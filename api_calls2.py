@@ -1,7 +1,11 @@
-import requests, os, json
+import os, json, time
 from warrant import Cognito
 from dotenv import load_dotenv
 from os.path import join, dirname
+
+import asyncio
+import aiohttp
+from aiohttp import ClientSession
 
 class API_calls:
 
@@ -28,9 +32,20 @@ class API_calls:
             print(f"Unable to authenticate {self.username}.")
             print(e)
 
-        self.api = "http://api.photonranch.org"
+        print('testing aiohttp')
+        #asyncio.run(self.test())
+        self._session = ClientSession()
 
-    def base_url(self, port):
+
+
+    async def test(self):
+        header = self.make_authenticated_header()
+        async with ClientSession() as session:
+            async with session.request(method="GET", url="http://api.photonranch.org/site4/status/", headers=header) as response:
+                response = await response.json()
+                print(response)
+
+    def base_url(self):
         return "http://api.photonranch.org"
 
     def make_authenticated_header(self):
@@ -43,23 +58,43 @@ class API_calls:
             print(e)
         return header
 
+    
 
-    def get(self, uri: str, payload: dict = None, port: int = 5000) -> str:
+    async def api(self, method: str, uri: str, payload: dict = None) -> str:
+        header = self.make_authenticated_header()
+
+        #async with ClientSession() as session:
+
+        # Populate the request parameters. Include data only if it was sent.
+        request_kwargs = { 
+            "method": method,
+            "url": f"{self.base_url()}/{uri}",
+            "headers": header,
+        }
+        if payload is not None: 
+            request_kwargs["data"] = json.dumps(payload)
+
+        async with self._session.request(**request_kwargs) as response:
+            response = await response.json()
+            return response
+
+
+    def get(self, uri: str, payload: dict = None) -> str:
         header = self.make_authenticated_header()
         if payload is None:
             response = requests.get(
-                f"{self.base_url(port)}/{uri}", 
+                f"{self.base_url()}/{uri}", 
                 headers=header
             ) 
         else:
             response = requests.get(
-                f"{self.base_url(port)}/{uri}", 
+                f"{self.base_url()}/{uri}", 
                 data=json.dumps(payload), 
                 headers=header
             )
         return response.json()
 
-    def put(self, uri: str, payload: dict, port: int = 5000) -> str:
+    def put(self, uri: str, payload: dict) -> str:
         ''' Localhost put request at the specified uri and access token.
 
         Args: 
@@ -72,13 +107,13 @@ class API_calls:
         '''
         header = self.make_authenticated_header()
         response = requests.put(
-            f"{self.base_url(port)}/{uri}", 
+            f"{self.base_url()}/{uri}", 
             data=json.dumps(payload), 
             headers=header
         ) 
         return response.json()
 
-    def post(self, uri: str, payload: dict, port: int = 5000) -> str:
+    def post(self, uri: str, payload: dict) -> str:
         ''' Localhost post request at the specified uri and access token.
 
         Args: 
@@ -91,10 +126,12 @@ class API_calls:
         '''
         header = self.make_authenticated_header()
         response = requests.post(
-            f"{self.base_url(port)}/{uri}", 
+            f"{self.base_url()}/{uri}", 
             data=json.dumps(payload), 
             headers=header
         ) 
         return response.json()
 
+if __name__ == "__main__":
+    a = API_calls()
         
