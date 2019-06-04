@@ -1,23 +1,19 @@
 
 # obs.py
+# concurrency via threading
 
-import time, json
-from random import randint
-import threading
+import time, json, sys, threading
+
 from api_calls import API_calls
-
 from devices.camera import Camera
 from devices.mount import Mount
 
-import sys
-
 running = True
-
 
 class Observatory:
 
     update_status_period = 5 #seconds
-    scan_for_tasks_period = 2
+    scan_for_tasks_period = 5
     running = True
 
     device_types = [ 
@@ -35,9 +31,29 @@ class Observatory:
 
         self.create_devices(config)
 
+        self.stopped = False
         self.run()
-        #time.sleep(10)
-        #self.stop()
+
+    def run(self):
+        ''' Continuously scan for commands and send status updates.
+        Scanning and updating are run in independent threads.
+        The run loop can be terminated by sending a KeyboardInterrupt signal.
+        '''
+
+        try:
+            self.scan_thread = threading.Thread(target=self.scan_requests).start()
+            self.update_thread = threading.Thread(target=self.update_status).start()
+
+            # Keep the main thread alive, otherwise signals are ignored
+            while True:
+                time.sleep(0.5)
+
+        except KeyboardInterrupt:
+            print("Finishing loops and exiting...")
+            self.stopped = True 
+            return
+
+        
 
     def create_devices(self, config: dict):
 
@@ -73,40 +89,41 @@ class Observatory:
         print("Device creation finished.")
         
 
-    def run(self):
-        self.t1 = threading.Timer(1, target=self.update_status)
-        self.t2 = threading.Timer(1, target=self.scan_requests)
-        #self.t1.daemon = True
-        #self.t2.daemon = True
-        self.t1.start()
-        self.t2.start()
-    def stop(self):
-        self.running = False
-        sys.exit()
-
     def scan_requests(self):
-        while running:
-            uri = f"{self.name}/mount1/command/"
-            cmd = json.loads(self.api.get(uri))
 
-            if cmd == {'Body': 'empty'}:
-                continue
+        while not self.stopped:
+            try:
+                time.sleep(self.scan_for_tasks_period)
+                start = time.time()
+                print("scanning")
+                uri = f"{self.name}/mount1/command/"
+                cmd = json.loads(self.api.get(uri))
 
-            print(cmd)
+                if cmd == {'Body': 'empty'}:
+                    #return
+                    print(f"finished empty scan in {time.time()-start} seconds")
+                    continue
 
-            cmd_type = cmd['type']
-            device_name = cmd['device']
+                print(cmd)
 
-            # Get the device based on it's type and name, then parse the cmd.
-            device = self.all_devices[cmd_type][device_name]
-            device.parse_command(cmd)
+                cmd_type = cmd['type']
+                device_name = cmd['device']
 
-            time.sleep(self.scan_for_tasks_period)
+                # Get the device based on it's type and name, then parse the cmd.
+                device = self.all_devices[cmd_type][device_name]
+                device.parse_command(cmd)
+
+                print(f"scan finished in {time.time()-start} seconds")
+            except KeyboardInterrupt:
+                print("caught in scan")
+                return
 
     def update_status(self):
 
-        while running:
-
+        while not self.stopped:
+            time.sleep(self.update_status_period)
+            start = time.time()
+            print("updating")
             ### Get status of all devices
             ###
 
@@ -139,7 +156,7 @@ class Observatory:
             uri = f"{self.name}/status/"
             res = self.api.put(uri, status)
 
-            time.sleep(self.update_status_period)
+            print(f"update finished in {time.time()-start:.2f} seconds")
 
 
 
@@ -168,11 +185,6 @@ if __name__=="__main__":
         },
     }
 
-    def signal_handler(signal, frame):
-        print('You pressed Ctrl+C')
-        running = False
-        sys.exit()
-    signal.signal(signal.SIGINT, signal_handler)
-    print('Press Ctrl+C')
 
     o = Observatory("site4", simple_config)
+
