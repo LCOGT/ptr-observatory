@@ -30,7 +30,7 @@ class API_calls:
 
         self.api = "http://api.photonranch.org"
 
-    def base_url(self, port):
+    def base_url(self):
         return "http://api.photonranch.org"
 
     def make_authenticated_header(self):
@@ -44,57 +44,19 @@ class API_calls:
         return header
 
 
-    def get(self, uri: str, payload: dict = None, port: int = 5000) -> str:
+    def authenticated_request(self, method: str, uri: str, payload: dict = None) -> str:
         header = self.make_authenticated_header()
-        if payload is None:
-            response = requests.get(
-                f"{self.base_url(port)}/{uri}", 
-                headers=header
-            ) 
-        else:
-            response = requests.get(
-                f"{self.base_url(port)}/{uri}", 
-                data=json.dumps(payload), 
-                headers=header
-            )
+
+        # Populate the request parameters. Include data only if it was sent.
+        request_kwargs = { 
+            "method": method,
+            "url": f"{self.base_url()}/{uri}",
+            "headers": header,
+        }
+        if payload is not None: 
+            request_kwargs["data"] = json.dumps(payload)
+
+        response = requests.request(**request_kwargs)
         return response.json()
 
-    def put(self, uri: str, payload: dict, port: int = 5000) -> str:
-        ''' Localhost put request at the specified uri and access token.
 
-        Args: 
-            uri (str): the part of the url after the port. Eg: 'site1/status/'.
-            payload (dict): body that will be converted to a json string. 
-            port (int): optional, specifies localhost port. 
-
-        Return: 
-            json response from the request.
-        '''
-        header = self.make_authenticated_header()
-        response = requests.put(
-            f"{self.base_url(port)}/{uri}", 
-            data=json.dumps(payload), 
-            headers=header
-        ) 
-        return response.json()
-
-    def post(self, uri: str, payload: dict, port: int = 5000) -> str:
-        ''' Localhost post request at the specified uri and access token.
-
-        Args: 
-            uri (str): the part of the url after the port. Eg: 'site1/status/'.
-            payload (dict): body that will be converted to a json string. 
-            port (int): optional, specifies localhost port. 
-
-        Return: 
-            json response from the request.
-        '''
-        header = self.make_authenticated_header()
-        response = requests.post(
-            f"{self.base_url(port)}/{uri}", 
-            data=json.dumps(payload), 
-            headers=header
-        ) 
-        return response.json()
-
-        

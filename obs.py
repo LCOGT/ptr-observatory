@@ -5,14 +5,21 @@
 import time, json, sys, threading
 
 from api_calls import API_calls
+
+# import device classes
 from devices.camera import Camera
+from devices.enclosure import Enclosure 
+from devices.filter import Filter
+from devices.focuser import Focuser
 from devices.mount import Mount
+from devices.observing_conditions import ObservingConditions
+from devices.switch import Switch
+
 
 class Observatory:
 
-    update_status_period = 5 #seconds
-    scan_for_tasks_period = 5
-    running = True
+    time_between_status_update = 3 #seconds
+    time_between_command_check = 3
 
     device_types = [ 
         'mount',
@@ -58,7 +65,6 @@ class Observatory:
             self.stopped = True 
             return
 
-        
     def create_devices(self, config: dict):
 
         # This dict will store all created devices, subcategorized by type.
@@ -97,16 +103,17 @@ class Observatory:
 
         # Loop forever unless stopped 
         while not self.stopped:
-            time.sleep(self.scan_for_tasks_period)
+            time.sleep(self.time_between_command_check)
             start = time.time()
             print("scanning")
             uri = f"{self.name}/mount1/command/"
-            cmd = json.loads(self.api.get(uri))
+            cmd = json.loads(self.api.authenticated_request("GET", uri))
 
             if cmd == {'Body': 'empty'}:
                 print(f"finished empty scan in {time.time()-start:.2f} seconds")
                 continue
 
+            # If a non-empty command arrives, it will print to the terminal.
             print(cmd)
 
             cmd_type = cmd['type']
@@ -128,7 +135,7 @@ class Observatory:
         while not self.stopped:
 
             # Only send an update every few seconds.
-            time.sleep(self.update_status_period)
+            time.sleep(self.time_between_status_update)
 
             start = time.time()
             print("updating")
@@ -161,11 +168,11 @@ class Observatory:
             # Include the time that the status was assembled and sent.
             status["timestamp"] = str(int(time.time()))
 
-            ### Push this status online
+            ### Put this status online
             ###
 
             uri = f"{self.name}/status/"
-            response = self.api.put(uri, status)
+            response = self.api.authenticated_request("PUT", uri, status)
 
             print(f"update finished in {time.time()-start:.2f} seconds")
 

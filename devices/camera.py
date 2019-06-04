@@ -20,18 +20,24 @@ class Camera:
         status = {"type":"camera"}
         return status
 
-    def get_ascom_description(self):
-        return self.camera.Description
-
     def parse_command(self, command):
         req = command['required_params']
         opt = command['optional_params']
         action = command['action']
 
         if action == "expose":
-            self.expose(req, opt)
+            self.expose_command(req, opt)
+        elif action == "stop":
+            self.stop_command(req, opt)
+        else:
+            print(f"Command <{action}> not recognized.")
 
-    def expose(self, required_params, optional_params):
+    ###############################
+    #       Camera Commands       #
+    ###############################
+
+    def expose_command(self, required_params, optional_params):
+        ''' Apply settings and start an exposure. '''
         c = self.camera
         bin = int(optional_params.get('bin', 1))
         gain = optional_params.get('gain', 1)
@@ -58,6 +64,13 @@ class Camera:
             if pc == 100: break
             time.sleep(1)
 
+    def stop_command(self, required_params, optional_params):
+        ''' Stop the current exposure and return the camera to Idle state. '''
+
+        self.camera.AbortExposure()
+
+        # Alternative: self.camera.StopExposure() will stop the exposure and 
+        # initiate the readout process. 
         
 
 
