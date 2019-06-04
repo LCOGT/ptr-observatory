@@ -8,8 +8,6 @@ from api_calls import API_calls
 from devices.camera import Camera
 from devices.mount import Mount
 
-running = True
-
 class Observatory:
 
     update_status_period = 5 #seconds
@@ -25,21 +23,27 @@ class Observatory:
     ]
 
     def __init__(self, name, config): 
+
+        # This is the class through which we can make authenticated api calls.
         self.api = API_calls()
+
+        # The site name (str) and configuration (dict) are given by the user. 
         self.name = name
         self.config = config
 
+        # Use the configuration to instantiate objects for all devices.
         self.create_devices(config)
 
+        # Run observatory loops as long as the `stopped` is not set to True.
         self.stopped = False
         self.run()
 
     def run(self):
         ''' Continuously scan for commands and send status updates.
+
         Scanning and updating are run in independent threads.
         The run loop can be terminated by sending a KeyboardInterrupt signal.
         '''
-
         try:
             self.scan_thread = threading.Thread(target=self.scan_requests).start()
             self.update_thread = threading.Thread(target=self.update_status).start()
@@ -48,13 +52,13 @@ class Observatory:
             while True:
                 time.sleep(0.5)
 
+        # `Ctrl-C` will exit the program.
         except KeyboardInterrupt:
             print("Finishing loops and exiting...")
             self.stopped = True 
             return
 
         
-
     def create_devices(self, config: dict):
 
         # This dict will store all created devices, subcategorized by type.
@@ -91,39 +95,44 @@ class Observatory:
 
     def scan_requests(self):
 
+        # Loop forever unless stopped 
         while not self.stopped:
-            try:
-                time.sleep(self.scan_for_tasks_period)
-                start = time.time()
-                print("scanning")
-                uri = f"{self.name}/mount1/command/"
-                cmd = json.loads(self.api.get(uri))
+            time.sleep(self.scan_for_tasks_period)
+            start = time.time()
+            print("scanning")
+            uri = f"{self.name}/mount1/command/"
+            cmd = json.loads(self.api.get(uri))
 
-                if cmd == {'Body': 'empty'}:
-                    #return
-                    print(f"finished empty scan in {time.time()-start} seconds")
-                    continue
+            if cmd == {'Body': 'empty'}:
+                print(f"finished empty scan in {time.time()-start:.2f} seconds")
+                continue
 
-                print(cmd)
+            print(cmd)
 
-                cmd_type = cmd['type']
-                device_name = cmd['device']
+            cmd_type = cmd['type']
+            device_name = cmd['device']
 
-                # Get the device based on it's type and name, then parse the cmd.
-                device = self.all_devices[cmd_type][device_name]
-                device.parse_command(cmd)
+            # Get the device based on it's type and name, then parse the cmd.
+            device = self.all_devices[cmd_type][device_name]
+            device.parse_command(cmd)
 
-                print(f"scan finished in {time.time()-start} seconds")
-            except KeyboardInterrupt:
-                print("caught in scan")
-                return
+            print(f"scan finished in {time.time()-start:.2f} seconds")
 
     def update_status(self):
+        ''' Collect status from all devics and send an update to aws.
+
+        Each device class is responsible for implementing the method 
+        `get_status` which returns a dictionary. 
+        '''
 
         while not self.stopped:
+
+            # Only send an update every few seconds.
             time.sleep(self.update_status_period)
+
             start = time.time()
             print("updating")
+
             ### Get status of all devices
             ###
 
@@ -133,38 +142,36 @@ class Observatory:
             # For each type, we get and save the status of each device.
             for type in self.device_types:
 
-                # The status is grouped into lists of devices by type.
+                # The status that we will send is grouped into lists of 
+                # devices by type.
                 status[type] = {}
                 
                 # Names of all devices of the current type.
-                # Recall that self.all_devices[type] is a dictionary of all `type` 
-                # devices, with key=name and val=device object itself.
+                # Recall that self.all_devices[type] is a dictionary of all 
+                # `type` devices, with key=name and val=device object itself.
                 devices_of_type = self.all_devices.get(type, {})
                 device_names = devices_of_type.keys()
 
                 for device_name in device_names:
-                    # The actual device object
+                    # Get the actual device object...
                     device = devices_of_type[device_name]
-                    # Add to main status dict.
+                    # ...and add it to main status dict.
                     status[type][device_name] = device.get_status()
             
+            # Include the time that the status was assembled and sent.
             status["timestamp"] = str(int(time.time()))
 
             ### Push this status online
             ###
 
             uri = f"{self.name}/status/"
-            res = self.api.put(uri, status)
+            response = self.api.put(uri, status)
 
             print(f"update finished in {time.time()-start:.2f} seconds")
 
 
 
 if __name__=="__main__":
-
-
-    import signal
-    import os
 
     simple_config = {
         "mount": {
@@ -184,7 +191,6 @@ if __name__=="__main__":
             },
         },
     }
-
 
     o = Observatory("site4", simple_config)
 
