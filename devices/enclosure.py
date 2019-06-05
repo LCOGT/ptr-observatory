@@ -2,7 +2,8 @@ import win32com.client
 
 class Enclosure:
 
-    def __init__(self, driver: str):
+    def __init__(self, driver: str, name: str):
+        self.name = name
         self.enclosure = win32com.client.Dispatch(driver)
         self.enclosure.Connected = True
 

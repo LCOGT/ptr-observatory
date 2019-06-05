@@ -3,7 +3,8 @@ import win32com.client
 
 class Focuser:
 
-    def __init__(self, driver: str):
+    def __init__(self, driver: str, name: str):
+        self.name = name
         self.focuser = win32com.client.Dispatch(driver)
         self.focuser.Connected = True
 
@@ -39,21 +40,21 @@ class Focuser:
 
     def move_relative_command(self, req: dict, opt: dict):
         ''' set the focus position by moving relative to current position '''
-        print(f"filter cmd: move_relative")
+        print(f"focuser cmd: move_relative")
         pass
     def move_absolute_command(self, req: dict, opt: dict):
         ''' set the focus position by moving to an absolute position '''
-        print(f"filter cmd: move_absolute")
+        print(f"focuser cmd: move_absolute")
         pass
     def stop_command(self, req: dict, opt: dict):
-        ''' stop filter movement '''
-        print(f"filter cmd: stop")
+        ''' stop focuser movement '''
+        print(f"focuser cmd: stop")
         pass
     def home_command(self, req: dict, opt: dict):
-        ''' set the filter to the home position'''
-        print(f"filter cmd: home")
+        ''' set the focuser to the home position'''
+        print(f"focuser cmd: home")
         pass
     def auto_command(self, req: dict, opt: dict):
         ''' autofocus '''
-        print(f"filter cmd: auto")
+        print(f"focuser cmd: auto")
         pass

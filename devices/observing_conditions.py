@@ -3,7 +3,8 @@ import win32com.client
 
 class ObservingConditions:
 
-    def __init__(self, driver: str):
+    def __init__(self, driver: str, name: str):
+        self.name = name
         self.observing_conditions = win32com.client.Dispatch(driver)
         self.observing_conditions.Connected = True
 

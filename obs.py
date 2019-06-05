@@ -13,6 +13,7 @@ from devices.filter import Filter
 from devices.focuser import Focuser
 from devices.mount import Mount
 from devices.observing_conditions import ObservingConditions
+from devices.rotator import Rotator
 from devices.switch import Switch
 
 
@@ -22,11 +23,14 @@ class Observatory:
     time_between_command_check = 3
 
     device_types = [ 
-        'mount',
         'camera',
+        'enclosure',
         'filter',
         'focuser', 
+        'mount',
         'rotator',
+        'switch',
+
     ]
 
     def __init__(self, name, config): 
@@ -37,6 +41,7 @@ class Observatory:
         # The site name (str) and configuration (dict) are given by the user. 
         self.name = name
         self.config = config
+        self.update_config()
 
         # Use the configuration to instantiate objects for all devices.
         self.create_devices(config)
@@ -54,6 +59,7 @@ class Observatory:
         try:
             self.scan_thread = threading.Thread(target=self.scan_requests).start()
             self.update_thread = threading.Thread(target=self.update_status).start()
+            #self.update_config = threading.Thread(target=self.update_config).start()
 
             # Keep the main thread alive, otherwise signals are ignored
             while True:
@@ -74,7 +80,7 @@ class Observatory:
         for type in self.device_types:
 
             self.all_devices[type] = {}
-
+            print(type)
             # Get the names of all the devices from each type.
             devices_of_type = config.get(type, {})
             device_names = devices_of_type.keys()
@@ -83,21 +89,38 @@ class Observatory:
             for name in device_names:
                 driver = devices_of_type[name]["driver"]
                 if type == "camera":
-                    device = Camera(driver)
+                    device = Camera(driver, name)
                 elif type == "mount":
-                    device = Mount(driver)
+                    device = Mount(driver, name)
                 elif type == "filter":
-                    device = Filter(driver)
+                    device = Filter(driver, name)
                 elif type == "focuser":
-                    device = Focuser(driver)
+                    device = Focuser(driver, name)
                 elif type == "rotator":
-                    device = Rotator(driver)
+                    device = Rotator(driver, name)
+                else:
+                    print(f"Unknown device: {name}")
 
                 # Add the instantiated device to the collection of all devices.
                 self.all_devices[type][name] = device
 
         print("Device creation finished.")
         
+    def update_config(self):
+        ''' Send the config to aws. Used in UI creation too. 
+
+        NOTE: currently, the config must include:
+                config["site"] = `site name`
+                config["mounts"] = <list>
+            This is due to code in the flask api, in the `sites.py` file
+            during initializing aws resources from the config 
+            (function init_from_config)
+        '''
+            
+        print("Sending updated site configuration...")
+        uri = f"{self.name}/config/"
+        response = self.api.authenticated_request("PUT", uri, self.config)
+        print(response)
 
     def scan_requests(self):
 
@@ -105,7 +128,6 @@ class Observatory:
         while not self.stopped:
             time.sleep(self.time_between_command_check)
             start = time.time()
-            print("scanning")
             uri = f"{self.name}/mount1/command/"
             cmd = json.loads(self.api.authenticated_request("GET", uri))
 
@@ -138,7 +160,6 @@ class Observatory:
             time.sleep(self.time_between_status_update)
 
             start = time.time()
-            print("updating")
 
             ### Get status of all devices
             ###
@@ -181,6 +202,7 @@ class Observatory:
 if __name__=="__main__":
 
     simple_config = {
+        "site": "sim_site",
         "mount": {
             "mount1": {
                 "name": "mount1",
@@ -197,7 +219,31 @@ if __name__=="__main__":
                 "driver": 'ASCOM.Simulator.Camera',
             },
         },
+        "filter": {
+            "filter1": {
+                "name": "filter1",
+                "driver": "ASCOM.Simulator.FilterWheel",
+            }
+        },
+        "telescope": {
+            "telescope1": {
+                "name": "telescope1",
+                "driver": "ASCOM.Simulator.Telescope"
+            }
+        },
+        "focuser": {
+            "focuser1": {
+                "name": "focuser1",
+                "driver": "ASCOM.Simulator.Focuser"
+            }
+        },
+        "rotator": {
+            "rotator1": {
+                "name": "rotator1",
+                "driver": "ASCOM.Simulator.Rotator"
+            }
+        },
     }
 
-    o = Observatory("site4", simple_config)
+    o = Observatory("sim_site", simple_config)
 

@@ -2,7 +2,8 @@ import win32com.client
 
 class Mount:
 
-    def __init__(self, driver: str):
+    def __init__(self, driver: str, name: str):
+        self.name = name
         self.mount = win32com.client.Dispatch(driver)
         self.mount.Connected = True
 
@@ -10,7 +11,17 @@ class Mount:
         print(self.mount.Description)
 
     def get_status(self):
-        status = {"type":"mount"}
+        status = {
+            "name": self.name,
+            "type":"mount",
+            "RightAscension": str(self.mount.RightAscension),
+            "Declination": str(self.mount.Declination),
+            "RightAscensionRate": str(self.mount.RightAscensionRate),
+            "DeclinationRate": str(self.mount.DeclinationRate),
+            "Slewing": str(self.mount.Slewing),
+            "AtHome": str(self.mount.AtHome),
+            "AtPark": str(self.mount.AtPark),
+        }
         return status
 
     def parse_command(self, command):
@@ -38,8 +49,24 @@ class Mount:
     ###############################
 
     def go_command(self, req, opt):
-        ''' slew to the given coordinates '''
+        ''' Slew to the given ra/dec coordinates. '''
         print("mount cmd: slewing mount")
+
+        ra = req['ra']
+        dec = req['dec']
+
+        # Offset from sidereal in arcseconds per SI second, default = 0.0
+        tracking_rate_ra = opt.get('tracking_rate_ra', 0)
+
+        # Arcseconds per SI second, default = 0.0
+        tracking_rate_dec = opt.get('tracking_rate_dec', 0)
+
+        self.mount.Tracking = True
+        self.mount.SlewToCoordinatesAsync(ra, dec)
+
+        self.mount.RightAscensionRate = tracking_rate_ra
+        self.mount.DeclinationRate = tracking_rate_dec
+
         pass
 
     def stop_command(self, req, opt):

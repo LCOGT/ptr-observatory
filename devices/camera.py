@@ -1,17 +1,27 @@
 import win32com.client
 import time
 
+import os
+import numpy as np
+from astropy.io import fits
+from astropy.table import Table
+from astropy.utils.data import get_pkg_data_filename
+
+from os.path import join, dirname, abspath
+
 class Camera:
 
     """ 
     http://ascom-standards.org/Help/Developer/html/T_ASCOM_DriverAccess_Camera.htm
     """
 
-    def __init__(self, driver='ASCOM.Simulator.Camera'):
-
+    def __init__(self, driver: str, name: str):
+        self.name = name
         # Define the camera driver, then connect to it.
         self.camera = win32com.client.Dispatch(driver)
         self.camera.Connected = True
+
+        self.save_directory = abspath(join(dirname(__file__), '..', 'images'))
 
         print("Connected to camera.")
         print(self.camera.Description)
@@ -53,15 +63,16 @@ class Camera:
         try:
             print("starting exposure")
             c.StartExposure(exposure_time, False)
-            c.StartExposure(exposure_time, False)
         except Exception as e:
             print("failed exposure")
             print(e)
 
         for i in range(20):
             pc = c.PercentCompleted
-            print(pc)
-            if pc == 100: break
+            print(f"{pc}%")
+            if pc >= 100: 
+                self.save_image()
+                break
             time.sleep(1)
 
     def stop_command(self, required_params, optional_params):
@@ -72,6 +83,40 @@ class Camera:
         # Alternative: self.camera.StopExposure() will stop the exposure and 
         # initiate the readout process. 
         
+
+
+    ###############################
+    #       Helper Methods        #
+    ###############################
+
+
+    def save_image(self):
+        print(f"Image ready: {self.camera.ImageReady}.")
+
+        # Wait until image is ready for retrieval.
+        while not self.camera.ImageReady:
+            time.sleep(0.1)
+
+        # Array of pixel values from the camera.
+        image_array = np.array(self.camera.ImageArray)
+
+        # Create a PrimaryHDU object to encapsulate the data.
+        hdu = fits.PrimaryHDU(image_array)
+
+        # Add header
+        hdu.header['C_HEAD'] = ('CUSTOMVAL', 'Custom comment')
+
+        # Write file.
+        try: 
+            print(self.save_directory)
+            filename = f'image_{int(time.time())}.fits'
+            hdu.writeto(join(self.save_directory, filename))
+        except Exception as e:
+            print(f"Problem saving file. {e}")
+
+
+
+
 
 
         

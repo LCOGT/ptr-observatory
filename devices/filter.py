@@ -2,7 +2,8 @@ import win32com.client
 
 class Filter:
 
-    def __init__(self, driver: str):
+    def __init__(self, driver: str, name: str):
+        self.name = name
         self.filter = win32com.client.Dispatch(driver)
         self.filter.Connected = True
 

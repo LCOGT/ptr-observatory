@@ -23,6 +23,7 @@ class API_calls:
                        username=self.username,
                        user_pool_region=self.region)
         try:
+            print("Authenticating...")
             self.user.authenticate(password=self.password)
         except Exception as e:
             print(f"Unable to authenticate {self.username}.")
@@ -32,6 +33,7 @@ class API_calls:
 
     def base_url(self):
         return "http://api.photonranch.org"
+        #return "http://localhost:5000"
 
     def make_authenticated_header(self):
         header = {}
@@ -56,6 +58,7 @@ class API_calls:
         if payload is not None: 
             request_kwargs["data"] = json.dumps(payload)
 
+        #print(request_kwargs)
         response = requests.request(**request_kwargs)
         return response.json()
 
