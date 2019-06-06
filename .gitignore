@@ -5,4 +5,4 @@ __pycache__/
 .vscode/
 bash.exe.stackdump
 sandbox/
-images/*
+images/*.fits

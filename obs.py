@@ -80,7 +80,7 @@ class Observatory:
         for type in self.device_types:
 
             self.all_devices[type] = {}
-            print(type)
+
             # Get the names of all the devices from each type.
             devices_of_type = config.get(type, {})
             device_names = devices_of_type.keys()
@@ -88,10 +88,11 @@ class Observatory:
             # Instantiate each device object from based on its type
             for name in device_names:
                 driver = devices_of_type[name]["driver"]
+                settings = devices_of_type[name].get("settings", {})
                 if type == "camera":
                     device = Camera(driver, name)
                 elif type == "mount":
-                    device = Mount(driver, name)
+                    device = Mount(driver, name, settings)
                 elif type == "filter":
                     device = Filter(driver, name)
                 elif type == "focuser":
@@ -107,20 +108,14 @@ class Observatory:
         print("Device creation finished.")
         
     def update_config(self):
-        ''' Send the config to aws. Used in UI creation too. 
-
-        NOTE: currently, the config must include:
-                config["site"] = `site name`
-                config["mounts"] = <list>
-            This is due to code in the flask api, in the `sites.py` file
-            during initializing aws resources from the config 
-            (function init_from_config)
-        '''
+        ''' Send the config to aws. Used in UI creation too. '''
             
         print("Sending updated site configuration...")
         uri = f"{self.name}/config/"
         response = self.api.authenticated_request("PUT", uri, self.config)
-        print(response)
+        if response:
+            print("Config uploaded successfully.")
+            print(response)
 
     def scan_requests(self):
 
@@ -201,49 +196,6 @@ class Observatory:
 
 if __name__=="__main__":
 
-    simple_config = {
-        "site": "sim_site",
-        "mount": {
-            "mount1": {
-                "name": "mount1",
-                "driver": 'ASCOM.Simulator.Telescope',
-            },
-        },
-        "camera": {
-            "cam1": {
-                "name": "cam1",
-                "driver": 'ASCOM.Simulator.Camera',
-            },
-            "cam2": {
-                "name": "cam2",
-                "driver": 'ASCOM.Simulator.Camera',
-            },
-        },
-        "filter": {
-            "filter1": {
-                "name": "filter1",
-                "driver": "ASCOM.Simulator.FilterWheel",
-            }
-        },
-        "telescope": {
-            "telescope1": {
-                "name": "telescope1",
-                "driver": "ASCOM.Simulator.Telescope"
-            }
-        },
-        "focuser": {
-            "focuser1": {
-                "name": "focuser1",
-                "driver": "ASCOM.Simulator.Focuser"
-            }
-        },
-        "rotator": {
-            "rotator1": {
-                "name": "rotator1",
-                "driver": "ASCOM.Simulator.Rotator"
-            }
-        },
-    }
-
-    o = Observatory("sim_site", simple_config)
+    from config import sim_config
+    o = Observatory("sim_site", sim_config)
 
