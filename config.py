@@ -2,12 +2,25 @@
 # NOTE: Keep all values as strings for consistency, and to avoid errors with 
 #       json conversion. 
 
+site_name = "sim_site"
+
 sim_config = {
     "site": "sim_site",
 
     "mount": {
         "mount1": {
             "name": "mount1",
+            "driver": 'ASCOM.Simulator.Telescope',
+            "settings": {
+                "lattitude": "34.4",
+                "longitude": "-119.7",
+                "elevation": "485", # meters above sea level
+                "home_altitude": "0.0",
+                "home_azimuth": "0.0",
+            },
+        },
+        "mount2": {
+            "name": "mount2",
             "driver": 'ASCOM.Simulator.Telescope',
             "settings": {
                 "lattitude": "34.4",

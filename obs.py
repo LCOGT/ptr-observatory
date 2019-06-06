@@ -57,9 +57,15 @@ class Observatory:
         The run loop can be terminated by sending a KeyboardInterrupt signal.
         '''
         try:
-            self.scan_thread = threading.Thread(target=self.scan_requests).start()
             self.update_thread = threading.Thread(target=self.update_status).start()
-            #self.update_config = threading.Thread(target=self.update_config).start()
+
+            # Each mount operates async and has its own command queue to scan.
+            # TODO: is it better to use just one command queue per site? 
+            for mount in self.all_devices['mount'].keys():
+                self.scan_thread = threading.Thread(
+                    target=self.scan_requests, 
+                    args=(mount,)
+                ).start()
 
             # Keep the main thread alive, otherwise signals are ignored
             while True:
@@ -117,17 +123,17 @@ class Observatory:
             print("Config uploaded successfully.")
             print(response)
 
-    def scan_requests(self):
+    def scan_requests(self, mount):
 
         # Loop forever unless stopped 
         while not self.stopped:
             time.sleep(self.time_between_command_check)
             start = time.time()
-            uri = f"{self.name}/mount1/command/"
+            uri = f"{self.name}/{mount}/command/"
             cmd = json.loads(self.api.authenticated_request("GET", uri))
 
             if cmd == {'Body': 'empty'}:
-                print(f"finished empty scan in {time.time()-start:.2f} seconds")
+                print(f"{mount} finished empty scan in {time.time()-start:.2f} seconds")
                 continue
 
             # If a non-empty command arrives, it will print to the terminal.
@@ -140,7 +146,7 @@ class Observatory:
             device = self.all_devices[cmd_type][device_name]
             device.parse_command(cmd)
 
-            print(f"scan finished in {time.time()-start:.2f} seconds")
+            print(f"{mount} finished scan in {time.time()-start:.2f} seconds")
 
     def update_status(self):
         ''' Collect status from all devics and send an update to aws.
@@ -196,6 +202,7 @@ class Observatory:
 
 if __name__=="__main__":
 
-    from config import sim_config
-    o = Observatory("sim_site", sim_config)
+    from config import sim_config, site_name
+
+    o = Observatory(site_name, sim_config)
 
