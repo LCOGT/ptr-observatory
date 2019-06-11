@@ -98,6 +98,7 @@ class Mount:
             #self.mount.SlewToAltAzAsync(home_alt, home_az)
             self.mount.FindHome()
         else:
+            self.mount.Tracking = False
             print(f"Mount is not capable of finding home. Slewing to zenith.")
             self.mount.SlewToAltAzAsync(88., 0.)
 
