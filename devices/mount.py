@@ -23,6 +23,7 @@ class Mount:
             "AtHome": str(m.AtHome),
             "AtPark": str(m.AtPark),
             "Azimuth": str(m.Azimuth),
+            "Altitude": str(m.Altitude),
             "GuideRateDeclination": str(m.GuideRateDeclination),
             "GuideRateRightAscension": str(m.GuideRateRightAscension),
             "IsPulseGuiding": str(m.IsPulseGuiding),
