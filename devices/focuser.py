@@ -12,7 +12,18 @@ class Focuser:
         print(self.focuser.Description)
 
     def get_status(self):
-        status = {"type":"focuser"}
+        f = self.focuser
+        status = {
+            "Absolute": str(f.Absolute),
+            "Connected": str(f.Connected),
+            "IsMoving": str(f.IsMoving),
+            "MaxIncrement": str(f.MaxIncrement),
+            "MaxStep": str(f.MaxStep),
+            "Position": str(f.Position),
+            "StepSize": str(f.StepSize),
+            "TempComp": str(f.TempComp),
+            "Temperature": str(f.Temperature),
+        }
         return status
 
     def parse_command(self, command):
@@ -49,7 +60,8 @@ class Focuser:
     def stop_command(self, req: dict, opt: dict):
         ''' stop focuser movement '''
         print(f"focuser cmd: stop")
-        pass
+        self.focuser.Halt()
+
     def home_command(self, req: dict, opt: dict):
         ''' set the focuser to the home position'''
         print(f"focuser cmd: home")

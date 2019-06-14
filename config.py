@@ -4,7 +4,7 @@
 
 site_name = "sim_site"
 
-sim_config = {
+site_config = {
     "site": "sim_site",
 
     "mount": {

@@ -202,7 +202,8 @@ class Observatory:
 
 if __name__=="__main__":
 
-    from config import sim_config, site_name
+    from config import site_config, site_name
+    #from config_wmd import site_name, site_config
 
-    o = Observatory(site_name, sim_config)
+    o = Observatory(site_name, site_config)
 
