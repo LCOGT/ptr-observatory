@@ -524,7 +524,6 @@ class Camera:
                             pass
                         
                         hdu1.writeto(im_path + raw_name, overwrite=True)
-                        breakpoint()
                         text = open(im_path + text_name, 'w')
                         text.write(str(hdu.header))
                         text.close()
