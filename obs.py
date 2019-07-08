@@ -149,14 +149,14 @@ class Observatory:
             for name in device_names:
                 driver = devices_of_type[name]["driver"]
                 settings = devices_of_type[name].get("settings", {})
-                3#rint('looking for dev-types:  ', dev_type)
+                #print('looking for dev-types:  ', dev_type)
                 if dev_type == "observing_conditions":
-                    #breakpoint()
+                    
                     device = ObservingConditions(driver, name)
                 elif dev_type == "enclosure":
                     device = Enclosure(driver, name)
                 elif dev_type == "camera":
-                    #breakpoint()
+                    
                     device = Camera(driver, name)
                 elif dev_type == "mount":
                     device = Mount(driver, name, settings)
@@ -165,10 +165,10 @@ class Observatory:
                 elif dev_type == "focuser":
                     device = Focuser(driver, name)
                 elif dev_type == "rotator":
-                    #breakpoint()
+                    
                     device = Rotator(driver, name)
                 elif dev_type == "scripter":
-                    #breakpoint()
+                    
                     device = Scripter(driver, name)
                 else:
                     print(f"Unknown device: {name}")
@@ -332,14 +332,14 @@ class Observatory:
                                        #A tuple containing im_path and name.    
         while True:
             if not self.aws_queue.empty():
-                #breakpoint()
+                
                 pri_image = self.aws_queue.get(block=False)
                 if pri_image is None:
                     time.sleep(0.1)
                     continue
                 #Here we parse the item, set up and send to AWS
                 #print('sendToAWS:  ', pri_image)
-                #breakpoint()
+                
                 im_path = pri_image[1][0]
                 name = pri_image[1][1]
                 if name[-3:] != 'jpg':

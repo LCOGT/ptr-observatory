@@ -510,7 +510,10 @@ class Camera:
                         raw_name = config.site_name + '-' + alias + '-' + g_dev['day'] + '-' + next_seq  + '-' + im_type + '00.fits'
                         db_name = config.site_name + '-' + alias + '-' + g_dev['day'] + '-' + next_seq  + '-' + im_type + '13.fits'
                         jpeg_name = config.site_name + '-' + alias + '-' + g_dev['day'] + '-' + next_seq  + '-' + im_type + '13.jpg'
+                        text_name = config.site_name + '-' + alias + '-' + g_dev['day'] + '-' + next_seq  + '-' + im_type + '00.txt'
                         im_path = 'Q:\\archive\\ea03\\'
+                        hdu.header['FILEPATH'] = str(im_path)
+                        hdu.header['FILENAME'] = str(raw_name)
                         #print('Creating:  ', im_path + g_dev['day'] + '\\to_AWS\\  ... subdirectory.')
                         try:
                             
@@ -521,6 +524,10 @@ class Camera:
                             pass
                         
                         hdu1.writeto(im_path + raw_name, overwrite=True)
+                        breakpoint()
+                        text = open(im_path + text_name, 'w')
+                        text.write(str(hdu.header))
+                        text.close()
                         raw_data_size = hdu.data.size
 
                         print("\n\Finish-Exposure is complete:  " + raw_name, raw_data_size, '\n')
