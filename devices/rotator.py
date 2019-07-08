@@ -1,10 +1,13 @@
 
 import win32com.client
+import time
+from global_yard import g_dev 
 
 class Rotator:
 
     def __init__(self, driver: str, name: str):
         self.name = name
+        g_dev['rot'] = self
         self.rotator = win32com.client.Dispatch(driver)
         self.rotator.Connected = True
 
@@ -26,9 +29,27 @@ class Rotator:
             "name": self.name, 
             "type": "rotator",
             "position_angle": str(self.rotator.Position),
+            "rotator moving": str(self.rotator.IsMoving),
         }
         return status
 
+    def get_quick_status(self, quick):
+        quick.append(time.time())
+        quick.append(self.rotator.Position)
+        quick.append(self.rotator.IsMoving)
+
+        return quick
+    
+    def get_average_status(self, pre, post):
+        average = []
+        average.append(round((pre[0] + post[0])/2, 3))
+        average.append(round((pre[1] + post[1])/2, 3))
+        if pre[2] or post[2]:
+            average.append('T')
+        else:
+            average.append('F')
+        return average
+    
     def parse_command(self, command):
         req = command['required_params']
         opt = command['optional_params']

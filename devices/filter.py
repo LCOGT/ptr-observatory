@@ -1,14 +1,23 @@
 import win32com.client
+from global_yard import g_dev 
 
 class Filter:
 
-    def __init__(self, driver: str, name: str):
+    def __init__(self, driver: str, name: str, camera=None):
         self.name = name
-        self.filter = win32com.client.Dispatch(driver)
-        self.filter.Connected = True
-
-        print(f"filter connected.")
-        print(self.filter.Description)
+        g_dev['fil']= self
+        #breakpoint()
+        if driver[0:5] != 'Maxim':
+            self.filter = win32com.client.Dispatch(driver)
+            self.filter.Connected = True
+    
+            print(f"filter connected.")
+            print(self.filter.Description)
+        else:
+            #THIS CODE implements a filter via the Maxim application which is passed in 
+            #as a valid instance of class camera.
+            print('Fabricate Maxim supported Dual filter here.')
+            
 
     def get_status(self):
         status = {"type":"filter"}

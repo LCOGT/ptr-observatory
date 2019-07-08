@@ -1,17 +1,32 @@
 import win32com.client
+from global_yard import g_dev
 
 class Enclosure:
 
     def __init__(self, driver: str, name: str):
         self.name = name
+        g_dev['enc'] = self
         self.enclosure = win32com.client.Dispatch(driver)
+        #breakpoint()
         self.enclosure.Connected = True
 
         print(f"enclosure connected.")
         print(self.enclosure.Description)
 
     def get_status(self) -> dict:
-        status = {"type":"enclosure"}
+        shutter_status = self.enclosure.ShutterStatus
+        if shutter_status == 0:
+            stat_string = "Open"  
+        elif shutter_status == 1:
+             stat_string = "Closed"
+        elif shutter_status == 2:
+             stat_string = "Opening"
+        elif shutter_status == 3:
+             stat_string = "Closing"
+        elif shutter_status == 4:
+             stat_string = "Error"
+        status = {"type":"enclosure",
+                  'shutter status':stat_string}
         return status
 
     def parse_command(self, command):
