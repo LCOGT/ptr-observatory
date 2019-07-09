@@ -205,10 +205,8 @@ class Observatory:
         if cmd == {'Body': 'empty'}:
             print(cmd)
             return  #Nothing to do, co command in the FIFO
-        
-
-        # If a non-empty command arrives, it will print to the terminal.
-        print(cmd)
+            # If a non-empty command arrives, it will print to the terminal.
+            print(cmd)
 
         cmd_type = cmd['type']            #Evil overload of a keyword!
         device_name = cmd['device']
@@ -265,13 +263,13 @@ class Observatory:
         ### Put this status online
         ###
      
-        print('Status from Update:  ', status)
+        print('Status Sent')#from Update:  ', status)
 
         uri = f"{self.name}/status/"
         #NBNBNB None of the strings can be empty.  Otherwise this put faults.
         response = self.api.authenticated_request("PUT", uri, status)
 
-        print(f"update finished in {time.time()-start:.2f} seconds", response)
+        #print(f"update finished in {time.time()-start:.2f} seconds", response)
             
     def update(self):
         self.scan_requests('mnt1')
@@ -298,7 +296,7 @@ class Observatory:
                 self.update()
                 time.sleep(2)
                 self.cycles -= 1
-                print('.')
+                #print('.')
         
         
 #        ''' Continuously scan for commands and send status updates.
@@ -342,7 +340,7 @@ class Observatory:
                 
                 im_path = pri_image[1][0]
                 name = pri_image[1][1]
-                if name[-3:] != 'jpg':
+                if not (name[-3:] == 'jpg' or name[-3:] == 'txt'):
                     #compress first
                     ptr_bz2.to_bz2(im_path + name)
                     name = name + '.bz2'
@@ -351,11 +349,12 @@ class Observatory:
         
                 with open(im_path + name , 'rb') as f:
                     files = {'file': (im_path + name, f)}
+                    print(im_path + name)
                     start_send = time.time()
                     #print('\n\n\nStart send at:  ', start_send, '\n\n\n')
                     http_response = requests.post(aws_resp['url'], data=aws_resp['fields'], files=files)
                     #print("\n\nhttp_response:  ", http_response, '\n\n')
-                if name[-3:] == 'bz2' or name[-3:] == 'jpg':
+                if name[-3:] == 'bz2' or name[-3:] == 'jpg' or name[-3:] =='txt':
                     #os.remove(im_path + name)   #We do not need to keep 
                     pass
                     #print('Deleting:  ', im_path + name)

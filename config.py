@@ -28,14 +28,6 @@ site_config = {
         },
     },
 
-    "scripter": {
-        "scr-1": {
-            "name": "scr-1",
-            "parent": "mnt1",
-            "alias": "Scripts",
-            "driver": 'None'
-        },
-    },
                 
     "enclosure": {
         "encl1": {
@@ -120,11 +112,11 @@ site_config = {
             "aperture": "450.0",
             "focal_length": "2457.3",
             "has_cover":  "False",
-            "Has_dew_heaters":  "True",
+            "has_dew_heaters":  "True",
                 "settings": {
-                    "Dew_heat": "Auto|On|Off",
-                    "Fans": "High|Auto|Low|Off",
-                    "Cover": "Close|Open",  
+                    "dew_heat": "Auto|On|Off",
+                    "fans": "High|Auto|Low|Off",
+                    "cover": "Close|Open",  
             },
             
         },

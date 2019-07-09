@@ -51,7 +51,7 @@ class Mount:
         
     def get_status(self):
         alt = self.mount.Altitude
-        zen = (90 - alt)
+        zen = round((90 - alt), 3)
         if zen > 90:
             zen = 90.0
         if zen < 0.1:    #This can blow up when zen <=0!
@@ -60,6 +60,8 @@ class Mount:
             new_z = zen
         sec_z = 1/cos(radians(new_z))
         airmass = round(sec_z - 0.0018167*(sec_z - 1) - 0.002875*((sec_z - 1)**2) - 0.0008083*((sec_z - 1)**3),3)
+        if airmass > 10: airmass = 10.0
+        airmass = round(airmass, 4)
         #Be careful to preserve order
         status = {            
                 f'{self.device_name}_timestamp': str(round(time.time(), 3)),
@@ -84,7 +86,7 @@ class Mount:
     
     def get_quick_status(self, pre):
         alt = self.mount.Altitude
-        zen = (90 - alt)
+        zen = round((90 - alt), 3)
         if zen > 90:
             zen = 90.0
         if zen < 0.1:    #This can blow up when zen <=0!
@@ -93,6 +95,8 @@ class Mount:
             new_z = zen
         sec_z = 1/cos(radians(new_z))
         airmass = round(sec_z - 0.0018167*(sec_z - 1) - 0.002875*((sec_z - 1)**2) - 0.0008083*((sec_z - 1)**3),3)
+        if airmass > 10: airmass = 10
+        airmass = round(airmass, 4)
         pre.append(time.time())
         pre.append(self.mount.RightAscension)
         pre.append(self.mount.Declination)

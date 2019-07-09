@@ -135,7 +135,7 @@ class Camera:
                     filt_pointer = match
                     break
             self.filter_str = self.filters[filt_pointer]
-            print('Filter_str:  ', self.filter_str)
+            #print('Filter_str:  ', self.filter_str)
             self.filter_off = self.filter_offset[filt_pointer]
             status['filter'] = str(self.filter_str)
             status['status'] = str(cam_stat)
@@ -144,6 +144,7 @@ class Camera:
         return status
 
     def parse_command(self, command):
+        print("Camera Command incoming:  ", command)
         req = command['required_params']
         opt = command['optional_params']
         action = command['action']
@@ -164,7 +165,7 @@ class Camera:
     #       Camera Commands       #
     ###############################
 
-    def expose_command(self, required_params, optional_params, ):
+    def expose_command(self, required_params, optional_params, next_filter=None, next_focus=None, dither=False):
         ''' Apply settings and start an exposure. '''
         c = self.camera
         print('Req:  ', required_params, 'Opt:  ', optional_params)
@@ -178,18 +179,18 @@ class Camera:
         filter =optional_params.get('filter', 0)
         area = optional_params.get('size', 100)
         if area == None: area = 100
-
+        breakpoint()
         count = int(optional_params.get('repeat', 1))
         if count < 1:
             count = 1   #Hence repeat does not repeat unless > 1
-        elif count == 42:
+        elif count == 42424242:
             
             count = 4
             self.af_mode= True
             self.af_step = -1
             area = "1x-jpg"
             filter = 'w'
-            exposure_time = max(exposure_time, 5.0)
+            exposure_time = max(exposure_time, 3.0)
             print('AUTOFOCUS CYCLE\n')
         else:
             self.af_mode = False
@@ -378,7 +379,7 @@ class Camera:
                 else:
                     c.StartExposure(exposure_time, imtypeb)
                     self.t3 = time.time()#True indicates Light Frame.
-                self.finish_exposure(exposure_time, imtype, count+1)
+                self.finish_exposure(exposure_time, imtype, count+1, next_filter, next_focus, dither)
                 #self.exposure_busy = False  Need to be able to do repeats
             except Exception as e:
                 print("failed exposure")
@@ -409,7 +410,7 @@ class Camera:
     #       Helper Methods        #
     ###############################
     
-    def finish_exposure(self, exposure_time, frame_type, counter):
+    def finish_exposure(self, exposure_time, frame_type, counter, next_filter=None, next_focus=None, dither=False):
         self.post_mnt = []
         self.post_rot = []
         self.post_foc = []
@@ -426,6 +427,12 @@ class Camera:
                     g_dev['foc'].get_quick_status(self.post_foc)
                     g_dev['ocn'].get_quick_status(self.post_ocn)
                     ###Here is the place to potentially pipeline dithers, next filter, focus, etc.
+                    if next_filter is not None:
+                        print("Post image filter seek here")
+                    if next_focus is not None:
+                        print("Post Image focus seek here")
+                    if dither == True:
+                        print("Post image Dither step here")
                     self.t6 = time.time()
                     self.img = self.camera.ImageArray
                     self.t7 = time.time()
@@ -465,8 +472,14 @@ class Camera:
                         hdu.header['OBSERVER'] = "WER"
                         hdu.header['ENCLOSE'] = "Clamshell"
                         hdu.header['MNT-SIDT'] = avg_mnt['mnt1_sid']
+                        ha = avg_mnt['mnt1_ra'] - avg_mnt['mnt1_sid']
                         hdu.header['MNT-RA'] = avg_mnt['mnt1_ra']
-                        hdu.header['MNT-HA'] = avg_mnt['mnt1_dec']
+                        while ha >= 12:
+                            ha -= 24.
+                        while ha < 12:
+                            ha += 24.
+                        hdu.header['MNT-HA'] = round(ha, 4)
+                        hdu.header['MNT-DEC'] = avg_mnt['mnt1_dec']
                         hdu.header['MNRRAVEL'] = avg_mnt['mnt1_tracking_ra_rate']
                         hdu.header['MNTDECVL'] = avg_mnt['mnt1_tracking_dec_rate']
                         hdu.header['AZIMUTH '] = avg_mnt['mnt1_az']
@@ -493,10 +506,10 @@ class Camera:
                         hdu.header['DEWPOINT'] = avg_ocn[4]
                         hdu.header['WIND'] = avg_ocn[5]
                         hdu.header['PRESSURE'] = avg_ocn[6]
-                        hdu.header['CALILLUM'] = avg_ocn[7]
+                        hdu.header['CALC-LUX'] = avg_ocn[7]
                         hdu.header['SKY-HZ'] = avg_ocn[8]
         
-                        hdu.header['DETECT'] = ""
+                        hdu.header['DETECTOR'] = ""
                         hdu.header['CAMNAME'] = 'ea03'
                         hdu.header['GAIN'] = 1.18
                         hdu.header['RDNOISE'] = 5.82
@@ -524,9 +537,11 @@ class Camera:
                             pass
                         
                         hdu1.writeto(im_path + raw_name, overwrite=True)
+                        breakpoint()
                         text = open(im_path + text_name, 'w')
                         text.write(str(hdu.header))
                         text.close()
+                        text_data_size = len(str(hdu.header))- 2048
                         raw_data_size = hdu.data.size
 
                         print("\n\Finish-Exposure is complete:  " + raw_name, raw_data_size, '\n')
@@ -620,6 +635,7 @@ class Camera:
 
                         
                         self.enqueue_image(jpeg_data_size, im_path, jpeg_name)
+                        self.enqueue_image(text_data_size, im_path, text_name)
                         self.enqueue_image(db_data_size, im_path, db_name)
                         self.enqueue_image(raw_data_size, im_path, raw_name)
                         
