@@ -29,7 +29,7 @@ class Rotator:
             "name": self.name, 
             "type": "rotator",
             "position_angle": str(self.rotator.Position),
-            "rotator moving": str(self.rotator.IsMoving),
+            "rotator_moving": str(self.rotator.IsMoving),
         }
         return status
 

@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 Created on Wed Jun 12 20:47:53 2019
+Updated 20190718
 
 @author: obs
 """
@@ -14,9 +15,12 @@ site_name = "WMD"
 site_config = {
     "site": "WMD",
     "alias": "West Mountain Drive, SBA CA USA",
+    "latitude": "34.34293028",
+    "longitude": "-119.68112805",
+    "elevation": "317.75"     # meters above sea level
 
     #*** Proably put Observing conditons here.
-    #*** How do we associate a aenith pointed sky cam or IR cam or Seeing monitor?
+    #*** How/where do we associate a zenith pointed sky cam, IR cam or Seeing monitor?
     
     "observing_conditions": {
         "wx-1": {
@@ -37,9 +41,6 @@ site_config = {
             "driver": 'ASCOM.SkyRoof.Dome',
             "has_lights":  ['White', 'Red', 'IR'],
             "settings": {
-                "lattitude": "34.34293028",
-                "longitude": "-119.68112805",
-                "elevation": "317.75", # meters above sea level
                 "lights":  "Auto/White/Red/IR/Off",       #A way to encode possible states or options???
                                                           #First Entry is default condition.
                                                 
@@ -60,10 +61,10 @@ site_config = {
                 "lattitude": "34.34293028",
                 "longitude": "-119.68105",
                 "elevation": "317.75", # meters above sea level
-                "home/park_altitude": "1.75",
-                "home/park_azimuth": "178.0",
+                "home_park_altitude": "1.75",
+                "home_park_azimuth": "178.0",
                 "horizon":  "20",
-                "h_detail": {
+                "horizon_detail": {
                      "0": "32",
                      "30": "35",
                      "36.5": "39",
@@ -91,11 +92,6 @@ site_config = {
                      "315": "32",
                      "360": "32",
                 },
-                "collecting_area":  '350000.0',
-                "obscuration":  "33%",
-                "aperture": "450.0",
-                "focal_length": "2457.3",
-                "has_cover":  "False",
             },
         },      
     },
@@ -107,37 +103,39 @@ site_config = {
             "alias": "main",
             "desc":  "Planewave CDK 450mm F6",
             "driver": "None",                     #Essentially this device is informational.  It is mostly about optics.
-            "collecting_area":  '350000.0',
+            "collecting_area":  '146438.0',
             "obscureation":  "33%",
             "aperture": "450.0",
             "focal_length": "2457.3",
-            "has_cover":  "False",
-            "has_dew_heaters":  "True",
+            "has_dew_heaters":  "true",
+            "has_fans":  "true",
+            "has_cover":  "false",
                 "settings": {
                     "dew_heat": "Auto|On|Off",
                     "fans": "High|Auto|Low|Off",
                     "cover": "Close|Open",  
             },
             
+
+        "tel2": {
+            "name": "tel12",
+            "parent": "mount1",
+            "alias": "auxillary",
+            "desc":  "Astro-physics Starfire 180mm F7",
+            "driver": "None",                     #Essentially this device is informational.  It is mostly about optics.
+            "collecting_area":  "25446",
+            "aperture": "180",
+            "focal_length": "1260",
+            "has_dew_heaters":  "true",
+            "has_fans":  "true",
+            "has_cover":  "true",
+                "settings": {
+                    "dew_heat": "Auto|On|Off",
+                    "fans": "High|Auto|Low|Off",
+                    "Cover": "Close|Open", 
+            },
+            
         },
-#        "tel2": {
-#            "name": "tel12",
-#            "parent": "mount1",
-#            "alias": "auxillary",
-#            "desc":  "Astro-physics Starfire 180mm F7",
-#            "driver": "None",                     #Essentially this device is informational.  It is mostly about optics.
-#            "collecting_area":  "25446",
-#            "aperture": "180",
-#            "focal_length": "1260",
-#            "has_cover":  "True",
-#            "Has_dew_heaters":  "True",
-#                "settings": {
-#                    "Dew_heat": "Auto|On|Off",
-#                    "Fans": "High|Auto|Low|Off",
-#                    "Cover": "Close|Open", 
-#            },
-#            
-#        },
     },
     
     "rotator": {
@@ -150,14 +148,14 @@ site_config = {
             
         },
                 
-#        "rotator2": {
-#            "name": "rotator2",
-#            "parent": "tel2",
-#            "alias": "rotator",
-#            "desc":  'Optec',
-#            "driver": "ASCOM.PWI3.Rotator",
-#            
-#        }
+        "rotator2": {
+            "name": "rotator2",
+            "parent": "tel2",
+            "alias": "rotator",
+            "desc":  'Optec',
+            "driver": "ASCOM.Optec.Rotator",
+            
+        }
     },
 
 
@@ -171,14 +169,15 @@ site_config = {
             "reference":  '11011'
         },
                 
-#        "focuser2": {
-#            "name": "focuser2",
-#            "parent": "tel2",
-#            "alias": "focuser",
-#            "desc":  'Planewave IRF PWI3',
-#            "driver": "ASCOM.PWI3.Focuser",
-#            "reference":  '11011'
-#        }
+        "focuser2": {
+            "name": "focuser2",
+            "parent": "tel2",
+            "alias": "focuser",
+            "desc":  'Planewave IRF PWI3',
+            "driver": "ASCOM.PWI3.Focuser",
+            "reference":  '5000',
+            'has_dial_indicator':  "true"
+        }
     },
 
 
@@ -201,22 +200,20 @@ site_config = {
 
             },
         },
-#        "filter2": {
-#            "name": "filter2",
-#            "parent": "tel2",
-#            "alias": "dual filter wheel",
-#            "desc":  'QHY Centerline Custom Dual 50mm sq.',
-#            "driver": 'Maxim.CCDCamera',
-#            "settings": {
-#                "filter_count": "23",
-#                "filters": ['air', 'duo', 'triad', 'LPR', 'dark'],
-#                 "_filter_index": ['(0, 0), (4, 0), (2, 0), (1, 0), (3, 0), (0, 5), (0, 6), (0, 7), (0, 8), (5, 0), (0, 4), \
-#                                  (0, 3), (0, 2), (0, 1), (7, 0), (6, 0), (8, 0), (4, 5), (4, 6), (4, 7), (4, 8), (9, 0), \
-#                                  (10, 9)'],
-#                 "_filter_offset": ['-1000', '0', '0', '0', '0']
-#
-#            },
-#        },
+        "filter2": {
+            "name": "filter2",
+            "parent": "tel2",
+            "alias": "dual filter wheel",
+            "desc":  'QHY Centerline Custom Dual 50mm sq.',
+            "driver": 'ASCOM.QHYFilter',
+            "settings": {
+                "filter_count": "5",
+                "filters": ['air', 'duo', 'triad', 'LPR', 'dark'],
+                 "_filter_index": ['0, 1, 2, 3, 4'],
+                 "_filter_offset": ['-1000', '0', '0', '0', '0']
+
+            },
+        },
     },
 
     "camera": {
@@ -242,27 +239,30 @@ site_config = {
             },
         },
 
-#        "cam2": {
-#            "name": "cam2",
-#            "parent": "tel2",
-#            "alias": "qgc01",      #Important becuase this triggers a server file structure by that name.
-#            "desc":  'QHY 367C',
-#            "driver": 'Maxim.CCDCamera',
-#            "settings": {
-#                "x_pixels":  "7376",
-#                "y_pixels":  "4938",
-#                "overscan_x": "0",
-#                "overscan_y": "0",
-#                "ns_offset": '0.0',
-#                "ew_offset": '0.0',
-#                "area": ['100%', '2X-jpg', '71%', '50%', '1X-jpg', '33%', '25%', '1/2 jpg'],
-#                "bins": ['Square=True',  'MaxX=2'],
-#                "can_bin":  'True',   #Swr binning is square max of 4,  Usually> bin2 is useless.
-#                "can_subframe":  'True',
-#                "has_screen": "True",
-#                "has_darkslide":  "False"
-#            },
-#        },
+        "cam2": {
+            "name": "cam2",
+            "parent": "tel2",
+            "alias": "qgc01",      #Important becuase this triggers a server file structure by that name.
+            "desc":  'QHY 367C',
+            "driver": 'ASCOM.QHYCamera',
+            "settings": {
+                "x_pixels":  "7376",
+                "y_pixels":  "4938",
+                "overscan_x": "0",
+                "overscan_y": "0",
+                "ns_offset": '0.0',
+                "ew_offset": '0.0',
+                "area": ['100%', '2X-jpg', '71%', '50%', '1X-jpg', '33%', '25%', '1/2 jpg'],
+                "bins": ['square=True',  'maxX=2'],
+                "can_bin":  'true',   #Swr binning is square max of 4,  Usually> bin2 is useless.
+                "can_subframe":  'true',
+                "has_screen": "true",
+                "has_darkslide":  "false",
+                "offset_collimation": "0.0",
+                "offset_declination": "0.0",
+                "offset_flexure": "0.0"
+            },
+        },
     },
 
 
@@ -286,9 +286,9 @@ site_config = {
             "driver": 'http://10.15.0.17',
             "fov":  "15.0",
             "settings": {
-                "DID": "0.0",
-                "DCH": "0.0",
-                "DTF": "0.0"
+                "offset_collimation": "0.0",
+                "offset_declination": "0.0",
+                "offset_flexure": "0.0"
 
             },
         },
@@ -314,7 +314,7 @@ site_config = {
     "server": {
         "server1": {
             "name": "QNAP",
-            "winURL": "archive (\\10.15.0.82) (Q:)",
+            "win_url": "archive (\\10.15.0.82) (Q:)",
             "redis":  "(host='10.15.0.15', port=6379, db=0, decode_responses=True)"
         }
     },

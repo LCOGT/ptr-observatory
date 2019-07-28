@@ -64,21 +64,21 @@ class Mount:
         airmass = round(airmass, 4)
         #Be careful to preserve order
         status = {            
-                f'{self.device_name}_timestamp': str(round(time.time(), 3)),
-                f'{self.device_name}_ra': str(self.mount.RightAscension),
-                f'{self.device_name}_dec': str(self.mount.Declination),
-                f'{self.device_name}_sid': str(self.mount.SiderealTime),
-                f'{self.device_name}_tracking_ra_rate': str(self.mount.RightAscensionRate),
-                f'{self.device_name}_tracking_dec_rate': str(self.mount.DeclinationRate),
-                f'{self.device_name}_az': str(self.mount.Azimuth),
-                f'{self.device_name}_alt': str(alt),
-                f'{self.device_name}_zen': str(zen),
-                f'{self.device_name}_air': str(airmass),                
-                f'{self.device_name}_rdsys': str(self.rdsys),
-                f'{self.device_name}_inst': str(self.inst),
-                f'{self.device_name}_is_parked': (self.mount.AtPark),
-                f'{self.device_name}_is_tracking': str(self.mount.Tracking),
-                f'{self.device_name}_is_slewing': str(self.mount.Slewing)
+                f'timestamp': str(round(time.time(), 3)),
+                f'right_ascension': str(self.mount.RightAscension),
+                f'declination': str(self.mount.Declination),
+                f'sidreal_time': str(self.mount.SiderealTime),
+                f'tracking_right_ascension_rate': str(self.mount.RightAscensionRate),
+                f'tracking_declination_rate': str(self.mount.DeclinationRate),
+                f'azimuth': str(self.mount.Azimuth),
+                f'altitude': str(alt),
+                f'zenith_distance': str(zen),
+                f'airmass': str(airmass),                
+                f'coordinate_system': str(self.rdsys),
+                f'instrument': str(self.inst),
+                f'is_parked': (self.mount.AtPark),
+                f'is_tracking': str(self.mount.Tracking),
+                f'is_slewing': str(self.mount.Slewing)
 
             
         }
@@ -156,21 +156,21 @@ class Mount:
             slew_avg = "F"
 
         status = {
-            f'{self.device_name}_timestamp': t_avg,
-            f'{self.device_name}_ra': ra_avg,
-            f'{self.device_name}_dec': dec_avg,
-            f'{self.device_name}_sid': sid_avg,
-            f'{self.device_name}_tracking_ra_rate': rar_avg,
-            f'{self.device_name}_tracking_dec_rate': decr_avg,
-            f'{self.device_name}_az':  az_avg,
-            f'{self.device_name}_alt': alt_avg,
-            f'{self.device_name}_zen': zen_avg,
-            f'{self.device_name}_air': air_avg,            
-            f'{self.device_name}_rdsys': str(self.rdsys),
-            f'{self.device_name}_inst': str(self.inst),
-            f'{self.device_name}_is_parked': park_avg,
-            f'{self.device_name}_is_tracking': track_avg,
-            f'{self.device_name}_is_slewing': slew_avg
+            f'timestamp': t_avg,
+            f'right_ascension': ra_avg,
+            f'declination': dec_avg,
+            f'sidreal_time': sid_avg,
+            f'tracking_right_ascansion_rate': rar_avg,
+            f'tracking_declination_rate': decr_avg,
+            f'azimuth':  az_avg,
+            f'alttitude': alt_avg,
+            f'zenith_distance': zen_avg,
+            f'airmass': air_avg,            
+            f'coordinate_system': str(self.rdsys),
+            f'instrument': str(self.inst),
+            f'is_parked': park_avg,
+            f'is_tracking': track_avg,
+            f'is_slewing': slew_avg
             
         }
         return status  #json.dumps(status)
@@ -192,6 +192,8 @@ class Mount:
             self.tracking_command(req, opt)
         elif action == "park":
             self.park_command(req, opt)
+        elif action == 'center_on_pixels':
+            print (command)
         else:
             print(f"Command <{action}> not recognized.")
 

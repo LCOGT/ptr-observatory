@@ -165,11 +165,7 @@ class Observatory:
                 elif dev_type == "focuser":
                     device = Focuser(driver, name)
                 elif dev_type == "rotator":
-                    
                     device = Rotator(driver, name)
-                elif dev_type == "scripter":
-                    
-                    device = Scripter(driver, name)
                 else:
                     print(f"Unknown device: {name}")
 

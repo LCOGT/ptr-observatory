@@ -165,7 +165,7 @@ class Camera:
     #       Camera Commands       #
     ###############################
 
-    def expose_command(self, required_params, optional_params, next_filter=None, next_focus=None, dither=False):
+    def expose_command(self, required_params, optional_params, p_next_filter=None, p_next_focus=None, p_dither=False):
         ''' Apply settings and start an exposure. '''
         c = self.camera
         print('Req:  ', required_params, 'Opt:  ', optional_params)
@@ -179,22 +179,11 @@ class Camera:
         filter =optional_params.get('filter', 0)
         area = optional_params.get('size', 100)
         if area == None: area = 100
-        breakpoint()
+        #breakpoint()
         count = int(optional_params.get('repeat', 1))
         if count < 1:
             count = 1   #Hence repeat does not repeat unless > 1
-        elif count == 42424242:
-            
-            count = 4
-            self.af_mode= True
-            self.af_step = -1
-            area = "1x-jpg"
-            filter = 'w'
-            exposure_time = max(exposure_time, 3.0)
-            print('AUTOFOCUS CYCLE\n')
-        else:
-            self.af_mode = False
-            self.af_step = -1  
+ 
         if type(filter) == int and 0 <= filter < len(self.filters):
             filter = int(filter)
             selection = filter
@@ -213,7 +202,18 @@ class Camera:
             if imtype.lower() == 'bias':
                 exposure_time = 0.0
             imtypeb = False
-      
+            
+        if required_params['image_type'] == 'auto focus':           
+            count = 4
+            self.af_mode= True
+            self.af_step = -1
+            area = "1x-jpg"
+            filter = 'w'
+            exposure_time = max(exposure_time, 3.0)
+            print('AUTOFOCUS CYCLE\n')
+        else:
+            self.af_mode = False
+            self.af_step = -1 
         print(bin_x, count, filter, area, type(area))
         if type(area) == str and area[-1] =='%':
             area = int(area[0:-1])
@@ -246,10 +246,10 @@ class Camera:
             self.camera.StartY = 640
             self.area = 37.5
         elif type(area) == str and area.lower() == "2x-jpg":
-            self.camera.NumX = 1440
-            self.camera.StartX = 304
-            self.camera.NumY = 1440
-            self.camera.StartY = 304
+            self.camera.NumX = 1536
+            self.camera.StartX = 256
+            self.camera.NumY = 1536
+            self.camera.StartY = 256
             self.area = 75
         elif type(area) == str and area.lower() == "1/2 jpg":
             self.camera.NumX = 360
@@ -318,44 +318,40 @@ class Camera:
                     if not self.af_mode:
                         next_focus = self.filter_offset[selection] + ptr_config.get_focal_ref(self.name)
                     else:
-                        #This is an AF cycle so need to set up
+                        #This is an AF cycle so need to set up.  THIS VERSION PRE_FOCUSES, no overlap
                         if  self.af_step == -1:
-                           
+                            #breakpoint()
                             self.f_positions = []
                             self.f_spot_dia = []
                             #Take first image with no focus adjustment
                             next_focus = self.filter_offset[selection] + ptr_config.get_focal_ref(self.name)
                             self.af_step = 0
-#                        elif self.af_step == 0:
-#                            
-#                            next_focus = self.filter_offset[selection] + ptr_config.get_focal_ref(self.name)
-#                            self.af_step = 1
                         elif self.af_step == 0:
                             
                             next_focus = self.filter_offset[selection] + ptr_config.get_focal_ref(self.name) - 1200
                             self.af_step = 1
                         elif self.af_step == 1:
                             
-                            next_focus = self.filter_offset[selection] + ptr_config.get_focal_ref(self.name) + 2400
+                            next_focus = self.filter_offset[selection] + ptr_config.get_focal_ref(self.name) + 3000
                             if next_focus != g_dev['foc'].focuser.Position:
                                 
                                 g_dev['foc'].focuser.Move(next_focus)
                                 while  g_dev['foc'].focuser.IsMoving:
                                     time.sleep(0.5)
                                     print(';;')
-                            next_focus = self.filter_offset[selection] + ptr_config.get_focal_ref(self.name) + 1200
+                            next_focus = self.filter_offset[selection] + ptr_config.get_focal_ref(self.name) +-600
                             self.af_step = 2                            
                         elif self.af_step == 2:
                             #this should use the self.new_focus solution
-                            breakpoint()
+                            #breakpoint()
                             next_focus = self.new_focus #self.filter_offset[selection] + ptr_config.get_focal_ref(self.name)
                             next_focus -= self.filter_offset[selection]
-                            ptr_config.set_focal_ref(self.name, next_focus)
+                            #ptr_config.set_focal_ref(self.name, next_focus)
                             #Here we would update the shelved reference focus
                             self.af_step = 3
                         elif self.af_step == 3:
-                            breakpoint()
-                            next_focus = self.filter_offset[selection] + ptr_config.get_focal_ref(self.name) + 1200
+                            #breakpoint()
+                            #next_focus = self.filter_offset[selection] + ptr_config.get_focal_ref(self.name) 
                             self.f_positions = []
                             self.f_spot_dia = []
                             self.af_mode = False
@@ -364,7 +360,7 @@ class Camera:
                     if next_focus != g_dev['foc'].focuser.Position:
                         
                         g_dev['foc'].focuser.Move(next_focus)
-                        while  g_dev['foc'].focuser.IsMoving:
+                        while  g_dev['foc'].focuser.IsMoving:     #Check here for filter, guider, still moving
                             time.sleep(0.5)
                             print(';')
                     self.t1 = time.time()
@@ -379,7 +375,7 @@ class Camera:
                 else:
                     c.StartExposure(exposure_time, imtypeb)
                     self.t3 = time.time()#True indicates Light Frame.
-                self.finish_exposure(exposure_time, imtype, count+1, next_filter, next_focus, dither)
+                self.finish_exposure(exposure_time, imtype, count+1, p_next_filter, p_next_focus, p_dither)
                 #self.exposure_busy = False  Need to be able to do repeats
             except Exception as e:
                 print("failed exposure")
@@ -410,7 +406,7 @@ class Camera:
     #       Helper Methods        #
     ###############################
     
-    def finish_exposure(self, exposure_time, frame_type, counter, next_filter=None, next_focus=None, dither=False):
+    def finish_exposure(self, exposure_time, frame_type, counter, p_next_filter=None, p_next_focus=None, p_dither=False):
         self.post_mnt = []
         self.post_rot = []
         self.post_foc = []
@@ -427,12 +423,12 @@ class Camera:
                     g_dev['foc'].get_quick_status(self.post_foc)
                     g_dev['ocn'].get_quick_status(self.post_ocn)
                     ###Here is the place to potentially pipeline dithers, next filter, focus, etc.
-                    if next_filter is not None:
+                    if p_next_filter is not None:
                         print("Post image filter seek here")
-                    if next_focus is not None:
+                    if p_next_focus is not None:
                         print("Post Image focus seek here")
-                    if dither == True:
-                        print("Post image Dither step here")
+                    if p_dither == True:
+                        print("Post image dither step here")
                     self.t6 = time.time()
                     self.img = self.camera.ImageArray
                     self.t7 = time.time()
@@ -537,7 +533,7 @@ class Camera:
                             pass
                         
                         hdu1.writeto(im_path + raw_name, overwrite=True)
-                        breakpoint()
+                        #breakpoint()
                         text = open(im_path + text_name, 'w')
                         text.write(str(hdu.header))
                         text.close()
@@ -582,7 +578,7 @@ class Camera:
                         except:
                             pass
                         if self.af_mode:
-                            
+                            #THIS NEEDS DEFENSING AGAINST NaN returns from sep
                             if 0 <= self.af_step < 3:
                                 #to simulate
 #                                if self.af_step == 0: spot = 5
@@ -600,12 +596,12 @@ class Camera:
                                 try:
                                     x = -b/(2*a)
                                 except:
-                                    x = 10999
+                                    x = 11186
                                 print('a, b, c, x, spot:  ', a ,b, c, x, a*x**2 + b*x + c)
                                 self.new_focus = x
                             if self.af_step == 3:
                                 print("Check before seeking to final.")
-                                breakpoint()
+                                #breakpoint()
                                 print('AF result:  ', spot, g_dev['foc'].focuser.Position)
                                 self.f_spot_dia = []
                                 self.f_positions = []

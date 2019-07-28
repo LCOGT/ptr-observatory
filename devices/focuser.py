@@ -18,9 +18,9 @@ class Focuser:
         status = {
             "name": self.name, 
             "type": "focuser",
-            "focus position": str(self.focuser.Position),
-            "focus moving": str(self.focuser.IsMoving),
-            "focus temperature": str(self.focuser.Temperature)
+            "focus_position": str(self.focuser.Position),
+            "focus_moving": str(self.focuser.IsMoving),
+            "focus_temperature": str(self.focuser.Temperature)
             }
         return status
 

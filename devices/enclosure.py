@@ -16,17 +16,17 @@ class Enclosure:
     def get_status(self) -> dict:
         shutter_status = self.enclosure.ShutterStatus
         if shutter_status == 0:
-            stat_string = "Open"  
+            stat_string = "open"  
         elif shutter_status == 1:
-             stat_string = "Closed"
+             stat_string = "closed"
         elif shutter_status == 2:
-             stat_string = "Opening"
+             stat_string = "opening"
         elif shutter_status == 3:
-             stat_string = "Closing"
+             stat_string = "closing"
         elif shutter_status == 4:
-             stat_string = "Error"
+             stat_string = "error"
         status = {"type":"enclosure",
-                  'shutter status':stat_string}
+                  'shutter_status': stat_string}
         return status
 
     def parse_command(self, command):
