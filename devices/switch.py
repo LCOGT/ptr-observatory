@@ -12,7 +12,7 @@ class Switch:
         print(self.switch.Description)
 
     def get_status(self):
-        status = {"type":"switch"}
+        status = {"device_type":"switch"}
         return status
 
     def parse_command(self, command):

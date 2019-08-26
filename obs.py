@@ -6,32 +6,47 @@
 """
 IMPORTANT TODOs:
     
+Send Postage Stamp
+
+Flash calibrate from LNG  - Hot and cold pixel repair
+
+Gather screen flats   #For these ideally we need to figure out when screen saturates, then develop a curve which
+linearizes the screen -- and adu/bright for each filter.  Screen bright is the independent variable.  What we want
+is the longest possible exposure to get to some exposure level, to minimize shutter effects, then gather 2E7 electrons.
+
+Shutter compensation?
+
+
+Autofocus
+
+Gather Sky Flats  First need to set up to track SkyFlat spot from approx time where exposures cn start through the
+finish, avoiding a zenith event.    However a zenith event really does not affect things very much.  WE have the field
+roation issue to contend with though.   A different problem is exposure calculation.  In principle we shoudl be able to predict
+sky bright at midpoint of upcoming exposure since the transformation is only moderately quadratic.  So what we need is 
+adu/lux for each filter.
+
+
+Events
+Map Hz to sky mags
+Read IR cam values
+Source Lists
+Astro Solves, EN pointer
+Self guiding 
+Time to complete, Estimated time to complete.
+Dome management
+Enclosure light management   
+Robust start up of devices.
+ASCOM camera not Maxim.
+Event/Calendar
+ACP Operation
+Throttle traffic when closed, Sun up
+Screen support    
 Enqueue specific device commands and then dispatch them when device is not busy.
 
-What does this imply for more detailed command ordering? and interaction with 
-AWS sent events?   Macro command blocks?
 
-Robust start up of devices.
-
-Time to complete, Estimated time to complete.
-
-Dome management
-
-Enclosure light management
-
-Source list, FWHM determination, etc.
-
-Autofocus routine
-
-Guiding.
-
-ASCOM camera not Maxim.
-
-Throttle traffic when closed, Sun up, ...
-
-Screen support
-
-
+NBNBNB Possibly a better way to build this is use Remote ascom to interface to each device. 1st that permits multiple
+control computers.  2nd it isolates the devices while the code code is being debugged.  This mostly seems to affect
+MaximDL and filter wheel interactions.
     
     
 """
@@ -47,10 +62,12 @@ import os
 
 # import device classes
 from devices.camera import Camera
+from devices.camera_maxim import MaximCamera
 from devices.enclosure import Enclosure 
-from devices.filter import Filter
+from devices.filter_wheel import FilterWheel
 from devices.focuser import Focuser
 from devices.mount import Mount
+from devices.telescope import Telescope
 from devices.observing_conditions import ObservingConditions
 from devices.rotator import Rotator
 from devices.switch import Switch
@@ -71,7 +88,7 @@ def patch_httplib(bsize=400000):
             if self.auto_open:
                 self.connect()
             else:
-                raise httplib.NotConnected()
+                raise httplib2.NotConnected()
         if self.debuglevel > 0:
             print( "send:", repr(data))
         if hasattr(data, 'read') and not isinstance(data, list):
@@ -86,21 +103,21 @@ def patch_httplib(bsize=400000):
 
 class Observatory:
 
-    time_between_status_update = 3 #seconds
+    time_between_status_update = 5 #seconds
     time_between_command_check = 3
 
-    device_types = [
-        'observing_conditions',
-        'enclosure',
-        'mount',
-        'telescope',
-        'rotator',
-        'focuser', 
-        'filter',
-        'camera',
-        'switch'
-
-    ]
+#    device_types = [
+#        'observing_conditions',
+#        'enclosure',
+#        'mount',
+#        'telescope',
+#        'rotator',
+#        'focuser', 
+#        'filter_wheel',
+#        'camera',
+#        'switch'
+#
+#    ]
 
     def __init__(self, name, config): 
 
@@ -111,7 +128,16 @@ class Observatory:
         self.name = name
         self.config = config
         self.update_config()
-
+        self.device_types =[
+        'observing_conditions',
+        'enclosure',
+        'mount',
+        'telescope',
+        'rotator',
+        'focuser',
+        'screen',
+        'camera',
+        'filter_wheel']
         # Use the configuration to instantiate objects for all devices.
         self.create_devices(config)
 
@@ -126,8 +152,6 @@ class Observatory:
         self.aws_queue_thread.start()
 
         #self.run()
-
-
 
     def create_devices(self, config: dict):
 
@@ -151,21 +175,29 @@ class Observatory:
                 settings = devices_of_type[name].get("settings", {})
                 #print('looking for dev-types:  ', dev_type)
                 if dev_type == "observing_conditions":
-                    
                     device = ObservingConditions(driver, name)
                 elif dev_type == "enclosure":
                     device = Enclosure(driver, name)
-                elif dev_type == "camera":
-                    
-                    device = Camera(driver, name)
                 elif dev_type == "mount":
-                    device = Mount(driver, name, settings)
-                elif dev_type == "filter":
-                    device = Filter(driver, name)
+                    device = Mount(driver, name, settings, tel=False)
+                elif dev_type == "telescope":
+                    device = Telescope(driver, name, settings, tel=True)
                 elif dev_type == "focuser":
-                    device = Focuser(driver, name)
+                    device = Focuser(driver, name, self.config)
                 elif dev_type == "rotator":
                     device = Rotator(driver, name)
+                elif dev_type == "screen":
+                    device = Screen('EastAlnitak', 'COM22')
+                elif dev_type == "camera": 
+                     
+                    device = Camera(driver, name, self.config)   #aPPRENTLY THIS NEEDS TO BE STARTED PRIOR TO fILTER wHEEL!!!
+                    time.sleep(2)
+                elif dev_type == "filter_wheel":
+                     #pass
+                     device = FilterWheel(driver, name, self.config)
+
+                #elif dev_type == "camera_maxim":                    
+                    #device = MaximCamera(driver, name)
                 else:
                     print(f"Unknown device: {name}")
 
@@ -199,7 +231,7 @@ class Observatory:
             print('self.api.authenticated_request("GET", uri)  -- FAILED')
 
         if cmd == {'Body': 'empty'}:
-            print(cmd)
+            print('Command Queue: ', cmd)
             return  #Nothing to do, co command in the FIFO
             # If a non-empty command arrives, it will print to the terminal.
             print(cmd)
@@ -249,17 +281,20 @@ class Observatory:
 #                    continue
             for device_name in device_names:
                 # Get the actual device object...
+                if device_name =='filter_wheel' or device_name == 'filter_wheel1':
+#                    continue
+                    pass
                 device = devices_of_type[device_name]
                 # ...and add it to main status dict.
                 status[dev_type][device_name] = device.get_status()
         
         # Include the time that the status was assembled and sent.
-        status["timestamp"] = str(int(time.time()))
+        status["timestamp"] = str(round((time.time() + start)/2. , 3))
 
         ### Put this status online
-        ###
+        ###bbbb
      
-        print('Status Sent')#from Update:  ', status)
+        print('Status Sent:  \n', status)#from Update:  ', status)
 
         uri = f"{self.name}/status/"
         #NBNBNB None of the strings can be empty.  Otherwise this put faults.
@@ -341,7 +376,8 @@ class Observatory:
                     ptr_bz2.to_bz2(im_path + name)
                     name = name + '.bz2'
                 aws_req = {"object_name": "raw_data/2019/" + name}
-                aws_resp = g_dev['obs'].api.authenticated_request('GET', 'WMD/upload/', aws_req)
+                site_str = config.site_config['site']
+                aws_resp = g_dev['obs'].api.authenticated_request('GET', site_str +'/upload/', aws_req)
         
                 with open(im_path + name , 'rb') as f:
                     files = {'file': (im_path + name, f)}
@@ -376,8 +412,8 @@ if __name__=="__main__":
     
     #Current TB version:
     
-aws = {'device': 'cam1', 'type': 'camera', 'timestamp': 1562359322, 'action': 'expose', 'required_params': {'time': '1'}, \
-       'optional_params': {'repeat': '1', 'bin': '1', 'filter': 'air', 'size': '100%'}}
+#aws = {'device': 'cam1', 'type': 'camera', 'timestamp': 1562359322, 'action': 'expose', 'required_params': {'time': '1'}, \
+#       'optional_params': {'repeat': '1', 'bin': '1', 'filter': 'air', 'size': '100%'}}
 
     
     

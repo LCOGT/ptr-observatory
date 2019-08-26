@@ -1,0 +1,21 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Tue Jun 18 23:52:20 2019
+
+@author: obs
+"""
+
+g_dev = {
+        'obs': None,
+        'ocn': None,
+        'enc': None,
+        'mnt': None,
+        'scr': None,
+        'tel': None,
+        'rot': None,
+        'foc': None,
+        'cam': None,
+        'sel': None,
+        'fil': None,
+        'day': None,
+        }

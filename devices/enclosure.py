@@ -25,8 +25,7 @@ class Enclosure:
              stat_string = "closing"
         elif shutter_status == 4:
              stat_string = "error"
-        status = {"type":"enclosure",
-                  'shutter_status': stat_string}
+        status = {'shutter_status': stat_string}
         return status
 
     def parse_command(self, command):

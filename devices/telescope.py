@@ -1,3 +1,10 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Mon Jul 29 14:56:25 2019
+
+@author: obs
+"""
+
 import win32com.client
 import pythoncom
 import time, json
@@ -5,16 +12,13 @@ from math import cos, radians
 from global_yard import g_dev 
 
 #The mount is not threaded and uses non-blocking seek.
-class Mount:
+class Telescope:
 
     def __init__(self, driver: str, name: str, settings: dict, tel=False):
         self.name = name
-        g_dev['mnt'] = self
+        g_dev['tel'] = self
         self.device_name = name
         self.settings = settings
-        win32com.client.pythoncom.CoInitialize()
-        self.mount = win32com.client.Dispatch(driver)
-        self.mount.Connected = True
         self.rdsys = 'J.now'
         self.inst = 'tel1'
         self.tel = tel
@@ -24,7 +28,7 @@ class Mount:
             print(f"Mount connected.")
         else:
             print(f"Tel/OTA connected.")
-        print(self.mount.Description)
+
 
 #    def get_status(self):
 #        m = self.mount
@@ -54,7 +58,7 @@ class Mount:
         
         
     def get_status(self):
-        alt = self.mount.Altitude
+        alt = g_dev['mnt'].mount.Altitude
         zen = round((90 - alt), 3)
         if zen > 90:
             zen = 90.0
@@ -64,8 +68,13 @@ class Mount:
             new_z = zen
         sec_z = 1/cos(radians(new_z))
         airmass = round(sec_z - 0.0018167*(sec_z - 1) - 0.002875*((sec_z - 1)**2) - 0.0008083*((sec_z - 1)**3),3)
-        if airmass > 10: airmass = 10.0
-        airmass = round(airmass, 4)
+        #for some reason the comare fails with a very large airmass near infinity
+        if abs(int(airmass)) > 20: 
+            airmass = 20.0
+            airmass_string = ">> 20!"
+        else:
+            airmass = round(airmass, 4)
+            airmass_string = str(airmass)
         #Be careful to preserve order
         print(self.device_name, self.name)
         if self.tel == False:
@@ -73,7 +82,7 @@ class Mount:
                 f'timestamp': str(round(time.time(), 3)),
 #                f'right_ascension': str(self.mount.RightAscension),
 #                f'declination': str(self.mount.Declination),
-#                f'sidereal_time': str(self.mount.SiderealTime),
+#                f'sidreal_time': str(self.mount.SiderealTime),
 #                f'tracking_right_ascension_rate': str(self.mount.RightAscensionRate),
 #                f'tracking_declination_rate': str(self.mount.DeclinationRate),
 #                f'azimuth': str(self.mount.Azimuth),
@@ -82,22 +91,22 @@ class Mount:
 #                f'airmass': str(airmass),                
 #                f'coordinate_system': str(self.rdsys),
                 f'pointing_telescope': str(self.inst),  #needs fixing
-                f'is_parked': str(self.mount.AtPark).lower(),
-                f'is_tracking': str(self.mount.Tracking).lower(),
-                f'is_slewing': str(self.mount.Slewing).lower()
+                f'is_parked': str(g_dev['mnt'].mount.AtPark).lower(),
+                f'is_tracking': str(g_dev['mnt'].mount.Tracking).lower(),
+                f'is_slewing': str(g_dev['mnt'].mount.Slewing).lower()
             }
         elif self.tel == True:
             status = {            
                 f'timestamp': str(round(time.time(), 3)),
-                f'right_ascension': str(round(self.mount.RightAscension, 5)),
-                f'declination': str(round(self.mount.Declination,4)),
-                f'sidereal_time': str(round(self.mount.SiderealTime, 5)),
-                f'tracking_right_ascension_rate': str(self.mount.RightAscensionRate),
-                f'tracking_declination_rate': str(self.mount.DeclinationRate),
-                f'azimuth': str(round(self.mount.Azimuth, 3)),
+                f'right_ascension': str(round(g_dev['mnt'].mount.RightAscension, 5)),
+                f'declination': str(round(g_dev['mnt'].mount.Declination, 4)),
+                f'sidereal_time': str(round(g_dev['mnt'].mount.SiderealTime, 5)),
+                f'tracking_right_ascension_rate': str(g_dev['mnt'].mount.RightAscensionRate),
+                f'tracking_declination_rate': str(g_dev['mnt'].mount.DeclinationRate),
+                f'azimuth': str(round(g_dev['mnt'].mount.Azimuth, 3)),
                 f'altitude': str(round(alt, 3)),
                 f'zenith_distance': str(round(zen, 3)),
-                f'airmass': str(round(airmass,4)),                
+                f'airmass': airmass_string,                
                 f'coordinate_system': str(self.rdsys),
                 f'pointing_instrument': str(self.inst),  #needs fixing
 #                f'is_parked': (self.mount.AtPark),
@@ -135,7 +144,7 @@ class Mount:
         pre.append(self.mount.AtPark)
         pre.append(self.mount.Tracking)
         pre.append(self.mount.Slewing)
-        #print(pre)
+        print(pre)
         return pre
     
     @classmethod
@@ -155,9 +164,9 @@ class Mount:
             
         
         
-    def get_average_status(self, pre, post):    #Add HA to this calculation.
+    def get_average_status(self, pre, post):
         t_avg = round((pre[0] + post[0])/2, 3)
-        #print(t_avg)
+        print(t_avg)
         ra_avg = round(Mount.two_pi_avg(pre[1],  post[1], 12), 6)
         dec_avg = round((pre[2] + post[2])/2, 4)
         sid_avg = round(Mount.two_pi_avg(pre[3],  post[3], 12), 5)
@@ -167,8 +176,6 @@ class Mount:
         alt_avg = round((pre[7] + post[7])/2, 3)
         zen_avg = round((pre[8] + post[8])/2, 3)
         air_avg = round((pre[9] + post[9])/2, 4)
-        if air_avg > 20.0:
-            air_avg = 20.0
         if pre[10] and post[10]:
             park_avg = "T"
         else:
@@ -186,11 +193,11 @@ class Mount:
             f'timestamp': t_avg,
             f'right_ascension': ra_avg,
             f'declination': dec_avg,
-            f'sidereal_time': sid_avg,
-            f'tracking_right_ascension_rate': rar_avg,
+            f'sidreal_time': sid_avg,
+            f'tracking_right_ascansion_rate': rar_avg,
             f'tracking_declination_rate': decr_avg,
             f'azimuth':  az_avg,
-            f'altitude': alt_avg,
+            f'alttitude': alt_avg,
             f'zenith_distance': zen_avg,
             f'airmass': air_avg,            
             f'coordinate_system': str(self.rdsys),
@@ -207,92 +214,7 @@ class Mount:
         opt = command['optional_params']
         action = command['action']
 
-        if action == "go": 
-            self.go_command(req, opt) 
-        elif action == "stop":
-            self.stop_command(req, opt)
-        elif action == "home": 
-            self.home_command(req, opt)
-        elif action == "flat_panel":
-            self.flat_panel_command(req, opt)
-        elif action == "tracking":
-            self.tracking_command(req, opt)
-        elif action == "park":
-            self.park_command(req, opt)
-        elif action == 'center_on_pixels':
-            print (command)
-        else:
-            print(f"Command <{action}> not recognized.")
-
-    ###############################
-    #        Mount Commands       #
-    ###############################
-
-    def go_command(self, req, opt):
-        ''' Slew to the given ra/dec coordinates. '''
-        print("mount cmd: slewing mount", req, opt)
-
-        ra = req['ra']
-        dec = req['dec']
-
-        # Offset from sidereal in arcseconds per SI second, default = 0.0
-        tracking_rate_ra = opt.get('tracking_rate_ra', 0)
-
-        # Arcseconds per SI second, default = 0.0
-        tracking_rate_dec = opt.get('tracking_rate_dec', 0)
-
-        self.mount.Tracking = True
-        self.mount.SlewToCoordinatesAsync(ra, dec)
-
-        self.mount.RightAscensionRate = tracking_rate_ra
-        self.mount.DeclinationRate = tracking_rate_dec
+        print(f"Tel Command <{action}> not recognized.")
 
 
-    def stop_command(self, req, opt):
-        print("mount cmd: stopping mount")
-        self.mount.AbortSlew()
-
-    def home_command(self, req, opt):
-        ''' slew to the home position '''
-        print("mount cmd: homing mount")
-        if self.mount.AtHome:
-            print(f"Mount is at home.")
-        elif False: #self.mount.CanFindHome:
-            print(f"can find home: {self.mount.CanFindHome}")
-            self.mount.Unpark()
-            #home_alt = self.settings["home_altitude"]
-            #home_az = self.settings["home_azimuth"]
-            #self.mount.SlewToAltAzAsync(home_alt, home_az)
-            self.mount.FindHome()
-        else:
-            print(f"Mount is not capable of finding home. Slewing to zenith.")
-            self.mount.SlewToAltAzAsync(88., 0.)
-
-    def flat_panel_command(self, req, opt):
-        ''' slew to the flat panel if it exists '''
-        print("mount cmd: slewing to flat panel")
-        pass
-
-    def tracking_command(self, req, opt):
-        ''' set the tracking rates, or turn tracking off '''
-        print("mount cmd: tracking changed")
-        pass
-
-    def park_command(self, req, opt):
-        ''' park the telescope mount '''
-        print("mount cmd: parking mount")
-        print(self.mount.CanPark)
-        self.mount.Park()
-        
-if __name__ == '__main__':
-    req = {'time': 1,  'alias': 'ea03', 'frame': 'Light', 'filter': 2}
-    opt = {'area': 50}
-    m = Mount('ASCOM.PWI4.Telescope', "mnt1", {})
-    pre=[]
-    post=[]
-    m.get_quick_status(pre)
-    time.sleep(2)
-    m.get_quick_status(post)
-    print(m.get_average_status(pre, post))
-    #print(c.get_ascom_description())
-
+   

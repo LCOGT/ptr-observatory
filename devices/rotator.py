@@ -26,10 +26,8 @@ class Rotator:
         Angle of the imager, and compensate for any difference.
         '''
         status = {
-            "name": self.name, 
-            "type": "rotator",
-            "position_angle": str(self.rotator.Position),
-            "rotator_moving": str(self.rotator.IsMoving),
+            "position_angle": str(round(self.rotator.Position, 4)),
+            "rotator_moving": str(self.rotator.IsMoving).lower(),
         }
         return status
 

@@ -26,36 +26,34 @@ class ObservingConditions:
         #print(wx)
         #breakpoint()
         try:
-            status = {"type": "observing_conditions",
-                      "Temperature": wx["amb_temp C"],
-                      "Pressure": ' ---- ',
-                      "Humidity": wx["humidity %"],
-                      "Dewpoint": wx["dewpoint C"],
-                      "Calc_sky lux": wx["illum lux"],
-                      "Sky_tempC": wx["sky C"],
-                      "Time_to_Open": wx["time to open"],
-                      "Time_to_Close": wx["time to close"],
-                      "Wind k/h": wx["wind k/h"],
-                      "Light":  wx["light"],
-                      "Open_possible":  wx["open_possible"],
-                      "Brightness Hz": wx['bright hz']
+            status = {"temperature": wx["amb_temp C"],
+                      "pressure": ' ---- ',
+                      "humidity": wx["humidity %"],
+                      "dewpoint": wx["dewpoint C"],
+                      "calc_sky_lux": wx["illum lux"],
+                      "sky_temp": wx["sky C"],
+                      "time_to_open": wx["time to open"],
+                      "time_to_close": wx["time to close"],
+                      "wind_km/h": wx["wind k/h"],
+                      "ambient_light":  wx["light"],
+                      "open_possible":  wx["open_possible"],
+                      "brightness_hz": wx['bright hz']
                       }
         except:
             time.sleep(1)
             wx = eval(self.redis_server.get('<ptr-wx-1_state'))  #Redis returns a string dict.
-            status = {"type": "observing_conditions",
-                      "Temperature": wx["amb_temp C"],
-                      "Pressure": ' ---- ',
-                      "Humidity": wx["humidity %"],
-                      "Dewpoint": wx["dewpoint C"],
-                      "Calc_sky lux": wx["illum lux"],
-                      "Sky_tempC": wx["sky C"],
-                      "Time_to_Open": wx["time to open"],
-                      "Time_to_Close": wx["time to close"],
-                      "Wind k/h": wx["wind k/h"],
-                      "Light":  wx["light"],
-                      "Open_possible":  wx["open_possible"],
-                      "Brightness Hz": wx['bright hz']
+            status = {"temperature": wx["amb_temp C"],
+                      "pressure": ' ---- ',
+                      "humidity": wx["humidity %"],
+                      "dewpoint": wx["dewpoint C"],
+                      "calc_sky_lux": wx["illum lux"],
+                      "sky_temp": wx["sky C"],
+                      "time_to_open": wx["time to open"],
+                      "time_to_close": wx["time to close"],
+                      "wind_km/h": wx["wind k/h"],
+                      "ambient_light":  wx["light"],
+                      "open_possible":  wx["open_possible"],
+                      "brightness_hz": wx['bright hz']
                       }
         return status
 
@@ -70,7 +68,7 @@ class ObservingConditions:
         quick.append(float(970.0))
         quick.append(float(wx["illum lux"]))     #Add Solar, Lunar elev and phase
         quick.append(float(wx['bright hz']))
-        print(quick)
+        #print(quick)
         return quick
     
     def get_average_status(self, pre, post):
@@ -108,4 +106,4 @@ class ObservingConditions:
         pass
     
 if __name__ == '__main__':
-    oc = ObservingConditions('redis', 'oc-1')
+    oc = ObservingConditions('redis', 'wx1')
