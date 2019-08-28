@@ -71,6 +71,7 @@ from devices.telescope import Telescope
 from devices.observing_conditions import ObservingConditions
 from devices.rotator import Rotator
 from devices.switch import Switch
+from devices.screen import Screen
 from global_yard import g_dev
 import ptr_bz2
 import httplib2
@@ -303,7 +304,7 @@ class Observatory:
         #print(f"update finished in {time.time()-start:.2f} seconds", response)
             
     def update(self):
-        self.scan_requests('mnt1')
+        self.scan_requests('mount1')
         if not self.stopped:
             self.update_status()
     
@@ -408,43 +409,3 @@ if __name__=="__main__":
     print(o.all_devices)
     o.run(n_cycles=100000)
 
-#   Examples of block commands
-    
-    #Current TB version:
-    
-#aws = {'device': 'cam1', 'type': 'camera', 'timestamp': 1562359322, 'action': 'expose', 'required_params': {'time': '1'}, \
-#       'optional_params': {'repeat': '1', 'bin': '1', 'filter': 'air', 'size': '100%'}}
-
-    
-    
-#    bias_rq ={'type':   'block',
-#              'device': 'cam1',
-#              'action': 'bias_dark'}
-              
-              
-              
-              
-              
-##This is the payload for a Bias/dark block.             
-#            park
-#            cover   'close'
-#            temp    setpoint
-#            filter   'dark'
-#            flush   bin       0.0     quantity  
-#            loop    quantity                              #This is the key improvement over Maxim loops
-#                bias    bin1    0.0     quantity   param
-#                dark    bin1    exp     quantity
-#                bias    bin2    0.0     quantity
-#                dark    bin2    0.0     quantity
-#                
-##This is the payload for selected screen flats.
-#                
-#            temp    setpoint 
-#            flush   bin       0.0     quantity  
-#            loop    quantity                              
-#                filters    [ dif, w, ...]
-#                bin [1, 2, ...]
-#                dark      0.0     quantity   param bin1    exp     quantity
-#                bias    bin2    0.0     quantity
-#                dark    bin2    0.0     quantity                
-                

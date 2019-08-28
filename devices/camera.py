@@ -388,12 +388,15 @@ class Camera:
         req = command['required_params']
         opt = command['optional_params']
         action = command['action']
+        script_mode = opt['scripts']
 
-        if action == "expose" and not self.exposure_busy:
+        if action == "expose" and not self.exposure_busy and script_mode == 'none':
             self.expose_command(req, opt)
             self.exposure_busy = False     #Hangup needs to be guarded with a timeout.
             return True    #this resumes Run Thread in Obs.
-            
+        elif action == "expose" and script_mode == 'make_superscreenflats':
+            self.screen_flat_script(req, opt)
+            self.exposure_busy = False
         elif action == "stop":
             self.stop_command(req, opt)
             self.exposure_busy = False
@@ -444,11 +447,10 @@ class Camera:
         frame = required_params.get('frame', 'Light')
         new_filter = optional_params.get('filter', 'w')
         self.current_filter = g_dev['fil'].filter_selected
-        count = int(optional_params.get('repeat', 1))
+        count = int(optional_params.get('count', 1))
         if count < 1:
             count = 1   #Hence repeat does not repeat unless > 1
         if required_params['image_type'] == 'auto focus':           
-            count = 5
             self.af_mode= True
             self.af_step = -1
             area = "1x-jpg"
@@ -565,6 +567,9 @@ class Camera:
         #print(self.camera.NumX, self.camera.StartX, self.camera.NumY, self.camera.StartY)
         for seq in range(count):
             #SEQ is the outer repeat count loop.
+            if seq > 1:
+                #breakpoint()
+                pass
             for fil in [self.current_filter]:#, 'N2', 'S2', 'CR']: #range(1)
                 if fil == 'CR': exposure_time /= 2.5
                 if fil == 'S2': exposure_time *= 1
@@ -572,7 +577,7 @@ class Camera:
                 print('\n',  fil*5, '\n')
                 for rpt in range(1):
                     #Repeat that filter rpt-times
-                    print('\nREPEATREPEATREPEAT:  ', rpt, '\n')
+                    print('\n   REPEAT REPEAT REPEAT:  ', rpt, '\n')
                     try:
                         #print("starting exposure, area =  ", self.area)
                         #NB NB Ultimately we need to be a thread.
@@ -580,7 +585,7 @@ class Camera:
                         self.pre_rot = []
                         self.pre_foc = []
                         self.pre_ocn = []
-                        throw = 1200
+                        throw = 600
                         if True:   #Was a Maxim test 
                             if not self.af_mode:
                                 next_focus = self.current_offset + g_dev['foc'].reference
@@ -654,6 +659,7 @@ class Camera:
                             self.t3 = time.time()#True indicates Light Frame.
                         self.finish_exposure(exposure_time, imtype, count+1, p_next_filter, p_next_focus, p_dither, gather_status)
                         #self.exposure_busy = False  Need to be able to do repeats
+                        #g_dev['obs'].update()   This may cause loosing this thread
                     except Exception as e:
                         print("failed exposure")
                         print(e)
@@ -765,6 +771,8 @@ class Camera:
                         hdu.header['READOUTM'] = 'Monochrome'                           
                         hdu.header['FILTER ']  = self.current_filter
                         hdu.header['FILTEROF']  = self.current_offset
+                        if g_dev['scr'].dark_setting == 'Light':
+                            hdu.header['SCREEN'] = g_dev['scr'].bright_setting
                         hdu.header['IMAGETYP'] = 'Light Frame'                                
                         hdu.header['TELESCOP'] = 'PlaneWave CDK 432mm'
                         hdu.header['APR-DIA']   = 432.          
@@ -838,7 +846,7 @@ class Camera:
                         hdu.header['PIXSCALE'] = 0.85
                         #Need to assemble a complete header here
                         #hdu1.writeto('Q:\\archive\\ea03\\new2b.fits')#, overwrite=True)
-                        alias = self.config['camera']['cam1']['alias']
+                        alias = self.config['camera']['camera1']['alias']
                         im_type = 'E'
                         next_seq = ptr_config.next_seq(alias)
                         raw_name = self.config['site'] + '-' + alias + '-' + g_dev['day'] + '-' + next_seq  + '-' + im_type + '00.fits'
@@ -891,7 +899,7 @@ class Camera:
                         for source in sources:
                             a0 = source['a']
                             b0 =  source['b']
-                            if (a0 - b0)/(a0 + b0)/2 > 0.1:
+                            if (a0 - b0)/(a0 + b0)/2 > 0.1:    #This seems problematic and should reject if peak > saturation
                                 continue
                             r0 = round(math.sqrt(a0**2 + b0**2), 2)
                             result.append((round((source['x']), 1), round((source['y']), 1), round((source['cflux']), 1), \
@@ -990,7 +998,52 @@ class Camera:
 #            #                        #self.save_image(self.last_image_name)
 #            #                        self.image_number += 1
 
+    def screen_flat_script(self, req, opt):
+        
+        '''
+        We will assume the filters have loaded those filters needed in screen flats, highest throughput to lowest.
+        We will assume count contains the number of repeated flats needed.
+        We will assume u filter is only dealt with via skyflats since its exposures are excessive with the screen.
+        
+        Park the mounting.
+        Close the Enclosure.
+        Turn off any lights.
+        For filter in list
+            set the filter
+            get its gain @ 0.2 second exposure
+            set the screen
+            take the count
+        
+        '''
+        g_dev['mnt'].park_command({}, {})
+        g_dev['scr'].screen_dark()
+        
+        for filt in g_dev['fil'].filter_screen_sort:
+            filter_number = int(filt)
+            exposure = 0.2
+            sensitivity = float(g_dev['fil'].filter_data[filter_number][4])
+            sensitivity = sensitivity*exposure
+            screen_bright = int((3000/sensitivity)*100/160)
+            g_dev['scr'].set_screen_bright(screen_bright)
+            g_dev['scr'].screen_light_on()
+            g_dev['fil'].set_number_command(filter_number)
+            count = 2
+            for exp_num in range(count):
+                print('Test Screen:  ', filter_number, screen_bright, count)
+        g_dev['scr'].screen_dark()
+                
 
+            
+        
+
+
+    def sky_flat_script(self, req, opt):
+        
+        '''
+        We will assume the filters have loaded those filters needed in sky flats, lowest to highest sky throughput..
+        We will assume count contains the number of repeated flats needed.
+          
+        '''
     def enqueue_image(self, priority, im_path, name):
         image = (im_path, name)
         print("stuffing Queue:  ", priority, im_path, name)

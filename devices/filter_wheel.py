@@ -10,6 +10,7 @@ class FilterWheel:
         g_dev['fil']= self
         self.config = config
         self.filter_data = self.config['filter_wheel']['filter_wheel1']['settings']['filter_data'][1:]
+        self.filter_screen_sort = self.config['filter_wheel']['filter_wheel1']['settings']['filter_screen_sort']
         self.filter_reference = int(self.config['filter_wheel']['filter_wheel1']['settings']['filter_reference'])
         #THIS CODE implements a filter via the Maxim application which is passed in 
         #as a valid instance of class camera.
@@ -73,18 +74,30 @@ class FilterWheel:
     #        Filter Commands      #
     ###############################
 
-    def set_position_command(self, req: dict, opt: dict):
+    def set_number_command(self, filter_number):
         ''' set the filter position by numeric filter position index '''
-        'NBNBNB This routine in not correct'
-        print(f"filter cmd: set_position")
-        filter_selections = self.filter_data[int(req['filter_num'])]
+        print(f"filter cmd: set_number")
+        filter_selections = eval(self.filter_data[int(filter_number)][1])
         print('Selections:  ', filter_selections)
         while self.filter_front.Position == -1:
             time.sleep(0.2)
         self.filter_front.Position = filter_selections[1]
         while self.filter_back.Position == -1:
             time.sleep(0.2)
-        self.filter_back.Position = filter_selections[0]       
+        self.filter_back.Position = filter_selections[0] 
+        
+    def set_position_command(self, req: dict, opt: dict):
+        ''' set the filter position by  param string filter position index '''
+        'NBNBNB This routine may not be correct'
+        print(f"filter cmd: set_position")
+        filter_selections = eval(self.filter_data[int(req['filter_num'])][1])
+        print('Selections:  ', filter_selections)
+        while self.filter_front.Position == -1:
+            time.sleep(0.2)
+        self.filter_front.Position = filter_selections[1]
+        while self.filter_back.Position == -1:
+            time.sleep(0.2)
+        self.filter_back.Position =filter_selections[0]       
 
     def set_name_command(self, req: dict, opt: dict):
         ''' set the filter position by filter name '''

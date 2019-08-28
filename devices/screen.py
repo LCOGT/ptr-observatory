@@ -88,25 +88,17 @@ class Screen(object):
   
     def parse_command(self, command):
         req = command['required_params']
-        opt = command['optional_params']
+        #opt = command['optional_params']
         action = command['action']
-
-        if action == "move_relative":
-            self.move_relative_command(req, opt)
-        elif action == "move_absolute":
-            self.move_absolute_command(req, opt)
-        elif action == "stop":
-            self.stop_command(req, opt)
-        elif action == "home":
-            self.home_command(req, opt)
+        if action == "turn_off":
+            self.screen_dark()
+        elif action == 'turn_on':
+             bright = int(req['brightness'])
+             self.set_screen_bright(bright)
+             self. screen_light_on()
         else:
-            print(f"Command <{action}> not recognized.")
-
-
-    ###############################
-    #       Screen Commands      #
-    ###############################
-
+            print("Defective Screen Command", command)
+            
 if __name__== "__main__":
     
     sc = Screen('COM22', 'screen1')

@@ -42,7 +42,7 @@ site_config = {
 
                 
     'enclosure': {
-        'encl1': {
+        'enclosure1': {
             'parent': 'site',
             'alias': 'Megawan',
             'driver': 'ASCOM.SkyRoof.Dome',
@@ -59,8 +59,8 @@ site_config = {
                         
 
     'mount': {
-        'mnt1': {
-            'parent': 'encl1',
+        'mount1': {
+            'parent': 'enclosure1',
             'alias': 'eastpier',
             'hostIP':  '10.15.0.30',     #Can be a name if local DNS recognizes it.
             'hostname':  'eastpier',
@@ -109,27 +109,28 @@ site_config = {
     },
 
     'telescope': {
-        'tel1': {
-            'parent': 'mnt1',
-            'alias': 'main OTA',
+        'telescope1': {
+            'parent': 'mount1',
+            'alias': 'Main OTA',
             'desc':  'Planewave CDK 450mm F6',
-            'driver': 'None',                     #Essentially this device is informational.  It is mostly about optics.
+            'driver': 'None',                     #Essentially this device is informational.  It is mostly about the optics.
             'collecting_area':  '146438.0',
             'obscuration':  '33%',
             'aperture': '450.0',
             'focal_length': '2457.3',
             'has_dew_heater':  'true',
+            'screen_name': 'screen1',
+            'focuser_name':  'focuser1',
+            'rotator_name':  'rotator1',
+            'camera_name':  'camera1',
+            'filter_wheel_name':  'filter_wheel1',
             'has_fans':  'true',
             'has_cover':  'false',
-            'has_screen':  'true',    #Screen is in FRONT of cover
                 'settings': {
                     'dew_heater': ['Auto', 'On', 'Off'],
                     'fans': ['Auto','High', 'Low', 'Off'],
-                    'screen': {
-                               'saturate':  '157',
-                               'screen_gain':  '12.3'},
-
-                    'offset_collimation': '0.0',
+                    'offset_collimation': '0.0',    #If the mount model is current, these numbers are usually near 0.0 
+                                                    #for tel1.  Units are arcseconds.
                     'offset_declination': '0.0',
                     'offset_flexure': '0.0',
             },
@@ -145,34 +146,37 @@ site_config = {
             'minimum': '-180.0',
             'maximum': '360.0',
             'step_size':  '0.0001',
+            'backlash':  '0.0',     
             'unit':  'degree'
         },
     },
 
     'screen': {
         'screen1': {
-            'parent': 'tel1',
+            'parent': 'telescope1',
             'alias': 'screen',
             'desc':  'Optec Alnitak 24"',
-            'driver': 'COM22',
-            'minimum': '5.0',
-            'saturate': '170',  #out of 0.0 - 255
+            'driver': 'COM22',  #This needs to be a four or 5 character string as in 'COM8' or 'COM22'
+            'minimum': '5.0',   #This is the % of light emitted when Screen is on and nominally at 0% bright.
+            'saturate': '170',  #Out of 0.0 - 255, this is the last value where the screen is linear with output.
+                                #These values have a minor temperature sensitivity yet to quantify.
 
         },
     },
                 
     'focuser': {
         'focuser1': {
-            'parent': 'tel1',
+            'parent': 'telescope1',
             'alias': 'focuser',
             'desc':  'Planewave IRF PWI3',
             'driver': 'ASCOM.PWI3.Focuser',
             'reference':  '9986',    #Nominal at 20C Primary temperature
             'coef_c': '-164.0673',   #negative means focus moves out as Primary gets colder
             'coef_0': '13267.37  ',  #Nominal intercept when Primary is at 0.0 C.
-            'minimum': '0.0',
-            'maximum': '25200',
-            'step_size': '1.0',
+            'minimum': '0',
+            'maximum': '19000', 
+            'step_size': '1',
+            'backlash':  '0',
             'unit': 'micron',
             'has_dial_indicator': 'false'
         },
@@ -182,45 +186,50 @@ site_config = {
 
     'filter_wheel': {
         "filter_wheel1": {
-            "parent": "tel1",
+            "parent": "telescope1",
             "alias": "Dual filter wheel",
             "desc":  'FLI Centerline Custom Dual 50mm sq.',
             "driver": ['ASCOM.FLI.FilterWheel', 'ASCOM.FLI.FilterWheel1'],
             'settings': {
                 'filter_count': '23',
                 'filter_reference': '2',
-                'filter_data': [['filter', 'filter_index', 'filter_offset', 'sky_gain', 'screen_gainb'],
-                                ['air', '(0, 0)', '-1000', '0.01', '369.0'],
-                                ['dif', '(4, 0)', '0', '0.01', '8.18'],
-                                ['w', '(2, 0)', '0', '0.01', '4.355'],
-                                ['ContR', '(1, 0)', '0', '0.01', '334.0'],
-                                ['N2', '(3, 0)', '0', '0.01', '0.585'],
-                                ['u', '(0, 5)', '0', '0.01', '4.23'],
-                                ['g', '(0, 6)', '0', '0.01', '5.165'],
-                                ['r', '(0, 7)', '0', '0.01', '3.105'],
-                                ['i', '(0, 8)', '0', '0.01', '0.541'],
-                                ['zs', '(5, 0)', '0', '0.01', '0.042'],
-                                ['PL', '(0, 4)', '0', '0.01', '334.0'],
-                                ['PR', '(0, 3)', '0', '0.01', '83.00'],
-                                ['PG', '(0, 2)', '0', '0.01', '80.0'],
-                                ['PB', '(0, 1)', '0', '0.01', '80.0'],
-                                ['O3', '(7, 0)', '0', '0.01', '136.0'],
-                                ['HA', '(6, 0)', '0', '0.01', '194.0'],
-                                ['S2', '(8, 0)', '0', '0.01', '30.0'],
-                                ['dif_u', '(4, 5)', '0', '0.01', '4.0'],
-                                ['dif_g', '(4, 6)', '0', '0.01', '5.0'],
-                                ['dif_r', '(4, 7)', '0', '0.01', '3.0'],
-                                ['dif_i', '(4, 8)', '0', '0.01', '0.5'],
-                                ['dif_zs', '(9, 0)', '0', '0.01', '0.04'],
-                                ['dark', '(10, 9)', '0', '0.01', '0.0']]
-                                #Screen = 100; QHY400 ~ 92% DQE   HDR Mode    Screen = 100  20190731 measured.
+                'filter_screen_sort':  ['0', '1', '2', '10', '7', '19', '6', '18', '12', '11', '13', '8', '20', '3', \
+                                               '14', '15', '4', '16', '9', '21'],  # '5', '17'],
+                'filter_sky_sort':  ['17', '5', '21', '9', '16', '4', '15', '14', '3', '20', '8', '13', '11', '12', \
+                                               '18', '6', '19', '7', '10', '2', '1', '0'],
+                'filter_data': [['filter', 'filter_index', 'filter_offset', 'sky_gain', 'screen_gain'],
+                                ['air', '(0, 0)', '-1000', '0.01', '1063'],   # 0Mul Screen@100% by saturate*exp
+                                ['dif', '(4, 0)', '0', '0.01', '950'],   # 1
+                                ['w', '(2, 0)', '0', '0.01', '827'],   # 2
+                                ['ContR', '(1, 0)', '0', '0.01', '203'],   # 3
+                                ['N2', '(3, 0)', '0', '0.01', '101'],   # 4
+                                ['u', '(0, 5)', '0', '0.01', '0.2'],   # 5
+                                ['g', '(0, 6)', '0', '0.01', '507'],   # 6
+                                ['r', '(0, 7)', '0', '0.01', '683'],   # 7
+                                ['i', '(0, 8)', '0', '0.01', '223'],   # 8
+                                ['zs', '(5, 0)', '0', '0.01', '15.3'],   # 9
+                                ['PL', '(0, 4)', '0', '0.01', '775'],   # 10
+                                ['PR', '(0, 3)', '0', '0.01', '436'],   # 11
+                                ['PG', '(0, 2)', '0', '0.01', '436'],   # 12
+                                ['PB', '(0, 1)', '0', '0.01', '415'],   # 13
+                                ['O3', '(7, 0)', '0', '0.01', '113'],   # 14
+                                ['HA', '(6, 0)', '0', '0.01', '101'],   # 15
+                                ['S2', '(8, 0)', '0', '0.01', '68'],   # 16
+                                ['dif_u', '(4, 5)', '0', '0.01', '0.2'],   # 17
+                                ['dif_g', '(4, 6)', '0', '0.01', '481'],   # 18
+                                ['dif_r', '(4, 7)', '0', '0.01', '626'],   # 19
+                                ['dif_i', '(4, 8)', '0', '0.01', '218'],   # 20
+                                ['dif_zs', '(9, 0)', '0', '0.01', '14.5'],   # 21
+                                ['dark', '(10, 9)', '0', '0.01', '0.0']]   # 22
+                                #Screen = 100; QHY400 ~ 92% DQE   HDR Mode    Screen = 160 sat  20190825 measured.
+                                
             },
         },                  
     },
 
     'camera': {
-        'cam1': {
-            'parent': 'tel1',
+        'camera1': {
+            'parent': 'telescope1',
             'alias': 'gf01',      #Important because this points to a server file structure by that name.
             'desc':  'FLI Kepler 400',
             'driver':  'ASCOM.FLI.Kepler.Camera',
@@ -259,7 +268,7 @@ site_config = {
 
     'web_cam': {
         'web_cam1 ': {
-            'parent': 'encl1',
+            'parent': 'enclosure1',
             'alias': 'MegaCam',
             'desc':  'AXIS PTZ w control',
             'driver': 'http://10.15.0.19',
@@ -269,7 +278,7 @@ site_config = {
             },
                 
         'web_cam3 ': {
-            'parent': 'mnt1',
+            'parent': 'enclosure1',
             'alias': 'FLIR',
             'desc':  'FLIR NIR 10 micron 15deg.',
             'driver': 'http://10.15.0.17',
@@ -282,7 +291,7 @@ site_config = {
                 },
             },
         'web_cam2 ': {
-            'parent': 'encl1',
+            'parent': 'enclosure1',
             'alias': 'FLIR',
             'desc':  'FLIR NIR 10 micron Zenith View 90 deg',
             'driver': 'http://10.15.0.18',
