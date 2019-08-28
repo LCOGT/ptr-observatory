@@ -102,7 +102,7 @@ class Focuser:
         time.sleep(0.1)
         while self.focuser.IsMoving:
             time.sleep(0.5)
-            print(';')
+            print('>')
         #Here we could spin until the move is completed, simplifying other devices.  Since normally these are short moves,
         #that may make the most sense to keep things seperated.
         '''

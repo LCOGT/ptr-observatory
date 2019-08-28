@@ -326,8 +326,10 @@ class Camera:
         self.save_directory = abspath(join(dirname(__file__), '..', 'images'))   #Where did this come from?
                 
     @classmethod
-    def fit_quadratic(cls, x, y):     #Abscissa arguments do not to be ordered
+    def fit_quadratic(cls, x, y):     
         #From Meeus, works fine.
+        #Abscissa arguments do not to be ordered for this to work.
+        #NB Variable names this short can confict with debugger commands.
         if len(x) == len(y):
             p = 0
             q = 0
@@ -349,7 +351,8 @@ class Camera:
             a = (n*q*v + p*r*t + p*q*u - q*q*t - p*p*v - n*r*u)/d
             b = (n*s*u + p*q*v + q*r*t - q*q*u - p*s*t - n*r*v)/d
             c = (q*s*t + q*r*u + p*r*v - q*q*v - p*s*u - r*r*t)/d
-            return a, b, c
+            print('Quad;  ', a, b, c)
+            return (a, b, c)
         else:
             return None
         
@@ -451,7 +454,8 @@ class Camera:
         if count < 1:
             count = 1   #Hence repeat does not repeat unless > 1
         if required_params['image_type'] == 'auto focus':           
-            self.af_mode= True
+            count = 4    #Must be set to cause the right number of images to be taken
+            self.af_mode = True
             self.af_step = -1
             area = "1x-jpg"
             new_filter = 'w'
@@ -570,6 +574,7 @@ class Camera:
             if seq > 1:
                 #breakpoint()
                 pass
+            print('Count value:  ', count)
             for fil in [self.current_filter]:#, 'N2', 'S2', 'CR']: #range(1)
                 if fil == 'CR': exposure_time /= 2.5
                 if fil == 'S2': exposure_time *= 1
@@ -626,7 +631,7 @@ class Camera:
                                     #next_focus = self.filter_offset[selection] + ptr_config.get_focal_ref(self.name) 
                                     self.f_positions = []
                                     self.f_spot_dia = []
-                                    self.af_mode = False
+                                    self.af_mode = False    #This terminates the AF steps, if count > 4 will just read other images
                                     self.af_step = -1
              
                             if gather_status:
@@ -661,6 +666,7 @@ class Camera:
                         #self.exposure_busy = False  Need to be able to do repeats
                         #g_dev['obs'].update()   This may cause loosing this thread
                     except Exception as e:
+                        breakpoint()
                         print("failed exposure")
                         print(e)
                         return   #Presumably this premature return cleans things out so they can still run?
@@ -695,7 +701,7 @@ class Camera:
     
     def finish_exposure(self, exposure_time, frame_type, counter, p_next_filter=None, p_next_focus=None, p_dither=False, \
                         gather_status=True):
-        print("Finish exposure Entered.")
+        print("Finish exposure Entered:  ", self. af_step, exposure_time, frame_type, counter)
         if gather_status:
             self.post_mnt = []
             self.post_rot = []
@@ -913,30 +919,35 @@ class Camera:
                             pass
                         if self.af_mode:
                             #THIS NEEDS DEFENSING AGAINST NaN returns from sep
+                            
                             if 0 <= self.af_step < 3:
                                 #to simulate
-#                                if self.af_step == 0: spot = 5
-#                                if self.af_step == 1: spot = 8
-#                                if self.af_step == 2: spot = 7.9
+                                if self.af_step == 0:
+                                    spot = 5
+                                    
+                                if self.af_step == 1: spot = 8
+                                if self.af_step == 2: spot = 7.9
+                                if self.af_step == 3: spot = 5.01
                                 
                                 self.f_positions.append(g_dev['foc'].focuser.Position)
                                 self.f_spot_dia.append(spot)
                                 print("Auto-focus:  ", self.f_spot_dia, self.f_positions)
                             if self.af_step == 2:
-                                #bbreakpoint()
-                                a,b,c = Camera.fit_quadratic(self.f_positions, self.f_spot_dia)
-                                print ('a, b, c:  ', a ,b, c, self.f_positions, self.f_spot_dia)
+                                tup = self.fit_quadratic(self.f_positions, self.f_spot_dia)
+                                aaa = tup[0]
+                                bbb = tup[1]
+                                ccc = tup[2]
+                                print ('a, b, c:  ', aaa , bbb, ccc, self.f_positions, self.f_spot_dia)
                                 #find the minimum
                                 try:
-                                    x = -b/(2*a)
+                                    x = -bbb/(2*aaa)
                                 except:
                                     x = g_dev['foc'].reference
-                                print('a, b, c, x, spot:  ', a ,b, c, x, a*x**2 + b*x + c)
+                                print('a, b, c, x, spot:  ', aaa ,bbb , ccc, x, aaa*x**2 + bbb*x + ccc)
                                 self.new_focus = x
                                 self.af_step = 3
                             if self.af_step == 3:
                                 print("Check before seeking to final.")
-                                #breakpoint()
                                 print('AF result:  ', spot, g_dev['foc'].focuser.Position)
                                 self.f_spot_dia = []
                                 self.f_positions = []
@@ -968,7 +979,6 @@ class Camera:
                         print(istd, img3.max(), img3.mean(), img3.min())
                         imsave(im_path + jpeg_name, img3)
                         jpeg_data_size = img3.size  -  1024
-
                         
                         self.enqueue_image(jpeg_data_size, im_path, jpeg_name)
                         self.enqueue_image(text_data_size, im_path, text_name)
@@ -978,7 +988,7 @@ class Camera:
                         self.img = None
                         hdu = None
                     except:
-                        pass
+                        breakpoint()
                         print('Header assembly block failed.')
                     return
                 else:               #here we are in waiting for imageReady loop and could send status and check Queue

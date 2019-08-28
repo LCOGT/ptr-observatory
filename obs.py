@@ -191,7 +191,7 @@ class Observatory:
                     device = Screen('EastAlnitak', 'COM22')
                 elif dev_type == "camera": 
                      
-                    device = Camera(driver, name, self.config)   #aPPRENTLY THIS NEEDS TO BE STARTED PRIOR TO fILTER wHEEL!!!
+                    device = Camera(driver, name, self.config)   #APPARENTLY THIS NEEDS TO BE STARTED PRIOR TO FILTER WHEEL!!!
                     time.sleep(2)
                 elif dev_type == "filter_wheel":
                      #pass
