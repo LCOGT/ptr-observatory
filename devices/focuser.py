@@ -17,16 +17,17 @@ class Focuser:
         print(f"focuser connected.")
         print(self.focuser.Description)
         time.sleep(0.2)
-        try:
-            try:
-                self.reference = self.calculate_compensation( self.focuser.Temperature)   #need to change to config supplied
-                print("Focus reference updated from Compensated value:  ", self.reference)
-            except:
-                self.reference = float(ptr_config.get_focal_ref('gf01'))   #need to change to config supplied
-                print("Focus reference updated from Night Shelf:  ", self.reference)
-        except:
-            self.reference = int(self.config['reference'])
-            print("Focus reference derived from supplied Config dicitionary:  ", self.reference)
+#        try:
+#            try:
+#                self.reference = self.calculate_compensation( self.focuser.Temperature)   #need to change to config supplied
+#                print("Focus reference updated from Compensated value:  ", self.reference)
+#            except:
+#                pass
+#                #self.reference = float(ptr_config.get_focal_ref('gf01'))   #need to change to config supplied
+#                #print("Focus reference updated from Night Shelf:  ", self.reference)
+#        except:
+        self.reference = int(self.config['reference'])
+        print("Focus reference derived from supplied Config dicitionary:  ", self.reference)
         self.focuser.Move(int(self.reference))
     
     def calculate_compensation(self, temp_primary):

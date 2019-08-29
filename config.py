@@ -170,7 +170,7 @@ site_config = {
             'alias': 'focuser',
             'desc':  'Planewave IRF PWI3',
             'driver': 'ASCOM.PWI3.Focuser',
-            'reference':  '9986',    #Nominal at 20C Primary temperature
+            'reference':  '10892',    #Nominal at 20C Primary temperature
             'coef_c': '-164.0673',   #negative means focus moves out as Primary gets colder
             'coef_0': '13267.37  ',  #Nominal intercept when Primary is at 0.0 C.
             'minimum': '0',
