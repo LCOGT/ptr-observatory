@@ -76,7 +76,7 @@ class Telescope:
             airmass = round(airmass, 4)
             airmass_string = str(airmass)
         #Be careful to preserve order
-        print(self.device_name, self.name)
+        #print(self.device_name, self.name)
         if self.tel == False:
             status = {            
                 f'timestamp': str(round(time.time(), 3)),
@@ -144,7 +144,7 @@ class Telescope:
         pre.append(self.mount.AtPark)
         pre.append(self.mount.Tracking)
         pre.append(self.mount.Slewing)
-        print(pre)
+        #print(pre)
         return pre
     
     @classmethod

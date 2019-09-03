@@ -79,6 +79,8 @@ class FilterWheel:
         print(f"filter cmd: set_number")
         filter_selections = eval(self.filter_data[int(filter_number)][1])
         print('Selections:  ', filter_selections)
+        self.filter_number = filter_number
+        self.filter_selected = self.filter_data[filter_number][0]
         while self.filter_front.Position == -1:
             time.sleep(0.2)
         self.filter_front.Position = filter_selections[1]

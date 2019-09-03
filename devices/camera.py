@@ -60,17 +60,16 @@ def imageStats(img_img, loud=False):
     if loud: print('Mean, std:  ', img_mean, img_std)
     return round(img_mean, 2), round(img_std, 2)
 
-def median8(img_img, hotPix):
-    img_img = img_img[0]
+def median8(img, hot_pix):
     #print('1: ',img_img.data)
-    axis1 = img_img.header['NAXIS1']
-    axis2 = img_img.header['NAXIS2']
+    axis1 = 1536
+    axis2 = 1536
 
-    img = img_img.data
-    for pix in range(len(hot[0])):
-        iy = hot[0][pix]
-        ix = hot[1][pix]
-        if (0 < iy < axis1 - 2) and (0 < ix < axis2 - 2):
+    img = img
+    for pix in range(len(hot_pix[0])):
+        iy = hot_pix[0][pix]
+        ix = hot_pix[1][pix]
+        if (0 < iy < axis1 - 1) and (0 < ix < axis2 - 1):
             med = []
             med.append(img[iy-1][ix-1])
             med.append(img[iy-1][ix])
@@ -227,21 +226,25 @@ def calibrate (hdu, lng_path):
         s_dark = super_dark_15
         d_exp = 15.
         h_map = hotmap_60
+        h_pix = hotpix_60
         pass
     elif data_exposure_level <= 30:
         s_dark = super_dark_30
         d_exp = 30.
         h_map = hotmap_60
+        h_pix = hotpix_60
         pass
     elif data_exposure_level <= 60:
         s_dark = super_dark_60
         d_exp = 60.
         h_map = hotmap_120
+        h_pix = hotpix_120
         pass
     elif data_exposure_level <= 120:
         s_dark = super_dark_120
         d_exp = 120.
         h_map = hotmap_120
+        h_pix = hotpix_120
         pass
     else:
         do_dark = False  
@@ -255,6 +258,7 @@ def calibrate (hdu, lng_path):
             cal_string += ', D'
         else:
             print('INFO:  Dark exposure too small, skipped this step.')
+        
     img_filter = hdu.header['FILTER']
     do_flat = True
     if img_filter == 'w':
@@ -263,11 +267,13 @@ def calibrate (hdu, lng_path):
         s_flat = super_flat_HA
     else:
         do_flat = False
-    if do_flat:
+    if do_flat: # and not g_dev['seq'].active_script == 'make_superscreenflats':
         img = img/s_flat
         print('QuickFlat!', scale)
         imageStats(img, loud)
         cal_string +=', SCF'
+    median8(img, h_pix)
+    cal_string +=', HP'
     hdu.header['HISTORY'] = cal_string
     hdu.data = img.astype('float32')
     return
@@ -396,15 +402,17 @@ class Camera:
         req = command['required_params']
         opt = command['optional_params']
         action = command['action']
-        script_mode = opt['scripts']
+        
 
-        if action == "expose" and not self.exposure_busy and script_mode == 'none':
+        if action == "expose" and not self.exposure_busy :
             self.expose_command(req, opt)
             self.exposure_busy = False     #Hangup needs to be guarded with a timeout.
+            self.active_script = None
             return True    #this resumes Run Thread in Obs.
-        elif action == "expose" and script_mode == 'make_superscreenflats':
-            self.screen_flat_script(req, opt)
-            self.exposure_busy = False
+#        elif action == "expose" and script_mode == 'make_superscreenflats':
+#            self.screen_flat_script(req, opt)
+#            self.exposure_busy = False
+#            self.active_script = 'make_superscreenflats'
         elif action == "stop":
             self.stop_command(req, opt)
             self.exposure_busy = False
@@ -458,8 +466,8 @@ class Camera:
         count = int(optional_params.get('count', 1))
         if count < 1:
             count = 1   #Hence repeat does not repeat unless > 1
-        if required_params['image_type'] == 'auto focus':           
-            count = 4    #Must be set to cause the right number of images to be taken
+        if required_params['image_type'] == 'toss':           
+            count =  4    #Must be set to cause the right number of images to be taken
             self.af_mode = True
             self.af_step = -1
             area = "1x-jpg"
@@ -576,14 +584,16 @@ class Camera:
         #print(self.camera.NumX, self.camera.StartX, self.camera.NumY, self.camera.StartY)
         for seq in range(count):
             #SEQ is the outer repeat count loop.
+            if seq > 0: 
+                g_dev['obs'].update_status()
             for fil in [self.current_filter]:#, 'N2', 'S2', 'CR']: #range(1)
-                if fil == 'CR': exposure_time /= 2.5
-                if fil == 'S2': exposure_time *= 1
+#                if fil == 'CR': exposure_time /= 2.5
+#                if fil == 'S2': exposure_time *= 1
                 #Change filter here
                 print('\n',  fil*5, '\n')
                 for rpt in range(1):
                     #Repeat that filter rpt-times
-                    print('\n   REPEAT REPEAT REPEAT:  ', rpt, '\n')
+                    #print('\n   REPEAT REPEAT REPEAT:  ', rpt, '\n')
                     try:
                         #print("starting exposure, area =  ", self.area)
                         #NB NB Ultimately we need to be a thread.
@@ -594,35 +604,36 @@ class Camera:
                         throw = 600
                         if True:   #Was a Maxim test 
                             if not self.af_mode:
-                                next_focus = self.current_offset + g_dev['foc'].reference
+                                next_focus = g_dev['foc'].focuser.Position #self.current_offset + g_dev['foc'].reference
                             else:
-                                #This is an AF cycle so need to set up.  THIS VERSION PRE_FOCUSES from reference.
+                                #This is an AF cycle so need to set up.  This version  does not PRE_FOCUS from reference.
                                 if  self.af_step == -1:
                                     self.f_positions = []
                                     self.f_spot_dia = []
                                     #Take first image with no focus adjustment
-                                    next_focus = self.current_offset + g_dev['foc'].reference
+                                    next_focus = g_dev['foc'].focuser.Position   #self.current_offset + g_dev['foc'].reference
+                                    self.af_start_position = next_focus
                                     self.af_step = 0
                                 elif self.af_step == 0:
                                     #Since cooling requires an increased focus setting move out:
-                                    next_focus = self.current_offset + g_dev['foc'].reference + throw  #+0.6mm
+                                    next_focus = self.af_start_position + throw   #self.current_offset + g_dev['foc'].reference + throw  #+0.6mm
                                     self.af_step = 1
                                 elif self.af_step == 1:
                                     #This step needs to overcome backlash
-                                    next_focus = self.current_offset + g_dev['foc'].reference - (throw + 600)   #-1.2mm
+                                    next_focus = self.af_start_position - (throw + 600)   #-1.2mm
                                     if next_focus != g_dev['foc'].focuser.Position:
                                         #Here we overtravel them come back
                                         g_dev['foc'].focuser.Move(next_focus)
                                         while  g_dev['foc'].focuser.IsMoving:
                                             time.sleep(0.5)
-                                            print(';;')
+                                            print('<')
                                     #Now we advance by inward extra throw amount
-                                    next_focus = self.current_offset + g_dev['foc'].reference - throw   #-0.6MM
+                                    next_focus = self.af_start_position - throw   #-0.6MM
                                     self.af_step = 2                            
                                 elif self.af_step == 2:
                                     #this should use the self.new_focus solution
-                                    next_focus = self.new_focus #self.filter_offset[selection] + ptr_config.get_focal_ref(self.name)
-                                    next_focus -= self.filter_offset
+                                    next_focus = self.next_focus #self.filter_offset[selection] + ptr_config.get_focal_ref(self.name)
+                                    #next_focus -= self.filter_offset   #Filter-offsets need to be thought through better
                                     #ptr_config.set_focal_ref(self.name, next_focus)
                                     #Here we would update the shelved reference focus
                                     self.af_step = 3
@@ -632,15 +643,16 @@ class Camera:
                                     self.f_positions = []
                                     self.f_spot_dia = []
                                     self.af_mode = False    #This terminates the AF steps, if count > 4 will just read other images
-                                    self.af_step = -1             
-                            if gather_status:
-                                if next_focus != g_dev['foc'].focuser.Position:
-                                    print('****Focus adjusting to:  ', next_focus)
-                                    g_dev['foc'].focuser.Move(next_focus)
-                                    while  g_dev['foc'].focuser.IsMoving:     #Check here for filter, guider, still moving
-                                        time.sleep(0.5)
-                                        print(';')
+                                    self.af_step = -1
+                                    next_focus = self.next_focus
+                            if next_focus != g_dev['foc'].focuser.Position:
+                                print('****Focus adjusting to:  ', next_focus)
+                                g_dev['foc'].focuser.Move(next_focus)
+                                while  g_dev['foc'].focuser.IsMoving:     #Check here for filter, guider, still moving
+                                    time.sleep(0.5)
+                                    print('>')
                             self.t1 = time.time()
+                            #Used to inform fits header where telescope is for scripts like screens.
                             g_dev['ocn'].get_quick_status(self.pre_ocn)
                             g_dev['foc'].get_quick_status(self.pre_foc)
                             g_dev['rot'].get_quick_status(self.pre_rot)
@@ -651,16 +663,17 @@ class Camera:
                             self.t2 = time.time()
                             c.StartExposure(exposure_time, imtypeb)     #True indicates Light Frame.
                             self.t3 = time.time()
-                        else:
-                            print('Second Entry')
-                            self.camera.StartX = 256   #This puts the big glow spot almost out of the resulting frame/
-                            self.camera.StartY = 256
-                            self.camera.NumX = 1536
-                            self.camera.Numy = 1536
-                            self.t2 = time.time()
-                            c.StartExposure(exposure_time, imtypeb)
-                            self.t3 = time.time()#True indicates Light Frame.
+#                        else:
+#                            print('Second Entry')
+#                            self.camera.StartX = 256   #This puts the big glow spot almost out of the resulting frame/
+#                            self.camera.StartY = 256
+#                            self.camera.NumX = 1536
+#                            self.camera.Numy = 1536
+#                            self.t2 = time.time()
+#                            c.StartExposure(exposure_time, imtypeb)
+#                            self.t3 = time.time()#True indicates Light Frame.
                         self.finish_exposure(exposure_time, imtype, count+1, p_next_filter, p_next_focus, p_dither, gather_status)
+                        self.exposure_busy = False
                         #self.exposure_busy = False  Need to be able to do repeats
                         #g_dev['obs'].update()   This may cause loosing this thread
                     except Exception as e:
@@ -699,6 +712,7 @@ class Camera:
     def finish_exposure(self, exposure_time, frame_type, counter, p_next_filter=None, p_next_focus=None, p_dither=False, \
                         gather_status=True):
         print("Finish exposure Entered:  ", self. af_step, exposure_time, frame_type, counter)
+        #breakpoint()
         if gather_status:
             self.post_mnt = []
             self.post_rot = []
@@ -729,7 +743,6 @@ class Camera:
                     self.t7 = time.time()
                     #Save image with Fits Header information, then read back with astropy
                     hdu = fits.PrimaryHDU(img)
-#                    hdu.header['BUNIT'] = 'adu'
 #                    hdu.header['COMMENT'] = ('Kilroy was here.', 'Here as well.')
                     hdul = fits.HDUList([hdu])
                     hdul.writeto('Q:\\archive\\' + 'gf01'+ '\\newest.fits', overwrite=True)
@@ -921,26 +934,35 @@ class Camera:
                                 #to simulate
 #                                if self.af_step == 0:
 #                                    spot = 5                                 
-#                                if self.af_step == 1: spot = 8
-#                                if self.af_step == 2: spot = 7.9
+#                                if self.af_step == 1: spot = 4
+#                                if self.af_step == 2: spot = 6
 #                                if self.af_step == 3: spot = 5.01                                
                                 self.f_positions.append(g_dev['foc'].focuser.Position)
                                 self.f_spot_dia.append(spot)
                                 print("Auto-focus:  ", self.f_spot_dia, self.f_positions)
                             if self.af_step == 2:
-                                tup = self.fit_quadratic(self.f_positions, self.f_spot_dia)
-                                aaa = tup[0]
-                                bbb = tup[1]
-                                ccc = tup[2]
-                                print ('a, b, c:  ', aaa , bbb, ccc, self.f_positions, self.f_spot_dia)
-                                #find the minimum
-                                try:
-                                    x = -bbb/(2*aaa)
-                                except:
-                                    x = g_dev['foc'].reference
-                                print('a, b, c, x, spot:  ', aaa ,bbb , ccc, x, aaa*x**2 + bbb*x + ccc)
-                                self.new_focus = x
                                 breakpoint()
+                                if self.f_spot_dia[2] <= self.f_spot_dia[0] <= self.f_spot_dia[1]:
+                                    print ('Increasing spot size, move in.')
+                                    self.next_focus = self.f_positions[2] - 250   #microns
+                                elif self.f_spot_dia[2] >= self.f_spot_dia[0] >= self.f_spot_dia[1]:
+                                    print ('Decreasing spot size, move out')
+                                    self.next_focus = self.f_positions[1] + 250   #microns
+                                else:
+                                    tup = self.fit_quadratic(self.f_positions, self.f_spot_dia)
+                                    aaa = tup[0]
+                                    bbb = tup[1]
+                                    ccc = tup[2]
+                                    print ('a, b, c:  ', aaa , bbb, ccc, self.f_positions, self.f_spot_dia)
+                                    #find the minimum
+                                    try:
+                                        x = -bbb/(2*aaa)
+                                        print('a, b, c, x, spot:  ', aaa ,bbb , ccc, x, aaa*x**2 + bbb*x + ccc)
+                                    except:
+                                        print('Auto Focus did not produce a Solution.')
+                                        x = self.af_start_position  #  Return to prior to startng g_dev['foc'].reference
+                                    self.next_focus = x
+                                #breakpoint()
                                 self.af_step = 3
                             if self.af_step == 3:
                                 print("Check before seeking to final.")
@@ -1023,9 +1045,11 @@ class Camera:
         '''
         g_dev['mnt'].park_command({}, {})
         g_dev['scr'].screen_dark()
+        #ake a dark screen w flat to sense ambient
         
         for filt in g_dev['fil'].filter_screen_sort:
             filter_number = int(filt)
+            print(filter_number, g_dev['fil'].filter_data[filter_number][0])
             exposure = 0.2
             sensitivity = float(g_dev['fil'].filter_data[filter_number][4])
             sensitivity = sensitivity*exposure
@@ -1036,17 +1060,14 @@ class Camera:
 #            count = 2
 #            for exp_num in range(count):
             print('Test Screen:  ', filter_number, screen_bright)
-            req = {'time': 0.2,  'alias': 'gf01', 'image_type': 'Light', 'filter': filter_number}
+            req = {'time': 0.2,  'alias': 'gf01', 'image_type': 'Light', 'filter': g_dev['fil'].filter_data[filter_number][0]}
             opt = {'size': 100, 'count': 1}
             self.expose_command(req, opt, gather_status = False)
                 
         g_dev['scr'].screen_dark()
-                
-
-            
-        
-
-
+        #Take a post series dark screen w flat to sense ambient light
+        print('Screen Flat sequence completed.')
+ 
     def sky_flat_script(self, req, opt):
         
         '''
@@ -1056,7 +1077,7 @@ class Camera:
         '''
     def enqueue_image(self, priority, im_path, name):
         image = (im_path, name)
-        print("stuffing Queue:  ", priority, im_path, name)
+        #print("stuffing Queue:  ", priority, im_path, name)
         g_dev['obs'].aws_queue.put((priority, image), block=False)
         
 #        aws_req = {"object_name": "raw_data/2019/" + name}

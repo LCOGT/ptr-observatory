@@ -171,8 +171,9 @@ site_config = {
             'desc':  'Planewave IRF PWI3',
             'driver': 'ASCOM.PWI3.Focuser',
             'reference':  '10892',    #Nominal at 20C Primary temperature
-            'coef_c': '-164.0673',   #negative means focus moves out as Primary gets colder
-            'coef_0': '13267.37  ',  #Nominal intercept when Primary is at 0.0 C.
+            'coef_c': '-119.52',   #negative means focus moves out as Primary gets colder
+            'coef_0': '13678',  #Nominal intercept when Primary is at 0.0 C.
+            'coef_date':  '20190829',    #-102.0708 + 12402.224   20190829   R^2 = 0.67  Ad hoc added 900 units.
             'minimum': '0',
             'maximum': '19000', 
             'step_size': '1',
@@ -265,7 +266,17 @@ site_config = {
                    
     },
 
+    'sequencer': {
+        'sequencer': {
+            'parent': 'site',
+            'alias': 'Sequencer',
+            'desc':  'Automation Control',
+            'driver': 'none',  #This needs to be a four or 5 character string as in 'COM8' or 'COM22'
 
+
+        },
+    },
+                
     'web_cam': {
         'web_cam1 ': {
             'parent': 'enclosure1',

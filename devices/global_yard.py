@@ -18,4 +18,5 @@ g_dev = {
         'sel': None,
         'fil': None,
         'day': None,
+        'seq': None
         }

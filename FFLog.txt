@@ -1,0 +1,1713 @@
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-08-28 03:01:11
+COMPORT:22
+Turning off light.
+Light is off.
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-08-28 03:11:24
+COMPORT:22
+Turning off light.
+Light is off.
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-08-28 03:17:57
+COMPORT:22
+Turning off light.
+Light is off.
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-08-28 03:22:01
+COMPORT:22
+Turning off light.
+Light is off.
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-08-28 03:31:49
+COMPORT:22
+Turning off light.
+Light is off.
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-08-28 03:32:01
+COMPORT:22
+Turning off light.
+Light is off.
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-08-28 18:10:41
+COMPORT:22
+Turning off light.
+Light is off.
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-08-28 18:16:46
+COMPORT:22
+Turning off light.
+Light is off.
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-08-28 18:40:08
+COMPORT:22
+Turning off light.
+Light is off.
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-08-28 18:51:45
+COMPORT:22
+Turning off light.
+Light is off.
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-08-28 19:07:39
+COMPORT:22
+Turning off light.
+Light is off.
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-08-28 19:19:19
+COMPORT:22
+Turning off light.
+Light is off.
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-08-28 19:33:31
+COMPORT:22
+Turning off light.
+Light is off.
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-08-28 21:07:39
+COMPORT:22
+Turning off light.
+Light is off.
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-08-28 21:08:38
+COMPORT:22
+Turning off light.
+Light is off.
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-08-28 21:08:42
+COMPORT:22
+Set brightness to (0-255): 13
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-08-28 21:08:45
+COMPORT:22
+Turning on Light.
+Light is on at brightness: 13
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-08-28 21:10:11
+COMPORT:22
+Turning off light.
+Light is off.
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-08-28 21:11:01
+COMPORT:22
+Turning off light.
+Light is off.
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-08-28 21:11:04
+COMPORT:22
+Set brightness to (0-255): 13
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-08-28 21:11:08
+COMPORT:22
+Turning on Light.
+Light is on at brightness: 13
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-08-28 21:13:43
+COMPORT:22
+Turning off light.
+Light is off.
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-08-28 21:14:49
+COMPORT:22
+Turning off light.
+Light is off.
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-08-28 21:14:52
+COMPORT:22
+Set brightness to (0-255): 13
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-08-28 21:14:56
+COMPORT:22
+Turning on Light.
+Light is on at brightness: 13
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-08-28 21:20:53
+COMPORT:22
+Turning off light.
+Light is off.
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-08-28 21:21:44
+COMPORT:22
+Turning off light.
+Light is off.
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-08-28 21:21:47
+COMPORT:22
+Set brightness to (0-255): 13
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-08-28 21:21:50
+COMPORT:22
+Turning on Light.
+Light is on at brightness: 13
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-08-28 21:23:48
+COMPORT:22
+Set brightness to (0-255): 15
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-08-28 21:23:52
+COMPORT:22
+Turning on Light.
+Light is on at brightness: 15
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-08-28 21:24:57
+COMPORT:22
+Set brightness to (0-255): 18
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-08-28 21:25:00
+COMPORT:22
+Turning on Light.
+Light is on at brightness: 18
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-08-28 21:31:25
+COMPORT:22
+Turning off light.
+Light is off.
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-08-28 21:33:38
+COMPORT:22
+Turning off light.
+Light is off.
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-08-28 21:33:41
+COMPORT:22
+Set brightness to (0-255): 13
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-08-28 21:33:45
+COMPORT:22
+Turning on Light.
+Light is on at brightness: 13
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-08-28 21:34:15
+COMPORT:22
+Set brightness to (0-255): 15
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-08-28 21:34:18
+COMPORT:22
+Turning on Light.
+Light is on at brightness: 15
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-08-28 21:34:32
+COMPORT:22
+Set brightness to (0-255): 18
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-08-28 21:34:35
+COMPORT:22
+Turning on Light.
+Light is on at brightness: 18
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-08-28 21:34:50
+COMPORT:22
+Set brightness to (0-255): 20
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-08-28 21:34:53
+COMPORT:22
+Turning on Light.
+Light is on at brightness: 20
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-08-28 21:35:13
+COMPORT:22
+Set brightness to (0-255): 22
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-08-28 21:35:16
+COMPORT:22
+Turning on Light.
+Light is on at brightness: 22
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-08-28 21:35:36
+COMPORT:22
+Set brightness to (0-255): 23
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-08-28 21:35:39
+COMPORT:22
+Turning on Light.
+Light is on at brightness: 23
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-08-28 21:35:53
+COMPORT:22
+Set brightness to (0-255): 30
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-08-28 21:35:57
+COMPORT:22
+Turning on Light.
+Light is on at brightness: 30
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-08-28 21:36:16
+COMPORT:22
+Set brightness to (0-255): 32
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-08-28 21:36:20
+COMPORT:22
+Turning on Light.
+Light is on at brightness: 32
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-08-28 21:36:34
+COMPORT:22
+Set brightness to (0-255): 35
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-08-28 21:36:37
+COMPORT:22
+Turning on Light.
+Light is on at brightness: 35
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-08-28 21:36:59
+COMPORT:22
+Set brightness to (0-255): 35
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-08-28 21:37:03
+COMPORT:22
+Turning on Light.
+Light is on at brightness: 35
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-08-28 21:37:18
+COMPORT:22
+Set brightness to (0-255): 37
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-08-28 21:37:22
+COMPORT:22
+Turning on Light.
+Light is on at brightness: 37
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-08-28 21:37:43
+COMPORT:22
+Set brightness to (0-255): 71
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-08-28 21:38:51
+COMPORT:22
+Turning on Light.
+Light is on at brightness: 71
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-08-28 21:39:17
+COMPORT:22
+Set brightness to (0-255): 73
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-08-28 21:39:21
+COMPORT:22
+Turning on Light.
+Light is on at brightness: 73
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-08-28 21:39:34
+COMPORT:22
+Set brightness to (0-255): 78
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-08-28 21:39:38
+COMPORT:22
+Turning on Light.
+Light is on at brightness: 78
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-08-28 21:39:53
+COMPORT:22
+Set brightness to (0-255): 139
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-08-28 21:39:57
+COMPORT:22
+Turning on Light.
+Light is on at brightness: 139
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-08-28 21:40:11
+COMPORT:22
+Set brightness to (0-255): 156
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-08-28 21:40:14
+COMPORT:22
+Turning on Light.
+Light is on at brightness: 156
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-08-28 21:40:28
+COMPORT:22
+Set brightness to (0-255): 156
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-08-28 21:40:32
+COMPORT:22
+Turning on Light.
+Light is on at brightness: 156
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-08-28 21:40:46
+COMPORT:22
+Set brightness to (0-255): 170
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-08-28 21:40:49
+COMPORT:22
+Turning on Light.
+Light is on at brightness: 170
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-08-28 21:41:03
+COMPORT:22
+Set brightness to (0-255): 170
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-08-28 21:41:07
+COMPORT:22
+Turning on Light.
+Light is on at brightness: 170
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-08-28 21:41:21
+COMPORT:22
+Set brightness to (0-255): 170
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-08-28 21:41:25
+COMPORT:22
+Turning on Light.
+Light is on at brightness: 170
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-08-28 21:41:39
+COMPORT:22
+Turning off light.
+Light is off.
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-08-29 00:06:52
+COMPORT:22
+Set brightness to (0-255): 170
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-08-29 00:06:56
+COMPORT:22
+Turning on Light.
+Light is on at brightness: 170
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-08-29 00:07:21
+COMPORT:22
+Turning off light.
+Light is off.
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-08-29 04:47:09
+COMPORT:22
+Turning off light.
+Light is off.
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-08-29 05:01:28
+COMPORT:22
+Turning off light.
+Light is off.
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-08-29 05:02:57
+COMPORT:22
+Turning off light.
+Light is off.
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-08-29 05:03:49
+COMPORT:22
+Turning off light.
+Light is off.
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-08-29 05:07:05
+COMPORT:22
+Turning off light.
+Light is off.
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-08-29 05:13:23
+COMPORT:22
+Turning off light.
+Light is off.
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-08-29 17:53:15
+COMPORT:22
+Turning off light.
+Light is off.
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-08-29 18:27:14
+COMPORT:22
+Turning off light.
+Light is off.
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-08-29 18:27:40
+COMPORT:22
+Turning off light.
+Light is off.
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-08-29 18:33:59
+COMPORT:22
+Turning off light.
+Light is off.
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-08-29 18:39:58
+COMPORT:22
+Turning off light.
+Light is off.
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-08-29 18:43:30
+COMPORT:22
+Turning off light.
+Light is off.
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-08-29 18:51:03
+COMPORT:22
+Turning off light.
+Light is off.
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-08-29 18:57:36
+COMPORT:22
+Turning off light.
+Light is off.
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-08-29 19:13:17
+COMPORT:22
+Turning off light.
+Light is off.
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-08-29 19:24:14
+COMPORT:22
+Turning off light.
+Light is off.
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-08-29 19:29:14
+COMPORT:22
+Turning off light.
+Light is off.
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-08-29 19:34:06
+COMPORT:22
+Turning off light.
+Light is off.
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-08-29 19:41:56
+COMPORT:22
+Turning off light.
+Light is off.
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-08-29 19:46:55
+COMPORT:22
+Turning off light.
+Light is off.
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-08-29 21:57:14
+COMPORT:22
+Turning off light.
+Light is off.
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-08-30 00:40:08
+COMPORT:22
+Turning off light.
+Light is off.
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-08-30 00:43:25
+COMPORT:22
+Turning off light.
+Light is off.
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-08-30 01:27:41
+COMPORT:22
+Turning off light.
+Light is off.
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-08-30 01:29:45
+COMPORT:22
+Turning off light.
+Light is off.
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-08-30 01:43:28
+COMPORT:22
+Turning off light.
+Light is off.
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-08-30 03:55:05
+COMPORT:22
+Turning off light.
+Light is off.
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-08-30 03:56:34
+COMPORT:22
+Turning off light.
+Light is off.
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-08-30 03:57:13
+COMPORT:22
+Turning off light.
+Light is off.
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-08-30 18:17:40
+COMPORT:22
+Turning off light.
+Light is off.
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-08-30 18:21:05
+COMPORT:22
+Turning off light.
+Light is off.
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-08-30 18:27:10
+COMPORT:22
+Turning off light.
+Light is off.
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-08-30 18:32:08
+COMPORT:22
+Turning off light.
+Light is off.
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-08-30 18:36:46
+COMPORT:22
+Turning off light.
+Light is off.
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-08-30 18:49:49
+COMPORT:22
+Turning off light.
+Light is off.
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-08-30 18:55:50
+COMPORT:22
+Turning off light.
+Light is off.
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-08-30 19:10:34
+COMPORT:22
+Turning off light.
+Light is off.
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-08-30 19:31:29
+COMPORT:22
+Turning off light.
+Light is off.
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-08-30 19:36:47
+COMPORT:22
+Turning off light.
+Light is off.
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-08-30 19:40:23
+COMPORT:22
+Turning off light.
+Light is off.
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-08-30 19:44:22
+COMPORT:22
+Turning off light.
+Light is off.
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-08-30 19:51:16
+COMPORT:22
+Turning off light.
+Light is off.
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-08-30 19:54:36
+COMPORT:22
+Turning off light.
+Light is off.
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-08-30 19:59:55
+COMPORT:22
+Turning off light.
+Light is off.
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-08-30 20:05:17
+COMPORT:22
+Turning off light.
+Light is off.
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-08-30 20:09:50
+COMPORT:22
+Turning off light.
+Light is off.
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-08-30 22:30:08
+COMPORT:22
+Turning off light.
+Light is off.
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-08-30 23:16:54
+COMPORT:22
+Turning off light.
+Light is off.
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-08-30 23:37:34
+COMPORT:22
+Turning off light.
+Light is off.
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-08-31 00:20:47
+COMPORT:22
+Turning off light.
+Light is off.
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-08-31 00:23:52
+COMPORT:22
+Turning off light.
+Light is off.
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-08-31 00:44:03
+COMPORT:22
+Turning off light.
+Light is off.
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-08-31 00:50:28
+COMPORT:22
+Turning off light.
+Light is off.
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-08-31 04:36:21
+COMPORT:22
+Turning off light.
+Light is off.
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-08-31 04:44:09
+COMPORT:22
+Turning off light.
+Light is off.
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-08-31 23:30:56
+COMPORT:22
+Turning off light.
+Light is off.
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-01 03:01:34
+COMPORT:22
+Turning off light.
+Light is off.
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-01 03:02:14
+COMPORT:22
+Turning off light.
+Light is off.
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-01 03:04:44
+COMPORT:22
+Turning off light.
+Light is off.
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-01 03:10:13
+COMPORT:22
+Turning off light.
+Light is off.
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-01 03:17:10
+COMPORT:22
+Turning off light.
+Light is off.
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-01 03:22:27
+COMPORT:22
+Turning off light.
+Light is off.
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-01 03:31:28
+COMPORT:22
+Turning off light.
+Light is off.
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-01 03:39:19
+COMPORT:22
+Turning off light.
+Light is off.
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-01 16:59:23
+COMPORT:22
+Turning off light.
+Light is off.
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-01 17:07:11
+COMPORT:22
+Turning off light.
+Light is off.
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-01 17:08:39
+COMPORT:22
+Turning off light.
+Light is off.
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-01 17:10:58
+COMPORT:22
+Turning off light.
+Light is off.
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-02 01:32:22
+COMPORT:22
+Turning off light.
+Light is off.
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-02 01:32:46
+COMPORT:22
+Turning off light.
+Light is off.
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-02 01:37:53
+COMPORT:22
+Turning off light.
+Light is off.
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-02 04:04:34
+COMPORT:22
+Turning off light.
+Light is off.
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-02 04:17:58
+COMPORT:22
+Turning off light.
+Light is off.
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-02 05:14:30
+COMPORT:22
+Turning off light.
+Light is off.
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-02 19:10:29
+COMPORT:22
+Turning off light.
+Light is off.
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-02 19:28:12
+COMPORT:22
+Turning off light.
+Light is off.
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-02 19:43:50
+COMPORT:22
+Turning off light.
+Light is off.
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-02 20:01:15
+COMPORT:22
+Turning off light.
+Light is off.
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-02 20:05:16
+COMPORT:22
+Turning off light.
+Light is off.
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-02 20:15:33
+COMPORT:22
+Turning off light.
+Light is off.
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-02 20:22:29
+COMPORT:22
+Turning off light.
+Light is off.
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-02 20:27:27
+COMPORT:22
+Turning off light.
+Light is off.
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-02 20:38:58
+COMPORT:22
+Turning off light.
+Light is off.
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-02 20:54:33
+COMPORT:22
+Turning off light.
+Light is off.
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-02 20:55:21
+COMPORT:22
+Turning off light.
+Light is off.
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-02 20:55:24
+COMPORT:22
+Set brightness to (0-255): 13
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-02 20:55:28
+COMPORT:22
+Turning on Light.
+Light is on at brightness: 13
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-02 20:55:47
+COMPORT:22
+Set brightness to (0-255): 15
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-02 20:55:50
+COMPORT:22
+Turning on Light.
+Light is on at brightness: 15
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-02 20:55:59
+COMPORT:22
+Set brightness to (0-255): 18
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-02 20:56:02
+COMPORT:22
+Turning on Light.
+Light is on at brightness: 18
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-02 20:56:11
+COMPORT:22
+Set brightness to (0-255): 20
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-02 20:56:15
+COMPORT:22
+Turning on Light.
+Light is on at brightness: 20
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-02 20:56:29
+COMPORT:22
+Set brightness to (0-255): 22
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-02 20:56:32
+COMPORT:22
+Turning on Light.
+Light is on at brightness: 22
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-02 20:56:47
+COMPORT:22
+Set brightness to (0-255): 23
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-02 20:56:51
+COMPORT:22
+Turning on Light.
+Light is on at brightness: 23
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-02 20:56:59
+COMPORT:22
+Set brightness to (0-255): 30
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-02 20:57:03
+COMPORT:22
+Turning on Light.
+Light is on at brightness: 30
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-02 20:57:17
+COMPORT:22
+Set brightness to (0-255): 32
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-02 20:57:21
+COMPORT:22
+Turning on Light.
+Light is on at brightness: 32
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-02 20:57:30
+COMPORT:22
+Set brightness to (0-255): 35
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-02 20:57:34
+COMPORT:22
+Turning on Light.
+Light is on at brightness: 35
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-02 20:57:50
+COMPORT:22
+Set brightness to (0-255): 35
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-02 20:57:53
+COMPORT:22
+Turning on Light.
+Light is on at brightness: 35
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-02 20:58:03
+COMPORT:22
+Set brightness to (0-255): 37
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-02 20:58:07
+COMPORT:22
+Turning on Light.
+Light is on at brightness: 37
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-02 20:58:20
+COMPORT:22
+Set brightness to (0-255): 71
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-02 20:58:24
+COMPORT:22
+Turning on Light.
+Light is on at brightness: 71
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-02 20:58:43
+COMPORT:22
+Set brightness to (0-255): 73
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-02 20:58:47
+COMPORT:22
+Turning on Light.
+Light is on at brightness: 73
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-02 20:58:56
+COMPORT:22
+Set brightness to (0-255): 78
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-02 20:58:59
+COMPORT:22
+Turning on Light.
+Light is on at brightness: 78
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-02 20:59:10
+COMPORT:22
+Set brightness to (0-255): 139
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-02 20:59:13
+COMPORT:22
+Turning on Light.
+Light is on at brightness: 139
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-02 20:59:22
+COMPORT:22
+Set brightness to (0-255): 156
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-02 20:59:26
+COMPORT:22
+Turning on Light.
+Light is on at brightness: 156
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-02 20:59:34
+COMPORT:22
+Set brightness to (0-255): 156
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-02 20:59:38
+COMPORT:22
+Turning on Light.
+Light is on at brightness: 156
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-02 20:59:47
+COMPORT:22
+Set brightness to (0-255): 170
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-02 20:59:50
+COMPORT:22
+Turning on Light.
+Light is on at brightness: 170
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-02 20:59:59
+COMPORT:22
+Set brightness to (0-255): 170
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-02 21:00:02
+COMPORT:22
+Turning on Light.
+Light is on at brightness: 170
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-02 21:00:11
+COMPORT:22
+Set brightness to (0-255): 170
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-02 21:00:15
+COMPORT:22
+Turning on Light.
+Light is on at brightness: 170
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-02 21:00:24
+COMPORT:22
+Turning off light.
+Light is off.
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-02 23:09:20
+COMPORT:22
+Turning off light.
+Light is off.
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-02 23:10:10
+COMPORT:22
+Turning off light.
+Light is off.
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-02 23:10:14
+COMPORT:22
+Set brightness to (0-255): 13
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-02 23:10:17
+COMPORT:22
+Turning on Light.
+Light is on at brightness: 13
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-02 23:10:36
+COMPORT:22
+Set brightness to (0-255): 15
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-02 23:10:40
+COMPORT:22
+Turning on Light.
+Light is on at brightness: 15
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-02 23:10:49
+COMPORT:22
+Set brightness to (0-255): 18
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-02 23:10:52
+COMPORT:22
+Turning on Light.
+Light is on at brightness: 18
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-02 23:11:01
+COMPORT:22
+Set brightness to (0-255): 20
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-02 23:11:05
+COMPORT:22
+Turning on Light.
+Light is on at brightness: 20
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-02 23:11:19
+COMPORT:22
+Set brightness to (0-255): 22
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-02 23:11:23
+COMPORT:22
+Turning on Light.
+Light is on at brightness: 22
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-02 23:11:38
+COMPORT:22
+Set brightness to (0-255): 23
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-02 23:11:41
+COMPORT:22
+Turning on Light.
+Light is on at brightness: 23
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-02 23:11:50
+COMPORT:22
+Set brightness to (0-255): 30
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-02 23:11:53
+COMPORT:22
+Turning on Light.
+Light is on at brightness: 30
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-02 23:12:08
+COMPORT:22
+Set brightness to (0-255): 32
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-02 23:12:11
+COMPORT:22
+Turning on Light.
+Light is on at brightness: 32
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-02 23:12:20
+COMPORT:22
+Set brightness to (0-255): 35
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-02 23:12:24
+COMPORT:22
+Turning on Light.
+Light is on at brightness: 35
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-02 23:12:40
+COMPORT:22
+Set brightness to (0-255): 35
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-02 23:12:43
+COMPORT:22
+Turning on Light.
+Light is on at brightness: 35
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-02 23:12:54
+COMPORT:22
+Set brightness to (0-255): 37
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-02 23:12:57
+COMPORT:22
+Turning on Light.
+Light is on at brightness: 37
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-02 23:13:12
+COMPORT:22
+Set brightness to (0-255): 71
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-02 23:13:15
+COMPORT:22
+Turning on Light.
+Light is on at brightness: 71
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-02 23:13:35
+COMPORT:22
+Set brightness to (0-255): 73
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-02 23:13:38
+COMPORT:22
+Turning on Light.
+Light is on at brightness: 73
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-02 23:13:47
+COMPORT:22
+Set brightness to (0-255): 78
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-02 23:13:51
+COMPORT:22
+Turning on Light.
+Light is on at brightness: 78
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-02 23:14:01
+COMPORT:22
+Set brightness to (0-255): 139
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-02 23:14:05
+COMPORT:22
+Turning on Light.
+Light is on at brightness: 139
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-02 23:14:13
+COMPORT:22
+Set brightness to (0-255): 156
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-02 23:14:17
+COMPORT:22
+Turning on Light.
+Light is on at brightness: 156
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-02 23:14:25
+COMPORT:22
+Set brightness to (0-255): 156
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-02 23:14:29
+COMPORT:22
+Turning on Light.
+Light is on at brightness: 156
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-02 23:14:38
+COMPORT:22
+Set brightness to (0-255): 170
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-02 23:14:41
+COMPORT:22
+Turning on Light.
+Light is on at brightness: 170
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-02 23:14:50
+COMPORT:22
+Set brightness to (0-255): 170
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-02 23:14:53
+COMPORT:22
+Turning on Light.
+Light is on at brightness: 170
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-02 23:15:02
+COMPORT:22
+Set brightness to (0-255): 170
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-02 23:15:06
+COMPORT:22
+Turning on Light.
+Light is on at brightness: 170
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-02 23:15:14
+COMPORT:22
+Turning off light.
+Light is off.
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-02 23:28:46
+COMPORT:22
+Turning off light.
+Light is off.
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-02 23:48:21
+COMPORT:22
+Turning off light.
+Light is off.
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-02 23:49:28
+COMPORT:22
+Turning off light.
+Light is off.
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-02 23:49:31
+COMPORT:22
+Set brightness to (0-255): 13
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-02 23:49:35
+COMPORT:22
+Turning on Light.
+Light is on at brightness: 13
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-02 23:49:59
+COMPORT:22
+Set brightness to (0-255): 15
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-02 23:50:02
+COMPORT:22
+Turning on Light.
+Light is on at brightness: 15
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-02 23:50:14
+COMPORT:22
+Set brightness to (0-255): 18
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-02 23:50:17
+COMPORT:22
+Turning on Light.
+Light is on at brightness: 18
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-02 23:50:26
+COMPORT:22
+Set brightness to (0-255): 20
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-02 23:50:30
+COMPORT:22
+Turning on Light.
+Light is on at brightness: 20
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-02 23:50:48
+COMPORT:22
+Set brightness to (0-255): 22
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-02 23:50:52
+COMPORT:22
+Turning on Light.
+Light is on at brightness: 22
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-02 23:51:10
+COMPORT:22
+Set brightness to (0-255): 23
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-02 23:51:13
+COMPORT:22
+Turning on Light.
+Light is on at brightness: 23
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-02 23:51:29
+COMPORT:22
+Set brightness to (0-255): 30
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-02 23:51:33
+COMPORT:22
+Turning on Light.
+Light is on at brightness: 30
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-02 23:51:49
+COMPORT:22
+Set brightness to (0-255): 32
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-02 23:51:53
+COMPORT:22
+Turning on Light.
+Light is on at brightness: 32
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-02 23:52:09
+COMPORT:22
+Set brightness to (0-255): 35
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-02 23:52:13
+COMPORT:22
+Turning on Light.
+Light is on at brightness: 35
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-02 23:52:29
+COMPORT:22
+Set brightness to (0-255): 35
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-02 23:52:32
+COMPORT:22
+Turning on Light.
+Light is on at brightness: 35
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-02 23:52:50
+COMPORT:22
+Set brightness to (0-255): 37
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-02 23:52:54
+COMPORT:22
+Turning on Light.
+Light is on at brightness: 37
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-02 23:53:10
+COMPORT:22
+Set brightness to (0-255): 71
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-02 23:53:13
+COMPORT:22
+Turning on Light.
+Light is on at brightness: 71
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-02 23:53:32
+COMPORT:22
+Set brightness to (0-255): 73
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-02 23:53:36
+COMPORT:22
+Turning on Light.
+Light is on at brightness: 73
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-02 23:53:54
+COMPORT:22
+Set brightness to (0-255): 78
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-02 23:53:57
+COMPORT:22
+Turning on Light.
+Light is on at brightness: 78
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-02 23:54:11
+COMPORT:22
+Set brightness to (0-255): 139
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-02 23:54:15
+COMPORT:22
+Turning on Light.
+Light is on at brightness: 139
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-02 23:54:32
+COMPORT:22
+Set brightness to (0-255): 156
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-02 23:54:36
+COMPORT:22
+Turning on Light.
+Light is on at brightness: 156
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-02 23:54:52
+COMPORT:22
+Set brightness to (0-255): 156
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-02 23:54:56
+COMPORT:22
+Turning on Light.
+Light is on at brightness: 156
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-02 23:55:06
+COMPORT:22
+Set brightness to (0-255): 170
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-02 23:55:10
+COMPORT:22
+Turning on Light.
+Light is on at brightness: 170
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-02 23:55:29
+COMPORT:22
+Set brightness to (0-255): 170
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-02 23:55:32
+COMPORT:22
+Turning on Light.
+Light is on at brightness: 170
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-02 23:55:48
+COMPORT:22
+Set brightness to (0-255): 170
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-02 23:55:51
+COMPORT:22
+Turning on Light.
+Light is on at brightness: 170
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-02 23:56:05
+COMPORT:22
+Turning off light.
+Light is off.
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-03 01:38:32
+COMPORT:22
+Turning off light.
+Light is off.
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-03 03:06:17
+COMPORT:22
+Turning off light.
+Light is off.
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-03 03:18:09
+COMPORT:22
+Turning off light.
+Light is off.
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-03 03:24:21
+COMPORT:22
+Turning off light.
+Light is off.
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-03 03:32:08
+COMPORT:22
+Turning off light.
+Light is off.
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-03 03:51:38
+COMPORT:22
+Turning off light.
+Light is off.
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-03 03:59:56
+COMPORT:22
+Turning off light.
+Light is off.
+
+Alnitak Astro Flip-Flat/Flat-Man Controller
+2019-09-03 18:03:31
+COMPORT:22
+Turning off light.
+Light is off.

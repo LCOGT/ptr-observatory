@@ -72,6 +72,7 @@ from devices.observing_conditions import ObservingConditions
 from devices.rotator import Rotator
 from devices.switch import Switch
 from devices.screen import Screen
+from devices.sequencer import Sequencer
 from global_yard import g_dev
 import ptr_bz2
 import httplib2
@@ -138,7 +139,9 @@ class Observatory:
         'focuser',
         'screen',
         'camera',
+        'sequencer',
         'filter_wheel']
+        
         # Use the configuration to instantiate objects for all devices.
         self.create_devices(config)
 
@@ -193,12 +196,14 @@ class Observatory:
                      
                     device = Camera(driver, name, self.config)   #APPARENTLY THIS NEEDS TO BE STARTED PRIOR TO FILTER WHEEL!!!
                     time.sleep(2)
+                elif dev_type == "sequencer":
+                     device = Sequencer(driver, name)
                 elif dev_type == "filter_wheel":
                      #pass
                      device = FilterWheel(driver, name, self.config)
 
                 #elif dev_type == "camera_maxim":                    
-                    #device = MaximCamera(driver, name)
+                #device = MaximCamera(driver, name)
                 else:
                     print(f"Unknown device: {name}")
 
@@ -232,16 +237,16 @@ class Observatory:
             print('self.api.authenticated_request("GET", uri)  -- FAILED')
 
         if cmd == {'Body': 'empty'}:
-            print('Command Queue: ', cmd)
+            #print('Command Queue: ', cmd)
             return  #Nothing to do, co command in the FIFO
             # If a non-empty command arrives, it will print to the terminal.
             print(cmd)
 
-        cmd_type = cmd['type']            #Evil overload of a keyword!
+        cmd_instance = cmd['instance']
         device_name = cmd['device']
 
         #Get the device based on it's type and name, then parse the cmd.
-        device = self.all_devices[cmd_type][device_name]
+        device = self.all_devices[device_name][cmd_instance]
         device.parse_command(cmd)
 
             #print(f"{mount} finished scan in {time.time()-start:.2f} seconds")
@@ -295,7 +300,7 @@ class Observatory:
         ### Put this status online
         ###bbbb
      
-        print('Status Sent:  \n', status)#from Update:  ', status)
+        print('.')#Status Sent:  \n', status)#from Update:  ', status)
 
         uri = f"{self.name}/status/"
         #NBNBNB None of the strings can be empty.  Otherwise this put faults.

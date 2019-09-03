@@ -67,7 +67,7 @@ class Mount:
         if airmass > 10: airmass = 10.0
         airmass = round(airmass, 4)
         #Be careful to preserve order
-        print(self.device_name, self.name)
+        #print(self.device_name, self.name)
         if self.tel == False:
             status = {            
                 f'timestamp': str(round(time.time(), 3)),
