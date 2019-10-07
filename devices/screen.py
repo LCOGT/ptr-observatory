@@ -25,14 +25,19 @@ class Screen(object):
         self.saturate = 170
         #os.chdir(self.priorWd)
 
-    def set_screen_bright(self, pBright):
+    def set_screen_bright(self, pBright, is_percent=True):
         #self.priorWd = os.getcwd()
         #os.chdir('C:\\Program Files (x86)\\Optec\\Alnitak Astrosystems Controller')
         if pBright <= 0:
-            self.screen_dark()            
-        pBright = min(abs(pBright), 100)
-        scrn_setting = int(pBright*self.saturate/100.)
-        subprocess.call('C:\\Program Files (x86)\\Optec\\Alnitak Astrosystems Controller\\AACmd.exe ' + self.pC + ' B' + str(scrn_setting))
+            self.screen_dark()
+        if is_percent:            
+            pBright = min(abs(pBright), 100)
+            scrn_setting = int(pBright*self.saturate/100.)
+        else:
+            pBright = min(abs(pBright), 171)
+            scrn_setting = int(pBright)            
+        subprocess.call('C:\\Program Files (x86)\\Optec\\Alnitak Astrosystems Controller\\AACmd.exe ' + self.pC + ' B' + \
+                        str(scrn_setting))
         self.bright_setting = pBright
         #os.chdir(self.priorWd)
         print("Brightness set to:  ", pBright, '%, actual:  ', scrn_setting)
@@ -41,14 +46,15 @@ class Screen(object):
         #self.priorWd = os.getcwd()
         #os.chdir('C:\\Program Files (x86)\\Optec\\Alnitak Astrosystems Controller')
         subprocess.call('C:\\Program Files (x86)\\Optec\\Alnitak Astrosystems Controller\\AACmd.exe ' + self.pC + ' L')
-        self.dark_setting = 'Light'
+        self.dark_setting = 'Light is On.'
         #os.chdir(self.priorWd)
 
     def screen_dark(self):
         #self.priorWd = os.getcwd()
         #os.chdir('C:\\Program Files (x86)\\Optec\\Alnitak Astrosystems Controller')
         subprocess.call('C:\\Program Files (x86)\\Optec\\Alnitak Astrosystems Controller\\AACmd.exe ' + self.pC + ' D')
-        self.dark_setting = 'Dark'
+        self.dark_setting = 'Screen is Off.'
+        self.bright_setting = 0
         #os.chdir(self.priorWd)
 
 #   def openCover(self):

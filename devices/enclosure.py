@@ -1,5 +1,6 @@
 import win32com.client
 from global_yard import g_dev
+import ptr_events
 
 class Enclosure:
 
@@ -12,6 +13,11 @@ class Enclosure:
 
         print(f"enclosure connected.")
         print(self.enclosure.Description)
+        self.state = 'Closed, normal operation, waiting for observing window.'    #A descriptive string of the state of the enclosure
+        self.cycles = 0           #if >=3 inhibits reopening for Wx
+        self.wait_time = 0        #A countdown to re-open
+        self.wx_close = False     #If made true by Wx code, a 15 minute timeout will begin when Wx turns OK
+        self.external_close = False   #If made true by operator system will not reopen for the night
 
     def get_status(self) -> dict:
         shutter_status = self.enclosure.ShutterStatus
@@ -85,5 +91,31 @@ class Enclosure:
         ''' park the enclosure if it's a dome '''
         print(f"enclosure cmd: park")
         pass
+    
+    def wx_is_ok(self):   #A placeholder for a proper weather class or ASCOM device.
+        return True
+    
+    def manager(self):     #This is the place where the enclosure is autonomus during operating hours. Delicut Code!!!
+        
+        if ptr_events.sunZ82Op <= ptr_events.ephem.now() <= ptr_events.sunZ82Cl \
+                               and self. wx_is_ok() \
+                               and self.wait_time <= 0 \
+                               and self.enclosure.ShutterStatus == 1: #Closed
+            print('open')
+            #Since this could be a re-open we assume other code opened covers, unparked, seeked, etc.
+            #open
+            self.state = 'Open, Wx OK, in Observing window.'    #A descriptive string of the state of the enclosure
+            self.cycles += 1           #if >=3 inhibits reopening for Wx    #NBNBN THis needs to be persistend across envocatins of the code when testing.
+            self.wait_time = 0        #A countdown to re-open
+            self.enclosure.OpenShutter()
 
+
+            
+        else:
+            #Close the puppy.
+            pass
+        
+if __name__ =='__main__':
+    print('Enclosure class started locally')
+    enc = Enclosure('ASCOM.SkyRoof.Dome', 'enclosure1')
 

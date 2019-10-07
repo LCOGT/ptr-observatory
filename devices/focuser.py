@@ -161,7 +161,6 @@ class Focuser:
         #print(f"focuser cmd: move_relative:  ", req, opt)
     def move_absolute_command(self, req: dict, opt: dict):
         ''' set the focus position by moving to an absolute position '''
-        #breakpoint()
         print(f"focuser cmd: move_absolute:  ", req, opt)
         position = int(req['position'])
         self.focuser.Move(position)

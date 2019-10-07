@@ -17,6 +17,7 @@ class FilterWheel:
 
         print('Please NOTE: Filter wheel may block for many seconds while first connecting & homing.')
         if type(driver) == list:
+
             self.filter_front = win32com.client.Dispatch(driver[0])
             self.filter_front.Connected = True
             self.filter_back = win32com.client.Dispatch(driver[1])

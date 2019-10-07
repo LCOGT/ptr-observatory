@@ -63,7 +63,7 @@ class Mount:
         else:
             new_z = zen
         sec_z = 1/cos(radians(new_z))
-        airmass = round(sec_z - 0.0018167*(sec_z - 1) - 0.002875*((sec_z - 1)**2) - 0.0008083*((sec_z - 1)**3),3)
+        airmass = abs(round(sec_z - 0.0018167*(sec_z - 1) - 0.002875*((sec_z - 1)**2) - 0.0008083*((sec_z - 1)**3),3))
         if airmass > 10: airmass = 10.0
         airmass = round(airmass, 4)
         #Be careful to preserve order
@@ -119,7 +119,7 @@ class Mount:
         else:
             new_z = zen
         sec_z = 1/cos(radians(new_z))
-        airmass = round(sec_z - 0.0018167*(sec_z - 1) - 0.002875*((sec_z - 1)**2) - 0.0008083*((sec_z - 1)**3),3)
+        airmass = abs(round(sec_z - 0.0018167*(sec_z - 1) - 0.002875*((sec_z - 1)**2) - 0.0008083*((sec_z - 1)**3),3))
         if airmass > 10: airmass = 10
         airmass = round(airmass, 4)
         pre.append(time.time())
@@ -166,7 +166,7 @@ class Mount:
         az_avg = round(Mount.two_pi_avg(pre[6],  post[6], 180), 3)
         alt_avg = round((pre[7] + post[7])/2, 3)
         zen_avg = round((pre[8] + post[8])/2, 3)
-        air_avg = round((pre[9] + post[9])/2, 4)
+        air_avg = abs(round((pre[9] + post[9])/2, 4))
         if air_avg > 20.0:
             air_avg = 20.0
         if pre[10] and post[10]:

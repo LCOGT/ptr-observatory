@@ -45,12 +45,12 @@ Enqueue specific device commands and then dispatch them when device is not busy.
 
 
 NBNBNB Possibly a better way to build this is use Remote ascom to interface to each device. 1st that permits multiple
-control computers.  2nd it isolates the devices while the code code is being debugged.  This mostly seems to affect
+control computers.  2nd it isolates the devices while the code is being debugged.  This mostly seems to affect
 MaximDL and filter wheel interactions.
     
     
 """
-import time, json, sys, threading, queue
+import time, json, sys, threading, queue     #17 to 1 Brightness
 
 from api_calls import API_calls
 import ptr_config
@@ -181,6 +181,7 @@ class Observatory:
                 if dev_type == "observing_conditions":
                     device = ObservingConditions(driver, name)
                 elif dev_type == "enclosure":
+                    print("enc:  ", driver, name)
                     device = Enclosure(driver, name)
                 elif dev_type == "mount":
                     device = Mount(driver, name, settings, tel=False)
@@ -192,8 +193,7 @@ class Observatory:
                     device = Rotator(driver, name)
                 elif dev_type == "screen":
                     device = Screen('EastAlnitak', 'COM22')
-                elif dev_type == "camera": 
-                     
+                elif dev_type == "camera":                      
                     device = Camera(driver, name, self.config)   #APPARENTLY THIS NEEDS TO BE STARTED PRIOR TO FILTER WHEEL!!!
                     time.sleep(2)
                 elif dev_type == "sequencer":
@@ -304,7 +304,10 @@ class Observatory:
 
         uri = f"{self.name}/status/"
         #NBNBNB None of the strings can be empty.  Otherwise this put faults.
-        response = self.api.authenticated_request("PUT", uri, status)
+        try:    #20190926  tHIS STARTED THROWING EXCEPTIONS OCCASIONALLY
+            response = self.api.authenticated_request("PUT", uri, status)
+        except:
+            print('self.api.authenticated_request("PUT", uri, status):   Failed!')
 
         #print(f"update finished in {time.time()-start:.2f} seconds", response)
             
@@ -331,6 +334,7 @@ class Observatory:
         try:
             while self.cycles >= 0:
                 self.update()
+                g_dev['enc'].manager()
                 time.sleep(2)
                 self.cycles -= 1
                 #print('.')
@@ -387,7 +391,7 @@ class Observatory:
         
                 with open(im_path + name , 'rb') as f:
                     files = {'file': (im_path + name, f)}
-                    print(im_path + name)
+                    print('.>')
                     start_send = time.time()
                     #print('\n\n\nStart send at:  ', start_send, '\n\n\n')
                     http_response = requests.post(aws_resp['url'], data=aws_resp['fields'], files=files)
@@ -397,7 +401,7 @@ class Observatory:
                     pass
                     #print('Deleting:  ', im_path + name)
                 self.aws_queue.task_done()
-                print('\n*****AWS Transfer completed in:  ', int(time.time() - start_send), ' sec.  *****\n')
+                #print('\n*****AWS Transfer completed in:  ', int(time.time() - start_send), ' sec.  *****\n')
                 time.sleep(0.1)
             time.sleep(0.1)
         
@@ -409,7 +413,7 @@ if __name__=="__main__":
     from config import site_config, site_name
     g_dev['day'] = ptr_events.compute_day_directory()
     #patch_httplib
-
+    print('\nNow is:  ', ptr_events.ephem.now())   #Add local Sidereal time at Midnight
     o = Observatory(site_name, site_config)
     print(o.all_devices)
     o.run(n_cycles=100000)

@@ -262,7 +262,7 @@ def calcMornFlatValues(pWhen, loud=False):
     print('Flat spot at:  ', SunAz1, SunAlt1)
     FlatStartRa, FlatStartDec = ptr.radec_of(str(SunAz1), str(SunAlt1))
     print('Ra/Dec of Flat spot:  ', FlatStartRa, FlatStartDec)
-    ptr.date = sunZ85Cl
+    ptr.date = sunZ82Cl
     sun.compute(ptr)
     if loud: print('Flat End  Sun:  ', sun.ra, sun.dec, sun.az, sun.alt)#SunRa = float(sun.ra)
     SunAz2 = degrees(sun.az) + 180
@@ -343,11 +343,11 @@ ptr.horizon = '-0:34'
 sunset = ptr.next_setting(sun)
 middleNight = ptr.next_antitransit(sun)
 sunrise = ptr.next_rising(sun)
-ptr.horizon = '5'
+ptr.horizon = '2'
 sun.compute(ptr)
 #if loud: print('Sun 2: ', sun.ra, sun.dec, sun.az, sun.alt)
-sunZ85Op = ptr.next_setting(sun)
-sunZ85Cl = ptr.next_rising(sun)
+sunZ82Op = ptr.next_setting(sun)
+sunZ82Cl = ptr.next_rising(sun)
 ptr.horizon = '-6'
 sun.compute(ptr)
 #if loud: print('Sun -6: ', sun.ra, sun.dec, sun.az, sun.alt)
@@ -367,7 +367,7 @@ nauticalDawn = ptr.next_rising(sun)
 ptr.horizon = '-18'
 sun.compute(ptr)
 #if loud: print('Sun -18: ', sun.ra, sun.dec, sun.az, sun.alt)
-if loud: print('Dark: ', sun.az, sun.alt)
+#if loud: print('Dark: ', sun.az, sun.alt)
 astroDark = ptr.next_setting(sun)
 astroEnd = ptr.next_rising(sun)
 duration = (astroEnd - astroDark)*24
@@ -375,18 +375,20 @@ ptr.date = middleNight
 moon.compute(ptr)
 sun=ephem.Sun()
 sun.compute(ptr)
-if loud: print('Middle night  Sun:  ', sun.ra, sun.dec, sun.az, sun.alt)
-if loud: print('Middle night Moon:  ', moon.ra, moon.dec, moon.az, moon.alt)
-moonPhase = moon.phase
+#if loud: print('Middle night  Sun:  ', sun.ra, sun.dec, sun.az, sun.alt)
+if loud: print('Middle night Moon:  ', moon.ra, moon.dec)#, moon.az, moon.alt)
+mid_moon_ra = moon.ra
+mid_moon_dec = moon.dec
+mid_moon_phase = moon.phase
 
 eveFlatStartRa, eveFlatStartDec, eveFlatEndRa, eveFlatEndDec, \
-                eveRaDot, eveDecDot =  calcEveFlatValues(sunZ85Op, loud=True)
+                eveRaDot, eveDecDot =  calcEveFlatValues(sunZ82Op, loud=True)
 
 mornFlatStartRa, mornFlatStartDec, mornFlatEndRa, mornFlatEndDec, \
                 mornRaDot, mornDecDot =  calcMornFlatValues(skyFlatBegin, \
                 loud=True)
 
-endEveScreenFlats = sunZ85Op  - LONGESTSCREEN
+endEveScreenFlats = sunZ82Op  - LONGESTSCREEN
 beginEveScreenFlats = endEveScreenFlats - SCREENFLATDURATION
 endEveBiasDark = beginEveScreenFlats - LONGESTDARK
 beginEveBiasDark = endEveBiasDark - BIASDARKDURATION
@@ -396,7 +398,7 @@ beginEveBiasDark = endEveBiasDark - BIASDARKDURATION
 #morning screen flats begin, followed by bias dark and then
 #morning reductions.  So the times below are the latest case.
 
-beginMornScreenFlats = sunZ85Cl + 2/1440
+beginMornScreenFlats = sunZ82Cl + 2/1440
 endMornScreenFlats = beginMornScreenFlats + SCREENFLATDURATION
 beginMornBiasDark = endMornScreenFlats + LONGESTSCREEN
 endMornBiasDark = beginMornBiasDark + MORNBIASDARKDURATION
@@ -409,22 +411,8 @@ try:
     obsShelf['DayDir'] = DAY_Directory
     obsShelf['EphemDate'] = dayNow
     obsShelf['EveSun'] = (eveSunRa, eveSunDec, eveSunAz1, eveSunAlt1)
-    obsShelf['Opening'] = sunZ85Op
-    obsShelf['Sunset'] = sunset
-    obsShelf['CivilDusk'] = civilDusk
     obsShelf['EveSunRa/Dec'] = (float(sun.ra), float(sun.dec))
-    obsShelf['FlatEnd'] = skyFlatEnd
-    obsShelf['NautDusk'] = nauticalDusk
-    obsShelf['AstroDark'] = astroDark
-    obsShelf['MiddleNight'] = middleNight
-    obsShelf['AstroEnd'] = astroEnd
-    obsShelf['FlatStart'] = skyFlatBegin
-    obsShelf['NautDawn'] = nauticalDawn
-    obsShelf['FlatStart'] = skyFlatBegin
     obsShelf['MornSun'] = (mornSunRa ,mornSunDec, mornSunAz1, mornSunAlt1)
-    obsShelf['Civil Dawn'] = civilDawn
-    obsShelf['Sunrise'] = sunrise
-    obsShelf['Closing'] = sunZ85Cl
     obsShelf['Duration'] = round(duration, 2)
     obsShelf['MoonRa/Dec'] = (float(moon.ra), float(moon.dec))
     obsShelf['MoonPhase'] = float(moonPhase)
@@ -462,7 +450,82 @@ def sunPhaseAngle(offsetHrs=0.0):
     if loud: print('Moon Now: ', degrees(moon.az), degrees(moon.alt))
     return round(saz, 2)
 
-print('Events module reporting for duty.')
+print('Events module reporting for duty. \n')
+
+print('Ephem date    :    ', dayNow)
+print('DayDir        :    ', DAY_Directory)
+#    print('Beg Bias Dark :    ', ephem.Date(beginEveBiasDark))
+#    print('End Bias Dark :    ', ephem.Date(endEveBiasDark))
+#    print('Beg Scrn Flats:    ', ephem.Date(beginEveScreenFlats))
+#    print('End Scrn Flats:    ', ephem.Date(endEveScreenFlats))
+#    print('SunZ82 Opening:    ', sunZ82Op)
+#    print('Beg Sky Flats :    ', sunZ82Op)
+#    print('Sun   next_set:    ', sunset)
+#    print('Civil  Dusk   :    ', civilDusk)
+#    print('Naut   Dusk   :    ', nauticalDusk)
+#    print('Flat End      :    ', skyFlatEnd)
+#    print('Astro  Dark   :    ', astroDark)
+#    print('Middle Night  :    ', middleNight)
+#    print('Astro  End    :    ', astroEnd)
+#    print('Flat Start    :    ', skyFlatBegin)
+#    print('Naut   Dawn   :    ', nauticalDawn)
+#    print('Civil  Dawn   :    ', civilDawn)
+#    print('Sun  next_rise:    ', sunrise)
+#    print('SunZ82   Close:    ', sunZ82Cl)
+print('Night Duration :    ', str(round(duration, 2)) + ' hr')
+#    print('')
+print('MoonRaDec     :    ', (round(mid_moon_ra, 2), round(mid_moon_dec , 1)))
+print('Moon phase %  :    ', round(mid_moon_phase, 1))
+print(('\n'))
+#    print('Moon prev_anti:    ', ptr.previous_antitransit(moon))
+#    print('Moon rise     :    ', ptr.previous_rising(moon))
+#    print('Moon transit  :    ', ptr.previous_transit(moon))
+#    print('Moon set      :    ', ptr.previous_setting(moon))
+#    print('Moon rise     :    ', ptr.next_rising(moon))
+#    print('Moon transit  :    ', ptr.next_transit(moon))
+#    print('Moon set      :    ', ptr.next_setting(moon), '\n\n')
+
+evnt = [('Beg Bias Dark :    ', ephem.Date(beginEveBiasDark)),
+        ('End Bias Dark :    ', ephem.Date(endEveBiasDark)),
+        ('Beg Scrn Flats:    ', ephem.Date(beginEveScreenFlats)),
+        ('End Scrn Flats:    ', ephem.Date(endEveScreenFlats)),
+        ('SunZ82 Opening:    ', sunZ82Op),
+        ('Beg Sky Flats :    ', sunZ82Op),
+        ('Sun   next_set:    ', sunset),
+        ('Civil  Dusk   :    ', civilDusk),
+        ('Naut   Dusk   :    ', nauticalDusk),
+        ('Flat End      :    ', skyFlatEnd),
+        ('Astro  Dark   :    ', astroDark),
+        ('Middle Night  :    ', middleNight),
+        ('Astro  End    :    ', astroEnd),
+        ('Flat Start    :    ', skyFlatBegin),
+        ('Naut   Dawn   :    ', nauticalDawn),
+        ('Civil  Dawn   :    ', civilDawn),
+        ('Sun  next_rise:    ', sunrise),
+        ('SunZ82   Close:    ', sunZ82Cl),
+        ('Moon rise:         ', ptr.previous_rising(moon)),
+        ('Moon transit  :    ', ptr.previous_transit(moon)),
+        ('Moon set      :    ', ptr.previous_setting(moon)),
+        ('Moon rise     :    ', ptr.next_rising(moon)),
+        ('Moon transit  :    ', ptr.next_transit(moon)),
+        ('Moon rise     :    ', ptr.next_setting(moon))]
+
+# Function to sort the list by second item of tuple 
+def Sort_Tuple(tup):  
+  
+    # reverse = None (Sorts in Ascending order)  
+    # key is set to sort using second element of  
+    # sublist lambda has been used  
+    return(sorted(tup, key = lambda x: x[1])) 
+
+evnt_sort = Sort_Tuple(evnt)
+#Edit out rise and sets prior to or after operations.
+while evnt_sort[0][0] != 'Beg Bias Dark :    ':
+    evnt_sort.pop(0)
+while evnt_sort[-1][0] != 'SunZ82   Close:    ':
+    evnt_sort.pop(-1)
+for evnt in evnt_sort:
+    print(evnt[0], evnt[1])
 
 ##Early start check needs to be added!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -558,38 +621,80 @@ So L215 and L200 is the central.   20s L, 30S EX, 60S RGB X 3
 if __name__ == '__main__':
 
     print('Ephem date    :    ', dayNow)
-    print('DayDir        :    ', DAY_Directory, '\n')
-    print('Beg Bias Dark :    ', ephem.Date(beginEveBiasDark))
-    print('End Bias Dark :    ', ephem.Date(endEveBiasDark))
-    print('Beg Scrn Flats:    ', ephem.Date(beginEveScreenFlats))
-    print('End Scrn Flats:    ', ephem.Date(endEveScreenFlats))
-    print('SunZ85 Opening:    ', sunZ85Op)
-    print('Beg Sky Flats :    ', sunZ85Op)
-    print('Sun   next_set:    ', sunset)
-    print('Civil  Dusk   :    ', civilDusk)
-    print('Naut   Dusk   :    ', nauticalDusk)
-    print('Flat End      :    ', skyFlatEnd)
-    print('Astro  Dark   :    ', astroDark)
-    print('Middle Night  :    ', middleNight)
-    print('Astro  End    :    ', astroEnd)
-    print('Flat Start    :    ', skyFlatBegin)
-    print('Naut   Dawn   :    ', nauticalDawn)
-    print('Civil  Dawn   :    ', civilDawn)
-    print('Sun  next_rise:    ', sunrise)
-    print('SunZ85   Close:    ', sunZ85Cl)
-    print('Duration      :    ', str(round(duration, 2)) + ' hr')
-    print('')
-    print('MoonRaDec     :    ', moon.ra, moon.dec)
-    print('Moon phase %  :    ', round(moonPhase, 2))
-    print('Moon prev_anti:    ', ptr.previous_antitransit(moon))
-    print('Moon prev_rise:    ', ptr.previous_rising(moon))
-    print('Moon prev_tran:    ', ptr.previous_transit(moon))
-    print('Moon prev_set :    ', ptr.previous_setting(moon))
-    print('Moon next_anti:    ', ptr.next_antitransit(moon))
-    print('Moon next_rise:    ', ptr.next_rising(moon))
-    print('Moon next_tran:    ', ptr.next_transit(moon))
-    print('Moon next_set :    ', ptr.next_setting(moon))
+    print('DayDir        :    ', DAY_Directory)
+#    print('Beg Bias Dark :    ', ephem.Date(beginEveBiasDark))
+#    print('End Bias Dark :    ', ephem.Date(endEveBiasDark))
+#    print('Beg Scrn Flats:    ', ephem.Date(beginEveScreenFlats))
+#    print('End Scrn Flats:    ', ephem.Date(endEveScreenFlats))
+#    print('SunZ82 Opening:    ', sunZ82Op)
+#    print('Beg Sky Flats :    ', sunZ82Op)
+#    print('Sun   next_set:    ', sunset)
+#    print('Civil  Dusk   :    ', civilDusk)
+#    print('Naut   Dusk   :    ', nauticalDusk)
+#    print('Flat End      :    ', skyFlatEnd)
+#    print('Astro  Dark   :    ', astroDark)
+#    print('Middle Night  :    ', middleNight)
+#    print('Astro  End    :    ', astroEnd)
+#    print('Flat Start    :    ', skyFlatBegin)
+#    print('Naut   Dawn   :    ', nauticalDawn)
+#    print('Civil  Dawn   :    ', civilDawn)
+#    print('Sun  next_rise:    ', sunrise)
+#    print('SunZ82   Close:    ', sunZ82Cl)
+    print('Night Duration :    ', str(round(duration, 2)) + ' hr')
+#    print('')
+    print('MoonRaDec     :    ', (round(mid_moon_ra, 2), round(mid_moon_dec , 1)))
+    print('Moon phase %  :    ', round(mid_moon_phase, 1))
+    print(('\n'))
+#    print('Moon prev_anti:    ', ptr.previous_antitransit(moon))
+#    print('Moon rise     :    ', ptr.previous_rising(moon))
+#    print('Moon transit  :    ', ptr.previous_transit(moon))
+#    print('Moon set      :    ', ptr.previous_setting(moon))
+#    print('Moon rise     :    ', ptr.next_rising(moon))
+#    print('Moon transit  :    ', ptr.next_transit(moon))
+#    print('Moon set      :    ', ptr.next_setting(moon), '\n\n')
 
+    evnt = [('Beg Bias Dark :    ', ephem.Date(beginEveBiasDark)),
+            ('End Bias Dark :    ', ephem.Date(endEveBiasDark)),
+            ('Beg Scrn Flats:    ', ephem.Date(beginEveScreenFlats)),
+            ('End Scrn Flats:    ', ephem.Date(endEveScreenFlats)),
+            ('SunZ82 Opening:    ', sunZ82Op),
+            ('Beg Sky Flats :    ', sunZ82Op),
+            ('Sun   next_set:    ', sunset),
+            ('Civil  Dusk   :    ', civilDusk),
+            ('Naut   Dusk   :    ', nauticalDusk),
+            ('Flat End      :    ', skyFlatEnd),
+            ('Astro  Dark   :    ', astroDark),
+            ('Middle Night  :    ', middleNight),
+            ('Astro  End    :    ', astroEnd),
+            ('Flat Start    :    ', skyFlatBegin),
+            ('Naut   Dawn   :    ', nauticalDawn),
+            ('Civil  Dawn   :    ', civilDawn),
+            ('Sun  next_rise:    ', sunrise),
+            ('SunZ82   Close:    ', sunZ82Cl),
+            ('Moon rise:         ', ptr.previous_rising(moon)),
+            ('Moon transit  :    ', ptr.previous_transit(moon)),
+            ('Moon set      :    ', ptr.previous_setting(moon)),
+            ('Moon rise     :    ', ptr.next_rising(moon)),
+            ('Moon transit  :    ', ptr.next_transit(moon)),
+            ('Moon rise     :    ', ptr.next_setting(moon))]
+    
+    # Function to sort the list by second item of tuple 
+    def Sort_Tuple(tup):  
+      
+        # reverse = None (Sorts in Ascending order)  
+        # key is set to sort using second element of  
+        # sublist lambda has been used  
+        return(sorted(tup, key = lambda x: x[1])) 
+    
+    evnt_sort = Sort_Tuple(evnt)
+    #Edit out rise and sets prior to or after operations.
+    while evnt_sort[0][0] != 'Beg Bias Dark :    ':
+        evnt_sort.pop(0)
+    while evnt_sort[-1][0] != 'SunZ82   Close:    ':
+        evnt_sort.pop(-1)
+    for evnt in evnt_sort:
+        print(evnt[0], evnt[1])
+               
 
 '''
 Get daydir generation correct.

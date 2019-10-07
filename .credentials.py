@@ -1,8 +1,9 @@
 # Note: all values should be strings.
 
-REGION='us-west-2'
-USERPOOL_ID='us-west-2_gAjMkmuFh'
-APP_CLIENT_ID='4qq12gr44u1lg4hqq9vqrbc4sv'
-APP_CLIENT_SECRET='1o21udh4pgrrq1u4cbkrp88nh6ppjlkbfk7q7id6vsdv2ptvgd3r'
+
+REGION='us-east-1'
+USERPOOL_ID='us-east-1_Oq8nC90sF'
+APP_CLIENT_ID='33mk91buh0m8i9fo4gs6tc5fn8'
+APP_CLIENT_SECRET='1o43rg2uvjq1oe4ibge22eu2fuc47p6nbdaraaue9v5q09cjh73u'
 SITE_USERNAME='wmd_admin'
 SITE_PASS='Password1!'
