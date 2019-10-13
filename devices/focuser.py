@@ -69,7 +69,7 @@ class Focuser:
         if -5 <= temp_primary <= 45:
             trial =round(float(self.config['coef_c'])*temp_primary + float(self.config['coef_0']), 1)
             trial = max(trial,500)  #These values would change for Gemini to more like 11900 max
-            trial = min(trial, 13200)
+            trial = min(trial, 14000)
             print('Calculated focus compensated position:  ', trial)
             return int(trial)
         else:

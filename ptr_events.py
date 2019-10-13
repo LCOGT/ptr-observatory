@@ -262,7 +262,7 @@ def calcMornFlatValues(pWhen, loud=False):
     print('Flat spot at:  ', SunAz1, SunAlt1)
     FlatStartRa, FlatStartDec = ptr.radec_of(str(SunAz1), str(SunAlt1))
     print('Ra/Dec of Flat spot:  ', FlatStartRa, FlatStartDec)
-    ptr.date = sunZ82Cl
+    ptr.date = sunZ88Cl
     sun.compute(ptr)
     if loud: print('Flat End  Sun:  ', sun.ra, sun.dec, sun.az, sun.alt)#SunRa = float(sun.ra)
     SunAz2 = degrees(sun.az) + 180
@@ -346,8 +346,8 @@ sunrise = ptr.next_rising(sun)
 ptr.horizon = '2'
 sun.compute(ptr)
 #if loud: print('Sun 2: ', sun.ra, sun.dec, sun.az, sun.alt)
-sunZ82Op = ptr.next_setting(sun)
-sunZ82Cl = ptr.next_rising(sun)
+sunZ88Op = ptr.next_setting(sun)
+sunZ88Cl = ptr.next_rising(sun)
 ptr.horizon = '-6'
 sun.compute(ptr)
 #if loud: print('Sun -6: ', sun.ra, sun.dec, sun.az, sun.alt)
@@ -382,13 +382,13 @@ mid_moon_dec = moon.dec
 mid_moon_phase = moon.phase
 
 eveFlatStartRa, eveFlatStartDec, eveFlatEndRa, eveFlatEndDec, \
-                eveRaDot, eveDecDot =  calcEveFlatValues(sunZ82Op, loud=True)
+                eveRaDot, eveDecDot =  calcEveFlatValues(sunZ88Op, loud=True)
 
 mornFlatStartRa, mornFlatStartDec, mornFlatEndRa, mornFlatEndDec, \
                 mornRaDot, mornDecDot =  calcMornFlatValues(skyFlatBegin, \
                 loud=True)
 
-endEveScreenFlats = sunZ82Op  - LONGESTSCREEN
+endEveScreenFlats = sunZ88Op  - LONGESTSCREEN
 beginEveScreenFlats = endEveScreenFlats - SCREENFLATDURATION
 endEveBiasDark = beginEveScreenFlats - LONGESTDARK
 beginEveBiasDark = endEveBiasDark - BIASDARKDURATION
@@ -398,7 +398,7 @@ beginEveBiasDark = endEveBiasDark - BIASDARKDURATION
 #morning screen flats begin, followed by bias dark and then
 #morning reductions.  So the times below are the latest case.
 
-beginMornScreenFlats = sunZ82Cl + 2/1440
+beginMornScreenFlats = sunZ88Cl + 2/1440
 endMornScreenFlats = beginMornScreenFlats + SCREENFLATDURATION
 beginMornBiasDark = endMornScreenFlats + LONGESTSCREEN
 endMornBiasDark = beginMornBiasDark + MORNBIASDARKDURATION
@@ -458,8 +458,8 @@ print('DayDir        :    ', DAY_Directory)
 #    print('End Bias Dark :    ', ephem.Date(endEveBiasDark))
 #    print('Beg Scrn Flats:    ', ephem.Date(beginEveScreenFlats))
 #    print('End Scrn Flats:    ', ephem.Date(endEveScreenFlats))
-#    print('SunZ82 Opening:    ', sunZ82Op)
-#    print('Beg Sky Flats :    ', sunZ82Op)
+#    print('SunZ88 Opening:    ', sunZ88Op)
+#    print('Beg Sky Flats :    ', sunZ88Op)
 #    print('Sun   next_set:    ', sunset)
 #    print('Civil  Dusk   :    ', civilDusk)
 #    print('Naut   Dusk   :    ', nauticalDusk)
@@ -471,7 +471,7 @@ print('DayDir        :    ', DAY_Directory)
 #    print('Naut   Dawn   :    ', nauticalDawn)
 #    print('Civil  Dawn   :    ', civilDawn)
 #    print('Sun  next_rise:    ', sunrise)
-#    print('SunZ82   Close:    ', sunZ82Cl)
+#    print('SunZ88   Close:    ', sunZ88Cl)
 print('Night Duration :    ', str(round(duration, 2)) + ' hr')
 #    print('')
 print('MoonRaDec     :    ', (round(mid_moon_ra, 2), round(mid_moon_dec , 1)))
@@ -489,8 +489,8 @@ evnt = [('Beg Bias Dark :    ', ephem.Date(beginEveBiasDark)),
         ('End Bias Dark :    ', ephem.Date(endEveBiasDark)),
         ('Beg Scrn Flats:    ', ephem.Date(beginEveScreenFlats)),
         ('End Scrn Flats:    ', ephem.Date(endEveScreenFlats)),
-        ('SunZ82 Opening:    ', sunZ82Op),
-        ('Beg Sky Flats :    ', sunZ82Op),
+        ('SunZ88 Opening:    ', sunZ88Op),
+        ('Beg Sky Flats :    ', sunZ88Op),
         ('Sun   next_set:    ', sunset),
         ('Civil  Dusk   :    ', civilDusk),
         ('Naut   Dusk   :    ', nauticalDusk),
@@ -502,7 +502,7 @@ evnt = [('Beg Bias Dark :    ', ephem.Date(beginEveBiasDark)),
         ('Naut   Dawn   :    ', nauticalDawn),
         ('Civil  Dawn   :    ', civilDawn),
         ('Sun  next_rise:    ', sunrise),
-        ('SunZ82   Close:    ', sunZ82Cl),
+        ('SunZ88   Close:    ', sunZ88Cl),
         ('Moon rise:         ', ptr.previous_rising(moon)),
         ('Moon transit  :    ', ptr.previous_transit(moon)),
         ('Moon set      :    ', ptr.previous_setting(moon)),
@@ -522,7 +522,7 @@ evnt_sort = Sort_Tuple(evnt)
 #Edit out rise and sets prior to or after operations.
 while evnt_sort[0][0] != 'Beg Bias Dark :    ':
     evnt_sort.pop(0)
-while evnt_sort[-1][0] != 'SunZ82   Close:    ':
+while evnt_sort[-1][0] != 'SunZ88   Close:    ':
     evnt_sort.pop(-1)
 for evnt in evnt_sort:
     print(evnt[0], evnt[1])
@@ -626,8 +626,8 @@ if __name__ == '__main__':
 #    print('End Bias Dark :    ', ephem.Date(endEveBiasDark))
 #    print('Beg Scrn Flats:    ', ephem.Date(beginEveScreenFlats))
 #    print('End Scrn Flats:    ', ephem.Date(endEveScreenFlats))
-#    print('SunZ82 Opening:    ', sunZ82Op)
-#    print('Beg Sky Flats :    ', sunZ82Op)
+#    print('SunZ88 Opening:    ', sunZ88Op)
+#    print('Beg Sky Flats :    ', sunZ88Op)
 #    print('Sun   next_set:    ', sunset)
 #    print('Civil  Dusk   :    ', civilDusk)
 #    print('Naut   Dusk   :    ', nauticalDusk)
@@ -639,7 +639,7 @@ if __name__ == '__main__':
 #    print('Naut   Dawn   :    ', nauticalDawn)
 #    print('Civil  Dawn   :    ', civilDawn)
 #    print('Sun  next_rise:    ', sunrise)
-#    print('SunZ82   Close:    ', sunZ82Cl)
+#    print('SunZ88   Close:    ', sunZ88Cl)
     print('Night Duration :    ', str(round(duration, 2)) + ' hr')
 #    print('')
     print('MoonRaDec     :    ', (round(mid_moon_ra, 2), round(mid_moon_dec , 1)))
@@ -657,8 +657,8 @@ if __name__ == '__main__':
             ('End Bias Dark :    ', ephem.Date(endEveBiasDark)),
             ('Beg Scrn Flats:    ', ephem.Date(beginEveScreenFlats)),
             ('End Scrn Flats:    ', ephem.Date(endEveScreenFlats)),
-            ('SunZ82 Opening:    ', sunZ82Op),
-            ('Beg Sky Flats :    ', sunZ82Op),
+            ('SunZ88 Opening:    ', sunZ88Op),
+            ('Beg Sky Flats :    ', sunZ88Op),
             ('Sun   next_set:    ', sunset),
             ('Civil  Dusk   :    ', civilDusk),
             ('Naut   Dusk   :    ', nauticalDusk),
@@ -670,7 +670,7 @@ if __name__ == '__main__':
             ('Naut   Dawn   :    ', nauticalDawn),
             ('Civil  Dawn   :    ', civilDawn),
             ('Sun  next_rise:    ', sunrise),
-            ('SunZ82   Close:    ', sunZ82Cl),
+            ('SunZ88   Close:    ', sunZ88Cl),
             ('Moon rise:         ', ptr.previous_rising(moon)),
             ('Moon transit  :    ', ptr.previous_transit(moon)),
             ('Moon set      :    ', ptr.previous_setting(moon)),
@@ -690,7 +690,7 @@ if __name__ == '__main__':
     #Edit out rise and sets prior to or after operations.
     while evnt_sort[0][0] != 'Beg Bias Dark :    ':
         evnt_sort.pop(0)
-    while evnt_sort[-1][0] != 'SunZ82   Close:    ':
+    while evnt_sort[-1][0] != 'SunZ88   Close:    ':
         evnt_sort.pop(-1)
     for evnt in evnt_sort:
         print(evnt[0], evnt[1])

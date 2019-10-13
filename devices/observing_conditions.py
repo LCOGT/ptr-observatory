@@ -22,7 +22,10 @@ class ObservingConditions:
         #print(self.observing_conditions.Description)
 
     def get_status(self):
-        wx = eval(self.redis_server.get('<ptr-wx-1_state'))  #Redis returns a string dict.
+        try:
+            wx = eval(self.redis_server.get('<ptr-wx-1_state'))  #Redis returns a string dict.
+        except:
+            print('Redis is not turning Wx Data properly.')
         #print(wx)
         #breakpoint()
         try:
@@ -41,7 +44,10 @@ class ObservingConditions:
                       }
         except:
             time.sleep(1)
-            wx = eval(self.redis_server.get('<ptr-wx-1_state'))  #Redis returns a string dict.
+            try:
+                wx = eval(self.redis_server.get('<ptr-wx-1_state'))  #Redis returns a string dict.
+            except:
+                print('Redis is not turning Wx Data properly.')
             status = {"temperature": wx["amb_temp C"],
                       "pressure": ' ---- ',
                       "humidity": wx["humidity %"],

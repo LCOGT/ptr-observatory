@@ -65,8 +65,8 @@ autofocus
 bias/dark +screens, skyflats
 '''
 def imageStats(img_img, loud=False):
-    axis1 = 1536
-    axis2 = 1536
+    axis1 =img_img.shape[0]
+    axis2 = img_img.shape[1]
     subAxis1 = axis1/2
     patchHalf1 = axis1/10
     subAxis2 = axis2/2
@@ -75,13 +75,13 @@ def imageStats(img_img, loud=False):
     img_mean = sub_img.mean()
     img_std = sub_img.std()
     #ADD Mode here someday.
-    if loud: print('Mean, std:  ', img_mean, img_std)
+    if loud: print('Mean, std:  ', round(img_mean, 1), round(img_std, 2))
     return round(img_mean, 2), round(img_std, 2)
 
 def median8(img, hot_pix):
     #print('1: ',img_img.data)
-    axis1 = 1536
-    axis2 = 1536
+    axis1 = img.shape[0]
+    axis2 = img.shape[1]
 
     img = img
     for pix in range(len(hot_pix[0])):
@@ -124,7 +124,7 @@ super_flat_HA = None
 
 #This is a brute force linear version. This needs to be more sophisticated and camera independent.
 
-def calibrate (hdu, lng_path, frame_type='light'):
+def calibrate (hdu, lng_path, frame_type='light', start_x=0, start_y=0):
     #These variables are gloal in the sense they persist between calls (memoized in a form)
     global super_bias, super_dark_15, super_dark_30, super_dark_60, super_dark_300, \
            super_flat_w, super_flat_HA, hotmap_300, hotpix_300
@@ -228,6 +228,7 @@ def calibrate (hdu, lng_path, frame_type='light'):
             print('Hotmap_120 failed to load.')
             
     #Here we actually calibrate
+
     while True:   #Use break to drop through to exit.  i.e., do not calibrte frames we are acquring for calibration.
         cal_string = ''
         img = hdu.data
@@ -236,7 +237,7 @@ def calibrate (hdu, lng_path, frame_type='light'):
         #breakpoint()
         if frame_type == 'bias': break
         if super_bias is not None:
-            img = img - super_bias
+            img = img - super_bias[start_x:(start_x + img.shape[0]), start_y:(start_y + img.shape[1])]  #hdu.header['NAXIS2, NAXIS1']
             if loud: print('QuickBias result:  ')
             imageStats(img, loud)
             cal_string += 'B'
@@ -271,7 +272,7 @@ def calibrate (hdu, lng_path, frame_type='light'):
         #Need to verify dark is not 0 seconds long!
             if d_exp >= data_exposure_level and d_exp >= 1:
                 scale = data_exposure_level/d_exp
-                img =  (img - s_dark*scale)
+                img =  (img - s_dark[start_x:(start_x + img.shape[0]), start_y:(start_y + img.shape[1])])
                 print('QuickDark result: ', scale)
                 imageStats(img, loud)
 #                scale2 = scale*1.1
@@ -366,13 +367,27 @@ class Camera:
             print('Camera __init__ Fault!')
         self.exposure_busy = False
         #Set camera to a sensible default state -- this should ultimately be configuration settings 
-        self.camera_model = "FLI Kepler 400 #01"
+        self.camera_model = "FLI Kepler 4040 #gf03"
         #self.camera.Binx = 1     #Kepler does not accept a bin
         #self.camera.BinY = 1
-        self.camera.StartX = 256   #This puts the big glow spot almost out of the resulting frame/
-        self.camera.StartY = 256
-        self.camera.NumX = 1536
-        self.camera.Numy = 1536
+        self.cameraXSize = self.camera.CameraXSize  #unbinned
+        self.cameraYSize = self.camera.CameraYSize  #unbinned
+        self.cameraMaxXBin = self.camera.MaxBinX
+        self.cameraMaxYBin = self.camera.MaxBinY
+        self.camera.StartX = 0   #This puts the big glow spot almost out of the resulting frame/  This should be a config input
+        self.camera.StartY = 0
+        self.camera.NumX = 2048
+        self.camera.Numy = 2048
+        self.previous_start_fraction_x = 0.   #These are the subframe **fraction** values for the previous exposure.
+        self.previous_start_fraction_y = 0.
+        self.previous_num_fraction_x = 1.
+        self.previous_num_fraction_y = 1.
+        self.previous_start_x = 0.   #These are the subframe **pixel** values for the previous exposure.
+        self.previous_start_y = 0.
+        self.previous_num_x = 1.
+        self.previous_num_y = 1.
+        self.previous_image_name = ''
+        self.previous_area = 100
         
         self.af_mode = False
         self.af_step = -1
@@ -502,25 +517,34 @@ class Camera:
         self.current_offset = g_dev['fil'].filter_offset
         area = optional_params.get('size', 100)
         if area == None: area = 100
+        sub_frame_fraction = optional_params.get('subframe', None)
         if imtype.lower() == 'light' or imtype.lower() == 'screen flat' or imtype.lower() == 'sky flat' or imtype.lower() == \
                              'experimental' or imtype.lower() == 'toss':
                                  #here we might eventually turn on spectrograph lamps as needed for the imtype.
             imtypeb = True    #imtypeb passed to open the shutter.
             frame_type = imtype.lower()
+            do_sep = True
+            if imtype.lower() == 'screen_flat' or imtype.lower() == 'sky flat':
+                do_sep = False
         elif imtype.lower() == 'bias':
                 exposure_time = 0.0
                 imtypeb = False
                 frame_type = 'bias'
                 no_AWS = True
+                do_sep = False
                 #Consider forcing filter to dark if such a filter exists.
         elif imtype.lower() == 'dark':
                 imtypeb = False
                 frame_type = 'dark'
                 no_AWS = True
+                do_sep = False
                 #Consider forcing filter to dark if such a filter exists.
+        elif imtype.lower() == 'screen_flat' or imtype.lower() == 'sky flat':
+            do_sep = False
         else:
             imtypeb = True
-        #NBNB This area still needs work to cleanly define shutter, calibration and AWS actions.
+            do_sep = True
+        #NBNB This area still needs work to cleanly define shutter, calibration, sep and AWS actions.
                 
         print(bin_x, count, self.current_filter, area)# type(area))
         try:
@@ -613,6 +637,85 @@ class Camera:
             self.camera.StartY = 0
             self.area = 100
             print("Defult area used. 100%")
+            
+        #Next apply any subframe setting here.  Be very careful to keep fractional specs and pixel values disinguished.
+        if self.area == self.previous_area and sub_frame_fraction is not None and \
+                        (sub_frame_fraction['definedOnThisFile'] != self.previous_image_name):
+            #breakpoint()
+            sub_frame_fraction_xw = abs(sub_frame_fraction['x1'] - sub_frame_fraction['x0'])
+            if sub_frame_fraction_xw < 1/32.:
+                sub_frame_fraction_xw = 1/32.
+            else:
+                pass   #Adjust to center position of sub-size frame
+            sub_frame_fraction_yw = abs(sub_frame_fraction['y1'] - sub_frame_fraction['y0'])
+            if sub_frame_fraction_yw < 1/32.:
+                sub_frame_fraction_yw = 1/32.
+            else:
+                pass
+            sub_frame_fraction_x = min(sub_frame_fraction['x0'], sub_frame_fraction['x1'])
+            sub_frame_fraction_y = min(sub_frame_fraction['y0'], sub_frame_fraction['y1'])
+            num_x = int(self.previous_num_fraction_x*sub_frame_fraction_xw*self.previous_num_x)
+            num_y = int(self.previous_num_fraction_y*sub_frame_fraction_yw*self.previous_num_y)
+            if num_x < 32:
+                num_x = 32
+            if num_y < 32:
+                num_y = 32
+            dist_x = int(self.previous_start_x + self.previous_num_x*sub_frame_fraction_x)
+            dist_y = int(self.previous_start_y +self.previous_num_y*sub_frame_fraction_y)
+            self.camera.StartX= dist_x
+            self.camera.StartY= dist_y 
+            self.camera.NumX= num_x 
+            self.camera.NumY= num_y
+            self.previous_image_name = sub_frame_fraction['definedOnThisFile']
+            self.previous_start_x = dist_x
+            self.previous_start_y = dist_y
+            self.previous_num_x = num_x
+            self.previous_num_y = num_y
+            self.bpt_flag = False
+        elif self.area == self.previous_area and sub_frame_fraction is not None and \
+                        (sub_frame_fraction['definedOnThisFile'] == self.previous_image_name):         
+            #Here we repeat the previous subframe and do not re-enter and make smaller
+            #breakpoint()
+            self.camera.StartX = self.previous_start_x
+            self.camera.StartY = self.previous_start_y
+            dist_x = self.previous_start_x
+            dist_y = self.previous_start_y
+            self.camera.NumX= self.previous_num_x 
+            self.camera.NumY= self.previous_num_y
+            self.bpt_flag  = True
+        
+        elif sub_frame_fraction is None: 
+            #breakpoint()
+            self.previous_start_x = self.camera.StartX  #These are the subframe values for the new area exposure.
+            self.previous_start_y = self.camera.StartY
+            dist_x = self.previous_start_x 
+            dist_y = self.previous_start_y 
+            self.previous_num_x = self.camera.NumX
+            self.previous_num_y = self.camera.NumY
+            self.previous_num_fraction_x = 1.0
+            self.previous_num_fraction_y = 1.0
+            self.previous_area = self.area
+            self.bpt_flag = False
+        
+        #Here we ensure parameters to camera are vaild. This works only for bin 1 and 2.
+#        if self.bin_x == 1:
+#            if self.camera.StartX < 0:
+#                self.camera.StartX = 0
+#            if self.camera.NumX < 32:   #This is a somewhat arbitrary criterion.
+#                self.camera.NumX = 32
+#            if self.camera.StartX + self.camera.NumX > self.cameraXSize:
+                
+                
+                
+#            
+#        elif self.bin_x == 2:
+#        
+#        if self.bin_y == 1:
+#            
+#        elif self.bin_y == 2:        
+        
+        
+            
 # #NBNBNB Consider jamming camera X Size in first.  THis is for a FLI Kepler 400
 #        if bin_y == 0 or self.camera.MaxBinX != self.camera.MaxBinY:
 #            self.bin_x = min(bin_x, self.camera.MaxBinX)
@@ -732,7 +835,7 @@ class Camera:
                         self.t9 = time.time()
                         #We go here to keep this subroutine a reasonable length.
                         self.finish_exposure(exposure_time,  frame_type, count - seq, p_next_filter, p_next_focus, p_dither, \
-                                             gather_status, do_sep, no_AWS)
+                                             gather_status, do_sep, no_AWS, dist_x, dist_y)
                         self.exposure_busy = False
                         self.t10 = time.time()
                         #self.exposure_busy = False  Need to be able to do repeats
@@ -769,9 +872,14 @@ class Camera:
     ###############################
     
     def finish_exposure(self, exposure_time, frame_type, counter, p_next_filter=None, p_next_focus=None, p_dither=False, \
-                        gather_status=True, do_sep=False, no_AWS=False):
-        print("Finish exposure Entered:  ", self. af_step, exposure_time, frame_type, counter)
-        if gather_status:   #Does this need to be here?
+                        gather_status=True, do_sep=False, no_AWS=False, start_x=None, start_y=None):
+        print("Finish exposure Entered:  ", self.af_step, exposure_time, frame_type, counter, ' to go!')
+        print(exposure_time, frame_type, counter, p_next_filter, p_next_focus, p_dither, \
+                        gather_status, do_sep, no_AWS, start_x, start_y)
+        if self.bpt_flag:
+            #breakpoint()
+            pass
+        if gather_status:   #Does this need to be here
             self.post_mnt = []
             self.post_rot = []
             self.post_foc = []
@@ -806,7 +914,12 @@ class Camera:
                     hdu = fits.PrimaryHDU(img)
 #                    hdu.header['COMMENT'] = ('Kilroy was here.', 'Here as well.')
                     hdul = fits.HDUList([hdu])
-                    hdul.writeto('Q:\\archive\\' + 'gf03'+ '\\newest.fits', overwrite=True)
+                    try:
+                        hdul.writeto('Q:\\archive\\' + 'gf03'+ '\\newest.fits', overwrite=True)
+                    except:
+                        print('Write to newest.fits failed becuase it is busy, -- reason unknown.')
+                        os.remove('Q:\\archive\\' + 'gf03'+ '\\newest.fits')
+                        return
                     #This should be a very fast disk.
                     #self.camera.SaveImage('Q:\\archive\\ea03\\newest.fits')#, overwrite=True)  #This was a Maxim Command.
                     if gather_status:
@@ -985,8 +1098,8 @@ class Camera:
                         #Now make the db_image:
                         #THis should be moved into the transfer process and processed in parallel
                         #hdu.data.astype('float32')
-                       
-                        calibrate(hdu, lng_path, frame_type)
+
+                        calibrate(hdu, lng_path, frame_type, start_x=start_x, start_y=start_y)
                         hdu1.writeto(cal_path + cal_name, overwrite=True)
                         hdu1.writeto(im_path + raw_name01, overwrite=True)
 #                        
@@ -1023,12 +1136,67 @@ class Camera:
                             except:
                                 pass
                             
+                        #Here we need to process images which upon input, may not be square.  The way we will do that
+                        #is find which dimension is largest.  We then pad the opposite dimension with 1/2 of the difference,
+                        #and add vertical or horizontal lines filled with img(min)-2 but >=0.  The immediate last or first line
+                        #of fill adjacent to the image is set to 80% of img(max) so any subsequent subframing selections by the
+                        #user is informed. If the incoming image dimensions are odd, they wil be decreased by one.  In essence
+                        #we wre embedding a non-rectaglular image in a "square" and scaling it to 768^2.  We will impose a 
+                        #minimum subframe reporting of 32 x 32
+                        
+                        in_shape = hdu.data.shape
+                        in_shape = [in_shape[0], in_shape[1]]   #Have to convert to a list, cannot manipulate a tuple,
+                        if in_shape[0]%2 == 1:
+                            in_shape[0] -= 1   
+                        if in_shape[0] < 32:
+                            in_shape[0] = 32
+                        if in_shape[1]%2 == 1:
+                            in_shape[1] -= 1   
+                        if in_shape[1] < 32:
+                            in_shape[1] = 32
+                        #Ok, we have an even array and a minimum 32x32 array.
+                        if in_shape[0] < in_shape[1]:
+                            #breakpoint()
+                            diff = int(abs(in_shape[1] - in_shape[0])/2)
+                            in_max = int(hdu.data.max()*0.8)
+                            in_min = int(hdu.data.min() - 2)   
+                            if in_min < 0: 
+                                in_min = 0
+                            new_img = np. zeros((in_shape[1], in_shape[1]))    #new square array
+                            new_img[0:diff - 1, :] = in_min
+                            new_img[diff-1, :] = in_max
+                            new_img[diff:(diff + in_shape[0]), :]
+                            new_img[(diff + in_shape[0]), :] = in_max
+                            new_img[(diff + in_shape[0] + 1):(2*diff + in_shape[0]), :] = in_min
+                            hdu.data = new_img
+                        elif in_shape[0] > in_shape[1]:
+                            #Same scheme as above, but expands second axis.
+                            #breakpoint()
+                            diff = int((in_shape[0] - in_shape[1])/2)
+                            in_max = int(hdu.data.max()*0.8)
+                            in_min = int(hdu.data.min() - 2) 
+                            if in_min < 0: 
+                                in_min = 0
+                            new_img = np. zeros((in_shape[0], in_shape[0]))    #new square array
+                            new_img[:, 0:diff - 1] = in_min
+                            new_img[:, diff-1] = in_max
+                            new_img[:, diff:(diff + in_shape[1])]
+                            new_img[:, (diff + in_shape[1])] = in_max
+                            new_img[:, (diff + in_shape[1] + 1):(2*diff + in_shape[1])] = in_min
+                            hdu.data = new_img
+                        else:
+                            #nothing to do, the array is already square
+                            pass
+                        
+                                
+                            
                         resized_a = resize(hdu.data, (768, 768), preserve_range=True)
                         #print(resized_a.shape, resized_a.astype('uint16'))
                         hdu.data = resized_a.astype('uint16')
                         db_data_size = hdu.data.size
                         hdu1.writeto(im_path + db_name, overwrite=True)
                         hdu.data = resized_a.astype('float')
+                        #The following does a very lame contrast scaling.  A beer for best improvement on this code!!!
                         istd = np.std(hdu.data)
                         imean = np.mean(hdu.data)                                             
                         img3 = hdu.data/(imean + 3*istd)
@@ -1048,6 +1216,10 @@ class Camera:
                             self.enqueue_image(raw_data_size, im_path, raw_name01)                       
                         self.img = None
                         hdu = None
+                        try:
+                            os.remove('Q:\\archive\\' + 'gf03'+ '\\newest.fits')
+                        except:
+                            print(' 2 Could not remove newest.fits.')
                     except:   
                         breakpoint()
                         print('Header assembly block failed.')
@@ -1061,6 +1233,7 @@ class Camera:
             except:
                 counter += 1
                 time.sleep(1)
+                #This shouldbe counted down for a loop cancel.
                 continue
         self.t8 = time.time()
         return

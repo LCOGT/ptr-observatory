@@ -97,7 +97,7 @@ class Enclosure:
     
     def manager(self):     #This is the place where the enclosure is autonomus during operating hours. Delicut Code!!!
         
-        if ptr_events.sunZ82Op <= ptr_events.ephem.now() <= ptr_events.sunZ82Cl \
+        if ptr_events.sunZ88Op <= ptr_events.ephem.now() <= ptr_events.sunZ88Cl \
                                and self. wx_is_ok() \
                                and self.wait_time <= 0 \
                                and self.enclosure.ShutterStatus == 1: #Closed

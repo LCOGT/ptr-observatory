@@ -170,9 +170,9 @@ site_config = {
             'alias': 'focuser',
             'desc':  'Planewave IRF PWI3',
             'driver': 'ASCOM.PWI3.Focuser',
-            'reference':  '9500',    #Nominal at 20C Primary temperature
-            'coef_c': '-119.52',   #negative means focus moves out as Primary gets colder
-            'coef_0': '14243',  #Nominal intercept when Primary is at 0.0 C.
+            'reference':  '9062',    #Nominal at 20C Primary temperature
+            'coef_c': '0',   #negative means focus moves out as Primary gets colder
+            'coef_0': '9062',  #Nominal intercept when Primary is at 0.0 C.
             'coef_date':  '20190829',    #-102.0708 + 12402.224   20190829   R^2 = 0.67  Ad hoc added 900 units.
             'minimum': '0',
             'maximum': '19000', 
