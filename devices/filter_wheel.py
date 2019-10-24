@@ -12,12 +12,12 @@ class FilterWheel:
         self.filter_data = self.config['filter_wheel']['filter_wheel1']['settings']['filter_data'][1:]
         self.filter_screen_sort = self.config['filter_wheel']['filter_wheel1']['settings']['filter_screen_sort']
         self.filter_reference = int(self.config['filter_wheel']['filter_wheel1']['settings']['filter_reference'])
-        #THIS CODE implements a filter via the Maxim application which is passed in 
+        #THIS CODE DOES NOT implemnt a filter via the Maxim application which is passed in 
         #as a valid instance of class camera.
 
         print('Please NOTE: Filter wheel may block for many seconds while first connecting & homing.')
         if type(driver) == list:
-
+            #breakpoint()
             self.filter_front = win32com.client.Dispatch(driver[0])
             self.filter_front.Connected = True
             self.filter_back = win32com.client.Dispatch(driver[1])

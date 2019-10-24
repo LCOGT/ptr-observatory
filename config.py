@@ -6,7 +6,7 @@ Created on Fri Aug  2 11:57:41 2019
 '''
 import json
 
-#NB NB NB json is not bi-directional with tuples (), use lists [] instead.
+#NB NB NB json is not bi-directional with tuples (), use lists [], nested if tuples as needed, instead.
 
 site_name = 'wmd'
 
@@ -19,18 +19,19 @@ site_config = {
     'description':  '''
                     Now is the time for all good persons
                     to get out and vote early and often lest
-                    we loose charge of our democracy.''',    #i.e, a multipline text block supplied by the owner.
+                    we lose charge of our democracy.
+                    ''',    #i.e, a multi-line text block supplied by the owner.
                     
-    'mpc_code':  'ZZ23',
+    'mpc_code':  'ZZ23',    #This is made up for now.
     'timezone': 'PDT',       #We might be smart to require some Python DateTime String Constant here
                              #since this is a serious place where misconfigurations occur.  We run on
                              #UTC and all translations to local time are 'informational.'  PTR will
                              #Not accept observatories whose master clocks run on local time, or where
                              #the longitude and value of UTC disagree by more than a hour or so.
-    'latitude': '34.34293028',
-    'longitude': '-119.68112805',
+    'latitude': '34.34293028',     #Decimal degrees, North is Positive
+    'longitude': '-119.68112805',   #Decimal degrees, West is negative
     'elevation': '317.75',    # meters above sea level
-    'reference_ambient':  ['12.1'],  #Alternately 12 entries, one for every - mid month.
+    'reference_ambient':  ['15.0'],  #Degress Celsius.  Alternately 12 entries, one for every - mid month.
     'observing_conditions': {
         'wx1': {
             'parent': 'site',
@@ -233,7 +234,7 @@ site_config = {
             'parent': 'telescope1',
             'alias': 'gf03',      #Important because this points to a server file structure by that name.
             'desc':  'FLI Kepler 4040',
-            'driver':  'ASCOM.FLI.Kepler.Camera',
+            'driver':  'ASCOM.FLI.Kepler.Camera',  #"Maxim.CCDCamera"
             'settings': {
                 'x_start':  '0',
                 'y_start':  '0',
@@ -249,7 +250,7 @@ site_config = {
                 'can_subframe':  'true',
                 'is_cmos':  'true',
                 'area': ['100%', '2X-jpg', '71%', '50%', '1X-jpg', '33%', '25%', '1/2 jpg'],
-                'bin_modes': [['1', '1'], ['2', '2']],     #Meaning no binning if list has only one entry
+                'bin_modes':  [['1', '1'], ['2', '2']],     #Meaning no binning if list has only one entry
                                                #otherwise enumerate all xy modes: [[1,1], [1,2], ...[3,2]...]
                 'has_darkslide':  'false',
                 'has_screen': 'true',

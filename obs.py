@@ -21,7 +21,7 @@ Autofocus
 
 Gather Sky Flats  First need to set up to track SkyFlat spot from approx time where exposures cn start through the
 finish, avoiding a zenith event.    However a zenith event really does not affect things very much.  WE have the field
-roation issue to contend with though.   A different problem is exposure calculation.  In principle we shoudl be able to predict
+roation issue to contend with though.   A different problem is exposure calculation.  In principle we should be able to predict
 sky bright at midpoint of upcoming exposure since the transformation is only moderately quadratic.  So what we need is 
 adu/lux for each filter.
 
@@ -50,6 +50,7 @@ MaximDL and filter wheel interactions.
     
     
 """
+
 import time, json, sys, threading, queue     #17 to 1 Brightness
 
 from api_calls import API_calls
@@ -148,6 +149,7 @@ class Observatory:
         # Run observatory loops as long as the `stopped` is not set to True.
         self.stopped = False
         self.cycles = 1000000
+        self.loud_status = False
         g_dev['obs'] = self
         self.g_dev = g_dev
         #Build the to-AWS Queue
@@ -300,7 +302,10 @@ class Observatory:
         ### Put this status online
         ###bbbb
      
-        print('.')#Status Sent:  \n', status)#from Update:  ', status)
+        if self.loud_status:
+            print('Status Sent:  \n', status)#from Update:  ', status))
+        else:
+            print('.')#Status Sent:  \n', status)#from Update:  ', status)
 
         uri = f"{self.name}/status/"
         #NBNBNB None of the strings can be empty.  Otherwise this put faults.
@@ -328,7 +333,8 @@ class Observatory:
 #     is parsed and dispatched.          
 # =============================================================================
     
-    def run(self, n_cycles=None):
+    def run(self, n_cycles=None, loud=False):
+        self.loud_status = loud
         if n_cycles is not None:
             self.cycles = n_cycles
         try:
@@ -408,13 +414,20 @@ class Observatory:
 
 
 
-if __name__=="__main__":
+if __name__ == "__main__":
 
     from config import site_config, site_name
-    g_dev['day'] = ptr_events.compute_day_directory()
+    day_str = ptr_events.compute_day_directory()
+    #breakpoint()
+    g_dev['day'] = day_str
+    next_day = ptr_events.Day_tomorrow
+    g_dev['d-a-y'] = day_str[0:4] + '-' + day_str[4:6] +  '-' + day_str[6:]
+    g_dev['next_day'] = next_day[0:4] + '-' + next_day[4:6] +  '-' + next_day[6:]
+    print('Next Day is:  ', g_dev['next_day'])
+
     #patch_httplib
-    print('\nNow is:  ', ptr_events.ephem.now())   #Add local Sidereal time at Midnight
+    print('\nNow is:  ', ptr_events.ephem.now(), g_dev['d-a-y'])   #Add local Sidereal time at Midnight
     o = Observatory(site_name, site_config)
     print(o.all_devices)
-    o.run(n_cycles=100000)
+    o.run(n_cycles=100000, loud=False)
 

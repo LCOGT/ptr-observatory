@@ -30,7 +30,7 @@ from astropy.coordinates import EarthLocation #SkyCoord, FK5, ICRS, FK4, Distanc
 
 ###This is important:  c ONE r
 core1_redis = redis.StrictRedis(host='10.15.0.15', port=6379, db=0, decode_responses=True)
-siteVersion = "20180811"
+siteVersion = "2019102"
 siteLatitude = 34.342930277777775    #  34 20 34.569   #34 + (20 + 34.549/60.)/60.
 siteLongitude = -119.68112805555556  #-(119 + (40 + 52.061/60.)/60.) 119 40 52.061 W
 siteElevation = 317.75

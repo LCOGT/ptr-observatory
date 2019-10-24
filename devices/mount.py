@@ -51,9 +51,23 @@ class Mount:
 #            #"TargetRightAscension": str(m.TargetRightAscension),
 #        }
 #        return status
+
+    def check_connect(self):
         
+        try:
+            if self.mount.Connected:
+                return
+            else:
+                print('Found mount not connected, reconnecting.')
+                self.mount.Connected = True
+                return
+        except:
+            print('Found mount not connected via try: block fail, reconnecting.')
+            self.mount.Connected = True
+            return
         
     def get_status(self):
+        self.check_connect()
         alt = self.mount.Altitude
         zen = round((90 - alt), 3)
         if zen > 90:
@@ -89,10 +103,12 @@ class Mount:
         elif self.tel == True:
             status = {            
                 f'timestamp': str(round(time.time(), 3)),
-                f'right_ascension': str(round(self.mount.RightAscension, 5)),
+                f'right_ascension': str(round(self.mount.RightAscension, 5)),  #RA reported as decimal hours.  Needs to be
+                                                                               #decimal degees or Sexagesimal in FITS header.
+                                                                               #HA can be reported as decimal hours in FITS.
                 f'declination': str(round(self.mount.Declination,4)),
                 f'sidereal_time': str(round(self.mount.SiderealTime, 5)),
-                f'tracking_right_ascension_rate': str(self.mount.RightAscensionRate),
+                f'tracking_right_ascension_rate': str(self.mount.RightAscensionRate),   #Will use asec/s not s/s as ASCOM does.
                 f'tracking_declination_rate': str(self.mount.DeclinationRate),
                 f'azimuth': str(round(self.mount.Azimuth, 3)),
                 f'altitude': str(round(alt, 3)),
@@ -109,7 +125,11 @@ class Mount:
             status = {'defective':  'status'}
         return status  #json.dumps(status)
     
+
+        
+    
     def get_quick_status(self, pre):
+        self.check_connect()
         alt = self.mount.Altitude
         zen = round((90 - alt), 3)
         if zen > 90:
@@ -156,6 +176,7 @@ class Mount:
         
         
     def get_average_status(self, pre, post):    #Add HA to this calculation.
+        self.check_connect()
         t_avg = round((pre[0] + post[0])/2, 3)
         #print(t_avg)
         ra_avg = round(Mount.two_pi_avg(pre[1],  post[1], 12), 6)
@@ -206,7 +227,7 @@ class Mount:
         req = command['required_params']
         opt = command['optional_params']
         action = command['action']
-
+        self.check_connect()
         if action == "go": 
             self.go_command(req, opt) 
         elif action == "stop":

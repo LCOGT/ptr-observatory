@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+ # -*- coding: utf-8 -*-
 """
 Spyder Editor
 
@@ -33,6 +33,7 @@ LONGESTSCREEN = 5/1440                  #2 min
 LONGESTDARK = (800/60)/1440             #13.33 min
 
 DAY_Directory = None
+Day_tomorrow = None
 dayNow = None
 ##****** NB NB NB    These are important, for now, global SITE state variables
 ##                   shared by other processes which load these modules.
@@ -296,7 +297,7 @@ be centered on the JD of local solar noon and will wun Midnight to midnight.
 
 '''
 def compute_day_directory(loud=False):
-    global DAY_Directory, dayNow
+    global DAY_Directory, dayNow, Day_tomorrow
     intDay = int(ephem.now())
     dayFrac = ephem.now() - intDay
     if dayFrac < 0.20833:
@@ -304,6 +305,7 @@ def compute_day_directory(loud=False):
     else:
         dayNow = intDay + 0.45
     ephem.date = ephem.Date(dayNow)
+    ephem.tomorrow = ephem.Date(dayNow + 1)
     dayStr = str(ephem.date).split()[0]
     dayStr = dayStr.split('/')
     #print('Day String', dayStr)
@@ -314,6 +316,18 @@ def compute_day_directory(loud=False):
     #print('Day String', dayStr)
     DAY_Directory = dayStr[0] + dayStr[1] + dayStr[2]
     if loud: print('DaDIR:  ', DAY_Directory)
+    
+    dayStr = str(ephem.tomorrow).split()[0]
+    dayStr = dayStr.split('/')
+    #print('Day String', dayStr)
+    if len(dayStr[1]) == 1:
+        dayStr[1] = '0' + dayStr[1]
+    if len(dayStr[2]) == 1:
+        dayStr[2] = '0' + dayStr[2]
+    #print('Day String', dayStr)
+    Day_tomorrow = dayStr[0] + dayStr[1] + dayStr[2]
+    if loud: print('DaDIR:  ', DAY_Directory)
+    
     return DAY_Directory
 
 compute_day_directory()
@@ -454,6 +468,7 @@ print('Events module reporting for duty. \n')
 
 print('Ephem date    :    ', dayNow)
 print('DayDir        :    ', DAY_Directory)
+print('Next day      :    ', Day_tomorrow)
 #    print('Beg Bias Dark :    ', ephem.Date(beginEveBiasDark))
 #    print('End Bias Dark :    ', ephem.Date(endEveBiasDark))
 #    print('Beg Scrn Flats:    ', ephem.Date(beginEveScreenFlats))
