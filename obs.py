@@ -248,6 +248,7 @@ class Observatory:
         device_name = cmd['device']
 
         #Get the device based on it's type and name, then parse the cmd.
+        print(device_name, cmd_instance)
         device = self.all_devices[device_name][cmd_instance]
         device.parse_command(cmd)
 
@@ -427,6 +428,10 @@ if __name__ == "__main__":
 
     #patch_httplib
     print('\nNow is:  ', ptr_events.ephem.now(), g_dev['d-a-y'])   #Add local Sidereal time at Midnight
+    try:
+         os.remove('Q:\\archive\\' + 'gf03'+ '\\newest.fits')
+    except:
+        print("Newest.fits not removed, catuion.")
     o = Observatory(site_name, site_config)
     print(o.all_devices)
     o.run(n_cycles=100000, loud=False)

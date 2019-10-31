@@ -39,27 +39,27 @@ or build a bank of calibrations are various temperatures.  Since we
 are able to hold -20C year-round we have no experience with scaling 
 combining calibrations from various temperatures. Dark current 
 declines exponentially by a factor of two for every -7C so correction
-to an intermediate temperaute requires some care.
+to an intermediate temperature requires some care.
 
-Start with taking 1023 HDR and LDR biases then a large number of 
-darks (I use 255) of a duration longer than what you plan for any
+Start with taking 511HDR and LDR biases then a large number of 
+darks (I use 127) of a duration longer than what you plan for any
 given actual exposure.  I use 300 seconds.
 
 Median combine themin the usual way, of course subtracting the superbias
 from the darks.
 
-I save these in float-32.  I divide the dark by the exposure time
-so its units are e-/sec.
+I save these in float32.  I divide the dark by the exposure time
+so its units are adu/sec.
 
 The most naive combination method can be effected by finding the scale
 between the low and high ranges.  Expose so the high gain image has a peak
-values around 3600 ADU, but the image can fall off from that central value
-somewhat.  Take say 15 of these
+values around 3600 ADU, but the images can fall off from that central value
+somewhat.  Take say 15 0r 31 of these -- star images are needed here
 
-Then take 15 low gain images, ideally interleaving the acquisition.  Median
-or 3-sigma clip mean to two sets then divide the hihg by the low.  The result
+Then take as many low gain images, ideally interleaving the acquisition.  Median
+or 3-sigma clip mean to two sets then divide the high by the low.  The result
 should be a image with the vast majority of the values tightly distributed
-about some value, like 28.xyz.  This is the ratio of the e-/adu gains of the
+about some value, like 17.xyz.  This is the ratio of the e-/adu gains of the
 two settings.
 
 Since this is a full image I find its median and use that value as the 'scale.'
@@ -87,11 +87,11 @@ to sauturate and go non-linear.  My choice of 3600 or so is based on the value
 FLI provides.  It might be less or more.  but there is no need to get too close
  to 4095 -- the maximum value for a 12 bit quantity.
 
-Based on detector named gf03, the scale is ~ 28 -- a bit less than 32 (5 bits.)
-So multiplying by 28 extends the range above 16 bits.  Since we are dealing with a 
+Based on detector named gf03, the scale is ~ 17 -- less than 32 (5 bits.)
+So multiplying by 17 extends the range above 16 bits.  Since we are dealing with a 
 float quantity that really does not matter.  However if you want to keep the merged 
 value < 2^16 then instead divide the High data by 2.0, divide the low range data by
-(28/2) and use a merge threshold of 3600/2.  Don;t forget to update gain in the 
+(17/2) and use a merge threshold of 3600/2.  Don't forget to update gain in the 
 header properly.
 
 There is no reason to do compaction to 2^16 unless some downstream application 
@@ -205,24 +205,29 @@ def calibrate (hdu, hdu_ldr, lng_path, frame_type='light', start_x=0, start_y=0)
     global super_bias, super_bias_ldr, super_dark_15, super_dark_30, super_dark_60, super_dark_300, \
            super_dark_300_ldr, super_flat_w, super_flat_HA, hotmap_300, hotpix_300, hotmap_300_ldr, hotpix_300_ldr
     loud = True
-    #breakpoint()    
     if super_bias is None:
         try:
-            sbHdu = fits.open(lng_path + 'hdr_mb_1.fits')
+            sbHdu = fits.open(lng_path + 'mb_1_hdr.fits')
             super_bias = sbHdu[0].data#.astype('float32')
+            #Temp fix
+            fix = np.where(super_bias > 400)
+            super_bias[fix] = super_bias.mean()
             sbHdu.close()
             quick_bias = True
-            if loud: print(lng_path + 'hdr_mb_1.fits', 'Loaded')
+            if loud: print(lng_path + 'mb_1_hdr.fits', 'Loaded')
         except:
             quick_bias = False
             print('WARN: No Bias Loaded.')
     if super_bias_ldr is None and hdu_ldr is not None:
         try:
-            sbHdu = fits.open(lng_path + 'ldr_mb_1.fits')
+            sbHdu = fits.open(lng_path + 'mb_1_ldr.fits')
             super_bias_ldr = sbHdu[0].data#.astype('float32')
+            #Temp fix
+            fix = np.where(super_bias_ldr > 400)
+            super_bias[fix] = super_bias_ldr.mean()
             sbHdu.close()
             quick_bias_ldr = True
-            if loud: print(lng_path + 'ldr_mb_1.fits', 'Loaded')
+            if loud: print(lng_path + 'mb_1_ldr.fits', 'Loaded')
         except:
             quick_bias_ldr = False
             print('WARN: No Bias Loaded.')
@@ -261,23 +266,29 @@ def calibrate (hdu, hdu_ldr, lng_path, frame_type='light', start_x=0, start_y=0)
 #            print('WARN: No dark Loaded.')
     if super_dark_300 is None:
         try:
-            sdHdu = fits.open(lng_path + 'hdr_md_1_300.fits')
+            sdHdu = fits.open(lng_path + 'md_1_300_hdr.fits')
             dark_300_exposure_level = sdHdu[0].header['EXPTIME']
             super_dark_300  = sdHdu[0].data#.astype('float32')
+            print('sdark_HDR:  ',super_dark_300.min(), super_dark_300.mean(), super_dark_300.max())
             sdHdu.close()
+            fix = np.where(super_dark_300 < 0)
+            super_dark_300[fix] = 0
             quick_dark_300 = True
-            print(lng_path + 'hdr_md_1_300.fits', 'Loaded')
+            print(lng_path + 'md_1_300_hdr.fits', 'Loaded')
         except:
             quick_dark_300 = False
             print('WARN: No dark Loaded.')
     if super_dark_300_ldr is None and hdu_ldr is not None:
         try:
-            sdHdu = fits.open(lng_path + 'ldr_md_1_300.fits')
+            sdHdu = fits.open(lng_path + 'md_1_300_ldr.fits')
             dark_300_ldr_exposure_level = sdHdu[0].header['EXPTIME']
             super_dark_300_ldr  = sdHdu[0].data#.astype('float32')
+            print('sdark_LDR:  ',super_dark_300_ldr.min(), super_dark_300_ldr.mean(), super_dark_300_ldr.max())
             sdHdu.close()
+            fix = np.where(super_dark_300_ldr < 0)
+            super_dark_300_ldr[fix] = 0
             quick_dark_300_ldr = True
-            print(lng_path + 'ldr_md_1_300.fits', 'Loaded')
+            print(lng_path + 'md_1_300_ldr.fits', 'Loaded')
         except:
             quick_dark_300_ldr = False
             print('WARN: No dark Loaded.')
@@ -336,8 +347,9 @@ def calibrate (hdu, hdu_ldr, lng_path, frame_type='light', start_x=0, start_y=0)
             quick_hotmap_300_ldr= False
             print('Hotmap_300_ldr failed to load.')
             
-    #Here we actually calibrate
-
+    #Here we actually calibrate.  #NBNBNB Should we be using CCD Proc routines and stip off the excess information in other
+    #headers?
+    #breakpoint()
     while True:   #Use break to drop through to exit.  i.e., do not calibrte frames we are acquring for calibration.
         cal_string = ''
         img = hdu.data.astype('float32')
@@ -381,7 +393,7 @@ def calibrate (hdu, hdu_ldr, lng_path, frame_type='light', start_x=0, start_y=0)
             if d_exp >= data_exposure_level and d_exp >= 1:
                 scale = data_exposure_level/d_exp
                 img =  (img - s_dark[start_x:(start_x + img.shape[0]), start_y:(start_y + img.shape[1])])
-                print('QuickDark result: ', scale, imageStats(img, loud) )
+                print('QuickDark  scale/result: ', round(scale, 4), imageStats(img, loud))
 #                scale2 = scale*1.1
 #                img2 =  (img - s_dark*scale2)
 #                print('QuickDark result: ', scale2)
@@ -529,13 +541,25 @@ def calibrate (hdu, hdu_ldr, lng_path, frame_type='light', start_x=0, start_y=0)
         if cal_string == '':
             cal_string = 'Uncalibrated'
         hdu_ldr.header['CALHIST'] = cal_string
+        
+        #breakpoint()
         hdu_ldr.data = img.astype('float32')
-        print(hdu.data.max(), hdu_ldr.data.max(), hdu_ldr.data.max()*20.8)
-        ldr_scaled = hdu_ldr.data*20.8
+        print(hdu.data.max(), hdu_ldr.data.max(), hdu_ldr.data.max()*17.2314281698)
+        ldr_scaled = hdu_ldr.data*17.2314281698    #20191025b
         jam = np.where(hdu.data > 3600)
         print('jam length:  ', len(jam[0]))
-        hdu.data[jam] = hdu_ldr.data[jam]*20.8
+        hdu.data[jam] = hdu_ldr.data[jam]*17.23142816988    #20191025b
         print('hdu.data.max():  ', hdu.data.max())
+        #Temp fix for Tim Bq.
+        #breakpoint()
+        big_max = hdu.data.max()
+        fix = np.where(hdu.data < 0)
+        print('# of 0 fix pixels:  ', len(fix[0]))
+        hdu.data[fix] = 0
+        if big_max > 65535:
+            hdu.data = hdu.data*65500/big_max
+        #Just trimmed any spurious negatives and scaled to 0:65550
+        
         break
         
     return
@@ -570,7 +594,7 @@ class Camera:
             self.camera.SetCCDTemperature = -20.0
             self.camera.CoolerOn = True
             self.current_filter = 0
-            print('Contol is ASCOM camera driver.')
+            print('Control is ASCOM camera driver.')
 
         else:
 
@@ -581,7 +605,7 @@ class Camera:
             self.camera.TemperatureSetpoint = -20.
             self.camera.CoolerOn = True
             self.current_filter = 0
-            print('Contol is Maxim camera interface.')
+            print('Control is Maxim camera interface.')
         self.exposure_busy = False
         #Set camera to a sensible default state -- this should ultimately be configuration settings 
         self.camera_model = "FLI Kepler 4040 #gf03"
@@ -1052,7 +1076,8 @@ class Camera:
                         g_dev['foc'].get_quick_status(self.pre_foc)
                         g_dev['rot'].get_quick_status(self.pre_rot)
                         g_dev['mnt'].get_quick_status(self.pre_mnt)  #stage two quick_get_'s symmetric around exposure
-                        self.exposure_busy = True                        
+                        self.exposure_busy = True
+                        #breakpoint()                        
                         print('First Entry', c.StartX, c.StartY, c.NumX, c.NumY, exposure_time)
                         self.t2 = time.time()       #Immediately before Exposure
                         #c.SetFullFrame()
@@ -1147,22 +1172,21 @@ class Camera:
                         hdul = fits.HDUList([hdu])
                         try:
                             #This should be a very fast disk.
-                            pass
-                            #hdul.writeto('Q:\\archive\\' + 'gf03'+ '\\newest.fits', overwrite=True)
+                            hdul.writeto('Q:\\archive\\' + 'gf03'+ '\\newest.fits', overwrite=True)
                             #For reasons unclear, this file never seems to close properly.  20191022 WER
                         except:
                             print('Write to newest.fits failed because it is busy, -- reason unknown.')
                             os.remove('Q:\\archive\\' + 'gf03'+ '\\newest.fits')
                             return
                         try:
-                            breakpoint()
+                            #breakpoint()
                             ldr_handle = glob.glob('Q:\\archive\\gf03\\raw_kepler\\' + g_dev['d-a-y'] + '\\' + '*low.fits')
                             hdu2 =  fits.open(ldr_handle[0])
                             hdu2 = hdu2[0]   #get the Primary header and date
-                            hdr_handle = glob.glob('Q:\\archive\\gf03\\raw_kepler\\' + g_dev['d-a-y'] + '\\' + '*high.fits')
-                            hdul =  fits.open(hdr_handle[0])
-                            hdul = hdul[0]
-                            hdul.writeto('Q:\\archive\\' + 'gf03'+ '\\newest.fits', overwrite=True)
+#                            hdr_handle = glob.glob('Q:\\archive\\gf03\\raw_kepler\\' + g_dev['d-a-y'] + '\\' + '*high.fits')
+#                            hdul =  fits.open(hdr_handle[0])
+#                            hdul = hdul[0]
+#                            hdul.writeto('Q:\\archive\\' + 'gf03'+ '\\newest.fits', overwrite=True)
                         except:
                             try:
                                 ldr_handle = glob.glob('Q:\\archive\\gf03\\raw_kepler\\' + g_dev['next_day'] + '\\' + '*low.fits')
@@ -1297,9 +1321,10 @@ class Camera:
                         hdu.header['GAINUNIT'] = 'e-/ADU'
                         hdu.header['GAIN'] = 7.5   #20190911   LDR-LDC mode set in ascom
                         hdu.header['RDNOISE'] = 4.86
-                        hdu.header['CMOSMODE'] = 'LDR-LDC'  #Need to figure out how to read this from setup.
+                        hdu.header['CMOSCAM'] = True
+                        hdu.header['CMOSMODE'] = 'LDR-HDC'  #Need to figure out how to read this from setup.
                         hdu.header['SATURATE'] = 3600
-                        hdu.header['PIXSCALE'] = 0.85
+                        hdu.header['PIXSCALE'] = 0.85*self.camera.BinX
 
                         #Need to assemble a complete header here
                         #hdu1.writeto('Q:\\archive\\ea03\\new2b.fits')#, overwrite=True)
@@ -1362,6 +1387,7 @@ class Camera:
                         hdu.data.astype('float32')
                         #put a _ldc header in second position to do a reduction/merge
                         calibrate(hdu, hdu2, lng_path, frame_type, start_x=start_x, start_y=start_y)
+                        #breakpoint()
                         hdu1.writeto(cal_path + cal_name, overwrite=True)   #THis needs qualifying and should not be so general.
                         hdu1.writeto(im_path + raw_name01, overwrite=True)
 #                        
@@ -1372,6 +1398,7 @@ class Camera:
 ##                            hdu.data = hdu.data[:, :2048] - medover
 ##                        else:
 ##                            hdu.data = hdu.data # - 1310.0     #This deaals with all subframes
+                        do_sep = False
                         if do_sep:
                             img = hdu.data.copy().astype('float')
                             bkg = sep.Background(img)
@@ -1452,7 +1479,7 @@ class Camera:
                             pass
                         
                                 
-                            
+                        hdu.data = hdu.data.astype('uint16')   
                         resized_a = resize(hdu.data, (768, 768), preserve_range=True)
                         #print(resized_a.shape, resized_a.astype('uint16'))
                         hdu.data = resized_a.astype('uint16')
@@ -1464,9 +1491,9 @@ class Camera:
                         imean = np.mean(hdu.data)                                             
                         img3 = hdu.data/(imean + 3*istd)
                         fix = np.where(img3 >= 0.999)
-                        fiz = np.where(img3 <= -0.1)
+                        fiz = np.where(img3 < 0)
                         img3[fix] = .999
-                        img3[fiz] = -0.1
+                        img3[fiz] = 0
                         #img3[:, 384] = 0.995
                         #img3[384, :] = 0.995
                         print(istd, img3.max(), img3.mean(), img3.min())
@@ -1499,6 +1526,19 @@ class Camera:
                 #This shouldbe counted down for a loop cancel.
                 continue
         self.t8 = time.time()
+        #definitely try to clean up any messes.
+        try:
+            hdul.close()
+        except:
+            pass
+        try:
+            hdu.close()
+        except:
+            pass
+        try:
+            hdu2.close()
+        except:
+            pass
         return
             
 
