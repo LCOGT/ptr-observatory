@@ -6,8 +6,45 @@ Created on Sat Oct 26 16:35:36 2019
 """
 
 '''
-The goal of this module is to produce a set of LNG masters for a specified camera, including CMOS cameras.  Implicit for
-correct generation of masters is running the necessary scripts to produce the calibratin frames. in the proper quantities
+
+Update 20191031 @ ELP
+
+Today's version explores cleaning up this code with an eye towards 'quick'
+
+This code is unweildy and near to spagetti.   We need a number of support modules and at least one laryer of enclosing
+module to amke things simpler and modular.
+
+The notion of a camera is made more complex when Maxim is used, and as well if Maxim is controlling filters or 
+if filters are independently managed.
+
+In the spirit of not disrupting existing ACP/Maxim setups, some of them may use maxim for calibration.  I think in general
+this will be limited to CCD cameras or possibly CMOS cameras which do image merge. 
+
+It is reasonable to expect site.config dictionary to define the configuration in sufficient detail that there will be non
+in-code site specific hacks.
+
+On calibration.  It makes sens to have a way to gather calibratin frames and send them to Bonsai operating at AWS.  But long
+run that is a lot of traffic whihc results in a small numbers of AWS side calibration files.  The goal will be to
+shunt the calibration files to a subset of BONSAI running at site (presumably on windows) and produce the calibration masters
+at site and send them to AWS.  However we reguire bit for bit equality for master produced by either path.
+
+Provenance is important:  As filters change, or a filter wheel is 'dusted' or a camera is changed or baked out, these events
+need to be incorporated into the information stream. 
+
+Last, the number of shutter operations needs to be incorporated into the data stream in some sensible way.  All raw data is 
+recorded locally and groomed so that the respective site does not run our of disk during an operating night.
+
+For CMOS cameras a special exposure/reduction mode may be implemented that is as fast as possible for focusing and other 
+image evaluation uses.  Although valid, it is assumed that 'Quicks' are not necessarily scientific or archival quality.
+
+For Qucik mode exposures it is OK to break the layering in return for higher speed.  As a general rule Quicks may include
+2:2 bins or if 1:1, subframes of 50% of the chip area (and recurively smaller subframes or bins.)
+
+__Older stuff ___ Below.
+
+ 
+The goal of this module is to apply a set of LNG masters for a specified camera, including CMOS cameras.  Implicit for
+correct generation of masters is running the necessary scripts to produce the calibration frames. in the proper quantities
 and names as required by this code.  The Masters are placed in the LNG directory as well as dated versions in lng_history.  As
 well, masters are uploaded to AWS in a day-dated form.  Masters for any give daydirecotry are indicated _eve_(ning) or 
 _mor_(ning) as required.
@@ -220,7 +257,7 @@ def create_super_bias(input_images, out_path, super_name):
     num = 0
     while len(input_images) > 0:  #I.e., there are chuncks to combine
         inputs = []
-        print('SB chunk:  ', len(input_images[0]), input_images[0])
+        print('SB chunk:  ', num+1, len(input_images[0]), input_images[0])
         len_input = len(input_images[0])
         for img in range(len_input):
             print(input_images[0][img])
@@ -230,25 +267,19 @@ def create_super_bias(input_images, out_path, super_name):
             num += 1
         print(inputs[-1])   #show the last one
         combiner = Combiner(inputs)
-        if len(inputs) > 9:              #This is a pretty arbitrary decison.
-            im_temp = combiner.median_combine()
-        else:
-            im_temp = combiner.median_combine()            
-        im_temp.data = im_temp.data.astype(np.float32)
+        combiner.sigma_clipping(low_thresh=2, high_thresh=3, func = np.ma.mean)        
+        im_temp = combiner.average_combine()
         print(im_temp.data[2][3])
-        #breakpoint()
-        super_image.append(im_temp)     #Change to sigma-clip
+        super_image.append(im_temp)    
         combiner = None   #get rid of big data no longer needed.
         inputs = None
         input_images.pop(0)
     #print('SI:  ', super_image)
-    #Now we combint the outer data to make the master
-    breakpoint()
+    #Now we combine the outer data to make the master
+    #breakpoint()
     combiner = Combiner(super_image)
-    if len(super_image) > 9:     
-        super_img = combiner.median_combine()
-    else:
-        super_img = combiner.median_combine()        
+    combiner.sigma_clipping(low_thresh=2, high_thresh=3, func = np.ma.mean)
+    super_img= combiner.average_combine()
     super_image = None    #Again get rid of big stale data
     combiner = None
     super_img.data = super_img.data.astype(np.float32) 
@@ -302,9 +333,9 @@ def create_super_dark(input_images, out_path, super_name, super_bias_name):
             num += 1
         combiner = Combiner(inputs)
         if len(inputs) > 9:
-            im_temp= combiner.median_combine()
+            im_temp= combiner.sigma_clipping(low_thresh=2, high_thresh=3, func = np.ma.mean)
         else:
-            im_temp = combiner.median_combine()
+            im_temp = combiner.sigma_clipping(low_thresh=2, high_thresh=3, func = np.ma.mean)
         im_temp.data = im_temp.data.astype(np.float32)
         print(im_temp.data[2][3])
         #breakpoint()
@@ -315,9 +346,9 @@ def create_super_dark(input_images, out_path, super_name, super_bias_name):
     #Now we combint the outer data to make the master
     combiner = Combiner(super_image)
     if len(super_image) > 9:     
-        super_img = combiner.median_combine()
+        super_img = combiner.sigma_clipping(low_thresh=2, high_thresh=3, func = np.ma.mean)
     else:
-        super_img = combiner.median_combine()        
+        super_img = combiner.sigma_clipping(low_thresh=2, high_thresh=3, func = np.ma.mean)       
     super_image = None    #Again get rid of big stale data
     combiner = None
     super_img.data = super_img.data.astype(np.float32)
@@ -338,10 +369,11 @@ def create_super_dark(input_images, out_path, super_name, super_bias_name):
    
 def make_master_bias (alias, path, selector_string, out_file):
     file_list = glob.glob(path + selector_string)
+    file_list.sort()
     print('# of files:  ', len(file_list))
     print(file_list)
-    if len(file_list) > 15:
-        file_list = file_list[0:15]
+    if len(file_list) > 1023:
+        file_list = file_list[0:1023]
     chunk = int(math.sqrt(len(file_list)))
     if chunk %2 == 0: chunk += 1 
     if chunk > 31: chunk = 31
@@ -353,6 +385,7 @@ def make_master_bias (alias, path, selector_string, out_file):
 def make_master_dark (alias, path, selector_string, out_file, super_bias_name):
     #breakpoint()
     file_list = glob.glob(path + selector_string)
+    file_list.sort
     print('# of files:  ', len(file_list))
     print(file_list)
     if len(file_list) > 63:
@@ -368,12 +401,12 @@ def make_master_dark (alias, path, selector_string, out_file, super_bias_name):
 if __name__ == '__main__':
 
     print (config.site_config['camera']['camera1']['alias'])
-    #make_master_bias('gf03', 'Q:/archive/gf03/raw_kepler/2019-10-26\\' , '*0.001s_2x2*-high*', 'mb_2_hdr.fits'  )
-    #make_master_bias('gf03', 'Q:/archive/gf03/raw_kepler/2019-10-26/' , '*0.001s_2x2*-low*', 'mb_2_ldr.fits'  )
-    #make_master_bias('gf03', 'Q:/archive/gf03/raw_kepler/2019-10-26/' , '*0.001s_1x1*-high*', 'mb_1_hdr.fits'  )
-    #make_master_bias('gf03', 'Q:/archive/gf03/raw_kepler/2019-10-26/' , '*0.001s_1x1*-low*', 'mb_1_ldr.fits'  )
-    make_master_dark('gf03', 'Q:/archive/gf03/raw_kepler/2019-10-27/' , '*300s_2x2*-high*', 'md_2_300_hdr.fits', 'mb_2_hdr.fits'   )
-    make_master_dark('gf03', 'Q:/archive/gf03/raw_kepler/2019-10-27/' , '*300s_2x2*-low*', 'md_2_300_ldr.fits', 'mb_2_ldr.fits'   )
+    #make_master_bias('gf03', 'Q:/archive/gf03/2019-11-15/' , '*b_2*.*', 'mb_2_hdr.fits'  )
+    #make_master_bias('gf03', 'Q:/archive/gf03/raw_kepler/2019-11-16/' , '*0.001s_2x2*-low*', 'mb_2_ldr.fits'  )
+    make_master_bias('gf03', 'Q:/archive/gf03/2019-11-15/' , '*b_1*.*', 'mb_1_hdr.fits'  )
+    make_master_bias('gf03', 'Q:/archive/gf03/raw_kepler/2019-11-16/' , '*0.001s_1x1*-low*', 'mb_1_ldr.fits'  )
+    #make_master_dark('gf03', 'Q:/archive/gf03/raw_kepler/2019-11-09/' , '*300s_2x2*-high*', 'md_2_300_hdr.fits', 'mb_2_hdr.fits'   )
+    #make_master_dark('gf03', 'Q:/archive/gf03/raw_kepler/2019-11-09/' , '*300s_2x2*-low*', 'md_2_300_ldr.fits', 'mb_2_ldr.fits'   )
     #make_master_dark('gf03', 'Q:/archive/gf03/raw_kepler/2019-10-26/' , '*300s_1x1*-high*', 'md_1_300_hdr.fits', 'mb_1_hdr.fits'   )
     #make_master_dark('gf03', 'Q:/archive/gf03/raw_kepler/2019-10-26/' , '*300s_1x1*-low*', 'md_1_300_ldr.fits', 'mb_1_ldr.fits'   )
     #make_master_dark('gf03', 'Q:/archive/gf03/raw_kepler/2019-10-26/' , '*900s_1x1*-high*', 'md_1_900_hdr.fits', 'mb_1_hdr.fits'   )

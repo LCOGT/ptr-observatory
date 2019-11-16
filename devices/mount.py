@@ -1,5 +1,7 @@
+import threading
 import win32com.client
 import pythoncom
+import serial
 import time, json
 from math import cos, radians
 from global_yard import g_dev 
@@ -18,6 +20,7 @@ class Mount:
         self.rdsys = 'J.now'
         self.inst = 'tel1'
         self.tel = tel
+        print('Can Move Axis is Possible.', self.mount.CanMoveAxis(0), self.mount.CanMoveAxis(1))
         
 
         if not tel:
@@ -25,6 +28,16 @@ class Mount:
         else:
             print(f"Tel/OTA connected.")
         print(self.mount.Description)
+        self._paddle = serial.Serial('COM38', timeout=0.1)
+        self._paddle.write(b'ver\n')
+        print(self._paddle.read(13).decode()[-8:])
+        self._paddle.write(b"gpio iodir 00ff\n")
+        #self._paddle.write(b"gpio readall\n")
+        print('a:',self._paddle.read(20).decode())
+        print('b:',self._paddle.read(20).decode())
+        print('c:',self._paddle.read(20).decode())
+        #self.paddle_thread = threading.Thread(target=self.paddle(self._paddle, self.mount), args=())
+        #self.paddle_thread.start()
 
 #    def get_status(self):
 #        m = self.mount
@@ -305,15 +318,170 @@ class Mount:
         print(self.mount.CanPark)
         self.mount.Park()
         
+    def paddle(self, _paddle, _mount):
+        '''
+        The real way this should work is monitor if a speed button is pushed, then log the time and
+        start the thread.  If no button pushed for say 30 seconds, stop thread and re-join.  That way
+        image operations are minimally disrupted.
+        
+        Normally this will never be started, unless we are operating locally in the observatory.
+        '''
+        breakpoint()
+        while True:
+            time.sleep(0.3)
+            self._paddle.write(b"gpio readall\n")
+            temp = self._paddle.read(21).decode()
+            #print (len(temp), '|' + temp[16:18] +'|')
+            button = temp[17]
+            spd= temp[16]
+            direc = ''
+            speed = 0.0
+            if button == 'E': direc = 'N'
+            if button == 'B': direc = 'S'
+            if button == 'D': direc = 'E'
+            if button == '7': direc = 'W'
+            if button == 'C': direc = 'NE'
+            if button == '9': direc = 'SE'
+            if button == '3': direc = 'SW'
+            if button == '6': direc = 'NW'
+            if spd ==  'F': 
+                speed = 15.
+                EW = 1
+                NS = 1
+            if spd == 'E': 
+                speed = 15.
+                EW = -1
+                NS = 1
+            if spd ==  'D': 
+                speed = 15.
+                EW = 1
+                NS = -1
+            if spd ==  'C': 
+                speed = 15.
+                EW = -1
+                NS = -1
+            if spd ==  'B': 
+                speed = 45.
+                EW = 1
+                NS = 1
+            if spd == 'A': 
+                speed = 45.
+                EW = -1
+                NS = 1
+            if spd ==  '9': 
+                speed = 45.
+                EW = 1
+                NS = -1
+            if spd ==  '8': 
+                speed = 45.
+                EW = -1
+                NS = -1
+            if spd ==  '7': 
+                speed = 135.
+                EW = 1
+                NS = 1
+            if spd == '6': 
+                speed = 135.
+                EW = -1
+                NS = 1
+            if spd ==  '5': 
+                speed = 135.
+                EW = 1
+                NS = -1
+            if spd ==  '4': 
+                speed = 135.
+                EW = -1
+                NS = -1
+            if spd ==  '3': 
+                speed = 405.
+                EW = 1
+                NS = 1
+            if spd == '2': 
+                speed = 405.
+                EW = -1
+                NS = 1
+            if spd ==  '1': 
+                speed = 405.
+                EW = 1
+                NS = -1
+            if spd ==  '0': 
+                speed = 405.
+                EW = 1
+                NS = 1
+
+            #print(button, spd, direc, speed)
+#            if direc != '':
+#                print(direc, speed)
+            if direc == 'N': 
+                _mount.DeclinationRate = NS*speed
+                self.paddeling = True
+                print(direc,  NS*speed)
+            if direc == 'S':
+                _mount.DeclinationRate = -NS*speed
+                self.paddeling = True
+                print(direc,  -NS*speed)
+            if direc == 'E':
+                _mount.RightAscensionRate = EW*speed/15.   #Not quite the correct divisor.
+                self.paddeling = True
+                print(direc, EW*speed/15.)
+            if direc == 'W': 
+                _mount.RightAscensionRate = -EW*speed/15.
+                self.paddeling = True
+                print(direc, -EW*speed/15.)
+            if direc == '': 
+                _mount.DeclinationRate = 0.0
+                _mount.RightAscensionRate = 0.0
+                self.paddeling = False
+            
+            
+        
+        '''
+         class Darkslide(object):
+        
+           def __init__(self, pCOM):
+               self.slideStatus = 'unknown'
+        
+           def openDarkslide(self):
+               self._com = serial.Serial(pCom, timeout=0.1)
+               self._com.write(b'@')
+               self.slideStatus = 'open'
+               self._com.close()
+        
+           def closeDarkslide(self):
+               self._com = serial.Serial(pCom, timeout=0.1)
+               self._com.write(b'A')
+               self.slideStatus = 'closed'
+               self._com.close()
+        
+           def darkslideStatus(self):
+               return self.slideStatus
+        
+        
+        class Probe(object):
+        
+            def __init__(self, pCom):
+                self.probePosition = None
+                print('Probe class called with:  ', pCom)
+                self.commPort = pCom
+        
+            def probeRead(self):
+               with serial.Serial(self.commPort, timeout=0.3) as com:
+                   com.write(b'R1\n')
+                   self.probePosition = float(com.read(6).decode())
+                   com.close()
+                   print(self.probePosition)
+        '''
+
+        
 if __name__ == '__main__':
     req = {'time': 1,  'alias': 'ea03', 'frame': 'Light', 'filter': 2}
     opt = {'area': 50}
     m = Mount('ASCOM.PWI4.Telescope', "mnt1", {})
-    pre=[]
-    post=[]
-    m.get_quick_status(pre)
-    time.sleep(2)
-    m.get_quick_status(post)
-    print(m.get_average_status(pre, post))
+#    pre=[]
+#    post=[]
+#    m.get_quick_status(pre)
+#    time.sleep(2)
+#    m.get_quick_status(post)
+#    print(m.get_average_status(pre, post))
     #print(c.get_ascom_description())
 

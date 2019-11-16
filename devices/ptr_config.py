@@ -30,14 +30,14 @@ from astropy.coordinates import EarthLocation #SkyCoord, FK5, ICRS, FK4, Distanc
 
 ###This is important:  c ONE r
 core1_redis = redis.StrictRedis(host='10.15.0.15', port=6379, db=0, decode_responses=True)
-siteVersion = "2019102"
+siteVersion = "20191102"
 siteLatitude = 34.342930277777775    #  34 20 34.569   #34 + (20 + 34.549/60.)/60.
 siteLongitude = -119.68112805555556  #-(119 + (40 + 52.061/60.)/60.) 119 40 52.061 W
 siteElevation = 317.75
 siteRefTemp = 15.0         #These should be a monthly average data.
 siteRefPress = 973.0       #mbar
-siteName = "Photon Ranch"
-siteAbbreviation = "PTR"
+siteName = "West Mountain Drive, SBA, USA"
+siteAbbreviation = "WMD"
 siteCoordinates = EarthLocation(lat=siteLatitude*u.deg, \
                                 lon=siteLongitude*u.deg,
                                 height=siteElevation*u.m)
@@ -47,7 +47,7 @@ tzOffset = -7
 
 mountOne = "PW_L500"
 mountOneAscom = None
-cameraOneOne = "ea03"
+cameraOneOne = "qf03"
 
 ##NB Need to implement a clearer dual wheel scheme.
 #filters are 1 to three letter generic, followed optionally by a 3 didgit

@@ -27,7 +27,7 @@ site_config = {
                              #since this is a serious place where misconfigurations occur.  We run on
                              #UTC and all translations to local time are 'informational.'  PTR will
                              #Not accept observatories whose master clocks run on local time, or where
-                             #the longitude and value of UTC disagree by more than a hour or so.
+                             #the longitude and value of UTC disagree by more than a smidegon.
     'latitude': '34.34293028',     #Decimal degrees, North is Positive
     'longitude': '-119.68112805',   #Decimal degrees, West is negative
     'elevation': '317.75',    # meters above sea level

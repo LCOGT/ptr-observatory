@@ -6,7 +6,7 @@
 """
 IMPORTANT TODOs:
     
-Send Postage Stamp
+This body of code needs to be refactored, particularly the camera module which is too convoluted.
 
 Flash calibrate from LNG  - Hot and cold pixel repair
 
@@ -398,7 +398,7 @@ class Observatory:
         
                 with open(im_path + name , 'rb') as f:
                     files = {'file': (im_path + name, f)}
-                    print('.>')
+                    print('.>', str(im_path + name))
                     start_send = time.time()
                     #print('\n\n\nStart send at:  ', start_send, '\n\n\n')
                     http_response = requests.post(aws_resp['url'], data=aws_resp['fields'], files=files)

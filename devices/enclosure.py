@@ -107,7 +107,7 @@ class Enclosure:
             self.state = 'Open, Wx OK, in Observing window.'    #A descriptive string of the state of the enclosure
             self.cycles += 1           #if >=3 inhibits reopening for Wx    #NBNBN THis needs to be persistend across envocatins of the code when testing.
             self.wait_time = 0        #A countdown to re-open
-            self.enclosure.OpenShutter()
+            #self.enclosure.OpenShutter()
 
 
             

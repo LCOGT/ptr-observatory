@@ -30,6 +30,8 @@ import ptr_config
 #import ptr_bz2
 
 '''
+
+Quick images store little, and are mainly for focus eploration.
 Thoughts on how to merge CMOS images.
 
 The detector in question is:  G-Sense 4040. The camera is a FLI Kepler.
@@ -151,7 +153,6 @@ def imageStats(img_img, loud=False):
 
 def median8(img, hot_pix):
     #print('1: ',img_img.data)
-    #breakpoint()
     axis1 = img.shape[0]
     axis2 = img.shape[1]
 
@@ -200,7 +201,7 @@ super_flat_HA = None
 
 #This is a brute force linear version. This needs to be more sophisticated and camera independent.
 
-def calibrate (hdu, hdu_ldr, lng_path, frame_type='light', start_x=0, start_y=0):
+def calibrate (hdu, hdu_ldr, lng_path, frame_type='light', start_x=0, start_y=0, quick=False):
     #These variables are gloal in the sense they persist between calls (memoized in a form)
     global super_bias, super_bias_ldr, super_dark_15, super_dark_30, super_dark_60, super_dark_300, \
            super_dark_300_ldr, super_flat_w, super_flat_HA, hotmap_300, hotpix_300, hotmap_300_ldr, hotpix_300_ldr
@@ -211,20 +212,20 @@ def calibrate (hdu, hdu_ldr, lng_path, frame_type='light', start_x=0, start_y=0)
             super_bias = sbHdu[0].data#.astype('float32')
             #Temp fix
             fix = np.where(super_bias > 400)
-            super_bias[fix] = super_bias.mean()
+            super_bias[fix] = int(super_bias.mean())
             sbHdu.close()
             quick_bias = True
             if loud: print(lng_path + 'mb_1_hdr.fits', 'Loaded')
         except:
             quick_bias = False
             print('WARN: No Bias Loaded.')
-    if super_bias_ldr is None and hdu_ldr is not None:
+    if not quick and super_bias_ldr is None and hdu_ldr is not None:
         try:
             sbHdu = fits.open(lng_path + 'mb_1_ldr.fits')
             super_bias_ldr = sbHdu[0].data#.astype('float32')
             #Temp fix
             fix = np.where(super_bias_ldr > 400)
-            super_bias[fix] = super_bias_ldr.mean()
+            super_bias[fix] = int(super_bias_ldr.mean())
             sbHdu.close()
             quick_bias_ldr = True
             if loud: print(lng_path + 'mb_1_ldr.fits', 'Loaded')
@@ -278,7 +279,7 @@ def calibrate (hdu, hdu_ldr, lng_path, frame_type='light', start_x=0, start_y=0)
         except:
             quick_dark_300 = False
             print('WARN: No dark Loaded.')
-    if super_dark_300_ldr is None and hdu_ldr is not None:
+    if  not quick and super_dark_300_ldr is None and hdu_ldr is not None:
         try:
             sdHdu = fits.open(lng_path + 'md_1_300_ldr.fits')
             dark_300_ldr_exposure_level = sdHdu[0].header['EXPTIME']
@@ -312,7 +313,7 @@ def calibrate (hdu, hdu_ldr, lng_path, frame_type='light', start_x=0, start_y=0)
             if loud: print(lng_path + 'ldr_mf_1_HA.fits', 'Loaded')
         except:
             quick_flat_HA = False
-            print('WARN: No HA Flat/Lum Loaded.')
+            if not quick: print('WARN: No HA Flat/Lum Loaded.')
 #    if coldmap_120 is None:
 #        try:
 #            shHdu = fits.open(lng_path + 'ldr_coldmap_1_120.fits')
@@ -334,8 +335,8 @@ def calibrate (hdu, hdu_ldr, lng_path, frame_type='light', start_x=0, start_y=0)
             print(lng_path + 'hdr_hotmap_300.fits', 'Loaded, Length = ', len(hotpix_300[0]))
         except:
             quick_hotmap_300= False
-            print('Hotmap_300 failed to load.')
-    if hotmap_300_ldr is None and hdu_ldr is not None:
+            if not quick: print('Hotmap_300 failed to load.')
+    if  not quick and hotmap_300_ldr is None and hdu_ldr is not None:
         try:
             shHdu = fits.open(lng_path + 'ldr_hotmap_300.fits')
             hotmap_300_ldr = shHdu[0].data#.astype('uint16')
@@ -345,21 +346,25 @@ def calibrate (hdu, hdu_ldr, lng_path, frame_type='light', start_x=0, start_y=0)
             print(lng_path + 'ldr_hotmap_300.fits', 'Loaded, Length = ', len(hotpix_300_ldr[0]))
         except:
             quick_hotmap_300_ldr= False
-            print('Hotmap_300_ldr failed to load.')
+            if not quick: print('Hotmap_300_ldr failed to load.')
             
     #Here we actually calibrate.  #NBNBNB Should we be using CCD Proc routines and stip off the excess information in other
     #headers?
-    #breakpoint()
     while True:   #Use break to drop through to exit.  i.e., do not calibrte frames we are acquring for calibration.
+        #breakpoint()
         cal_string = ''
         img = hdu.data.astype('float32')
-        if loud: print('InputImage', imageStats(img, loud))
-        #breakpoint()
+        if not quick:
+            img = hdu.data.astype('float32')
+            if loud: print('InputImage', imageStats(img, loud))
+        else:
+            img = hdu.data
         if frame_type == 'bias': break
         if super_bias is not None:
-            print(start_x, start_x + img.shape[0], start_y, start_y + img.shape[1])
+            if not quick: print(start_x, start_x + img.shape[0], start_y, start_y + img.shape[1])
             img = img - super_bias[start_x:(start_x + img.shape[0]), start_y:(start_y + img.shape[1])]  #hdu.header['NAXIS2, NAXIS1']
-            if loud: print('QuickBias result:  ',imageStats(img, loud))
+            if not quick: 
+                if loud: print('QuickBias result:  ',imageStats(img, loud))
             cal_string += 'B'
         data_exposure_level = hdu.header['EXPTIME']
         if frame_type == 'dark': 
@@ -388,12 +393,12 @@ def calibrate (hdu, hdu_ldr, lng_path, frame_type='light', start_x=0, start_y=0)
         else:
             do_dark = False  
         if do_dark:
-            #breakpoint()
         #Need to verify dark is not 0 seconds long!
             if d_exp >= data_exposure_level and d_exp >= 1:
                 scale = data_exposure_level/d_exp
                 img =  (img - s_dark[start_x:(start_x + img.shape[0]), start_y:(start_y + img.shape[1])])
-                print('QuickDark  scale/result: ', round(scale, 4), imageStats(img, loud))
+                if not quick:
+                    print('QuickDark  scale/result: ', round(scale, 4), imageStats(img, loud))
 #                scale2 = scale*1.1
 #                img2 =  (img - s_dark*scale2)
 #                print('QuickDark result: ', scale2)
@@ -421,7 +426,7 @@ def calibrate (hdu, hdu_ldr, lng_path, frame_type='light', start_x=0, start_y=0)
 #                img2 =  (img - s_dark*scale)    #put back to correct            
                 cal_string += ', D'
             else:
-                print('INFO:  Dark exposure too small, skipped this step.')           
+                if not quick: print('INFO:  Dark exposure too small, skipped this step.')           
 
         img_filter = hdu.header['FILTER']
         if frame_type[-4:]  == 'flat': break       #Note frame type end inf 'flat, e.g arc_flat, screen_flat, sky_flat
@@ -436,7 +441,7 @@ def calibrate (hdu, hdu_ldr, lng_path, frame_type='light', start_x=0, start_y=0)
             do_flat = False
         if do_flat: # and not g_dev['seq'].active_script == 'make_superscreenflats':
             img = img/s_flat
-            print('QuickFlat result:  ', imageStats(img, loud))
+            if not quick: print('QuickFlat result:  ', imageStats(img, loud))
             
             cal_string +=', SCF'
         #median8(img, h_pix)
@@ -445,12 +450,11 @@ def calibrate (hdu, hdu_ldr, lng_path, frame_type='light', start_x=0, start_y=0)
     if cal_string == '':
         cal_string = 'Uncalibrated'
     hdu.header['CALHIST'] = cal_string
-    hdu.data = img.astype('float32')
-    while True and hdu_ldr is not None:   #Use break to drop through to exit.  i.e., do not calibrte frames we are acquring for calibration.
+    hdu.data = img.astype('float32')  #This is meant to catch an image change to 'float64'
+    while not quick and hdu_ldr is not None:   #Use break to drop through to exit.  i.e., do not calibrte frames we are acquring for calibration.
         cal_string = ''
         img = hdu_ldr.data.astype('float32')
         if loud: print('LDR InputImage', imageStats(img, loud))
-        
         #breakpoint()
         if frame_type == 'bias': break
         if super_bias_ldr is not None:
@@ -462,21 +466,6 @@ def calibrate (hdu, hdu_ldr, lng_path, frame_type='light', start_x=0, start_y=0)
         if frame_type == 'dark': 
             break
         do_dark = True
-#        if data_exposure_level <= 15:
-#            s_dark = super_dark_15
-#            d_exp = 15.
-#            h_map = hotmap_60
-#            h_pix = hotpix_60
-#        elif data_exposure_level <= 30:
-#            s_dark = super_dark_30
-#            d_exp = 30.
-#            h_map = hotmap_60
-#            h_pix = hotpix_60
-#        elif data_exposure_level <= 60:
-#            s_dark = super_dark_60
-#            d_exp = 60.
-#            h_map = hotmap_120
-#            h_pix = hotpix_120
         if data_exposure_level <= 300:
             s_dark = super_dark_300_ldr
             d_exp = 300.0 #dark_300_exposure_level #hack to fix bad dark master.
@@ -485,41 +474,14 @@ def calibrate (hdu, hdu_ldr, lng_path, frame_type='light', start_x=0, start_y=0)
         else:
             do_dark = False  
         if do_dark:
-            #breakpoint()
         #Need to verify dark is not 0 seconds long!
             if d_exp >= data_exposure_level and d_exp >= 1:
                 scale = data_exposure_level/d_exp
                 img =  (img - s_dark[start_x:(start_x + img.shape[0]), start_y:(start_y + img.shape[1])])
-                print('LDR QuickDark result: ', scale, imageStats(img, loud))
-#                scale2 = scale*1.1
-#                img2 =  (img - s_dark*scale2)
-#                print('QuickDark result: ', scale2)
-#                imageStats(img2, loud)
-#                scale2 = scale*1.2
-#                img2 =  (img - s_dark*scale2)
-#                print('QuickDark result: ', scale2)
-#                imageStats(img2, loud)
-#                scale2 = scale*1.3
-#                img2 =  (img - s_dark*scale2)
-#                print('QuickDark result: ', scale2)
-#                imageStats(img2, loud)
-#                scale2 = scale*1.4
-#                img2 =  (img - s_dark*scale2)
-#                print('QuickDark result: ', scale2)
-#                imageStats(img2, loud)
-#                scale2 = scale*1.5
-#                img2 =  (img - s_dark*scale2)
-#                print('QuickDark result: ', scale2)
-#                imageStats(img2, loud)
-#                scale2 = scale*1.6
-#                img2 =  (img - s_dark*scale2)
-#                print('QuickDark result: ', scale2)
-#                imageStats(img2, loud)
-#                img2 =  (img - s_dark*scale)    #put back to correct            
+                print('LDR QuickDark result: ', scale, imageStats(img, loud))          
                 cal_string += ', D'
             else:
                 print('INFO:  Dark exposure too small, skipped this step.')           
-
         img_filter = hdu.header['FILTER']
         if frame_type[-4:]  == 'flat': break       #Note frame type end inf 'flat, e.g arc_flat, screen_flat, sky_flat
         do_flat = False
@@ -533,7 +495,7 @@ def calibrate (hdu, hdu_ldr, lng_path, frame_type='light', start_x=0, start_y=0)
             do_flat = False
         if do_flat: # and not g_dev['seq'].active_script == 'make_superscreenflats':
             img = img/s_flat
-            print('LDR QuickFlat result:  ', imageStats(img, loud))
+            if not quick: print('LDR QuickFlat result:  ', imageStats(img, loud))
             cal_string +=', SCF'
         #median8(img, h_pix)
         #cal_string +=', HP'
@@ -541,20 +503,17 @@ def calibrate (hdu, hdu_ldr, lng_path, frame_type='light', start_x=0, start_y=0)
         if cal_string == '':
             cal_string = 'Uncalibrated'
         hdu_ldr.header['CALHIST'] = cal_string
-        
-        #breakpoint()
         hdu_ldr.data = img.astype('float32')
-        print(hdu.data.max(), hdu_ldr.data.max(), hdu_ldr.data.max()*17.2314281698)
+        if not quick: print(hdu.data.max(), hdu_ldr.data.max(), hdu_ldr.data.max()*17.2314281698)
         ldr_scaled = hdu_ldr.data*17.2314281698    #20191025b
         jam = np.where(hdu.data > 3600)
-        print('jam length:  ', len(jam[0]))
+        if not quick: print('jam length:  ', len(jam[0]))
         hdu.data[jam] = hdu_ldr.data[jam]*17.23142816988    #20191025b
-        print('hdu.data.max():  ', hdu.data.max())
+        if not quick: print('hdu.data.max():  ', hdu.data.max())
         #Temp fix for Tim Bq.
-        #breakpoint()
         big_max = hdu.data.max()
         fix = np.where(hdu.data < 0)
-        print('# of 0 fix pixels:  ', len(fix[0]))
+        if not quick: print('# of 0 fix pixels:  ', len(fix[0]))
         hdu.data[fix] = 0
         if big_max > 65535:
             hdu.data = hdu.data*65500/big_max
@@ -696,7 +655,7 @@ class Camera:
         
 
         if action == "expose" and not self.exposure_busy :
-            self.expose_command(req, opt, do_sep=False)
+            self.expose_command(req, opt, do_sep=False, quick=False)
             self.exposure_busy = False     #Hangup needs to be guarded with a timeout.
             self.active_script = None
             return True    #this resumes Run Thread in Obs.
@@ -741,11 +700,18 @@ class Camera:
     '''
 
     def expose_command(self, required_params, optional_params, p_next_filter=None, p_next_focus=None, p_dither=False, \
-                       gather_status = True, do_sep=False, no_AWS=False):
-        ''' Apply settings and start an exposure. '''
+                       gather_status = True, do_sep=False, no_AWS=False, quick=False):
+        ''' 
+        Apply settings and start an exposure. 
+        Quick=True is meant to be fast.  We assume the ASCOM imageBuffer is the source of data, not the Files path.
+        '''
         c = self.camera
         print('Expose Entered.  req:  ', required_params, 'opt:  ', optional_params)
-        bin_x = int(optional_params.get('bin', 1))
+        bin_x = optional_params.get('bin', '1,1')
+        if bin_x == '2,2':
+            bin_x = 2
+        else:
+            bin_x = 1
         bin_y = bin_x   #NB This needs fixing
         gain = optional_params.get('gain', 1)
         exposure_time = float(required_params.get('time', 5))
@@ -805,7 +771,9 @@ class Camera:
         ##NBNB Need to fold in subtracting overscan for subframes.
         
         #This code is no where general enough for use!
-        #I have fast patched it for 4096x4096 chip/
+        #Need to first apply binning to the native chip.
+        #The results should be computed once and passed on as a specification so there is not possibility
+        #of downstream errors. Ichip/bin) / (area or subframe-spec).  Change area into a subframe specification.
         
         #NBNBNB Consider jamming camera X Size in first. THios if for a FLI Kepler 4040
         if bin_y == 0 or self.camera.MaxBinX != self.camera.MaxBinY:
@@ -889,7 +857,6 @@ class Camera:
         #Next apply any subframe setting here.  Be very careful to keep fractional specs and pixel values disinguished.
         if self.area == self.previous_area and sub_frame_fraction is not None and \
                         (sub_frame_fraction['definedOnThisFile'] != self.previous_image_name):
-            #breakpoint()
             sub_frame_fraction_xw = abs(sub_frame_fraction['x1'] - sub_frame_fraction['x0'])
             if sub_frame_fraction_xw < 1/32.:
                 sub_frame_fraction_xw = 1/32.
@@ -904,6 +871,7 @@ class Camera:
             sub_frame_fraction_y = min(sub_frame_fraction['y0'], sub_frame_fraction['y1'])
             num_x = int(self.previous_num_fraction_x*sub_frame_fraction_xw*self.previous_num_x)
             num_y = int(self.previous_num_fraction_y*sub_frame_fraction_yw*self.previous_num_y)
+            #Clamp subframes to a minimum size
             if num_x < 32:
                 num_x = 32
             if num_y < 32:
@@ -923,7 +891,6 @@ class Camera:
         elif self.area == self.previous_area and sub_frame_fraction is not None and \
                         (sub_frame_fraction['definedOnThisFile'] == self.previous_image_name):         
             #Here we repeat the previous subframe and do not re-enter and make smaller
-            #breakpoint()
             self.camera.StartX = self.previous_start_x
             self.camera.StartY = self.previous_start_y
             dist_x = self.previous_start_x
@@ -933,7 +900,6 @@ class Camera:
             self.bpt_flag  = True
         
         elif sub_frame_fraction is None: 
-            #breakpoint()
             self.previous_start_x = self.camera.StartX  #These are the subframe values for the new area exposure.
             self.previous_start_y = self.camera.StartY
             dist_x = self.previous_start_x 
@@ -943,113 +909,15 @@ class Camera:
             self.previous_num_fraction_x = 1.0
             self.previous_num_fraction_y = 1.0
             self.previous_area = self.area
-            self.bpt_flag = False
-        
-        #Here we ensure parameters to camera are vaild. This works only for bin 1 and 2.
-#        if self.bin_x == 1:
-#            if self.camera.StartX < 0:
-#                self.camera.StartX = 0
-#            if self.camera.NumX < 32:   #This is a somewhat arbitrary criterion.
-#                self.camera.NumX = 32
-#            if self.camera.StartX + self.camera.NumX > self.cameraXSize:
-                
-                
-                
-#            
-#        elif self.bin_x == 2:
-#        
-#        if self.bin_y == 1:
-#            
-#        elif self.bin_y == 2:        
-        
-        
+            self.bpt_flag = False     
             
-# #NBNBNB Consider jamming camera X Size in first.  THis is for a FLI Kepler 400
-#        if bin_y == 0 or self.camera.MaxBinX != self.camera.MaxBinY:
-#            self.bin_x = min(bin_x, self.camera.MaxBinX)
-#            self.camera.BinX = self.bin_x 
-#            self.bin_y = min(bin_x, self.camera.MaxBiny)
-#            self.camera.BinY = self.bin_y
-#        else:
-#            self.bin_x = min(bin_x, self.camera.MaxBinX)
-#            self.camera.Binx = self.bin_x
-#            self.bin_y = min(bin_y, self.camera.MaxBinY)
-#            self.camera.BinY = self.bin_y
-#        self.len_x = 1536#self.camera.CameraXSize//self.bin_x
-#        self.len_y = 1536#self.camera.CameraYSize//self.bin_y    #Unit is binned pixels.
-#        self.len_xs = 1536#self.len_x - 50   #THIS IS A HACK
-#        #print(self.len_x, self.len_y)
-#        
-#        #"area": ['100%', '2X-jpg', '71%', '50%', '1X-jpg', '33%', '25%', '1/2 jpg']
-#        if type(area) == str and area.lower() == "1x-jpg":
-#            self.camera.NumX = 768
-#            self.camera.StartX = 640
-#            self.camera.NumY = 768
-#            self.camera.StartY = 640
-#            self.area = 37.5
-#        elif type(area) == str and area.lower() == "2x-jpg":
-#            self.camera.NumX = 1536
-#            self.camera.StartX = 256
-#            self.camera.NumY = 1536
-#            self.camera.StartY = 256
-#            self.area = 75
-#        elif type(area) == str and area.lower() == "1/2 jpg":
-#            self.camera.NumX = 384
-#            self.camera.StartX = 832
-#            self.camera.NumY = 384
-#            self.camera.StartY = 832
-#            self.area = 18.75
-#        elif type(area) == str:     #Just defalut to a small area.
-#            self.camera.NumX = self.len_x//4
-#            self.camera.StartX = int(self.len_xs/2.667)
-#            self.camera.NumY = self.len_y//4
-#            self.camera.StartY = int(self.len_y/2.667)
-#            self.area = 100
-#        elif 72 < area <= 100:
-#            self.camera.NumX = self.len_x
-#            self.camera.StartX = 256
-#            self.camera.NumY = self.len_y
-#            self.camera.StartY = 256
-#            self.area = 100
-#        elif 70 <= area <= 72:
-#            self.camera.NumX = int(self.len_xs/1.4142)
-#            self.camera.StartX = int(self.len_xs/6.827)
-#            self.camera.NumY = int(self.len_y/1.4142)
-#            self.camera.StartY = int(self.len_y/6.827)
-#            self.area = 71       
-#        elif area == 50:
-#            self.camera.NumX = self.len_xs//2
-#            self.camera.StartX = self.len_xs//4
-#            self.camera.NumY = self.len_y//2
-#            self.camera.StartY = self.len_y//4
-#            self.area = 50
-#        elif 33 <= area <= 35:
-#            self.camera.NumX = int(self.len_xs/2.829)
-#            self.camera.StartX = int(self.len_xs/3.093)
-#            self.camera.NumY = int(self.len_y/2.829)
-#            self.camera.StartY = int(self.len_y/3.093)
-#            self.area = 33
-#        elif area == 25:
-#            self.camera.NumX = self.len_xs//4
-#            self.camera.StartX = int(self.len_xs/2.667)
-#            self.camera.NumY = self.len_y//4
-#            self.camera.StartY = int(self.len_y/2.667)
-#            self.area = 25
-#        else:
-#            self.camera.NumX = self.len_x
-#            self.camera.StartX = 256
-#            self.camera.NumY = self.len_y
-#            self.camera.StartY = 256
-#            self.area = 100
-#            print("Defult area used. 100%")
+
        #print(self.camera.NumX, self.camera.StartX, self.camera.NumY, self.camera.StartY)
         for seq in range(count):
             #SEQ is the outer repeat count loop.
             if seq > 0: 
                 g_dev['obs'].update_status()
             for fil in [self.current_filter]:#, 'N2', 'S2', 'CR']: #range(1)
-#                if fil == 'CR': exposure_time /= 2.5
-#                if fil == 'S2': exposure_time *= 1
                 #Change filter here
                 print('\nFilter:  ',  (fil +' ')*5, '\n')
                 for rpt in range(1):
@@ -1076,8 +944,7 @@ class Camera:
                         g_dev['foc'].get_quick_status(self.pre_foc)
                         g_dev['rot'].get_quick_status(self.pre_rot)
                         g_dev['mnt'].get_quick_status(self.pre_mnt)  #stage two quick_get_'s symmetric around exposure
-                        self.exposure_busy = True
-                        #breakpoint()                        
+                        self.exposure_busy = True                       
                         print('First Entry', c.StartX, c.StartY, c.NumX, c.NumY, exposure_time)
                         self.t2 = time.time()       #Immediately before Exposure
                         #c.SetFullFrame()
@@ -1090,7 +957,7 @@ class Camera:
                         self.t9 = time.time()
                         #We go here to keep this subroutine a reasonable length.
                         self.finish_exposure(exposure_time,  frame_type, count - seq, p_next_filter, p_next_focus, p_dither, \
-                                             gather_status, do_sep, no_AWS, dist_x, dist_y)
+                                             gather_status, do_sep, no_AWS, dist_x, dist_y, quick=quick)
                         self.exposure_busy = False
                         self.t10 = time.time()
                         #self.exposure_busy = False  Need to be able to do repeats
@@ -1127,12 +994,11 @@ class Camera:
     ###############################
     
     def finish_exposure(self, exposure_time, frame_type, counter, p_next_filter=None, p_next_focus=None, p_dither=False, \
-                        gather_status=True, do_sep=False, no_AWS=False, start_x=None, start_y=None):
+                        gather_status=True, do_sep=False, no_AWS=False, start_x=None, start_y=None, quick=False):
         print("Finish exposure Entered:  ", self.af_step, exposure_time, frame_type, counter, ' to go!')
         print(exposure_time, frame_type, counter, p_next_filter, p_next_focus, p_dither, \
                         gather_status, do_sep, no_AWS, start_x, start_y)
         if self.bpt_flag:
-            #breakpoint()
             pass
         if gather_status:   #Does this need to be here
             self.post_mnt = []
@@ -1143,10 +1009,9 @@ class Camera:
         while True:
             try:
                 self.t3 = time.time()
-                time.sleep(5)
                 if self.camera.ImageReady: #and not self.img_available and self.exposing:
                     self.t4 = time.time()
-                    if gather_status:
+                    if not quick and gather_status:
                         g_dev['mnt'].get_quick_status(self.post_mnt)  #stage symmetric around exposure
                         g_dev['rot'].get_quick_status(self.post_rot)
                         g_dev['foc'].get_quick_status(self.post_foc)
@@ -1163,46 +1028,48 @@ class Camera:
 #                        if p_dither:
 #                            print("Post image dither step here")
                         img = self.camera.ImageArray
-                        img = np.array(img).astype('uint16')
-                        #Makes the image like those from Default MaximDL
+                        img = np.array(img).astype('uint16')   #THIS LINE OF CODE I NECESSARY!
+                        #Next line makes the image like those from Default MaximDL
                         img = img.transpose()
                         self.t6 = time.time()
                         #Save image with Fits Header information, then read back with astropy and fill out keywords.
                         hdu = fits.PrimaryHDU(img)
-                        hdul = fits.HDUList([hdu])
+                        hdu1 = fits.HDUList([hdu])
+                        hdu2 = None
                         try:
                             #This should be a very fast disk.
-                            hdul.writeto('Q:\\archive\\' + 'gf03'+ '\\newest.fits', overwrite=True)
+                            hdu1.writeto('Q:\\archive\\' + 'gf03'+ '\\newest.fits', overwrite=True)
                             #For reasons unclear, this file never seems to close properly.  20191022 WER
                         except:
                             print('Write to newest.fits failed because it is busy, -- reason unknown.')
                             os.remove('Q:\\archive\\' + 'gf03'+ '\\newest.fits')
                             return
-                        try:
+                        if not quick:
                             #breakpoint()
-                            ldr_handle = glob.glob('Q:\\archive\\gf03\\raw_kepler\\' + g_dev['d-a-y'] + '\\' + '*low.fits')
-                            hdu2 =  fits.open(ldr_handle[0])
-                            hdu2 = hdu2[0]   #get the Primary header and date
-#                            hdr_handle = glob.glob('Q:\\archive\\gf03\\raw_kepler\\' + g_dev['d-a-y'] + '\\' + '*high.fits')
-#                            hdul =  fits.open(hdr_handle[0])
-#                            hdul = hdul[0]
-#                            hdul.writeto('Q:\\archive\\' + 'gf03'+ '\\newest.fits', overwrite=True)
-                        except:
                             try:
-                                ldr_handle = glob.glob('Q:\\archive\\gf03\\raw_kepler\\' + g_dev['next_day'] + '\\' + '*low.fits')
+                                ldr_handle = glob.glob('Q:\\archive\\gf03\\raw_kepler\\' + g_dev['d-a-y'] + '\\' + '*low.fits')
                                 hdu2 =  fits.open(ldr_handle[0])
                                 hdu2 = hdu2[0]   #get the Primary header and date
-                                hdr_handle = glob.glob('Q:\\archive\\gf03\\raw_kepler\\' + g_dev['next_day'] + '\\' + '*high.fits')
-                                hdul =  fits.open(hdr_handle[0])
-                                hdul = hdul[0]
-                                hdul.writeto('Q:\\archive\\' + 'gf03'+ '\\newest.fits', overwrite=True)
+    #                            hdr_handle = glob.glob('Q:\\archive\\gf03\\raw_kepler\\' + g_dev['d-a-y'] + '\\' + '*high.fits')
+    #                            hdu1 =  fits.open(hdr_handle[0])
+    #                            hdu1 = hdu1[0]
+    #                            hdu1.writeto('Q:\\archive\\' + 'gf03'+ '\\newest.fits', overwrite=True)
                             except:
-                                
-                                hdu2 = None
-                                print("something went wrong reading in high and low")
+                                try:
+                                    ldr_handle = glob.glob('Q:\\archive\\gf03\\raw_kepler\\' + g_dev['next_day'] + '\\' + '*low.fits')
+                                    hdu2 = fits.open(ldr_handle[0])
+                                    hdu2 = hdu2[0]   #get the Primary header and date
+#                                    hdr_handle = glob.glob('Q:\\archive\\gf03\\raw_kepler\\' + g_dev['next_day'] + '\\' + '*high.fits')
+#                                    hdu1 =  fits.open(hdr_handle[0])
+#                                    hdu1 = hdu1[0]
+#                                    hdu1.writeto('Q:\\archive\\' + 'gf03'+ '\\newest.fits', overwrite=True)
+                                except:
+                                    
+                                    hdu2 = None
+                                    print("something went wrong reading in high and low")
 
                     #***After this point we no longer care about the camera specific files.
-                    if gather_status:
+                    if not quick and gather_status:
                         avg_mnt = g_dev['mnt'].get_average_status(self.pre_mnt, self.post_mnt)
                         avg_foc = g_dev['foc'].get_average_status(self.pre_foc, self.post_foc)
                         avg_rot = g_dev['rot'].get_average_status(self.pre_rot, self.post_rot)
@@ -1212,10 +1079,14 @@ class Camera:
                     #counter = 0
                     try:
                         #Save the raw data after adding fits header information.
-                        hdu1 =  fits.open('Q:\\archive\\gf03\\newest.fits')
-                        hdu = hdu1[0]   #get the Primary header and date
-                        hdu.data = hdu.data.astype('uint16')    #This is probably redundant but forces unsigned storage
-                        self.hdu_data1 = hdu.data.copy()
+                        if not quick:
+                            hdu1 =  fits.open('Q:\\archive\\gf03\\newest.fits')
+                            hdu = hdu1[0]   #get the Primary header and date
+                            hdu.data = hdu.data.astype('uint16')    #This is probably redundant but forces unsigned storage
+                            self.hdu_data1 = hdu.data.copy()   #NEVER USED??
+                        else:
+                            hdu = hdu1[0]
+
                         hdu.header['BUNIT']    = 'adu'
                         hdu.header['DATE-OBS'] = datetime.datetime.isoformat(datetime.datetime.utcfromtimestamp(self.t2))   
                         hdu.header['EXPTIME']  = exposure_time   #This is the exposure in seconds specified by the user                  
@@ -1260,7 +1131,7 @@ class Camera:
                         hdu.header['OBDECRAT']  = self.pre_mnt[5]                                                       
                         hdu.header['TELESCOP'] = 'PW 0m45 CDK'          
                         hdu.header['INSTRUME'] = 'FLI4 CMOS USB3'                                                      
-                        hdu.header['OBSERVER'] = 'WER     '                                                            
+                        hdu.header['OBSERVER'] = 'WER DEV'                                                            
                         hdu.header['NOTE']    = 'Bring up Images'                                                     
                         hdu.header['FLIPSTAT'] = 'None'  
                         hdu.header['SEQCOUNT'] = int(counter)
@@ -1271,7 +1142,7 @@ class Camera:
                         hdu.header['DOMEAZ']  = "None"   #Need to document shutter status, azimuth, internal light.
                         hdu.header['ROOF']  = "Open/Closed"   #Need to document shutter status, azimuth, internal light.
                         hdu.header['ENCLIGHT'] ="White/Red/IR/Off"
-                        if gather_status:
+                        if not quick and gather_status:
                             hdu.header['MNT-SIDT'] = avg_mnt['sidereal_time']
                             ha = avg_mnt['right_ascension'] - avg_mnt['sidereal_time']
                             hdu.header['MNT-RA'] = avg_mnt['right_ascension']
@@ -1315,14 +1186,14 @@ class Camera:
                         hdu.header['CAMANUF'] = 'Finger Lakes Instrumentation'
 #                        try:
 #                            hdu.header['GAIN'] = g_dev['cam'].camera.gain
-                        print('Gain was read;  ', g_dev['cam'].camera.gain)
+                        #print('Gain was read;  ', g_dev['cam'].camera.gain)
 #                        except:                                
 #                            hdu.header['GAIN'] = 1.18
                         hdu.header['GAINUNIT'] = 'e-/ADU'
-                        hdu.header['GAIN'] = 7.5   #20190911   LDR-LDC mode set in ascom
+                        hdu.header['GAIN'] = 2.2   #20190911   LDR-LDC mode set in ascom
                         hdu.header['RDNOISE'] = 4.86
                         hdu.header['CMOSCAM'] = True
-                        hdu.header['CMOSMODE'] = 'LDR-HDC'  #Need to figure out how to read this from setup.
+                        hdu.header['CMOSMODE'] = 'HDR-LDC'  #Need to figure out how to read this from setup.
                         hdu.header['SATURATE'] = 3600
                         hdu.header['PIXSCALE'] = 0.85*self.camera.BinX
 
@@ -1373,23 +1244,24 @@ class Camera:
                             pass
                         
                         
-                        hdu1.writeto(raw_path + raw_name00, overwrite=True)
-                        hdu1.close()
-                        text = open(im_path + text_name, 'w')
-                        text.write(str(hdu.header))
-                        text.close()
+                        if not quick:
+                            hdu1.writeto(raw_path + raw_name00, overwrite=True)
+                            hdu1.close()
+                            text = open(im_path + text_name, 'w')
+                            text.write(str(hdu.header))
+                            text.close()
                         text_data_size = len(str(hdu.header)) - 2048
                         raw_data_size = hdu.data.size
 
                         print("\n\Finish-Exposure is complete:  " + raw_name00, raw_data_size, '\n')
                         #Now make the db_image:
                         #THis should be moved into the transfer process and processed in parallel
-                        hdu.data.astype('float32')
+                        #hdu.data.astype('float32')
                         #put a _ldc header in second position to do a reduction/merge
-                        calibrate(hdu, hdu2, lng_path, frame_type, start_x=start_x, start_y=start_y)
-                        #breakpoint()
-                        hdu1.writeto(cal_path + cal_name, overwrite=True)   #THis needs qualifying and should not be so general.
-                        hdu1.writeto(im_path + raw_name01, overwrite=True)
+                        calibrate(hdu, hdu2, lng_path, frame_type, start_x=start_x, start_y=start_y, quick=quick)
+                        if not quick:
+                            hdu1.writeto(cal_path + cal_name, overwrite=True)   #THis needs qualifying and should not be so general.
+                            hdu1.writeto(im_path + raw_name01, overwrite=True)
 #                        
 ##                        if b.data.shape[1] == 2098:
 ##                            overscan = hdu.data[:, 2048:]
@@ -1446,7 +1318,6 @@ class Camera:
                             in_shape[1] = 32
                         #Ok, we have an even array and a minimum 32x32 array.
                         if in_shape[0] < in_shape[1]:
-                            #breakpoint()
                             diff = int(abs(in_shape[1] - in_shape[0])/2)
                             in_max = int(hdu.data.max()*0.8)
                             in_min = int(hdu.data.min() - 2)   
@@ -1461,7 +1332,6 @@ class Camera:
                             hdu.data = new_img
                         elif in_shape[0] > in_shape[1]:
                             #Same scheme as above, but expands second axis.
-                            #breakpoint()
                             diff = int((in_shape[0] - in_shape[1])/2)
                             in_max = int(hdu.data.max()*0.8)
                             in_min = int(hdu.data.min() - 2) 
@@ -1501,19 +1371,21 @@ class Camera:
                         jpeg_data_size = img3.size - 1024
                         if not no_AWS:                        
                             self.enqueue_image(jpeg_data_size, im_path, jpeg_name)
-                            self.enqueue_image(text_data_size, im_path, text_name)
-                            self.enqueue_image(db_data_size, im_path, db_name)
-                            self.enqueue_image(raw_data_size, im_path, raw_name01)                       
+                            if not quick:
+                                self.enqueue_image(text_data_size, im_path, text_name)
+                                self.enqueue_image(db_data_size, im_path, db_name)
+                                self.enqueue_image(raw_data_size, im_path, raw_name01)                       
                         self.img = None
+                        #hdu.close()
                         hdu = None
                         try:
                             os.remove('Q:\\archive\\' + 'gf03'+ '\\newest.fits')
                         except:
                             print(' 2 Could not remove newest.fits.')
                     except:   
-                        breakpoint()
                         print('Header assembly block failed.')
                         self.t7 = time.time()
+                        breakpoint()
                     return
                 else:               #here we are in waiting for imageReady loop and could send status and check Queue
                     counter += 1
@@ -1528,7 +1400,7 @@ class Camera:
         self.t8 = time.time()
         #definitely try to clean up any messes.
         try:
-            hdul.close()
+            hdu1.close()
         except:
             pass
         try:
@@ -1609,10 +1481,9 @@ if __name__ == '__main__':
    }
     req = {'time': 2,  'alias': 'gf03', 'image_type': 'Light', 'filter': 2}
     opt = {'size': 100}
-    breakpoint()
     #cam = Camera('Maxim.CCDCamera', "gf03", config)
     cam = Camera('ASCOM.FLI.Kepler.Camera', "gf03", config)
-    cam.expose_command(req, opt, gather_status=False)
+    cam.expose_command(req, opt, gather_status=False, quick=True)
 
 #    This fragment directly runs the camera not through the routines above
 #    cam.camera.StartExposure(0.001, False)
