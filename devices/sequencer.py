@@ -185,8 +185,10 @@ class Sequencer:
     def sky_flat_script(self, req, opt):
         
         '''
-        We will assume the filters have loaded those filters needed in sky flats, lowest to highest sky throughput..
-        We will assume count contains the number of repeated flats needed.
+     
+             
+        
+        
         '''
         
     def auto_focus_script(self, req, opt):

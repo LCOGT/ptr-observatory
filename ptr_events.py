@@ -201,7 +201,7 @@ def sunNow():
     moon.compute(ptr)
     # if loud: print('Moon Now: ', moon.ra, moon.dec, moon.az, moon.alt, ptr.date)
 
-    return sun.ra, sun.dec, degrees(sun.alt), sun.size/3600, moon.ra, moon.dec,\
+    return sun.ra, sun.dec, degrees(sun.alt), degrees(sun.az), moon.ra, moon.dec,\
            degrees(moon.alt), moon.size/3600
 
 def illuminationNow():
