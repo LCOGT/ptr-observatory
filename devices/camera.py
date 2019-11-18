@@ -409,7 +409,6 @@ def calibrate (hdu, hdu_ldr, lng_path, frame_type='light', start_x=0, start_y=0,
         #Need to verify dark is not 0 seconds long!
             if d_exp >= data_exposure_level and d_exp >= 1:
                 scale = data_exposure_level/d_exp
-                breakpoint()
                 img =  (img - s_dark[start_x:(start_x + img.shape[0]), start_y:(start_y + img.shape[1])])
                 if not quick:
                     print('QuickDark  scale/result(high): ', round(scale, 4), imageStats(img, loud))
@@ -1275,7 +1274,6 @@ class Camera:
 
                         print("\n\Finish-Exposure is complete:  " + raw_name00, raw_data_size, '\n')
                         calibrate(hdu, hdu2[0], lng_path, frame_type, start_x=start_x, start_y=start_y, quick=quick)
-                        breakpoint()
                     
                         if not quick:
                             hdu1.writeto(cal_path + cal_name, overwrite=True)   #THis needs qualifying and should not be so general.
