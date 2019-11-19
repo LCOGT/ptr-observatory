@@ -206,164 +206,166 @@ def calibrate (hdu, hdu_ldr, lng_path, frame_type='light', start_x=0, start_y=0,
            super_dark_300_ldr, super_flat_w, super_flat_HA, hotmap_300, hotpix_300, hotmap_300_ldr, hotpix_300_ldr
     loud = True
     #This needs to deal with caching different binnings as well.  And do we skip all this for a quick
-    if super_bias is None:
-        try:
-            sbHdu = fits.open(lng_path + 'mb_1_hdr.fits')
-            super_bias = sbHdu[0].data#.astype('float32')
-            #Temp fix
-            fix = np.where(super_bias > 400)
-            super_bias[fix] = int(super_bias.mean())
-            sbHdu.close()
-            quick_bias = True
-            if loud: print(lng_path + 'mb_1_hdr.fits', 'Loaded')
-        except:
-            quick_bias = False
-            print('WARN: No Bias Loaded.')
-    if not quick and super_bias_ldr is None and hdu_ldr is not None:
-        try:
-            sbHdu = fits.open(lng_path + 'mb_1_ldr.fits')
-            super_bias_ldr = sbHdu[0].data#.astype('float32')
-            #Temp fix
-            fix = np.where(super_bias_ldr > 400)
-            super_bias[fix] = int(super_bias_ldr.mean())
-            sbHdu.close()
-            quick_bias_ldr = True
-            if loud: print(lng_path + 'mb_1_ldr.fits', 'Loaded')
-        except:
-            quick_bias_ldr = False
-            print('WARN: No Bias Loaded.')
-            #    if super_dark_15 is None:
-#        try:
-#            sdHdu = fits.open(lng_path + 'ldr_md_15.fits')
-#            dark_15_exposure_level = sdHdu[0].header['EXPTIME']
-#            super_dark_15  = sdHdu[0].data.astype('float32')
-#            sdHdu.close()
-#           quick_dark_15 = True
-#            print(lng_path + 'ldr_md_15.fits', 'Loaded')
-#        except:
-#            quick_dark_15 = False
-#            print('WARN: No dark Loaded.')
-#    if super_dark_30 is None:
-#        try:
-#            sdHdu = fits.open(lng_path + 'ldr_md_30.fits')
-#            dark_30_exposure_level = sdHdu[0].header['EXPTIME']
-#            super_dark_30  = sdHdu[0].data.astype('float32')
-#            sdHdu.close()
-#            quick_dark_30 = True
-#            print(lng_path + 'ldr_md_30.fits', 'Loaded')
-#        except:
-#            quick_dark_30 = False
-#            print('WARN: No dark Loaded.')
-    if super_dark_90 is None:
-        try:
-            sdHdu = fits.open(lng_path + 'md_1_90_hdr.fits')
-            dark_90_exposure_level = sdHdu[0].header['EXPTIME']
-            super_dark_90  = sdHdu[0].data.astype('float32')
-            sdHdu.close()
-            fix = np.where(super_dark_90 < 0)
-            super_dark_90[fix] = 0
-            quick_dark_90 = True
-            print(lng_path + 'md_1_90_hdr.fits', 'Loaded')
-        except:
-            quick_dark_90 = False
-            print('WARN: No dark Loaded.')
-    if super_dark_300 is None:
-        try:
-            sdHdu = fits.open(lng_path + 'md_1_300_hdr.fits')
-            dark_300_exposure_level = sdHdu[0].header['EXPTIME']
-            super_dark_300  = sdHdu[0].data#.astype('float32')
-            print('sdark_HDR:  ', super_dark_300.mean())
-            sdHdu.close()
-            fix = np.where(super_dark_300 < 0)
-            super_dark_300[fix] = 0
-            quick_dark_300 = True
-            print(lng_path + 'md_1_300_hdr.fits', 'Loaded')
-        except:
-            quick_dark_300 = False
-            print('WARN: No dark Loaded.')
-    if  not quick and super_dark_300_ldr is None and hdu_ldr is not None:
-        try:
-            sdHdu = fits.open(lng_path + 'md_1_300_ldr.fits')
-            dark_300_ldr_exposure_level = sdHdu[0].header['EXPTIME']
-            super_dark_300_ldr  = sdHdu[0].data#.astype('float32')
-            print('sdark_300_LDR:  ', super_dark_300_ldr.mean())
-            sdHdu.close()
-            fix = np.where(super_dark_300_ldr < 0)
-            super_dark_300_ldr[fix] = 0
-            quick_dark_300_ldr = True
-            print(lng_path + 'md_1_300_ldr.fits', 'Loaded')
-        except:
-            quick_dark_300_ldr = False
-            print('WARN: No ldr 300 dark Loaded.')
-    if  not quick and super_dark_90_ldr is None and hdu_ldr is not None:
-        try:
-            sdHdu = fits.open(lng_path + 'md_1_90_ldr.fits')
-            dark_90_ldr_exposure_level = sdHdu[0].header['EXPTIME']
-            super_dark_90_ldr  = sdHdu[0].data#.astype('float32')
-            print('sdark_90_LDR:  ', super_dark_90_ldr.mean())
-            sdHdu.close()
-            fix = np.where(super_dark_90_ldr < 0)
-            super_dark_90_ldr[fix] = 0
-            quick_dark_90_ldr = True
-            print(lng_path + 'md_1_90_ldr.fits', 'Loaded')
-        except:
-            quick_dark_90_ldr = False
-            print('WARN: No ldr 90 dark Loaded.')
-            #Note on flats the case is carried through
-    if super_flat_w is None:
-        try:
-            sfHdu = fits.open(lng_path + 'ldr_mf_1_w.fits')
-            super_flat_w = sfHdu[0].data.astype('float32')
-            quick_flat_w = True
-            sfHdu.close()
-            if loud: print(lng_path + 'ldr_mf_1_w.fits', 'Loaded')
-        except:
-            quick_flat_w = False
-            print('WARN: No W Flat/Lum Loaded.')
-    if super_flat_HA is None:
-        try:
-            sfHdu = fits.open(lng_path + 'ldr_mf_1_1_HA.fits')
-            super_flat_HA = sfHdu[0].data#.astype('float32')
-            quick_flat_HA = True
-            sfHdu.close()
-            if loud: print(lng_path + 'ldr_mf_1_HA.fits', 'Loaded')
-        except:
-            quick_flat_HA = False
-            if not quick: print('WARN: No HA Flat/Lum Loaded.')
-#    if coldmap_120 is None:
-#        try:
-#            shHdu = fits.open(lng_path + 'ldr_coldmap_1_120.fits')
-#            coldmap_120 = shHdu[0].data.astype('uint16')
-#            shHdu.close()
-#            quick_coldmap_120 = True
-#            coldpix_120 = np.where(coldmap_120 > 0)   # 0 vs 1, see hotsection below?
-#            print(lng_path + 'ldr_coldmap_1_120.fits', 'Loaded, Lenght = ', len(coldpix_120[0]))
-#        except:
-#            quick_coldmap_120 = False
-#            print('coldmap_120 failed to load.')
-    if hotmap_300 is None:
-        try:
-            shHdu = fits.open(lng_path + 'hdr_hotmap_300.fits')
-            hotmap_300 = shHdu[0].data#.astype('uint16')
-            shHdu.close()
-            quick_hotmap_300 = True
-            hotpix_300 = np.where(hotmap_300 > 60)  #This is a temp simplifcation
-            print(lng_path + 'hdr_hotmap_300.fits', 'Loaded, Length = ', len(hotpix_300[0]))
-        except:
-            quick_hotmap_300= False
-            if not quick: print('Hotmap_300 failed to load.')
-    if  not quick and hotmap_300_ldr is None and hdu_ldr is not None:
-        try:
-            shHdu = fits.open(lng_path + 'ldr_hotmap_300.fits')
-            hotmap_300_ldr = shHdu[0].data#.astype('uint16')
-            shHdu.close()
-            quick_hotmap_300_ldr = True
-            hotpix_300_ldr = np.where(hotmap_300_ldr > 4)  #This is a temp simplifcation
-            print(lng_path + 'ldr_hotmap_300.fits', 'Loaded, Length = ', len(hotpix_300_ldr[0]))
-        except:
-            quick_hotmap_300_ldr= False
-            if not quick: print('Hotmap_300_ldr failed to load.')
-            
+    if not quick:
+        if super_bias is None:
+            try:
+                sbHdu = fits.open(lng_path + 'mb_1_hdr.fits')
+                super_bias = sbHdu[0].data#.astype('float32')
+                #Temp fix
+                fix = np.where(super_bias > 400)
+                super_bias[fix] = int(super_bias.mean())
+                sbHdu.close()
+                quick_bias = True
+                if loud: print(lng_path + 'mb_1_hdr.fits', 'Loaded')
+            except:
+                quick_bias = False
+                print('WARN: No Bias Loaded.')
+        if not quick and super_bias_ldr is None and hdu_ldr is not None:
+            try:
+                sbHdu = fits.open(lng_path + 'mb_1_ldr.fits')
+                super_bias_ldr = sbHdu[0].data#.astype('float32')
+                #Temp fix
+                fix = np.where(super_bias_ldr > 400)
+                super_bias[fix] = int(super_bias_ldr.mean())
+                sbHdu.close()
+                quick_bias_ldr = True
+                if loud: print(lng_path + 'mb_1_ldr.fits', 'Loaded')
+            except:
+                quick_bias_ldr = False
+                print('WARN: No Bias Loaded.')
+                #    if super_dark_15 is None:
+    #        try:
+    #            sdHdu = fits.open(lng_path + 'ldr_md_15.fits')
+    #            dark_15_exposure_level = sdHdu[0].header['EXPTIME']
+    #            super_dark_15  = sdHdu[0].data.astype('float32')
+    #            sdHdu.close()
+    #           quick_dark_15 = True
+    #            print(lng_path + 'ldr_md_15.fits', 'Loaded')
+    #        except:
+    #            quick_dark_15 = False
+    #            print('WARN: No dark Loaded.')
+    #    if super_dark_30 is None:
+    #        try:
+    #            sdHdu = fits.open(lng_path + 'ldr_md_30.fits')
+    #            dark_30_exposure_level = sdHdu[0].header['EXPTIME']
+    #            super_dark_30  = sdHdu[0].data.astype('float32')
+    #            sdHdu.close()
+    #            quick_dark_30 = True
+    #            print(lng_path + 'ldr_md_30.fits', 'Loaded')
+    #        except:
+    #            quick_dark_30 = False
+    #            print('WARN: No dark Loaded.')
+        if super_dark_90 is None:
+            try:
+                sdHdu = fits.open(lng_path + 'md_1_90_hdr.fits')
+                dark_90_exposure_level = sdHdu[0].header['EXPTIME']
+                super_dark_90  = sdHdu[0].data.astype('float32')
+                sdHdu.close()
+                fix = np.where(super_dark_90 < 0)
+                super_dark_90[fix] = 0
+                quick_dark_90 = True
+                print(lng_path + 'md_1_90_hdr.fits', 'Loaded')
+            except:
+                quick_dark_90 = False
+                print('WARN: No dark Loaded.')
+        if super_dark_300 is None:
+            try:
+                sdHdu = fits.open(lng_path + 'md_1_300_hdr.fits')
+                dark_300_exposure_level = sdHdu[0].header['EXPTIME']
+                super_dark_300  = sdHdu[0].data#.astype('float32')
+                print('sdark_HDR:  ', super_dark_300.mean())
+                sdHdu.close()
+                fix = np.where(super_dark_300 < 0)
+                super_dark_300[fix] = 0
+                quick_dark_300 = True
+                print(lng_path + 'md_1_300_hdr.fits', 'Loaded')
+            except:
+                quick_dark_300 = False
+                print('WARN: No dark Loaded.')
+        if  not quick and super_dark_300_ldr is None and hdu_ldr is not None:
+            try:
+                sdHdu = fits.open(lng_path + 'md_1_300_ldr.fits')
+                dark_300_ldr_exposure_level = sdHdu[0].header['EXPTIME']
+                super_dark_300_ldr  = sdHdu[0].data#.astype('float32')
+                print('sdark_300_LDR:  ', super_dark_300_ldr.mean())
+                sdHdu.close()
+                fix = np.where(super_dark_300_ldr < 0)
+                super_dark_300_ldr[fix] = 0
+                quick_dark_300_ldr = True
+                print(lng_path + 'md_1_300_ldr.fits', 'Loaded')
+            except:
+                quick_dark_300_ldr = False
+                print('WARN: No ldr 300 dark Loaded.')
+        if  not quick and super_dark_90_ldr is None and hdu_ldr is not None:
+            try:
+                sdHdu = fits.open(lng_path + 'md_1_90_ldr.fits')
+                dark_90_ldr_exposure_level = sdHdu[0].header['EXPTIME']
+                super_dark_90_ldr  = sdHdu[0].data#.astype('float32')
+                print('sdark_90_LDR:  ', super_dark_90_ldr.mean())
+                sdHdu.close()
+                fix = np.where(super_dark_90_ldr < 0)
+                super_dark_90_ldr[fix] = 0
+                quick_dark_90_ldr = True
+                print(lng_path + 'md_1_90_ldr.fits', 'Loaded')
+            except:
+                quick_dark_90_ldr = False
+                print('WARN: No ldr 90 dark Loaded.')
+                #Note on flats the case is carried through
+        if super_flat_w is None:
+            try:
+                sfHdu = fits.open(lng_path + 'ldr_mf_1_w.fits')
+                super_flat_w = sfHdu[0].data.astype('float32')
+                quick_flat_w = True
+                sfHdu.close()
+                if loud: print(lng_path + 'ldr_mf_1_w.fits', 'Loaded')
+            except:
+                quick_flat_w = False
+                print('WARN: No W Flat/Lum Loaded.')
+        if super_flat_HA is None:
+            try:
+                sfHdu = fits.open(lng_path + 'ldr_mf_1_1_HA.fits')
+                super_flat_HA = sfHdu[0].data#.astype('float32')
+                quick_flat_HA = True
+                sfHdu.close()
+                if loud: print(lng_path + 'ldr_mf_1_HA.fits', 'Loaded')
+            except:
+                quick_flat_HA = False
+                if not quick: print('WARN: No HA Flat/Lum Loaded.')
+    #    if coldmap_120 is None:
+    #        try:
+    #            shHdu = fits.open(lng_path + 'ldr_coldmap_1_120.fits')
+    #            coldmap_120 = shHdu[0].data.astype('uint16')
+    #            shHdu.close()
+    #            quick_coldmap_120 = True
+    #            coldpix_120 = np.where(coldmap_120 > 0)   # 0 vs 1, see hotsection below?
+    #            print(lng_path + 'ldr_coldmap_1_120.fits', 'Loaded, Lenght = ', len(coldpix_120[0]))
+    #        except:
+    #            quick_coldmap_120 = False
+    #            print('coldmap_120 failed to load.')
+        if hotmap_300 is None:
+            try:
+                shHdu = fits.open(lng_path + 'hdr_hotmap_300.fits')
+                hotmap_300 = shHdu[0].data#.astype('uint16')
+                shHdu.close()
+                quick_hotmap_300 = True
+                hotpix_300 = np.where(hotmap_300 > 60)  #This is a temp simplifcation
+                print(lng_path + 'hdr_hotmap_300.fits', 'Loaded, Length = ', len(hotpix_300[0]))
+            except:
+                quick_hotmap_300= False
+                if not quick: print('Hotmap_300 failed to load.')
+        if  not quick and hotmap_300_ldr is None and hdu_ldr is not None:
+            try:
+                shHdu = fits.open(lng_path + 'ldr_hotmap_300.fits')
+                hotmap_300_ldr = shHdu[0].data#.astype('uint16')
+                shHdu.close()
+                quick_hotmap_300_ldr = True
+                hotpix_300_ldr = np.where(hotmap_300_ldr > 4)  #This is a temp simplifcation
+                print(lng_path + 'ldr_hotmap_300.fits', 'Loaded, Length = ', len(hotpix_300_ldr[0]))
+            except:
+                quick_hotmap_300_ldr= False
+                if not quick: print('Hotmap_300_ldr failed to load.')
+        else:
+            pass   #Enf of quick block.
     #Here we actually calibrate.  
     while True:   #Use break to drop through to exit.  i.e., do not calibrte frames we are acquring for calibration.
         cal_string = ''
@@ -373,6 +375,10 @@ def calibrate (hdu, hdu_ldr, lng_path, frame_type='light', start_x=0, start_y=0,
         else:
             img = hdu.data
         if frame_type == 'bias': break
+        if quick:
+            img = img - 164.   #An arbitrary cut.
+            hdu.data = img
+            break
         if super_bias is not None:
             #if not quick: print(start_x, start_x + img.shape[0], start_y, start_y + img.shape[1])
             img = img - super_bias[start_x:(start_x + img.shape[0]), start_y:(start_y + img.shape[1])]  #hdu.header['NAXIS2, NAXIS1']
@@ -773,8 +779,10 @@ class Camera:
             do_sep = False
         elif imtype.lower() == 'quick':
             quick=True
-            no_AWS = True
+            no_AWS = False   #Send only a JPEG
             do_sep = False
+            imtypeb = True
+            frame_type = 'light'
         else:
             imtypeb = True
             do_sep = True
@@ -1065,15 +1073,16 @@ class Camera:
                             print('Write to newest.fits failed because it is busy, -- reason unknown.')
                             os.remove('Q:\\archive\\' + 'gf03'+ '\\newest.fits')
                             return
-                        if not quick:
+                        
+                        try:
+                            ldr_handle = glob.glob('Q:\\archive\\gf03\\raw_kepler\\' + g_dev['d-a-y'] + '\\' + '*low.fits')
+                        except:
                             try:
-                                ldr_handle = glob.glob('Q:\\archive\\gf03\\raw_kepler\\' + g_dev['d-a-y'] + '\\' + '*low.fits')
+                                ldr_handle = glob.glob('Q:\\archive\\gf03\\raw_kepler\\' + g_dev['next_day'] + '\\' + '*low.fits')
                             except:
-                                try:
-                                    ldr_handle = glob.glob('Q:\\archive\\gf03\\raw_kepler\\' + g_dev['next_day'] + '\\' + '*low.fits')
-                                except:
-                                    hdu2 = None
-                                    print("something went wrong reading in a version of low.fits")
+                                hdu3 = None
+                                print("something went wrong reading in a version of low.fits")
+                        if not quick:     #For quciks we do not deal with low data range data.
                             hdu2 = fits.open(ldr_handle[0])  #This directory should only have one file.
                             del hdu2[0].header['FILTER']
                             hdu2[0].header['FILTER']= self.current_filter   #Fix bocus filter.
@@ -1084,8 +1093,10 @@ class Camera:
                             hdu2.close()
                             os.remove(ldr_handle[0])
                             hdu2 = fits.open('Q:\\archive\\' + 'gf03'+ '\\newest_low.fits')
+                            hdu3 = hdu2[0]
                         else:
-                           hdu2 = None     #No low image is created or saved during a quick operation.
+                            os.remove(ldr_handle[0])
+                            hdu3 = None     #No low image is created or saved during a quick operation.
 
                     #***After this point we no longer care about the camera specific files.
                     if not quick and gather_status:
@@ -1202,7 +1213,7 @@ class Camera:
         
                         hdu.header['DETECTOR'] = "G-Sense CMOS 4040"
                         hdu.header['CAMNAME'] = 'gf03'
-                        hdu.header['CAMANUF'] = 'Finger Lakes Instrumentation'
+                        hdu.header['CAMMANUF'] = 'Finger Lakes Instrumentation'
 #                        try:
 #                            hdu.header['GAIN'] = g_dev['cam'].camera.gain
                         #print('Gain was read;  ', g_dev['cam'].camera.gain)
@@ -1212,7 +1223,7 @@ class Camera:
                         hdu.header['GAIN'] = 2.2   #20190911   LDR-LDC mode set in ascom
                         hdu.header['RDNOISE'] = 4.86
                         hdu.header['CMOSCAM'] = True
-                        hdu.header['CMOSMODE'] = 'HDR-LDC'  #Need to figure out how to read this from setup.
+                        hdu.header['CMOSMODE'] = 'HDR-HDC'  #Need to figure out how to read this from setup.
                         hdu.header['SATURATE'] = 3600
                         hdu.header['PIXSCALE'] = 0.85*self.camera.BinX
 
@@ -1262,22 +1273,23 @@ class Camera:
                         except:
                             pass
                         
-                        
+                        text = open(im_path + text_name, 'w')  #This is always needed by AWS to set up database.
+                        text.write(str(hdu.header))
+                        text.close()
+                        text_data_size = len(str(hdu.header)) - 2048                        
                         if not quick:
                             hdu1.writeto(raw_path + raw_name00, overwrite=True)
                             hdu1.close()
-                            text = open(im_path + text_name, 'w')
-                            text.write(str(hdu.header))
-                            text.close()
-                        text_data_size = len(str(hdu.header)) - 2048
                         raw_data_size = hdu.data.size
 
                         print("\n\Finish-Exposure is complete:  " + raw_name00, raw_data_size, '\n')
-                        calibrate(hdu, hdu2[0], lng_path, frame_type, start_x=start_x, start_y=start_y, quick=quick)
-                    
+
+                        calibrate(hdu, hdu3, lng_path, frame_type, start_x=start_x, start_y=start_y, quick=quick)
                         if not quick:
                             hdu1.writeto(cal_path + cal_name, overwrite=True)   #THis needs qualifying and should not be so general.
                             hdu1.writeto(im_path + raw_name01, overwrite=True)
+                            #THE above does not quite make sense.
+                            
 ##                        if b.data.shape[1] == 2098:
 ##                            overscan = hdu.data[:, 2048:]
 ##                            medover = np.median(overscan)
@@ -1363,6 +1375,7 @@ class Camera:
                             pass
                         
                                 
+                        if quick:  pass
                         hdu.data = hdu.data.astype('uint16')   
                         resized_a = resize(hdu.data, (768, 768), preserve_range=True)
                         #print(resized_a.shape, resized_a.astype('uint16'))
@@ -1384,9 +1397,9 @@ class Camera:
                         imsave(im_path + jpeg_name, img3)
                         jpeg_data_size = img3.size - 1024
                         if not no_AWS:                        
+                            self.enqueue_image(text_data_size, im_path, text_name)
                             self.enqueue_image(jpeg_data_size, im_path, jpeg_name)
                             if not quick:
-                                self.enqueue_image(text_data_size, im_path, text_name)
                                 self.enqueue_image(db_data_size, im_path, db_name)
                                 self.enqueue_image(raw_data_size, im_path, raw_name01)                       
                         self.img = None
@@ -1433,30 +1446,10 @@ class Camera:
         self.t8 = time.time()
         return
             
-
-#
-#            #                        self.last_image_name = f'{int(time.time())}_{site}_testimage_{duration}s_no{self.image_number}.jpg'
-#            #                        print(f"image file: {self.last_image_name}")
-#            #                        self.images.append(self.last_image_name)
-#            #                        #self.save_image(self.last_image_name)
-#            #                        self.image_number += 1
-
-
-          
-
     def enqueue_image(self, priority, im_path, name):
         image = (im_path, name)
         #print("stuffing Queue:  ", priority, im_path, name)
         g_dev['obs'].aws_queue.put((priority, image), block=False)
-        
-#        aws_req = {"object_name": "raw_data/2019/" + name}
-#        aws_resp = g_dev['obs'].api.authenticated_request('GET', 'WMD/upload/', aws_req)
-#
-#        with open(im_path + name , 'rb') as f:
-#            files = {'file': (im_path + name, f)}
-#            http_response = requests.post(aws_resp['url'], data=aws_resp['fields'], files=files)
-#            print("\n\nhttp_response:  ", http_response, '\n')
-        
 
 if __name__ == '__main__':
 #    import config

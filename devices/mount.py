@@ -20,7 +20,7 @@ class Mount:
         self.rdsys = 'J.now'
         self.inst = 'tel1'
         self.tel = tel
-        print('Can Move Axis is Possible.', self.mount.CanMoveAxis(0), self.mount.CanMoveAxis(1))
+        #print('Can Move Axis is Possible.', self.mount.CanMoveAxis(0), self.mount.CanMoveAxis(1))
         
 
         if not tel:
@@ -30,12 +30,13 @@ class Mount:
         print(self.mount.Description)
         self._paddle = serial.Serial('COM38', timeout=0.1)
         self._paddle.write(b'ver\n')
-        print(self._paddle.read(13).decode()[-8:])
+        #print(self._paddle.read(13).decode()[-8:])
         self._paddle.write(b"gpio iodir 00ff\n")
         #self._paddle.write(b"gpio readall\n")
-        print('a:',self._paddle.read(20).decode())
-        print('b:',self._paddle.read(20).decode())
-        print('c:',self._paddle.read(20).decode())
+        #print('a:',self._paddle.read(20).decode())
+        #print('b:',self._paddle.read(20).decode())
+        #print('c:',self._paddle.read(20).decode())
+        print("Paddle connected but not operational.")
         #self.paddle_thread = threading.Thread(target=self.paddle(self._paddle, self.mount), args=())
         #self.paddle_thread.start()
 
