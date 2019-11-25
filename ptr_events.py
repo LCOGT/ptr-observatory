@@ -23,6 +23,7 @@ from datetime import datetime, timedelta
 from math import degrees
 
 from ptr_config import *
+from global_yard import *
 #from ptr_utility import *
 from astropy.time import Time
 
@@ -179,6 +180,22 @@ def illumination(sunRa, sunDec, sunElev, sunDia, moonRa, moonDec, moonElev, moon
     skyMag = 22-2.5*log10(skyBrightRatio)
     return illuminance,  skyMag  #Units are lux, dimensionless ratio, approx mag/sq-asec
     #
+def flat_spot_now(go=False):
+    ra, dec, sun_alt, sun_az, *other = sunNow()
+    print('Sun:  ', sun_alt, sun_az)
+    sun_az2 = sun_az - 180.
+    if sun_az2 < 0:
+        sun_az2 += 360.
+    sun_alt2 = sun_alt + 105
+    if sun_alt2 > 90:
+        sun_alt2 = 180 - sun_alt2
+    elif sun_alt2 <=90:
+        sun_az2 = sun_az
+    if go:
+        g_dev['mnt'].mount.SlewToAltAzAsync(sun_az2, sun_alt2)
+
+    return(sun_alt2, sun_az2)
+    
 
 def sunNow():
     dayNow = ephem.now()

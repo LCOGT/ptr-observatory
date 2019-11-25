@@ -22,6 +22,9 @@ class FilterWheel:
             self.filter_front.Connected = True
             self.filter_back = win32com.client.Dispatch(driver[1])
             self.filter_back.Connected = True
+#            flifil1 or flifil3?
+#            HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\ASCOM\FilterWheel Drivers\ASCOM.FLI.FilterWheel1
+            print("filters are connected")
             self.dual = True
             self.filter_selected = self.filter_data[self.filter_reference][0]
             self.filter_number = int(self.filter_reference)

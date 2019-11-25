@@ -98,17 +98,21 @@ class Enclosure:
     
     def manager(self):     #This is the place where the enclosure is autonomus during operating hours. Delicut Code!!!
         
-        if ptr_events.sunZ88Op <= ptr_events.ephem.now() <= ptr_events.sunZ88Cl \
+        #   ptr_events.sunZ88Op <=
+        if  ptr_events.sunZ88Op < ptr_events.ephem.now() < ptr_events.sunZ88Cl \
                                and self. wx_is_ok() \
                                and self.wait_time <= 0 \
                                and self.enclosure.ShutterStatus == 1: #Closed
-            print('open')
+            #print('open')
             #Since this could be a re-open we assume other code opened covers, unparked, seeked, etc.
             #open
             self.state = 'Open, Wx OK, in Observing window.'    #A descriptive string of the state of the enclosure
             self.cycles += 1           #if >=3 inhibits reopening for Wx    #NBNBN THis needs to be persistend across envocatins of the code when testing.
-            self.wait_time = 0        #A countdown to re-open
+            self.wait_time = 0
+            #A countdown to re-open
             self.enclosure.OpenShutter()
+            ptr_events.flat_spot_now(go=True)
+
 
 
             

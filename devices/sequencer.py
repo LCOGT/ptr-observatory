@@ -1,7 +1,8 @@
 
 import win32com.client
 import time
-from global_yard import g_dev 
+from global_yard import g_dev
+from devices.calibration import fit_quadratic
 
 class Sequencer:
 
@@ -42,9 +43,10 @@ class Sequencer:
         action = command['action']
         script = command['required_params']['script']
         if action == "run" and script == 'focus_auto':
-            req = {'time': 0.2,  'alias': 'gf01', 'image_type': 'toss', 'filter': 2}
-            opt = {'size': 100, 'count': 1}
-            g_dev['cam'].expose_command(req, opt)   #Do not inhibit gather status for an autofocus.
+#            req = {'time': 0.2,  'alias': 'gf01', 'image_type': 'toss', 'filter': 2}
+#            opt = {'size': 100, 'count': 1}
+#            g_dev['cam'].expose_command(req, opt)   #Do not inhibit gather status for an autofocus.
+            self.focus_auto_script(req, opt)
         elif action == "run" and script == 'genScreenFlatMasters':
             self.screen_flat_script(req, opt)
         elif action == "stop":
@@ -107,7 +109,6 @@ class Sequencer:
         #Take a 10 s dark screen air flat to sense ambient
         req = {'time': 10,  'alias': 'gf01', 'image_type': 'Bias'}
         opt = {'size': 100, 'count': bias_count, 'filter': g_dev['fil'].filter_data[2][0]}
-        breakpoint()
         g_dev['cam'].expose_command(req, opt, gather_status = False, no_AWS=True)
         
         for gain in gain_screen_values :
@@ -191,7 +192,7 @@ class Sequencer:
         
         '''
         
-    def auto_focus_script(self, req, opt):
+    def focus_auto_script(self, req, opt):
         '''
         V curve is a big move focus designed to fit two lines adjacent to the more normal focus curve.
         It finds the approximate focus, particulary for a new instrument. ti requires 8 points plus
@@ -202,121 +203,48 @@ class Sequencer:
         Fine focus consists of five points plus a verify.
         
         Optionally individual images can be multiples of one to average out seeing.
-
-#NBNBNB This is holdover AF code to be removed.
-#        if required_params['image_type'] == 'toss':           
-#            count =  4    #Must be set to cause the right number of images to be taken
-#            self.af_mode = True
-#            self.af_step = -1
-#            area = "1x-jpg"
-#            new_filter = 'w'
-#            exposure_time = max(exposure_time, 3.0)
-#            print('AUTOFOCUS CYCLE\n')
-#        else:
-#            self.af_mode = False
-#            self.af_step = -1 
-        
-        
-#NB Again, ALL AF code.                        
-#                        throw = 600
-#                        if True:   #Was a Maxim test 
-#                            if not self.af_mode:
-#                                next_focus = g_dev['foc'].focuser.Position #self.current_offset + g_dev['foc'].reference
-#                            else:
-#                                #This is an AF cycle so need to set up.  This version  does not PRE_FOCUS from reference.
-#                                if  self.af_step == -1:
-#                                    self.f_positions = []
-#                                    self.f_spot_dia = []
-#                                    #Take first image with no focus adjustment
-#                                    next_focus = g_dev['foc'].focuser.Position   #self.current_offset + g_dev['foc'].reference
-#                                    self.af_start_position = next_focus
-#                                    self.af_step = 0
-#                                elif self.af_step == 0:
-#                                    #Since cooling requires an increased focus setting move out:
-#                                    next_focus = self.af_start_position + throw   #self.current_offset + g_dev['foc'].reference + throw  #+0.6mm
-#                                    self.af_step = 1
-#                                elif self.af_step == 1:
-#                                    #This step needs to overcome backlash
-#                                    next_focus = self.af_start_position - (throw + 600)   #-1.2mm
-#                                    if next_focus != g_dev['foc'].focuser.Position:
-#                                        #Here we overtravel them come back
-#                                        g_dev['foc'].focuser.Move(next_focus)
-#                                        while  g_dev['foc'].focuser.IsMoving:
-#                                            time.sleep(0.5)
-#                                            print('<')
-#                                    #Now we advance by inward extra throw amount
-#                                    next_focus = self.af_start_position - throw   #-0.6MM
-#                                    self.af_step = 2                            
-#                                elif self.af_step == 2:
-#                                    #this should use the self.new_focus solution
-#                                    next_focus = self.next_focus #self.filter_offset[selection] + ptr_config.get_focal_ref(self.name)
-#                                    #next_focus -= self.filter_offset   #Filter-offsets need to be thought through better
-#                                    #ptr_config.set_focal_ref(self.name, next_focus)
-#                                    #Here we would update the shelved reference focus
-#                                    self.af_step = 3
-#                                elif self.af_step == 3:
-#                                    #Here we should advance and verify new focus
-#                                    #next_focus = self.filter_offset[selection] + ptr_config.get_focal_ref(self.name) 
-#                                    self.f_positions = []
-#                                    self.f_spot_dia = []
-#                                    self.af_mode = False    #This terminates the AF steps, if count > 4 will just read other images
-#                                    self.af_step = -1
-#                                    next_focus = self.next_focus
-#                            next_focus = g_dev['foc'].focuser.Position     #THIS IS CLEASRLY INCORRECT
-#                            if next_focus != g_dev['foc'].focuser.Position:
-#                                print('****Focus adjusting to:  ', next_focus)
-#                                g_dev['foc'].focuser.Move(next_focus)
-        self=None
-        spot = None
-        #second part
-        if self.af_mode:
-            #THIS NEEDS DEFENSE AGAINST NaN returns from sep
+        '''
+        req = {'time': 5,  'alias': 'gf01', 'image_type': 'toss', 'filter': 2}
+        opt = {'size': 71, 'count': 1}
+        #Take first image where we are
+        foc_pos1 = g_dev['foc'].focuser.Position
+        print('Starting at:  ', foc_pos1)
+        throw = 300
+        result = g_dev['cam'].expose_command(req, opt)
+        if result is not None and len(result) == 2:
+            spot1, foc_pos1 = result
+        else:
+            spot1 = 3.0
+            foc_pos1 = 10473
+        g_dev['foc'].focuser.Move(foc_pos1 - throw)
+        result = g_dev['cam'].expose_command(req, opt)
+        if result is not None and len(result) == 2:
+            spot2, foc_pos2 = result
+        else:
+            spot2 = 3.6
+            foc_pos2 = 10173
+        g_dev['foc'].focuser.Move(foc_pos1 + 2*throw)   #It is important to overshoot to overcome any backlash
+        g_dev['foc'].focuser.Move(foc_pos1 + throw)
+        result = g_dev['cam'].expose_command(req, opt)
+        if result is not None and len(result) == 2:
+            spot3, foc_pos3 = result
+        else:
+            spot3 = 3.7
+            foc_pos3 = 10773
+        x = [foc_pos1, foc_pos2, foc_pos3]
+        y = [spot1, spot2, spot3]
+        #Digits are to help out pdb commands!
+        a1, b1, c1, d1 = fit_quadratic(x, y)
+        new_spot = round(a1*d1*d1 + b1*d1 + c1, 2)
+        print ('Solved focus:  ', round(d1, 2), new_spot)
+        g_dev['foc'].focuser.Move(int(d1))
+        result = g_dev['cam'].expose_command(req, opt, halt=True)
+        if result is not None and len(result) == 2:
+            spot4, foc_pos4 = result
             
-            if 0 <= self.af_step < 3:
-                #to simulate
-    #                                if self.af_step == 0:
-    #                                    spot = 5                                 
-    #                                if self.af_step == 1: spot = 4
-    #                                if self.af_step == 2: spot = 6
-    #                                if self.af_step == 3: spot = 5.01                                
-                self.f_positions.append(g_dev['foc'].focuser.Position)
-                self.f_spot_dia.append(spot)
-                print("Auto-focus:  ", self.f_spot_dia, self.f_positions)
-            if self.af_step == 2:
-                if self.f_spot_dia[2] <= self.f_spot_dia[0] <= self.f_spot_dia[1]:
-                    print ('Increasing spot size, move in.')
-                    self.next_focus = self.f_positions[2] - 250   #microns
-                elif self.f_spot_dia[2] >= self.f_spot_dia[0] >= self.f_spot_dia[1]:
-                    print ('Decreasing spot size, move out')
-                    self.next_focus = self.f_positions[1] + 250   #microns
-                else:
-                    tup = self.fit_quadratic(self.f_positions, self.f_spot_dia)
-                    aaa = tup[0]
-                    bbb = tup[1]
-                    ccc = tup[2]
-                    print ('a, b, c:  ', aaa , bbb, ccc, self.f_positions, self.f_spot_dia)
-                    #find the minimum
-                    try:
-                        x = -bbb/(2*aaa)
-                        print('a, b, c, x, spot:  ', aaa ,bbb , ccc, x, aaa*x**2 + bbb*x + ccc)
-                    except:
-                        print('Auto Focus did not produce a Solution.')
-                        x = self.af_start_position  #  Return to prior to startng g_dev['foc'].reference
-                    self.next_focus = x
-                self.af_step = 3
-            if self.af_step == 3:
-                print("Check before seeking to final.")
-                print('AF result:  ', spot, g_dev['foc'].focuser.Position)
-                self.f_spot_dia = []
-                self.f_positions = []
-
-        NB   Focus centering. If the solve is outside the supplied range of the focus x-values, then
-        we are way out of focus.  In that case we know which way and can revert to a V-curve solution.  That
-        should put the second focus test very close to correct.  Note the temp compensation is on order of -168 to -200
-        microns per c.  So we need a V-Curve envelope to improve this setup.  And we need a better temp coefficient.
-    '''                         
+        print('Actual focus:  ', foc_pos4, round(spot4, 2))
         
-            
-    #return  focus, temp, float(spot)
+
+
     
     

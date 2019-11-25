@@ -5,6 +5,7 @@ import serial
 import time, json
 from math import cos, radians
 from global_yard import g_dev 
+import ptr_events
 
 #The mount is not threaded and uses non-blocking seek.
 class Mount:
@@ -17,6 +18,7 @@ class Mount:
         win32com.client.pythoncom.CoInitialize()
         self.mount = win32com.client.Dispatch(driver)
         self.mount.Connected = True
+#        print('Can Asynch:  ', self.mount.CanSlewAltAzAsync)
         self.rdsys = 'J.now'
         self.inst = 'tel1'
         self.tel = tel
@@ -28,10 +30,10 @@ class Mount:
         else:
             print(f"Tel/OTA connected.")
         print(self.mount.Description)
-        self._paddle = serial.Serial('COM38', timeout=0.1)
-        self._paddle.write(b'ver\n')
-        #print(self._paddle.read(13).decode()[-8:])
-        self._paddle.write(b"gpio iodir 00ff\n")
+#        self._paddle = serial.Serial('COM38', timeout=0.1)
+#        self._paddle.write(b'ver\n')
+#        #print(self._paddle.read(13).decode()[-8:])
+#        self._paddle.write(b"gpio iodir 00ff\n")
         #self._paddle.write(b"gpio readall\n")
         #print('a:',self._paddle.read(20).decode())
         #print('b:',self._paddle.read(20).decode())
@@ -256,6 +258,9 @@ class Mount:
             self.park_command(req, opt)
         elif action == 'center_on_pixels':
             print (command)
+        elif action == 'sky_flat_position':
+            print (command)
+            ptr_events.flat_spot_now(go=True)
         else:
             print(f"Command <{action}> not recognized.")
 

@@ -377,11 +377,13 @@ class Observatory:
     def send_to_AWS(self):  #pri_image is a tuple, smaller first item has priority. second item is also
                                        #A tuple containing im_path and name.    
         while True:
+            
             if not self.aws_queue.empty():
                 
                 pri_image = self.aws_queue.get(block=False)
                 if pri_image is None:
-                    time.sleep(0.1)
+                    time.sleep(0.4)
+                    
                     continue
                 #Here we parse the item, set up and send to AWS
                 #print('sendToAWS:  ', pri_image)
@@ -402,15 +404,17 @@ class Observatory:
                     start_send = time.time()
                     #print('\n\n\nStart send at:  ', start_send, '\n\n\n')
                     http_response = requests.post(aws_resp['url'], data=aws_resp['fields'], files=files)
-                    #print("\n\nhttp_response:  ", http_response, '\n\n')
+                    print("\n\nhttp_response:  ", http_response, '\n\n')
                 if name[-3:] == 'bz2' or name[-3:] == 'jpg' or name[-3:] =='txt':
                     #os.remove(im_path + name)   #We do not need to keep 
                     pass
                     #print('Deleting:  ', im_path + name)
                 self.aws_queue.task_done()
                 #print('\n*****AWS Transfer completed in:  ', int(time.time() - start_send), ' sec.  *****\n')
-                time.sleep(0.1)
-            time.sleep(0.1)
+                time.sleep(0.2)
+            else:
+                time.sleep(0.4)
+                continue
         
 
 
