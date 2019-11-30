@@ -9,6 +9,7 @@ class FilterWheel:
         self.name = name
         g_dev['fil']= self
         self.config = config
+        print("FW:  ", config)
         self.filter_data = self.config['filter_wheel']['filter_wheel1']['settings']['filter_data'][1:]
         self.filter_screen_sort = self.config['filter_wheel']['filter_wheel1']['settings']['filter_screen_sort']
         self.filter_reference = int(self.config['filter_wheel']['filter_wheel1']['settings']['filter_reference'])

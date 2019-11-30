@@ -83,7 +83,7 @@ class Sequencer:
         print(f"rotator cmd: home")
         pass
     
-    def screen_flat_script(self, req, opt):
+    def screen_flat_script_old(self, req, opt):
         
         '''
         We will assume the filters have loaded those filters needed in screen flats, highest throughput to lowest.
@@ -98,7 +98,7 @@ class Sequencer:
         
         '''
         gain_screen_values = [42, 39, 36, 33, 30, 27, 23, 20, 17, 14, 11, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0]
-        bias_count = 15
+        bias_count = 7
         flat_count = int(req['numFrames'])
         gain_calc = req['gainCalc']
         shut_comp =  req['shutterCompensation']
@@ -128,7 +128,7 @@ class Sequencer:
 #        g_dev['cam'].expose_command(req, opt, gather_status = False)
         print('Screen Gain sequence completed.')
         
-    def screen_flat_script1(self, req, opt):
+    def screen_flat_script(self, req, opt):
         
         '''
         We will assume the filters have loaded those filters needed in screen flats, highest throughput to lowest.
@@ -146,7 +146,7 @@ class Sequencer:
         
         '''
         dark_count = 1
-        flat_count = int(req['numFrames'])
+        flat_count = 1#int(req['numFrames'])
         gain_calc = req['gainCalc']
         shut_comp =  req['shutterCompensation']
         if flat_count < 1: flat_count = 1
@@ -156,8 +156,7 @@ class Sequencer:
         #Take a 10 s dark screen air flat to sense ambient
         req = {'time': 10,  'alias': 'gf01', 'image_type': 'screen flat'}
         opt = {'size': 100, 'count': dark_count, 'filter': g_dev['fil'].filter_data[0][0]}
-        g_dev['cam'].expose_command(req, opt, gather_status = False, no_AWS=True)
-        
+        #g_dev['cam'].expose_command(req, opt, gather_status = False, no_AWS=True)
         for filt in g_dev['fil'].filter_screen_sort:
             filter_number = int(filt)
             print(filter_number, g_dev['fil'].filter_data[filter_number][0])
@@ -165,11 +164,11 @@ class Sequencer:
             sensitivity = float(g_dev['fil'].filter_data[filter_number][4])
             sensitivity = sensitivity*exposure
             screen_bright = int((3000/sensitivity)*100/160)
-            g_dev['scr'].set_screen_bright(screen_bright)
+            g_dev['scr'].set_screen_bright(0)#screen_bright)
             g_dev['scr'].screen_light_on()
             g_dev['fil'].set_number_command(filter_number)
             print('Test Screen; filter, bright:  ', filter_number, screen_bright)
-            exp_time = 3
+            exp_time = 5
             if filter_number == 9 or filter_number == 21:
                 exp_time *= 8
             req = {'time': exp_time,  'alias': 'gf01', 'image_type': 'screen flat'}

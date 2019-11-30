@@ -400,7 +400,7 @@ def calibrate (hdu, hdu_ldr, lng_path, frame_type='light', start_x=0, start_y=0,
 #                if not quick: print('Hotmap_300_ldr failed to load.')
 #        else:
 #            pass   #Enf of quick block.
-    #Here we actually calibrate.  
+    #Here we actually calibrate.
     while True:   #Use break to drop through to exit.  i.e., do not calibrte frames we are acquring for calibration.
         cal_string = ''
         if not quick:
@@ -414,7 +414,7 @@ def calibrate (hdu, hdu_ldr, lng_path, frame_type='light', start_x=0, start_y=0,
             img = img - 164.   #An arbitrary cut.
             hdu.data = img
             break
-        if super_bias is not None and mn < 4000:
+        if super_bias is not None and mn < 3590:
             #if not quick: print(start_x, start_x + img.shape[0], start_y, start_y + img.shape[1])
             img = img - super_bias[start_x:(start_x + img.shape[0]), start_y:(start_y + img.shape[1])]  #hdu.header['NAXIS2, NAXIS1']
             if not quick: 
@@ -446,7 +446,7 @@ def calibrate (hdu, hdu_ldr, lng_path, frame_type='light', start_x=0, start_y=0,
 #            h_pix = hotpix_300
         else:
             do_dark = False  
-        if do_dark and mn < 4000:
+        if do_dark and mn < 3590:
         #Need to verify dark is not 0 seconds long!
             if d_exp >= data_exposure_level and d_exp >= 1:
                 scale = data_exposure_level/d_exp
@@ -509,10 +509,10 @@ def calibrate (hdu, hdu_ldr, lng_path, frame_type='light', start_x=0, start_y=0,
     while not quick and hdu_ldr is not None:   #Use break to drop through to exit.  i.e., do not calibrte frames we are acquring for calibration.
         cal_string = ''
         img = hdu_ldr.data.astype('float32')
-        mn, std = imageStats(img, False)
+        mn_ldr, std = imageStats(img, False)
         if loud: print('LDR InputImage', imageStats(img, loud))
         if frame_type == 'bias': break
-        if super_bias_ldr is not None and mn < 4000:
+        if super_bias_ldr is not None:
             print(start_x, start_x + img.shape[0], start_y, start_y + img.shape[1])
             img = img - super_bias_ldr[start_x:(start_x + img.shape[0]), start_y:(start_y + img.shape[1])]  #hdu.header['NAXIS2, NAXIS1']
             if loud: print('LDR QuickBias result:  ', imageStats(img, loud))
@@ -533,7 +533,7 @@ def calibrate (hdu, hdu_ldr, lng_path, frame_type='light', start_x=0, start_y=0,
 #            h_pix = hotpix_300
         else:
             do_dark = False  
-        if do_dark and mn < 4000:
+        if do_dark:
         #Need to verify dark is not 0 seconds long!
             if d_exp >= data_exposure_level and d_exp >= 1:
                 scale = data_exposure_level/d_exp
@@ -543,7 +543,8 @@ def calibrate (hdu, hdu_ldr, lng_path, frame_type='light', start_x=0, start_y=0,
             else:
                 print('INFO:  Dark exposure too small, skipped this step.')           
         img_filter = hdu.header['FILTER']
-        if frame_type[-4:]  == 'flat': break       #Note frame type end inf 'flat, e.g arc_flat, screen_flat, sky_flat
+        if frame_type[-4:]  == 'flat': 
+            pass   #break       #Note frame type end inf 'flat, e.g arc_flat, screen_flat, sky_flat
         do_flat = False
         if img_filter == 'w':
             do_flat= False
@@ -564,20 +565,23 @@ def calibrate (hdu, hdu_ldr, lng_path, frame_type='light', start_x=0, start_y=0,
             cal_string = 'Uncalibrated'
         hdu_ldr.header['CALHIST'] = cal_string
         hdu_ldr.data = img.astype('float32')
-        if not quick: print('Pre merge:  ', hdu.data.max(), hdu_ldr.data.max(), hdu_ldr.data.max()*20.69)
-        #ldr_scaled = hdu_ldr.data*20.909 #17.2314281698    #20191025b
-        jam = np.where(hdu.data > 3600)
-        if not quick: print('jam length:  ', len(jam[0]))
-        hdu.data[jam] = hdu_ldr.data[jam]*20.69 #17.23142816988    #20191025b
+        if not quick: print('Pre merge:  ', hdu.data.max(), hdu_ldr.data.max(), hdu_ldr.data.max()*20.396)
+        #201910125
+        if mn_ldr > 150:
+            hdu.data = hdu_ldr.data*20.396  #Ignore high range data
+        else:
+            jam = np.where(hdu.data > 3600)
+            if not quick: print('jam length:  ', len(jam[0]))
+            hdu.data[jam] = hdu_ldr.data[jam]*20.396 #17.23142816988    #20191025b
         if not quick: print('Merged hdu.data.max():  ', hdu.data.max())
         #Temp fix for Tim Bq.
         fix = np.where(hdu.data < 0)
         if not quick: print('# of 0 fix pixels:  ', len(fix[0]))
         hdu.data[fix] = 0
-        big_max = hdu.data.max()
-        
-        if big_max > 65535.:   #This scaling is probelmatic.
-            hdu.data = hdu.data*(65530./big_max)
+#        big_max = hdu.data.max()
+#        
+#        if big_max > 65535.:   #This scaling is probelmatic.
+#            hdu.data = hdu.data*(65530./big_max)
         #Just trimmed any spurious negatives and scaled to 0:65530
         
         break

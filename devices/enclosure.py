@@ -110,8 +110,8 @@ class Enclosure:
             self.cycles += 1           #if >=3 inhibits reopening for Wx    #NBNBN THis needs to be persistend across envocatins of the code when testing.
             self.wait_time = 0
             #A countdown to re-open
-            self.enclosure.OpenShutter()
-            ptr_events.flat_spot_now(go=True)
+            #self.enclosure.OpenShutter()
+            #ptr_events.flat_spot_now(go=True)
 
 
 

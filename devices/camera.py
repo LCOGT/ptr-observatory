@@ -23,9 +23,12 @@ import matplotlib.pyplot as plt
 from PIL import Image
 from global_yard import g_dev
 import ptr_config
-from devices import calibration
-import ptr_events
+import calibration
 #import ptr_events
+import filter_wheel
+import focuser
+import rotator
+import ptr_events
 #import api_calls
 #import requests
 
@@ -77,7 +80,7 @@ class Camera:
         self.cmd_in = None
         #Set camera to a sensible default state -- this should ultimately be configuration settings 
         self.camera_model = "FLI Kepler 4040 #gf03"
-        #self.camera.Binx = 1     #Kepler does not accept a bin
+        #self.camera.Binx = 1     #Kepler 400 does not accept a bin??
         #self.camera.BinY = 1
         self.cameraXSize = self.camera.CameraXSize  #unbinned
         self.cameraYSize = self.camera.CameraYSize  #unbinned
@@ -114,14 +117,14 @@ class Camera:
         else:
             status['busy_lock'] = 'false'
         if self.maxim:
-            cam_stat = 'unknown'#self.camera.CameraState
+            cam_stat = 'unknown' #self.camera.CameraState
         if self.ascom:
-            cam_stat = self.camera.CameraState
+            cam_stat = 'unknown' #self.camera.CameraState
         status['status'] = str(cam_stat)  #The state could be expanded to be more meaningful.
-        if self.maxim:
-            status['ccd_temperature'] = str(round(self.camera.Temperature , 3))
-        if self.ascom:
-            status['ccd_temperature'] = str(round(self.camera.CCDTemperature , 3))
+#        if self.maxim:
+#            status['ccd_temperature'] = str(round(self.camera.Temperature , 3))
+#        if self.ascom:
+#            status['ccd_temperature'] = str(round(self.camera.CCDTemperature , 3))
             
 
 
@@ -184,7 +187,7 @@ class Camera:
         Apply settings and start an exposure. 
         Quick=True is meant to be fast.  We assume the ASCOM imageBuffer is the source of data, not the Files path.
         '''
-        c = self.camera
+
         print('Expose Entered.  req:  ', required_params, 'opt:  ', optional_params)
         bin_x = optional_params.get('bin', '1,1')
         if bin_x == '2,2':
@@ -401,17 +404,18 @@ class Camera:
             #SEQ is the outer repeat count loop.
             if seq > 0: 
                 g_dev['obs'].update_status()
-            if self.current_filter == 'u':
-                bolt = [ 'O3', 'HA', 'N2', 'S2', 'ContR', 'zs', 'u']
-                ptr_events.flat_spot_now(go=True)
-            elif self.current_filter == 'PL':
-                bolt = [ 'PR', 'PG', 'PB', 'PL']
-            elif self.current_filter == 'g':
-                bolt = [ 'r', 'i', 'zs', 'u', 'w', 'g']
-            else:
-                bolt = [self.current_filter]
+#            if self.current_filter == 'u':
+#                bolt = [ 'O3', 'HA', 'N2', 'S2', 'ContR', 'zs', 'u']
+#                ptr_events.flat_spot_now(go=True)
+#            elif self.current_filter == 'PL':
+#                bolt = [ 'PR', 'PG', 'PB', 'PL']
+#            elif self.current_filter == 'g':
+#                bolt = [ 'r', 'i', 'zs', 'u', 'w', 'g']
+#            else:
+            bolt = [self.current_filter]
                 
-            for fil in bolt:  # 'N2', 'S2', 'CR']: #range(1)
+            for fil in bolt:  # 'N2', 'S2', 'CR']: #range(1)                
+             
                 filter_req = {'filter_name': str(fil)}
                 filter_opt = {}
                 if self.current_filter != new_filter:
@@ -429,45 +433,85 @@ class Camera:
                         self.pre_foc = []
                         self.pre_ocn = []
                         #Check here for filter, guider, still moving  THIS IS A CLASSIC case where a timeout is a smart idea.
+                        #                           g_dev['mnt'].mount.Slewing or \
                         while  g_dev['foc'].focuser.IsMoving or \
                            g_dev['rot'].rotator.IsMoving or \
-                           g_dev['mnt'].mount.Slewing or \
                            g_dev['fil'].filter_front.Position == -1 or \
                            g_dev['fil'].filter_back.Position == -1:
                            print('>> Filter, focus, rotator or mount is still moving. >>')
                            time.sleep(1)
                         self.t1 = time.time()
                         #Used to inform fits header where telescope is for scripts like screens.
-                        g_dev['ocn'].get_quick_status(self.pre_ocn)
+                        #g_dev['ocn'].get_quick_status(self.pre_ocn)
                         g_dev['foc'].get_quick_status(self.pre_foc)
                         g_dev['rot'].get_quick_status(self.pre_rot)
-                        g_dev['mnt'].get_quick_status(self.pre_mnt)  #stage two quick_get_'s symmetric around exposure
+                        #g_dev['mnt'].get_quick_status(self.pre_mnt)  #stage two quick_get_'s symmetric around exposure
                         self.exposure_busy = True                       
-                        print('First Entry', c.StartX, c.StartY, c.NumX, c.NumY, exposure_time)
-#                        try:
-#                            ldr_handle= glob.glob('Q:\\archive\\gf03\\raw_kepler\\' + g_dev['d-a-y'] + '\\' + '*low.fits')
-#                        except:
-#                            try:
-#                                ldr_handle = glob.glob('Q:\\archive\\gf03\\raw_kepler\\' + g_dev['next_day'] + '\\' + '*low.fits')
-#                            except:
-#                                print("something went wrong reading in a version of low.fits")
-#                        for item in ldr_handle:
-#                            os.remove(item)
-#                            print("removed:  ", item)
-
-                        self.t2 = time.time()       #Immediately before Exposure
-                        #c.SetFullFrame()
-
+                        print('First Entry', self.camera.StartX, self.camera.StartY, self.camera.NumX, self.camera.NumY, exposure_time)
                         if self.ascom:
-                            c.StartExposure(exposure_time, imtypeb)     #True indicates Light Frame.  Maxim Difference of code
+                            try:
+                                ldr_handle= glob.glob('Q:\\archive\\gf03\\raw_kepler\\' + g_dev['next_day'] + '\\' + '*low.fits')
+                                ldr_handle_high= glob.glob('Q:\\archive\\gf03\\raw_kepler\\' + g_dev['next_day'] + '\\' + '*high.fits')
+                            except:
+                                print("Something went wrong reading in a version of low / or high.fits")
+                            if ldr_handle == [] or ldr_handle_high == []:
+                                try:
+                                    ldr_handle = glob.glob('Q:\\archive\\gf03\\raw_kepler\\' + g_dev['d-a-y'] + '\\' + '*low.fits')
+                                    ldr_handle_high = glob.glob('Q:\\archive\\gf03\\raw_kepler\\' + g_dev['d-a-y'] + '\\' + '*high.fits')
+                                except:
+                                    print("Something went wrong reading in a version of low / or high.fits")  
+                            if len(ldr_handle_high) > 0:
+                                for item in ldr_handle_high:
+                                    os.remove(item)
+                            if len(ldr_handle) > 0:
+                                for item in ldr_handle:
+                                    os.remove(item)
+                            print('Connected:  ', self.camera.connected)
+                            self.camera.connected = False
+                            self.camera.connected = True
+                            self.camera.AbortExposure()
+                            self.t2 = time.time()       #Immediately before Exposure
+                            self.camera.StartExposure(exposure_time, imtypeb)     #True indicates Light Frame.  Maxim Difference of code
                         elif self.maxim:
-                            c.Expose(exposure_time, imtypeb)
+                            try:
+                                ldr_handle= glob.glob('Q:\\archive\\gf03\\raw_kepler\\' + g_dev['next_day'] + '\\' + '*low.fits')
+                                ldr_handle_high= glob.glob('Q:\\archive\\gf03\\raw_kepler\\' + g_dev['next_day'] + '\\' + '*high.fits')
+                            except:
+                                print("Something went wrong reading in a version of low / or high.fits")
+                            if ldr_handle == [] or ldr_handle_high == []:
+                                try:
+                                    ldr_handle = glob.glob('Q:\\archive\\gf03\\raw_kepler\\' + g_dev['d-a-y'] + '\\' + '*low.fits')
+                                    ldr_handle_high = glob.glob('Q:\\archive\\gf03\\raw_kepler\\' + g_dev['d-a-y'] + '\\' + '*high.fits')
+                                except:
+                                    print("Something went wrong reading in a version of low / or high.fits")  
+                            if len(ldr_handle_high) > 0:
+                                new_list = []
+                                for item in ldr_handle_high:
+                                    new_list.append( (os.stat(item).st_mtime, item))
+                                new_list.sort()
+                                ldr_handle_high_time = new_list[-1][0]
+                                    #os.remove(item)
+                                    #pass
+                            if len(ldr_handle) > 0:
+
+                                new_list = []
+                                for item in ldr_handle:
+                                    new_list.append( (os.stat(item).st_mtime, item))
+                                new_list.sort()
+                                ldr_handle_time = new_list[-1][0]
+                                    #os.remove(item)
+                                    #pass
+                            print('Link Enable:  ', self.camera.LinkEnabled)
+                            self.camera.AbortExposure()
+                            self.t2 = time.time()
+                            self.camera.Expose(exposure_time, imtypeb)
                         else:
                             print("Something terribly wrong!")
                         self.t9 = time.time()
                         #We go here to keep this subroutine a reasonable length.
                         result = self.finish_exposure(exposure_time,  frame_type, count - seq, p_next_filter, p_next_focus, p_dither, \
-                                             gather_status, do_sep, no_AWS, dist_x, dist_y, quick=quick, halt=halt)
+                                             gather_status, do_sep, no_AWS, dist_x, dist_y, quick=quick, halt=halt, low=ldr_handle_time, \
+                                             high=ldr_handle_high_time)
                         self.exposure_busy = False
                         self.t10 = time.time()
                         #self.exposure_busy = False  Need to be able to do repeats
@@ -504,9 +548,9 @@ class Camera:
     ###############################
     
     def finish_exposure(self, exposure_time, frame_type, counter, p_next_filter=None, p_next_focus=None, p_dither=False, \
-                        gather_status=True, do_sep=False, no_AWS=False, start_x=None, start_y=None, quick=False, halt=False):
-        print("Finish exposure Entered:  ", self.af_step, exposure_time, frame_type, counter, ' to go!')
-        print(exposure_time, frame_type, counter, p_next_filter, p_next_focus, p_dither, \
+                        gather_status=True, do_sep=False, no_AWS=False, start_x=None, start_y=None, quick=False, halt=False, low=0, high=0):
+        #print("Finish exposure Entered:  ", self.af_step, exposure_time, frame_type, counter, ' to go!')
+        print("Finish exposure Entered:  ", exposure_time, frame_type, counter, p_next_filter, p_next_focus, p_dither, \
                         gather_status, do_sep, no_AWS, start_x, start_y)
         if self.bpt_flag:
             pass
@@ -518,39 +562,74 @@ class Camera:
         counter = 0
         while True:
             try:
+                time.sleep(0.1)
+                hi_low = []
+                probe_a = glob.glob('Q:\\archive\\gf03\\raw_kepler\\' + g_dev['next_day'] + '\\' + '*low.fits')
+                probe_b = glob.glob('Q:\\archive\\gf03\\raw_kepler\\' + g_dev['next_day'] + '\\' + '*high.fits')
+                probe_c = glob.glob('Q:\\archive\\gf03\\raw_kepler\\' + g_dev['d-a-y'] + '\\' + '*low.fits')
+                probe_d = glob.glob('Q:\\archive\\gf03\\raw_kepler\\' + g_dev['d-a-y'] + '\\' + '*high.fits')
+                if len(probe_a) > 0:
+                    new_list = []
+                    for item in probe_a:
+                        new_list.append( (os.stat(item).st_mtime, item))
+                        new_list.sort()
+                        ldr_handle_time = new_list[-1][0]
+                        ldr_handle = new_list[-1][1]
+                if len(probe_b) > 0:
+                    new_list = []
+                    for item in probe_b:
+                        new_list.append( (os.stat(item).st_mtime, item))
+                        new_list.sort()
+                        ldr_handle_high_time = new_list[-1][0]
+                        ldr_handle_high = new_list[-1][1]
+                if len(probe_c) > 0:
+                    new_list = []
+                    for item in probe_c:
+                        new_list.append( (os.stat(item).st_mtime, item))
+                        new_list.sort()
+                        ldr_handle_time = new_list[-1][0]
+                        ldr_handle = new_list[-1][1]
+                if len(probe_d) > 0:
+                    new_list = []
+                    for item in probe_d:
+                        new_list.append( (os.stat(item).st_mtime, item))
+                        new_list.sort()
+                        ldr_handle_high_time = new_list[-1][0]
+                        ldr_handle_high = new_list[-1][1]
                 self.t3 = time.time()
-                if self.camera.ImageReady: #and not self.img_available and self.exposing:
+                print(ldr_handle_time , low , ldr_handle_high_time , high)
+                if ldr_handle_time > low and ldr_handle_high_time > high:  #len(hi_low) == 2:  #self.camera.ImageReady: #and not self.img_available and self.exposing:
                     self.t4 = time.time()
                     print('Time to ImageReady:  ', self.t4 - self.t2)
                     #print( glob.glob('Q:\\archive\\gf03\\raw_kepler\\' + g_dev['next_day'] + '\\' + '*.fits'))
-                    
                     if not quick and gather_status:
-                        g_dev['mnt'].get_quick_status(self.post_mnt)  #stage symmetric around exposure
+                        #g_dev['mnt'].get_quick_status(self.post_mnt)  #stage symmetric around exposure
                         g_dev['rot'].get_quick_status(self.post_rot)
                         g_dev['foc'].get_quick_status(self.post_foc)
                         g_dev['ocn'].get_quick_status(self.post_ocn)
                     self.t5 = time.time()
-                    if self.maxim:
-                        self.camera.SaveImage('Q:\\archive\\gf03\\newest.fits')
+                    #if self.maxim:
+                        #self.camera.SaveImage('Q:\\archive\\gf03\\newest.fits')
                         #Save image with Maxim Fits Header information, then read back with astropy
-                    if self.ascom:
-#                        if p_next_filter is not None:
-#                            print("Post image filter seek here")
-#                        if p_next_focus is not None:
-#                            print("Post Image focus seek here")
-#                        if p_dither:
-#                            print("Post image dither step here")
-                        img = self.camera.ImageArray
-                        img = np.array(img).astype('uint16')   #THIS LINE OF CODE IS NECESSARY!
-                        #Next line makes the image like those from Default MaximDL
-                        img = img.transpose()
-                        self.t6 = time.time()
-                        print('Post transpose:  ', self.t6-self.t2)
+                    if self.maxim:  #self.ascom:
+##                        if p_next_filter is not None:
+##                            print("Post image filter seek here")
+##                        if p_next_focus is not None:
+##                            print("Post Image focus seek here")
+##                        if p_dither:
+##                            print("Post image dither step here")
+#                        img = self.camera.ImageArray
+#                        img = np.array(img).astype('uint16')   #THIS LINE OF CODE IS NECESSARY!
+#                        #Next line makes the image like those from Default MaximDL
+#                        img = img.transpose()
+#                        self.t6 = time.time()
+#                        time.sleep(0.1)
+#                        print('Post transpose:  ', self.t6-self.t2)
 
                         #Save high mage with Fits Header information, then read back with astropy and fill out keywords.
-                        hdu = fits.PrimaryHDU(img)
-                        hdu1 = fits.HDUList([hdu])
-                        hdu = hdu1[0]
+#                        hdu = fits.PrimaryHDU(img)
+#                        hdu1 = fits.HDUList([hdu])
+#                        hdu = hdu1[0]
 #                        try:
 #                            #This should be a very fast disk.
 #                            pass
@@ -560,65 +639,73 @@ class Camera:
 #                            print('Write to newest.fits failed because it is busy, -- reason unknown.')
 #                            os.remove('Q:\\archive\\' + 'gf03'+ '\\newest.fits')
 #                            return
-                        try:
-                            ldr_handle= glob.glob('Q:\\archive\\gf03\\raw_kepler\\' + g_dev['d-a-y'] + '\\' + '*low.fits')
-                            ldr_handle_high= glob.glob('Q:\\archive\\gf03\\raw_kepler\\' + g_dev['d-a-y'] + '\\' + '*high.fits')
-                        except:
-                            try:
-                                ldr_handle = glob.glob('Q:\\archive\\gf03\\raw_kepler\\' + g_dev['next_day'] + '\\' + '*low.fits')
-                                ldr_handle_high = glob.glob('Q:\\archive\\gf03\\raw_kepler\\' + g_dev['next_day'] + '\\' + '*high.fits')
-                            except:
-                                hdu3 = None
-                                print("something went wrong reading in a version of low / or high.fits")
-                        if ldr_handle == []:
-                            try:
-                                ldr_handle = glob.glob('Q:\\archive\\gf03\\raw_kepler\\' + g_dev['next_day'] + '\\' + '*low.fits')
-                                ldr_handle_high = glob.glob('Q:\\archive\\gf03\\raw_kepler\\' + g_dev['next_day'] + '\\' + '*high.fits')
-                            except:
-                                hdu3 = None
-                                print("something went wrong reading in a version of low / or high.fits")  
-                        if not quick:     #For quicks we do not deal with low data range data.
-
-                            new_list = []
-                            print("Len high:  ", len(ldr_handle_high))
-                            if len(ldr_handle_high) > 0:
-                                for item in ldr_handle_high:
-                                    new_list.append( (os.stat(item).st_mtime, item))
-                                new_list.sort()
-                                ldr_handle_high = new_list[-1][1]
-                                for item in new_list[0:-1]:
-                                    os.remove(item[1])
-                            new_list = []
-                            for item in ldr_handle:
-                                new_list.append( (os.stat(item).st_mtime, item))
-                            new_list.sort()
-                            ldr_handle = new_list[-1][1]
-                            for item in new_list[0:-1]:
-                                os.remove(item[1])
-                            hdub = fits.open(ldr_handle) #This directory should only have one file.                        hdu = fits.PrimaryHDU(img)
-                            img = hdub[0].data
-                            hdub.close()
-                            hdu3 = fits.PrimaryHDU(img)
-                            hdu3b = fits.HDUList([hdu3])
-                            hdu3 = hdu3b[0]
-                            hdu3.header['FILTER']= self.current_filter   #Fix bocus filter.
-                            hdu3.header['DATE-OBS'] = datetime.datetime.isoformat(datetime.datetime.utcfromtimestamp(self.t2))
-                            hdu3.header['DATE'] = datetime.datetime.isoformat(datetime.datetime.utcfromtimestamp(self.t2))
-                            hdu3.header['EXPTIME'] = exposure_time
-                        else:
-                            #os.remove(ldr_handle[0])
-                            hdu3 = None     #No low image is created or saved during a quick operation.
+# =============================================================================
+#                         try:
+#                             ldr_handle= glob.glob('Q:\\archive\\gf03\\raw_kepler\\' + g_dev['next_day'] + '\\' + '*low.fits')
+#                             ldr_handle_high= glob.glob('Q:\\archive\\gf03\\raw_kepler\\' + g_dev['next_day'] + '\\' + '*high.fits')
+#                         except:
+#                             hdu3 = None
+#                             print("Something went wrong reading in a version of low / or high.fits")
+#                         if ldr_handle == []:
+#                             try:
+#                                 ldr_handle = glob.glob('Q:\\archive\\gf03\\raw_kepler\\' + g_dev['d-a-y'] + '\\' + '*low.fits')
+#                                 ldr_handle_high = glob.glob('Q:\\archive\\gf03\\raw_kepler\\' + g_dev['d-a-y'] + '\\' + '*high.fits')
+#                             except:
+#                                 hdu3 = None
+#                                 print("Something went wrong reading in a version of low / or high.fits")  
+#                         if not quick:     #For quicks we do not deal with low data range data.
+#                             #Process high range image
+#                             new_list = []
+#                             for item in ldr_handle_high:
+#                                 new_list.append( (os.stat(item).st_mtime, item))
+#                             new_list.sort()
+#                             ldr_handle_high = new_list[-1][1]
+#                             for item in new_list[0:-1]:
+#                                 os.remove(item[1])
+# =============================================================================
+                        hdua = fits.open(ldr_handle_high)
+                        img = hdua[0].data
+                        hdua.close()
+                        hdu = fits.PrimaryHDU(img)
+                        hdu1 = fits.HDUList([hdu])
+                        hdu = hdu1[0]
+                        #Process low range image
+#                            new_list = []
+#                            for item in ldr_handle:
+#                                new_list.append( (os.stat(item).st_mtime, item))
+#                            new_list.sort()
+#                            ldr_handle = new_list[-1][1]
+#                            for item in new_list[0:-1]:
+#                                os.remove(item[1])
+                        hdub = fits.open(ldr_handle) #This directory should only have one file.                        hdu = fits.PrimaryHDU(img)
+                        imgb = hdub[0].data
+                        hdub.close()
+                        hdu3 = fits.PrimaryHDU(imgb)
+                        hdu3b = fits.HDUList([hdu3])
+                        hdu3 = hdu3b[0]
+                        hdu3.header['FILTER']= self.current_filter   #Fix bocus filter.
+                        hdu3.header['DATE-OBS'] = datetime.datetime.isoformat(datetime.datetime.utcfromtimestamp(self.t2))
+                        hdu3.header['DATE'] = datetime.datetime.isoformat(datetime.datetime.utcfromtimestamp(self.t2))
+                        hdu3.header['EXPTIME'] = exposure_time
+                        return (2.0, 12345)
+                    else:
+                        #os.remove(ldr_handle[0])
+                        hdu3 = None     #No low image is created or saved during a quick operation.
                     #***After this point we no longer care about the camera specific files.
+                    self.camera.AbortExposure()
+                    breakpoint()
                     if not quick and gather_status:
-                        avg_mnt = g_dev['mnt'].get_average_status(self.pre_mnt, self.post_mnt)
+                        #avg_mnt = g_dev['mnt'].get_average_status(self.pre_mnt, self.post_mnt)
                         avg_foc = g_dev['foc'].get_average_status(self.pre_foc, self.post_foc)
                         avg_rot = g_dev['rot'].get_average_status(self.pre_rot, self.post_rot)
-                        avg_ocn = g_dev['ocn'].get_average_status(self.pre_ocn, self.post_ocn)
+                        #avg_ocn = g_dev['ocn'].get_average_status(self.pre_ocn, self.post_ocn)
+                        if hdu3 is not None:
+                            hdu3.header['CALC-LUX'] = avg_ocn[7]
+                            hdu3.header['SKY-HZ'] = avg_ocn[8]
+                            hdu3.header['ROOF'] = g_dev['enc'].get_status()['shutter_status']
+                    else:
+                        avg_foc = [0,0]   #This needs a serious clean-up
                     #print(avg_ocn, avg_foc, avg_rot, avg_mnt)
-                    if hdu3 is not None:
-                        hdu3.header['CALC-LUX'] = avg_ocn[7]
-                        hdu3.header['SKY-HZ'] = avg_ocn[8]
-                        hdu3.header['ROOF'] = g_dev['enc'].get_status()['shutter_status']
                     #counter = 0
                     try:
                         #Save the raw data after adding fits header information.
@@ -684,9 +771,9 @@ class Camera:
                         hdu.header['OPERATOR'] = "WER"
                         hdu.header['ENCLOSE']  = "Clamshell"   #Need to document shutter status, azimuth, internal light.
                         hdu.header['DOMEAZ']  = "NA"   #Need to document shutter status, azimuth, internal light.
-                        hdu.header['ROOF']  = g_dev['enc'].get_status()['shutter_status']   #"Open/Closed"   #Need to document shutter status, azimuth, internal light.
                         hdu.header['ENCLIGHT'] ="Off/White/Red/IR"
                         if not quick and gather_status:
+        
                             hdu.header['MNT-SIDT'] = avg_mnt['sidereal_time']
                             ha = avg_mnt['right_ascension'] - avg_mnt['sidereal_time']
                             hdu.header['MNT-RA'] = avg_mnt['right_ascension']
@@ -724,6 +811,7 @@ class Camera:
                             hdu.header['PRESSURE'] = avg_ocn[6]
                             hdu.header['CALC-LUX'] = avg_ocn[7]
                             hdu.header['SKY-HZ'] = avg_ocn[8]
+                            hdu.header['ROOF']  = g_dev['enc'].get_status()['shutter_status']   #"Open/Closed"
         
                         hdu.header['DETECTOR'] = "G-Sense CMOS 4040"
                         hdu.header['CAMNAME'] = 'gf03'
@@ -792,11 +880,11 @@ class Camera:
                         text.close()
                         text_data_size = len(str(hdu.header)) - 2048                        
                         if not quick:
-                            hdu1.writeto(raw_path + raw_name00, overwrite=True)
-                            hdu1.close()
-                        raw_data_size = hdu.data.size
+                            hdu.writeto(raw_path + raw_name00, overwrite=True)
+                            #hdu.close()
+                        #raw_data_size = hdu.data.size
 
-                        print("\n\Finish-Exposure is complete:  " + raw_name00, raw_data_size, '\n')
+                        print("\n\Finish-Exposure is complete:  " + raw_name00)#, raw_data_size, '\n')
 
                         calibration.calibrate(hdu, hdu3, lng_path, frame_type, start_x=start_x, start_y=start_y, quick=quick)
                         
@@ -897,6 +985,7 @@ class Camera:
                         
                                 
                         if quick:  pass
+                        return (spot, avg_foc[1])
                         hdu.data = hdu.data.astype('uint16')   
                         resized_a = resize(hdu.data, (768, 768), preserve_range=True)
                         #print(resized_a.shape, resized_a.astype('uint16'))
@@ -939,7 +1028,7 @@ class Camera:
                         breakpoint()
                     return (spot, avg_foc[1])
                 else:               #here we are in waiting for imageReady loop and could send status and check Queue
-                    time.sleep(.01)                    
+                    time.sleep(.2)                    
                     #if not quick:
                     #   g_dev['obs'].update()    #This keeps status alive while camera is loopin
                     self.t7= time.time()
@@ -949,7 +1038,7 @@ class Camera:
                 counter += 1
                 time.sleep(.01)
                 #This shouldbe counted down for a loop cancel.
-                print('>>>')
+                print('~')
                 continue
         #definitely try to clean up any messes.
         try:
@@ -1015,13 +1104,128 @@ if __name__ == '__main__':
         },
                    
     },
-   }
-    req = {'time': 2,  'alias': 'gf03', 'image_type': 'Light', 'filter': 2}
-    opt = {'size': 100}
-    #cam = Camera('Maxim.CCDCamera', "gf03", config)
-    cam = Camera('ASCOM.FLI.Kepler.Camera', "gf03", config)
-    cam.expose_command(req, opt, gather_status=False, quick=True)
+    }
 
+    filter_config ={'filter_wheel': {
+        "filter_wheel1": {
+            "parent": "telescope1",
+            "alias": "Dual filter wheel",
+            "desc":  'FLI Centerline Custom Dual 50mm sq.',
+            "driver": ['ASCOM.FLI.FilterWheel', 'ASCOM.FLI.FilterWheel1'],
+            'settings': {
+                'filter_count': '23',
+                'filter_reference': '2',
+                'filter_screen_sort':  ['0', '1', '2', '3', '7', '19', '6', '18', '12', '11', '13', '8', '20', '10', \
+                                        '14', '15', '4', '16', '9', '21'],  # '5', '17'], #Most to least throughput, \
+                                        #so screen brightens, skipping u and zs which really need sky.
+                'filter_sky_sort':  ['17', '5', '21', '9', '16', '4', '15', '14', '3', '20', '8', '13', '11', '12', \
+                                     '18', '6', '19', '7', '10', '2', '1', '0'],  #Least to most throughput
+                'filter_data': [['filter', 'filter_index', 'filter_offset', 'sky_gain', 'screen_gain', 'abbreviation'],
+                                ['air', '(0, 0)', '-1000', '0.01', '790', 'ai'],   # 0Mul Screen@100% by saturate*exp
+                                ['dif', '(4, 0)', '0', '0.01', '780', 'di'],   # 1
+                                ['w', '(2, 0)', '0', '0.01', '780', 'w_'],   # 2
+                                ['ContR', '(1, 0)', '0', '0.01', '175', 'CR'],   # 3
+                                ['N2', '(3, 0)', '0', '0.01', '101', 'N2'],   # 4
+                                ['u', '(0, 5)', '0', '0.01', '0.2', 'u_'],   # 5
+                                ['g', '(0, 6)', '0', '0.01', '550', 'g_'],   # 6
+                                ['r', '(0, 7)', '0', '0.01', '630', 'r_'],   # 7
+                                ['i', '(0, 8)', '0', '0.01', '223', 'i_'],   # 8
+                                ['zs', '(5, 0)', '0', '0.01', '15.3','zs'],   # 9
+                                ['PL', '(0, 4)', '0', '0.01', '775', "PL"],   # 10
+                                ['PR', '(0, 3)', '0', '0.01', '436', 'PR'],   # 11
+                                ['PG', '(0, 2)', '0', '0.01', '446','PG'],   # 12
+                                ['PB', '(0, 1)', '0', '0.01', '446', 'PB'],   # 13
+                                ['O3', '(7, 0)', '0', '0.01', '130','03'],   # 14
+                                ['HA', '(6, 0)', '0', '0.01', '101','HA'],   # 15
+                                ['S2', '(8, 0)', '0', '0.01', '28','S2'],   # 16
+                                ['dif_u', '(4, 5)', '0', '0.01', '0.2', 'du'],   # 17
+                                ['dif_g', '(4, 6)', '0', '0.01', '515','dg'],   # 18
+                                ['dif_r', '(4, 7)', '0', '0.01', '600', 'dr'],   # 19
+                                ['dif_i', '(4, 8)', '0', '0.01', '218', 'di'],   # 20
+                                ['dif_zs', '(9, 0)', '0', '0.01', '14.5', 'dz'],   # 21
+                                ['dark', '(10, 9)', '0', '0.01', '0.0', 'dk']]   # 22
+                                #Screen = 100; QHY400 ~ 92% DQE   HDR Mode    Screen = 160 sat  20190825 measured.
+                                
+            },
+        },                  
+    }   
+    }
+    
+    focus_config = {'focuser': {
+        'focuser1': {
+            'parent': 'telescope1',
+            'alias': 'focuser',
+            'desc':  'Planewave IRF PWI3',
+            'driver': 'ASCOM.PWI3.Focuser',
+            'reference':  '9062',    #Nominal at 20C Primary temperature
+            'coef_c': '0',   #negative means focus moves out as Primary gets colder
+            'coef_0': '10461',  #Nominal intercept when Primary is at 0.0 C.
+            'coef_date':  '20191124',    #-102.0708 + 12402.224   20190829   R^2 = 0.67  Ad hoc added 900 units.
+            'minimum': '0',
+            'maximum': '19000', 
+            'step_size': '1',
+            'backlash':  '0',
+            'unit': 'micron',
+            'has_dial_indicator': 'True'
+        },
+
+    } 
+    }
+    rotator_config = {    'rotator': {
+        'rotator1': {
+            'parent': 'tel1',
+            'alias': 'rotator',
+            'desc':  'Planewave IRF PWI3',
+            'driver': 'ASCOM.PWI3.Rotator',
+            'minimum': '-180.0',
+            'maximum': '360.0',
+            'step_size':  '0.0001',
+            'backlash':  '0.0',     
+            'unit':  'degree'
+        },
+    },
+    }             
+
+    #cam = Camera('ASCOM.FLI.Kepler.Camera', "gf03", config)
+    day_str = ptr_events.compute_day_directory()
+    #breakpoint()
+    g_dev['day'] = day_str
+    next_day = ptr_events.Day_tomorrow
+    g_dev['d-a-y'] = day_str[0:4] + '-' + day_str[4:6] +  '-' + day_str[6:]
+    g_dev['next_day'] = next_day[0:4] + '-' + next_day[4:6] +  '-' + next_day[6:]
+    print('Next Day is:  ', g_dev['next_day'])
+
+    #patch_httplib
+#    print('\nNow is:  ', ptr_events.ephem.now(), g_dev['d-a-y'])   #Add local Sidereal time at Midnight
+#    try:
+#         os.remove('Q:\\archive\\' + 'gf03'+ '\\newest.fits')
+#    except:
+#        print("Newest.fits not removed, catuion.")
+#    foc = focuser.Focuser('ASCOM.PWI3.Focuser', 'focuser', focus_config)
+#    rot = rotator.Rotator('ASCOM.PWI3.Rotator', 'rotator')
+#    fil = filter_wheel.FilterWheel( ['ASCOM.FLI.FilterWheel', 'ASCOM.FLI.FilterWheel1'], 'filter_wheel1' , filter_config)
+    req = {'time': 2,  'alias': 'gf03', 'image_type': 'Light'}
+    opt = {'size': 100, 'filter': '0'}
+    cam = Camera('Maxim.CCDCamera', "gf03", config)
+    print(cam.expose_command(req, opt, gather_status=False, quick=True))
+    opt = {'size': 100, 'filter': '1'}
+    print(cam.expose_command(req, opt, gather_status=False, quick=True))   
+    opt = {'size': 100, 'filter': '2'}
+    print(cam.expose_command(req, opt, gather_status=False, quick=True))   
+    opt = {'size': 100, 'filter': '3'}
+    print(cam.expose_command(req, opt, gather_status=False, quick=True))    
+    opt = {'size': 100, 'filter': '4'}
+    print(cam.expose_command(req, opt, gather_status=False, quick=True))    
+    opt = {'size': 100, 'filter': '5'}
+    print(cam.expose_command(req, opt, gather_status=False, quick=True))    
+    ropt = {'size': 100, 'filter': '6'}
+    print(cam.expose_command(req, opt, gather_status=False, quick=True))
+    ropt = {'size': 100, 'filter': '7'}
+    print(cam.expose_command(req, opt, gather_status=False, quick=True))
+    
+    ropt = {'size': 100, 'filter': '8'}
+    print(cam.expose_command(req, opt, gather_status=False, quick=True))
+        
 #    This fragment directly runs the camera not through the routines above
 #    cam.camera.StartExposure(0.001, False)
 #    elapsed = 0

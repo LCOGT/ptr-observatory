@@ -195,10 +195,11 @@ site_config = {
             'settings': {
                 'filter_count': '23',
                 'filter_reference': '2',
-                'filter_screen_sort':  ['0', '1', '2', '10', '7', '19', '6', '18', '12', '11', '13', '8', '20', '3', \
-                                        '14', '15', '4', '16', '9', '21'],  # '5', '17'],
+                'filter_screen_sort':  ['0', '1', '2', '3', '7', '19', '6', '18', '12', '11', '13', '8', '20', '10', \
+                                        '14', '15', '4', '16', '9', '21'],  # '5', '17'], #Most to least throughput, \
+                                        #so screen brightens, skipping u and zs which really need sky.
                 'filter_sky_sort':  ['17', '5', '21', '9', '16', '4', '15', '14', '3', '20', '8', '13', '11', '12', \
-                                     '18', '6', '19', '7', '10', '2', '1', '0'],
+                                     '18', '6', '19', '7', '10', '2', '1', '0'],  #Least to most throughput
                 'filter_data': [['filter', 'filter_index', 'filter_offset', 'sky_gain', 'screen_gain', 'abbreviation'],
                                 ['air', '(0, 0)', '-1000', '0.01', '790', 'ai'],   # 0Mul Screen@100% by saturate*exp
                                 ['dif', '(4, 0)', '0', '0.01', '780', 'di'],   # 1
@@ -234,7 +235,7 @@ site_config = {
             'parent': 'telescope1',
             'alias': 'gf03',      #Important because this points to a server file structure by that name.
             'desc':  'FLI Kepler 4040',
-            'driver':  'ASCOM.FLI.Kepler.Camera',  #"Maxim.CCDCamera"
+            'driver':  "Maxim.CCDCamera",   #'ASCOM.FLI.Kepler.Camera',  #"Maxim.CCDCamera"
             'settings': {
                 'x_start':  '0',
                 'y_start':  '0',

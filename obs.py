@@ -19,8 +19,8 @@ Shutter compensation?
 
 Autofocus
 
-Gather Sky Flats  First need to set up to track SkyFlat spot from approx time where exposures cn start through the
-finish, avoiding a zenith event.    However a zenith event really does not affect things very much.  WE have the field
+Gather Sky Flats  First need to set up to track SkyFlat spot from approx time where exposures can start through the
+finish, avoiding a zenith event.    However a zenith event really does not affect things very much.  We have the field
 roation issue to contend with though.   A different problem is exposure calculation.  In principle we should be able to predict
 sky bright at midpoint of upcoming exposure since the transformation is only moderately quadratic.  So what we need is 
 adu/lux for each filter.
@@ -58,6 +58,7 @@ import ptr_config
 import ptr_events
 import api_calls
 import requests
+import calibration
 import config
 import os
 
