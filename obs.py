@@ -54,11 +54,9 @@ MaximDL and filter wheel interactions.
 import time, json, sys, threading, queue     #17 to 1 Brightness
 
 from api_calls import API_calls
-import ptr_config
 import ptr_events
 import api_calls
 import requests
-import calibration
 import config
 import os
 
@@ -197,7 +195,7 @@ class Observatory:
                 elif dev_type == "screen":
                     device = Screen('EastAlnitak', 'COM22')
                 elif dev_type == "camera":                      
-                    device = Camera(driver, name, self.config)   #APPARENTLY THIS NEEDS TO BE STARTED PRIOR TO FILTER WHEEL!!!
+                    device = Camera(driver, name, self.config, remote_mode=True)   #APPARENTLY THIS NEEDS TO BE STARTED PRIOR TO FILTER WHEEL!!!
                     time.sleep(2)
                 elif dev_type == "sequencer":
                      device = Sequencer(driver, name)

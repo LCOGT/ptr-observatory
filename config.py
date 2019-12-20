@@ -195,7 +195,7 @@ site_config = {
             'settings': {
                 'filter_count': '23',
                 'filter_reference': '2',
-                'filter_screen_sort':  ['0', '1', '2', '3', '7', '19', '6', '18', '12', '11', '13', '8', '20', '10', \
+                'filter_screen_sort':  ['0', '1', '2', '10', '7', '19', '6', '18', '12', '11', '13', '8', '20', '3', \
                                         '14', '15', '4', '16', '9', '21'],  # '5', '17'], #Most to least throughput, \
                                         #so screen brightens, skipping u and zs which really need sky.
                 'filter_sky_sort':  ['17', '5', '21', '9', '16', '4', '15', '14', '3', '20', '8', '13', '11', '12', \

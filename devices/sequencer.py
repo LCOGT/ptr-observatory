@@ -145,8 +145,8 @@ class Sequencer:
             take the count
         
         '''
-        dark_count = 1
-        flat_count = 1#int(req['numFrames'])
+        dark_count = 3
+        flat_count = 3#int(req['numFrames'])
         gain_calc = req['gainCalc']
         shut_comp =  req['shutterCompensation']
         if flat_count < 1: flat_count = 1
@@ -156,15 +156,15 @@ class Sequencer:
         #Take a 10 s dark screen air flat to sense ambient
         req = {'time': 10,  'alias': 'gf01', 'image_type': 'screen flat'}
         opt = {'size': 100, 'count': dark_count, 'filter': g_dev['fil'].filter_data[0][0]}
-        #g_dev['cam'].expose_command(req, opt, gather_status = False, no_AWS=True)
+        g_dev['cam'].expose_command(req, opt, gather_status = False, no_AWS=True)
         for filt in g_dev['fil'].filter_screen_sort:
             filter_number = int(filt)
             print(filter_number, g_dev['fil'].filter_data[filter_number][0])
-            exposure = 0.2
+            exposure = 1
             sensitivity = float(g_dev['fil'].filter_data[filter_number][4])
             sensitivity = sensitivity*exposure
             screen_bright = int((3000/sensitivity)*100/160)
-            g_dev['scr'].set_screen_bright(0)#screen_bright)
+            g_dev['scr'].set_screen_bright(screen_bright)
             g_dev['scr'].screen_light_on()
             g_dev['fil'].set_number_command(filter_number)
             print('Test Screen; filter, bright:  ', filter_number, screen_bright)
@@ -174,6 +174,7 @@ class Sequencer:
             req = {'time': exp_time,  'alias': 'gf01', 'image_type': 'screen flat'}
             opt = {'size': 100, 'count': flat_count, 'filter': g_dev['fil'].filter_data[filter_number][0]}
             g_dev['cam'].expose_command(req, opt, gather_status = False, no_AWS=True)
+            print('seq 7')
                 
         g_dev['scr'].screen_dark()
         #take a 10 s dark screen air flat to sense ambient
