@@ -3,6 +3,7 @@ import win32com.client
 import time
 import serial
 from global_yard import g_dev 
+import config_east as config
 import ptr_config
 
 #TEMP COEFF ESTIMATED 20190824   fx= round(-164.0673*C_pri +13267.37, 1)  #A very good 1.5C span.  9986@20C. Random Hyst ~ 500 microns! :((( )))

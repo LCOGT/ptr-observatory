@@ -46,6 +46,7 @@ site_config = {
         'enclosure1': {
             'parent': 'site',
             'alias': 'Megawan',
+            'hostIP':  '10.15.0.50',
             'driver': 'ASCOM.SkyRoof.Dome',
             'has_lights':  'true',
             'controlled_by':  ['mnt1', 'mnt2'],
@@ -53,6 +54,25 @@ site_config = {
                 'lights':  ['Auto', 'White', 'Red', 'IR', 'Off'],       #A way to encode possible states or options???
                                                                         #First Entry is always default condition.
                 'roof_shutter':  ['Auto', 'Open', 'Close', 'Lock Closed', 'Unlock'],                               
+            },
+        },
+    'web_cam': {
+        'web_cam1 ': {
+            'parent': 'enclosure1',
+            'alias': 'MegaCam',
+            'desc':  'AXIS PTZ w control',
+            'driver': 'http://10.15.0.19',
+            'fov':  '90.0',
+            'altitude': '90.0',
+            'azimuth':  '0.0'      #or '180.0'
+            },
+                
+        'web_cam2 ': {
+            'parent': 'enclosure1',
+            'alias': 'FLIR',
+            'desc':  'FLIR NIR 10 micron Zenith View 90 deg',
+            'driver': 'http://10.15.0.18',
+            'fov':  '90.0'
             },
         },
     },
@@ -113,13 +133,13 @@ site_config = {
         'telescope1': {
             'parent': 'mount1',
             'alias': 'Main OTA',
-            'desc':  'Planewave CDK 450mm F6',
+            'desc':  'Planewave CDK 500 F6.8',
             'driver': 'None',                     #Essentially this device is informational.  It is mostly about the optics.
-            'collecting_area':  '146438.0',
-            'obscuration':  '33%',
-            'aperture': '450.0',
-            'focal_length': '2457.3',
-            'has_dew_heater':  'true',
+            'collecting_area':  '119773.0',
+            'obscuration':  '39%',
+            'aperture': '500',
+            'focal_length': '3454',
+            'has_dew_heater':  'false',
             'screen_name': 'screen1',
             'focuser_name':  'focuser1',
             'rotator_name':  'rotator1',
@@ -128,7 +148,6 @@ site_config = {
             'has_fans':  'true',
             'has_cover':  'false',
                 'settings': {
-                    'dew_heater': ['Auto', 'On', 'Off'],
                     'fans': ['Auto','High', 'Low', 'Off'],
                     'offset_collimation': '0.0',    #If the mount model is current, these numbers are usually near 0.0 
                                                     #for tel1.  Units are arcseconds.
@@ -142,7 +161,7 @@ site_config = {
         'rotator1': {
             'parent': 'tel1',
             'alias': 'rotator',
-            'desc':  'Planewave IRF PWI3',
+            'desc':  'Opetc Gemini',
             'driver': 'ASCOM.PWI3.Rotator',
             'minimum': '-180.0',
             'maximum': '360.0',
@@ -169,18 +188,18 @@ site_config = {
         'focuser1': {
             'parent': 'telescope1',
             'alias': 'focuser',
-            'desc':  'Planewave IRF PWI3',
+            'desc':  'Optec Gemini',
             'driver': 'ASCOM.PWI3.Focuser',
-            'reference':  '9062',    #Nominal at 20C Primary temperature
+            'reference':  '6300',    #Nominal at 20C Primary temperature
             'coef_c': '0',   #negative means focus moves out as Primary gets colder
-            'coef_0': '10461',  #Nominal intercept when Primary is at 0.0 C.
+            'coef_0': '0',  #Nominal intercept when Primary is at 0.0 C.
             'coef_date':  '20191124',    #-102.0708 + 12402.224   20190829   R^2 = 0.67  Ad hoc added 900 units.
             'minimum': '0',
-            'maximum': '19000', 
+            'maximum': '12700', 
             'step_size': '1',
             'backlash':  '0',
             'unit': 'micron',
-            'has_dial_indicator': 'True'
+            'has_dial_indicator': 'false'
         },
 
     },
@@ -281,16 +300,7 @@ site_config = {
     },
                 
     'web_cam': {
-        'web_cam1 ': {
-            'parent': 'enclosure1',
-            'alias': 'MegaCam',
-            'desc':  'AXIS PTZ w control',
-            'driver': 'http://10.15.0.19',
-            'fov':  '90.0',
-            'altitude': '90.0',
-            'azimuth':  '0.0'      #or '180.0'
-            },
-                
+               
         'web_cam3 ': {
             'parent': 'enclosure1',
             'alias': 'FLIR',
@@ -304,13 +314,7 @@ site_config = {
 
                 },
             },
-        'web_cam2 ': {
-            'parent': 'enclosure1',
-            'alias': 'FLIR',
-            'desc':  'FLIR NIR 10 micron Zenith View 90 deg',
-            'driver': 'http://10.15.0.18',
-            'fov':  '90.0'
-            },
+
     },
        
 

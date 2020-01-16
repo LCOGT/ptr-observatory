@@ -57,7 +57,7 @@ from api_calls import API_calls
 import ptr_events
 import api_calls
 import requests
-import config
+import config_east as config
 import os
 
 # import device classes
@@ -132,12 +132,12 @@ class Observatory:
         self.update_config()
         self.device_types =[
         'observing_conditions',
-        'enclosure',
+#        'enclosure',
         'mount',
         'telescope',
         'rotator',
         'focuser',
-        'screen',
+#        'screen',
         'camera',
         'sequencer',
         'filter_wheel']
@@ -181,9 +181,9 @@ class Observatory:
                 #print('looking for dev-types:  ', dev_type)
                 if dev_type == "observing_conditions":
                     device = ObservingConditions(driver, name)
-                elif dev_type == "enclosure":
-                    print("enc:  ", driver, name)
-                    device = Enclosure(driver, name)
+#                elif dev_type == "enclosure":
+#                    print("enc:  ", driver, name)
+#                    device = Enclosure(driver, name)
                 elif dev_type == "mount":
                     device = Mount(driver, name, settings, tel=False)
                 elif dev_type == "telescope":
@@ -192,16 +192,17 @@ class Observatory:
                     device = Focuser(driver, name, self.config)
                 elif dev_type == "rotator":
                     device = Rotator(driver, name)
-                elif dev_type == "screen":
-                    device = Screen('EastAlnitak', 'COM22')
+#                elif dev_type == "screen":
+#                    device = Screen('EastAlnitak', 'COM22')
                 elif dev_type == "camera":                      
-                    device = Camera(driver, name, self.config, remote_mode=True)   #APPARENTLY THIS NEEDS TO BE STARTED PRIOR TO FILTER WHEEL!!!
+                    device = Camera(driver, name, self.config)   #APPARENTLY THIS NEEDS TO BE STARTED PRIOR TO FILTER WHEEL!!!
                     time.sleep(2)
                 elif dev_type == "sequencer":
                      device = Sequencer(driver, name)
                 elif dev_type == "filter_wheel":
                      #pass
-                     device = FilterWheel(driver, name, self.config)
+                     #device = FilterWheel(driver, name, self.config)
+                     print('Filter wheel bypassed')
 
                 #elif dev_type == "camera_maxim":                    
                 #device = MaximCamera(driver, name)
@@ -210,7 +211,7 @@ class Observatory:
 
                 # Add the instantiated device to the collection of all devices.
                 self.all_devices[dev_type][name] = device
-        print(g_dev)
+        #print(g_dev)
         print("Device creation finished.", )
         
     def update_config(self):
@@ -340,7 +341,8 @@ class Observatory:
         try:
             while self.cycles >= 0:
                 self.update()
-                g_dev['enc'].manager()
+
+#                g_dev['enc'].manager()
                 time.sleep(2)
                 self.cycles -= 1
                 #print('.')
@@ -420,7 +422,7 @@ class Observatory:
 
 if __name__ == "__main__":
 
-    from config import site_config, site_name
+    from config_east import site_config, site_name
     day_str = ptr_events.compute_day_directory()
     #breakpoint()
     g_dev['day'] = day_str
@@ -432,7 +434,7 @@ if __name__ == "__main__":
     #patch_httplib
     print('\nNow is:  ', ptr_events.ephem.now(), g_dev['d-a-y'])   #Add local Sidereal time at Midnight
     try:
-         os.remove('Q:\\archive\\' + 'gf03'+ '\\newest.fits')
+         os.remove('Q:\\archive\\' + 'gf06'+ '\\newest.fits')
     except:
         print("Newest.fits not removed, catuion.")
     o = Observatory(site_name, site_config)
