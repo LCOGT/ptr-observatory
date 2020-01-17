@@ -649,7 +649,7 @@ class Camera:
 #                             for item in new_list[0:-1]:
 #                                 os.remove(item[1])
 # =============================================================================
-                    hdua = fits.open(ldr_handle_high)
+                    hdua = fits.open(ldr_handle_high)#
                     img = hdua[0].data
                     hdua.close()
                     hdu = fits.PrimaryHDU(img)
@@ -972,8 +972,9 @@ class Camera:
                             pass
                         
                                 
-                        if quick:  pass
-                        return (spot, avg_foc[1])
+                        if quick:  
+                            pass
+                        
                         hdu.data = hdu.data.astype('uint16')   
                         resized_a = resize(hdu.data, (768, 768), preserve_range=True)
                         #print(resized_a.shape, resized_a.astype('uint16'))

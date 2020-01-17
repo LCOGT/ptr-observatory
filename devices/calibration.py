@@ -31,7 +31,7 @@ from global_yard import g_dev
 import ptr_config
 
 '''
-Quick images store little, and are mainly for focus eploration.
+Quick images store little, and are mainly for focus exploration.
 Thoughts on how to merge CMOS images.
 
 The detector in question is:  G-Sense 4040. The camera is a FLI Kepler.
@@ -40,12 +40,14 @@ Pick a setpoint temperature you can maintain over a period of time,
 or build a bank of calibrations are various temperatures.  Since we 
 are able to hold -20C year-round we have no experience with scaling 
 combining calibrations from various temperatures. Dark current 
-declines exponentially by a factor of two for every -7C so correction
+declines exponentially by a factor of two for every -7C, so correction
 to an intermediate temperature requires some care.
 
-Start with taking 511HDR and LDR biases then a large number of 
+Start with taking 511 bHDR and LDR biases then a large number of 
 darks (I use 127) of a duration longer than what you plan for any
-given actual exposure.  I use 300 seconds.
+given actual exposure.  I use 90 and 300 seconds.  
+
+Bins of 1x1 and 2x2
 
 Median combine themin the usual way, of course subtracting the superbias
 from the darks.
@@ -400,7 +402,6 @@ def calibrate (hdu_high, hdu_ldr, lng_path, frame_type='light', start_x=0, start
 #                if not quick: print('Hotmap_300_ldr failed to load.')
 #        else:
 #            pass   #Enf of quick block.
-    #Here we actually calibrate.
 
     while True:   #Use break to drop through to exit.  i.e., do not calibrte frames we are acquring for calibration.
         cal_string = ''
@@ -420,7 +421,7 @@ def calibrate (hdu_high, hdu_ldr, lng_path, frame_type='light', start_x=0, start
         data_exposure_level = hdu_high.header['EXPTIME']
         if frame_type == 'dark': 
             break
-        do_dark = True
+        do_dark = False
 #        if data_exposure_level <= 15:
 #            s_dark = super_dark_15
 #            d_exp = 15.
@@ -445,7 +446,7 @@ def calibrate (hdu_high, hdu_ldr, lng_path, frame_type='light', start_x=0, start
             do_dark = False  
         if do_dark and mn < 3590:
         #Need to verify dark is not 0 seconds long!
-            if d_exp >= data_exposure_level and d_exp >= 1:
+            if d_exp >= data_exposure_level and d_exp >= 1  and quick_dark_90:
                 scale = data_exposure_level/d_exp
                 img =  (img - s_dark[start_x:(start_x + img.shape[0]), start_y:(start_y + img.shape[1])])
                 if not quick:
@@ -517,7 +518,7 @@ def calibrate (hdu_high, hdu_ldr, lng_path, frame_type='light', start_x=0, start
         data_exposure_level = hdu_ldr.header['EXPTIME']
         if frame_type == 'dark': 
             break
-        do_dark = True
+        do_dark = False
         if data_exposure_level <= 90:
             s_dark = super_dark_90_ldr
             d_exp = 90.
