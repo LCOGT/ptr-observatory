@@ -49,7 +49,7 @@ given actual exposure.  I use 90 and 300 seconds.
 
 Bins of 1x1 and 2x2
 
-Median combine themin the usual way, of course subtracting the superbias
+Median combine them in the usual way, of course subtracting the superbias
 from the darks.
 
 I save these in float32.  I divide the dark by the exposure time

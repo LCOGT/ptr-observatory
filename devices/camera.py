@@ -75,7 +75,7 @@ class Camera:
         self.exposure_busy = False
         self.cmd_in = None
         #Set camera to a sensible default state -- this should ultimately be configuration settings 
-        self.camera_model = "FLI Kepler 4040 #gf06"
+        self.camera_model = "FLI Kepler 4040 #gf03"
         self.camera.Binx = 1     #Kepler 400 does not accept a bin??
         self.camera.BinY = 1
         self.cameraXSize = self.camera.CameraXSize  #unbinned
@@ -425,14 +425,14 @@ class Camera:
                         print('First Entry', self.camera.StartX, self.camera.StartY, self.camera.NumX, self.camera.NumY, exposure_time)
                         if self.ascom:
                             try:
-                                ldr_handle= glob.glob('Q:\\archive\\gf06\\raw_kepler\\' + g_dev['next_day'] + '\\' + '*low.fits')
-                                ldr_handle_high= glob.glob('Q:\\archive\\gf06\\raw_kepler\\' + g_dev['next_day'] + '\\' + '*high.fits')
+                                ldr_handle= glob.glob('Q:\\archive\\gf03\\raw_kepler\\' + g_dev['next_day'] + '\\' + '*low.fits')
+                                ldr_handle_high= glob.glob('Q:\\archive\\gf03\\raw_kepler\\' + g_dev['next_day'] + '\\' + '*high.fits')
                             except:
                                 print("Something went wrong reading in a version of low / or high.fits")
                             if ldr_handle == [] or ldr_handle_high == []:
                                 try:
-                                    ldr_handle = glob.glob('Q:\\archive\\gf06\\raw_kepler\\' + g_dev['d-a-y'] + '\\' + '*low.fits')
-                                    ldr_handle_high = glob.glob('Q:\\archive\\gf06\\raw_kepler\\' + g_dev['d-a-y'] + '\\' + '*high.fits')
+                                    ldr_handle = glob.glob('Q:\\archive\\gf03\\raw_kepler\\' + g_dev['d-a-y'] + '\\' + '*low.fits')
+                                    ldr_handle_high = glob.glob('Q:\\archive\\gf03\\raw_kepler\\' + g_dev['d-a-y'] + '\\' + '*high.fits')
                                 except:
                                     print("Something went wrong reading in a version of low / or high.fits")  
                             if len(ldr_handle_high) > 0:
@@ -449,14 +449,14 @@ class Camera:
                             #This code grooms away older unuseable raw Kepler 12 bit images, presuming they exist and deals
                             #With oddities of directory naming by FliCam Server.
                             try:
-                                ldr_handle = glob.glob('Q:\\archive\\gf06\\raw_kepler\\' + g_dev['next_day'] + '\\' + '*low.fits')
-                                ldr_handle_high = glob.glob('Q:\\archive\\gf06\\raw_kepler\\' + g_dev['next_day'] + '\\' + '*high.fits')
+                                ldr_handle = glob.glob('Q:\\archive\\gf03\\raw_kepler\\' + g_dev['next_day'] + '\\' + '*low.fits')
+                                ldr_handle_high = glob.glob('Q:\\archive\\gf03\\raw_kepler\\' + g_dev['next_day'] + '\\' + '*high.fits')
                             except:
                                 print("Something went wrong reading in a version of low / or high.fits")
                             if ldr_handle == [] or ldr_handle_high == []:
                                 try:
-                                    ldr_handle = glob.glob('Q:\\archive\\gf06\\raw_kepler\\' + g_dev['d-a-y'] + '\\' + '*low.fits')
-                                    ldr_handle_high = glob.glob('Q:\\archive\\gf06\\raw_kepler\\' + g_dev['d-a-y'] + '\\' + '*high.fits')
+                                    ldr_handle = glob.glob('Q:\\archive\\gf03\\raw_kepler\\' + g_dev['d-a-y'] + '\\' + '*low.fits')
+                                    ldr_handle_high = glob.glob('Q:\\archive\\gf03\\raw_kepler\\' + g_dev['d-a-y'] + '\\' + '*high.fits')
                                 except:
                                     print("Something went wrong reading in a version of low / or high.fits")  
                             if len(ldr_handle_high) > 0:
@@ -548,10 +548,10 @@ class Camera:
             try:
                 time.sleep(0.1)
                 print('Hi-Low:  ', high, low)
-                probe_a = glob.glob('Q:\\archive\\gf06\\raw_kepler\\' + g_dev['next_day'] + '\\' + '*low.fits')
-                probe_b = glob.glob('Q:\\archive\\gf06\\raw_kepler\\' + g_dev['next_day'] + '\\' + '*high.fits')
-                probe_c = glob.glob('Q:\\archive\\gf06\\raw_kepler\\' + g_dev['d-a-y'] + '\\' + '*low.fits')
-                probe_d = glob.glob('Q:\\archive\\gf06\\raw_kepler\\' + g_dev['d-a-y'] + '\\' + '*high.fits')
+                probe_a = glob.glob('Q:\\archive\\gf03\\raw_kepler\\' + g_dev['next_day'] + '\\' + '*low.fits')
+                probe_b = glob.glob('Q:\\archive\\gf03\\raw_kepler\\' + g_dev['next_day'] + '\\' + '*high.fits')
+                probe_c = glob.glob('Q:\\archive\\gf03\\raw_kepler\\' + g_dev['d-a-y'] + '\\' + '*low.fits')
+                probe_d = glob.glob('Q:\\archive\\gf03\\raw_kepler\\' + g_dev['d-a-y'] + '\\' + '*high.fits')
                 if len(probe_a) > 0:
                     new_list = []
                     for item in probe_a:
@@ -585,7 +585,7 @@ class Camera:
                 if ldr_handle_time > low and ldr_handle_high_time > high:  #len(hi_low) == 2:  #self.camera.ImageReady: #and not self.img_available and self.exposing:
                     self.t4 = time.time()
                     print('Time to ImageReady:  ', self.t4 - self.t2)
-                    #print( glob.glob('Q:\\archive\\gf06\\raw_kepler\\' + g_dev['next_day'] + '\\' + '*.fits'))
+                    #print( glob.glob('Q:\\archive\\gf03\\raw_kepler\\' + g_dev['next_day'] + '\\' + '*.fits'))
                     if not quick and gather_status:
                         g_dev['mnt'].get_quick_status(self.post_mnt)  #stage symmetric around exposure
                         g_dev['rot'].get_quick_status(self.post_rot)
@@ -593,7 +593,7 @@ class Camera:
                         g_dev['ocn'].get_quick_status(self.post_ocn)
                     self.t5 = time.time()
                     #if self.maxim:
-                        #self.camera.SaveImage('Q:\\archive\\gf06\\newest.fits')
+                        #self.camera.SaveImage('Q:\\archive\\gf03\\newest.fits')
                         #Save image with Maxim Fits Header information, then read back with astropy
                     #if self.maxim:
 
@@ -619,23 +619,23 @@ class Camera:
 #                        try:
 #                            #This should be a very fast disk.
 #                            pass
-#                            #hdu1.writeto('Q:\\archive\\' + 'gf06'+ '\\newest.fits', overwrite=True)
+#                            #hdu1.writeto('Q:\\archive\\' + 'gf03'+ '\\newest.fits', overwrite=True)
 #                            #For reasons unclear, this file never seems to close properly.  20191022 WER
 #                        except:
 #                            print('Write to newest.fits failed because it is busy, -- reason unknown.')
-#                            os.remove('Q:\\archive\\' + 'gf06'+ '\\newest.fits')
+#                            os.remove('Q:\\archive\\' + 'gf03'+ '\\newest.fits')
 #                            return
 # =============================================================================
 #                         try:
-#                             ldr_handle= glob.glob('Q:\\archive\\gf06\\raw_kepler\\' + g_dev['next_day'] + '\\' + '*low.fits')
-#                             ldr_handle_high= glob.glob('Q:\\archive\\gf06\\raw_kepler\\' + g_dev['next_day'] + '\\' + '*high.fits')
+#                             ldr_handle= glob.glob('Q:\\archive\\gf03\\raw_kepler\\' + g_dev['next_day'] + '\\' + '*low.fits')
+#                             ldr_handle_high= glob.glob('Q:\\archive\\gf03\\raw_kepler\\' + g_dev['next_day'] + '\\' + '*high.fits')
 #                         except:
 #                             hdu3 = None
 #                             print("Something went wrong reading in a version of low / or high.fits")
 #                         if ldr_handle == []:
 #                             try:
-#                                 ldr_handle = glob.glob('Q:\\archive\\gf06\\raw_kepler\\' + g_dev['d-a-y'] + '\\' + '*low.fits')
-#                                 ldr_handle_high = glob.glob('Q:\\archive\\gf06\\raw_kepler\\' + g_dev['d-a-y'] + '\\' + '*high.fits')
+#                                 ldr_handle = glob.glob('Q:\\archive\\gf03\\raw_kepler\\' + g_dev['d-a-y'] + '\\' + '*low.fits')
+#                                 ldr_handle_high = glob.glob('Q:\\archive\\gf03\\raw_kepler\\' + g_dev['d-a-y'] + '\\' + '*high.fits')
 #                             except:
 #                                 hdu3 = None
 #                                 print("Something went wrong reading in a version of low / or high.fits")  
@@ -697,7 +697,7 @@ class Camera:
                     try:
                         #Save the raw data after adding fits header information.
 #                        if not quick:
-#                            #hdu1 =  fits.open('Q:\\archive\\gf06\\newest.fits')
+#                            #hdu1 =  fits.open('Q:\\archive\\gf03\\newest.fits')
 #                            hdu = hdu1[0]   #get the Primary header and date
 #                            #hdu.data = hdu.data.astype('uint16')    #This is probably redundant but forces unsigned storage
 #                            #self.hdu_data1 = hdu.data.copy()   #NEVER USED??
@@ -802,7 +802,7 @@ class Camera:
                                 hdu.header['ROOF']  = g_dev['enc'].get_status()['shutter_status']   #"Open/Closed"
         
                         hdu.header['DETECTOR'] = "G-Sense CMOS 4040"
-                        hdu.header['CAMNAME'] = 'gf06'
+                        hdu.header['CAMNAME'] = 'gf03'
                         hdu.header['CAMMANUF'] = 'Finger Lakes Instrumentation'
 #                        try:
 #                            hdu.header['GAIN'] = g_dev['cam'].camera.gain
@@ -1006,8 +1006,8 @@ class Camera:
                         #hdu.close()
                         hdu = None
 #                        try:
-#                            'Q:\\archive\\' + 'gf06'+ '\\newest.fits'
-#                            'Q:\\archive\\' + 'gf06'+ '\\newest_low.fits'
+#                            'Q:\\archive\\' + 'gf03'+ '\\newest.fits'
+#                            'Q:\\archive\\' + 'gf03'+ '\\newest_low.fits'
 #                        except:
 #                            print(' 2 Could not remove newest.fits.')
                         return (spot, avg_foc[1])

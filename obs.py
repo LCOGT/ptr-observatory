@@ -1,10 +1,12 @@
 
 # obs.py
-# concurrency via threading
+
 
 
 """
 IMPORTANT TODOs:
+    
+Figure out how to disable Maxim if it is running on startup.
     
 This body of code needs to be refactored, particularly the camera module which is too convoluted.
 
@@ -192,8 +194,8 @@ class Observatory:
                     device = Focuser(driver, name, self.config)
                 elif dev_type == "rotator":
                     device = Rotator(driver, name)
-#                elif dev_type == "screen":
-#                    device = Screen('EastAlnitak', 'COM22')
+                elif dev_type == "screen":
+                    device = Screen('EastAlnitak', 'COM22')
                 elif dev_type == "camera":                      
                     device = Camera(driver, name, self.config)   #APPARENTLY THIS NEEDS TO BE STARTED PRIOR TO FILTER WHEEL!!!
                     time.sleep(2)
@@ -201,8 +203,8 @@ class Observatory:
                      device = Sequencer(driver, name)
                 elif dev_type == "filter_wheel":
                      #pass
-                     #device = FilterWheel(driver, name, self.config)
-                     print('Filter wheel bypassed')
+                     device = FilterWheel(driver, name, self.config)
+                     #print('Filter wheel bypassed')
 
                 #elif dev_type == "camera_maxim":                    
                 #device = MaximCamera(driver, name)
@@ -232,7 +234,6 @@ class Observatory:
             #start = time.time()
         uri = f"{self.name}/{mount}/command/"
         try:
-            
             cmd = json.loads(self.api.authenticated_request("GET", uri))   #This needs work
         except:
             cmd = {'Body': 'empty'}
@@ -240,17 +241,17 @@ class Observatory:
 
         if cmd == {'Body': 'empty'}:
             #print('Command Queue: ', cmd)
-            return  #Nothing to do, co command in the FIFO
+            return  #Nothing to do, no command in the FIFO
             # If a non-empty command arrives, it will print to the terminal.
             print(cmd)
-
-        cmd_instance = cmd['instance']
-        device_name = cmd['device']
+        cmd_body = cmd['body']
+        cmd_instance = cmd['body']['instance']
+        device_name = cmd['body']['device']
 
         #Get the device based on it's type and name, then parse the cmd.
         print(device_name, cmd_instance)
         device = self.all_devices[device_name][cmd_instance]
-        device.parse_command(cmd)
+        device.parse_command(cmd_body)
 
             #print(f"{mount} finished scan in {time.time()-start:.2f} seconds")
 

@@ -252,7 +252,7 @@ site_config = {
     'camera': {
         'camera1': {
             'parent': 'telescope1',
-            'alias': 'gf06',      #Important because this points to a server file structure by that name.
+            'alias': 'gf03',      #Important because this points to a server file structure by that name.
             'desc':  'FLI Kepler 4040 CMOS',
             'driver':  "Maxim.CCDCamera",   #'ASCOM.FLI.Kepler.Camera',  #"Maxim.CCDCamera"
             'settings': {
@@ -335,6 +335,10 @@ site_config = {
 }
 
 if __name__ == '__main__':
+    '''
+    This is a simple test to send and receive via json.
+    '''
+    
     j_dump = json.dumps(site_config)
     site_unjasoned = json.loads(j_dump)
     if str(site_config)  == str(site_unjasoned):
@@ -342,30 +346,4 @@ if __name__ == '__main__':
     if site_config == site_unjasoned:
         print('Dictionaries matched.')
         
-    '''
-                    'filter_data': [['filter', 'filter_index', 'filter_offset', 'sky_gain', 'screen_gain', 'abbreviation'],
-                                ['air', '(0, 0)', '-1000', '0.01', '1063', 'ai'],   # 0Mul Screen@100% by saturate*exp
-                                ['dif', '(4, 0)', '0', '0.01', '950', 'di'],   # 1
-                                ['w', '(2, 0)', '0', '0.01', '827', 'w_'],   # 2
-                                ['ContR', '(1, 0)', '0', '0.01', '203', 'CR'],   # 3
-                                ['N2', '(3, 0)', '0', '0.01', '101', 'N2'],   # 4
-                                ['u', '(0, 5)', '0', '0.01', '0.2', 'u_'],   # 5
-                                ['g', '(0, 6)', '0', '0.01', '507', 'g_'],   # 6
-                                ['r', '(0, 7)', '0', '0.01', '683', 'r_'],   # 7
-                                ['i', '(0, 8)', '0', '0.01', '223', 'i_'],   # 8
-                                ['zs', '(5, 0)', '0', '0.01', '15.3','zs'],   # 9
-                                ['PL', '(0, 4)', '0', '0.01', '775', "PL"],   # 10
-                                ['PR', '(0, 3)', '0', '0.01', '436', 'PR'],   # 11
-                                ['PG', '(0, 2)', '0', '0.01', '436','PG'],   # 12
-                                ['PB', '(0, 1)', '0', '0.01', '415', 'PB'],   # 13
-                                ['O3', '(7, 0)', '0', '0.01', '113','03'],   # 14
-                                ['HA', '(6, 0)', '0', '0.01', '101','HA'],   # 15
-                                ['S2', '(8, 0)', '0', '0.01', '68','S2'],   # 16
-                                ['dif_u', '(4, 5)', '0', '0.01', '0.2', 'du'],   # 17
-                                ['dif_g', '(4, 6)', '0', '0.01', '481','dg'],   # 18
-                                ['dif_r', '(4, 7)', '0', '0.01', '626', 'dr'],   # 19
-                                ['dif_i', '(4, 8)', '0', '0.01', '218', 'di'],   # 20
-                                ['dif_zs', '(9, 0)', '0', '0.01', '14.5', 'dz'],   # 21
-                                ['dark', '(10, 9)', '0', '0.01', '0.0', 'dk']]   # 22
-                                #Screen = 100; QHY400 ~ 92% DQE   HDR Mode    Screen = 160 sat  20190825 measured.
-    '''
+   
