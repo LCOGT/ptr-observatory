@@ -6,6 +6,7 @@ import time, json
 from math import cos, radians
 from global_yard import g_dev 
 import ptr_events
+#from devices.pywinusb_paddle import *
 
 #The mount is not threaded and uses non-blocking seek.
 class Mount:
@@ -30,17 +31,20 @@ class Mount:
         else:
             print(f"Tel/OTA connected.")
         print(self.mount.Description)
-#        self._paddle = serial.Serial('COM38', timeout=0.1)
-#        self._paddle.write(b'ver\n')
-#        #print(self._paddle.read(13).decode()[-8:])
-#        self._paddle.write(b"gpio iodir 00ff\n")
-        #self._paddle.write(b"gpio readall\n")
-        #print('a:',self._paddle.read(20).decode())
-        #print('b:',self._paddle.read(20).decode())
-        #print('c:',self._paddle.read(20).decode())
-        print("Paddle connected but not operational.")
-        #self.paddle_thread = threading.Thread(target=self.paddle(self._paddle, self.mount), args=())
+        self._paddle = serial.Serial('COM10', timeout=0.1)
+        self._paddle.write(b'ver\n')
+        print(self._paddle.read(13).decode()[-8:])
+        self._paddle.write(b"gpio iodir 00ff\n")
+        self._paddle.write(b"gpio readall\n")
+        self.paddleing = False
+#        print('a:',self._paddle.read(20).decode())
+#        print('b:',self._paddle.read(20).decode())
+#        print('c:',self._paddle.read(20).decode())
+        print("Paddle connected but not operational??")
+#        self.paddle_thread = threading.Thread(target=self.paddle( self._paddle, self.mount), args=())
         #self.paddle_thread.start()
+        print("exiting mount _init")
+
 
 #    def get_status(self):
 #        m = self.mount
@@ -84,6 +88,7 @@ class Mount:
         
     def get_status(self):
         self.check_connect()
+        self.paddle()
         alt = self.mount.Altitude
         zen = round((90 - alt), 3)
         if zen > 90:
@@ -324,7 +329,7 @@ class Mount:
         print(self.mount.CanPark)
         self.mount.Park()
         
-    def paddle(self, _paddle, _mount):
+    def paddle(self):
         '''
         The real way this should work is monitor if a speed button is pushed, then log the time and
         start the thread.  If no button pushed for say 30 seconds, stop thread and re-join.  That way
@@ -332,112 +337,115 @@ class Mount:
         
         Normally this will never be started, unless we are operating locally in the observatory.
         '''
-        breakpoint()
-        while True:
-            time.sleep(0.3)
-            self._paddle.write(b"gpio readall\n")
-            temp = self._paddle.read(21).decode()
-            #print (len(temp), '|' + temp[16:18] +'|')
-            button = temp[17]
-            spd= temp[16]
-            direc = ''
-            speed = 0.0
-            if button == 'E': direc = 'N'
-            if button == 'B': direc = 'S'
-            if button == 'D': direc = 'E'
-            if button == '7': direc = 'W'
-            if button == 'C': direc = 'NE'
-            if button == '9': direc = 'SE'
-            if button == '3': direc = 'SW'
-            if button == '6': direc = 'NW'
-            if spd ==  'F': 
-                speed = 15.
-                EW = 1
-                NS = 1
-            if spd == 'E': 
-                speed = 15.
-                EW = -1
-                NS = 1
-            if spd ==  'D': 
-                speed = 15.
-                EW = 1
-                NS = -1
-            if spd ==  'C': 
-                speed = 15.
-                EW = -1
-                NS = -1
-            if spd ==  'B': 
-                speed = 45.
-                EW = 1
-                NS = 1
-            if spd == 'A': 
-                speed = 45.
-                EW = -1
-                NS = 1
-            if spd ==  '9': 
-                speed = 45.
-                EW = 1
-                NS = -1
-            if spd ==  '8': 
-                speed = 45.
-                EW = -1
-                NS = -1
-            if spd ==  '7': 
-                speed = 135.
-                EW = 1
-                NS = 1
-            if spd == '6': 
-                speed = 135.
-                EW = -1
-                NS = 1
-            if spd ==  '5': 
-                speed = 135.
-                EW = 1
-                NS = -1
-            if spd ==  '4': 
-                speed = 135.
-                EW = -1
-                NS = -1
-            if spd ==  '3': 
-                speed = 405.
-                EW = 1
-                NS = 1
-            if spd == '2': 
-                speed = 405.
-                EW = -1
-                NS = 1
-            if spd ==  '1': 
-                speed = 405.
-                EW = 1
-                NS = -1
-            if spd ==  '0': 
-                speed = 405.
-                EW = 1
-                NS = 1
 
-            #print(button, spd, direc, speed)
+        self._paddle.write(b"gpio readall\n")
+        temp = self._paddle.read(21).decode()
+        #print ('|' + temp[16:18] +'|')
+        button = temp[17]
+        spd= temp[16]
+        direc = ''
+        speed = 0.0
+        #print("Btn:  ", button, "Spd:  ", speed, "Dir:  ", direc)
+        if button == 'E': direc = 'N'
+        if button == 'B': direc = 'S'
+        if button == 'D': direc = 'E'
+        if button == '7': direc = 'W'
+        if button == 'C': direc = 'NE'
+        if button == '9': direc = 'SE'
+        if button == '3': direc = 'SW'
+        if button == '6': direc = 'NW'
+        if spd ==  'C': 
+            speed = 0.
+            EW = 1
+            NS = 1
+        if spd == '8': 
+            speed = 15.
+            EW = 1
+            NS = 1
+        if spd ==  '4': 
+            speed = 45.
+            EW = 1
+            NS = 1
+        if spd ==  '0': 
+            speed = 135.
+            EW = 1
+            NS = 1
+        if spd ==  'D': 
+            speed = 0.
+            EW = -1
+            NS = 1
+        if spd == '9': 
+            speed = 15.
+            EW = -1
+            NS = 1
+        if spd ==  '5': 
+            speed = 45.
+            EW = -1
+            NS = 1
+        if spd ==  '1': 
+            speed = 135.
+            EW = -1
+            NS = 1
+        if spd ==  'E': 
+            speed = 0.
+            EW = 1
+            NS = -1
+        if spd == 'A': 
+            speed = 15.
+            EW = 1
+            NS = -1
+        if spd ==  '6': 
+            speed = 45.
+            EW = 1
+            NS = -1
+        if spd ==  '2': 
+            speed = 135.
+            EW = 1
+            NS = -1
+        if spd ==  'F': 
+            speed = 0.
+            EW = -1
+            NS = -1
+        if spd == 'B': 
+            speed = 15.
+            EW = -1
+            NS = -1
+        if spd == '7': 
+            speed = 45.
+            EW = -1
+            NS = -1
+        if spd == '3': 
+            speed = 135.
+            EW = -1
+            NS = -1
+
+        #print(button, spd, direc, speed)
 #            if direc != '':
-#                print(direc, speed)
-            if direc == 'N': 
-                _mount.DeclinationRate = NS*speed
-                self.paddeling = True
-                print(direc,  NS*speed)
-            if direc == 'S':
-                _mount.DeclinationRate = -NS*speed
-                self.paddeling = True
-                print(direc,  -NS*speed)
-            if direc == 'E':
-                _mount.RightAscensionRate = EW*speed/15.   #Not quite the correct divisor.
-                self.paddeling = True
-                print(direc, EW*speed/15.)
-            if direc == 'W': 
-                _mount.RightAscensionRate = -EW*speed/15.
-                self.paddeling = True
-                print(direc, -EW*speed/15.)
-            if direc == '': 
-                _mount.DeclinationRate = 0.0
-                _mount.RightAscensionRate = 0.0
-                self.paddeling = False
+        #print(direc, speed)
+        _mount = self.mount
+        #Need to add diagonal moves
+        if direc == 'N':
+            _mount.DeclinationRate = NS*speed
+            self.paddleing = True
+            print('cmd:  ', direc,  NS*speed)
+        if direc == 'S':
+            _mount.DeclinationRate = -NS*speed
+            self.paddleing = True
+            print('cmd:  ',direc,  -NS*speed)
+        if direc == 'E':
+            _mount.RightAscensionRate = EW*speed/15.   #Not quite the correct divisor.
+            self.paddleing = True
+            print('cmd:  ',direc, EW*speed/15.)
+        if direc == 'W': 
+            _mount.RightAscensionRate = -EW*speed/15.
+            self.paddleing = True
+            print('cmd:  ',direc, -EW*speed/15.)
+        if direc == '': 
+            _mount.DeclinationRate = 0.0
+            _mount.RightAscensionRate = 0.0
+            self.paddleing = False
+        return
+
             
             
         
@@ -483,6 +491,7 @@ if __name__ == '__main__':
     req = {'time': 1,  'alias': 'ea03', 'frame': 'Light', 'filter': 2}
     opt = {'area': 50}
     m = Mount('ASCOM.PWI4.Telescope', "mnt1", {})
+    m.paddle()
 #    pre=[]
 #    post=[]
 #    m.get_quick_status(pre)

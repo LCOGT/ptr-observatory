@@ -183,9 +183,9 @@ class Observatory:
                 #print('looking for dev-types:  ', dev_type)
                 if dev_type == "observing_conditions":
                     device = ObservingConditions(driver, name)
-#                elif dev_type == "enclosure":
-#                    print("enc:  ", driver, name)
-#                    device = Enclosure(driver, name)
+                elif dev_type == "enclosure":
+                    print("enc:  ", driver, name)
+                    device = Enclosure(driver, name)
                 elif dev_type == "mount":
                     device = Mount(driver, name, settings, tel=False)
                 elif dev_type == "telescope":
@@ -238,20 +238,29 @@ class Observatory:
         except:
             cmd = {'Body': 'empty'}
             print('self.api.authenticated_request("GET", uri)  -- FAILED')
-
         if cmd == {'Body': 'empty'}:
             #print('Command Queue: ', cmd)
             return  #Nothing to do, no command in the FIFO
             # If a non-empty command arrives, it will print to the terminal.
             print(cmd)
-        cmd_body = cmd['body']
-        cmd_instance = cmd['body']['instance']
-        device_name = cmd['body']['device']
+        try:
+            cmd_body = cmd['body']
+            cmd_instance = cmd['body']['instance']
+            device_name = cmd['body']['device']
+            print(device_name, cmd_instance)
+            device = self.all_devices[device_name][cmd_instance]
+            device.parse_command(cmd_body)
+        except:
+            cmd_instance = cmd['instance']
+            device_name = cmd['device']
+            print(device_name, cmd_instance)
+            device = self.all_devices[device_name][cmd_instance]
+            device.parse_command(cmd)            
 
         #Get the device based on it's type and name, then parse the cmd.
-        print(device_name, cmd_instance)
-        device = self.all_devices[device_name][cmd_instance]
-        device.parse_command(cmd_body)
+#        print(device_name, cmd_instance)
+#        device = self.all_devices[device_name][cmd_instance]
+#        device.parse_command(cmd_body)
 
             #print(f"{mount} finished scan in {time.time()-start:.2f} seconds")
 
@@ -344,7 +353,7 @@ class Observatory:
                 self.update()
 
 #                g_dev['enc'].manager()
-                time.sleep(2)
+                time.sleep(1)
                 self.cycles -= 1
                 #print('.')
         

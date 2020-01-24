@@ -190,7 +190,7 @@ site_config = {
             'alias': 'focuser',
             'desc':  'Optec Gemini',
             'driver': 'ASCOM.OptecGemini.Focuser',
-            'reference':  '6300',    #Nominal at 20C Primary temperature
+            'reference':  '7295',    #Nominal at 20C Primary temperature
             'coef_c': '0',   #negative means focus moves out as Primary gets colder
             'coef_0': '0',  #Nominal intercept when Primary is at 0.0 C.
             'coef_date':  '20191124',    #-102.0708 + 12402.224   20190829   R^2 = 0.67  Ad hoc added 900 units.

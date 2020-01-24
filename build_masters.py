@@ -317,7 +317,7 @@ def create_super_dark(input_images, out_path, super_name, super_bias_name):
     num = 0
     inputs = []
     print('SD:  ', len(input_images), input_images)
-    super_bias_img = ccdproc.CCDData.read(out_path + super_bias_name, ignore_missing_end=True)
+    super_bias_img = ccdproc.CCDData.read(out_path + super_bias_name, ignore_missing_end=True, unit='adu')
     while len(input_images) > 0:
         inputs = []
         print('SD chunk:  ', len(input_images[0]), input_images[0])
@@ -336,12 +336,14 @@ def create_super_dark(input_images, out_path, super_name, super_bias_name):
             im_temp= combiner.sigma_clipping(low_thresh=2, high_thresh=3, func = np.ma.mean)
         else:
             im_temp = combiner.sigma_clipping(low_thresh=2, high_thresh=3, func = np.ma.mean)
+        im_temp = combiner.average_combine()
         im_temp.data = im_temp.data.astype(np.float32)
         print(im_temp.data[2][3])
         #breakpoint()
         super_image.append(im_temp)     
         combiner = None   #get rid of big data no longer needed.
         inputs = None
+        
         input_images.pop(0)
     #Now we combint the outer data to make the master
     combiner = Combiner(super_image)
@@ -349,11 +351,10 @@ def create_super_dark(input_images, out_path, super_name, super_bias_name):
         super_img = combiner.sigma_clipping(low_thresh=2, high_thresh=3, func = np.ma.mean)
     else:
         super_img = combiner.sigma_clipping(low_thresh=2, high_thresh=3, func = np.ma.mean)       
-    super_image = None    #Again get rid of big stale data
+    super_img = combiner.average_combine()
     combiner = None
     super_img.data = super_img.data.astype(np.float32)
     super_img.meta = first_image.meta         
-
     mn, std = image_stats(super_img)
     super_img.meta = first_image.meta
     super_img.meta['NCOMBINE'] = num
@@ -364,13 +365,16 @@ def create_super_dark(input_images, out_path, super_name, super_bias_name):
     super_img.meta['CNTRSTD'] = std
     wstring = str(out_path + super_name)
     super_img.write(wstring, overwrite=True)
+    super_image = None    #Again get rid of big stale data
     #hot and cold pix here.
     return
    
 def make_master_bias (alias, path, selector_string, out_file):
+
     file_list = glob.glob(path + selector_string)
     file_list.sort()
     print('# of files:  ', len(file_list))
+
     print(file_list)
     if len(file_list) > 1023:
         file_list = file_list[0:1023]
@@ -401,15 +405,14 @@ def make_master_dark (alias, path, selector_string, out_file, super_bias_name):
 if __name__ == '__main__':
 
     print (config.site_config['camera']['camera1']['alias'])
-    #make_master_bias('gf03', 'Q:/archive/gf03/2019-11-15/' , '*b_2*.*', 'mb_2_hdr.fits'  )
-    #make_master_bias('gf03', 'Q:/archive/gf03/raw_kepler/2019-11-16/' , '*0.001s_2x2*-low*', 'mb_2_ldr.fits'  )
-    make_master_bias('gf03', 'Q:/archive/gf03/2019-11-15/' , '*b_1*.*', 'mb_1_hdr.fits'  )
-    make_master_bias('gf03', 'Q:/archive/gf03/raw_kepler/2019-11-16/' , '*0.001s_1x1*-low*', 'mb_1_ldr.fits'  )
-    #make_master_dark('gf03', 'Q:/archive/gf03/raw_kepler/2019-11-09/' , '*300s_2x2*-high*', 'md_2_300_hdr.fits', 'mb_2_hdr.fits'   )
-    #make_master_dark('gf03', 'Q:/archive/gf03/raw_kepler/2019-11-09/' , '*300s_2x2*-low*', 'md_2_300_ldr.fits', 'mb_2_ldr.fits'   )
-    #make_master_dark('gf03', 'Q:/archive/gf03/raw_kepler/2019-10-26/' , '*300s_1x1*-high*', 'md_1_300_hdr.fits', 'mb_1_hdr.fits'   )
-    #make_master_dark('gf03', 'Q:/archive/gf03/raw_kepler/2019-10-26/' , '*300s_1x1*-low*', 'md_1_300_ldr.fits', 'mb_1_ldr.fits'   )
-    #make_master_dark('gf03', 'Q:/archive/gf03/raw_kepler/2019-10-26/' , '*900s_1x1*-high*', 'md_1_900_hdr.fits', 'mb_1_hdr.fits'   )
+    #make_master_bias('gf03', 'Q:/archive/gf03/raw_kepler/2020-01-21/', '*0.001s_1x1*-high.*', 'mb_1_hdrx.fits'  )
+    #make_master_bias('gf03', 'Q:/archive/gf03/raw_kepler/2020-01-21/', '*0.001s_1x1*-low.*', 'mb_1_ldrx.fits'  )
+#    make_master_bias('gf03', 'Q:/archive/gf03/raw_kepler/2020-01-21/', '*0.001s_2x2*-high.*', 'mb_2_hdrx.fits'  )
+#    make_master_bias('gf03', 'Q:/archive/gf03/raw_kepler/2020-01-21/', '*0.001s_2x2*-low.*', 'mb_2_ldrx.fits'  )    #make_master_dark('gf03', 'Q:/archive/gf03/raw_kepler/2019-11-09/' , '*300s_2x2*-high*', 'md_2_300_hdr.fits', 'mb_2_hdr.fits'   )
+    make_master_dark('gf03', 'Q:/archive/gf03/raw_kepler/2020-01-21/' , '*300s_1x1*-low*', 'md_1_300_ldrx.fits', 'mb_1_ldr.fits'   )
+    make_master_dark('gf03', 'Q:/archive/gf03/raw_kepler/2020-01-21/' , '*300s_1x1*-high*', 'md_1_300_hdrx.fits', 'mb_1_hdr.fits'   )
+    make_master_dark('gf03', 'Q:/archive/gf03/raw_kepler/2020-01-21/' , '*300s_2x2*-low*', 'md_2_300_ldr.fits', 'mb_2_ldr.fits'   )
+    make_master_dark('gf03', 'Q:/archive/gf03/raw_kepler/2020-01-21/' , '*300s_2x2*-high*', 'md_2_300_hdr.fits', 'mb_2_hdr.fits'   )
     #make_master_dark('gf03', 'Q:/archive/gf03/raw_kepler/2019-10-26/' , '*900s_1x1*-low*', 'md_1_900_ldr.fits', 'mb_1_ldr.fits'   )
     '''
     # -*- coding: utf-8 -*-
@@ -417,6 +420,7 @@ if __name__ == '__main__':
 Created on Sun Feb  4 16:59:15 2018
 
 @author: WER
+Q:\archive\gf03\raw_kepler\2020-01-21
 """
 
 """
