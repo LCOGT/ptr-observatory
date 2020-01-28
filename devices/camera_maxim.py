@@ -32,7 +32,7 @@ import ptr_bz2
 TO DO
 
 This module is hopelessly a MAXIM camera.  Do a differnt module for an ASCOM camera and call filter for that camera.
-This is most cleanly dome by calling a MaximCamera Class and have cam1, for example to be intantiated from that 
+This is most cleanly done by calling a MaximCamera Class and have cam1, for example to be instantiated from that 
 las instead of Camera.
 
 Annotate fits, incl Wx conditions, other devices

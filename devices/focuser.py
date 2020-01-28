@@ -50,8 +50,10 @@ class Focuser:
         self.config = config['focuser']['focuser1']
         self.focuser = win32com.client.Dispatch(driver)
         self.focuser.Connected = True
+        self.steps_to_micron = 1/9.090909090909090909
+        self.micron_to_steps = 9.090909090909090909
         print(f"focuser connected.")
-        print(self.focuser.Description)
+        print(self.focuser.Description, "At:  ", self.focuser.Position*self.steps_to_micron)
         time.sleep(0.2)
         try:
             try:
@@ -63,7 +65,7 @@ class Focuser:
         except:
             self.reference = int(self.config['reference'])
             print("Focus reference derived from supplied Config dicitionary:  ", self.reference)
-        self.focuser.Move(int(self.reference))
+        self.focuser.Move(int(self.config['reference']))
     
     def calculate_compensation(self, temp_primary):
         
@@ -79,7 +81,7 @@ class Focuser:
 
     def get_status(self):
         status = {
-            "focus_position": str(round(self.focuser.Position, 1)),
+            "focus_position": str(round(self.focuser.Position*self.steps_to_micron, 1)),
             "focus_moving": str(self.focuser.IsMoving).lower(),
             "focus_temperature": str(self.focuser.Temperature)
             }
@@ -87,7 +89,7 @@ class Focuser:
 
     def get_quick_status(self, quick):
         quick.append(time.time())
-        quick.append(self.focuser.Position)
+        quick.append(self.focuser.Position*self.steps_to_micron)
         quick.append(self.focuser.Temperature)
         quick.append(self.focuser.IsMoving)
         return quick
@@ -127,7 +129,7 @@ class Focuser:
                 time.sleep(0.5)
                 print('>')
         elif action == "save_as_reference":
-            ptr_config.set_focal_ref('gf01', self.focuser.Position)  #Need to get the alias properly
+            ptr_config.set_focal_ref('gf01', self.focuser*self.steps_to_micron)  #Need to get the alias properly
         else:
             print(f"Command <{action}> not recognized:", command)
 
@@ -140,11 +142,11 @@ class Focuser:
         ''' set the focus position by moving relative to current position '''
         #The string must start with a + or a - sign, otherwize treated as zero and no action.
         position_string = req['position']
-        position = self.focuser.Position
+        position = self.focuser.Position*self.steps_to_micron
         if position_string[0] != '-':
             relative = int(position_string)
             position += relative
-            self.focuser.Move(position)
+            self.focuser.Move(position*self.micron_to_steps)
             time.sleep(0.1)
             while self.focuser.IsMoving:
                 time.sleep(0.5)
@@ -152,7 +154,7 @@ class Focuser:
         elif position_string[0] =='-':
             relative = int(position_string[1:])
             position -= relative
-            self.focuser.Move(position)
+            self.focuser.Move(position*self.micron_to_steps)
             time.sleep(0.1)
             while self.focuser.IsMoving:
                 time.sleep(0.5)
@@ -164,7 +166,7 @@ class Focuser:
         ''' set the focus position by moving to an absolute position '''
         print(f"focuser cmd: move_absolute:  ", req, opt)
         position = int(req['position'])
-        self.focuser.Move(position)
+        self.focuser.Move(position*self.micron_to_steps)
         time.sleep(0.1)
         while self.focuser.IsMoving:
             time.sleep(0.5)

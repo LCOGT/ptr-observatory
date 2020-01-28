@@ -250,13 +250,13 @@ class Camera:
                 exposure_time = 0.0
                 imtypeb = False
                 frame_type = 'bias'
-                no_AWS = True
+                no_AWS = False
                 do_sep = False
                 #Consider forcing filter to dark if such a filter exists.
         elif imtype.lower() == 'dark':
                 imtypeb = False
                 frame_type = 'dark'
-                no_AWS = True
+                no_AWS = False
                 do_sep = False
                 #Consider forcing filter to dark if such a filter exists.
         elif imtype.lower() == 'screen_flat' or imtype.lower() == 'sky flat':
@@ -521,6 +521,7 @@ class Camera:
                             g_dev['rot'].get_quick_status(self.pre_rot)
                             g_dev['mnt'].get_quick_status(self.pre_mnt)
                             self.t2 = time.time()
+                            print("Starting exposure at:  ", self.t2)
                             self.camera.Expose(exposure_time, imtypeb)
                         else:
                             print("Something terribly wrong!")
@@ -706,7 +707,7 @@ class Camera:
                     hdu3b = fits.HDUList([hdu3])
                     hdu3 = hdu3b[0]
                     #***After this point we no longer care about the camera specific files.  The raw could be deleted.
-                    self.camera.AbortExposure()
+                    self.camera.AbortExposure()   #We do not need the image in the camera buffer.
                     hdu3.header['FILTER']= self.current_filter   #Fix bogus filter.
                     hdu3.header['DATE-OBS'] = datetime.datetime.isoformat(datetime.datetime.utcfromtimestamp(self.t2))
                     hdu3.header['DATE'] = datetime.datetime.isoformat(datetime.datetime.utcfromtimestamp(self.t2))
@@ -911,7 +912,7 @@ class Camera:
                         print("\n\Finish-Exposure is complete:  " + raw_name00)#, raw_data_size, '\n')
     
                         calibrate(hdu, hdu3, lng_path, frame_type, start_x=start_x, start_y=start_y, quick=quick)
-                        
+
                         if not quick:
                             #bbbhdu1.writeto(cal_path + cal_name, overwrite=True)   #THis needs qualifying and should not be so general.
                             hdu1.writeto(im_path + raw_name01, overwrite=True)
@@ -925,11 +926,12 @@ class Camera:
     ##                        else:
     ##                            hdu.data = hdu.data # - 1310.0     #This deaals with all subframes
                         do_sep = True
+                        raw_data_size = hdu1[0].data.size
                         if do_sep:
                             try:
                                 img = hdu.data.copy().astype('float')
                                 bkg = sep.Background(img)
-                                bkg_rms = bkg.rms()
+                                #bkg_rms = bkg.rms()
                                 img -= bkg
                                 sources = sep.extract(img, 7, err=1, minarea=30)#, filter_kernel=kern)
                                 sources.sort(order = 'cflux')
@@ -1037,7 +1039,7 @@ class Camera:
                             if not quick:
                                 self.enqueue_image(db_data_size, im_path, db_name)
                                 self.enqueue_image(raw_data_size, im_path, raw_name01)
-                            print('Stuffed.')
+                            print('Sent to AWS Queue.')
                         self.img = None
                         #hdu.close()
                         hdu = None
@@ -1046,24 +1048,26 @@ class Camera:
     #                            'Q:\\archive\\' + 'gf03'+ '\\newest_low.fits'
     #                        except:
     #                            print(' 2 Could not remove newest.fits.')
+                        print('Returning #1:  ', spot, avg_foc[1] )
                         return (spot, avg_foc[1])
                     except:   
                         print('Header assembly block failed.')
                         self.t7 = time.time()
     
-                    return (spot, avg_foc[1])
+                    return (None ,None)
                 else:               #here we are in waiting for imageReady loop and could send status and check Queue
                     time.sleep(.3)                    
                     #if not quick:
                     #   g_dev['obs'].update()    #This keeps status alive while camera is loopin
                     self.t7= time.time()
-                    print("while loop expired")               
+                    print("Basic camera file wait loop loop expired")
+                    #it takes about 15 seconds from AWS to get here for a bias.
             except:
                 counter += 1
                 time.sleep(.01)
                 #This shouldbe counted down for a loop cancel.
-                print('Wait for exposure end')
-                continue
+                print('Wait for exposure end, but getting here is bad.')
+                return (None, None)
 
         #definitely try to clean up any messes.
         try:
@@ -1082,6 +1086,7 @@ class Camera:
         except:
             pass
         self.t8 = time.time()
+        print('Returning #2:  ', spot, avg_foc[1] )
         return (spot, avg_foc[1])
             
     def enqueue_image(self, priority, im_path, name):

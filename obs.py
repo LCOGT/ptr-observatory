@@ -79,7 +79,7 @@ from global_yard import g_dev
 import ptr_bz2
 import httplib2
 
-
+last_req = None
 #A monkey patch to speed up outgoing large files.   Does this help?
 
 def patch_httplib(bsize=400000):
@@ -188,12 +188,12 @@ class Observatory:
                     device = Enclosure(driver, name)
                 elif dev_type == "mount":
                     device = Mount(driver, name, settings, tel=False)
-                elif dev_type == "telescope":
+                elif dev_type == "telescope":   #order of attaching is sensitive
                     device = Telescope(driver, name, settings, tel=True)
-                elif dev_type == "focuser":
-                    device = Focuser(driver, name, self.config)
                 elif dev_type == "rotator":
                     device = Rotator(driver, name)
+                elif dev_type == "focuser":
+                    device = Focuser(driver, name, self.config)
                 elif dev_type == "screen":
                     device = Screen('EastAlnitak', 'COM22')
                 elif dev_type == "camera":                      
@@ -227,36 +227,82 @@ class Observatory:
             print(response)
 
     def scan_requests(self, mount):
+        global last_req
 
-        # Loop forever unless stopped 
-        #kwhile not self.stopped:
-            #time.sleep(self.time_between_command_check)
-            #start = time.time()
-        uri = f"{self.name}/{mount}/command/"
-        try:
-            cmd = json.loads(self.api.authenticated_request("GET", uri))   #This needs work
-        except:
-            cmd = {'Body': 'empty'}
-            print('self.api.authenticated_request("GET", uri)  -- FAILED')
-        if cmd == {'Body': 'empty'}:
-            #print('Command Queue: ', cmd)
-            return  #Nothing to do, no command in the FIFO
-            # If a non-empty command arrives, it will print to the terminal.
-            print(cmd)
-        try:
-            cmd_body = cmd['body']
-            cmd_instance = cmd['body']['instance']
-            device_name = cmd['body']['device']
-            print(device_name, cmd_instance)
-            device = self.all_devices[device_name][cmd_instance]
-            device.parse_command(cmd_body)
-        except:
-            cmd_instance = cmd['instance']
-            device_name = cmd['device']
-            print(device_name, cmd_instance)
-            device = self.all_devices[device_name][cmd_instance]
-            device.parse_command(cmd)            
+        '''
+        This can be improved by looking for a Cancel/Stop from
+        AWS and even better, queuing commands to different devices
+        and explicitly handling their individual busy states.
+        
+        '''
+        if not  g_dev['seq'].sequencer_hold:   
+            
+            uri = f"{self.name}/{mount}/command/"
+            try:
+                cmd = json.loads(self.api.authenticated_request("GET", uri))   #This needs work
+                cmd_instance = cmd['instance']
+                device_name = cmd['device']
+                this_req = float(cmd['timestamp'])
+                print(device_name, cmd_instance)
+                device = self.all_devices[device_name][cmd_instance]
+                if last_req is  None or this_req > last_req:
+                    last_req = float(cmd['timestamp'])
+                    device.parse_command(cmd)                    
+                else:
+                    print("Last Req rejected")
+                return
+            except:
+                
+                if cmd == {'Body': 'empty'}:
+                    return  #Nothing to do, no command in the FIFO
+                else:
+                    try: 
+                        cmd_body = cmd['body']
+                        cmd_instance = cmd['body']['instance']
+                        device_name = cmd['body']['device']
+                        this_req = float(cmd['body']['timestamp'])
+                        print(device_name, cmd_instance)
+                        device = self.all_devices[device_name][cmd_instance]
+                        if last_req is None or this_req > last_req:
+                            last_req = float(cmd['body']['timestamp'])
+                            device.parse_command(cmd_body)                            
+                        else:
+                            print("Last Req rejected")
+                        return
+                    
+                    except:
+                        print('\n\n self.api.authenticated_request("GET", uri)  -- FAILED', cmd, '\nEnd of dictionary, \
+                              command not processed.\n\n')
+                return
 
+#            try:
+#                cmd_body = cmd['body']
+#                cmd_instance = cmd['body']['instance']
+#                device_name = cmd['body']['device']
+#                print(device_name, cmd_instance)
+#                device = self.all_devices[device_name][cmd_instance]
+#                device.parse_command(cmd_body)
+#                print("BODY in normal path!  ", cmd)
+#            except:
+#                print("Check command dictinary:  ", cmd)
+#                if cmd['Body'] is not None:
+#                    cmd_body = cmd['body']
+#                    cmd_instance = cmd['body']['instance']
+#                    device_name = cmd['body']['device']
+#                    print(device_name, cmd_instance)
+#                    device = self.all_devices[device_name][cmd_instance]
+#                    device.parse_command(cmd_body)
+#                    print("BODY is back!")
+#                cmd_instance = cmd['instance']
+#                device_name = cmd['device']
+#                print(device_name, cmd_instance)
+#                device = self.all_devices[device_name][cmd_instance]
+#                device.parse_command(cmd)            
+        else:
+             print('Sequencer Hold asserted.')
+             '''
+             What we really want here is looking for a Cancel/Stop.
+             '''
         #Get the device based on it's type and name, then parse the cmd.
 #        print(device_name, cmd_instance)
 #        device = self.all_devices[device_name][cmd_instance]
@@ -411,11 +457,12 @@ class Observatory:
         
                 with open(im_path + name , 'rb') as f:
                     files = {'file': (im_path + name, f)}
-                    print('.>', str(im_path + name))
+                    print('--> To AWS -->', str(im_path + name))
                     start_send = time.time()
                     #print('\n\n\nStart send at:  ', start_send, '\n\n\n')
                     http_response = requests.post(aws_resp['url'], data=aws_resp['fields'], files=files)
-                    print("\n\nhttp_response:  ", http_response, '\n\n')
+                    if http_response != '<Response [204]>':
+                        print("\n\n Problem; http_response:  ", http_response, '\n\n')
                 if name[-3:] == 'bz2' or name[-3:] == 'jpg' or name[-3:] =='txt':
                     #os.remove(im_path + name)   #We do not need to keep 
                     pass

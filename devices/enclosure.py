@@ -97,23 +97,44 @@ class Enclosure:
         return True
     
     def manager(self):     #This is the place where the enclosure is autonomus during operating hours. Delicut Code!!!
+        '''
+        When the code starts up  we wait for the Sun = Z 88 condition and if Wx is OK
+        based on analysing both Redis data and checking on the enable bit in the  Boltwood
+        file, we issue ONE open command then set an Open Block so no more commands are
+        issued.  At time of normal closing, we issue a series of close signals -- basically
+        all day long.
         
+        While it is night, if WxOK goes bad a close is issued eveery 2 minutes
+        and a one-shot timer then refreshes while Wx is bad. If it is NOT BAD for 15 minutes, then a new
+        open is issued.
+        
+        Now what if code hangs?  To recover from that ideally we need a deadman style timer operating on a
+        seperate computer.
+        
+        
+        '''
         #   ptr_events.sunZ88Op <=
         if  ptr_events.sunZ88Op < ptr_events.ephem.now() < ptr_events.sunZ88Cl \
-                               and self. wx_is_ok() \
-                               and self.wait_time <= 0 \
-                               and self.enclosure.ShutterStatus == 1: #Closed
+                                and self. wx_is_ok() \
+                                and self.wait_time <= 0 \
+                                and self.enclosure.ShutterStatus == 1: #Closed
             #print('open')
             #Since this could be a re-open we assume other code opened covers, unparked, seeked, etc.
             #open
-            self.state = 'Open, Wx OK, in Observing window.'    #A descriptive string of the state of the enclosure
+            self.state = 'Nightime Open Shutter, Wx OK, in Observing window.'    #A descriptive string of the state of the enclosure
             self.cycles += 1           #if >=3 inhibits reopening for Wx    #NBNBN THis needs to be persistend across envocatins of the code when testing.
             self.wait_time = 0
             #A countdown to re-open
             #self.enclosure.OpenShutter()
             #ptr_events.flat_spot_now(go=True)
-
-
+        
+        elif ptr_events.sunZ88Op >= ptr_events.ephem.now()  or \
+                                ptr_events.ephem.now() >= ptr_events.sunZ88Cl:
+                                    
+            self.enclosure.CloseShutter()
+            print("Daytime Close Shutter issued.")
+                                    
+                
 
             
         else:

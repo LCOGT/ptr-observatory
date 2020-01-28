@@ -190,7 +190,8 @@ site_config = {
             'alias': 'focuser',
             'desc':  'Optec Gemini',
             'driver': 'ASCOM.OptecGemini.Focuser',
-            'reference':  '7295',    #Nominal at 20C Primary temperature
+            'reference':  '7700',    #Nominal at 20C Primary temperature
+            'ref_temp':   '16.3',
             'coef_c': '0',   #negative means focus moves out as Primary gets colder
             'coef_0': '0',  #Nominal intercept when Primary is at 0.0 C.
             'coef_date':  '20191124',    #-102.0708 + 12402.224   20190829   R^2 = 0.67  Ad hoc added 900 units.
@@ -210,7 +211,7 @@ site_config = {
             "parent": "telescope1",
             "alias": "Dual filter wheel",
             "desc":  'FLI Centerline Custom Dual 50mm sq.',
-            "driver": ['ASCOM.FLI.FilterWheel', 'ASCOM.FLI.FilterWheel1'],
+            "driver": ['ASCOM.FLI.FilterWheel1', 'ASCOM.FLI.FilterWheel2'],
             'settings': {
                 'filter_count': '23',
                 'filter_reference': '2',
@@ -252,25 +253,26 @@ site_config = {
     'camera': {
         'camera1': {
             'parent': 'telescope1',
-            'alias': 'gf03',      #Important because this points to a server file structure by that name.
-            'desc':  'FLI Kepler 4040 CMOS',
+            'alias': 'df01',      #Important because this points to a server file structure by that name.
+            'desc':  'FLI U42DD Microline',
             'driver':  "Maxim.CCDCamera",   #'ASCOM.FLI.Kepler.Camera',  #"Maxim.CCDCamera"
             'settings': {
                 'x_start':  '0',
                 'y_start':  '0',
-                'x_width':  '4096',
-                'y_width':  '4096',
+                'x_width':  '2048',
+                'y_width':  '2048',
                 'overscan_x': '0',
                 'overscan_y': '0',
                 'north_offset': '0.0',
                 'east_offset': '0.0',
                 'rotation': '0.0',
-                'min_exposure': '0.200',
-                'max_exposure': '300.0',
+                'min_exposure': '0.100',
+                'max_exposure': '600.0',
                 'can_subframe':  'true',
-                'is_cmos':  'true',
+                'min_subframe':  '16:16',
+                'is_cmos':  'false',
                 'area': ['100%', '2X-jpg', '71%', '50%', '1X-jpg', '33%', '25%', '1/2 jpg'],
-                'bin_modes':  [['1', '1'], ['2', '2']],     #Meaning no binning if list has only one entry
+                'bin_modes':  [['1', '1']],     #Meaning no binning if list has only one entry
                                                #otherwise enumerate all xy modes: [[1,1], [1,2], ...[3,2]...]
                 'has_darkslide':  'false',
                 'has_screen': 'true',

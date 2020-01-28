@@ -11,7 +11,7 @@ class Sequencer:
         g_dev['seq'] = self
         self.connected = True
         self.description = "Sequencer for the eastpier mounting and OTAs"
-
+        self.sequencer_hold = False
         print(f"sequencer connected.")
         print(self.description)
 
@@ -203,34 +203,40 @@ class Sequencer:
         Fine focus consists of five points plus a verify.
         
         Optionally individual images can be multiples of one to average out seeing.
+        
+        NBNBNB This code needs to go to known stars to be moe relaible and permit subframes
         '''
-        req = {'time': 5,  'alias': 'gf01', 'image_type': 'toss', 'filter': 2}
+        print('AF entered with:  ', req, opt)
+        self.sequencer_hold = True  #Blocks command checks.
+        req = {'time': 3,  'alias': 'gf03', 'image_type': 'light', 'filter': 2}
         opt = {'size': 71, 'count': 1}
         #Take first image where we are
-        foc_pos1 = g_dev['foc'].focuser.Position
-        print('Starting at:  ', foc_pos1)
+        brealpoint()
+        foc_pos1 = g_dev['foc'].focuser* g_dev['foc'].steps_to_micron
+        print('Autofocus Starting at:  ', foc_pos1, '\n\n')
         throw = 300
         result = g_dev['cam'].expose_command(req, opt)
-        if result is not None and len(result) == 2:
+        if result[0] is not None and len(result) == 2:
             spot1, foc_pos1 = result
         else:
             spot1 = 3.0
-            foc_pos1 = 10473
+            foc_pos1 = 7700
+
         g_dev['foc'].focuser.Move(foc_pos1 - throw)
         result = g_dev['cam'].expose_command(req, opt)
-        if result is not None and len(result) == 2:
+        if result[0] is not None and len(result) == 2:
             spot2, foc_pos2 = result
         else:
             spot2 = 3.6
-            foc_pos2 = 10173
+            foc_pos2 = 7400
         g_dev['foc'].focuser.Move(foc_pos1 + 2*throw)   #It is important to overshoot to overcome any backlash
         g_dev['foc'].focuser.Move(foc_pos1 + throw)
         result = g_dev['cam'].expose_command(req, opt)
-        if result is not None and len(result) == 2:
+        if result[0] is not None and len(result) == 2:
             spot3, foc_pos3 = result
         else:
             spot3 = 3.7
-            foc_pos3 = 10773
+            foc_pos3 = 8000
         x = [foc_pos1, foc_pos2, foc_pos3]
         y = [spot1, spot2, spot3]
         #Digits are to help out pdb commands!
@@ -239,10 +245,12 @@ class Sequencer:
         print ('Solved focus:  ', round(d1, 2), new_spot)
         g_dev['foc'].focuser.Move(int(d1))
         result = g_dev['cam'].expose_command(req, opt, halt=True)
-        if result is not None and len(result) == 2:
+        if result[0] is not None and len(result) == 2:
             spot4, foc_pos4 = result
             
         print('Actual focus:  ', foc_pos4, round(spot4, 2))
+        self.sequencer_hold = False   #Allow comand checks.
+        
         
 
 
