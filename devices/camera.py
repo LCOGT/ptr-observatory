@@ -73,12 +73,12 @@ class Camera:
     
     ###filter, focuser, rotator must be set up prior to camera.
 
-    def __init__(self, driver: str, name: str, config):
+    def __init__(self, driver: str, name: str, config_in):
         
         self.name = name
 
         g_dev['cam'] = self
-        self.config = config
+        self.config = config_in
         win32com.client.pythoncom.CoInitialize()
         self.camera = win32com.client.Dispatch(driver)
         #self.camera = win32com.client.Dispatch('ASCOM.FLI.Kepler.Camera')
@@ -108,6 +108,8 @@ class Camera:
             print('Control is Maxim camera interface.')
         self.exposure_busy = False
         self.cmd_in = None
+
+        self.is_cmos = False
         #Set camera to a sensible default state -- this should ultimately be configuration settings 
         self.camera_model = "FLI Microline e2v DD U42"
         self.camera.Binx = 1     #Kepler 400 does not accept a bin??
@@ -457,63 +459,85 @@ class Camera:
                         #g_dev['mnt'].get_quick_status(self.pre_mnt)  #stage two quick_get_'s symmetric around exposure
                         self.exposure_busy = True                       
                         print('First Entry', self.camera.StartX, self.camera.StartY, self.camera.NumX, self.camera.NumY, exposure_time)
-                        if self.ascom:
-                            try:
-                                ldr_handle= glob.glob('Q:\\archive\\gf03\\raw_kepler\\' + g_dev['next_day'] + '\\' + '*low.fits')
-                                ldr_handle_high= glob.glob('Q:\\archive\\gf03\\raw_kepler\\' + g_dev['next_day'] + '\\' + '*high.fits')
-                            except:
-                                print("Something went wrong reading in a version of low / or high.fits")
-                            if ldr_handle == [] or ldr_handle_high == []:
-                                try:
-                                    ldr_handle = glob.glob('Q:\\archive\\gf03\\raw_kepler\\' + g_dev['d-a-y'] + '\\' + '*low.fits')
-                                    ldr_handle_high = glob.glob('Q:\\archive\\gf03\\raw_kepler\\' + g_dev['d-a-y'] + '\\' + '*high.fits')
-                                except:
-                                    print("Something went wrong reading in a version of low / or high.fits")  
-                            if len(ldr_handle_high) > 0:
-                                for item in ldr_handle_high:
-                                    os.remove(item)
-                            if len(ldr_handle) > 0:
-                                for item in ldr_handle:
-                                    os.remove(item)
-
-                            self.camera.AbortExposure()
-                            self.t2 = time.time()       #Immediately before Exposure
-                            self.camera.StartExposure(exposure_time, imtypeb)     #True indicates Light Frame.  Maxim Difference of code
+                        if self.ascom and self.is_cmos:
+                            breakpoint()
+#                            try:
+#                                ldr_handle= glob.glob('Q:\\archive\\gf03\\raw_kepler\\' + g_dev['next_day'] + '\\' + '*low.fits')
+#                                ldr_handle_high= glob.glob('Q:\\archive\\gf03\\raw_kepler\\' + g_dev['next_day'] + '\\' + '*high.fits')
+#                            except:
+#                                print("Something went wrong reading in a version of low / or high.fits")
+#                            if ldr_handle == [] or ldr_handle_high == []:
+#                                try:
+#                                    ldr_handle = glob.glob('Q:\\archive\\gf03\\raw_kepler\\' + g_dev['d-a-y'] + '\\' + '*low.fits')
+#                                    ldr_handle_high = glob.glob('Q:\\archive\\gf03\\raw_kepler\\' + g_dev['d-a-y'] + '\\' + '*high.fits')
+#                                except:
+#                                    print("Something went wrong reading in a version of low / or high.fits")  
+#                            if len(ldr_handle_high) > 0:
+#                                for item in ldr_handle_high:
+#                                    os.remove(item)
+#                            if len(ldr_handle) > 0:
+#                                for item in ldr_handle:
+#                                    os.remove(item)
+#
+#                            self.camera.AbortExposure()
+#                            self.t2 = time.time()       #Immediately before Exposure
+#                            self.camera.StartExposure(exposure_time, imtypeb)     #True indicates Light Frame.  Maxim Difference of code
+                        if self.maxim and self.is_cmos:
+                            breakpoint()
+#                            #This code grooms away older unuseable raw Kepler 12 bit images, presuming they exist and deals
+#                            #With oddities of directory naming by FliCam Server.
+#                            try:
+#                                ldr_handle = glob.glob('Q:\\archive\\gf03\\raw_kepler\\' + g_dev['next_day'] + '\\' + '*low.fits')
+#                                ldr_handle_high = glob.glob('Q:\\archive\\gf03\\raw_kepler\\' + g_dev['next_day'] + '\\' + '*high.fits')
+#                            except:
+#                                print("Something went wrong reading in a version of low / or high.fits")
+#                            if ldr_handle == [] or ldr_handle_high == []:
+#                                try:
+#                                    ldr_handle = glob.glob('Q:\\archive\\gf03\\raw_kepler\\' + g_dev['d-a-y'] + '\\' + '*low.fits')
+#                                    ldr_handle_high = glob.glob('Q:\\archive\\gf03\\raw_kepler\\' + g_dev['d-a-y'] + '\\' + '*high.fits')
+#                                except:
+#                                    print("Something went wrong reading in a version of low / or high.fits")  
+#                            if len(ldr_handle_high) > 0:
+#                                new_list = []
+#                                for item in ldr_handle_high:
+#                                    new_list.append( (os.stat(item).st_mtime, item))
+#                                new_list.sort()
+#                                ldr_handle_high_time = new_list[-1][0]
+#                                    #os.remove(item)
+#                                    #pass
+#                            else:
+#                                ldr_handle_high_time = time.time()
+#                            if len(ldr_handle) > 0:
+#
+#                                new_list = []
+#                                for item in ldr_handle:
+#                                    new_list.append( (os.stat(item).st_mtime, item))
+#                                new_list.sort()
+#                                ldr_handle_time = new_list[-1][0]
+#                                    #os.remove(item)
+#                                    #pass
+#                            else:
+#                                ldr_handle_time = time.time()
+#                            print('Link Enable:  ', self.camera.LinkEnabled)
+#                            self.camera.AbortExposure()
+#                            g_dev['ocn'].get_quick_status(self.pre_ocn)
+#                            g_dev['foc'].get_quick_status(self.pre_foc)
+#                            g_dev['rot'].get_quick_status(self.pre_rot)
+#                            g_dev['mnt'].get_quick_status(self.pre_mnt)
+#                            self.t2 = time.time()
+#                            print("Starting exposure at:  ", self.t2)
+#                            self.camera.Expose(exposure_time, imtypeb)
+                        elif self.ascom:
+                            breakpoint()
+#                            self.camera.AbortExposure()
+#                            g_dev['ocn'].get_quick_status(self.pre_ocn)
+#                            g_dev['foc'].get_quick_status(self.pre_foc)
+#                            g_dev['rot'].get_quick_status(self.pre_rot)
+#                            g_dev['mnt'].get_quick_status(self.pre_mnt)
+#                            self.t2 = time.time()       #Immediately before Exposure
+#                            self.camera.StartExposure(exposure_time, imtypeb) 
+#                            
                         elif self.maxim:
-                            #This code grooms away older unuseable raw Kepler 12 bit images, presuming they exist and deals
-                            #With oddities of directory naming by FliCam Server.
-                            try:
-                                ldr_handle = glob.glob('Q:\\archive\\gf03\\raw_kepler\\' + g_dev['next_day'] + '\\' + '*low.fits')
-                                ldr_handle_high = glob.glob('Q:\\archive\\gf03\\raw_kepler\\' + g_dev['next_day'] + '\\' + '*high.fits')
-                            except:
-                                print("Something went wrong reading in a version of low / or high.fits")
-                            if ldr_handle == [] or ldr_handle_high == []:
-                                try:
-                                    ldr_handle = glob.glob('Q:\\archive\\gf03\\raw_kepler\\' + g_dev['d-a-y'] + '\\' + '*low.fits')
-                                    ldr_handle_high = glob.glob('Q:\\archive\\gf03\\raw_kepler\\' + g_dev['d-a-y'] + '\\' + '*high.fits')
-                                except:
-                                    print("Something went wrong reading in a version of low / or high.fits")  
-                            if len(ldr_handle_high) > 0:
-                                new_list = []
-                                for item in ldr_handle_high:
-                                    new_list.append( (os.stat(item).st_mtime, item))
-                                new_list.sort()
-                                ldr_handle_high_time = new_list[-1][0]
-                                    #os.remove(item)
-                                    #pass
-                            else:
-                                ldr_handle_high_time = time.time()
-                            if len(ldr_handle) > 0:
-
-                                new_list = []
-                                for item in ldr_handle:
-                                    new_list.append( (os.stat(item).st_mtime, item))
-                                new_list.sort()
-                                ldr_handle_time = new_list[-1][0]
-                                    #os.remove(item)
-                                    #pass
-                            else:
-                                ldr_handle_time = time.time()
                             print('Link Enable:  ', self.camera.LinkEnabled)
                             self.camera.AbortExposure()
                             g_dev['ocn'].get_quick_status(self.pre_ocn)
@@ -523,8 +547,10 @@ class Camera:
                             self.t2 = time.time()
                             print("Starting exposure at:  ", self.t2)
                             self.camera.Expose(exposure_time, imtypeb)
+                            ldr_handle_time = None
+                            ldr_handle_high_time = None
                         else:
-                            print("Something terribly wrong!")
+                            print("Something terribly wrong, driver not recognized.!")
                         self.t9 = time.time()
                         #We go here to keep this subroutine a reasonable length.
                         result = self.finish_exposure(exposure_time,  frame_type, count - seq, p_next_filter, p_next_focus, p_dither, \
@@ -532,8 +558,10 @@ class Camera:
                                              high=ldr_handle_high_time)
                         self.exposure_busy = False
                         self.t10 = time.time()
+                        
+                        ##NB NB NB Should there be a return here?
+                        
                         #self.exposure_busy = False  Need to be able to do repeats
-                        #g_dev['obs'].update()   This may cause loosing this thread
                     except Exception as e:
                         print("failed exposure")
                         print(e)
@@ -579,168 +607,44 @@ class Camera:
             self.post_foc = []
             self.post_ocn = []
         counter = 0
-        while True:
+        while True:     #THis is where we should have an outer timeout system
             try:
-                time.sleep(0.1)
-                print('Hi-Low:  ', high, low)
-                probe_a = glob.glob('Q:\\archive\\gf03\\raw_kepler\\' + g_dev['next_day'] + '\\' + '*low.fits')
-                probe_b = glob.glob('Q:\\archive\\gf03\\raw_kepler\\' + g_dev['next_day'] + '\\' + '*high.fits')
-                probe_c = glob.glob('Q:\\archive\\gf03\\raw_kepler\\' + g_dev['d-a-y'] + '\\' + '*low.fits')
-                probe_d = glob.glob('Q:\\archive\\gf03\\raw_kepler\\' + g_dev['d-a-y'] + '\\' + '*high.fits')
-                if len(probe_a) > 0:
-                    new_list = []
-                    for item in probe_a:
-                        new_list.append( (os.stat(item).st_mtime, item))
-                        new_list.sort()
-                        ldr_handle_time = new_list[-1][0]
-                        ldr_handle = new_list[-1][1]
-                if len(probe_b) > 0:
-                    new_list = []
-                    for item in probe_b:
-                        new_list.append( (os.stat(item).st_mtime, item))
-                        new_list.sort()
-                        ldr_handle_high_time = new_list[-1][0]
-                        ldr_handle_high = new_list[-1][1]
-                if len(probe_c) > 0:
-                    new_list = []
-                    for item in probe_c:
-                        new_list.append( (os.stat(item).st_mtime, item))
-                        new_list.sort()
-                        ldr_handle_time = new_list[-1][0]
-                        ldr_handle = new_list[-1][1]
-                if len(probe_d) > 0:
-                    new_list = []
-                    for item in probe_d:
-                        new_list.append( (os.stat(item).st_mtime, item))
-                        new_list.sort()
-                        ldr_handle_high_time = new_list[-1][0]
-                        ldr_handle_high = new_list[-1][1]
-                self.t3 = time.time()
-                print(ldr_handle_time , low , ldr_handle_high_time , high)
-                if ldr_handle_time > low and ldr_handle_high_time > high:  #len(hi_low) == 2:  #self.camera.ImageReady: #and not self.img_available and self.exposing:
+                if self.maxim and self.camera.ImageReady: #and not self.img_available and self.exposing:
                     self.t4 = time.time()
-                    print('Time to ImageReady:  ', self.t4 - self.t2)
-                    self.camera.AbortExposure()
-
-                    #print( glob.glob('Q:\\archive\\gf03\\raw_kepler\\' + g_dev['next_day'] + '\\' + '*.fits'))
+                   
                     if not quick and gather_status:
                         g_dev['mnt'].get_quick_status(self.post_mnt)  #stage symmetric around exposure
                         g_dev['rot'].get_quick_status(self.post_rot)
                         g_dev['foc'].get_quick_status(self.post_foc)
                         g_dev['ocn'].get_quick_status(self.post_ocn)
                     self.t5 = time.time()
-                    #if self.maxim:
-                        #self.camera.SaveImage('Q:\\archive\\gf03\\newest.fits')
-                        #Save image with Maxim Fits Header information, then read back with astropy
-                    #if self.maxim:
-    
-                    #self.ascom:
-    ##                        if p_next_filter is not None:
-    ##                            print("Post image filter seek here")
-    ##                        if p_next_focus is not None:
-    ##                            print("Post Image focus seek here")
-    ##                        if p_dither:
-    ##                            print("Post image dither step here")
-    #                        img = self.camera.ImageArray
-    #                        img = np.array(img).astype('uint16')   #THIS LINE OF CODE IS NECESSARY!
-    #                        #Next line makes the image like those from Default MaximDL
-    #                        img = img.transpose()
-    #                        self.t6 = time.time()
-    #                        time.sleep(0.1)
-    #                        print('Post transpose:  ', self.t6-self.t2)
-    
-                        #Save high mage with Fits Header information, then read back with astropy and fill out keywords.
-    #                        hdu = fits.PrimaryHDU(img)
-    #                        hdu1 = fits.HDUList([hdu])
-    #                        hdu = hdu1[0]
-    #                        try:
-    #                            #This should be a very fast disk.
-    #                            pass
-    #                            #hdu1.writeto('Q:\\archive\\' + 'gf03'+ '\\newest.fits', overwrite=True)
-    #                            #For reasons unclear, this file never seems to close properly.  20191022 WER
-    #                        except:
-    #                            print('Write to newest.fits failed because it is busy, -- reason unknown.')
-    #                            os.remove('Q:\\archive\\' + 'gf03'+ '\\newest.fits')
-    #                            return
-    # =============================================================================
-    #                         try:
-    #                             ldr_handle= glob.glob('Q:\\archive\\gf03\\raw_kepler\\' + g_dev['next_day'] + '\\' + '*low.fits')
-    #                             ldr_handle_high= glob.glob('Q:\\archive\\gf03\\raw_kepler\\' + g_dev['next_day'] + '\\' + '*high.fits')
-    #                         except:
-    #                             hdu3 = None
-    #                             print("Something went wrong reading in a version of low / or high.fits")
-    #                         if ldr_handle == []:
-    #                             try:
-    #                                 ldr_handle = glob.glob('Q:\\archive\\gf03\\raw_kepler\\' + g_dev['d-a-y'] + '\\' + '*low.fits')
-    #                                 ldr_handle_high = glob.glob('Q:\\archive\\gf03\\raw_kepler\\' + g_dev['d-a-y'] + '\\' + '*high.fits')
-    #                             except:
-    #                                 hdu3 = None
-    #                                 print("Something went wrong reading in a version of low / or high.fits")  
-    #                         if not quick:     #For quicks we do not deal with low data range data.
-    #                             #Process high range image
-    #                             new_list = []
-    #                             for item in ldr_handle_high:
-    #                                 new_list.append( (os.stat(item).st_mtime, item))
-    #                             new_list.sort()
-    #                             ldr_handle_high = new_list[-1][1]
-    #                             for item in new_list[0:-1]:
-    #                                 os.remove(item[1])
-    # =============================================================================
-                    hdua = fits.open(ldr_handle_high)#
-                    img = hdua[0].data
-                    hdua.close()
-                    hdu = fits.PrimaryHDU(img)
-                    hdu1 = fits.HDUList([hdu])
-                    hdu = hdu1[0]
-                    #Process low range image
-    #                            new_list = []
-    #                            for item in ldr_handle:
-    #                                new_list.append( (os.stat(item).st_mtime, item))
-    #                            new_list.sort()
-    #                            ldr_handle = new_list[-1][1]
-    #                            for item in new_list[0:-1]:
-    #                                os.remove(item[1])
-                    hdub = fits.open(ldr_handle) #This directory should only have one file.                        hdu = fits.PrimaryHDU(img)
-                    imgb = hdub[0].data
-                    hdub.close()
-                    hdu3 = fits.PrimaryHDU(imgb)
-                    hdu3b = fits.HDUList([hdu3])
-                    hdu3 = hdu3b[0]
-                    #***After this point we no longer care about the camera specific files.  The raw could be deleted.
-                    self.camera.AbortExposure()   #We do not need the image in the camera buffer.
-                    hdu3.header['FILTER']= self.current_filter   #Fix bogus filter.
-                    hdu3.header['DATE-OBS'] = datetime.datetime.isoformat(datetime.datetime.utcfromtimestamp(self.t2))
-                    hdu3.header['DATE'] = datetime.datetime.isoformat(datetime.datetime.utcfromtimestamp(self.t2))
-                    hdu3.header['EXPTIME'] = exposure_time
-                    #else:
-                        #os.remove(ldr_handle[0])
-                    #   hdu3 = None     #No low image is created or saved during a quick operation.
-    
-    
+                    ###Here is the place to potentially pipeline dithers, next filter, focus, etc.
+#                    if p_next_filter is not None:
+#                        print("Post image filter seek here")
+#                    if p_next_focus is not None:
+#                        print("Post Image focus seek here")
+#                    if p_dither == True:
+#                        print("Post image dither step here")
+                    self.t6 = time.time()
+                    self.img = self.camera.ImageArray
+                    self.t7 = time.time()
+                    #Save image with Maxim Header information, then read back with astropy and use the
+                    #lqtter code for fits manipulation.
+                    #This should be a very fast disk.
+                    self.camera.SaveImage('Q:\\archive\\kf01\\newest.fits')#, overwrite=True)
+                    counter = 0
                     if not quick and gather_status:
                         avg_mnt = g_dev['mnt'].get_average_status(self.pre_mnt, self.post_mnt)
                         avg_foc = g_dev['foc'].get_average_status(self.pre_foc, self.post_foc)
                         avg_rot = g_dev['rot'].get_average_status(self.pre_rot, self.post_rot)
                         avg_ocn = g_dev['ocn'].get_average_status(self.pre_ocn, self.post_ocn)
-                        if hdu3 is not None:
-                            hdu3.header['CALC-LUX'] = avg_ocn[7]
-                            hdu3.header['SKY-HZ'] = avg_ocn[8]
-                            #hdu3.header['ROOF'] = g_dev['enc'].get_status()['shutter_status']
                     else:
-                        avg_foc = [0,0]   #This needs a serious clean-up
-                    #print(avg_ocn, avg_foc, avg_rot, avg_mnt)
-                    #counter = 0
-    
+                        avg_foc = [0,0]   #This needs a serious clean-up   
                     try:
                         #Save the raw data after adding fits header information.
-    #                        if not quick:
-    #                            #hdu1 =  fits.open('Q:\\archive\\gf03\\newest.fits')
-    #                            hdu = hdu1[0]   #get the Primary header and date
-    #                            #hdu.data = hdu.data.astype('uint16')    #This is probably redundant but forces unsigned storage
-    #                            #self.hdu_data1 = hdu.data.copy()   #NEVER USED??
-    #                        else:
-    #                            hdu = hdu1[0]
-                        #hdu = hdu1[0]
+#                        if not quick:
+                        hdu1 =  fits.open('Q:\\archive\\kf01\\newest.fits')
+                        hdu = hdu1[0]
                         hdu.header['BUNIT']    = 'adu'
                         hdu.header['DATE-OBS'] = datetime.datetime.isoformat(datetime.datetime.utcfromtimestamp(self.t2))   
                         hdu.header['EXPTIME']  = exposure_time   #This is the exposure in seconds specified by the user                  
@@ -765,12 +669,12 @@ class Camera:
                             hdu.header['XBINING'] = 1                       
                             hdu.header['YBINING'] = 1
                         hdu.header['CCDSUM'] = '1 1'  
-                        hdu.header['XORGSUBF'] = 768     #This makes little sense to fix...     
+                        hdu.header['XORGSUBF'] = 768     #This makes little sense to fix...  NB ALL NEEDS TO COME FROM CONFIG!!   
                         hdu.header['YORGSUBF'] = 768           
                         hdu.header['READOUTM'] = 'Monochrome'                                                         
-                        hdu.header['TELESCOP'] = 'PlaneWave CDK 432mm'
-                        hdu.header['FOCAL'] = 2939.
-                        hdu.header['APR-DIA']   = 432.          
+                        hdu.header['TELESCOP'] = 'PlaneWave CDK 500mm'
+                        hdu.header['FOCAL'] = 3500.
+                        hdu.header['APR-DIA']   = 500.          
                         hdu.header['APR-AREA']  = 128618.8174364                       
                         hdu.header['SITELAT']  = 34.34293028            
                         hdu.header['SITE-LNG'] = -119.68105
@@ -797,7 +701,6 @@ class Camera:
                         hdu.header['DOMEAZ']  = "NA"   #Need to document shutter status, azimuth, internal light.
                         hdu.header['ENCLIGHT'] ="Off/White/Red/IR"
                         if not quick and gather_status:
-        
                             hdu.header['MNT-SIDT'] = avg_mnt['sidereal_time']
                             ha = avg_mnt['right_ascension'] - avg_mnt['sidereal_time']
                             hdu.header['MNT-RA'] = avg_mnt['right_ascension']
@@ -838,8 +741,8 @@ class Camera:
                             if g_dev['enc'] is not None:
                                 hdu.header['ROOF']  = g_dev['enc'].get_status()['shutter_status']   #"Open/Closed"
         
-                        hdu.header['DETECTOR'] = "G-Sense CMOS 4040"
-                        hdu.header['CAMNAME'] = 'gf03'
+                        hdu.header['DETECTOR'] = "Kodak 16803"
+                        hdu.header['CAMNAME'] = 'df01'
                         hdu.header['CAMMANUF'] = 'Finger Lakes Instrumentation'
     #                        try:
     #                            hdu.header['GAIN'] = g_dev['cam'].camera.gain
@@ -847,11 +750,12 @@ class Camera:
     #                        except:                                
     #                            hdu.header['GAIN'] = 1.18
                         hdu.header['GAINUNIT'] = 'e-/ADU'
-                        hdu.header['GAIN'] = 18.0   #20190911   LDR-LDC mode set in ascom
-                        hdu.header['RDNOISE'] = 4.86
-                        hdu.header['CMOSCAM'] = True
-                        hdu.header['CMOSMODE'] = 'HDR-HDC'  #Need to figure out how to read this from setup.
-                        hdu.header['SATURATE'] = 3600
+                        hdu.header['GAIN'] = 1.2   #20190911   LDR-LDC mode set in ascom
+                        hdu.header['RDNOISE'] = 8
+                        hdu.header['CMOSCAM'] = False
+                        breakpoint()
+                        #hdu.header['CMOSMODE'] = 'HDR-HDC'  #Need to figure out how to read this from setup.
+                        hdu.header['SATURATE'] = 60000
                         hdu.header['PIXSCALE'] = 0.85*self.camera.BinX
     
                         #Need to assemble a complete header here
@@ -859,11 +763,11 @@ class Camera:
                         alias1 = self.config['camera']['camera1']['alias']
                         im_type = 'EX'   #or EN for engineering....
                         f_ext = ""
-                        if frame_type[-4:] == 'flat':
-                            f_ext = '-' + self.current_filter    #Append flat string to local image name
+#                        if frame_type[-4:] == 'flat':
+#                            f_ext = '-' + self.current_filter    #Append flat string to local image name
                         next_seq = ptr_config.next_seq(alias1)
-                        cal_name = self.config['site'] + '-' + alias1 + '-' + g_dev['day'] + '-' + next_seq  + f_ext + '-'  + \
-                                                       im_type + '01.fits'
+#                        cal_name = self.config['site'] + '-' + alias1 + '-' + g_dev['day'] + '-' + next_seq  + f_ext + '-'  + \
+#                                                       im_type + '01.fits'
                         raw_name00 = self.config['site'] + '-' + alias1 + '-' + g_dev['day'] + '-' + next_seq  + '-' + \
                                                        im_type + '00.fits'
                         raw_name01 = self.config['site'] + '-' + alias1 + '-' + g_dev['day'] + '-' + next_seq  + '-' + \
@@ -903,7 +807,7 @@ class Camera:
                         text = open(im_path + text_name, 'w')  #This is always needed by AWS to set up database.
                         text.write(str(hdu.header))
                         text.close()
-                        text_data_size = len(str(hdu.header)) - 2048                        
+                        text_data_size = len(str(hdu.header)) - 4096                        
                         if not quick:
                             hdu.writeto(raw_path + raw_name00, overwrite=True)
                             #hdu.close()
@@ -911,20 +815,10 @@ class Camera:
     
                         print("\n\Finish-Exposure is complete:  " + raw_name00)#, raw_data_size, '\n')
     
-                        calibrate(hdu, hdu3, lng_path, frame_type, start_x=start_x, start_y=start_y, quick=quick)
+                        calibrate(hdu, None, lng_path, frame_type, start_x=start_x, start_y=start_y, quick=quick)
 
                         if not quick:
-                            #bbbhdu1.writeto(cal_path + cal_name, overwrite=True)   #THis needs qualifying and should not be so general.
                             hdu1.writeto(im_path + raw_name01, overwrite=True)
-                            #THE above does not quite make sense.
-                            
-    ##                        if b.data.shape[1] == 2098:
-    ##                            overscan = hdu.data[:, 2048:]
-    ##                            medover = np.median(overscan)
-    ##                            print('Overscan median =  ', medover)
-    ##                            hdu.data = hdu.data[:, :2048] - medover
-    ##                        else:
-    ##                            hdu.data = hdu.data # - 1310.0     #This deaals with all subframes
                         do_sep = True
                         raw_data_size = hdu1[0].data.size
                         if do_sep:
@@ -1080,11 +974,7 @@ class Camera:
             hdu1 = None
         except:
             pass
-        try:
-            hdu3.close()
-            hdu3 = None
-        except:
-            pass
+
         self.t8 = time.time()
         print('Returning #2:  ', spot, avg_foc[1] )
         return (spot, avg_foc[1])
