@@ -50,8 +50,7 @@ class Focuser:
         self.config = config['focuser']['focuser1']
         self.focuser = win32com.client.Dispatch(driver)
         self.focuser.Connected = True
-        self.steps_to_micron = 1/9.090909090909090909
-        self.micron_to_steps = 9.090909090909090909
+        self.steps_to_micron = float(config['focuser']['focuser1']['unit_conversion'])
         print(f"focuser connected.")
         print(self.focuser.Description, "At:  ", self.focuser.Position*self.steps_to_micron)
         time.sleep(0.2)
@@ -65,7 +64,7 @@ class Focuser:
         except:
             self.reference = int(self.config['reference'])
             print("Focus reference derived from supplied Config dicitionary:  ", self.reference)
-        self.focuser.Move(int(self.config['reference']))
+        self.focuser.Move(int(float(self.config['reference'])/self.steps_to_micron))
     
     def calculate_compensation(self, temp_primary):
         
@@ -123,7 +122,8 @@ class Focuser:
                 print('>')
         elif action == "go_to_compensated":
             reference = self.calculate_compensation( self.focuser.Temperature)
-            self.focuser.Move(reference)
+            breakpoint()
+            self.focuser.Move(reference/self.steps_to_micron)
             time.sleep(0.1)
             while self.focuser.IsMoving:
                 time.sleep(0.5)
@@ -137,28 +137,33 @@ class Focuser:
     ###############################
     #       Focuser Commands      #
     ###############################
+    
+    def get_position(self, counts=False):
+        if not counts:
+            return int(self.focuser.Position*self.steps_to_micron)
 
     def move_relative_command(self, req: dict, opt: dict):
         ''' set the focus position by moving relative to current position '''
         #The string must start with a + or a - sign, otherwize treated as zero and no action.
+
         position_string = req['position']
-        position = self.focuser.Position*self.steps_to_micron
+        position = int(self.focuser.Position*self.steps_to_micron)
         if position_string[0] != '-':
             relative = int(position_string)
             position += relative
-            self.focuser.Move(position*self.micron_to_steps)
+            self.focuser.Move(int(position/self.steps_to_micron))
             time.sleep(0.1)
             while self.focuser.IsMoving:
                 time.sleep(0.5)
-                print('>')
+                print('>f++')
         elif position_string[0] =='-':
             relative = int(position_string[1:])
             position -= relative
-            self.focuser.Move(position*self.micron_to_steps)
+            self.focuser.Move(int(position/self.steps_to_micron))
             time.sleep(0.1)
             while self.focuser.IsMoving:
                 time.sleep(0.5)
-                print('>')            
+                print('>f--')            
         else:
             print('Supplied relativemove is lacking a sign; ignoring.')
         #print(f"focuser cmd: move_relative:  ", req, opt)
@@ -166,11 +171,11 @@ class Focuser:
         ''' set the focus position by moving to an absolute position '''
         print(f"focuser cmd: move_absolute:  ", req, opt)
         position = int(req['position'])
-        self.focuser.Move(position*self.micron_to_steps)
+        self.focuser.Move(int(position/self.steps_to_micron))
         time.sleep(0.1)
         while self.focuser.IsMoving:
             time.sleep(0.5)
-            print('>')
+            print('>f abs')
         #Here we could spin until the move is completed, simplifying other devices.  Since normally these are short moves,
         #that may make the most sense to keep things seperated.
         '''

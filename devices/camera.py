@@ -91,7 +91,7 @@ class Camera:
             self.description = "ASCOM"
             self.maxim = False
             self.ascom = True
-            self.camera.SetCCDTemperature = -20.0
+            self.camera.SetCCDTemperature = -40.0
             self.camera.CoolerOn = True
             self.current_filter = 0
             print('Control is ASCOM camera driver.')
@@ -102,14 +102,14 @@ class Camera:
             self.description = 'MAXIM'
             self.maxim = True
             self.ascom = False
-            self.camera.TemperatureSetpoint = -20.
+            self.camera.TemperatureSetpoint = -40.
             self.camera.CoolerOn = True
             self.current_filter = 0
             print('Control is Maxim camera interface.')
         self.exposure_busy = False
         self.cmd_in = None
         #Set camera to a sensible default state -- this should ultimately be configuration settings 
-        self.camera_model = "FLI Kepler 4040 #gf03"
+        self.camera_model = "FLI Microline e2v DD U42"
         self.camera.Binx = 1     #Kepler 400 does not accept a bin??
         self.camera.BinY = 1
         self.cameraXSize = self.camera.CameraXSize  #unbinned
@@ -118,8 +118,8 @@ class Camera:
         self.cameraMaxYBin = self.camera.MaxBinY
         self.camera.StartX = 0
         self.camera.StartY = 0
-        self.camera.NumX = 4096
-        self.camera.Numy = 4096
+        self.camera.NumX = 2048
+        self.camera.Numy = 2048
         self.previous_start_fraction_x = 0.   #These are the subframe **fraction** values for the previous exposure.
         self.previous_start_fraction_y = 0.
         self.previous_num_fraction_x = 1.

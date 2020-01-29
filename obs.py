@@ -274,30 +274,7 @@ class Observatory:
                         print('\n\n self.api.authenticated_request("GET", uri)  -- FAILED', cmd, '\nEnd of dictionary, \
                               command not processed.\n\n')
                 return
-
-#            try:
-#                cmd_body = cmd['body']
-#                cmd_instance = cmd['body']['instance']
-#                device_name = cmd['body']['device']
-#                print(device_name, cmd_instance)
-#                device = self.all_devices[device_name][cmd_instance]
-#                device.parse_command(cmd_body)
-#                print("BODY in normal path!  ", cmd)
-#            except:
-#                print("Check command dictinary:  ", cmd)
-#                if cmd['Body'] is not None:
-#                    cmd_body = cmd['body']
-#                    cmd_instance = cmd['body']['instance']
-#                    device_name = cmd['body']['device']
-#                    print(device_name, cmd_instance)
-#                    device = self.all_devices[device_name][cmd_instance]
-#                    device.parse_command(cmd_body)
-#                    print("BODY is back!")
-#                cmd_instance = cmd['instance']
-#                device_name = cmd['device']
-#                print(device_name, cmd_instance)
-#                device = self.all_devices[device_name][cmd_instance]
-#                device.parse_command(cmd)            
+           
         else:
              print('Sequencer Hold asserted.')
              '''

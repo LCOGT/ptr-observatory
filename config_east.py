@@ -190,16 +190,17 @@ site_config = {
             'alias': 'focuser',
             'desc':  'Optec Gemini',
             'driver': 'ASCOM.OptecGemini.Focuser',
-            'reference':  '7700',    #Nominal at 20C Primary temperature
-            'ref_temp':   '16.3',
+            'reference':  '5700',    #Nominal at 20C Primary temperature, in microns not steps.
+            'ref_temp':   '15',      #Update when pinning reference
             'coef_c': '0',   #negative means focus moves out as Primary gets colder
             'coef_0': '0',  #Nominal intercept when Primary is at 0.0 C.
-            'coef_date':  '20191124',    #-102.0708 + 12402.224   20190829   R^2 = 0.67  Ad hoc added 900 units.
+            'coef_date':  '201200128',    #-102.0708 + 12402.224   20190829   R^2 = 0.67  Ad hoc added 900 units.
             'minimum': '0',
             'maximum': '12700', 
             'step_size': '1',
             'backlash':  '0',
-            'unit': 'micron',
+            'unit': 'steps',
+            'unit_conversion':  '0.090909090909091',
             'has_dial_indicator': 'false'
         },
 
@@ -272,7 +273,7 @@ site_config = {
                 'min_subframe':  '16:16',
                 'is_cmos':  'false',
                 'area': ['100%', '2X-jpg', '71%', '50%', '1X-jpg', '33%', '25%', '1/2 jpg'],
-                'bin_modes':  [['1', '1']],     #Meaning no binning if list has only one entry
+                'bin_modes':  [['1', '1'], ['2, 2']],     #Meaning no binning if list has only one entry
                                                #otherwise enumerate all xy modes: [[1,1], [1,2], ...[3,2]...]
                 'has_darkslide':  'false',
                 'has_screen': 'true',
