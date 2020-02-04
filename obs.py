@@ -110,18 +110,6 @@ class Observatory:
     time_between_status_update = 5 #seconds
     time_between_command_check = 3
 
-#    device_types = [
-#        'observing_conditions',
-#        'enclosure',
-#        'mount',
-#        'telescope',
-#        'rotator',
-#        'focuser', 
-#        'filter_wheel',
-#        'camera',
-#        'switch'
-#
-#    ]
 
     def __init__(self, name, config): 
 
@@ -132,17 +120,19 @@ class Observatory:
         self.name = name
         self.config = config
         self.update_config()
-        self.device_types =[
-        'observing_conditions',
-#        'enclosure',
-        'mount',
-        'telescope',
-        'rotator',
-        'focuser',
-#        'screen',
-        'camera',
-        'sequencer',
-        'filter_wheel']
+        
+        self.device_types = [
+            'observing_conditions',
+            #'enclosure',
+            'mount',
+            'telescope',
+            'rotator',
+            'focuser',
+            #'screen',
+            'camera',
+            'sequencer',
+            'filter_wheel'
+        ]
         
         # Use the configuration to instantiate objects for all devices.
         self.create_devices(config)
