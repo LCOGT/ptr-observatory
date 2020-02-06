@@ -190,11 +190,11 @@ site_config = {
             'alias': 'focuser',
             'desc':  'Optec Gemini',
             'driver': 'ASCOM.OptecGemini.Focuser',
-            'reference':  '5700',    #Nominal at 20C Primary temperature, in microns not steps.
+            'reference':  '5941',    #Nominal at 20C Primary temperature, in microns not steps.
             'ref_temp':   '15',      #Update when pinning reference
             'coef_c': '0',   #negative means focus moves out as Primary gets colder
             'coef_0': '0',  #Nominal intercept when Primary is at 0.0 C.
-            'coef_date':  '201200128',    #-102.0708 + 12402.224   20190829   R^2 = 0.67  Ad hoc added 900 units.
+            'coef_date':  '201200129',    #-102.0708 + 12402.224   20190829   R^2 = 0.67  Ad hoc added 900 units.
             'minimum': '0',
             'maximum': '12700', 
             'step_size': '1',
@@ -254,7 +254,7 @@ site_config = {
     'camera': {
         'camera1': {
             'parent': 'telescope1',
-            'alias': 'df01',      #Important because this points to a server file structure by that name.
+            'alias': 'kf01',      #Important because this points to a server file structure by that name.
             'desc':  'FLI Microline 16803',
             'driver':  "Maxim.CCDCamera",   #'ASCOM.FLI.Kepler.Camera',  #"Maxim.CCDCamera"
             'settings': {

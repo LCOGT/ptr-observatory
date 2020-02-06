@@ -41,8 +41,9 @@ class API_calls:
             self.user.check_token()
             header["Authorization"] = f"Bearer {self.user.access_token}"
         except AttributeError as e:
-            print("Could not create authorization header.")
-            print(e)
+            pass
+            #print("Could not create authorization header.")
+            #print(e)
         return header
 
 

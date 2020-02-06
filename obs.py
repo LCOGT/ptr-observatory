@@ -438,8 +438,8 @@ class Observatory:
                     start_send = time.time()
                     #print('\n\n\nStart send at:  ', start_send, '\n\n\n')
                     http_response = requests.post(aws_resp['url'], data=aws_resp['fields'], files=files)
-                    if http_response != '<Response [204]>':
-                        print("\n\n Problem; http_response:  ", http_response, '\n\n')
+                    #if http_response != '<Response [204]>':
+                    #    print("\n\n Problem; http_response:  ", http_response, '\n\n')
                 if name[-3:] == 'bz2' or name[-3:] == 'jpg' or name[-3:] =='txt':
                     #os.remove(im_path + name)   #We do not need to keep 
                     pass

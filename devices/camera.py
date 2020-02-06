@@ -753,7 +753,6 @@ class Camera:
                         hdu.header['GAIN'] = 1.2   #20190911   LDR-LDC mode set in ascom
                         hdu.header['RDNOISE'] = 8
                         hdu.header['CMOSCAM'] = False
-                        breakpoint()
                         #hdu.header['CMOSMODE'] = 'HDR-HDC'  #Need to figure out how to read this from setup.
                         hdu.header['SATURATE'] = 60000
                         hdu.header['PIXSCALE'] = 0.85*self.camera.BinX
@@ -816,7 +815,7 @@ class Camera:
                         print("\n\Finish-Exposure is complete:  " + raw_name00)#, raw_data_size, '\n')
     
                         calibrate(hdu, None, lng_path, frame_type, start_x=start_x, start_y=start_y, quick=quick)
-
+                        #Note we may be using different files if calibrate is null.
                         if not quick:
                             hdu1.writeto(im_path + raw_name01, overwrite=True)
                         do_sep = True
