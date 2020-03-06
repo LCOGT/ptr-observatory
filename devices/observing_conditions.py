@@ -25,7 +25,7 @@ class ObservingConditions:
         try:
             wx = eval(self.redis_server.get('<ptr-wx-1_state'))  #Redis returns a string dict.
         except:
-            print('Redis is not turning Wx Data properly.')
+            print('Redis is not returning Wx Data properly.')
         #print(wx)
         #breakpoint()
         try:

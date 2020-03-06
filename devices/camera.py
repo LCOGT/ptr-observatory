@@ -84,6 +84,8 @@ class Camera:
         #self.camera = win32com.client.Dispatch('ASCOM.FLI.Kepler.Camera')
         #Need logic here if camera denies connection.
         print("Connecting to ASCOM camera:", driver)
+
+        
         if driver[:5].lower() == 'ascom':
             print('ASCOM')
             time.sleep(1)

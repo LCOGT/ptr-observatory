@@ -17,7 +17,7 @@ class FilterWheel:
         #as a valid instance of class camera.
 
         print('Please NOTE: Filter wheel may block for many seconds while first connecting & homing.')
-        if type(driver) == list:
+        if type(driver) == list and False:
             #breakpoint()
             self.filter_front = win32com.client.Dispatch(driver[0])
             self.filter_front.Connected = True
@@ -43,23 +43,32 @@ class FilterWheel:
             print(self.filter_front.Names, self.filter_back.Names, self.filter_selected, self.filter_offset)
         else:
             self.dual = False
-            self.filter_front = win32com.client.Dispatch(driver)
-            self.filter_front.Connected = True
+            #self.filter_front = win32com.client.Dispatch(driver)
+            #self.filter_front.Connected = True
             self.dual = False
 
     def get_status(self):
-        if self.filter_front.Position == -1 or self.filter_back.Position == -1:
-            f_move = 'true'
-        else:
+        try:
+            if self.filter_front.Position == -1 or self.filter_back.Position == -1:
+                f_move = 'true'
+            else:
+                f_move = 'false'
+            status = {
+                'filter_name': str(self.filter_selected),
+                'filter_number': str(self.filter_number),
+                'filter_offset': str(self.filter_offset),
+                'wheel_is_moving': f_move
+                }
+            return status
+        except:
             f_move = 'false'
-        status = {
-            'filter_name': str(self.filter_selected),
-            'filter_number': str(self.filter_number),
-            'filter_offset': str(self.filter_offset),
-            'wheel_is_moving': f_move
-            }
-        return status
-
+            status = {
+                'filter_name': str('None'),
+                'filter_number': str(0),
+                'filter_offset': str(0.0),
+                'wheel_is_moving': f_move
+                }
+            return status
     def parse_command(self, command):
         req = command['required_params']
         opt = command['optional_params']

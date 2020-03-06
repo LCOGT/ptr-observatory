@@ -31,16 +31,16 @@ class Mount:
         else:
             print(f"Tel/OTA connected.")
         print(self.mount.Description)
-        self._paddle = serial.Serial('COM10', timeout=0.1)
-        self._paddle.write(b'ver\n')
-        print(self._paddle.read(13).decode()[-8:])
-        self._paddle.write(b"gpio iodir 00ff\n")
-        self._paddle.write(b"gpio readall\n")
+#        self._paddle = serial.Serial('COM10', timeout=0.1)
+#        self._paddle.write(b'ver\n')
+#        print(self._paddle.read(13).decode()[-8:])
+#        self._paddle.write(b"gpio iodir 00ff\n")
+#        self._paddle.write(b"gpio readall\n")
         self.paddleing = False
 #        print('a:',self._paddle.read(20).decode())
 #        print('b:',self._paddle.read(20).decode())
 #        print('c:',self._paddle.read(20).decode())
-        print("Paddle connected but not operational??")
+        print("Paddle  not operational??")
 #        self.paddle_thread = threading.Thread(target=self.paddle( self._paddle, self.mount), args=())
         #self.paddle_thread.start()
         print("exiting mount _init")
@@ -88,7 +88,7 @@ class Mount:
         
     def get_status(self):
         self.check_connect()
-        self.paddle()
+        #self.paddle()
         alt = self.mount.Altitude
         zen = round((90 - alt), 3)
         if zen > 90:

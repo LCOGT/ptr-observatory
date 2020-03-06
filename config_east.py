@@ -255,15 +255,15 @@ site_config = {
         'camera1': {
             'parent': 'telescope1',
             'alias': 'kf01',      #Important because this points to a server file structure by that name.
-            'desc':  'FLI Microline 16803',
+            'desc':  'FLI Microline DDU42',
             'driver':  "Maxim.CCDCamera",   #'ASCOM.FLI.Kepler.Camera',  #"Maxim.CCDCamera"
             'settings': {
                 'x_start':  '0',
                 'y_start':  '0',
-                'x_width':  '4096',
-                'x_pixel':  '9.0',
-                'y_width':  '4096',
-                'y_pixel':  '9.0',
+                'x_width':  '2048',
+                'x_pixel':  '13',
+                'y_width':  '2048',
+                'y_pixel':  '13',
                 'overscan_x': '0',
                 'overscan_y': '0',
                 'north_offset': '0.0',
@@ -277,7 +277,7 @@ site_config = {
                 'reference_gain': ['12.0', '14.0', '15.0', '16.0'],     #One val for each binning.
                 'reference_noise': ['2.0', '4.0', '6.0', '8.0'],
                 'area': ['100%', '2X-jpg', '71%', '50%', '1X-jpg', '33%', '25%', '1/2 jpg'],
-                'bin_modes':  [['1', '1'], ['2', '2'], ['3', '3'], ['4','4']],     #Meaning no binning if list has only one entry
+                'bin_modes':  [['1', '1'], ['2', '2']],     #Meaning no binning if list has only one entry
                                                #otherwise enumerate all xy modes: [[1,1], [1,2], ...[3,2]...]
                 'has_darkslide':  'false',
                 'has_screen': 'true',
