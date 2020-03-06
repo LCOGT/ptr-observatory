@@ -4,10 +4,10 @@ from os.path import join, dirname
 class API_calls:
 
     def __init__(self):         
-        self.api = "http://api.photonranch.org"
+        self.api = "https://api.photonranch.org/api"
 
     def base_url(self):
-        return "http://api.photonranch.org"
+        return "https://api.photonranch.org/api"
         #return "http://localhost:5000"
         
     def authenticated_request(self, method: str, uri: str, payload: dict = None) -> str:
