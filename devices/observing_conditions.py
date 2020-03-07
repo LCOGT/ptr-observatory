@@ -16,9 +16,9 @@ class ObservingConditions:
         #breakpoint()
         self.redis_server = redis.StrictRedis(host='10.15.0.15', port=6379, db=0, decode_responses=True)
         #self.observing_conditions = win32com.client.Dispatch(driver)
-        #self.observing_conditions.Connected = True
+        self.observing_conditions_connected = True   #This is not an ASCOM device, so this is a bit bogus.
 
-        print(f"observing_conditions  connected")
+        print("observing_conditions:  Connected == True")
         #print(self.observing_conditions.Description)
 
     def get_status(self):

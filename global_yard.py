@@ -19,3 +19,5 @@ g_dev = {
         'cam': None,
         'day': None,
         }
+
+#NBNB This whole idea breaks down if we have multiple devices or any given type.

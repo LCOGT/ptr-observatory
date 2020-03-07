@@ -6,15 +6,14 @@ Created on Fri Aug  2 11:57:41 2019
 '''
 import json
 
-#NB NB NB json is not bi-directional with tuples (), use lists [], nested if tuples as needed, instead.
+#NB NB NB json is not bi-directional with tuples (), instead, use lists [], nested if tuples are needed.
 
 site_name = 'wmd'
 
 site_config = {
     'site': 'wmd',
     'alias': 'West Mountain Drive Observatory',
-    'location': 'Santa Barbara, Californa,  USA',   #Tim if this does not work for you, \
-                                                     #propose a change.
+    'location': 'Santa Barbara, Californa,  USA',   #Tim if this does not work for you, propose a change.
     'observatory_url': 'https://starz-r-us.sky/clearskies',   #This is meant to be optional
     'description':  '''
                     Now is the time for all good persons
@@ -46,8 +45,8 @@ site_config = {
         'enclosure1': {
             'parent': 'site',
             'alias': 'Megawan',
-            'hostIP':  '10.15.0.50',
-            'driver': 'ASCOM.SkyRoof.Dome',
+            'hostIP':  '10.15.0.30',
+            'driver': 'ASCOM.SkyRoofHub.Dome',
             'has_lights':  'true',
             'controlled_by':  ['mnt1', 'mnt2'],
             'settings': {
@@ -56,25 +55,30 @@ site_config = {
                 'roof_shutter':  ['Auto', 'Open', 'Close', 'Lock Closed', 'Unlock'],                               
             },
         },
-    'web_cam': {
-        'web_cam1 ': {
-            'parent': 'enclosure1',
-            'alias': 'MegaCam',
-            'desc':  'AXIS PTZ w control',
-            'driver': 'http://10.15.0.19',
-            'fov':  '90.0',
-            'altitude': '90.0',
-            'azimuth':  '0.0'      #or '180.0'
-            },
-                
-        'web_cam2 ': {
-            'parent': 'enclosure1',
-            'alias': 'FLIR',
-            'desc':  'FLIR NIR 10 micron Zenith View 90 deg',
-            'driver': 'http://10.15.0.18',
-            'fov':  '90.0'
-            },
-        },
+# =============================================================================
+#     'web_cam': {
+#         'web_cam1 ': {
+#             'parent': 'enclosure1',
+#             'alias': 'MegaCam',
+#             'desc':  'AXIS PTZ w control',
+#             'driver': 'http://10.15.0.19',
+#             'fov':  '90.0',
+#             'altitude': '90.0',
+#             'azimuth':  '0.0'      #or '180.0 if Pole is low.
+#             },
+#         #Need to find a way to get this supported and displaying and ultimately logging the 10 micron sky signal.        
+# =============================================================================
+# =============================================================================
+#         'web_cam2 ': {               #currently no support for building this object.
+#             'parent': 'enclosure1',
+#             'alias': 'FLIR',
+#             'desc':  'FLIR NIR 10 micron Zenith View 90 deg',
+#             'driver': 'http://10.15.0.18',
+#             'fov':  '90.0'
+#             },
+#         },
+# =============================================================================
+    #Need to eventually add skycam here along with seeing monitor.
     },
                     
                         
@@ -88,6 +92,7 @@ site_config = {
             'desc':  'Planewave L500 AltAz',
             'driver': 'ASCOM.AltAzDS.Telescope',
             'alignment': 'Alt-Az',
+            'has_paddle': 'false',    #or a string that permits proper configuration.
             'pointing_tel': 'tel1',     #This can be changed to 'tel2' by user.  This establishes a default.
             'settings': {
                 'lattitude': '34.34293028',   #These could in principle be different than site by  small amount
@@ -254,16 +259,16 @@ site_config = {
     'camera': {
         'camera1': {
             'parent': 'telescope1',
-            'alias': 'kf01',      #Important because this points to a server file structure by that name.
-            'desc':  'FLI Microline DDU42',
-            'driver':  "Maxim.CCDCamera",   #'ASCOM.FLI.Kepler.Camera',  #"Maxim.CCDCamera"
+            'alias': 'df01',      #Important because this points to a server file structure by that name.
+            'desc':  'FLI Microline e2vU42DD',
+            'driver':  "Maxim.CCDCamera",   #'ASCOM.FLI.Kepler.Camera',  #Code must work with both.
             'settings': {
                 'x_start':  '0',
                 'y_start':  '0',
                 'x_width':  '2048',
-                'x_pixel':  '13',
+                'x_pixel':  '13.5',
                 'y_width':  '2048',
-                'y_pixel':  '13',
+                'y_pixel':  '13.5',
                 'overscan_x': '0',
                 'overscan_y': '0',
                 'north_offset': '0.0',
@@ -274,14 +279,15 @@ site_config = {
                 'can_subframe':  'true',
                 'min_subframe':  '16:16',
                 'is_cmos':  'false',
-                'reference_gain': ['12.0', '14.0', '15.0', '16.0'],     #One val for each binning.
-                'reference_noise': ['2.0', '4.0', '6.0', '8.0'],
+                'reference_gain': ['1.4', '1.4' ],     #One val for each binning.
+                'reference_noise': ['14.0', '14.0' ],
+                'reference_dark': ['0.2', '-30' ],
                 'area': ['100%', '2X-jpg', '71%', '50%', '1X-jpg', '33%', '25%', '1/2 jpg'],
                 'bin_modes':  [['1', '1'], ['2', '2']],     #Meaning no binning if list has only one entry
                                                #otherwise enumerate all xy modes: [[1,1], [1,2], ...[3,2]...]
                 'has_darkslide':  'false',
-                'has_screen': 'true',
 #                'darkslide':  ['Auto', 'Open', 'Close'],
+                'has_screen': 'true',
                 'screen_settings':  {
                     'screen_saturation':  '157.0',
                     'screen_x4':  '-4E-12',  #'y = -4E-12x4 + 3E-08x3 - 9E-05x2 + 0.1285x + 8.683     20190731'
@@ -305,11 +311,11 @@ site_config = {
 
         },
     },
-                
+    #As aboove, need to get this sensibly suported on GUI and in fits headers.            
     'web_cam': {
                
         'web_cam3 ': {
-            'parent': 'enclosure1',
+            'parent': 'mount1',
             'alias': 'FLIR',
             'desc':  'FLIR NIR 10 micron 15deg, sidecam',
             'driver': 'http://10.15.0.17',
@@ -329,9 +335,11 @@ site_config = {
             
     #***NEED to put switches here for above devices.
     
+    #Need to build instrument selector and multi-OTA configurations.
+    
 
 
-    #I am not sure AWS needs this, but my configuration code might make use of it.
+    #AWS does not need this, but my configuration code might make use of it.
     'server': {
         'server1': {
             'name': 'QNAP',
