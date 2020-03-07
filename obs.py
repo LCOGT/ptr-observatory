@@ -229,7 +229,9 @@ class Observatory:
             
             uri = f"{self.name}/{mount}/command/"
             try:
-                cmd = json.loads(self.api.authenticated_request("GET", uri))   #This needs work
+                #cmd = json.loads(self.api.authenticated_request("GET", uri))   #This needs work
+                cmd =self.api.authenticated_request("GET", uri)
+                #print('cmd received:  ', cmd)
                 cmd_instance = cmd['instance']
                 device_name = cmd['device']
                 this_req = float(cmd['timestamp'])
@@ -243,28 +245,34 @@ class Observatory:
                 return
             except:
                 
-                if cmd == {'Body': 'empty'}:
+                if cmd == {}:
                     return  #Nothing to do, no command in the FIFO
                 else:
-                    try: 
-                        cmd_body = cmd['body']
-                        cmd_instance = cmd['body']['instance']
-                        device_name = cmd['body']['device']
-                        this_req = float(cmd['body']['timestamp'])
-                        print(device_name, cmd_instance)
-                        device = self.all_devices[device_name][cmd_instance]
-                        if last_req is None or this_req > last_req:
-                            last_req = float(cmd['body']['timestamp'])
-                            device.parse_command(cmd_body)                            
-                        else:
-                            print("Last Req rejected")
-                        return
-                    
-                    except:
-                        print('\n\n self.api.authenticated_request("GET", uri)  -- FAILED', cmd, '\nEnd of dictionary, \
-                              command not processed.\n\n')
-                return
-           
+                    print("unparseable command dict received", cmd)
+
+                    return
+                
+#           else:
+#                    try: 
+#                        cmd_body = cmd['body']
+#                        cmd_instance = cmd['body']['instance']
+#                        device_name = cmd['body']['device']
+#                        this_req = float(cmd['body']['timestamp'])
+#                        print(device_name, cmd_instance)
+#                        device = self.all_devices[device_name][cmd_instance]
+#                        if last_req is None or this_req > last_req:
+#                            last_req = float(cmd['body']['timestamp'])
+#                            device.parse_command(cmd_body)                            
+#                        else:
+#                            print("Last Req rejected")
+#                        return
+#                    
+#                    except Exception as ex: 
+#                   
+#                        print('\n\n self.api.authenticated_request("GET", uri)  -- FAILED', cmd, '\nEnd of dictionary, \
+#                              command not processed.\n\n')
+#                        print(ex)
+#                return
         else:
              print('Sequencer Hold asserted.')
              '''
@@ -420,7 +428,7 @@ class Observatory:
                     name = name + '.bz2'
                 aws_req = {"object_name": "raw_data/2019/" + name}
                 site_str = config.site_config['site']
-                aws_resp = g_dev['obs'].api.authenticated_request('GET', site_str +'/upload/', aws_req)
+                aws_resp = g_dev['obs'].api.authenticated_request('POST', site_str +'/upload/', aws_req)
         
                 with open(im_path + name , 'rb') as f:
                     files = {'file': (im_path + name, f)}

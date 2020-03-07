@@ -912,6 +912,7 @@ class Camera:
                         resized_a = resize(hdu.data, (768, 768), preserve_range=True)
                         #print(resized_a.shape, resized_a.astype('uint16'))
                         hdu.data = resized_a.astype('uint16')
+                        
                         db_data_size = hdu.data.size
                         hdu1.writeto(im_path + db_name, overwrite=True)
                         hdu.data = resized_a.astype('float')
