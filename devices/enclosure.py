@@ -109,28 +109,20 @@ class Enclosure:
         open is issued.
         
         Now what if code hangs?  To recover from that ideally we need a deadman style timer operating on a
-        seperate computer.
-        
-        
+        separate computer.
         '''
         #   ptr_events.sunZ88Op <=
         if  ptr_events.sunZ88Op < ptr_events.ephem.now() < ptr_events.sunZ88Cl \
                                 and self. wx_is_ok() \
                                 and self.wait_time <= 0 \
                                 and self.enclosure.ShutterStatus == 1: #Closed
-            #print('open')
-            #Since this could be a re-open we assume other code opened covers, unparked, seeked, etc.
-            #open
-            self.state = 'Nightime Open Shutter, Wx OK, in Observing window.'    #A descriptive string of the state of the enclosure
-            self.cycles += 1           #if >=3 inhibits reopening for Wx    #NBNBN THis needs to be persistend across envocatins of the code when testing.
-            self.wait_time = 0
+            self.state = 'Nightime Open Shutter, Wx OK, in Observing window.'   
+            self.cycles += 1           #if >=3 inhibits reopening for Wx  -- may need shelving so this persists.
             #A countdown to re-open
-            #self.enclosure.OpenShutter()
+            #self.enclosure.OpenShutter()   #<<<<NB NB NB Only enable when code is fully proven to work.
             #ptr_events.flat_spot_now(go=True)
         
-        elif ptr_events.sunZ88Op >= ptr_events.ephem.now()  or \
-                                ptr_events.ephem.now() >= ptr_events.sunZ88Cl:
-                                    
+        elif ptr_events.sunZ88Op >= ptr_events.ephem.now()  or ptr_events.ephem.now() >= ptr_events.sunZ88Cl:                         
             self.enclosure.CloseShutter()
             print("Daytime Close Shutter issued.")
                                     

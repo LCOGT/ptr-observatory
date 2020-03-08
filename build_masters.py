@@ -6,6 +6,7 @@ Created on Sat Oct 26 16:35:36 2019
 """
 
 '''
+20200308 WER  THis is code to generate master frames.  It is far from complete but works for the JPEG level application.
 
 Update 20191031 @ ELP
 
@@ -167,25 +168,7 @@ def fits_remove_overscan(ipath, opath):
             
             
             img_hdu[0].data = (img - biasline)[:2048,:2048].astype('uint16')
-#            fimg = img2.flatten()
-#            simg = fimg.copy()
-#            simg.sort()
-#            ftop = int(len(fimg)*0.995)
-#            fmin = fimg.min()
-#            fmax = simg[ftop]
-#            fslope = 254./(fmax - fmin)
-#            img2 -= fmin
-#            img2 = img2*fslope
-#            fix = np.where(img2 > 254)
-#            img2[fix] = 255
-#            img2 = img2/255.
-#            
-#            small = resize(img2, (768, 768), mode='edge')
-#            small_gamma_corrected = exposure.adjust_gamma(small, .15)
-#            small = (small_gamma_corrected*255.).astype('uint16')
-#            
-#        
-#            img_hdu[0].data = small
+
             meta['HISTORY'] = 'Median overscan subtracted and trimmed. Mean = ' + str(round(biasmean,2))
 
             img_hdu.writeto(opath + file_name, clobber=True)

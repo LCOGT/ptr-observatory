@@ -7,11 +7,7 @@ This is a temporary script file.
 #Continuum Analytics Python ver 3.5.2-0.pyEphem __version__ = '3.7.6.0'
 #Computer clock is UTC, Windows Time Zone is UTC, no Daylight slaving.
 '''
-
-This needs a rework to use astropy, astroplan, ephem is depricated.
-
-Goal is a table of events which various schedulers can use to launch
-calibrations, release the enclosures to open. etc.
+This is also very old code just grafted on. Needs variable renaming, and a good scrub.
 
 '''
 
@@ -36,49 +32,7 @@ LONGESTDARK = (800/60)/1440             #13.33 min
 DAY_Directory = None
 Day_tomorrow = None
 dayNow = None
-##****** NB NB NB    These are important, for now, global SITE state variables
-##                   shared by other processes which load these modules.
-##                   THIS IS CRITCAL INFORMATION and cannot be wiped out.
 
-gBiasDarkStarted =False         #To the process
-gBiasDarkEndTarget = None       #info
-gBiasDarkPID = None             #Info
-gBiasDarkActivity = None        #From the process
-gBiasDarkTimetoComplete = 0.0   #From the process
-gScreenFlatStarted =False
-gScreenFlatEndTarget = None
-gScreenFlatPID = None
-gScreenFlatActivity = None
-gScreenFlatTimetoComplete = 0.0
-gWaitToOpenStarted =False
-gWaittoOpenEndTarget = None
-gSkyFlatStarted =False
-gSkyFlatEndTarget = None
-gSkyFlatPID = None
-gSkyFlatActivity = None
-gSkyFlatTimetoComplete = 0.0
-gAutofocusStarted =False
-gAutoFocusEndTarget = None
-gObservationsStarted =False
-gObservationsEndTarget = None  #AF, etc.,  are then reused in reverse order
-gObservationsPID = None
-gBiasDarkCheckStarted =False
-gBiasDarkCheckEndTarget = None
-gBiasDarkCheckPID = None
-gReductionStarted =False
-gReductionsEndTarget = None
-
-#def epochToDayDirectory(pEpoch):
-#    lclDateTime = datetime.datetime.fromtimestamp(time.time()) + timedelta(0, -25200, 0)
-#    lclTime = lclDateTime.time()
-#    priorDateTime = datetime.datetime.fromtimestamp(time.time()) + timedelta(-1, -25200, 0)
-#    flipTime = datetime.time(10, 30, 0)
-#    getJulianDateTime()
-#    if lclTime <= flipTime:
-#        dirDay = priorDateTime.date().isoformat()
-#    else:
-#        dirDay = lclDateTime.date().isoformat()
-#    return dirDay[:4] + dirDay[5:7] + dirDay[-2:]
 
 def getJulianDateTime():
     global jYear,JD, MJD, unixEpochOf, localEpoch
@@ -88,27 +42,7 @@ def getJulianDateTime():
     JD = e.jd
     MJD =e.mjd
     localEpoch = datetime.now()#.isoformat()
-    '''
-    n = Time('2017-01-03T19:30:00.0')
 
-    n.jd
-    Out[3]: 2457757.3125
-
-    m.mjd
-    Traceback (most recent call last):
-
-      File "<ipython-input-4-bf9c11c98ddf>", line 1, in <module>
-        m.mjd
-
-    NameError: name 'm' is not defined
-
-
-    n.mjd
-    Out[5]: 57756.8125
-
-    n.jyear
-    Out[6]: 2017.0083846680357
-    '''
 
 def illumination(sunRa, sunDec, sunElev, sunDia, moonRa, moonDec, moonElev, moonDia):
     '''
@@ -198,9 +132,6 @@ def flat_spot_now(go=False):
     
 
 def sunNow():
-    dayNow = ephem.now()
-
-    #if loud: print('DayNow:  ', dayNow)
     sun = ephem.Sun()
     sun.compute()
     moon = ephem.Moon()
@@ -298,9 +229,7 @@ def calcMornFlatValues(pWhen, loud=False):
 
 #NBNBNB Convert this to skyfield!
 print('Events module loaded at: ', ephem.now(), round((ephem.now()), 4))
-
 loud = True
-
 
 '''
 Mantatory:  The day_directory is the datestring for the Julian day as defined
@@ -309,10 +238,8 @@ by the local astronomical Noon.  Restating the software any time within that
 at any time but automatic ones will normally occur somewhat after the prior
 night's  final reductions and the upcoming local Noon.
 
-For observaatories whihc operate solar telescopes the night directory will
-be centered on the JD of local solar noon and will wun Midnight to midnight.
-
 '''
+
 def compute_day_directory(loud=False):
     global DAY_Directory, dayNow, Day_tomorrow
     intDay = int(ephem.now())
@@ -361,15 +288,6 @@ ptr.lon = str(siteLongitude)
 ptr.elev = siteElevation
 ptr.compute_pressure()
 ptr.temp = siteRefTemp
-
-# loud: print('Moon Now: ', moon.ra, moon.dec, moon.az, moon.alt, moon.size/3600., ptr.date)
-
-#if loud: print('\nEphem date    :    ', ephem.now(), '\n')
-#if loud: print('Sun  prev_tran:    ', ptr.previous_transit(sun))
-#if loud: print('Sun  prev_set :    ', ptr.previous_setting(sun))
-#if loud: print('Sun  prev_anti:    ', ptr.previous_antitransit(sun))
-#if loud: print('Sun  prev_rise:    ', ptr.previous_rising(sun))
-#if loud: print('Sun  next_tran:    ', ptr.next_transit(sun))
 ptr.horizon = '-0:34'
 sunset = ptr.next_setting(sun)
 middleNight = ptr.next_antitransit(sun)
@@ -486,36 +404,11 @@ print('Events module reporting for duty. \n')
 print('Ephem date    :    ', dayNow)
 print('DayDir        :    ', DAY_Directory)
 print('Next day      :    ', Day_tomorrow)
-#    print('Beg Bias Dark :    ', ephem.Date(beginEveBiasDark))
-#    print('End Bias Dark :    ', ephem.Date(endEveBiasDark))
-#    print('Beg Scrn Flats:    ', ephem.Date(beginEveScreenFlats))
-#    print('End Scrn Flats:    ', ephem.Date(endEveScreenFlats))
-#    print('SunZ88 Opening:    ', sunZ88Op)
-#    print('Beg Sky Flats :    ', sunZ88Op)
-#    print('Sun   next_set:    ', sunset)
-#    print('Civil  Dusk   :    ', civilDusk)
-#    print('Naut   Dusk   :    ', nauticalDusk)
-#    print('Flat End      :    ', skyFlatEnd)
-#    print('Astro  Dark   :    ', astroDark)
-#    print('Middle Night  :    ', middleNight)
-#    print('Astro  End    :    ', astroEnd)
-#    print('Flat Start    :    ', skyFlatBegin)
-#    print('Naut   Dawn   :    ', nauticalDawn)
-#    print('Civil  Dawn   :    ', civilDawn)
-#    print('Sun  next_rise:    ', sunrise)
-#    print('SunZ88   Close:    ', sunZ88Cl)
 print('Night Duration :    ', str(round(duration, 2)) + ' hr')
-#    print('')
 print('MoonRaDec     :    ', (round(mid_moon_ra, 2), round(mid_moon_dec , 1)))
 print('Moon phase %  :    ', round(mid_moon_phase, 1))
 print(('\n'))
-#    print('Moon prev_anti:    ', ptr.previous_antitransit(moon))
-#    print('Moon rise     :    ', ptr.previous_rising(moon))
-#    print('Moon transit  :    ', ptr.previous_transit(moon))
-#    print('Moon set      :    ', ptr.previous_setting(moon))
-#    print('Moon rise     :    ', ptr.next_rising(moon))
-#    print('Moon transit  :    ', ptr.next_transit(moon))
-#    print('Moon set      :    ', ptr.next_setting(moon), '\n\n')
+
 
 evnt = [('Beg Bias Dark :    ', ephem.Date(beginEveBiasDark)),
         ('End Bias Dark :    ', ephem.Date(endEveBiasDark)),
@@ -558,56 +451,11 @@ while evnt_sort[-1][0] != 'SunZ88   Close:    ':
     evnt_sort.pop(-1)
 for evnt in evnt_sort:
     print(evnt[0], evnt[1])
-
 ##Early start check needs to be added!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 '''
-At this point we enter the plan generation engine.
-
-Waiting (for Bias/Dark)
-Evening Bias Dark
-Evening Screen Flats
-          ----> Wx hold Option
-Opening
-          ----> Wx hold Option
-Evening Sky Flats
-          ----> Wx hold Option
-Evening Focus & Pointing
-          ----> Wx hold Option
-Observing
-          ----> Wx hold Option
-Morning Focus and Pointing
-          ----> Wx hold Option
-Morning Sky Flats
-          ----> Wx hold Option
-Closing
-Morning Screen Flats
-Morning Bias Dark
-Reducing
-
-Any calibrations during observing are considered quick, original images are
-retained for post observation phase final reductions.
-
-First effort should be a plan builder that accomodates the various PTR
-observing requirements.
-
-1) Generation of Satellite pointing and (non!)-tracking.
-2) Landold based standards, extinction measurement.
-3) Red-blue rising/setting, extinction measurement (more efficient than 2)
-4) Additional Target catalog.
-
-Landolt:
-
-At Begin of ADark, pick a field which permits a 60 degree fall.
-
-
-
-
 Landolt "bonus fields"
-RA J2000	DE J2000	N
-Star Field
-
-row #
+RA J2000	DE J2000	N    Star Field
 
 00 54 41 +00 45 00 4 L010
 02 23 38 +13 27 38 3 L020 PG0220+132
@@ -636,54 +484,16 @@ row #
 22 16 28 -00 21 15 4 L220 PG2213-006
 23 33 44 +05 46 36 3 L230 PG2331+055
 23 38 44 +00 42 55 3 L235 PG2336+004
-
-
 '''
 
-'''
-4:440 is AN, so Sid time is 17H
-
-night is 6:40 long
-
-So pick L170 as the setter    17+ 6:30 = 23:30
-but 17+4.40  = 17+4:24 = 21:30 is the riser and 19:15 is the central.
-
-So L215 and L200 is the central.   20s L, 30S EX, 60S RGB X 3
-'''
 if __name__ == '__main__':
 
     print('Ephem date    :    ', dayNow)
     print('DayDir        :    ', DAY_Directory)
-#    print('Beg Bias Dark :    ', ephem.Date(beginEveBiasDark))
-#    print('End Bias Dark :    ', ephem.Date(endEveBiasDark))
-#    print('Beg Scrn Flats:    ', ephem.Date(beginEveScreenFlats))
-#    print('End Scrn Flats:    ', ephem.Date(endEveScreenFlats))
-#    print('SunZ88 Opening:    ', sunZ88Op)
-#    print('Beg Sky Flats :    ', sunZ88Op)
-#    print('Sun   next_set:    ', sunset)
-#    print('Civil  Dusk   :    ', civilDusk)
-#    print('Naut   Dusk   :    ', nauticalDusk)
-#    print('Flat End      :    ', skyFlatEnd)
-#    print('Astro  Dark   :    ', astroDark)
-#    print('Middle Night  :    ', middleNight)
-#    print('Astro  End    :    ', astroEnd)
-#    print('Flat Start    :    ', skyFlatBegin)
-#    print('Naut   Dawn   :    ', nauticalDawn)
-#    print('Civil  Dawn   :    ', civilDawn)
-#    print('Sun  next_rise:    ', sunrise)
-#    print('SunZ88   Close:    ', sunZ88Cl)
     print('Night Duration :    ', str(round(duration, 2)) + ' hr')
-#    print('')
     print('MoonRaDec     :    ', (round(mid_moon_ra, 2), round(mid_moon_dec , 1)))
     print('Moon phase %  :    ', round(mid_moon_phase, 1))
     print(('\n'))
-#    print('Moon prev_anti:    ', ptr.previous_antitransit(moon))
-#    print('Moon rise     :    ', ptr.previous_rising(moon))
-#    print('Moon transit  :    ', ptr.previous_transit(moon))
-#    print('Moon set      :    ', ptr.previous_setting(moon))
-#    print('Moon rise     :    ', ptr.next_rising(moon))
-#    print('Moon transit  :    ', ptr.next_transit(moon))
-#    print('Moon set      :    ', ptr.next_setting(moon), '\n\n')
 
     evnt = [('Beg Bias Dark :    ', ephem.Date(beginEveBiasDark)),
             ('End Bias Dark :    ', ephem.Date(endEveBiasDark)),
@@ -728,41 +538,6 @@ if __name__ == '__main__':
         print(evnt[0], evnt[1])
                
 
-'''
-Get daydir generation correct.
-
-Create for any given startup time, the daydir one is in and the two upcoming.
-Sort lunar events into the output narrative.
-
-If (re) started in a day, finish out phases gracefully.  After the end of
-observations advance the calculation which should repeat, filling out
-the upcoming day and its sucessor.
-
-Treat the Moon as a data signal, not an event since there is no plan to do
-antyhing specific based on the Moon.
-
-A restart or start after computing the condition, calls the phase script, which
-executes.  This may be a null operation.
-
-The only difficult part of this is screen flats where we would possibly have
-two screens operating at the same time.  Assuming warm up is not a problem, can
-interleave exposures and readout from alternate setups.
-
-
-***
-
-Create a shelf array of sky illumination during dark time and a Moon Ephemeris
-so it is easy to append these data to fits files.  Since skyfiled gives us Sun
-and Moon this should not be a big problem.
-
-Need to create a logger for telescope and Wx data so fast camera frames can
-have added metadata.
-
-Need to investigate how to conrol PCO, Zyla and Tucsen and encapsulate data
-stream.  As to real time, other than pipeline latency if we keep up that is a
-win since we cannor react to an object if it moves too far.  See musings.
-
-'''
 
 
 

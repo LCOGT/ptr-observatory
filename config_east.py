@@ -181,7 +181,7 @@ site_config = {
             'parent': 'telescope1',
             'alias': 'screen',
             'desc':  'Optec Alnitak 24"',
-            'driver': 'COM22',  #This needs to be a four or 5 character string as in 'COM8' or 'COM22'
+            'driver': 'COM6',  #This needs to be a four or 5 character string as in 'COM8' or 'COM22'
             'minimum': '5.0',   #This is the % of light emitted when Screen is on and nominally at 0% bright.
             'saturate': '170',  #Out of 0.0 - 255, this is the last value where the screen is linear with output.
                                 #These values have a minor temperature sensitivity yet to quantify.
@@ -306,14 +306,12 @@ site_config = {
             'parent': 'site',
             'alias': 'Sequencer',
             'desc':  'Automation Control',
-            'driver': 'none',  #This needs to be a four or 5 character string as in 'COM8' or 'COM22'
-
-
+            'driver': 'none'
         },
     },
     #As aboove, need to get this sensibly suported on GUI and in fits headers.            
     'web_cam': {
-               
+              
         'web_cam3 ': {
             'parent': 'mount1',
             'alias': 'FLIR',
@@ -329,15 +327,11 @@ site_config = {
             },
 
     },
-       
-
 
             
-    #***NEED to put switches here for above devices.
+    #Need to put switches here for above devices.
     
     #Need to build instrument selector and multi-OTA configurations.
-    
-
 
     #AWS does not need this, but my configuration code might make use of it.
     'server': {

@@ -17,17 +17,13 @@ class ObservingConditions:
         self.redis_server = redis.StrictRedis(host='10.15.0.15', port=6379, db=0, decode_responses=True)
         #self.observing_conditions = win32com.client.Dispatch(driver)
         self.observing_conditions_connected = True   #This is not an ASCOM device, so this is a bit bogus.
-
         print("observing_conditions:  Connected == True")
-        #print(self.observing_conditions.Description)
 
     def get_status(self):
         try:
             wx = eval(self.redis_server.get('<ptr-wx-1_state'))  #Redis returns a string dict.
         except:
             print('Redis is not returning Wx Data properly.')
-        #print(wx)
-        #breakpoint()
         try:
             status = {"temperature": wx["amb_temp C"],
                       "pressure": ' ---- ',
@@ -94,8 +90,7 @@ class ObservingConditions:
     def parse_command(self, command):
         req = command['required_params']
         opt = command['optional_params']
-        action = command['action']
-        
+        action = command['action']       
         if action is not None:
             self.move_relative_command(req, opt)
         else:

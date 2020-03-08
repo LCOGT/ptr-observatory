@@ -12,13 +12,12 @@ to start from.
 """
 
 import time,  threading, queue
+import requests
+import os
 
 from api_calls import API_calls
 import ptr_events
-import api_calls       #NBNBNB  Something odd here, see line 70.
-import requests
-import config_east as config
-import os
+import config_east as config    #NB This is a site-specific reference.  Need to decide how mutli-mount sites are set up.
 
 # import device classes
 from devices.camera import Camera
@@ -38,7 +37,7 @@ import httplib2
 
 last_req = None
 
-#The following function is a monkey patch to speed up outgoing large files.   Does this help?
+#The following function is a monkey patch to speed up outgoing large files.   Does this help?  Does not appear to be used.
 
 def patch_httplib(bsize=400000):
     """ Update httplib block size for faster upload (Default if bsize=None) """
@@ -126,7 +125,7 @@ class Observatory:
                 elif dev_type == "focuser":
                     device = Focuser(driver, name, self.config)
                 elif dev_type == "screen":
-                    device = Screen('EastAlnitak', 'COM22')
+                    device = Screen('EastAlnitak', 'COM6')
                 elif dev_type == "camera":                      
                     device = Camera(driver, name, self.config)   #APPARENTLY THIS NEEDS TO BE STARTED PRIOR TO FILTER WHEEL!!!
                 elif dev_type == "sequencer":
@@ -299,15 +298,15 @@ if __name__ == "__main__":
     print('Next Day is:  ', g_dev['next_day'])
     print('\nNow is:  ', ptr_events.ephem.now(), g_dev['d-a-y'])   #Add local Sidereal time at Midnight
     try:
-         os.remove('Q:\\archive\\' + 'gf06'+ '\\newest.fits')
+         os.remove('Q:\\archive\\' + 'df01'+ '\\newest.fits')
     except:
-        print("Newest.fits not removed, catuion.")
+        print("Newest.fits not removed, catuion.")  #This is clean up code in the wrong place.
     #patch_httplib     #20200307 Note I appear to not apply the speedup patch.
     o = Observatory(site_name, site_config)
     print(o.all_devices)
     o.run(n_cycles=100000, loud=False)
     
-    #NBNBNB 20200307  Startup requires PWI4 to be started, we should do what is needed to get the support app;ications set
+    #NBNBNB 20200307  Startup requires PWI4 to be started, we should do what is needed to get the support applications set
     #up properly before starting this code.  Best is we kill then restart them.  Maxim is particularly difficult. 
     #It seems to take two calls to start the mount.      20200307  WER
     

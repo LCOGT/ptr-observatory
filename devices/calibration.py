@@ -8,117 +8,17 @@ import numpy as np
 from astropy.io import fits
 
 '''
-Quick images store little, and are mainly for focus exploration.
-Thoughts on how to merge CMOS images.
+This is kludge code just to quickly partially calibrate images for the AWS 768^2 postage.
+WE need to re-think how this will work, ie use BONSAI locally or not.
 
-The detector in question is:  G-Sense 4040. The camera is a FLI Kepler.
-
-Pick a setpoint temperature you can maintain over a period of time,
-or build a bank of calibrations are various temperatures.  Since we 
-are able to hold -20C year-round we have no experience with scaling 
-combining calibrations from various temperatures. Dark current 
-declines exponentially by a factor of two for every -7C, so correction
-to an intermediate temperature requires some care.
-
-Start with taking 511 bHDR and LDR biases then a large number of 
-darks (I use 127) of a duration longer than what you plan for any
-given actual exposure.  I use 90 and 300 seconds.  
-
-Bins of 1x1 and 2x2
-
-Median combine them in the usual way, of course subtracting the superbias
-from the darks.
-
-I save these in float32.  I divide the dark by the exposure time
-so its units are adu/sec.
-
-The most naive combination method can be effected by finding the scale
-between the low and high ranges.  Expose so the high gain image has a peak
-values around 3600 ADU, but the images can fall off from that central value
-somewhat.  Take say 15 0r 31 of these -- star images are needed here
-
-Then take as many low gain images, ideally interleaving the acquisition.  Median
-or 3-sigma clip mean to two sets then divide the high by the low.  The result
-should be a image with the vast majority of the values tightly distributed
-about some value, like 17.xyz.  This is the ratio of the e-/adu gains of the
-two settings.
-
-Since this is a full image I find its median and use that value as the 'scale.'
-
-Note no non-linearity is taken into account with this procedure.
-
-Now for two images then on an object, calibrate as above, then multiply the
-low gain image by the scale.
-
-Next for the scaled low gain image any pixel which is < 3600, instead use the
-corresponding high gain pixel.  If you have derived bad pixel, column or row
-maps for each gain range, then they also need to be merged on a per-pixel 
-basis with a Boolean OR.
-
-For cosmetic, rather than scientific purposes one, could randomomly change the
-3600 threshold with some sort of a distribution to mask any discontinuity at 
-that value.  Note I said cosmetic purposes.
-
-Better way:  This involves a light box and careful gain and linearity calibration
-of the two LDR and HDR number lines.  If these polynomials are available then
-aplly them to each pixel after the dark step.
-
-The non-linearity polynomomials will indicate where the HDR image is starting 
-to sauturate and go non-linear.  My choice of 3600 or so is based on the value 
-FLI provides.  It might be less or more.  but there is no need to get too close
- to 4095 -- the maximum value for a 12 bit quantity.
-
-Based on detector named gf03, the scale is ~ 17 -- less than 32 (5 bits.)
-So multiplying by 17 extends the range above 16 bits.  Since we are dealing with a 
-float quantity that really does not matter.  However if you want to keep the merged 
-value < 2^16 then instead divide the High data by 2.0, divide the low range data by
-(17/2) and use a merge threshold of 3600/2.  Don't forget to update gain in the 
-header properly.
-
-There is no reason to do compaction to 2^16 unless some downstream application 
-'cuts' at 65535.
-
-TO DO
-
-Simplify this routine to exposing, and write image in a well known place.
-Prior to exposure, verify mount not slewing, etc -- wait before starting (with a timeout)
-then expose.  The central question is does the expose method have a count?  If so we need
-sequence numbers.
-
-Next do we calibrate every time and modify the calibration steps as needed.  Last do we solve for sources?
-
-AS a general rule in-line is faster, but only do what is needed.
-
-If bias, no calib, just a long sequence
-if dark, only bias
-if flat, only bias and dark
-
-if light, BD, F if available, then hotpix if avail.
-SEP is the AF optimized version. (no sat, median of values of FWHM.)
-
-Re- move AF logic from the expose code.
-
-
-OLD TO DO
-Annotate fits, incl Wx conditions, other devices
-Fix fits to be strictly 80 character records with proper justifications.
-Jpeg
-
-Timeout
-Power cycle Reset
-repeat, then execute blocks     command( [(exposure, bin/area, filter, dither, co-add), ( ...)}, repeat)  co-adds send jpegs
-    only for each frame and a DB for the sum.
-    
-dither
-autofocus
-bias/dark +screens, skyflats
+Name of module is a bit deceptive, this is more like 'create_postage'.
 '''
 
 
 def fit_quadratic(x, y):     
     #From Meeus, works fine.
     #Abscissa arguments do not need to be ordered for this to work.
-    #NB Variable names this short can confict with debugger commands.
+    #NB Single alpha variable names confict with debugger commands.
     if len(x) == len(y):
         p = 0
         q = 0
