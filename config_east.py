@@ -98,7 +98,7 @@ site_config = {
                 'lattitude': '34.34293028',   #These could in principle be different than site by  small amount
                 'longitude': '-119.68105',
                 'elevation': '317.75', # meters above sea level
-                'home_park_altitude': '0',
+                'home_park_altitude': '0',   #Having this setting is important for PWI4 where it can easily be messed up.
                 'home_park_azimuth': '174.0',
                 'horizon':  '20',
                 'horizon_detail': {
