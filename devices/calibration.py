@@ -97,10 +97,12 @@ def simpleColumnFix(img, col):
 
 
 super_bias = None
+super_bias_2 = None
 super_bias_ldr = None
 super_dark_90 = None
 super_dark_90_ldr = None
 super_dark_300 = None
+super_dark_2_300 = None
 super_dark_300_ldr = None
 hotmap_300 = None
 hotmap_300_ldr = None
@@ -112,8 +114,8 @@ super_flat_HA = None
 #This is a brute force linear version. This needs to be more sophisticated and camera independent.
 
 def calibrate (hdu, hdu_ldr, lng_path, frame_type='light', start_x=0, start_y=0, quick=False):
-    #These variables are gloal in the sense they persist between calls (memoized in a form)
-    global super_bias, super_bias_ldr, super_dark_90, super_dark_90_ldr, super_dark_300, \
+    #These variables are gloal in the sense they persist between calls (memoized so to speak, should use that facility.)
+    global super_bias, super_bias_2, super_bias_ldr, super_dark_90, super_dark_90_ldr, super_dark_300, super_dark_2_300, \
            super_dark_300_ldr, super_flat_w, super_flat_HA, hotmap_300, hotpix_300, hotmap_300_ldr, hotpix_300_ldr
     loud = True
     #This needs to deal with caching different binnings as well.  And do we skip all this for a quick
@@ -128,6 +130,19 @@ def calibrate (hdu, hdu_ldr, lng_path, frame_type='light', start_x=0, start_y=0,
                 sbHdu.close()
                 quick_bias = True
                 if loud: print(lng_path + 'mb_1.fits', 'Loaded')
+            except:
+                quick_bias = False
+                print('WARN: No Bias Loaded.')
+        if super_bias_2 is None:
+            try:
+                sbHdu = fits.open(lng_path + 'mb_2.fits')
+                super_bias_2 = sbHdu[0].data#.astype('float32')
+                #Temp fix
+                #fix = np.where(super_bias > 400)
+                #super_bias[fix] = int(super_bias.mean())
+                sbHdu.close()
+                quick_bias = True
+                if loud: print(lng_path + 'mb_2.fits', 'Loaded')
             except:
                 quick_bias = False
                 print('WARN: No Bias Loaded.')
@@ -158,6 +173,20 @@ def calibrate (hdu, hdu_ldr, lng_path, frame_type='light', start_x=0, start_y=0,
                 print(lng_path + 'md_1_300.fits', 'Loaded')
             except:
                quick_dark_300 = False
+               print('WARN: No dark Loaded.')
+        if super_dark_2_300 is None:
+            try:
+                sdHdu = fits.open(lng_path + 'md_2_300.fits')
+                dark_2_300_exposure_level = sdHdu[0].header['EXPTIME']
+                super_dark_2_300  = sdHdu[0].data#.astype('float32')
+                print('sdark_300:  ', super_dark_2_300.mean())
+                sdHdu.close()
+                #fix = np.where(super_dark_300 < 0)
+                #super_dark_300[fix] = 0
+                quick_dark_2_300 = True
+                print(lng_path + 'md_1_300.fits', 'Loaded')
+            except:
+               quick_dark_2_300 = False
                print('WARN: No dark Loaded.')
 #Note on flats the case is carried through
 #        if super_flat_w is None:
@@ -193,7 +222,8 @@ def calibrate (hdu, hdu_ldr, lng_path, frame_type='light', start_x=0, start_y=0,
             quick_hotmap_300= False
 #                if not quick: print('Hotmap_300 failed to load.')
 
-
+    #this whole area need to be re-thought to better cache and deal with a mix of flats and binnings  Right now partial 
+    #brute force.
     while True:   #Use break to drop through to exit.  i.e., do not calibrte frames we are acquring for calibration.
         cal_string = ''
         if not quick:
