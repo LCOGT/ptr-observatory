@@ -8,6 +8,8 @@ Figure out how to fix jams with Maxium. Debug interrupts can cause it to disconn
 
 Test all this code with ASCOM simulators as the instruments so we have a stable reference
 to start from.
+
+Remove WMD specifics, and add constructors for shelved objects.
       
 """
 
@@ -168,10 +170,11 @@ class Observatory:
                 else:
                     print("Last Req rejected")
                 return
-            except:
+            except Exception as e:
                 if cmd == {}:
                     return  #Nothing to do, no command in the FIFO
                 else:
+                    print(e)
                     print("unparseable command dict received", cmd)
                     return
         else:
@@ -207,6 +210,7 @@ class Observatory:
                 status[dev_type][device_name] = device.get_status()        
         # Include the time that the status was assembled and sent.
         status["timestamp"] = str(round((time.time() + start)/2. , 3))
+        status['send_heartbeat'] = 'false'
         if self.loud_status:
             print('Status Sent:  \n', status)#from Update:  ', status))
         else:
@@ -285,30 +289,35 @@ class Observatory:
             else:
                 time.sleep(0.2)
                 continue
-        
-if __name__ == "__main__":
-
-    from config_east import site_config, site_name
-    #This is a bit of ugliness occcasioned by bad file naming in the FLI Kepler driver.  Should be relocated.
+def main():
+    '''
+    Construct the environment if it has not already been established. E.g shelve spaces.
+    '''
+    #This is a bit of ugliness occcasioned by bad file naming in the FLI Kepler driver. 
     day_str = ptr_events.compute_day_directory()
     g_dev['day'] = day_str
     next_day = ptr_events.Day_tomorrow
     g_dev['d-a-y'] = day_str[0:4] + '-' + day_str[4:6] +  '-' + day_str[6:]
     g_dev['next_day'] = next_day[0:4] + '-' + next_day[4:6] +  '-' + next_day[6:]
-    print('Next Day is:  ', g_dev['next_day'])
-    print('\nNow is:  ', ptr_events.ephem.now(), g_dev['d-a-y'])   #Add local Sidereal time at Midnight
+    print('\nNext Day is:  ', g_dev['next_day'])
+    print('Now is:  ', ptr_events.ephem.now(), g_dev['d-a-y'])   #Add local Sidereal time at Midnight
+    patch_httplib
+# =============================================================================
+#     #This is specific to a camera and should be in camera __init.
+# =============================================================================
     try:
-         os.remove('Q:\\archive\\' + 'df01'+ '\\newest.fits')
+        os.remove('Q:\\archive\\' + 'df01'+ '\\newest.fits')
     except:
-        print("Newest.fits not removed, catuion.")  #This is clean up code in the wrong place.
-    #patch_httplib     #20200307 Note I appear to not apply the speedup patch.
-    o = Observatory(site_name, site_config)
-    print(o.all_devices)
+        print("newest file not removed.")
+
+    o = Observatory(config.site_name,config. site_config)
+    print('\n', o.all_devices)
     o.run(n_cycles=100000, loud=False)
+            
+if __name__ == "__main__":
     
-    #NBNBNB 20200307  Startup requires PWI4 to be started, we should do what is needed to get the support applications set
-    #up properly before starting this code.  Best is we kill then restart them.  Maxim is particularly difficult. 
-    #It seems to take two calls to start the mount.      20200307  WER
+    main()
+
     
     
 
