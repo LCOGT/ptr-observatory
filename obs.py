@@ -130,17 +130,17 @@ class Observatory:
             time.sleep(self.time_between_command_check)
             start = time.time()
             uri = f"{self.name}/{mount}/command/"
-            cmd = json.loads(self.api.authenticated_request("GET", uri))
+            cmd = self.api.authenticated_request("GET", uri)
 
-            if cmd == {'Body': 'empty'}:
+            if cmd == {}:
                 print(f"{mount} finished empty scan in {time.time()-start:.2f} seconds")
                 continue
 
             # If a non-empty command arrives, it will print to the terminal.
             print(cmd)
 
-            cmd_type = cmd['type']
-            device_name = cmd['device']
+            cmd_type = cmd['device']
+            device_name = cmd['instance']
 
             # Get the device based on it's type and name, then parse the cmd.
             device = self.all_devices[cmd_type][device_name]

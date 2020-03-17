@@ -49,16 +49,18 @@ class Camera:
     def expose_command(self, required_params, optional_params):
         ''' Apply settings and start an exposure. '''
         c = self.camera
-        bin = int(optional_params.get('bin', 1))
+        bin = optional_params.get('bin', '1,1')
+        binX = int(bin[0])
+        binY = int(bin[2])
         gain = optional_params.get('gain', 1)
         count = int(optional_params.get('count', 1))
         exposure_time = required_params.get('time', 5)
         
         # Setting binning requires also setting NumX and NumY: number of pixels per side.
-        c.NumX = c.NumX / bin
-        c.NumY = c.NumY / bin
-        c.BinX = bin
-        c.BinY = bin
+        c.NumX = c.NumX / binX
+        c.NumY = c.NumY / binY
+        c.BinX = binX
+        c.BinY = binY
 
         try:
             print("starting exposure")
