@@ -195,7 +195,6 @@ site_config = {
             'settings': {
                 'filter_count': '14',
                 'filter_reference': '0',   #We choose to use W and the default filter.
-
                 'filter_data': [['filter', 'filter_index', 'filter_offset', 'sky_gain', 'screen_gain', 'abbreviation'],
                                 ['W', '(0, 0)', '0', '0.01', '12', 'w '],   # 0 Mul Screen@100% by saturate*exp
                                 ['B', '(1, 0)', '0', '0.01', '32', 'B '],   # 1
@@ -221,6 +220,7 @@ site_config = {
             },
         },
     },
+
 
     'camera': {
         'camera1': {

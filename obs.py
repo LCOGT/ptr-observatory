@@ -10,6 +10,21 @@ Test all this code with ASCOM simulators as the instruments so we have a stable 
 to start from.
 
 Remove WMD specifics, and add constructors for shelved objects.
+
+THINGS TO FIX:
+    20200316
+    filter wheel code is broken  -blocked until FLI gets us new library.
+    fully test flash calibration
+    genereate local masters
+    create and send sources file created by sep
+    verify operation with FLI16200 camera
+    Get Neyle a webcam we will be happy to reccommend
+    screen flats
+    autofocus, and with grid of known stars
+    sky flats
+    much better weather station approach
+    
+    
       
 """
 
@@ -178,7 +193,7 @@ class Observatory:
                     print("unparseable command dict received", cmd)
                     return
         else:
-             print('Sequencer Hold asserted.')    #What we really want here is looking for a Cancel/Stop.
+             print('Sequencer Hold asserted.')    #What we really want here is looking fosysr a Cancel/Stop.
 
     def update_status(self):
         ''' Collect status from all devics and send an update to aws.
