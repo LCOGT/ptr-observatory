@@ -45,6 +45,10 @@ THINGS TO FIX/Consider:
         Back to normal.
         
         Next step is pull in saf camera module.
+    New SPYDER is noticibly slower about second and later startups.
+        It runs much bettr if Chrome is not running!
+        This is now verified.
+    archive_path and camera_path are confusing, they do same thing -- pick one name.
     
     
       
@@ -344,7 +348,7 @@ def main():
 #     #This is specific to a camera and should be in camera __init.
 # =============================================================================
     try:
-        os.remove('Q:\\archive\\' + 'df01'+ '\\newest.fits')
+        os.remove('Q:/archive/' + 'df01'+ '/newest.fits')
     except:
         print("newest file not removed.")
 
