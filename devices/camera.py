@@ -93,7 +93,8 @@ class Camera:
             self.description = "ASCOM"
             self.maxim = False
             self.ascom = True
-            self.camera.SetCCDTemperature = -40.0
+            if self.camera.CanSetCCDTemperature:
+                self.camera.SetCCDTemperature = -40.0
             self.camera.CoolerOn = True
             self.current_filter = 0
             print('Control is ASCOM camera driver.')

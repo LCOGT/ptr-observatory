@@ -289,9 +289,10 @@ class Observatory:
             else:
                 time.sleep(0.2)
                 continue
-def main():
+def run_wmd():
     '''
     Construct the environment if it has not already been established. E.g shelve spaces.
+    This is specific to site WMD and should be used for testing purpose only.
     '''
     #This is a bit of ugliness occcasioned by bad file naming in the FLI Kepler driver. 
     day_str = ptr_events.compute_day_directory()
@@ -313,10 +314,18 @@ def main():
     o = Observatory(config.site_name,config. site_config)
     print('\n', o.all_devices)
     o.run(n_cycles=100000, loud=False)
+
+import config_simulator1 as config_simulator
+def run_simulator():
+    conf = config_simulator
+    o = Observatory(conf.site_name, conf.site_config)
+    o.run()
+
             
 if __name__ == "__main__":
     
-    main()
+    #run_wmd()
+    run_simulator()
 
     
     
