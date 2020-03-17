@@ -16,6 +16,7 @@ Remove WMD specifics, and add constructors for shelved objects.
 import time,  threading, queue
 import requests
 import os
+import argparse
 
 from api_calls import API_calls
 import ptr_events
@@ -158,6 +159,7 @@ class Observatory:
         '''
         if not  g_dev['seq'].sequencer_hold:   
             uri = f"{self.name}/{mount}/command/"
+            cmd = {}
             try:
                 cmd =self.api.authenticated_request("GET", uri)
                 cmd_instance = cmd['instance']
@@ -324,8 +326,19 @@ def run_simulator():
             
 if __name__ == "__main__":
     
-    #run_wmd()
-    run_simulator()
+    parser = argparse.ArgumentParser()
+
+    # command line arg to use simulated ascom devices
+    parser.add_argument('-sim', action='store_true')
+    options = parser.parse_args()
+
+    if options.sim:
+        print('Starting up with ASCOM simulators.')
+        run_simulator()
+    else:
+        print('Starting up default configuration file.')
+        run_wmd()
+
 
     
     
