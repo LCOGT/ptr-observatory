@@ -375,4 +375,6 @@ if __name__ == '__main__':
     if site_config == site_unjasoned:
         print('Dictionaries matched.')
         
+    #NB Here we might import obs and call obs.main()
+        
    

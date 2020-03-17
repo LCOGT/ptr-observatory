@@ -2,7 +2,11 @@ import win32com.client
 from global_yard import g_dev 
 import time
 
-
+# =============================================================================
+# 
+# NB Plesae NOTE this code is broken. 20200317   WER
+# 
+# =============================================================================
 class FilterWheel:
 
     def __init__(self, driver: str, name: str, config):
@@ -153,14 +157,14 @@ class FilterWheel:
             self.filter_front.Position = filter_selections[1]
             time.sleep(0.2)
         except:
-            breakpoint()
+            pass
         try:
             while self.filter_back.Position == -1:
                 time.sleep(0.4)
             self.filter_back.Position =filter_selections[0]
             time.sleep(0.2)
         except:
-            breakpoint()
+            pass
         self.filter_offset = int(self.filter_data[filt_pointer][2])
 
     def home_command(self, req: dict, opt: dict):

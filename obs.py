@@ -11,7 +11,7 @@ to start from.
 
 Remove WMD specifics, and add constructors for shelved objects.
 
-THINGS TO FIX:
+THINGS TO FIX/Consider:
     20200316
     filter wheel code is broken  -blocked until FLI gets us new library.
     fully test flash calibration
@@ -23,6 +23,28 @@ THINGS TO FIX:
     autofocus, and with grid of known stars
     sky flats
     much better weather station approach
+    20200317
+    various devices (skyroofhub, pwi4) sometime block startup
+        Skyroof hub can not show up on desktop but show on taskmanager,
+        the soultion is to either kill to existing skyroof task or 
+        subsribe to it with a try: 
+    change loop to print out first status, or have an AWS Send Status -- this gets into the area of logging and reporting
+    detail to users
+    Maxim DL
+        This can get in a state where it connects and then gets into an infinite download. We need a timeout on the
+        exposure loop and a way to reset the camera if the latter is in fact the problem.  The camera can jam.
+        This MAY also have to do with Maxim starting up in Autosave or Continuous mode. At least in this instance,
+        the problme appears to be the FLI camera is jammed. Power cycling it.
+        
+        Humm Gemini focuser not responding after can instrument power cycle.
+        
+        Had to reset the CPU.
+        
+        it appears long running ASCOM servers may be zombies of some sort.
+        
+        Back to normal.
+        
+        Next step is pull in saf camera module.
     
     
       
@@ -173,6 +195,7 @@ class Observatory:
         '''
         if not  g_dev['seq'].sequencer_hold:   
             uri = f"{self.name}/{mount}/command/"
+            cmd = {}
             try:
                 cmd =self.api.authenticated_request("GET", uri)
                 cmd_instance = cmd['instance']
