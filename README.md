@@ -10,8 +10,6 @@ Clone the repository. Install the python dependencies with `$ pip install -r req
 
 Modify `config.py` as appropriate. Make sure to specify the correct ascom drivers for each device. These drivers should already be configured using the ascom device chooser.
 
-Rename `.credentials_WRITEME` to `.credentials`, and fill out the empty values (see the 'photon ranch' tab in the LCOGT System Information doc).
-
 
 ## Usage
 

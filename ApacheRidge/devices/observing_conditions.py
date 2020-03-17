@@ -14,30 +14,47 @@ class ObservingConditions:
         self.name = name
         g_dev['ocn']=  self
         #breakpoint()
-        self.redis_server = redis.StrictRedis(host='10.15.0.15', port=6379, db=0, decode_responses=True)
+        #self.redis_server = redis.StrictRedis(host='10.15.0.15', port=6379, db=0, decode_responses=True)
         #self.observing_conditions = win32com.client.Dispatch(driver)
         self.observing_conditions_connected = True   #This is not an ASCOM device, so this is a bit bogus.
         print("observing_conditions:  Connected == True")
 
     def get_status(self):
+# =============================================================================
+#         try:
+#             wx = eval(self.redis_server.get('<ptr-wx-1_state'))  #Redis returns a string dict.
+#         except:
+#             print('Redis is not returning Wx Data properly.')
+# =============================================================================
         try:
-            wx = eval(self.redis_server.get('<ptr-wx-1_state'))  #Redis returns a string dict.
-        except:
-            print('Redis is not returning Wx Data properly.')
-        try:
-            status = {"temperature": wx["amb_temp C"],
-                      "pressure": ' ---- ',
-                      "humidity": wx["humidity %"],
-                      "dewpoint": wx["dewpoint C"],
-                      "calc_sky_lux": wx["illum lux"],
-                      "sky_temp": wx["sky C"],
-                      "time_to_open": wx["time to open"],
-                      "time_to_close": wx["time to close"],
-                      "wind_km/h": wx["wind k/h"],
-                      "ambient_light":  wx["light"],
-                      "open_possible":  wx["open_possible"],
-                      "brightness_hz": wx['bright hz']
+            status = {"temperature":  '10.0',
+                      "pressure": '900',
+                      "humidity": '50',
+                      "dewpoint": '5',
+                      "calc_sky_lux":'0.002',
+                      "sky_temp": '-40',
+                      "time_to_open":  '2.0',
+                      "time_to_close": '10.0',
+                      "wind_km/h": '1.234',
+                      "ambient_light":  'Dim',
+                      "open_possible":  'true',
+                      "brightness_hz":'2345'
                       }
+# =============================================================================
+#             status = {"temperature": wx["amb_temp C"],
+#                       "pressure": ' ---- ',
+#                       "humidity": wx["humidity %"],
+#                       "dewpoint": wx["dewpoint C"],
+#                       "calc_sky_lux": wx["illum lux"],
+#                       "sky_temp": wx["sky C"],
+#                       "time_to_open": wx["time to open"],
+#                       "time_to_close": wx["time to close"],
+#                       "wind_km/h": wx["wind k/h"],
+#                       "ambient_light":  wx["light"],
+#                       "open_possible":  wx["open_possible"],
+#                       "brightness_hz": wx['bright hz']
+#                       }
+# =============================================================================
         except:
             time.sleep(1)
             try:
@@ -60,19 +77,19 @@ class ObservingConditions:
         return status
 
     def get_quick_status(self, quick):
-        wx = eval(self.redis_server.get('<ptr-wx-1_state'))
+        #wx = eval(self.redis_server.get('<ptr-wx-1_state'))
         quick.append(time.time())
-        quick.append(float(wx["sky C"]))
-        quick.append(float(wx["amb_temp C"]))
-        quick.append(float(wx["humidity %"]))
-        quick.append(float(wx["dewpoint C"]))
-        quick.append(float(wx["wind k/h"]))
+        quick.append(float(-40))
+        quick.append(float(10))
+        quick.append(float(50))
+        quick.append(float(6))
+        quick.append(float(3.5))
         quick.append(float(970.0))
-        quick.append(float(wx["illum lux"]))     #Add Solar, Lunar elev and phase
-        quick.append(float(wx['bright hz']))
+        quick.append(float(1234))     #Add Solar, Lunar elev and phase
+        quick.append(float(4567))
         #print(quick)
         return quick
-    
+
     def get_average_status(self, pre, post):
         average = []
         average.append(round((pre[0] + post[0])/2, 3))
@@ -85,12 +102,12 @@ class ObservingConditions:
         average.append(round((pre[7] + post[7])/2, 3))
         average.append(round((pre[8] + post[8])/2, 1))
         return average
-        
-        
+
+
     def parse_command(self, command):
         req = command['required_params']
         opt = command['optional_params']
-        action = command['action']       
+        action = command['action']
         if action is not None:
             self.move_relative_command(req, opt)
         else:
@@ -105,6 +122,6 @@ class ObservingConditions:
         ''' does nothing '''
         print(f"obseving conditions cmd: empty command")
         pass
-    
+
 if __name__ == '__main__':
     oc = ObservingConditions('redis', 'wx1')

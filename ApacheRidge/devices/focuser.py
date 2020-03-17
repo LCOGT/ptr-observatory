@@ -2,8 +2,8 @@
 import win32com.client
 import time
 import serial
-from global_yard import g_dev 
-import config_east as config
+from global_yard import g_dev
+import config_saf as config
 import ptr_config
 
 #TEMP COEFF ESTIMATED 20190824   fx= round(-164.0673*C_pri +13267.37, 1)  #A very good 1.5C span.  9986@20C. Random Hyst ~ 500 microns! :((( )))
@@ -29,7 +29,7 @@ def probeRead(com_port):
            com.write(b'R1\n')
            probePosition = float(com.read(7).decode())  #check # significant digits.
            print(probePosition)
-           
+
 
 probeRead('COM31')
 -6.846
@@ -49,10 +49,14 @@ class Focuser:
         g_dev['foc'] = self
         self.config = config['focuser']['focuser1']
         self.focuser = win32com.client.Dispatch(driver)
-        self.focuser.Connected = True
+        #POTH must be running
+        #self.focuser.Connected = True
         self.steps_to_micron = float(config['focuser']['focuser1']['unit_conversion'])
         print(f"focuser connected.")
-        print(self.focuser.Description, "At:  ", self.focuser.Position*self.steps_to_micron)
+        try:
+           print(self.focuser.Description, "At:  ", self.focuser.Position*self.steps_to_micron)
+        except:
+            pass
         time.sleep(0.2)
         try:
             try:
@@ -65,9 +69,9 @@ class Focuser:
             self.reference = int(self.config['reference'])
             print("Focus reference derived from supplied Config dicitionary:  ", self.reference)
         self.focuser.Move(int(float(self.config['reference'])/self.steps_to_micron))
-    
+
     def calculate_compensation(self, temp_primary):
-        
+
         if -5 <= temp_primary <= 45:
             trial =round(float(self.config['coef_c'])*temp_primary + float(self.config['coef_0']), 1)
             trial = max(trial,500)  #These values would change for Gemini to more like 11900 max
@@ -92,7 +96,7 @@ class Focuser:
         quick.append(self.focuser.Temperature)
         quick.append(self.focuser.IsMoving)
         return quick
-    
+
     def get_average_status(self, pre, post):
         average = []
         average.append(round((pre[0] + post[0])/2, 3))
@@ -101,9 +105,9 @@ class Focuser:
         if pre[3] or post[3]:
             average.append('T')
         else:
-            average.append('F')            
+            average.append('F')
         return average
-    
+
     def parse_command(self, command):
         req = command['required_params']
         opt = command['optional_params']
@@ -137,7 +141,7 @@ class Focuser:
     ###############################
     #       Focuser Commands      #
     ###############################
-    
+
     def get_position(self, counts=False):
         if not counts:
             return int(self.focuser.Position*self.steps_to_micron)
@@ -163,7 +167,7 @@ class Focuser:
             time.sleep(0.1)
             while self.focuser.IsMoving:
                 time.sleep(0.5)
-                print('>f--')            
+                print('>f--')
         else:
             print('Supplied relativemove is lacking a sign; ignoring.')
         #print(f"focuser cmd: move_relative:  ", req, opt)
@@ -181,24 +185,18 @@ class Focuser:
         '''
         A new seek *may* cause a mount move, a filter,l rotator, and focus change.  How do we launch all of these in parallel, then
         send status until each completes, then move on to exposing?
-        
+
         '''
     def stop_command(self, req: dict, opt: dict):
         ''' stop focuser movement '''
         print(f"focuser cmd: stop")
-<<<<<<< HEAD
-        self.focuser.Halt()
-
-=======
->>>>>>> WER_Working
     def home_command(self, req: dict, opt: dict):
         ''' set the focuser to the home position'''
         print(f"focuser cmd: home")
     def auto_command(self, req: dict, opt: dict):
         ''' autofocus '''
         print(f"focuser cmd: auto")
-        
+
 if __name__ == '__main__':
     pass
-        
-    
+

@@ -1,55 +1,14 @@
-'''
-
-Docstring here??
-
-'''
-
-"""
-20200310 WER
-General comments.  Note use of double quotes.  Maybe this is our convention for polemics and trading opinions then we strip
-out of the Production source?
-
-'''   use single quotes and # for code documentation and standaing comments
-
-      use double quotes for talking to each other, or for actual quotes, document references and the like.
-#"    in-line version of a polemic.   Does not go to production source.  A 'team-quote.'
-      
-      NB (nota bene) means "someone should fix this eventually!"   Please add your initials.   A valid fix is to delete the 
-      message.  They can go to production source.
-
-The missing thing is mount management is more uniform treatement of the frame of reference of pointing, and the astrometric 
-solutions provided.  This is probably a WER task to sort out.  From the AWS user point of view we want to start with Modern
-catalog positions, nominally ICRS, particularly as realized by the current GAIA release.  Other objects (Messier) as an example
-we always try to go through Strassbourg to get coordinates.  Updates to those happen but they are carefully vetted.  We can 
-start with nominal poblished catalogs whihc generally give names, Ra and dec, Season, mag etc but update them IFF the 
-Strassborug data is more current.  Star charts are harder.  But there is some new stuff in the Ppixinsight realse we might 
-want to take advantage of.
-
-Refraction and mount models need to be added, but the problem is the state of mounting code over various manufactures is a
-complete mess.  I have done this now for four different mountings and telescope setups so I think I can abstract things in a
-way that the user experience can be uniform.  The goal is to get the best unguided tracking possible.  Although observing > 60 
-degt Zenith is inadvisable, if the Comet is here you are going to go for it right down to the horizon.  So getting refraction
-right is important.
-
-For pretty pictures one thing I would like to add to the 'coordinates' for an object is specification of Ra and Dec offset and
-a Rotation (in the form of a Position Angle) that we have selected once we have imaged the object.  The user can of course 
-specify something different by selecting Catalog (N up, E to the left, PA = 0), Recommened( blah list here), or user (blah 
-list here retained in user account.)
-
-"""
-
-
 import threading
 import win32com.client
 import pythoncom
 import serial
 import time, json
-from math import cos, radians    #"What plan do we have for making some imports be done this way, elg, import numpy as np...?"
-from global_yard import g_dev    #"Ditto guestion we are importing a single object instance."
+from math import cos, radians
+from global_yard import g_dev 
 import ptr_events
 #from devices.pywinusb_paddle import *
 
-#The mount is not threaded and uses non-blocking seek.     "Note no doule quotes.
+#The mount is not threaded and uses non-blocking seek.
 class Mount:
 
     def __init__(self, driver: str, name: str, settings: dict, tel=False):
@@ -72,7 +31,6 @@ class Mount:
         else:
             print(f"Tel/OTA connected.")
         print(self.mount.Description)
-        #NB THe paddle needs a re-think and needs to be cast into its own thread. 20200310 WER
 #        self._paddle = serial.Serial('COM10', timeout=0.1)
 #        self._paddle.write(b'ver\n')
 #        print(self._paddle.read(13).decode()[-8:])
@@ -352,7 +310,6 @@ class Mount:
             #self.mount.SlewToAltAzAsync(home_alt, home_az)
             self.mount.FindHome()
         else:
-            self.mount.Tracking = False
             print(f"Mount is not capable of finding home. Slewing to zenith.")
             self.mount.SlewToAltAzAsync(88., 0.)
 

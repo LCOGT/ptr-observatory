@@ -3,29 +3,12 @@
 WER 20200307
 
 IMPORTANT TODOs:
-    
+
 Figure out how to fix jams with Maxium. Debug interrupts can cause it to disconnect.
 
 Test all this code with ASCOM simulators as the instruments so we have a stable reference
 to start from.
 
-Remove WMD specifics, and add constructors for shelved objects.
-
-THINGS TO FIX:
-    20200316
-    filter wheel code is broken  -blocked until FLI gets us new library.
-    fully test flash calibration
-    genereate local masters
-    create and send sources file created by sep
-    verify operation with FLI16200 camera
-    Get Neyle a webcam we will be happy to reccommend
-    screen flats
-    autofocus, and with grid of known stars
-    sky flats
-    much better weather station approach
-    
-    
-      
 """
 
 import time,  threading, queue
@@ -34,11 +17,11 @@ import os
 
 from api_calls import API_calls
 import ptr_events
-import config_east as config    #NB This is a site-specific reference.  Need to decide how mutli-mount sites are set up.
+import config_saf as config    #NB This is a site-specific reference.  Need to decide how mutli-mount sites are set up.
 
 # import device classes
 from devices.camera import Camera
-from devices.enclosure import Enclosure 
+from devices.enclosure import Enclosure
 from devices.filter_wheel import FilterWheel
 from devices.focuser import Focuser
 from devices.mount import Mount
@@ -80,19 +63,19 @@ def patch_httplib(bsize=400000):
     httplib2.httplib.HTTPConnection.send = send
 
 class Observatory:
-    def __init__(self, name, config): 
+    def __init__(self, name, config):
 
         # This is the class through which we can make authenticated api calls.
         self.api = API_calls()
 
-        # The site name (str) and configuration (dict) are given by the user. 
+        # The site name (str) and configuration (dict) are given by the user.
         self.name = name
         self.config = config
         self.update_config()
-        
+
         self.device_types = [
             'observing_conditions',
-            'enclosure',     #Commented out so enclosure does not usually open automatically.  Also it breaks configuation.
+            'enclosure',
             'mount',
             'telescope',
             'rotator',
@@ -117,12 +100,12 @@ class Observatory:
 
     def create_devices(self, config: dict):
         # This dict will store all created devices, subcategorized by dev_type.
-        self.all_devices = {} 
+        self.all_devices = {}
         # Create device objects by type, going through the config by type.
         for dev_type in self.device_types:
             self.all_devices[dev_type] = {}
             # Get the names of all the devices from each dev_type.
-            devices_of_type = config.get(dev_type, {})            
+            devices_of_type = config.get(dev_type, {})
             device_names = devices_of_type.keys()
             # Instantiate each device object from based on its type
             for name in device_names:
@@ -143,7 +126,7 @@ class Observatory:
                     device = Focuser(driver, name, self.config)
                 elif dev_type == "screen":
                     device = Screen('EastAlnitak', 'COM6')
-                elif dev_type == "camera":                      
+                elif dev_type == "camera":
                     device = Camera(driver, name, self.config)   #APPARENTLY THIS NEEDS TO BE STARTED PRIOR TO FILTER WHEEL!!!
                 elif dev_type == "sequencer":
                     device = Sequencer(driver, name)
@@ -154,7 +137,7 @@ class Observatory:
                 # Add the instantiated device to the collection of all devices.
                 self.all_devices[dev_type][name] = device
 
-        
+
     def update_config(self):
         ''' Send the config to aws. '''
         uri = f"{self.name}/config/"
@@ -168,12 +151,11 @@ class Observatory:
         This can be improved by looking for a Cancel/Stop from
         AWS and even better, queuing commands to different devices
         and explicitly handling their individual busy states.
-        
+
         I.e., a single command queue can be limiting
         '''
-        if not  g_dev['seq'].sequencer_hold:   
+        if not  g_dev['seq'].sequencer_hold:
             uri = f"{self.name}/{mount}/command/"
-            cmd = {}
             try:
                 cmd =self.api.authenticated_request("GET", uri)
                 cmd_instance = cmd['instance']
@@ -182,24 +164,23 @@ class Observatory:
                 device = self.all_devices[device_name][cmd_instance]
                 if last_req is  None or this_req > last_req:   #Part of dealing with an old problem of questionable requets.
                     last_req = float(cmd['timestamp'])
-                    device.parse_command(cmd)                    
+                    device.parse_command(cmd)
                 else:
                     print("Last Req rejected")
                 return
-            except Exception as e:
+            except:
                 if cmd == {}:
                     return  #Nothing to do, no command in the FIFO
                 else:
-                    print(e)
                     print("unparseable command dict received", cmd)
                     return
         else:
-             print('Sequencer Hold asserted.')    #What we really want here is looking fosysr a Cancel/Stop.
+             print('Sequencer Hold asserted.')    #What we really want here is looking for a Cancel/Stop.
 
     def update_status(self):
         ''' Collect status from all devics and send an update to aws.
-        Each device class is responsible for implementing the method 
-        `get_status` which returns a dictionary. 
+        Each device class is responsible for implementing the method
+        `get_status` which returns a dictionary.
         '''
         start = time.time()
         status = {}
@@ -207,32 +188,25 @@ class Observatory:
         # For each type, we get and save the status of each device.
         for dev_type in self.device_types:
 
-            # The status that we will send is grouped into lists of 
+            # The status that we will send is grouped into lists of
             # devices by dev_type.
             status[dev_type] = {}
-            
+
             # Names of all devices of the current type.
-            # Recall that self.all_devices[type] is a dictionary of all 
+            # Recall that self.all_devices[type] is a dictionary of all
             # `type` devices, with key=name and val=device object itself.
             devices_of_type = self.all_devices.get(dev_type, {})
             device_names = devices_of_type.keys()
 
-<<<<<<< HEAD
-    from config import site_config, site_name
-    #from config_wmd import site_name, site_config
-
-    o = Observatory(site_name, site_config)
-=======
             for device_name in device_names:
                 # Get the actual device object...
                 if device_name =='filter_wheel' or device_name == 'filter_wheel1':
                     pass
                 device = devices_of_type[device_name]
                 # ...and add it to main status dict.
-                status[dev_type][device_name] = device.get_status()        
+                status[dev_type][device_name] = device.get_status()
         # Include the time that the status was assembled and sent.
         status["timestamp"] = str(round((time.time() + start)/2. , 3))
-        status['send_heartbeat'] = 'false'
         if self.loud_status:
             print('Status Sent:  \n', status)#from Update:  ', status))
         else:
@@ -244,25 +218,25 @@ class Observatory:
         except:
             print('self.api.authenticated_request("PUT", uri, status):   Failed!')
         #print(f"update finished in {time.time()-start:.2f} seconds", response)
-            
+
     def update(self):
         self.scan_requests('mount1')
         if not self.stopped:
             self.update_status()
-    
+
 # =============================================================================
-#     This thread is basically the sequencer.  When a device, such as a camera causes a block, it is the responsibility of 
-#     that device to call self.update on a regular basis so AWS can receive status and to monitor is AWS is sending other 
+#     This thread is basically the sequencer.  When a device, such as a camera causes a block, it is the responsibility of
+#     that device to call self.update on a regular basis so AWS can receive status and to monitor is AWS is sending other
 #     commands or a STOP.
-#            
+#
 #     Seeks, rotations and exposures are the typical example of observing related delays.
-#          
+#
 #     We will follow the convention that a command is in the form of a dictionary and the first entry is a command type.
 #     These command dictionaries can be nested to an arbitrary level and this thread is the master point where the command
 #     is parsed and dispatched.   This wqas changed early from Tim;s original design becuase of conflicts with some ASCOM
 #     instances.   My comment above about having status be its own thread refers to this area of the code.  WER 20200307
 # =============================================================================
-    
+
     def run(self, n_cycles=None, loud=False):   #run is a poor name for this function.
         self.loud_status = loud
         if n_cycles is not None:
@@ -276,20 +250,20 @@ class Observatory:
         # `Ctrl-C` will exit the program.
         except KeyboardInterrupt:
             print("Finishing loops and exiting...")
-            self.stopped = False 
+            self.stopped = False
             self.cycles = 1000000
             return
-        
-    #Note this is a thread!       
-    def send_to_AWS(self):  #pri_image is a tuple, smaller first item has priority. second item is alsa tuple containing 
-                            #im_path and name.    
-        while True:            
-            if not self.aws_queue.empty(): 
+
+    #Note this is a thread!
+    def send_to_AWS(self):  #pri_image is a tuple, smaller first item has priority. second item is alsa tuple containing
+                            #im_path and name.
+        while True:
+            if not self.aws_queue.empty():
                 pri_image = self.aws_queue.get(block=False)
                 if pri_image is None:
                     time.sleep(0.2)
                     continue
-                #Here we parse the file, set up and send to AWS                
+                #Here we parse the file, set up and send to AWS
                 im_path = pri_image[1][0]
                 name = pri_image[1][1]
                 if not (name[-3:] == 'jpg' or name[-3:] == 'txt'):
@@ -298,7 +272,7 @@ class Observatory:
                     name = name + '.bz2'
                 aws_req = {"object_name": "raw_data/2019/" + name}
                 site_str = config.site_config['site']
-                aws_resp = g_dev['obs'].api.authenticated_request('POST', site_str +'/upload/', aws_req)       
+                aws_resp = g_dev['obs'].api.authenticated_request('POST', site_str +'/upload/', aws_req)
                 with open(im_path + name , 'rb') as f:
                     files = {'file': (im_path + name, f)}
                     print('--> To AWS -->', str(im_path + name))
@@ -312,35 +286,23 @@ class Observatory:
                 time.sleep(0.2)
                 continue
 def main():
-    '''
-    Construct the environment if it has not already been established. E.g shelve spaces.
-    '''
-    #This is a bit of ugliness occcasioned by bad file naming in the FLI Kepler driver. 
+
+    #This is a bit of ugliness occcasioned by bad file naming in the FLI Kepler driver.  Should be relocated.
     day_str = ptr_events.compute_day_directory()
     g_dev['day'] = day_str
     next_day = ptr_events.Day_tomorrow
     g_dev['d-a-y'] = day_str[0:4] + '-' + day_str[4:6] +  '-' + day_str[6:]
     g_dev['next_day'] = next_day[0:4] + '-' + next_day[4:6] +  '-' + next_day[6:]
-    print('\nNext Day is:  ', g_dev['next_day'])
-    print('Now is:  ', ptr_events.ephem.now(), g_dev['d-a-y'])   #Add local Sidereal time at Midnight
-    patch_httplib
-# =============================================================================
-#     #This is specific to a camera and should be in camera __init.
-# =============================================================================
-    try:
-        os.remove('Q:\\archive\\' + 'df01'+ '\\newest.fits')
-    except:
-        print("newest file not removed.")
-
-    o = Observatory(config.site_name,config. site_config)
-    print('\n', o.all_devices)
+    print('Next Day is:  ', g_dev['next_day'])
+    print('\nNow is:  ', ptr_events.ephem.now(), g_dev['d-a-y'])   #Add local Sidereal time at Midnight
+    patch_httplib     #20200315    Enable this and verify it works.
+    o = Observatory(config.site_name, config.site_config)
+    print(o.all_devices)
     o.run(n_cycles=100000, loud=False)
-            
+
 if __name__ == "__main__":
-    
+
     main()
 
-    
-    
->>>>>>> WER_Working
+
 
