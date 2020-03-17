@@ -20,7 +20,12 @@ import argparse
 
 from api_calls import API_calls
 import ptr_events
-import config_east as config    #NB This is a site-specific reference.  Need to decide how mutli-mount sites are set up.
+
+# NB: The main config file should be named simply 'config.py'. 
+# Specific site configs should not be tracked in version control. 
+# Recommended practices: https://stackoverflow.com/questions/4743770/how-to-manage-configuration-files-when-collaborating
+import config_east as config    
+import config_simulator as config_simulator
 
 # import device classes
 from devices.camera import Camera
@@ -317,7 +322,6 @@ def run_wmd():
     print('\n', o.all_devices)
     o.run(n_cycles=100000, loud=False)
 
-import config_simulator1 as config_simulator
 def run_simulator():
     conf = config_simulator
     o = Observatory(conf.site_name, conf.site_config)
