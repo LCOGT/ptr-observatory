@@ -1,5 +1,4 @@
 venv/
-venv1/
 __pycache__/
 .credentials
 .vscode/
