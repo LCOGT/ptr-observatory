@@ -91,6 +91,9 @@ class Observatory:
         # This is the class through which we can make authenticated api calls.
         self.api = API_calls()
 
+        self.command_interval = 2 # seconds between polls for new commands
+        self.status_interval  = 2 # seconds between sending status to aws
+
         # The site name (str) and configuration (dict) are given by the user. 
         self.name = name
         self.config = config
@@ -177,73 +180,88 @@ class Observatory:
         
         I.e., a single command queue can be limiting
         '''
-        if not  g_dev['seq'].sequencer_hold:   
-            uri = f"{self.name}/{mount}/command/"
-            cmd = {}
-            try:
-                cmd =self.api.authenticated_request("GET", uri)
-                cmd_instance = cmd['instance']
-                device_name = cmd['device']
-                this_req = float(cmd['timestamp'])
-                device = self.all_devices[device_name][cmd_instance]
-                if last_req is  None or this_req > last_req:   #Part of dealing with an old problem of questionable requets.
-                    last_req = float(cmd['timestamp'])
-                    device.parse_command(cmd)                    
-                else:
-                    print("Last Req rejected")
-                return
-            except Exception as e:
-                if cmd == {}:
-                    return  #Nothing to do, no command in the FIFO
-                else:
-                    print(e)
-                    print("unparseable command dict received", cmd)
-                    return
-        else:
-             print('Sequencer Hold asserted.')    #What we really want here is looking fosysr a Cancel/Stop.
+
+        # This stopping mechanism allows for threads to close cleanly.
+        while not self.stopped:
+
+            # Wait a bit before polling for new commands
+            time.sleep(self.command_interval)
+
+            if not  g_dev['seq'].sequencer_hold:   
+                uri = f"{self.name}/{mount}/command/"
+                cmd = {}
+                try:
+                    cmd =self.api.authenticated_request("GET", uri)
+                    cmd_instance = cmd['instance']
+                    device_name = cmd['device']
+                    this_req = float(cmd['timestamp'])
+                    device = self.all_devices[device_name][cmd_instance]
+                    if last_req is  None or this_req > last_req:   #Part of dealing with an old problem of questionable requets.
+                        last_req = float(cmd['timestamp'])
+                        device.parse_command(cmd)                    
+                    else:
+                        print("Last Req rejected")
+                    continue
+                except Exception as e:
+                    if cmd == {}:
+                        continue #Nothing to do, no command in the FIFO
+                    else:
+                        print(e)
+                        print("unparseable command dict received", cmd)
+                        continue
+            else:
+                print('Sequencer Hold asserted.')    #What we really want here is looking for a Cancel/Stop.
 
     def update_status(self):
         ''' Collect status from all devics and send an update to aws.
         Each device class is responsible for implementing the method 
         `get_status` which returns a dictionary. 
         '''
-        start = time.time()
-        status = {}
-        # Loop through all types of devices.
-        # For each type, we get and save the status of each device.
-        for dev_type in self.device_types:
 
-            # The status that we will send is grouped into lists of 
-            # devices by dev_type.
-            status[dev_type] = {}
-            
-            # Names of all devices of the current type.
-            # Recall that self.all_devices[type] is a dictionary of all 
-            # `type` devices, with key=name and val=device object itself.
-            devices_of_type = self.all_devices.get(dev_type, {})
-            device_names = devices_of_type.keys()
+        # This stopping mechanism allows for threads to close cleanly.
+        while not self.stopped:
 
-            for device_name in device_names:
-                # Get the actual device object...
-                if device_name =='filter_wheel' or device_name == 'filter_wheel1':
-                    pass
-                device = devices_of_type[device_name]
-                # ...and add it to main status dict.
-                status[dev_type][device_name] = device.get_status()        
-        # Include the time that the status was assembled and sent.
-        status["timestamp"] = str(round((time.time() + start)/2. , 3))
-        status['send_heartbeat'] = 'false'
-        if self.loud_status:
-            print('Status Sent:  \n', status)#from Update:  ', status))
-        else:
-            print('.')#   #We print this to stay infomred of process on the console.
-        uri = f"{self.name}/status/"
-        #NBNBNB None of the strings can be empty.  Otherwise this put faults.
-        try:    #20190926  tHIS STARTED THROWING EXCEPTIONS OCCASIONALLY
-            self.api.authenticated_request("PUT", uri, status)   #response = is not  used
-        except:
-            print('self.api.authenticated_request("PUT", uri, status):   Failed!')
-        #print(f"update finished in {time.time()-start:.2f} seconds", response)
+            # Wait a bit between status updates
+            time.sleep(self.status_interval)
+
+            start = time.time()
+            status = {}
+
+            # Loop through all types of devices.
+            # For each type, we get and save the status of each device.
+            for dev_type in self.device_types:
+
+                # The status that we will send is grouped into lists of 
+                # devices by dev_type.
+                status[dev_type] = {}
+                
+                # Names of all devices of the current type.
+                # Recall that self.all_devices[type] is a dictionary of all 
+                # `type` devices, with key=name and val=device object itself.
+                devices_of_type = self.all_devices.get(dev_type, {})
+                device_names = devices_of_type.keys()
+
+                for device_name in device_names:
+                    # Get the actual device object...
+                    if device_name =='filter_wheel' or device_name == 'filter_wheel1':
+                        pass
+                    device = devices_of_type[device_name]
+                    # ...and add it to main status dict.
+                    status[dev_type][device_name] = device.get_status()        
+            # Include the time that the status was assembled and sent.
+            status["timestamp"] = str(round((time.time() + start)/2. , 3))
+            status['send_heartbeat'] = 'false'
+            if self.loud_status:
+                print('Status Sent:  \n', status)#from Update:  ', status))
+            else:
+                print('.')#   #We print this to stay infomred of process on the console.
+            uri = f"{self.name}/status/"
+            #NBNBNB None of the strings can be empty.  Otherwise this put faults.
+            try:    #20190926  tHIS STARTED THROWING EXCEPTIONS OCCASIONALLY
+                self.api.authenticated_request("PUT", uri, status)   #response = is not  used
+            except:
+                print('self.api.authenticated_request("PUT", uri, status):   Failed!')
+            #print(f"update finished in {time.time()-start:.2f} seconds", response)
             
     def update(self):
         self.scan_requests('mount1')
@@ -268,22 +286,40 @@ class Observatory:
         if n_cycles is not None:
             self.cycles = n_cycles
         try:
-            while self.cycles >= 0:
-                self.update()
-#                g_dev['enc'].manager()
+            #while self.cycles >= 0:
+                #self.update()
+##                g_dev['enc'].manager()
+                #time.sleep(1)
+                #self.cycles -= 1
+
+            self.update_thread = threading.Thread(target=self.update_status).start()
+
+            # Each mount operates async and has its own command queue to scan.
+            # TODO: is it better to use just one command queue per site? 
+            for mount in self.all_devices['mount'].keys():
+                self.scan_thread = threading.Thread(
+                    target=self.scan_requests, 
+                    args=(mount,)
+                ).start()
+
+            # Keep the main thread alive, otherwise signals are ignored
+            while True:
                 time.sleep(1)
-                self.cycles -= 1
+
+
         # `Ctrl-C` will exit the program.
         except KeyboardInterrupt:
             print("Finishing loops and exiting...")
-            self.stopped = False 
-            self.cycles = 1000000
+            self.stopped = True
+            #self.cycles = 1000000
             return
         
     #Note this is a thread!       
     def send_to_AWS(self):  #pri_image is a tuple, smaller first item has priority. second item is alsa tuple containing 
                             #im_path and name.    
-        while True:            
+
+        # This stopping mechanism allows for threads to close cleanly.
+        while not self.stopped:            
             if not self.aws_queue.empty(): 
                 pri_image = self.aws_queue.get(block=False)
                 if pri_image is None:
