@@ -184,6 +184,7 @@ class Observatory:
         # This stopping mechanism allows for threads to close cleanly.
         while not self.stopped:
 
+            print('command loop')
             # Wait a bit before polling for new commands
             time.sleep(self.command_interval)
 
@@ -201,14 +202,14 @@ class Observatory:
                         device.parse_command(cmd)                    
                     else:
                         print("Last Req rejected")
-                    return
+                    continue
                 except Exception as e:
                     if cmd == {}:
-                        return  #Nothing to do, no command in the FIFO
+                        continue #Nothing to do, no command in the FIFO
                     else:
                         print(e)
                         print("unparseable command dict received", cmd)
-                        return
+                        continue
             else:
                 print('Sequencer Hold asserted.')    #What we really want here is looking for a Cancel/Stop.
 
@@ -223,6 +224,7 @@ class Observatory:
 
             # Wait a bit between status updates
             time.sleep(self.status_interval)
+            print('status loop')
 
             start = time.time()
             status = {}
