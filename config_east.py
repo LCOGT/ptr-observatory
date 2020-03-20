@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 '''
 Created on Fri Aug  2 11:57:41 2019
+Updates 20200316   WER
 
 @author: wrosing
 '''
@@ -20,14 +21,14 @@ site_config = {
                     Now is the time for all good persons
                     to get out and vote early and often lest
                     we lose charge of our democracy.
-                    ''',    #i.e, a multi-line text block supplied by the owner.
+                    ''',    #i.e, a multi-line text block supplied by the owner.  Must be careful about the contents for now.
                     
     'mpc_code':  'ZZ23',    #This is made up for now.
     'timezone': 'PDT',       #We might be smart to require some Python DateTime String Constant here
                              #since this is a serious place where misconfigurations occur.  We run on
                              #UTC and all translations to local time are 'informational.'  PTR will
                              #Not accept observatories whose master clocks run on local time, or where
-                             #the longitude and value of UTC disagree by more than a smidegon.
+                             #the longitude and value of apparent UTC disagree by more than a smidegon.
     'latitude': '34.34293028',     #Decimal degrees, North is Positive
     'longitude': '-119.68112805',   #Decimal degrees, West is negative
     'elevation': '317.75',    # meters above sea level
@@ -52,6 +53,7 @@ site_config = {
             'driver': 'ASCOM.SkyRoofHub.Dome',
             'has_lights':  'true',   #NB wouldn't it be eless error-rone for this to be "True"?
             'controlled_by':  ['mnt1', 'mnt2'],
+            'is_dome': 'false',
             'settings': {
                 'lights':  ['Auto', 'White', 'Red', 'IR', 'Off'],       #A way to encode possible states or options???
                                                                         #First Entry is always default condition.
@@ -98,7 +100,7 @@ site_config = {
             'has_paddle': 'false',    #or a string that permits proper configuration.
             'pointing_tel': 'tel1',     #This can be changed to 'tel2' by user.  This establishes a default.
             'settings': {
-                'lattitude': '34.34293028',   #These could in principle be different than site by small amount
+                'latitude': '34.34293028',   #These could in principle be different than site by small amount
                 'longitude': '-119.68105',
                 'elevation': '317.75', # meters above sea level
                 'home_park_altitude': '0',   #Having this setting is important for PWI4 where it can easily be messed up.
@@ -275,12 +277,16 @@ site_config = {
             'alias': 'df01',      #Important because this points to a server file structure by that name.
             'desc':  'FLI Microline e2vU42DD',
             'driver':  "Maxim.CCDCamera",   #'ASCOM.FLI.Kepler.Camera',  #Code must work with both.
+            'detector':  'e2v U42 DD',
+            'manufacturer':  'FLI -- Finger Lakes Instrumentation',
             'settings': {
                 'x_start':  '0',
                 'y_start':  '0',
                 'x_width':  '2048',
-                'x_pixel':  '13.5',
                 'y_width':  '2048',
+                'x_chip':   '2048',
+                'y_chip':   '2048',
+                'x_pixel':  '13.5',
                 'y_pixel':  '13.5',
                 'overscan_x': '0',
                 'overscan_y': '0',
@@ -295,9 +301,10 @@ site_config = {
                 'reference_gain': ['1.4', '1.4' ],     #One val for each binning.
                 'reference_noise': ['14.0', '14.0' ],
                 'reference_dark': ['0.2', '-30' ],
+                'saturate':  '55000',
                 'area': ['100%', '2X-jpg', '71%', '50%', '1X-jpg', '33%', '25%', '1/2 jpg'],
                 'bin_modes':  [['1', '1'], ['2', '2']],     #Meaning no binning if list has only one entry
-                                               #otherwise enumerate all xy modes: [[1,1], [1,2], ...[3,2]...]
+                'default_bin':  '2',    #Always square and matched to seeing situation by owner
                 'has_darkslide':  'false',
 #                'darkslide':  ['Auto', 'Open', 'Close'],
                 'has_screen': 'true',

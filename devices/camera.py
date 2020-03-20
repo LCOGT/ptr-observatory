@@ -222,7 +222,7 @@ class Camera:
         Apply settings and start an exposure. 
         Quick=True is meant to be fast.  We assume the ASCOM imageBuffer is the source of data, not the Files path.
         '''
-        print('Expose Entered.  req:  ', required_params, 'opt:  ', optional_params)
+        #print('Expose Entered.  req:  ', required_params, 'opt:  ', optional_params)
         
         bin_x = optional_params.get('bin', '1,1')
         if bin_x == '2,2':
