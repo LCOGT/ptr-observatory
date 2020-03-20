@@ -464,82 +464,82 @@ class Camera:
                         print('First Entry', self.camera.StartX, self.camera.StartY, self.camera.NumX, self.camera.NumY, exposure_time)
                         if self.ascom and self.is_cmos:
                             breakpoint()
-#                            try:
-#                                ldr_handle= glob.glob('Q:\\archive\\gf03\\raw_kepler\\' + g_dev['next_day'] + '\\' + '*low.fits')
-#                                ldr_handle_high= glob.glob('Q:\\archive\\gf03\\raw_kepler\\' + g_dev['next_day'] + '\\' + '*high.fits')
-#                            except:
-#                                print("Something went wrong reading in a version of low / or high.fits")
-#                            if ldr_handle == [] or ldr_handle_high == []:
-#                                try:
-#                                    ldr_handle = glob.glob('Q:\\archive\\gf03\\raw_kepler\\' + g_dev['d-a-y'] + '\\' + '*low.fits')
-#                                    ldr_handle_high = glob.glob('Q:\\archive\\gf03\\raw_kepler\\' + g_dev['d-a-y'] + '\\' + '*high.fits')
-#                                except:
-#                                    print("Something went wrong reading in a version of low / or high.fits")  
-#                            if len(ldr_handle_high) > 0:
-#                                for item in ldr_handle_high:
-#                                    os.remove(item)
-#                            if len(ldr_handle) > 0:
-#                                for item in ldr_handle:
-#                                    os.remove(item)
-#
-#                            self.camera.AbortExposure()
-#                            self.t2 = time.time()       #Immediately before Exposure
-#                            self.camera.StartExposure(exposure_time, imtypeb)     #True indicates Light Frame.  Maxim Difference of code
+                            try:
+                                ldr_handle= glob.glob('Q:\\archive\\gf03\\raw_kepler\\' + g_dev['next_day'] + '\\' + '*low.fits')
+                                ldr_handle_high= glob.glob('Q:\\archive\\gf03\\raw_kepler\\' + g_dev['next_day'] + '\\' + '*high.fits')
+                            except:
+                                print("Something went wrong reading in a version of low / or high.fits")
+                            if ldr_handle == [] or ldr_handle_high == []:
+                                try:
+                                    ldr_handle = glob.glob('Q:\\archive\\gf03\\raw_kepler\\' + g_dev['d-a-y'] + '\\' + '*low.fits')
+                                    ldr_handle_high = glob.glob('Q:\\archive\\gf03\\raw_kepler\\' + g_dev['d-a-y'] + '\\' + '*high.fits')
+                                except:
+                                    print("Something went wrong reading in a version of low / or high.fits")  
+                            if len(ldr_handle_high) > 0:
+                                for item in ldr_handle_high:
+                                    os.remove(item)
+                            if len(ldr_handle) > 0:
+                                for item in ldr_handle:
+                                    os.remove(item)
+
+                            self.camera.AbortExposure()
+                            self.t2 = time.time()       #Immediately before Exposure
+                            self.camera.StartExposure(exposure_time, imtypeb)     #True indicates Light Frame.  Maxim Difference of code
                         if self.maxim and self.is_cmos:
                             breakpoint()
-#                            #This code grooms away older unuseable raw Kepler 12 bit images, presuming they exist and deals
-#                            #With oddities of directory naming by FliCam Server.
-#                            try:
-#                                ldr_handle = glob.glob('Q:\\archive\\gf03\\raw_kepler\\' + g_dev['next_day'] + '\\' + '*low.fits')
-#                                ldr_handle_high = glob.glob('Q:\\archive\\gf03\\raw_kepler\\' + g_dev['next_day'] + '\\' + '*high.fits')
-#                            except:
-#                                print("Something went wrong reading in a version of low / or high.fits")
-#                            if ldr_handle == [] or ldr_handle_high == []:
-#                                try:
-#                                    ldr_handle = glob.glob('Q:\\archive\\gf03\\raw_kepler\\' + g_dev['d-a-y'] + '\\' + '*low.fits')
-#                                    ldr_handle_high = glob.glob('Q:\\archive\\gf03\\raw_kepler\\' + g_dev['d-a-y'] + '\\' + '*high.fits')
-#                                except:
-#                                    print("Something went wrong reading in a version of low / or high.fits")  
-#                            if len(ldr_handle_high) > 0:
-#                                new_list = []
-#                                for item in ldr_handle_high:
-#                                    new_list.append( (os.stat(item).st_mtime, item))
-#                                new_list.sort()
-#                                ldr_handle_high_time = new_list[-1][0]
-#                                    #os.remove(item)
-#                                    #pass
-#                            else:
-#                                ldr_handle_high_time = time.time()
-#                            if len(ldr_handle) > 0:
-#
-#                                new_list = []
-#                                for item in ldr_handle:
-#                                    new_list.append( (os.stat(item).st_mtime, item))
-#                                new_list.sort()
-#                                ldr_handle_time = new_list[-1][0]
-#                                    #os.remove(item)
-#                                    #pass
-#                            else:
-#                                ldr_handle_time = time.time()
-#                            print('Link Enable:  ', self.camera.LinkEnabled)
-#                            self.camera.AbortExposure()
-#                            g_dev['ocn'].get_quick_status(self.pre_ocn)
-#                            g_dev['foc'].get_quick_status(self.pre_foc)
-#                            g_dev['rot'].get_quick_status(self.pre_rot)
-#                            g_dev['mnt'].get_quick_status(self.pre_mnt)
-#                            self.t2 = time.time()
-#                            print("Starting exposure at:  ", self.t2)
-#                            self.camera.Expose(exposure_time, imtypeb)
+                            #This code grooms away older unuseable raw Kepler 12 bit images, presuming they exist and deals
+                            #With oddities of directory naming by FliCam Server.
+                            try:
+                                ldr_handle = glob.glob('Q:\\archive\\gf03\\raw_kepler\\' + g_dev['next_day'] + '\\' + '*low.fits')
+                                ldr_handle_high = glob.glob('Q:\\archive\\gf03\\raw_kepler\\' + g_dev['next_day'] + '\\' + '*high.fits')
+                            except:
+                                print("Something went wrong reading in a version of low / or high.fits")
+                            if ldr_handle == [] or ldr_handle_high == []:
+                                try:
+                                    ldr_handle = glob.glob('Q:\\archive\\gf03\\raw_kepler\\' + g_dev['d-a-y'] + '\\' + '*low.fits')
+                                    ldr_handle_high = glob.glob('Q:\\archive\\gf03\\raw_kepler\\' + g_dev['d-a-y'] + '\\' + '*high.fits')
+                                except:
+                                    print("Something went wrong reading in a version of low / or high.fits")  
+                            if len(ldr_handle_high) > 0:
+                                new_list = []
+                                for item in ldr_handle_high:
+                                    new_list.append( (os.stat(item).st_mtime, item))
+                                new_list.sort()
+                                ldr_handle_high_time = new_list[-1][0]
+                                    #os.remove(item)
+                                    #pass
+                            else:
+                                ldr_handle_high_time = time.time()
+                            if len(ldr_handle) > 0:
+
+                                new_list = []
+                                for item in ldr_handle:
+                                    new_list.append( (os.stat(item).st_mtime, item))
+                                new_list.sort()
+                                ldr_handle_time = new_list[-1][0]
+                                    #os.remove(item)
+                                    #pass
+                            else:
+                                ldr_handle_time = time.time()
+                            print('Link Enable:  ', self.camera.LinkEnabled)
+                            self.camera.AbortExposure()
+                            g_dev['ocn'].get_quick_status(self.pre_ocn)
+                            g_dev['foc'].get_quick_status(self.pre_foc)
+                            g_dev['rot'].get_quick_status(self.pre_rot)
+                            g_dev['mnt'].get_quick_status(self.pre_mnt)
+                            self.t2 = time.time()
+                            print("Starting exposure at:  ", self.t2)
+                            self.camera.Expose(exposure_time, imtypeb)
                         elif self.ascom:
                             breakpoint()
-#                            self.camera.AbortExposure()
-#                            g_dev['ocn'].get_quick_status(self.pre_ocn)
-#                            g_dev['foc'].get_quick_status(self.pre_foc)
-#                            g_dev['rot'].get_quick_status(self.pre_rot)
-#                            g_dev['mnt'].get_quick_status(self.pre_mnt)
-#                            self.t2 = time.time()       #Immediately before Exposure
-#                            self.camera.StartExposure(exposure_time, imtypeb) 
-#                            
+                            self.camera.AbortExposure()
+                            g_dev['ocn'].get_quick_status(self.pre_ocn)
+                            g_dev['foc'].get_quick_status(self.pre_foc)
+                            g_dev['rot'].get_quick_status(self.pre_rot)
+                            g_dev['mnt'].get_quick_status(self.pre_mnt)
+                            self.t2 = time.time()       #Immediately before Exposure
+                            self.camera.StartExposure(exposure_time, imtypeb) 
+                            
                         elif self.maxim:
                             print('Link Enable:  ', self.camera.LinkEnabled)
                             self.camera.AbortExposure()

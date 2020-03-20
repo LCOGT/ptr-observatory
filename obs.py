@@ -184,7 +184,6 @@ class Observatory:
         # This stopping mechanism allows for threads to close cleanly.
         while not self.stopped:
 
-            print('command loop')
             # Wait a bit before polling for new commands
             time.sleep(self.command_interval)
 
@@ -224,7 +223,6 @@ class Observatory:
 
             # Wait a bit between status updates
             time.sleep(self.status_interval)
-            print('status loop')
 
             start = time.time()
             status = {}
