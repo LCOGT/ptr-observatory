@@ -32,9 +32,10 @@ import time,  threading, queue
 import requests
 import os
 import argparse
+import json
 
 from api_calls import API_calls
-import ptr_events
+#import ptr_events
 
 # NB: The main config file should be named simply 'config.py'. 
 # Specific site configs should not be tracked in version control. 
@@ -188,29 +189,26 @@ class Observatory:
             time.sleep(self.command_interval)
 
             if not  g_dev['seq'].sequencer_hold:   
-                uri = f"{self.name}/{mount}/command/"
+                url = f"https://jobs.photonranch.org/jobs/getnewjobs"
+                body = {"site": self.name}
+                #uri = f"{self.name}/{mount}/command/"
                 cmd = {}
-                try:
-                    cmd =self.api.authenticated_request("GET", uri)
-                    cmd_instance = cmd['instance']
-                    device_name = cmd['device']
-                    this_req = float(cmd['timestamp'])
-                    device = self.all_devices[device_name][cmd_instance]
-                    if last_req is  None or this_req > last_req:   #Part of dealing with an old problem of questionable requets.
-                        last_req = float(cmd['timestamp'])
-                        device.parse_command(cmd)                    
-                    else:
-                        print("Last Req rejected")
-                    continue
-                except Exception as e:
-                    if cmd == {}:
-                        continue #Nothing to do, no command in the FIFO
-                    else:
+
+                unread_commands = requests.request('POST', url, data=json.dumps(body)).json()
+                for cmd in unread_commands:
+                    print(cmd)
+
+                    deviceInstance = cmd['deviceInstance']
+                    deviceType = cmd['deviceType']
+                    device = self.all_devices[deviceType][deviceInstance]
+                    try: 
+                        device.parse_command(cmd)
+                    except Exception as e:
                         print(e)
-                        print("unparseable command dict received", cmd)
-                        continue
+                continue
             else:
                 print('Sequencer Hold asserted.')    #What we really want here is looking for a Cancel/Stop.
+                continue
 
     def update_status(self):
         ''' Collect status from all devics and send an update to aws.

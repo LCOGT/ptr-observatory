@@ -3,62 +3,66 @@
 Created by Tim Beccue, 2020-03-16
 
 This is a configuration file designed to simulate an observatory using
-ASCOM simulators. 
+ASCOM simulators.
 
-The file is adapted from a version of the WMD config, and is a work in 
+The file is adapted from a version of the WMD config, and is a work in
 progress. The key differences are the names of the drivers listed under each
-device; they point to the ASCOM simulator drivers that should already be 
+device; they point to the ASCOM simulator drivers that should already be
 installed on the computer in order to work.
 
-Most of the numbers in this config file aren't used. However, some of the 
+Most of the numbers in this config file aren't used. However, some of the
 site code depends on some of these values. Eventually this should be cleaned.
+
+Modified 20200323 by WER  A simple simulation of an observatory at ALI in Tibet.
 
 '''
 
-site_name = 'sim_site'
+site_name = 'ALI-sim'
 
 site_config = {
-    'site': 'sim_site',
-    'name': 'Simulator Site',
+    'site': 'ALI-sim',
+    'name': 'ALI Simulated Site',
     #'archive_path': 'Q:/',     #Really important, this is where state and results are stored. Can be a NAS server.
-    'location': 'Santa Barbara, Californa,  USA',
+    'location': 'Shiquhane, Tibet,  PRC',
     #'observatory_url': 'https://starz-r-us.sky/clearskies',
     #'mpc_code':  'ZZ23',    #This is made up for now.
-    'timezone': 'PDT',       #We might be smart to require some Python DateTime String Constant here
+    'timezone': 'CST+08',       #We might be smart to require some Python DateTime String Constant here
                              #since this is a serious place where misconfigurations occur.  We run on
                              #UTC and all translations to local time are 'informational.'  PTR will
                              #Not accept observatories whose master clocks run on local time, or where
                              #the longitude and value of UTC disagree by more than a smidegon.
-    'latitude': '34.34293028',     #Decimal degrees, North is Positive
-    'longitude': '-119.68112805',   #Decimal degrees, West is negative
-    'elevation': '317.75',    # meters above sea level
-    'reference_ambient':  ['15.0'],  #Degrees Celsius.  Alternately 12 entries, one for every - mid month.
-    'reference_pressure':  ['973'],  #mbar Alternately 12 entries, one for every - mid month.
-    'observing_conditions': {
-        'wx1': {
+    'latitude': '33.3167',     #Decimal degrees, North is Positive
+    'longitude': '80.0167',   #Decimal degrees, West is negative
+    'elevation': '5100',    # meters above sea level
+    'reference_ambient':  ['5'],  #Degrees Celsius.  Alternately 12 entries, one for every - mid month.
+    'reference_pressure':  ['839.8'],  #mbar Alternately 12 entries, one for every - mid month.
+    #'observing_conditions': {
+        #'wx1': {
+            #'parent': 'site',
+            #'alias': 'Weather Station #1',
+            #'driver': 'redis'
+           #
+            #},
+        #},
+
+
+    #Dome added by WER 20200320              
+    'enclosure': {
+        'enclosure1': {
             'parent': 'site',
-            'alias': 'Weather Station #1',
-            'driver': 'redis'
-            
+            'alias': 'SinDome',
+#            'hostIP':  '10.15.0.30',
+            'driver': 'ASCOM.Simulator.Dome',
+            'has_lights':  'true',   #NB wouldn't it be eless error-rone for this to be "True"?
+            'is_dome':  'true',
+            'controlled_by':  ['mnt1'],
+            'settings': {
+                'lights':  ['Auto', 'White', 'Red', 'IR', 'Off'],       #A way to encode possible states or options???
+                                                                        #First Entry is always default condition.
+                'roof_shutter':  ['Auto', 'Open', 'Close', 'Lock Closed', 'Unlock'],                              
+                },
             },
         },
-
-
-                
-#    'enclosure': {
-#        'enclosure1': {
-#            'parent': 'site',
-#            'alias': 'Megawan',
-#            'hostIP':  '10.15.0.30',
-#            'driver': 'ASCOM.SkyRoofHub.Dome',
-#            'has_lights':  'true',   #NB wouldn't it be eless error-rone for this to be "True"?
-#            'controlled_by':  ['mnt1', 'mnt2'],
-#            'settings': {
-#                'lights':  ['Auto', 'White', 'Red', 'IR', 'Off'],       #A way to encode possible states or options???
-#                                                                        #First Entry is always default condition.
-#                'roof_shutter':  ['Auto', 'Open', 'Close', 'Lock Closed', 'Unlock'],                               
-#                },
-#            },
 # =============================================================================
 #     'web_cam': {
 #         'web_cam1 ': {
@@ -91,34 +95,7 @@ site_config = {
                 'home_park_altitude': '0',   #Having this setting is important for PWI4 where it can easily be messed up.
                 'home_park_azimuth': '174.0',
                 'horizon':  '20',
-                'horizon_detail': {
-                     '0': '32',
-                     '30': '35',
-                     '36.5': '39',
-                     '43': '28.6',
-                     '59': '32.7',
-                     '62': '28.6',
-                     '65': '25.2',
-                     '74': '22.6',
-                     '82': '20',
-                     '95.5': '20',
-                     '101.5': '14',
-                     '107.5': '12',
-                     '130': '12',
-                     '150': '20',
-                     '172': '28',
-                     '191': '25',
-                     '213': '20',
-                     '235': '15.3',
-                     '260': '11',
-                     '272': '17',
-                     '294': '16.5',
-                     '298.5': '18.6',
-                     '303': '20.6',
-                     '309': '27',
-                     '315': '32',
-                     '360': '32',
-                     },
+
             },
         },
 
@@ -145,14 +122,14 @@ site_config = {
             'has_cover':  'false',
             'settings': {
                 'fans': ['Auto','High', 'Low', 'Off'],
-                'offset_collimation': '0.0',    #If the mount model is current, these numbers are usually near 0.0 
+                'offset_collimation': '0.0',    #If the mount model is current, these numbers are usually near 0.0
                                                 #for tel1.  Units are arcseconds.
                 'offset_declination': '0.0',
                 'offset_flexure': '0.0',
                 },
         },
     },
-  
+ 
     'rotator': {
         'rotator1': {
             'parent': 'telescope1',
@@ -162,7 +139,7 @@ site_config = {
             'minimum': '-180.0',
             'maximum': '360.0',
             'step_size':  '0.0001',
-            'backlash':  '0.0',     
+            'backlash':  '0.0',    
             'unit':  'degree'
             },
     },
@@ -179,7 +156,7 @@ site_config = {
 #
 #            },
 #    },
-                
+               
     'focuser': {
         'focuser1': {
             'parent': 'telescope1',
@@ -192,7 +169,7 @@ site_config = {
             'coef_0': '0',  #Nominal intercept when Primary is at 0.0 C.
             'coef_date':  '20300314',
             'minimum': '0',    #NB this needs clarifying, we are mixing steps and microns.
-            'maximum': '12700', 
+            'maximum': '12700',
             'step_size': '1',
             'backlash':  '0',
             'unit': 'steps',
@@ -242,19 +219,19 @@ site_config = {
                                 #so screen brightens, skipping u and zs which really need sky.
                 'filter_sky_sort':  ['17', '5', '21', '9', '16', '4', '15', '14', '3', '20', '8', '13', '11', '12', \
                                      '18', '6', '19', '7', '10', '2', '1', '0']  #Least to most throughput
-                                
+                               
             },
         },                  
     },
-        
-        
-    
-    # A site may have many cameras registered (camera1, camera2, camera3, ...) each with unique aliases -- which are assumed 
+       
+       
+   
+    # A site may have many cameras registered (camera1, camera2, camera3, ...) each with unique aliases -- which are assumed
     # to be the name an owner has assigned and in principle that name "kb01" is labeled and found on the camera.  Between sites,
     # there can be overlap of camera names.  LCO convention is letter of cam manuf, letter of chip manuf, then 00, 01, 02, ...  
-    # However this code will treat the camera name/alias as a string of arbitrary length:  "saf_Neyle's favorite_camera" is 
+    # However this code will treat the camera name/alias as a string of arbitrary length:  "saf_Neyle's favorite_camera" is
     # perfectly valid as an alias.
-    
+   
 
     'camera': {
         'camera1': {
@@ -295,7 +272,7 @@ site_config = {
                     'screen_x3':  '3E-08',
                     'screen_x2':  '-9E-05',
                     'screen_x1':  '.1258',
-                    'screen_x0':  '8.683' 
+                    'screen_x0':  '8.683'
                     },
                 },
         },
@@ -329,9 +306,9 @@ site_config = {
 #
 #    },
 
-            
+           
     #Need to put switches here for above devices.
-    
+   
     #Need to build instrument selector and multi-OTA configurations.
 
     #AWS does not need this, but my configuration code might make use of it.

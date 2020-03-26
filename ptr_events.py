@@ -487,7 +487,8 @@ RA J2000	DE J2000	N    Star Field
 '''
 
 if __name__ == '__main__':
-
+    print("skipping printing ptr_events")
+'''
     print('Ephem date    :    ', dayNow)
     print('DayDir        :    ', DAY_Directory)
     print('Night Duration :    ', str(round(duration, 2)) + ' hr')
@@ -536,6 +537,7 @@ if __name__ == '__main__':
         evnt_sort.pop(-1)
     for evnt in evnt_sort:
         print(evnt[0], evnt[1])
+'''
                
 
 
