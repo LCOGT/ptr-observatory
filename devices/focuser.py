@@ -110,7 +110,12 @@ class Focuser:
     
     def update_job_status(self, cmd_id, status, seconds_remaining=-1):
         """
-        Update the status of a job, to display in the UI. 
+        Update the status of a job. 
+        Args:
+            cmd_id (string): the ulid that identifies the job to update
+            status (string): the new status (eg. "STARTED")
+            seconds_remaining (int): time estimate until job is updated as "COMPLETE".
+                Note: value of -1 used when no estimate is provided.
         """
         url = "https://jobs.photonranch.org/jobs/updatejobstatus"
         body = {
@@ -130,9 +135,16 @@ class Focuser:
         action = command['action']
 
         if action == "move_relative":
+            # Mark a job as "STARTED" just before starting it. 
+            # Include a time estmiate if possible. This is sent to the UI.
             self.update_job_status(command['ulid'], 'STARTED', 5)
+
+            # Do the command. Additional job updates can be sent in this function too. 
             self.move_relative_command(req, opt)
+
+            # Mark the job "COMPLETE" when finished. 
             self.update_job_status(command['ulid'], 'COMPLETE')
+
         elif action == "move_absolute":
             self.update_job_status(command['ulid'], 'STARTED', 5)
             self.move_absolute_command(req, opt)

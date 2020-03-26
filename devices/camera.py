@@ -27,7 +27,7 @@ import ptr_config
 import config_east as config
 from devices.calibration import calibrate
 
-#import ptr_events
+import ptr_events
 
 '''
 Autofocus NOTE 20200122

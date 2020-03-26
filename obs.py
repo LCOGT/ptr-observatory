@@ -35,7 +35,7 @@ import argparse
 import json
 
 from api_calls import API_calls
-#import ptr_events
+import ptr_events
 
 # NB: The main config file should be named simply 'config.py'. 
 # Specific site configs should not be tracked in version control. 
@@ -194,10 +194,16 @@ class Observatory:
                 #uri = f"{self.name}/{mount}/command/"
                 cmd = {}
 
+                # Get a list of new jobs to complete (this request marks the commands as "RECEIVED")
                 unread_commands = requests.request('POST', url, data=json.dumps(body)).json()
+
+                # Make sure the list is sorted in the order the jobs were issued
+                # Note: the ulid for a job is a unique lexicographically-sortable id
+                unread_commands.sort(key=lambda x: x.ulid)
+
+                # Process each job one at a time
                 for cmd in unread_commands:
                     print(cmd)
-
                     deviceInstance = cmd['deviceInstance']
                     deviceType = cmd['deviceType']
                     device = self.all_devices[deviceType][deviceInstance]
