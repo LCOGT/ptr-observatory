@@ -140,6 +140,7 @@ class Camera:
         self.af_step = -1
         self.f_spot_dia = []
         self.f_positions = []
+        self.t_0 = time.time()
         #self.camera.SetupDialog()
      
                 
@@ -223,7 +224,7 @@ class Camera:
         Quick=True is meant to be fast.  We assume the ASCOM imageBuffer is the source of data, not the Files path.
         '''
         #print('Expose Entered.  req:  ', required_params, 'opt:  ', optional_params)
-        
+        self.t_0 = time.time()
         bin_x = optional_params.get('bin', '1,1')
         if bin_x == '2,2':
             bin_x = 2
@@ -569,8 +570,10 @@ class Camera:
                         print("failed exposure")
                         print(e)
                         self.t11 = time.time()
+                        print("expose took:  ", round(self.t11 - self.t_0 , 2))
                         return None  #Presumably this premature return cleans things out so they can still run?
         self.t11 = time.time()
+        print("expose took:  ", round(self.t11 - self.t_0 , 2))
         return result
 
 #        for i in range(20):
@@ -631,6 +634,7 @@ class Camera:
                     self.t6 = time.time()
                     self.img = self.camera.ImageArray
                     self.t7 = time.time()
+                    g_dev['obs'].update_status() 
                     #Save image with Maxim Header information, then read back with astropy and use the
                     #lqtter code for fits manipulation.
                     #This should be a very fast disk.
@@ -816,7 +820,7 @@ class Camera:
                         #raw_data_size = hdu.data.size
     
                         print("\n\Finish-Exposure is complete:  " + raw_name00)#, raw_data_size, '\n')
-    
+                        g_dev['obs'].update_status() 
                         calibrate(hdu, None, lng_path, frame_type, start_x=start_x, start_y=start_y, quick=quick)
                         #Note we may be using different files if calibrate is null.
                         if not quick:
@@ -856,6 +860,7 @@ class Camera:
                             except:
                                 spot = None
                         if halt: pass
+                        g_dev['obs'].update_status() 
                         #Here we need to process images which upon input, may not be square.  The way we will do that
                         #is find which dimension is largest.  We then pad the opposite dimension with 1/2 of the difference,
                         #and add vertical or horizontal lines filled with img(min)-2 but >=0.  The immediate last or first line
@@ -953,7 +958,8 @@ class Camera:
     
                     return (None ,None)
                 else:               #here we are in waiting for imageReady loop and could send status and check Queue
-                    time.sleep(.3)                    
+                    time.sleep(.05)
+                    g_dev['obs'].update_status()                    
                     #if not quick:
                     #   g_dev['obs'].update()    #This keeps status alive while camera is loopin
                     self.t7= time.time()

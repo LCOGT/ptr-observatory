@@ -19,8 +19,10 @@ class FilterWheel:
         print('Please NOTE: Filter wheel may block for many seconds while first connecting & homing.')
         if type(driver) == list and False:
             #breakpoint()
+            win32com.client.pythoncom.CoInitialize()
             self.filter_front = win32com.client.Dispatch(driver[0])
             self.filter_front.Connected = True
+            win32com.client.pythoncom.CoInitialize()
             self.filter_back = win32com.client.Dispatch(driver[1])
             self.filter_back.Connected = True
 #            flifil1 or flifil3?

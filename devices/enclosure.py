@@ -8,11 +8,10 @@ class Enclosure:
     def __init__(self, driver: str, name: str):
         self.name = name
         g_dev['enc'] = self
-        win32com.client.pythoncom.CoInitialize()    #<<<I also added this.
+        win32com.client.pythoncom.CoInitialize()
         self.enclosure = win32com.client.Dispatch(driver)
-        #breakpoint()
-        self.enclosure.Connected = True  #<<<<<NB this seems to work impling the object exists.  So may be thread local data
-
+        print(self.enclosure)
+        self.enclosure.Connected = True  
         print(f"enclosure connected.")
         print(self.enclosure.Description)
         self.state = 'Closed, normal operation, waiting for observing window.'    #A descriptive string of the state of the enclosure
@@ -22,7 +21,7 @@ class Enclosure:
         self.external_close = False   #If made true by operator system will not reopen for the night
 
     def get_status(self) -> dict:
-        #breakpoint()    #<<<<This is where I set the brealpoint
+        #breakpoint()    #<<<<The next attibute reference fails.
         shutter_status = self.enclosure.ShutterStatus
         if shutter_status == 0:
             stat_string = "open"  
