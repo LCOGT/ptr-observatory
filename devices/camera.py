@@ -532,7 +532,6 @@ class Camera:
                             print("Starting exposure at:  ", self.t2)
                             self.camera.Expose(exposure_time, imtypeb)
                         elif self.ascom:
-                            breakpoint()
                             self.camera.AbortExposure()
                             g_dev['ocn'].get_quick_status(self.pre_ocn)
                             g_dev['foc'].get_quick_status(self.pre_foc)

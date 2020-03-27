@@ -32,6 +32,7 @@ import time,  threading, queue
 import requests
 import os, sys
 import argparse
+import json
 
 from api_calls import API_calls
 import ptr_events
@@ -190,6 +191,7 @@ class Observatory:
         NB at this time we are preserving one command queue for all devices at a site.  This may need to change when we
         have parallel mountings or independently controlled cameras.
         '''
+<<<<<<< HEAD
         # Wait a bit before polling for new commands
         time.sleep(self.command_interval)
         t1 = time.time()
@@ -217,6 +219,42 @@ class Observatory:
             print('scan_requests finished in:  ', round(time.time() - t1, 3), '  seconds')
         else:
             print('Sequencer Hold asserted.')    #What we really want here is looking for a Cancel/Stop.
+=======
+
+        # This stopping mechanism allows for threads to close cleanly.
+        while not self.stopped:
+
+            # Wait a bit before polling for new commands
+            time.sleep(self.command_interval)
+
+            if not  g_dev['seq'].sequencer_hold:   
+                url = f"https://jobs.photonranch.org/jobs/getnewjobs"
+                body = {"site": self.name}
+                #uri = f"{self.name}/{mount}/command/"
+                cmd = {}
+
+                # Get a list of new jobs to complete (this request marks the commands as "RECEIVED")
+                unread_commands = requests.request('POST', url, data=json.dumps(body)).json()
+
+                # Make sure the list is sorted in the order the jobs were issued
+                # Note: the ulid for a job is a unique lexicographically-sortable id
+                unread_commands.sort(key=lambda x: x["ulid"])
+
+                # Process each job one at a time
+                for cmd in unread_commands:
+                    print(cmd)
+                    deviceInstance = cmd['deviceInstance']
+                    deviceType = cmd['deviceType']
+                    device = self.all_devices[deviceType][deviceInstance]
+                    try: 
+                        device.parse_command(cmd)
+                    except Exception as e:
+                        print(e)
+                continue
+            else:
+                print('Sequencer Hold asserted.')    #What we really want here is looking for a Cancel/Stop.
+                continue
+>>>>>>> 79e9b607f4529842c3f6c27e501095093c638045
 
     def update_status(self):
         ''' Collect status from all devics and send an update to aws.

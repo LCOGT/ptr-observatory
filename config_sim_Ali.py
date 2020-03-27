@@ -45,12 +45,8 @@ site_config = {
             #},
         #},
 
-<<<<<<< HEAD
-     #Dome added by WER 20200320          
-=======
 
-    #Dome added by WER 20200320              
->>>>>>> 79e9b607f4529842c3f6c27e501095093c638045
+     #Dome added by WER 20200320          
     'enclosure': {
         'enclosure1': {
             'parent': 'site',
@@ -59,19 +55,11 @@ site_config = {
             'driver': 'ASCOM.Simulator.Dome',
             'has_lights':  'true',   #NB wouldn't it be eless error-rone for this to be "True"?
             'is_dome':  'true',
-<<<<<<< HEAD
             'controlled_by':  ['mnt1', 'mnt2'],
             'settings': {
                 'lights':  ['Auto', 'White', 'Red', 'IR', 'Off'],       #A way to encode possible states or options???
                                                                         #First Entry is always default condition.
-                'roof_shutter':  ['Auto', 'Open', 'Close', 'Lock Closed', 'Unlock'],                               
-=======
-            'controlled_by':  ['mnt1'],
-            'settings': {
-                'lights':  ['Auto', 'White', 'Red', 'IR', 'Off'],       #A way to encode possible states or options???
-                                                                        #First Entry is always default condition.
-                'roof_shutter':  ['Auto', 'Open', 'Close', 'Lock Closed', 'Unlock'],                              
->>>>>>> 79e9b607f4529842c3f6c27e501095093c638045
+                'roof_shutter':  ['Auto', 'Open', 'Close', 'Lock Closed', 'Unlock'],                                                           
                 },
             },
         },
@@ -101,9 +89,9 @@ site_config = {
             'has_paddle': 'false',    #or a string that permits proper configuration.
             'pointing_tel': 'tel1',     #This can be changed to 'tel2' by user.  This establishes a default.
             'settings': {
-                'lattitude': '34.34293028',   #These could in principle be different than site by small amount
-                'longitude': '-119.68105',
-                'elevation': '317.75', # meters above sea level
+                'latitude': '33.3167',     #Decimal degrees, North is Positive
+                'longitude': '80.0167',   #Decimal degrees, West is negative
+                'elevation': '5100', # meters above sea level
                 'home_park_altitude': '0',   #Having this setting is important for PWI4 where it can easily be messed up.
                 'home_park_azimuth': '174.0',
                 'horizon':  '20',
