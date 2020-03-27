@@ -43,8 +43,7 @@ site_config = {
             },
         },
 
-
-    #Dome added by WER 20200320               
+              
     'enclosure': {
         'enclosure1': {
             'parent': 'site',
@@ -52,7 +51,7 @@ site_config = {
 #            'hostIP':  '10.15.0.30',
             'driver': 'ASCOM.Simulator.Dome',
             'has_lights':  'true',   #NB wouldn't it be eless error-rone for this to be "True"?
-           'controlled_by':  ['mnt1', 'mnt2'],
+            'controlled_by':  ['mnt1', 'mnt2'],
             'settings': {
                 'lights':  ['Auto', 'White', 'Red', 'IR', 'Off'],       #A way to encode possible states or options???
                                                                         #First Entry is always default condition.
