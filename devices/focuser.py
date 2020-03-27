@@ -6,6 +6,9 @@ from global_yard import g_dev
 import config_east as config
 import ptr_config
 
+import requests
+import json
+
 #TEMP COEFF ESTIMATED 20190824   fx= round(-164.0673*C_pri +13267.37, 1)  #A very good 1.5C span.  9986@20C. Random Hyst ~ 500 microns! :((( )))
 #-104.769 + 12457.5   2019083
 
@@ -45,6 +48,7 @@ def probeRead(com_port):
 class Focuser:
 
     def __init__(self, driver: str, name: str, config):
+        self.site = config['site']
         self.name = name
         g_dev['foc'] = self
         self.config = config['focuser']['focuser1']
@@ -104,22 +108,56 @@ class Focuser:
             average.append('F')            
         return average
     
+    def update_job_status(self, cmd_id, status, seconds_remaining=-1):
+        """
+        Update the status of a job. 
+        Args:
+            cmd_id (string): the ulid that identifies the job to update
+            status (string): the new status (eg. "STARTED")
+            seconds_remaining (int): time estimate until job is updated as "COMPLETE".
+                Note: value of -1 used when no estimate is provided.
+        """
+        url = "https://jobs.photonranch.org/jobs/updatejobstatus"
+        body = {
+            "site": self.site,
+            "ulid": cmd_id,
+            "secondsUntilComplete": seconds_remaining,
+            "newStatus": status,
+        }
+        response = requests.request('POST', url, data=json.dumps(body))
+        print(response)
+        return response
+
+    
     def parse_command(self, command):
         req = command['required_params']
         opt = command['optional_params']
         action = command['action']
 
         if action == "move_relative":
+            # Mark a job as "STARTED" just before starting it. 
+            # Include a time estmiate if possible. This is sent to the UI.
+            self.update_job_status(command['ulid'], 'STARTED', 5)
+
+            # Do the command. Additional job updates can be sent in this function too. 
             self.move_relative_command(req, opt)
+
+            # Mark the job "COMPLETE" when finished. 
+            self.update_job_status(command['ulid'], 'COMPLETE')
+
         elif action == "move_absolute":
+            self.update_job_status(command['ulid'], 'STARTED', 5)
             self.move_absolute_command(req, opt)
+            self.update_job_status(command['ulid'], 'COMPLETE')
         elif action == "go_to_reference":
+            self.update_job_status(command['ulid'], 'STARTED', 5)
             reference = ptr_config.get_focal_ref('gf01')
             self.focuser.Move(reference)
             time.sleep(0.1)
             while self.focuser.IsMoving:
                 time.sleep(0.5)
                 print('>')
+            self.update_job_status(command['ulid'], 'COMPLETE')
         elif action == "go_to_compensated":
             reference = self.calculate_compensation( self.focuser.Temperature)
             breakpoint()
