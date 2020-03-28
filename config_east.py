@@ -43,8 +43,7 @@ site_config = {
             },
         },
 
-
-                
+              
     'enclosure': {
         'enclosure1': {
             'parent': 'site',
@@ -55,8 +54,7 @@ site_config = {
             'controlled_by':  ['mnt1', 'mnt2'],
             'is_dome': 'false',
             'settings': {
-                'lights':  ['Auto', 'White', 'Red', 'IR', 'Off'],       #A way to encode possible states or options???
-                                                                        #First Entry is always default condition.
+                'lights':  ['Auto', 'White', 'Red', 'IR', 'Off'],
                 'roof_shutter':  ['Auto', 'Open', 'Close', 'Lock Closed', 'Unlock'],                               
                 },
             },
