@@ -9,7 +9,7 @@ class FilterWheel:
         self.name = name
         g_dev['fil']= self
         self.config = config
-        print("FW:  ", config)
+        #print("FW:  ", config)
         self.filter_data = self.config['filter_wheel']['filter_wheel1']['settings']['filter_data'][1:]
         self.filter_screen_sort = self.config['filter_wheel']['filter_wheel1']['settings']['filter_screen_sort']
         self.filter_reference = int(self.config['filter_wheel']['filter_wheel1']['settings']['filter_reference'])
@@ -19,8 +19,10 @@ class FilterWheel:
         print('Please NOTE: Filter wheel may block for many seconds while first connecting & homing.')
         if type(driver) == list and False:
             #breakpoint()
+            win32com.client.pythoncom.CoInitialize()
             self.filter_front = win32com.client.Dispatch(driver[0])
             self.filter_front.Connected = True
+            win32com.client.pythoncom.CoInitialize()
             self.filter_back = win32com.client.Dispatch(driver[1])
             self.filter_back.Connected = True
 #            flifil1 or flifil3?

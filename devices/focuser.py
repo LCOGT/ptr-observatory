@@ -52,6 +52,7 @@ class Focuser:
         self.name = name
         g_dev['foc'] = self
         self.config = config['focuser']['focuser1']
+        win32com.client.pythoncom.CoInitialize()
         self.focuser = win32com.client.Dispatch(driver)
         self.focuser.Connected = True
         self.steps_to_micron = float(config['focuser']['focuser1']['unit_conversion'])

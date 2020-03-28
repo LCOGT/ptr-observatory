@@ -30,7 +30,7 @@ THINGS TO FIX:
 
 import time,  threading, queue
 import requests
-import os
+import os, sys
 import argparse
 import json
 
@@ -39,7 +39,6 @@ import ptr_events
 
 # NB: The main config file should be named simply 'config.py'. 
 # Specific site configs should not be tracked in version control. 
-# Recommended practices: https://stackoverflow.com/questions/4743770/how-to-manage-configuration-files-when-collaborating
 import config_east as config    
 import config_simulator as config_simulator
 
@@ -59,10 +58,8 @@ from global_yard import g_dev
 import ptr_bz2
 import httplib2
 
-last_req = None
 
-#The following function is a monkey patch to speed up outgoing large files.   Does this help?  Does not appear to be used.
-
+#The following function is a monkey patch to speed up outgoing large files.   
 def patch_httplib(bsize=400000):
     """ Update httplib block size for faster upload (Default if bsize=None) """
     if bsize is None:
@@ -93,16 +90,17 @@ class Observatory:
         self.api = API_calls()
 
         self.command_interval = 2 # seconds between polls for new commands
-        self.status_interval  = 2 # seconds between sending status to aws
+        self.status_interval  = 2 # seconds between sending status to aws  #nOTE THESE IMPLENTED AS A DELA NOT A RATE.
 
         # The site name (str) and configuration (dict) are given by the user. 
         self.name = name
         self.config = config
         self.update_config()
-        
+        self.last_request = None
+        self.stopped = False
         self.device_types = [
             'observing_conditions',
-            'enclosure',     #Commented out so enclosure does not usually open automatically.  Also it breaks configuation.
+            'enclosure',     #Commented out so enclosure does not usually open automatically.
             'mount',
             'telescope',
             'rotator',
@@ -114,16 +112,20 @@ class Observatory:
             ]
         # Use the configuration to instantiate objects for all devices.
         self.create_devices(config)
-        self.stopped = False
-        self.cycles = 1000000
         self.loud_status = False
         g_dev['obs'] = self
         self.g_dev = g_dev
-        #Build the to-AWS Queue and start a thread. Note we ned a status scan thread, and probably a flash-reduce THread
-        #or multiprocess style thread.
+        self.time_last_status = time.time() - 3  #initializes for what will be a rate limiter
+        #Build the to-AWS Queue and start a thread.
         self.aws_queue = queue.PriorityQueue()
         self.aws_queue_thread = threading.Thread(target=self.send_to_AWS, args=())
         self.aws_queue_thread.start()
+        #Build the site (from-AWS) Queue and start a thread.
+        # self.site_queue = queue.SimpleQueue()
+        # self.site_queue_thread = threading.Thread(target=self.get_from_AWS, args=())
+        # self.site_queue_thread.start()
+        
+
 
     def create_devices(self, config: dict):
         # This dict will store all created devices, subcategorized by dev_type.
@@ -154,7 +156,7 @@ class Observatory:
                 elif dev_type == "screen":
                     device = Screen('EastAlnitak', 'COM6')
                 elif dev_type == "camera":                      
-                    device = Camera(driver, name, self.config)   #APPARENTLY THIS NEEDS TO BE STARTED PRIOR TO FILTER WHEEL!!!
+                    device = Camera(driver, name, self.config)   #THIS NEEDS TO BE STARTED PRIOR TO FILTER WHEEL!!!
                 elif dev_type == "sequencer":
                     device = Sequencer(driver, name)
                 elif dev_type == "filter_wheel":
@@ -166,28 +168,37 @@ class Observatory:
 
         
     def update_config(self):
-        ''' Send the config to aws. '''
+        ''' 
+        Send the config to aws. 
+        '''
         uri = f"{self.name}/config/"
         response = self.api.authenticated_request("PUT", uri, self.config)
         if response:
             print("Config uploaded successfully.")
 
     def scan_requests(self, mount):
-        global last_req             #Intended as a debug aid, may be obsolete
-        '''
-        This can be improved by looking for a Cancel/Stop from
-        AWS and even better, queuing commands to different devices
-        and explicitly handling their individual busy states.
+        ''' 
+        Outline of change 20200323 WER
+        Get commands from AWS, and post a STOP/Cancel flag
+        This function will be a Thread. we will limit the polling to once every 2.5 - 3 seconds because AWS does not 
+        appear to respond any faster.  When we do poll we parse the action keyword for 'stop' or 'cancel' and post the 
+        existence of the timestamp of that command to the respective device attribute   <self>.cancel_at.  Then we 
+        also enqueue the incoming command as well.
         
-        I.e., a single command queue can be limiting
+        when a device is status scanned, if .cancel_at is not None, the device takes appropriate action and sets 
+        cancel_at back to None.
+        
+        NB at this time we are preserving one command queue for all devices at a site.  This may need to change when we
+        have parallel mountings or independently controlled cameras.
         '''
+
 
         # This stopping mechanism allows for threads to close cleanly.
         while not self.stopped:
 
             # Wait a bit before polling for new commands
             time.sleep(self.command_interval)
-
+            t1 = time.time()
             if not  g_dev['seq'].sequencer_hold:   
                 url = f"https://jobs.photonranch.org/jobs/getnewjobs"
                 body = {"site": self.name}
@@ -211,10 +222,13 @@ class Observatory:
                         device.parse_command(cmd)
                     except Exception as e:
                         print(e)
-                continue
+                        
+               # print('scan_requests finished in:  ', round(time.time() - t1, 3), '  seconds')
+                return   #Contine   #This creates an infinite loop
             else:
                 print('Sequencer Hold asserted.')    #What we really want here is looking for a Cancel/Stop.
                 continue
+
 
     def update_status(self):
         ''' Collect status from all devics and send an update to aws.
@@ -223,107 +237,103 @@ class Observatory:
         '''
 
         # This stopping mechanism allows for threads to close cleanly.
-        while not self.stopped:
+        loud = False      
+        # Wait a bit between status updates
+        while time.time() < self.time_last_status + self.status_interval:
+            #time.sleep(self.st)atus_interval  #This was prior code
+            print("Staus send skipped.")
+            return   #Note we are just not sending status, too soon.
+        
+        t1 = time.time()
+        status = {}
+        # Loop through all types of devices.
+        # For each type, we get and save the status of each device.
+        for dev_type in self.device_types:
 
-            # Wait a bit between status updates
-            time.sleep(self.status_interval)
-
-            start = time.time()
-            status = {}
-
-            # Loop through all types of devices.
-            # For each type, we get and save the status of each device.
-            for dev_type in self.device_types:
-
-                # The status that we will send is grouped into lists of 
-                # devices by dev_type.
-                status[dev_type] = {}
-                
-                # Names of all devices of the current type.
-                # Recall that self.all_devices[type] is a dictionary of all 
-                # `type` devices, with key=name and val=device object itself.
-                devices_of_type = self.all_devices.get(dev_type, {})
-                device_names = devices_of_type.keys()
-
-                for device_name in device_names:
-                    # Get the actual device object...
-                    if device_name =='filter_wheel' or device_name == 'filter_wheel1':
-                        pass
-                    device = devices_of_type[device_name]
-                    # ...and add it to main status dict.
-                    status[dev_type][device_name] = device.get_status()        
-            # Include the time that the status was assembled and sent.
-            status["timestamp"] = str(round((time.time() + start)/2. , 3))
-            status['send_heartbeat'] = 'false'
-            if self.loud_status:
-                print('Status Sent:  \n', status)#from Update:  ', status))
-            else:
-                print('.')#   #We print this to stay infomred of process on the console.
-            uri = f"{self.name}/status/"
-            #NBNBNB None of the strings can be empty.  Otherwise this put faults.
-            try:    #20190926  tHIS STARTED THROWING EXCEPTIONS OCCASIONALLY
-                self.api.authenticated_request("PUT", uri, status)   #response = is not  used
-            except:
-                print('self.api.authenticated_request("PUT", uri, status):   Failed!')
-            #print(f"update finished in {time.time()-start:.2f} seconds", response)
+            # The status that we will send is grouped into lists of 
+            # devices by dev_type.
+            status[dev_type] = {}          
+            # Names of all devices of the current type.
+            # Recall that self.all_devices[type] is a dictionary of all 
+            # `type` devices, with key=name and val=device object itself.
+            devices_of_type = self.all_devices.get(dev_type, {})
+            device_names = devices_of_type.keys()
+            for device_name in device_names:
+                # Get the actual device object...
+                if device_name =='filter_wheel' or device_name == 'filter_wheel1':
+                    pass
+                device = devices_of_type[device_name]
+                # ...and add it to main status dict.
+                status[dev_type][device_name] = device.get_status()        
+        # Include the time that the status was assembled and sent.
+        status["timestamp"] = str(round((time.time() + t1)/2. , 3))
+        status['send_heartbeat'] = 'false'
+        if self.loud_status:
+            print('Status Sent:  \n', status)#from Update:  ', status))
+        else:
+            pass
+            #print('.')#   #We print this to stay infomred of process on the console.
+        uri = f"{self.name}/status/"
+        #NBNBNB None of the strings can be empty.  Otherwise this put faults.
+        if loud: print('pre-AWS phase of update_status took :  ', round(time.time() - t1, 9), sys.getsizeof(status))         
+        #NB is it possible we might want to gueue this phase of sending the status back? 20200322  
+        try:    #20190926  tHIS STARTED THROWING EXCEPTIONS OCCASIONALLY
+            self.api.authenticated_request("PUT", uri, status)   #response = is not  used
+            self.time_last_status = time.time()
+        except:
+            print('self.api.authenticated_request("PUT", uri, status):   Failed!')
+        if loud: print("update_status finished in:  ", round(time.time() - t1, 2), "  seconds")
             
     def update(self):
+        t2 = time.time()
+        self.update_status()
+        #print('update_status took :  ', round(time.time() - t2, 3))
+        t1 = time.time()
         self.scan_requests('mount1')
-        if not self.stopped:
-            self.update_status()
+       #print('scan_requests took :  ', round(time.time() - t1, 3))
+
     
 # =============================================================================
-#     This thread is basically the sequencer.  When a device, such as a camera causes a block, it is the responsibility of 
-#     that device to call self.update on a regular basis so AWS can receive status and to monitor is AWS is sending other 
-#     commands or a STOP.
+#     This thread is basically the sequencer.  When a device, such as a camera causes a block, it is the responsibility
+#     of that device to call self.update on a regular basis so AWS can receive status and to monitor is AWS is sending 
+#     other commands or a STOP.
 #            
 #     Seeks, rotations and exposures are the typical example of observing related delays.
 #          
-#     We will follow the convention that a command is in the form of a dictionary and the first entry is a command type.
-#     These command dictionaries can be nested to an arbitrary level and this thread is the master point where the command
-#     is parsed and dispatched.   This wqas changed early from Tim;s original design becuase of conflicts with some ASCOM
-#     instances.   My comment above about having status be its own thread refers to this area of the code.  WER 20200307
+#     We will follow the convention that a command is in the form of a dictionary and the first entry is a command 
+#     type.  These command dictionaries can be nested to an arbitrary level and this thread is the master point where
+#     the command is parsed and dispatched.   This wqas changed early from Tim;s original design becuase of conflicts 
+#     with some ASCOM instances.   My comment above about having status be its own thread refers to this area of the 
+#     code.  WER 20200307
 # =============================================================================
-    
-    def run(self, n_cycles=None, loud=False):   #run is a poor name for this function.
-        self.loud_status = loud
-        if n_cycles is not None:
-            self.cycles = n_cycles
+
+    def run(self):   #run is a poor name for this function.
         try:
-            #while self.cycles >= 0:
-                #self.update()
-##                g_dev['enc'].manager()
-                #time.sleep(1)
-                #self.cycles -= 1
-
-            self.update_thread = threading.Thread(target=self.update_status).start()
-
+            #self.update_thread = threading.Thread(target=self.update_status).start()
             # Each mount operates async and has its own command queue to scan.
             # TODO: is it better to use just one command queue per site? 
-            for mount in self.all_devices['mount'].keys():
-                self.scan_thread = threading.Thread(
-                    target=self.scan_requests, 
-                    args=(mount,)
-                ).start()
-
+            # for mount in self.all_devices['mount'].keys():
+            #     self.scan_thread = threading.Thread(
+            #         target=self.scan_requests, 
+            #         args=(mount,)
+            #     ).start()
             # Keep the main thread alive, otherwise signals are ignored
             while True:
-                time.sleep(1)
+                self.update()
 
 
-        # `Ctrl-C` will exit the program.
+               # `Ctrl-C` will exit the program.
         except KeyboardInterrupt:
             print("Finishing loops and exiting...")
             self.stopped = True
-            #self.cycles = 1000000
             return
         
     #Note this is a thread!       
-    def send_to_AWS(self):  #pri_image is a tuple, smaller first item has priority. second item is alsa tuple containing 
-                            #im_path and name.    
+    def send_to_AWS(self):  #pri_image is a tuple, smaller first item has priority. second item is alsa tuple 
+                            #containing #im_path and name.    
 
         # This stopping mechanism allows for threads to close cleanly.
-        while not self.stopped:            
+        while True:            
             if not self.aws_queue.empty(): 
                 pri_image = self.aws_queue.get(block=False)
                 if pri_image is None:
@@ -342,7 +352,7 @@ class Observatory:
                 with open(im_path + name , 'rb') as f:
                     files = {'file': (im_path + name, f)}
                     print('--> To AWS -->', str(im_path + name))
-                    requests.post(aws_resp['url'], data=aws_resp['fields'], files=files)  #http_response =   was never used.
+                    requests.post(aws_resp['url'], data=aws_resp['fields'], files=files)  
                 if name[-3:] == 'bz2' or name[-3:] == 'jpg' or name[-3:] =='txt':
                     #os.remove(im_path + name)   #We do not need to keep locally
                     pass
@@ -350,7 +360,6 @@ class Observatory:
                 time.sleep(0.1)
             else:
                 time.sleep(0.2)
-                continue
 def run_wmd():
     '''
     Construct the environment if it has not already been established. E.g shelve spaces.
@@ -373,9 +382,9 @@ def run_wmd():
     except:
         print("newest file not removed.")
 
-    o = Observatory(config.site_name,config. site_config)
-    print('\n', o.all_devices)
-    o.run(n_cycles=100000, loud=False)
+    o = Observatory(config.site_name, config.site_config)
+    #print('\n', o.all_devices)
+    o.run()
 
 def run_simulator():
     conf = config_simulator
@@ -390,6 +399,7 @@ if __name__ == "__main__":
     # command line arg to use simulated ascom devices
     parser.add_argument('-sim', action='store_true')
     options = parser.parse_args()
+    options.sim = False
 
     if options.sim:
         print('Starting up with ASCOM simulators.')
