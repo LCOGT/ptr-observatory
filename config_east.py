@@ -14,7 +14,7 @@ site_name = 'wmd'    #NB These must be unique across all of PTR. Pre-pend with a
 site_config = {
     'site': 'wmd',
     'name': 'West Mountain Drive Observatory',
-    'archive_path': 'Q:/',     #Really important, this is where state and results are stored. Can be a NAS server.
+    'site_path': 'Q:/',     #Really important, this is where state and results are stored. Can be a NAS server.
     'location': 'Santa Barbara, Californa,  USA',
     'observatory_url': 'https://starz-r-us.sky/clearskies',
     'description':  '''

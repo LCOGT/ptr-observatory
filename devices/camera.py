@@ -84,11 +84,9 @@ class Camera:
         #self.camera = win32com.client.Dispatch('ASCOM.FLI.Kepler.Camera')
         #Need logic here if camera denies connection.
         print("Connecting to ASCOM camera:", driver)
-
-        
+    
         if driver[:5].lower() == 'ascom':
-            print('ASCOM')
-            time.sleep(1)
+            print('ASCOM Camera is initializing.')
             self.camera.Connected = True
             self.description = "ASCOM"
             self.maxim = False
@@ -98,9 +96,7 @@ class Camera:
             self.camera.CoolerOn = True
             self.current_filter = 0
             print('Control is ASCOM camera driver.')
-
         else:
-
             self.camera.LinkEnabled = True
             self.description = 'MAXIM'
             self.maxim = True
@@ -111,20 +107,39 @@ class Camera:
             print('Control is Maxim camera interface.')
         self.exposure_busy = False
         self.cmd_in = None
-
+        self.alias = self.config['camera']['camera1']['alias']
+        self.site_path = config.site_config['site_path']
+        self.archive_path = config.site_config['site_path'] +'archive/'
+        self.camera_path = self.archive_path  + self.config['camera']['camera1']['alias'] + "/"
+        self.lng_path = self.camera_path + "lng/"
+        try:
+            os.remove(self.camera_path + 'newest.fits')
+        except:
+            print ("'newest.fits' not found, this is probably OK")    
         self.is_cmos = False
-        #Set camera to a sensible default state -- this should ultimately be configuration settings 
-        self.camera_model = "FLI Microline e2v DD U42"
-        self.camera.Binx = 1     #Kepler 400 does not accept a bin??
-        self.camera.BinY = 1
-        self.cameraXSize = self.camera.CameraXSize  #unbinned
-        self.cameraYSize = self.camera.CameraYSize  #unbinned
-        self.cameraMaxXBin = self.camera.MaxBinX
-        self.cameraMaxYBin = self.camera.MaxBinY
-        self.camera.StartX = 0
-        self.camera.StartY = 0
-        self.camera.NumX = 2048
-        self.camera.Numy = 2048
+        if config.site_config['camera']['camera1']['settings']['is_cmos']  == 'true':
+            self.is_cmos = False
+        self.camera_model = config.site_config['camera']['camera1']['desc']
+        #NB We are reading from the actual camera or setting as the case may be.  For initial setup,
+        #   we pull from config for some of the various settings.
+        try:
+            self.camera.BinX = int(config.site_config['camera']['camera1']['settings']['default_bin'])
+            self.camera.BinY = int(config.site_config['camera']['camera1']['settings']['default_bin'])
+            #NB we need to be sure AWS picks up this default.config.site_config['camera']['camera1']['settings']['default_bin'])
+        except:
+            print('Camera only accepts Bins = 1.')
+            self.camera.BinX = 1
+            self.camera.BinY = 1
+        self.overscan_x =  int(config.site_config['camera']['camera1']['settings']['overscan_x'])
+        self.overscan_y =  int(config.site_config['camera']['camera1']['settings']['overscan_y'])
+        self.camera_x_size = self.camera.CameraXSize  #unbinned values.
+        self.camera_y_size = self.camera.CameraYSize  #unbinned
+        self.camera_max_x_bin = self.camera.MaxBinX
+        self.camera_max_y_bin = self.camera.MaxBinY
+        self.camera_start_x = self.camera.StartX
+        self.camera_start_y = self.camera.StartY
+        self.camera_num_x = self.camera.NumX    #These are affected binned values.
+        self.camera_num_y = self.camera.NumY
         self.previous_start_fraction_x = 0.   #These are the subframe **fraction** values for the previous exposure.
         self.previous_start_fraction_y = 0.
         self.previous_num_fraction_x = 1.
@@ -134,13 +149,13 @@ class Camera:
         self.previous_num_x = 1.
         self.previous_num_y = 1.
         self.previous_image_name = ''
-        self.previous_area = 100
-        
+        self.previous_area = 100  
         self.af_mode = False
         self.af_step = -1
         self.f_spot_dia = []
         self.f_positions = []
         self.t_0 = time.time()
+        self.hint = None
         #self.camera.SetupDialog()
      
                 
@@ -225,6 +240,7 @@ class Camera:
         '''
         #print('Expose Entered.  req:  ', required_params, 'opt:  ', optional_params)
         self.t_0 = time.time()
+        self.hint = optional_params.get('hint', '')
         bin_x = optional_params.get('bin', '1,1')
         if bin_x == '2,2':
             bin_x = 2
@@ -286,81 +302,81 @@ class Camera:
                 area = int(area[0:-1])
         except:
             area = 100
-        if bin_y == 0 or self.cameraMaxXBin != self.cameraMaxYBin:
-            self.bin_x = min(bin_x, self.cameraMaxXBin)
-            self.cameraBinX = self.bin_x 
-            self.bin_y = min(bin_x, self.cameraMaxYBin)
+        if bin_y == 0 or self.camera_max_x_bin != self.camera_max_y_bin:
+            self.bin_x = min(bin_x, self.camera_max_x_bin)
+            self.cameraBinX = self.bin_x
+            self.bin_y = min(bin_x, self.camera_max_y_bin)
             self.cameraBinY = self.bin_y
         else:
-            self.bin_x = min(bin_x, self.cameraMaxXBin)
+            self.bin_x = min(bin_x, self.camera_max_x_bin)
             self.cameraBinx = self.bin_x
-            self.bin_y = min(bin_y, self.cameraMaxYBin)
+            self.bin_y = min(bin_y, self.camera_max_y_bin)
             self.cameraBinY = self.bin_y
-        self.len_x = 4096#self.camera.CameraXSize//self.bin_x
-        self.len_y = 4096#self.camera.CameraYSize//self.bin_y    #Unit is binned pixels.
-        self.len_xs = 4096#self.len_x - 50   #THIS IS A HACK
+        self.len_x = self.camera.CameraXSize//self.bin_x
+        self.len_y = self.camera.CameraYSize//self.bin_y    #Unit is binned pixels.
+        self.len_xs = 0  #THIS IS A HACK, indicating no overscan.
         #print(self.len_x, self.len_y)
-        
+
         #"area": ['100%', '2X-jpg', '71%', '50%', '1X-jpg', '33%', '25%', '1/2 jpg']
         if type(area) == str and area.lower() == "1x-jpg":
-            self.cameraNumX = 768
-            self.cameraStartX = 1659
-            self.cameraNumY = 768
-            self.cameraStartY = 1659
+            self.camera_num_x = 768              #NB WHere are these absolute numbers coming from?  This needs testing!!
+            self.camera_start_x = 1659
+            self.camera_num_y = 768
+            self.camera_start_y = 1659
             self.area = 37.5
         elif type(area) == str and area.lower() == "2x-jpg":
-            self.cameraNumX = 1536
-            self.cameraStartX = 1280
-            self.cameraNumY = 1536
-            self.cameraStartY = 1280
+            self.camera_num_x = 1536
+            self.camera_start_x = 1280
+            self.camera_num_y = 1536
+            self.camera_start_y = 1280
             self.area = 75
         elif type(area) == str and area.lower() == "1/2 jpg":
-            self.cameraNumX = 384
-            self.cameraStartX = 832
-            self.cameraNumY = 384
-            self.cameraStartY = 832
+            self.camera_num_x = 384
+            self.camera_start_x = 832
+            self.camera_num_y = 384
+            self.camera_start_y = 832
             self.area = 18.75
-        elif type(area) == str:     #Just defalut to a small area.
-            self.cameraNumX = self.len_x//4
-            self.cameraStartX = int(self.len_xs/2.667)
-            self.cameraNumY = self.len_y//4
-            self.cameraStartY = int(self.len_y/2.667)
+        elif type(area) == str:     #Just default to a small area.
+            self.camera_num_x = self.len_x//4
+            self.camera_start_x = int(self.len_xs/2.667)
+            self.camera_num_y = self.len_y//4
+            self.camera_start_y = int(self.len_y/2.667)
             self.area = 100
         elif 72 < area <= 100:
-            self.cameraNumX = self.len_x
-            self.cameraStartX = 0
-            self.cameraNumY = self.len_y
-            self.cameraStartY = 0
+            self.camera_num_x = self.len_x
+            self.camera_start_x = 0
+            self.camera_num_y = self.len_y
+            self.camera_start_y = 0
             self.area = 100
         elif 70 <= area <= 72:
-            self.cameraNumX = int(self.len_xs/1.4142)
-            self.cameraStartX = int(self.len_xs/6.827)
-            self.cameraNumY = int(self.len_y/1.4142)
-            self.cameraStartY = int(self.len_y/6.827)
-            self.area = 71       
+            self.camera_num_x = int(self.len_xs/1.4142)
+            self.camera_start_x = int(self.len_xs/6.827)
+            self.camera_num_y = int(self.len_y/1.4142)
+            self.camera_start_y = int(self.len_y/6.827)
+            self.area = 71
         elif area == 50:
-            self.cameraNumX = self.len_xs//2
-            self.cameraStartX = self.len_xs//4
-            self.cameraNumY = self.len_y//2
-            self.cameraStartY = self.len_y//4
+            self.camera_num_x = self.len_xs//2
+            self.camera_start_x = self.len_xs//4
+            self.camera_num_y = self.len_y//2
+            self.camera_start_y = self.len_y//4
             self.area = 50
         elif 33 <= area <= 35:
-            self.cameraNumX = int(self.len_xs/2.829)
-            self.cameraStartX = int(self.len_xs/3.093)
-            self.cameraNumY = int(self.len_y/2.829)
-            self.cameraStartY = int(self.len_y/3.093)
+            self.camera_num_x = int(self.len_xs/2.829)
+            self.camera_start_x = int(self.len_xs/3.093)
+            self.camera_num_y = int(self.len_y/2.829)
+            self.camera_start_y = int(self.len_y/3.093)
             self.area = 33
         elif area == 25:
-            self.cameraNumX = self.len_xs//4
-            self.cameraStartX = int(self.len_xs/2.667)
-            self.cameraNumY = self.len_y//4
-            self.cameraStartY = int(self.len_y/2.667)
+            self.camera_num_x = self.len_xs//4
+            self.camera_start_x = int(self.len_xs/2.667)
+            self.camera_num_y = self.len_y//4
+            self.camera_start_y = int(self.len_y/2.667)
             self.area = 25
         else:
-            self.cameraNumX = self.len_x
-            self.cameraStartX = 0
-            self.cameraNumY = self.len_y
-            self.cameraStartY = 0
+            self.camera_num_x = self.len_x
+            self.camera_start_x = 0
+            self.camera_num_y = self.len_y
+            self.camera_start_y = 0
             self.area = 100
             print("Defult area used. 100%")
             
@@ -388,10 +404,10 @@ class Camera:
                 num_y = 32
             dist_x = int(self.previous_start_x + self.previous_num_x*sub_frame_fraction_x)
             dist_y = int(self.previous_start_y +self.previous_num_y*sub_frame_fraction_y)
-            self.cameraStartX= dist_x
-            self.cameraStartY= dist_y 
-            self.cameraNumX= num_x 
-            self.cameraNumY= num_y
+            self.camera_start_x= dist_x
+            self.camera_start_y= dist_y
+            self.camera_num_x= num_x
+            self.camera_num_y= num_y
             self.previous_image_name = sub_frame_fraction['definedOnThisFile']
             self.previous_start_x = dist_x
             self.previous_start_y = dist_y
@@ -399,27 +415,27 @@ class Camera:
             self.previous_num_y = num_y
             self.bpt_flag = False
         elif self.area == self.previous_area and sub_frame_fraction is not None and \
-                          (sub_frame_fraction['definedOnThisFile'] == self.previous_image_name):         
+                          (sub_frame_fraction['definedOnThisFile'] == self.previous_image_name):
             #Here we repeat the previous subframe and do not re-enter and make smaller
-            self.cameraStartX = self.previous_start_x
-            self.cameraStartY = self.previous_start_y
+            self.camera_start_x = self.previous_start_x
+            self.camera_start_y = self.previous_start_y
             dist_x = self.previous_start_x
             dist_y = self.previous_start_y
-            self.cameraNumX= self.previous_num_x 
+            self.camera_num_x= self.previous_num_x
             self.cameraNumY= self.previous_num_y
             self.bpt_flag  = True
-        
-        elif sub_frame_fraction is None: 
-            self.previous_start_x = self.cameraStartX  #These are the subframe values for the new area exposure.
-            self.previous_start_y = self.cameraStartY
-            dist_x = self.previous_start_x 
-            dist_y = self.previous_start_y 
-            self.previous_num_x = self.cameraNumX
-            self.previous_num_y = self.cameraNumY
+
+        elif sub_frame_fraction is None:
+            self.previous_start_x = self.camera_start_x  #These are the subframe values for the new area exposure.
+            self.previous_start_y = self.camera_start_y
+            dist_x = self.previous_start_x
+            dist_y = self.previous_start_y
+            self.previous_num_x = self.camera_num_x
+            self.previous_num_y = self.camera_num_y
             self.previous_num_fraction_x = 1.0
             self.previous_num_fraction_y = 1.0
             self.previous_area = self.area
-            self.bpt_flag = False          
+            self.bpt_flag = False         
             
 
        #print(self.camera.NumX, self.camera.StartX, self.camera.NumY, self.camera.StartY)
@@ -637,7 +653,7 @@ class Camera:
                     #Save image with Maxim Header information, then read back with astropy and use the
                     #lqtter code for fits manipulation.
                     #This should be a very fast disk.
-                    self.camera.SaveImage('Q:\\archive\\kf01\\newest.fits')#, overwrite=True)
+                    self.camera.SaveImage(self.camera_path + 'newest.fits')#, overwrite=True)
                     counter = 0
                     if not quick and gather_status:
                         avg_mnt = g_dev['mnt'].get_average_status(self.pre_mnt, self.post_mnt)
@@ -675,33 +691,31 @@ class Camera:
                             hdu.header['XBINING'] = 1                       
                             hdu.header['YBINING'] = 1
                         hdu.header['CCDSUM'] = '1 1'  
-                        hdu.header['XORGSUBF'] = 768     #This makes little sense to fix...  NB ALL NEEDS TO COME FROM CONFIG!!   
-                        hdu.header['YORGSUBF'] = 768           
-                        hdu.header['READOUTM'] = 'Monochrome'                                                         
-                        hdu.header['TELESCOP'] = 'PlaneWave CDK 500mm'
-                        hdu.header['FOCAL'] = 3500.
-                        hdu.header['APR-DIA']   = 500.          
-                        hdu.header['APR-AREA']  = 128618.8174364                       
-                        hdu.header['SITELAT']  = 34.34293028            
-                        hdu.header['SITE-LNG'] = -119.68105
-                        hdu.header['SITE-ELV'] = 317.75
-                        hdu.header['MPC-CODE'] = 'vz123'              
-                        hdu.header['JD-START'] = 'bogus'       # Julian Date at start of exposure               
+                        hdu.header['XORGSUBF'] = self.camera_start_x    #This makes little sense to fix...  NB ALL NEEDS TO COME FROM CONFIG!!
+                        hdu.header['YORGSUBF'] = self.camera_start_y
+                        hdu.header['READOUTM'] = 'Monochrome'    #NB this needs to be updated
+                        hdu.header['TELESCOP'] = config.site_config['telescope']['telescope1']['desc']
+                        hdu.header['FOCAL']    = float(config.site_config['telescope']['telescope1']['focal_length'])
+                        hdu.header['APR-DIA']  = float(config.site_config['telescope']['telescope1']['aperture'])
+                        hdu.header['APR-AREA'] = float(config.site_config['telescope']['telescope1']['collecting_area'])
+                        hdu.header['SITELAT']  = round(float(config.site_config['latitude']), 6)
+                        hdu.header['SITE-LNG'] = round(float(config.site_config['longitude']), 6)
+                        hdu.header['SITE-ELV'] = round(float(config.site_config['elevation']), 2)
+                        hdu.header['MPC-CODE'] = 'zzzzz'       # This is made up for now.
+                        hdu.header['JD-START'] = 'bogus'       # Julian Date at start of exposure
                         hdu.header['JD-HELIO'] = 'bogus'       # Heliocentric Julian Date at exposure midpoint
                         hdu.header['OBJECT']   = ''
                         hdu.header['SID-TIME'] = self.pre_mnt[3]
                         hdu.header['OBJCTRA']  = self.pre_mnt[1]
                         hdu.header['OBJCTDEC'] = self.pre_mnt[2]
                         hdu.header['OBRARATE'] = self.pre_mnt[4]
-                        hdu.header['OBDECRAT']  = self.pre_mnt[5]                                                       
-                        hdu.header['TELESCOP'] = 'PW 0m45 CDK'          
-                        hdu.header['INSTRUME'] = 'FLI4040 CMOS USB3'                                                      
-                        hdu.header['OBSERVER'] = 'WER DEV'                                                            
-                        hdu.header['NOTE']    = 'Bring up Images'                                                     
+                        hdu.header['OBDECRAT'] = self.pre_mnt[5]
+                        hdu.header['INSTRUME'] = self.camera_model
+                        hdu.header['OBSERVER'] = 'WER DEV'
+                        hdu.header['NOTE']     = self.hint[0:54]            #Needs to be truncated.                                                 
                         hdu.header['FLIPSTAT'] = 'None'  
                         hdu.header['SEQCOUNT'] = int(counter)
                         hdu.header['DITHER']   = 0
-                        hdu.header['IMGTYPE']  = frame_type
                         hdu.header['OPERATOR'] = "WER"
                         hdu.header['ENCLOSE']  = "Clamshell"   #Need to document shutter status, azimuth, internal light.
                         hdu.header['DOMEAZ']  = "NA"   #Need to document shutter status, azimuth, internal light.
@@ -747,9 +761,9 @@ class Camera:
                             if g_dev['enc'] is not None:
                                 hdu.header['ROOF']  = g_dev['enc'].get_status()['shutter_status']   #"Open/Closed"
         
-                        hdu.header['DETECTOR'] = "Kodak 16803"
-                        hdu.header['CAMNAME'] = 'df01'
-                        hdu.header['CAMMANUF'] = 'Finger Lakes Instrumentation'
+                        hdu.header['DETECTOR'] = self.config['camera']['camera1']['detector']
+                        hdu.header['CAMNAME'] = self.config['camera']['camera1']['alias']
+                        hdu.header['CAMMANUF'] = self.config['camera']['camera1']['manufacturer']
     #                        try:
     #                            hdu.header['GAIN'] = g_dev['cam'].camera.gain
                         #print('Gain was read;  ', g_dev['cam'].camera.gain)
@@ -758,10 +772,14 @@ class Camera:
                         hdu.header['GAINUNIT'] = 'e-/ADU'
                         hdu.header['GAIN'] = 1.2   #20190911   LDR-LDC mode set in ascom
                         hdu.header['RDNOISE'] = 8
-                        hdu.header['CMOSCAM'] = False
+                        hdu.header['CMOSCAM'] = self.is_cmos
                         #hdu.header['CMOSMODE'] = 'HDR-HDC'  #Need to figure out how to read this from setup.
-                        hdu.header['SATURATE'] = 60000
-                        hdu.header['PIXSCALE'] = 0.85*self.camera.BinX
+                        hdu.header['SATURATE'] = int(self.config['camera']['camera1']['settings']['saturate'])
+                        #NB This needs to be properly computed
+                        pix_ang = (self.camera.PixelSizeX*self.camera.BinX/(float(config.site_config['telescope'] \
+                                                  ['telescope1']['focal_length'])*1000.))
+                        hdu.header['PIXSCALE'] = round(math.degrees(math.atan(pix_ang))*3600., 2)
+
     
                         #Need to assemble a complete header here
                         #hdu1.writeto('Q:\\archive\\ea03\\new2b.fits')#, overwrite=True)

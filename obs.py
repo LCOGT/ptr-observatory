@@ -241,7 +241,7 @@ class Observatory:
         # Wait a bit between status updates
         while time.time() < self.time_last_status + self.status_interval:
             #time.sleep(self.st)atus_interval  #This was prior code
-            print("Staus send skipped.")
+            #print("Staus send skipped.")
             return   #Note we are just not sending status, too soon.
         
         t1 = time.time()
@@ -374,13 +374,7 @@ def run_wmd():
     print('\nNext Day is:  ', g_dev['next_day'])
     print('Now is:  ', ptr_events.ephem.now(), g_dev['d-a-y'])   #Add local Sidereal time at Midnight
     patch_httplib
-# =============================================================================
-#     #This is specific to a camera and should be in camera __init.
-# =============================================================================
-    try:
-        os.remove('Q:\\archive\\' + 'df01'+ '\\newest.fits')
-    except:
-        print("newest file not removed.")
+
 
     o = Observatory(config.site_name, config.site_config)
     #print('\n', o.all_devices)

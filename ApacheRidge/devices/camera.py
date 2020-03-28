@@ -111,8 +111,8 @@ class Camera:
         self.cmd_in = None
         #NB The  FOLLOWING SEEMS UNSSATISFYING AND NOT ELEGANT.
         self.alias = self.config['camera']['camera1']['alias']
-        self.archive_path = config.site_config['site_path'] +'/'
-        self.camera_path = self.archive_path  + self.config['camera']['camera1']['alias'] + "/"
+        self.archive_path = config.site_config['site_path'] +'/archive/'
+        self.camera_path = self.archive_path  + self.alias+ "/"
         self.lng_path = self.camera_path + "lng/"
         try:
             os.remove(self.camera_path + 'newest.fits')
