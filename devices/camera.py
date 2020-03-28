@@ -166,7 +166,7 @@ class Camera:
 
 
     def parse_command(self, command):
-        print("Camera Command incoming:  ", command)
+        #print("Camera Command incoming:  ", command)
         req = command['required_params']
         opt = command['optional_params']
         action = command['action']

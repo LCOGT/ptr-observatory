@@ -45,12 +45,7 @@ site_config = {
             #},
         #},
 
-<<<<<<< HEAD
-     #Dome added by WER 20200320          
-=======
-
     #Dome added by WER 20200320              
->>>>>>> 79e9b607f4529842c3f6c27e501095093c638045
     'enclosure': {
         'enclosure1': {
             'parent': 'site',
@@ -59,19 +54,13 @@ site_config = {
             'driver': 'ASCOM.Simulator.Dome',
             'has_lights':  'true',   #NB wouldn't it be eless error-rone for this to be "True"?
             'is_dome':  'true',
-<<<<<<< HEAD
-            'controlled_by':  ['mnt1', 'mnt2'],
-            'settings': {
-                'lights':  ['Auto', 'White', 'Red', 'IR', 'Off'],       #A way to encode possible states or options???
-                                                                        #First Entry is always default condition.
-                'roof_shutter':  ['Auto', 'Open', 'Close', 'Lock Closed', 'Unlock'],                               
-=======
+
             'controlled_by':  ['mnt1'],
             'settings': {
                 'lights':  ['Auto', 'White', 'Red', 'IR', 'Off'],       #A way to encode possible states or options???
                                                                         #First Entry is always default condition.
                 'roof_shutter':  ['Auto', 'Open', 'Close', 'Lock Closed', 'Unlock'],                              
->>>>>>> 79e9b607f4529842c3f6c27e501095093c638045
+
                 },
             },
         },

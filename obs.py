@@ -39,7 +39,6 @@ import ptr_events
 
 # NB: The main config file should be named simply 'config.py'. 
 # Specific site configs should not be tracked in version control. 
-# Recommended practices: https://stackoverflow.com/questions/4743770/how-to-manage-configuration-files-when-collaborating
 import config_east as config    
 import config_simulator as config_simulator
 
@@ -90,7 +89,7 @@ class Observatory:
         # This is the class through which we can make authenticated api calls.
         self.api = API_calls()
 
-        self.command_interval = .1 # seconds between polls for new commands
+        self.command_interval = 2 # seconds between polls for new commands
         self.status_interval  = 2 # seconds between sending status to aws  #nOTE THESE IMPLENTED AS A DELA NOT A RATE.
 
         # The site name (str) and configuration (dict) are given by the user. 
@@ -98,9 +97,10 @@ class Observatory:
         self.config = config
         self.update_config()
         self.last_request = None
+        self.stopped = False
         self.device_types = [
             'observing_conditions',
-            'enclosure',     #Commented out so enclosure does not usually open automatically.  Also it breaks configuation.
+            'enclosure',     #Commented out so enclosure does not usually open automatically.
             'mount',
             'telescope',
             'rotator',
@@ -115,7 +115,7 @@ class Observatory:
         self.loud_status = False
         g_dev['obs'] = self
         self.g_dev = g_dev
-        self.time_last_status = time.time()   #initializes for what will be a rate limiter
+        self.time_last_status = time.time() - 3  #initializes for what will be a rate limiter
         #Build the to-AWS Queue and start a thread.
         self.aws_queue = queue.PriorityQueue()
         self.aws_queue_thread = threading.Thread(target=self.send_to_AWS, args=())
@@ -156,7 +156,7 @@ class Observatory:
                 elif dev_type == "screen":
                     device = Screen('EastAlnitak', 'COM6')
                 elif dev_type == "camera":                      
-                    device = Camera(driver, name, self.config)   #APPARENTLY THIS NEEDS TO BE STARTED PRIOR TO FILTER WHEEL!!!
+                    device = Camera(driver, name, self.config)   #THIS NEEDS TO BE STARTED PRIOR TO FILTER WHEEL!!!
                 elif dev_type == "sequencer":
                     device = Sequencer(driver, name)
                 elif dev_type == "filter_wheel":
@@ -180,53 +180,25 @@ class Observatory:
         ''' 
         Outline of change 20200323 WER
         Get commands from AWS, and post a STOP/Cancel flag
-        This function will be a Thread. we will limit the polling to once every 2.5 - 3 seconds because AWS does not appear 
-        to respond any faster.  When we do poll we parse the action keyword for 'stop' or 'cancel' and post the existence
-        of the timestamp of that command to the respective device attribute   <self>.cancel_at.  Then we also enqueue the
-        incoming command as well.
+        This function will be a Thread. we will limit the polling to once every 2.5 - 3 seconds because AWS does not 
+        appear to respond any faster.  When we do poll we parse the action keyword for 'stop' or 'cancel' and post the 
+        existence of the timestamp of that command to the respective device attribute   <self>.cancel_at.  Then we 
+        also enqueue the incoming command as well.
         
-        when a device is status scanned, if .cancel_at is not None, the device takes appropriate action and sets cancel_at 
-        back to None.
+        when a device is status scanned, if .cancel_at is not None, the device takes appropriate action and sets 
+        cancel_at back to None.
         
         NB at this time we are preserving one command queue for all devices at a site.  This may need to change when we
         have parallel mountings or independently controlled cameras.
         '''
-<<<<<<< HEAD
-        # Wait a bit before polling for new commands
-        time.sleep(self.command_interval)
-        t1 = time.time()
 
-        if not  g_dev['seq'].sequencer_hold:   
-            uri = f"{self.name}/{mount}/command/"
-            cmd = {}
-            try:
-                cmd =self.api.authenticated_request("GET", uri)
-                cmd_instance = cmd['instance']
-                device_name = cmd['device']
-                this_request = float(cmd['timestamp'])
-                device = self.all_devices[device_name][cmd_instance]
-                if self.last_request is  None or this_request > self.last_request:   #Part of dealing with an old problem of questionable requets.
-                    self.last_request = float(cmd['timestamp'])
-                    device.parse_command(cmd)                    
-                else:
-                    print("Last Req rejected")
-            except Exception as e:
-                if cmd == {}:
-                    print('No command from AWS available.')
-                else:
-                    print(e)
-                    print("unparseable command dict received", cmd)
-            print('scan_requests finished in:  ', round(time.time() - t1, 3), '  seconds')
-        else:
-            print('Sequencer Hold asserted.')    #What we really want here is looking for a Cancel/Stop.
-=======
 
         # This stopping mechanism allows for threads to close cleanly.
         while not self.stopped:
 
             # Wait a bit before polling for new commands
             time.sleep(self.command_interval)
-
+            t1 = time.time()
             if not  g_dev['seq'].sequencer_hold:   
                 url = f"https://jobs.photonranch.org/jobs/getnewjobs"
                 body = {"site": self.name}
@@ -250,11 +222,12 @@ class Observatory:
                         device.parse_command(cmd)
                     except Exception as e:
                         print(e)
-                continue
+               # print('scan_requests finished in:  ', round(time.time() - t1, 3), '  seconds')
+                return   #Contine   #This creates an infinite loop
             else:
                 print('Sequencer Hold asserted.')    #What we really want here is looking for a Cancel/Stop.
                 continue
->>>>>>> 79e9b607f4529842c3f6c27e501095093c638045
+
 
     def update_status(self):
         ''' Collect status from all devics and send an update to aws.
@@ -263,7 +236,7 @@ class Observatory:
         '''
 
         # This stopping mechanism allows for threads to close cleanly.
-        loud = True       
+        loud = False      
         # Wait a bit between status updates
         while time.time() < self.time_last_status + self.status_interval:
             #time.sleep(self.st)atus_interval  #This was prior code
@@ -297,11 +270,12 @@ class Observatory:
         if self.loud_status:
             print('Status Sent:  \n', status)#from Update:  ', status))
         else:
-            print('.')#   #We print this to stay infomred of process on the console.
+            pass
+            #print('.')#   #We print this to stay infomred of process on the console.
         uri = f"{self.name}/status/"
         #NBNBNB None of the strings can be empty.  Otherwise this put faults.
         if loud: print('pre-AWS phase of update_status took :  ', round(time.time() - t1, 9), sys.getsizeof(status))         
-        #NB is it possible we might want to gueue this phase of sending the status back? 20200322  lOOP WOULD BE FASTER.
+        #NB is it possible we might want to gueue this phase of sending the status back? 20200322  
         try:    #20190926  tHIS STARTED THROWING EXCEPTIONS OCCASIONALLY
             self.api.authenticated_request("PUT", uri, status)   #response = is not  used
             self.time_last_status = time.time()
@@ -310,24 +284,26 @@ class Observatory:
         if loud: print("update_status finished in:  ", round(time.time() - t1, 2), "  seconds")
             
     def update(self):
-        t1 = time.time()
-        self.scan_requests('mount1')
-        print('scan_requests took :  ', round(time.time() - t1, 3))
         t2 = time.time()
         self.update_status()
-        print('update_status took :  ', round(time.time() - t2, 3))
+        #print('update_status took :  ', round(time.time() - t2, 3))
+        t1 = time.time()
+        self.scan_requests('mount1')
+       #print('scan_requests took :  ', round(time.time() - t1, 3))
+
     
 # =============================================================================
-#     This thread is basically the sequencer.  When a device, such as a camera causes a block, it is the responsibility of 
-#     that device to call self.update on a regular basis so AWS can receive status and to monitor is AWS is sending other 
-#     commands or a STOP.
+#     This thread is basically the sequencer.  When a device, such as a camera causes a block, it is the responsibility
+#     of that device to call self.update on a regular basis so AWS can receive status and to monitor is AWS is sending 
+#     other commands or a STOP.
 #            
 #     Seeks, rotations and exposures are the typical example of observing related delays.
 #          
-#     We will follow the convention that a command is in the form of a dictionary and the first entry is a command type.
-#     These command dictionaries can be nested to an arbitrary level and this thread is the master point where the command
-#     is parsed and dispatched.   This wqas changed early from Tim;s original design becuase of conflicts with some ASCOM
-#     instances.   My comment above about having status be its own thread refers to this area of the code.  WER 20200307
+#     We will follow the convention that a command is in the form of a dictionary and the first entry is a command 
+#     type.  These command dictionaries can be nested to an arbitrary level and this thread is the master point where
+#     the command is parsed and dispatched.   This wqas changed early from Tim;s original design becuase of conflicts 
+#     with some ASCOM instances.   My comment above about having status be its own thread refers to this area of the 
+#     code.  WER 20200307
 # =============================================================================
 
     def run(self):   #run is a poor name for this function.
@@ -352,8 +328,8 @@ class Observatory:
             return
         
     #Note this is a thread!       
-    def send_to_AWS(self):  #pri_image is a tuple, smaller first item has priority. second item is alsa tuple containing 
-                            #im_path and name.    
+    def send_to_AWS(self):  #pri_image is a tuple, smaller first item has priority. second item is alsa tuple 
+                            #containing #im_path and name.    
 
         # This stopping mechanism allows for threads to close cleanly.
         while True:            
@@ -375,7 +351,7 @@ class Observatory:
                 with open(im_path + name , 'rb') as f:
                     files = {'file': (im_path + name, f)}
                     print('--> To AWS -->', str(im_path + name))
-                    requests.post(aws_resp['url'], data=aws_resp['fields'], files=files)  #http_response =   was never used.
+                    requests.post(aws_resp['url'], data=aws_resp['fields'], files=files)  
                 if name[-3:] == 'bz2' or name[-3:] == 'jpg' or name[-3:] =='txt':
                     #os.remove(im_path + name)   #We do not need to keep locally
                     pass
@@ -405,8 +381,8 @@ def run_wmd():
     except:
         print("newest file not removed.")
 
-    o = Observatory(config.site_name,config. site_config)
-    print('\n', o.all_devices)
+    o = Observatory(config.site_name, config.site_config)
+    #print('\n', o.all_devices)
     o.run()
 
 def run_simulator():
