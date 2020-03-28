@@ -44,7 +44,7 @@ site_config = {
            #
             #},
         #},
-            
+
     'enclosure': {
         'enclosure1': {
             'parent': 'site',
