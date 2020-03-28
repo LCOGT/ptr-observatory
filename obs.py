@@ -222,6 +222,7 @@ class Observatory:
                         device.parse_command(cmd)
                     except Exception as e:
                         print(e)
+                        
                # print('scan_requests finished in:  ', round(time.time() - t1, 3), '  seconds')
                 return   #Contine   #This creates an infinite loop
             else:
