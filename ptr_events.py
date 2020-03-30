@@ -33,6 +33,14 @@ DAY_Directory = None
 Day_tomorrow = None
 dayNow = None
 
+def reduceHa(pHa):
+    while pHa <= -12:
+        pHa += 24.0
+    while pHa > 12:
+        pHa -= 24.0
+    return pHa
+
+
 
 def getJulianDateTime():
     global jYear,JD, MJD, unixEpochOf, localEpoch
@@ -62,6 +70,7 @@ def illumination(sunRa, sunDec, sunElev, sunDia, moonRa, moonDec, moonElev, moon
     #Enter above with  sunDia, moonDia in degrees., rest are radians
     #sunElev = degrees(sunElev)
     #lmoonElev = degrees(moonElev)
+
     if sunElev >= -18:
         if sunElev >= 20:
             il = (3.74, 3.97, -4.07, 1.47)
@@ -129,7 +138,7 @@ def flat_spot_now(go=False):
         g_dev['mnt'].mount.SlewToAltAzAsync(sun_az2, sun_alt2)
 
     return(sun_alt2, sun_az2)
-    
+
 
 def sunNow():
     sun = ephem.Sun()
@@ -153,9 +162,10 @@ def sunNow():
            degrees(moon.alt), moon.size/3600
 
 def illuminationNow():
-    sunRa, sunDec, sunElev, sunDia, moonRa, moonDec, moonElev, moonDia \
+
+    sunRa, sunDec, sunElev, sunAz, moonRa, moonDec, moonElev, moonDia \
     = sunNow()
-    illuminance, skyMag = illumination(sunRa, sunDec, sunElev, sunDia, \
+    illuminance, skyMag = illumination(sunRa, sunDec, sunElev, 0.5, \
                                        moonRa, moonDec, moonElev, moonDia)
     return round(illuminance, 3), round(skyMag ,2)
     #if loud: print('Moon Now: ', moon.ra, moon.dec, moon.az, moon.alt, ptr.date)
@@ -260,7 +270,7 @@ def compute_day_directory(loud=False):
     #print('Day String', dayStr)
     DAY_Directory = dayStr[0] + dayStr[1] + dayStr[2]
     if loud: print('DaDIR:  ', DAY_Directory)
-    
+
     dayStr = str(ephem.tomorrow).split()[0]
     dayStr = dayStr.split('/')
     #print('Day String', dayStr)
@@ -271,7 +281,7 @@ def compute_day_directory(loud=False):
     #print('Day String', dayStr)
     Day_tomorrow = dayStr[0] + dayStr[1] + dayStr[2]
     if loud: print('DaDIR:  ', DAY_Directory)
-    
+
     return DAY_Directory
 
 compute_day_directory()
@@ -435,13 +445,13 @@ evnt = [('Beg Bias Dark :    ', ephem.Date(beginEveBiasDark)),
         ('Moon transit  :    ', ptr.next_transit(moon)),
         ('Moon rise     :    ', ptr.next_setting(moon))]
 
-# Function to sort the list by second item of tuple 
-def Sort_Tuple(tup):  
-  
-    # reverse = None (Sorts in Ascending order)  
-    # key is set to sort using second element of  
-    # sublist lambda has been used  
-    return(sorted(tup, key = lambda x: x[1])) 
+# Function to sort the list by second item of tuple
+def Sort_Tuple(tup):
+
+    # reverse = None (Sorts in Ascending order)
+    # key is set to sort using second element of
+    # sublist lambda has been used
+    return(sorted(tup, key = lambda x: x[1]))
 
 evnt_sort = Sort_Tuple(evnt)
 #Edit out rise and sets prior to or after operations.
@@ -519,24 +529,24 @@ if __name__ == '__main__':
             ('Moon rise     :    ', ptr.next_rising(moon)),
             ('Moon transit  :    ', ptr.next_transit(moon)),
             ('Moon rise     :    ', ptr.next_setting(moon))]
-    
-    # Function to sort the list by second item of tuple 
-    def Sort_Tuple(tup):  
-      
-        # reverse = None (Sorts in Ascending order)  
-        # key is set to sort using second element of  
-        # sublist lambda has been used  
-        return(sorted(tup, key = lambda x: x[1])) 
-    
-    evnt_sort = Sort_Tuple(evnt)
-    #Edit out rise and sets prior to or after operations.
-    while evnt_sort[0][0] != 'Beg Bias Dark :    ':
-        evnt_sort.pop(0)
-    while evnt_sort[-1][0] != 'SunZ88   Close:    ':
-        evnt_sort.pop(-1)
-    for evnt in evnt_sort:
-        print(evnt[0], evnt[1])
-               
+
+    # # Function to sort the list by second item of tuple
+    # def Sort_Tuple(tup):
+
+    #     # reverse = None (Sorts in Ascending order)
+    #     # key is set to sort using second element of
+    #     # sublist lambda has been used
+    #     return(sorted(tup, key = lambda x: x[1]))
+
+    # evnt_sort = Sort_Tuple(evnt)
+    # #Edit out rise and sets prior to or after operations.
+    # while evnt_sort[0][0] != 'Beg Bias Dark :    ':
+    #     evnt_sort.pop(0)
+    # while evnt_sort[-1][0] != 'SunZ88   Close:    ':
+    #     evnt_sort.pop(-1)
+    # for evnt in evnt_sort:
+    #     print(evnt[0], evnt[1])
+
 
 
 

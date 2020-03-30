@@ -1,5 +1,5 @@
 import win32com.client
-from global_yard import g_dev 
+from global_yard import g_dev
 import time
 
 
@@ -13,7 +13,7 @@ class FilterWheel:
         self.filter_data = self.config['filter_wheel']['filter_wheel1']['settings']['filter_data'][1:]
         self.filter_screen_sort = self.config['filter_wheel']['filter_wheel1']['settings']['filter_screen_sort']
         self.filter_reference = int(self.config['filter_wheel']['filter_wheel1']['settings']['filter_reference'])
-        #THIS CODE DOES NOT implemnt a filter via the Maxim application which is passed in 
+        #THIS CODE DOES NOT implemnt a filter via the Maxim application which is passed in
         #as a valid instance of class camera.
 
         print('Please NOTE: Filter wheel may block for many seconds while first connecting & homing.')
@@ -65,7 +65,7 @@ class FilterWheel:
         except:
             f_move = 'false'
             status = {
-                'filter_name': str('None'),
+                'filter_name': str('none'),
                 'filter_number': str(0),
                 'filter_offset': str(0.0),
                 'wheel_is_moving': f_move
@@ -110,8 +110,8 @@ class FilterWheel:
             self.filter_back.Position =filter_selections[0]
             time.sleep(0.2)
         except:
-            breakpoint() 
-        
+            breakpoint()
+
     def set_position_command(self, req: dict, opt: dict):
         ''' set the filter position by  param string filter position index '''
         'NBNBNB This routine may not be correct'
@@ -140,7 +140,7 @@ class FilterWheel:
         filter_name = req['filter_name']
         for match in range(int(self.config['filter_wheel']['filter_wheel1']['settings']['filter_count'])):
             if filter_name == self.filter_data[match][0]:
-                filt_pointer = match 
+                filt_pointer = match
 #                break
 #            else:
 #                print('Filter name appears to be incorrect. Check for proper case.')
@@ -176,7 +176,7 @@ class FilterWheel:
         self.filter_selected = 'w'
         self.filter_reference = 2
         self.filter_offset = int(self.filter_data[2][2])
-      
+
 
 if __name__ == '__main__':
     import config
