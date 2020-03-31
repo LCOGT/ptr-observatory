@@ -3,7 +3,7 @@ import win32com.client
 import time
 import os
 import subprocess
-from global_yard import g_dev 
+from global_yard import g_dev
 
 class Screen(object):
     def __init__(self, driver: str, name: str):
@@ -30,12 +30,12 @@ class Screen(object):
         #os.chdir('C:\\Program Files (x86)\\Optec\\Alnitak Astrosystems Controller')
         if pBright <= 0:
             self.screen_dark()
-        if is_percent:            
+        if is_percent:
             pBright = min(abs(pBright), 100)
             scrn_setting = int(pBright*self.saturate/100.)
         else:
             pBright = min(abs(pBright), 171)
-            scrn_setting = int(pBright)            
+            scrn_setting = int(pBright)
         subprocess.call('C:\\Program Files (x86)\\Optec\\Alnitak Astrosystems Controller\\AACmd.exe ' + self.pC + ' B' + \
                         str(scrn_setting))
         self.bright_setting = pBright
@@ -88,10 +88,10 @@ class Screen(object):
 
         status = {
             "bright_setting": str(round(self.bright_setting, 1)),
-            "dark_setting": str(self.dark_setting)
+            "dark_setting": str(self.dark_setting).lower()
         }
         return status
-  
+
     def parse_command(self, command):
         req = command['required_params']
         #opt = command['optional_params']
@@ -104,9 +104,8 @@ class Screen(object):
              self. screen_light_on()
         else:
             print("Defective Screen Command", command)
-            
+
 if __name__== "__main__":
-    
+
     sc = Screen('COM22', 'screen1')
-    
-    
+

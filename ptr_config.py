@@ -13,20 +13,18 @@ from astropy import units as u
 from astropy.coordinates import EarthLocation #SkyCoord, FK5, ICRS, FK4, Distance, \
 from global_yard import g_dev
 
-core1_redis = redis.StrictRedis(host='10.15.0.15', port=6379, db=0, decode_responses=True)
+core1_redis = None   #redis.StrictRedis(host='10.15.0.15', port=6379, db=0, decode_responses=True)
 
 #NB pick this up from config file
-siteLatitude = 34.342930277777775    #  34 20 34.569   #34 + (20 + 34.549/60.)/60.
-siteLongitude = -119.68112805555556  #-(119 + (40 + 52.061/60.)/60.) 119 40 52.061 W
-siteElevation = 317.75
-siteRefTemp = 15.0         #These should be a monthly average data.
-siteRefPress = 973.0       #mbar
+siteLatitude = 35.554444    #  34 20 34.569   #34 + (20 + 34.549/60.)/60.
+siteLongitude = -105.870278 #-(119 + (40 + 52.061/60.)/60.) 119 40 52.061 W
+siteElevation = 2187
+siteRefTemp = 10.0         #These should be a monthly average data.
+siteRefPress = 784.0       #mbar
 siteCoordinates = EarthLocation(lat=siteLatitude*u.deg, \
                                 lon=siteLongitude*u.deg,
                                 height=siteElevation*u.m)
 #ptr = EarthLocation(lat=siteLatitude*u.deg, lon=siteLongitude*u.deg, height=siteElevation*u.m)
-
-
 
 
 def next_seq(pCamera):
@@ -60,7 +58,7 @@ def set_focal_ref(pCamera, ref):
     camShelf = shelve.open(g_dev['cam'].site_path + 'ptr_night_shelf/' + str(pCamera))
     camShelf['Focus Ref'] = int(ref)
     camShelf.close()
-    return 
+    return
 
 def get_focal_ref(pCamera):
     camShelf = shelve.open(g_dev['cam'].site_path + 'ptr_night_shelf/' + str(pCamera))
