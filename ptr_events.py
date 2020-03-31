@@ -18,10 +18,16 @@ import ephem
 from datetime import datetime, timedelta
 from math import degrees
 
-from ptr_config import *
+#from ptr_config import *
 from global_yard import *
 #from ptr_utility import *
 from astropy.time import Time
+
+siteLatitude = 35.554444    #  34 20 34.569   #34 + (20 + 34.549/60.)/60.
+siteLongitude = -105.870278 #-(119 + (40 + 52.061/60.)/60.) 119 40 52.061 W
+siteElevation = 2187
+siteRefTemp = 10.0         #These should be a monthly average data.
+siteRefPress = 784.0
 
 SCREENFLATDURATION = 230/1440           #2.4    3h20min rough measure 20170811
 BIASDARKDURATION = 300/1440             #5 hours

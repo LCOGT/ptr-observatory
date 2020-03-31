@@ -11,6 +11,7 @@ from astropy.table import Table
 from astropy.utils.data import get_pkg_data_filename
 import sep
 import glob
+import shelve
 
 from os.path import join, dirname, abspath
 
@@ -23,8 +24,7 @@ import matplotlib.pyplot as plt
 
 from PIL import Image
 from global_yard import g_dev
-import ptr_config
-import config_saf as config
+import config_east as config
 from devices.calibration import calibrate
 
 import ptr_events
@@ -57,13 +57,44 @@ Note at the last exposure it is reasonable to do a minor recalibrate of the poin
 Once we have fully automatic observing it might make sense to do a more full range test of the focus mechanism
 and or visit more altitudes and temeperatures.
 
+
+
 1) Implement mag 7 star selection including getting that star at center of rotation.
 
 2) Implement using Sep to reliably find that star.
 
+3) change use of site config file.
+
+4) use common settings for sep
+
 
 '''
+def next_sequence(pCamera):
+    global SEQ_Counter
+    camShelf = shelve.open(g_dev['cam'].site_path + 'ptr_night_shelf/' + pCamera)
+    #print('Shelf:  ', camShelf)
+    sKey = 'Sequence'
+    #print(type(sKey), sKey)
+    seq = camShelf[sKey]      #get an 8 character string
+    seqInt = int(seq)
+    seqInt += 1
+    seq = ('0000000000'+str(seqInt))[-8:]
+    #print(pCamera,seq)
+    camShelf['Sequence'] = seq
+    camShelf.close()
+    SEQ_Counter = seq
+    return seq
 
+def reset_sequence(pCamera):
+    camShelf = shelve.open(g_dev['cam'].site_path + 'ptr_night_shelf/' + str(pCamera))
+    #seq = camShelf['Sequence']      # a 9 character string
+    seqInt = int(-1)
+    seqInt  += 1
+    seq = ('0000000000'+str(seqInt))[-8:]
+    print('Making new seq: ' , pCamera, seq)
+    camShelf['Sequence'] = seq
+    camShelf.close()
+    return seq
 
 class Camera:
 
@@ -784,25 +815,26 @@ class Camera:
 
                         #Need to assemble a complete header here
                         #hdu1.writeto('Q:\\archive\\ea03\\new2b.fits')#, overwrite=True)
-                        alias1 = self.config['camera']['camera1']['name']
+                        #NB rename to ccurrent_camera
+                        current_camera_name = self.config['camera']['camera1']['name']
                         im_type = 'EX'   #or EN for engineering....
                         f_ext = ""
 #                        if frame_type[-4:] == 'flat':
 #                            f_ext = '-' + self.current_filter    #Append flat string to local image name
-                        next_seq = ptr_config.next_seq(alias1)
-#                        cal_name = self.config['site'] + '-' + alias1 + '-' + g_dev['day'] + '-' + next_seq  + f_ext + '-'  + \
-#                                                       im_type + '01.fits'
-                        raw_name00 = self.config['site'] + '-' + alias1 + '-' + g_dev['day'] + '-' + next_seq  + '-' + \
-                                                       im_type + '00.fits'
-                        raw_name01 = self.config['site'] + '-' + alias1 + '-' + g_dev['day'] + '-' + next_seq  + '-' + \
-                                                       im_type + '01.fits'
+                        next_seq = next_sequence(current_camera_name)
+#                        cal_name = self.config['site'] + '-' + current_camera_name + '-' + g_dev['day'] + '-' + \
+#                                                    next_seq  + f_ext + '-'  + im_type + '01.fits'
+                        raw_name00 = self.config['site'] + '-' + current_camera_name + '-' + g_dev['day'] + '-' + \
+                            next_seq  + '-' + im_type + '00.fits'
+                        raw_name01 = self.config['site'] + '-' + current_camera_name + '-' + g_dev['day'] + '-' + \
+                            next_seq  + '-' + im_type + '01.fits'
                         #Cal_ and raw_ names are confusing
-                        db_name = self.config['site'] + '-' + alias1 + '-' + g_dev['day'] + '-' + next_seq  + '-' + \
-                                                       im_type + '13.fits'
-                        jpeg_name = self.config['site'] + '-' + alias1 + '-' + g_dev['day'] + '-' + next_seq  + '-' + \
-                                                       im_type + '13.jpg'
-                        text_name = self.config['site'] + '-' + alias1 + '-' + g_dev['day'] + '-' + next_seq  + '-' + \
-                                                       im_type + '01.txt'
+                        db_name = self.config['site'] + '-' + current_camera_name + '-' + g_dev['day'] + '-' + \
+                            next_seq  + '-' + im_type + '13.fits'
+                        jpeg_name = self.config['site'] + '-' + current_camera_name + '-' + g_dev['day'] + '-' + \
+                            next_seq  + '-' + im_type + '13.jpg'
+                        text_name = self.config['site'] + '-' + current_camera_name + '-' + g_dev['day'] + '-' + \
+                            next_seq  + '-' +  im_type + '01.txt'
                         im_path_r = self.camera_path
                         lng_path = self.lng_path
                         hdu.header['DAY-OBS'] = g_dev['day']

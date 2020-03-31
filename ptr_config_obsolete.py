@@ -5,15 +5,14 @@ Created on Thu Jul 21 18:02:28 2016
 @author: wrosing
 """
 '''
-This is very old code. This mostly concerns shelving (persiting) valus between invocation of the site vode.
+This is very old code. This mostly concerns shelving (persiting) values between invocation of the site vode.
 '''
-import redis
+
 import shelve
 from astropy import units as u
 from astropy.coordinates import EarthLocation #SkyCoord, FK5, ICRS, FK4, Distance, \
 from global_yard import g_dev
 
-core1_redis = None   #redis.StrictRedis(host='10.15.0.15', port=6379, db=0, decode_responses=True)
 
 #NB pick this up from config file
 siteLatitude = 35.554444    #  34 20 34.569   #34 + (20 + 34.549/60.)/60.

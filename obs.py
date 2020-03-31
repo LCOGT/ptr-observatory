@@ -39,7 +39,7 @@ import ptr_events
 
 # NB: The main config file should be named simply 'config.py'.
 # Specific site configs should not be tracked in version control.
-import config_saf as config
+import config_east as config
 import config_simulator as config_simulator
 
 # import device classes
@@ -142,7 +142,7 @@ class Observatory:
                 settings = devices_of_type[name].get("settings", {})
                 #print('looking for dev-types:  ', dev_type)
                 if dev_type == "observing_conditions":
-                    device = ObservingConditions(driver, name)
+                    device = ObservingConditions(driver, name, self.config)
                 elif dev_type == 'enclosure':
                     device = Enclosure(driver, name)
                 elif dev_type == "mount":

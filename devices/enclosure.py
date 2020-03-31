@@ -34,10 +34,16 @@ class Enclosure:
              stat_string = "closing"
         elif shutter_status == 4:
              stat_string = "error"
-        status = {'shutter_status': stat_string,
-                  'shutter_slaving': str(self.enclosure.Slaved),
-                  'shutter_azimuth': str(self.enclosure.Azimuth),
-                  'shutter_slewing': str(self.enclosure.Slewing)}
+        try:     #This is for a dome
+            status = {'shutter_status': stat_string,
+                      'shutter_slaving': str(self.enclosure.Slaved),
+                      'shutter_azimuth': str(self.enclosure.Azimuth),
+                      'shutter_slewing': str(self.enclosure.Slewing)}
+        except:
+             status = {'shutter_status': stat_string,
+                      'shutter_slaving': str(self.enclosure.Slaved),
+                      'shutter_azimuth': 'unknown',
+                      'shutter_slewing': str(self.enclosure.Slewing)}           
         #print('Enclosure status:  ', status)
         return status
 

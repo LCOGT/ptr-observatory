@@ -37,7 +37,7 @@ site_config = {
     'observing_conditions': {
         'wx1': {
             'parent': 'site',
-            'alias': 'Weather Station #1',
+            'name': 'Weather Station #1',
             'driver': 'redis'
             
             },
@@ -47,7 +47,7 @@ site_config = {
     'enclosure': {
         'enclosure1': {
             'parent': 'site',
-            'alias': 'Megawan',
+            'name': 'Megawan',
             'hostIP':  '10.15.0.30',
             'driver': 'ASCOM.SkyRoofHub.Dome',
             'has_lights':  'true',   #NB wouldn't it be eless error-rone for this to be "True"?
@@ -62,7 +62,7 @@ site_config = {
 #     'web_cam': {
 #         'web_cam1 ': {
 #             'parent': 'enclosure1',
-#             'alias': 'MegaCam',
+#             'name': 'MegaCam',
 #             'desc':  'AXIS PTZ w control',
 #             'driver': 'http://10.15.0.19',
 #             'fov':  '90.0',
@@ -74,7 +74,7 @@ site_config = {
 # =============================================================================
 #         'web_cam2 ': {               #currently no support for building this object.
 #             'parent': 'enclosure1',
-#             'alias': 'FLIR',
+#             'name': 'FLIR',
 #             'desc':  'FLIR NIR 10 micron Zenith View 90 deg',
 #             'driver': 'http://10.15.0.18',
 #             'fov':  '90.0'
@@ -89,7 +89,7 @@ site_config = {
     'mount': {
         'mount1': {
             'parent': 'enclosure1',
-            'alias': 'eastpier',
+            'name': 'eastpier',
             'hostIP':  '10.15.0.30',     #Can be a name if local DNS recognizes it.
             'hostname':  'eastpier',
             'desc':  'Planewave L500 AltAz',
@@ -140,7 +140,7 @@ site_config = {
     'telescope': {
         'telescope1': {
             'parent': 'mount1',
-            'alias': 'Main OTA',
+            'name': 'Main OTA',
             'desc':  'Planewave CDK 500 F6.8',
             'driver': 'None',                     #Essentially this device is informational.  It is mostly about the optics.
             'collecting_area':  '119773.0',
@@ -169,7 +169,7 @@ site_config = {
     'rotator': {
         'rotator1': {
             'parent': 'tel1',    #NB Note we are changing to an abbrevation. BAD!
-            'alias': 'rotator',
+            'name': 'rotator',
             'desc':  'Opetc Gemini',
             'driver': 'ASCOM.AltAzDS.Rotator',
             'minimum': '-180.0',
@@ -183,7 +183,7 @@ site_config = {
     'screen': {
         'screen1': {
             'parent': 'telescope1',
-            'alias': 'screen',
+            'name': 'screen',
             'desc':  'Optec Alnitak 24"',
             'driver': 'COM6',  #This needs to be a four or 5 character string as in 'COM8' or 'COM22'
             'minimum': '5.0',   #This is the % of light emitted when Screen is on and nominally at 0% bright.
@@ -196,7 +196,7 @@ site_config = {
     'focuser': {
         'focuser1': {
             'parent': 'telescope1',
-            'alias': 'focuser',
+            'name': 'focuser',
             'desc':  'Optec Gemini',
             'driver': 'ASCOM.OptecGemini.Focuser',
             'reference':  '5941',    #Nominal at 20C Primary temperature, in microns not steps.
@@ -272,7 +272,7 @@ site_config = {
     'camera': {
         'camera1': {
             'parent': 'telescope1',
-            'alias': 'df01',      #Important because this points to a server file structure by that name.
+            'name': 'df01',      #Important because this points to a server file structure by that name.
             'desc':  'FLI Microline e2vU42DD',
             'driver':  "Maxim.CCDCamera",   #'ASCOM.FLI.Kepler.Camera',  #Code must work with both.
             'detector':  'e2v U42 DD',
@@ -322,7 +322,7 @@ site_config = {
     'sequencer': {
         'sequencer': {
             'parent': 'site',
-            'alias': 'Sequencer',
+            'name': 'Sequencer',
             'desc':  'Automation Control',
             'driver': 'none'
         },
@@ -332,7 +332,7 @@ site_config = {
               
         'web_cam3 ': {
             'parent': 'mount1',
-            'alias': 'FLIR',
+            'name': 'FLIR',
             'desc':  'FLIR NIR 10 micron 15deg, sidecam',
             'driver': 'http://10.15.0.17',
             'fov':  '15.0',

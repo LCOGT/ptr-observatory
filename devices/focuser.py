@@ -3,8 +3,8 @@ import win32com.client
 import time
 import serial
 from global_yard import g_dev 
-import config_east as config
-import ptr_config
+#import config_east as config
+import shelve
 
 import requests
 import json
@@ -39,6 +39,15 @@ probeRead('COM31')
 
 '''
 
+def set_focal_ref(pCamera, ref):
+    camShelf = shelve.open(g_dev['cam'].site_path + 'ptr_night_shelf/' + str(pCamera))
+    camShelf['Focus Ref'] = int(ref)
+    camShelf.close()
+    return
+
+def get_focal_ref(pCamera):
+    camShelf = shelve.open(g_dev['cam'].site_path + 'ptr_night_shelf/' + str(pCamera))
+    return int(camShelf['Focus Ref'])
 def probeRead(com_port):
        with serial.Serial(com_port, timeout=0.3) as com:
            com.write(b'R1\n')
