@@ -25,7 +25,7 @@ import matplotlib.pyplot as plt
 from PIL import Image
 from global_yard import g_dev
 import config_east as config
-from devices.calibration import calibrate
+from processing.calibration import calibrate
 import ptr_events
 
 '''

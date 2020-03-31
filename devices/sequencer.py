@@ -2,7 +2,7 @@
 import win32com.client
 import time
 from global_yard import g_dev
-from devices.calibration import fit_quadratic
+from processing.calibration import fit_quadratic
 
 class Sequencer:
 
@@ -61,28 +61,6 @@ class Sequencer:
     #       Sequencer Commands and Scripts
     ###############################
 
-    def move_relative_command(self, req: dict, opt: dict):
-        ''' set the focus position by moving relative to current position '''
-        print(f"rotator cmd: move_relative")
-        position = float(req['position'])
-        self.rotator.Move(position)
-
-    def move_absolute_command(self, req: dict, opt: dict):
-        ''' set the focus position by moving to an absolute position '''
-        print(f"rotator cmd: move_absolute")
-        position = float(req['position'])
-        self.rotator.MoveAbsolute(position)
-
-    def stop_command(self, req: dict, opt: dict):
-        ''' stop rotator movement immediately '''
-        print(f"rotator cmd: stop")
-        self.rotator.Halt()
-
-    def home_command(self, req: dict, opt: dict):
-        ''' set the rotator to the home position'''
-        print(f"rotator cmd: home")
-        pass
-    
     def screen_flat_script_old(self, req, opt):
         
         '''
@@ -110,7 +88,6 @@ class Sequencer:
         req = {'time': 10,  'alias': 'gf01', 'image_type': 'Bias'}
         opt = {'size': 100, 'count': bias_count, 'filter': g_dev['fil'].filter_data[2][0]}
         g_dev['cam'].expose_command(req, opt, gather_status = False, no_AWS=True)
-        
         for gain in gain_screen_values :
             g_dev['scr'].set_screen_bright(gain, is_percent=False)
             g_dev['scr'].screen_light_on()
@@ -120,7 +97,6 @@ class Sequencer:
             req = {'time': exp_time,  'alias': 'gf01', 'image_type': 'screen flat'}
             opt = {'size': 100, 'count': 2, 'filter': g_dev['fil'].filter_data[2][0]}
             g_dev['cam'].expose_command(req, opt, gather_status = False, no_AWS=True)
-                
         g_dev['scr'].screen_dark()
         #take a 10 s dark screen air flat to sense ambient
 #        req = {'time': 10,  'alias': 'gf01', 'image_type': 'screen flat'}
@@ -174,8 +150,7 @@ class Sequencer:
             req = {'time': exp_time,  'alias': 'gf01', 'image_type': 'screen flat'}
             opt = {'size': 100, 'count': flat_count, 'filter': g_dev['fil'].filter_data[filter_number][0]}
             g_dev['cam'].expose_command(req, opt, gather_status = False, no_AWS=True)
-            print('seq 7')
-                
+            print('seq 7')               
         g_dev['scr'].screen_dark()
         #take a 10 s dark screen air flat to sense ambient
         req = {'time': 10,  'alias': 'gf01', 'image_type': 'screen flat'}
@@ -184,28 +159,21 @@ class Sequencer:
         print('Screen Flat sequence completed.')
  
     def sky_flat_script(self, req, opt):
-        
         '''
-     
-             
-        
-        
+        Unimplemented.
         '''
         
     def focus_auto_script(self, req, opt):
         '''
         V curve is a big move focus designed to fit two lines adjacent to the more normal focus curve.
         It finds the approximate focus, particulary for a new instrument. ti requires 8 points plus
-        a verify.
-        
-        Quick focus consists of three points plus a verify.
-        
-        Fine focus consists of five points plus a verify.
-        
-        Optionally individual images can be multiples of one to average out seeing.
-        
+        a verify.        
+        Quick focus consists of three points plus a verify.        
+        Fine focus consists of five points plus a verify.       
+        Optionally individual images can be multiples of one to average out seeing.    
         NBNBNB This code needs to go to known stars to be moe relaible and permit subframes
         '''
+        
         print('AF entered with:  ', req, opt)
         self.sequencer_hold = True  #Blocks command checks.
         req = {'time': 3,  'alias': 'gf03', 'image_type': 'light', 'filter': 2}
@@ -221,7 +189,6 @@ class Sequencer:
         else:
             spot1 = 3.0
             foc_pos1 = 7700
-
         g_dev['foc'].focuser.Move(foc_pos1 - throw)
         result = g_dev['cam'].expose_command(req, opt)
         if result[0] is not None and len(result) == 2:
@@ -246,8 +213,7 @@ class Sequencer:
         g_dev['foc'].focuser.Move(int(d1))
         result = g_dev['cam'].expose_command(req, opt, halt=True)
         if result[0] is not None and len(result) == 2:
-            spot4, foc_pos4 = result
-            
+            spot4, foc_pos4 = result       
         print('Actual focus:  ', foc_pos4, round(spot4, 2))
         self.sequencer_hold = False   #Allow comand checks.
         
