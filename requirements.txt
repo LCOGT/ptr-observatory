@@ -29,16 +29,8 @@ numpy==1.16.4
 Pillow==7.0.0
 pycparser==2.19
 pycryptodome==3.6.6
-<<<<<<< HEAD
 pyparsing==2.4.6
 pypiwin32==223
-=======
-<<<<<<< HEAD
-=======
-pyparsing==2.4.6
-pypiwin32==223
->>>>>>> feature/ascom-simulators
->>>>>>> 9c11990ab6c5caca8049d0be732c6a23c0440476
 python-dateutil==2.8.0
 python-dotenv==0.10.2
 python-jose-cryptodome==1.3.2
