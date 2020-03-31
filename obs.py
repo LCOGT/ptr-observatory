@@ -55,10 +55,41 @@ from devices.rotator import Rotator
 from devices.screen import Screen
 from devices.sequencer import Sequencer
 from global_yard import g_dev
-import ptr_bz2
+import bz2
 import httplib2
 
 
+
+def to_bz2(filename, delete=False):
+    try:
+        uncomp = open(filename, 'rb')
+        comp = bz2.compress(uncomp.read())
+        uncomp.close()
+        if delete:
+            os.remove(filename)
+        target = open(filename +'.bz2', 'wb')
+        target.write(comp)
+        target.close()
+        return True
+    except:
+        print('to_bz2 failed.')
+        return False
+    
+def from_bz2(filename, delete=False):
+    try:
+        comp = open(filename, 'rb')
+        uncomp = bz2.decompress(comp.read())
+        comp.close()
+        if delete:
+            os.remove(filename)
+        target=open(filename[0:-4], 'wb')
+        target.write(uncomp)
+        target.close()
+        return True
+    except:
+        print('from_bz2 failed.')
+        return False 
+    
 #The following function is a monkey patch to speed up outgoing large files.
 def patch_httplib(bsize=400000):
     """ Update httplib block size for faster upload (Default if bsize=None) """
@@ -344,7 +375,7 @@ class Observatory:
                 name = pri_image[1][1]
                 if not (name[-3:] == 'jpg' or name[-3:] == 'txt'):
                     #compress first
-                    ptr_bz2.to_bz2(im_path + name)
+                    to_bz2(im_path + name)
                     name = name + '.bz2'
                 aws_req = {"object_name": "raw_data/2019/" + name}
                 site_str = config.site_config['site']

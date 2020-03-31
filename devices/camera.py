@@ -26,7 +26,6 @@ from PIL import Image
 from global_yard import g_dev
 import config_east as config
 from devices.calibration import calibrate
-
 import ptr_events
 
 '''
@@ -69,6 +68,8 @@ and or visit more altitudes and temeperatures.
 
 
 '''
+
+#These should eventually be in a utility module
 def next_sequence(pCamera):
     global SEQ_Counter
     camShelf = shelve.open(g_dev['cam'].site_path + 'ptr_night_shelf/' + pCamera)
@@ -95,6 +96,9 @@ def reset_sequence(pCamera):
     camShelf['Sequence'] = seq
     camShelf.close()
     return seq
+
+   
+    
 
 class Camera:
 
