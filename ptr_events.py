@@ -18,9 +18,9 @@ import ephem
 from datetime import datetime, timedelta
 from math import degrees
 
-#from ptr_config import *
+
 from global_yard import *
-#from ptr_utility import *
+
 from astropy.time import Time
 
 siteLatitude = 35.554444    #  34 20 34.569   #34 + (20 + 34.549/60.)/60.

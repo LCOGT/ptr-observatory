@@ -2,7 +2,7 @@
 import win32com.client
 import time
 import serial
-from global_yard import g_dev 
+from global_yard import g_dev
 #import config_east as config
 import shelve
 
@@ -32,7 +32,7 @@ def probeRead(com_port):
            com.write(b'R1\n')
            probePosition = float(com.read(7).decode())  #check # significant digits.
            print(probePosition)
-           
+
 
 probeRead('COM31')
 -6.846
@@ -64,6 +64,7 @@ class Focuser:
         win32com.client.pythoncom.CoInitialize()
         self.focuser = win32com.client.Dispatch(driver)
         self.focuser.Connected = True
+        self.focuser.TempComp = False
         self.steps_to_micron = float(config['focuser']['focuser1']['unit_conversion'])
         print(f"focuser connected.")
         print(self.focuser.Description, "At:  ", self.focuser.Position*self.steps_to_micron)
@@ -79,9 +80,9 @@ class Focuser:
             self.reference = int(self.config['reference'])
             print("Focus reference derived from supplied Config dicitionary:  ", self.reference)
         self.focuser.Move(int(float(self.config['reference'])/self.steps_to_micron))
-    
+
     def calculate_compensation(self, temp_primary):
-        
+
         if -5 <= temp_primary <= 45:
             trial =round(float(self.config['coef_c'])*temp_primary + float(self.config['coef_0']), 1)
             trial = max(trial,500)  #These values would change for Gemini to more like 11900 max
@@ -106,7 +107,7 @@ class Focuser:
         quick.append(self.focuser.Temperature)
         quick.append(self.focuser.IsMoving)
         return quick
-    
+
     def get_average_status(self, pre, post):
         average = []
         average.append(round((pre[0] + post[0])/2, 3))
@@ -115,12 +116,12 @@ class Focuser:
         if pre[3] or post[3]:
             average.append('T')
         else:
-            average.append('F')            
+            average.append('F')
         return average
-    
+
     def update_job_status(self, cmd_id, status, seconds_remaining=-1):
         """
-        Update the status of a job. 
+        Update the status of a job.
         Args:
             cmd_id (string): the ulid that identifies the job to update
             status (string): the new status (eg. "STARTED")
@@ -138,21 +139,21 @@ class Focuser:
         print(response)
         return response
 
-    
+
     def parse_command(self, command):
         req = command['required_params']
         opt = command['optional_params']
         action = command['action']
 
         if action == "move_relative":
-            # Mark a job as "STARTED" just before starting it. 
+            # Mark a job as "STARTED" just before starting it.
             # Include a time estmiate if possible. This is sent to the UI.
             self.update_job_status(command['ulid'], 'STARTED', 5)
 
-            # Do the command. Additional job updates can be sent in this function too. 
+            # Do the command. Additional job updates can be sent in this function too.
             self.move_relative_command(req, opt)
 
-            # Mark the job "COMPLETE" when finished. 
+            # Mark the job "COMPLETE" when finished.
             self.update_job_status(command['ulid'], 'COMPLETE')
 
         elif action == "move_absolute":
@@ -170,7 +171,6 @@ class Focuser:
             self.update_job_status(command['ulid'], 'COMPLETE')
         elif action == "go_to_compensated":
             reference = self.calculate_compensation( self.focuser.Temperature)
-            breakpoint()
             self.focuser.Move(reference/self.steps_to_micron)
             time.sleep(0.1)
             while self.focuser.IsMoving:
@@ -185,7 +185,7 @@ class Focuser:
     ###############################
     #       Focuser Commands      #
     ###############################
-    
+
     def get_position(self, counts=False):
         if not counts:
             return int(self.focuser.Position*self.steps_to_micron)
@@ -211,7 +211,7 @@ class Focuser:
             time.sleep(0.1)
             while self.focuser.IsMoving:
                 time.sleep(0.5)
-                print('>f--')            
+                print('>f--')
         else:
             print('Supplied relativemove is lacking a sign; ignoring.')
         #print(f"focuser cmd: move_relative:  ", req, opt)
@@ -229,7 +229,7 @@ class Focuser:
         '''
         A new seek *may* cause a mount move, a filter,l rotator, and focus change.  How do we launch all of these in parallel, then
         send status until each completes, then move on to exposing?
-        
+
         '''
     def stop_command(self, req: dict, opt: dict):
         ''' stop focuser movement '''
@@ -240,8 +240,7 @@ class Focuser:
     def auto_command(self, req: dict, opt: dict):
         ''' autofocus '''
         print(f"focuser cmd: auto")
-        
+
 if __name__ == '__main__':
     pass
-        
-    
+

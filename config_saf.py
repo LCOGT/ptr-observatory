@@ -77,9 +77,9 @@ site_config = {
             'has_paddle': 'false',      #paddle refers to something supported in the python code, not the AP paddle.
             'pointing_tel': 'tel1',     #This can be changed to 'tel2'... by user.  This establishes a default.
             'settings': {
-			    'latitude': '35.554444',     #Decimal degrees, North is Positive   These *could* be slightly different than site.
-			    'longitude': '-105.870278',   #Decimal degrees, West is negative  #NB This could be an eval( <<site config data>>))
-			    'elevation': '2187',    # meters above sea level
+			    'latitude_offset': '0.0',     #Decimal degrees, North is Positive   These *could* be slightly different than site.
+			    'longitude_offset': '0.0',   #Decimal degrees, West is negative  #NB This could be an eval( <<site config data>>))
+			    'elevation_offset': '0.0',    # meters above sea level
                 'home_park_altitude': '0',
                 'home_park_azimuth': '180',
                 'horizon':  '20',

@@ -18,7 +18,7 @@ class ObservingConditions:
         self.site = config['site']
         if self.site == 'wmd':
             self.redis_server = redis.StrictRedis(host='10.15.0.15', port=6379, db=0, decode_responses=True)
-            self.observing_conditions_connected = True 
+            self.observing_conditions_connected = True
             print("observing_conditions: Redis connected = True")
         else:
             win32com.client.pythoncom.CoInitialize()
@@ -27,7 +27,7 @@ class ObservingConditions:
             print("observing_conditions: Boltwood connected = True")
 
     def get_status(self):
-  
+
         if self.site == 'saf':
             illum, mag = illuminationNow()
             if illum <= 7500.:
@@ -36,7 +36,7 @@ class ObservingConditions:
             else:
                 open_poss = 'false'
                 hz = 500000
-            
+
             status = {"temperature": str(self.boltwood.Temperature),
                       "pressure": str(784),
                       "humidity": str(self.boltwood.Humidity),
@@ -71,7 +71,7 @@ class ObservingConditions:
                           "open_possible":  wx["open_possible"],
                           "brightness_hz": wx['bright hz']
                           }
-    
+
             except:
                 time.sleep(1)
                 #This is meant to be a retry
@@ -100,6 +100,7 @@ class ObservingConditions:
         #wx = eval(self.redis_server.get('<ptr-wx-1_state'))
 
         if self.site == 'saf':
+            #Should incorporate Davis data into this data set, and Unihedron.
             illum, mag = illuminationNow()
             if illum <= 7500.:
                 open_poss = True
@@ -129,7 +130,7 @@ class ObservingConditions:
             quick.append(float(973))   #20200329 a SWAG!
             quick.append(float(wx['illum lux']))     #Add Solar, Lunar elev and phase
             quick.append(float(wx['bright hz']))
-            
+
         else:
             print("Big fatal error, site not supported in this version of the code.")
 

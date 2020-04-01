@@ -55,7 +55,7 @@ site_config = {
             'controlled_by':  ['mnt1'],
             'settings': {
                 'lights':  ['Auto', 'White', 'Red', 'IR', 'Off'],
-                'roof_shutter':  ['Auto', 'Open', 'Close', 'Lock Closed', 'Unlock'],                              
+                'roof_shutter':  ['Auto', 'Open', 'Close', 'Lock Closed', 'Unlock'],
                 },
             },
         },
@@ -70,7 +70,7 @@ site_config = {
 #             'altitude': '90.0',
 #             'azimuth':  '0.0'      #or '180.0 if Pole is low.
 #             },
-#         #Need to find a way to get this supported and displaying and ultimately logging the 10 micron sky signal.        
+#         #Need to find a way to get this supported and displaying and ultimately logging the 10 micron sky signal.
 # =============================================================================
 
     'mount': {
@@ -85,9 +85,9 @@ site_config = {
             'has_paddle': 'false',    #or a string that permits proper configuration.
             'pointing_tel': 'tel1',     #This can be changed to 'tel2' by user.  This establishes a default.
             'settings': {
-                'latitude': '33.3167',     #Decimal degrees, North is Positive
-                'longitude': '80.0167',   #Decimal degrees, West is negative
-                'elevation': '5100',    # meters above sea level
+			    'latitude_offset': '0.0',     #Decimal degrees, North is Positive   These *could* be slightly different than site.
+			    'longitude_offset': '0.0',   #Decimal degrees, West is negative  #NB This could be an eval( <<site config data>>))
+			    'elevation_offset': '0.0',    # meters above sea level
                 'home_park_altitude': '0',   #Having this setting is important for PWI4 where it can easily be messed up.
                 'home_park_azimuth': '174.0',
                 'horizon':  '20',
@@ -125,7 +125,7 @@ site_config = {
                 },
         },
     },
- 
+
     'rotator': {
         'rotator1': {
             'parent': 'telescope1',
@@ -135,7 +135,7 @@ site_config = {
             'minimum': '-180.0',
             'maximum': '360.0',
             'step_size':  '0.0001',
-            'backlash':  '0.0',    
+            'backlash':  '0.0',
             'unit':  'degree'
             },
     },
@@ -152,7 +152,7 @@ site_config = {
 #
 #            },
 #    },
-               
+
     'focuser': {
         'focuser1': {
             'parent': 'telescope1',
@@ -215,19 +215,19 @@ site_config = {
                                 #so screen brightens, skipping u and zs which really need sky.
                 'filter_sky_sort':  ['17', '5', '21', '9', '16', '4', '15', '14', '3', '20', '8', '13', '11', '12', \
                                      '18', '6', '19', '7', '10', '2', '1', '0']  #Least to most throughput
-                               
+
             },
-        },                  
+        },
     },
-       
-       
-   
+
+
+
     # A site may have many cameras registered (camera1, camera2, camera3, ...) each with unique aliases -- which are assumed
     # to be the name an owner has assigned and in principle that name "kb01" is labeled and found on the camera.  Between sites,
-    # there can be overlap of camera names.  LCO convention is letter of cam manuf, letter of chip manuf, then 00, 01, 02, ...  
+    # there can be overlap of camera names.  LCO convention is letter of cam manuf, letter of chip manuf, then 00, 01, 02, ...
     # However this code will treat the camera name/alias as a string of arbitrary length:  "saf_Neyle's favorite_camera" is
     # perfectly valid as an alias.
-   
+
 
     'camera': {
         'camera1': {
@@ -272,7 +272,7 @@ site_config = {
                     },
                 },
         },
-                   
+
     },
 
     'sequencer': {
@@ -283,9 +283,9 @@ site_config = {
             'driver': 'none'
         },
     },
-    #As aboove, need to get this sensibly suported on GUI and in fits headers.            
+    #As aboove, need to get this sensibly suported on GUI and in fits headers.
 #    'web_cam': {
-#              
+#
 #        'web_cam3 ': {
 #            'parent': 'mount1',
 #            'alias': 'FLIR',
@@ -302,9 +302,9 @@ site_config = {
 #
 #    },
 
-           
+
     #Need to put switches here for above devices.
-   
+
     #Need to build instrument selector and multi-OTA configurations.
 
     #AWS does not need this, but my configuration code might make use of it.

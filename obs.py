@@ -39,7 +39,7 @@ import ptr_events
 
 # NB: The main config file should be named simply 'config.py'.
 # Specific site configs should not be tracked in version control.
-import config_east as config
+import config_saf as config
 import config_simulator as config_simulator
 
 # import device classes
@@ -74,7 +74,7 @@ def to_bz2(filename, delete=False):
     except:
         print('to_bz2 failed.')
         return False
-    
+
 def from_bz2(filename, delete=False):
     try:
         comp = open(filename, 'rb')
@@ -88,8 +88,8 @@ def from_bz2(filename, delete=False):
         return True
     except:
         print('from_bz2 failed.')
-        return False 
-    
+        return False
+
 #The following function is a monkey patch to speed up outgoing large files.
 def patch_httplib(bsize=400000):
     """ Update httplib block size for faster upload (Default if bsize=None) """
