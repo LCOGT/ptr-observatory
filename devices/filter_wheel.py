@@ -17,8 +17,8 @@ class FilterWheel:
         #as a valid instance of class camera.
 
         print('Please NOTE: Filter wheel may block for many seconds while first connecting & homing.')
-        if type(driver) == list and False:
-            #breakpoint()
+        breakpoint()
+        if type(driver) == list:
             win32com.client.pythoncom.CoInitialize()
             self.filter_front = win32com.client.Dispatch(driver[0])
             self.filter_front.Connected = True
@@ -45,9 +45,20 @@ class FilterWheel:
             print(self.filter_front.Names, self.filter_back.Names, self.filter_selected, self.filter_offset)
         else:
             self.dual = False
+            '''
+            We need to distinguish here between an independent ASCOM filter wheel
+            and a filter that is supported by maxim.  That is specified if a Maxim
+            based driver is supplied. IF so it is NOT actually Dispatched, instead
+            we assume access is via the MAxim camera application.  So basically we
+            fake having an independnet filter wheel.  IF the filter supplied is 
+            an ASCOM.filter then we set this device up normally.  Eg., SAF is an
+            example of this version of the setup.
+            
+            '''
             #self.filter_front = win32com.client.Dispatch(driver)
             #self.filter_front.Connected = True
-            self.dual = False
+            
+
 
     def get_status(self):
         try:

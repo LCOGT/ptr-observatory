@@ -50,6 +50,9 @@ site_config = {
             'name': 'Megawan',
             'hostIP':  '10.15.0.30',
             'driver': 'ASCOM.SkyRoofHub.Dome',
+            'startup_script':  'None',
+            'recover_script':  'None',
+            'shutdown_script':  'None',     
             'has_lights':  'true',   #NB wouldn't it be eless error-rone for this to be "True"?
             'controlled_by':  ['mnt1', 'mnt2'],
             'is_dome': 'false',
@@ -94,6 +97,9 @@ site_config = {
             'hostname':  'eastpier',
             'desc':  'Planewave L500 AltAz',
             'driver': 'ASCOM.AltAzDS.Telescope',
+            'startup_script':  'None',
+            'recover_script':  'None',
+            'shutdown_script':  'None',  
             'alignment': 'Alt-Az',
             'has_paddle': 'false',    #or a string that permits proper configuration.
             'pointing_tel': 'tel1',     #This can be changed to 'tel2' by user.  This establishes a default.
@@ -143,6 +149,9 @@ site_config = {
             'name': 'Main OTA',
             'desc':  'Planewave CDK 500 F6.8',
             'driver': 'None',                     #Essentially this device is informational.  It is mostly about the optics.
+            'startup_script':  'None',
+            'recover_script':  'None',
+            'shutdown_script':  'None',  
             'collecting_area':  '119773.0',
             'obscuration':  '39%',
             'aperture': '500',
@@ -172,6 +181,9 @@ site_config = {
             'name': 'rotator',
             'desc':  'Opetc Gemini',
             'driver': 'ASCOM.AltAzDS.Rotator',
+            'startup_script':  'None',
+            'recover_script':  'None',
+            'shutdown_script':  'None' , 
             'minimum': '-180.0',
             'maximum': '360.0',
             'step_size':  '0.0001',
@@ -186,6 +198,9 @@ site_config = {
             'name': 'screen',
             'desc':  'Optec Alnitak 24"',
             'driver': 'COM6',  #This needs to be a four or 5 character string as in 'COM8' or 'COM22'
+            'startup_script':  'None',
+            'recover_script':  'None',
+            'shutdown_script':  'None',  
             'minimum': '5.0',   #This is the % of light emitted when Screen is on and nominally at 0% bright.
             'saturate': '170',  #Out of 0.0 - 255, this is the last value where the screen is linear with output.
                                 #These values have a minor temperature sensitivity yet to quantify.
@@ -199,6 +214,9 @@ site_config = {
             'name': 'focuser',
             'desc':  'Optec Gemini',
             'driver': 'ASCOM.OptecGemini.Focuser',
+            'startup_script':  'None',
+            'recover_script':  'None',
+            'shutdown_script':  'None', 
             'reference':  '5941',    #Nominal at 20C Primary temperature, in microns not steps.
             'ref_temp':   '15',      #Update when pinning reference
             'coef_c': '0',   #negative means focus moves out as Primary gets colder
@@ -222,6 +240,9 @@ site_config = {
             "alias": "Dual filter wheel",
             "desc":  'FLI Centerline Custom Dual 50mm sq.',
             "driver": ['ASCOM.FLI.FilterWheel1', 'ASCOM.FLI.FilterWheel2'],
+            'startup_script':  'None',
+            'recover_script':  'None',
+            'shutdown_script':  'None',  
             'settings': {
                 'filter_count': '23',
                 'filter_reference': '2',
@@ -275,6 +296,9 @@ site_config = {
             'name': 'df01',      #Important because this points to a server file structure by that name.
             'desc':  'FLI Microline e2vU42DD',
             'driver':  "Maxim.CCDCamera",   #'ASCOM.FLI.Kepler.Camera',  #Code must work with both.
+            'startup_script':  'None',
+            'recover_script':  'None',
+            'shutdown_script':  'None',  
             'detector':  'e2v U42 DD',
             'manufacturer':  'FLI -- Finger Lakes Instrumentation',
             'settings': {
@@ -324,7 +348,10 @@ site_config = {
             'parent': 'site',
             'name': 'Sequencer',
             'desc':  'Automation Control',
-            'driver': 'none'
+            'driver': 'none',
+            'startup_script':  'None',
+            'recover_script':  'None',
+            'shutdown_script':  'None', 
         },
     },
     #As aboove, need to get this sensibly suported on GUI and in fits headers.            
@@ -335,6 +362,9 @@ site_config = {
             'name': 'FLIR',
             'desc':  'FLIR NIR 10 micron 15deg, sidecam',
             'driver': 'http://10.15.0.17',
+            'startup_script':  'None',
+            'recover_script':  'None',
+            'shutdown_script':  'None',  
             'fov':  '15.0',
             'settings': {
                 'offset_collimation': '0.0',
@@ -351,12 +381,16 @@ site_config = {
     
     #Need to build instrument selector and multi-OTA configurations.
 
-    #AWS does not need this, but my configuration code might make use of it.
+    #AWS does not need this, but my configuration code might make use of it. VALENTINA this device will probably
+    #alwys be custom per installation. In my case Q: points to a 40TB NAS server in the basement. WER
     'server': {
         'server1': {
             'name': 'QNAP',
             'win_url': 'archive (\\10.15.0.82) (Q:)',
-            'redis':  '(host=10.15.0.15, port=6379, db=0, decode_responses=True)'
+            'redis':  '(host=10.15.0.15, port=6379, db=0, decode_responses=True)',
+            'startup_script':  'None',
+            'recover_script':  'None',
+            'shutdown_script':  'None',  
         },
     },
 }    #This brace closes the while configuration dictionary. Match found up top at:  site_config = {
