@@ -24,7 +24,7 @@ import matplotlib.pyplot as plt
 
 from PIL import Image
 from global_yard import g_dev
-import config_east as config #NB this can be eliminated by using passed in config.
+import config_saf as config #NB this can be eliminated by using passed in config.
 from processing.calibration import calibrate
 import ptr_events
 
@@ -281,11 +281,19 @@ class Camera:
         self.t_0 = time.time()
         self.hint = optional_params.get('hint', '')
         bin_x = optional_params.get('bin', '1,1')  #NB this should pick up config default.
-        if bin_x == '2,2':
+        if bin_x == '5,5':
+            bin_x = 5
+        elif bin_x == '4,4':
+            bin_x = 4
+        elif bin_x == '3,3':
+            bin_x = 3
+        elif bin_x == '2,2':
             bin_x = 2
         else:
             bin_x = 1
         bin_y = bin_x   #NB This needs fixing
+        self.camera.BinX = bin_x
+        self.camera.BinY = bin_y
         gain = optional_params.get('gain', 1)
         exposure_time = float(required_params.get('time', 5))
         #exposure_time = max(0.2, exposure_time)  #Saves the shutter, this needs qualify with imtype.
