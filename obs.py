@@ -39,7 +39,7 @@ import ptr_events
 
 # NB: The main config file should be named simply 'config.py'.
 # Specific site configs should not be tracked in version control.
-import config_saf as config
+import config_east as config
 import config_simulator as config_simulator
 
 # import device classes

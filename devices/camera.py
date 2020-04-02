@@ -24,7 +24,7 @@ import matplotlib.pyplot as plt
 
 from PIL import Image
 from global_yard import g_dev
-import config_saf as config #NB this can be eliminated by using passed in config.
+import config_east as config #NB this can be eliminated by using passed in config.
 from processing.calibration import calibrate
 import ptr_events
 
@@ -294,14 +294,8 @@ class Camera:
         count = int(optional_params.get('count', 1))
         if count < 1:
             count = 1   #Hence repeat does not repeat unless > 1
-        breakpoint()
-        requested_filter_alpha = optional_params.get('filter', 'W')
-        fil_number, offset = g_dev['fil'].set_name_command({'filter_name': 'V'}, {}, move_fil=False)
-        requested_filter = fil_number[0]  #Have to get the numeric index
-        if 0 <= requested_filter < 13:    #NB needs to use filter config..
-            pass
-        else:
-            requested_filter = 0    #NB needs to use filter config..
+        requested_filter_alpha = str(optional_params.get('filter', 'w'))
+        g_dev['fil'].set_name_command({'filter': requested_filter_alpha}, {}, move_fil=False)
 
         #NBNB Changing filter may cause a need to shift focus
         self.current_offset = 6300#g_dev['fil'].filter_offset  #TEMP
@@ -612,8 +606,7 @@ class Camera:
                             g_dev['mnt'].get_quick_status(self.pre_mnt)
                             self.t2 = time.time()
                             print("Starting exposure at:  ", self.t2)
-                            breakpoint()
-                            self.camera.Expose(exposure_time, imtypeb, requested_filter)
+                            self.camera.Expose(exposure_time, imtypeb)
                             ldr_handle_time = None
                             ldr_handle_high_time = None
                         else:
