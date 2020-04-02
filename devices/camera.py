@@ -299,6 +299,7 @@ class Camera:
 
         #NBNB Changing filter may cause a need to shift focus
         self.current_offset = 6300#g_dev['fil'].filter_offset  #TEMP
+        breakpoint()
         sub_frame_fraction = optional_params.get('subframe', None)
         #The following bit of code is convoluted.
         if imtype.lower() == 'light' or imtype.lower() == 'screen flat' or imtype.lower() == 'sky flat' or imtype.lower() == \
