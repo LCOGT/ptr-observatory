@@ -145,7 +145,7 @@ class FilterWheel:
             breakpoint()
         #NBNBNB Filter offset may not be set properly
 
-    def set_name_command(self, req: dict, opt: dict):
+    def set_name_command(self, req: dict, opt: dict, move_fil=False):
         ''' set the filter position by filter name '''
         print(f"filter cmd: set_name", req, opt)
         filter_name = req['filter_name']
@@ -160,21 +160,25 @@ class FilterWheel:
         self.filter_selected = filter_name
         filter_selections = eval(self.filter_data[filt_pointer][1])
         print('Selections:  ', filter_selections)
-        try:
-            while self.filter_front.Position == -1:
-                time.sleep(0.4)
-            self.filter_front.Position = filter_selections[1]
-            time.sleep(0.2)
-        except:
-            breakpoint()
-        try:
-            while self.filter_back.Position == -1:
-                time.sleep(0.4)
-            self.filter_back.Position =filter_selections[0]
-            time.sleep(0.2)
-        except:
-            breakpoint()
-        self.filter_offset = int(self.filter_data[filt_pointer][2])
+        breakpoint()
+        if move_fil:
+            try:
+                while self.filter_front.Position == -1:
+                    time.sleep(0.4)
+                self.filter_front.Position = filter_selections[1]
+                time.sleep(0.2)
+            except:
+                breakpoint()
+            try:
+                while self.filter_back.Position == -1:
+                    time.sleep(0.4)
+                self.filter_back.Position = filter_selections[0]
+                time.sleep(0.2)
+            except:
+                breakpoint()
+            self.filter_offset = int(self.filter_data[filt_pointer][2])
+        else:
+            return  (filter_selections, int(self.filter_data[filt_pointer][2]))
 
     def home_command(self, req: dict, opt: dict):
         ''' set the filter to the home position '''

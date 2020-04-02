@@ -22,7 +22,7 @@ site_config = {
                     to get out and vote early and often lest
                     we lose charge of our democracy.
                     ''',    #i.e, a multi-line text block supplied by the owner.  Must be careful about the contents for now.
-                    
+
     'mpc_code':  'ZZ23',    #This is made up for now.
     'timezone': 'PDT',       #We might be smart to require some Python DateTime String Constant here
                              #since this is a serious place where misconfigurations occur.  We run on
@@ -39,11 +39,11 @@ site_config = {
             'parent': 'site',
             'name': 'Weather Station #1',
             'driver': 'redis'
-            
+
             },
         },
 
-              
+
     'enclosure': {
         'enclosure1': {
             'parent': 'site',
@@ -58,7 +58,7 @@ site_config = {
             'is_dome': 'false',
             'settings': {
                 'lights':  ['Auto', 'White', 'Red', 'IR', 'Off'],
-                'roof_shutter':  ['Auto', 'Open', 'Close', 'Lock Closed', 'Unlock'],                               
+                'roof_shutter':  ['Auto', 'Open', 'Close', 'Lock Closed', 'Unlock'],
                 },
             },
 # =============================================================================
@@ -72,7 +72,7 @@ site_config = {
 #             'altitude': '90.0',
 #             'azimuth':  '0.0'      #or '180.0 if Pole is low.
 #             },
-#         #Need to find a way to get this supported and displaying and ultimately logging the 10 micron sky signal.        
+#         #Need to find a way to get this supported and displaying and ultimately logging the 10 micron sky signal.
 # =============================================================================
 # =============================================================================
 #         'web_cam2 ': {               #currently no support for building this object.
@@ -86,8 +86,8 @@ site_config = {
 # =============================================================================
     #Need to eventually add skycam here along with seeing monitor.
     },
-                    
-                        
+
+
 
     'mount': {
         'mount1': {
@@ -104,9 +104,9 @@ site_config = {
             'has_paddle': 'false',    #or a string that permits proper configuration.
             'pointing_tel': 'tel1',     #This can be changed to 'tel2' by user.  This establishes a default.
             'settings': {
-                'latitude': '34.34293028',   #These could in principle be different than site by small amount
-                'longitude': '-119.68105',
-                'elevation': '317.75', # meters above sea level
+			    'latitude_offset': '0.0',     #Decimal degrees, North is Positive   These *could* be slightly different than site.
+			    'longitude_offset': '0.0',   #Decimal degrees, West is negative  #NB This could be an eval( <<site config data>>))
+			    'elevation_offset': '0.0',    # meters above sea level
                 'home_park_altitude': '0',   #Having this setting is important for PWI4 where it can easily be messed up.
                 'home_park_azimuth': '174.0',
                 'horizon':  '20',
@@ -167,14 +167,14 @@ site_config = {
             'has_cover':  'false',
             'settings': {
                 'fans': ['Auto','High', 'Low', 'Off'],
-                'offset_collimation': '0.0',    #If the mount model is current, these numbers are usually near 0.0 
+                'offset_collimation': '0.0',    #If the mount model is current, these numbers are usually near 0.0
                                                 #for tel1.  Units are arcseconds.
                 'offset_declination': '0.0',
                 'offset_flexure': '0.0',
                 },
         },
     },
-  
+
     'rotator': {
         'rotator1': {
             'parent': 'tel1',    #NB Note we are changing to an abbrevation. BAD!
@@ -187,7 +187,7 @@ site_config = {
             'minimum': '-180.0',
             'maximum': '360.0',
             'step_size':  '0.0001',
-            'backlash':  '0.0',     
+            'backlash':  '0.0',
             'unit':  'degree'
             },
     },
@@ -207,7 +207,7 @@ site_config = {
 
             },
     },
-                
+
     'focuser': {
         'focuser1': {
             'parent': 'telescope1',
@@ -223,7 +223,7 @@ site_config = {
             'coef_0': '0',  #Nominal intercept when Primary is at 0.0 C.
             'coef_date':  '20300314',
             'minimum': '0',    #NB this needs clarifying, we are mixing steps and microns.
-            'maximum': '12700', 
+            'maximum': '12700',
             'step_size': '1',
             'backlash':  '0',
             'unit': 'steps',
@@ -276,19 +276,19 @@ site_config = {
                                 #so screen brightens, skipping u and zs which really need sky.
                 'filter_sky_sort':  ['17', '5', '21', '9', '16', '4', '15', '14', '3', '20', '8', '13', '11', '12', \
                                      '18', '6', '19', '7', '10', '2', '1', '0']  #Least to most throughput
-                                
+
             },
-        },                  
+        },
     },
-        
-        
-    
-    # A site may have many cameras registered (camera1, camera2, camera3, ...) each with unique aliases -- which are assumed 
+
+
+
+    # A site may have many cameras registered (camera1, camera2, camera3, ...) each with unique aliases -- which are assumed
     # to be the name an owner has assigned and in principle that name "kb01" is labeled and found on the camera.  Between sites,
-    # there can be overlap of camera names.  LCO convention is letter of cam manuf, letter of chip manuf, then 00, 01, 02, ...  
-    # However this code will treat the camera name/alias as a string of arbitrary length:  "saf_Neyle's favorite_camera" is 
+    # there can be overlap of camera names.  LCO convention is letter of cam manuf, letter of chip manuf, then 00, 01, 02, ...
+    # However this code will treat the camera name/alias as a string of arbitrary length:  "saf_Neyle's favorite_camera" is
     # perfectly valid as an alias.
-    
+
 
     'camera': {
         'camera1': {
@@ -336,11 +336,11 @@ site_config = {
                     'screen_x3':  '3E-08',
                     'screen_x2':  '-9E-05',
                     'screen_x1':  '.1258',
-                    'screen_x0':  '8.683' 
+                    'screen_x0':  '8.683'
                     },
                 },
         },
-                   
+
     },
 
     'sequencer': {
@@ -354,9 +354,9 @@ site_config = {
             'shutdown_script':  'None', 
         },
     },
-    #As aboove, need to get this sensibly suported on GUI and in fits headers.            
+    #As aboove, need to get this sensibly suported on GUI and in fits headers.
     'web_cam': {
-              
+
         'web_cam3 ': {
             'parent': 'mount1',
             'name': 'FLIR',
@@ -376,9 +376,9 @@ site_config = {
 
     },
 
-            
+
     #Need to put switches here for above devices.
-    
+
     #Need to build instrument selector and multi-OTA configurations.
 
     #AWS does not need this, but my configuration code might make use of it. VALENTINA this device will probably
@@ -399,12 +399,11 @@ if __name__ == '__main__':
     '''
     This is a simple test to send and receive via json.
     '''
-    
+
     j_dump = json.dumps(site_config)
     site_unjasoned = json.loads(j_dump)
     if str(site_config)  == str(site_unjasoned):
         print('Strings matched.')
     if site_config == site_unjasoned:
         print('Dictionaries matched.')
-        
-   
+

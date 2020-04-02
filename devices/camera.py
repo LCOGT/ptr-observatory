@@ -24,7 +24,7 @@ import matplotlib.pyplot as plt
 
 from PIL import Image
 from global_yard import g_dev
-import config_east as config
+import config_saf as config #NB this can be eliminated by using passed in config.
 from processing.calibration import calibrate
 import ptr_events
 
@@ -97,8 +97,8 @@ def reset_sequence(pCamera):
     camShelf.close()
     return seq
 
-   
-    
+
+
 
 class Camera:
 
@@ -129,16 +129,18 @@ class Camera:
             if self.camera.CanSetCCDTemperature:
                 self.camera.SetCCDTemperature = -40.0
             self.camera.CoolerOn = True
-            self.current_filter = 0
+            self.current_filter = 2     #A WMD reference -- needs fixing.
+            self.filter_wheel_name = "ascom ASCOM"   #This needs to be more specific
             print('Control is ASCOM camera driver.')
         else:
             self.camera.LinkEnabled = True
             self.description = 'MAXIM'
             self.maxim = True
             self.ascom = False
-            self.camera.TemperatureSetpoint = -40.
+            self.camera.TemperatureSetpoint = -30.
             self.camera.CoolerOn = True
             self.current_filter = 0
+            self.filter_wheel_name = 'maxim ' + self.camera.FilterWheelName
             print('Control is Maxim camera interface.')
         self.exposure_busy = False
         self.cmd_in = None
@@ -151,7 +153,7 @@ class Camera:
         try:
             os.remove(self.camera_path + 'newest.fits')
         except:
-            print ("'newest.fits' not found, this is probably OK")
+            print ("File newest.fits not found, this is probably OK")
         self.is_cmos = False
         if config.site_config['camera']['camera1']['settings']['is_cmos']  == 'true':
             self.is_cmos = False
@@ -278,7 +280,7 @@ class Camera:
         #print('Expose Entered.  req:  ', required_params, 'opt:  ', optional_params)
         self.t_0 = time.time()
         self.hint = optional_params.get('hint', '')
-        bin_x = optional_params.get('bin', '1,1')
+        bin_x = optional_params.get('bin', '1,1')  #NB this should pick up config default.
         if bin_x == '2,2':
             bin_x = 2
         else:
@@ -292,11 +294,19 @@ class Camera:
         count = int(optional_params.get('count', 1))
         if count < 1:
             count = 1   #Hence repeat does not repeat unless > 1
-
+        breakpoint()
+        requested_filter_alpha = optional_params.get('filter', 'W')
+        fil_number, offset = g_dev['fil'].set_name_command({'filter_name': 'V'}, {}, move_fil=False)
+        requested_filter = fil_number[0]  #Have to get the numeric index
+        if 0 <= requested_filter < 13:    #NB needs to use filter config..
+            pass
+        else:
+            requested_filter = 0    #NB needs to use filter config..
 
         #NBNB Changing filter may cause a need to shift focus
         self.current_offset = 6300#g_dev['fil'].filter_offset  #TEMP
         sub_frame_fraction = optional_params.get('subframe', None)
+        #The following bit of code is convoluted.
         if imtype.lower() == 'light' or imtype.lower() == 'screen flat' or imtype.lower() == 'sky flat' or imtype.lower() == \
                              'experimental' or imtype.lower() == 'toss' :
                                  #here we might eventually turn on spectrograph lamps as needed for the imtype.
@@ -602,7 +612,8 @@ class Camera:
                             g_dev['mnt'].get_quick_status(self.pre_mnt)
                             self.t2 = time.time()
                             print("Starting exposure at:  ", self.t2)
-                            self.camera.Expose(exposure_time, imtypeb)
+                            breakpoint()
+                            self.camera.Expose(exposure_time, imtypeb, requested_filter)
                             ldr_handle_time = None
                             ldr_handle_high_time = None
                         else:

@@ -18,9 +18,9 @@ import ephem
 from datetime import datetime, timedelta
 from math import degrees
 
-#from ptr_config import *
+
 from global_yard import *
-#from ptr_utility import *
+
 from astropy.time import Time
 
 #WMD:    #NB these should all come from config
