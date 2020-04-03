@@ -1,8 +1,0 @@
-venv/
-venv1/
-__pycache__/
-.credentials
-.vscode/
-bash.exe.stackdump
-sandbox/
-images/*.fits
