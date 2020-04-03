@@ -6,6 +6,3 @@ bash.exe.stackdump
 sandbox/
 images/*.fits
 config.py
-config_east.py
-config_wmd_eastpier.py
-config_saf.py
