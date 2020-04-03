@@ -34,8 +34,9 @@ from api_calls import API_calls
 
 # NB: The main config file should be named simply 'config.py'.
 # Specific site configs should not be tracked in version control.
-import config_east as config
+import config as config
 import config_simulator as config_simulator
+# Correct site config must be imorted before ptr_events
 import ptr_events
 # import device classes
 from devices.camera import Camera
