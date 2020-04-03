@@ -24,7 +24,7 @@ import matplotlib.pyplot as plt
 
 from PIL import Image
 from global_yard import g_dev
-import config_saf as config #NB this can be eliminated by using passed in config.
+from obs import config #NB this can be eliminated by using passed in config.
 from processing.calibration import calibrate
 import ptr_events
 
@@ -307,7 +307,6 @@ class Camera:
 
         #NBNB Changing filter may cause a need to shift focus
         self.current_offset = 6300#g_dev['fil'].filter_offset  #TEMP
-        breakpoint()
         sub_frame_fraction = optional_params.get('subframe', None)
         #The following bit of code is convoluted.
         if imtype.lower() == 'light' or imtype.lower() == 'screen flat' or imtype.lower() == 'sky flat' or imtype.lower() == \
@@ -319,36 +318,37 @@ class Camera:
             if imtype.lower() == 'screen_flat' or imtype.lower() == 'sky flat' or imtype.lower() == 'guick':
                 do_sep = False
         elif imtype.lower() == 'bias':
-                exposure_time = 0.0
-                imtypeb = False
-                frame_type = 'bias'
-                no_AWS = False
-                do_sep = False
-                #Consider forcing filter to dark if such a filter exists.
+            exposure_time = 0.0
+            imtypeb = False
+            frame_type = 'bias'
+            no_AWS = False
+            do_sep = False
+            # Consider forcing filter to dark if such a filter exists.
         elif imtype.lower() == 'dark':
-                imtypeb = False
-                frame_type = 'dark'
-                no_AWS = False
-                do_sep = False
-                #Consider forcing filter to dark if such a filter exists.
+            imtypeb = False
+            frame_type = 'dark'
+            no_AWS = False
+            do_sep = False
+            # Consider forcing filter to dark if such a filter exists.
         elif imtype.lower() == 'screen_flat' or imtype.lower() == 'sky flat':
             do_sep = False
         elif imtype.lower() == 'quick':
-            quick=True
-            no_AWS = False   #Send only a JPEG
+            quick = True
+            no_AWS = False   # Send only a JPEG
             do_sep = False
             imtypeb = True
             frame_type = 'light'
         else:
             imtypeb = True
             do_sep = True
-        #NBNB This area still needs work to cleanly define shutter, calibration, sep and AWS actions.
+        # NBNB This area still needs work to cleanly define shutter, calibration, sep and AWS actions.
 
         area = optional_params.get('size', 100)
-        if area == None: area = 100
+        if area is None:
+            area = 100
         sub_frame_fraction = optional_params.get('subframe', None)
         try:
-            if type(area) == str and area[-1] =='%':
+            if type(area) == str and area[-1] == '%':
                 area = int(area[0:-1])
         except:
             area = 100
@@ -364,12 +364,12 @@ class Camera:
             self.cameraBinY = self.bin_y
         self.len_x = self.camera.CameraXSize//self.bin_x
         self.len_y = self.camera.CameraYSize//self.bin_y    #Unit is binned pixels.
-        self.len_xs = 0  #THIS IS A HACK, indicating no overscan.
-        #print(self.len_x, self.len_y)
+        self.len_xs = 0  # THIS IS A HACK, indicating no overscan.
+        # print(self.len_x, self.len_y)
 
-        #"area": ['100%', '2X-jpg', '71%', '50%', '1X-jpg', '33%', '25%', '1/2 jpg']
+        # "area": ['100%', '2X-jpg', '71%', '50%', '1X-jpg', '33%', '25%', '1/2 jpg']
         if type(area) == str and area.lower() == "1x-jpg":
-            self.camera_num_x = 768              #NB WHere are these absolute numbers coming from?  This needs testing!!
+            self.camera_num_x = 768              # NB WHere are these absolute numbers coming from?  This needs testing!!
             self.camera_start_x = 1659
             self.camera_num_y = 768
             self.camera_start_y = 1659
@@ -432,13 +432,13 @@ class Camera:
 
         #Next apply any subframe setting here.  Be very careful to keep fractional specs and pixel values disinguished.
         if self.area == self.previous_area and sub_frame_fraction is not None and \
-                        (sub_frame_fraction['definedOnThisFile'] != self.previous_image_name):
-            sub_frame_fraction_xw = abs(sub_frame_fraction['x1'] - sub_frame_fraction['x0'])
+                        (sub_frame_fraction != self.previous_image_name):
+            sub_frame_fraction_xw = abs(float(sub_frame_fraction['x1']) -float( sub_frame_fraction['x0']))
             if sub_frame_fraction_xw < 1/32.:
                 sub_frame_fraction_xw = 1/32.
             else:
                 pass   #Adjust to center position of sub-size frame
-            sub_frame_fraction_yw = abs(sub_frame_fraction['y1'] - sub_frame_fraction['y0'])
+            sub_frame_fraction_yw = abs(float(sub_frame_fraction['y1']) - float(sub_frame_fraction['y0']))
             if sub_frame_fraction_yw < 1/32.:
                 sub_frame_fraction_yw = 1/32.
             else:
@@ -452,8 +452,8 @@ class Camera:
                 num_x = 32
             if num_y < 32:
                 num_y = 32
-            dist_x = int(self.previous_start_x + self.previous_num_x*sub_frame_fraction_x)
-            dist_y = int(self.previous_start_y +self.previous_num_y*sub_frame_fraction_y)
+            dist_x = int(self.previous_start_x + self.previous_num_x*float(sub_frame_fraction_x))
+            dist_y = int(self.previous_start_y +self.previous_num_y*float(sub_frame_fraction_y))
             self.camera_start_x= dist_x
             self.camera_start_y= dist_y
             self.camera_num_x= num_x
@@ -530,7 +530,6 @@ class Camera:
                         self.exposure_busy = True
                         print('First Entry', self.camera.StartX, self.camera.StartY, self.camera.NumX, self.camera.NumY, exposure_time)
                         if self.ascom and self.is_cmos:
-                            breakpoint()
                             try:
                                 ldr_handle= glob.glob('Q:\\archive\\gf03\\raw_kepler\\' + g_dev['next_day'] + '\\' + '*low.fits')
                                 ldr_handle_high= glob.glob('Q:\\archive\\gf03\\raw_kepler\\' + g_dev['next_day'] + '\\' + '*high.fits')
@@ -553,7 +552,6 @@ class Camera:
                             self.t2 = time.time()       #Immediately before Exposure
                             self.camera.StartExposure(exposure_time, imtypeb)     #True indicates Light Frame.  Maxim Difference of code
                         if self.maxim and self.is_cmos:
-                            breakpoint()
                             #This code grooms away older unuseable raw Kepler 12 bit images, presuming they exist and deals
                             #With oddities of directory naming by FliCam Server.
                             try:

@@ -22,7 +22,7 @@ class Enclosure:
 
 
     def get_status(self) -> dict:
-        #breakpoint()    #<<<<The next attibute reference fails.
+        #<<<<The next attibute reference fails.
         shutter_status = self.enclosure.ShutterStatus
         if shutter_status == 0:
             stat_string = "open"
