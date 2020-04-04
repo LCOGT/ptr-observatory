@@ -5,63 +5,21 @@ Created on Sat Oct 26 16:35:36 2019
 @author: obs
 """
 
-'''
+"""
 20200308 WER  THis is code to generate master frames.  It is far from complete but works for the JPEG level application.
 
-Update 20191031 @ ELP
+Update 20200404 WER On saf.
 
-Today's version explores cleaning up this code with an eye towards 'quick'
+This is a re-work of older code designed to build calibrations from Neyle's natural directory structure for
+MAXIM DL, or from a sub-directory 'calibrations' found in the designated archive structure.
+D:/04-01-2020 screen flats W Ha/
 
-This code is unweildy and near to spagetti.   We need a number of support modules and at least one laryer of enclosing
-module to amke things simpler and modular.
+The output is destined for the LNG flash calibration directory.  LNG contains a sub-directory, 'priors.'  THe
+idea is calibrations are gathered daily, reduced and put into prior.  then the priors are scanned and combined to
+build more substantial lower noise masters.  Priors are aged and once too old are removed.  It may be the case that
+we want to weight older priors lower than the current fresh one.
 
-The notion of a camera is made more complex when Maxim is used, and as well if Maxim is controlling filters or 
-if filters are independently managed.
-
-In the spirit of not disrupting existing ACP/Maxim setups, some of them may use maxim for calibration.  I think in general
-this will be limited to CCD cameras or possibly CMOS cameras which do image merge. 
-
-It is reasonable to expect site.config dictionary to define the configuration in sufficient detail that there will be non
-in-code site specific hacks.
-
-On calibration.  It makes sens to have a way to gather calibratin frames and send them to Bonsai operating at AWS.  But long
-run that is a lot of traffic whihc results in a small numbers of AWS side calibration files.  The goal will be to
-shunt the calibration files to a subset of BONSAI running at site (presumably on windows) and produce the calibration masters
-at site and send them to AWS.  However we reguire bit for bit equality for master produced by either path.
-
-Provenance is important:  As filters change, or a filter wheel is 'dusted' or a camera is changed or baked out, these events
-need to be incorporated into the information stream. 
-
-Last, the number of shutter operations needs to be incorporated into the data stream in some sensible way.  All raw data is 
-recorded locally and groomed so that the respective site does not run our of disk during an operating night.
-
-For CMOS cameras a special exposure/reduction mode may be implemented that is as fast as possible for focusing and other 
-image evaluation uses.  Although valid, it is assumed that 'Quicks' are not necessarily scientific or archival quality.
-
-For Qucik mode exposures it is OK to break the layering in return for higher speed.  As a general rule Quicks may include
-2:2 bins or if 1:1, subframes of 50% of the chip area (and recurively smaller subframes or bins.)
-
-__Older stuff ___ Below.
-
- 
-The goal of this module is to apply a set of LNG masters for a specified camera, including CMOS cameras.  Implicit for
-correct generation of masters is running the necessary scripts to produce the calibration frames. in the proper quantities
-and names as required by this code.  The Masters are placed in the LNG directory as well as dated versions in lng_history.  As
-well, masters are uploaded to AWS in a day-dated form.  Masters for any give daydirecotry are indicated _eve_(ning) or 
-_mor_(ning) as required.
-
-Since the number of calibration frames may be large (1023 for biases) and darks may be interleaved along with binning changes
-we are going to choose to span the whole collection of any given type of calibration and pick every n'th frame where median
-assembling N images does not cause a memory problem. Then we repeat again over the medians until we end up with a single 
-master.  Note this does affect some statistics.
-
-The proposed master must be withing some tolerance of the existing lng master to be substituted for the local lng used for
-flash reductions.
-
-As a general rule once arithmetic is done on any incoming fits file, the output is float32.  In some cases the incoming data 
-converted to fits32 in advance.
-
-'''
+"""
 
 
 
@@ -79,7 +37,7 @@ import math
 import numpy as np
 from scipy import stats
 import matplotlib.pyplot as plt
-from PIL import Image 
+from PIL import Image
 
 from skimage import data, io, filters
 from skimage.transform import resize
@@ -101,12 +59,11 @@ from ccdproc import CCDData, Combiner
 
 import sep
 
-from global_yard import g_dev
-import ptr_config
-import config
-import ptr_events
-import api_calls
-import requests
+# from ptr-observatory.global_yard import g_dev
+import ptr-observatory.config
+# import ptr-observatory.ptr_events
+# import api_calls
+# import requests
 
 import ptr_bz2
 
@@ -116,7 +73,7 @@ def fits_renamer(path):
     '''
 #    Re-names in place *.fts, *.fit to *.fits.
     '''
-    
+
     fit_file_list = glob.glob(path + '\\*.fts')
     fit_list_two = glob.glob(path + '\\*.fit')
     fit_file_list += fit_list_two
@@ -151,7 +108,7 @@ def fits_remove_overscan(ipath, opath):
     '''
 #    Note this is cameras ea03amd ea04 specific!
     '''
-    
+
     fits_file_list = glob.glob(ipath + '\\*.fits')
     print(str(len(fits_file_list)) + ' files found.')
     count = 0
@@ -165,8 +122,8 @@ def fits_remove_overscan(ipath, opath):
             biasline = np.median(overscan, axis=1)
             biasmean = biasline.mean()
             biasline = biasline.reshape((2048,1))
-            
-            
+
+
             img_hdu[0].data = (img - biasline)[:2048,:2048].astype('uint16')
 
             meta['HISTORY'] = 'Median overscan subtracted and trimmed. Mean = ' + str(round(biasmean,2))
@@ -177,8 +134,8 @@ def fits_remove_overscan(ipath, opath):
         else:
             continue
     print(count, '   Files overscan adjusted and trimmed.')
-    
-    
+
+
 def get_size(obj, seen=None):    #purloined from WWW  SHIPPO
     """Recursively finds size of objects"""
     size = sys.getsizeof(obj)
@@ -198,7 +155,7 @@ def get_size(obj, seen=None):    #purloined from WWW  SHIPPO
     elif hasattr(obj, '__iter__') and not isinstance(obj, (str, bytes, bytearray)):
         size += sum([get_size(i, seen) for i in obj])
     return size
-    
+
 def chunkify(im_list, chunk_size):
     '''
     Accept a long list of images, for now a max of 225.  Create a new list of
@@ -206,7 +163,7 @@ def chunkify(im_list, chunk_size):
     is len of runt < 11, it gets combined with sigma clip.   iF THE INPUT LIST
     is 15 items or less, it is unchanged.   For inputs < 30 should make two
     basically even split lists. (Not implementd yet.)
-    
+
     Note this does not interleave frames just breaks them up into blocks.
     '''
     count = len(im_list)
@@ -250,10 +207,10 @@ def create_super_bias(input_images, out_path, super_name):
             num += 1
         print(inputs[-1])   #show the last one
         combiner = Combiner(inputs)
-        combiner.sigma_clipping(low_thresh=2, high_thresh=3, func = np.ma.mean)        
+        combiner.sigma_clipping(low_thresh=2, high_thresh=3, func = np.ma.mean)
         im_temp = combiner.average_combine()
         print(im_temp.data[2][3])
-        super_image.append(im_temp)    
+        super_image.append(im_temp)
         combiner = None   #get rid of big data no longer needed.
         inputs = None
         input_images.pop(0)
@@ -265,7 +222,7 @@ def create_super_bias(input_images, out_path, super_name):
     super_img= combiner.average_combine()
     super_image = None    #Again get rid of big stale data
     combiner = None
-    super_img.data = super_img.data.astype(np.float32) 
+    super_img.data = super_img.data.astype(np.float32)
     #Here we should clean up egregious pixels.
     super_img.meta = first_image.meta       #Just pick up first header
     first_image = None
@@ -278,7 +235,7 @@ def create_super_bias(input_images, out_path, super_name):
     super_img.meta['CNTRSTD'] = std
     super_img.write(out_path + str(super_name), overwrite=True)
     super_img = None
-    
+
 ##    s_name = str(super_name).split('\\')
 ##    print('s_name_split:  ', s_name)
 #    s_name = super_name.split('.')
@@ -310,7 +267,7 @@ def create_super_dark(input_images, out_path, super_name, super_bias_name):
             corr_dark = ccdproc.subtract_bias(
                        (ccdproc.CCDData.read(input_images[0][img], unit='adu')),
                         super_bias_img)
-            im = corr_dark       
+            im = corr_dark
             im.data = im.data.astype(np.float32)
             inputs.append(im)
             num += 1
@@ -323,21 +280,21 @@ def create_super_dark(input_images, out_path, super_name, super_bias_name):
         im_temp.data = im_temp.data.astype(np.float32)
         print(im_temp.data[2][3])
         #breakpoint()
-        super_image.append(im_temp)     
+        super_image.append(im_temp)
         combiner = None   #get rid of big data no longer needed.
         inputs = None
-        
+
         input_images.pop(0)
     #Now we combint the outer data to make the master
     combiner = Combiner(super_image)
-    if len(super_image) > 9:     
+    if len(super_image) > 9:
         super_img = combiner.sigma_clipping(low_thresh=2, high_thresh=3, func = np.ma.mean)
     else:
-        super_img = combiner.sigma_clipping(low_thresh=2, high_thresh=3, func = np.ma.mean)       
+        super_img = combiner.sigma_clipping(low_thresh=2, high_thresh=3, func = np.ma.mean)
     super_img = combiner.average_combine()
     combiner = None
     super_img.data = super_img.data.astype(np.float32)
-    super_img.meta = first_image.meta         
+    super_img.meta = first_image.meta
     mn, std = image_stats(super_img)
     super_img.meta = first_image.meta
     super_img.meta['NCOMBINE'] = num
@@ -351,7 +308,7 @@ def create_super_dark(input_images, out_path, super_name, super_bias_name):
     super_image = None    #Again get rid of big stale data
     #hot and cold pix here.
     return
-   
+
 def make_master_bias (alias, path, selector_string, out_file):
 
     file_list = glob.glob(path + selector_string)
@@ -362,13 +319,13 @@ def make_master_bias (alias, path, selector_string, out_file):
     if len(file_list) > 1023:
         file_list = file_list[0:1023]
     chunk = int(math.sqrt(len(file_list)))
-    if chunk %2 == 0: chunk += 1 
+    if chunk %2 == 0: chunk += 1
     if chunk > 31: chunk = 31
     print('Chunk size:  ', chunk, len(file_list)//chunk)
     chunked_list = chunkify(file_list, chunk)
     print(chunked_list)
     create_super_bias(chunked_list, 'Q:/archive/gf03/lng/', out_file )
-    
+
 def make_master_dark (alias, path, selector_string, out_file, super_bias_name):
     #breakpoint()
     file_list = glob.glob(path + selector_string)
@@ -378,13 +335,13 @@ def make_master_dark (alias, path, selector_string, out_file, super_bias_name):
     if len(file_list) > 63:
         file_list = file_list[0:63]
     chunk = int(math.sqrt(len(file_list)))
-    if chunk %2 == 0: chunk += 1 
+    if chunk %2 == 0: chunk += 1
     if chunk > 31: chunk = 31
     print('Chunk size:  ', chunk, len(file_list)//chunk)
     chunked_list = chunkify(file_list, chunk)
     print(chunked_list)
     create_super_dark(chunked_list, 'Q:/archive/gf03/lng/', out_file, super_bias_name )
-    
+
 if __name__ == '__main__':
 
     print (config.site_config['camera']['camera1']['alias'])
@@ -409,7 +366,7 @@ Q:\archive\gf03\raw_kepler\2020-01-21
 """
 
 Goal here is a general purpose reduction module.  Ultimate
-files are calibrated in units of e- and e-/s in the case 
+files are calibrated in units of e- and e-/s in the case
 of darks.
 
 """
@@ -443,7 +400,7 @@ from scipy import stats
 from skimage import data, io #, filters
 from skimage.transform import resize
 from skimage import img_as_float
-from skimage import exposure 
+from skimage import exposure
 
 from astropy.modeling import models
 from astropy import units as u
@@ -537,7 +494,7 @@ def simpleColumnFix(img, col):
 #    superbias first, then based on if there exists a prior lng superbias that
 #    a new combined weighted bias is created.  The prior N <=4 days biases are
 #    kept then aged (1*5 + 2*4 + 3*3 + 4*2 + 5*1)/16
-#    
+#
 #    Need to examine for hot pixels and hot columns and make entries in the 1:!
 #    resolution bad pixel mask.
     '''
@@ -551,7 +508,7 @@ def create_super_dark( input_images, oPath, super_name, super_bias_name):
         corr_dark = ccdproc.subtract_bias(
                    (ccdproc.CCDData.read(input_images[img], unit='adu')),
                     super_bias_img)
-        im = corr_dark       
+        im = corr_dark
         im.data = im.data.astype(np.float32)
         im_offset= imageOffset(im, p_median=True)
         im_offset = float(im_offset)
@@ -574,7 +531,7 @@ def create_super_dark( input_images, oPath, super_name, super_bias_name):
                         tstring[0]+tstring[1]+tstring[2] + \
                         '.fits')
     super_img.write(wstring, overwrite=True)
-    
+
     hots = hot_pixels(super_img)
     print (len(hots), hots)
     '''
@@ -629,7 +586,7 @@ detectors = []
 
 #
 #if __name__ == '__main__':
-#    
+#
 #    img = ccdproc.CCDData.read(path + 'b11.fits')
 #    print(img)
 #    rows = np.median(img, axis=0)
@@ -637,8 +594,8 @@ detectors = []
 #    row_avg = np.mean(rows)
 #    row_diff = rows - row_med
 #    row_std = row_diff.std()
-    
-    
+
+
 # =============================================================================
 #ic1 = ImageFileCollection(path,
 #                           keywords=keys) # only keep track of keys
@@ -800,7 +757,7 @@ print('starting reductions.')
 if __name__ == '__main__':
     path = 'Q:\\archive\\gf01\\20190914\\calib\\'
     opath = 'Q:/archive/ea03/20190503/'
-    
+
     print('Finding images in:  ', path)
     imgs = glob.glob(path + '*-w-*.*')
     p = []
@@ -823,7 +780,7 @@ if __name__ == '__main__':
            #out_slope, out_intercept, out_r_value, p_value, std_err = stats.linregress(v_outx, v_outy)
     plt.scatter(p,q)
     print(out_slope, out_intercept, out_r_value, p_value, std_err )
-        
+
 #    os.chdir(path)
 #    #rename to *.fits
 #    try:
@@ -831,14 +788,14 @@ if __name__ == '__main__':
 #    except:
 #        print('mkdir \'calibs\' creation faile)d at:  ', path)
 #    fits_renamer(path)
-    
+
 #    ic1 = ImageFileCollection(path,
 #                               keywords=keys) # only keep track of keys
 #    ic2 = deepcopy(ic1)
 #    biases_1 = ic1.files_filtered(imagetyp='Light Frame', exposure=0.0)
 
     print('Fini')
-        
+
 #    img = ccdproc.CCDData.read(path + 'bd-0034_d1_360', unit="adu")
 #    print(img)
 
@@ -852,5 +809,5 @@ if __name__ == '__main__':
 #    create_super_dark(darks_2_30, oPath, 'md_2_30.fits', oPath +'mb_2_2018-10-16T210946.fits')
 
 #   create_super_flat(flats_2_4, oPath, 'sc_2_30_air', oPath +'mb_2_2018-10-16T210946.fits', oPath + 'md_2_30_2018-10-16T220839.fits')
-    
+
  '''
