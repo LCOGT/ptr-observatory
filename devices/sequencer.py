@@ -105,7 +105,7 @@ class Sequencer:
 #        g_dev['cam'].expose_command(req, opt, gather_status = False)
         print('Screen Gain sequence completed.')
         
-    def screen_flat_scrip_old(self, req, opt):
+    def screen_flat_script_old(self, req, opt):
         
         '''
         We will assume the filters have loaded those filters needed in screen flats, highest throughput to lowest.
@@ -176,7 +176,7 @@ class Sequencer:
             Proceed shortest to longest exposure, brighting screen as needed.
         
         '''
-        
+        '''
         alias = str(config.site_config['camera']['camera1']['name'])
         dark_count = 1
         flat_count = 2#int(req['numFrames'])
@@ -209,6 +209,7 @@ class Sequencer:
         opt = {'size': 100, 'count': dark_count, 'filter': g_dev['fil'].filter_data[0][0]}
         g_dev['cam'].expose_command(req, opt, gather_status = False, no_AWS=True)
         print('Screen Flat sequence completed.')
+    '''
  
     def sky_flat_script(self, req, opt):
         '''
