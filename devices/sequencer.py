@@ -18,13 +18,13 @@ class Sequencer:
 
     def get_status(self):
         '''
-        The position is expressed as an angle from 0 up to but not including 
-        360 degrees, counter-clockwise against the sky. This is the standard 
-        definition of Position Angle. However, the rotator does not need to 
-        (and in general will not) report the true Equatorial Position Angle, 
-        as the attached imager may not be precisely aligned with the rotator's 
-        indexing. It is up to the client to determine any offset between 
-        mechanical rotator position angle and the true Equatorial Position 
+        The position is expressed as an angle from 0 up to but not including
+        360 degrees, counter-clockwise against the sky. This is the standard
+        definition of Position Angle. However, the rotator does not need to
+        (and in general will not) report the true Equatorial Position Angle,
+        as the attached imager may not be precisely aligned with the rotator's
+        indexing. It is up to the client to determine any offset between
+        mechanical rotator position angle and the true Equatorial Position
         Angle of the imager, and compensate for any difference.
         '''
         status = {
@@ -34,9 +34,9 @@ class Sequencer:
         return status
 
 
-    
 
-    
+
+
     def parse_command(self, command):
         print('Sequencer input:  ', command)
         req = command['required_params']
@@ -63,18 +63,18 @@ class Sequencer:
     ###############################
 
     def screen_flat_script_oldest(self, req, opt):
-        
+
         '''
         We will assume the filters have loaded those filters needed in screen flats, highest throughput to lowest.
         We will assume count contains the number of repeated flats needed.
         We will assume u filter is only dealt with via skyflats since its exposures are excessive with the screen.
-        
+
         Park the mounting.
         Close the Enclosure.
         Turn off any lights.
         Use 'w' filter for now.  More generally a wide bandwidth.
             take the count
-        
+
         '''
         gain_screen_values = [42, 39, 36, 33, 30, 27, 23, 20, 17, 14, 11, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0]
         bias_count = 7
@@ -104,14 +104,14 @@ class Sequencer:
 #        opt = {'size': 100, 'count': dark_count, 'filter': g_dev['fil'].filter_data[0][0]}
 #        g_dev['cam'].expose_command(req, opt, gather_status = False)
         print('Screen Gain sequence completed.')
-        
+
     def screen_flat_scrip_old(self, req, opt):
-        
+
         '''
         We will assume the filters have loaded those filters needed in screen flats, highest throughput to lowest.
         We will assume count contains the number of repeated flats needed.
         We will assume u filter is only dealt with via skyflats since its exposures are excessive with the screen.
-        
+
         Park the mounting.
         Close the Enclosure.
         Turn off any lights.
@@ -120,7 +120,7 @@ class Sequencer:
             get its gain @ 0.2 second exposure
             set the screen
             take the count
-        
+
         '''
         dark_count = 3
         flat_count = 3#int(req['numFrames'])
@@ -151,21 +151,21 @@ class Sequencer:
             req = {'time': exp_time,  'alias': 'gf01', 'image_type': 'screen flat'}
             opt = {'size': 100, 'count': flat_count, 'filter': g_dev['fil'].filter_data[filter_number][0]}
             g_dev['cam'].expose_command(req, opt, gather_status = False, no_AWS=True)
-            print('seq 7')               
+            print('seq 7')
         g_dev['scr'].screen_dark()
         #take a 10 s dark screen air flat to sense ambient
         req = {'time': 10,  'alias': 'gf01', 'image_type': 'screen flat'}
         opt = {'size': 100, 'count': dark_count, 'filter': g_dev['fil'].filter_data[0][0]}
         g_dev['cam'].expose_command(req, opt, gather_status = False)
         print('Screen Flat sequence completed.')
-        
-    def screen_flat_scrip(self, req, opt):
-        
+
+    def screen_flat_script(self, req, opt):
+
         '''
         We will assume the filters have loaded those filters needed in screen flats, highest throughput to lowest.
         We will assume count contains the number of repeated flats needed.
         We will assume u filter is only dealt with via skyflats since its exposures are excessive with the screen.
-        
+
         Park the mounting.
         Close the Enclosure.
         Turn off any lights.
@@ -174,22 +174,22 @@ class Sequencer:
             set the screen
             take the count
             Proceed shortest to longest exposure, brighting screen as needed.
-        
+
         '''
         breakpoint()
-        alias = str(config['camera']['camera1']['name'])
+        alias = str(config.site_config['camera']['camera1']['name'])
         dark_count = 3
         flat_count = 1#int(req['numFrames'])
-        gain_calc = req['gainCalc']
-        shut_comp =  req['shutterCompensation']
+        #gain_calc = req['gainCalc']
+        #shut_comp =  req['shutterCompensation']
         if flat_count < 1: flat_count = 1
         g_dev['mnt'].park_command({}, {})
         g_dev['scr'].screen_dark()
         #Here we need to switch off any IR or dome lighting.
         #Take a 10 s dark screen air flat to sense ambient
-        req = {'time': 10,  'alias': alias, 'image_type': 'screen flat'}
-        opt = {'size': 100, 'count': dark_count, 'filter': g_dev['fil'].filter_data[0][0]}
-        g_dev['cam'].expose_command(req, opt, gather_status = False, no_AWS=True)
+        # req = {'time': 10,  'alias': alias, 'image_type': 'screen flat'}
+        # opt = {'size': 100, 'count': dark_count, 'filter': g_dev['fil'].filter_data[0][0]}
+        # g_dev['cam'].expose_command(req, opt, gather_status = False, no_AWS=True)
         for filt in g_dev['fil'].filter_screen_sort:
             filter_number = int(filt)
             g_dev['fil'].set_number_command(filter_number)
@@ -197,35 +197,35 @@ class Sequencer:
             exposure = 1
             exp_time, screen_setting = float(g_dev['fil'].filter_data[filter_number][4])
             g_dev['scr'].set_screen_bright(screen_setting)
-            g_dev['scr'].screen_light_on()           
+            g_dev['scr'].screen_light_on()
             print('Test Screen; filter, bright:  ', filter_number, screen_bright)
             req = {'time': exp_time,  'alias': alias, 'image_type': 'screen flat'}
             opt = {'size': 100, 'count': flat_count, 'filter': g_dev['fil'].filter_data[filter_number][0]}
             g_dev['cam'].expose_command(req, opt, gather_status = False, no_AWS=True)
-            print('seq 7')               
+            print('seq 7')
         g_dev['scr'].screen_dark()
         #take a 10 s dark screen air flat to sense ambient
         req = {'time': 10,  'alias': alias, 'image_type': 'screen flat'}
         opt = {'size': 100, 'count': dark_count, 'filter': g_dev['fil'].filter_data[0][0]}
         g_dev['cam'].expose_command(req, opt, gather_status = False, no_AWS=True)
         print('Screen Flat sequence completed.')
- 
+
     def sky_flat_script(self, req, opt):
         '''
         Unimplemented.
         '''
-        
+
     def focus_auto_script(self, req, opt):
         '''
         V curve is a big move focus designed to fit two lines adjacent to the more normal focus curve.
         It finds the approximate focus, particulary for a new instrument. ti requires 8 points plus
-        a verify.        
-        Quick focus consists of three points plus a verify.        
-        Fine focus consists of five points plus a verify.       
-        Optionally individual images can be multiples of one to average out seeing.    
+        a verify.
+        Quick focus consists of three points plus a verify.
+        Fine focus consists of five points plus a verify.
+        Optionally individual images can be multiples of one to average out seeing.
         NBNBNB This code needs to go to known stars to be moe relaible and permit subframes
         '''
-        
+
         print('AF entered with:  ', req, opt)
         self.sequencer_hold = True  #Blocks command checks.
         req = {'time': 3,  'alias': 'gf03', 'image_type': 'light', 'filter': 2}
@@ -265,12 +265,11 @@ class Sequencer:
         g_dev['foc'].focuser.Move(int(d1))
         result = g_dev['cam'].expose_command(req, opt, halt=True)
         if result[0] is not None and len(result) == 2:
-            spot4, foc_pos4 = result       
+            spot4, foc_pos4 = result
         print('Actual focus:  ', foc_pos4, round(spot4, 2))
         self.sequencer_hold = False   #Allow comand checks.
-        
-        
 
 
-    
-    
+
+
+

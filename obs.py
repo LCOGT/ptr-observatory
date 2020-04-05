@@ -86,7 +86,7 @@ def from_bz2(filename, delete=False):
     except:
         print('from_bz2 failed.')
         return False
-    
+
 
 # The following function is a monkey patch to speed up outgoing large files.
 def patch_httplib(bsize=400000):
@@ -234,16 +234,13 @@ class Observatory:
                 body = {"site": self.name}
                 # uri = f"{self.name}/{mount}/command/"
                 cmd = {}
-
-                # Get a list of new jobs to complete (this request 
+                # Get a list of new jobs to complete (this request
                 # marks the commands as "RECEIVED")
                 unread_commands = requests.request('POST', url, \
                                                    data=json.dumps(body)).json()
-
                 # Make sure the list is sorted in the order the jobs were issued
                 # Note: the ulid for a job is a unique lexicographically-sortable id
                 unread_commands.sort(key=lambda x: x["ulid"])
-
                 # Process each job one at a time
                 for cmd in unread_commands:
                     print(cmd)
@@ -254,9 +251,8 @@ class Observatory:
                         device.parse_command(cmd)
                     except Exception as e:
                         print(e)
-
                # print('scan_requests finished in:  ', round(time.time() - t1, 3), '  seconds')
-                return   # Contine   #This creates an infinite loop
+                return   # Continue   #This creates an infinite loop
             else:
                 print('Sequencer Hold asserted.')    #What we really want here is looking for a Cancel/Stop.
                 continue
@@ -302,8 +298,7 @@ class Observatory:
         if loud:
             print('Status Sent:  \n', status)   # from Update:  ', status))
         else:
-            pass
-            # print('.')#   #We print this to stay informed of process on the console.
+            print('.')#   #We print this to stay informed of process on the console.
         uri = f"{self.name}/status/"
         # NBNBNB None of the strings can be empty.  Otherwise this put faults.
         # if loud: print('pre-AWS phase of update_status took :  ', round(time.time() - t1, 9), sys.getsizeof(status))
@@ -343,7 +338,7 @@ class Observatory:
             return
 
     # Note this is a thread!
-    def send_to_AWS(self):  # pri_image is a tuple, smaller first item has priority. 
+    def send_to_AWS(self):  # pri_image is a tuple, smaller first item has priority.
                             # second item is also a tuple containing im_path and name.
 
         # This stopping mechanism allows for threads to close cleanly.

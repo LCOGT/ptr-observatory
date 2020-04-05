@@ -13,27 +13,27 @@ out of the Production source?
 
       use double quotes for talking to each other, or for actual quotes, document references and the like.
 #"    in-line version of a polemic.   Does not go to production source.  A 'team-quote.'
-      
-      NB (nota bene) means "someone should fix this eventually!"   Please add your initials.   A valid fix is to delete the 
+
+      NB (nota bene) means "someone should fix this eventually!"   Please add your initials.   A valid fix is to delete the
       message.  They can go to production source.
 
-The missing thing is mount management is more uniform treatement of the frame of reference of pointing, and the astrometric 
+The missing thing is mount management is more uniform treatement of the frame of reference of pointing, and the astrometric
 solutions provided.  This is probably a WER task to sort out.  From the AWS user point of view we want to start with Modern
 catalog positions, nominally ICRS, particularly as realized by the current GAIA release.  Other objects (Messier) as an example
-we always try to go through Strassbourg to get coordinates.  Updates to those happen but they are carefully vetted.  We can 
-start with nominal poblished catalogs whihc generally give names, Ra and dec, Season, mag etc but update them IFF the 
-Strassborug data is more current.  Star charts are harder.  But there is some new stuff in the Ppixinsight realse we might 
+we always try to go through Strassbourg to get coordinates.  Updates to those happen but they are carefully vetted.  We can
+start with nominal poblished catalogs whihc generally give names, Ra and dec, Season, mag etc but update them IFF the
+Strassborug data is more current.  Star charts are harder.  But there is some new stuff in the Ppixinsight realse we might
 want to take advantage of.
 
 Refraction and mount models need to be added, but the problem is the state of mounting code over various manufactures is a
 complete mess.  I have done this now for four different mountings and telescope setups so I think I can abstract things in a
-way that the user experience can be uniform.  The goal is to get the best unguided tracking possible.  Although observing > 60 
+way that the user experience can be uniform.  The goal is to get the best unguided tracking possible.  Although observing > 60
 degt Zenith is inadvisable, if the Comet is here you are going to go for it right down to the horizon.  So getting refraction
 right is important.
 
 For pretty pictures one thing I would like to add to the 'coordinates' for an object is specification of Ra and Dec offset and
-a Rotation (in the form of a Position Angle) that we have selected once we have imaged the object.  The user can of course 
-specify something different by selecting Catalog (N up, E to the left, PA = 0), Recommened( blah list here), or user (blah 
+a Rotation (in the form of a Position Angle) that we have selected once we have imaged the object.  The user can of course
+specify something different by selecting Catalog (N up, E to the left, PA = 0), Recommened( blah list here), or user (blah
 list here retained in user account.)
 
 """
@@ -65,7 +65,7 @@ class Mount:
         self.inst = 'tel1'
         self.tel = tel
         #print('Can Move Axis is Possible.', self.mount.CanMoveAxis(0), self.mount.CanMoveAxis(1))
-        
+
 
         if not tel:
             print(f"Mount connected.")
@@ -82,7 +82,7 @@ class Mount:
 #        print('a:',self._paddle.read(20).decode())
 #        print('b:',self._paddle.read(20).decode())
 #        print('c:',self._paddle.read(20).decode())
-        print("Paddle  not operational??")
+#        print("Paddle  not operational??")
 #        self.paddle_thread = threading.Thread(target=self.paddle( self._paddle, self.mount), args=())
         #self.paddle_thread.start()
         print("exiting mount _init")
@@ -107,7 +107,7 @@ class Mount:
 #            "Slewing": str(m.Slewing),
 #            "Tracking": str(m.Tracking),
 #            "TrackingRate": str(0.0), #(m.TrackingRate),
-#            # Target ra and dec throws error if they have not been set. 
+#            # Target ra and dec throws error if they have not been set.
 #            # Maybe we don't even need to include them in the status...
 #            #"TargetDeclination": str(m.TargetDeclination),
 #            #"TargetRightAscension": str(m.TargetRightAscension),
@@ -115,7 +115,7 @@ class Mount:
 #        return status
 
     def check_connect(self):
-        
+
         try:
             if self.mount.Connected:
                 return
@@ -127,7 +127,7 @@ class Mount:
             print('Found mount not connected via try: block fail, reconnecting.')
             self.mount.Connected = True
             return
-        
+
     def get_status(self):
         self.check_connect()
         #self.paddle()
@@ -146,7 +146,7 @@ class Mount:
         #Be careful to preserve order
         #print(self.device_name, self.name)
         if self.tel == False:
-            status = {            
+            status = {
                 f'timestamp': str(round(time.time(), 3)),
 #                f'right_ascension': str(self.mount.RightAscension),
 #                f'declination': str(self.mount.Declination),
@@ -156,7 +156,7 @@ class Mount:
 #                f'azimuth': str(self.mount.Azimuth),
 #                f'altitude': str(alt),
 #                f'zenith_distance': str(zen),
-#                f'airmass': str(airmass),                
+#                f'airmass': str(airmass),
 #                f'coordinate_system': str(self.rdsys),
                 f'pointing_telescope': str(self.inst),  #needs fixing
                 f'is_parked': str(self.mount.AtPark).lower(),
@@ -164,7 +164,7 @@ class Mount:
                 f'is_slewing': str(self.mount.Slewing).lower()
             }
         elif self.tel == True:
-            status = {            
+            status = {
                 f'timestamp': str(round(time.time(), 3)),
                 f'right_ascension': str(round(self.mount.RightAscension, 5)),  #RA reported as decimal hours.  Needs to be
                                                                                #decimal degees or Sexagesimal in FITS header.
@@ -176,7 +176,7 @@ class Mount:
                 f'azimuth': str(round(self.mount.Azimuth, 3)),
                 f'altitude': str(round(alt, 3)),
                 f'zenith_distance': str(round(zen, 3)),
-                f'airmass': str(round(airmass,4)),                
+                f'airmass': str(round(airmass,4)),
                 f'coordinate_system': str(self.rdsys),
                 f'pointing_instrument': str(self.inst),  #needs fixing
 #                f'is_parked': (self.mount.AtPark),
@@ -187,10 +187,10 @@ class Mount:
             print('Proper device_name is missing, or tel == None')
             status = {'defective':  'status'}
         return status  #json.dumps(status)
-    
 
-        
-    
+
+
+
     def get_quick_status(self, pre):
         self.check_connect()
         alt = self.mount.Altitude
@@ -220,7 +220,7 @@ class Mount:
         pre.append(self.mount.Slewing)
         #print(pre)
         return pre
-    
+
     @classmethod
     def two_pi_avg(cls, pre, post, half):
         if abs(pre - post) > half:
@@ -235,9 +235,9 @@ class Mount:
         while avg >= 2*half:
             avg = avg - 2*half
         return avg
-            
-        
-        
+
+
+
     def get_average_status(self, pre, post):    #Add HA to this calculation.
         self.check_connect()
         t_avg = round((pre[0] + post[0])/2, 3)
@@ -276,26 +276,26 @@ class Mount:
             f'azimuth':  az_avg,
             f'altitude': alt_avg,
             f'zenith_distance': zen_avg,
-            f'airmass': air_avg,            
+            f'airmass': air_avg,
             f'coordinate_system': str(self.rdsys),
             f'instrument': str(self.inst),
             f'is_parked': park_avg,
             f'is_tracking': track_avg,
             f'is_slewing': slew_avg
-            
+
         }
         return status  #json.dumps(status)
-    
+
     def parse_command(self, command):
         req = command['required_params']
         opt = command['optional_params']
         action = command['action']
         self.check_connect()
-        if action == "go": 
-            self.go_command(req, opt) 
+        if action == "go":
+            self.go_command(req, opt)
         elif action == "stop":
             self.stop_command(req, opt)
-        elif action == "home": 
+        elif action == "home":
             self.home_command(req, opt)
         elif action == "flat_panel":
             self.flat_panel_command(req, opt)
@@ -370,13 +370,13 @@ class Mount:
         print("mount cmd: parking mount")
         print(self.mount.CanPark)
         self.mount.Park()
-        
+
     def paddle(self):
         '''
         The real way this should work is monitor if a speed button is pushed, then log the time and
         start the thread.  If no button pushed for say 30 seconds, stop thread and re-join.  That way
         image operations are minimally disrupted.
-        
+
         Normally this will never be started, unless we are operating locally in the observatory.
         '''
 
@@ -396,67 +396,67 @@ class Mount:
         if button == '9': direc = 'SE'
         if button == '3': direc = 'SW'
         if button == '6': direc = 'NW'
-        if spd ==  'C': 
+        if spd ==  'C':
             speed = 0.
             EW = 1
             NS = 1
-        if spd == '8': 
+        if spd == '8':
             speed = 15.
             EW = 1
             NS = 1
-        if spd ==  '4': 
+        if spd ==  '4':
             speed = 45.
             EW = 1
             NS = 1
-        if spd ==  '0': 
+        if spd ==  '0':
             speed = 135.
             EW = 1
             NS = 1
-        if spd ==  'D': 
+        if spd ==  'D':
             speed = 0.
             EW = -1
             NS = 1
-        if spd == '9': 
+        if spd == '9':
             speed = 15.
             EW = -1
             NS = 1
-        if spd ==  '5': 
+        if spd ==  '5':
             speed = 45.
             EW = -1
             NS = 1
-        if spd ==  '1': 
+        if spd ==  '1':
             speed = 135.
             EW = -1
             NS = 1
-        if spd ==  'E': 
+        if spd ==  'E':
             speed = 0.
             EW = 1
             NS = -1
-        if spd == 'A': 
+        if spd == 'A':
             speed = 15.
             EW = 1
             NS = -1
-        if spd ==  '6': 
+        if spd ==  '6':
             speed = 45.
             EW = 1
             NS = -1
-        if spd ==  '2': 
+        if spd ==  '2':
             speed = 135.
             EW = 1
             NS = -1
-        if spd ==  'F': 
+        if spd ==  'F':
             speed = 0.
             EW = -1
             NS = -1
-        if spd == 'B': 
+        if spd == 'B':
             speed = 15.
             EW = -1
             NS = -1
-        if spd == '7': 
+        if spd == '7':
             speed = 45.
             EW = -1
             NS = -1
-        if spd == '3': 
+        if spd == '3':
             speed = 135.
             EW = -1
             NS = -1
@@ -478,48 +478,48 @@ class Mount:
             _mount.RightAscensionRate = EW*speed/15.   #Not quite the correct divisor.
             self.paddleing = True
             print('cmd:  ',direc, EW*speed/15.)
-        if direc == 'W': 
+        if direc == 'W':
             _mount.RightAscensionRate = -EW*speed/15.
             self.paddleing = True
             print('cmd:  ',direc, -EW*speed/15.)
-        if direc == '': 
+        if direc == '':
             _mount.DeclinationRate = 0.0
             _mount.RightAscensionRate = 0.0
             self.paddleing = False
         return
 
-            
-            
-        
+
+
+
         '''
          class Darkslide(object):
-        
+
            def __init__(self, pCOM):
                self.slideStatus = 'unknown'
-        
+
            def openDarkslide(self):
                self._com = serial.Serial(pCom, timeout=0.1)
                self._com.write(b'@')
                self.slideStatus = 'open'
                self._com.close()
-        
+
            def closeDarkslide(self):
                self._com = serial.Serial(pCom, timeout=0.1)
                self._com.write(b'A')
                self.slideStatus = 'closed'
                self._com.close()
-        
+
            def darkslideStatus(self):
                return self.slideStatus
-        
-        
+
+
         class Probe(object):
-        
+
             def __init__(self, pCom):
                 self.probePosition = None
                 print('Probe class called with:  ', pCom)
                 self.commPort = pCom
-        
+
             def probeRead(self):
                with serial.Serial(self.commPort, timeout=0.3) as com:
                    com.write(b'R1\n')
@@ -528,7 +528,7 @@ class Mount:
                    print(self.probePosition)
         '''
 
-        
+
 if __name__ == '__main__':
     req = {'time': 1,  'alias': 'ea03', 'frame': 'Light', 'filter': 2}
     opt = {'area': 50}

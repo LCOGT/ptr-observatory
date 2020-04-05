@@ -47,7 +47,7 @@ class FilterWheel:
         elif driver.lower() in ['maxim', 'maximdl', 'maximdlpro']:
             self.maxim = True
             self.dual = False
-            self.filter_selected = self.filter_data[self.filter_reference][0]   #This is the defaultexpected after a 
+            self.filter_selected = self.filter_data[self.filter_reference][0]   #This is the defaultexpected after a
                                                                                 #Home or power-up cycle.
             self.filter_number = int(self.filter_reference)
             self.filter_offset = eval(self.filter_data[self.filter_reference][2])
@@ -62,15 +62,15 @@ class FilterWheel:
             and a filter that is supported by maxim.  That is specified if a Maxim
             based driver is supplied. IF so it is NOT actually Dispatched, instead
             we assume access is via the MAxim camera application.  So basically we
-            fake having an independnet filter wheel.  IF the filter supplied is 
+            fake having an independnet filter wheel.  IF the filter supplied is
             an ASCOM.filter then we set this device up normally.  Eg., SAF is an
             example of this version of the setup.
-            
+
             '''
             #self.filter_front = win32com.client.Dispatch(driver)
             #self.filter_front.Connected = True
             print("Entered a filter area with no code in it.")
-            
+
 
 
     def get_status(self):
@@ -126,22 +126,23 @@ class FilterWheel:
             try:
                 while self.filter_front.Position == -1:
                     time.sleep(0.4)
-                self.filter_front.Position = filter_selected[1]
+                self.filter_front.Position = self.filter_selected[1]
                 time.sleep(0.2)
             except:
                 breakpoint()
             try:
                 while self.filter_back.Position == -1:
                     time.sleep(0.4)
-                self.filter_back.Position = filter_selected[0]
+                self.filter_back.Position = self.filter_selected[0]
                 time.sleep(0.2)
             except:
                 breakpoint()
             self.filter_offset = int(self.filter_data[filt_pointer][2])
         elif self.maxim:
-            g_dev['cam'].camera.Filter = filter_selected[0]
+            breakpoint()
+            g_dev['cam'].camera.Filter = self.filter_selected[0]
             time.sleep(0.2)
-            g_dev['cam'].camera.GuiderFilter = filter_selected[1]
+            g_dev['cam'].camera.GuiderFilter = self.filter_selected[1]
 
     def set_position_command(self, req: dict, opt: dict):
         ''' set the filter position by  param string filter position index '''
@@ -204,7 +205,7 @@ class FilterWheel:
         elif self.maxim:
             g_dev['cam'].camera.Filter = filter_selections[0]
             time.sleep(0.2)
-            g_dev['cam'].camera.GuiderFilter = filter_selections[1]           
+            g_dev['cam'].camera.GuiderFilter = filter_selections[1]
         else:
              return  (filter_selections, int(self.filter_data[filt_pointer][2]))
 

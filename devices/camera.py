@@ -223,6 +223,13 @@ class Camera:
         #print("Camera Command incoming:  ", command)
         req = command['required_params']
         opt = command['optional_params']
+        print(g_dev['cam'].camera, self)
+        print(g_dev['cam'].camera, self.camera)
+        if self.camera.Connected:
+            print("self is connected.")
+        if g_dev['cam'].camera.Connected:
+            print("g_dev['cam'] is connected.")
+        g_dev['seq'].screen_flat_script(req, opt)
         action = command['action']
 
 
