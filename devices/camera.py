@@ -26,7 +26,7 @@ from PIL import Image
 from global_yard import g_dev
 from obs import config #NB this can be eliminated by using passed in config.
 from processing.calibration import calibrate
-import ptr_events
+from devices.sequencer import Sequencer
 
 '''
 Autofocus NOTE 20200122
@@ -224,8 +224,7 @@ class Camera:
         req = command['required_params']
         opt = command['optional_params']
         action = command['action']
-
-
+        g_dev['seq'].screen_flat_script(req, opt)
         if action == "expose" and not self.exposure_busy :
             self.expose_command(req, opt, do_sep=False, quick=False)
             self.exposure_busy = False     #Hangup needs to be guarded with a timeout.
