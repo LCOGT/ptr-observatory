@@ -104,9 +104,9 @@ class Sequencer:
 #        opt = {'size': 100, 'count': dark_count, 'filter': g_dev['fil'].filter_data[0][0]}
 #        g_dev['cam'].expose_command(req, opt, gather_status = False)
         print('Screen Gain sequence completed.')
-        
+
     def screen_flat_script_old(self, req, opt):
-        
+
         '''
         We will assume the filters have loaded those filters needed in screen flats, highest throughput to lowest.
         We will assume count contains the number of repeated flats needed.
@@ -122,6 +122,7 @@ class Sequencer:
             take the count
 
         '''
+        alias = config.site_config['camera']['camera1']['name']
         dark_count = 3
         flat_count = 3#int(req['numFrames'])
         gain_calc = req['gainCalc']
@@ -131,7 +132,7 @@ class Sequencer:
         g_dev['scr'].screen_dark()
         #Here we need to switch off any IR or dome lighting.
         #Take a 10 s dark screen air flat to sense ambient
-        req = {'time': 10,  'alias': 'gf01', 'image_type': 'screen flat'}
+        req = {'time': 1,  'alias': alias, 'image_type': 'screen flat'}
         opt = {'size': 100, 'count': dark_count, 'filter': g_dev['fil'].filter_data[0][0]}
         g_dev['cam'].expose_command(req, opt, gather_status = False, no_AWS=True)
         for filt in g_dev['fil'].filter_screen_sort:
@@ -141,42 +142,25 @@ class Sequencer:
             sensitivity = float(g_dev['fil'].filter_data[filter_number][4])
             sensitivity = sensitivity*exposure
             screen_bright = int((3000/sensitivity)*100/160)
-            g_dev['scr'].set_screen_bright(screen_bright)
+            g_dev['scr'].set_screen_bright(screen_bright, is_percent=False)
             g_dev['scr'].screen_light_on()
             g_dev['fil'].set_number_command(filter_number)
             print('Test Screen; filter, bright:  ', filter_number, screen_bright)
             exp_time = 5
             if filter_number == 9 or filter_number == 21:
                 exp_time *= 8
-            req = {'time': exp_time,  'alias': 'gf01', 'image_type': 'screen flat'}
+            req = {'time': exp_time,  'alias': alias, 'image_type': 'screen flat'}
             opt = {'size': 100, 'count': flat_count, 'filter': g_dev['fil'].filter_data[filter_number][0]}
             g_dev['cam'].expose_command(req, opt, gather_status = False, no_AWS=True)
-            print('seq 7')
         g_dev['scr'].screen_dark()
         #take a 10 s dark screen air flat to sense ambient
-        req = {'time': 10,  'alias': 'gf01', 'image_type': 'screen flat'}
+        req = {'time': 1,  'alias': alias, 'image_type': 'screen flat'}
         opt = {'size': 100, 'count': dark_count, 'filter': g_dev['fil'].filter_data[0][0]}
         g_dev['cam'].expose_command(req, opt, gather_status = False)
         print('Screen Flat sequence completed.')
-        
+
     def screen_flat_script(self, req, opt):
-        
-        '''
-        We will assume the filters have loaded those filters needed in screen flats, highest throughput to lowest.
-        We will assume count contains the number of repeated flats needed.
-        We will assume u filter is only dealt with via skyflats since its exposures are excessive with the screen.
 
-        Park the mounting.
-        Close the Enclosure.
-        Turn off any lights.
-        For filter in list
-            set the filter
-            set the screen
-            take the count
-            Proceed shortest to longest exposure, brighting screen as needed.
-
-        '''
-        '''
         alias = str(config.site_config['camera']['camera1']['name'])
         dark_count = 1
         flat_count = 2#int(req['numFrames'])
@@ -187,9 +171,9 @@ class Sequencer:
         g_dev['scr'].screen_dark()
         #Here we need to switch off any IR or dome lighting.
         #Take a 10 s dark screen air flat to sense ambient
-        # req = {'time': 10,  'alias': alias, 'image_type': 'screen flat'}
-        # opt = {'size': 100, 'count': dark_count, 'filter': g_dev['fil'].filter_data[0][0]}
-        # g_dev['cam'].expose_command(req, opt, gather_status = False, no_AWS=True)
+        req = {'time': 10,  'alias': alias, 'image_type': 'screen flat'}
+        opt = {'size': 100, 'count': dark_count, 'filter': g_dev['fil'].filter_data[0][0]}
+        g_dev['cam'].expose_command(req, opt, gather_status = False, no_AWS=True)
         for filt in g_dev['fil'].filter_screen_sort:
             filter_number = int(filt)
             #g_dev['fil'].set_number_command(filter_number)  #THis faults
@@ -197,7 +181,7 @@ class Sequencer:
             exposure = 1
             exp_time, screen_setting = g_dev['fil'].filter_data[filter_number][4]
             g_dev['scr'].set_screen_bright(float(screen_setting))
-            g_dev['scr'].screen_light_on()           
+            g_dev['scr'].screen_light_on()
             print('Test Screen; filter, bright:  ', filter_number, float(screen_setting))
             req = {'time': float(exp_time),  'alias': alias, 'image_type': 'screen flat'}
             opt = {'size': 100, 'count': flat_count, 'filter': g_dev['fil'].filter_data[filter_number][0]}
@@ -209,8 +193,8 @@ class Sequencer:
         opt = {'size': 100, 'count': dark_count, 'filter': g_dev['fil'].filter_data[0][0]}
         g_dev['cam'].expose_command(req, opt, gather_status = False, no_AWS=True)
         print('Screen Flat sequence completed.')
-    '''
- 
+
+
     def sky_flat_script(self, req, opt):
         '''
         Unimplemented.
@@ -271,5 +255,5 @@ class Sequencer:
         self.sequencer_hold = False   #Allow comand checks.
 
 
-    
-    
+
+

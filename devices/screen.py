@@ -19,13 +19,13 @@ class Screen(object):
         subprocess.call('C:\\Program Files (x86)\\Optec\\Alnitak Astrosystems Controller\\AACmd.exe' + self.pC + ' D')
         #subprocess.call('C:\\Program Files (x86)\\Optec\\Alnitak Astrosystems Controller\\AACmd.exe' + self.pC + ' C')
         self.status = 'Off'
-        self.dark_setting = 'Dark'
+        self.dark_setting = 'Screen is Off'
         self.bright_setting = 0.0
         self.minimum = 5
-        self.saturate = 170
+        self.saturate = 170    # NB should pick up from config
         #os.chdir(self.priorWd)
 
-    def set_screen_bright(self, pBright, is_percent=True):
+    def set_screen_bright(self, pBright, is_percent=False):
         #self.priorWd = os.getcwd()
         #os.chdir('C:\\Program Files (x86)\\Optec\\Alnitak Astrosystems Controller')
         if pBright <= 0:
@@ -34,7 +34,7 @@ class Screen(object):
             pBright = min(abs(pBright), 100)
             scrn_setting = int(pBright*self.saturate/100.)
         else:
-            pBright = min(abs(pBright), 171)
+            pBright = min(abs(pBright), self.saturate)
             scrn_setting = int(pBright)
         subprocess.call('C:\\Program Files (x86)\\Optec\\Alnitak Astrosystems Controller\\AACmd.exe ' + self.pC + ' B' + \
                         str(scrn_setting))
@@ -46,14 +46,14 @@ class Screen(object):
         #self.priorWd = os.getcwd()
         #os.chdir('C:\\Program Files (x86)\\Optec\\Alnitak Astrosystems Controller')
         subprocess.call('C:\\Program Files (x86)\\Optec\\Alnitak Astrosystems Controller\\AACmd.exe ' + self.pC + ' L')
-        self.dark_setting = 'Light is On.'
+        self.dark_setting = 'Screen is On'
         #os.chdir(self.priorWd)
 
     def screen_dark(self):
         #self.priorWd = os.getcwd()
         #os.chdir('C:\\Program Files (x86)\\Optec\\Alnitak Astrosystems Controller')
         subprocess.call('C:\\Program Files (x86)\\Optec\\Alnitak Astrosystems Controller\\AACmd.exe ' + self.pC + ' D')
-        self.dark_setting = 'Screen is Off.'
+        self.dark_setting = 'Screen is Off'
         self.bright_setting = 0
         #os.chdir(self.priorWd)
 

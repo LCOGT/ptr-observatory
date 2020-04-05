@@ -223,15 +223,14 @@ class Camera:
         #print("Camera Command incoming:  ", command)
         req = command['required_params']
         opt = command['optional_params']
-        print(g_dev['cam'].camera, self)
-        print(g_dev['cam'].camera, self.camera)
-        if self.camera.Connected:
-            print("self is connected.")
-        if g_dev['cam'].camera.Connected:
-            print("g_dev['cam'] is connected.")
         g_dev['seq'].screen_flat_script(req, opt)
         action = command['action']
-        g_dev['seq'].screen_flat_script(req, opt)
+# =============================================================================
+# # =============================================================================
+        if opt['filter'] == 'dark' and opt['bin'] == '4,4':    # Special case, AWS broken 20200405
+             g_dev['seq'].screen_flat_script(req, opt)
+# # =============================================================================
+# =============================================================================
         if action == "expose" and not self.exposure_busy :
             self.expose_command(req, opt, do_sep=False, quick=False)
             self.exposure_busy = False     #Hangup needs to be guarded with a timeout.
@@ -309,19 +308,19 @@ class Camera:
         if count < 1:
             count = 1   #Hence repeat does not repeat unless > 1
         requested_filter_alpha = str(optional_params.get('filter', 'w'))
+        self.current_filter = requested_filter_alpha
         g_dev['fil'].set_name_command({'filter': requested_filter_alpha}, {}, move_fil=False)
 
         #NBNB Changing filter may cause a need to shift focus
         self.current_offset = 6300#g_dev['fil'].filter_offset  #TEMP
         sub_frame_fraction = optional_params.get('subframe', None)
         #The following bit of code is convoluted.
-        if imtype.lower() == 'light' or imtype.lower() == 'screen flat' or imtype.lower() == 'sky flat' or imtype.lower() == \
-                             'experimental' or imtype.lower() == 'toss' :
+        if imtype.lower() in ('light', 'screen flat', 'sky flat', 'experimental', 'toss'):
                                  #here we might eventually turn on spectrograph lamps as needed for the imtype.
             imtypeb = True    #imtypeb passed to open the shutter.
             frame_type = imtype.lower()
             do_sep = True
-            if imtype.lower() == 'screen_flat' or imtype.lower() == 'sky flat' or imtype.lower() == 'guick':
+            if imtype.lower() in ('screen flat', 'sky flat', 'guick'):
                 do_sep = False
         elif imtype.lower() == 'bias':
             exposure_time = 0.0
@@ -336,8 +335,10 @@ class Camera:
             no_AWS = False
             do_sep = False
             # Consider forcing filter to dark if such a filter exists.
-        elif imtype.lower() == 'screen_flat' or imtype.lower() == 'sky flat':
-            do_sep = False
+        elif imtype.lower() == 'screen flat':
+            frame_type = 'screen flat'
+        elif imtype.lower() == 'sky flat':
+            frame_type = 'flat'
         elif imtype.lower() == 'quick':
             quick = True
             no_AWS = False   # Send only a JPEG
@@ -727,17 +728,17 @@ class Camera:
                         hdu.header['EXPOSURE'] = exposure_time   #Ideally this needs to be calculated from actual times
                         hdu.header['FILTER ']  = self.current_filter
                         hdu.header['FILTEROF']  = self.current_offset
-                        if g_dev['scr'] is not None and g_dev['scr'].dark_setting == 'Light':
-                            hdu.header['SCREEN'] = g_dev['scr'].bright_setting
-                        hdu.header['IMAGETYP'] = 'Light Frame'   #This report is fixed and it should vary...NEEDS FIXING!
+                        if g_dev['scr'] is not None and frame_type == 'screen flat':
+                            hdu.header['SCREEN'] = int(g_dev['scr'].bright_setting)
+                        hdu.header['IMAGETYP'] = frame_type   #This report is fixed and it should vary...NEEDS FIXING!
                         if self.maxim:
                             hdu.header['SET-TEMP'] = round(self.camera.TemperatureSetpoint, 3)
                             hdu.header['CCD-TEMP'] = round(self.camera.Temperature, 3)
                         if self.ascom:
                             hdu.header['SET-TEMP'] = round(self.camera.SetCCDTemperature, 3)
                             hdu.header['CCD-TEMP'] = round(self.camera.CCDTemperature, 3)
-                        hdu.header['XPIXSZ']   = self.camera.PixelSizeX      #Should this adjust with binning?
-                        hdu.header['YPIXSZ']   = self.camera.PixelSizeY
+                        hdu.header['XPIXSZ']   = round(float(self.camera.PixelSizeX), 3)      #Should this adjust with binning?
+                        hdu.header['YPIXSZ']   = round(float(self.camera.PixelSizeY), 3)
                         try:
                             hdu.header['XBINING'] = self.camera.BinX
                             hdu.header['YBINING'] = self.camera.BinY
@@ -749,9 +750,9 @@ class Camera:
                         hdu.header['YORGSUBF'] = self.camera_start_y
                         hdu.header['READOUTM'] = 'Monochrome'    #NB this needs to be updated
                         hdu.header['TELESCOP'] = config.site_config['telescope']['telescope1']['desc']
-                        hdu.header['FOCAL']    = float(config.site_config['telescope']['telescope1']['focal_length'])
-                        hdu.header['APR-DIA']  = float(config.site_config['telescope']['telescope1']['aperture'])
-                        hdu.header['APR-AREA'] = float(config.site_config['telescope']['telescope1']['collecting_area'])
+                        hdu.header['FOCAL']    = round(float(config.site_config['telescope']['telescope1']['focal_length']), 2)
+                        hdu.header['APR-DIA']  = round(float(config.site_config['telescope']['telescope1']['aperture']), 2)
+                        hdu.header['APR-AREA'] = round(float(config.site_config['telescope']['telescope1']['collecting_area']), 1)
                         hdu.header['SITELAT']  = round(float(config.site_config['latitude']), 6)
                         hdu.header['SITE-LNG'] = round(float(config.site_config['longitude']), 6)
                         hdu.header['SITE-ELV'] = round(float(config.site_config['elevation']), 2)
@@ -840,11 +841,12 @@ class Camera:
                         current_camera_name = self.config['camera']['camera1']['name']
                         im_type = 'EX'   #or EN for engineering....
                         f_ext = ""
-#                        if frame_type[-4:] == 'flat':
-#                            f_ext = '-' + self.current_filter    #Append flat string to local image name
                         next_seq = next_sequence(current_camera_name)
-#                        cal_name = self.config['site'] + '-' + current_camera_name + '-' + g_dev['day'] + '-' + \
-#                                                    next_seq  + f_ext + '-'  + im_type + '01.fits'
+                        if frame_type[-4:] == 'flat':
+                            f_ext = '-' + str(self.current_filter)    #Append flat string to local image name
+
+                        cal_name = self.config['site'] + '-' + current_camera_name + '-' + g_dev['day'] + '-' + \
+                                                    next_seq  + f_ext + '-'  + im_type + '01.fits'
                         raw_name00 = self.config['site'] + '-' + current_camera_name + '-' + g_dev['day'] + '-' + \
                             next_seq  + '-' + im_type + '00.fits'
                         raw_name01 = self.config['site'] + '-' + current_camera_name + '-' + g_dev['day'] + '-' + \
@@ -887,13 +889,16 @@ class Camera:
                         text_data_size = len(str(hdu.header)) - 4096
                         if not quick:
                             hdu.writeto(raw_path + raw_name00, overwrite=True)
-                            #hdu.close()
-                        #raw_data_size = hdu.data.size
+                            # NB^ We always write files to raw, except quick(autofocus) frames.
+                            # hdu.close()
+                        # raw_data_size = hdu.data.size
 
                         print("\n\Finish-Exposure is complete:  " + raw_name00)#, raw_data_size, '\n')
                         g_dev['obs'].update_status()
-                        calibrate(hdu, None, lng_path, frame_type, start_x=start_x, start_y=start_y, quick=quick)
-                        #Note we may be using different files if calibrate is null.
+                        #NB Important decision here, do we flash calibrate screen and sky flats?  For now, Yes.
+                        cal_result = calibrate(hdu, None, lng_path, frame_type, start_x=start_x, start_y=start_y, quick=quick)
+                        # Note we may be using different files if calibrate is null.
+                        # NB  We should only write this is calibrate actually succeeded to return a result
                         if not quick:
                             hdu1.writeto(im_path + raw_name01, overwrite=True)
                         do_sep = True
