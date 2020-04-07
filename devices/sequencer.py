@@ -3,12 +3,12 @@ import win32com.client
 import time
 from global_yard import g_dev
 from processing.calibration import fit_quadratic
-from obs import config
 
 class Sequencer:
 
-    def __init__(self, driver: str, name: str):
+    def __init__(self, driver: str, name: str, config: dict):
         self.name = name
+        self.config = config
         g_dev['seq'] = self
         self.connected = True
         self.description = "Sequencer for the eastpier mounting and OTAs"
@@ -124,7 +124,7 @@ class Sequencer:
             take the count
 
         '''
-        alias = config.site_config['camera']['camera1']['name']
+        alias = self.config.site_config['camera']['camera1']['name']
         dark_count = 3
         flat_count = 3#int(req['numFrames'])
         gain_calc = req['gainCalc']
@@ -163,14 +163,16 @@ class Sequencer:
 
     def screen_flat_script(self, req, opt):
 
-        alias = str(config.site_config['camera']['camera1']['name'])
+        alias = str(self.config.site_config['camera']['camera1']['name'])
         dark_count = 1
         flat_count = 2#int(req['numFrames'])
         #gain_calc = req['gainCalc']
         #shut_comp =  req['shutterCompensation']
         if flat_count < 1: flat_count = 1
         g_dev['mnt'].park_command({}, {})
+        g_dev['obs'].update_status()
         g_dev['scr'].screen_dark()
+        g_dev['obs'].update_status()
         #Here we need to switch off any IR or dome lighting.
         #Take a 10 s dark screen air flat to sense ambient
         req = {'time': 10,  'alias': alias, 'image_type': 'screen flat'}
@@ -183,13 +185,15 @@ class Sequencer:
             exposure = 1
             exp_time, screen_setting = g_dev['fil'].filter_data[filter_number][4]
             g_dev['scr'].set_screen_bright(float(screen_setting))
+            g_dev['obs'].update_status()
             g_dev['scr'].screen_light_on()
+            g_dev['obs'].update_status()
             print('Test Screen; filter, bright:  ', filter_number, float(screen_setting))
             req = {'time': float(exp_time),  'alias': alias, 'image_type': 'screen flat'}
             opt = {'size': 100, 'count': flat_count, 'filter': g_dev['fil'].filter_data[filter_number][0]}
             g_dev['cam'].expose_command(req, opt, gather_status = False, no_AWS=True)
-            print('seq 7')
         g_dev['scr'].screen_dark()
+        g_dev['obs'].update_status()
         #take a 10 s dark screen air flat to sense ambient
         req = {'time': 10,  'alias': alias, 'image_type': 'screen flat'}
         opt = {'size': 100, 'count': dark_count, 'filter': g_dev['fil'].filter_data[0][0]}

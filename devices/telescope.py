@@ -14,7 +14,7 @@ from global_yard import g_dev
 #The mount is not threaded and uses non-blocking seek.
 class Telescope:
 
-    def __init__(self, driver: str, name: str, settings: dict, tel=False):
+    def __init__(self, driver: str, name: str, settings: dict, config: dict, tel=False):
         self.name = name
         g_dev['tel'] = self
         self.device_name = name

@@ -5,7 +5,7 @@ from global_yard import g_dev
 
 class Rotator:
 
-    def __init__(self, driver: str, name: str):
+    def __init__(self, driver: str, name: str, config: dict):
         self.name = name
         g_dev['rot'] = self
         win32com.client.pythoncom.CoInitialize()

@@ -3,7 +3,6 @@ import win32com.client
 import redis
 import time
 from global_yard import g_dev
-import ptr_events
 
 #  core1_redis.set('<ptr-wx-1_state', json.dumps(wx), ex=120)
 #            core1_redis.get('<ptr-wx-1_state')
@@ -13,8 +12,9 @@ import ptr_events
 
 class ObservingConditions:
 
-    def __init__(self, driver: str, name: str, config):
+    def __init__(self, driver: str, name: str, config: dict, astro_events):
         self.name = name
+        self.astro_events = astro_events
         g_dev['ocn'] = self
         self.site = config['site']
         if self.site == 'wmd':
@@ -31,7 +31,7 @@ class ObservingConditions:
     def get_status(self):
 
         if self.site == 'saf':
-            illum, mag = ptr_events.illuminationNow()
+            illum, mag = self.astro_events.illuminationNow()
             if illum <= 7500.:
                 open_poss = 'true'
                 hz = 100000
@@ -103,7 +103,7 @@ class ObservingConditions:
 
         if self.site == 'saf':
             # Should incorporate Davis data into this data set, and Unihedron.
-            illum, mag = ptr_events.illuminationNow()
+            illum, mag = self.astro_events.illuminationNow()
             if illum <= 7500.:
                 open_poss = True
                 hz = 100000

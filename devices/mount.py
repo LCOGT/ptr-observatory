@@ -1,8 +1,3 @@
-'''
-
-Docstring here??
-
-'''
 
 """
 20200310 WER
@@ -46,14 +41,15 @@ import serial
 import time, json
 from math import cos, radians    #"What plan do we have for making some imports be done this way, elg, import numpy as np...?"
 from global_yard import g_dev    #"Ditto guestion we are importing a single object instance."
-import ptr_events
+
 #from devices.pywinusb_paddle import *
 
 #The mount is not threaded and uses non-blocking seek.     "Note no doule quotes.
 class Mount:
 
-    def __init__(self, driver: str, name: str, settings: dict, tel=False):
+    def __init__(self, driver: str, name: str, settings: dict, config: dict, astro_events, tel=False):
         self.name = name
+        self.astro_events = astro_events
         g_dev['mnt'] = self
         self.device_name = name
         self.settings = settings
@@ -115,7 +111,6 @@ class Mount:
 #        return status
 
     def check_connect(self):
-
         try:
             if self.mount.Connected:
                 return
@@ -307,7 +302,7 @@ class Mount:
             print (command)
         elif action == 'sky_flat_position':
             print (command)
-            ptr_events.flat_spot_now(go=True)
+            self.slewToAltAzAsync()
         else:
             print(f"Command <{action}> not recognized.")
 
@@ -333,6 +328,10 @@ class Mount:
 
         self.mount.RightAscensionRate = tracking_rate_ra
         self.mount.DeclinationRate = tracking_rate_dec
+
+    def slewToAltAzAsync(self):
+        alt, az = self.astro_events.flat_spot_now()
+        self.mount.SlewToAltAzAsync(az, alt)
 
 
     def stop_command(self, req, opt):

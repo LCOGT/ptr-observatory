@@ -9,20 +9,22 @@ class Screen(object):
     def __init__(self, driver: str, name: str):
         self.name = name
         g_dev['scr'] = self
-        self.driver = 'COM22'
+        self.driver = driver
         self.description = 'Optec Alnitak 24" screen'
         #self.priorWd = os.getcwd()
-        self.pC = ' 22'   #just last 0ne or two digits.
-        print('COM port used for Screen:  COM' + self.pC)
+        self.pC =  ' ' +self.driver.split('COM')[1]  #just last 0ne or two digits.
+        print('COM port used for Screen:  ' + self.driver)
+        print("Screen takes a few seconds to process commands.")
         self.scrn = str ('EastAlnitak')
         #os.chdir('C:\\Program Files (x86)\\Optec\\Alnitak Astrosystems Controller')
-        subprocess.call('C:\\Program Files (x86)\\Optec\\Alnitak Astrosystems Controller\\AACmd.exe' + self.pC + ' D')
+        subprocess.call('C:\\Program Files (x86)\\Optec\\Alnitak Astrosystems Controller\\AACmd.exe' + self.pC + ' D s')
         #subprocess.call('C:\\Program Files (x86)\\Optec\\Alnitak Astrosystems Controller\\AACmd.exe' + self.pC + ' C')
         self.status = 'Off'
         self.dark_setting = 'Screen is Off'
         self.bright_setting = 0.0
         self.minimum = 5
         self.saturate = 170    # NB should pick up from config
+        self.screen_dark()
         #os.chdir(self.priorWd)
 
     def set_screen_bright(self, pBright, is_percent=False):
@@ -36,7 +38,7 @@ class Screen(object):
         else:
             pBright = min(abs(pBright), self.saturate)
             scrn_setting = int(pBright)
-        subprocess.call('C:\\Program Files (x86)\\Optec\\Alnitak Astrosystems Controller\\AACmd.exe ' + self.pC + ' B' + \
+        subprocess.call('C:\\Program Files (x86)\\Optec\\Alnitak Astrosystems Controller\\AACmd.exe ' + self.pC + ' B s' + \
                         str(scrn_setting))
         self.bright_setting = pBright
         #os.chdir(self.priorWd)
@@ -45,14 +47,14 @@ class Screen(object):
     def screen_light_on(self):
         #self.priorWd = os.getcwd()
         #os.chdir('C:\\Program Files (x86)\\Optec\\Alnitak Astrosystems Controller')
-        subprocess.call('C:\\Program Files (x86)\\Optec\\Alnitak Astrosystems Controller\\AACmd.exe ' + self.pC + ' L')
+        subprocess.call('C:\\Program Files (x86)\\Optec\\Alnitak Astrosystems Controller\\AACmd.exe ' + self.pC + ' L s')
         self.dark_setting = 'Screen is On'
         #os.chdir(self.priorWd)
 
     def screen_dark(self):
         #self.priorWd = os.getcwd()
         #os.chdir('C:\\Program Files (x86)\\Optec\\Alnitak Astrosystems Controller')
-        subprocess.call('C:\\Program Files (x86)\\Optec\\Alnitak Astrosystems Controller\\AACmd.exe ' + self.pC + ' D')
+        subprocess.call('C:\\Program Files (x86)\\Optec\\Alnitak Astrosystems Controller\\AACmd.exe ' + self.pC + ' D s')
         self.dark_setting = 'Screen is Off'
         self.bright_setting = 0
         #os.chdir(self.priorWd)
