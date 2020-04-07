@@ -319,8 +319,8 @@ class Mount:
         ''' Slew to the given ra/dec coordinates. '''
         print("mount cmd: slewing mount", req, opt)
 
-        ra = req['ra']
-        dec = req['dec']
+        ra = float(req['ra'])
+        dec = float(req['dec'])
 
         # Offset from sidereal in arcseconds per SI second, default = 0.0
         tracking_rate_ra = opt.get('tracking_rate_ra', 0)
@@ -344,7 +344,7 @@ class Mount:
         print("mount cmd: homing mount")
         if self.mount.AtHome:
             print(f"Mount is at home.")
-        elif False: #self.mount.CanFindHome:
+        elif False: #self.mount.CanFindHome:    # NB what is this all about?
             print(f"can find home: {self.mount.CanFindHome}")
             self.mount.Unpark()
             #home_alt = self.settings["home_altitude"]
@@ -365,11 +365,18 @@ class Mount:
         print("mount cmd: tracking changed")
         pass
 
-    def park_command(self, req, opt):
+    def park_command(self, req=None, opt=None):
         ''' park the telescope mount '''
-        print("mount cmd: parking mount")
         print(self.mount.CanPark)
-        self.mount.Park()
+        if self.mount.CanPark:
+            print("mount cmd: parking mount")
+            self.mount.Park()
+
+    def unpark_command(self, req=None, opt=None):
+        ''' unpark the telescope mount '''
+        if self.mount.CanPark:
+            print("mount cmd: unparking mount")
+            self.mount.Unpark()
 
     def paddle(self):
         '''

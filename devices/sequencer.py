@@ -50,6 +50,8 @@ class Sequencer:
             self.focus_auto_script(req, opt)
         elif action == "run" and script == 'genScreenFlatMasters':
             self.screen_flat_script(req, opt)
+        elif action == "run" and script == '32_target_pointing_run':
+            self.equatorial_pointing_run(req, opt)
         elif action == "stop":
             self.stop_command(req, opt)
         elif action == "home":
@@ -253,6 +255,84 @@ class Sequencer:
             spot4, foc_pos4 = result
         print('Actual focus:  ', foc_pos4, round(spot4, 2))
         self.sequencer_hold = False   #Allow comand checks.
+
+    def equatorial_pointing_run(reg, opt, spacing=10, vertical=False, grid=False, alt_minimum=25):
+        '''
+        unpark telescope
+        if not open, open dome
+        go to zenith & expose (Consider using Nearest mag 7 grid star.)
+        verify reasonable transparency
+            Ultimately, check focus, find a good exposure level
+        go to -72.5 degrees of ha, 0  expose
+        ha += 10; repeat to Ha = 67.5
+        += 5, expose
+        -= 10 until -67.5
+
+        if vertical go ha = -0.25 and step dec 85 -= 10 to -30 then
+        flip and go other way with offset 5 deg.
+
+        For Grid use Patrick Wallace's Mag 7 Tyco star grid it covers
+        sky equal-area, has a bright star as target and wraps around
+        both axes to better sample the encoders.'
+        '''
+        '''
+        Prompt for ACCP model to be turned off
+        if closed:
+           If WxOk: open
+        if parked:
+             unpark
+
+         pick grid star near zenith in west (no flip)
+              expose 10 s
+              solve
+              Is there a bright object in field?
+              adjust exposure if needed.
+        Go to (-72.5deg HA, dec = 0),
+             Expose, calibrate, save file.  Consider
+             if we can real time solve or jsut gather.
+        step 10 degrees forward untl ha is 77.5
+        at 77.5 adjust target to (72.5, 0) and step
+        backward.  Stop when you get to -77.5.
+        park
+        Launch reduction
+
+A variant on this is cover a grid, cover a + sign shape.
+
+        '''
+        ha_deg_steps = (-72.5, -62.5, -52.5, -42.5, -32.5, -22.5, -12.5, -2.5, 7.5,
+                        17.5, 27.5, 37.5, 47.5, 57.5, 67.5, 72.5, 62.5, 52.5, 42.5,
+                        32.5, 22.5, 12.5, 2.5, -7.5, -17.5, -27.5, -37.5, -47.5,
+                        -57.5, -67.5)
+        print("Starting equatorial sweep.")
+        g_dev['mnt'].unpark_command()
+        cam_name = str(config.site_config['camera']['camera1']['name'])
+        for ha_degree_value in ha_deg_steps:
+            target_ra =  g_dev['mnt'].mount.SiderealTime - ha_degree_value/15.
+            while target_ra < 0:
+                target_ra += 24.
+            while target_ra >=24:
+                target_ra -= 24.
+            req = {'ra':  target_ra,
+                   'dec':  0.0}
+            opt = {}
+            g_dev['mnt'].go_command(req, opt)
+            while g_dev['mnt'].mount.Slewing or g_dev['enc'].enclosure.Slewing:
+                g_dev['obs'].update_status()
+                time.sleep(0.5)
+            time.sleep(3)
+            g_dev['obs'].update_status()
+            time.sleep(3)
+            g_dev['obs'].update_status()
+            req = {'time': 10,  'alias': cam_name, 'image_type': 'Light Frame'}
+            opt = {'size': 100, 'count': 1, 'filter': g_dev['fil'].filter_data[0][0], 'hint': 'Equator pointing run.'}
+            result = g_dev['cam'].expose_command(req, opt)
+            g_dev['obs'].update_status()
+            print('Result:  ', result)
+        g_dev['mnt'].stop_command()
+        print("Equatorial sweep completed. Happy reducing.")
+        pass
+
+
 
 
 

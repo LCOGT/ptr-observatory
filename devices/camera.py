@@ -206,9 +206,9 @@ class Camera:
         else:
             status['busy_lock'] = 'false'
         if self.maxim:
-            cam_stat = 'unknown' #self.camera.CameraState
+            cam_stat = 'Not implemented yet' #self.camera.CameraState
         if self.ascom:
-            cam_stat = 'unknown' #self.camera.CameraState
+            cam_stat = 'Not implemented yet' #self.camera.CameraState
         status['status'] = str(cam_stat).lower()  #The state could be expanded to be more meaningful.
         return status
 #        if self.maxim:
@@ -315,7 +315,7 @@ class Camera:
         self.current_offset = 6300#g_dev['fil'].filter_offset  #TEMP
         sub_frame_fraction = optional_params.get('subframe', None)
         #The following bit of code is convoluted.
-        if imtype.lower() in ('light', 'screen flat', 'sky flat', 'experimental', 'toss'):
+        if imtype.lower() in ('light', 'light frame', 'screen flat', 'sky flat', 'experimental', 'toss'):
                                  #here we might eventually turn on spectrograph lamps as needed for the imtype.
             imtypeb = True    #imtypeb passed to open the shutter.
             frame_type = imtype.lower()
@@ -1034,10 +1034,10 @@ class Camera:
 
                     return (None ,None)
                 else:               #here we are in waiting for imageReady loop and could send status and check Queue
-                    time.sleep(.05)
+                    time.sleep(.2)
                     g_dev['obs'].update_status()
                     #if not quick:
-                    #   g_dev['obs'].update()    #This keeps status alive while camera is loopin
+                    #   g_dev['obs'].update_status()
                     self.t7= time.time()
                     print("Basic camera file wait loop loop expired")
                     #it takes about 15 seconds from AWS to get here for a bias.
