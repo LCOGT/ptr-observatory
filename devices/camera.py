@@ -160,6 +160,7 @@ class Camera:
         self.camera_model = config.site_config['camera']['camera1']['desc']
         #NB We are reading from the actual camera or setting as the case may be.  For initial setup,
         #   we pull from config for some of the various settings.
+        breakpoint()
         try:
             self.camera.BinX = int(config.site_config['camera']['camera1']['settings']['default_bin'])
             self.camera.BinY = int(config.site_config['camera']['camera1']['settings']['default_bin'])
@@ -223,11 +224,10 @@ class Camera:
         #print("Camera Command incoming:  ", command)
         req = command['required_params']
         opt = command['optional_params']
-        g_dev['seq'].screen_flat_script(req, opt)
         action = command['action']
 # =============================================================================
 # # =============================================================================
-        if opt['filter'] == 'dark' and opt['bin'] == '4,4':    # Special case, AWS broken 20200405
+        if opt['filter'] == 'dark' and opt['bin'] == '2,2':    # Special case, AWS broken 20200405
              g_dev['seq'].screen_flat_script(req, opt)
 # # =============================================================================
 # =============================================================================
@@ -1034,7 +1034,7 @@ class Camera:
 
                     return (None ,None)
                 else:               #here we are in waiting for imageReady loop and could send status and check Queue
-                    time.sleep(.05)
+                    time.sleep(.2)
                     g_dev['obs'].update_status()
                     #if not quick:
                     #   g_dev['obs'].update()    #This keeps status alive while camera is loopin

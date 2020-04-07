@@ -168,7 +168,9 @@ class Sequencer:
         #shut_comp =  req['shutterCompensation']
         if flat_count < 1: flat_count = 1
         g_dev['mnt'].park_command({}, {})
+        g_dev['obs'].update_status()
         g_dev['scr'].screen_dark()
+        g_dev['obs'].update_status()
         #Here we need to switch off any IR or dome lighting.
         #Take a 10 s dark screen air flat to sense ambient
         req = {'time': 10,  'alias': alias, 'image_type': 'screen flat'}
@@ -181,13 +183,15 @@ class Sequencer:
             exposure = 1
             exp_time, screen_setting = g_dev['fil'].filter_data[filter_number][4]
             g_dev['scr'].set_screen_bright(float(screen_setting))
+            g_dev['obs'].update_status()
             g_dev['scr'].screen_light_on()
+            g_dev['obs'].update_status()
             print('Test Screen; filter, bright:  ', filter_number, float(screen_setting))
             req = {'time': float(exp_time),  'alias': alias, 'image_type': 'screen flat'}
             opt = {'size': 100, 'count': flat_count, 'filter': g_dev['fil'].filter_data[filter_number][0]}
             g_dev['cam'].expose_command(req, opt, gather_status = False, no_AWS=True)
-            print('seq 7')
         g_dev['scr'].screen_dark()
+        g_dev['obs'].update_status()
         #take a 10 s dark screen air flat to sense ambient
         req = {'time': 10,  'alias': alias, 'image_type': 'screen flat'}
         opt = {'size': 100, 'count': dark_count, 'filter': g_dev['fil'].filter_data[0][0]}
