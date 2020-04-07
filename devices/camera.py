@@ -24,7 +24,6 @@ import matplotlib.pyplot as plt
 
 from PIL import Image
 from global_yard import g_dev
-from obs import config #NB this can be eliminated by using passed in config.
 from processing.calibration import calibrate
 from devices.sequencer import Sequencer
 
@@ -108,12 +107,12 @@ class Camera:
 
     ###filter, focuser, rotator must be set up prior to camera.
 
-    def __init__(self, driver: str, name: str, config_in):
+    def __init__(self, driver: str, name: str, config: dict):
 
         self.name = name
 
         g_dev['cam'] = self
-        self.config = config_in
+        self.config = config
         win32com.client.pythoncom.CoInitialize()
         self.camera = win32com.client.Dispatch(driver)
         #self.camera = win32com.client.Dispatch('ASCOM.FLI.Kepler.Camera')
@@ -145,7 +144,7 @@ class Camera:
         self.exposure_busy = False
         self.cmd_in = None
         self.alias = self.config['camera']['camera1']['name']
-        self.site_path = config.site_config['site_path']
+        self.site_path = self.config['site_path']
         self.archive_path = self.site_path +'archive/'
         self.camera_path = self.archive_path  + self.alias+ "/"
         self.lng_path = self.camera_path + "lng/"
@@ -155,22 +154,22 @@ class Camera:
         except:
             print ("File newest.fits not found, this is probably OK")
         self.is_cmos = False
-        if config.site_config['camera']['camera1']['settings']['is_cmos']  == 'true':
+        if self.config['camera']['camera1']['settings']['is_cmos']  == 'true':
             self.is_cmos = False
-        self.camera_model = config.site_config['camera']['camera1']['desc']
+        self.camera_model = self.config['camera']['camera1']['desc']
         #NB We are reading from the actual camera or setting as the case may be.  For initial setup,
         #   we pull from config for some of the various settings.
         breakpoint()
         try:
-            self.camera.BinX = int(config.site_config['camera']['camera1']['settings']['default_bin'])
-            self.camera.BinY = int(config.site_config['camera']['camera1']['settings']['default_bin'])
+            self.camera.BinX = int(self.config['camera']['camera1']['settings']['default_bin'])
+            self.camera.BinY = int(self.config['camera']['camera1']['settings']['default_bin'])
             #NB we need to be sure AWS picks up this default.config.site_config['camera']['camera1']['settings']['default_bin'])
         except:
             print('Camera only accepts Bins = 1.')
             self.camera.BinX = 1
             self.camera.BinY = 1
-        self.overscan_x =  int(config.site_config['camera']['camera1']['settings']['overscan_x'])
-        self.overscan_y =  int(config.site_config['camera']['camera1']['settings']['overscan_y'])
+        self.overscan_x =  int(self.config['camera']['camera1']['settings']['overscan_x'])
+        self.overscan_y =  int(self.config['camera']['camera1']['settings']['overscan_y'])
         self.camera_x_size = self.camera.CameraXSize  #unbinned values.
         self.camera_y_size = self.camera.CameraYSize  #unbinned
         self.camera_max_x_bin = self.camera.MaxBinX
@@ -502,7 +501,6 @@ class Camera:
                 g_dev['obs'].update_status()
 #            if self.current_filter == 'u':
 #                bolt = [ 'O3', 'HA', 'N2', 'S2', 'ContR', 'zs', 'u']
-#                ptr_events.flat_spot_now(go=True)
 #            elif self.current_filter == 'PL':
 #                bolt = [ 'PR', 'PG', 'PB', 'PL']
 #            elif self.current_filter == 'g':
@@ -749,13 +747,13 @@ class Camera:
                         hdu.header['XORGSUBF'] = self.camera_start_x    #This makes little sense to fix...  NB ALL NEEDS TO COME FROM CONFIG!!
                         hdu.header['YORGSUBF'] = self.camera_start_y
                         hdu.header['READOUTM'] = 'Monochrome'    #NB this needs to be updated
-                        hdu.header['TELESCOP'] = config.site_config['telescope']['telescope1']['desc']
-                        hdu.header['FOCAL']    = round(float(config.site_config['telescope']['telescope1']['focal_length']), 2)
-                        hdu.header['APR-DIA']  = round(float(config.site_config['telescope']['telescope1']['aperture']), 2)
-                        hdu.header['APR-AREA'] = round(float(config.site_config['telescope']['telescope1']['collecting_area']), 1)
-                        hdu.header['SITELAT']  = round(float(config.site_config['latitude']), 6)
-                        hdu.header['SITE-LNG'] = round(float(config.site_config['longitude']), 6)
-                        hdu.header['SITE-ELV'] = round(float(config.site_config['elevation']), 2)
+                        hdu.header['TELESCOP'] = self.config['telescope']['telescope1']['desc']
+                        hdu.header['FOCAL']    = round(float(self.config['telescope']['telescope1']['focal_length']), 2)
+                        hdu.header['APR-DIA']  = round(float(self.config['telescope']['telescope1']['aperture']), 2)
+                        hdu.header['APR-AREA'] = round(float(self.config['telescope']['telescope1']['collecting_area']), 1)
+                        hdu.header['SITELAT']  = round(float(self.config['latitude']), 6)
+                        hdu.header['SITE-LNG'] = round(float(self.config['longitude']), 6)
+                        hdu.header['SITE-ELV'] = round(float(self.config['elevation']), 2)
                         hdu.header['MPC-CODE'] = 'zzzzz'       # This is made up for now.
                         hdu.header['JD-START'] = 'bogus'       # Julian Date at start of exposure
                         hdu.header['JD-HELIO'] = 'bogus'       # Heliocentric Julian Date at exposure midpoint
@@ -830,7 +828,7 @@ class Camera:
                         #hdu.header['CMOSMODE'] = 'HDR-HDC'  #Need to figure out how to read this from setup.
                         hdu.header['SATURATE'] = int(self.config['camera']['camera1']['settings']['saturate'])
                         #NB This needs to be properly computed
-                        pix_ang = (self.camera.PixelSizeX*self.camera.BinX/(float(config.site_config['telescope'] \
+                        pix_ang = (self.camera.PixelSizeX*self.camera.BinX/(float(self.config['telescope'] \
                                                   ['telescope1']['focal_length'])*1000.))
                         hdu.header['PIXSCALE'] = round(math.degrees(math.atan(pix_ang))*3600., 2)
 

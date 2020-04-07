@@ -56,7 +56,7 @@ def probeRead(com_port):
 
 class Focuser:
 
-    def __init__(self, driver: str, name: str, config):
+    def __init__(self, driver: str, name: str, config: dict):
         self.site = config['site']
         self.name = name
         g_dev['foc'] = self

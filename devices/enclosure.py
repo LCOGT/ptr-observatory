@@ -1,12 +1,12 @@
 import win32com.client
 from global_yard import g_dev
-import ptr_events
 
 
 class Enclosure:
 
-    def __init__(self, driver: str, name: str):
+    def __init__(self, driver: str, name: str, config: dict, astro_events):
         self.name = name
+        self.astro_events = astro_events
         g_dev['enc'] = self
         win32com.client.pythoncom.CoInitialize()
         self.enclosure = win32com.client.Dispatch(driver)
@@ -123,18 +123,19 @@ class Enclosure:
         Now what if code hangs?  To recover from that ideally we need a deadman style timer operating on a
         separate computer.
         '''
-        #   ptr_events.sunZ88Op <=
-        if  ptr_events.sunZ88Op < ptr_events.ephem.now() < ptr_events.sunZ88Cl \
-                                and self. wx_is_ok() \
-                                and self.wait_time <= 0 \
-                                and self.enclosure.ShutterStatus == 1: #Closed
+
+        sunZ88Op, sunZ88Cl, ephemNow = self.astro_events.getSunEvents()
+
+        if  sunZ88Op < ephemNow < sunZ88Cl \
+                and self.wx_is_ok() \
+                and self.wait_time <= 0 \
+                and self.enclosure.ShutterStatus == 1: #Closed
             self.state = 'Nightime Open Shutter, Wx OK, in Observing window.'
             self.cycles += 1           #if >=3 inhibits reopening for Wx  -- may need shelving so this persists.
             #A countdown to re-open
             #self.enclosure.OpenShutter()   #<<<<NB NB NB Only enable when code is fully proven to work.
-            #ptr_events.flat_spot_now(go=True)
 
-        elif ptr_events.sunZ88Op >= ptr_events.ephem.now()  or ptr_events.ephem.now() >= ptr_events.sunZ88Cl:
+        elif sunZ88Op >= ephemNow or ephemNow >= sunZ88Cl:
             self.enclosure.CloseShutter()
             print("Daytime Close Shutter issued.")
 

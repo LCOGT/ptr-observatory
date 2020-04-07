@@ -4,8 +4,11 @@ WER 20200307
 
 IMPORTANT TODOs:
 
-Figure out how to fix jams with Maxium. Debug interrupts can cause
-it to disconnect.
+- Figure out how to fix jams with Maxium. Debug interrupts can cause
+  it to disconnect.
+
+- Design the program to terminate cleanly with Ctrl-C. 
+
 THINGS TO FIX:
     20200316
 
@@ -29,15 +32,11 @@ import os
 import sys
 import argparse
 import json
-
+import importlib
 from api_calls import API_calls
 
-# NB: The main config file should be named simply 'config.py'.
-# Specific site configs should not be tracked in version control.
-import config as config
-import config_simulator as config_simulator
-# Correct site config must be imorted before ptr_events
 import ptr_events
+
 # import device classes
 from devices.camera import Camera
 from devices.enclosure import Enclosure
@@ -47,7 +46,7 @@ from devices.mount import Mount
 from devices.telescope import Telescope
 from devices.observing_conditions import ObservingConditions
 from devices.rotator import Rotator
-# from devices.switch import Switch    #Nothing implemented yet 20200307
+from devices.switch import Switch    #Nothing implemented yet 20200307
 from devices.screen import Screen
 from devices.sequencer import Sequencer
 from global_yard import g_dev
@@ -55,6 +54,7 @@ import bz2
 import httplib2
 
 
+# TODO: move this function to a better location
 def to_bz2(filename, delete=False):
     try:
         uncomp = open(filename, 'rb')
@@ -72,6 +72,7 @@ def to_bz2(filename, delete=False):
         return False
 
 
+# TODO: move this function to a better location
 def from_bz2(filename, delete=False):
     try:
         comp = open(filename, 'rb')
@@ -88,6 +89,7 @@ def from_bz2(filename, delete=False):
         return False
 
 
+# TODO: move this function to a better location
 # The following function is a monkey patch to speed up outgoing large files.
 def patch_httplib(bsize=400000):
     """ Update httplib block size for faster upload (Default if bsize=None) """
@@ -120,11 +122,13 @@ class Observatory:
 
         # This is the class through which we can make authenticated api calls.
         self.api = API_calls()
+
         self.command_interval = 2   # seconds between polls for new commands
+
         self.status_interval = 3    # NOTE THESE IMPLENTED AS A DELA NOT A RATE.
+
         self.name = name
         self.config = config
-        self.update_config()
         self.last_request = None
         self.stopped = False
         self.device_types = [
@@ -139,16 +143,26 @@ class Observatory:
             'sequencer',
             'filter_wheel'
             ]
+
+        # Send the config to aws
+        self.update_config()
+
+        # Instantiate the helper class for astronomical events
+        self.astro_events = ptr_events.Events(self.config)
+
         # Use the configuration to instantiate objects for all devices.
         self.create_devices(config)
+
         self.loud_status = False
         g_dev['obs'] = self
         self.g_dev = g_dev
         self.time_last_status = time.time() - 3
+
         # Build the to-AWS Queue and start a thread.
         self.aws_queue = queue.PriorityQueue()
         self.aws_queue_thread = threading.Thread(target=self.send_to_AWS, args=())
         self.aws_queue_thread.start()
+
         # uild the site (from-AWS) Queue and start a thread.
         # self.site_queue = queue.SimpleQueue()
         # self.site_queue_thread = threading.Thread(target=self.get_from_AWS, args=())
@@ -170,15 +184,15 @@ class Observatory:
                 settings = devices_of_type[name].get("settings", {})
                 # print('looking for dev-types:  ', dev_type)
                 if dev_type == "observing_conditions":
-                    device = ObservingConditions(driver, name, self.config)
+                    device = ObservingConditions(driver, name, self.config, self.astro_events)
                 elif dev_type == 'enclosure':
-                    device = Enclosure(driver, name)
+                    device = Enclosure(driver, name, self.config, self.astro_events)
                 elif dev_type == "mount":
-                    device = Mount(driver, name, settings, tel=False)
+                    device = Mount(driver, name, settings, self.config, self.astro_events, tel=False)
                 elif dev_type == "telescope":   # order of attaching is sensitive
-                    device = Telescope(driver, name, settings, tel=True)
+                    device = Telescope(driver, name, settings, self.config, tel=True)
                 elif dev_type == "rotator":
-                    device = Rotator(driver, name)
+                    device = Rotator(driver, name, self.config)
                 elif dev_type == "focuser":
                     device = Focuser(driver, name, self.config)
                 elif dev_type == "screen":
@@ -186,13 +200,14 @@ class Observatory:
                 elif dev_type == "camera":
                     device = Camera(driver, name, self.config)
                 elif dev_type == "sequencer":
-                    device = Sequencer(driver, name)
+                    device = Sequencer(driver, name, self.config)
                 elif dev_type == "filter_wheel":
                     device = FilterWheel(driver, name, self.config)
                 else:
                     print(f"Unknown device: {name}")
                 # Add the instantiated device to the collection of all devices.
                 self.all_devices[dev_type][name] = device
+        print("Finished creating devices.")
 
     def update_config(self):
         '''
@@ -311,12 +326,8 @@ class Observatory:
         # if loud: print("update_status finished in:  ", round(time.time() - t1, 2), "  seconds")
 
     def update(self):
-        # t2 = time.time()
         self.update_status()
-        # print('update_status took :  ', round(time.time() - t2, 3))
-        # t1 = time.time()
         self.scan_requests('mount1')
-       # print('scan_requests took :  ', round(time.time() - t1, 3))
 
     def run(self):   # run is a poor name for this function.
         try:
@@ -373,49 +384,40 @@ class Observatory:
                 time.sleep(0.2)
 
 
-def run_wmd():
-
-    # This is a bit of ugliness occcasioned by the FLI Kepler driver.
-    day_str = ptr_events.compute_day_directory()
-    g_dev['day'] = day_str
-    next_day = ptr_events.Day_tomorrow
-    g_dev['d-a-y'] = day_str[0:4] + '-' + day_str[4:6] + '-' + day_str[6:]
-    g_dev['next_day'] = next_day[0:4] + '-' + next_day[4:6] +\
-        '-' + next_day[6:]
-    print('\nNext Day is:  ', g_dev['next_day'])
-    print('Now is:  ', ptr_events.ephem.now(), g_dev['d-a-y'])
-    patch_httplib
-
-    ptr_events.display_events()
-    o = Observatory(config.site_name, config.site_config)
-    # print('\n', o.all_devices)
-    o.run()
-
-
-def run_simulator():
-    conf = config_simulator
-    ptr_events.display_events()
-    o = Observatory(conf.site_name, conf.site_config)
-    o.run()
-
-
 if __name__ == "__main__":
 
+    # Define a command line argument to specify the config file to use
     parser = argparse.ArgumentParser()
-
-    # command line arg to use simulated ascom devices
-    parser.add_argument('-sim', action='store_true')
+    parser.add_argument('--config', type=str, default="wmd_eastpier")
     options = parser.parse_args()
-    options.sim = False
 
-    if options.sim:
-        print('Starting up with ASCOM simulators.')
-        run_simulator()
-    else:
-        print('Starting up default configuration file.')
-        run_wmd()
+    # Import the specified config file
+    config_file_name = f"config_{options.config}"
+    config = importlib.import_module(f"config_files.{config_file_name}")
+    print(f"Starting up {config.site_name}.")
 
-
-
+    # Start up the observatory
+    o = Observatory(config.site_name, config.site_config)
+    o.run()
 
 
+
+
+
+def OLD_CODE():
+    '''
+    This is a place for code that is not currently used but saved for reference later.
+    If there is code in here that you know is no longer needed, please delete it!
+
+    '''
+
+    ### 20200407 - This was run before instantiating the Observatory class in obs.py.
+        # # This is a bit of ugliness occcasioned by the FLI Kepler driver.
+        # day_str = ptr_events.compute_day_directory()
+        # g_dev['day'] = day_str
+        # next_day = ptr_events.Day_tomorrow
+        # g_dev['d-a-y'] = f"{day_str[0:4]}-{day_str[4:6]}-{day_str[6:]}"
+        # g_dev['next_day'] = f"{next_day[0:4]}-{next_day[4:6]}-{next_day[6:]}"
+        # print('\nNext Day is:  ', g_dev['next_day'])
+        # print('Now is:  ', ptr_events.ephem.now(), g_dev['d-a-y'])
+        # patch_httplib
