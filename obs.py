@@ -124,7 +124,8 @@ class Observatory:
         self.api = API_calls()
 
         self.command_interval = 2   # seconds between polls for new commands
-        self.status_interval = 2    # NOTE THESE IMPLENTED AS A DELA NOT A RATE.
+
+        self.status_interval = 3    # NOTE THESE IMPLENTED AS A DELA NOT A RATE.
 
         self.name = name
         self.config = config
@@ -195,7 +196,7 @@ class Observatory:
                 elif dev_type == "focuser":
                     device = Focuser(driver, name, self.config)
                 elif dev_type == "screen":
-                    device = Screen('EastAlnitak', 'COM6')
+                    device = Screen(driver, name)
                 elif dev_type == "camera":
                     device = Camera(driver, name, self.config)
                 elif dev_type == "sequencer":
