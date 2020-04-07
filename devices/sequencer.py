@@ -4,6 +4,7 @@ import time
 from global_yard import g_dev
 from processing.calibration import fit_quadratic
 
+
 class Sequencer:
 
     def __init__(self, driver: str, name: str, config: dict):
@@ -11,22 +12,12 @@ class Sequencer:
         self.config = config
         g_dev['seq'] = self
         self.connected = True
-        self.description = "Sequencer for the eastpier mounting and OTAs"
+        self.description = "Sequencer for script execution."
         self.sequencer_hold = False
         print(f"sequencer connected.")
         print(self.description)
 
     def get_status(self):
-        '''
-        The position is expressed as an angle from 0 up to but not including
-        360 degrees, counter-clockwise against the sky. This is the standard
-        definition of Position Angle. However, the rotator does not need to
-        (and in general will not) report the true Equatorial Position Angle,
-        as the attached imager may not be precisely aligned with the rotator's
-        indexing. It is up to the client to determine any offset between
-        mechanical rotator position angle and the true Equatorial Position
-        Angle of the imager, and compensate for any difference.
-        '''
         status = {
             "active_script": 'none',
             "sequencer_busy":  'false'
@@ -260,7 +251,7 @@ class Sequencer:
         print('Actual focus:  ', foc_pos4, round(spot4, 2))
         self.sequencer_hold = False   #Allow comand checks.
 
-    def equatorial_pointing_run(reg, opt, spacing=10, vertical=False, grid=False, alt_minimum=25):
+    def equatorial_pointing_run(self, reg, opt, spacing=10, vertical=False, grid=False, alt_minimum=25):
         '''
         unpark telescope
         if not open, open dome
@@ -309,7 +300,7 @@ A variant on this is cover a grid, cover a + sign shape.
                         -57.5, -67.5)
         print("Starting equatorial sweep.")
         g_dev['mnt'].unpark_command()
-        cam_name = str(config.site_config['camera']['camera1']['name'])
+        cam_name = str(self.config['camera']['camera1']['name'])
         for ha_degree_value in ha_deg_steps:
             target_ra =  g_dev['mnt'].mount.SiderealTime - ha_degree_value/15.
             while target_ra < 0:

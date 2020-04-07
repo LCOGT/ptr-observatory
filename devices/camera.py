@@ -159,7 +159,6 @@ class Camera:
         self.camera_model = self.config['camera']['camera1']['desc']
         #NB We are reading from the actual camera or setting as the case may be.  For initial setup,
         #   we pull from config for some of the various settings.
-        breakpoint()
         try:
             self.camera.BinX = int(self.config['camera']['camera1']['settings']['default_bin'])
             self.camera.BinY = int(self.config['camera']['camera1']['settings']['default_bin'])
