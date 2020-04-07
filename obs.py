@@ -4,8 +4,11 @@ WER 20200307
 
 IMPORTANT TODOs:
 
-Figure out how to fix jams with Maxium. Debug interrupts can cause
-it to disconnect.
+- Figure out how to fix jams with Maxium. Debug interrupts can cause
+  it to disconnect.
+
+- Design the program to terminate cleanly with Ctrl-C. 
+
 THINGS TO FIX:
     20200316
 
@@ -32,12 +35,8 @@ import json
 import importlib
 from api_calls import API_calls
 
-# NB: The main config file should be named simply 'config.py'.
-# Specific site configs should not be tracked in version control.
-#import config as config
-#import config_simulator as config_simulator
-# Correct site config must be imorted before ptr_events
 import ptr_events
+
 # import device classes
 from devices.camera import Camera
 from devices.enclosure import Enclosure
@@ -47,7 +46,7 @@ from devices.mount import Mount
 from devices.telescope import Telescope
 from devices.observing_conditions import ObservingConditions
 from devices.rotator import Rotator
-# from devices.switch import Switch    #Nothing implemented yet 20200307
+from devices.switch import Switch    #Nothing implemented yet 20200307
 from devices.screen import Screen
 from devices.sequencer import Sequencer
 from global_yard import g_dev
@@ -55,6 +54,7 @@ import bz2
 import httplib2
 
 
+# TODO: move this function to a better location
 def to_bz2(filename, delete=False):
     try:
         uncomp = open(filename, 'rb')
@@ -72,6 +72,7 @@ def to_bz2(filename, delete=False):
         return False
 
 
+# TODO: move this function to a better location
 def from_bz2(filename, delete=False):
     try:
         comp = open(filename, 'rb')
@@ -88,6 +89,7 @@ def from_bz2(filename, delete=False):
         return False
 
 
+# TODO: move this function to a better location
 # The following function is a monkey patch to speed up outgoing large files.
 def patch_httplib(bsize=400000):
     """ Update httplib block size for faster upload (Default if bsize=None) """
@@ -130,7 +132,7 @@ class Observatory:
         self.stopped = False
         self.device_types = [
             'observing_conditions',
-            #'enclosure',
+            'enclosure',
             'mount',
             'telescope',
             'rotator',
@@ -236,8 +238,6 @@ class Observatory:
         have parallel mountings or independently controlled cameras.
         '''
 
-        print("Starting to scan for requests")
-
         # This stopping mechanism allows for threads to close cleanly.
         while not self.stopped:
             # Wait a bit before polling for new commands
@@ -276,8 +276,6 @@ class Observatory:
         Each device class is responsible for implementing the method
         `get_status` which returns a dictionary.
         '''
-
-        print("Starting to send status")
 
         # This stopping mechanism allows for threads to close cleanly.
         loud = False
@@ -327,12 +325,8 @@ class Observatory:
         # if loud: print("update_status finished in:  ", round(time.time() - t1, 2), "  seconds")
 
     def update(self):
-        # t2 = time.time()
         self.update_status()
-        # print('update_status took :  ', round(time.time() - t2, 3))
-        # t1 = time.time()
         self.scan_requests('mount1')
-       # print('scan_requests took :  ', round(time.time() - t1, 3))
 
     def run(self):   # run is a poor name for this function.
         try:
@@ -389,56 +383,40 @@ class Observatory:
                 time.sleep(0.2)
 
 
-def run_wmd():
-
-    # This is a bit of ugliness occcasioned by the FLI Kepler driver.
-    day_str = ptr_events.compute_day_directory()
-    g_dev['day'] = day_str
-    next_day = ptr_events.Day_tomorrow
-    g_dev['d-a-y'] = day_str[0:4] + '-' + day_str[4:6] + '-' + day_str[6:]
-    g_dev['next_day'] = next_day[0:4] + '-' + next_day[4:6] +\
-        '-' + next_day[6:]
-    print('\nNext Day is:  ', g_dev['next_day'])
-    print('Now is:  ', ptr_events.ephem.now(), g_dev['d-a-y'])
-    patch_httplib
-
-    ptr_events.display_events()
-    o = Observatory(config.site_name, config.site_config)
-    # print('\n', o.all_devices)
-    o.run()
-
-
-def run_simulator():
-    conf = config_simulator
-    o = Observatory(conf.site_name, conf.site_config)
-    o.run()
-
-
 if __name__ == "__main__":
 
+    # Define a command line argument to specify the config file to use
     parser = argparse.ArgumentParser()
-
-    # command line arg to use simulated ascom devices
-    parser.add_argument('-sim', action='store_true')
     parser.add_argument('--config', type=str, default="wmd_eastpier")
     options = parser.parse_args()
-    options.sim = False
 
-    config_file = f"config_{options.config}"
-    config = importlib.import_module(f"config_files.{config_file}")
-    print(config.site_name)
+    # Import the specified config file
+    config_file_name = f"config_{options.config}"
+    config = importlib.import_module(f"config_files.{config_file_name}")
+    print(f"Starting up {config.site_name}.")
 
+    # Start up the observatory
     o = Observatory(config.site_name, config.site_config)
     o.run()
 
-    #if options.sim:
-        #print('Starting up with ASCOM simulators.')
-        #run_simulator()
-    #else:
-        #print('Starting up default configuration file.')
-        #run_wmd()
 
 
 
 
+def OLD_CODE():
+    '''
+    This is a place for code that is not currently used but saved for reference later.
+    If there is code in here that you know is no longer needed, please delete it!
 
+    '''
+
+    ### 20200407 - This was run before instantiating the Observatory class in obs.py.
+        # # This is a bit of ugliness occcasioned by the FLI Kepler driver.
+        # day_str = ptr_events.compute_day_directory()
+        # g_dev['day'] = day_str
+        # next_day = ptr_events.Day_tomorrow
+        # g_dev['d-a-y'] = f"{day_str[0:4]}-{day_str[4:6]}-{day_str[6:]}"
+        # g_dev['next_day'] = f"{next_day[0:4]}-{next_day[4:6]}-{next_day[6:]}"
+        # print('\nNext Day is:  ', g_dev['next_day'])
+        # print('Now is:  ', ptr_events.ephem.now(), g_dev['d-a-y'])
+        # patch_httplib
