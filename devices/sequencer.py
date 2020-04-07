@@ -3,12 +3,12 @@ import win32com.client
 import time
 from global_yard import g_dev
 from processing.calibration import fit_quadratic
-from obs import config
 
 class Sequencer:
 
-    def __init__(self, driver: str, name: str):
+    def __init__(self, driver: str, name: str, config: dict):
         self.name = name
+        self.config = config
         g_dev['seq'] = self
         self.connected = True
         self.description = "Sequencer for the eastpier mounting and OTAs"
@@ -122,7 +122,7 @@ class Sequencer:
             take the count
 
         '''
-        alias = config.site_config['camera']['camera1']['name']
+        alias = self.config.site_config['camera']['camera1']['name']
         dark_count = 3
         flat_count = 3#int(req['numFrames'])
         gain_calc = req['gainCalc']
@@ -161,7 +161,7 @@ class Sequencer:
 
     def screen_flat_script(self, req, opt):
 
-        alias = str(config.site_config['camera']['camera1']['name'])
+        alias = str(self.config.site_config['camera']['camera1']['name'])
         dark_count = 1
         flat_count = 2#int(req['numFrames'])
         #gain_calc = req['gainCalc']

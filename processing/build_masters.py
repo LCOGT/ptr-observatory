@@ -61,7 +61,6 @@ import sep
 
 # from ptr-observatory.global_yard import g_dev
 import config
-# import ptr-observatory.ptr_events
 # import api_calls
 # import requests
 

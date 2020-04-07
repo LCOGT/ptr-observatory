@@ -29,13 +29,13 @@ import os
 import sys
 import argparse
 import json
-
+import importlib
 from api_calls import API_calls
 
 # NB: The main config file should be named simply 'config.py'.
 # Specific site configs should not be tracked in version control.
-import config as config
-import config_simulator as config_simulator
+#import config as config
+#import config_simulator as config_simulator
 # Correct site config must be imorted before ptr_events
 import ptr_events
 # import device classes
@@ -120,16 +120,17 @@ class Observatory:
 
         # This is the class through which we can make authenticated api calls.
         self.api = API_calls()
+
         self.command_interval = 2   # seconds between polls for new commands
         self.status_interval = 2    # NOTE THESE IMPLENTED AS A DELA NOT A RATE.
+
         self.name = name
         self.config = config
-        self.update_config()
         self.last_request = None
         self.stopped = False
         self.device_types = [
             'observing_conditions',
-            'enclosure',
+            #'enclosure',
             'mount',
             'telescope',
             'rotator',
@@ -139,16 +140,26 @@ class Observatory:
             'sequencer',
             'filter_wheel'
             ]
+
+        # Send the config to aws
+        self.update_config()
+
+        # Instantiate the helper class for astronomical events
+        self.astro_events = ptr_events.Events(self.config)
+
         # Use the configuration to instantiate objects for all devices.
         self.create_devices(config)
+
         self.loud_status = False
         g_dev['obs'] = self
         self.g_dev = g_dev
         self.time_last_status = time.time() - 3
+
         # Build the to-AWS Queue and start a thread.
         self.aws_queue = queue.PriorityQueue()
         self.aws_queue_thread = threading.Thread(target=self.send_to_AWS, args=())
         self.aws_queue_thread.start()
+
         # uild the site (from-AWS) Queue and start a thread.
         # self.site_queue = queue.SimpleQueue()
         # self.site_queue_thread = threading.Thread(target=self.get_from_AWS, args=())
@@ -170,15 +181,15 @@ class Observatory:
                 settings = devices_of_type[name].get("settings", {})
                 # print('looking for dev-types:  ', dev_type)
                 if dev_type == "observing_conditions":
-                    device = ObservingConditions(driver, name, self.config)
+                    device = ObservingConditions(driver, name, self.config, self.astro_events)
                 elif dev_type == 'enclosure':
-                    device = Enclosure(driver, name)
+                    device = Enclosure(driver, name, self.config, self.astro_events)
                 elif dev_type == "mount":
-                    device = Mount(driver, name, settings, tel=False)
+                    device = Mount(driver, name, settings, self.config, self.astro_events, tel=False)
                 elif dev_type == "telescope":   # order of attaching is sensitive
-                    device = Telescope(driver, name, settings, tel=True)
+                    device = Telescope(driver, name, settings, self.config, tel=True)
                 elif dev_type == "rotator":
-                    device = Rotator(driver, name)
+                    device = Rotator(driver, name, self.config)
                 elif dev_type == "focuser":
                     device = Focuser(driver, name, self.config)
                 elif dev_type == "screen":
@@ -186,13 +197,14 @@ class Observatory:
                 elif dev_type == "camera":
                     device = Camera(driver, name, self.config)
                 elif dev_type == "sequencer":
-                    device = Sequencer(driver, name)
+                    device = Sequencer(driver, name, self.config)
                 elif dev_type == "filter_wheel":
                     device = FilterWheel(driver, name, self.config)
                 else:
                     print(f"Unknown device: {name}")
                 # Add the instantiated device to the collection of all devices.
                 self.all_devices[dev_type][name] = device
+        print("Finished creating devices.")
 
     def update_config(self):
         '''
@@ -223,6 +235,8 @@ class Observatory:
         for all devices at a site.  This may need to change when we
         have parallel mountings or independently controlled cameras.
         '''
+
+        print("Starting to scan for requests")
 
         # This stopping mechanism allows for threads to close cleanly.
         while not self.stopped:
@@ -262,6 +276,8 @@ class Observatory:
         Each device class is responsible for implementing the method
         `get_status` which returns a dictionary.
         '''
+
+        print("Starting to send status")
 
         # This stopping mechanism allows for threads to close cleanly.
         loud = False
@@ -394,7 +410,6 @@ def run_wmd():
 
 def run_simulator():
     conf = config_simulator
-    ptr_events.display_events()
     o = Observatory(conf.site_name, conf.site_config)
     o.run()
 
@@ -405,15 +420,23 @@ if __name__ == "__main__":
 
     # command line arg to use simulated ascom devices
     parser.add_argument('-sim', action='store_true')
+    parser.add_argument('--config', type=str, default="wmd_eastpier")
     options = parser.parse_args()
     options.sim = False
 
-    if options.sim:
-        print('Starting up with ASCOM simulators.')
-        run_simulator()
-    else:
-        print('Starting up default configuration file.')
-        run_wmd()
+    config_file = f"config_{options.config}"
+    config = importlib.import_module(f"config_files.{config_file}")
+    print(config.site_name)
+
+    o = Observatory(config.site_name, config.site_config)
+    o.run()
+
+    #if options.sim:
+        #print('Starting up with ASCOM simulators.')
+        #run_simulator()
+    #else:
+        #print('Starting up default configuration file.')
+        #run_wmd()
 
 
 
