@@ -7,7 +7,7 @@ IMPORTANT TODOs:
 - Figure out how to fix jams with Maxium. Debug interrupts can cause
   it to disconnect.
 
-- Design the program to terminate cleanly with Ctrl-C. 
+- Design the program to terminate cleanly with Ctrl-C.
 
 THINGS TO FIX:
     20200316
