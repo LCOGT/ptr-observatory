@@ -91,6 +91,7 @@ def from_bz2(filename, delete=False):
 
 # TODO: move this function to a better location
 # The following function is a monkey patch to speed up outgoing large files.
+# NB does not appear to work. 20200408 WER
 def patch_httplib(bsize=400000):
     """ Update httplib block size for faster upload (Default if bsize=None) """
     if bsize is None:
@@ -148,11 +149,12 @@ class Observatory:
         self.update_config()
 
         # Instantiate the helper class for astronomical events
-        self.astro_events = ptr_events.Events(self.config)
 
+        self.astro_events = ptr_events.Events(self.config)
+        self.astro_events.compute_day_directory()
+        self.astro_events.display_events()
         # Use the configuration to instantiate objects for all devices.
         self.create_devices(config)
-
         self.loud_status = False
         g_dev['obs'] = self
         self.g_dev = g_dev
@@ -390,21 +392,18 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--config', type=str, default="default")
     options = parser.parse_args()
-
     # Import the specified config file
     print(options.config)
     if options.config == "default":
         config_file_name = "config"
-    else: 
+    else:
         config_file_name = f"config_files.config_{options.config}"
     config = importlib.import_module(config_file_name)
     print(f"Starting up {config.site_name}.")
-
     # Start up the observatory
+    # patch_httplib()     # NB at some point we should check this improves performance, I think it does.  WER
     o = Observatory(config.site_name, config.site_config)
     o.run()
-
-
 
 
 
@@ -414,14 +413,3 @@ def OLD_CODE():
     If there is code in here that you know is no longer needed, please delete it!
 
     '''
-
-    ### 20200407 - This was run before instantiating the Observatory class in obs.py.
-        # # This is a bit of ugliness occcasioned by the FLI Kepler driver.
-        # day_str = ptr_events.compute_day_directory()
-        # g_dev['day'] = day_str
-        # next_day = ptr_events.Day_tomorrow
-        # g_dev['d-a-y'] = f"{day_str[0:4]}-{day_str[4:6]}-{day_str[6:]}"
-        # g_dev['next_day'] = f"{next_day[0:4]}-{next_day[4:6]}-{next_day[6:]}"
-        # print('\nNext Day is:  ', g_dev['next_day'])
-        # print('Now is:  ', ptr_events.ephem.now(), g_dev['d-a-y'])
-        # patch_httplib

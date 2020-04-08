@@ -835,13 +835,14 @@ class Camera:
                         #Need to assemble a complete header here
                         #hdu1.writeto('Q:\\archive\\ea03\\new2b.fits')#, overwrite=True)
                         #NB rename to ccurrent_camera
+
                         current_camera_name = self.config['camera']['camera1']['name']
+                        # NB This needs more deveopment
                         im_type = 'EX'   #or EN for engineering....
                         f_ext = ""
                         next_seq = next_sequence(current_camera_name)
                         if frame_type[-4:] == 'flat':
                             f_ext = '-' + str(self.current_filter)    #Append flat string to local image name
-
                         cal_name = self.config['site'] + '-' + current_camera_name + '-' + g_dev['day'] + '-' + \
                                                     next_seq  + f_ext + '-'  + im_type + '01.fits'
                         raw_name00 = self.config['site'] + '-' + current_camera_name + '-' + g_dev['day'] + '-' + \
@@ -855,6 +856,7 @@ class Camera:
                             next_seq  + '-' + im_type + '13.jpg'
                         text_name = self.config['site'] + '-' + current_camera_name + '-' + g_dev['day'] + '-' + \
                             next_seq  + '-' +  im_type + '01.txt'
+
                         im_path_r = self.camera_path
                         lng_path = self.lng_path
                         hdu.header['DAY-OBS'] = g_dev['day']
