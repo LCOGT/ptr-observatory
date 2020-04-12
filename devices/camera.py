@@ -137,7 +137,7 @@ class Camera:
             self.maxim = True
             self.ascom = False
             self.camera.TemperatureSetpoint = -30.
-            self.camera.CoolerOn = True
+            self.camera.CoolerOn = False   # NB This should be a site configuratin setting. 20200412
             self.current_filter = 0
             self.filter_wheel_name = 'maxim ' + self.camera.FilterWheelName
             print('Control is Maxim camera interface.')
@@ -701,6 +701,13 @@ class Camera:
                     self.t6 = time.time()
                     self.img = self.camera.ImageArray
                     self.t7 = time.time()
+                    if frame_type[-4:] == 'flat':
+                        test_saturated = np.array(self.img)
+                        if (test_saturated.mean() + np.median(test_saturated))/2 > 50000:   # NB Should we sample a patch?
+                            # NB How do we be sure Maxim does not hang?
+                            print("Flat rejected, too bright:  ", round(test_saturated.mean, 0))
+                            self.camera.AbortExposure()
+                            return -1, 0   # signals to flat routine image was rejected
                     g_dev['obs'].update_status()
                     #Save image with Maxim Header information, then read back with astropy and use the
                     #lqtter code for fits manipulation.
@@ -1033,18 +1040,18 @@ class Camera:
 
                     return (None ,None)
                 else:               #here we are in waiting for imageReady loop and could send status and check Queue
-                    time.sleep(.2)
+                    time.sleep(.3)
                     g_dev['obs'].update_status()
                     #if not quick:
                     #   g_dev['obs'].update_status()
                     self.t7= time.time()
-                    print("Basic camera file wait loop loop expired")
+                    print("Basic camera wait loop loop  is occuring")
                     #it takes about 15 seconds from AWS to get here for a bias.
             except:
                 counter += 1
                 time.sleep(.01)
                 #This shouldbe counted down for a loop cancel.
-                print('Wait for exposure end, but getting here is bad.')
+                print('Wait for exposure end, but getting here is usually bad.')
                 return (None, None)
 
         #definitely try to clean up any messes.

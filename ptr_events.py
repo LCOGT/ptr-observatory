@@ -138,7 +138,7 @@ class Events:
         skyBrightRatio = illuminance/0.002
         if skyBrightRatio < 1: skyBrightRatio = 1
         skyMag = 22-2.5*log10(skyBrightRatio)
-        return illuminance,  skyMag  #Units are lux, dimensionless ratio, approx mag/sq-asec
+        return illuminance,  skyMag   #  #Units are lux, dimensionless ratio, approx mag/sq-asec
 
     def _sunNow(self):
         sun = ephem.Sun()

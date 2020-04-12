@@ -22,7 +22,8 @@ class Enclosure:
 
 
     def get_status(self) -> dict:
-        #<<<<The next attibute reference fails.
+        #<<<<The next attibute reference fails at SAF, usually spurious Dome Ring Open report.
+
         shutter_status = self.enclosure.ShutterStatus
         if shutter_status == 0:
             stat_string = "open"
@@ -34,7 +35,7 @@ class Enclosure:
              stat_string = "closing"
         elif shutter_status == 4:
              stat_string = "error"
-        try:     #This is for a dome
+        try:     #This is for a dome   NB shouold not be using try/except here
             status = {'shutter_status': stat_string,
                       'shutter_slaving': str(self.enclosure.Slaved),
                       'shutter_azimuth': str(self.enclosure.Azimuth),
@@ -43,7 +44,7 @@ class Enclosure:
              status = {'shutter_status': stat_string,
                       'shutter_slaving': str(self.enclosure.Slaved),
                       'shutter_azimuth': 'unknown',
-                      'shutter_slewing': str(self.enclosure.Slewing)}           
+                      'shutter_slewing': str(self.enclosure.Slewing)}
         #print('Enclosure status:  ', status)
         return status
 
@@ -76,6 +77,7 @@ class Enclosure:
 
     def open_command(self, req: dict, opt: dict):
         ''' open the enclosure '''
+        self.manager()
         print(f"enclosure cmd: open")
         pass
 
@@ -111,19 +113,18 @@ class Enclosure:
     def manager(self):     #This is the place where the enclosure is autonomus during operating hours. Delicut Code!!!
         '''
         When the code starts up  we wait for the Sun = Z 88 condition and if Wx is OK
-        based on analysing both Redis data and checking on the enable bit in the  Boltwood
+        based on analyzing both Redis data and checking on the enable bit in the  Boltwood
         file, we issue ONE open command then set an Open Block so no more commands are
         issued.  At time of normal closing, we issue a series of close signals -- basically
         all day long.
 
-        While it is night, if WxOK goes bad a close is issued eveery 2 minutes
+        While it is night, if WxOK goes bad a close is issued every 2 minutes
         and a one-shot timer then refreshes while Wx is bad. If it is NOT BAD for 15 minutes, then a new
         open is issued.
 
         Now what if code hangs?  To recover from that ideally we need a deadman style timer operating on a
         separate computer.
         '''
-
         sunZ88Op, sunZ88Cl, ephemNow = self.astro_events.getSunEvents()
 
         if  sunZ88Op < ephemNow < sunZ88Cl \

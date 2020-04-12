@@ -126,7 +126,7 @@ class Observatory:
 
         self.command_interval = 2   # seconds between polls for new commands
 
-        self.status_interval = 3    # NOTE THESE IMPLENTED AS A DELA NOT A RATE.
+        self.status_interval = 3    # NOTE THESE IMPLENTED AS A DELT NOT A RATE.
 
         self.name = name
         self.config = config
@@ -209,6 +209,8 @@ class Observatory:
                     print(f"Unknown device: {name}")
                 # Add the instantiated device to the collection of all devices.
                 self.all_devices[dev_type][name] = device
+                # NB 20200410 This dropped out of the code: self.all_devices[dev_type][name] = [device]
+
         print("Finished creating devices.")
 
     def update_config(self):
@@ -328,8 +330,34 @@ class Observatory:
         # if loud: print("update_status finished in:  ", round(time.time() - t1, 2), "  seconds")
 
     def update(self):
+        """
+       
+        20200411 WER
+        This compact little function is the heart of the code in the sense this is repeatedly
+        called.  It first SENDS status for all devices to AWS, then it checks for any new
+        commands from AWS.  Then it calls sequencer.monitor() were jobs may get launched. A
+        flaw here is we do not have a Ulid for the 'Job number.'
+        
+        With a Maxim based camera is it possible for the owner to push buttons in parallel
+        with commands coming from AWS.  This is useful during the debugging phase.
+        
+        Sequences that are self-dispatched primarily relate to Bias darks, screen and sky
+        flats, opening and closing.  Status for these jobs is repored via the normal 
+        sequencer status mechanism. Guard flags to preveent care;ess interrupts will be
+        implemented as well as Cancel of a sequence if emitted by the Cancel botton on 
+        the AWS Sequence tab.
+        
+        Flat acquisition will include auomatic rejection of any image that has a mean 
+        intensity > cam.saturate.  The camera will return without further processing and
+        no image will be returned to AWS or stored locally.  We should log the Unihedron and
+        calc_illum values where filter first enter non-saturation.  Once we know those values
+        we can spend much less effort taking frames that are saturated. Save The Shutter!
+       
+        """
+
         self.update_status()
         self.scan_requests('mount1')
+        g_dev['seq'].monitor()
 
     def run(self):   # run is a poor name for this function.
         try:
