@@ -7,7 +7,7 @@ IMPORTANT TODOs:
 - Figure out how to fix jams with Maxium. Debug interrupts can cause
   it to disconnect.
 
-- Design the program to terminate cleanly with Ctrl-C. 
+- Design the program to terminate cleanly with Ctrl-C.
 
 THINGS TO FIX:
     20200316
@@ -91,6 +91,7 @@ def from_bz2(filename, delete=False):
 
 # TODO: move this function to a better location
 # The following function is a monkey patch to speed up outgoing large files.
+# NB does not appear to work. 20200408 WER
 def patch_httplib(bsize=400000):
     """ Update httplib block size for faster upload (Default if bsize=None) """
     if bsize is None:
@@ -125,7 +126,7 @@ class Observatory:
 
         self.command_interval = 2   # seconds between polls for new commands
 
-        self.status_interval = 3    # NOTE THESE IMPLENTED AS A DELA NOT A RATE.
+        self.status_interval = 3    # NOTE THESE IMPLENTED AS A DELT NOT A RATE.
 
         self.name = name
         self.config = config
@@ -148,11 +149,12 @@ class Observatory:
         self.update_config()
 
         # Instantiate the helper class for astronomical events
-        self.astro_events = ptr_events.Events(self.config)
 
+        self.astro_events = ptr_events.Events(self.config)
+        self.astro_events.compute_day_directory()
+        self.astro_events.display_events()
         # Use the configuration to instantiate objects for all devices.
         self.create_devices(config)
-
         self.loud_status = False
         g_dev['obs'] = self
         self.g_dev = g_dev
@@ -207,6 +209,8 @@ class Observatory:
                     print(f"Unknown device: {name}")
                 # Add the instantiated device to the collection of all devices.
                 self.all_devices[dev_type][name] = device
+                # NB 20200410 This dropped out of the code: self.all_devices[dev_type][name] = [device]
+
         print("Finished creating devices.")
 
     def update_config(self):
@@ -326,8 +330,34 @@ class Observatory:
         # if loud: print("update_status finished in:  ", round(time.time() - t1, 2), "  seconds")
 
     def update(self):
+        """
+       
+        20200411 WER
+        This compact little function is the heart of the code in the sense this is repeatedly
+        called.  It first SENDS status for all devices to AWS, then it checks for any new
+        commands from AWS.  Then it calls sequencer.monitor() were jobs may get launched. A
+        flaw here is we do not have a Ulid for the 'Job number.'
+        
+        With a Maxim based camera is it possible for the owner to push buttons in parallel
+        with commands coming from AWS.  This is useful during the debugging phase.
+        
+        Sequences that are self-dispatched primarily relate to Bias darks, screen and sky
+        flats, opening and closing.  Status for these jobs is repored via the normal 
+        sequencer status mechanism. Guard flags to preveent care;ess interrupts will be
+        implemented as well as Cancel of a sequence if emitted by the Cancel botton on 
+        the AWS Sequence tab.
+        
+        Flat acquisition will include auomatic rejection of any image that has a mean 
+        intensity > cam.saturate.  The camera will return without further processing and
+        no image will be returned to AWS or stored locally.  We should log the Unihedron and
+        calc_illum values where filter first enter non-saturation.  Once we know those values
+        we can spend much less effort taking frames that are saturated. Save The Shutter!
+       
+        """
+
         self.update_status()
         self.scan_requests('mount1')
+        g_dev['seq'].monitor()
 
     def run(self):   # run is a poor name for this function.
         try:
@@ -388,19 +418,20 @@ if __name__ == "__main__":
 
     # Define a command line argument to specify the config file to use
     parser = argparse.ArgumentParser()
-    parser.add_argument('--config', type=str, default="wmd_eastpier")
+    parser.add_argument('--config', type=str, default="default")
     options = parser.parse_args()
-
     # Import the specified config file
-    config_file_name = f"config_{options.config}"
-    config = importlib.import_module(f"config_files.{config_file_name}")
+    print(options.config)
+    if options.config == "default":
+        config_file_name = "config"
+    else:
+        config_file_name = f"config_files.config_{options.config}"
+    config = importlib.import_module(config_file_name)
     print(f"Starting up {config.site_name}.")
-
     # Start up the observatory
+    # patch_httplib()     # NB at some point we should check this improves performance, I think it does.  WER
     o = Observatory(config.site_name, config.site_config)
     o.run()
-
-
 
 
 
@@ -410,14 +441,3 @@ def OLD_CODE():
     If there is code in here that you know is no longer needed, please delete it!
 
     '''
-
-    ### 20200407 - This was run before instantiating the Observatory class in obs.py.
-        # # This is a bit of ugliness occcasioned by the FLI Kepler driver.
-        # day_str = ptr_events.compute_day_directory()
-        # g_dev['day'] = day_str
-        # next_day = ptr_events.Day_tomorrow
-        # g_dev['d-a-y'] = f"{day_str[0:4]}-{day_str[4:6]}-{day_str[6:]}"
-        # g_dev['next_day'] = f"{next_day[0:4]}-{next_day[4:6]}-{next_day[6:]}"
-        # print('\nNext Day is:  ', g_dev['next_day'])
-        # print('Now is:  ', ptr_events.ephem.now(), g_dev['d-a-y'])
-        # patch_httplib

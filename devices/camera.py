@@ -137,7 +137,7 @@ class Camera:
             self.maxim = True
             self.ascom = False
             self.camera.TemperatureSetpoint = -30.
-            self.camera.CoolerOn = True
+            self.camera.CoolerOn = False   # NB This should be a site configuratin setting. 20200412
             self.current_filter = 0
             self.filter_wheel_name = 'maxim ' + self.camera.FilterWheelName
             print('Control is Maxim camera interface.')
@@ -159,7 +159,6 @@ class Camera:
         self.camera_model = self.config['camera']['camera1']['desc']
         #NB We are reading from the actual camera or setting as the case may be.  For initial setup,
         #   we pull from config for some of the various settings.
-        breakpoint()
         try:
             self.camera.BinX = int(self.config['camera']['camera1']['settings']['default_bin'])
             self.camera.BinY = int(self.config['camera']['camera1']['settings']['default_bin'])
@@ -206,9 +205,9 @@ class Camera:
         else:
             status['busy_lock'] = 'false'
         if self.maxim:
-            cam_stat = 'unknown' #self.camera.CameraState
+            cam_stat = 'Not implemented yet' #self.camera.CameraState
         if self.ascom:
-            cam_stat = 'unknown' #self.camera.CameraState
+            cam_stat = 'Not implemented yet' #self.camera.CameraState
         status['status'] = str(cam_stat).lower()  #The state could be expanded to be more meaningful.
         return status
 #        if self.maxim:
@@ -314,7 +313,7 @@ class Camera:
         self.current_offset = 6300#g_dev['fil'].filter_offset  #TEMP
         sub_frame_fraction = optional_params.get('subframe', None)
         #The following bit of code is convoluted.
-        if imtype.lower() in ('light', 'screen flat', 'sky flat', 'experimental', 'toss'):
+        if imtype.lower() in ('light', 'light frame', 'screen flat', 'sky flat', 'experimental', 'toss'):
                                  #here we might eventually turn on spectrograph lamps as needed for the imtype.
             imtypeb = True    #imtypeb passed to open the shutter.
             frame_type = imtype.lower()
@@ -702,6 +701,13 @@ class Camera:
                     self.t6 = time.time()
                     self.img = self.camera.ImageArray
                     self.t7 = time.time()
+                    if frame_type[-4:] == 'flat':
+                        test_saturated = np.array(self.img)
+                        if (test_saturated.mean() + np.median(test_saturated))/2 > 50000:   # NB Should we sample a patch?
+                            # NB How do we be sure Maxim does not hang?
+                            print("Flat rejected, too bright:  ", round(test_saturated.mean, 0))
+                            self.camera.AbortExposure()
+                            return -1, 0   # signals to flat routine image was rejected
                     g_dev['obs'].update_status()
                     #Save image with Maxim Header information, then read back with astropy and use the
                     #lqtter code for fits manipulation.
@@ -836,13 +842,14 @@ class Camera:
                         #Need to assemble a complete header here
                         #hdu1.writeto('Q:\\archive\\ea03\\new2b.fits')#, overwrite=True)
                         #NB rename to ccurrent_camera
+
                         current_camera_name = self.config['camera']['camera1']['name']
+                        # NB This needs more deveopment
                         im_type = 'EX'   #or EN for engineering....
                         f_ext = ""
                         next_seq = next_sequence(current_camera_name)
                         if frame_type[-4:] == 'flat':
                             f_ext = '-' + str(self.current_filter)    #Append flat string to local image name
-
                         cal_name = self.config['site'] + '-' + current_camera_name + '-' + g_dev['day'] + '-' + \
                                                     next_seq  + f_ext + '-'  + im_type + '01.fits'
                         raw_name00 = self.config['site'] + '-' + current_camera_name + '-' + g_dev['day'] + '-' + \
@@ -856,6 +863,7 @@ class Camera:
                             next_seq  + '-' + im_type + '13.jpg'
                         text_name = self.config['site'] + '-' + current_camera_name + '-' + g_dev['day'] + '-' + \
                             next_seq  + '-' +  im_type + '01.txt'
+
                         im_path_r = self.camera_path
                         lng_path = self.lng_path
                         hdu.header['DAY-OBS'] = g_dev['day']
@@ -1032,18 +1040,18 @@ class Camera:
 
                     return (None ,None)
                 else:               #here we are in waiting for imageReady loop and could send status and check Queue
-                    time.sleep(.2)
+                    time.sleep(.3)
                     g_dev['obs'].update_status()
                     #if not quick:
-                    #   g_dev['obs'].update()    #This keeps status alive while camera is loopin
+                    #   g_dev['obs'].update_status()
                     self.t7= time.time()
-                    print("Basic camera file wait loop loop expired")
+                    print("Basic camera wait loop loop  is occuring")
                     #it takes about 15 seconds from AWS to get here for a bias.
             except:
                 counter += 1
                 time.sleep(.01)
                 #This shouldbe counted down for a loop cancel.
-                print('Wait for exposure end, but getting here is bad.')
+                print('Wait for exposure end, but getting here is usually bad.')
                 return (None, None)
 
         #definitely try to clean up any messes.

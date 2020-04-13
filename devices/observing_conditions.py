@@ -26,32 +26,60 @@ class ObservingConditions:
             win32com.client.pythoncom.CoInitialize()
             self.boltwood = win32com.client.Dispatch(driver)
             self.boltwood.connected = True   # This is not an ASCOM device.
+            port =config['observing_conditions']['observing_conditions1']['unihedron'].lower()
+            driver_2 = config['observing_conditions']['observing_conditions1']['driver_2']
+            self.boltwood_oktoopen = win32com.client.Dispatch(driver_2)
+            self.boltwood_oktoopen.Connected = True
+            driver_3 = config['observing_conditions']['observing_conditions1']['driver_3']
+            self.boltwood_oktoimage = win32com.client.Dispatch(driver_3)
+            self.boltwood_oktoimage.Connected = True
             print("observing_conditions: Boltwood connected = True")
+            if port != 'false':
+                driver = config['observing_conditions']['observing_conditions1']['uni_driver']
+                self.unihedron = win32com.client.Dispatch(driver)
+                self.unihedron.Connected = True
+                print("observing_conditions: Unihedron connected = True, on COM" + str(port))
+
 
     def get_status(self):
-
         if self.site == 'saf':
             illum, mag = self.astro_events.illuminationNow()
-            if illum <= 7500.:
-                open_poss = 'true'
-                hz = 100000
-            else:
-                open_poss = 'false'
-                hz = 500000
-
-            status = {"temperature": str(self.boltwood.Temperature),
-                      "pressure": str(784),
-                      "humidity": str(self.boltwood.Humidity),
-                      "dewpoint": str(self.boltwood.DewPoint),
-                      "calc_sky_lux": str(illum),
-                      "sky_temp": str(self.boltwood.SkyTemperature),
-                      "wind_km/h": str(abs(self.boltwood.WindSpeed)),
+            status = {"temperature_C": str(round(self.boltwood.Temperature, 2)),
+                      "pressure_mbar": str(784.0),
+                      "humidity_%": str(self.boltwood.Humidity),
+                      "dewpoint_C": str(self.boltwood.DewPoint),
+                      "sky_temp_C": str(round(self.boltwood.SkyTemperature,2)),
+                      "last_sky_update_s":  str(round(self.boltwood.TimeSinceLastUpdate('SkyTemperature'), 2)),
+                      "wind_km/h": str(abs(round(self.boltwood.WindSpeed, 2))),
                       'rain_rate': str(self.boltwood.RainRate),
-                      "ambient_light": str(illum),
-                      "sky-mag_asec^2": str(mag),
-                      "open_possible": open_poss,
-                      "brightness_hz": str(hz)
+                      'cloud_cover_%': str(self.boltwood.CloudCover),
+                      "calc_sky_lux": str(illum),
+                      "calc_sky_mpsas": str(mag),
+                      "meas_sky_mpsas":  str(self.unihedron.SkyQuality),
+                      "open_possible": str(self.boltwood_oktoopen.IsSafe),
+                      "image_possible": str(self.boltwood_oktoimage.IsSafe)
                       }
+
+            # Here we add in-line (To be changed) a preliminary OpenOK calculation:
+            dew_point_gap = (self.boltwood.Temperature + 2.0 - self.boltwood.DewPoint) < 0
+            temp_bounds = (self.boltwood.Temperature < 2.0) or (self.boltwood.Temperature > 45)
+            # time_window = not(g_dev['events']['SunZ88 Opening:    '] < time.time() < g_dev['events']['SunZ88   Close:    '])
+            # This needs a rework of 'events' in g_dev[]
+
+            # Only write when around dark, put in CSV format
+            sunZ88Op, sunZ88Cl, ephemNow = g_dev['obs'].astro_events.getSunEvents()
+            quarter_hour = 0.25/24
+            if  sunZ88Op - quarter_hour < ephemNow < sunZ88Cl+ quarter_hour:
+                try:
+                    wl = open('D:/archive/wx_log.txt', 'a')
+                    wl.write('wx, ' + str(time.time()) + ', ' + str(illum) + ', ' + str(mag) + ', ' \
+                             + str(self.unihedron.SkyQuality) + ", \n")
+                    wl.close()
+                except:
+                    print("Wx log did not write.")
+
+
+
             return status
         elif self.site == 'wmd':
 
@@ -118,7 +146,7 @@ class ObservingConditions:
             quick.append(float(abs(self.boltwood.WindSpeed)))
             quick.append(float(784.0))   # 20200329 a SWAG!
             quick.append(float(illum))     # Add Solar, Lunar elev and phase
-            quick.append(float(hz))     # intended for Unihedron
+            quick.append(float(self.unihedron.SkyQuality))     # intended for Unihedron
             # print(quick)
             return quick
         elif self.site == 'wmd':

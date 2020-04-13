@@ -39,15 +39,8 @@ probeRead('COM31')
 
 '''
 
-def set_focal_ref(pCamera, ref):
-    camShelf = shelve.open(g_dev['cam'].site_path + 'ptr_night_shelf/' + str(pCamera))
-    camShelf['Focus Ref'] = int(ref)
-    camShelf.close()
-    return
 
-def get_focal_ref(pCamera):
-    camShelf = shelve.open(g_dev['cam'].site_path + 'ptr_night_shelf/' + str(pCamera))
-    return int(camShelf['Focus Ref'])
+#  Unused except for WMD
 def probeRead(com_port):
        with serial.Serial(com_port, timeout=0.3) as com:
            com.write(b'R1\n')
@@ -59,43 +52,46 @@ class Focuser:
     def __init__(self, driver: str, name: str, config: dict):
         self.site = config['site']
         self.name = name
+        self.site_path = config['site_path']
+        self.camera_name = config['camera']['camera1']['name']
         g_dev['foc'] = self
         self.config = config['focuser']['focuser1']
         win32com.client.pythoncom.CoInitialize()
         self.focuser = win32com.client.Dispatch(driver)
         self.focuser.Connected = True
         self.focuser.TempComp = False
-        self.steps_to_micron = float(config['focuser']['focuser1']['unit_conversion'])
+        self.micron_to_steps = float(config['focuser']['focuser1']['unit_conversion'])
         print(f"focuser connected.")
-        print(self.focuser.Description, "At:  ", self.focuser.Position*self.steps_to_micron)
+        print(self.focuser.Description, "At:  ", self.focuser.Position/self.micron_to_steps)
         time.sleep(0.2)
         try:
             try:
                 self.reference = self.calculate_compensation( self.focuser.Temperature)   #need to change to config supplied
                 print("Focus reference updated from Compensated value:  ", self.reference)
             except:
-                self.reference = float(ptr_config.get_focal_ref('gf01'))   #need to change to config supplied
+                self.reference = float(self.get_focal_ref())   #need to change to config supplied
                 print("Focus reference updated from Night Shelf:  ", self.reference)
         except:
             self.reference = int(self.config['reference'])
             print("Focus reference derived from supplied Config dicitionary:  ", self.reference)
-        self.focuser.Move(int(float(self.config['reference'])/self.steps_to_micron))
+        self.focuser.Move(int(float(self.reference)*self.micron_to_steps))
 
     def calculate_compensation(self, temp_primary):
 
         if -5 <= temp_primary <= 45:
+            # NB this math is awkward, should use delta_temp
             trial =round(float(self.config['coef_c'])*temp_primary + float(self.config['coef_0']), 1)
             trial = max(trial,500)  #These values would change for Gemini to more like 11900 max
-            trial = min(trial, 14000)
+            trial = min(trial, 12150)
             print('Calculated focus compensated position:  ', trial)
             return int(trial)
         else:
             print('Primary out of range -5 to 45C, using reference focus')
-            return self.config['reference']
+            return float(self.config['reference'])
 
     def get_status(self):
         status = {
-            "focus_position": str(round(self.focuser.Position*self.steps_to_micron, 1)),
+            "focus_position": str(round(self.focuser.Position/self.micron_to_steps, 1)),
             "focus_moving": str(self.focuser.IsMoving).lower(),
             "focus_temperature": str(self.focuser.Temperature)
             }
@@ -103,7 +99,7 @@ class Focuser:
 
     def get_quick_status(self, quick):
         quick.append(time.time())
-        quick.append(self.focuser.Position*self.steps_to_micron)
+        quick.append(self.focuser.Position/self.micron_to_steps)
         quick.append(self.focuser.Temperature)
         quick.append(self.focuser.IsMoving)
         return quick
@@ -162,8 +158,8 @@ class Focuser:
             self.update_job_status(command['ulid'], 'COMPLETE')
         elif action == "go_to_reference":
             self.update_job_status(command['ulid'], 'STARTED', 5)
-            reference = ptr_config.get_focal_ref('gf01')
-            self.focuser.Move(reference)
+            reference = self.get_focal_ref()
+            self.focuser.Move(reference*self.micron_to_steps)
             time.sleep(0.1)
             while self.focuser.IsMoving:
                 time.sleep(0.5)
@@ -171,13 +167,13 @@ class Focuser:
             self.update_job_status(command['ulid'], 'COMPLETE')
         elif action == "go_to_compensated":
             reference = self.calculate_compensation( self.focuser.Temperature)
-            self.focuser.Move(reference/self.steps_to_micron)
+            self.focuser.Move(reference*self.micron_to_steps)
             time.sleep(0.1)
             while self.focuser.IsMoving:
                 time.sleep(0.5)
                 print('>')
         elif action == "save_as_reference":
-            ptr_config.set_focal_ref('gf01', self.focuser*self.steps_to_micron)  #Need to get the alias properly
+            self.set_focal_ref(self.focuser.Position/self.micron_to_steps)  #Need to get the alias properly
         else:
             print(f"Command <{action}> not recognized:", command)
 
@@ -188,18 +184,19 @@ class Focuser:
 
     def get_position(self, counts=False):
         if not counts:
-            return int(self.focuser.Position*self.steps_to_micron)
+            return int(self.focuser.Position/self.micron_to_steps)
 
     def move_relative_command(self, req: dict, opt: dict):
         ''' set the focus position by moving relative to current position '''
         #The string must start with a + or a - sign, otherwize treated as zero and no action.
 
         position_string = req['position']
-        position = int(self.focuser.Position*self.steps_to_micron)
+        position = int(self.focuser.Position/self.micron_to_steps)
+        breakpoint()
         if position_string[0] != '-':
             relative = int(position_string)
             position += relative
-            self.focuser.Move(int(position/self.steps_to_micron))
+            self.focuser.Move(int(position*self.micron_to_steps))
             time.sleep(0.1)
             while self.focuser.IsMoving:
                 time.sleep(0.5)
@@ -207,7 +204,7 @@ class Focuser:
         elif position_string[0] =='-':
             relative = int(position_string[1:])
             position -= relative
-            self.focuser.Move(int(position/self.steps_to_micron))
+            self.focuser.Move(int(position*self.micron_to_steps))
             time.sleep(0.1)
             while self.focuser.IsMoving:
                 time.sleep(0.5)
@@ -219,7 +216,8 @@ class Focuser:
         ''' set the focus position by moving to an absolute position '''
         print(f"focuser cmd: move_absolute:  ", req, opt)
         position = int(req['position'])
-        self.focuser.Move(int(position/self.steps_to_micron))
+        breakpoint()
+        self.focuser.Move(int(position*self.micron_to_steps))
         time.sleep(0.1)
         while self.focuser.IsMoving:
             time.sleep(0.5)
@@ -240,6 +238,16 @@ class Focuser:
     def auto_command(self, req: dict, opt: dict):
         ''' autofocus '''
         print(f"focuser cmd: auto")
+
+    def set_focal_ref(self, ref):
+        camShelf = shelve.open(self.site_path + 'ptr_night_shelf/' + self.camera_name)
+        camShelf['Focus Ref'] = ref
+        camShelf.close()
+        return
+
+    def get_focal_ref(self):
+        camShelf = shelve.open(self.site_path + 'ptr_night_shelf/' + self.camera_name)
+        return camShelf['Focus Ref']
 
 if __name__ == '__main__':
     pass

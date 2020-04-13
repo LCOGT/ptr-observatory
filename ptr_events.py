@@ -20,14 +20,15 @@ from math import degrees
 from global_yard import *
 from astropy.time import Time
 
-# NB Change these to hours not fractins od a day.
+
+# NB Change these to hours not fractins of a day.  Should come from site config not be in code here.
 SCREENFLATDURATION = 230/1440           #2.4    3h20min rough measure 20170811
 BIASDARKDURATION = 300/1440             #5 hours
 MORNBIASDARKDURATION = 12/1440          #12 min
 LONGESTSCREEN = 5/1440                  #2 min
 LONGESTDARK = (800/60)/1440
 
-DAY_Directory = None
+DAY_Directory = None   #NB this is an evil use of Globals by WER.  20200408   WER
 Day_tomorrow = None
 dayNow = None
 
@@ -40,18 +41,6 @@ class Events:
         self.siteElevation =  round(float(self.config['longitude']), 3)
         self.siteRefTemp =  round(float(self.config['reference_ambient'][0]), 2)       #These should be a monthly average data.
         self.siteRefPress =  round(float(self.config['reference_pressure'][0]), 2)
-        # SAF:    
-        # siteLatitude = 35.554444    #  34 20 34.569   #34 + (20 + 34.549/60.)/60.
-        # siteLongitude = -105.870278 #-(119 + (40 + 52.061/60.)/60.) 119 40 52.061 W
-        # siteElevation = 2187
-        # siteRefTemp = 10.0         #These should be a monthly average data.
-        # siteRefPress = 784.0
-        # SCREENFLATDURATION = 230/1440           #2.4    3h20min rough measure 20170811
-        # BIASDARKDURATION = 300/1440             #5 hours
-        # MORNBIASDARKDURATION = 12/1440          #12 min
-        # LONGESTSCREEN = 5/1440                  #2 min
-        # LONGESTDARK = (800/60)/1440             #13.33 min
-
 
     ###############################
     ###    Internal Methods    ####
@@ -149,8 +138,8 @@ class Events:
         skyBrightRatio = illuminance/0.002
         if skyBrightRatio < 1: skyBrightRatio = 1
         skyMag = 22-2.5*log10(skyBrightRatio)
-        return illuminance,  skyMag  #Units are lux, dimensionless ratio, approx mag/sq-asec
-    
+        return illuminance,  skyMag   #  #Units are lux, dimensionless ratio, approx mag/sq-asec
+
     def _sunNow(self):
         sun = ephem.Sun()
         sun.compute()
@@ -271,7 +260,7 @@ class Events:
     #############################
 
     def getSunEvents(self):
-        ''' 
+        '''
         This is used in the enclosure module to determine if is a good time
         of day to open.
         '''
@@ -327,7 +316,7 @@ class Events:
     def compute_day_directory(self, loud=False):
         # NBNBNB Convert this to skyfield!
         '''
-        Mantatory:  The day_directory is the datestring for the Julian day as defined
+        Mandatory:  The day_directory is the datestring for the Julian day as defined
         by the local astronomical Noon.  Restating the software any time within that
         24 hour period resultin in the Same day_directory.    Site restarts may occur
         at any time but automatic ones will normally occur somewhat after the prior
@@ -345,6 +334,7 @@ class Events:
         ephem.tomorrow = ephem.Date(dayNow + 1)
         dayStr = str(ephem.date).split()[0]
         dayStr = dayStr.split('/')
+        day_str = dayStr
         #print('Day String', dayStr)
         if len(dayStr[1]) == 1:
             dayStr[1] = '0' + dayStr[1]
@@ -352,6 +342,9 @@ class Events:
             dayStr[2] = '0' + dayStr[2]
         #print('Day String', dayStr)
         DAY_Directory = dayStr[0] + dayStr[1] + dayStr[2]
+        day_str = DAY_Directory
+        g_dev['day'] = DAY_Directory
+        g_dev['d-a-y'] = f"{day_str[0:4]}-{day_str[4:6]}-{day_str[6:]}"
         if loud: print('DaDIR:  ', DAY_Directory)
 
         dayStr = str(ephem.tomorrow).split()[0]
@@ -363,18 +356,18 @@ class Events:
             dayStr[2] = '0' + dayStr[2]
         #print('Day String', dayStr)
         Day_tomorrow = dayStr[0] + dayStr[1] + dayStr[2]
+        next_day = Day_tomorrow
+        g_dev['next_day'] = f"{next_day[0:4]}-{next_day[4:6]}-{next_day[6:]}"
         if loud: print('DaDIR:  ', DAY_Directory)
+        print('\nNext Day is:  ', g_dev['next_day'])
+        print('Now is:  ', ephem.now(), g_dev['d-a-y'])
 
         return DAY_Directory
 
-
-
-    def display_events(self):
+    def display_events(self):   # Routine above needs to be called first.
 
         # print('Events module loaded at: ', ephem.now(), round((ephem.now()), 4))
         loud = True
-        self.compute_day_directory()
-        
         sun = ephem.Sun()
         #sun.compute(dayNow)
         moon = ephem.Moon()
@@ -411,7 +404,7 @@ class Events:
         #if loud: print('Sun -12: ', sun.ra, sun.dec, sun.az, sun.alt)
         nauticalDusk = ptr.next_setting(sun)
         nauticalDawn = ptr.next_rising(sun)
-        
+
         ptr.horizon = '-18'
         sun.compute(ptr)
         #if loud: print('Sun -18: ', sun.ra, sun.dec, sun.az, sun.alt)
@@ -432,23 +425,23 @@ class Events:
         eveRaDot, eveDecDot = self._calcEveFlatValues(ptr, sun, sunZ88Op, skyFlatEnd, loud=True)
         mornFlatStartRa, mornFlatStartDec, mornFlatEndRa, mornFlatEndDec, mornRaDot, \
                         mornDecDot = self._calcMornFlatValues(ptr, sun, skyFlatBegin, sunZ88Cl, \
-                                                        sunrise, loud=True)  
+                                                        sunrise, loud=True)
         endEveScreenFlats = sunZ88Op - LONGESTSCREEN
         beginEveScreenFlats = endEveScreenFlats - SCREENFLATDURATION
         endEveBiasDark = beginEveScreenFlats - LONGESTDARK
         beginEveBiasDark = endEveBiasDark - BIASDARKDURATION
-        
+
         # Morning times queue off on when flats are no longer
         # gatherable,  A close is then issued, then after closing,
         # morning screen flats begin, followed by bias dark and then
         # morning reductions.  So the times below are the latest case.
-        
+
         beginMornScreenFlats = sunZ88Cl + 2/1440
         endMornScreenFlats = beginMornScreenFlats + SCREENFLATDURATION
         beginMornBiasDark = endMornScreenFlats + LONGESTSCREEN
         endMornBiasDark = beginMornBiasDark + MORNBIASDARKDURATION
         beginReductions = endMornBiasDark + LONGESTDARK
-        
+
         # try:
         #     # WMD specific and apparently unused.
         #     obsShelf = shelve.open('Q:\\ptr_night_shelf\\site')
@@ -472,7 +465,6 @@ class Events:
         print('Night Duration :    ', str(round(duration, 2)) + ' hr')
         print('MoonRaDec      :    ', round(mid_moon_ra, 2), "  ", round(mid_moon_dec, 1))
         print('Moon phase %   :    ', round(mid_moon_phase, 1), '%\n')
-
         evnt = [('Beg Bias Dark :    ', ephem.Date(beginEveBiasDark)),
                 ('End Bias Dark :    ', ephem.Date(endEveBiasDark)),
                 ('Beg Scrn Flats:    ', ephem.Date(beginEveScreenFlats)),
@@ -497,9 +489,7 @@ class Events:
                 ('Moon rise     :    ', ptr.next_rising(moon)),
                 ('Moon transit  :    ', ptr.next_transit(moon)),
                 ('Moon rise     :    ', ptr.next_setting(moon))]
-
         evnt_sort = self._sortTuple(evnt)
-
         #Edit out rise and sets prior to or after operations.
         while evnt_sort[0][0] != 'Beg Bias Dark :    ':
             evnt_sort.pop(0)
@@ -507,8 +497,10 @@ class Events:
             evnt_sort.pop(-1)
         for evnt in evnt_sort:
             print(evnt[0], evnt[1])
+        g_dev['events'] = evnt_sort
+        # print("g_dev['events']:  ", g_dev['events'])
 
-
+        #NB I notice some minor discrepancies in lunar timing. Should re-check all the dates and times wer 20200408
 
 
 

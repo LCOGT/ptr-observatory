@@ -4,6 +4,7 @@ import time
 from global_yard import g_dev
 from processing.calibration import fit_quadratic
 
+
 class Sequencer:
 
     def __init__(self, driver: str, name: str, config: dict):
@@ -11,22 +12,12 @@ class Sequencer:
         self.config = config
         g_dev['seq'] = self
         self.connected = True
-        self.description = "Sequencer for the eastpier mounting and OTAs"
+        self.description = "Sequencer for script execution."
         self.sequencer_hold = False
         print(f"sequencer connected.")
         print(self.description)
 
     def get_status(self):
-        '''
-        The position is expressed as an angle from 0 up to but not including
-        360 degrees, counter-clockwise against the sky. This is the standard
-        definition of Position Angle. However, the rotator does not need to
-        (and in general will not) report the true Equatorial Position Angle,
-        as the attached imager may not be precisely aligned with the rotator's
-        indexing. It is up to the client to determine any offset between
-        mechanical rotator position angle and the true Equatorial Position
-        Angle of the imager, and compensate for any difference.
-        '''
         status = {
             "active_script": 'none',
             "sequencer_busy":  'false'
@@ -50,6 +41,8 @@ class Sequencer:
             self.focus_auto_script(req, opt)
         elif action == "run" and script == 'genScreenFlatMasters':
             self.screen_flat_script(req, opt)
+        elif action == "run" and script == '32_target_pointing_run':
+            self.equatorial_pointing_run(req, opt)
         elif action == "stop":
             self.stop_command(req, opt)
         elif action == "home":
@@ -61,103 +54,8 @@ class Sequencer:
     ###############################
     #       Sequencer Commands and Scripts
     ###############################
-
-    def screen_flat_script_oldest(self, req, opt):
-
-        '''
-        We will assume the filters have loaded those filters needed in screen flats, highest throughput to lowest.
-        We will assume count contains the number of repeated flats needed.
-        We will assume u filter is only dealt with via skyflats since its exposures are excessive with the screen.
-
-        Park the mounting.
-        Close the Enclosure.
-        Turn off any lights.
-        Use 'w' filter for now.  More generally a wide bandwidth.
-            take the count
-
-        '''
-        gain_screen_values = [42, 39, 36, 33, 30, 27, 23, 20, 17, 14, 11, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0]
-        bias_count = 7
-        flat_count = int(req['numFrames'])
-        gain_calc = req['gainCalc']
-        shut_comp =  req['shutterCompensation']
-        if flat_count < 1: flat_count = 1
-        g_dev['mnt'].park_command({}, {})
-        g_dev['scr'].screen_dark()
-        #Here we need to switch off any IR or dome lighting.
-        #Take a 10 s dark screen air flat to sense ambient
-        req = {'time': 10,  'alias': 'gf01', 'image_type': 'Bias'}
-        opt = {'size': 100, 'count': bias_count, 'filter': g_dev['fil'].filter_data[2][0]}
-        g_dev['cam'].expose_command(req, opt, gather_status = False, no_AWS=True)
-        for gain in gain_screen_values :
-            g_dev['scr'].set_screen_bright(gain, is_percent=False)
-            g_dev['scr'].screen_light_on()
-            g_dev['fil'].set_number_command(2)
-            print('Test Screen; filter, bright:  ', 2, gain)
-            exp_time = 1.7
-            req = {'time': exp_time,  'alias': 'gf01', 'image_type': 'screen flat'}
-            opt = {'size': 100, 'count': 2, 'filter': g_dev['fil'].filter_data[2][0]}
-            g_dev['cam'].expose_command(req, opt, gather_status = False, no_AWS=True)
-        g_dev['scr'].screen_dark()
-        #take a 10 s dark screen air flat to sense ambient
-#        req = {'time': 10,  'alias': 'gf01', 'image_type': 'screen flat'}
-#        opt = {'size': 100, 'count': dark_count, 'filter': g_dev['fil'].filter_data[0][0]}
-#        g_dev['cam'].expose_command(req, opt, gather_status = False)
-        print('Screen Gain sequence completed.')
-
-    def screen_flat_script_old(self, req, opt):
-
-        '''
-        We will assume the filters have loaded those filters needed in screen flats, highest throughput to lowest.
-        We will assume count contains the number of repeated flats needed.
-        We will assume u filter is only dealt with via skyflats since its exposures are excessive with the screen.
-
-        Park the mounting.
-        Close the Enclosure.
-        Turn off any lights.
-        For filter in list
-            set the filter
-            get its gain @ 0.2 second exposure
-            set the screen
-            take the count
-
-        '''
-        alias = self.config.site_config['camera']['camera1']['name']
-        dark_count = 3
-        flat_count = 3#int(req['numFrames'])
-        gain_calc = req['gainCalc']
-        shut_comp =  req['shutterCompensation']
-        if flat_count < 1: flat_count = 1
-        g_dev['mnt'].park_command({}, {})
-        g_dev['scr'].screen_dark()
-        #Here we need to switch off any IR or dome lighting.
-        #Take a 10 s dark screen air flat to sense ambient
-        req = {'time': 1,  'alias': alias, 'image_type': 'screen flat'}
-        opt = {'size': 100, 'count': dark_count, 'filter': g_dev['fil'].filter_data[0][0]}
-        g_dev['cam'].expose_command(req, opt, gather_status = False, no_AWS=True)
-        for filt in g_dev['fil'].filter_screen_sort:
-            filter_number = int(filt)
-            print(filter_number, g_dev['fil'].filter_data[filter_number][0])
-            exposure = 1
-            sensitivity = float(g_dev['fil'].filter_data[filter_number][4])
-            sensitivity = sensitivity*exposure
-            screen_bright = int((3000/sensitivity)*100/160)
-            g_dev['scr'].set_screen_bright(screen_bright, is_percent=False)
-            g_dev['scr'].screen_light_on()
-            g_dev['fil'].set_number_command(filter_number)
-            print('Test Screen; filter, bright:  ', filter_number, screen_bright)
-            exp_time = 5
-            if filter_number == 9 or filter_number == 21:
-                exp_time *= 8
-            req = {'time': exp_time,  'alias': alias, 'image_type': 'screen flat'}
-            opt = {'size': 100, 'count': flat_count, 'filter': g_dev['fil'].filter_data[filter_number][0]}
-            g_dev['cam'].expose_command(req, opt, gather_status = False, no_AWS=True)
-        g_dev['scr'].screen_dark()
-        #take a 10 s dark screen air flat to sense ambient
-        req = {'time': 1,  'alias': alias, 'image_type': 'screen flat'}
-        opt = {'size': 100, 'count': dark_count, 'filter': g_dev['fil'].filter_data[0][0]}
-        g_dev['cam'].expose_command(req, opt, gather_status = False)
-        print('Screen Flat sequence completed.')
+    def monitor(self):
+        pass
 
     def screen_flat_script(self, req, opt):
 
@@ -180,7 +78,6 @@ class Sequencer:
             filter_number = int(filt)
             #g_dev['fil'].set_number_command(filter_number)  #THis faults
             print(filter_number, g_dev['fil'].filter_data[filter_number][0])
-            exposure = 1
             exp_time, screen_setting = g_dev['fil'].filter_data[filter_number][4]
             g_dev['scr'].set_screen_bright(float(screen_setting))
             g_dev['obs'].update_status()
@@ -200,9 +97,56 @@ class Sequencer:
 
 
     def sky_flat_script(self, req, opt):
-        '''
-        Unimplemented.
-        '''
+        """
+
+        If entered, put up a guard.
+        if open conditions are acceptable then take a dark image of a dark screen, just for
+        reference.
+        Open the dome,
+        GoTo flat spot, expose, rotating through 3 filters pick least sensitive
+        discard overexposures, keep rotating.  once one of the three yeilds a good
+        exposure, repeat four more times, then drop that filter from list, add a new one
+        and proceed to loop.  This should allow us to generate the sensitivity list in
+        the right order and not fill the system up will overexposed files.  Ultimatley
+        we wait for the correct sky condition once we have the calibrations so as to not
+        wear out the shutter.
+        Non photometric shutters need longer exposure times.
+        Note with alt-az mount we could get very near the zenith zone.
+        Note we want Moon at least 30 degrees away
+
+        """
+        alias = str(self.config.site_config['camera']['camera1']['name'])
+        dark_count = 1
+        flat_count = 5#int(req['numFrames'])
+        #gain_calc = req['gainCalc']
+        #shut_comp =  req['shutterCompensation']
+        if flat_count < 1: flat_count = 1
+        g_dev['mnt'].park_command({}, {})
+        g_dev['obs'].update_status()
+        g_dev['scr'].screen_dark()
+        g_dev['obs'].update_status()
+        #Here we need to switch off any IR or dome lighting.
+        #Take a 10 s dark screen air flat to record ambient
+        # Park Telescope
+        req = {'time': 10,  'alias': alias, 'image_type': 'screen flat'}
+        opt = {'size': 100, 'count': dark_count, 'filter': g_dev['fil'].filter_data[0][0]}
+        g_dev['cam'].expose_command(req, opt, gather_status = False, no_AWS=True)
+        # Open Dome
+        for filt in g_dev['fil'].filter_sky_sort:
+            filter_number = int(filt)
+            #g_dev['fil'].set_number_command(filter_number)  #THis faults
+            print(filter_number, g_dev['fil'].filter_data[filter_number][0])
+
+            g_dev['obs'].update_status()
+            print('Test Screen; filter, bright:  ', filter_number, float(screen_setting))
+            # Goto flat spot
+            req = {'time': float(exp_time),  'alias': alias, 'image_type': 'screen flat'}
+            opt = {'size': 100, 'count': flat_count, 'filter': g_dev['fil'].filter_data[filter_number][0]}
+            g_dev['cam'].expose_command(req, opt, gather_status = False, no_AWS=True)
+            # if no exposure, wait 10 sec
+        g_dev['obs'].update_status()
+
+        print('Sky Flat sequence completed, Tracking is off.')
 
     def focus_auto_script(self, req, opt):
         '''
@@ -257,6 +201,84 @@ class Sequencer:
             spot4, foc_pos4 = result
         print('Actual focus:  ', foc_pos4, round(spot4, 2))
         self.sequencer_hold = False   #Allow comand checks.
+
+    def equatorial_pointing_run(self, reg, opt, spacing=10, vertical=False, grid=False, alt_minimum=25):
+        '''
+        unpark telescope
+        if not open, open dome
+        go to zenith & expose (Consider using Nearest mag 7 grid star.)
+        verify reasonable transparency
+            Ultimately, check focus, find a good exposure level
+        go to -72.5 degrees of ha, 0  expose
+        ha += 10; repeat to Ha = 67.5
+        += 5, expose
+        -= 10 until -67.5
+
+        if vertical go ha = -0.25 and step dec 85 -= 10 to -30 then
+        flip and go other way with offset 5 deg.
+
+        For Grid use Patrick Wallace's Mag 7 Tyco star grid it covers
+        sky equal-area, has a bright star as target and wraps around
+        both axes to better sample the encoders.'
+        '''
+        '''
+        Prompt for ACCP model to be turned off
+        if closed:
+           If WxOk: open
+        if parked:
+             unpark
+
+         pick grid star near zenith in west (no flip)
+              expose 10 s
+              solve
+              Is there a bright object in field?
+              adjust exposure if needed.
+        Go to (-72.5deg HA, dec = 0),
+             Expose, calibrate, save file.  Consider
+             if we can real time solve or jsut gather.
+        step 10 degrees forward untl ha is 77.5
+        at 77.5 adjust target to (72.5, 0) and step
+        backward.  Stop when you get to -77.5.
+        park
+        Launch reduction
+
+A variant on this is cover a grid, cover a + sign shape.
+
+        '''
+        ha_deg_steps = (-72.5, -62.5, -52.5, -42.5, -32.5, -22.5, -12.5, -2.5, 7.5,
+                        17.5, 27.5, 37.5, 47.5, 57.5, 67.5, 72.5, 62.5, 52.5, 42.5,
+                        32.5, 22.5, 12.5, 2.5, -7.5, -17.5, -27.5, -37.5, -47.5,
+                        -57.5, -67.5)
+        print("Starting equatorial sweep.")
+        g_dev['mnt'].unpark_command()
+        cam_name = str(self.config['camera']['camera1']['name'])
+        for ha_degree_value in ha_deg_steps:
+            target_ra =  g_dev['mnt'].mount.SiderealTime - ha_degree_value/15.
+            while target_ra < 0:
+                target_ra += 24.
+            while target_ra >=24:
+                target_ra -= 24.
+            req = {'ra':  target_ra,
+                   'dec':  0.0}
+            opt = {}
+            g_dev['mnt'].go_command(req, opt)
+            while g_dev['mnt'].mount.Slewing or g_dev['enc'].enclosure.Slewing:
+                g_dev['obs'].update_status()
+                time.sleep(0.5)
+            time.sleep(3)
+            g_dev['obs'].update_status()
+            time.sleep(3)
+            g_dev['obs'].update_status()
+            req = {'time': 10,  'alias': cam_name, 'image_type': 'Light Frame'}
+            opt = {'size': 100, 'count': 1, 'filter': g_dev['fil'].filter_data[0][0], 'hint': 'Equator pointing run.'}
+            result = g_dev['cam'].expose_command(req, opt)
+            g_dev['obs'].update_status()
+            print('Result:  ', result)
+        g_dev['mnt'].stop_command()
+        print("Equatorial sweep completed. Happy reducing.")
+        pass
+
+
 
 
 
