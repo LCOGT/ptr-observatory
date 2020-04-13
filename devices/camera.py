@@ -137,7 +137,7 @@ class Camera:
             self.maxim = True
             self.ascom = False
             self.camera.TemperatureSetpoint = -30.
-            self.camera.CoolerOn = False   # NB This should be a site configuratin setting. 20200412
+            self.camera.CoolerOn = True   # NB This should be a site configuratin setting. 20200412
             self.current_filter = 0
             self.filter_wheel_name = 'maxim ' + self.camera.FilterWheelName
             print('Control is Maxim camera interface.')
@@ -842,7 +842,6 @@ class Camera:
                         #Need to assemble a complete header here
                         #hdu1.writeto('Q:\\archive\\ea03\\new2b.fits')#, overwrite=True)
                         #NB rename to ccurrent_camera
-
                         current_camera_name = self.config['camera']['camera1']['name']
                         # NB This needs more deveopment
                         im_type = 'EX'   #or EN for engineering....
@@ -879,13 +878,13 @@ class Camera:
                         #print('Creating:  ', im_path + g_dev['day'] + '\\to_AWS\\  ... subdirectory.')
                         try:
 
-                            os.makedirs(im_path_r + g_dev['day'] + '\\to_AWS\\', exist_ok=True)
-                            os.makedirs(im_path_r + g_dev['day'] + '\\raw\\', exist_ok=True)
-                            os.makedirs(im_path_r + g_dev['day'] + '\\calib\\', exist_ok=True)
+                            os.makedirs(im_path_r + g_dev['day'] + '/to_AWS/', exist_ok=True)
+                            os.makedirs(im_path_r + g_dev['day'] + '/raw/', exist_ok=True)
+                            os.makedirs(im_path_r + g_dev['day'] + '/calib\/', exist_ok=True)
                             #print('Created:  ',im_path + g_dev['day'] + '\\to_AWS\\' )
-                            im_path = im_path_r + g_dev['day'] + '\\to_AWS\\'
-                            raw_path = im_path_r + g_dev['day'] + '\\raw\\'
-                            cal_path = im_path_r + g_dev['day'] + '\\calib\\'
+                            im_path = im_path_r + g_dev['day'] + '/to_AWS/'
+                            raw_path = im_path_r + g_dev['day'] + '/raw/'
+                            cal_path = im_path_r + g_dev['day'] + '/calib/'
                         except:
                             pass
 
@@ -907,7 +906,8 @@ class Camera:
                         # NB  We should only write this is calibrate actually succeeded to return a result
                         if not quick:
                             hdu1.writeto(im_path + raw_name01, overwrite=True)
-                        do_sep = True
+                        do_sep = False
+                        spot = None
                         raw_data_size = hdu1[0].data.size
                         if do_sep:
                             try:

@@ -159,7 +159,7 @@ def calibrate (hdu, hdu_ldr, lng_path, frame_type='light', start_x=0, start_y=0,
                 print(lng_path + 'md_1_90.fits', 'Loaded')
             except:
                 quick_dark_90 = False
-                print('WARN: No dark Loaded.')
+                print('WARN: No dark_1_90 Loaded.')
         if super_dark_300 is None:
             try:
                 sdHdu = fits.open(lng_path + 'md_1_300.fits')
@@ -176,15 +176,15 @@ def calibrate (hdu, hdu_ldr, lng_path, frame_type='light', start_x=0, start_y=0,
                print('WARN: No dark Loaded.')
         if super_dark_2_300 is None:
             try:
-                sdHdu = fits.open(lng_path + 'md_2_300.fits')
+                sdHdu = fits.open(lng_path + 'md_2_120.fits')
                 dark_2_300_exposure_level = sdHdu[0].header['EXPTIME']
                 super_dark_2_300  = sdHdu[0].data#.astype('float32')
-                print('sdark_300:  ', super_dark_2_300.mean())
+                print('sdark_2_300:  ', super_dark_2_300.mean())
                 sdHdu.close()
                 #fix = np.where(super_dark_300 < 0)
                 #super_dark_300[fix] = 0
                 quick_dark_2_300 = True
-                print(lng_path + 'md_1_300.fits', 'Loaded')
+                print(lng_path + 'md_2_300.fits', 'Loaded')
             except:
                quick_dark_2_300 = False
                print('WARN: No dark Loaded.')
@@ -243,29 +243,31 @@ def calibrate (hdu, hdu_ldr, lng_path, frame_type='light', start_x=0, start_y=0,
         if frame_type == 'dark': 
             break
         do_dark = False
-        if data_exposure_level <= 90:
-            s_dark = super_dark_90
-            d_exp = 90.
-            h_map = hotmap_300
-            h_pix = hotpix_300
-            do_dark = True
-        elif data_exposure_level <= 300:
+        # if data_exposure_level <= 90:
+        #     s_dark = super_dark_90
+        #     d_exp = 90.
+        #     h_map = hotmap_300
+        #     h_pix = hotpix_300
+        #     do_dark = True
+        # el
+        if data_exposure_level <= 300:
             s_dark = super_dark_300
             d_exp = 300.0 #dark_300_exposure_level #hack to fix bad dark master.
             h_map = hotmap_300
             h_pix = hotpix_300
+            do_dark = True
         else:
             do_dark = False  
-        if do_dark and mn < 3590:
+        if do_dark:  #  and mn < 3590:
         #Need to verify dark is not 0 seconds long!
-            if d_exp >= data_exposure_level and d_exp >= 1  and quick_dark_90:
+            if d_exp >= data_exposure_level and d_exp >= 1:  #  and quick_dark_90:
                 scale = data_exposure_level/d_exp
                 img =  (img - s_dark[start_x:(start_x + img.shape[0]), start_y:(start_y + img.shape[1])])
                 if not quick:
                     print('QuickDark  scale/result(high): ', round(scale, 4), imageStats(img, loud))
                 cal_string += ', D'
             else:
-                if not quick: print('INFO:  Dark exposure too small, skipped this step.')           
+                if not quick: print('INFO:  Light exposure too small, skipped this step.')           
 
         img_filter = hdu.header['FILTER']
         if frame_type[-4:]  == 'flat': break       #Note frame type end inf 'flat, e.g arc_flat, screen_flat, sky_flat

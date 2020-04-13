@@ -416,20 +416,21 @@ class Observatory:
 
 if __name__ == "__main__":
 
-    # Define a command line argument to specify the config file to use
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--config', type=str, default="default")
-    options = parser.parse_args()
-    # Import the specified config file
-    print(options.config)
-    if options.config == "default":
-        config_file_name = "config"
-    else:
-        config_file_name = f"config_files.config_{options.config}"
-    config = importlib.import_module(config_file_name)
-    print(f"Starting up {config.site_name}.")
+    # # Define a command line argument to specify the config file to use
+    # parser = argparse.ArgumentParser()
+    # parser.add_argument('--config', type=str, default="default")
+    # options = parser.parse_args()
+    # # Import the specified config file
+    # print(options.config)
+    # if options.config == "default":
+    #     config_file_name = "config"
+    # else:
+    #     config_file_name = f"config_files.config_{options.config}"
+    # config = importlib.import_module(config_file_name)
+    # print(f"Starting up {config.site_name}.")
     # Start up the observatory
     # patch_httplib()     # NB at some point we should check this improves performance, I think it does.  WER
+    import config
     o = Observatory(config.site_name, config.site_config)
     o.run()
 
