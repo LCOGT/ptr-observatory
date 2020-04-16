@@ -225,18 +225,18 @@ C95	6025	Oc	5.1	12	2500	16 03.7	-60 30	TrA	summer
 C96	2516	Oc	3.8	30	1300	07 58.3	-60 52	Car	winter
 C97	3766	Oc	5.3	12	5800	11 36.1	-61 37	Cen	spring
 C98	4609	Oc	6.9	5	4200	12 42.3	-62 58	Cru	spring
-C99	-	   Dn -    400x300	610	12 53.0	-63 00	Cru	spring	Coalsack Nebula
+C99	-	Dn      -       400x300	610	12 53.0	-63 00	Cru	spring	Coalsack Nebula
 C100	I2944	Oc	4.5	15	6000	11 36.6	-63 02	Cen	spring	Lambda Centauri Nebula
 C101	6744	Sb	9.0	16x10	34E06	19 09.8	-63 51	Pav	summer
 C102	I2602	Oc	1.9	50	492	10 43.2	-64 24	Car	spring	Theta Car Cluster
 C103	2070	Bn	1.0	40x25	170000	05 38.7	-69 06	Dor	winter	Tarantula Nebula
 C104	362	Gc	6.6	13	27700	01 03.2	-70 51	Tuc	autumn
-C105 4833	Gc	7.3	14	19600	12 59.6	-70 53	Mus	spring
+C105    4833	Gc	7.3	14	19600	12 59.6	-70 53	Mus	spring
 C106	104	Gc	4.0	31	14700	00 24.1	-72 05	Tuc	autumn	47 Tucanae
 C107	6101	Gc	9.3	11	49900	16 25.8	-72 12	Aps	summer
 C108	4372	Gc	7.8	19	18900	12 25.8	-72 40	Mus	spring
-C109	3195	Pl	11.6	40x35	5400	10 09.5	-80 52	Cha	spring
-StQ 7318 Cg 13.9  10  200E06     22 36 33 57.6 Peg autumn Stephan's Quintet
-SyS 6027 Cg 14.7  10 19E07 15 59.2 20 45.5 Ser summer Seyfert's Sextet
-C2619 2619 Sp 12.	2x1 20E07 08 37.5 28 42.3 Cnc spring N2619-AGN
-C2683 2683 Sp 9.	9x2 20E07 08  52.7 33 25.3 Lyn spring N2683-AGN
+C109	3195   	Pl	11.6 	40x35	5400	10 09.5	-80 52	Cha	spring
+StQ     7318    Cg      13.9    10      200E06  22 36    33 58  Peg     autumn Stephan's Quintet
+SyS     6027    Cg      14.7    10      19E07   15 59.2  20 46  Ser     summer Seyfert's Sextet
+C2619   2619    Sp      12.	2x1     20E07   08 37.5  28 42  Cnc     spring N2619-AGN
+C2683   2683    Sp      9.	9x2     20E07   08 52.7  33 25  Lyn     spring N2683-AGN
