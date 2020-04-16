@@ -139,10 +139,9 @@ class FilterWheel:
                 breakpoint()
             self.filter_offset = int(self.filter_data[filt_pointer][2])
         elif self.maxim:
-            breakpoint()
-            g_dev['cam'].camera.Filter = self.filter_selected[0]
-            time.sleep(0.2)
-            g_dev['cam'].camera.GuiderFilter = self.filter_selected[1]
+            g_dev['cam'].camera.Filter = filter_selections[0]
+            time.sleep(0.1)
+            g_dev['cam'].camera.GuiderFilter = filter_selections[1]
 
     def set_position_command(self, req: dict, opt: dict):
         ''' set the filter position by  param string filter position index '''

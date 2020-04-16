@@ -301,8 +301,7 @@ class Mount:
         elif action == 'center_on_pixels':
             print (command)
         elif action == 'sky_flat_position':
-            print (command)
-            self.slewToAltAzAsync()
+            self.slewToSkyFlatAsync()
         else:
             print(f"Command <{action}> not recognized.")
 
@@ -329,8 +328,8 @@ class Mount:
         self.mount.RightAscensionRate = tracking_rate_ra
         self.mount.DeclinationRate = tracking_rate_dec
 
-    def slewToAltAzAsync(self):
-        alt, az = self.astro_events.flat_spot_now()
+    def slewToSkyFlatAsync(self):
+        az, alt = self.astro_events.flat_spot_now()
         self.mount.SlewToAltAzAsync(az, alt)
 
 
