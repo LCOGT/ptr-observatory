@@ -56,7 +56,34 @@ class Sequencer:
     #       Sequencer Commands and Scripts
     ###############################
     def monitor(self):
+
         pass
+
+
+    def bias_dark_script(self, req, opt):
+        """
+        This script may be auto-triggered as the bias_dark window opens,
+        and this script runs for about an hour.  No images are sent to AWS.
+        Images go to the calibs folder in a day-directory.  After the script
+        ends build_masters.py executes in a different process and attempts
+        to process and update the biad-dark master images, which are sent to
+        AWS.
+
+        Ultimately it can be running and random incoming requests for the
+        camera will be honored between Bias dark images as a way to expidite
+        debugging. This is not advised for normal operations.  Scheme though
+        is sneak in BD images between commands to camera.  So this requires
+        we have a camera_busy guard in place.  IF this works well, notice
+        this means we could have a larger window to take longer darks.
+
+        Defaults:  Darks: 9 frames  500 seconds 1:1, 360 2:2  240 3:3  120:4:4
+                   Biases for each dark, 5 before, 4 after
+                   Once a week: 600 seconds, 5 each to build hot pixel map
+
+        """
+
+        pass
+
 
     def screen_flat_script(self, req, opt):
         name = str(self.config['camera']['camera1']['name'])

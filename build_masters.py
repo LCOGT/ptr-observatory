@@ -12,12 +12,16 @@ Update 20200404 WER On saf.
 
 This is a re-work of older code designed to build calibrations from Neyle's natural directory structure for
 MAXIM DL, or from a sub-directory 'calibrations' found in the designated archive structure.
-D:/04-01-2020 screen flats W Ha/
+
 
 The output is destined for the LNG flash calibration directory.  LNG contains a sub-directory, 'priors.'  THe
 idea is calibrations are gathered daily, reduced and put into prior.  then the priors are scanned and combined to
 build more substantial lower noise masters.  Priors are aged and once too old are removed.  It may be the case that
 we want to weight older priors lower than the current fresh one.
+
+NB NB The chunking logic is flawed and needs a re-work, and always submit an
+odd number of items to a median filter.  Use sigma-clipped mean id # of items
+falls below 9.
 
 """
 
@@ -64,7 +68,7 @@ import config
 # import api_calls
 # import requests
 
-import ptr_bz2
+
 
 
 
@@ -256,7 +260,10 @@ def create_super_dark(input_images, out_path, super_name, super_bias_name):
     num = 0
     inputs = []
     print('SD:  ', len(input_images), input_images)
-    super_bias_img = ccdproc.CCDData.read(out_path + super_bias_name, ignore_missing_end=True, unit='adu')
+    try:
+        super_bias_img = ccdproc.CCDData.read(out_path + super_bias_name, ignore_missing_end=True, unit='adu')
+    except:
+        print(out_path + super_bias_name, 'failed')
     while len(input_images) > 0:
         inputs = []
         print('SD chunk:  ', len(input_images[0]), input_images[0])
@@ -272,7 +279,7 @@ def create_super_dark(input_images, out_path, super_name, super_bias_name):
             num += 1
         combiner = Combiner(inputs)
         if len(inputs) > 9:
-            im_temp= combiner.sigma_clipping(low_thresh=2, high_thresh=3, func = np.ma.mean)
+            im_temp= combiner.sigma_clipping(low_thresh=2, high_thresh=3, func = np.ma.median)
         else:
             im_temp = combiner.sigma_clipping(low_thresh=2, high_thresh=3, func = np.ma.mean)
         im_temp = combiner.average_combine()
@@ -287,7 +294,7 @@ def create_super_dark(input_images, out_path, super_name, super_bias_name):
     #Now we combint the outer data to make the master
     combiner = Combiner(super_image)
     if len(super_image) > 9:
-        super_img = combiner.sigma_clipping(low_thresh=2, high_thresh=3, func = np.ma.mean)
+        super_img = combiner.sigma_clipping(low_thresh=2, high_thresh=3, func = np.ma.median)
     else:
         super_img = combiner.sigma_clipping(low_thresh=2, high_thresh=3, func = np.ma.mean)
     super_img = combiner.average_combine()
@@ -308,24 +315,31 @@ def create_super_dark(input_images, out_path, super_name, super_bias_name):
     #hot and cold pix here.
     return
 
-def make_master_bias (alias, path, selector_string, out_file):
+def make_master_bias (alias, path,  lng_path ,selector_string, out_file):
 
     file_list = glob.glob(path + selector_string)
     file_list.sort()
     print('# of files:  ', len(file_list))
 
     print(file_list)
-    if len(file_list) > 1023:
-        file_list = file_list[0:1023]
-    chunk = int(math.sqrt(len(file_list)))
-    if chunk %2 == 0: chunk += 1
+
+    if len(file_list) == 0:
+        print("Empty list, returning.")
+        return
+    if len(file_list) > 255:
+        file_list = file_list[0:255]
+    if len(file_list) > 32:
+        chunk = int(math.sqrt(len(file_list)))
+        if chunk %2 == 0: chunk += 1
+    else:
+        chunk = len(file_list)
     if chunk > 31: chunk = 31
     print('Chunk size:  ', chunk, len(file_list)//chunk)
     chunked_list = chunkify(file_list, chunk)
     print(chunked_list)
-    create_super_bias(chunked_list, 'Q:/archive/gf03/lng/', out_file )
+    create_super_bias(chunked_list, lng_path, out_file )
 
-def make_master_dark (alias, path, selector_string, out_file, super_bias_name):
+def make_master_dark (alias, path, lng_path, selector_string, out_file, super_bias_name):
     #breakpoint()
     file_list = glob.glob(path + selector_string)
     file_list.sort
@@ -333,26 +347,33 @@ def make_master_dark (alias, path, selector_string, out_file, super_bias_name):
     print(file_list)
     if len(file_list) > 63:
         file_list = file_list[0:63]
-    chunk = int(math.sqrt(len(file_list)))
-    if chunk %2 == 0: chunk += 1
+    if len(file_list) > 32:
+        chunk = int(math.sqrt(len(file_list)))
+        if chunk %2 == 0: chunk += 1
+    else:
+        chunk = len(file_list)
     if chunk > 31: chunk = 31
     print('Chunk size:  ', chunk, len(file_list)//chunk)
     chunked_list = chunkify(file_list, chunk)
     print(chunked_list)
-    create_super_dark(chunked_list, 'Q:/archive/gf03/lng/', out_file, super_bias_name )
+    create_super_dark(chunked_list, lng_path, out_file, super_bias_name )
 
 if __name__ == '__main__':
+    camera_name = config.site_config['camera']['camera1']['name']
+    archive_path = "D:/archive/archive/kb01/calib/2020-04-14/"
+    lng_path = "D:/archive/archive/kb01/lng/"
+    make_master_bias(camera_name, archive_path, lng_path, '*b_1*', 'mb_1.fits')
+    make_master_bias(camera_name, archive_path, lng_path, '*b_2*', 'mb_2.fits')
+    make_master_bias(camera_name, archive_path, lng_path, '*b_3*', 'mb_3.fits')
+    make_master_bias(camera_name, archive_path, lng_path, '*b_4*', 'mb_4.fits')
+    #  make_master_dark(camera_name, archive_path, lng_path, '*d_1_120*', 'md_1_120.fits', 'mb_1.fits')
+    make_master_dark(camera_name, archive_path, lng_path, '*d_1_360*', 'md_1_360.fits', 'mb_1.fits')
+    make_master_dark(camera_name, archive_path, lng_path, '*d_2_360*', 'md_2_360.fits', 'mb_2.fits')   # Note error in first selector
+    make_master_dark(camera_name, archive_path, lng_path, '*d_3_120*', 'md_3_120.fits', 'mb_3.fits')
+    make_master_dark(camera_name, archive_path, lng_path, '*d_4_90*', 'md_4_90.fits', 'mb_4.fits')
+    print('Fini')
 
-    print (config.site_config['camera']['camera1']['alias'])
-    #make_master_bias('gf03', 'Q:/archive/gf03/raw_kepler/2020-01-21/', '*0.001s_1x1*-high.*', 'mb_1_hdrx.fits'  )
-    #make_master_bias('gf03', 'Q:/archive/gf03/raw_kepler/2020-01-21/', '*0.001s_1x1*-low.*', 'mb_1_ldrx.fits'  )
-#    make_master_bias('gf03', 'Q:/archive/gf03/raw_kepler/2020-01-21/', '*0.001s_2x2*-high.*', 'mb_2_hdrx.fits'  )
-#    make_master_bias('gf03', 'Q:/archive/gf03/raw_kepler/2020-01-21/', '*0.001s_2x2*-low.*', 'mb_2_ldrx.fits'  )    #make_master_dark('gf03', 'Q:/archive/gf03/raw_kepler/2019-11-09/' , '*300s_2x2*-high*', 'md_2_300_hdr.fits', 'mb_2_hdr.fits'   )
-    make_master_dark('gf03', 'Q:/archive/gf03/raw_kepler/2020-01-21/' , '*300s_1x1*-low*', 'md_1_300_ldrx.fits', 'mb_1_ldr.fits'   )
-    make_master_dark('gf03', 'Q:/archive/gf03/raw_kepler/2020-01-21/' , '*300s_1x1*-high*', 'md_1_300_hdrx.fits', 'mb_1_hdr.fits'   )
-    make_master_dark('gf03', 'Q:/archive/gf03/raw_kepler/2020-01-21/' , '*300s_2x2*-low*', 'md_2_300_ldr.fits', 'mb_2_ldr.fits'   )
-    make_master_dark('gf03', 'Q:/archive/gf03/raw_kepler/2020-01-21/' , '*300s_2x2*-high*', 'md_2_300_hdr.fits', 'mb_2_hdr.fits'   )
-    #make_master_dark('gf03', 'Q:/archive/gf03/raw_kepler/2019-10-26/' , '*900s_1x1*-low*', 'md_1_900_ldr.fits', 'mb_1_ldr.fits'   )
+    # NB Here we would logially go on to get screen flats.
     '''
     # -*- coding: utf-8 -*-
 """
