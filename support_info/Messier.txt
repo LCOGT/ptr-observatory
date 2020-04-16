@@ -16,7 +16,7 @@ El,	Elliptical Galaxy
 Ln,	Lenticular Galaxy
 Px,   Peculiar Galaxy
 Sx,   Seyfert Galaxy
-M#	NGC Type Mag.	Size Dist(ly) RA		  Dec	Con	Season	Common Name
+M#	NGC   Type  Mag	Size Dist(ly) RA		  Dec	Con	Season	Common Name
 M1	1952	Sn	8.4	6x4	6300	5 34.5  +22   01 Tau 	winter	Crab Nebula
 M2	7089	Gc	6.5	12.9	37900	21 33.5  +00   49 Aqr	autumn
 M3	5272	Gc	6.2	16.2	33900	13 42.2  +28   23 CVn	spring
