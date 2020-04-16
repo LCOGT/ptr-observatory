@@ -1,0 +1,22 @@
+10 REM     DEMO.BAS -- PROGRAM TO READ NGC 2000.0
+20 REM     Copyright (c) 1989 Sky Publishing Corp.
+30 REM     Version of Jan. 18, 1989
+40 REM
+50 HD$=" NGC  Type   R.A.   Dec.   Size  Mag."
+60 F$="NGC2000.DAT"
+70 OPEN "R",1,F$,24
+80 FIELD 1,5 AS N$,1 AS T$,2 AS H$,3 AS M$
+90 FIELD 1,11 AS X$,3 AS D$,2 AS M1$,4 AS S$,4 AS B$
+100 INPUT "START, END";S,E
+110 CLS
+120 PRINT HD$: PRINT
+130 FOR I=S TO E
+140 GET#1,I
+150 M5$=M$
+160 M5$=LEFT$(M5$,2)+"."+RIGHT$(M5$,1)
+170 PRINT N$;"  ";T$;"  ";H$;" ";M5$;"  ";
+180 PRINT D$;" ";M1$;"  ";S$;"  ";B$
+190 NEXT
+200 CLOSE
+210 END
+
