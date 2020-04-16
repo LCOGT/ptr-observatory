@@ -29,7 +29,6 @@ class Sequencer:
 
 
     def parse_command(self, command):
-        print('Sequencer input:  ', command)
         req = command['required_params']
         opt = command['optional_params']
         action = command['action']
@@ -40,6 +39,8 @@ class Sequencer:
 #            g_dev['cam'].expose_command(req, opt)   #Do not inhibit gather status for an autofocus.
             self.focus_auto_script(req, opt)
         elif action == "run" and script == 'genScreenFlatMasters':
+            self.screen_flat_script(req, opt)
+        elif action == "run" and script == 'takeSkyFlats':
             self.screen_flat_script(req, opt)
         elif action == "run" and script == '32_target_pointing_run':
             self.equatorial_pointing_run(req, opt)
@@ -85,10 +86,11 @@ class Sequencer:
 
 
     def screen_flat_script(self, req, opt):
-
-        alias = str(self.config.site_config['camera']['camera1']['name'])
+        name = str(self.config['camera']['camera1']['name'])
         dark_count = 1
-        flat_count = 2#int(req['numFrames'])
+        flat_count = 2
+        exp_time = 5
+        #int(req['numFrames'])
         #gain_calc = req['gainCalc']
         #shut_comp =  req['shutterCompensation']
         if flat_count < 1: flat_count = 1
@@ -98,29 +100,37 @@ class Sequencer:
         g_dev['obs'].update_status()
         #Here we need to switch off any IR or dome lighting.
         #Take a 10 s dark screen air flat to sense ambient
-        req = {'time': 10,  'alias': alias, 'image_type': 'screen flat'}
+        req = {'time': 10,  'alias': name, 'image_type': 'screen flat'}
         opt = {'size': 100, 'count': dark_count, 'filter': g_dev['fil'].filter_data[0][0]}
-        g_dev['cam'].expose_command(req, opt, gather_status = False, no_AWS=True)
-        for filt in g_dev['fil'].filter_screen_sort:
-            filter_number = int(filt)
-            #g_dev['fil'].set_number_command(filter_number)  #THis faults
-            print(filter_number, g_dev['fil'].filter_data[filter_number][0])
-            exp_time, screen_setting = g_dev['fil'].filter_data[filter_number][4]
-            g_dev['scr'].set_screen_bright(float(screen_setting))
+        #g_dev['cam'].expose_command(req, opt, gather_status = False, no_AWS=True)
+        g_dev['mnt'].slewToSkyFlatAsync()
+        pop_list = self.config['filter_wheel']['filter_wheel1']['settings']['filter_sky_sort']
+        while len(pop_list) > 0:
+            current_filter = int(pop_list[0])
+            g_dev['fil'].set_number_command(current_filter) 
+            g_dev['mnt'].slewToSkyFlatAsync()
+            req = {'time': float(exp_time),  'alias': name, 'image_type': 'sky flat'}
+            opt = {'size': 100, 'count': flat_count, 'filter': g_dev['fil'].filter_data[current_filter][0]}
+            bright, fwhm = g_dev['cam'].expose_command(req, opt, gather_status = False, no_AWS=True)
+           
             g_dev['obs'].update_status()
-            g_dev['scr'].screen_light_on()
+            if bright > 55000:    #NB should gate with end of skyflat window as well.
+                time.sleep(30)
+                continue
+            g_dev['mnt'].slewToSkyFlatAsync()
             g_dev['obs'].update_status()
-            print('Test Screen; filter, bright:  ', filter_number, float(screen_setting))
-            req = {'time': float(exp_time),  'alias': alias, 'image_type': 'screen flat'}
-            opt = {'size': 100, 'count': flat_count, 'filter': g_dev['fil'].filter_data[filter_number][0]}
-            g_dev['cam'].expose_command(req, opt, gather_status = False, no_AWS=True)
-        g_dev['scr'].screen_dark()
-        g_dev['obs'].update_status()
-        #take a 10 s dark screen air flat to sense ambient
-        req = {'time': 10,  'alias': alias, 'image_type': 'screen flat'}
-        opt = {'size': 100, 'count': dark_count, 'filter': g_dev['fil'].filter_data[0][0]}
-        g_dev['cam'].expose_command(req, opt, gather_status = False, no_AWS=True)
-        print('Screen Flat sequence completed.')
+            req = {'time': float(exp_time),  'alias': name, 'image_type': 'sky flat'}
+            opt = {'size': 100, 'count': flat_count, 'filter': g_dev['fil'].filter_data[current_filter][0]}
+            bright2, fwhm = g_dev['cam'].expose_command(req, opt, gather_status = False, no_AWS=True)
+            time.sleep(2)
+            if bright2 > 55000:
+                continue
+            print("filter pop:  ", current_filter, bright, bright2)
+            pop_list.pop(0)
+            g_dev['obs'].update_status()
+            continue
+        g_dev['mnt'].park_command({}, {})
+        print('Sky flat complete')
 
 
     def sky_flat_script(self, req, opt):
@@ -142,7 +152,7 @@ class Sequencer:
         Note we want Moon at least 30 degrees away
 
         """
-        alias = str(self.config.site_config['camera']['camera1']['name'])
+        alias = str(self.config['camera']['camera1']['name'])
         dark_count = 1
         flat_count = 5#int(req['numFrames'])
         #gain_calc = req['gainCalc']

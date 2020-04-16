@@ -1,0 +1,18 @@
+As,	Asterism
+Ds,	Double Star
+MW,	Milky Way Patch
+Oc,	Open Cluster
+Gc,	Globular Cluster
+Pl,	Planetary Nebula
+Di,	Diffuse Nebula
+Bn, Bright Nebula
+Dn, Dark Nebula
+Sn,	Supernova Remnant
+Cg, Clustered Galaxies
+Sp,	Spiral Galaxy
+Ba,	Barred Galaxy	
+Ir,	Irregular Galaxy
+El,	Elliptical Galaxy
+Ln,	Lenticular Galaxy
+Px, Peculiar Galaxy
+Sx, Seyfert Galaxy

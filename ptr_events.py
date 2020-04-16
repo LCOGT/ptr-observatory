@@ -292,7 +292,7 @@ class Events:
         Return a tuple with the (alt, az) of the flattest part of the sky.
         '''
         ra, dec, sun_alt, sun_az, *other = self._sunNow()
-        print('Sun:  ', sun_alt, sun_az)
+        print('Sun:  ', sun_az, sun_alt)
         sun_az2 = sun_az - 180.
         if sun_az2 < 0:
             sun_az2 += 360.
@@ -302,7 +302,7 @@ class Events:
         elif sun_alt2 <=90:
             sun_az2 = sun_az
 
-        return(sun_alt2, sun_az2)
+        return(sun_az2, sun_alt2)
 
     def illuminationNow(self):
 
