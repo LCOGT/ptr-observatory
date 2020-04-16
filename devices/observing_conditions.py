@@ -50,7 +50,7 @@ class ObservingConditions:
                       "dewpoint_C": str(self.boltwood.DewPoint),
                       "sky_temp_C": str(round(self.boltwood.SkyTemperature,2)),
                       "last_sky_update_s":  str(round(self.boltwood.TimeSinceLastUpdate('SkyTemperature'), 2)),
-                      "wind_km/h": str(abs(round(self.boltwood.WindSpeed, 2))),
+                      "wind_m/s": str(abs(round(self.boltwood.WindSpeed, 2))),
                       'rain_rate': str(self.boltwood.RainRate),
                       'cloud_cover_%': str(self.boltwood.CloudCover),
                       "calc_sky_lux": str(illum),
@@ -89,19 +89,21 @@ class ObservingConditions:
             except:
                 print('Redis is not returning Wx Data properly.')
             try:
-                status = {"temperature": wx["amb_temp C"],
-                          "pressure": ' ---- ',
-                          "humidity": wx["humidity %"],
-                          "dewpoint": wx["dewpoint C"],
+                status = {"temperature_C": wx["amb_temp C"],
+                          "pressur_mbar": '978',
+                          "humidity_5": wx["humidity %"],
+                          "dewpoint_C": wx["dewpoint C"],
                           "calc_sky_lux": wx["illum lux"],
-                          "sky_temp": wx["sky C"],
+                          "sky_temp_C": wx["sky C"],
                           "time_to_open": wx["time to open"],
                           "time_to_close": wx["time to close"],
                           "wind_km/h": wx["wind k/h"],
                           "ambient_light": wx["light"],
                           "open_ok": wx["open_possible"],
-                          "brightness_hz": wx['bright hz']
+                          "wx_ok": wx["open_possible"],
+                          "meas_sky_mpsas": wx['bright hz']
                           }
+                breakpoint()
 
 
             except:

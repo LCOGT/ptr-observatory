@@ -26,15 +26,15 @@ class Enclosure:
 
         shutter_status = self.enclosure.ShutterStatus
         if shutter_status == 0:
-            stat_string = "open"
+            stat_string = "Open"
         elif shutter_status == 1:
-             stat_string = "closed"
+             stat_string = "Closed"
         elif shutter_status == 2:
-             stat_string = "opening"
+             stat_string = "Opening"
         elif shutter_status == 3:
-             stat_string = "closing"
+             stat_string = "Closing"
         elif shutter_status == 4:
-             stat_string = "error"
+             stat_string = "Error"
         try:     #This is for a dome   NB shouold not be using try/except here
             status = {'shutter_status': stat_string,
                       'shutter_slaving': str(self.enclosure.Slaved),

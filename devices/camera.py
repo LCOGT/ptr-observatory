@@ -901,6 +901,7 @@ class Camera:
                         print("\n\Finish-Exposure is complete:  " + raw_name00)#, raw_data_size, '\n')
                         g_dev['obs'].update_status()
                         #NB Important decision here, do we flash calibrate screen and sky flats?  For now, Yes.
+                        breakpoint()
                         cal_result = calibrate(hdu, None, lng_path, frame_type, start_x=start_x, start_y=start_y, quick=quick)
                         # Note we may be using different files if calibrate is null.
                         # NB  We should only write this is calibrate actually succeeded to return a result

@@ -12,12 +12,16 @@ Update 20200404 WER On saf.
 
 This is a re-work of older code designed to build calibrations from Neyle's natural directory structure for
 MAXIM DL, or from a sub-directory 'calibrations' found in the designated archive structure.
-D:/04-01-2020 screen flats W Ha/
+
 
 The output is destined for the LNG flash calibration directory.  LNG contains a sub-directory, 'priors.'  THe
 idea is calibrations are gathered daily, reduced and put into prior.  then the priors are scanned and combined to
 build more substantial lower noise masters.  Priors are aged and once too old are removed.  It may be the case that
 we want to weight older priors lower than the current fresh one.
+
+NB NB The chunking logic is flawed and needs a re-work, and always submit an
+odd number of items to a median filter.  Use sigma-clipped mean id # of items
+falls below 9.
 
 """
 
@@ -318,14 +322,17 @@ def make_master_bias (alias, path,  lng_path ,selector_string, out_file):
     print('# of files:  ', len(file_list))
 
     print(file_list)
-    breakpoint()
+
     if len(file_list) == 0:
         print("Empty list, returning.")
         return
     if len(file_list) > 255:
         file_list = file_list[0:255]
-    chunk = int(math.sqrt(len(file_list)))
-    if chunk %2 == 0: chunk += 1
+    if len(file_list) > 32:
+        chunk = int(math.sqrt(len(file_list)))
+        if chunk %2 == 0: chunk += 1
+    else:
+        chunk = len(file_list)
     if chunk > 31: chunk = 31
     print('Chunk size:  ', chunk, len(file_list)//chunk)
     chunked_list = chunkify(file_list, chunk)
@@ -340,11 +347,11 @@ def make_master_dark (alias, path, lng_path, selector_string, out_file, super_bi
     print(file_list)
     if len(file_list) > 63:
         file_list = file_list[0:63]
-    if len(file_list) == 0:
-        print("Empty list, returning.")
-        return
-    chunk = int(math.sqrt(len(file_list)))
-    if chunk %2 == 0: chunk += 1
+    if len(file_list) > 32:
+        chunk = int(math.sqrt(len(file_list)))
+        if chunk %2 == 0: chunk += 1
+    else:
+        chunk = len(file_list)
     if chunk > 31: chunk = 31
     print('Chunk size:  ', chunk, len(file_list)//chunk)
     chunked_list = chunkify(file_list, chunk)
@@ -353,18 +360,20 @@ def make_master_dark (alias, path, lng_path, selector_string, out_file, super_bi
 
 if __name__ == '__main__':
     camera_name = config.site_config['camera']['camera1']['name']
-    archive_path = "D:/04-01-2020 screen flats W Ha/"
+    archive_path = "D:/archive/archive/kb01/calib/2020-04-14/"
     lng_path = "D:/archive/archive/kb01/lng/"
     make_master_bias(camera_name, archive_path, lng_path, '*b_1*', 'mb_1.fits')
     make_master_bias(camera_name, archive_path, lng_path, '*b_2*', 'mb_2.fits')
     make_master_bias(camera_name, archive_path, lng_path, '*b_3*', 'mb_3.fits')
     make_master_bias(camera_name, archive_path, lng_path, '*b_4*', 'mb_4.fits')
-    make_master_dark(camera_name, archive_path, lng_path, '*d_1_120*', 'md_1_120.fits', 'mb_1.fits')
+    #  make_master_dark(camera_name, archive_path, lng_path, '*d_1_120*', 'md_1_120.fits', 'mb_1.fits')
     make_master_dark(camera_name, archive_path, lng_path, '*d_1_360*', 'md_1_360.fits', 'mb_1.fits')
-    make_master_dark(camera_name, archive_path, lng_path, '*b_2_120*', 'md_2_120.fits', 'mb_2.fits')   # Note error in first selector
-    make_master_dark(camera_name, archive_path, lng_path, '*d_3_90*', 'md_3_90.fits', 'mb_3.fits')
-    make_master_dark(camera_name, archive_path, lng_path, '*d_4_60*', 'md_4_60.fits', 'mb_4.fits')
+    make_master_dark(camera_name, archive_path, lng_path, '*d_2_360*', 'md_2_360.fits', 'mb_2.fits')   # Note error in first selector
+    make_master_dark(camera_name, archive_path, lng_path, '*d_3_120*', 'md_3_120.fits', 'mb_3.fits')
+    make_master_dark(camera_name, archive_path, lng_path, '*d_4_90*', 'md_4_90.fits', 'mb_4.fits')
     print('Fini')
+
+    # NB Here we would logially go on to get screen flats.
     '''
     # -*- coding: utf-8 -*-
 """
