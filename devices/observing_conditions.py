@@ -56,8 +56,9 @@ class ObservingConditions:
                       "calc_sky_lux": str(illum),
                       "calc_sky_mpsas": str(mag),
                       "meas_sky_mpsas":  str(self.unihedron.SkyQuality),
-                      "open_possible": str(self.boltwood_oktoopen.IsSafe),
-                      "image_possible": str(self.boltwood_oktoimage.IsSafe)
+                      "wx_ok": str(self.boltwood_oktoimage.IsSafe),
+                      "open_ok": str(self.boltwood_oktoopen.IsSafe)
+                      #"image_ok": str(self.boltwood_oktoimage.IsSafe)
                       }
 
             # Here we add in-line (To be changed) a preliminary OpenOK calculation:
@@ -72,8 +73,8 @@ class ObservingConditions:
             if  sunZ88Op - quarter_hour < ephemNow < sunZ88Cl+ quarter_hour:
                 try:
                     wl = open('D:/archive/wx_log.txt', 'a')
-                    wl.write('wx, ' + str(time.time()) + ', ' + str(illum) + ', ' + str(mag) + ', ' \
-                             + str(self.unihedron.SkyQuality) + ", \n")
+                    wl.write('wx, ' + time.time() + ', ' + illum + ', ' + mag + ', ' \
+                             + self.unihedron.SkyQuality + ", \n")
                     wl.close()
                 except:
                     print("Wx log did not write.")
@@ -98,9 +99,10 @@ class ObservingConditions:
                           "time_to_close": wx["time to close"],
                           "wind_km/h": wx["wind k/h"],
                           "ambient_light": wx["light"],
-                          "open_possible": wx["open_possible"],
+                          "open_ok": wx["open_possible"],
                           "brightness_hz": wx['bright hz']
                           }
+
 
             except:
                 time.sleep(1)
