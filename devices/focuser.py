@@ -66,6 +66,7 @@ class Focuser:
         time.sleep(0.2)
         try:
             try:
+
                 self.reference = self.calculate_compensation( self.focuser.Temperature)   #need to change to config supplied
                 print("Focus reference updated from Compensated value:  ", self.reference)
             except:
@@ -80,6 +81,7 @@ class Focuser:
 
         if -5 <= temp_primary <= 45:
             # NB this math is awkward, should use delta_temp
+
             trial =round(float(self.config['coef_c'])*temp_primary + float(self.config['coef_0']), 1)
             trial = max(trial,500)  #These values would change for Gemini to more like 11900 max
             trial = min(trial, 12150)

@@ -701,7 +701,7 @@ class Camera:
                     self.t6 = time.time()
                     self.img = self.camera.ImageArray
                     self.t7 = time.time()
-   
+
                     if frame_type[-4:] == 'flat':
                         test_saturated = np.array(self.img)
                         if (test_saturated.mean() + np.median(test_saturated))/2 > 50000:   # NB Should we sample a patch?
@@ -902,14 +902,14 @@ class Camera:
                         print("\n\Finish-Exposure is complete:  " + raw_name00)#, raw_data_size, '\n')
                         g_dev['obs'].update_status()
                         #NB Important decision here, do we flash calibrate screen and sky flats?  For now, Yes.
-                        breakpoint()
+
                         cal_result = calibrate(hdu, None, lng_path, frame_type, start_x=start_x, start_y=start_y, quick=quick)
                         # Note we may be using different files if calibrate is null.
                         # NB  We should only write this is calibrate actually succeeded to return a result
-                        
+
                         #  if frame_type == 'sky flat':
                         #      hdu.header['SKYSENSE'] = int(g_dev['scr'].bright_setting)
-                        
+
                         if not quick:
                             hdu1.writeto(im_path + raw_name01, overwrite=True)
                         do_sep = False
