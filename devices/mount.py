@@ -296,8 +296,14 @@ class Mount:
             self.flat_panel_command(req, opt)
         elif action == "tracking":
             self.tracking_command(req, opt)
+        elif action in ["pivot", 'zero', 'ra=sid, dec=0']:
+            req['ra'] = self.mount.SiderealTime
+            req['dec'] = 0.0
+            self.go_command(req, opt)
         elif action == "park":
             self.park_command(req, opt)
+        elif action == "unpark":
+            self.unpark_command(req, opt)
         elif action == 'center_on_pixels':
             print (command)
         elif action == 'sky_flat_position':
@@ -312,6 +318,11 @@ class Mount:
     def go_command(self, req, opt):
         ''' Slew to the given ra/dec coordinates. '''
         print("mount cmd: slewing mount", req, opt)
+
+        ''' unpark the telescope mount '''  #  NB can we check if unparked and save time?
+        if self.mount.CanPark:
+            print("mount cmd: unparking mount")
+            self.mount.Unpark()
 
         ra = float(req['ra'])
         dec = float(req['dec'])
@@ -330,6 +341,7 @@ class Mount:
 
     def slewToSkyFlatAsync(self):
         az, alt = self.astro_events.flat_spot_now()
+        self.mount.Tracking = False
         self.mount.SlewToAltAzAsync(az, alt)
 
 

@@ -9,7 +9,7 @@ import win32com.client
 import pythoncom
 import time, json
 from math import cos, radians
-from global_yard import g_dev 
+from global_yard import g_dev
 
 #The mount is not threaded and uses non-blocking seek.
 class Telescope:
@@ -22,7 +22,7 @@ class Telescope:
         self.rdsys = 'J.now'
         self.inst = 'tel1'
         self.tel = tel
-        
+
 
         if not tel:
             print(f"Mount connected.")
@@ -49,14 +49,14 @@ class Telescope:
 #            "Slewing": str(m.Slewing),
 #            "Tracking": str(m.Tracking),
 #            "TrackingRate": str(0.0), #(m.TrackingRate),
-#            # Target ra and dec throws error if they have not been set. 
+#            # Target ra and dec throws error if they have not been set.
 #            # Maybe we don't even need to include them in the status...
 #            #"TargetDeclination": str(m.TargetDeclination),
 #            #"TargetRightAscension": str(m.TargetRightAscension),
 #        }
 #        return status
-        
-        
+
+
     def get_status(self):
         alt = g_dev['mnt'].mount.Altitude
         zen = round((90 - alt), 3)
@@ -69,16 +69,15 @@ class Telescope:
         sec_z = 1/cos(radians(new_z))
         airmass = round(sec_z - 0.0018167*(sec_z - 1) - 0.002875*((sec_z - 1)**2) - 0.0008083*((sec_z - 1)**3),3)
         #for some reason the comare fails with a very large airmass near infinity
-        if abs(int(airmass)) > 20: 
-            airmass = 20.0
-            airmass_string = ">> 20!"
+        if abs(int(airmass)) > 5:
+            airmass_string = " >> 5 "
         else:
             airmass = round(airmass, 4)
             airmass_string = str(airmass)
         #Be careful to preserve order
         #print(self.device_name, self.name)
         if self.tel == False:
-            status = {            
+            status = {
                 f'timestamp': str(round(time.time(), 3)),
 #                f'right_ascension': str(self.mount.RightAscension),
 #                f'declination': str(self.mount.Declination),
@@ -88,7 +87,7 @@ class Telescope:
 #                f'azimuth': str(self.mount.Azimuth),
 #                f'altitude': str(alt),
 #                f'zenith_distance': str(zen),
-#                f'airmass': str(airmass),                
+#                f'airmass': str(airmass),
 #                f'coordinate_system': str(self.rdsys),
                 f'pointing_telescope': str(self.inst),  #needs fixing
                 f'is_parked': str(g_dev['mnt'].mount.AtPark).lower(),
@@ -96,7 +95,7 @@ class Telescope:
                 f'is_slewing': str(g_dev['mnt'].mount.Slewing).lower()
             }
         elif self.tel == True:
-            status = {            
+            status = {
                 f'timestamp': str(round(time.time(), 3)),
                 f'right_ascension': str(round(g_dev['mnt'].mount.RightAscension, 5)),
                 f'declination': str(round(g_dev['mnt'].mount.Declination, 4)),
@@ -106,7 +105,7 @@ class Telescope:
                 f'azimuth': str(round(g_dev['mnt'].mount.Azimuth, 3)),
                 f'altitude': str(round(alt, 3)),
                 f'zenith_distance': str(round(zen, 3)),
-                f'airmass': airmass_string,                
+                f'airmass': airmass_string,
                 f'coordinate_system': str(self.rdsys),
                 f'pointing_instrument': str(self.inst),  #needs fixing
 #                f'is_parked': (self.mount.AtPark),
@@ -117,7 +116,7 @@ class Telescope:
             print('Proper device_name is missing, or tel == None')
             status = {'defective':  'status'}
         return status  #json.dumps(status)
-    
+
     def get_quick_status(self, pre):
         alt = self.mount.Altitude
         zen = round((90 - alt), 3)
@@ -146,7 +145,7 @@ class Telescope:
         pre.append(self.mount.Slewing)
         #print(pre)
         return pre
-    
+
     @classmethod
     def two_pi_avg(cls, pre, post, half):
         if abs(pre - post) > half:
@@ -161,9 +160,9 @@ class Telescope:
         while avg >= 2*half:
             avg = avg - 2*half
         return avg
-            
-        
-        
+
+
+
     def get_average_status(self, pre, post):
         t_avg = round((pre[0] + post[0])/2, 3)
         print(t_avg)
@@ -199,16 +198,16 @@ class Telescope:
             f'azimuth':  az_avg,
             f'alttitude': alt_avg,
             f'zenith_distance': zen_avg,
-            f'airmass': air_avg,            
+            f'airmass': air_avg,
             f'coordinate_system': str(self.rdsys),
             f'instrument': str(self.inst),
             f'is_parked': park_avg,
             f'is_tracking': track_avg,
             f'is_slewing': slew_avg
-            
+
         }
         return status  #json.dumps(status)
-    
+
     def parse_command(self, command):
         req = command['required_params']
         opt = command['optional_params']
@@ -217,4 +216,3 @@ class Telescope:
         print(f"Tel Command <{action}> not recognized.")
 
 
-   

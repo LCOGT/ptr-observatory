@@ -42,7 +42,7 @@ class Screen(object):
                         str(scrn_setting))
         self.bright_setting = pBright
         #os.chdir(self.priorWd)
-        print("Brightness set to:  ", pBright, '%, actual:  ', scrn_setting)
+        print("Brightness set to:  ", scrn_setting)
 
     def screen_light_on(self):
         #self.priorWd = os.getcwd()
