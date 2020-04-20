@@ -40,11 +40,11 @@ class Sequencer:
             self.focus_auto_script(req, opt)
         elif action == "run" and script == 'genScreenFlatMasters':
             self.screen_flat_script(req, opt)
-        elif action == "run" and script == 'takeSkyFlats':
-            self.screen_flat_script(req, opt)
-        elif action == "run" and script == '32_target_pointing_run':
+        elif action == "run" and script == 'genSkyFlatMasters':
+            self.sky_flat_script(req, opt)
+        elif action == "run" and script in ['32TargetPointingRun', 'pointing_run']:
             self.equatorial_pointing_run(req, opt)
-        elif action == "stop":
+        elif action.lower() in ["stop", "cancel"]:
             self.stop_command(req, opt)
         elif action == "home":
             self.home_command(req, opt)
@@ -85,54 +85,6 @@ class Sequencer:
         pass
 
 
-    def screen_flat_script(self, req, opt):
-        name = str(self.config['camera']['camera1']['name'])
-        dark_count = 1
-        flat_count = 2
-        exp_time = 5
-        #int(req['numFrames'])
-        #gain_calc = req['gainCalc']
-        #shut_comp =  req['shutterCompensation']
-        if flat_count < 1: flat_count = 1
-        g_dev['mnt'].park_command({}, {})
-        g_dev['obs'].update_status()
-        g_dev['scr'].screen_dark()
-        g_dev['obs'].update_status()
-        #Here we need to switch off any IR or dome lighting.
-        #Take a 10 s dark screen air flat to sense ambient
-        req = {'time': 10,  'alias': name, 'image_type': 'screen flat'}
-        opt = {'size': 100, 'count': dark_count, 'filter': g_dev['fil'].filter_data[0][0]}
-        #g_dev['cam'].expose_command(req, opt, gather_status = False, no_AWS=True)
-        g_dev['mnt'].slewToSkyFlatAsync()
-        pop_list = self.config['filter_wheel']['filter_wheel1']['settings']['filter_sky_sort']
-        while len(pop_list) > 0:
-            current_filter = int(pop_list[0])
-            g_dev['fil'].set_number_command(current_filter) 
-            g_dev['mnt'].slewToSkyFlatAsync()
-            req = {'time': float(exp_time),  'alias': name, 'image_type': 'sky flat'}
-            opt = {'size': 100, 'count': flat_count, 'filter': g_dev['fil'].filter_data[current_filter][0]}
-            bright, fwhm = g_dev['cam'].expose_command(req, opt, gather_status = False, no_AWS=True)
-           
-            g_dev['obs'].update_status()
-            if bright > 55000:    #NB should gate with end of skyflat window as well.
-                time.sleep(30)
-                continue
-            g_dev['mnt'].slewToSkyFlatAsync()
-            g_dev['obs'].update_status()
-            req = {'time': float(exp_time),  'alias': name, 'image_type': 'sky flat'}
-            opt = {'size': 100, 'count': flat_count, 'filter': g_dev['fil'].filter_data[current_filter][0]}
-            bright2, fwhm = g_dev['cam'].expose_command(req, opt, gather_status = False, no_AWS=True)
-            time.sleep(2)
-            if bright2 > 55000:
-                continue
-            print("filter pop:  ", current_filter, bright, bright2)
-            pop_list.pop(0)
-            g_dev['obs'].update_status()
-            continue
-        g_dev['mnt'].park_command({}, {})
-        print('Sky flat complete')
-
-
     def sky_flat_script(self, req, opt):
         """
 
@@ -152,9 +104,63 @@ class Sequencer:
         Note we want Moon at least 30 degrees away
 
         """
+
+        name = str(self.config['camera']['camera1']['name'])
+        dark_count = 1
+        flat_count = 1
+        exp_time = 5
+        #int(req['numFrames'])
+        #gain_calc = req['gainCalc']
+        #shut_comp =  req['shutterCompensation']
+        if flat_count < 1: flat_count = 1
+        g_dev['mnt'].unpark_command({}, {})
+        g_dev['obs'].update_status()
+        g_dev['scr'].screen_dark()
+        g_dev['obs'].update_status()
+        #  We should probe to be sure dome is open, otherwise this is a test when closed and
+        #  we can speed it up
+        #Here we need to switch off any IR or dome lighting.
+        #Take a 10 s dark screen air flat to sense ambient
+        req = {'time': 10,  'alias': name, 'image_type': 'screen flat'}
+        opt = {'size': 100, 'count': dark_count, 'filter': g_dev['fil'].filter_data[0][0]}
+        #g_dev['cam'].expose_command(req, opt, gather_status = False, no_AWS=True)
+        g_dev['mnt'].slewToSkyFlatAsync()
+        pop_list = self.config['filter_wheel']['filter_wheel1']['settings']['filter_sky_sort']
+        while len(pop_list) > 0:
+            current_filter = int(pop_list[0])
+            g_dev['fil'].set_number_command(current_filter)
+            g_dev['mnt'].slewToSkyFlatAsync()
+            req = {'time': float(exp_time),  'alias': name, 'image_type': 'sky flat'}
+            opt = {'size': 100, 'count': flat_count, 'filter': g_dev['fil'].filter_data[current_filter][0]}
+            bright, fwhm = g_dev['cam'].expose_command(req, opt, gather_status = True, no_AWS=True)
+            g_dev['obs'].update_status()
+            if bright > 55000:    #NB should gate with end of skyflat window as well.
+                time.sleep(30)
+                continue
+            g_dev['mnt'].slewToSkyFlatAsync()
+            g_dev['obs'].update_status()
+            req = {'time': float(exp_time),  'alias': name, 'image_type': 'sky flat'}
+            opt = {'size': 100, 'count': flat_count, 'filter': g_dev['fil'].filter_data[current_filter][0]}
+            bright2, fwhm = g_dev['cam'].expose_command(req, opt, gather_status = True, no_AWS=True)
+            time.sleep(2)
+            if bright2 > 55000:
+                continue
+            print("filter pop:  ", current_filter, bright, bright2)
+            pop_list.pop(0)
+            g_dev['obs'].update_status()
+            continue
+        g_dev['mnt'].park_command({}, {})
+        print('\nSky flat complete.\n')
+
+
+    def screen_flat_script(self, req, opt):
+
+
+        #  NB NB NB This code is broken.  Go back a few revs
         alias = str(self.config['camera']['camera1']['name'])
         dark_count = 1
         flat_count = 5#int(req['numFrames'])
+        exp_time = 5
         #gain_calc = req['gainCalc']
         #shut_comp =  req['shutterCompensation']
         if flat_count < 1: flat_count = 1
@@ -167,19 +173,19 @@ class Sequencer:
         # Park Telescope
         req = {'time': 10,  'alias': alias, 'image_type': 'screen flat'}
         opt = {'size': 100, 'count': dark_count, 'filter': g_dev['fil'].filter_data[0][0]}
-        g_dev['cam'].expose_command(req, opt, gather_status = False, no_AWS=True)
+        g_dev['cam'].expose_command(req, opt, gather_status =True, no_AWS=True)
         # Open Dome
-        for filt in g_dev['fil'].filter_sky_sort:
+        for filt in g_dev['fil'].filter_screen_sort:
             filter_number = int(filt)
             #g_dev['fil'].set_number_command(filter_number)  #THis faults
             print(filter_number, g_dev['fil'].filter_data[filter_number][0])
 
             g_dev['obs'].update_status()
             print('Test Screen; filter, bright:  ', filter_number, float(screen_setting))
-            # Goto flat spot
+
             req = {'time': float(exp_time),  'alias': alias, 'image_type': 'screen flat'}
             opt = {'size': 100, 'count': flat_count, 'filter': g_dev['fil'].filter_data[filter_number][0]}
-            g_dev['cam'].expose_command(req, opt, gather_status = False, no_AWS=True)
+            g_dev['cam'].expose_command(req, opt, gather_status = True, no_AWS=True)
             # if no exposure, wait 10 sec
         g_dev['obs'].update_status()
 
@@ -256,7 +262,8 @@ class Sequencer:
 
         For Grid use Patrick Wallace's Mag 7 Tyco star grid it covers
         sky equal-area, has a bright star as target and wraps around
-        both axes to better sample the encoders.'
+        both axes to better sample the encoders. Choose and load the
+        grid coarseness.
         '''
         '''
         Prompt for ACCP model to be turned off
@@ -272,7 +279,7 @@ class Sequencer:
               adjust exposure if needed.
         Go to (-72.5deg HA, dec = 0),
              Expose, calibrate, save file.  Consider
-             if we can real time solve or jsut gather.
+             if we can real time solve or just gather.
         step 10 degrees forward untl ha is 77.5
         at 77.5 adjust target to (72.5, 0) and step
         backward.  Stop when you get to -77.5.

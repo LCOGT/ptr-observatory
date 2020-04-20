@@ -17,6 +17,8 @@ class ObservingConditions:
         self.astro_events = astro_events
         g_dev['ocn'] = self
         self.site = config['site']
+        self.sample_time = 0
+        self.ok_to_open = 'No'
         if self.site == 'wmd':
             self.redis_server = redis.StrictRedis(host='10.15.0.15', port=6379, db=0,
                                                   decode_responses=True)
@@ -44,6 +46,16 @@ class ObservingConditions:
     def get_status(self):
         if self.site == 'saf':
             illum, mag = self.astro_events.illuminationNow()
+            if illum > 500:
+                illum = int(illum)
+            # Here we add in-line (To be changed) a preliminary OpenOK calculation:
+            dew_point_gap = not (self.boltwood.Temperature  - self.boltwood.DewPoint) < 2
+            temp_bounds = not (self.boltwood.Temperature < 2.0) or (self.boltwood.Temperature > 35)
+            # Many other gates can be here.
+            if self.boltwood_oktoopen.IsSafe and dew_point_gap and temp_bounds:
+                self.ok_to_open = 'Yes'
+            else:
+                self.ok_to_open = "No"
             status = {"temperature_C": str(round(self.boltwood.Temperature, 2)),
                       "pressure_mbar": str(784.0),
                       "humidity_%": str(self.boltwood.Humidity),
@@ -52,30 +64,30 @@ class ObservingConditions:
                       "last_sky_update_s":  str(round(self.boltwood.TimeSinceLastUpdate('SkyTemperature'), 2)),
                       "wind_m/s": str(abs(round(self.boltwood.WindSpeed, 2))),
                       'rain_rate': str(self.boltwood.RainRate),
+                      'solar_flux_w/m^2': 'NA',
                       'cloud_cover_%': str(self.boltwood.CloudCover),
                       "calc_sky_lux": str(illum),
-                      "calc_sky_mpsas": str(mag),
+                      "calc_HSI_lux": str(illum),
+                      "calc_sky_mpsas": str(mag - 20.01),
                       "meas_sky_mpsas":  str(self.unihedron.SkyQuality),
                       "wx_ok": str(self.boltwood_oktoimage.IsSafe),
-                      "open_ok": str(self.boltwood_oktoopen.IsSafe)
+                      "open_ok": str(self.ok_to_open)
                       #"image_ok": str(self.boltwood_oktoimage.IsSafe)
                       }
 
-            # Here we add in-line (To be changed) a preliminary OpenOK calculation:
-            dew_point_gap = (self.boltwood.Temperature + 2.0 - self.boltwood.DewPoint) < 0
-            temp_bounds = (self.boltwood.Temperature < 2.0) or (self.boltwood.Temperature > 45)
-            # time_window = not(g_dev['events']['SunZ88 Opening:    '] < time.time() < g_dev['events']['SunZ88   Close:    '])
-            # This needs a rework of 'events' in g_dev[]
+
 
             # Only write when around dark, put in CSV format
             sunZ88Op, sunZ88Cl, ephemNow = g_dev['obs'].astro_events.getSunEvents()
-            quarter_hour = 0.25/24
-            if  sunZ88Op - quarter_hour < ephemNow < sunZ88Cl+ quarter_hour:
+            quarter_hour = 0.75/24    #  Note temp changed to 3/4 of an hour.
+            if  (sunZ88Op - quarter_hour < ephemNow < sunZ88Cl+ quarter_hour) and (time.time() >= \
+                 self.sample_time + 30.):    #  Two samples a minute.
                 try:
                     wl = open('D:/archive/wx_log.txt', 'a')
-                    wl.write('wx, ' + time.time() + ', ' + illum + ', ' + mag + ', ' \
-                             + self.unihedron.SkyQuality + ", \n")
+                    wl.write('wx, ' + str(time.time()) + ', ' + str(illum) + ', ' + str(mag) + ', ' \
+                             + str(self.unihedron.SkyQuality) + ", \n")
                     wl.close()
+                    self.sample_time = time.time()
                 except:
                     print("Wx log did not write.")
 

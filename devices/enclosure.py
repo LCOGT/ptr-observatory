@@ -14,7 +14,8 @@ class Enclosure:
         self.enclosure.Connected = True
         print(f"enclosure connected.")
         print(self.enclosure.Description)
-        self.state = 'Closed, normal operation, waiting for observing window.'    #A descriptive string of the state of the enclosure
+        self.state = 'Closed.  Initialized class property value.'
+        self.mode = 'Automatic'   #  Auto|User Control|User Close|Disable
         self.cycles = 0           #if >=3 inhibits reopening for Wx
         self.wait_time = 0        #A countdown to re-open
         self.wx_close = False     #If made true by Wx code, a 15 minute timeout will begin when Wx turns OK
@@ -23,8 +24,12 @@ class Enclosure:
 
     def get_status(self) -> dict:
         #<<<<The next attibute reference fails at SAF, usually spurious Dome Ring Open report.
-
-        shutter_status = self.enclosure.ShutterStatus
+        #<<< Have seen other instances of failing.
+        try:
+            shutter_status = self.enclosure.ShutterStatus
+        except:
+            print("self.enclosure.ShutterStatus -- Faulted. ")
+            shutter_status = 5
         if shutter_status == 0:
             stat_string = "Open"
         elif shutter_status == 1:
@@ -35,17 +40,25 @@ class Enclosure:
              stat_string = "Closing"
         elif shutter_status == 4:
              stat_string = "Error"
+        else:
+             stat_string = "Fault"
         try:     #This is for a dome   NB shouold not be using try/except here
             status = {'shutter_status': stat_string,
                       'shutter_slaving': str(self.enclosure.Slaved),
-                      'shutter_azimuth': str(self.enclosure.Azimuth),
-                      'shutter_slewing': str(self.enclosure.Slewing)}
+                      'shutter_azimuth': str(round(self.enclosure.Azimuth, 1)),
+                      'shutter_slewing': str(self.enclosure.Slewing),
+                      'shutter_mode': str(self.mode),
+                      'shutter_message': str(self.state)}
         except:
              status = {'shutter_status': stat_string,
                       'shutter_slaving': str(self.enclosure.Slaved),
                       'shutter_azimuth': 'unknown',
-                      'shutter_slewing': str(self.enclosure.Slewing)}
-        #print('Enclosure status:  ', status)
+                      'shutter_slewing': str(self.enclosure.Slewing),
+                      'shutter_mode': str(self.mode),
+                      'shutter_message': str(self.state)}
+        #print('Enclosure status:  ', status
+        self.status_string = stat_string
+        self.manager()   #There be monsters here.
         return status
 
     def parse_command(self, command):
@@ -77,12 +90,13 @@ class Enclosure:
 
     def open_command(self, req: dict, opt: dict):
         ''' open the enclosure '''
-        self.manager()
+        self.manager(open_cmd=True)
         print(f"enclosure cmd: open")
         pass
 
     def close_command(self, req: dict, opt: dict):
         ''' close the enclosure '''
+        self.manager(close_cmd=True)
         print(f"enclosure cmd: close")
         pass
 
@@ -110,9 +124,9 @@ class Enclosure:
     def wx_is_ok(self):   #A placeholder for a proper weather class or ASCOM device.
         return True
 
-    def manager(self):     #This is the place where the enclosure is autonomus during operating hours. Delicut Code!!!
+    def manager(self, open_cmd=False, close_cmd=False):     #This is the place where the enclosure is autonomus during operating hours. Delicut Code!!!
         '''
-        When the code starts up  we wait for the Sun = Z 88 condition and if Wx is OK
+        When the code starts up, we wait for the Sun = Z 88 condition and if Wx is OK
         based on analyzing both Redis data and checking on the enable bit in the  Boltwood
         file, we issue ONE open command then set an Open Block so no more commands are
         issued.  At time of normal closing, we issue a series of close signals -- basically
@@ -125,20 +139,36 @@ class Enclosure:
         Now what if code hangs?  To recover from that ideally we need a deadman style timer operating on a
         separate computer.
         '''
-        sunZ88Op, sunZ88Cl, ephemNow = self.astro_events.getSunEvents()
 
-        if  sunZ88Op < ephemNow < sunZ88Cl \
-                and self.wx_is_ok() \
+        #  NB NB NB Directly calling enclosure methods is to be discouraged, go through commands so logging
+        #           and so forth can be done in one place.
+        sunZ88Op, sunZ88Cl, ephemNow = self.astro_events.getSunEvents()
+        if  (sunZ88Op < ephemNow < sunZ88Cl or open_cmd) \
+                and self.mode == 'Automatic' \
+                and g_dev['ocn'].ok_to_open.lower() in ['yes', 'true'] \
                 and self.wait_time <= 0 \
                 and self.enclosure.ShutterStatus == 1: #Closed
-            self.state = 'Nightime Open Shutter, Wx OK, in Observing window.'
+            if open_cmd:
+                self.state = 'User Opened the Shutter'
+            else:
+                self.state = 'Nightime Open Shutter, Wx OK, in Observing window.'
             self.cycles += 1           #if >=3 inhibits reopening for Wx  -- may need shelving so this persists.
             #A countdown to re-open
-            #self.enclosure.OpenShutter()   #<<<<NB NB NB Only enable when code is fully proven to work.
-
-        elif sunZ88Op >= ephemNow or ephemNow >= sunZ88Cl:
-            self.enclosure.CloseShutter()
-            print("Daytime Close Shutter issued.")
+            if self.status_string.lower() in ['closed', 'closing']:
+                self.enclosure.OpenShutter()   #<<<<NB NB NB Only enable when code is fully proven to work.
+                print("Night time Open Shutter issued.")
+        elif (sunZ88Op >= ephemNow or ephemNow >= sunZ88Cl \
+                and self.mode == 'Automatic') or close_cmd:
+            if close_cmd:
+                self.state = 'User Closed the Shutter'
+            else:
+                self.state = 'Daytime normally Closed Shutter'
+            if self.status_string.lower() in ['open', 'opening']:
+                try:
+                    self.enclosure.CloseShutter()
+                    print("Daytime Close Shutter issued.")
+                except:
+                    print("Shutter busy right now!")
 
 
 

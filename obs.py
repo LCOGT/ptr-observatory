@@ -145,7 +145,7 @@ class Observatory:
             'filter_wheel'
             ]
 
-        # Send the config to aws
+        # Send the config to aws   # NB NB NB This has faulted.
         self.update_config()
 
         # Instantiate the helper class for astronomical events
@@ -331,33 +331,37 @@ class Observatory:
 
     def update(self):
         """
-       
+
         20200411 WER
         This compact little function is the heart of the code in the sense this is repeatedly
         called.  It first SENDS status for all devices to AWS, then it checks for any new
         commands from AWS.  Then it calls sequencer.monitor() were jobs may get launched. A
         flaw here is we do not have a Ulid for the 'Job number.'
-        
+
         With a Maxim based camera is it possible for the owner to push buttons in parallel
         with commands coming from AWS.  This is useful during the debugging phase.
-        
+
         Sequences that are self-dispatched primarily relate to Bias darks, screen and sky
-        flats, opening and closing.  Status for these jobs is repored via the normal 
-        sequencer status mechanism. Guard flags to preveent care;ess interrupts will be
-        implemented as well as Cancel of a sequence if emitted by the Cancel botton on 
+        flats, opening and closing.  Status for these jobs is reported via the normal
+        sequencer status mechanism. Guard flags to preveent careless interrupts will be
+        implemented as well as Cancel of a sequence if emitted by the Cancel botton on
         the AWS Sequence tab.
-        
-        Flat acquisition will include auomatic rejection of any image that has a mean 
+
+        Flat acquisition will include auomatic rejection of any image that has a mean
         intensity > cam.saturate.  The camera will return without further processing and
         no image will be returned to AWS or stored locally.  We should log the Unihedron and
         calc_illum values where filter first enter non-saturation.  Once we know those values
         we can spend much less effort taking frames that are saturated. Save The Shutter!
-       
+
         """
 
         self.update_status()
-        self.scan_requests('mount1')
-        g_dev['seq'].monitor()
+        try:
+            self.scan_requests('mount1')   #NBNBNB THis has faulted, needs to be Try/Except
+        except:
+            print("self.scan_requests('mount1') threw an exception.")
+
+        g_dev['seq'].monitor()  #  Go see if there is something new to do.
 
     def run(self):   # run is a poor name for this function.
         try:

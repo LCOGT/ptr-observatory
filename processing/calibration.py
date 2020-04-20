@@ -299,7 +299,7 @@ def calibrate (hdu, hdu_ldr, lng_path, frame_type='light', start_x=0, start_y=0,
     big_max = hdu.data.max()
     if big_max > 65535.:   #This scaling is probelmatic.
         hdu.data = hdu.data*(65530./big_max)
-    return
+    return (hdu.data.mean() + np.median(hdu.data))/2
 
 if __name__ == '__main__':
     pass

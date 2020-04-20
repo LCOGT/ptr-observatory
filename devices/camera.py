@@ -137,7 +137,7 @@ class Camera:
             self.maxim = True
             self.ascom = False
             self.camera.TemperatureSetpoint = -30.
-            self.camera.CoolerOn = True   # NB This should be a site configuratin setting. 20200412
+            self.camera.CoolerOn = False   # NB This should be a site configuratin setting. 20200412
             self.current_filter = 0
             self.filter_wheel_name = 'maxim ' + self.camera.FilterWheelName
             print('Control is Maxim camera interface.')
@@ -816,6 +816,7 @@ class Camera:
                             hdu.header['DEWPOINT'] = avg_ocn[4]
                             hdu.header['WIND'] = avg_ocn[5]
                             hdu.header['PRESSURE'] = avg_ocn[6]
+                            breakpoint()
                             hdu.header['CALC-LUX'] = avg_ocn[7]
                             hdu.header['SKY-HZ'] = avg_ocn[8]
                             if g_dev['enc'] is not None:
@@ -1039,11 +1040,10 @@ class Camera:
     #                        except:
     #                            print(' 2 Could not remove newest.fits.')
                         print('Returning #1:  ', spot, avg_foc[1] )
-                        return (spot, avg_foc[1])
+                        return (cal_result, avg_foc[1])
                     except:
                         print('Header assembly block failed.')
                         self.t7 = time.time()
-
                     return (None ,None)
                 else:               #here we are in waiting for imageReady loop and could send status and check Queue
                     time.sleep(.3)
@@ -1051,7 +1051,7 @@ class Camera:
                     #if not quick:
                     #   g_dev['obs'].update_status()
                     self.t7= time.time()
-                    print("Basic camera wait loop loop  is occuring")
+                    print("Basic camera wait loop loop.")
                     #it takes about 15 seconds from AWS to get here for a bias.
             except:
                 counter += 1

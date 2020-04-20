@@ -62,7 +62,7 @@ class Focuser:
         self.focuser.TempComp = False
         self.micron_to_steps = float(config['focuser']['focuser1']['unit_conversion'])
         print(f"focuser connected.")
-        print(self.focuser.Description, "At:  ", self.focuser.Position/self.micron_to_steps)
+        print(self.focuser.Description, "At:  ", round(self.focuser.Position/self.micron_to_steps, 1))
         time.sleep(0.2)
         try:
             try:
