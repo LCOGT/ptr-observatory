@@ -132,7 +132,7 @@ class Sequencer:
             g_dev['mnt'].slewToSkyFlatAsync()
             req = {'time': float(exp_time),  'alias': name, 'image_type': 'sky flat'}
             opt = {'size': 100, 'count': flat_count, 'filter': g_dev['fil'].filter_data[current_filter][0]}
-            bright, fwhm = g_dev['cam'].expose_command(req, opt, gather_status = True, no_AWS=True)
+            bright, fwhm = g_dev['cam'].expose_command(req, opt, gather_status=True, no_AWS=True)
             g_dev['obs'].update_status()
             if bright > 55000:    #NB should gate with end of skyflat window as well.
                 time.sleep(30)
@@ -141,7 +141,7 @@ class Sequencer:
             g_dev['obs'].update_status()
             req = {'time': float(exp_time),  'alias': name, 'image_type': 'sky flat'}
             opt = {'size': 100, 'count': flat_count, 'filter': g_dev['fil'].filter_data[current_filter][0]}
-            bright2, fwhm = g_dev['cam'].expose_command(req, opt, gather_status = True, no_AWS=True)
+            bright2, fwhm = g_dev['cam'].expose_command(req, opt, gather_status=True, no_AWS=True)
             time.sleep(2)
             if bright2 > 55000:
                 continue
@@ -155,16 +155,21 @@ class Sequencer:
 
     def screen_flat_script(self, req, opt):
 
+        if req['numFrames'] > 1:
+            flat_count = req['numFrames']
+        else:
+            flat_count = 7    #   A dedugging compromise
 
-        #  NB NB NB This code is broken.  Go back a few revs
+        #  NB here we ned to check cam at reasonable temp, or dwell until it is.
+
         alias = str(self.config['camera']['camera1']['name'])
-        dark_count = 1
-        flat_count = 5#int(req['numFrames'])
+        dark_count = 3
         exp_time = 5
         #gain_calc = req['gainCalc']
         #shut_comp =  req['shutterCompensation']
         if flat_count < 1: flat_count = 1
         g_dev['mnt'].park_command({}, {})
+        #  NB:  g_dev['enc'].close
         g_dev['obs'].update_status()
         g_dev['scr'].screen_dark()
         g_dev['obs'].update_status()
@@ -172,29 +177,36 @@ class Sequencer:
         #Take a 10 s dark screen air flat to record ambient
         # Park Telescope
         req = {'time': 10,  'alias': alias, 'image_type': 'screen flat'}
-        opt = {'size': 100, 'count': dark_count, 'filter': g_dev['fil'].filter_data[0][0]}
-        g_dev['cam'].expose_command(req, opt, gather_status =True, no_AWS=True)
-        # Open Dome
+        opt = {'size': 100, 'count': dark_count, 'filter': g_dev['fil'].filter_data[12][0]}  #  air has highest throughput
+        # Skip for now;  bright, fwhm = g_dev['cam'].expose_command(req, opt, gather_status=True, no_AWS=True)
+        g_dev['scr'].screen_light_on()
         for filt in g_dev['fil'].filter_screen_sort:
             filter_number = int(filt)
             #g_dev['fil'].set_number_command(filter_number)  #THis faults
             print(filter_number, g_dev['fil'].filter_data[filter_number][0])
-
+            screen_setting = g_dev['fil'].filter_data[filter_number][4][1]
+            g_dev['scr'].set_screen_bright(int(screen_setting))
+            #  NB if changed we should wait 15 seconds. time.sleep(15)
+            exp_time  = g_dev['fil'].filter_data[filter_number][4][0]
             g_dev['obs'].update_status()
-            print('Test Screen; filter, bright:  ', filter_number, float(screen_setting))
+            print('Test Screen; filter, bright:  ', filter_number, screen_setting)
 
             req = {'time': float(exp_time),  'alias': alias, 'image_type': 'screen flat'}
             opt = {'size': 100, 'count': flat_count, 'filter': g_dev['fil'].filter_data[filter_number][0]}
-            g_dev['cam'].expose_command(req, opt, gather_status = True, no_AWS=True)
+            bright, fwhm = g_dev['cam'].expose_command(req, opt, gather_status=True, no_AWS=True)
             # if no exposure, wait 10 sec
+            print("Screen flat:  ", bright, g_dev['fil'].filter_data[filter_number][0], '\n\n')
+            g_dev['obs'].update_status()
+            #breakpoint()
+        g_dev['scr'].screen_dark()
         g_dev['obs'].update_status()
-
-        print('Sky Flat sequence completed, Tracking is off.')
+        g_dev['mnt'].park_command({}, {})
+        print('Sky Flat sequence completed, Telescope is parked.')
 
     def focus_auto_script(self, req, opt):
         '''
         V curve is a big move focus designed to fit two lines adjacent to the more normal focus curve.
-        It finds the approximate focus, particulary for a new instrument. ti requires 8 points plus
+        It finds the approximate focus, particulary for a new instrument. It requires 8 points plus
         a verify.
         Quick focus consists of three points plus a verify.
         Fine focus consists of five points plus a verify.

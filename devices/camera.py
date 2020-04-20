@@ -127,6 +127,7 @@ class Camera:
             self.ascom = True
             if self.camera.CanSetCCDTemperature:
                 self.camera.SetCCDTemperature = -40.0
+                self.temperature_setpoint = self.camera.SetCCDTemperature
             self.camera.CoolerOn = True
             self.current_filter = 2     #A WMD reference -- needs fixing.
             self.filter_wheel_name = "ascom ASCOM"   #This needs to be more specific
@@ -137,7 +138,8 @@ class Camera:
             self.maxim = True
             self.ascom = False
             self.camera.TemperatureSetpoint = -30.
-            self.camera.CoolerOn = False   # NB This should be a site configuratin setting. 20200412
+            self.temperature_setpoint = self.camera.TemperatureSetpoint
+            self.camera.CoolerOn = False   # NB This should be a site configuration setting. 20200412
             self.current_filter = 0
             self.filter_wheel_name = 'maxim ' + self.camera.FilterWheelName
             print('Control is Maxim camera interface.')
@@ -609,7 +611,7 @@ class Camera:
                             self.camera.StartExposure(exposure_time, imtypeb)
 
                         elif self.maxim:
-                            print('Link Enable:  ', self.camera.LinkEnabled)
+                            print('Link Enable check:  ', self.camera.LinkEnabled)
                             self.camera.AbortExposure()
                             g_dev['ocn'].get_quick_status(self.pre_ocn)
                             g_dev['foc'].get_quick_status(self.pre_foc)
@@ -617,6 +619,9 @@ class Camera:
                             g_dev['mnt'].get_quick_status(self.pre_mnt)
                             self.t2 = time.time()
                             print("Starting exposure at:  ", self.t2)
+                            if not self.camera.LinkEnabled:
+                                self.camera.LinkEnabled = True
+                                print('Reset LinkEnabled right before exposure')
                             self.camera.Expose(exposure_time, imtypeb)
                             ldr_handle_time = None
                             ldr_handle_high_time = None
@@ -816,7 +821,6 @@ class Camera:
                             hdu.header['DEWPOINT'] = avg_ocn[4]
                             hdu.header['WIND'] = avg_ocn[5]
                             hdu.header['PRESSURE'] = avg_ocn[6]
-                            breakpoint()
                             hdu.header['CALC-LUX'] = avg_ocn[7]
                             hdu.header['SKY-HZ'] = avg_ocn[8]
                             if g_dev['enc'] is not None:
@@ -882,7 +886,7 @@ class Camera:
 
                             os.makedirs(im_path_r + g_dev['day'] + '/to_AWS/', exist_ok=True)
                             os.makedirs(im_path_r + g_dev['day'] + '/raw/', exist_ok=True)
-                            os.makedirs(im_path_r + g_dev['day'] + '/calib\/', exist_ok=True)
+                            os.makedirs(im_path_r + g_dev['day'] + '/calib/', exist_ok=True)
                             #print('Created:  ',im_path + g_dev['day'] + '\\to_AWS\\' )
                             im_path = im_path_r + g_dev['day'] + '/to_AWS/'
                             raw_path = im_path_r + g_dev['day'] + '/raw/'
@@ -1024,7 +1028,7 @@ class Camera:
                         print(istd, img3.max(), img3.mean(), img3.min())
                         imsave(im_path + jpeg_name, img3)
                         jpeg_data_size = img3.size - 1024
-                        if not no_AWS:
+                        if not no_AWS:  #IN the no+AWS case should we skip more of the above processing?
                             self.enqueue_image(text_data_size, im_path, text_name)
                             self.enqueue_image(jpeg_data_size, im_path, jpeg_name)
                             if not quick:
@@ -1039,8 +1043,8 @@ class Camera:
     #                            'Q:\\archive\\' + 'gf03'+ '\\newest_low.fits'
     #                        except:
     #                            print(' 2 Could not remove newest.fits.')
-                        print('Returning #1:  ', spot, avg_foc[1] )
-                        return (cal_result, avg_foc[1])
+                        # This conficts with cal_result  print('Returning #1:  ', spot, avg_foc[1] )
+                        return cal_result, avg_foc[1]
                     except:
                         print('Header assembly block failed.')
                         self.t7 = time.time()
