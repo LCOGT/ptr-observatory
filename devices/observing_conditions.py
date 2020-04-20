@@ -103,7 +103,7 @@ class ObservingConditions:
                           "wx_ok": wx["open_possible"],
                           "meas_sky_mpsas": wx['bright hz']
                           }
-                breakpoint()
+
 
 
             except:
