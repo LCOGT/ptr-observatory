@@ -98,14 +98,22 @@ class ObservingConditions:
 
             try:
                 wx = eval(self.redis_server.get('<ptr-wx-1_state'))
+                breakpoint()
             except:
                 print('Redis is not returning Wx Data properly.')
             try:
+                illum, mag = self.astro_events.illuminationNow()
+                illum = float(wx["illum lux"])
+                if illum > 500:
+                    illum = int(illum)
+                else:
+                    illum = round(illum, 3)
                 status = {"temperature_C": wx["amb_temp C"],
                           "pressur_mbar": '978',
-                          "humidity_5": wx["humidity %"],
+                          "humidity_%": wx["humidity %"],
                           "dewpoint_C": wx["dewpoint C"],
-                          "calc_sky_lux": wx["illum lux"],
+                          "calc_sky_lux": str(illum),
+                          "calc_HSI_lux": str(illum),
                           "sky_temp_C": wx["sky C"],
                           "time_to_open": wx["time to open"],
                           "time_to_close": wx["time to close"],
@@ -113,7 +121,8 @@ class ObservingConditions:
                           "ambient_light": wx["light"],
                           "open_ok": wx["open_possible"],
                           "wx_ok": wx["open_possible"],
-                          "meas_sky_mpsas": wx['bright hz']
+                          "meas_sky_mpsas": wx['meas_sky_mpsas'],
+                          "calc_sky_mpsas": str(mag - 20.01)
                           }
 
 
@@ -138,7 +147,20 @@ class ObservingConditions:
                           "open_possible":  wx["open_possible"],
                           "brightness_hz": wx['bright hz']
                           }
-            return status
+                        # Only write when around dark, put in CSV format
+                sunZ88Op, sunZ88Cl, ephemNow = g_dev['obs'].astro_events.getSunEvents()
+                quarter_hour = 0.75/24    #  Note temp changed to 3/4 of an hour.
+                if  (sunZ88Op - quarter_hour < ephemNow < sunZ88Cl + quarter_hour) and (time.time() >= \
+                     self.sample_time + 30.):    #  Two samples a minute.
+                    try:
+                        wl = open('Q:/archive/wx_log.txt', 'a')
+                        wl.write('wx, ' + str(time.time()) + ', ' + str(illum) + ', ' + str(mag - 20.01) + ', ' \
+                                 + str(self.unihedron.SkyQuality) + ", \n")
+                        wl.close()
+                        self.sample_time = time.time()
+                    except:
+                        print("Wx log did not write.")
+                return status
         else:
             print("Big fatal error")
 
