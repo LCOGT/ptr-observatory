@@ -95,10 +95,8 @@ class ObservingConditions:
 
             return status
         elif self.site == 'wmd':
-
             try:
                 wx = eval(self.redis_server.get('<ptr-wx-1_state'))
-                breakpoint()
             except:
                 print('Redis is not returning Wx Data properly.')
             try:
@@ -115,23 +113,35 @@ class ObservingConditions:
                           "calc_sky_lux": str(illum),
                           "calc_HSI_lux": str(illum),
                           "sky_temp_C": wx["sky C"],
-                          "time_to_open": wx["time to open"],
-                          "time_to_close": wx["time to close"],
-                          "wind_km/h": wx["wind k/h"],
+                          "time_to_open_h": wx["time to open"],
+                          "time_to_close_h": wx["time to close"],
+                          "wind_m/s": wx["wind m/s"],
                           "ambient_light": wx["light"],
                           "open_ok": wx["open_possible"],
                           "wx_ok": wx["open_possible"],
                           "meas_sky_mpsas": wx['meas_sky_mpsas'],
-                          "calc_sky_mpsas": str(mag - 20.01)
+                          "calc_sky_mpsas": str(round((mag - 20.01), 2))
                           }
+                        # Only write when around dark, put in CSV format
+                # sunZ88Op, sunZ88Cl, ephemNow = g_dev['obs'].astro_events.getSunEvents()
+                # quarter_hour = 0.75/24    #  Note temp changed to 3/4 of an hour.
+                # if  (sunZ88Op - quarter_hour < ephemNow < sunZ88Cl + quarter_hour) and (time.time() >= \
+                #      self.sample_time + 30.):    #  Two samples a minute.
+                #     try:
+                #         wl = open('Q:/archive/wx_log.txt', 'a')
+                #         wl.write('wx, ' + str(time.time()) + ', ' + str(illum) + ', ' + str(mag - 20.01) + ', ' \
+                #                  + str(self.unihedron.SkyQuality) + ", \n")
+                #         wl.close()
+                #         self.sample_time = time.time()
+                #     except:
+                #         print("Wx log did not write.")
 
-
-
+                return status
             except:
                 time.sleep(1)
                 # This is meant to be a retry
                 try:
-                    wx = eval(self.redis_server.get('<ptr-wx-1_state'))
+                    wx = eval(self.redis_server.get('<ptr-wx-1_state'))                
                 except:
                     print('Redis is not turning Wx Data properly.')
                 status = {"temperature": wx["amb_temp C"],
@@ -142,7 +152,7 @@ class ObservingConditions:
                           "sky_temp": wx["sky C"],
                           "time_to_open": wx["time to open"],
                           "time_to_close": wx["time to close"],
-                          "wind_km/h": wx["wind k/h"],
+                          "wind_m/s": wx['wind m/s'],
                           "ambient_light":  wx["light"],
                           "open_possible":  wx["open_possible"],
                           "brightness_hz": wx['bright hz']
@@ -160,7 +170,7 @@ class ObservingConditions:
                         self.sample_time = time.time()
                     except:
                         print("Wx log did not write.")
-                return status
+            return status
         else:
             print("Big fatal error")
 

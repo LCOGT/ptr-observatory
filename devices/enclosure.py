@@ -7,6 +7,7 @@ class Enclosure:
     def __init__(self, driver: str, name: str, config: dict, astro_events):
         self.name = name
         self.astro_events = astro_events
+        self.site = config['site']
         g_dev['enc'] = self
         win32com.client.pythoncom.CoInitialize()
         self.enclosure = win32com.client.Dispatch(driver)
@@ -28,7 +29,7 @@ class Enclosure:
         try:
             shutter_status = self.enclosure.ShutterStatus
         except:
-            print("self.enclosure.ShutterStatus -- Faulted. ")
+            print("self.enclosure.Roof.ShutterStatus -- Faulted. ")
             shutter_status = 5
         if shutter_status == 0:
             stat_string = "Open"
@@ -42,20 +43,20 @@ class Enclosure:
              stat_string = "Error"
         else:
              stat_string = "Fault"
-        try:     #This is for a dome   NB shouold not be using try/except here
+        
+        if self.site == 'saf':
             status = {'shutter_status': stat_string,
-                      'shutter_slaving': str(self.enclosure.Slaved),
-                      'shutter_azimuth': str(round(self.enclosure.Azimuth, 1)),
-                      'shutter_slewing': str(self.enclosure.Slewing),
-                      'shutter_mode': str(self.mode),
-                      'shutter_message': str(self.state)}
-        except:
-             status = {'shutter_status': stat_string,
-                      'shutter_slaving': str(self.enclosure.Slaved),
-                      'shutter_azimuth': 'unknown',
-                      'shutter_slewing': str(self.enclosure.Slewing),
-                      'shutter_mode': str(self.mode),
-                      'shutter_message': str(self.state)}
+                  'enclosure_slaving': str(self.enclosure.Slaved),
+                  'dome_azimuth': str(round(self.enclosure.Azimuth, 1)),
+                  'dome_slewing': str(self.enclosure.Slewing),
+                  'enclosure_mode': str(self.mode),
+                  'enclosure_message': str(self.state)}
+        else:
+            status = {'roof_status': stat_string,
+                  'enclosure_slaving': str(self.enclosure.Slaved),
+                  'enclosure_mode': str(self.mode),
+                  'enclosure_message': str(self.state)}
+
         #print('Enclosure status:  ', status
         self.status_string = stat_string
         self.manager()   #There be monsters here.
