@@ -144,30 +144,34 @@ class Enclosure:
         #  NB NB NB Directly calling enclosure methods is to be discouraged, go through commands so logging
         #           and so forth can be done in one place.
         sunZ88Op, sunZ88Cl, ephemNow = self.astro_events.getSunEvents()
+        if self.site == 'saf':
+             shutter_str = "Dome."
+        else:
+            shutter_str = "Roof."
         if  (sunZ88Op < ephemNow < sunZ88Cl or open_cmd) \
                 and self.mode == 'Automatic' \
                 and g_dev['ocn'].ok_to_open.lower() in ['yes', 'true'] \
                 and self.wait_time <= 0 \
                 and self.enclosure.ShutterStatus == 1: #Closed
             if open_cmd:
-                self.state = 'User Opened the Shutter'
+                self.state = 'User Opened the ' + shutter_str
             else:
-                self.state = 'Nightime Open Shutter, Wx OK, in Observing window.'
+                self.state = 'Nightime Open ' + shutter_str + '   Wx OK, in Observing window.'
             self.cycles += 1           #if >=3 inhibits reopening for Wx  -- may need shelving so this persists.
             #A countdown to re-open
             if self.status_string.lower() in ['closed', 'closing']:
                 self.enclosure.OpenShutter()   #<<<<NB NB NB Only enable when code is fully proven to work.
-                print("Night time Open Shutter issued.")
+                print("Night time Open issued to the "  + shutter_str)
         elif (sunZ88Op >= ephemNow or ephemNow >= sunZ88Cl \
                 and self.mode == 'Automatic') or close_cmd:
             if close_cmd:
-                self.state = 'User Closed the Shutter'
+                self.state = 'User Closed the '  + shutter_str
             else:
-                self.state = 'Daytime normally Closed Shutter'
+                self.state = 'Daytime normally Closed the ' + shutter_str
             if self.status_string.lower() in ['open', 'opening']:
                 try:
                     self.enclosure.CloseShutter()
-                    print("Daytime Close Shutter issued.")
+                    print("Daytime Close issued to the " + shutter_str)
                 except:
                     print("Shutter busy right now!")
 
