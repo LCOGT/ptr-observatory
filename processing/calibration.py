@@ -292,13 +292,13 @@ def calibrate (hdu, hdu_ldr, lng_path, frame_type='light', start_x=0, start_y=0,
     if cal_string == '':
         cal_string = 'Uncalibrated'
     hdu.header['CALHIST'] = cal_string
-    hdu.data = img.astype('float32')  #This is meant to catch an image change to 'float64'
+    hdu.data = img.astype('float32')  #This is meant to catch an image cast to 'float64'
     fix = np.where(hdu.data < 0)
-    if not quick: print('# of 0 fix pixels:  ', len(fix[0]))
-    hdu.data[fix] = 0
-    big_max = hdu.data.max()
-    if big_max > 65535.:   #This scaling is probelmatic.
-        hdu.data = hdu.data*(65530./big_max)
+    if not quick: print('# of < 0  pixels:  ', len(fix[0]))  #  Do not change values here.
+    # hdu.data[fix] = 0
+    # big_max = hdu.data.max()
+    # if big_max > 65535.:   #This scaling is problematic.
+    #     hdu.data = hdu.data*(65530./big_max)
     return (hdu.data.mean() + np.median(hdu.data))/2
 
 if __name__ == '__main__':
