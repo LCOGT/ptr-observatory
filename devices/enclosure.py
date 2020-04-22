@@ -47,15 +47,15 @@ class Enclosure:
                       'shutter_slaving': str(self.enclosure.Slaved),
                       'shutter_azimuth': str(round(self.enclosure.Azimuth, 1)),
                       'shutter_slewing': str(self.enclosure.Slewing),
-                      'shutter_mode': str(self.mode),
-                      'shutter_message': str(self.state)}
+                      'enclosure_mode': str(self.mode),
+                      'enclosure_message': str(self.state)}
         except:
              status = {'shutter_status': stat_string,
                       'shutter_slaving': str(self.enclosure.Slaved),
                       'shutter_azimuth': 'unknown',
                       'shutter_slewing': str(self.enclosure.Slewing),
-                      'shutter_mode': str(self.mode),
-                      'shutter_message': str(self.state)}
+                      'enclosure_mode': str(self.mode),
+                      'enclosure_message': str(self.state)}
         #print('Enclosure status:  ', status
         self.status_string = stat_string
         self.manager()   #There be monsters here.

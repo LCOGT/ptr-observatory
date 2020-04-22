@@ -914,7 +914,6 @@ class Camera:
 
                         #  if frame_type == 'sky flat':
                         #      hdu.header['SKYSENSE'] = int(g_dev['scr'].bright_setting)
-
                         if not quick:
                             hdu1.writeto(im_path + raw_name01, overwrite=True)
                         do_sep = False
@@ -961,6 +960,7 @@ class Camera:
                         #user is informed. If the incoming image dimensions are odd, they wil be decreased by one.  In essence
                         #we wre embedding a non-rectaglular image in a "square" and scaling it to 768^2.  We will impose a
                         #minimum subframe reporting of 32 x 32
+
                         in_shape = hdu.data.shape
                         in_shape = [in_shape[0], in_shape[1]]   #Have to convert to a list, cannot manipulate a tuple,
                         if in_shape[0]%2 == 1:
@@ -972,6 +972,13 @@ class Camera:
                         if in_shape[1] < 32:
                             in_shape[1] = 32
                         #Ok, we have an even array and a minimum 32x32 array.
+
+# =============================================================================
+# x = 2      From Numpy: a way to quickly embed an array in a larger one
+# y = 3
+# wall[x:x+block.shape[0], y:y+block.shape[1]] = block
+# =============================================================================
+
                         if in_shape[0] < in_shape[1]:
                             diff = int(abs(in_shape[1] - in_shape[0])/2)
                             in_max = int(hdu.data.max()*0.8)
@@ -981,7 +988,7 @@ class Camera:
                             new_img = np. zeros((in_shape[1], in_shape[1]))    #new square array
                             new_img[0:diff - 1, :] = in_min
                             new_img[diff-1, :] = in_max
-                            new_img[diff:(diff + in_shape[0]), :]
+                            new_img[diff:(diff + in_shape[0]), :] = hdu.data
                             new_img[(diff + in_shape[0]), :] = in_max
                             new_img[(diff + in_shape[0] + 1):(2*diff + in_shape[0]), :] = in_min
                             hdu.data = new_img
@@ -995,7 +1002,7 @@ class Camera:
                             new_img = np. zeros((in_shape[0], in_shape[0]))    #new square array
                             new_img[:, 0:diff - 1] = in_min
                             new_img[:, diff-1] = in_max
-                            new_img[:, diff:(diff + in_shape[1])]
+                            new_img[:, diff:(diff + in_shape[1])] = hdu.data
                             new_img[:, (diff + in_shape[1])] = in_max
                             new_img[:, (diff + in_shape[1] + 1):(2*diff + in_shape[1])] = in_min
                             hdu.data = new_img
@@ -1061,7 +1068,7 @@ class Camera:
                 counter += 1
                 time.sleep(.01)
                 #This shouldbe counted down for a loop cancel.
-                print('Wait for exposure end, but getting here is usually bad.')
+                print('Wait for exposure end, but getting here is usually bad news, tray again.')
                 return (None, None)
 
         #definitely try to clean up any messes.
