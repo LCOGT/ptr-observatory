@@ -16,7 +16,7 @@ class Enclosure:
         print(f"enclosure connected.")
         print(self.enclosure.Description)
         self.state = 'Closed.  Initialized class property value.'
-        self.mode = 'Automatic'   #  Auto|User Control|User Close|Disable
+        self.mode = 'Manual'   #  Auto|User Control|User Close|Disable
         self.cycles = 0           #if >=3 inhibits reopening for Wx
         self.wait_time = 0        #A countdown to re-open
         self.wx_close = False     #If made true by Wx code, a 15 minute timeout will begin when Wx turns OK
@@ -43,7 +43,7 @@ class Enclosure:
              stat_string = "Error"
         else:
              stat_string = "Fault"
-        
+
         if self.site == 'saf':
             status = {'shutter_status': stat_string,
                   'enclosure_slaving': str(self.enclosure.Slaved),
@@ -71,6 +71,12 @@ class Enclosure:
             self.open_command(req, opt)
         elif action == "close":
             self.close_command(req, opt)
+        elif action == "setAuto":
+            self.mode = 'Automatic'
+            print("Enclosure set to Automatic.")
+        elif action == "setManual":
+            self.mode = 'Manual'
+            print("Enclosure set to Manual.")
         elif action == "slew_alt":
             self.slew_alt_command(req, opt)
         elif action == "slew_az":

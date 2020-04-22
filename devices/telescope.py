@@ -22,6 +22,7 @@ class Telescope:
         self.rdsys = 'J.now'
         self.inst = 'tel1'
         self.tel = tel
+        self.message = ""
 
 
         if not tel:
@@ -92,7 +93,8 @@ class Telescope:
                 f'pointing_telescope': str(self.inst),  #needs fixing
                 f'is_parked': str(g_dev['mnt'].mount.AtPark).lower(),
                 f'is_tracking': str(g_dev['mnt'].mount.Tracking).lower(),
-                f'is_slewing': str(g_dev['mnt'].mount.Slewing).lower()
+                f'is_slewing': str(g_dev['mnt'].mount.Slewing).lower(),
+                f'message': g_dev['mnt'].message[:32]
             }
         elif self.tel == True:
             status = {
@@ -108,6 +110,7 @@ class Telescope:
                 f'airmass': airmass_string,
                 f'coordinate_system': str(self.rdsys),
                 f'pointing_instrument': str(self.inst),  #needs fixing
+                f'message': g_dev['mnt'].message[:32]
 #                f'is_parked': (self.mount.AtPark),
 #                f'is_tracking': str(self.mount.Tracking),
 #                f'is_slewing': str(self.mount.Slewing)

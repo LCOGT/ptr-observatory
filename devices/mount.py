@@ -60,6 +60,7 @@ class Mount:
         self.rdsys = 'J.now'
         self.inst = 'tel1'
         self.tel = tel
+        self.message = ""
         #print('Can Move Axis is Possible.', self.mount.CanMoveAxis(0), self.mount.CanMoveAxis(1))
 
 
@@ -156,7 +157,8 @@ class Mount:
                 f'pointing_telescope': str(self.inst),  #needs fixing
                 f'is_parked': str(self.mount.AtPark).lower(),
                 f'is_tracking': str(self.mount.Tracking).lower(),
-                f'is_slewing': str(self.mount.Slewing).lower()
+                f'is_slewing': str(self.mount.Slewing).lower(),
+                f'message': self.message[:32]
             }
         elif self.tel == True:
             status = {
@@ -174,6 +176,7 @@ class Mount:
                 f'airmass': str(round(airmass,4)),
                 f'coordinate_system': str(self.rdsys),
                 f'pointing_instrument': str(self.inst),  #needs fixing
+                f'message': self.message[:32]
 #                f'is_parked': (self.mount.AtPark),
 #                f'is_tracking': str(self.mount.Tracking),
 #                f'is_slewing': str(self.mount.Slewing)
@@ -321,11 +324,15 @@ class Mount:
 
         ''' unpark the telescope mount '''  #  NB can we check if unparked and save time?
         if self.mount.CanPark:
-            print("mount cmd: unparking mount")
+            #print("mount cmd: unparking mount")
             self.mount.Unpark()
-
-        ra = float(req['ra'])
-        dec = float(req['dec'])
+        try:
+            ra = float(req['ra'])
+            dec = float(req['dec'])
+        except:
+            print("Bad coordinates supplied.")
+            self.message = "Bad coordinates supplied, try again."
+            return
 
         # Offset from sidereal in arcseconds per SI second, default = 0.0
         tracking_rate_ra = opt.get('tracking_rate_ra', 0)
