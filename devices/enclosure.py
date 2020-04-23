@@ -17,6 +17,7 @@ class Enclosure:
         print(self.enclosure.Description)
         self.state = 'Closed.  Initialized class property value.'
         self.mode = 'Manual'   #  Auto|User Control|User Close|Disable
+        self.message = '-'
         self.cycles = 0           #if >=3 inhibits reopening for Wx
         self.wait_time = 0        #A countdown to re-open
         self.wx_close = False     #If made true by Wx code, a 15 minute timeout will begin when Wx turns OK

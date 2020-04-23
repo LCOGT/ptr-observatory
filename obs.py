@@ -316,13 +316,14 @@ class Observatory:
             print('Status Sent:  \n', status)   # from Update:  ', status))
         else:
             print('.')   # We print this to stay informed of process on the console.
+            #  Consider inhibity unless status rate is low
         uri = f"{self.name}/status/"
         # NB None of the strings can be empty.  Otherwise this put faults.
         try:    # 20190926  tHIS STARTED THROWING EXCEPTIONS OCCASIONALLY
-            print("AWS uri:  ", uri)
-            print('Status to be sent:  \n', status, '\n')
+            #print("AWS uri:  ", uri)
+            #print('Status to be sent:  \n', status, '\n')
             response = self.api.authenticated_request("PUT", uri, status)   # response = is not  used
-            print("AWS Response:  ",response)
+            #print("AWS Response:  ",response)
             self.time_last_status = time.time()
         except:
             print('self.api.authenticated_request("PUT", uri, status):   Failed!')

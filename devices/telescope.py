@@ -22,7 +22,7 @@ class Telescope:
         self.rdsys = 'J.now'
         self.inst = 'tel1'
         self.tel = tel
-        self.message = ""
+        self.message = "-"
 
 
         if not tel:

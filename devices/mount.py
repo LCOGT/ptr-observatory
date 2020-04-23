@@ -60,7 +60,7 @@ class Mount:
         self.rdsys = 'J.now'
         self.inst = 'tel1'
         self.tel = tel
-        self.message = ""
+        self.message = "-"
         #print('Can Move Axis is Possible.', self.mount.CanMoveAxis(0), self.mount.CanMoveAxis(1))
 
 
