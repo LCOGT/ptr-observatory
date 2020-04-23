@@ -194,7 +194,6 @@ class Focuser:
 
         position_string = req['position']
         position = int(self.focuser.Position/self.micron_to_steps)
-        breakpoint()
         if position_string[0] != '-':
             relative = int(position_string)
             position += relative
@@ -218,7 +217,6 @@ class Focuser:
         ''' set the focus position by moving to an absolute position '''
         print(f"focuser cmd: move_absolute:  ", req, opt)
         position = int(req['position'])
-        breakpoint()
         self.focuser.Move(int(position*self.micron_to_steps))
         time.sleep(0.1)
         while self.focuser.IsMoving:

@@ -283,7 +283,7 @@ class Observatory:
         '''
 
         # This stopping mechanism allows for threads to close cleanly.
-        loud = False
+        loud = True
         # Wait a bit between status updates
         while time.time() < self.time_last_status + self.status_interval:
             # time.sleep(self.st)atus_interval  #This was prior code
@@ -306,8 +306,6 @@ class Observatory:
             device_names = devices_of_type.keys()
             for device_name in device_names:
                 # Get the actual device object...
-                if device_name == 'filter_wheel' or device_name == 'filter_wheel1':
-                    pass
                 device = devices_of_type[device_name]
                 # ...and add it to main status dict.
                 status[dev_type][device_name] = device.get_status()

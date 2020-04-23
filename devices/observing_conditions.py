@@ -66,9 +66,8 @@ class ObservingConditions:
                       'rain_rate': str(self.boltwood.RainRate),
                       'solar_flux_w/m^2': 'NA',
                       'cloud_cover_%': str(self.boltwood.CloudCover),
-                      "calc_sky_lux": str(illum),
                       "calc_HSI_lux": str(illum),
-                      "calc_sky_mpsas": str(mag - 20.01),
+                      "calc_sky_mpsas": str(round((mag - 20.01),2)),
                       "meas_sky_mpsas":  str(self.unihedron.SkyQuality),
                       "wx_ok": str(self.boltwood_oktoimage.IsSafe),
                       "open_ok": str(self.ok_to_open)
@@ -110,7 +109,6 @@ class ObservingConditions:
                           "pressur_mbar": '978',
                           "humidity_%": wx["humidity %"],
                           "dewpoint_C": wx["dewpoint C"],
-                          "calc_sky_lux": str(illum),
                           "calc_HSI_lux": str(illum),
                           "sky_temp_C": wx["sky C"],
                           "time_to_open_h": wx["time to open"],
@@ -141,7 +139,7 @@ class ObservingConditions:
                 time.sleep(1)
                 # This is meant to be a retry
                 try:
-                    wx = eval(self.redis_server.get('<ptr-wx-1_state'))                
+                    wx = eval(self.redis_server.get('<ptr-wx-1_state'))
                 except:
                     print('Redis is not turning Wx Data properly.')
                 status = {"temperature": wx["amb_temp C"],
