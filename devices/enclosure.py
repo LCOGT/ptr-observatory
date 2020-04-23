@@ -73,7 +73,7 @@ class Enclosure:
             self.close_command(req, opt)
         elif action == "setAuto":
             self.mode = 'Automatic'
- 	        print("Enclosure set to Automatic.")
+            print("Enclosure set to Automatic.")
         elif action == "setManual":
             self.mode = 'Manual'
             print("Enclosure set to Manual.")

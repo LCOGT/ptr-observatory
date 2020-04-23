@@ -65,7 +65,7 @@ class ObservingConditions:
                       "wind_m/s": str(abs(round(self.boltwood.WindSpeed, 2))),
                       'rain_rate': str(self.boltwood.RainRate),
                       'solar_flux_w/m^2': 'NA',
-                      'cloud_cover_%': str(self.boltwood.CloudCover),
+                      #  'cloud_cover_%': str(self.boltwood.CloudCover),
                       "calc_HSI_lux": str(illum),
                       "calc_sky_mpsas": str(round((mag - 20.01),2)),
                       "meas_sky_mpsas":  str(self.unihedron.SkyQuality),
