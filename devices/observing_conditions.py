@@ -19,6 +19,7 @@ class ObservingConditions:
         self.site = config['site']
         self.sample_time = 0
         self.ok_to_open = 'No'
+        self.observing_condtions_message = '-'
         if self.site == 'wmd':
             self.redis_server = redis.StrictRedis(host='10.15.0.15', port=6379, db=0,
                                                   decode_responses=True)

@@ -145,6 +145,7 @@ class Camera:
             print('Control is Maxim camera interface.')
         self.exposure_busy = False
         self.cmd_in = None
+        self.camera_message = '-'
         self.alias = self.config['camera']['camera1']['name']
         self.site_path = self.config['site_path']
         self.archive_path = self.site_path +'archive/'

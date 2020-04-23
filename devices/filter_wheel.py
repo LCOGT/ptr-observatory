@@ -15,7 +15,7 @@ class FilterWheel:
         self.filter_reference = int(self.config['filter_wheel']['filter_wheel1']['settings']['filter_reference'])
         #THIS CODE DOES NOT implemnt a filter via the Maxim application which is passed in
         #as a valid instance of class camera.
-
+        self.filter_message = '-'
         print('Please NOTE: Filter wheel may block for many seconds while first connecting & homing.')
         if type(driver) == list:
             self.maxim = False

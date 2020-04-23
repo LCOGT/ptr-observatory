@@ -1,7 +1,7 @@
 
 import win32com.client
 import time
-from global_yard import g_dev 
+from global_yard import g_dev
 
 class Rotator:
 
@@ -11,19 +11,19 @@ class Rotator:
         win32com.client.pythoncom.CoInitialize()
         self.rotator = win32com.client.Dispatch(driver)
         self.rotator.Connected = True
-
+        self.rotator_message = '-'
         print(f"rotator connected.")
         print(self.rotator.Description)
 
     def get_status(self):
         '''
-        The position is expressed as an angle from 0 up to but not including 
-        360 degrees, counter-clockwise against the sky. This is the standard 
-        definition of Position Angle. However, the rotator does not need to 
-        (and in general will not) report the true Equatorial Position Angle, 
-        as the attached imager may not be precisely aligned with the rotator's 
-        indexing. It is up to the client to determine any offset between 
-        mechanical rotator position angle and the true Equatorial Position 
+        The position is expressed as an angle from 0 up to but not including
+        360 degrees, counter-clockwise against the sky. This is the standard
+        definition of Position Angle. However, the rotator does not need to
+        (and in general will not) report the true Equatorial Position Angle,
+        as the attached imager may not be precisely aligned with the rotator's
+        indexing. It is up to the client to determine any offset between
+        mechanical rotator position angle and the true Equatorial Position
         Angle of the imager, and compensate for any difference.
         '''
         status = {
@@ -39,7 +39,7 @@ class Rotator:
         quick.append(self.rotator.IsMoving)
 
         return quick
-    
+
     def get_average_status(self, pre, post):
         average = []
         average.append(round((pre[0] + post[0])/2, 3))
@@ -49,7 +49,7 @@ class Rotator:
         else:
             average.append('F')
         return average
-    
+
     def parse_command(self, command):
         req = command['required_params']
         opt = command['optional_params']

@@ -20,6 +20,7 @@ class Screen(object):
         subprocess.call('C:\\Program Files (x86)\\Optec\\Alnitak Astrosystems Controller\\AACmd.exe' + self.pC + ' D s')
         #subprocess.call('C:\\Program Files (x86)\\Optec\\Alnitak Astrosystems Controller\\AACmd.exe' + self.pC + ' C')
         self.status = 'Off'
+        self.screen_message = '-'
         self.dark_setting = 'Screen is Off'
         self.bright_setting = 0.0
         self.minimum = 5

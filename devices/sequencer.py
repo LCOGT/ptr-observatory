@@ -14,6 +14,7 @@ class Sequencer:
         self.connected = True
         self.description = "Sequencer for script execution."
         self.sequencer_hold = False
+        self.sequencer_message = '-'
         print(f"sequencer connected.")
         print(self.description)
 

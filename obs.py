@@ -132,6 +132,7 @@ class Observatory:
         self.config = config
         self.last_request = None
         self.stopped = False
+        self.site_message = '-'
         self.device_types = [
             'observing_conditions',
             'enclosure',
