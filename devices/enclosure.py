@@ -71,6 +71,10 @@ class Enclosure:
             self.open_command(req, opt)
         elif action == "close":
             self.close_command(req, opt)
+        elif action == "setAuto":
+            self.mode = 'Automatic'
+        elif action == "SetManual":
+            self.mode = 'Manual'
         elif action == "slew_alt":
             self.slew_alt_command(req, opt)
         elif action == "slew_az":
