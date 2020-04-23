@@ -283,7 +283,7 @@ class Observatory:
         '''
 
         # This stopping mechanism allows for threads to close cleanly.
-        loud = True
+        loud = False
         # Wait a bit between status updates
         while time.time() < self.time_last_status + self.status_interval:
             # time.sleep(self.st)atus_interval  #This was prior code
@@ -315,17 +315,18 @@ class Observatory:
         if loud:
             print('Status Sent:  \n', status)   # from Update:  ', status))
         else:
-            print('.')#   #We print this to stay informed of process on the console.
+            print('.')   # We print this to stay informed of process on the console.
         uri = f"{self.name}/status/"
-        # NBNBNB None of the strings can be empty.  Otherwise this put faults.
-        # if loud: print('pre-AWS phase of update_status took :  ', round(time.time() - t1, 9), sys.getsizeof(status))
-        # NB is it possible we might want to gueue this phase of sending the status back? 20200322
+        # NB None of the strings can be empty.  Otherwise this put faults.
         try:    # 20190926  tHIS STARTED THROWING EXCEPTIONS OCCASIONALLY
-            self.api.authenticated_request("PUT", uri, status)   # response = is not  used
+            print("AWS uri:  ", uri)
+            print('Status to be sent:  \n', status, '\n')
+            response = self.api.authenticated_request("PUT", uri, status)   # response = is not  used
+            print("AWS Response:  ",response)
             self.time_last_status = time.time()
         except:
             print('self.api.authenticated_request("PUT", uri, status):   Failed!')
-        # if loud: print("update_status finished in:  ", round(time.time() - t1, 2), "  seconds")
+
 
     def update(self):
         """
