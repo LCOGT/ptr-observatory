@@ -66,14 +66,14 @@ class Enclosure:
         req = command['required_params']
         opt = command['optional_params']
         action = command['action']
-
+        breakpoint()
         if action == "open":
             self.open_command(req, opt)
         elif action == "close":
             self.close_command(req, opt)
         elif action == "setAuto":
             self.mode = 'Automatic'
- 	        print("Enclosure set to Automatic.")
+            print("Enclosure set to Automatic.")
         elif action == "setManual":
             self.mode = 'Manual'
             print("Enclosure set to Manual.")
