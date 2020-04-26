@@ -348,6 +348,9 @@ class Mount:
 
     def slewToSkyFlatAsync(self):
         az, alt = self.astro_events.flat_spot_now()
+        if self.mount.CanPark:
+            #print("mount cmd: unparking mount")
+            self.mount.Unpark()
         self.mount.Tracking = False
         self.mount.SlewToAltAzAsync(az, alt)
 

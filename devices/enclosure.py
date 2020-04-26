@@ -67,7 +67,6 @@ class Enclosure:
         req = command['required_params']
         opt = command['optional_params']
         action = command['action']
-        breakpoint()
         if action == "open":
             self.open_command(req, opt)
         elif action == "close":
@@ -167,7 +166,8 @@ class Enclosure:
             self.cycles += 1           #if >=3 inhibits reopening for Wx  -- may need shelving so this persists.
             #A countdown to re-open
             if self.status_string.lower() in ['closed', 'closing']:
-                self.enclosure.OpenShutter()   #<<<<NB NB NB Only enable when code is fully proven to work.
+                #self.enclosure.OpenShutter()   #<<<<NB NB NB Only enable when code is fully proven to work.
+                print('NB NB 20200423  Open patched out.')
                 print("Night time Open issued to the "  + shutter_str)
         elif (sunZ88Op >= ephemNow or ephemNow >= sunZ88Cl \
                 and self.mode == 'Automatic') or close_cmd:

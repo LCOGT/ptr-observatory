@@ -1,9 +1,22 @@
 
 import win32com.client
 import time
+from random import shuffle
 from global_yard import g_dev
 from processing.calibration import fit_quadratic
 
+def bin_to_string(use_bin):
+    if use_bin == 1:
+        return '1,1'
+    if use_bin == 2:
+        return '2,2'
+    if use_bin == 3:
+        return '3,3'
+    if use_bin == 4:
+        return '4,4'
+    if use_bin == 5:
+        return'5,5'
+    return '1,1'
 
 class Sequencer:
 
@@ -43,8 +56,14 @@ class Sequencer:
             self.screen_flat_script(req, opt)
         elif action == "run" and script == 'genSkyFlatMasters':
             self.sky_flat_script(req, opt)
-        elif action == "run" and script in ['32TargetPointingRun', 'pointing_run']:
+        elif action == "run" and script in ['32TargetPointingRun', 'pointing_run', 'makeModel']:
             self.equatorial_pointing_run(req, opt)
+        elif action == "run" and script in ("genBiasDarkMaster", "genBiasDarkMasters"):
+            self.bias_dark_script(req, opt)
+        elif action == "run" and script == "takeLRGBstack":
+            self.take_lrgb_stack(req, opt)
+        elif action == "run" and script == "takeO3HaS2N2Stack":
+            self.take_lrgb_stack(req, opt)
         elif action.lower() in ["stop", "cancel"]:
             self.stop_command(req, opt)
         elif action == "home":
@@ -67,7 +86,7 @@ class Sequencer:
         and this script runs for about an hour.  No images are sent to AWS.
         Images go to the calibs folder in a day-directory.  After the script
         ends build_masters.py executes in a different process and attempts
-        to process and update the biad-dark master images, which are sent to
+        to process and update the bias-dark master images, which are sent to
         AWS.
 
         Ultimately it can be running and random incoming requests for the
@@ -81,9 +100,125 @@ class Sequencer:
                    Biases for each dark, 5 before, 4 after
                    Once a week: 600 seconds, 5 each to build hot pixel map
 
+        Parse parameters,
+        if sommething to do, put up sequencer_guard, estimated duration, factoring in
+        event windows -- if in a window and count = 0, keep going until end of window.
+        More biases and darks never hurt anyone.
+        Connect Camera
+        set temperature target and wait for it (this could be first exposure of the day!)
+        Flush camera 2X
+        interleave the binnings with biases and darks so everthing is reasonably balanced.
+
+        Loop until count goes to zero
+
+        Note this can be called by the Auto Sequencer OR invoked by a user.
         """
 
-        pass
+        bias_list = []
+        num_bias = max(9, req['numOfBias'])
+        if req['bin1']:
+            bias_list.append([1, max(9, num_bias)])
+        if req['bin2']:
+            bias_list.append([2, max(7, num_bias)])
+        if req['bin3']:
+            bias_list.append([3, max(5, num_bias//2)])
+        if req['bin4']:
+            bias_list.append([4, max(5, num_bias//3)])
+        if req.get('bin5', False):
+            bias_list.append([5, max(5, num_bias//4)])
+        print('Bias_list:  ', bias_list)
+        total_num_biases = 0
+        for item in bias_list:
+            total_num_biases += item[1]
+        print("Total # of bias frames, all binnings =  ", total_num_biases )
+        dark_list = []
+        num_dark = max(5, req['numOfDark'])
+        if req['bin1']:
+            dark_list.append([1, max(5, num_dark)])
+        if req['bin2']:
+            dark_list.append([2, max(3, num_dark)])
+        if req['bin3']:
+            dark_list.append([3, max(3, num_dark//2)])
+        if req['bin4']:
+            dark_list.append([4, max(3, num_dark//3)])
+        if req.get('bin5', False):
+            dark_list.append([5, max(3, num_dark//4)])
+        print('Dark_list:  ', dark_list)
+        total_num_dark = 0
+        for item in dark_list:
+            total_num_dark += item[1]
+        print("Total # of dark frames, all binnings =  ", total_num_dark )
+        long_dark_list = []
+        num_long_dark = max(3, req['numOfDark2'])
+        if req['bin1']:
+            long_dark_list.append([1, max(3, num_long_dark)])
+        if req['bin2']:
+            long_dark_list.append([2, max(3, num_long_dark)])
+        if req['bin3']:
+            long_dark_list.append([3, max(3, num_long_dark//2)])
+        if req['bin4']:
+            long_dark_list.append([4, max(3, num_long_dark//3)])
+        if req.get('bin5', False):
+            long_dark_list.append([5, max(3, num_long_dark//4)])
+        print('Long_dark_list:  ',  long_dark_list)
+        total_num_long_dark = 0
+        for item in long_dark_list:
+            total_num_long_dark += item[1]
+        print("Total # of long_dark frames, all binnings =  ", total_num_long_dark)
+        bias_time = 12.  #NB Pick up from camera config
+        total_time = bias_time*(total_num_biases + total_num_dark + total_num_long_dark)
+        #  NB Note higher bin readout not compensated for.
+        total_time += total_num_dark*float(req['darkTime']) + total_num_long_dark*float(req['dark2Time'])
+        print('Approx duration of Bias Dark seguence:  ', total_time//60 + 1, ' min.')
+        bias_ratio = int(total_num_biases//(total_num_dark + total_num_long_dark + 0.1) + 1)
+        if bias_ratio < 1:
+            bias_ratio = 1
+        #Flush twice
+        while len(bias_list) + len(dark_list) + len(long_dark_list) > 0:
+            if len(bias_list) > 0:
+                for bias in range(bias_ratio):
+                    if len(bias_list) == 0:
+                        breakpoint()
+                    shuffle(bias_list)
+                    use_bin = bias_list[0][0]   #  Pick up bias value
+                    if bias_list[0][1] > 1:
+                        bias_list[0][1] -= 1
+                    if bias_list[0][1] <= 1:
+                        bias_list.pop(0)
+                    print("Expose Bias using:  ", use_bin, bias_list)
+                    bin_str = bin_to_string(use_bin)
+                    req = {'time': 10,  'script': 'True', 'image_type': 'bias'}
+                    opt = {'size': 100, 'count': 1, 'bin': bin_str, \
+                           'filter': g_dev['fil'].filter_data[0][0]}
+                    g_dev['cam'].expose_command(req, opt, gather_status=False, no_AWS=True, \
+                                                do_sep=False, quick=False)
+                    if len(bias_list) < 1:
+                        print("Bias List exhausted.", bias_list)
+                        break
+            if len(dark_list) > 0:
+                for dark in range(1):
+                    shuffle(dark_list)
+                    use_bin = dark_list[0][0]   #  Pick up bias value
+                    if dark_list[0][1] > 1:
+                        dark_list[0][1] -= 1
+                    if dark_list[0][1] <= 1:
+                        dark_list.pop(0)
+                    print("Expose dark using:  ", use_bin, dark_list)
+                    if len(dark_list) < 1:
+                        print("Dark List exhausted.",dark_list)
+            if len(long_dark_list) > 0:
+                for long_dark in range(1):
+                    shuffle(long_dark_list)
+                    use_bin = long_dark_list[0][0]   #  Pick up bias value
+                    if long_dark_list[0][1] > 1:
+                        long_dark_list[0][1] -= 1
+                    if long_dark_list[0][1] <= 1:
+                        long_dark_list.pop(0)
+                    print("Expose long_dark using:  ", use_bin, long_dark_list)
+                    if len(long_dark_list) < 1:
+                        print("Long_dark exhausted.", long_dark_list)
+        print("fini")
+
 
 
     def sky_flat_script(self, req, opt):
@@ -105,7 +240,7 @@ class Sequencer:
         Note we want Moon at least 30 degrees away
 
         """
-
+        breakpoint()
         name = str(self.config['camera']['camera1']['name'])
         dark_count = 1
         flat_count = 1
@@ -155,7 +290,7 @@ class Sequencer:
 
 
     def screen_flat_script(self, req, opt):
-
+        breakpoint()
         if req['numFrames'] > 1:
             flat_count = req['numFrames']
         else:
@@ -214,7 +349,7 @@ class Sequencer:
         Optionally individual images can be multiples of one to average out seeing.
         NBNBNB This code needs to go to known stars to be moe relaible and permit subframes
         '''
-
+        breakpoint()
         print('AF entered with:  ', req, opt)
         self.sequencer_hold = True  #Blocks command checks.
         req = {'time': 3,  'alias': 'gf03', 'image_type': 'light', 'filter': 2}
@@ -302,6 +437,7 @@ class Sequencer:
 A variant on this is cover a grid, cover a + sign shape.
 
         '''
+        breakpoint()
         ha_deg_steps = (-72.5, -62.5, -52.5, -42.5, -32.5, -22.5, -12.5, -2.5, 7.5,
                         17.5, 27.5, 37.5, 47.5, 57.5, 67.5, 72.5, 62.5, 52.5, 42.5,
                         32.5, 22.5, 12.5, 2.5, -7.5, -17.5, -27.5, -37.5, -47.5,

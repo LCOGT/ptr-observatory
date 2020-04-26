@@ -126,9 +126,12 @@ class Camera:
             self.maxim = False
             self.ascom = True
             if self.camera.CanSetCCDTemperature:
-                self.camera.SetCCDTemperature = -40.0
+                self.camera.SetCCDTemperature = float(self.config['camera']['camera1'] \
+                                                      ['settings']['temp_setpoint'])
                 self.temperature_setpoint = self.camera.SetCCDTemperature
-            self.camera.CoolerOn = True
+                cooler_on = self.config['camera']['camera1'] \
+                                       ['settings']['cooler_on'] in ['True', 'true', 'Yes', 'yes', 'On', 'on']
+            self.camera.CoolerOn = cooler_on
             self.current_filter = 2     #A WMD reference -- needs fixing.
             self.filter_wheel_name = "ascom ASCOM"   #This needs to be more specific
             print('Control is ASCOM camera driver.')
@@ -137,9 +140,12 @@ class Camera:
             self.description = 'MAXIM'
             self.maxim = True
             self.ascom = False
-            self.camera.TemperatureSetpoint = -30.
+            self.camera.TemperatureSetpoint = float(self.config['camera']['camera1'] \
+                                                      ['settings']['temp_setpoint'])
             self.temperature_setpoint = self.camera.TemperatureSetpoint
-            self.camera.CoolerOn = False   # NB This should be a site configuration setting. 20200412
+            cooler_on = self.config['camera']['camera1'] \
+                                   ['settings']['cooler_on'] in ['True', 'true', 'Yes', 'yes', 'On', 'on']
+            self.camera.CoolerOn = cooler_on
             self.current_filter = 0
             self.filter_wheel_name = 'maxim ' + self.camera.FilterWheelName
             print('Control is Maxim camera interface.')
@@ -283,9 +289,10 @@ class Camera:
         Apply settings and start an exposure.
         Quick=True is meant to be fast.  We assume the ASCOM imageBuffer is the source of data, not the Files path.
         '''
-        #print('Expose Entered.  req:  ', required_params, 'opt:  ', optional_params)
+        print('Expose Entered.  req:  ', required_params, 'opt:  ', optional_params)
         self.t_0 = time.time()
         self.hint = optional_params.get('hint', '')
+        self.script = required_params.get('script', 'False')
         bin_x = optional_params.get('bin', '1,1')  #NB this should pick up config default.
         if bin_x == '5,5':
             bin_x = 5
@@ -342,7 +349,7 @@ class Camera:
             frame_type = 'flat'
         elif imtype.lower() == 'quick':
             quick = True
-            no_AWS = False   # Send only a JPEG
+            no_AWS = False   # Send only an informational JPEG??
             do_sep = False
             imtypeb = True
             frame_type = 'light'
@@ -632,7 +639,7 @@ class Camera:
                         #We go here to keep this subroutine a reasonable length.
                         result = self.finish_exposure(exposure_time,  frame_type, count - seq, p_next_filter, p_next_focus, p_dither, \
                                              gather_status, do_sep, no_AWS, dist_x, dist_y, quick=quick, halt=halt, low=ldr_handle_time, \
-                                             high=ldr_handle_high_time)
+                                             high=ldr_handle_high_time, script=self.script)
                         self.exposure_busy = False
                         self.t10 = time.time()
 
@@ -674,7 +681,7 @@ class Camera:
 
     def finish_exposure(self, exposure_time, frame_type, counter, p_next_filter=None, p_next_focus=None, p_dither=False, \
                         gather_status=True, do_sep=False, no_AWS=False, start_x=None, start_y=None, quick=False, halt=False, \
-                        low=0, high=0):
+                        low=0, high=0, script='False'):
         #print("Finish exposure Entered:  ", self.af_step, exposure_time, frame_type, counter, ' to go!')
         print("Finish exposure Entered:  ", exposure_time, frame_type, counter, p_next_filter, p_next_focus, p_dither, \
                         gather_status, do_sep, no_AWS, start_x, start_y)
@@ -899,8 +906,13 @@ class Camera:
                         text.write(str(hdu.header))
                         text.close()
                         text_data_size = len(str(hdu.header)) - 4096
-                        if not quick:
+                        if not quick and not script:
                             hdu.writeto(raw_path + raw_name00, overwrite=True)
+                        breakpoint()
+                        if script in ('True', 'true', 'On', 'on'):
+                            hdu.writeto(cal_path + cal_name00, overwrite=True)
+                            breakpoint()
+                            return 0, 0   #  Note we are not calibrating. Just saving the file.
                             # NB^ We always write files to raw, except quick(autofocus) frames.
                             # hdu.close()
                         # raw_data_size = hdu.data.size
