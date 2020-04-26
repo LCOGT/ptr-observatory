@@ -69,6 +69,7 @@ class Mount:
         else:
             print(f"Tel/OTA connected.")
         print(self.mount.Description)
+        breakpoint()
         #NB THe paddle needs a re-think and needs to be cast into its own thread. 20200310 WER
 #        self._paddle = serial.Serial('COM10', timeout=0.1)
 #        self._paddle.write(b'ver\n')
