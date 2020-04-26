@@ -12,7 +12,19 @@ import json
 site_name = 'saf'
 
 site_config = {
-    'site': 'saf',
+    'site': site_name,
+    'defaults': {
+        'observing_conditions': 'observing_conditions1',
+        'enclosure': 'enclosure1',
+        'mount': 'mount1',
+        'telescope': 'telescope1',
+        'focuser': 'focuser1',
+        'rotator': 'rotator1',
+        'screen': 'screen1',
+        'filter_wheel': 'filter_wheel1',
+        'camera': 'camera1',
+        'sequencer': 'sequencer1'
+        },
     'name': 'Apache Ridge Observatory',
     'location': 'Santa Fe, New Mexico,  USA',
     'site_path':  'D:/archive/',    #Path to where all Photon Ranch data and state are to be found
@@ -35,13 +47,15 @@ site_config = {
     'reference_ambient':  ['10.0'],  #Degress Celsius.  Alternately 12 entries, one for every - mid month.
     'reference_pressure':  ['781.0'],  #mbar   A rough guess 20200315
 
-
-    #NB trying to move this to be its own device
     'observing_conditions' : {
         'observing_conditions1': {
             'parent': 'site',
-            'alias': 'Boltwood',
-            'driver': 'ASCOM.Boltwood.ObservingConditions'
+            'name': 'Boltwood',
+            'driver': 'ASCOM.Boltwood.ObservingConditions',
+            'driver_2':  'ASCOM.Boltwood.OkToOpen.SafetyMonitor',
+            'driver_3':  'ASCOM.Boltwood.OkToImage.SafetyMonitor',
+            'unihedron':  '13',    #'False" or numeric of COM port.
+            'uni_driver': 'ASCOM.SQM.serial.ObservingConditions'
         },
     },
 
@@ -55,6 +69,7 @@ site_config = {
             'has_lights':  'false',
             'controlled_by': 'mount1',
 			'is_dome': 'true',
+            'mode': 'Manual',
             'settings': {
                 'lights':  ['Auto', 'White', 'Red', 'IR', 'Off'],       #A way to encode possible states or options???
                                                                         #First Entry is always default condition.
@@ -158,17 +173,17 @@ site_config = {
             'desc':  'Optec Gemini',
             'driver': 'ASCOM.OptecGemini.Focuser',
 			'com_port':  'None',
-            'reference':  '8501',    #Nominal at 20C Primary temperature
-            'ref_temp':   '10',    #Update when pinning reference
+            'reference':  '8056',    #Nominal at 20C Primary temperature
+            'ref_temp':   '15',    #Update when pinning reference
             'coef_c': '0',   #negative means focus moves out as Primary gets colder
-            'coef_0': '0',  #Nominal intercept when Primary is at 0.0 C.
-            'coef_date':  '20200207',    #-102.0708 + 12402.224   20190829   R^2 = 0.67  Ad hoc added 900 units.
+            'coef_0': '8056',  #Nominal intercept when Primary is at 0.0 C.
+            'coef_date':  '20200409',    #Per Neyle
             'minimum': '0',     #NB this area is confusing steps and microns, and need fixing.
             'maximum': '12700',
             'step_size': '1',       #This is probably 0.09090909090909...
             'backlash':  '0',
             'unit': 'micron',
-            'unit_conversion': '0.0909090909091',
+            'unit_conversion': '9.09090909091',
             'has_dial_indicator': 'false'
         },
 
@@ -183,27 +198,26 @@ site_config = {
             "driver": 'MAXIM',
             'settings': {
                 'filter_count': '13',    # dark filer not implemented yet.
-                'filter_reference': '0',   #We choose to use W and the default filter.
+                'filter_reference': '0',   #We choose to use W as the default filter.
                 'filter_data': [['filter', 'filter_index', 'filter_offset', 'sky_gain', 'screen_gain', 'abbreviation'],
-                                ['W', '(0, 0)', '0', '0.01', ['2', '17'], 'w '],   # 0 Mul Screen@100% by saturate*exp
-                                ['B', '(1, 0)', '0', '0.01', ['18', '17'], 'B '],   # 1
-                                ['V', '(2, 0)', '0', '0.01', ['6', '17'], 'V '],   # 2
-                                ['R', '(3, 0)', '0', '0.01', ['6', '17'], 'R '],   # 3
-                                ["g'", '(4, 0)', '0', '0.01', ['8', '17'], "g'"],   # 4
-                                ["r'", '(5, 0)', '0', '0.01', ['6', '17'], "r'"],   # 5
-                                ["i'", '(6, 0)', '0', '0.01', ['6.2', '17'], "i'"],   # 6
-                                ['O3', '(7, 0)', '0', '0.01', ['15', '150'], 'O3'],   # 7
-                                ['HA', '(8, 0)', '0', '0.01', ['60', '150'], 'HA'],   # 8
-                                ['S2', '(9, 0)', '0', '0.01', ['90', '150'],'S2'],   # 9
-                                ['N2', '(10, 0)', '0', '0.01', ['60', '150'], "N2"],   # 10
-                                ['EXO', '(11, 0)', '0', '0.01', ['2', '17'], 'ex'],   # 11
-                                ['air', '(12, 0)', '-1000', '0.01', ['1.5', '17'], 'ai'],   # 12
-                                ['dark', '(13, 0)', '0', '0.01', ['1.5', '17'], 'dk']],   # 13  20200315 This needs to be set up as a \
-                                                                                #     cascade of say N2 and B or O3 and i.
+                                ['W', '(0, 0)', '0', '0.01', ['2.15', '17'], 'w '],   # 0 Mul Screen@100% by saturate*exp
+                                ['B', '(1, 0)', '0', '0.01', ['23', '17'], 'B '],   # 1
+                                ['V', '(2, 0)', '0', '0.01', ['7.74', '17'], 'V '],   # 2
+                                ['R', '(3, 0)', '0', '0.01', ['6.3', '17'], 'R '],   # 3
+                                ["g'", '(4, 0)', '0', '0.01', ['8.4', '17'], "g'"],   # 4
+                                ["r'", '(5, 0)', '0', '0.01', ['7', '17'], "r'"],   # 5
+                                ["i'", '(6, 0)', '0', '0.01', ['5.75', '17'], "i'"],   # 6
+                                ['O3', '(7, 0)', '0', '0.01', ['300', '170'], 'O3'],   # 7
+                                ['HA', '(8, 0)', '0', '0.01', ['300', '170'], 'HA'],   # 8
+                                ['S2', '(9, 0)', '0', '0.01', ['300', '170'],'S2'],   # 9
+                                ['N2', '(10, 0)', '0', '0.01', ['300', '170'], "N2"],   # 10
+                                ['EXO', '(11, 0)', '0', '0.01', ['1.68', '17'], 'ex'],   # 11
+                                ['air', '(12, 0)', '-1000', '0.01', ['1.4', '17'], 'ai'],   # 12
+                                ['dark', '(13, 0)', '0', '0.01', ['15', '17'], 'dk']],   # 13  20200315 This needs to be set up as a \
+                                #  'dark' filter =   cascade of say N2 and B or O3 and i.
                                 #Screen = 100; QHY400 ~ 92% DQE   HDR Mode    Screen = 160 sat  20190825 measured.
-                'filter_screen_sort':  ['12', '0', '11', '2', '3', '5', '6', '4', '7', '1', '8', '10', '9'],
-                'filter_sky_sort':  ['17', '5', '21', '9', '16', '4', '15', '14', '3', '20', '8', '13', '11', '12', \
-                                     '18', '6', '19', '7', '10', '2', '1', '0']  #Least to most throughput
+                'filter_screen_sort':  ['12', '0', '11', '2', '3', '5', '6', '4', '1'],   # don't use narrow yet, '7', '8', '10', '9'],
+                'filter_sky_sort':  ['9', '10', '8', '7', '1', '4', '6', '5', '3', '2', '11', '0', '12']  #Least to most throughput
             },
         },
     },
@@ -218,6 +232,8 @@ site_config = {
             'detector':  'Kodak 6303',
             'manufacturer':  'SBIG/Diffraction Limited',
             'settings': {
+                'temp_setpoint': '-10',
+                'cooler_on': 'True',
                 'x_start':  '0',
                 'y_start':  '0',
                 'x_width':  '3100',   #NB Should be set up with overscan, which this camera is!  20200315 WER
@@ -260,7 +276,7 @@ site_config = {
     },
 
     'sequencer': {
-        'sequencer': {
+        'sequencer1': {
             'parent': 'site',
             'name': 'Sequencer',
             'desc':  'Automation Control',
