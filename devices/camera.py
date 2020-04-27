@@ -27,46 +27,18 @@ from global_yard import g_dev
 from processing.calibration import calibrate
 from devices.sequencer import Sequencer
 
-'''
-Autofocus NOTE 20200122
+"""
+Camera note 20200427.
 
-As a general rule the focus is stable(temp).  So when code (re)starts, compute and go to that point(filter).
-
-Nautical or astronomical dark, and time of last focus > 2 hours or delta-temp > ?1C, then schedule an
-autofocus.  Presumably system is near the bottom of the focus parabola, but it may not be.
-
-Pick a ~7mag focus star at an Alt of about 60 degrees, generally in the South.  Later on we can start
-chosing and logging a range of altitudes so we can develop(temp, alt).
-
-Take cental image, move in 1x and expose, move out 2x then in 1x and expose, solve the equation and
-then finish with a check exposure.
-
-Now there are cases if for some reason telescope is not near the focus:  first the minimum is at one end
-of a linear series.  From that series and the image diameters we can imply where the focus is, subject to
-seeing induced errors.  If either case occurs, go to the projected point and try again.
-
-A second case is the focus is WAY off, and or pointing.  Make appropriate adjustments and try again.
-
-The third case is we have a minimum.  Inspection of the FWHM may imply seeing is poor.  In that case
-double the exposure and possibly do a 5-point fit rather than a 3-point.
-
-Note at the last exposure it is reasonable to do a minor recalibrate of the pointing.
-
-Once we have fully automatic observing it might make sense to do a more full range test of the focus mechanism
-and or visit more altitudes and temeperatures.
+The goal is refactor this module so we use class attributes more and do not carry them
+as parameters in various calls.  Try to use keywords as 'instructions' for processing steps
+downstream.  When returning from calls use a dictionary to report results.  Support
+synchronous and async reductions.  If the ccd has overscan, incorporate that step into
+the immediate processing with trim
 
 
 
-1) Implement mag 7 star selection including getting that star at center of rotation.
-
-2) Implement using Sep to reliably find that star.
-
-3) change use of site config file.
-
-4) use common settings for sep
-
-
-'''
+"""
 
 #These should eventually be in a utility module
 def next_sequence(pCamera):
@@ -108,6 +80,14 @@ class Camera:
     ###filter, focuser, rotator must be set up prior to camera.
 
     def __init__(self, driver: str, name: str, config: dict):
+        """
+        Added monkey patches to make ASCOM/Maxim differences
+        go away from the bulk of the in-line code.
+
+        Try to be more consistent about use of filter names rather than
+        numbers.
+
+        """
 
         self.name = name
 
@@ -118,9 +98,8 @@ class Camera:
         #self.camera = win32com.client.Dispatch('ASCOM.FLI.Kepler.Camera')
         #Need logic here if camera denies connection.
         print("Connecting to ASCOM camera:", driver)
-
         if driver[:5].lower() == 'ascom':
-            print('ASCOM Camera is initializing.')
+            print('ASCOM camera is initializing.')
             self.camera.Connected = True
             self.description = "ASCOM"
             self.maxim = False
@@ -133,21 +112,29 @@ class Camera:
                                        ['settings']['cooler_on'] in ['True', 'true', 'Yes', 'yes', 'On', 'on']
             self.camera.CoolerOn = cooler_on
             self.current_filter = 2     #A WMD reference -- needs fixing.
-            self.filter_wheel_name = "ascom ASCOM"   #This needs to be more specific
+
             print('Control is ASCOM camera driver.')
         else:
-            self.camera.LinkEnabled = True
+            print('Maxim camera is initializing.')
+            #Monkey patch in Maxim specific
+            self._connected = self._maxim_connected
+            self._connect = self._maxim_connect
+            self._setpoint = self._maxim_setpoint
+            self._temperature = self._maxim_temperature
             self.description = 'MAXIM'
             self.maxim = True
             self.ascom = False
-            self.camera.TemperatureSetpoint = float(self.config['camera']['camera1'] \
-                                                      ['settings']['temp_setpoint'])
-            self.temperature_setpoint = self.camera.TemperatureSetpoint
+            print(self._connect(True))
+            print(self._connected())
+            print(self._setpoint(float(self.config['camera']['camera1'] \
+                                      ['settings']['temp_setpoint'])))
+            print(self._temperature)
+
             cooler_on = self.config['camera']['camera1'] \
                                    ['settings']['cooler_on'] in ['True', 'true', 'Yes', 'yes', 'On', 'on']
             self.camera.CoolerOn = cooler_on
             self.current_filter = 0
-            self.filter_wheel_name = 'maxim ' + self.camera.FilterWheelName
+
             print('Control is Maxim camera interface.')
         self.exposure_busy = False
         self.cmd_in = None
@@ -203,6 +190,40 @@ class Camera:
         self.t_0 = time.time()
         self.hint = None
         #self.camera.SetupDialog()
+
+    #Patchable methods   NB These could be default ASCOM
+    def _connected(self):
+        print("This is un-patched _connected method")
+        return False
+
+    def _connect(self, p_connect):
+        print("This is un-patched _connect method:  ", p_connect)
+        return False
+
+    def _setpoint(self):
+        print("This is un-patched cooler _setpoint method")
+        return
+
+
+
+    #The patches.   Note these are essentially a getter-setter/property constructs.
+    def _maxim_connected(self):
+        return self.camera.LinkEnabled
+
+    def _maxim_connect(self, p_connect):
+        self.camera.LinkEnabled = p_connect
+        return self.camera.LinkEnabled
+
+    def _maxim_temperature(self):
+        return self.camera.SetCCDTemperature
+
+    def _maxim_setpoint(self, p_temp):
+        self.camera.TemperatureSetpoint = float(p_temp)
+        return self.camera.TemperatureSetpoint
+
+
+
+    #  NB Need to add in ASCOM versions
 
 
 
@@ -619,7 +640,7 @@ class Camera:
                             self.camera.StartExposure(exposure_time, imtypeb)
 
                         elif self.maxim:
-                            print('Link Enable check:  ', self.camera.LinkEnabled)
+                            print('Link Enable check:  ', self._connected())
                             self.camera.AbortExposure()
                             g_dev['ocn'].get_quick_status(self.pre_ocn)
                             g_dev['foc'].get_quick_status(self.pre_foc)
@@ -630,8 +651,8 @@ class Camera:
                             ldr_handle_time = None
                             print("Starting exposure at:  ", self.t2)
                             try:
-                                if not self.camera.LinkEnabled:
-                                    self.camera.LinkEnabled = True
+                                if not self._connected():
+                                    self._connect()
                                     self.camera.AbortExposure()
                                     time.sleep(2)
                                     print('Reset LinkEnabled right before exposure')
@@ -639,8 +660,8 @@ class Camera:
                             except:
                                 print("Retry to set up camera exposure.")
                                 time.sleep(4)
-                                if not self.camera.LinkEnabled:
-                                    self.camera.LinkEnabled = True
+                                if not self._connected:
+                                    self._connect()
                                     self.camera.AbortExposure()
                                     time.sleep(2)
                                     print('Reset LinkEnabled right before exposure')
@@ -688,9 +709,7 @@ class Camera:
 
 
 
-    ###############################
-    #       Helper Methods        #
-    ###############################
+    ##  NB the bnumber of  keywords is questionable.
 
     def finish_exposure(self, exposure_time, frame_type, counter, p_next_filter=None, p_next_focus=None, p_dither=False, \
                         gather_status=True, do_sep=False, no_AWS=False, start_x=None, start_y=None, quick=False, halt=False, \

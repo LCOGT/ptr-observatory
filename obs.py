@@ -126,7 +126,7 @@ class Observatory:
 
         self.command_interval = 2   # seconds between polls for new commands
 
-        self.status_interval = 3    # NOTE THESE IMPLENTED AS A DELT NOT A RATE.
+        self.status_interval = 3    # NOTE THESE IMPLEMENTED AS A DELTA NOT A RATE.
 
         self.name = name
         self.config = config

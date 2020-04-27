@@ -5,6 +5,47 @@ from random import shuffle
 from global_yard import g_dev
 from processing.calibration import fit_quadratic
 
+'''
+Autofocus NOTE 20200122
+
+As a general rule the focus is stable(temp).  So when code (re)starts, compute and go to that point(filter).
+
+Nautical or astronomical dark, and time of last focus > 2 hours or delta-temp > ?1C, then schedule an
+autofocus.  Presumably system is near the bottom of the focus parabola, but it may not be.
+
+Pick a ~7mag focus star at an Alt of about 60 degrees, generally in the South.  Later on we can start
+chosing and logging a range of altitudes so we can develop(temp, alt).
+
+Take cental image, move in 1x and expose, move out 2x then in 1x and expose, solve the equation and
+then finish with a check exposure.
+
+Now there are cases if for some reason telescope is not near the focus:  first the minimum is at one end
+of a linear series.  From that series and the image diameters we can imply where the focus is, subject to
+seeing induced errors.  If either case occurs, go to the projected point and try again.
+
+A second case is the focus is WAY off, and or pointing.  Make appropriate adjustments and try again.
+
+The third case is we have a minimum.  Inspection of the FWHM may imply seeing is poor.  In that case
+double the exposure and possibly do a 5-point fit rather than a 3-point.
+
+Note at the last exposure it is reasonable to do a minor recalibrate of the pointing.
+
+Once we have fully automatic observing it might make sense to do a more full range test of the focus mechanism
+and or visit more altitudes and temeperatures.
+
+
+
+1) Implement mag 7 star selection including getting that star at center of rotation.
+
+2) Implement using Sep to reliably find that star.
+
+3) change use of site config file.
+
+4) use common settings for sep
+
+
+'''
+
 def bin_to_string(use_bin):
     if use_bin == 1:
         return '1,1'
