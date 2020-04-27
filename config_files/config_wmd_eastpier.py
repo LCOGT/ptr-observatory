@@ -13,6 +13,18 @@ site_name = 'wmd'    #NB These must be unique across all of PTR. Pre-pend with a
 
 site_config = {
     'site': 'wmd',
+    'defaults': {
+        'observing_conditions': 'observing_conditions1',
+        'enclosure': 'enclosure1',
+        'mount': 'mount1',
+        'telescope': 'telescope1',
+        'focuser': 'focuser1',
+        'rotator': 'rotator1',
+        'screen': 'screen1',
+        'filter_wheel': 'filter_wheel1',
+        'camera': 'camera1',
+        'sequencer': 'sequencer1'
+        },
     'name': 'West Mountain Drive Observatory',
     'site_path': 'Q:/',     #Really important, this is where state and results are stored. Can be a NAS server.
     'location': 'Santa Barbara, Californa,  USA',
@@ -35,7 +47,7 @@ site_config = {
     'reference_ambient':  ['15.0'],  #Degrees Celsius.  Alternately 12 entries, one for every - mid month.
     'reference_pressure':  ['973'],  #mbar Alternately 12 entries, one for every - mid month.
     'observing_conditions': {
-        'wx1': {
+        'observing_conditions1': {
             'parent': 'site',
             'name': 'Weather Station #1',
             'driver': 'redis'
@@ -173,6 +185,36 @@ site_config = {
                 'offset_flexure': '0.0',
                 },
         },
+
+            'telescope2': {
+                'parent': 'mount1',
+                'name': 'Aux OTA',
+                'desc':  'Astro=Physics AP185 Refractor',
+                'driver': 'None',                     #Essentially this device is informational.  It is mostly about the optics.
+                'startup_script':  'None',
+                'recover_script':  'None',
+                'shutdown_script':  'None',  
+                'collecting_area':  '26880',
+                'obscuration':  '0.0%',
+                'aperture': '585',
+                'f-ratio':  '7.5',   #This and focal_lenght can be refined after a solve.
+                'focal_length': '1387.5',
+                'has_dew_heater':  'false',
+                'screen_name': 'screen2',
+                'focuser_name':  'focuser2',
+                'rotator_name':  'rotator2',
+                'camera_name':  'camera2',
+                'filter_wheel_name':  'none',
+                'has_fans':  'false',
+                'has_cover':  'true',
+                'settings': {
+                    'fans': ['none'],
+                    'offset_collimation': '0.0',    #If the mount model is current, these numbers are usually near 0.0
+                                                    #for tel1.  Units are arcseconds.
+                    'offset_declination': '0.0',
+                    'offset_flexure': '0.0',
+                    },
+            },
     },
 
     'rotator': {
@@ -190,6 +232,20 @@ site_config = {
             'backlash':  '0.0',
             'unit':  'degree'
             },
+       # 'rotator2': {
+       #      'parent': 'tel2',    #NB Note we are changing to an abbrevation. BAD!
+       #      'name': 'Aux Rotator',
+       #      'desc':  'Opetc Gemini',
+       #      'driver': 'ASCOM.AltAzDS.Rotator2',
+       #      'startup_script':  'None',
+       #      'recover_script':  'None',
+       #      'shutdown_script':  'None' , 
+       #      'minimum': '-180.0',
+       #      'maximum': '360.0',
+       #      'step_size':  '0.0001',
+       #      'backlash':  '0.0',
+       #      'unit':  'degree'
+       #      },
     },
 
     'screen': {
@@ -204,8 +260,19 @@ site_config = {
             'minimum': '5.0',   #This is the % of light emitted when Screen is on and nominally at 0% bright.
             'saturate': '170',  #Out of 0.0 - 255, this is the last value where the screen is linear with output.
                                 #These values have a minor temperature sensitivity yet to quantify.
-
             },
+      # 'screen2': {
+      #       'parent': 'telescope2',
+      #       'name': 'screen',
+      #       'desc':  'Optec Alnitak 24"',
+      #       'driver': 'COM77',  #This needs to be a four or 5 character string as in 'COM8' or 'COM22'
+      #       'startup_script':  'None',
+      #       'recover_script':  'None',
+      #       'shutdown_script':  'None',  
+      #       'minimum': '5.0',   #This is the % of light emitted when Screen is on and nominally at 0% bright.
+      #       'saturate': '170',  #Out of 0.0 - 255, this is the last value where the screen is linear with output.
+      #                           #These values have a minor temperature sensitivity yet to quantify.
+      #       },
     },
 
     'focuser': {
@@ -217,11 +284,11 @@ site_config = {
             'startup_script':  'None',
             'recover_script':  'None',
             'shutdown_script':  'None', 
-            'reference':  '5941',    #Nominal at 20C Primary temperature, in microns not steps.
-            'ref_temp':   '15',      #Update when pinning reference
-            'coef_c': '0',   #negative means focus moves out as Primary gets colder
+            'reference':  '5062',    #Nominal at 20C Primary temperature, in microns not steps.
+            'ref_temp':   '22.5',      #Update when pinning reference  Larger at lower temperatures.
+            'coef_c': '-0.0',   #negative means focus moves out as Primary gets colder
             'coef_0': '0',  #Nominal intercept when Primary is at 0.0 C.
-            'coef_date':  '20300314',
+            'coef_date':  '20200423',
             'minimum': '0',    #NB this needs clarifying, we are mixing steps and microns.
             'maximum': '12700',
             'step_size': '1',
@@ -230,7 +297,28 @@ site_config = {
             'unit_conversion':  '0.090909090909091',
             'has_dial_indicator': 'false'
             },
-
+       # 'focuser2': {
+       #      'parent': 'telescope2',
+       #      'name': 'aux_focuser',
+       #      'desc':  'Optec Gemini',
+       #      'driver': 'ASCOM.OptecGemini.Focuser2',
+       #      'startup_script':  'None',
+       #      'recover_script':  'None',
+       #      'shutdown_script':  'None', 
+       #      'reference':  '5941',    #Nominal at 20C Primary temperature, in microns not steps.
+       #      'ref_temp':   '15',      #Update when pinning reference
+       #      'coef_c': '0',   #negative means focus moves out as Primary gets colder
+       #      'coef_0': '0',  #Nominal intercept when Primary is at 0.0 C.
+       #      'coef_date':  '20300314',
+       #      'minimum': '0',    #NB this needs clarifying, we are mixing steps and microns.
+       #      'maximum': '12700',
+       #      'step_size': '1',
+       #      'backlash':  '0',
+       #      'unit': 'steps',
+       #      'unit_conversion':  '0.090909090909091',
+       #      'has_dial_indicator': 'false'
+       #      },
+       
     },
 
     #Add CWL, BW and DQE to filter and detector specs.   HA3, HA6 for nm or BW.
@@ -247,32 +335,32 @@ site_config = {
                 'filter_count': '23',
                 'filter_reference': '2',
                 'filter_data': [['filter', 'filter_index', 'filter_offset', 'sky_gain', 'screen_gain', 'abbreviation'],
-                                ['air', '(0, 0)', '-1000', '0.01', '790', 'ai'], # 0
-                                ['dif', '(4, 0)', '0', '0.01', '780', 'di'],     # 1
-                                ['w', '(2, 0)', '0', '0.01', '780', 'w_'],       # 2
-                                ['ContR', '(1, 0)', '0', '0.01', '175', 'CR'],   # 3
-                                ['N2', '(3, 0)', '0', '0.01', '101', 'N2'],      # 4
-                                ['u', '(0, 5)', '0', '0.01', '0.2', 'u_'],       # 5
-                                ['g', '(0, 6)', '0', '0.01', '550', 'g_'],       # 6
-                                ['r', '(0, 7)', '0', '0.01', '630', 'r_'],       # 7
-                                ['i', '(0, 8)', '0', '0.01', '223', 'i_'],       # 8
-                                ['zs', '(5, 0)', '0', '0.01', '15.3','zs'],      # 9
-                                ['PL', '(0, 4)', '0', '0.01', '775', "PL"],      # 10
-                                ['PR', '(0, 3)', '0', '0.01', '436', 'PR'],      # 11
-                                ['PG', '(0, 2)', '0', '0.01', '446','PG'],       # 12
-                                ['PB', '(0, 1)', '0', '0.01', '446', 'PB'],      # 13
-                                ['O3', '(7, 0)', '0', '0.01', '130','03'],       # 14
-                                ['HA', '(6, 0)', '0', '0.01', '101','HA'],       # 15
-                                ['S2', '(8, 0)', '0', '0.01', '28','S2'],        # 16
-                                ['dif_u', '(4, 5)', '0', '0.01', '0.2', 'du'],   # 17
-                                ['dif_g', '(4, 6)', '0', '0.01', '515','dg'],    # 18
-                                ['dif_r', '(4, 7)', '0', '0.01', '600', 'dr'],   # 19
-                                ['dif_i', '(4, 8)', '0', '0.01', '218', 'di'],   # 20
-                                ['dif_zs', '(9, 0)', '0', '0.01', '14.5', 'dz'], # 21
-                                ['dark', '(10, 9)', '0', '0.01', '0.0', 'dk']],  # 22
+                                ['air', '(0, 0)', '-1000','0.01',['2', '17'], 'ai'], # 0
+                                ['dif', '(4, 0)', '0', '0.01',   ['2', '17'], 'di'], # 1
+                                ['W', '(0, 0)', '0', '0.01',     ['2', '17'], 'w '], # 2
+                                ['ContR', '(1, 0)', '0', '0.01', ['2', '17'], 'CR'], # 3
+                                ['N2', '(3, 0)', '0', '0.01',    ['2', '17'], 'N2'], # 4
+                                ['u', '(0, 5)', '0', '0.01',     ['2', '17'], 'u_'], # 5
+                                ['g', '(0, 6)', '0', '0.01',     ['2', '17'], 'g_'], # 6
+                                ['r', '(0, 7)', '0', '0.01',     ['2', '17'], 'r_'], # 7
+                                ['i', '(0, 8)', '0', '0.01',     ['2', '17'], 'i_'], # 8
+                                ['zs', '(5, 0)', '0', '0.01',    ['2', '17'], 'zs'], # 9
+                                ['PL', '(0, 4)', '0', '0.01',    ['2', '17'], "PL"], # 10
+                                ['PR', '(0, 3)', '0', '0.01',    ['2', '17'], 'PR'], # 11
+                                ['PG', '(0, 2)', '0', '0.01',    ['2', '17'], 'PG'], # 12
+                                ['PB', '(0, 1)', '0', '0.01',    ['2', '17'], 'PB'], # 13
+                                ['O3', '(7, 0)', '0', '0.01',    ['2', '17'], '03'], # 14
+                                ['HA', '(6, 0)', '0', '0.01',    ['2', '17'], 'HA'], # 15
+                                ['S2', '(8, 0)', '0', '0.01',    ['2', '17'], 'S2'], # 16
+                                ['dif_u', '(4, 5)', '0', '0.01', ['2', '17'], 'du'], # 17
+                                ['dif_g', '(4, 6)', '0', '0.01', ['2', '17'], 'dg'], # 18
+                                ['dif_r', '(4, 7)', '0', '0.01', ['2', '17'], 'dr'], # 19
+                                ['dif_i', '(4, 8)', '0', '0.01', ['2', '17'], 'di'], # 20
+                                ['dif_zs', '(9, 0)', '0', '0.01',['2', '17'], 'dz'], # 21
+                                ['dark', '(10, 9)', '0', '0.01', ['2', '17'], 'dk']],# 22
                                 #Screen = 100; QHY400 ~ 92% DQE   HDR Mode    Screen = 160 sat  20190825 measured.
                 'filter_screen_sort':  ['0', '1', '2', '10', '7', '19', '6', '18', '12', '11', '13', '8', '20', '3', \
-                                        '14', '15', '4', '16', '9', '21'],  # '5', '17'], #Most to least throughput, \
+                                        '14', '15', '4', '16'],   #  '9', '21'],  # '5', '17'], #Most to least throughput, \
                                 #so screen brightens, skipping u and zs which really need sky.
                 'filter_sky_sort':     ['17', '5', '21', '9', '16', '4', '15', '14', '3', '20', '8', '13', '11', '12', \
                                         '18', '6', '19', '7', '10', '2', '1', '0']  #Least to most throughput
@@ -293,23 +381,25 @@ site_config = {
     'camera': {
         'camera1': {
             'parent': 'telescope1',
-            'name': 'df01',      #Important because this points to a server file structure by that name.
-            'desc':  'FLI Microline e2vU42DD',
+            'name': 'kf02',      #Important because this points to a server file structure by that name.
+            'desc':  'FLI Microline OnSemi 16200',
             'driver':  "Maxim.CCDCamera",   #'ASCOM.FLI.Kepler.Camera',  #Code must work with both.
             'startup_script':  'None',
             'recover_script':  'None',
             'shutdown_script':  'None',  
-            'detector':  'e2v U42 DD',
+            'detector':  'On 16200',
             'manufacturer':  'FLI -- Finger Lakes Instrumentation',
             'settings': {
+                'temp_setpoint': '-35',
+                'cooler_on': 'True',
                 'x_start':  '0',
                 'y_start':  '0',
-                'x_width':  '2048',
-                'y_width':  '2048',
-                'x_chip':   '2048',
-                'y_chip':   '2048',
-                'x_pixel':  '13.5',
-                'y_pixel':  '13.5',
+                'x_width':  '4500',
+                'y_width':  '3600',
+                'x_chip':   '4500',
+                'y_chip':   '3600',
+                'x_pixel':  '6',
+                'y_pixel':  '6',
                 'overscan_x': '0',
                 'overscan_y': '0',
                 'north_offset': '0.0',
@@ -325,8 +415,8 @@ site_config = {
                 'reference_dark': ['0.2', '-30' ],
                 'saturate':  '55000',
                 'area': ['100%', '2X-jpg', '71%', '50%', '1X-jpg', '33%', '25%', '1/2 jpg'],
-                'bin_modes':  [['1', '1'], ['2', '2']],     #Meaning no binning if list has only one entry
-                'default_bin':  '2',    #Always square and matched to seeing situation by owner
+                'bin_modes':  [['1', '1'], ['2', '2'], ['3', '3'], ['4', '4']],     #Meaning no binning if list has only one entry
+                'default_bin':  '1',    #Always square and matched to seeing situation by owner
                 'has_darkslide':  'false',
 #                'darkslide':  ['Auto', 'Open', 'Close'],
                 'has_screen': 'true',
@@ -340,11 +430,62 @@ site_config = {
                     },
                 },
         },
-
+        
+#         'camera2': {
+#             'parent': 'telescope2',
+#             'name': 'sq01',      #Important because this points to a server file structure by that name.
+#             'desc':  'GHY 600Pro',
+#             'driver':  "ASCOM.QHYCCD.Camera",   #'ASCOM.FLI.Kepler.Camera',  #Code must work with both.
+#             'startup_script':  'None',
+#             'recover_script':  'None',
+#             'shutdown_script':  'None',  
+#             'detector':  'Sony Exmore',
+#             'manufacturer':  'QHY',
+#             'settings': {
+#                 'x_start':  '0',
+#                 'y_start':  '0',
+#                 'x_width':  '9600',
+#                 'y_width':  '6642',
+#                 'x_chip':   '9600',
+#                 'y_chip':   '6642',
+#                 'x_pixel':  '6.0',
+#                 'y_pixel':  '6.0',
+#                 'overscan_x': '0',
+#                 'overscan_y': '0',
+#                 'north_offset': '0.0',
+#                 'east_offset': '0.0',
+#                 'rotation': '0.0',
+#                 'min_exposure': '0.001',
+#                 'max_exposure': '300',
+#                 'can_subframe':  'true',
+#                 'min_subframe':  '16:16',
+#                 'is_cmos_':  'false',                
+#                 'is_cmos_16':  'true',
+#                 'bin_modes':  [['1', '1'], ['2', '2']],     #Meaning no binning if list has only one entry
+#                 'default_bin':  '1',    #Always square and matched to seeing situation by owner               'reference_gain': ['1.4', '1.4' ],     #One val for each binning.
+#                 'reference_noise': ['1.0', '1.0' ],
+#                 'reference_dark': ['0.2', '-30' ],
+#                 'saturate':  '55000',
+#                 'area': ['100%', '2X-jpg', '71%', '50%', '1X-jpg', '33%', '25%', '1/2 jpg'],
+#                 'has_shutter':  'false',   
+#                 'has_darkslide':  'false',
+#                 'darkslide_option':  'screen_2',
+# #                'darkslide':  ['Auto', 'Open', 'Close'],
+#                 'has_screen': 'true',
+#                 'screen_settings':  {     # This is meant to be for the specific camera.  NBNBNB Owner cannot simply enter tihs.
+#                     'screen_saturation':  '157.0',
+#                     'screen_x4':  '-4E-12',  #'y = -4E-12x4 + 3E-08x3 - 9E-05x2 + 0.1285x + 8.683     20190731'
+#                     'screen_x3':  '3E-08',
+#                     'screen_x2':  '-9E-05',
+#                     'screen_x1':  '.1258',
+#                     'screen_x0':  '8.683'
+#                     },
+#                 },
+#        },
     },
 
     'sequencer': {
-        'sequencer': {
+        'sequencer1': {
             'parent': 'site',
             'name': 'Sequencer',
             'desc':  'Automation Control',

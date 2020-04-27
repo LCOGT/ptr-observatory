@@ -304,7 +304,7 @@ class Camera:
             bin_x = 2
         else:
             bin_x = 1
-        bin_y = bin_x   #NB This needs fixing
+        bin_y = bin_x   #NB This needs fixing someday!
         self.camera.BinX = bin_x
         self.camera.BinY = bin_y
         gain = optional_params.get('gain', 1)
@@ -626,13 +626,25 @@ class Camera:
                             g_dev['rot'].get_quick_status(self.pre_rot)
                             g_dev['mnt'].get_quick_status(self.pre_mnt)
                             self.t2 = time.time()
-                            print("Starting exposure at:  ", self.t2)
-                            if not self.camera.LinkEnabled:
-                                self.camera.LinkEnabled = True
-                                print('Reset LinkEnabled right before exposure')
-                            self.camera.Expose(exposure_time, imtypeb)
-                            ldr_handle_time = None
                             ldr_handle_high_time = None
+                            ldr_handle_time = None
+                            print("Starting exposure at:  ", self.t2)
+                            try:
+                                if not self.camera.LinkEnabled:
+                                    self.camera.LinkEnabled = True
+                                    self.camera.AbortExposure()
+                                    time.sleep(2)
+                                    print('Reset LinkEnabled right before exposure')
+                                self.camera.Expose(exposure_time, imtypeb)
+                            except:
+                                print("Retry to set up camera exposure.")
+                                time.sleep(4)
+                                if not self.camera.LinkEnabled:
+                                    self.camera.LinkEnabled = True
+                                    self.camera.AbortExposure()
+                                    time.sleep(2)
+                                    print('Reset LinkEnabled right before exposure')
+                                self.camera.Expose(exposure_time, imtypeb)
                         else:
                             print("Something terribly wrong, driver not recognized.!")
                         self.t9 = time.time()
@@ -647,6 +659,7 @@ class Camera:
 
                         #self.exposure_busy = False  Need to be able to do repeats
                     except Exception as e:
+                        breakpoint()
                         print("failed exposure")
                         print(e)
                         self.t11 = time.time()
@@ -864,7 +877,7 @@ class Camera:
                         if frame_type[-4:] == 'flat':
                             f_ext = '-' + str(self.current_filter)    #Append flat string to local image name
                         cal_name = self.config['site'] + '-' + current_camera_name + '-' + g_dev['day'] + '-' + \
-                                                    next_seq  + f_ext + '-'  + im_type + '01.fits'
+                                                    next_seq  + f_ext + '-'  + im_type + '00.fits'
                         raw_name00 = self.config['site'] + '-' + current_camera_name + '-' + g_dev['day'] + '-' + \
                             next_seq  + '-' + im_type + '00.fits'
                         raw_name01 = self.config['site'] + '-' + current_camera_name + '-' + g_dev['day'] + '-' + \
@@ -906,12 +919,10 @@ class Camera:
                         text.write(str(hdu.header))
                         text.close()
                         text_data_size = len(str(hdu.header)) - 4096
-                        if not quick and not script:
+                        if not quick and not script in ('True', 'true', 'On', 'on'):
                             hdu.writeto(raw_path + raw_name00, overwrite=True)
-                        breakpoint()
                         if script in ('True', 'true', 'On', 'on'):
-                            hdu.writeto(cal_path + cal_name00, overwrite=True)
-                            breakpoint()
+                            hdu.writeto(cal_path + cal_name, overwrite=True)
                             return 0, 0   #  Note we are not calibrating. Just saving the file.
                             # NB^ We always write files to raw, except quick(autofocus) frames.
                             # hdu.close()

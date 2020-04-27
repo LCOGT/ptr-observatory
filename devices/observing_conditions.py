@@ -203,7 +203,7 @@ class ObservingConditions:
             quick.append(float(wx["amb_temp C"]))
             quick.append(float(wx["humidity %"]))
             quick.append(float(wx["dewpoint C"]))
-            quick.append(float(wx["wind k/h"]))
+            quick.append(float(wx["wind m/s"]))
             quick.append(float(973))   # 20200329 a SWAG!
             quick.append(float(wx['illum lux']))     # Add Solar, etc.
             quick.append(float(wx['bright hz']))

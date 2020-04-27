@@ -133,6 +133,7 @@ class Sequencer:
         print("Total # of bias frames, all binnings =  ", total_num_biases )
         dark_list = []
         num_dark = max(5, req['numOfDark'])
+        dark_time = float(req['darkTime'])
         if req['bin1']:
             dark_list.append([1, max(5, num_dark)])
         if req['bin2']:
@@ -150,6 +151,7 @@ class Sequencer:
         print("Total # of dark frames, all binnings =  ", total_num_dark )
         long_dark_list = []
         num_long_dark = max(3, req['numOfDark2'])
+        long_dark_time = float(req['dark2Time'])
         if req['bin1']:
             long_dark_list.append([1, max(3, num_long_dark)])
         if req['bin2']:
@@ -178,18 +180,19 @@ class Sequencer:
             if len(bias_list) > 0:
                 for bias in range(bias_ratio):
                     if len(bias_list) == 0:
-                        breakpoint()
+                        pass
                     shuffle(bias_list)
-                    use_bin = bias_list[0][0]   #  Pick up bias value
+                    use_bin = bias_list[0][0]   #  Pick up bin value
                     if bias_list[0][1] > 1:
                         bias_list[0][1] -= 1
                     if bias_list[0][1] <= 1:
                         bias_list.pop(0)
                     print("Expose Bias using:  ", use_bin, bias_list)
                     bin_str = bin_to_string(use_bin)
-                    req = {'time': 10,  'script': 'True', 'image_type': 'bias'}
+                    req = {'time': 0.0,  'script': 'True', 'image_type': 'bias'}
                     opt = {'size': 100, 'count': 1, 'bin': bin_str, \
                            'filter': g_dev['fil'].filter_data[0][0]}
+                    breakpoint()
                     g_dev['cam'].expose_command(req, opt, gather_status=False, no_AWS=True, \
                                                 do_sep=False, quick=False)
                     if len(bias_list) < 1:
@@ -198,23 +201,35 @@ class Sequencer:
             if len(dark_list) > 0:
                 for dark in range(1):
                     shuffle(dark_list)
-                    use_bin = dark_list[0][0]   #  Pick up bias value
+                    use_bin = dark_list[0][0]   #  Pick up bin value
                     if dark_list[0][1] > 1:
                         dark_list[0][1] -= 1
                     if dark_list[0][1] <= 1:
                         dark_list.pop(0)
                     print("Expose dark using:  ", use_bin, dark_list)
+                    bin_str = bin_to_string(use_bin)
+                    req = {'time':dark_time ,  'script': 'True', 'image_type': 'dark'}
+                    opt = {'size': 100, 'count': 1, 'bin': bin_str, \
+                           'filter': g_dev['fil'].filter_data[0][0]}
+                    g_dev['cam'].expose_command(req, opt, gather_status=False, no_AWS=True, \
+                                                do_sep=False, quick=False)
                     if len(dark_list) < 1:
                         print("Dark List exhausted.",dark_list)
             if len(long_dark_list) > 0:
                 for long_dark in range(1):
                     shuffle(long_dark_list)
-                    use_bin = long_dark_list[0][0]   #  Pick up bias value
+                    use_bin = long_dark_list[0][0]   #  Pick up bin value
                     if long_dark_list[0][1] > 1:
                         long_dark_list[0][1] -= 1
                     if long_dark_list[0][1] <= 1:
                         long_dark_list.pop(0)
                     print("Expose long_dark using:  ", use_bin, long_dark_list)
+                    bin_str = bin_to_string(use_bin)
+                    req = {'time': long_dark_time,  'script': 'True', 'image_type': 'dark'}
+                    opt = {'size': 100, 'count': 1, 'bin': bin_str, \
+                           'filter': g_dev['fil'].filter_data[0][0]}
+                    g_dev['cam'].expose_command(req, opt, gather_status=False, no_AWS=True, \
+                                                do_sep=False, quick=False)
                     if len(long_dark_list) < 1:
                         print("Long_dark exhausted.", long_dark_list)
         print("fini")

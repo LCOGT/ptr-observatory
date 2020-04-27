@@ -69,7 +69,7 @@ class Mount:
         else:
             print(f"Tel/OTA connected.")
         print(self.mount.Description)
-        breakpoint()
+     
         #NB THe paddle needs a re-think and needs to be cast into its own thread. 20200310 WER
 #        self._paddle = serial.Serial('COM10', timeout=0.1)
 #        self._paddle.write(b'ver\n')
@@ -349,9 +349,6 @@ class Mount:
 
     def slewToSkyFlatAsync(self):
         az, alt = self.astro_events.flat_spot_now()
-        if self.mount.CanPark:
-            #print("mount cmd: unparking mount")
-            self.mount.Unpark()
         self.mount.Tracking = False
         self.mount.SlewToAltAzAsync(az, alt)
 
