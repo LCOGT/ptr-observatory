@@ -22,28 +22,28 @@ M20	6514	Di	9.0	28	5200	18 02.6  -23   02 Sgr	summer	Trifid  Nebula
 M21	6531	Oc	6.5	13	4250	18 04.6  -22   30 Sgr	summer
 M22	6656	Gc	5.1	24	10400	18 36.4  -23   54 Sgr	summer	Sagittarius Cluster
 M23	6494	Oc	6.9	27	2150	17 56.8  -19   01 Sgr	summer
-M24	**	MW	4.6	90	10000	18 16.9  -18   30 Sgr	summer	Sagittarius Star Cloud
+M24	**	    MW	4.6	90	10000	18 16.9  -18   30 Sgr	summer	Sagittarius Star Cloud
 M25	IC4725	Oc	6.5	40	2000	18 31.6  -19   15 Sgr	summer
 M26	6694	Oc	8.0	15	5000	18 45.2  -09   24 Sct	summer
 M27	6853	Pl	7.4	8.0x5.7	1250	19 59.6  +22   43 Vul	summer	Dumbbell Nebula
 M28	6626	Gc	6.8	11.2	18600	18 24.5  -24   52 Sgr	summer
 M29	6913	Oc	7.1	7	4000	20 23.9  +38   32 Cyg	summer
 M30	7099	Gc	7.2	11	26100	21 40.4  -23   11 Cap	autumn
-M31	224	Sp	3.4	178x63	3E06	0 41.8  +41	16 And	autumn	Andromeda Galaxy
-M32	221	El	8.1	8x6	3E06	0 42.8  +40   52 And	autumn
-M33	598	Sp	5.7	73x45	3E06	1 33.9  +30	39 Tri	autumn	Triangulum Galaxy
+M31	224	    Sp	3.4	178x63	3E06	0 41.8  +41	16 And	autumn	Andromeda Galaxy
+M32	221	    El	8.1	8x6	3E06	0 42.8  +40   52 And	autumn
+M33	598	    Sp	5.7	73x45	3E06	1 33.9  +30	39 Tri	autumn	Triangulum Galaxy
 M34	1039	Oc	5.5	35	1400	2 42m	+42   47 Per	autumn
 M35	2168	Oc	5.3	28	2800	6 08.9  +24   20 Gem	winter
 M36	1960	Oc	6.3	12	4100	5 36.1  +34   08 Aur	winter
 M37	2099	Oc	6.2	24	4400	5 52.4  +32   33 Aur	winter
 M38	1912	Oc	7.4	21	4200	5 28.7  +35   50 Aur	winter
 M39	7092	Oc	4.6	32	825	21 32.2  +48   26 Cyg	autumn
-M40	*	d*	8.4	0.8	510	12 22.4  +58   05 UMa	spring	* Winnecke 4
+M40	*	    d*	8.4	0.8	510	12 22.4  +58   05 UMa	spring	* Winnecke 4
 M41	2287	Oc	4.6	38	2300	6 47    -20    44 CMa	winter
 M42	1976	Di	4.0	85x60	1600	5 35.4  -05    27 Ori	winter	Orion Nebula
 M43	1982	Di	9.0	20x15	1600	5 35.6  -05    16 Ori	winter	De Mairans' Nebula
 M44	2632	Oc	3.7	95	577	8 40.1  +19    59 Cnc	winter	Beehive Cluster
-M45	**	Oc	1.6	110	380	3 47    +24    07 Tau	winter	Pleiades
+M45	**	    Oc	1.6	110	380	3 47    +24    07 Tau	winter	Pleiades
 M46	2437	Oc	6.0	27	5400	7 41.8  -14    49 Pup	winter
 M47	2422	Oc	5.2	30	1600	7 36.6  -14    30 Pup	winter
 M48	2548	Oc	5.5	54	1500	8 13.8  -05    48 Hya	winter
@@ -72,9 +72,9 @@ M70	6681	Gc	7.9	7.8	29400	18 43.2  -32   18 Sgr	summer
 M71	6838	Gc	8.2	7.2	12700	19 53.8  +18   47 Sge	summer
 M72	6981	Gc	9.3	5.9	55400	20 53.5  -12   32 Aqr	summer
 M73	6994	As	9.0	2.8	2000	20 59  -12     38 Aqr	summer
-M74	628	Sp	9.4	10.2x9.5 35E06	1 36.7  +15    47 Psc	 autumn
+M74	628	    Sp	9.4	10.2x9.5 35E06	1 36.7  +15    47 Psc	 autumn
 M75	6864	Gc	8.5	6	61300	20 06.1  -21   55 Sgr	summer
-M76	650	Pl	10.1	2.7x1.8	3400	1 42.4  +51    34 Per	autumn	Little Dumbbell Nebula
+M76	650	    Pl	10.1	2.7x1.8	3400	1 42.4  +51    34 Per	autumn	Little Dumbbell Nebula
 M77	1068	Sp	8.9	7x6	6E07	2 42.7  +00    02 Cet	autumn
 M78	2068	Di	8.3	8x6	1600	5 46.7  +00    03 Ori	winter
 M79	1904	Gc	7.7	8.7	42100	5 24.5  -24    33 Lep	winter
@@ -91,14 +91,14 @@ M89	4552	El	9.8	4	6E07	12 35.7  +12   33 Vir	spring
 M90	4569	Sp	9.5	9.5x4.5	6E07	12 36.8  +13   10 Vir	spring
 M91	4548	Ba	10.2	5.4x4.4	6E07	12 35.5  +14   30 Com	spring
 M92	6341	Gc	6.4	11.2	26700	17 17.1  +43   08 Her	summer
-M93	2447	Oc	6.0	22	 3600	 7 44.6  -23   52 Pup	winter
-M94	4736	Sp	8.2	7x3	15E06	12 50.9  +41   08 CVn	spring
-M95	3351	Ba	9.7	4.4x3.3	38E06	10 44  +11     42 Leo	spring
-M96	3368	Sp	9.2	6x4	38E06	10 46.8  +11   49 Leo	spring
-M97	3587	Pl	9.9	3.4x3.3	2600	11 14.8  +55   01 UMa	spring	Owl Nebula
-M98	4192	Sp	10.1	9.5x3.2	6E07	12 13.9  +14   55 Com	spring
-M99	4254	Sp	9.9	5.4x4.8	6E07	12 18.9  +14   26 Com	spring
-M100	4321	Sp	9.3	7x6	6E07	12 23  +15     50 Com	spring
+M93	 2447	Oc	6.0	22	 3600	 7 44.6  -23   52 Pup	winter
+M94	 4736	Sp	8.2	7x3	15E06	12 50.9  +41   08 CVn	spring
+M95	 3351	Ba	9.7	4.4x3.3	38E06	10 44  +11     42 Leo	spring
+M96	 3368	Sp	9.2	6x4	38E06	10 46.8  +11   49 Leo	spring
+M97	 3587	Pl	9.9	3.4x3.3	2600	11 14.8  +55   01 UMa	spring	Owl Nebula
+M98	 4192	Sp	10.1	9.5x3.2	6E07	12 13.9  +14   55 Com	spring
+M99	 4254	Sp	9.9	5.4x4.8	6E07	12 18.9  +14   26 Com	spring
+M100 4321	Sp	9.3	7x6	6E07	12 23  +15     50 Com	spring
 M101	5457	Sp	7.9	22	27E06	14 03.2  +54   21 UMa	spring	Pinwheel Galaxy
 M102	5866	Ln	9.9	5.2x2.3	4E07	15 06.5  +55   46 Dra	summer
 M103	581	Oc	7.4	6	8500	1 33.2  +60    42 Cas	autumn
