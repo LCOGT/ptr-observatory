@@ -42,6 +42,12 @@ import time, json
 from math import cos, radians    #"What plan do we have for making some imports be done this way, elg, import numpy as np...?"
 from global_yard import g_dev    #"Ditto guestion we are importing a single object instance."
 
+from astropy.time import Time
+from astropy import units as u
+from astropy.coordinates import SkyCoord, FK5, ICRS, FK4, Distance, \
+                         EarthLocation, AltAz
+from astroquery.vizier import Vizier
+from astroquery.simbad import Simbad
 #from devices.pywinusb_paddle import *
 
 #The mount is not threaded and uses non-blocking seek.     "Note no doule quotes.
@@ -69,7 +75,9 @@ class Mount:
         else:
             print(f"Tel/OTA connected.")
         print(self.mount.Description)
-     
+
+
+
         #NB THe paddle needs a re-think and needs to be cast into its own thread. 20200310 WER
 #        self._paddle = serial.Serial('COM10', timeout=0.1)
 #        self._paddle.write(b'ver\n')
@@ -340,6 +348,25 @@ class Mount:
 
         # Arcseconds per SI second, default = 0.0
         tracking_rate_dec = opt.get('tracking_rate_dec', 0)
+        breakpoint()
+
+        def get_current_times():
+        ut_now = Time(datetime.datetime.now(), scale='utc', location=siteCoordinates)   #From astropy.time
+        sid_now = ut_now.sidereal_time('apparent')
+        sidTime = sid_now
+    # =============================================================================
+    #     THIS NEEDS FIXING! Sloppy
+    # =============================================================================
+        iso_day = datetime.date.today().isocalendar()
+        doy = ((iso_day[1]-1)*7 + (iso_day[2] ))
+        equinox_now = 'J' +str(round((iso_day[0] + ((iso_day[1]-1)*7 + (iso_day[2] ))/365), 2))
+        return(ut_now, sid_now, equinox_now, doy)
+
+        meanCoord = SkyCoord(pCoord[0]*u.hour, pCoord[1]*u.degree, frame='icrs')
+        t = meanCoord.transform_to(FK5(equinox=equinox_now))
+        print('T:  ', t)
+        appRa = fromHMS(str(t.ra.to_string(u.hour)))
+        appDec = fromDMS(str(t.dec.to_string(u.degree)))
 
         self.mount.Tracking = True
         self.mount.SlewToCoordinatesAsync(ra, dec)

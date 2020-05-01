@@ -167,6 +167,7 @@ class Enclosure:
             #A countdown to re-open
             if self.status_string.lower() in ['closed', 'closing']:
                 #self.enclosure.OpenShutter()   #<<<<NB NB NB Only enable when code is fully proven to work.
+                breakpoint()
                 print('NB NB 20200423  Open patched out.')
                 print("Night time Open issued to the "  + shutter_str)
         elif (sunZ88Op >= ephemNow or ephemNow >= sunZ88Cl \
@@ -181,10 +182,6 @@ class Enclosure:
                     print("Daytime Close issued to the " + shutter_str)
                 except:
                     print("Shutter busy right now!")
-
-
-
-
         else:
             #Close the puppy.
             pass
