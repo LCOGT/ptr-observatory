@@ -8,8 +8,15 @@ Created on Mon Jul 29 14:56:25 2019
 import win32com.client
 import pythoncom
 import time, json
+import datetime
 from math import cos, radians
 from global_yard import g_dev
+from astropy.time import Time
+from astropy import units as u
+from astropy.coordinates import SkyCoord, FK5, ICRS, FK4, Distance, \
+                                EarthLocation, AltAz
+from astroquery.vizier import Vizier
+from astroquery.simbad import Simbad
 
 #The mount is not threaded and uses non-blocking seek.
 class Telescope:
@@ -23,12 +30,15 @@ class Telescope:
         self.inst = 'tel1'
         self.tel = tel
         self.telescope_message = "-"
+        self.site_coordinates = EarthLocation(lat=float(config['latitude'])*u.deg, \
+                        lon=float(config['longitude'])*u.deg,
+                        height=float(config['elevation'])*u.m)
 
 
         if not tel:
-            print(f"Mount connected.")
+            print(f"Mount is connected.")
         else:
-            print(f"Tel/OTA connected.")
+            print(self.inst + "  is connected.")
 
 
 #    def get_status(self):
@@ -57,7 +67,14 @@ class Telescope:
 #        }
 #        return status
 
-
+    def get_current_times(self):
+        self.ut_now = Time(datetime.datetime.now(), scale='utc', location=self.site_coordinates)   #From astropy.time
+        self.sid_now = self.ut_now.sidereal_time('apparent')
+        iso_day = datetime.date.today().isocalendar()
+        self.doy = ((iso_day[1]-1)*7 + (iso_day[2] ))
+        self.equinox_now = 'J' +str(round((iso_day[0] + ((iso_day[1]-1)*7 + (iso_day[2] ))/365), 2))
+        return
+    
     def get_status(self):
         alt = g_dev['mnt'].mount.Altitude
         zen = round((90 - alt), 3)
@@ -97,10 +114,22 @@ class Telescope:
                 f'message': g_dev['mnt'].mount_message[:32]
             }
         elif self.tel == True:
+            if g_dev['mnt'].mount.EquatorialSystem == 1:
+                self.get_current_times()  
+                jnow_ra = g_dev['mnt'].mount.RightAscension
+                jnow_dec = g_dev['mnt'].mount.Declination
+                jnow_coord = SkyCoord(jnow_ra*u.hour, jnow_dec*u.degree, \
+                                      frame='fk5', equinox=self.equinox_now)
+                icrs_coord =jnow_coord.transform_to(ICRS)
+                ra= icrs_coord.ra.hour
+                dec = icrs_coord.dec.degree
+            else:
+                ra = g_dev['mnt'].mount.RightAscension
+                dec = g_dev['mnt'].mount.Declination
             status = {
                 f'timestamp': str(round(time.time(), 3)),
-                f'right_ascension': str(round(g_dev['mnt'].mount.RightAscension, 5)),
-                f'declination': str(round(g_dev['mnt'].mount.Declination, 4)),
+                f'right_ascension': str(round(ra, 5)),
+                f'declination': str(round(dec, 4)),
                 f'sidereal_time': str(round(g_dev['mnt'].mount.SiderealTime, 5)),
                 f'tracking_right_ascension_rate': str(g_dev['mnt'].mount.RightAscensionRate),
                 f'tracking_declination_rate': str(g_dev['mnt'].mount.DeclinationRate),
@@ -109,7 +138,8 @@ class Telescope:
                 f'zenith_distance': str(round(zen, 3)),
                 f'airmass': airmass_string,
                 f'coordinate_system': str(self.rdsys),
-                f'pointing_instrument': str(self.inst),  #needs fixing
+                'equinox':  str(self.equinox_now),
+                f'pointing_instrument': str(self.inst),
                 f'message': g_dev['mnt'].mount_message[:32]
 #                f'is_parked': (self.mount.AtPark),
 #                f'is_tracking': str(self.mount.Tracking),

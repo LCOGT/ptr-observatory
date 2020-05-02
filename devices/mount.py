@@ -39,6 +39,7 @@ import win32com.client
 import pythoncom
 import serial
 import time, json
+import datetime
 from math import cos, radians    #"What plan do we have for making some imports be done this way, elg, import numpy as np...?"
 from global_yard import g_dev    #"Ditto guestion we are importing a single object instance."
 
@@ -50,6 +51,24 @@ from astroquery.vizier import Vizier
 from astroquery.simbad import Simbad
 #from devices.pywinusb_paddle import *
 
+
+
+# siteLatitude = 34.342930277777775    #  34 20 34.569   #34 + (20 + 34.549/60.)/60.
+# siteLongitude = -119.68112805555556  #-(119 + (40 + 52.061/60.)/60.) 119 40 52.061 W
+# siteElevation = 317.75
+# siteRefTemp = 15.0         #These should be a monthly average data.
+# siteRefPress = 973.0       #mbar
+# siteName = "Photon Ranch"
+# siteAbbreviation = "PTR"
+# siteCoordinates = EarthLocation(lat=siteLatitude*u.deg, \
+#                                 lon=siteLongitude*u.deg,
+#                                 height=siteElevation*u.m)
+#ptr = EarthLocation(lat=siteLatitude*u.deg, lon=siteLongitude*u.deg, height=siteElevation*u.m)
+
+tzOffset = -7
+
+mountOne = "PW_L500"
+mountOneAscom = None
 #The mount is not threaded and uses non-blocking seek.     "Note no doule quotes.
 class Mount:
 
@@ -63,13 +82,18 @@ class Mount:
         self.mount = win32com.client.Dispatch(driver)
         self.mount.Connected = True
 #        print('Can Asynch:  ', self.mount.CanSlewAltAzAsync)
+        
+        #hould put config Lat, lon, etc into mount, or at least check it is correct.
+        self.site_coordinates = EarthLocation(lat=float(config['latitude'])*u.deg, \
+                                lon=float(config['longitude'])*u.deg,
+                                height=float(config['elevation'])*u.m)
         self.rdsys = 'J.now'
         self.inst = 'tel1'
         self.tel = tel
         self.mount_message = "-"
         #print('Can Move Axis is Possible.', self.mount.CanMoveAxis(0), self.mount.CanMoveAxis(1))
 
-
+        #  NB THis tel concept is a remnant of a bad dream
         if not tel:
             print(f"Mount connected.")
         else:
@@ -170,12 +194,23 @@ class Mount:
                 f'message': self.mount_message[:32]
             }
         elif self.tel == True:
+            breakpoint()
+            if self. mount.EquatorialSystem == 1:
+                self.get_current_times()  
+                jnow_ra = self.mount.RightAscension
+                jnow_dec = self.mount.Declination
+                jnow_coord = SkyCoord(jnow_ra*u.hour, jnow_dec*u.degree, frame='fk5', \
+                          equinox=self.equinox_now)
+                icrs_coord =jnow_coord.transform_to(ICRS)
+                ra= icrs_coord.ra.hour
+                dec = icrs_coord.dec.degree
+            else:
+                ra = self.mount.RightAscension
+                dec = self.mount.Declination
             status = {
                 f'timestamp': str(round(time.time(), 3)),
-                f'right_ascension': str(round(self.mount.RightAscension, 5)),  #RA reported as decimal hours.  Needs to be
-                                                                               #decimal degees or Sexagesimal in FITS header.
-                                                                               #HA can be reported as decimal hours in FITS.
-                f'declination': str(round(self.mount.Declination,4)),
+                f'right_ascension': str(round(ra, 5)),  #
+                f'declination': str(round(dec, 4)),
                 f'sidereal_time': str(round(self.mount.SiderealTime, 5)),
                 f'tracking_right_ascension_rate': str(self.mount.RightAscensionRate),   #Will use asec/s not s/s as ASCOM does.
                 f'tracking_declination_rate': str(self.mount.DeclinationRate),
@@ -184,7 +219,8 @@ class Mount:
                 f'zenith_distance': str(round(zen, 3)),
                 f'airmass': str(round(airmass,4)),
                 f'coordinate_system': str(self.rdsys),
-                f'pointing_instrument': str(self.inst),  #needs fixing
+                f'equinox':  self.equinox_now,
+                f'pointing_instrument': str(self.inst),  # needs fixing
                 f'message': self.mount_message[:32]
 #                f'is_parked': (self.mount.AtPark),
 #                f'is_tracking': str(self.mount.Tracking),
@@ -195,6 +231,29 @@ class Mount:
             status = {'defective':  'status'}
         return status  #json.dumps(status)
 
+# =============================================================================
+# #20160316 OK
+# def transform_mount_to_Icrs(pCoord, pCurrentPierSide, pLST=None, loud=False):
+# 
+#     if pLST is not None:
+#         lclSid = pLST
+#     else:
+#         lclSid =sidTime
+#     if loud: print('Pcoord:  ', pCoord)
+#     roll, pitch = transform_raDec_to_haDec(pCoord[0], pCoord[1], sidTime)
+#     if loud: print('MountToICRS1')
+#     obsHa, obsDec = transform_mount_to_observed(roll, pitch, pCurrentPierSide)
+#     if loud: print('MountToICRS2')
+#     appRa, appDec = obsToAppHaRa(obsHa, obsDec, sidTime)
+#     if loud: print('Out:  ', appRa, appDec, jYear)
+#     pCoordJnow = SkyCoord(appRa*u.hour, appDec*u.degree, frame='fk5', \
+#                           equinox=equinox_now)
+#     if loud: print('pCoord:  ', pCoordJnow)
+#     t = pCoordJnow.transform_to(ICRS)
+#     if loud: print('returning ICRS:  ', t)
+#     return (reduceRa(fromHMS(str(t.ra.to_string(u.hour)))),  \
+#             reduceDec(fromDMS(str(t.dec.to_string(u.degree)))))
+# =============================================================================
 
 
 
@@ -323,6 +382,14 @@ class Mount:
         else:
             print(f"Command <{action}> not recognized.")
 
+
+    def get_current_times(self):
+        self.ut_now = Time(datetime.datetime.now(), scale='utc', location=self.site_coordinates)   #From astropy.time
+        self.sid_now = self.ut_now.sidereal_time('apparent')
+        iso_day = datetime.date.today().isocalendar()
+        self.doy = ((iso_day[1]-1)*7 + (iso_day[2] ))
+        self.equinox_now = 'J' +str(round((iso_day[0] + ((iso_day[1]-1)*7 + (iso_day[2] ))/365), 2))
+        return
     ###############################
     #        Mount Commands       #
     ###############################
@@ -348,29 +415,15 @@ class Mount:
 
         # Arcseconds per SI second, default = 0.0
         tracking_rate_dec = opt.get('tracking_rate_dec', 0)
-        breakpoint()
 
-        def get_current_times():
-        ut_now = Time(datetime.datetime.now(), scale='utc', location=siteCoordinates)   #From astropy.time
-        sid_now = ut_now.sidereal_time('apparent')
-        sidTime = sid_now
-    # =============================================================================
-    #     THIS NEEDS FIXING! Sloppy
-    # =============================================================================
-        iso_day = datetime.date.today().isocalendar()
-        doy = ((iso_day[1]-1)*7 + (iso_day[2] ))
-        equinox_now = 'J' +str(round((iso_day[0] + ((iso_day[1]-1)*7 + (iso_day[2] ))/365), 2))
-        return(ut_now, sid_now, equinox_now, doy)
-
-        meanCoord = SkyCoord(pCoord[0]*u.hour, pCoord[1]*u.degree, frame='icrs')
-        t = meanCoord.transform_to(FK5(equinox=equinox_now))
-        print('T:  ', t)
-        appRa = fromHMS(str(t.ra.to_string(u.hour)))
-        appDec = fromDMS(str(t.dec.to_string(u.degree)))
-
+        if self.mount.EquatorialSystem == 1:
+            self.get_current_times()   #  NB We should find a way to refresh this once a day, esp. for status return.
+            icrs_coord = SkyCoord(float(req['ra'])*u.hour, float(req['dec'])*u.degree, frame='icrs')
+            jnow_coord = icrs_coord.transform_to(FK5(equinox=self.equinox_now))
+            ra = jnow_coord.ra.hour
+            dec = jnow_coord.dec.degree
         self.mount.Tracking = True
         self.mount.SlewToCoordinatesAsync(ra, dec)
-
         self.mount.RightAscensionRate = tracking_rate_ra
         self.mount.DeclinationRate = tracking_rate_dec
 
