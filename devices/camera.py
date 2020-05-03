@@ -649,6 +649,10 @@ class Camera:
                             self.t2 = time.time()
                             ldr_handle_high_time = None
                             ldr_handle_time = None
+                            try:
+                                os.remove(self.camera_path + 'newest.fits')
+                            except:
+                                pass   #  print ("File newest.fits not found, this is probably OK")
                             print("Starting exposure at:  ", self.t2)
                             try:
                                 if not self._connected():
@@ -660,6 +664,7 @@ class Camera:
                             except:
                                 print("Retry to set up camera exposure.")
                                 time.sleep(4)
+                                breakpoint()
                                 if not self._connected:
                                     self._connect()
                                     self.camera.AbortExposure()
@@ -675,6 +680,7 @@ class Camera:
                                              high=ldr_handle_high_time, script=self.script)
                         self.exposure_busy = False
                         self.t10 = time.time()
+                        return result
 
                         ##NB NB NB Should there be a return here?
 
@@ -942,6 +948,10 @@ class Camera:
                             hdu.writeto(raw_path + raw_name00, overwrite=True)
                         if script in ('True', 'true', 'On', 'on'):
                             hdu.writeto(cal_path + cal_name, overwrite=True)
+                            try:
+                                os.remove(self.camera_path + 'newest.fits')
+                            except:
+                                pass    #  print ("File newest.fits not found, this is probably OK")
                             return 0, 0   #  Note we are not calibrating. Just saving the file.
                             # NB^ We always write files to raw, except quick(autofocus) frames.
                             # hdu.close()
@@ -1111,7 +1121,7 @@ class Camera:
                 counter += 1
                 time.sleep(.01)
                 #This shouldbe counted down for a loop cancel.
-                print('Wait for exposure end, but getting here is usually bad news, tray again.')
+                print('Wait for exposure end, but getting here is usually bad news, try again.')
                 return (None, None)
 
         #definitely try to clean up any messes.

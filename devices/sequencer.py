@@ -296,11 +296,10 @@ class Sequencer:
         Note we want Moon at least 30 degrees away
 
         """
-        breakpoint()
         name = str(self.config['camera']['camera1']['name'])
         dark_count = 1
         flat_count = 1
-        exp_time = 5
+        exp_time = 1
         #int(req['numFrames'])
         #gain_calc = req['gainCalc']
         #shut_comp =  req['shutterCompensation']
@@ -326,16 +325,18 @@ class Sequencer:
             opt = {'size': 100, 'count': flat_count, 'filter': g_dev['fil'].filter_data[current_filter][0]}
             bright, fwhm = g_dev['cam'].expose_command(req, opt, gather_status=True, no_AWS=True)
             g_dev['obs'].update_status()
-            if bright > 55000:    #NB should gate with end of skyflat window as well.
-                time.sleep(30)
+            print("Bright:  ", bright)
+            if bright > 35000:    #NB should gate with end of skyflat window as well.
+                time.sleep(5)  #  (30)
                 continue
             g_dev['mnt'].slewToSkyFlatAsync()
             g_dev['obs'].update_status()
             req = {'time': float(exp_time),  'alias': name, 'image_type': 'sky flat'}
-            opt = {'size': 100, 'count': flat_count, 'filter': g_dev['fil'].filter_data[current_filter][0]}
+            opt = {'size': 100, 'count': flat_count , 'filter': g_dev['fil'].filter_data[current_filter][0]}
             bright2, fwhm = g_dev['cam'].expose_command(req, opt, gather_status=True, no_AWS=True)
             time.sleep(2)
-            if bright2 > 55000:
+            if bright2 > 35000:
+                time.sleep(5)
                 continue
             print("filter pop:  ", current_filter, bright, bright2)
             pop_list.pop(0)

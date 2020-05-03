@@ -154,6 +154,10 @@ class Enclosure:
              shutter_str = "Dome."
         else:
             shutter_str = "Roof."
+        if  sunZ88Op < ephemNow < sunZ88Cl:
+            self.enclosure.Slaved = True
+        else:
+            self.enclosure.Slaved = False
         if  (sunZ88Op < ephemNow < sunZ88Cl or open_cmd) \
                 and self.mode == 'Automatic' \
                 and g_dev['ocn'].ok_to_open.lower() in ['yes', 'true'] \
@@ -166,12 +170,13 @@ class Enclosure:
             self.cycles += 1           #if >=3 inhibits reopening for Wx  -- may need shelving so this persists.
             #A countdown to re-open
             if self.status_string.lower() in ['closed', 'closing']:
-                #self.enclosure.OpenShutter()   #<<<<NB NB NB Only enable when code is fully proven to work.
                 breakpoint()
+                self.enclosure.OpenShutter()   #<<<<NB NB NB Only enable when code is fully proven to work.
                 print('NB NB 20200423  Open patched out.')
                 print("Night time Open issued to the "  + shutter_str)
         elif (sunZ88Op >= ephemNow or ephemNow >= sunZ88Cl \
-                and self.mode == 'Automatic') or close_cmd:
+                and self.mode ==
+                'Automatic') or close_cmd:
             if close_cmd:
                 self.state = 'User Closed the '  + shutter_str
             else:
