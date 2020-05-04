@@ -149,16 +149,16 @@ class Enclosure:
 
         #  NB NB NB Directly calling enclosure methods is to be discouraged, go through commands so logging
         #           and so forth can be done in one place.
-        sunZ88Op, sunZ88Cl, ephemNow = self.astro_events.getSunEvents()
+        obs_win_begin, sunZ88Op, sunZ88Cl, ephemNow = self.astro_events.getSunEvents()
         if self.site == 'saf':
              shutter_str = "Dome."
         else:
             shutter_str = "Roof."
-        if  sunZ88Op < ephemNow < sunZ88Cl:
+        if  obs_win_begin < ephemNow < sunZ88Cl:
             self.enclosure.Slaved = True
         else:
             self.enclosure.Slaved = False
-        if  (sunZ88Op < ephemNow < sunZ88Cl or open_cmd) \
+        if  (obs_win_begin < ephemNow < sunZ88Cl or open_cmd) \
                 and self.mode == 'Automatic' \
                 and g_dev['ocn'].ok_to_open.lower() in ['yes', 'true'] \
                 and self.wait_time <= 0 \
@@ -174,7 +174,7 @@ class Enclosure:
                 self.enclosure.OpenShutter()   #<<<<NB NB NB Only enable when code is fully proven to work.
                 print('NB NB 20200423  Open patched out.')
                 print("Night time Open issued to the "  + shutter_str)
-        elif (sunZ88Op >= ephemNow or ephemNow >= sunZ88Cl \
+        elif (obs_win_begin >= ephemNow or ephemNow >= sunZ88Cl \
                 and self.mode ==
                 'Automatic') or close_cmd:
             if close_cmd:

@@ -78,9 +78,9 @@ class ObservingConditions:
 
 
             # Only write when around dark, put in CSV format
-            sunZ88Op, sunZ88Cl, ephemNow = g_dev['obs'].astro_events.getSunEvents()
-            quarter_hour = 0.75/24    #  Note temp changed to 3/4 of an hour.
-            if  (sunZ88Op - quarter_hour < ephemNow < sunZ88Cl + quarter_hour) and (time.time() >= \
+            obs_win_begin, sunZ88Op, sunZ88Cl, ephemNow = g_dev['obs'].astro_events.getSunEvents()
+            quarter_hour = 0.15/24
+            if  (obs_win_begin - quarter_hour < ephemNow < sunZ88Cl + quarter_hour) and (time.time() >= \
                  self.sample_time + 30.):    #  Two samples a minute.
                 try:
                     wl = open('D:/archive/wx_log.txt', 'a')

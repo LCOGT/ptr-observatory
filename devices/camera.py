@@ -522,178 +522,76 @@ class Camera:
             self.previous_num_fraction_y = 1.0
             self.previous_area = self.area
             self.bpt_flag = False
-
-
-       #print(self.camera.NumX, self.camera.StartX, self.camera.NumY, self.camera.StartY)
+        result = (-1, -1)  #  This is a default return just in case
         for seq in range(count):
             #SEQ is the outer repeat count loop.
             if seq > 0:
                 g_dev['obs'].update_status()
-#            if self.current_filter == 'u':
-#                bolt = [ 'O3', 'HA', 'N2', 'S2', 'ContR', 'zs', 'u']
-#            elif self.current_filter == 'PL':
-#                bolt = [ 'PR', 'PG', 'PB', 'PL']
-#            elif self.current_filter == 'g':
-#                bolt = [ 'r', 'i', 'zs', 'u', 'w', 'g']
-#            else:
-            bolt = [self.current_filter]
 
-            for fil in bolt:  # 'N2', 'S2', 'CR']: #range(1)
+            self.pre_mnt = []
+            self.pre_rot = []
+            self.pre_foc = []
+            self.pre_ocn = []
+            #try:
+            #Check here for filter, guider, still moving  THIS IS A CLASSIC
+            #case where a timeout is a smart idea.
+            #g_dev['mnt'].mount.Slewing or  ???
+            self.t1 = time.time()
+            self.exposure_busy = True
+            print('First Entry to Camera code:  ', self.camera.StartX, self.camera.StartY, self.camera.NumX, self.camera.NumY, exposure_time)
 
-                filter_req = {'filter_name': str(fil)}
-                filter_opt = {}
-
-
-                for rpt in range(1):
-                    #Repeat that filter rpt-times
-                    #print('\n   REPEAT REPEAT REPEAT:  ', rpt, '\n')
-                    self.pre_mnt = []
-                    self.pre_rot = []
-                    self.pre_foc = []
-                    self.pre_ocn = []
-                    try:
-                        #print("starting exposure, area =  ", self.area)
-                        #NB NB Ultimately we need to be a thread.
-                        pass
-                        #Check here for filter, guider, still moving  THIS IS A CLASSIC case where a timeout is a smart idea.
-                        #                           g_dev['mnt'].mount.Slewing or \
-
-                        self.t1 = time.time()
-                        #Used to inform fits header where telescope is for scripts like screens.
-                        #g_dev['ocn'].get_quick_status(self.pre_ocn)
-                        #g_dev['mnt'].get_quick_status(self.pre_mnt)  #stage two quick_get_'s symmetric around exposure
-                        self.exposure_busy = True
-                        print('First Entry', self.camera.StartX, self.camera.StartY, self.camera.NumX, self.camera.NumY, exposure_time)
-                        if self.ascom and self.is_cmos:
-                            try:
-                                ldr_handle= glob.glob('Q:\\archive\\gf03\\raw_kepler\\' + g_dev['next_day'] + '\\' + '*low.fits')
-                                ldr_handle_high= glob.glob('Q:\\archive\\gf03\\raw_kepler\\' + g_dev['next_day'] + '\\' + '*high.fits')
-                            except:
-                                print("Something went wrong reading in a version of low / or high.fits")
-                            if ldr_handle == [] or ldr_handle_high == []:
-                                try:
-                                    ldr_handle = glob.glob('Q:\\archive\\gf03\\raw_kepler\\' + g_dev['d-a-y'] + '\\' + '*low.fits')
-                                    ldr_handle_high = glob.glob('Q:\\archive\\gf03\\raw_kepler\\' + g_dev['d-a-y'] + '\\' + '*high.fits')
-                                except:
-                                    print("Something went wrong reading in a version of low / or high.fits")
-                            if len(ldr_handle_high) > 0:
-                                for item in ldr_handle_high:
-                                    os.remove(item)
-                            if len(ldr_handle) > 0:
-                                for item in ldr_handle:
-                                    os.remove(item)
-
-                            self.camera.AbortExposure()
-                            self.t2 = time.time()       #Immediately before Exposure
-                            self.camera.StartExposure(exposure_time, imtypeb)     #True indicates Light Frame.  Maxim Difference of code
-                        if self.maxim and self.is_cmos:
-                            #This code grooms away older unuseable raw Kepler 12 bit images, presuming they exist and deals
-                            #With oddities of directory naming by FliCam Server.
-                            try:
-                                ldr_handle = glob.glob('Q:\\archive\\gf03\\raw_kepler\\' + g_dev['next_day'] + '\\' + '*low.fits')
-                                ldr_handle_high = glob.glob('Q:\\archive\\gf03\\raw_kepler\\' + g_dev['next_day'] + '\\' + '*high.fits')
-                            except:
-                                print("Something went wrong reading in a version of low / or high.fits")
-                            if ldr_handle == [] or ldr_handle_high == []:
-                                try:
-                                    ldr_handle = glob.glob('Q:\\archive\\gf03\\raw_kepler\\' + g_dev['d-a-y'] + '\\' + '*low.fits')
-                                    ldr_handle_high = glob.glob('Q:\\archive\\gf03\\raw_kepler\\' + g_dev['d-a-y'] + '\\' + '*high.fits')
-                                except:
-                                    print("Something went wrong reading in a version of low / or high.fits")
-                            if len(ldr_handle_high) > 0:
-                                new_list = []
-                                for item in ldr_handle_high:
-                                    new_list.append( (os.stat(item).st_mtime, item))
-                                new_list.sort()
-                                ldr_handle_high_time = new_list[-1][0]
-                                    #os.remove(item)
-                                    #pass
-                            else:
-                                ldr_handle_high_time = time.time()
-                            if len(ldr_handle) > 0:
-
-                                new_list = []
-                                for item in ldr_handle:
-                                    new_list.append( (os.stat(item).st_mtime, item))
-                                new_list.sort()
-                                ldr_handle_time = new_list[-1][0]
-                                    #os.remove(item)
-                                    #pass
-                            else:
-                                ldr_handle_time = time.time()
-                            print('Link Enable:  ', self.camera.LinkEnabled)
-                            self.camera.AbortExposure()
-                            g_dev['ocn'].get_quick_status(self.pre_ocn)
-                            g_dev['foc'].get_quick_status(self.pre_foc)
-                            g_dev['rot'].get_quick_status(self.pre_rot)
-                            g_dev['mnt'].get_quick_status(self.pre_mnt)
-                            self.t2 = time.time()
-                            print("Starting exposure at:  ", self.t2)
-                            self.camera.Expose(exposure_time, imtypeb)
-                        elif self.ascom:
-                            self.camera.AbortExposure()
-                            g_dev['ocn'].get_quick_status(self.pre_ocn)
-                            g_dev['foc'].get_quick_status(self.pre_foc)
-                            g_dev['rot'].get_quick_status(self.pre_rot)
-                            g_dev['mnt'].get_quick_status(self.pre_mnt)
-                            self.t2 = time.time()       #Immediately before Exposure
-                            self.camera.StartExposure(exposure_time, imtypeb)
-
-                        elif self.maxim:
-                            print('Link Enable check:  ', self._connected())
-                            self.camera.AbortExposure()
-                            g_dev['ocn'].get_quick_status(self.pre_ocn)
-                            g_dev['foc'].get_quick_status(self.pre_foc)
-                            g_dev['rot'].get_quick_status(self.pre_rot)
-                            g_dev['mnt'].get_quick_status(self.pre_mnt)
-                            self.t2 = time.time()
-                            ldr_handle_high_time = None
-                            ldr_handle_time = None
-                            try:
-                                os.remove(self.camera_path + 'newest.fits')
-                            except:
-                                pass   #  print ("File newest.fits not found, this is probably OK")
-                            print("Starting exposure at:  ", self.t2)
-                            try:
-                                if not self._connected():
-                                    self._connect()
-                                    self.camera.AbortExposure()
-                                    time.sleep(2)
-                                    print('Reset LinkEnabled right before exposure')
-                                self.camera.Expose(exposure_time, imtypeb)
-                            except:
-                                print("Retry to set up camera exposure.")
-                                time.sleep(4)
-                                breakpoint()
-                                if not self._connected:
-                                    self._connect()
-                                    self.camera.AbortExposure()
-                                    time.sleep(2)
-                                    print('Reset LinkEnabled right before exposure')
-                                self.camera.Expose(exposure_time, imtypeb)
-                        else:
-                            print("Something terribly wrong, driver not recognized.!")
-                        self.t9 = time.time()
-                        #We go here to keep this subroutine a reasonable length.
-                        result = self.finish_exposure(exposure_time,  frame_type, count - seq, p_next_filter, p_next_focus, p_dither, \
-                                             gather_status, do_sep, no_AWS, dist_x, dist_y, quick=quick, halt=halt, low=ldr_handle_time, \
-                                             high=ldr_handle_high_time, script=self.script)
-                        self.exposure_busy = False
-                        self.t10 = time.time()
-                        return result
-
-                        ##NB NB NB Should there be a return here?
-
-                        #self.exposure_busy = False  Need to be able to do repeats
-                    except Exception as e:
-                        breakpoint()
-                        print("failed exposure")
-                        print(e)
-                        self.t11 = time.time()
-                        print("expose took:  ", round(self.t11 - self.t_0 , 2))
-                        return None  #Presumably this premature return cleans things out so they can still run?
+            if self.ascom:
+                self.camera.AbortExposure()
+                g_dev['ocn'].get_quick_status(self.pre_ocn)
+                g_dev['foc'].get_quick_status(self.pre_foc)
+                g_dev['rot'].get_quick_status(self.pre_rot)
+                g_dev['mnt'].get_quick_status(self.pre_mnt)
+                self.t2 = time.time()       #Immediately before Exposure
+                self.camera.StartExposure(exposure_time, imtypeb)
+            elif self.maxim:
+                print('Link Enable check:  ', self._connected())
+                self.camera.AbortExposure()
+                g_dev['ocn'].get_quick_status(self.pre_ocn)
+                g_dev['foc'].get_quick_status(self.pre_foc)
+                g_dev['rot'].get_quick_status(self.pre_rot)
+                g_dev['mnt'].get_quick_status(self.pre_mnt)
+                self.t2 = time.time()
+                ldr_handle_high_time = None
+                ldr_handle_time = None
+                try:
+                    os.remove(self.camera_path + 'newest.fits')
+                except:
+                    pass   #  print ("File newest.fits not found, this is probably OK")
+                print("Starting exposure at:  ", self.t2)
+                try:
+                    if not self._connected():
+                        self._connect()
+                        self.camera.AbortExposure()
+                        time.sleep(2)
+                        print('Reset LinkEnabled right before exposure')
+                    self.camera.Expose(exposure_time, imtypeb)
+                except:
+                    print("Retry to set up camera exposure.")
+                    breakpoint()
+                    time.sleep(4)
+                    if not self._connected:
+                        self._connect()
+                        self.camera.AbortExposure()
+                        time.sleep(2)
+                        print('Reset LinkEnabled right before exposure')
+                    self.camera.Expose(exposure_time, imtypeb)
+            else:
+                print("Something terribly wrong, driver not recognized.!")
+            self.t9 = time.time()
+            #We go here to keep this subroutine a reasonable length.
+            result = self.finish_exposure(exposure_time,  frame_type, count - seq, p_next_filter, p_next_focus, p_dither, \
+                                 gather_status, do_sep, no_AWS, dist_x, dist_y, quick=quick, halt=halt, low=ldr_handle_time, \
+                                 high=ldr_handle_high_time, script=self.script)
+            self.exposure_busy = False
+            self.t10 = time.time()
+            print("inner expose returned:  ", result)
         self.t11 = time.time()
-        print("expose took:  ", round(self.t11 - self.t_0 , 2))
+        print("full expose seq took:  ", round(self.t11 - self.t_0 , 2), ' returned:  ', result)
         return result
 
 #        for i in range(20):
@@ -760,7 +658,9 @@ class Camera:
                             print("Flat rejected, too bright:  ", round(test_saturated.mean, 0))
                             self.camera.AbortExposure()
                             return 65535, 0   # signals to flat routine image was rejected
-                    g_dev['obs'].update_status()
+                    else:
+
+                        g_dev['obs'].update_status()
                     #Save image with Maxim Header information, then read back with astropy and use the
                     #lqtter code for fits manipulation.
                     #This should be a very fast disk.
@@ -952,6 +852,7 @@ class Camera:
                                 os.remove(self.camera_path + 'newest.fits')
                             except:
                                 pass    #  print ("File newest.fits not found, this is probably OK")
+                            breakpoint()
                             return 0, 0   #  Note we are not calibrating. Just saving the file.
                             # NB^ We always write files to raw, except quick(autofocus) frames.
                             # hdu.close()
@@ -1107,6 +1008,7 @@ class Camera:
                         return cal_result, avg_foc[1]
                     except:
                         print('Header assembly block failed.')
+                        breakpoint()
                         self.t7 = time.time()
                     return (None ,None)
                 else:               #here we are in waiting for imageReady loop and could send status and check Queue
@@ -1117,12 +1019,13 @@ class Camera:
                     self.t7= time.time()
                     print("Basic camera wait loop loop.")
                     #it takes about 15 seconds from AWS to get here for a bias.
-            except:
+            except Exception as e:
                 counter += 1
                 time.sleep(.01)
                 #This shouldbe counted down for a loop cancel.
-                print('Wait for exposure end, but getting here is usually bad news, try again.')
-                return (None, None)
+                print('Wait for exposure end, but getting here is usually bad news, try again.', e)
+                breakpoint()
+                return (-1, -1)
 
         #definitely try to clean up any messes.
         try:

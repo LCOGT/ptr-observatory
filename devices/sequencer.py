@@ -299,7 +299,7 @@ class Sequencer:
         name = str(self.config['camera']['camera1']['name'])
         dark_count = 1
         flat_count = 1
-        exp_time = 1
+        exp_time = 3
         #int(req['numFrames'])
         #gain_calc = req['gainCalc']
         #shut_comp =  req['shutterCompensation']
@@ -338,9 +338,11 @@ class Sequencer:
             if bright2 > 35000:
                 time.sleep(5)
                 continue
-            print("filter pop:  ", current_filter, bright, bright2)
+            print("Bright2 filter pop:  ", current_filter, bright, bright2)
             pop_list.pop(0)
             g_dev['obs'].update_status()
+            if len(pop_list) < 1:
+                break
             continue
         g_dev['mnt'].park_command({}, {})
         print('\nSky flat complete.\n')

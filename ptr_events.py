@@ -21,12 +21,12 @@ from global_yard import *
 from astropy.time import Time
 
 
-# NB Change these to hours not fractins of a day.  Should come from site config not be in code here.
-SCREENFLATDURATION = 230/1440           #2.4    3h20min rough measure 20170811
-BIASDARKDURATION = 300/1440             #5 hours
-MORNBIASDARKDURATION = 12/1440          #12 min
-LONGESTSCREEN = 5/1440                  #2 min
-LONGESTDARK = (800/60)/1440
+# NB Change these to hours not fractions of a day.  Should come from site config not be in code here.
+SCREENFLATDURATION = 90/1440            #1.5 hours
+BIASDARKDURATION = 180/1440             #3 hours
+MORNBIASDARKDURATION = 90/1440          #1.5 min
+LONGESTSCREEN = (75/60)/1440            #1 min
+LONGESTDARK = (385/60)/1440             #6 min
 
 DAY_Directory = None   #NB this is an evil use of Globals by WER.  20200408   WER
 Day_tomorrow = None
@@ -168,7 +168,8 @@ class Events:
         if loud: print('Sunset, sidtime:  ', pWhen, ptr.sidereal_time())
         if loud: print('Eve Open  Sun:  ', sun.ra, sun.dec, sun.az, sun.alt)
         SunAz1 = degrees(sun.az) - 180
-        if SunAz1 < 0: SunAz1 += 360
+        while  SunAz1 < 0:
+            SunAz1 += 360
         liftAlt = (degrees(sun.alt) + 105)
         if liftAlt <= 90:
             SunAlt1 = liftAlt
@@ -284,8 +285,9 @@ class Events:
         sun.compute(ptr)
         #if loud: print('Sun 2: ', sun.ra, sun.dec, sun.az, sun.alt)
         sunZ88Op = ptr.next_setting(sun)
+        obs_win_begin = sunZ88Op - 30/1440
         sunZ88Cl = ptr.next_rising(sun)
-        return (sunZ88Op, sunZ88Cl, ephem.now())
+        return (obs_win_begin, sunZ88Op, sunZ88Cl, ephem.now())
 
     def flat_spot_now(self):
         '''
@@ -388,6 +390,7 @@ class Events:
         sun.compute(ptr)
         #if loud: print('Sun 2: ', sun.ra, sun.dec, sun.az, sun.alt)
         sunZ88Op = ptr.next_setting(sun)
+        obs_win_begin = sunZ88Op - 30/1440      # Needs to come from site config
         sunZ88Cl = ptr.next_rising(sun)
         ptr.horizon = '-6'
         sun.compute(ptr)
@@ -422,11 +425,11 @@ class Events:
         mid_moon_dec = moon.dec
         mid_moon_phase = moon.phase
         eveFlatStartRa, eveFlatStartDec, eveFlatEndRa, eveFlatEndDec, \
-        eveRaDot, eveDecDot = self._calcEveFlatValues(ptr, sun, sunZ88Op, skyFlatEnd, loud=True)
+        eveRaDot, eveDecDot = self._calcEveFlatValues(ptr, sun, obs_win_begin, skyFlatEnd, loud=True)
         mornFlatStartRa, mornFlatStartDec, mornFlatEndRa, mornFlatEndDec, mornRaDot, \
                         mornDecDot = self._calcMornFlatValues(ptr, sun, skyFlatBegin, sunZ88Cl, \
                                                         sunrise, loud=True)
-        endEveScreenFlats = sunZ88Op - LONGESTSCREEN
+        endEveScreenFlats = obs_win_begin - LONGESTSCREEN
         beginEveScreenFlats = endEveScreenFlats - SCREENFLATDURATION
         endEveBiasDark = beginEveScreenFlats - LONGESTDARK
         beginEveBiasDark = endEveBiasDark - BIASDARKDURATION
@@ -436,7 +439,7 @@ class Events:
         # morning screen flats begin, followed by bias dark and then
         # morning reductions.  So the times below are the latest case.
 
-        beginMornScreenFlats = sunZ88Cl + 2/1440
+        beginMornScreenFlats = sunZ88Cl + 4/1440    #  4 min allowed for close up.
         endMornScreenFlats = beginMornScreenFlats + SCREENFLATDURATION
         beginMornBiasDark = endMornScreenFlats + LONGESTSCREEN
         endMornBiasDark = beginMornBiasDark + MORNBIASDARKDURATION
@@ -460,43 +463,46 @@ class Events:
         #     pass
         print('Events module reporting for duty. \n')
         print('Ephem date     :    ', dayNow)
-        print('DayDir         :    ', DAY_Directory)
+        print("Julian Day     :    ")
+        print("MJD            :    ")
+        print('Day_Directory  :    ', DAY_Directory)
         print('Next day       :    ', Day_tomorrow)
         print('Night Duration :    ', str(round(duration, 2)) + ' hr')
-        print('MoonRaDec      :    ', round(mid_moon_ra, 2), "  ", round(mid_moon_dec, 1))
+        print('Moon Ra; Dec   :    ', round(mid_moon_ra, 2), ";  ", round(mid_moon_dec, 1))
         print('Moon phase %   :    ', round(mid_moon_phase, 1), '%\n')
-        evnt = [('Beg Bias Dark :    ', ephem.Date(beginEveBiasDark)),
-                ('End Bias Dark :    ', ephem.Date(endEveBiasDark)),
-                ('Beg Scrn Flats:    ', ephem.Date(beginEveScreenFlats)),
-                ('End Scrn Flats:    ', ephem.Date(endEveScreenFlats)),
-                ('SunZ88 Opening:    ', sunZ88Op),
-                ('Beg Sky Flats :    ', sunZ88Op),
-                ('Sun   next_set:    ', sunset),
-                ('Civil  Dusk   :    ', civilDusk),
-                ('Naut   Dusk   :    ', nauticalDusk),
-                ('Flat End      :    ', skyFlatEnd),
-                ('Astro  Dark   :    ', astroDark),
-                ('Middle Night  :    ', middleNight),
-                ('Astro  End    :    ', astroEnd),
-                ('Flat Start    :    ', skyFlatBegin),
-                ('Naut   Dawn   :    ', nauticalDawn),
-                ('Civil  Dawn   :    ', civilDawn),
-                ('Sun  next_rise:    ', sunrise),
-                ('SunZ88   Close:    ', sunZ88Cl),
-                ('Moon rise:         ', ptr.previous_rising(moon)),
-                ('Moon transit  :    ', ptr.previous_transit(moon)),
-                ('Moon set      :    ', ptr.previous_setting(moon)),
-                ('Moon rise     :    ', ptr.next_rising(moon)),
-                ('Moon transit  :    ', ptr.next_transit(moon)),
-                ('Moon rise     :    ', ptr.next_setting(moon))]
+        evnt = [('Beg Bias Dark   :    ', ephem.Date(beginEveBiasDark)),
+                ('End Bias Dark   :    ', ephem.Date(endEveBiasDark)),
+                ('Beg Scrn Flats  :    ', ephem.Date(beginEveScreenFlats)),
+                ('End Scrn Flats  :    ', ephem.Date(endEveScreenFlats)),
+                ('Obs Window Start:    ', ephem.Date(obs_win_begin)),
+                ('Sun alt < 2 deg :    ', sunZ88Op),
+                ('Beg Sky Flats   :    ', sunZ88Op),
+                ('Sun   next_set  :    ', sunset),
+                ('Civil  Dusk     :    ', civilDusk),
+                ('Naut   Dusk     :    ', nauticalDusk),
+                ('Flat End        :    ', skyFlatEnd),
+                ('Astro  Dark     :    ', astroDark),
+                ('Middle of Night :    ', middleNight),
+                ('Astro  End      :    ', astroEnd),
+                ('Flat Start      :    ', skyFlatBegin),
+                ('Naut   Dawn     :    ', nauticalDawn),
+                ('Civil  Dawn     :    ', civilDawn),
+                ('Sun  next_rise  :    ', sunrise),
+                ('Sun >2deg, Close:    ', sunZ88Cl),
+                ('Moon rise       :    ', ptr.previous_rising(moon)),
+                ('Moon transit    :    ', ptr.previous_transit(moon)),
+                ('Moon set        :    ', ptr.previous_setting(moon)),
+                ('Moon rise       :    ', ptr.next_rising(moon)),
+                ('Moon transit    :    ', ptr.next_transit(moon)),
+                ('Moon rise       :    ', ptr.next_setting(moon))]
         evnt_sort = self._sortTuple(evnt)
         #Edit out rise and sets prior to or after operations.
-        while evnt_sort[0][0] != 'Beg Bias Dark :    ':
+        while evnt_sort[0][0] != 'Beg Bias Dark   :    ':  # NB sensitve to exact string w padding
             evnt_sort.pop(0)
-        while evnt_sort[-1][0] != 'SunZ88   Close:    ':
+        while evnt_sort[-1][0] != 'Sun >2deg, Close:    ':  # Ditto, see above.
             evnt_sort.pop(-1)
         for evnt in evnt_sort:
-            print(evnt[0], evnt[1])
+            print(evnt[0], evnt[1])    # NB Additon of local times would be handy here.
         g_dev['events'] = evnt_sort
         # print("g_dev['events']:  ", g_dev['events'])
 
