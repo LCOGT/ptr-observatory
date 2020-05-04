@@ -470,14 +470,14 @@ class Events:
         print('Night Duration :    ', str(round(duration, 2)) + ' hr')
         print('Moon Ra; Dec   :    ', round(mid_moon_ra, 2), ";  ", round(mid_moon_dec, 1))
         print('Moon phase %   :    ', round(mid_moon_phase, 1), '%\n')
-        evnt = [('Beg Bias Dark   :    ', ephem.Date(beginEveBiasDark)),
-                ('End Bias Dark   :    ', ephem.Date(endEveBiasDark)),
-                ('Beg Scrn Flats  :    ', ephem.Date(beginEveScreenFlats)),
+        print("Key events for the evening, presented by the Solar System.")
+        evnt = [('Begin Bias Dark :    ', ephem.Date(beginEveBiasDark)),
+                ('End of Bias Dark:    ', ephem.Date(endEveBiasDark)),
+                ('Begin Scrn Flats:    ', ephem.Date(beginEveScreenFlats)),
                 ('End Scrn Flats  :    ', ephem.Date(endEveScreenFlats)),
                 ('Obs Window Start:    ', ephem.Date(obs_win_begin)),
-                ('Sun alt < 2 deg :    ', sunZ88Op),
-                ('Beg Sky Flats   :    ', sunZ88Op),
-                ('Sun   next_set  :    ', sunset),
+                ('Sun<2  Sky Flats:    ', sunZ88Op),
+                ('Sun   Next_Set  :    ', sunset),
                 ('Civil  Dusk     :    ', civilDusk),
                 ('Naut   Dusk     :    ', nauticalDusk),
                 ('Flat End        :    ', skyFlatEnd),
@@ -487,17 +487,18 @@ class Events:
                 ('Flat Start      :    ', skyFlatBegin),
                 ('Naut   Dawn     :    ', nauticalDawn),
                 ('Civil  Dawn     :    ', civilDawn),
-                ('Sun  next_rise  :    ', sunrise),
+                ('Sun  Next Rise  :    ', sunrise),
                 ('Sun >2deg, Close:    ', sunZ88Cl),
-                ('Moon rise       :    ', ptr.previous_rising(moon)),
-                ('Moon transit    :    ', ptr.previous_transit(moon)),
-                ('Moon set        :    ', ptr.previous_setting(moon)),
-                ('Moon rise       :    ', ptr.next_rising(moon)),
-                ('Moon transit    :    ', ptr.next_transit(moon)),
-                ('Moon rise       :    ', ptr.next_setting(moon))]
+                ('Moon Rise       :    ', ptr.previous_rising(moon)),
+                ('Moon Transit    :    ', ptr.previous_transit(moon)),
+                ('Moon Set        :    ', ptr.previous_setting(moon)),
+                ('Moon Rise       :    ', ptr.next_rising(moon)),
+                ('Moon Transit    :    ', ptr.next_transit(moon)),
+                ('Moon Rise       :    ', ptr.next_setting(moon))]
+        print("No report of post-close events is available yet. \n\n")
         evnt_sort = self._sortTuple(evnt)
         #Edit out rise and sets prior to or after operations.
-        while evnt_sort[0][0] != 'Beg Bias Dark   :    ':  # NB sensitve to exact string w padding
+        while evnt_sort[0][0] != 'Begin Bias Dark :    ':  # NB sensitve to exact string w padding
             evnt_sort.pop(0)
         while evnt_sort[-1][0] != 'Sun >2deg, Close:    ':  # Ditto, see above.
             evnt_sort.pop(-1)

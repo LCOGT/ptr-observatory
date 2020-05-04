@@ -36,14 +36,21 @@ site_config = {
     'elevation': '5100',    # meters above sea level
     'reference_ambient':  ['5'],  #Degrees Celsius.  Alternately 12 entries, one for every - mid month.
     'reference_pressure':  ['839.8'],  #mbar Alternately 12 entries, one for every - mid month.
-    #'observing_conditions': {
-        #'wx1': {
-            #'parent': 'site',
-            #'name': 'Weather Station #1',
-            #'driver': 'redis'
-           #
-            #},
-        #},
+
+# =============================================================================
+#     'observing_conditions' : {    #   This is latest with has_unihedron taken from saf config.
+#         'observing_conditions1': {
+#             'parent': 'site',
+#             'name': 'Boltwood',
+#             'driver': 'ASCOM.Boltwood.ObservingConditions',
+#             'driver_2':  'ASCOM.Boltwood.OkToOpen.SafetyMonitor',
+#             'driver_3':  'ASCOM.Boltwood.OkToImage.SafetyMonitor',
+#             'has_unihedron':  'true',
+#             'uni_driver': 'ASCOM.SQM.serial.ObservingConditions',
+#             'unihedron_port':  '13'    #'False" or numeric of COM port.
+#         },
+#     },
+# =============================================================================
 
     'enclosure': {
         'enclosure1': {

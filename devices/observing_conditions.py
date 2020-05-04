@@ -29,7 +29,6 @@ class ObservingConditions:
             win32com.client.pythoncom.CoInitialize()
             self.boltwood = win32com.client.Dispatch(driver)
             self.boltwood.connected = True   # This is not an ASCOM device.
-            port =config['observing_conditions']['observing_conditions1']['unihedron'].lower()
             driver_2 = config['observing_conditions']['observing_conditions1']['driver_2']
             self.boltwood_oktoopen = win32com.client.Dispatch(driver_2)
             self.boltwood_oktoopen.Connected = True
@@ -37,11 +36,13 @@ class ObservingConditions:
             self.boltwood_oktoimage = win32com.client.Dispatch(driver_3)
             self.boltwood_oktoimage.Connected = True
             print("observing_conditions: Boltwood connected = True")
-            if port != 'false':
+            if config['observing_conditions']['observing_conditions1']['has_unihedron'].lower() == 'true':
                 driver = config['observing_conditions']['observing_conditions1']['uni_driver']
+                port = config['observing_conditions']['observing_conditions1']['unihedron_port'].lower()
                 self.unihedron = win32com.client.Dispatch(driver)
                 self.unihedron.Connected = True
                 print("observing_conditions: Unihedron connected = True, on COM" + str(port))
+                # NB NB if no unihedron is installed the status code needs to not report it.
 
 
     def get_status(self):
@@ -68,22 +69,28 @@ class ObservingConditions:
                       'solar_flux_w/m^2': 'NA',
                       #  'cloud_cover_%': str(self.boltwood.CloudCover),
                       "calc_HSI_lux": str(illum),
-                      "calc_sky_mpsas": str(round((mag - 20.01),2)),
-                      "meas_sky_mpsas":  str(self.unihedron.SkyQuality),
+                      "calc_sky_mpsas": str(round((mag - 20.01),2)),    #  Provenance of 20.01 is dubious 20200504 WER
                       "wx_ok": str(self.boltwood_oktoimage.IsSafe),
                       "open_ok": str(self.ok_to_open)
                       #"image_ok": str(self.boltwood_oktoimage.IsSafe)
                       }
+            if self.unihedron.Connected:
+                uni_measure = self.unihedron.SkyQuality   #  Provenance of 20.01 is dubious 20200504 WER
+                if uni_measure == 0:
+                    uni_measure = round((mag - 20.01),2)   #  Fixes Unihedron when sky is too bright
+                status["meas_sky_mpsas"] = str(uni_measure)
+            else:
+                status["meas_sky_mpsas"] = str(round((mag - 20.01),2))    #  Provenance of 20.01 is dubious 20200504 WER
 
 
 
             # Only write when around dark, put in CSV format
             obs_win_begin, sunZ88Op, sunZ88Cl, ephemNow = g_dev['obs'].astro_events.getSunEvents()
             quarter_hour = 0.15/24
-            if  (obs_win_begin - quarter_hour < ephemNow < sunZ88Cl + quarter_hour) and (time.time() >= \
-                 self.sample_time + 30.):    #  Two samples a minute.
+            if  (obs_win_begin - quarter_hour < ephemNow < sunZ88Cl + quarter_hour) \
+                 and self.unihedron.Connected and (time.time() >= self.sample_time + 30.):    #  Two samples a minute.
                 try:
-                    wl = open('D:/archive/wx_log.txt', 'a')
+                    wl = open('D:/archive/wx_log.txt', 'a')   #  NB This is currently site specifc but in code w/o config.
                     wl.write('wx, ' + str(time.time()) + ', ' + str(illum) + ', ' + str(mag - 20.01) + ', ' \
                              + str(self.unihedron.SkyQuality) + ", \n")
                     wl.close()
