@@ -74,6 +74,7 @@ class ObservingConditions:
                       "open_ok": str(self.ok_to_open)
                       #"image_ok": str(self.boltwood_oktoimage.IsSafe)
                       }
+
             if self.unihedron.Connected:
                 uni_measure = self.unihedron.SkyQuality   #  Provenance of 20.01 is dubious 20200504 WER
                 if uni_measure == 0:
