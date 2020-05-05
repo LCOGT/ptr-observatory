@@ -20,11 +20,23 @@ Modified 20200323 by WER  A simple simulation of an observatory at ALI in Tibet.
 site_name = 'ALI-sim'
 
 site_config = {
-    'site': 'ALI-sim',
-    'name': 'ALI Simulated Site',
-    'site_path': 'Q:/',     #Really important, this is where state and results are stored. Can be a NAS server.
+    'site': f'{site_name}',
+    'name': 'ALI [simulated]',
+    'defaults': {
+        #'observing_conditions': 'observing_conditions1',
+        'enclosure': 'enclosure1',
+        'mount': 'mount1',
+        'telescope': 'telescope1',
+        'focuser': 'focuser1',
+        'rotator': 'rotator1',
+        'screen': 'screen1',
+        'filter_wheel': 'filter_wheel1',
+        'camera': 'camera1',
+        'sequencer': 'sequencer1'
+        },
+    'site_path': 'Q:/',     # Really important, this is where state and results are stored. Can be a NAS server.
     'location': 'Shiquhane, Tibet,  PRC',
-    #'observatory_url': 'https://starz-r-us.sky/clearskies',
+    'observatory_url': f'https://www.photonranch.org/site/{site_name}',
     #'mpc_code':  'ZZ23',    #This is made up for now.
     'timezone': 'CST+08',       #We might be smart to require some Python DateTime String Constant here
                              #since this is a serious place where misconfigurations occur.  We run on
