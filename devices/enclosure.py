@@ -48,8 +48,7 @@ class Enclosure:
         if self.site == 'saf':
             status = {'shutter_status': stat_string,
                   'enclosure_slaving': str(self.enclosure.Slaved),
-                  'dome_azimuth': str(round(self.enclosure.Azimuth, 1)),
-                  'dome_slewing': str(self.enclosure.Slewing),
+                  'dome_azimuth': str(round(self.enclosure.Azimuth, 1)),                  'dome_slewing': str(self.enclosure.Slewing),
                   'enclosure_mode': str(self.mode),
                   'enclosure_message': str(self.state)}
         else:
@@ -57,10 +56,9 @@ class Enclosure:
                   'enclosure_slaving': str(self.enclosure.Slaved),
                   'enclosure_mode': str(self.mode),
                   'enclosure_message': str(self.state)}
-
         #print('Enclosure status:  ', status
         self.status_string = stat_string
-        self.manager()   #There be monsters here.
+        self.manager()   #There be monsters here. <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
         return status
 
     def parse_command(self, command):
@@ -133,7 +131,7 @@ class Enclosure:
 
     def manager(self, open_cmd=False, close_cmd=False):     #This is the place where the enclosure is autonomus during operating hours. Delicut Code!!!
         '''
-        When the code starts up, we wait for the Sun = Z 88 condition and if Wx is OK
+        When the code starts up, we wait for the obs_win_begin <= Sun = Z 88 condition and if Wx is OK
         based on analyzing both Redis data and checking on the enable bit in the  Boltwood
         file, we issue ONE open command then set an Open Block so no more commands are
         issued.  At time of normal closing, we issue a series of close signals -- basically
@@ -154,25 +152,25 @@ class Enclosure:
              shutter_str = "Dome."
         else:
             shutter_str = "Roof."
-        if  obs_win_begin < ephemNow < sunZ88Cl:
+        if  obs_win_begin <= ephemNow <= sunZ88Cl:
             self.enclosure.Slaved = True
         else:
             self.enclosure.Slaved = False
+
+        wx_is_ok = g_dev['ocn'].wx_is_ok
         if  (obs_win_begin < ephemNow < sunZ88Cl or open_cmd) \
                 and self.mode == 'Automatic' \
-                and g_dev['ocn'].ok_to_open.lower() in ['yes', 'true'] \
+                and wx_is_ok \
                 and self.wait_time <= 0 \
                 and self.enclosure.ShutterStatus == 1: #Closed
             if open_cmd:
                 self.state = 'User Opened the ' + shutter_str
             else:
-                self.state = 'Nightime Open ' + shutter_str + '   Wx OK, in Observing window.'
+                self.state = 'Automatic nightime Open ' + shutter_str + '   Wx is OK; in Observing window.'
             self.cycles += 1           #if >=3 inhibits reopening for Wx  -- may need shelving so this persists.
             #A countdown to re-open
             if self.status_string.lower() in ['closed', 'closing']:
-                breakpoint()
                 self.enclosure.OpenShutter()   #<<<<NB NB NB Only enable when code is fully proven to work.
-                print('NB NB 20200423  Open patched out.')
                 print("Night time Open issued to the "  + shutter_str)
         elif (obs_win_begin >= ephemNow or ephemNow >= sunZ88Cl \
                 and self.mode ==

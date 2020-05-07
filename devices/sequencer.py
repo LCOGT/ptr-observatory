@@ -3,7 +3,7 @@ import win32com.client
 import time
 from random import shuffle
 from global_yard import g_dev
-from processing.calibration import fit_quadratic
+
 
 '''
 Autofocus NOTE 20200122
@@ -45,6 +45,39 @@ and or visit more altitudes and temeperatures.
 
 
 '''
+
+def fit_quadratic(x, y):
+    #From Meeus, works fine.
+    #Abscissa arguments do not need to be ordered for this to work.
+    #NB Single alpha variable names confict with debugger commands.
+    if len(x) == len(y):
+        p = 0
+        q = 0
+        r = 0
+        s = 0
+        t = 0
+        u = 0
+        v = 0
+        for i in range(len(x)):
+            p += x[i]
+            q += x[i]**2
+            r += x[i]**3
+            s += x[i]**4
+            t += y[i]
+            u += x[i]*y[i]
+            v += x[i]**2*y[i]
+        n = len(x)
+        d = n*q*s +2*p*q*r - q*q*q - p*p*s - n*r*r
+        a = (n*q*v + p*r*t + p*q*u - q*q*t - p*p*v - n*r*u)/d
+        b = (n*s*u + p*q*v + q*r*t - q*q*u - p*s*t - n*r*v)/d
+        c = (q*s*t + q*r*u + p*r*v - q*q*v - p*s*u - r*r*t)/d
+        print('Quad;  ', a, b, c)
+        try:
+            return (a, b, c, -b/(2*a))
+        except:
+            return (a, b, c)
+    else:
+        return None
 
 def bin_to_string(use_bin):
     if use_bin == 1:
@@ -88,7 +121,7 @@ class Sequencer:
         opt = command['optional_params']
         action = command['action']
         script = command['required_params']['script']
-        if action == "run" and script == 'focus_auto':
+        if action == "run" and script == 'focusAuto':
 #            req = {'time': 0.2,  'alias': 'gf01', 'image_type': 'toss', 'filter': 2}
 #            opt = {'size': 100, 'count': 1}
 #            g_dev['cam'].expose_command(req, opt)   #Do not inhibit gather status for an autofocus.
@@ -408,49 +441,102 @@ class Sequencer:
         Optionally individual images can be multiples of one to average out seeing.
         NBNBNB This code needs to go to known stars to be moe relaible and permit subframes
         '''
-        breakpoint()
+
         print('AF entered with:  ', req, opt)
-        self.sequencer_hold = True  #Blocks command checks.
-        req = {'time': 3,  'alias': 'gf03', 'image_type': 'light', 'filter': 2}
-        opt = {'size': 71, 'count': 1}
+        #self.sequencer_hold = True  #Blocks command checks.
+        req = {'time': 10,  'alias':  str(self.config['camera']['camera1']['name']), 'image_type': 'light'}   #  NB Should pick up filter and constats from config
+        opt = {'size': 100, 'count': 1, 'filter': 'W'}   #   'fwhm_sim': 2.}
         #Take first image where we are
-        brealpoint()
-        foc_pos1 = g_dev['foc'].focuser* g_dev['foc'].steps_to_micron
+
+        foc_pos1 = g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron
         print('Autofocus Starting at:  ', foc_pos1, '\n\n')
-        throw = 300
+        throw = 100  # NB again, from config.  Units are microns
         result = g_dev['cam'].expose_command(req, opt)
-        if result[0] is not None and len(result) == 2:
-            spot1, foc_pos1 = result
-        else:
-            spot1 = 3.0
-            foc_pos1 = 7700
-        g_dev['foc'].focuser.Move(foc_pos1 - throw)
+        spot1 = result['FWHM']
+        foc_pos1 = result['mean_focus']
+        g_dev['foc'].focuser.Move((foc_pos1 - throw)*g_dev['foc'].micron_to_steps)
+        #opt['fwhm_sim'] = 4.
         result = g_dev['cam'].expose_command(req, opt)
-        if result[0] is not None and len(result) == 2:
-            spot2, foc_pos2 = result
-        else:
-            spot2 = 3.6
-            foc_pos2 = 7400
-        g_dev['foc'].focuser.Move(foc_pos1 + 2*throw)   #It is important to overshoot to overcome any backlash
-        g_dev['foc'].focuser.Move(foc_pos1 + throw)
+        spot2 = result['FWHM']
+        foc_pos2 = result['mean_focus']
+        g_dev['foc'].focuser.Move((foc_pos1 + 2*throw)*g_dev['foc'].micron_to_steps)   #It is important to overshoot to overcome any backlash
+        g_dev['foc'].focuser.Move((foc_pos1 + throw)*g_dev['foc'].micron_to_steps)
+        #opt['fwhm_sim'] = 5
         result = g_dev['cam'].expose_command(req, opt)
-        if result[0] is not None and len(result) == 2:
-            spot3, foc_pos3 = result
-        else:
-            spot3 = 3.7
-            foc_pos3 = 8000
+        spot3 = result['FWHM']
+        foc_pos3 = result['mean_focus']
         x = [foc_pos1, foc_pos2, foc_pos3]
         y = [spot1, spot2, spot3]
+        print('X, Y:  ', x, y)
         #Digits are to help out pdb commands!
         a1, b1, c1, d1 = fit_quadratic(x, y)
         new_spot = round(a1*d1*d1 + b1*d1 + c1, 2)
         print ('Solved focus:  ', round(d1, 2), new_spot)
-        g_dev['foc'].focuser.Move(int(d1))
+        g_dev['foc'].focuser.Move(int(d1)*g_dev['foc'].micron_to_steps)
         result = g_dev['cam'].expose_command(req, opt, halt=True)
-        if result[0] is not None and len(result) == 2:
-            spot4, foc_pos4 = result
-        print('Actual focus:  ', foc_pos4, round(spot4, 2))
+        spot4 = result['FWHM']
+        foc_pos4 = result['mean_focus']
+        print('\n\n\nFound best focus at:  ', foc_pos4, round(spot4, 2), '\n\n\n')
         self.sequencer_hold = False   #Allow comand checks.
+
+    def focus_fine_script(self, req, opt):
+        '''
+        V curve is a big move focus designed to fit two lines adjacent to the more normal focus curve.
+        It finds the approximate focus, particulary for a new instrument. It requires 8 points plus
+        a verify.
+        Quick focus consists of three points plus a verify.
+        Fine focus consists of five points plus a verify.
+        Optionally individual images can be multiples of one to average out seeing.
+        NBNBNB This code needs to go to known stars to be moe relaible and permit subframes
+        '''
+
+        print('AF entered with:  ', req, opt)
+        #self.sequencer_hold = True  #Blocks command checks.
+        req = {'time': 10,  'alias':  str(self.config['camera']['camera1']['name']), 'image_type': 'light'}   #  NB Should pick up filter and constats from config
+        opt = {'size': 100, 'count': 1, 'filter': 'W'}   #   'fwhm_sim': 2.}
+        #Take first image where we are
+
+        foc_pos1 = g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron
+        print('Autofocus Starting at:  ', foc_pos1, '\n\n')
+        throw = 75  # NB again, from config.  Units are microns
+        result = g_dev['cam'].expose_command(req, opt)
+        spot1 = result['FWHM']
+        foc_pos1 = result['mean_focus']
+        g_dev['foc'].focuser.Move((foc_pos1 - throw)*g_dev['foc'].micron_to_steps)
+        #opt['fwhm_sim'] = 4.
+        result = g_dev['cam'].expose_command(req, opt)
+        spot2 = result['FWHM']
+        foc_pos2 = result['mean_focus']
+        g_dev['foc'].focuser.Move((foc_pos1 - 2*throw)*g_dev['foc'].micron_to_steps)
+        #opt['fwhm_sim'] = 4.
+        result = g_dev['cam'].expose_command(req, opt)
+        spot3 = result['FWHM']
+        foc_pos3 = result['mean_focus']
+        g_dev['foc'].focuser.Move((foc_pos1 + 4*throw)*g_dev['foc'].micron_to_steps)   #It is important to overshoot to overcome any backlash
+        g_dev['foc'].focuser.Move((foc_pos1 - 2*throw)*g_dev['foc'].micron_to_steps)
+        #opt['fwhm_sim'] = 5
+        result = g_dev['cam'].expose_command(req, opt)
+        spot4 = result['FWHM']
+        foc_pos4 = result['mean_focus']
+        g_dev['foc'].focuser.Move((foc_pos1 - throw)*g_dev['foc'].micron_to_steps)
+        #opt['fwhm_sim'] = 4.
+        result = g_dev['cam'].expose_command(req, opt)
+        spot25 = result['FWHM']
+        foc_pos5 = result['mean_focus']
+        x = [foc_pos1, foc_pos2, foc_pos3, foc_pos4, foc_pos5]
+        y = [spot1, spot2, spot3, spot4, spot5]
+        print('X, Y:  ', x, y)
+        #Digits are to help out pdb commands!
+        a1, b1, c1, d1 = fit_quadratic(x, y)
+        new_spot = round(a1*d1*d1 + b1*d1 + c1, 2)
+        print ('Solved focus:  ', round(d1, 2), new_spot)
+        g_dev['foc'].focuser.Move(int(d1)*g_dev['foc'].micron_to_steps)
+        result = g_dev['cam'].expose_command(req, opt, halt=True)
+        spot4 = result['FWHM']
+        foc_pos4 = result['mean_focus']
+        print('\n\n\nFound best focus at:  ', foc_pos4, round(spot4, 2), '\n\n\n')
+        self.sequencer_hold = False   #Allow comand checks.
+
 
     def equatorial_pointing_run(self, reg, opt, spacing=10, vertical=False, grid=False, alt_minimum=25):
         '''
@@ -496,7 +582,6 @@ class Sequencer:
 A variant on this is cover a grid, cover a + sign shape.
 
         '''
-        breakpoint()
         ha_deg_steps = (-72.5, -62.5, -52.5, -42.5, -32.5, -22.5, -12.5, -2.5, 7.5,
                         17.5, 27.5, 37.5, 47.5, 57.5, 67.5, 72.5, 62.5, 52.5, 42.5,
                         32.5, 22.5, 12.5, 2.5, -7.5, -17.5, -27.5, -37.5, -47.5,

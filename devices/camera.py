@@ -144,7 +144,6 @@ class Camera:
         self.archive_path = self.site_path +'archive/'
         self.camera_path = self.archive_path  + self.alias+ "/"
         self.lng_path = self.camera_path + "lng/"
-
         try:
             os.remove(self.camera_path + 'newest.fits')
         except:
@@ -260,7 +259,7 @@ class Camera:
 # # =============================================================================
 # =============================================================================
         if action == "expose" and not self.exposure_busy :
-            self.expose_command(req, opt, do_sep=False, quick=False)
+            self.expose_command(req, opt, do_sep=True, quick=False)
             self.exposure_busy = False     #Hangup needs to be guarded with a timeout.
             self.active_script = None
 
@@ -311,6 +310,7 @@ class Camera:
         Quick=True is meant to be fast.  We assume the ASCOM imageBuffer is the source of data, not the Files path.
         '''
         print('Expose Entered.  req:  ', required_params, 'opt:  ', optional_params)
+        opt = optional_params
         self.t_0 = time.time()
         self.hint = optional_params.get('hint', '')
         self.script = required_params.get('script', 'False')
@@ -335,7 +335,7 @@ class Camera:
 
         count = int(optional_params.get('count', 1))
         if count < 1:
-            count = 1   #Hence repeat does not repeat unless > 1
+            count = 1   #Hence frame does not repeat unless count > 1
         requested_filter_alpha = str(optional_params.get('filter', 'w'))
         self.current_filter = requested_filter_alpha
         g_dev['fil'].set_name_command({'filter': requested_filter_alpha}, {}, move_fil=False)
@@ -532,10 +532,17 @@ class Camera:
             self.pre_rot = []
             self.pre_foc = []
             self.pre_ocn = []
-            #try:
-            #Check here for filter, guider, still moving  THIS IS A CLASSIC
-            #case where a timeout is a smart idea.
-            #g_dev['mnt'].mount.Slewing or  ???
+            #time_out = time.time()
+            try:
+                #Check here for filter, guider, still moving  THIS IS A CLASSIC
+                #case where a timeout is a smart idea.
+                while g_dev['foc'].focuser.IsMoving or g_dev['rot'].rotator.IsMoving or g_dev['mnt'].mount.Slewing or \
+                      g_dev['enc'].enclosure.Slewing:
+                    print(">>")
+                    time.sleep(0.2)
+            except:
+                print("Motion check faulted.")
+
             self.t1 = time.time()
             self.exposure_busy = True
             print('First Entry to Camera code:  ', self.camera.StartX, self.camera.StartY, self.camera.NumX, self.camera.NumY, exposure_time)
@@ -582,16 +589,22 @@ class Camera:
                     self.camera.Expose(exposure_time, imtypeb)
             else:
                 print("Something terribly wrong, driver not recognized.!")
+                result = {}
+                result['error': True]
+                return result
             self.t9 = time.time()
             #We go here to keep this subroutine a reasonable length.
             result = self.finish_exposure(exposure_time,  frame_type, count - seq, p_next_filter, p_next_focus, p_dither, \
                                  gather_status, do_sep, no_AWS, dist_x, dist_y, quick=quick, halt=halt, low=ldr_handle_time, \
-                                 high=ldr_handle_high_time, script=self.script)
+                                 high=ldr_handle_high_time, script=self.script, opt=opt)
             self.exposure_busy = False
             self.t10 = time.time()
+            self.camera.AbortExposure()
             print("inner expose returned:  ", result)
+            #  Note in this loop no external results are returned.  Need a re-think??
         self.t11 = time.time()
         print("full expose seq took:  ", round(self.t11 - self.t_0 , 2), ' returned:  ', result)
+        self.camera.AbortExposure()
         return result
 
 #        for i in range(20):
@@ -613,11 +626,11 @@ class Camera:
 
 
 
-    ##  NB the bnumber of  keywords is questionable.
+    ##  NB the number of  keywords is questionable.
 
     def finish_exposure(self, exposure_time, frame_type, counter, p_next_filter=None, p_next_focus=None, p_dither=False, \
                         gather_status=True, do_sep=False, no_AWS=False, start_x=None, start_y=None, quick=False, halt=False, \
-                        low=0, high=0, script='False'):
+                        low=0, high=0, script='False', opt=None):
         #print("Finish exposure Entered:  ", self.af_step, exposure_time, frame_type, counter, ' to go!')
         print("Finish exposure Entered:  ", exposure_time, frame_type, counter, p_next_filter, p_next_focus, p_dither, \
                         gather_status, do_sep, no_AWS, start_x, start_y)
@@ -629,6 +642,8 @@ class Camera:
             self.post_foc = []
             self.post_ocn = []
         counter = 0
+
+        result = {'error': False}
         while True:     #THis is where we should have an outer timeout system
             try:
                 if self.maxim and self.camera.ImageReady: #and not self.img_available and self.exposing:
@@ -864,15 +879,19 @@ class Camera:
 
                         cal_result = calibrate(hdu, None, lng_path, frame_type, start_x=start_x, start_y=start_y, quick=quick)
                         # Note we may be using different files if calibrate is null.
-                        # NB  We should only write this is calibrate actually succeeded to return a result
+                        # NB  We should only write this if calibrate actually succeeded to return a result ??
 
                         #  if frame_type == 'sky flat':
                         #      hdu.header['SKYSENSE'] = int(g_dev['scr'].bright_setting)
-                        if not quick:
-                            hdu1.writeto(im_path + raw_name01, overwrite=True)
-                        do_sep = False
+                        #
+                        # if not quick:
+                        #     hdu1.writeto(im_path + raw_name01, overwrite=True)
+                        # raw_data_size = hdu1[0].data.size
+
+                        #  NB Should this step be part of calibrate?  Second should we form and send a
+                        #  CSV file to AWS and possibly overlay key star detections?
+                        #  Possibly even astro solve and align a series or dither batch?
                         spot = None
-                        raw_data_size = hdu1[0].data.size
                         if do_sep:
                             try:
                                 img = hdu.data.copy().astype('float')
@@ -882,7 +901,7 @@ class Camera:
                                 sources = sep.extract(img, 7, err=1, minarea=30)#, filter_kernel=kern)
                                 sources.sort(order = 'cflux')
                                 print('No. of detections:  ', len(sources))
-                                result = []
+                                sep_result = []
                                 spots = []
                                 for source in sources:
                                     a0 = source['a']
@@ -890,22 +909,31 @@ class Camera:
                                     if (a0 - b0)/(a0 + b0)/2 > 0.1:    #This seems problematic and should reject if peak > saturation
                                         continue
                                     r0 = round(math.sqrt(a0**2 + b0**2), 2)
-                                    result.append((round((source['x']), 1), round((source['y']), 1), round((source['cflux']), 1), \
+                                    sep_result.append((round((source['x']), 1), round((source['y']), 1), round((source['cflux']), 1), \
                                                    round(r0), 2))
-
                                     spots.append(round((r0), 2))
                                 spot = np.array(spots)
-
                                 try:
                                     spot = np.median(spot[int(len(spot)*0.5):int(len(spot)*0.75)])
-                                    print(result, '\n', 'Spot and flux:  ', spot, source['cflux'], len(sources), avg_foc[1], '\n')
-                                    if len(result) < 5:
+                                    print(sep_result, '\n', 'Spot and flux:  ', spot, source['cflux'], len(sources), avg_foc[1], '\n')
+                                    if len(sep_result) < 5:
                                         spot = None
                                 except:
-                                    pass
+                                    spot = None
                             except:
                                 spot = None
-                        if halt: pass
+                        if spot == None:
+                            if opt is not None:
+                                spot = opt.get('fwhm_sim', 0.0)
+
+                        if not quick:
+                            hdu.header["PATCH"] = cal_result
+                            if spot is not None:
+                                hdu.header['SPOTFWHM'] = round(spot, 2)
+                            else:
+                                hdu.header['SPOTFWHM'] = "None"
+                            hdu1.writeto(im_path + raw_name01, overwrite=True)
+                        raw_data_size = hdu1[0].data.size
                         g_dev['obs'].update_status()
                         #Here we need to process images which upon input, may not be square.  The way we will do that
                         #is find which dimension is largest.  We then pad the opposite dimension with 1/2 of the difference,
@@ -996,52 +1024,88 @@ class Camera:
                                 self.enqueue_image(db_data_size, im_path, db_name)
                                 self.enqueue_image(raw_data_size, im_path, raw_name01)
                             print('Sent to AWS Queue.')
+                        time.sleep(0.5)
                         self.img = None
-                        #hdu.close()
-                        hdu = None
-    #                        try:
-    #                            'Q:\\archive\\' + 'gf03'+ '\\newest.fits'
-    #                            'Q:\\archive\\' + 'gf03'+ '\\newest_low.fits'
-    #                        except:
-    #                            print(' 2 Could not remove newest.fits.')
-                        # This conficts with cal_result  print('Returning #1:  ', spot, avg_foc[1] )
-                        return cal_result, avg_foc[1]
-                    except:
-                        print('Header assembly block failed.')
+                        try:
+                            self.camera.AbortExposure()
+                        except:
+                            pass
+                        try:
+                            hdu = None
+                        except:
+                            pass
+                        try:
+                            hdu1 = None
+                        except:
+                            pass
+                        result['mean_focus'] = avg_foc[1]
+                        result['mean_rotation'] = avg_rot[1]
+                        result['FWHM'] = spot
+                        result['half_FD'] = None
+                        result['patch'] = cal_result
+                        result['temperature'] = avg_foc[2]
+                        return result
+                    except Exception as e:
+                        print('Header assembly block failed: ', e)
                         breakpoint()
+                        try:
+                            self.camera.AbortExposure()
+                        except:
+                            pass
+                        try:
+                            hdu = None
+                        except:
+                            pass
+                        try:
+                            hdu1 = None
+                        except:
+                            pass
                         self.t7 = time.time()
-                    return (None ,None)
+                    return result['error': True]
                 else:               #here we are in waiting for imageReady loop and could send status and check Queue
                     time.sleep(.3)
                     g_dev['obs'].update_status()
-                    #if not quick:
-                    #   g_dev['obs'].update_status()
                     self.t7= time.time()
-                    print("Basic camera wait loop loop.")
+                    print("Basic camera wait loop, be patient.")
                     #it takes about 15 seconds from AWS to get here for a bias.
             except Exception as e:
                 counter += 1
                 time.sleep(.01)
                 #This shouldbe counted down for a loop cancel.
-                print('Wait for exposure end, but getting here is usually bad news, try again.', e)
-                breakpoint()
-                return (-1, -1)
+                print('Was waiting for exposure end, arriving here is bad news:  ', e)
+
+                try:
+                    self.camera.AbortExposure()
+                except:
+                    pass
+                try:
+                    hdu = None
+                except:
+                    pass
+                try:
+                    hdu1 = None
+                except:
+                    pass
+                return  result['error': True]
 
         #definitely try to clean up any messes.
         try:
-            hdu.close()
+            self.camera.AbortExposure()
+        except:
+            pass
+        try:
             hdu = None
         except:
             pass
         try:
-            hdu1.close()
             hdu1 = None
         except:
             pass
 
         self.t8 = time.time()
-        print('Returning #2:  ', spot, avg_foc[1] )
-        return (spot, avg_foc[1])
+        result['error': True]
+        print('Outer Try:  ', result )
+        return result
 
     def enqueue_image(self, priority, im_path, name):
         image = (im_path, name)

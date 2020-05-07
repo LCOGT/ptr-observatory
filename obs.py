@@ -24,7 +24,7 @@ THINGS TO FIX:
 
 """
 
-import time  n
+import time
 import threading
 import queue
 import requests

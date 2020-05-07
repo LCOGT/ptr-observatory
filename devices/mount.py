@@ -82,7 +82,7 @@ class Mount:
         self.mount = win32com.client.Dispatch(driver)
         self.mount.Connected = True
 #        print('Can Asynch:  ', self.mount.CanSlewAltAzAsync)
-        
+
         #hould put config Lat, lon, etc into mount, or at least check it is correct.
         self.site_coordinates = EarthLocation(lat=float(config['latitude'])*u.deg, \
                                 lon=float(config['longitude'])*u.deg,
@@ -196,7 +196,7 @@ class Mount:
         elif self.tel == True:
             breakpoint()
             if self. mount.EquatorialSystem == 1:
-                self.get_current_times()  
+                self.get_current_times()
                 jnow_ra = self.mount.RightAscension
                 jnow_dec = self.mount.Declination
                 jnow_coord = SkyCoord(jnow_ra*u.hour, jnow_dec*u.degree, frame='fk5', \
@@ -234,7 +234,7 @@ class Mount:
 # =============================================================================
 # #20160316 OK
 # def transform_mount_to_Icrs(pCoord, pCurrentPierSide, pLST=None, loud=False):
-# 
+#
 #     if pLST is not None:
 #         lclSid = pLST
 #     else:
@@ -429,6 +429,7 @@ class Mount:
 
     def slewToSkyFlatAsync(self):
         az, alt = self.astro_events.flat_spot_now()
+        self.unpark_command()
         self.mount.Tracking = False
         self.mount.SlewToAltAzAsync(az, alt)
 

@@ -15,38 +15,7 @@ Name of module is a bit deceptive, this is more like 'create_postage'.
 '''
 
 
-def fit_quadratic(x, y):
-    #From Meeus, works fine.
-    #Abscissa arguments do not need to be ordered for this to work.
-    #NB Single alpha variable names confict with debugger commands.
-    if len(x) == len(y):
-        p = 0
-        q = 0
-        r = 0
-        s = 0
-        t = 0
-        u = 0
-        v = 0
-        for i in range(len(x)):
-            p += x[i]
-            q += x[i]**2
-            r += x[i]**3
-            s += x[i]**4
-            t += y[i]
-            u += x[i]*y[i]
-            v += x[i]**2*y[i]
-        n = len(x)
-        d = n*q*s +2*p*q*r - q*q*q - p*p*s - n*r*r
-        a = (n*q*v + p*r*t + p*q*u - q*q*t - p*p*v - n*r*u)/d
-        b = (n*s*u + p*q*v + q*r*t - q*q*u - p*s*t - n*r*v)/d
-        c = (q*s*t + q*r*u + p*r*v - q*q*v - p*s*u - r*r*t)/d
-        print('Quad;  ', a, b, c)
-        try:
-            return (a, b, c, -b/(2*a))
-        except:
-            return (a, b, c)
-    else:
-        return None
+
 
 def imageStats(img_img, loud=False):
     axis1 =img_img.shape[0]
@@ -95,19 +64,19 @@ def simpleColumnFix(img, col):
     img = img.astype(np.uint16)
     return img
 
-
+#These are essentially cached supers.  Probably they could be class variables.
 super_bias = None
 super_bias_2 = None
 super_bias_ldr = None
-super_dark_90 = None
-super_dark_90_ldr = None
-super_dark_360 = None
-super_dark_2_360 = None
-super_dark_360_ldr = None
-hotmap_360 = None
-hotmap_360_ldr = None
-hotpix_360 = None
-hotpix_360_ldr = None
+super_dark = None
+super_dark_ldr = None
+super_dark = None
+super_dark_2 = None
+super_dark_ldr = None
+hotmap = None
+hotmap_ldr = None
+hotpix = None
+hotpix_ldr = None
 super_flat_w = None
 super_flat_HA = None
 
@@ -115,8 +84,8 @@ super_flat_HA = None
 
 def calibrate (hdu, hdu_ldr, lng_path, frame_type='light', start_x=0, start_y=0, quick=False):
     #These variables are gloal in the sense they persist between calls (memoized so to speak, should use that facility.)
-    global super_bias, super_bias_2, super_bias_ldr, super_dark_90, super_dark_90_ldr, super_dark_360, super_dark_2_360, \
-           super_dark_360_ldr, super_flat_w, super_flat_HA, hotmap_360, hotpix_360, hotmap_360_ldr, hotpix_360_ldr
+    global super_bias, super_bias_2, super_bias_ldr, super_dark, super_dark_ldr, super_dark, super_dark_2, \
+           super_dark_ldr, super_flat_w, super_flat_HA, hotmap, hotpix, hotmap_ldr, hotpix_ldr
     loud = True
     #This needs to deal with caching different binnings as well.  And do we skip all this for a quick
     if not quick:
@@ -132,7 +101,7 @@ def calibrate (hdu, hdu_ldr, lng_path, frame_type='light', start_x=0, start_y=0,
                 if loud: print(lng_path + 'mb_1.fits', 'Loaded')
             except:
                 quick_bias = False
-                print('WARN: No Bias Loaded.')
+                print('WARN: No Bias_1 Loaded.')
         if super_bias_2 is None:
             try:
                 sbHdu = fits.open(lng_path + 'mb_2.fits')
@@ -145,7 +114,7 @@ def calibrate (hdu, hdu_ldr, lng_path, frame_type='light', start_x=0, start_y=0,
                 if loud: print(lng_path + 'mb_2.fits', 'Loaded')
             except:
                 quick_bias = False
-                print('WARN: No Bias Loaded.')
+                print('WARN: No Bias_2 Loaded.')
         # if super_dark_90 is None:
         #     try:
         #         sdHdu = fits.open(lng_path + 'md_1_90.fits')
@@ -160,34 +129,34 @@ def calibrate (hdu, hdu_ldr, lng_path, frame_type='light', start_x=0, start_y=0,
         #     except:
         #         quick_dark_90 = False
         #         print('WARN: No dark_1_90 Loaded.')
-        if super_dark_360 is None:
+        if super_dark is None:
             try:
-                sdHdu = fits.open(lng_path + 'md_1_360.fits')
-                dark_360_exposure_level = sdHdu[0].header['EXPTIME']
-                super_dark_360  = sdHdu[0].data#.astype('float32')
-                print('sdark_360:  ', super_dark_360.mean())
+                sdHdu = fits.open(lng_path + 'md_1.fits')
+                dark_exposure_level = sdHdu[0].header['EXPTIME']
+                super_dark = sdHdu[0].data#.astype('float32')
+                print('sdark:  ', super_dark.mean())
                 sdHdu.close()
                 #fix = np.where(super_dark_360 < 0)
                 #super_dark_360[fix] = 0
-                quick_dark_360 = True
-                print(lng_path + 'md_1_360.fits', 'Loaded')
+                quick_dark= True
+                print(lng_path + 'md_1.fits', 'Loaded')
             except:
-               quick_dark_360 = False
-               print('WARN: No dark Loaded.')
-        if super_dark_2_360 is None:
+               quick_dark = False
+               print('WARN: No dark_1 Loaded.')
+        if super_dark_2 is None:
             try:
-                sdHdu = fits.open(lng_path + 'md_2_360.fits')
-                dark_2_360_exposure_level = sdHdu[0].header['EXPTIME']
-                super_dark_2_360  = sdHdu[0].data#.astype('float32')
-                print('sdark_2_360:  ', super_dark_2_360.mean())
+                sdHdu = fits.open(lng_path + 'md_2.fits')
+                dark_2_exposure_level = sdHdu[0].header['EXPTIME']
+                super_dark_2  = sdHdu[0].data#.astype('float32')
+                print('sdark_2:  ', super_dark_2.mean())
                 sdHdu.close()
                 #fix = np.where(super_dark_360 < 0)
                 #super_dark_360[fix] = 0
-                quick_dark_2_360 = True
-                print(lng_path + 'md_2_360.fits', 'Loaded')
+                quick_dark_2 = True
+                print(lng_path + 'md_2.fits', 'Loaded')
             except:
-               quick_dark_2_360 = False
-               print('WARN: No dark Loaded.')
+               quick_dark_2 = False
+               print('WARN: No dark_2 Loaded.')
 #Note on flats the case is carried through
 #        if super_flat_w is None:
 #            try:
@@ -224,7 +193,7 @@ def calibrate (hdu, hdu_ldr, lng_path, frame_type='light', start_x=0, start_y=0,
 
     #this whole area need to be re-thought to better cache and deal with a mix of flats and binnings  Right now partial
     #brute force.
-    while True:   #Use break to drop through to exit.  i.e., do not calibrte frames we are acquring for calibration.
+    while True:   #Use break to drop through to exit.  i.e., do not calibrate frames we are acquring for calibration.
         cal_string = ''
         if not quick:
             img = hdu.data.astype('float32')
@@ -232,16 +201,16 @@ def calibrate (hdu, hdu_ldr, lng_path, frame_type='light', start_x=0, start_y=0,
             if loud: print('InputImage (high):  ', imageStats(img, False))
         else:
             img = hdu.data
-        if frame_type == 'bias': break
+        if frame_type == 'bias':
+            break    #  Do not bias calibrate a bias.
         if super_bias is not None :   #NB Need to qualify with binning
-            #if not quick: print(start_x, start_x + img.shape[0], start_y, start_y + img.shape[1])
             img = img - super_bias[start_x:(start_x + img.shape[0]), start_y:(start_y + img.shape[1])]  #hdu.header['NAXIS2, NAXIS1']
             if not quick:
                 if loud: print('QuickBias result (high):  ', imageStats(img, False))
             cal_string += 'B'
         data_exposure_level = hdu.header['EXPTIME']
         if frame_type == 'dark':
-            break
+            break   #  Do not dark calibrate a dark.
         do_dark = False
         # if data_exposure_level <= 90:
         #     s_dark = super_dark_90
@@ -251,18 +220,20 @@ def calibrate (hdu, hdu_ldr, lng_path, frame_type='light', start_x=0, start_y=0,
         #     do_dark = True
 
         # NB Qualify if dark exists and by binning
-        if data_exposure_level <= 360:
-            s_dark = super_dark_360
+        if data_exposure_level <= 1080:
+            s_dark = super_dark
             d_exp = 360.0 #dark_360_exposure_level #hack to fix bad dark master.
-            h_map = hotmap_360
-            h_pix = hotpix_360
+            #h_map = hotmap
+            #h_pix = hotpix
             do_dark = True
         else:
             do_dark = False
-        if do_dark:  #  and mn < 3590:
+        if do_dark:
         #Need to verify dark is not 0 seconds long!
             if d_exp >= data_exposure_level and d_exp >= 1:  #  and quick_dark_90:
                 scale = data_exposure_level/d_exp
+                if scale > 1:
+                    print("WARNING:  Master dark being used over-scaled:", round(scale, 4))
                 img =  (img - s_dark[start_x:(start_x + img.shape[0]), start_y:(start_y + img.shape[1])])
                 if not quick:
                     print('QuickDark  scale/result(high): ', round(scale, 4), imageStats(img, loud))
@@ -271,7 +242,8 @@ def calibrate (hdu, hdu_ldr, lng_path, frame_type='light', start_x=0, start_y=0,
                 if not quick: print('INFO:  Light exposure too small, skipped this step.')
 
         img_filter = hdu.header['FILTER']
-        if frame_type[-4:]  == 'flat': break       #Note frame type end inf 'flat, e.g arc_flat, screen_flat, sky_flat
+        if frame_type[-4:]  == 'flat':   #  Note frame type ends 'flat, e.g arc_flat, screen_flat, sky_flat
+            break       #  Do not fla calibrate a flat.
         do_flat = False
         if img_filter == 'w':
             do_flat= False
@@ -295,11 +267,22 @@ def calibrate (hdu, hdu_ldr, lng_path, frame_type='light', start_x=0, start_y=0,
     hdu.data = img.astype('float32')  #This is meant to catch an image cast to 'float64'
     fix = np.where(hdu.data < 0)
     if not quick: print('# of < 0  pixels:  ', len(fix[0]))  #  Do not change values here.
-    # hdu.data[fix] = 0
+    hdu.data[fix] = 0
     # big_max = hdu.data.max()
     # if big_max > 65535.:   #This scaling is problematic.
     #     hdu.data = hdu.data*(65530./big_max)
-    return (hdu.data.mean() + np.median(hdu.data))/2
+    return round((hdu.data.mean() + np.median(hdu.data))/2, 1)
+
+    '''
+    Notes:
+
+    Use a central patch to define the tri-mean value.
+    Need to integrate overscan bias correct and trim.
+    Expand to other binnings or design to cache 1 or 2 prior binnings,
+    or build a special faster routine just for autofocus reduction.
+
+
+    '''
 
 if __name__ == '__main__':
     pass

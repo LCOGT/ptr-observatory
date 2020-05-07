@@ -51,8 +51,19 @@ class ObservingConditions:
             if illum > 500:
                 illum = int(illum)
             # Here we add in-line (To be changed) a preliminary OpenOK calculation:
+            #  NB all parameters should come from config.
             dew_point_gap = not (self.boltwood.Temperature  - self.boltwood.DewPoint) < 2
             temp_bounds = not (self.boltwood.Temperature < 2.0) or (self.boltwood.Temperature > 35)
+            wind_limit = self.boltwood.WindSpeed < 10
+            sky_amb_limit  = self.boltwood.SkyTemperature < 27.5
+            humidity_limit = self.boltwood.Humidity < 85
+            rain_limit = self.boltwood.RainRate <= 0.001
+            self.wx_is_ok = dew_point_gap and temp_bounds and wind_limit and sky_amb_limit and \
+                            humidity_limit and rain_limit
+            if self.wx_is_ok:
+                wx_str = "Yes"
+            else:
+                wx_str = "No"   #Ideally we add the dominant reason in prioirty order.
             # Many other gates can be here.
             if self.boltwood_oktoopen.IsSafe and dew_point_gap and temp_bounds:
                 self.ok_to_open = 'Yes'
@@ -70,7 +81,7 @@ class ObservingConditions:
                       #  'cloud_cover_%': str(self.boltwood.CloudCover),
                       "calc_HSI_lux": str(illum),
                       "calc_sky_mpsas": str(round((mag - 20.01),2)),    #  Provenance of 20.01 is dubious 20200504 WER
-                      "wx_ok": str(self.boltwood_oktoimage.IsSafe),
+                      "wx_ok": wx_str,  #str(self.boltwood_oktoimage.IsSafe),
                       "open_ok": str(self.ok_to_open)
                       #"image_ok": str(self.boltwood_oktoimage.IsSafe)
                       }

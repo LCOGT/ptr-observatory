@@ -390,7 +390,7 @@ class Events:
         sun.compute(ptr)
         #if loud: print('Sun 2: ', sun.ra, sun.dec, sun.az, sun.alt)
         sunZ88Op = ptr.next_setting(sun)
-        obs_win_begin = sunZ88Op - 0.25 #30/1440      # Needs to come from site config
+        obs_win_begin = sunZ88Op - 30/1440      # Needs to come from site config
         sunZ88Cl = ptr.next_rising(sun)
         ptr.horizon = '-6'
         sun.compute(ptr)
