@@ -203,7 +203,7 @@ class Observatory:
                 elif dev_type == "camera":
                     device = Camera(driver, name, self.config)
                 elif dev_type == "sequencer":
-                    device = Sequencer(driver, name, self.config)
+                    device = Sequencer(driver, name, self.config, self.astro_events)
                 elif dev_type == "filter_wheel":
                     device = FilterWheel(driver, name, self.config)
                 else:
@@ -362,7 +362,7 @@ class Observatory:
         except:
             print("self.scan_requests('mount1') threw an exception.")
 
-        g_dev['seq'].monitor()  #  Go see if there is something new to do.
+        g_dev['seq'].manager()  #  Go see if there is something new to do.
 
     def run(self):   # run is a poor name for this function.
         try:

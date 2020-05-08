@@ -94,8 +94,9 @@ def bin_to_string(use_bin):
 
 class Sequencer:
 
-    def __init__(self, driver: str, name: str, config: dict):
+    def __init__(self, driver: str, name: str, config: dict, astro_events):
         self.name = name
+        self.astro_events = astro_events
         self.config = config
         g_dev['seq'] = self
         self.connected = True
@@ -104,12 +105,14 @@ class Sequencer:
         self.sequencer_message = '-'
         print(f"sequencer connected.")
         print(self.description)
+        self.guard = False
 
     def get_status(self):
         status = {
             "active_script": 'none',
             "sequencer_busy":  'false'
         }
+        self.manager()      #  There be dragons here!  <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
         return status
 
 
@@ -149,8 +152,24 @@ class Sequencer:
     ###############################
     #       Sequencer Commands and Scripts
     ###############################
-    def monitor(self):
-
+    def manager(self):
+        '''
+        This is where scripts are auomagically started.  Be careful what you put in here.
+        '''
+        # NB Need a better way to get al the events.
+        #obs_win_begin, sunZ88Op, sunZ88Cl, ephemNow = self.astro_events.getSunEvents()
+        obs_win_begin, sunZ88Op, sunZ88Cl, ephemNow = self.astro_events.getSunEvents()
+        events = g_dev['events']
+        if  (events['Beg Eve Sky Flats'] < ephemNow < events['End Eve Sky Flats']) \
+                and self.mode == 'Automatic' \
+                and wx_is_ok \
+                and self.wait_time <= 0 \
+                and not False:
+            self.guard = True
+            self.current_script = "Eve Sky Flat script"
+            self.sky_flat_script({}, {})   #Null command dictionaries.
+            self.current_script = "No current script"
+            self.guard = False
         pass
 
 
@@ -329,6 +348,8 @@ class Sequencer:
         Note we want Moon at least 30 degrees away
 
         """
+        self.guard = True
+        print('Eve Sky Flat sequence Starting, Telescope will un-park.')
         name = str(self.config['camera']['camera1']['name'])
         dark_count = 1
         flat_count = 1
@@ -356,20 +377,28 @@ class Sequencer:
             g_dev['mnt'].slewToSkyFlatAsync()
             req = {'time': float(exp_time),  'alias': name, 'image_type': 'sky flat'}
             opt = {'size': 100, 'count': flat_count, 'filter': g_dev['fil'].filter_data[current_filter][0]}
-            bright, fwhm = g_dev['cam'].expose_command(req, opt, gather_status=True, no_AWS=True)
+            result = g_dev['cam'].expose_command(req, opt, gather_status=True, no_AWS=True, no_sep = True)
+            bright = result['patch']
             g_dev['obs'].update_status()
             print("Bright:  ", bright)
             if bright > 35000:    #NB should gate with end of skyflat window as well.
-                time.sleep(5)  #  (30)
+                time.sleep(10)  #  (30)
+                g_dev['obs'].update_status()
+                time.sleep(10)
+                g_dev['obs'].update_status()
+                time.sleep(10)
+                g_dev['obs'].update_status()
                 continue
             g_dev['mnt'].slewToSkyFlatAsync()
             g_dev['obs'].update_status()
             req = {'time': float(exp_time),  'alias': name, 'image_type': 'sky flat'}
             opt = {'size': 100, 'count': flat_count , 'filter': g_dev['fil'].filter_data[current_filter][0]}
-            bright2, fwhm = g_dev['cam'].expose_command(req, opt, gather_status=True, no_AWS=True)
+            result = g_dev['cam'].expose_command(req, opt, gather_status=True, no_AWS=True, no_sep = True)
+            bright2 = result['patch']
             time.sleep(2)
             if bright2 > 35000:
-                time.sleep(5)
+                g_dev['obs'].update_status()
+                time.sleep(10)
                 continue
             print("Bright2 filter pop:  ", current_filter, bright, bright2)
             pop_list.pop(0)
@@ -377,7 +406,7 @@ class Sequencer:
             if len(pop_list) < 1:
                 break
             continue
-        g_dev['mnt'].park_command({}, {})
+        g_dev['mnt'].park_command({}, {})  #  NB this is provisional
         print('\nSky flat complete.\n')
 
 
@@ -429,7 +458,8 @@ class Sequencer:
         g_dev['scr'].screen_dark()
         g_dev['obs'].update_status()
         g_dev['mnt'].park_command({}, {})
-        print('Sky Flat sequence completed, Telescope is parked.')
+        print('Eve Sky Flat sequence completed, Telescope is parked.')
+        self.guard = False
 
     def focus_auto_script(self, req, opt):
         '''
