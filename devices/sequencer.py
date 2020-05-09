@@ -3,7 +3,7 @@ import win32com.client
 import time
 from random import shuffle
 from global_yard import g_dev
-
+import ephem
 
 '''
 Autofocus NOTE 20200122
@@ -112,7 +112,8 @@ class Sequencer:
             "active_script": 'none',
             "sequencer_busy":  'false'
         }
-        self.manager()      #  There be dragons here!  <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+        if not self.sequencer_hold:   #  NB THis should be wrapped in a timeout.
+            self.manager()      #  There be dragons here!  <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
         return status
 
 
@@ -154,13 +155,41 @@ class Sequencer:
     ###############################
     def manager(self):
         '''
-        This is where scripts are auomagically started.  Be careful what you put in here.
+        This is where scripts are automagically started.  Be careful what you put in here if it is
+        going to open the dome or move the telescope at unexpected times.
+
+        Scripts must not block too long or they must provide for periodic calls to check status.
         '''
-        # NB Need a better way to get al the events.
+        # NB Need a better way to get all the events.
         #obs_win_begin, sunZ88Op, sunZ88Cl, ephemNow = self.astro_events.getSunEvents()
-        obs_win_begin, sunZ88Op, sunZ88Cl, ephemNow = self.astro_events.getSunEvents()
+        ephem_now = ephem.now()
         events = g_dev['events']
-        if  (events['Beg Eve Sky Flats'] < ephemNow < events['End Eve Sky Flats']) \
+
+        self.current_script = "No current script"
+        self.sequencer_hold = False
+         #events['Eve Bias Dark']
+        #if True:
+        if (events['Eve Bias Dark'] <= ephem_now <= events['End Eve Bias Dark']):
+            req = {'numOfBias': 31, 'bin3': True, 'numOfDark2': 3, 'bin4': False, 'bin1': True, \
+                   'darkTime': 360, 'hotMap': True, 'bin2': True, 'numOfDark': 3, 'dark2Time': 600, \
+                   'coldMap': True, 'script': 'genBiasDarkMaster', 'bin5': False}
+            opt = {}
+            self.bias_dark_script(req, opt)
+        # elif (events[] <= ephem_now <= events[]):
+        #     pass
+        # elif (events[] <= ephem_now <= events[]):
+        #     pass
+        # elif (events[] <= ephem_now <= events[]):
+        #     pass
+        # elif (events[] <= ephem_now <= events[]):
+        #     pass
+        # elif (events[] <= ephem_now <= events[]):
+        #     pass
+        # elif (events[] <= ephem_now <= events[]):
+        #     pass
+        # elif (events[] <= ephem_now <= events[]):
+        #     pass
+        elif  (events['Eve Sky Flats'] < ephem_now < events['End Eve Sky Flats']) \
                 and self.mode == 'Automatic' \
                 and wx_is_ok \
                 and self.wait_time <= 0 \
@@ -170,13 +199,18 @@ class Sequencer:
             self.sky_flat_script({}, {})   #Null command dictionaries.
             self.current_script = "No current script"
             self.guard = False
+        else:
+            self.current_script = "No current script"
+            self.guard = False
+            print("No active script is scheduled.")
         pass
 
 
-    def bias_dark_script(self, req, opt):
+    def bias_dark_script(self, req=None, opt=None):
         """
-        This script may be auto-triggered as the bias_dark window opens,
-        and this script runs for about an hour.  No images are sent to AWS.
+        This script may be auto-triggered as the bias_dark window opens, or
+        by a qualified user.
+        This auto script runs for about an hour.  No auto-triggered images are sent to AWS.
         Images go to the calibs folder in a day-directory.  After the script
         ends build_masters.py executes in a different process and attempts
         to process and update the bias-dark master images, which are sent to
@@ -206,13 +240,18 @@ class Sequencer:
 
         Note this can be called by the Auto Sequencer OR invoked by a user.
         """
-
+        if req is None:     #  NB This again should be a config item.
+            req = {'numOfBias': 63, 'bin3': True, 'numOfDark2': 3, 'bin4': False, 'bin1': True, \
+                    'darkTime': '360', 'hotMap': True, 'bin2': True, 'numOfDark': 9, 'dark2Time': '600', \
+                    'coldMap': True, 'script': 'genBiasDarkMaster', 'bin5': False}
+            opt = {}
+        self.sequencer_hold = True
         bias_list = []
         num_bias = max(9, req['numOfBias'])
         if req['bin1']:
             bias_list.append([1, max(9, num_bias)])
         if req['bin2']:
-            bias_list.append([2, max(7, num_bias)])
+            bias_list.append([2, max(9, num_bias)])
         if req['bin3']:
             bias_list.append([3, max(5, num_bias//2)])
         if req['bin4']:
@@ -230,7 +269,7 @@ class Sequencer:
         if req['bin1']:
             dark_list.append([1, max(5, num_dark)])
         if req['bin2']:
-            dark_list.append([2, max(3, num_dark)])
+            dark_list.append([2, max(5, num_dark)])
         if req['bin3']:
             dark_list.append([3, max(3, num_dark//2)])
         if req['bin4']:
@@ -250,7 +289,7 @@ class Sequencer:
         if req['bin2']:
             long_dark_list.append([2, max(3, num_long_dark)])
         if req['bin3']:
-            long_dark_list.append([3, max(3, num_long_dark//2)])
+            long_dark_list.append([3, max(3, num_long_dark//2)])   #  NB  need to create a make_odd function
         if req['bin4']:
             long_dark_list.append([4, max(3, num_long_dark//3)])
         if req.get('bin5', False):
@@ -285,9 +324,10 @@ class Sequencer:
                     req = {'time': 0.0,  'script': 'True', 'image_type': 'bias'}
                     opt = {'size': 100, 'count': 1, 'bin': bin_str, \
                            'filter': g_dev['fil'].filter_data[0][0]}
-                    breakpoint()
-                    g_dev['cam'].expose_command(req, opt, gather_status=False, no_AWS=True, \
+                    result = g_dev['cam'].expose_command(req, opt, gather_status=False, no_AWS=True, \
                                                 do_sep=False, quick=False)
+                    print(result)
+
                     if len(bias_list) < 1:
                         print("Bias List exhausted.", bias_list)
                         break
@@ -304,6 +344,7 @@ class Sequencer:
                     req = {'time':dark_time ,  'script': 'True', 'image_type': 'dark'}
                     opt = {'size': 100, 'count': 1, 'bin': bin_str, \
                            'filter': g_dev['fil'].filter_data[0][0]}
+
                     g_dev['cam'].expose_command(req, opt, gather_status=False, no_AWS=True, \
                                                 do_sep=False, quick=False)
                     if len(dark_list) < 1:
@@ -321,11 +362,14 @@ class Sequencer:
                     req = {'time': long_dark_time,  'script': 'True', 'image_type': 'dark'}
                     opt = {'size': 100, 'count': 1, 'bin': bin_str, \
                            'filter': g_dev['fil'].filter_data[0][0]}
+
                     g_dev['cam'].expose_command(req, opt, gather_status=False, no_AWS=True, \
                                                 do_sep=False, quick=False)
                     if len(long_dark_list) < 1:
                         print("Long_dark exhausted.", long_dark_list)
-        print("fini")
+        print("Bias dark acquisition is finished.")
+        self.sequencer_hold = False
+        return
 
 
 

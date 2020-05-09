@@ -572,17 +572,16 @@ class Camera:
                 print("Starting exposure at:  ", self.t2)
                 try:
                     if not self._connected():
-                        self._connect()
+                        self._connect(True)
                         self.camera.AbortExposure()
                         time.sleep(2)
                         print('Reset LinkEnabled right before exposure')
                     self.camera.Expose(exposure_time, imtypeb)
                 except:
                     print("Retry to set up camera exposure.")
-                    breakpoint()
                     time.sleep(4)
                     if not self._connected:
-                        self._connect()
+                        self._connect(True)
                         self.camera.AbortExposure()
                         time.sleep(2)
                         print('Reset LinkEnabled right before exposure')
@@ -634,8 +633,7 @@ class Camera:
         #print("Finish exposure Entered:  ", self.af_step, exposure_time, frame_type, counter, ' to go!')
         print("Finish exposure Entered:  ", exposure_time, frame_type, counter, p_next_filter, p_next_focus, p_dither, \
                         gather_status, do_sep, no_AWS, start_x, start_y)
-        if self.bpt_flag:
-            pass
+
         if gather_status:   #Does this need to be here
             self.post_mnt = []
             self.post_rot = []
@@ -867,8 +865,7 @@ class Camera:
                                 os.remove(self.camera_path + 'newest.fits')
                             except:
                                 pass    #  print ("File newest.fits not found, this is probably OK")
-                            breakpoint()
-                            return 0, 0   #  Note we are not calibrating. Just saving the file.
+                            return {'patch': 0.0}   #  Note we are not calibrating. Just saving the file.
                             # NB^ We always write files to raw, except quick(autofocus) frames.
                             # hdu.close()
                         # raw_data_size = hdu.data.size
