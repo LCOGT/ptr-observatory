@@ -54,8 +54,9 @@ site_config = {
             'driver': 'ASCOM.Boltwood.ObservingConditions',
             'driver_2':  'ASCOM.Boltwood.OkToOpen.SafetyMonitor',
             'driver_3':  'ASCOM.Boltwood.OkToImage.SafetyMonitor',
-            'unihedron':  '13',    #'False" or numeric of COM port.
-            'uni_driver': 'ASCOM.SQM.serial.ObservingConditions'
+            'has_unihedron':  'true',
+            'uni_driver': 'ASCOM.SQM.serial.ObservingConditions',
+            'unihedron_port':  '13'    #'False" or numeric of COM port.
         },
     },
 
@@ -63,13 +64,14 @@ site_config = {
     'enclosure': {
         'enclosure1': {
             'parent': 'site',
-            'name': 'Homedome',
+            'name': 'HomeDome',
             'hostIP':  '10.0.0.140',
             'driver': 'ASCOMDome.Dome',
             'has_lights':  'false',
             'controlled_by': 'mount1',
 			'is_dome': 'true',
-            'mode': 'Manual',
+            'mode': 'Automatic',
+            'cool_down': '30.0',     #  Minutes prior to sunZ88Op time.
             'settings': {
                 'lights':  ['Auto', 'White', 'Red', 'IR', 'Off'],       #A way to encode possible states or options???
                                                                         #First Entry is always default condition.
@@ -173,11 +175,11 @@ site_config = {
             'desc':  'Optec Gemini',
             'driver': 'ASCOM.OptecGemini.Focuser',
 			'com_port':  'None',
-            'reference':  '8056',    #Nominal at 20C Primary temperature
+            'reference':  '8050',    #Nominal at 20C Primary temperature
             'ref_temp':   '15',    #Update when pinning reference
             'coef_c': '0',   #negative means focus moves out as Primary gets colder
-            'coef_0': '8056',  #Nominal intercept when Primary is at 0.0 C.
-            'coef_date':  '20200409',    #Per Neyle
+            'coef_0': '8050',  #Nominal intercept when Primary is at 0.0 C.
+            'coef_date':  '20200505',    #Per Neyle   SWAG
             'minimum': '0',     #NB this area is confusing steps and microns, and need fixing.
             'maximum': '12700',
             'step_size': '1',       #This is probably 0.09090909090909...
@@ -200,22 +202,22 @@ site_config = {
                 'filter_count': '13',    # dark filer not implemented yet.
                 'filter_reference': '0',   #We choose to use W as the default filter.
                 'filter_data': [['filter', 'filter_index', 'filter_offset', 'sky_gain', 'screen_gain', 'abbreviation'],
-                                ['W', '(0, 0)', '0', '0.01', ['2.15', '17'], 'w '],   # 0 Mul Screen@100% by saturate*exp
-                                ['B', '(1, 0)', '0', '0.01', ['23', '17'], 'B '],   # 1
-                                ['V', '(2, 0)', '0', '0.01', ['7.74', '17'], 'V '],   # 2
-                                ['R', '(3, 0)', '0', '0.01', ['6.3', '17'], 'R '],   # 3
-                                ["g'", '(4, 0)', '0', '0.01', ['8.4', '17'], "g'"],   # 4
-                                ["r'", '(5, 0)', '0', '0.01', ['7', '17'], "r'"],   # 5
-                                ["i'", '(6, 0)', '0', '0.01', ['5.75', '17'], "i'"],   # 6
-                                ['O3', '(7, 0)', '0', '0.01', ['300', '170'], 'O3'],   # 7
-                                ['HA', '(8, 0)', '0', '0.01', ['300', '170'], 'HA'],   # 8
-                                ['S2', '(9, 0)', '0', '0.01', ['300', '170'],'S2'],   # 9
-                                ['N2', '(10, 0)', '0', '0.01', ['300', '170'], "N2"],   # 10
-                                ['EXO', '(11, 0)', '0', '0.01', ['1.68', '17'], 'ex'],   # 11
-                                ['air', '(12, 0)', '-1000', '0.01', ['1.4', '17'], 'ai'],   # 12
-                                ['dark', '(13, 0)', '0', '0.01', ['15', '17'], 'dk']],   # 13  20200315 This needs to be set up as a \
-                                #  'dark' filter =   cascade of say N2 and B or O3 and i.
-                                #Screen = 100; QHY400 ~ 92% DQE   HDR Mode    Screen = 160 sat  20190825 measured.
+                        ['W',    '(0,  0)',     '0', ' 0.01', ['2.15', ' 17'], 'w '],   # 0 Mul Screen@100% by saturate*exp
+                        ['B',    '(1,  0)',     '0', ' 63.6', ['23  ', ' 17'], 'B '],   # 1
+                        ['V',    '(2,  0)',     '0', ' 0.01', ['7.74', ' 17'], 'V '],   # 2
+                        ['R',    '(3,  0)',     '0', ' 0.01', ['6.3 ', ' 17'], 'R '],   # 3
+                        ["g'",   '(4,  0)',     '0', '114.0', ['8.4 ', ' 17'], "g'"],   # 4
+                        ["r'",   '(5,  0)',     '0', '00.01', ['7   ', ' 17'], "r'"],   # 5
+                        ["i'",   '(6,  0)',     '0', '00.01', ['5.75', ' 17'], "i'"],   # 6
+                        ['O3',   '(7,  0)',     '0', '09.75', ['300' , '170'], 'O3'],   # 7
+                        ['HA',   '(8,  0)',     '0', '09.42', ['300' , '170'], 'HA'],   # 8
+                        ['S2',   '(9,  0)',     '0', '09.80', ['300' , '170'], 'S2'],   # 9
+                        ['N2',   '(10, 0)',     '0', '09.34', ['300' , '170'], "N2"],   # 10
+                        ['EXO',  '(11, 0)',     '0', ' 0.01', ['1.68', ' 17'], 'ex'],   # 11
+                        ['air',  '(12, 0)', '-1000', ' 0.01', ['1.4 ', ' 17'], 'ai'],   # 12
+                        ['dark', '(13, 0)',     '0', ' 0.01', ['15  ', ' 17'], 'dk']],  # 13  20200315 This needs to be set up as a \
+                        #  'dark' filter =   cascade of say N2 and B or O3 and i.
+                        #Screen = 100; QHY400 ~ 92% DQE   HDR Mode    Screen = 160 sat  20190825 measured.
                 'filter_screen_sort':  ['12', '0', '11', '2', '3', '5', '6', '4', '1'],   # don't use narrow yet, '7', '8', '10', '9'],
                 'filter_sky_sort':  ['9', '10', '8', '7', '1', '4', '6', '5', '3', '2', '11', '0', '12']  #Least to most throughput
             },
