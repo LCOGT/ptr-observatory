@@ -15,8 +15,8 @@ from astropy.time import Time
 from astropy import units as u
 from astropy.coordinates import SkyCoord, FK5, ICRS, FK4, Distance, \
                                 EarthLocation, AltAz
-from astroquery.vizier import Vizier
-from astroquery.simbad import Simbad
+#from astroquery.vizier import Vizier
+#from astroquery.simbad import Simbad
 
 #The mount is not threaded and uses non-blocking seek.
 class Telescope:
