@@ -36,6 +36,23 @@ downstream.  When returning from calls use a dictionary to report results.  Supp
 synchronous and async reductions.  If the ccd has overscan, incorporate that step into
 the immediate processing with trim
 
+Camera Note 20200510.
+
+Beating on camera waiting for long exposures causes Maxim to disconnect.  So instead we
+will not look for ImageReady until 'exptime + nominal readout delay - 1 second.'
+However every 30 seconds during that wait we will check the camera is connected. if it
+drops out we setup the wait and report a failed exposure.
+
+Next add an exposure retry loop: for now retry three times then fail up the call chain.
+
+Reporting camera status should NOT normally provoke the camera when it is exposing. Instead
+just report the % complete or estimated time to completion.
+
+The camera operates in  Phase_1:  Setup Exposure, then Phase 2 Take the exposure, then Phase 3
+fill out fits headers and save the exposure.  Phase 2, and maybe  Phase 3, are wrapped in the retry-three-
+times framework. Next is Phase 4 -- local calibrate and analyze, then Phase 5 -- send to AWS.
+
+Note Camera at saf just set to hardware binning.
 
 
 """
@@ -68,7 +85,23 @@ def reset_sequence(pCamera):
     camShelf.close()
     return seq
 
+def create_simple_sequence(exp_time=0, img_type=0, speed=0, suffix='',repeat=0, \
+                    readout_mode="RAW Mono", filter_name='air', enabled=1, \
+                    binning=1, binmode=0):
 
+    proto_file = open('D:\\archive\\archive\\kb01\\seq\\ptr_saf.pro')
+    proto = proto_file.readlines()
+    proto[62] = proto[62][:9]  + str(exp_time) + proto[62][10:]
+    proto[65] = proto[65][:9]  + str(img_type) + proto[65][10:]
+    proto[58] = proto[58][:11] + str(suffix)   + proto[58][12:]
+    proto[56] = proto[56][:11] + str(speed)    + proto[56][12:]
+    proto[37] = proto[37][:11] + str(repeat)   + proto[37][12:]
+    proto[33] = proto[33][:16] + readout_mode  + proto[33][17:]
+    proto[15] = proto[15][:12] + filter_name   + proto[15][13:]
+    proto[11] = proto[11][:12] + str(enabled)  + proto[11][13:]
+    proto[01] = proto[01][:12] + str(binning)  + proto[01][13:]
+    proto.write('D:\\archive\\archive\\kb01\\seq\\ptr_saf.seq')
+    #  [3] is BinningMode]
 
 
 class Camera:
@@ -136,6 +169,15 @@ class Camera:
             self.current_filter = 0
 
             print('Control is Maxim camera interface.')
+ #       breakpoint()
+        # #self.camera.StartSequence("D:\archive\archive\kb01\seq\LRGB_1.seq")
+        # self.camera.StartSequence()
+        # for item in range(50000):
+        #     print(self.camera.LinkEnabled, self.camera.SequenceRunning)
+        #     time.sleep(1)
+        # time.sleep(5)
+        # print('Final:  ', self.camera.SequenceRunning)
+        # breakpoint()
         self.exposure_busy = False
         self.cmd_in = None
         self.camera_message = '-'
@@ -234,7 +276,8 @@ class Camera:
         else:
             status['busy_lock'] = 'false'
         if self.maxim:
-            cam_stat = 'Not implemented yet' #self.camera.CameraState
+            cam_stat = 'Not implemented yet' #
+            print('AutoSave:  ', self.camera.SequenceRunning)
         if self.ascom:
             cam_stat = 'Not implemented yet' #self.camera.CameraState
         status['status'] = str(cam_stat).lower()  #The state could be expanded to be more meaningful.
@@ -303,21 +346,23 @@ class Camera:
 
     '''
 
-    def expose_command(self, required_params, optional_params, p_next_filter=None, p_next_focus=None, p_dither=False, \
+    def expose_command(self, required_params, optional_params,  \
                        gather_status = True, do_sep=False, no_AWS=False, quick=False, halt=False):
         '''
+        This is Phase 1:  Setup the camera.
         Apply settings and start an exposure.
-        Quick=True is meant to be fast.  We assume the ASCOM imageBuffer is the source of data, not the Files path.
+        Quick=True is meant to be fast.  We assume the ASCOM/Maxim imageBuffer is the source of data in that mode,
+        not the slower File Path.  THe mode used for focusing or other operations where we do not want to save any
+        image data.
         '''
         print('Expose Entered.  req:  ', required_params, 'opt:  ', optional_params)
         opt = optional_params
         self.t_0 = time.time()
         self.hint = optional_params.get('hint', '')
-        self.script = required_params.get('script', 'False')
-        bin_x = optional_params.get('bin', '1,1')  #NB this should pick up config default.
-        if bin_x == '5,5':
-            bin_x = 5
-        elif bin_x == '4,4':
+        self.script = required_params.get('script', 'None')
+        bin_x = optional_params.get('bin', self.config['camera']['camera1'] \
+                                                      ['settings']['default_bin'])  #NB this should pick up config default.
+        if bin_x == '4,4':# For now this is thei highest level of binning supported.
             bin_x = 4
         elif bin_x == '3,3':
             bin_x = 3
@@ -328,25 +373,32 @@ class Camera:
         bin_y = bin_x   #NB This needs fixing someday!
         self.camera.BinX = bin_x
         self.camera.BinY = bin_y
-        gain = optional_params.get('gain', 1)
-        exposure_time = float(required_params.get('time', 5))
+        gain = float(optional_params.get('gain', self.config['camera']['camera1'] \
+                                                      ['settings']['reference_gain'][bin_x - 1]))
+        readout_time = float(self.config['camera']['camera1']['settings']['readout_time'][bin_x - 1])
+        exposure_time = float(required_params.get('time', 0.0))   #  0.0 may be the best default.
+        self.estimated_readtime = (exposure_time + 2*readout_time)*1.25*3   #  3 is the outer retry loop maximum.
         #exposure_time = max(0.2, exposure_time)  #Saves the shutter, this needs qualify with imtype.
         imtype= required_params.get('image_type', 'Light')
 
         count = int(optional_params.get('count', 1))
         if count < 1:
             count = 1   #Hence frame does not repeat unless count > 1
-        requested_filter_alpha = str(optional_params.get('filter', 'w'))
-        self.current_filter = requested_filter_alpha
-        g_dev['fil'].set_name_command({'filter': requested_filter_alpha}, {}, move_fil=False)
 
-        #NBNB Changing filter may cause a need to shift focus
-        self.current_offset = 6300#g_dev['fil'].filter_offset  #TEMP
+        #  Here we set up the filter, and later on possibly roational composition.
+        requested_filter_name = str(optional_params.get('filter', 'w'))   #Default should come from config.
+        self.current_filter = requested_filter_name
+        g_dev['fil'].set_name_command({'filter': requested_filter_name}, {})
+
+        #  NBNB Changing filter may cause a need to shift focus
+        self.current_offset = 6300#g_dev['fil'].filter_offset  #TEMP   NBNBNB This needs fixing
+        #  NB nothing being done here to get focus set properly. Where is this effected?
+
         sub_frame_fraction = optional_params.get('subframe', None)
-        #The following bit of code is convoluted.
+        #  The following bit of code is convoluted.  Presumably when we get Autofocus working this will get cleaned up.
         if imtype.lower() in ('light', 'light frame', 'screen flat', 'sky flat', 'experimental', 'toss'):
                                  #here we might eventually turn on spectrograph lamps as needed for the imtype.
-            imtypeb = True    #imtypeb passed to open the shutter.
+            imtypeb = True    #imtypeb will passed to open the shutter.
             frame_type = imtype.lower()
             do_sep = True
             if imtype.lower() in ('screen flat', 'sky flat', 'guick'):
@@ -380,9 +432,10 @@ class Camera:
         # NBNB This area still needs work to cleanly define shutter, calibration, sep and AWS actions.
 
         area = optional_params.get('size', 100)
-        if area is None:
+        if area is None or area == 'chip':   #  Temporary patch to deal with 'chip'
             area = 100
         sub_frame_fraction = optional_params.get('subframe', None)
+        # Need to put in support for chip mode once we have implmented in-line bias correct and trim.
         try:
             if type(area) == str and area[-1] == '%':
                 area = int(area[0:-1])
@@ -403,10 +456,10 @@ class Camera:
         self.len_xs = 0  # THIS IS A HACK, indicating no overscan.
         # print(self.len_x, self.len_y)
 
-        # "area": ['100%', '2X-jpg', '71%', '50%', '1X-jpg', '33%', '25%', '1/2 jpg']
+        # "area": ['100%', '2X-jpg', '71%', '50%', '1X-jpg', '33%', '25%', '1/2 jpg', 'chip' ]
         if type(area) == str and area.lower() == "1x-jpg":
-            self.camera_num_x = 768              # NB WHere are these absolute numbers coming from?  This needs testing!!
-            self.camera_start_x = 1659
+            self.camera_num_x = 768                 # 768 is the size of the JPEG
+            self.camera_start_x = 1659              # NB Where are these absolute numbers coming from?  This needs testing!!
             self.camera_num_y = 768
             self.camera_start_y = 1659
             self.area = 37.5
@@ -422,7 +475,7 @@ class Camera:
             self.camera_num_y = 384
             self.camera_start_y = 832
             self.area = 18.75
-        elif type(area) == str:     #Just default to a small area.
+        elif type(area) == str:     #Just default to a small area, for now 1/16th.
             self.camera_num_x = self.len_x//4
             self.camera_start_x = int(self.len_xs/2.667)
             self.camera_num_y = self.len_y//4
@@ -524,7 +577,8 @@ class Camera:
             self.bpt_flag = False
         result = (-1, -1)  #  This is a default return just in case
         for seq in range(count):
-            #SEQ is the outer repeat count loop.
+            #  SEQ is the outer repeat loop and takes count images; those individual exposures are wrapped in a
+            #  retry-3-times framework with an additional timeout included in it.
             if seq > 0:
                 g_dev['obs'].update_status()
 
@@ -536,74 +590,97 @@ class Camera:
             try:
                 #Check here for filter, guider, still moving  THIS IS A CLASSIC
                 #case where a timeout is a smart idea.
+                #Wait for external motion to cease before exposing.  Note this precludes satellite tracking.
                 while g_dev['foc'].focuser.IsMoving or g_dev['rot'].rotator.IsMoving or g_dev['mnt'].mount.Slewing or \
                       g_dev['enc'].enclosure.Slewing:
                     print(">>")
                     time.sleep(0.2)
+                    if seq > 0:
+                        g_dev['obs'].update_status()
             except:
                 print("Motion check faulted.")
+            if seq > 0:
+                g_dev['obs'].update_status()   # NB Make sure this routine has a fault guard.
+            self.retry_camera = 3
+            self.retry_camera_start_time = time.time()
 
-            self.t1 = time.time()
-            self.exposure_busy = True
-            print('First Entry to Camera code:  ', self.camera.StartX, self.camera.StartY, self.camera.NumX, self.camera.NumY, exposure_time)
+            while self.retry_camera > 0:
+                #NB Here we enter Phase 2
+                try:
+                    self.t1 = time.time()
+                    self.exposure_busy = True
+                    print('First Entry to inner Camera loop:  ', self.camera.StartX, self.camera.StartY, self.camera.NumX, self.camera.NumY, exposure_time)
+                    #First lets verify we are connected or try to reconnect.
+                    try:
+                        if not self._connected():
+                            self._connect(True)
+                            self.camera.AbortExposure()
+                            time.sleep(1)
+                            self._connect(True)
+                            time.sleep(0.5)
+                            print('Reset LinkEnabled/Connected right before exposure')
 
-            if self.ascom:
-                self.camera.AbortExposure()
-                g_dev['ocn'].get_quick_status(self.pre_ocn)
-                g_dev['foc'].get_quick_status(self.pre_foc)
-                g_dev['rot'].get_quick_status(self.pre_rot)
-                g_dev['mnt'].get_quick_status(self.pre_mnt)
-                self.t2 = time.time()       #Immediately before Exposure
-                self.camera.StartExposure(exposure_time, imtypeb)
-            elif self.maxim:
-                print('Link Enable check:  ', self._connected())
-                self.camera.AbortExposure()
-                g_dev['ocn'].get_quick_status(self.pre_ocn)
-                g_dev['foc'].get_quick_status(self.pre_foc)
-                g_dev['rot'].get_quick_status(self.pre_rot)
-                g_dev['mnt'].get_quick_status(self.pre_mnt)
-                self.t2 = time.time()
-                ldr_handle_high_time = None
-                ldr_handle_time = None
-                try:
-                    os.remove(self.camera_path + 'newest.fits')
-                except:
-                    pass   #  print ("File newest.fits not found, this is probably OK")
-                print("Starting exposure at:  ", self.t2)
-                try:
-                    if not self._connected():
-                        self._connect(True)
+                    except:
+                        print("2nd Retry to set up camera connected.")
+                        time.sleep(4)
+                        if not self._connected:
+                            self._connect(True)
+                            self.camera.AbortExposure()
+                            time.sleep(2)
+                            self._connect(True)
+                            time.sleep(1)
+                            print('2nd Reset LinkEnabled/Connected right before exposure')
+                    #  At this point we really should be connected!!
+                    if self.ascom:
                         self.camera.AbortExposure()
-                        time.sleep(2)
-                        print('Reset LinkEnabled right before exposure')
-                    self.camera.Expose(exposure_time, imtypeb)
-                except:
-                    print("Retry to set up camera exposure.")
-                    time.sleep(4)
-                    if not self._connected:
-                        self._connect(True)
+                        g_dev['ocn'].get_quick_status(self.pre_ocn)
+                        g_dev['foc'].get_quick_status(self.pre_foc)
+                        g_dev['rot'].get_quick_status(self.pre_rot)
+                        g_dev['mnt'].get_quick_status(self.pre_mnt)
+                        self.t2 = time.time()       #Immediately before Exposure
+                        self.camera.StartExposure(exposure_time, imtypeb)
+                    elif self.maxim:
+                        print('Link Enable check:  ', self._connected())
                         self.camera.AbortExposure()
-                        time.sleep(2)
-                        print('Reset LinkEnabled right before exposure')
-                    self.camera.Expose(exposure_time, imtypeb)
-            else:
-                print("Something terribly wrong, driver not recognized.!")
-                result = {}
-                result['error': True]
-                return result
-            self.t9 = time.time()
-            #We go here to keep this subroutine a reasonable length.
-            result = self.finish_exposure(exposure_time,  frame_type, count - seq, p_next_filter, p_next_focus, p_dither, \
-                                 gather_status, do_sep, no_AWS, dist_x, dist_y, quick=quick, halt=halt, low=ldr_handle_time, \
-                                 high=ldr_handle_high_time, script=self.script, opt=opt)
-            self.exposure_busy = False
-            self.t10 = time.time()
-            self.camera.AbortExposure()
-            print("inner expose returned:  ", result)
-            #  Note in this loop no external results are returned.  Need a re-think??
+                        g_dev['ocn'].get_quick_status(self.pre_ocn)
+                        g_dev['foc'].get_quick_status(self.pre_foc)
+                        g_dev['rot'].get_quick_status(self.pre_rot)
+                        g_dev['mnt'].get_quick_status(self.pre_mnt)
+                        self.t2 = time.time()
+                        ldr_handle_high_time = None  #  This is not maxim-specific
+                        ldr_handle_time = None
+                        try:
+                            os.remove(self.camera_path + 'newest.fits')
+                        except:
+                            pass   #  print ("File newest.fits not found, this is probably OK")
+                        print("Starting exposure at:  ", self.t2)
+                        self.camera.Expose(exposure_time, imtypeb)
+                    else:
+                        print("Something terribly wrong, driver not recognized.!")
+                        breakpoint()
+                        result = {}
+                        result['error': True]
+                        return result
+                    self.t9 = time.time()
+                    #We go here to keep this subroutine a reasonable length, Basically still in Phase 2
+                    result = self.finish_exposure(exposure_time,  frame_type, count - seq, \
+                                         gather_status, do_sep, no_AWS, dist_x, dist_y, quick=quick, halt=halt, low=ldr_handle_time, \
+                                         high=ldr_handle_high_time, script=self.script, opt=opt)  #  NB all these parameers are crazy!
+                    self.exposure_busy = False
+                    self.t10 = time.time()
+                    #self.camera.AbortExposure()
+                    print("inner expose returned:  ", result)
+                    self.retry_camera = 0
+                    break
+                except Exception as e:
+                    print('Exception:  ', e)
+                    self.retry_camera -= 1
+                    continue
+            #  This point terminates the retry_3_times loop
+            print("Retry-3-times completed early:  ", self.retry_camera)
+        #  This is the loop point for the seq count loop
         self.t11 = time.time()
         print("full expose seq took:  ", round(self.t11 - self.t_0 , 2), ' returned:  ', result)
-        self.camera.AbortExposure()
         return result
 
 #        for i in range(20):
@@ -627,11 +704,11 @@ class Camera:
 
     ##  NB the number of  keywords is questionable.
 
-    def finish_exposure(self, exposure_time, frame_type, counter, p_next_filter=None, p_next_focus=None, p_dither=False, \
+    def finish_exposure(self, exposure_time, frame_type, counter, \
                         gather_status=True, do_sep=False, no_AWS=False, start_x=None, start_y=None, quick=False, halt=False, \
                         low=0, high=0, script='False', opt=None):
         #print("Finish exposure Entered:  ", self.af_step, exposure_time, frame_type, counter, ' to go!')
-        print("Finish exposure Entered:  ", exposure_time, frame_type, counter, p_next_filter, p_next_focus, p_dither, \
+        print("Finish exposure Entered:  ", exposure_time, frame_type, counter,  \
                         gather_status, do_sep, no_AWS, start_x, start_y)
 
         if gather_status:   #Does this need to be here
@@ -642,7 +719,7 @@ class Camera:
         counter = 0
 
         result = {'error': False}
-        while True:     #THis is where we should have an outer timeout system
+        while True:     #THis is where we should have an camera probe throttle and timeout system
             try:
                 if self.maxim and self.camera.ImageReady: #and not self.img_available and self.exposing:
                     self.t4 = time.time()
@@ -653,13 +730,6 @@ class Camera:
                         g_dev['foc'].get_quick_status(self.post_foc)
                         g_dev['ocn'].get_quick_status(self.post_ocn)
                     self.t5 = time.time()
-                    ###Here is the place to potentially pipeline dithers, next filter, focus, etc.
-#                    if p_next_filter is not None:
-#                        print("Post image filter seek here")
-#                    if p_next_focus is not None:
-#                        print("Post Image focus seek here")
-#                    if p_dither == True:
-#                        print("Post image dither step here")
                     self.t6 = time.time()
                     self.img = self.camera.ImageArray
                     self.t7 = time.time()
@@ -1064,11 +1134,13 @@ class Camera:
                     g_dev['obs'].update_status()
                     self.t7= time.time()
                     print("Basic camera wait loop, be patient.")
+                    time.sleep(60)
                     #it takes about 15 seconds from AWS to get here for a bias.
             except Exception as e:
+                breakpoint()
                 counter += 1
                 time.sleep(.01)
-                #This shouldbe counted down for a loop cancel.
+                #This should be counted down for a loop cancel.
                 print('Was waiting for exposure end, arriving here is bad news:  ', e)
 
                 try:

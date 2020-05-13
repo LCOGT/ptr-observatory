@@ -46,7 +46,7 @@ from devices.mount import Mount
 from devices.telescope import Telescope
 from devices.observing_conditions import ObservingConditions
 from devices.rotator import Rotator
-from devices.switch import Switch    #Nothing implemented yet 20200307
+from devices.switch import Switch    #Nothing implemented yet 20200511
 from devices.screen import Screen
 from devices.sequencer import Sequencer
 from global_yard import g_dev

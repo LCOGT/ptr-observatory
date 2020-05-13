@@ -202,7 +202,7 @@ class Sequencer:
         else:
             self.current_script = "No current script"
             self.guard = False
-            print("No active script is scheduled.")
+            #print("No active script is scheduled.")
         pass
 
 

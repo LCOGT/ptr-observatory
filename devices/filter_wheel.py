@@ -170,7 +170,7 @@ class FilterWheel:
             time.sleep(0.2)
             g_dev['cam'].camera.GuiderFilter = filter_selections[1]
 
-    def set_name_command(self, req: dict, opt: dict, move_fil=False):
+    def set_name_command(self, req: dict, opt: dict):
         ''' set the filter position by filter name '''
         print(f"filter cmd: set_name", req, opt)
         filter_name = req['filter']
