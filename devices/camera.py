@@ -85,23 +85,45 @@ def reset_sequence(pCamera):
     camShelf.close()
     return seq
 
-def create_simple_sequence(exp_time=0, img_type=0, speed=0, suffix='',repeat=0, \
-                    readout_mode="RAW Mono", filter_name='air', enabled=1, \
-                    binning=1, binmode=0):
-
-    proto_file = open('D:\\archive\\archive\\kb01\\seq\\ptr_saf.pro')
+# Default filter needs to be pulled from site camera or filter config
+def create_simple_sequence(exp_time=0, img_type=0, speed=0, suffix='', repeat=1, \
+                    readout_mode="RAW", filter_name='W', enabled=1, \
+                    binning=1, binmode=0, column=1):
+    exp_time = round(abs(float(exp_time)), 3)
+    if img_type > 3:
+        img_type = 0
+    repeat = abs(int(repeat))
+    if repeat < 1:
+        repeat = 1
+    binning = abs(int(binning))
+    if binning > 4:
+        binning = 4
+    if filter_name == "":
+        filter_name = 'W'
+    proto_file = open('D:/archive/archive/kb01/seq/ptr_saf.pro')
     proto = proto_file.readlines()
-    proto[62] = proto[62][:9]  + str(exp_time) + proto[62][10:]
-    proto[65] = proto[65][:9]  + str(img_type) + proto[65][10:]
-    proto[58] = proto[58][:11] + str(suffix)   + proto[58][12:]
-    proto[56] = proto[56][:11] + str(speed)    + proto[56][12:]
-    proto[37] = proto[37][:11] + str(repeat)   + proto[37][12:]
-    proto[33] = proto[33][:16] + readout_mode  + proto[33][17:]
-    proto[15] = proto[15][:12] + filter_name   + proto[15][13:]
-    proto[11] = proto[11][:12] + str(enabled)  + proto[11][13:]
-    proto[01] = proto[01][:12] + str(binning)  + proto[01][13:]
-    proto.write('D:\\archive\\archive\\kb01\\seq\\ptr_saf.seq')
-    #  [3] is BinningMode]
+    proto_file.close()
+    print(proto, '\n\n')
+
+    if column == 1:
+        proto[62] = proto[62][:9]  + str(exp_time) + proto[62][12:]
+        proto[63] = proto[63][:9]  + str(img_type) + proto[63][10:]
+        proto[58] = proto[58][:12] + str(suffix)   + proto[58][12:]
+        proto[56] = proto[56][:10] + str(speed)    + proto[56][11:]
+        proto[37] = proto[37][:11] + str(repeat)   + proto[37][12:]
+        proto[33] = proto[33][:17] + readout_mode  + proto[33][20:]
+        proto[15] = proto[15][:12] + filter_name   + proto[15][13:]
+        proto[11] = proto[11][:12] + str(enabled)  + proto[11][13:]
+        proto[1]  = proto[1][:12]  + str(binning)  + proto[1][13:]
+    seq_file = open('D:/archive/archive/kb01/seq/ptr_saf.seq', 'w')
+    for item in range(len(proto)):
+        seq_file.write(proto[item])
+    seq_file.close()
+    print(proto)
+
+
+#  TEST  create_simple_sequence(exp_time=0, img_type=0, suffix='', repeat=1, \
+#                       binning=3, filter_name='air')
 
 
 class Camera:
@@ -169,14 +191,18 @@ class Camera:
             self.current_filter = 0
 
             print('Control is Maxim camera interface.')
- #       breakpoint()
-        # #self.camera.StartSequence("D:\archive\archive\kb01\seq\LRGB_1.seq")
-        # self.camera.StartSequence()
+        # breakpoint()
+        # # #self.camera.StartSequence('D:\\archive\\archive\\kb01\\seq\\ptr_saf.seq')
+        # create_simple_sequence(exp_time=720, img_type=2,filter_name='V')
+        # self.camera.StartSequence('D:/archive/archive/kb01/seq/ptr_saf.seq')
         # for item in range(50000):
-        #     print(self.camera.LinkEnabled, self.camera.SequenceRunning)
-        #     time.sleep(1)
-        # time.sleep(5)
-        # print('Final:  ', self.camera.SequenceRunning)
+        #     seq = self.camera.SequenceRunning
+        #     print(self.camera.LinkEnabled, seq)
+        #     if not seq:
+        #         break
+        #     time.sleep(.5)
+
+        # print('Exposure Finished:  ', item*0.5, ' seconds.')
         # breakpoint()
         self.exposure_busy = False
         self.cmd_in = None
@@ -277,7 +303,7 @@ class Camera:
             status['busy_lock'] = 'false'
         if self.maxim:
             cam_stat = 'Not implemented yet' #
-            print('AutoSave:  ', self.camera.SequenceRunning)
+            #print('AutoSave:  ', self.camera.SequenceRunning)
         if self.ascom:
             cam_stat = 'Not implemented yet' #self.camera.CameraState
         status['status'] = str(cam_stat).lower()  #The state could be expanded to be more meaningful.
