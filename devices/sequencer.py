@@ -46,7 +46,7 @@ and or visit more altitudes and temeperatures.
 
 '''
 def create_simple_sequence(exp_time=0, img_type=0, speed=0, suffix='', repeat=1, \
-                    readout_mode="RAW", filter_name='W', enabled=1, \
+                    readout_mode="RAW Mono", filter_name='W', enabled=1, \
                     binning=1, binmode=0, column=1):
     exp_time = round(abs(float(exp_time)), 3)
     if img_type > 3:
@@ -59,13 +59,14 @@ def create_simple_sequence(exp_time=0, img_type=0, speed=0, suffix='', repeat=1,
         binning = 4
     if filter_name == "":
         filter_name = 'W'
-    proto_file = open('D:\\archive\\archive\\kb01\\seq\\ptr_saf.pro')
+    proto_file = open('D:/archive/archive/kb01/seq/ptr_saf.pro')
     proto = proto_file.readlines()
     proto_file.close()
     print(proto, '\n\n')
+
     if column == 1:
         proto[62] = proto[62][:9]  + str(exp_time) + proto[62][12:]
-        proto[65] = proto[65][:9]  + str(img_type) + proto[65][10:]
+        proto[63] = proto[63][:9]  + str(img_type) + proto[63][10:]
         proto[58] = proto[58][:12] + str(suffix)   + proto[58][12:]
         proto[56] = proto[56][:10] + str(speed)    + proto[56][11:]
         proto[37] = proto[37][:11] + str(repeat)   + proto[37][12:]
@@ -73,7 +74,7 @@ def create_simple_sequence(exp_time=0, img_type=0, speed=0, suffix='', repeat=1,
         proto[15] = proto[15][:12] + filter_name   + proto[15][13:]
         proto[11] = proto[11][:12] + str(enabled)  + proto[11][13:]
         proto[1]  = proto[1][:12]  + str(binning)  + proto[1][13:]
-    seq_file = open('D:\\archive\\archive\\kb01\\seq\\ptr_saf.seq', 'w')
+    seq_file = open('D:/archive/archive/kb01/seq/ptr_saf.seq', 'w')
     for item in range(len(proto)):
         seq_file.write(proto[item])
     seq_file.close()
@@ -202,7 +203,7 @@ class Sequencer:
         self.sequencer_hold = False
          #events['Eve Bias Dark']
         #if True:
-        if (events['Eve Bias Dark'] <= ephem_now <= events['End Eve Bias Dark']):
+        if (events['Eve Bias Dark'] <= ephem_now <= events['End Eve Bias Dark']) and False:
             req = {'numOfBias': 31, 'bin3': True, 'numOfDark2': 3, 'bin4': False, 'bin1': True, \
                    'darkTime': 360, 'hotMap': True, 'bin2': True, 'numOfDark': 3, 'dark2Time': 600, \
                    'coldMap': True, 'script': 'genBiasDarkMaster', 'bin5': False}
@@ -222,7 +223,7 @@ class Sequencer:
         #     pass
         # elif (events[] <= ephem_now <= events[]):
         #     pass
-        elif  (events['Eve Sky Flats'] < ephem_now < events['End Eve Sky Flats']) \
+        elif  (events['Eve Sky Flats'] < ephem_now < events['End Eve Sky Flats']) and False \
                 and self.mode == 'Automatic' \
                 and wx_is_ok \
                 and self.wait_time <= 0 \
