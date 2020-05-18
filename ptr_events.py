@@ -8,7 +8,7 @@ This is a temporary script file.
 #Computer clock is UTC, Windows Time Zone is UTC, no Daylight slaving.
 '''
 This is also very old code just grafted on. Needs variable renaming, and a good scrub.
-
+THIS IS A TEST
 '''
 
 from math import *

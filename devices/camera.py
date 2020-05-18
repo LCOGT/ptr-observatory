@@ -806,6 +806,7 @@ class Camera:
                     try:
                         #Save the raw data after adding fits header information.
 #                        if not quick:
+                        time.sleep(2)
                         img_name = glob.glob(self.camera_path + 'autosave/*.f*t*')
                         img_name.sort()
                         hdu1 =  fits.open(img_name[-1])
