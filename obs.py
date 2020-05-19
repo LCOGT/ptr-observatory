@@ -166,7 +166,7 @@ class Observatory:
         self.aws_queue_thread = threading.Thread(target=self.send_to_AWS, args=())
         self.aws_queue_thread.start()
 
-        # uild the site (from-AWS) Queue and start a thread.
+        # Build the site (from-AWS) Queue and start a thread.
         # self.site_queue = queue.SimpleQueue()
         # self.site_queue_thread = threading.Thread(target=self.get_from_AWS, args=())
         # self.site_queue_thread.start()

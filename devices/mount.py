@@ -194,24 +194,24 @@ class Mount:
                 f'message': self.mount_message[:32]
             }
         elif self.tel == True:
-            breakpoint()
+            self.current_sidereal = self.mount.SiderealTime
             if self. mount.EquatorialSystem == 1:
                 self.get_current_times()
                 jnow_ra = self.mount.RightAscension
                 jnow_dec = self.mount.Declination
                 jnow_coord = SkyCoord(jnow_ra*u.hour, jnow_dec*u.degree, frame='fk5', \
                           equinox=self.equinox_now)
-                icrs_coord =jnow_coord.transform_to(ICRS)
-                ra= icrs_coord.ra.hour
-                dec = icrs_coord.dec.degree
+                icrs_coord = jnow_coord.transform_to(ICRS)
+                self.current_icrs_ra = icrs_coord.ra.hour
+                self.current_icrs_dec = icrs_coord.dec.degree
             else:
-                ra = self.mount.RightAscension
-                dec = self.mount.Declination
+                self.current_icrs_ra = self.mount.RightAscension
+                self.current_icrs_dec = self.mount.Declination
             status = {
                 f'timestamp': str(round(time.time(), 3)),
-                f'right_ascension': str(round(ra, 5)),  #
-                f'declination': str(round(dec, 4)),
-                f'sidereal_time': str(round(self.mount.SiderealTime, 5)),
+                f'right_ascension': str(round(self.current_icrs_ra, 5)),  #
+                f'declination': str(round(self.current_icrs_dec, 4)),
+                f'sidereal_time': str(round(self.current_sidereal, 5)),
                 f'tracking_right_ascension_rate': str(self.mount.RightAscensionRate),   #Will use asec/s not s/s as ASCOM does.
                 f'tracking_declination_rate': str(self.mount.DeclinationRate),
                 f'azimuth': str(round(self.mount.Azimuth, 3)),
@@ -426,6 +426,35 @@ class Mount:
         self.mount.SlewToCoordinatesAsync(ra, dec)
         self.mount.RightAscensionRate = tracking_rate_ra
         self.mount.DeclinationRate = tracking_rate_dec
+        self.current_icrs_ra = icrs_coord.ra.hour
+        self.current_icrs_dec = icrs_coord.dec.degree
+
+    def go_coord(self, ra, dec):
+        ''' Slew to the given ra/dec coordinates. '''
+
+        ''' unpark the telescope mount '''  #  NB can we check if unparked and save time?
+        if self.mount.CanPark:
+            #print("mount cmd: unparking mount")
+            self.mount.Unpark()
+
+        # Offset from sidereal in arcseconds per SI second, default = 0.0
+        tracking_rate_ra = 0#opt.get('tracking_rate_ra', 0)
+
+        # Arcseconds per SI second, default = 0.0
+        tracking_rate_dec =0#opt.get('tracking_rate_dec', 0)
+
+        if self.mount.EquatorialSystem == 1:
+            self.get_current_times()   #  NB We should find a way to refresh this once a day, esp. for status return.
+            icrs_coord = SkyCoord(ra*u.hour, dec*u.degree, frame='icrs')
+            jnow_coord = icrs_coord.transform_to(FK5(equinox=self.equinox_now))
+            ra = jnow_coord.ra.hour
+            dec = jnow_coord.dec.degree
+        self.mount.Tracking = True
+        self.mount.SlewToCoordinatesAsync(ra, dec)
+        self.mount.RightAscensionRate = tracking_rate_ra
+        self.mount.DeclinationRate = tracking_rate_dec
+        self.current_icrs_ra = icrs_coord.ra.hour
+        self.current_icrs_dec = icrs_coord.dec.degree
 
     def slewToSkyFlatAsync(self):
         az, alt = self.astro_events.flat_spot_now()

@@ -74,7 +74,7 @@ class Telescope:
         self.doy = ((iso_day[1]-1)*7 + (iso_day[2] ))
         self.equinox_now = 'J' +str(round((iso_day[0] + ((iso_day[1]-1)*7 + (iso_day[2] ))/365), 2))
         return
-    
+
     def get_status(self):
         alt = g_dev['mnt'].mount.Altitude
         zen = round((90 - alt), 3)
@@ -114,36 +114,38 @@ class Telescope:
                 f'message': g_dev['mnt'].mount_message[:32]
             }
         elif self.tel == True:
+            self.current_sidereal = g_dev['mnt'].mount.SiderealTime
             if g_dev['mnt'].mount.EquatorialSystem == 1:
-                self.get_current_times()  
+                self.get_current_times()
                 jnow_ra = g_dev['mnt'].mount.RightAscension
                 jnow_dec = g_dev['mnt'].mount.Declination
-                jnow_coord = SkyCoord(jnow_ra*u.hour, jnow_dec*u.degree, \
-                                      frame='fk5', equinox=self.equinox_now)
-                icrs_coord =jnow_coord.transform_to(ICRS)
-                ra= icrs_coord.ra.hour
-                dec = icrs_coord.dec.degree
+                jnow_coord = SkyCoord(jnow_ra*u.hour, jnow_dec*u.degree, frame='fk5', \
+                          equinox=self.equinox_now)
+                icrs_coord = jnow_coord.transform_to(ICRS)
+                self.current_icrs_ra = icrs_coord.ra.hour
+                self.current_icrs_dec = icrs_coord.dec.degree
             else:
-                ra = g_dev['mnt'].mount.RightAscension
-                dec = g_dev['mnt'].mount.Declination
+                self.current_icrs_ra = g_dev['mnt'].mount.RightAscension
+                self.current_icrs_dec = sg_dev['mnt'].mount.Declination
             status = {
                 f'timestamp': str(round(time.time(), 3)),
-                f'right_ascension': str(round(ra, 5)),
-                f'declination': str(round(dec, 4)),
-                f'sidereal_time': str(round(g_dev['mnt'].mount.SiderealTime, 5)),
-                f'tracking_right_ascension_rate': str(g_dev['mnt'].mount.RightAscensionRate),
+                f'right_ascension': str(round(self.current_icrs_ra, 5)),  #
+                f'declination': str(round(self.current_icrs_dec, 4)),
+                f'sidereal_time': str(round(self.current_sidereal, 5)),
+                f'tracking_right_ascension_rate': str(g_dev['mnt'].mount.RightAscensionRate),   #Will use asec/s not s/s as ASCOM does.
                 f'tracking_declination_rate': str(g_dev['mnt'].mount.DeclinationRate),
                 f'azimuth': str(round(g_dev['mnt'].mount.Azimuth, 3)),
                 f'altitude': str(round(alt, 3)),
                 f'zenith_distance': str(round(zen, 3)),
-                f'airmass': airmass_string,
+                f'airmass': str(round(airmass,4)),
                 f'coordinate_system': str(self.rdsys),
-                'equinox':  str(self.equinox_now),
-                f'pointing_instrument': str(self.inst),
+                f'equinox':  self.equinox_now,
+                f'pointing_instrument': str(self.inst),  # needs fixing
                 f'message': g_dev['mnt'].mount_message[:32]
 #                f'is_parked': (self.mount.AtPark),
 #                f'is_tracking': str(self.mount.Tracking),
 #                f'is_slewing': str(self.mount.Slewing)
+
             }
         else:
             print('Proper device_name is missing, or tel == None')

@@ -38,7 +38,7 @@ from astroquery.simbad import Simbad
 #from mpl_toolkits.basemap import Basemap
 
 
-from ptr_config import *
+
 import ephem
 #from ptr_astrometrics import *
 

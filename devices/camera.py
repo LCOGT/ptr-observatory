@@ -86,6 +86,7 @@ def reset_sequence(pCamera):
     return seq
 
 # Default filter needs to be pulled from site camera or filter config
+# NB this routine is duplicated in sequencer.py. Bad form.
 def create_simple_sequence(exp_time=0, img_type=0, speed=0, suffix='', repeat=1, \
                     readout_mode="RAW Mono", filter_name='W', enabled=1, \
                     binning=1, binmode=0, column=1):
