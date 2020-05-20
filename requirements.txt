@@ -16,7 +16,7 @@ ephem==3.7.7.1
 future==0.17.1
 gevent==1.4.0
 greenlet==0.4.15
-httplib2==0.17.0
+httplib2==0.18.0
 idna==2.8
 imageio==2.8.0
 iso8601==0.1.12
