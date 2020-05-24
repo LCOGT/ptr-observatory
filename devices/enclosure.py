@@ -154,6 +154,9 @@ class Enclosure:
             shutter_str = "Roof."
         if  obs_win_begin <= ephemNow <= sunZ88Cl:
             self.enclosure.Slaved = True
+            # nb tHIS SHOULD WORK DIFFERENT. Open then slew to Opposite az to Sun set.  Stay
+            # there until telescope is unparked, then  slave the dome.  Or maybe leave it at
+            # park, where Neyle can see it from house and always ready to respong to a Wx close.
         else:
             self.enclosure.Slaved = False
 
@@ -170,6 +173,7 @@ class Enclosure:
             self.cycles += 1           #if >=3 inhibits reopening for Wx  -- may need shelving so this persists.
             #A countdown to re-open
             if self.status_string.lower() in ['closed', 'closing']:
+
                 self.enclosure.OpenShutter()   #<<<<NB NB NB Only enable when code is fully proven to work.
                 print("Night time Open issued to the "  + shutter_str)
         elif (obs_win_begin >= ephemNow or ephemNow >= sunZ88Cl \

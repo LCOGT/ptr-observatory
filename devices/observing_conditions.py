@@ -115,7 +115,9 @@ class ObservingConditions:
             return status
         elif self.site == 'wmd':
             try:
-                wx = eval(self.redis_server.get('<ptr-wx-1_state'))
+                breakpoint()
+                pass
+                #wx = eval(self.redis_server.get('<ptr-wx-1_state'))
             except:
                 print('Redis is not returning Wx Data properly.')
             try:
@@ -159,7 +161,9 @@ class ObservingConditions:
                 time.sleep(1)
                 # This is meant to be a retry
                 try:
-                    wx = eval(self.redis_server.get('<ptr-wx-1_state'))
+                    breakpoint()
+                    pass
+                    #wx = eval(self.redis_server.get('<ptr-wx-1_state'))
                 except:
                     print('Redis is not turning Wx Data properly.')
                 status = {"temperature": wx["amb_temp C"],

@@ -85,10 +85,10 @@ class Telescope:
         else:
             new_z = zen
         sec_z = 1/cos(radians(new_z))
-        airmass = round(sec_z - 0.0018167*(sec_z - 1) - 0.002875*((sec_z - 1)**2) - 0.0008083*((sec_z - 1)**3),3)
-        #for some reason the comare fails with a very large airmass near infinity
-        if abs(int(airmass)) > 5:
+        airmass = abs(round(sec_z - 0.0018167*(sec_z - 1) - 0.002875*((sec_z - 1)**2) - 0.0008083*((sec_z - 1)**3),3))
+        if int(airmass) > 5:
             airmass_string = " >> 5 "
+            airmass = 5.0
         else:
             airmass = round(airmass, 4)
             airmass_string = str(airmass)
@@ -137,7 +137,7 @@ class Telescope:
                 f'azimuth': str(round(g_dev['mnt'].mount.Azimuth, 3)),
                 f'altitude': str(round(alt, 3)),
                 f'zenith_distance': str(round(zen, 3)),
-                f'airmass': str(round(airmass,4)),
+                f'airmass': airmass_string,
                 f'coordinate_system': str(self.rdsys),
                 f'equinox':  self.equinox_now,
                 f'pointing_instrument': str(self.inst),  # needs fixing

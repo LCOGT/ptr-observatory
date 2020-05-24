@@ -225,15 +225,14 @@ class Sequencer:
         #     pass
         # elif (events[] <= ephem_now <= events[]):
         #     pass
-        elif  (events['Eve Sky Flats'] < ephem_now < events['End Eve Sky Flats']) and False \
-                and self.mode == 'Automatic' \
-                and wx_is_ok \
-                and self.wait_time <= 0 \
-                and not False:
+        elif  (events['Eve Sky Flats'] < ephem_now < events['End Eve Sky Flats'])  \
+                and g_dev['enc'].mode == 'Automatic' \
+                and g_dev['ocn'].wx_is_ok \
+                and g_dev['enc'].wait_time <= 0 \
+                and not self.guard:
             self.guard = True
             self.current_script = "Eve Sky Flat script"
-            self.sky_flat_script({}, {})   #Null command dictionaries.
-            self.current_script = "No current script"
+            self.sky_flat_script({}, {})   #Null command dictionaries
             self.guard = False
         else:
             self.current_script = "No current script"
@@ -439,6 +438,7 @@ class Sequencer:
         #shut_comp =  req['shutterCompensation']
         if flat_count < 1: flat_count = 1
         g_dev['mnt'].unpark_command({}, {})
+        g_dev['enc'].Slaved = True  #Bring the dome into the picture.
         g_dev['obs'].update_status()
         g_dev['scr'].screen_dark()
         g_dev['obs'].update_status()
@@ -457,7 +457,7 @@ class Sequencer:
             g_dev['mnt'].slewToSkyFlatAsync()
             req = {'time': float(exp_time),  'alias': name, 'image_type': 'sky flat'}
             opt = {'size': 100, 'count': flat_count, 'filter': g_dev['fil'].filter_data[current_filter][0]}
-            result = g_dev['cam'].expose_command(req, opt, gather_status=True, no_AWS=True, no_sep = True)
+            result = g_dev['cam'].expose_command(req, opt, gather_status=True, no_AWS=True, do_sep = False)
             bright = result['patch']
             g_dev['obs'].update_status()
             print("Bright:  ", bright)
@@ -473,7 +473,7 @@ class Sequencer:
             g_dev['obs'].update_status()
             req = {'time': float(exp_time),  'alias': name, 'image_type': 'sky flat'}
             opt = {'size': 100, 'count': flat_count , 'filter': g_dev['fil'].filter_data[current_filter][0]}
-            result = g_dev['cam'].expose_command(req, opt, gather_status=True, no_AWS=True, no_sep = True)
+            result = g_dev['cam'].expose_command(req, opt, gather_status=True, no_AWS=True, do_sep = False)
             bright2 = result['patch']
             time.sleep(2)
             if bright2 > 35000:
@@ -551,20 +551,32 @@ class Sequencer:
         Fine focus consists of five points plus a verify.
         Optionally individual images can be multiples of one to average out seeing.
         NBNBNB This code needs to go to known stars to be moe relaible and permit subframes
+
+        Result format:
+                        result['mean_focus'] = avg_foc[1]
+                        result['mean_rotation'] = avg_rot[1]
+                        result['FWHM'] = spot   What is returned is a close proxy to real fitted FWHM.
+                        result['half_FD'] = None
+                        result['patch'] = cal_result
+                        result['temperature'] = avg_foc[2]  This is probably tube not reported by Gemini.
         '''
         self.guard = True
         print('AF entered with:  ', req, opt)
         #self.sequencer_hold = True  #Blocks command checks.
-        req = {'time': 10,  'alias':  str(self.config['camera']['camera1']['name']), 'image_type': 'light'}   #  NB Should pick up filter and constats from config
-        opt = {'size': 100, 'count': 1, 'filter': 'W'}   #   'fwhm_sim': 2.}
-        #Take first image where we are
-
-        #Need to pick up use Tycho * and go to closest Mag 7.5 with no flip
-        focus_star = tycho.dist_sort_targets(g_dev['tel'].current_icrs_ra, g_dev['tel'].current_icrs_dec, \
-                                g_dev['tel'].current_sidereal)
-        print("Going to near focus star " + str(focus_star[0]) + "  degrees away.")
-        g_dev['mnt'].go_coord(focus_star[1][1], focus_star[1][0])
+        if req['target'] == 'near_tycho_star':   ## 'bin', 'area'  Other parameters
+            #  Go to closest Mag 7.5 Tycho * with no flip
+            focus_star = tycho.dist_sort_targets(g_dev['tel'].current_icrs_ra, g_dev['tel'].current_icrs_dec, \
+                                    g_dev['tel'].current_sidereal)
+            print("Going to near focus star " + str(focus_star[0]) + "  degrees away.")
+            g_dev['mnt'].go_coord(focus_star[1][1], focus_star[1][0])
+            req = {'time': 3,  'alias':  str(self.config['camera']['camera1']['name']), 'image_type': 'light'}   #  NB Should pick up filter and constats from config
+            opt = {'size': 100, 'count': 1, 'filter': 'W'}
+        else:
+            pass   #Just take time image where currently pointed.
+            req = {'time': 10,  'alias':  str(self.config['camera']['camera1']['name']), 'image_type': 'light'}   #  NB Should pick up filter and constats from config
+            opt = {'size': 100, 'count': 1, 'filter': 'W'}
         foc_pos1 = g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron
+        focus_start = int(foc_pos1)
         print('Autofocus Starting at:  ', foc_pos1, '\n\n')
         throw = 100  # NB again, from config.  Units are microns
         result = g_dev['cam'].expose_command(req, opt)
@@ -590,12 +602,18 @@ class Sequencer:
         #Digits are to help out pdb commands!
         a1, b1, c1, d1 = fit_quadratic(x, y)
         new_spot = round(a1*d1*d1 + b1*d1 + c1, 2)
-        print ('Moving to Solved focus:  ', round(d1, 2), new_spot)
-        g_dev['foc'].focuser.Move(int(d1)*g_dev['foc'].micron_to_steps)
-        result = g_dev['cam'].expose_command(req, opt, halt=True)
-        spot4 = result['FWHM']
-        foc_pos4 = result['mean_focus']
-        print('\n\n\nFound best focus at:  ', foc_pos4, round(spot4, 2), '\n\n\n')
+        if x.min() <= d1 <= x.max:
+            print ('Moving to Solved focus:  ', round(d1, 2), ' calculated:  ',  new_spot)
+            g_dev['foc'].focuser.Move(int(d1)*g_dev['foc'].micron_to_steps)
+            result = g_dev['cam'].expose_command(req, opt, halt=True)
+            spot4 = result['FWHM']
+            foc_pos4 = result['mean_focus']
+            print('\n\n\nFound best focus at:  ', foc_pos4,' measured is:  ',  round(spot4, 2), '\n\n\n')
+        else:
+            print('Autofocus did not converge. Moving back to starting focus:  ', focus_start)
+            g_dev['foc'].focuser.Move((focus_start)*g_dev['foc'].micron_to_steps)
+
+        #  NB here we coudld re-solve with the overlay spot just to verify solution is sane.
         self.sequencer_hold = False   #Allow comand checks.
         self.guard = False
 
@@ -609,13 +627,21 @@ class Sequencer:
         Optionally individual images can be multiples of one to average out seeing.
         NBNBNB This code needs to go to known stars to be moe relaible and permit subframes
         '''
-
         print('AF entered with:  ', req, opt)
+        self.guard = True
         #self.sequencer_hold = True  #Blocks command checks.
-        req = {'time': 10,  'alias':  str(self.config['camera']['camera1']['name']), 'image_type': 'light'}   #  NB Should pick up filter and constats from config
-        opt = {'size': 100, 'count': 1, 'filter': 'W'}   #   'fwhm_sim': 2.}
-        #Take first image where we are
-
+        if req['target'] == 'near_tycho_star':   ## 'bin', 'area'  Other parameters
+            #  Go to closest Mag 7.5 Tycho * with no flip
+            focus_star = tycho.dist_sort_targets(g_dev['tel'].current_icrs_ra, g_dev['tel'].current_icrs_dec, \
+                                    g_dev['tel'].current_sidereal)
+            print("Going to near focus star " + str(focus_star[0]) + "  degrees away.")
+            g_dev['mnt'].go_coord(focus_star[1][1], focus_star[1][0])
+            req = {'time': 3,  'alias':  str(self.config['camera']['camera1']['name']), 'image_type': 'light'}   #  NB Should pick up filter and constats from config
+            opt = {'size': 100, 'count': 1, 'filter': 'W'}
+        else:
+            pass   #Just take time image where currently pointed.
+            req = {'time': 10,  'alias':  str(self.config['camera']['camera1']['name']), 'image_type': 'light'}   #  NB Should pick up filter and constats from config
+            opt = {'size': 100, 'count': 1, 'filter': 'W'}
         foc_pos1 = g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron
         print('Autofocus Starting at:  ', foc_pos1, '\n\n')
         throw = 75  # NB again, from config.  Units are microns
@@ -632,7 +658,7 @@ class Sequencer:
         result = g_dev['cam'].expose_command(req, opt)
         spot3 = result['FWHM']
         foc_pos3 = result['mean_focus']
-        g_dev['foc'].focuser.Move((foc_pos1 + 4*throw)*g_dev['foc'].micron_to_steps)   #It is important to overshoot to overcome any backlash
+        g_dev['foc'].focuser.Move((foc_pos1 + 5*throw)*g_dev['foc'].micron_to_steps)   #It is important to overshoot to overcome any backlash
         g_dev['foc'].focuser.Move((foc_pos1 - 2*throw)*g_dev['foc'].micron_to_steps)
         #opt['fwhm_sim'] = 5
         result = g_dev['cam'].expose_command(req, opt)
@@ -649,13 +675,20 @@ class Sequencer:
         #Digits are to help out pdb commands!
         a1, b1, c1, d1 = fit_quadratic(x, y)
         new_spot = round(a1*d1*d1 + b1*d1 + c1, 2)
-        print ('Solved focus:  ', round(d1, 2), new_spot)
-        g_dev['foc'].focuser.Move(int(d1)*g_dev['foc'].micron_to_steps)
-        result = g_dev['cam'].expose_command(req, opt, halt=True)
-        spot4 = result['FWHM']
-        foc_pos4 = result['mean_focus']
-        print('\n\n\nFound best focus at:  ', foc_pos4, round(spot4, 2), '\n\n\n')
+        if x.min() <= d1 <= x.max:
+            print ('Moving to Solved focus:  ', round(d1, 2), ' calculated:  ',  new_spot)
+            g_dev['foc'].focuser.Move(int(d1)*g_dev['foc'].micron_to_steps)
+            result = g_dev['cam'].expose_command(req, opt, halt=True)
+            spot4 = result['FWHM']
+            foc_pos4 = result['mean_focus']
+            print('\n\n\nFound best focus at:  ', foc_pos4,' measured is:  ',  round(spot4, 2), '\n\n\n')
+        else:
+            print('Autofocus did not converge. Moving back to starting focus:  ', focus_start)
+            g_dev['foc'].focuser.Move((focus_start)*g_dev['foc'].micron_to_steps)
+
+        #  NB here we coudld re-solve with the overlay spot just to verify solution is sane.
         self.sequencer_hold = False   #Allow comand checks.
+        self.guard = False
 
 
     def equatorial_pointing_run(self, reg, opt, spacing=10, vertical=False, grid=False, alt_minimum=25):

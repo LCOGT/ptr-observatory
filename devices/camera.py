@@ -1016,7 +1016,7 @@ class Camera:
                                 bkg = sep.Background(img)
                                 #bkg_rms = bkg.rms()
                                 img -= bkg
-                                sources = sep.extract(img, 7, err=1, minarea=30)#, filter_kernel=kern)
+                                sources = sep.extract(img_sub, 4.5, err=bkg.globalrms, minarea=9)#, filter_kernel=kern)
                                 sources.sort(order = 'cflux')
                                 print('No. of detections:  ', len(sources))
                                 sep_result = []
@@ -1024,15 +1024,13 @@ class Camera:
                                 for source in sources:
                                     a0 = source['a']
                                     b0 =  source['b']
-                                    if (a0 - b0)/(a0 + b0)/2 > 0.1:    #This seems problematic and should reject if peak > saturation
-                                        continue
-                                    r0 = round(math.sqrt(a0**2 + b0**2), 2)
-                                    sep_result.append((round((source['x']), 1), round((source['y']), 1), round((source['cflux']), 1), \
-                                                   round(r0), 2))
+                                    r0 = 2*round(math.sqrt(a0**2 + b0**2), 2)
+                                    sep_result.append((round((source['x']), 2), round((source['y']), 2), round((source['cflux']), 2), \
+                                                   round(r0), 3))
                                     spots.append(round((r0), 2))
                                 spot = np.array(spots)
                                 try:
-                                    spot = np.median(spot[int(len(spot)*0.5):int(len(spot)*0.75)])
+                                    spot = np.median(spot[-9:-2])   #  This grabs seven spots.
                                     print(sep_result, '\n', 'Spot and flux:  ', spot, source['cflux'], len(sources), avg_foc[1], '\n')
                                     if len(sep_result) < 5:
                                         spot = None
@@ -1248,7 +1246,7 @@ class Camera:
 
         self.t8 = time.time()
         result['error': True]
-        print('Outer Try:  ', result )
+        print('WHILE try, Failed exposure:  ', result )
         return result
 
     def enqueue_image(self, priority, im_path, name):
