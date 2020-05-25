@@ -563,35 +563,38 @@ class Sequencer:
         self.guard = True
         print('AF entered with:  ', req, opt)
         #self.sequencer_hold = True  #Blocks command checks.
+        start_ra = g_dev['mnt'].RightAscension
+        start_dec = g_dev['mnt'].Declination
         if req['target'] == 'near_tycho_star':   ## 'bin', 'area'  Other parameters
+
             #  Go to closest Mag 7.5 Tycho * with no flip
             focus_star = tycho.dist_sort_targets(g_dev['tel'].current_icrs_ra, g_dev['tel'].current_icrs_dec, \
                                     g_dev['tel'].current_sidereal)
             print("Going to near focus star " + str(focus_star[0]) + "  degrees away.")
             g_dev['mnt'].go_coord(focus_star[1][1], focus_star[1][0])
-            req = {'time': 3,  'alias':  str(self.config['camera']['camera1']['name']), 'image_type': 'light'}   #  NB Should pick up filter and constats from config
+            req = {'time': 5,  'alias':  str(self.config['camera']['camera1']['name']), 'image_type': 'light'}   #  NB Should pick up filter and constats from config
             opt = {'size': 100, 'count': 1, 'filter': 'W'}
         else:
             pass   #Just take time image where currently pointed.
             req = {'time': 10,  'alias':  str(self.config['camera']['camera1']['name']), 'image_type': 'light'}   #  NB Should pick up filter and constats from config
             opt = {'size': 100, 'count': 1, 'filter': 'W'}
-        foc_pos1 = g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron
-        focus_start = int(foc_pos1)
-        print('Autofocus Starting at:  ', foc_pos1, '\n\n')
+        foc_pos0 = g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron
+
+        print('Autofocus Starting at:  ', foc_pos0, '\n\n')
         throw = 100  # NB again, from config.  Units are microns
         result = g_dev['cam'].expose_command(req, opt)
         spot1 = result['FWHM']
         foc_pos1 = result['mean_focus']
         print('Autofocus Moving In.\n\n')
-        g_dev['foc'].focuser.Move((foc_pos1 - throw)*g_dev['foc'].micron_to_steps)
+        g_dev['foc'].focuser.Move((foc_pos0 - throw)*g_dev['foc'].micron_to_steps)
         #opt['fwhm_sim'] = 4.
         result = g_dev['cam'].expose_command(req, opt)
         spot2 = result['FWHM']
         foc_pos2 = result['mean_focus']
         print('Autofocus Overtaveling Out.\n\n')
-        g_dev['foc'].focuser.Move((foc_pos1 + 2*throw)*g_dev['foc'].micron_to_steps)   #It is important to overshoot to overcome any backlash
+        g_dev['foc'].focuser.Move((foc_pos0 + 2*throw)*g_dev['foc'].micron_to_steps)   #It is important to overshoot to overcome any backlash
         print('Autofocus Moving back in half-way.\n\n')
-        g_dev['foc'].focuser.Move((foc_pos1 + throw)*g_dev['foc'].micron_to_steps)
+        g_dev['foc'].focuser.Move((foc_pos0 + throw)*g_dev['foc'].micron_to_steps)
         #opt['fwhm_sim'] = 5
         result = g_dev['cam'].expose_command(req, opt)
         spot3 = result['FWHM']
@@ -612,8 +615,8 @@ class Sequencer:
         else:
             print('Autofocus did not converge. Moving back to starting focus:  ', focus_start)
             g_dev['foc'].focuser.Move((focus_start)*g_dev['foc'].micron_to_steps)
-
-        #  NB here we coudld re-solve with the overlay spot just to verify solution is sane.
+        g_dev['mnt'].SlewToCoordinatesAsync(start_ra, start_dec)   #Return to pre-focus pointing.
+        #  NB here we could re-solve with the overlay spot just to verify solution is sane.
         self.sequencer_hold = False   #Allow comand checks.
         self.guard = False
 
@@ -622,7 +625,7 @@ class Sequencer:
         V curve is a big move focus designed to fit two lines adjacent to the more normal focus curve.
         It finds the approximate focus, particulary for a new instrument. It requires 8 points plus
         a verify.
-        Quick focus consists of three points plus a verify.
+        Auto focus consists of three points plus a verify.
         Fine focus consists of five points plus a verify.
         Optionally individual images can be multiples of one to average out seeing.
         NBNBNB This code needs to go to known stars to be moe relaible and permit subframes
@@ -630,44 +633,46 @@ class Sequencer:
         print('AF entered with:  ', req, opt)
         self.guard = True
         #self.sequencer_hold = True  #Blocks command checks.
+        start_ra = g_dev['mnt'].RightAscension
+        start_dec = g_dev['mnt'].Declination
         if req['target'] == 'near_tycho_star':   ## 'bin', 'area'  Other parameters
             #  Go to closest Mag 7.5 Tycho * with no flip
             focus_star = tycho.dist_sort_targets(g_dev['tel'].current_icrs_ra, g_dev['tel'].current_icrs_dec, \
                                     g_dev['tel'].current_sidereal)
             print("Going to near focus star " + str(focus_star[0]) + "  degrees away.")
             g_dev['mnt'].go_coord(focus_star[1][1], focus_star[1][0])
-            req = {'time': 3,  'alias':  str(self.config['camera']['camera1']['name']), 'image_type': 'light'}   #  NB Should pick up filter and constats from config
+            req = {'time': 5,  'alias':  str(self.config['camera']['camera1']['name']), 'image_type': 'light'}   #  NB Should pick up filter and constats from config
             opt = {'size': 100, 'count': 1, 'filter': 'W'}
         else:
             pass   #Just take time image where currently pointed.
             req = {'time': 10,  'alias':  str(self.config['camera']['camera1']['name']), 'image_type': 'light'}   #  NB Should pick up filter and constats from config
             opt = {'size': 100, 'count': 1, 'filter': 'W'}
-        foc_pos1 = g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron
-        print('Autofocus Starting at:  ', foc_pos1, '\n\n')
+        foc_pos0 = g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron
+        print('Autofocus Starting at:  ', foc_pos0, '\n\n')
         throw = 75  # NB again, from config.  Units are microns
         result = g_dev['cam'].expose_command(req, opt)
         spot1 = result['FWHM']
         foc_pos1 = result['mean_focus']
-        g_dev['foc'].focuser.Move((foc_pos1 - throw)*g_dev['foc'].micron_to_steps)
+        g_dev['foc'].focuser.Move((foc_pos0 - throw)*g_dev['foc'].micron_to_steps)
         #opt['fwhm_sim'] = 4.
         result = g_dev['cam'].expose_command(req, opt)
         spot2 = result['FWHM']
         foc_pos2 = result['mean_focus']
-        g_dev['foc'].focuser.Move((foc_pos1 - 2*throw)*g_dev['foc'].micron_to_steps)
+        g_dev['foc'].focuser.Move((foc_pos0 - 2*throw)*g_dev['foc'].micron_to_steps)
         #opt['fwhm_sim'] = 4.
         result = g_dev['cam'].expose_command(req, opt)
         spot3 = result['FWHM']
         foc_pos3 = result['mean_focus']
-        g_dev['foc'].focuser.Move((foc_pos1 + 5*throw)*g_dev['foc'].micron_to_steps)   #It is important to overshoot to overcome any backlash
-        g_dev['foc'].focuser.Move((foc_pos1 - 2*throw)*g_dev['foc'].micron_to_steps)
+        g_dev['foc'].focuser.Move((foc_pos0 + 5*throw)*g_dev['foc'].micron_to_steps)   #It is important to overshoot to overcome any backlash
+        g_dev['foc'].focuser.Move((foc_pos0 - 2*throw)*g_dev['foc'].micron_to_steps)
         #opt['fwhm_sim'] = 5
         result = g_dev['cam'].expose_command(req, opt)
         spot4 = result['FWHM']
         foc_pos4 = result['mean_focus']
-        g_dev['foc'].focuser.Move((foc_pos1 - throw)*g_dev['foc'].micron_to_steps)
+        g_dev['foc'].focuser.Move((foc_pos0 - throw)*g_dev['foc'].micron_to_steps)
         #opt['fwhm_sim'] = 4.
         result = g_dev['cam'].expose_command(req, opt)
-        spot25 = result['FWHM']
+        spot5 = result['FWHM']
         foc_pos5 = result['mean_focus']
         x = [foc_pos1, foc_pos2, foc_pos3, foc_pos4, foc_pos5]
         y = [spot1, spot2, spot3, spot4, spot5]
@@ -683,9 +688,9 @@ class Sequencer:
             foc_pos4 = result['mean_focus']
             print('\n\n\nFound best focus at:  ', foc_pos4,' measured is:  ',  round(spot4, 2), '\n\n\n')
         else:
-            print('Autofocus did not converge. Moving back to starting focus:  ', focus_start)
-            g_dev['foc'].focuser.Move((focus_start)*g_dev['foc'].micron_to_steps)
-
+            print('Autofocus did not converge. Moving back to starting focus:  ', foc_pos0)
+            g_dev['foc'].focuser.Move((foc_pos0)*g_dev['foc'].micron_to_steps)
+        g_dev['mnt'].SlewToCoordinatesAsync(start_ra, start_dec)   #Return to pre-focus pointing.
         #  NB here we coudld re-solve with the overlay spot just to verify solution is sane.
         self.sequencer_hold = False   #Allow comand checks.
         self.guard = False

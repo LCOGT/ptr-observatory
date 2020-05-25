@@ -430,7 +430,7 @@ class Mount:
         self.current_icrs_dec = icrs_coord.dec.degree
 
     def go_coord(self, ra, dec):
-        ''' Slew to the given ra/dec coordinates. '''
+        ''' Slew to the given ra/dec coordinates, supplied in ICRS '''
 
         ''' unpark the telescope mount '''  #  NB can we check if unparked and save time?
         if self.mount.CanPark:

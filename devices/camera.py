@@ -104,7 +104,7 @@ def create_simple_sequence(exp_time=0, img_type=0, speed=0, suffix='', repeat=1,
     proto_file = open('D:/archive/archive/kb01/seq/ptr_saf.pro')
     proto = proto_file.readlines()
     proto_file.close()
-    print(proto, '\n\n')
+    #print(proto, '\n\n')
 
     if column == 1:
         proto[62] = proto[62][:9]  + str(exp_time) + proto[62][12:]
@@ -120,7 +120,7 @@ def create_simple_sequence(exp_time=0, img_type=0, speed=0, suffix='', repeat=1,
     for item in range(len(proto)):
         seq_file.write(proto[item])
     seq_file.close()
-    print(proto)
+    #print(proto)
 
 
 #  TEST  create_simple_sequence(exp_time=0, img_type=0, suffix='', repeat=1, \
@@ -887,12 +887,13 @@ class Camera:
                             hdu.header['MNT-SLEW'] = avg_mnt['is_slewing']
                             hdu.header['MNT-TRAK'] = avg_mnt['is_tracking']
                             hdu.header['OTA'] = ""
+                            hdu.header['SELECTEL'] = "tel1"
                             hdu.header['ROTATOR'] = ""
                             hdu.header['ROTANGLE'] = avg_rot[1]
                             hdu.header['ROTMOVNG'] = avg_rot[2]
                             hdu.header['FOCUS'] = ""
                             hdu.header['FOCUSPOS'] = avg_foc[1]
-                            hdu.header['FOCUSTEM'] = avg_foc[2]
+                            hdu.header['FOCUSTMP'] = avg_foc[2]
                             hdu.header['FOCUSMOV'] = avg_foc[3]
                             hdu.header['WX'] = ""
                             hdu.header['SKY-TEMP'] = avg_ocn[1]
