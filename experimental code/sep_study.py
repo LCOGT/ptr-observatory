@@ -281,7 +281,6 @@ if __name__ == '__main__':
 
     for image in fits_file_list[2:]:
         focus = get_sources(image, bright_limit=3, display=False)
-    print(focus)
 
 
 
