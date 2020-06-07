@@ -273,7 +273,7 @@ def get_sources(img, bright_limit=2, display=False):
 
 if __name__ == '__main__':
     print('sep is starting')
-    path = 'D:/archive/archive/kb01/20200524/to_AWS/'
+    path = 'D:/archive/archive/sq01/20200524/to_AWS/'
     #path = 'C:\\Users\\obs\\Documents\\PlaneWave Instruments\\Images\\Focus\\2019-02-20\\New folder\\'
     fits_file_list = glob.glob(path + '*EX01*.f*t*')
 

@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+ # -*- coding: utf-8 -*-
 """
 Created on Sat Oct 26 16:35:36 2019
 
@@ -360,17 +360,17 @@ def make_master_dark (alias, path, lng_path, selector_string, out_file, super_bi
 
 if __name__ == '__main__':
     camera_name = config.site_config['camera']['camera1']['name']
-    archive_path = "D:/archive/archive/kb01/autosave/"
-    lng_path = "D:/archive/archive/kb01/lng/"
-    # make_master_bias(camera_name, archive_path, lng_path, '*b_1*', 'mb_1.fits')
-    # make_master_bias(camera_name, archive_path, lng_path, '*b_2*', 'mb_2.fits')
-    # make_master_bias(camera_name, archive_path, lng_path, '*b_3*', 'mb_3.fits')
-    # make_master_bias(camera_name, archive_path, lng_path, '*b_4*', 'mb_4.fits')
-    #  make_master_dark(camera_name, archive_path, lng_path, '*d_1_120*', 'md_1_120.fits', 'mb_1.fits')
-    make_master_dark(camera_name, archive_path, lng_path, '*d_1_360*', 'md_1_360.fits', 'mb_1.fits')
-    make_master_dark(camera_name, archive_path, lng_path, '*d_2_180*', 'md_2_360.fits', 'mb_2.fits')   # Note error in first selector
-    make_master_dark(camera_name, archive_path, lng_path, '*d_3_90*', 'md_3_90.fits', 'mb_3.fits')
-    make_master_dark(camera_name, archive_path, lng_path, '*d_4_60*', 'md_4_60.fits', 'mb_4.fits')
+    archive_path = "D:/archive/archive/sq01/autosave/"
+    lng_path = "D:/archive/archive/sq01/lng/"
+    make_master_bias(camera_name, archive_path, lng_path, '*b_1*', 'mb_1.fits')
+    make_master_bias(camera_name, archive_path, lng_path, '*b_2*', 'mb_2.fits')
+    make_master_bias(camera_name, archive_path, lng_path, '*b_3*', 'mb_3.fits')
+    make_master_bias(camera_name, archive_path, lng_path, '*b_4*', 'mb_4.fits')
+    #make_master_dark(camera_name, archive_path, lng_path, '*d_1_120*', 'md_1_120.fits', 'mb_1.fits')
+    make_master_dark(camera_name, archive_path, lng_path, '*d_1_360*', 'md_1.fits', 'mb_1.fits')
+    make_master_dark(camera_name, archive_path, lng_path, '*d_2_180*', 'md_2.fits', 'mb_2.fits')
+    make_master_dark(camera_name, archive_path, lng_path, '*d_3_90*', 'md_3.fits', 'mb_3.fits')
+    make_master_dark(camera_name, archive_path, lng_path, '*d_4_60*', 'md_4.fits', 'mb_4.fits')
     print('Fini')
     # NB Here we would logcially go on to get screen flats.
     '''

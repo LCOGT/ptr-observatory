@@ -101,7 +101,7 @@ def create_simple_sequence(exp_time=0, img_type=0, speed=0, suffix='', repeat=1,
         binning = 4
     if filter_name == "":
         filter_name = 'W'
-    proto_file = open('D:/archive/archive/kb01/seq/ptr_saf.pro')
+    proto_file = open('D:/archive/archive/sq01/seq/ptr_saf.pro')
     proto = proto_file.readlines()
     proto_file.close()
     #print(proto, '\n\n')
@@ -116,7 +116,7 @@ def create_simple_sequence(exp_time=0, img_type=0, speed=0, suffix='', repeat=1,
         proto[15] = proto[15][:12] + filter_name   + proto[15][13:]
         proto[11] = proto[11][:12] + str(enabled)  + proto[11][13:]
         proto[1]  = proto[1][:12]  + str(binning)  + proto[1][13:]
-    seq_file = open('D:/archive/archive/kb01/seq/ptr_saf.seq', 'w')
+    seq_file = open('D:/archive/archive/sq01/seq/ptr_saf.seq', 'w')
     for item in range(len(proto)):
         seq_file.write(proto[item])
     seq_file.close()
@@ -193,9 +193,9 @@ class Camera:
 
             print('Control is Maxim camera interface.')
         # breakpoint()
-        # # #self.camera.StartSequence('D:\\archive\\archive\\kb01\\seq\\ptr_saf.seq')
+        # # #self.camera.StartSequence('D:\\archive\\archive\\sq01\\seq\\ptr_saf.seq')
         # create_simple_sequence(exp_time=720, img_type=2,filter_name='V')
-        # self.camera.StartSequence('D:/archive/archive/kb01/seq/ptr_saf_darks.seq')
+        # self.camera.StartSequence('D:/archive/archive/sq01/seq/ptr_saf_darks.seq')
         # for item in range(50):
         #     seq = self.camera.SequenceRunning
         #     print('Link:  ', self.camera.LinkEnabled,'  AutoSave:  ',  seq)
@@ -690,7 +690,7 @@ class Camera:
                         for old in old_autosaves:
                             os.remove(old)
                         self.entry_time = self.t2
-                        self.camera.StartSequence('D:/archive/archive/kb01/seq/ptr_saf.seq')
+                        self.camera.StartSequence('D:/archive/archive/sq01/seq/ptr_saf.seq')
                         print("Starting autosave  at:  ", self.entry_time)
                     else:
                         print("Something terribly wrong, driver not recognized.!")
