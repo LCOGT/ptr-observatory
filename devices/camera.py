@@ -396,17 +396,19 @@ class Camera:
         self.script = required_params.get('script', 'None')
         bin_x = optional_params.get('bin', self.config['camera']['camera1'] \
                                                       ['settings']['default_bin'])  #NB this should pick up config default.
-        if bin_x == '4,4':# For now this is thei highest level of binning supported.
-            bin_x = 4
-        elif bin_x == '3,3':
-            bin_x = 3
-        elif bin_x == '2,2':
+        if bin_x == '4, 4':# For now this is thei highest level of binning supported.
             bin_x = 2
+        elif bin_x == '3, 3':   #replace with in and various formats or stip spaces.
+            bin_x = 2
+        elif bin_x == '2, 2':
+            bin_x = 2
+            self.ccd_sum = '2 2'
         else:
             bin_x = 1
+            self.ccd_sum = '1 1'
         bin_y = bin_x   #NB This needs fixing someday!
-        #self.camera.BinX = bin_x
-        #self.camera.BinY = bin_y
+        self.camera.BinX = bin_x
+        self.camera.BinY = bin_y
         #gain = float(optional_params.get('gain', self.config['camera']['camera1'] \
         #                                              ['settings']['reference_gain'][bin_x - 1]))
         readout_time = float(self.config['camera']['camera1']['settings']['readout_time'][bin_x - 1])
@@ -689,13 +691,13 @@ class Camera:
                         if frame_type in ('flat', 'screen flat', 'sky flat'):
                             img_type = 3
 
-                        self.create_simple_sequence(exp_time=exposure_time, img_type=img_type, \
-                                               filter_name=self.current_filter, binning=bin_x, \
-                                               repeat=lcl_repeat)
-                        #Clear out priors.
-                        old_autosaves = glob.glob(self.camera_path + 'autosave/*.f*t*')
-                        for old in old_autosaves:
-                            os.remove(old)
+                        # self.create_simple_sequence(exp_time=exposure_time, img_type=img_type, \
+                        #                        filter_name=self.current_filter, binning=bin_x, \
+                        #                        repeat=lcl_repeat)
+                        # #Clear out priors.
+                        # old_autosaves = glob.glob(self.camera_path + 'autosave/*.f*t*')
+                        # for old in old_autosaves:
+                        #     os.remove(old)
                         self.entry_time = self.t2
                         self.camera.Expose (exposure_time, img_type)
                         #self.camera.StartSequence('Q:/archive/sq01/seq/ptr_saf.seq')
@@ -716,7 +718,7 @@ class Camera:
                     self.exposure_busy = False
                     self.t10 = time.time()
                     #self.camera.AbortExposure()
-                    print("inner expose returned:  ", result)
+                    #print("inner expose returned:  ", result)
                     self.retry_camera = 0
                     break
                 except Exception as e:
@@ -724,7 +726,7 @@ class Camera:
                     self.retry_camera -= 1
                     continue
             #  This point demarcates the retry_3_times loop
-            print("Retry-3-times completed early:  ", self.retry_camera)
+            #print("Retry-3-times completed early:  ", self.retry_camera)
         #  This is the loop point for the seq count loop
         self.t11 = time.time()
         print("full expose seq took:  ", round(self.t11 - self.t_0 , 2), ' returned:  ', result)
@@ -770,29 +772,38 @@ class Camera:
         result = {'error': False}
         while True:     #THis is where we should have a camera probe throttle and timeout system
             try:
-                #if self.maxim and self.camera.ImageReady: #and not self.img_available and self.exposing:
-                #result_file = glob.glob(self.autosave_path + '*f*t*')
-                #if self.maxim and len(result_file) > 0:
+                if not quick and  gather_status:
+                    g_dev['mnt'].get_quick_status(self.post_mnt)
+                    g_dev['rot'].get_quick_status(self.post_rot)
+                    g_dev['foc'].get_quick_status(self.post_foc)
+                    g_dev['ocn'].get_quick_status(self.post_ocn)
+                self.t5 = time.time()
                 if self.maxim and self.camera.ImageReady:
                     self.t4 = time.time()
                     print("entered phase 3")
-                    # if not self._connected():
-                    #     breakpoint()
-
-                    #if not quick and gather_status:
-                    if not quick and  gather_status:
-                        #The image is ready
-                        g_dev['mnt'].get_quick_status(self.post_mnt)  #stage symmetric around exposure
-                        g_dev['rot'].get_quick_status(self.post_rot)
-                        g_dev['foc'].get_quick_status(self.post_foc)
-                        g_dev['ocn'].get_quick_status(self.post_ocn)
-                    self.t5 = time.time()
                     # self.t6 = time.time()
                     # breakpoint()
                     self.img = self.camera.ImageArray
                     self.t7 = time.time()
                     self.camera.AbortExposure()   #We are now done with Maxim so free it up.
-                    self.img = np.array(self.img).transpose()
+                    self.img = np.array(self.img).transpose().astype('int32')
+
+                    #Overscan remove and trim
+                    pedastal = 100
+                    iy, ix = self.img.shape
+                    if ix == 9600:
+                        overscan = int(np.median(self.img[33:, -22:]))
+                        trimed = self.img[36:,:-26] + pedastal - overscan
+                        square = trimed[121:121+6144,1715:1715+6144]
+                    elif ix == 4800:
+                        overscan = int(np.median(self.img[17:, -11:]))
+                        trimed = self.img[18:,:-13] + pedastal - overscan
+                        square = trimed[61:61+3072,857:857+3072]
+                    else:
+                        print("Incorrect chip size or bin specified.")
+                    smin = np.where(square < 0)    #finds negative pixels
+                    square[smin] = 0               #marks them as 0
+                    self.img = square.astype('uint16')
 
                     # if frame_type[-4:] == 'flat':
                     #     test_saturated = np.array(self.img)
@@ -804,10 +815,7 @@ class Camera:
                     # else:
 
                     #     g_dev['obs'].update_status()
-                    #Save image with Maxim Header information, then read back with astropy and use the
-                    #lqtter code for fits manipulation.
-                    #This should be a very fast disk.
-                    #
+
                     counter = 0
                     if not quick and gather_status:
                         avg_mnt = g_dev['mnt'].get_average_status(self.pre_mnt, self.post_mnt)
@@ -841,15 +849,17 @@ class Camera:
                         if self.ascom:
                             hdu.header['SET-TEMP'] = round(self.camera.SetCCDTemperature, 3)
                             hdu.header['CCD-TEMP'] = round(self.camera.CCDTemperature, 3)
-                        hdu.header['XPIXSZ']   = round(float(self.camera.PixelSizeX), 3)      #Should this adjust with binning?
-                        hdu.header['YPIXSZ']   = round(float(self.camera.PixelSizeY), 3)
+                        hdu.header['XPIXSZ']   = round(float(self.camera.PixelSizeX*self.camera.BinX), 3)      #Should this adjust with binning?
+                        hdu.header['YPIXSZ']   = round(float(self.camera.PixelSizeY*self.camera.BinY), 3)
                         try:
                             hdu.header['XBINING'] = self.camera.BinX
                             hdu.header['YBINING'] = self.camera.BinY
                         except:
                             hdu.header['XBINING'] = 1
                             hdu.header['YBINING'] = 1
-                        hdu.header['CCDSUM'] = '1 1'
+                        hdu.header['PEDASTAL'] = -100
+                        hdu.header['ERRORVAL'] = 0
+                        hdu.header['CCDSUM'] = self.ccd_sum
                         hdu.header['XORGSUBF'] = self.camera_start_x    #This makes little sense to fix...  NB ALL NEEDS TO COME FROM CONFIG!!
                         hdu.header['YORGSUBF'] = self.camera_start_y
                         hdu.header['READOUTM'] = 'Monochrome'    #NB this needs to be updated
@@ -1158,7 +1168,7 @@ class Camera:
                             self.enqueue_image(jpeg_data_size, im_path, jpeg_name)
                             if not quick:
                                 self.enqueue_image(db_data_size, im_path, db_name)
-                                self.enqueue_image(raw_data_size, im_path, raw_name00)
+                                #self.enqueue_image(raw_data_size, im_path, raw_name00)
                             print('Sent to AWS Queue.')
                         time.sleep(0.5)
                         self.img = None
@@ -1177,9 +1187,9 @@ class Camera:
                             pass
                         result['mean_focus'] = avg_foc[1]
                         result['mean_rotation'] = avg_rot[1]
-                        result['FWHM'] = spot
+                        result['FWHM'] = None
                         result['half_FD'] = None
-                        result['patch'] = cal_result
+                        result['patch'] = None
                         result['temperature'] = avg_foc[2]
                         return result
                     except Exception as e:
