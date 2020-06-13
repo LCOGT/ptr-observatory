@@ -859,6 +859,7 @@ class Camera:
                             hdu.header['YBINING'] = 1
                         hdu.header['PEDASTAL'] = -100
                         hdu.header['ERRORVAL'] = 0
+                        hdu.header['OVERSCAN'] = overscan
                         hdu.header['CCDSUM'] = self.ccd_sum
                         hdu.header['XORGSUBF'] = self.camera_start_x    #This makes little sense to fix...  NB ALL NEEDS TO COME FROM CONFIG!!
                         hdu.header['YORGSUBF'] = self.camera_start_y
@@ -1214,7 +1215,7 @@ class Camera:
                     g_dev['obs'].update_status()   #THIS CALL MUST NOT ACCESS MAXIM OBJECT!
                     time_now = self.t7= time.time()
                     remaining = round(self.completion_time - time_now, 1)
-                    loop_count = int(remaining/0.3)
+                    loop_count = int((remaining/0.3)*0.7)
 
                     print("Basic camera wait loop, be patient:  ", round(remaining, 1), ' sec.')
                     for i in range(loop_count):
@@ -1223,7 +1224,7 @@ class Camera:
                         if i % 30 == 0:
                             time_now = self.t7= time.time()
                             remaining = round(self.completion_time - time_now, 1)
-                            print("Basic camera wait loop, be patient:  ", round(remaining, 1), ' sec.')
+                            print("Basic camera dwell loop, be patient:  ", round(remaining, 1), ' sec.')
                             g_dev['obs'].update_status()
                         # if i % 100 == 45:
                         #     lcl_connected = self._connected()
