@@ -39,9 +39,9 @@ import ptr_events
 
 # import device classes
 from devices.camera import Camera
-from devices.enclosure import Enclosure
 from devices.filter_wheel import FilterWheel
 from devices.focuser import Focuser
+from devices.enclosure import Enclosure
 from devices.mount import Mount
 from devices.telescope import Telescope
 from devices.observing_conditions import ObservingConditions

@@ -107,35 +107,29 @@ def image_stats(img_img, p_median=False):
     #ADD Mode here someday.
     return round(img_mean, 2), round(img_std, 2)
 
-def fits_remove_overscan(ipath, opath):
+def fits_remove_overscan(image):
     '''
-#    Note this is cameras ea03amd ea04 specific!
+#    Note this is QGY 600Pro specific code
     '''
-
-    fits_file_list = glob.glob(ipath + '\\*.fits')
-    print(str(len(fits_file_list)) + ' files found.')
-    count = 0
-    for fits_file in fits_file_list:
-        img_hdu = fits.open(fits_file)
-        file_name = fits_file.split('\\')[-1]
-        meta = img_hdu[0].header
-        if meta['NAXIS1'] == 2098 and meta['NAXIS2'] == 2048:
-            img = img_hdu[0].data.astype('float32')
-            overscan = img[:, 2050:]
-            biasline = np.median(overscan, axis=1)
-            biasmean = biasline.mean()
-            biasline = biasline.reshape((2048,1))
+    breakpoint()
+    img_hdu = fits.open(fits_file)
+    meta = img_hdu[0].header
+    breakpoint()
+    if meta['NAXIS1'] == 2098 and meta['NAXIS2'] == 2048:
+        img = img_hdu[0].data.astype('float32')
+        overscan = img[:, 2050:]
+        biasline = np.median(overscan, axis=1)
+        biasmean = biasline.mean()
+        biasline = biasline.reshape((2048,1))
 
 
-            img_hdu[0].data = (img - biasline)[:2048,:2048].astype('uint16')
+        img_hdu[0].data = (img - biasline)[:2048,:2048].astype('uint16')
 
-            meta['HISTORY'] = 'Median overscan subtracted and trimmed. Mean = ' + str(round(biasmean,2))
+        meta['HISTORY'] = 'Median overscan subtracted and trimmed. Mean = ' + str(round(biasmean,2))
 
-            img_hdu.writeto(opath + file_name, clobber=True)
-            #Note this is equivalent to normal first time CCD wirte of a trimmed image
-            count += 1
-        else:
-            continue
+        img_hdu.writeto(opath + file_name, clobber=True)
+        #Note this is equivalent to normal first time CCD wirte of a trimmed image
+
     print(count, '   Files overscan adjusted and trimmed.')
 
 
@@ -194,6 +188,8 @@ def chunkify(im_list, chunk_size):
 
 def create_super_bias(input_images, out_path, super_name):
     first_image = ccdproc.CCDData.read(input_images[0][0], unit='adu')
+    fits_remove_overscan(first_image)
+    breakpoint()
     last_image = ccdproc.CCDData.read(input_images[-1][-1], unit='adu')
     super_image =[]
     super_image_sigma = []
@@ -334,6 +330,7 @@ def make_master_bias (alias, path,  lng_path ,selector_string, out_file):
     else:
         chunk = len(file_list)
     if chunk > 31: chunk = 31
+    chunk = 7
     print('Chunk size:  ', chunk, len(file_list)//chunk)
     chunked_list = chunkify(file_list, chunk)
     print(chunked_list)
@@ -360,17 +357,17 @@ def make_master_dark (alias, path, lng_path, selector_string, out_file, super_bi
 
 if __name__ == '__main__':
     camera_name = config.site_config['camera']['camera1']['name']
-    archive_path = "D:/archive/archive/sq01/autosave/"
-    lng_path = "D:/archive/archive/sq01/lng/"
-    make_master_bias(camera_name, archive_path, lng_path, '*b_1*', 'mb_1.fits')
+    archive_path = "Q:/sq01/calib/20200606/"
+    lng_path = "Q:/sq01/lng/"
+    #make_master_bias(camera_name, archive_path, lng_path, '*b_1*', 'mb_1.fits')
     make_master_bias(camera_name, archive_path, lng_path, '*b_2*', 'mb_2.fits')
-    make_master_bias(camera_name, archive_path, lng_path, '*b_3*', 'mb_3.fits')
-    make_master_bias(camera_name, archive_path, lng_path, '*b_4*', 'mb_4.fits')
-    #make_master_dark(camera_name, archive_path, lng_path, '*d_1_120*', 'md_1_120.fits', 'mb_1.fits')
-    make_master_dark(camera_name, archive_path, lng_path, '*d_1_360*', 'md_1.fits', 'mb_1.fits')
-    make_master_dark(camera_name, archive_path, lng_path, '*d_2_180*', 'md_2.fits', 'mb_2.fits')
-    make_master_dark(camera_name, archive_path, lng_path, '*d_3_90*', 'md_3.fits', 'mb_3.fits')
-    make_master_dark(camera_name, archive_path, lng_path, '*d_4_60*', 'md_4.fits', 'mb_4.fits')
+    make_master_bias(camera_name, archive_path, lng_path, '*b_2_f*', 'mb_2_f.fits')
+    # make_master_bias(camera_name, archive_path, lng_path, '*b_4*', 'mb_4.fits')
+    # #make_master_dark(camera_name, archive_path, lng_path, '*d_1_120*', 'md_1_120.fits', 'mb_1.fits')
+    # make_master_dark(camera_name, archive_path, lng_path, '*d_1_360*', 'md_1.fits', 'mb_1.fits')
+    # make_master_dark(camera_name, archive_path, lng_path, '*d_2_180*', 'md_2.fits', 'mb_2.fits')
+    # make_master_dark(camera_name, archive_path, lng_path, '*d_3_90*', 'md_3.fits', 'mb_3.fits')
+    # make_master_dark(camera_name, archive_path, lng_path, '*d_4_60*', 'md_4.fits', 'mb_4.fits')
     print('Fini')
     # NB Here we would logcially go on to get screen flats.
     '''
