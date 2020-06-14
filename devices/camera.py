@@ -87,44 +87,7 @@ def reset_sequence(pCamera):
 
 # Default filter needs to be pulled from site camera or filter config
 # NB this routine is duplicated in sequencer.py. Bad form.
-def create_simple_sequence(exp_time=0, img_type=0, speed=0, suffix='', repeat=1, \
-                    readout_mode="RAW Mono", filter_name='W', enabled=1, \
-                    binning=1, binmode=0, column=1):
-    exp_time = round(abs(float(exp_time)), 3)
-    if img_type > 3:
-        img_type = 0
-    repeat = abs(int(repeat))
-    if repeat < 1:
-        repeat = 1
-    binning = abs(int(binning))
-    if binning > 4:
-        binning = 4
-    if filter_name == "":
-        filter_name = 'W'
-    proto_file = open('D:/archive/archive/kb01/seq/ptr_saf.pro')
-    proto = proto_file.readlines()
-    proto_file.close()
-    #print(proto, '\n\n')
 
-    if column == 1:
-        proto[62] = proto[62][:9]  + str(exp_time) + proto[62][12:]
-        proto[63] = proto[63][:9]  + str(img_type) + proto[63][10:]
-        proto[58] = proto[58][:12] + str(suffix)   + proto[58][12:]
-        proto[56] = proto[56][:10] + str(speed)    + proto[56][11:]
-        proto[37] = proto[37][:11] + str(repeat)   + proto[37][12:]
-        proto[33] = proto[33][:17] + readout_mode  + proto[33][20:]
-        proto[15] = proto[15][:12] + filter_name   + proto[15][13:]
-        proto[11] = proto[11][:12] + str(enabled)  + proto[11][13:]
-        proto[1]  = proto[1][:12]  + str(binning)  + proto[1][13:]
-    seq_file = open('D:/archive/archive/kb01/seq/ptr_saf.seq', 'w')
-    for item in range(len(proto)):
-        seq_file.write(proto[item])
-    seq_file.close()
-    #print(proto)
-
-
-#  TEST  create_simple_sequence(exp_time=0, img_type=0, suffix='', repeat=1, \
-#                       binning=3, filter_name='air')
 
 
 class Camera:
@@ -154,6 +117,8 @@ class Camera:
         #self.camera = win32com.client.Dispatch('ASCOM.FLI.Kepler.Camera')
         #Need logic here if camera denies connection.
         print("Connecting to ASCOM camera:", driver)
+
+
         if driver[:5].lower() == 'ascom':
             print('ASCOM camera is initializing.')
             self.camera.Connected = True
@@ -193,9 +158,9 @@ class Camera:
 
             print('Control is Maxim camera interface.')
         # breakpoint()
-        # # #self.camera.StartSequence('D:\\archive\\archive\\kb01\\seq\\ptr_saf.seq')
+        # # #self.camera.StartSequence('D:\\archive\\archive\\sq01\\seq\\ptr_saf.seq')
         # create_simple_sequence(exp_time=720, img_type=2,filter_name='V')
-        # self.camera.StartSequence('D:/archive/archive/kb01/seq/ptr_saf_darks.seq')
+        # self.camera.StartSequence('D:/archive/archive/sq01/seq/ptr_saf_darks.seq')
         # for item in range(50):
         #     seq = self.camera.SequenceRunning
         #     print('Link:  ', self.camera.LinkEnabled,'  AutoSave:  ',  seq)
@@ -214,19 +179,20 @@ class Camera:
         self.camera_path = self.archive_path  + self.alias+ "/"
         self.autosave_path = self.camera_path +'autosave/'
         self.lng_path = self.camera_path + "lng/"
+        self.seq_path = self.camera_path + "seq/"
         try:
             os.remove(self.camera_path + 'newest.fits')   #NB This needs to properly clean out all autosaves
         except:
             print ("File newest.fits not found, this is probably OK")
         self.is_cmos = False
         if self.config['camera']['camera1']['settings']['is_cmos']  == 'true':
-            self.is_cmos = False
+            self.is_cmos = True
         self.camera_model = self.config['camera']['camera1']['desc']
         #NB We are reading from the actual camera or setting as the case may be.  For initial setup,
         #   we pull from config for some of the various settings.
         try:
-            self.camera.BinX = int(self.config['camera']['camera1']['settings']['default_bin'])
-            self.camera.BinY = int(self.config['camera']['camera1']['settings']['default_bin'])
+            self.camera.BinX = int(self.config['camera']['camera1']['settings']['default_bin'][0])
+            self.camera.BinY = int(self.config['camera']['camera1']['settings']['default_bin'][1])
             #NB we need to be sure AWS picks up this default.config.site_config['camera']['camera1']['settings']['default_bin'])
         except:
             print('Camera only accepts Bins = 1.')
@@ -294,6 +260,46 @@ class Camera:
 
     #  NB Need to add in ASCOM versions
 
+
+    def create_simple_sequence(self, exp_time=0, img_type=0, speed=0, suffix='', repeat=1, \
+                        readout_mode="", filter_name='W', enabled=1, \
+                        binning=1, binmode=0, column=1):
+        exp_time = round(abs(float(exp_time)), 3)
+        if img_type > 3:
+            img_type = 0
+        repeat = abs(int(repeat))
+        if repeat < 1:
+            repeat = 1
+        binning = abs(int(binning))
+        if binning > 4:
+            binning = 4
+        if filter_name == "":
+            filter_name = 'W'
+        proto_file = open(self.seq_path + 'ptr_saf_pro.seq', 'r')
+        proto = proto_file.readlines()
+        proto_file.close()
+        # for i in range(len(proto)):
+        #     print(i, proto[i])
+
+        if column == 1:
+            proto[50] = proto[50][:9]  + str(exp_time) + proto[50][12:]
+            proto[51] = proto[51][:9]  + str(img_type) + proto[51][10:]
+            proto[48] = proto[48][:12] + str(suffix)   + proto[48][12:]
+            proto[47] = proto[47][:10] + str(speed)    + proto[47][11:]
+            proto[31] = proto[31][:11] + str(repeat)   + proto[31][12:]
+            proto[29] = proto[29][:17] + readout_mode  + proto[29][20:]
+            proto[13] = proto[13][:12] + filter_name   + proto[13][13:]
+            proto[10] = proto[10][:12] + str(enabled)  + proto[10][13:]
+            proto[1]  = proto[1][:12]  + str(binning)  + proto[1][13:]
+        seq_file = open(self.seq_path + 'ptr_saf.seq', 'w')
+        for item in range(len(proto)):
+            seq_file.write(proto[item])
+        seq_file.close()
+        # print(proto)
+
+
+    #  TEST  create_simple_sequence(exp_time=0, img_type=0, suffix='', repeat=1, \
+    #                       binning=3, filter_name='air')
 
 
     def get_status(self):
@@ -390,17 +396,19 @@ class Camera:
         self.script = required_params.get('script', 'None')
         bin_x = optional_params.get('bin', self.config['camera']['camera1'] \
                                                       ['settings']['default_bin'])  #NB this should pick up config default.
-        if bin_x == '4,4':# For now this is thei highest level of binning supported.
-            bin_x = 4
-        elif bin_x == '3,3':
-            bin_x = 3
-        elif bin_x == '2,2':
+        if bin_x == '4, 4':# For now this is thei highest level of binning supported.
             bin_x = 2
+        elif bin_x == '3, 3':   #replace with in and various formats or stip spaces.
+            bin_x = 2
+        elif bin_x == '2, 2':
+            bin_x = 2
+            self.ccd_sum = '2 2'
         else:
             bin_x = 1
+            self.ccd_sum = '1 1'
         bin_y = bin_x   #NB This needs fixing someday!
-        #self.camera.BinX = bin_x
-        #self.camera.BinY = bin_y
+        self.camera.BinX = bin_x
+        self.camera.BinY = bin_y
         #gain = float(optional_params.get('gain', self.config['camera']['camera1'] \
         #                                              ['settings']['reference_gain'][bin_x - 1]))
         readout_time = float(self.config['camera']['camera1']['settings']['readout_time'][bin_x - 1])
@@ -638,7 +646,7 @@ class Camera:
                 try:
                     self.t1 = time.time()
                     self.exposure_busy = True
-                    print('First Entry to inner Camera loop:  ')  #  Do not reference camera, self.camera.StartX, self.camera.StartY, self.camera.NumX, self.camera.NumY, exposure_time)
+                    #print('First Entry to inner Camera loop:  ')  #  Do not reference camera, self.camera.StartX, self.camera.StartY, self.camera.NumX, self.camera.NumY, exposure_time)
                     #First lets verify we are connected or try to reconnect.
                     try:
                         if not self._connected():
@@ -662,7 +670,7 @@ class Camera:
                         self.t2 = time.time()       #Immediately before Exposure
                         self.camera.StartExposure(exposure_time, imtypeb)
                     elif self.maxim:
-                        print('Link Enable check:  ', self._connected())
+                        #print('Link Enable check:  ', self._connected())
                         g_dev['ocn'].get_quick_status(self.pre_ocn)
                         g_dev['foc'].get_quick_status(self.pre_foc)
                         g_dev['rot'].get_quick_status(self.pre_rot)
@@ -682,15 +690,17 @@ class Camera:
                             img_type = 2
                         if frame_type in ('flat', 'screen flat', 'sky flat'):
                             img_type = 3
-                        create_simple_sequence(exp_time=exposure_time, img_type=img_type, \
-                                               filter_name=self.current_filter, binning=bin_x, \
-                                               repeat=lcl_repeat)
-                        #Clear out priors.
-                        old_autosaves = glob.glob(self.camera_path + 'autosave/*.f*t*')
-                        for old in old_autosaves:
-                            os.remove(old)
+
+                        # self.create_simple_sequence(exp_time=exposure_time, img_type=img_type, \
+                        #                        filter_name=self.current_filter, binning=bin_x, \
+                        #                        repeat=lcl_repeat)
+                        # #Clear out priors.
+                        # old_autosaves = glob.glob(self.camera_path + 'autosave/*.f*t*')
+                        # for old in old_autosaves:
+                        #     os.remove(old)
                         self.entry_time = self.t2
-                        self.camera.StartSequence('D:/archive/archive/kb01/seq/ptr_saf.seq')
+                        self.camera.Expose (exposure_time, img_type)
+                        #self.camera.StartSequence('Q:/archive/sq01/seq/ptr_saf.seq')
                         print("Starting autosave  at:  ", self.entry_time)
                     else:
                         print("Something terribly wrong, driver not recognized.!")
@@ -708,7 +718,7 @@ class Camera:
                     self.exposure_busy = False
                     self.t10 = time.time()
                     #self.camera.AbortExposure()
-                    print("inner expose returned:  ", result)
+                    #print("inner expose returned:  ", result)
                     self.retry_camera = 0
                     break
                 except Exception as e:
@@ -716,7 +726,7 @@ class Camera:
                     self.retry_camera -= 1
                     continue
             #  This point demarcates the retry_3_times loop
-            print("Retry-3-times completed early:  ", self.retry_camera)
+            #print("Retry-3-times completed early:  ", self.retry_camera)
         #  This is the loop point for the seq count loop
         self.t11 = time.time()
         print("full expose seq took:  ", round(self.t11 - self.t_0 , 2), ' returned:  ', result)
@@ -757,30 +767,43 @@ class Camera:
             self.post_ocn = []
         counter = 0
 
-        self.completion_time = self.entry_time + exposure_time + 8.8
+        self.completion_time = self.entry_time + exposure_time + 12
+
         result = {'error': False}
         while True:     #THis is where we should have a camera probe throttle and timeout system
             try:
-                #if self.maxim and self.camera.ImageReady: #and not self.img_available and self.exposing:
-                result_file = glob.glob(self.autosave_path + '*f*t*')
-                if self.maxim and len(result_file) > 0:
+                if not quick and  gather_status:
+                    g_dev['mnt'].get_quick_status(self.post_mnt)
+                    g_dev['rot'].get_quick_status(self.post_rot)
+                    g_dev['foc'].get_quick_status(self.post_foc)
+                    g_dev['ocn'].get_quick_status(self.post_ocn)
+                self.t5 = time.time()
+                if self.maxim and self.camera.ImageReady:
                     self.t4 = time.time()
                     print("entered phase 3")
-                    # if not self._connected():
-                    #     breakpoint()
-
-                    #if not quick and gather_status:
-                    if not quick and  gather_status:
-                        #The image is ready
-                        g_dev['mnt'].get_quick_status(self.post_mnt)  #stage symmetric around exposure
-                        g_dev['rot'].get_quick_status(self.post_rot)
-                        g_dev['foc'].get_quick_status(self.post_foc)
-                        g_dev['ocn'].get_quick_status(self.post_ocn)
-                    self.t5 = time.time()
                     # self.t6 = time.time()
                     # breakpoint()
-                    # self.img = self.camera.ImageArray
-                    # self.t7 = time.time()
+                    self.img = self.camera.ImageArray
+                    self.t7 = time.time()
+                    self.camera.AbortExposure()   #We are now done with Maxim so free it up.
+                    self.img = np.array(self.img).transpose().astype('int32')
+
+                    #Overscan remove and trim
+                    pedastal = 200
+                    iy, ix = self.img.shape
+                    if ix == 9600:
+                        overscan = int(np.median(self.img[33:, -22:]))
+                        trimed = self.img[36:,:-26] + pedastal - overscan
+                        square = trimed[121:121+6144,1715:1715+6144]
+                    elif ix == 4800:
+                        overscan = int(np.median(self.img[17:, -11:]))
+                        trimed = self.img[18:,:-13] + pedastal - overscan
+                        square = trimed[61:61+3072,857:857+3072]
+                    else:
+                        print("Incorrect chip size or bin specified.")
+                    smin = np.where(square < 0)    #finds negative pixels
+                    square[smin] = 0               #marks them as 0
+                    self.img = square.astype('uint16')
 
                     # if frame_type[-4:] == 'flat':
                     #     test_saturated = np.array(self.img)
@@ -792,10 +815,7 @@ class Camera:
                     # else:
 
                     #     g_dev['obs'].update_status()
-                    #Save image with Maxim Header information, then read back with astropy and use the
-                    #lqtter code for fits manipulation.
-                    #This should be a very fast disk.
-                    #
+
                     counter = 0
                     if not quick and gather_status:
                         avg_mnt = g_dev['mnt'].get_average_status(self.pre_mnt, self.post_mnt)
@@ -808,10 +828,12 @@ class Camera:
                         #Save the raw data after adding fits header information.
 #                        if not quick:
                         time.sleep(2)
-                        img_name = glob.glob(self.camera_path + 'autosave/*.f*t*')
-                        img_name.sort()
-                        hdu1 =  fits.open(img_name[-1])
-                        hdu = hdu1[0]
+                        # img_name = glob.glob(self.camera_path + 'autosave/*.f*t*')
+                        # img_name.sort()
+                        # hdu1 =  fits.open(img_name[-1])
+                        hdu = fits.PrimaryHDU(self.img)
+                        self.img = None    #does this free up any resource?
+
                         hdu.header['BUNIT']    = 'adu'
                         hdu.header['DATE-OBS'] = datetime.datetime.isoformat(datetime.datetime.utcfromtimestamp(self.t2))
                         hdu.header['EXPTIME']  = exposure_time   #This is the exposure in seconds specified by the user
@@ -827,15 +849,18 @@ class Camera:
                         if self.ascom:
                             hdu.header['SET-TEMP'] = round(self.camera.SetCCDTemperature, 3)
                             hdu.header['CCD-TEMP'] = round(self.camera.CCDTemperature, 3)
-                        hdu.header['XPIXSZ']   = round(float(self.camera.PixelSizeX), 3)      #Should this adjust with binning?
-                        hdu.header['YPIXSZ']   = round(float(self.camera.PixelSizeY), 3)
+                        hdu.header['XPIXSZ']   = round(float(self.camera.PixelSizeX*self.camera.BinX), 3)      #Should this adjust with binning?
+                        hdu.header['YPIXSZ']   = round(float(self.camera.PixelSizeY*self.camera.BinY), 3)
                         try:
                             hdu.header['XBINING'] = self.camera.BinX
                             hdu.header['YBINING'] = self.camera.BinY
                         except:
                             hdu.header['XBINING'] = 1
                             hdu.header['YBINING'] = 1
-                        hdu.header['CCDSUM'] = '1 1'
+                        hdu.header['PEDASTAL'] = -pedastal
+                        hdu.header['ERRORVAL'] = 0
+                        hdu.header['OVERSCAN'] = overscan
+                        hdu.header['CCDSUM'] = self.ccd_sum
                         hdu.header['XORGSUBF'] = self.camera_start_x    #This makes little sense to fix...  NB ALL NEEDS TO COME FROM CONFIG!!
                         hdu.header['YORGSUBF'] = self.camera_start_y
                         hdu.header['READOUTM'] = 'Monochrome'    #NB this needs to be updated
@@ -996,7 +1021,13 @@ class Camera:
                         g_dev['obs'].update_status()
                         #NB Important decision here, do we flash calibrate screen and sky flats?  For now, Yes.
 
-                        cal_result = calibrate(hdu, None, lng_path, frame_type, start_x=start_x, start_y=start_y, quick=quick)
+                        ########cal_result = calibrate(hdu, None, lng_path, frame_type, start_x=start_x, start_y=start_y, quick=quick)
+                        '''
+                        Here we need to consider just what local reductions and calibration really make sense to
+                        process in-line vs doing them in another process.
+
+
+                        '''
                         # Note we may be using different files if calibrate is null.
                         # NB  We should only write this if calibrate actually succeeded to return a result ??
 
@@ -1043,21 +1074,21 @@ class Camera:
                             if opt is not None:
                                 spot = opt.get('fwhm_sim', 0.0)
 
-                        if not quick:
-                            hdu.header["PATCH"] = cal_result
-                            if spot is not None:
-                                hdu.header['SPOTFWHM'] = round(spot, 2)
-                            else:
-                                hdu.header['SPOTFWHM'] = "None"
-                            hdu1.writeto(im_path + raw_name01, overwrite=True)
-                        raw_data_size = hdu1[0].data.size
+                        # if not quick:
+                        #     hdu.header["PATCH"] = cal_result
+                        #     if spot is not None:
+                        #         hdu.header['SPOTFWHM'] = round(spot, 2)
+                        #     else:
+                        #         hdu.header['SPOTFWHM'] = "None"
+                        #     hdu1.writeto(im_path + raw_name01, overwrite=True)
+                        raw_data_size = hdu.data.size
                         g_dev['obs'].update_status()
                         #Here we need to process images which upon input, may not be square.  The way we will do that
                         #is find which dimension is largest.  We then pad the opposite dimension with 1/2 of the difference,
                         #and add vertical or horizontal lines filled with img(min)-2 but >=0.  The immediate last or first line
                         #of fill adjacent to the image is set to 80% of img(max) so any subsequent subframing selections by the
                         #user is informed. If the incoming image dimensions are odd, they wil be decreased by one.  In essence
-                        #we wre embedding a non-rectaglular image in a "square" and scaling it to 768^2.  We will impose a
+                        #we wre embedding a non-rectanglular image in a "square" and scaling it to 768^2.  We will impose a
                         #minimum subframe reporting of 32 x 32
 
                         in_shape = hdu.data.shape
@@ -1112,14 +1143,13 @@ class Camera:
 
                         if quick:
                             pass
-
                         hdu.data = hdu.data.astype('uint16')
                         resized_a = resize(hdu.data, (768, 768), preserve_range=True)
                         #print(resized_a.shape, resized_a.astype('uint16'))
                         hdu.data = resized_a.astype('uint16')
 
                         db_data_size = hdu.data.size
-                        hdu1.writeto(im_path + db_name, overwrite=True)
+                        hdu.writeto(im_path + db_name, overwrite=True)
                         hdu.data = resized_a.astype('float')
                         #The following does a very lame contrast scaling.  A beer for best improvement on this code!!!
                         istd = np.std(hdu.data)
@@ -1139,10 +1169,11 @@ class Camera:
                             self.enqueue_image(jpeg_data_size, im_path, jpeg_name)
                             if not quick:
                                 self.enqueue_image(db_data_size, im_path, db_name)
-                                self.enqueue_image(raw_data_size, im_path, raw_name01)
+                                #self.enqueue_image(raw_data_size, im_path, raw_name00)
                             print('Sent to AWS Queue.')
                         time.sleep(0.5)
                         self.img = None
+
                         # try:
                         #     self.camera.AbortExposure()
                         # except:
@@ -1157,9 +1188,9 @@ class Camera:
                             pass
                         result['mean_focus'] = avg_foc[1]
                         result['mean_rotation'] = avg_rot[1]
-                        result['FWHM'] = spot
+                        result['FWHM'] = None
                         result['half_FD'] = None
-                        result['patch'] = cal_result
+                        result['patch'] = None
                         result['temperature'] = avg_foc[2]
                         return result
                     except Exception as e:
@@ -1184,7 +1215,7 @@ class Camera:
                     g_dev['obs'].update_status()   #THIS CALL MUST NOT ACCESS MAXIM OBJECT!
                     time_now = self.t7= time.time()
                     remaining = round(self.completion_time - time_now, 1)
-                    loop_count = int(remaining/0.3)
+                    loop_count = int((remaining/0.3)*0.7)
 
                     print("Basic camera wait loop, be patient:  ", round(remaining, 1), ' sec.')
                     for i in range(loop_count):
@@ -1193,7 +1224,7 @@ class Camera:
                         if i % 30 == 0:
                             time_now = self.t7= time.time()
                             remaining = round(self.completion_time - time_now, 1)
-                            print("Basic camera wait loop, be patient:  ", round(remaining, 1), ' sec.')
+                            print("Basic camera dwell loop, be patient:  ", round(remaining, 1), ' sec.')
                             g_dev['obs'].update_status()
                         # if i % 100 == 45:
                         #     lcl_connected = self._connected()

@@ -61,7 +61,7 @@ def create_simple_sequence(exp_time=0, img_type=0, speed=0, suffix='', repeat=1,
         binning = 4
     if filter_name == "":
         filter_name = 'W'
-    proto_file = open('D:/archive/archive/kb01/seq/ptr_saf.pro')
+    proto_file = open('D:/archive/archive/sq01/seq/ptr_saf.pro')
     proto = proto_file.readlines()
     proto_file.close()
     print(proto, '\n\n')
@@ -76,7 +76,7 @@ def create_simple_sequence(exp_time=0, img_type=0, speed=0, suffix='', repeat=1,
         proto[15] = proto[15][:12] + filter_name   + proto[15][13:]
         proto[11] = proto[11][:12] + str(enabled)  + proto[11][13:]
         proto[1]  = proto[1][:12]  + str(binning)  + proto[1][13:]
-    seq_file = open('D:/archive/archive/kb01/seq/ptr_saf.seq', 'w')
+    seq_file = open('D:/archive/archive/sq01/seq/ptr_saf.seq', 'w')
     for item in range(len(proto)):
         seq_file.write(proto[item])
     seq_file.close()
@@ -263,7 +263,7 @@ class Sequencer:
                    Once a week: 600 seconds, 5 each to build hot pixel map
 
         Parse parameters,
-        if sommething to do, put up sequencer_guard, estimated duration, factoring in
+        if something to do, put up sequencer_guard, estimated duration, factoring in
         event windows -- if in a window and count = 0, keep going until end of window.
         More biases and darks never hurt anyone.
         Connect Camera
@@ -273,26 +273,24 @@ class Sequencer:
 
         Loop until count goes to zero
 
-        Note this can be called by the Auto Sequencer OR invoked by a user.
+        Note this can be called by the Auto Sequencer OR invoked by a user with different counts
         """
-        if req is None:     #  NB This again should be a config item.
-            req = {'numOfBias': 63, 'bin3': True, 'numOfDark2': 3, 'bin4': False, 'bin1': True, \
-                    'darkTime': '360', 'hotMap': True, 'bin2': True, 'numOfDark': 9, 'dark2Time': '600', \
-                    'coldMap': True, 'script': 'genBiasDarkMaster', 'bin5': False}
+        if req is None:     #  NB This again should be a config item. 274 takes about 1 hour with SBIG 6303
+            req = {'numOfBias': 275, 'bin3': True, 'numOfDark2': 3, 'bin4': True, 'bin1': True, \
+                    'darkTime': '360', 'hotMap': True, 'bin2': True, 'numOfDark': 40, 'dark2Time': '720', \
+                    'coldMap': True, 'script': 'genBiasDarkMaster'}
             opt = {}
         self.sequencer_hold = True
         bias_list = []
-        num_bias = max(9, req['numOfBias'])
+        num_bias = max(15, req['numOfBias'])
+        if req['bin4']:
+            bias_list.append([4, max(5, int(num_bias*19/255))])   #THis whole scheme is wrong. 20200525 WER
+        if req['bin3']:
+            bias_list.append([3, max(5, int(num_bias*35/255))])
+        if req['bin2']:
+            bias_list.append([2, max(9, int(num_bias*74/255))])
         if req['bin1']:
             bias_list.append([1, max(9, num_bias)])
-        if req['bin2']:
-            bias_list.append([2, max(9, num_bias)])
-        if req['bin3']:
-            bias_list.append([3, max(5, num_bias//2)])
-        if req['bin4']:
-            bias_list.append([4, max(5, num_bias//3)])
-        if req.get('bin5', False):
-            bias_list.append([5, max(5, num_bias//4)])
         print('Bias_list:  ', bias_list)
         total_num_biases = 0
         for item in bias_list:
@@ -476,9 +474,20 @@ class Sequencer:
             result = g_dev['cam'].expose_command(req, opt, gather_status=True, no_AWS=True, do_sep = False)
             bright2 = result['patch']
             time.sleep(2)
-            if bright2 > 35000:
+            if bright2 > 37500:
+                time.sleep(5)
                 g_dev['obs'].update_status()
-                time.sleep(10)
+                continue
+            g_dev['mnt'].slewToSkyFlatAsync()
+            g_dev['obs'].update_status()
+            req = {'time': float(exp_time),  'alias': name, 'image_type': 'sky flat'}
+            opt = {'size': 100, 'count': flat_count , 'filter': g_dev['fil'].filter_data[current_filter][0]}
+            result = g_dev['cam'].expose_command(req, opt, gather_status=True, no_AWS=True, do_sep = False)
+            bright2 = result['patch']
+            time.sleep(2)
+            if bright2 > 37500:
+                time.sleep(5)
+                g_dev['obs'].update_status()
                 continue
             print("Bright2 filter pop:  ", current_filter, bright, bright2)
             pop_list.pop(0)
