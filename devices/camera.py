@@ -789,7 +789,7 @@ class Camera:
                     self.img = np.array(self.img).transpose().astype('int32')
 
                     #Overscan remove and trim
-                    pedastal = 100
+                    pedastal = 200
                     iy, ix = self.img.shape
                     if ix == 9600:
                         overscan = int(np.median(self.img[33:, -22:]))
@@ -857,7 +857,7 @@ class Camera:
                         except:
                             hdu.header['XBINING'] = 1
                             hdu.header['YBINING'] = 1
-                        hdu.header['PEDASTAL'] = -100
+                        hdu.header['PEDASTAL'] = -pedastal
                         hdu.header['ERRORVAL'] = 0
                         hdu.header['OVERSCAN'] = overscan
                         hdu.header['CCDSUM'] = self.ccd_sum
