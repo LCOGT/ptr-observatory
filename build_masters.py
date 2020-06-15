@@ -447,7 +447,8 @@ def debias_and_trim(camera_name, archive_path, out_path):
             trimed = img.data[18:,:-13].astype('int32') + pedastal - overscan
             square = trimed[61:61+3072,857:857+3072]
         else:
-            print("Incorrect chip size or bin specified.")
+            phttps://www.qhyccd.com/index.php?m=content&c=index&a=show&catid=94&id=55&cut=1
+            rint("Incorrect chip size or bin specified.")
         smin = np.where(square < 0)    #finds negative pixels
         std = square.std()
         shot = np.where(square > (pedastal + 3*std))
