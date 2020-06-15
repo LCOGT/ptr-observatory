@@ -252,15 +252,15 @@ def create_super_bias(input_images, out_path, super_name):
 
 
 def create_super_dark(input_images, out_path, super_name, super_bias_name):
-    first_image = ccdproc.CCDData.read(input_images[0][0], unit='adu')
-    last_image = ccdproc.CCDData.read(input_images[-1][-1], unit='adu')
+    first_image = ccdproc.CCDData.read(input_images[0][0])
+    last_image = ccdproc.CCDData.read(input_images[-1][-1])
     super_image =[]
     super_image_sigma = []
     num = 0
     inputs = []
     print('SD:  ', len(input_images), input_images)
     try:
-        super_bias_img = ccdproc.CCDData.read(out_path + super_bias_name, ignore_missing_end=True, unit='adu')
+        super_bias_img = ccdproc.CCDData.read(out_path + super_bias_name, ignore_missing_end=True)
     except:
         print(out_path + super_bias_name, 'failed')
     while len(input_images) > 0:
@@ -315,6 +315,40 @@ def create_super_dark(input_images, out_path, super_name, super_bias_name):
     super_image = None    #Again get rid of big stale data
     #hot and cold pix here.
     return
+def create_super_flat(input_images, oPath, super_name, super_bias_name,
+                      super_dark_name):
+    #NB Should cull low count input frames.
+    inputs = []
+    print('SF:  ', len(input_images))
+    super_bias = ccdproc.CCDData.read(super_bias_name, ignore_missing_end=True)
+    super_dark = ccdproc.CCDData.read(super_dark_name, ignore_missing_end=True)
+    #super_dark = super_dark.subtract(super_dark.meta['PEDASTAL']*u.adu)
+
+    for img in range(len(input_images)):
+        img_in = ccdproc.CCDData.read(input_images[img], unit='adu', ignore_missing_end=True)
+        bias_corr = ccdproc.subtract_bias(img_in, super_bias)
+        print('Hello:  ', super_dark.meta['EXPTIME'], img_in.meta['EXPTIME'], type(bias_corr), type(super_dark), img_in.meta)
+        corr_flat = ccdproc.subtract_dark(bias_corr, super_dark, scale=True, \
+                    dark_exposure=super_dark.meta['EXPTIME']*u.s, \
+                    data_exposure =img_in.meta['EXPTIME']*u.s)
+
+        #corr_flat = ccdproc.
+        inputs.append(corr_flat)
+    combiner = Combiner(inputs)
+    super_img = combiner.median_combine()
+    super_img.meta = inputs[0].meta
+
+    super_img.meta['NCOMBINE'] = len(inputs)
+    s_name = super_name.split('.')
+    print('s_name_split:  ', s_name[0])
+    tstring = datetime.datetime.now().isoformat().split('.')[0].split(':')
+    wstring = str(oPath + '\\' + s_name[0] + '_' + \
+                        tstring[0]+tstring[1]+tstring[2] + \
+                        '.fits')
+    super_img.write(wstring, overwrite=True)
+
+          #Turn the above into a circle region.
+    return
 
 def make_master_bias (alias, path,  lng_path ,selector_string, out_file):
 
@@ -365,6 +399,33 @@ def make_master_dark (alias, path, lng_path, selector_string, out_file, super_bi
 
     create_super_dark(chunked_list, lng_path, out_file, super_bias_name )
 
+def make_master_flat (alias, path, lng_path, selector_string, out_file, super_bias_name, \
+                      super_dark_name):
+    #breakpoint()
+    file_list = glob.glob(path + selector_string)
+    if len(file_list) < 3:
+        return
+    shuffle(file_list)
+    file_list = file_list[:5*5]   #Temporarily limit size of reduction.
+
+    print('# of files:  ', len(file_list))
+    print(file_list)
+    breakpoint()
+    if len(file_list) > 63:
+        file_list = file_list[0:63]
+    if len(file_list) > 32:
+        chunk = int(math.sqrt(len(file_list)))
+        if chunk %2 == 0: chunk += 1
+    else:
+        chunk = len(file_list)
+    if chunk > 31: chunk = 31
+    print('Chunk size:  ', chunk, len(file_list)//chunk)
+    chunk = 5
+    chunked_list = chunkify(file_list, chunk)
+    print(chunked_list)
+
+    create_super_flat(chunked_list, lng_path, out_file, super_bias_name, super_dark_name)
+
 def debias_and_trim(camera_name, archive_path, out_path):
     file_list = glob.glob(archive_path + "*B*")
     file_list.sort
@@ -410,10 +471,14 @@ if __name__ == '__main__':
     # #make_master_bias(camera_name, archive_path, lng_path, '*b_3*', 'mb_3.fits')
     # #make_master_bias(camera_name, archive_path, lng_path, '*b_4*', 'mb_4.fits')
     # #make_master_dark(camera_name, archive_path, lng_path, '*d_1_120*', 'md_1_120.fits', 'mb_1.fits')
-    make_master_dark(camera_name, archive_path, lng_path, '*d_1_360*', 'md_1.fits', 'mb_1.fits')
+    #make_master_dark(camera_name, archive_path, lng_path, '*d_1_360*', 'md_1.fits', 'mb_1.fits')
     # make_master_dark(camera_name, archive_path, lng_path, '*d_2_90*', 'md_2.fits', 'mb_2.fits')
     # #make_master_dark(camera_name, archive_path, lng_path, '*d_3_90*', 'md_3.fits', 'mb_3.fits')
     # #make_master_dark(camera_name, archive_path, lng_path, '*d_4_60*', 'md_4.fits', 'mb_4.fits')
+    filter_string = ['*W*', '*B*', '*V*','*R*','*GP*', '*RP*', '*IP*', '*Ha*', '*O3*', '*N2*', '*S2*', '*AIR*']
+    for filt in filter_string:
+        out_name = 'mf_' + filt[1:-2]
+        make_master_flat(camera_name, archive_path, lng_path, filt, out_name, 'mb_1.fits', 'md_1.fits')
     print('Fini')
     # NB Here we would logcially go on to get screen flats.
     '''
