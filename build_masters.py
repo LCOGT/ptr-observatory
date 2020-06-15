@@ -427,7 +427,8 @@ def make_master_flat (alias, path, lng_path, selector_string, out_file, super_bi
     create_super_flat(chunked_list, lng_path, out_file, super_bias_name, super_dark_name)
 
 def debias_and_trim(camera_name, archive_path, out_path):
-    file_list = glob.glob(archive_path + "*B*")
+    file_list = glob.glob(archive_path + "*")
+
     file_list.sort
     print(file_list)
     print('# of files:  ', len(file_list))
@@ -448,7 +449,9 @@ def debias_and_trim(camera_name, archive_path, out_path):
         else:
             print("Incorrect chip size or bin specified.")
         smin = np.where(square < 0)    #finds negative pixels
-        print('Mean, std, overscan, # neg pixels:  ', img.data.mean(), img.data.std(), overscan, len(smin[0]))
+        std = square.std()
+        shot = np.where(square > (pedastal + 3*std))
+        print('Mean, std, overscan, # neg, hot pixels:  ', square.mean(), std, overscan, len(smin[0]), len(shot[0]))
         square[smin] = 0               #marks them as 0
         img.data = square.astype('uint16')
         img.meta['PEDASTAL'] = -pedastal
@@ -462,23 +465,23 @@ if __name__ == '__main__':
     camera_name = 'sq01'  #  config.site_config['camera']['camera1']['name']
     archive_path = "D:/000ptr_saf/archive/sq01/2020-06-13/"
     archive_path = "D:/2020-06-12 REDO SCREEN FLATS AT 10098 FOCUS/B SCREEN FLATS/"
-    archive_path = "D:/000ptr_saf/archive/sq01/calib/20200613/"
-    out_path = "D:/000ptr_saf/archive/sq01/calib/20200613/"
+    archive_path = "D:/000ptr_saf/archive/sq01/calib/20200614/"
+    out_path = "D:/000ptr_saf/archive/sq01/calib/20200614/"
     lng_path = "D:/000ptr_saf/archive/sq01/lng/"
     #debias_and_trim(camera_name, archive_path, out_path)
-    #make_master_bias(camera_name, archive_path, lng_path, '*b_1*', 'mb_1.fits')
-    # make_master_bias(camera_name, archive_path, lng_path, '*b_2*', 'mb_2.fits')
+    make_master_bias(camera_name, archive_path, lng_path, '*b_1*', 'mb_1.fits')
+    make_master_bias(camera_name, archive_path, lng_path, '*b_2*', 'mb_2.fits')
     # #make_master_bias(camera_name, archive_path, lng_path, '*b_3*', 'mb_3.fits')
     # #make_master_bias(camera_name, archive_path, lng_path, '*b_4*', 'mb_4.fits')
     # #make_master_dark(camera_name, archive_path, lng_path, '*d_1_120*', 'md_1_120.fits', 'mb_1.fits')
-    #make_master_dark(camera_name, archive_path, lng_path, '*d_1_360*', 'md_1.fits', 'mb_1.fits')
-    # make_master_dark(camera_name, archive_path, lng_path, '*d_2_90*', 'md_2.fits', 'mb_2.fits')
+    make_master_dark(camera_name, archive_path, lng_path, '*d_1_360*', 'md_1.fits', 'mb_1.fits')
+    make_master_dark(camera_name, archive_path, lng_path, '*d_2_90*', 'md_2.fits', 'mb_2.fits')
     # #make_master_dark(camera_name, archive_path, lng_path, '*d_3_90*', 'md_3.fits', 'mb_3.fits')
     # #make_master_dark(camera_name, archive_path, lng_path, '*d_4_60*', 'md_4.fits', 'mb_4.fits')
-    filter_string = ['*W*', '*B*', '*V*','*R*','*GP*', '*RP*', '*IP*', '*Ha*', '*O3*', '*N2*', '*S2*', '*AIR*']
-    for filt in filter_string:
-        out_name = 'mf_' + filt[1:-2]
-        make_master_flat(camera_name, archive_path, lng_path, filt, out_name, 'mb_1.fits', 'md_1.fits')
+    # filter_string = ['*W*', '*B*', '*V*','*R*','*GP*', '*RP*', '*IP*', '*Ha*', '*O3*', '*N2*', '*S2*', '*AIR*']
+    # for filt in filter_string:
+    #     out_name = 'mf_' + filt[1:-2]
+    #     make_master_flat(camera_name, archive_path, lng_path, filt, out_name, 'mb_1.fits', 'md_1.fits')
     print('Fini')
     # NB Here we would logcially go on to get screen flats.
     '''
