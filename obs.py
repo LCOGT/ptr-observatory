@@ -401,9 +401,8 @@ class Observatory:
                     # compress first
                     to_bz2(im_path + name)
                     name = name + '.bz2'
-                aws_req = {"object_name": "raw_data/2019/" + name}
-                site_str = config.site_config['site']
-                aws_resp = g_dev['obs'].api.authenticated_request('POST', site_str +'/upload/', aws_req)
+                aws_req = {"object_name": name}
+                aws_resp = g_dev['obs'].api.authenticated_request('POST', '/upload/', aws_req)
                 with open(im_path + name, 'rb') as f:
                     files = {'file': (im_path + name, f)}
                     print('--> To AWS -->', str(im_path + name))
