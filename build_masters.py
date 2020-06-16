@@ -428,13 +428,12 @@ def make_master_flat (alias, path, lng_path, selector_string, out_file, super_bi
 
 def debias_and_trim(camera_name, archive_path, out_path):
     file_list = glob.glob(archive_path + "*")
-
     file_list.sort
     print(file_list)
     print('# of files:  ', len(file_list))
     for image in file_list:
         print('Processing:  ', image)
-        img = ccdproc.CCDData.read(image, unit='adu')
+        img = ccdproc.CCDData.read(image, unit='adu', format='fits')
         # Overscan remove and trim
         pedastal = 200
         iy, ix = img.data.shape
@@ -447,8 +446,7 @@ def debias_and_trim(camera_name, archive_path, out_path):
             trimed = img.data[18:,:-13].astype('int32') + pedastal - overscan
             square = trimed[61:61+3072,857:857+3072]
         else:
-            phttps://www.qhyccd.com/index.php?m=content&c=index&a=show&catid=94&id=55&cut=1
-            rint("Incorrect chip size or bin specified.")
+            print("Incorrect chip size or bin specified.")
         smin = np.where(square < 0)    #finds negative pixels
         std = square.std()
         shot = np.where(square > (pedastal + 3*std))
@@ -465,21 +463,21 @@ def debias_and_trim(camera_name, archive_path, out_path):
 if __name__ == '__main__':
     camera_name = 'sq01'  #  config.site_config['camera']['camera1']['name']
     archive_path = "D:/000ptr_saf/archive/sq01/2020-06-13/"
-    archive_path = "D:/2020-06-12 REDO SCREEN FLATS AT 10098 FOCUS/B SCREEN FLATS/"
-    archive_path = "D:/000ptr_saf/archive/sq01/calib/20200614/"
+    archive_path = "D:/2020-06-15  Redo all screen flatrs at focus 10098/g' r'  i' screen flats/"
+    #archive_path = "D:/000ptr_saf/archive/sq01/calib/20200614/"
     out_path = "D:/000ptr_saf/archive/sq01/calib/20200614/"
     lng_path = "D:/000ptr_saf/archive/sq01/lng/"
-    #debias_and_trim(camera_name, archive_path, out_path)
-    make_master_bias(camera_name, archive_path, lng_path, '*b_1*', 'mb_1.fits')
-    make_master_bias(camera_name, archive_path, lng_path, '*b_2*', 'mb_2.fits')
+    debias_and_trim(camera_name, archive_path, out_path)
+    #make_master_bias(camera_name, archive_path, lng_path, '*b_1*', 'mb_1.fits')
+    #make_master_bias(camera_name, archive_path, lng_path, '*b_2*', 'mb_2.fits')
     # #make_master_bias(camera_name, archive_path, lng_path, '*b_3*', 'mb_3.fits')
     # #make_master_bias(camera_name, archive_path, lng_path, '*b_4*', 'mb_4.fits')
     # #make_master_dark(camera_name, archive_path, lng_path, '*d_1_120*', 'md_1_120.fits', 'mb_1.fits')
-    make_master_dark(camera_name, archive_path, lng_path, '*d_1_360*', 'md_1.fits', 'mb_1.fits')
-    make_master_dark(camera_name, archive_path, lng_path, '*d_2_90*', 'md_2.fits', 'mb_2.fits')
+    #make_master_dark(camera_name, archive_path, lng_path, '*d_1_360*', 'md_1.fits', 'mb_1.fits')
+    #make_master_dark(camera_name, archive_path, lng_path, '*d_2_90*', 'md_2.fits', 'mb_2.fits')
     # #make_master_dark(camera_name, archive_path, lng_path, '*d_3_90*', 'md_3.fits', 'mb_3.fits')
     # #make_master_dark(camera_name, archive_path, lng_path, '*d_4_60*', 'md_4.fits', 'mb_4.fits')
-    # filter_string = ['*W*', '*B*', '*V*','*R*','*GP*', '*RP*', '*IP*', '*Ha*', '*O3*', '*N2*', '*S2*', '*AIR*']
+    # filter_string = ['*W*', '*B*', '*V*','*R*','*GP*', '*RP*', '*IP*', '*Ha*', '*O3*', '*N2*', '*S2*', '*EXO*', '*AIR*']
     # for filt in filter_string:
     #     out_name = 'mf_' + filt[1:-2]
     #     make_master_flat(camera_name, archive_path, lng_path, filt, out_name, 'mb_1.fits', 'md_1.fits')

@@ -1169,7 +1169,7 @@ class Camera:
                             self.enqueue_image(jpeg_data_size, im_path, jpeg_name)
                             if not quick:
                                 self.enqueue_image(db_data_size, im_path, db_name)
-                                #self.enqueue_image(raw_data_size, im_path, raw_name00)
+                                self.enqueue_image(raw_data_size, raw_path, raw_name00)
                             print('Sent to AWS Queue.')
                         time.sleep(0.5)
                         self.img = None
