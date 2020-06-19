@@ -329,6 +329,8 @@ class Camera:
         req = command['required_params']
         opt = command['optional_params']
         action = command['action']
+        self.user_id = command['user_id']
+        self.user_name = command['user_name']
 # =============================================================================
 # # =============================================================================
         if opt['filter'] == 'dark' and opt['bin'] == '2,2':    # Special case, AWS broken 20200405
@@ -980,8 +982,10 @@ class Camera:
                         hdu.header['DAY-OBS'] = g_dev['day']
                         hdu.header['DATE'] = datetime.datetime.isoformat(datetime.datetime.utcfromtimestamp(self.t2))
                         hdu.header['ISMASTER'] = False
-                        hdu.header['FILEPATH'] = str(im_path_r) +'to_AWS\\'
+                        hdu.header['FILEPATH'] = str(im_path_r) +'to_AWS/'
                         hdu.header['FILENAME'] = str(raw_name00)
+                        hdu.header['USERNAME'] = self.user_name
+                        hdu.header ['USERID'] = self.user_id
                         hdu.header['REQNUM'] = '00000001'
                         hdu.header['BLKUID'] = 'None'
                         hdu.header['BLKSDATE'] = 'None'

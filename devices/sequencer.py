@@ -159,6 +159,8 @@ class Sequencer:
     def parse_command(self, command):
         req = command['required_params']
         opt = command['optional_params']
+        g_dev['cam'].user_id = command['user_id']
+        g_dev['cam'].user_name = command['user_name']
         action = command['action']
         script = command['required_params']['script']
         if action == "run" and script == 'focusAuto':
@@ -243,6 +245,9 @@ class Sequencer:
 
     def bias_dark_script(self, req=None, opt=None):
         """
+
+        20200618   THis has been drastically simplied for now to deal with QHY600M.
+
         This script may be auto-triggered as the bias_dark window opens, or
         by a qualified user.
         This auto script runs for about an hour.  No auto-triggered images are sent to AWS.
@@ -276,13 +281,14 @@ class Sequencer:
         Note this can be called by the Auto Sequencer OR invoked by a user with different counts
         """
         if req is None:     #  NB This again should be a config item. 274 takes about 1 hour with SBIG 6303
-            req = {'numOfBias': 275, 'bin3': True, 'numOfDark2': 3, 'bin4': True, 'bin1': True, \
-                    'darkTime': '360', 'hotMap': True, 'bin2': True, 'numOfDark': 40, 'dark2Time': '720', \
+            req = {'numOfBias': 127, 'bin3': False, 'numOfDark2': 0, 'bin4': False, 'bin1': True, \
+                    'darkTime': '360', 'hotMap': True, 'bin2': false, 'numOfDark': 31, 'dark2Time': '720', \
                     'coldMap': True, 'script': 'genBiasDarkMaster'}
             opt = {}
         self.sequencer_hold = True
         bias_list = []
         num_bias = max(15, req['numOfBias'])
+        breakpoint()
         if req['bin4']:
             bias_list.append([4, max(5, int(num_bias*19/255))])   #THis whole scheme is wrong. 20200525 WER
         if req['bin3']:
@@ -315,10 +321,10 @@ class Sequencer:
             total_num_dark += item[1]
         print("Total # of dark frames, all binnings =  ", total_num_dark )
         long_dark_list = []
-        num_long_dark = max(3, req['numOfDark2'])
+        num_long_dark = max(0, req['numOfDark2'])
         long_dark_time = float(req['dark2Time'])
         if req['bin1']:
-            long_dark_list.append([1, max(3, num_long_dark)])
+            long_dark_list.append([1, max(0, num_long_dark)])
         if req['bin2']:
             long_dark_list.append([2, max(3, num_long_dark)])
         if req['bin3']:
@@ -501,7 +507,6 @@ class Sequencer:
 
 
     def screen_flat_script(self, req, opt):
-        breakpoint()
         if req['numFrames'] > 1:
             flat_count = req['numFrames']
         else:
