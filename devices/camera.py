@@ -409,6 +409,7 @@ class Camera:
             bin_x = 1
             self.ccd_sum = '1 1'
         bin_y = bin_x   #NB This needs fixing someday!
+        self.bin = bin_x
         self.camera.BinX = bin_x
         self.camera.BinY = bin_y
         #gain = float(optional_params.get('gain', self.config['camera']['camera1'] \
@@ -431,7 +432,7 @@ class Camera:
         #g_dev['fil'].set_name_command({'filter': requested_filter_name}, {})
 
         #  NBNB Changing filter may cause a need to shift focus
-        self.current_offset = 6300#g_dev['fil'].filter_offset  #TEMP   NBNBNB This needs fixing
+        self.current_offset = '????'#g_dev['fil'].filter_offset  #TEMP   NBNBNB This needs fixing
         #  NB nothing being done here to get focus set properly. Where is this effected?
 
         sub_frame_fraction = optional_params.get('subframe', None)
@@ -720,7 +721,7 @@ class Camera:
                     self.exposure_busy = False
                     self.t10 = time.time()
                     #self.camera.AbortExposure()
-                    #print("inner expose returned:  ", result)
+                    print("inner expose took:  ", round(self.t10 - self.t_0 , 2), ' returned:  ', result)
                     self.retry_camera = 0
                     break
                 except Exception as e:
@@ -768,8 +769,10 @@ class Camera:
             self.post_foc = []
             self.post_ocn = []
         counter = 0
-
-        self.completion_time = self.entry_time + exposure_time + 12
+        if self.bin == 1:
+            self.completion_time = self.entry_time + exposure_time + 30.5
+        else:
+            self.completion_time = self.entry_time + exposure_time + 19.36
 
         result = {'error': False}
         while True:     #THis is where we should have a camera probe throttle and timeout system
@@ -992,15 +995,18 @@ class Camera:
                         hdu.header['MOLUID'] = 'None'
                         hdu.header['OBSTYPE'] = 'None'
                         #print('Creating:  ', im_path + g_dev['day'] + '\\to_AWS\\  ... subdirectory.')
+
                         try:
 
                             os.makedirs(im_path_r + g_dev['day'] + '/to_AWS/', exist_ok=True)
                             os.makedirs(im_path_r + g_dev['day'] + '/raw/', exist_ok=True)
                             os.makedirs(im_path_r + g_dev['day'] + '/calib/', exist_ok=True)
+                            os.makedirs(im_path_r + g_dev['day'] + '/reduced/', exist_ok=True)
                             #print('Created:  ',im_path + g_dev['day'] + '\\to_AWS\\' )
                             im_path = im_path_r + g_dev['day'] + '/to_AWS/'
                             raw_path = im_path_r + g_dev['day'] + '/raw/'
                             cal_path = im_path_r + g_dev['day'] + '/calib/'
+                            red_path = im_path_r + g_dev['day'] + '/reduced/'
                         except:
                             pass
 
@@ -1025,10 +1031,12 @@ class Camera:
                         g_dev['obs'].update_status()
                         #NB Important decision here, do we flash calibrate screen and sky flats?  For now, Yes.
 
-                        ########cal_result = calibrate(hdu, None, lng_path, frame_type, start_x=start_x, start_y=start_y, quick=quick)
+                        cal_result = calibrate(hdu, lng_path, frame_type, start_x=start_x, start_y=start_y, quick=quick)
                         '''
-                        Here we need to consider just what local reductions and calibration really make sense to
-                        process in-line vs doing them in another process.
+                        Here we need to consider just what local reductions and calibrations really make sense to
+                        process in-line vs doing them in another process.  For all practical purposes evereything
+                        below can be done in a different process, the exception perhaps has to do with autofocus
+                        processing.
 
 
                         '''
@@ -1042,6 +1050,8 @@ class Camera:
                         #     hdu1.writeto(im_path + raw_name01, overwrite=True)
                         # raw_data_size = hdu1[0].data.size
 
+
+                        hdu.writeto(red_path + raw_name01, overwrite=True)
                         #  NB Should this step be part of calibrate?  Second should we form and send a
                         #  CSV file to AWS and possibly overlay key star detections?
                         #  Possibly even astro solve and align a series or dither batch?
@@ -1219,17 +1229,20 @@ class Camera:
                     g_dev['obs'].update_status()   #THIS CALL MUST NOT ACCESS MAXIM OBJECT!
                     time_now = self.t7= time.time()
                     remaining = round(self.completion_time - time_now, 1)
+                    print("Time remaining:", remaining)
                     loop_count = int((remaining/0.3)*0.7)
 
-                    print("Basic camera wait loop, be patient:  ", round(remaining, 1), ' sec.')
-                    for i in range(loop_count):
-                        #g_dev['obs'].update_status()
-                        time.sleep(0.3)
-                        if i % 30 == 0:
-                            time_now = self.t7= time.time()
-                            remaining = round(self.completion_time - time_now, 1)
-                            print("Basic camera dwell loop, be patient:  ", round(remaining, 1), ' sec.')
-                            g_dev['obs'].update_status()
+                    # print("Basic camera wait loop, be patient:  ", round(remaining, 1), ' sec.')
+                    # for i in range(loop_count):
+                    #     #g_dev['obs'].update_status()
+                    #     time.sleep(0.3)
+                    #     if i % 30 == 0:
+                    #         time_now = self.t7= time.time()
+                    #         remaining = round(self.completion_time - time_now, 1)
+                    #         print("Basic camera dwell loop, be patient:  ", round(remaining, 1), ' sec.')
+                    #         g_dev['obs'].update_status()
+
+
                         # if i % 100 == 45:
                         #     lcl_connected = self._connected()
                         #     if i < loop_count*0.95 and not lcl_connected:

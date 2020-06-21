@@ -108,6 +108,31 @@ def image_stats(img_img, p_median=False):
     #ADD Mode here someday.
     return round(img_mean, 2), round(img_std, 2)
 
+def median8(img, hot_pix):
+    #print('1: ',img_img.data)
+    axis1 = img.shape[0]
+    axis2 = img.shape[1]
+    for pix in range(len(hot_pix[0])):
+        iy = hot_pix[0][pix]
+        ix = hot_pix[1][pix]
+        med = []
+        if (0 < iy < axis1 - 1) and (0 < ix < axis2 - 1):   #Needs fixing for boundary condtions.
+                                                            #no changes to edge pixels as of 20200620 WER
+            med.append(img[iy-1][ix-1])
+            med.append(img[iy-1][ix])
+            med.append(img[iy-1][ix+1])
+            med.append(img[iy+1][ix-1])
+            med.append(img[iy+1][ix])
+            med.append(img[iy+1][ix+1])
+            med.append(img[iy][ix-1])
+            med.append(img[iy][ix+1])
+            med = np.median(np.array(med))
+            #print('2: ', iy, ix, img[iy][ix], med)
+            img[iy][ix] = med
+        #This can be slightly improved by edge and corner treatments.
+        #There may be an OOB condition.
+    return
+
 def remove_overscan(image_raw):
     '''
 #    Note this is camera QHY600 specific!
@@ -390,15 +415,13 @@ def create_super_flat(input_images, lng_path, super_name, super_bias_name,
     #hot and cold pix here.inputs.append(corr_flat)
     return
 
-def make_master_bias (alias, path,  lng_path ,selector_string, out_file):
+def make_master_bias (alias, path,  lng_path , selector_string, out_file):
 
     file_list = glob.glob(path + selector_string)
     shuffle(file_list)
     file_list = file_list[:9*9]   #Temporarily limit size of reduction.
     print('# of files:  ', len(file_list))
-
     print(file_list)
-
     if len(file_list) == 0:
         print("Empty list, returning.")
         return
@@ -421,7 +444,6 @@ def make_master_dark (alias, path, lng_path, selector_string, out_file, super_bi
     file_list = glob.glob(path + selector_string)
     shuffle(file_list)
     file_list = file_list[:9*9]   #Temporarily limit size of reduction.
-
     print('# of files:  ', len(file_list))
     print(file_list)
     if len(file_list) > 63:
@@ -436,20 +458,16 @@ def make_master_dark (alias, path, lng_path, selector_string, out_file, super_bi
     chunk = 9
     chunked_list = chunkify(file_list, chunk)
     print(chunked_list)
-
     create_super_dark(chunked_list, lng_path, out_file, super_bias_name )
 
 def make_master_flat (alias, path, lng_path, selector_string, out_name, super_bias_name, \
-
                       super_dark_name):
     #breakpoint()
     file_list = glob.glob(path + selector_string)
     if len(file_list) < 3:
         return
-
     shuffle(file_list)
     file_list = file_list[:9*9]   #Temporarily limit size of reduction.
-
     print('# of files:  ', len(file_list))
     print(file_list)
     if len(file_list) > 63:
@@ -464,13 +482,12 @@ def make_master_flat (alias, path, lng_path, selector_string, out_name, super_bi
     chunk = 9
     chunked_list = chunkify(file_list, chunk)
     print(chunked_list)
-
     create_super_flat(chunked_list, lng_path, out_name, super_bias_name, super_dark_name)
 
 
 def debias_and_trim(camera_name, archive_path, out_path):
     #NB this needs to rename fit and fts files to fits
-    file_list = glob.glob(archive_path + "*m8*")
+    file_list = glob.glob(archive_path + "*M8*")
     file_list.sort
     print(file_list)
     print('# of files:  ', len(file_list))
@@ -504,24 +521,53 @@ def debias_and_trim(camera_name, archive_path, out_path):
         img.write(out_path + image.split('\\')[1], overwrite=True)
     print('Debias and trim Finished.')
 
+def build_hot_map(camera_name, lng_path, in_image, out_name):
+    img = ccdproc.CCDData.read(lng_path + in_image, format='fits')
+    img_std = img.data.std()
+    img_mean = img.data.mean()
+    hot_pix = np.where(img.data > 2*img_std)
+    # print(img_std, img_mean, len(hot_pix[0]), hot_pix)
+    # median8(img.data, hot_pix)
+    # img2_std = img.data.std()
+    # img2_mean = img.data.mean()
+    # hot2_pix = np.where(img.data > 1*img_std)
+    # print(img2_std, img2_mean, len(hot2_pix[0]), hot2_pix) #interating on this does not improve
+    return hot_pix
+
+def build_hot_image(camera_name, lng_path, in_image, out_name):
+    img = ccdproc.CCDData.read(lng_path + in_image, format='fits')
+    img_std = img.data.std()
+    img_mean = img.data.mean()
+    hot_pix = np.where(img.data > 2*img_std)
+    saved = img.data.astype('int32')
+    img.data -= img.data
+    for pix in range(len(hot_pix[0])):
+        iy = hot_pix[0][pix]
+        ix = hot_pix[1][pix]
+        img.data[iy][ix] = saved[iy][ix]
+    img.write(lng_path + out_name, overwrite=True)
+
 if __name__ == '__main__':
     camera_name = 'sq01'  #  config.site_config['camera']['camera1']['name']
     #archive_path = "D:/000ptr_saf/archive/sq01/2020-06-13/"
     #archive_path = "D:/2020-06-19  Ha and O3 screen flats/"
-    archive_path = "D:/2020-06-19 qhy600 hA AND O3 LAGOON IMAGES/"
-    out_path = "D:/000ptr_saf/archive/sq01/20200618/lagoon/"
+    archive_path = "D:/2020-06-11  QHY600 testing/"
+    out_path = "D:/2020-06-19 qhy600 hA AND O3 LAGOON IMAGES/trimmed_other/"
     lng_path = "D:/000ptr_saf/archive/sq01/lng/"
     # debias_and_trim(camera_name, archive_path, out_path)
-    # make_master_bias(camera_name, archive_path, lng_path, '*b_1*', 'mb_1.fits')
-    # make_master_bias(camera_name, archive_path, lng_path, '*b_2*', 'mb_2.fits')
+    # make_master_bias(camera_name, out_path, lng_path, '*f_3*', 'mb_1b.fits')
+    # make_master_bias(camera_name, out_path, lng_path, '*b_2*', 'mb_2b.fits')
     # #make_master_bias(camera_name, archive_path, lng_path, '*b_3*', 'mb_3.fits')
     # #make_master_bias(camera_name, archive_path, lng_path, '*b_4*', 'mb_4.fits')
-    # #make_master_dark(camera_name, archive_path, lng_path, '*d_1_120*', 'md_1_120.fits', 'mb_1.fits')
-    # make_master_dark(camera_name, archive_path, lng_path, '*d_1_360*', 'md_1.fits', 'mb_1.fits')
-    # make_master_dark(camera_name, archive_path, lng_path, '*d_2_90*', 'md_2.fits', 'mb_2.fits')
+    # make_master_dark(camera_name, out_path, lng_path, '*d_1_1080*', 'md_1_1080.fits', 'mb_1b.fits')
+    # make_master_dark(camera_name, out_path, lng_path, '*d_1_360*', 'md_1b.fits', 'mb_1b.fits')
+    # make_master_bias(camera_name, out_path, lng_path, '*b_2*', 'mb_2b.fits')
+    # make_master_dark(camera_name, out_path, lng_path, '*d_2_120*', 'md_2b.fits', 'mb_2b.fits')
     # #make_master_dark(camera_name, archive_path, lng_path, '*d_3_90*', 'md_3.fits', 'mb_3.fits')
     # #make_master_dark(camera_name, archive_path, lng_path, '*d_4_60*', 'md_4.fits', 'mb_4.fits')
-#make_master_flat(camera_name, archive_path, lng_path, filt, out_name, 'mb_1.fits', 'md_1.fits')
+    #make_master_flat(camera_name, archive_path, lng_path, filt, out_name, 'mb_1.fits', 'md_1.fits')
+    # build_hot_map(camera_name, lng_path, "md_1_1080.fits", "hm_1")
+    build_hot_image(camera_name, lng_path, "md_1_1080.fits", "hm_1.fits")
     print('Fini')
     # NB Here we would logcially go on to get screen flats.
 

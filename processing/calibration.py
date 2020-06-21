@@ -67,25 +67,31 @@ def simpleColumnFix(img, col):
 #These are essentially cached supers.  Probably they could be class variables.
 super_bias = None
 super_bias_2 = None
-super_bias_ldr = None
-super_dark = None
-super_dark_ldr = None
 super_dark = None
 super_dark_2 = None
-super_dark_ldr = None
 hotmap = None
-hotmap_ldr = None
 hotpix = None
-hotpix_ldr = None
 super_flat_w = None
+super_flat_air = None
+super_flat_B= None
+super_flat_V = None
+super_flat_R = None
+super_flat_EXO = None
+super_flat_g = None
+super_flat_r = None
+super_flat_i = None
+super_flat_O3 = None
 super_flat_HA = None
+super_flat_N2 = None
+super_flat_S2 = None
 
 #This is a brute force linear version. This needs to be more sophisticated and camera independent.
 
-def calibrate (hdu, hdu_ldr, lng_path, frame_type='light', start_x=0, start_y=0, quick=False):
+def calibrate (hdu, lng_path, frame_type='light', start_x=0, start_y=0, quick=False):
     #These variables are gloal in the sense they persist between calls (memoized so to speak, should use that facility.)
-    global super_bias, super_bias_2, super_bias_ldr, super_dark, super_dark_ldr, super_dark, super_dark_2, \
-           super_dark_ldr, super_flat_w, super_flat_HA, hotmap, hotpix, hotmap_ldr, hotpix_ldr
+    global super_bias, super_bias_2, super_dark, super_dark_2, hotmap, hotpix, super_flat_air, super_flat_w, \
+        super_flat_B, super_flat_V, super_flat_R, super_flat_EXO, super_flat_g, super_flat_r, super_flat_i, \
+        super_flat_O3, super_flat_HA, super_flat_N2, super_flat_S2
     loud = True
     #This needs to deal with caching different binnings as well.  And do we skip all this for a quick
     if not quick:
@@ -133,7 +139,8 @@ def calibrate (hdu, hdu_ldr, lng_path, frame_type='light', start_x=0, start_y=0,
             try:
                 sdHdu = fits.open(lng_path + 'md_1.fits')
                 dark_exposure_level = sdHdu[0].header['EXPTIME']
-                super_dark = sdHdu[0].data#.astype('float32')
+                super_dark = sdHdu[0].data/dark_exposure_level  #Convert to adu/sec
+                super_dark = super_dark.astype('float32')
                 print('sdark:  ', super_dark.mean())
                 sdHdu.close()
                 #fix = np.where(super_dark_360 < 0)
@@ -147,7 +154,8 @@ def calibrate (hdu, hdu_ldr, lng_path, frame_type='light', start_x=0, start_y=0,
             try:
                 sdHdu = fits.open(lng_path + 'md_2.fits')
                 dark_2_exposure_level = sdHdu[0].header['EXPTIME']
-                super_dark_2  = sdHdu[0].data#.astype('float32')
+                super_dark_2  = sdHdu[0].data/dark_2_exposure_level  #Converto to ADU/sec
+                super_dark_2 = super_dark_2.astype('float32')
                 print('sdark_2:  ', super_dark_2.mean())
                 sdHdu.close()
                 #fix = np.where(super_dark_360 < 0)
@@ -155,29 +163,29 @@ def calibrate (hdu, hdu_ldr, lng_path, frame_type='light', start_x=0, start_y=0,
                 quick_dark_2 = True
                 print(lng_path + 'md_2.fits', 'Loaded')
             except:
-               quick_dark_2 = False
-               print('WARN: No dark_2 Loaded.')
-#Note on flats the case is carried through
-#        if super_flat_w is None:
-#            try:
-#                sfHdu = fits.open(lng_path + 'ldr_mf_1_w.fits')
-#                super_flat_w = sfHdu[0].data.astype('float32')
-#                quick_flat_w = True
-#                sfHdu.close()
-#                if loud: print(lng_path + 'ldr_mf_1_w.fits', 'Loaded')
-#            except:
-            quick_flat_w = False
-#                print('WARN: No W Flat/Lum Loaded.')
-#        if super_flat_HA is None:
-#            try:
-#                sfHdu = fits.open(lng_path + 'ldr_mf_1_1_HA.fits')
-#                super_flat_HA = sfHdu[0].data#.astype('float32')
-#                quick_flat_HA = True
-#                sfHdu.close()
-#                if loud: print(lng_path + 'ldr_mf_1_HA.fits', 'Loaded')
-#            except:
-            quick_flat_HA = False
-#                if not quick: print('WARN: No HA Flat/Lum Loaded.')
+                quick_dark_2 = False
+                print('WARN: No dark_2 Loaded.')
+
+        if super_flat_w is None:
+            try:
+                sfHdu = fits.open(lng_path + 'mf_w.fits')
+                super_flat_w = sfHdu[0].data.astype('float32')
+                quick_flat_w = True
+                sfHdu.close()
+                if loud: print(lng_path + 'm1_w.fits', 'Loaded')
+            except:
+                quick_flat_w = False
+                print('WARN: No W Flat/Lum Loaded.')
+        if super_flat_HA is None:
+            try:
+                sfHdu = fits.open(lng_path + 'mf_HA.fits')
+                super_flat_HA = sfHdu[0].data#.astype('float32')
+                quick_flat_HA = True
+                sfHdu.close()
+                if loud: print(lng_path + 'mf_HA.fits', 'Loaded')
+            except:
+                quick_flat_HA = False
+                if not quick: print('WARN: No HA Flat/Lum Loaded.')
 
 #        if hotmap_360 is None:
 #            try:
@@ -194,6 +202,7 @@ def calibrate (hdu, hdu_ldr, lng_path, frame_type='light', start_x=0, start_y=0,
     #this whole area need to be re-thought to better cache and deal with a mix of flats and binnings  Right now partial
     #brute force.
     while True:   #Use break to drop through to exit.  i.e., do not calibrate frames we are acquring for calibration.
+
         cal_string = ''
         if not quick:
             img = hdu.data.astype('float32')
@@ -211,53 +220,40 @@ def calibrate (hdu, hdu_ldr, lng_path, frame_type='light', start_x=0, start_y=0,
         data_exposure_level = hdu.header['EXPTIME']
         if frame_type == 'dark':
             break   #  Do not dark calibrate a dark.
-        do_dark = False
-        # if data_exposure_level <= 90:
-        #     s_dark = super_dark_90
-        #     d_exp = 90.
-        #     h_map = hotmap_360
-        #     h_pix = hotpix_360
-        #     do_dark = True
 
         # NB Qualify if dark exists and by binning
-        if data_exposure_level <= 1080:
-            s_dark = super_dark
-            d_exp = 360.0 #dark_360_exposure_level #hack to fix bad dark master.
-            #h_map = hotmap
-            #h_pix = hotpix
-            do_dark = True
-        else:
-            do_dark = False
-        if do_dark:
         #Need to verify dark is not 0 seconds long!
-            if d_exp >= data_exposure_level and d_exp >= 1:  #  and quick_dark_90:
-                scale = data_exposure_level/d_exp
-                if scale > 1:
-                    print("WARNING:  Master dark being used over-scaled:", round(scale, 4))
-                img =  (img - s_dark[start_x:(start_x + img.shape[0]), start_y:(start_y + img.shape[1])])
-                if not quick:
-                    print('QuickDark  scale/result(high): ', round(scale, 4), imageStats(img, loud))
-                cal_string += ', D'
-            else:
-                if not quick: print('INFO:  Light exposure too small, skipped this step.')
-
+        if super_dark is not None:  #  and quick_dark_90:
+            if data_exposure_level > 360:
+                print("WARNING:  Master dark being used over-scaled")
+            img =  (img - super_dark[start_x:(start_x + img.shape[0]), start_y:(start_y + img.shape[1]) \
+                                ]*data_exposure_level)
+            if not quick:
+                print('QuickDark: ', imageStats(img, loud))
+            cal_string += ', D'
+        else:
+            if not quick: print('INFO:  Light exposure too small, skipped this step.')
         img_filter = hdu.header['FILTER']
         if frame_type[-4:]  == 'flat':   #  Note frame type ends 'flat, e.g arc_flat, screen_flat, sky_flat
             break       #  Do not fla calibrate a flat.
         do_flat = False
-        if img_filter == 'w':
-            do_flat= False
-            #s_flat = super_flat_w
-        elif img_filter == 'HA':
-            do_flat = False
-            #s_flat = super_flat_HA
+        if img_filter in ['w', 'W']:
+            do_flat = True
+            s_flat = super_flat_w
+        elif img_filter in ['HA', 'Ha', 'ha']:
+            do_flat = True
+            s_flat = super_flat_HA
         else:
             do_flat = False
         if do_flat: # and not g_dev['seq'].active_script == 'make_superscreenflats':
-            img = img/s_flat
+            try:
+                img = img/s_flat
+                cal_string +=', SCF'
+            except:
+                print("Flat field math failed.")
             if not quick: print('QuickFlat result (high):  ', imageStats(img, loud))
 
-            cal_string +=', SCF'
+
         #median8(img, h_pix)
         #cal_string +=', HP'
         break    #If we get this far we are done.
