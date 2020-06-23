@@ -512,13 +512,11 @@ class Sequencer:
         else:
             flat_count = 7    #   A dedugging compromise
 
-        #  NB here we ned to check cam at reasonable temp, or dwell until it is.
+        #  NB here we need to check cam at reasonable temp, or dwell until it is.
 
         alias = str(self.config['camera']['camera1']['name'])
         dark_count = 3
         exp_time = 5
-        #gain_calc = req['gainCalc']
-        #shut_comp =  req['shutterCompensation']
         if flat_count < 1: flat_count = 1
         g_dev['mnt'].park_command({}, {})
         #  NB:  g_dev['enc'].close
@@ -531,24 +529,51 @@ class Sequencer:
         req = {'time': 10,  'alias': alias, 'image_type': 'screen flat'}
         opt = {'size': 100, 'count': dark_count, 'filter': g_dev['fil'].filter_data[12][0]}  #  air has highest throughput
         # Skip for now;  bright, fwhm = g_dev['cam'].expose_command(req, opt, gather_status=True, no_AWS=True)
-        g_dev['scr'].screen_light_on()
+        # g_dev['scr'].screen_light_on()
+
         for filt in g_dev['fil'].filter_screen_sort:
+            #enter with screen dark
             filter_number = int(filt)
-            #g_dev['fil'].set_number_command(filter_number)  #THis faults
             print(filter_number, g_dev['fil'].filter_data[filter_number][0])
             screen_setting = g_dev['fil'].filter_data[filter_number][4][1]
             g_dev['scr'].set_screen_bright(int(screen_setting))
-            #  NB if changed we should wait 15 seconds. time.sleep(15)
             exp_time  = g_dev['fil'].filter_data[filter_number][4][0]
             g_dev['obs'].update_status()
-            print('Test Screen; filter, bright:  ', filter_number, screen_setting)
 
+            print('Dark Screen; filter, bright:  ', filter_number, 0.0)
             req = {'time': float(exp_time),  'alias': alias, 'image_type': 'screen flat'}
-            opt = {'size': 100, 'count': flat_count, 'filter': g_dev['fil'].filter_data[filter_number][0]}
-            bright, fwhm = g_dev['cam'].expose_command(req, opt, gather_status=True, no_AWS=True)
-            # if no exposure, wait 10 sec
-            print("Screen flat:  ", bright, g_dev['fil'].filter_data[filter_number][0], '\n\n')
+            opt = {'size': 100, 'count': 2, 'filter': g_dev['fil'].filter_data[filter_number][0]}
+            result = g_dev['cam'].expose_command(req, opt, gather_status=True, no_AWS=True)
+            bright = result['patch']
+            print("Dark Screen flat, starting:  ", bright, g_dev['fil'].filter_data[filter_number][0], '\n\n')
             g_dev['obs'].update_status()
+
+            print('Lighted Screen; filter, bright:  ', filter_number, screen_setting)
+            g_dev['scr'].screen_light_on()
+            time.sleep(10)
+            g_dev['obs'].update_status()
+            time.sleep(10)
+            g_dev['obs'].update_status()
+            time.sleep(10)
+            g_dev['obs'].update_status()
+            req = {'time': float(exp_time)/10.,  'alias': alias, 'image_type': 'screen flat'}
+            opt = {'size': 100, 'count': 2, 'filter': g_dev['fil'].filter_data[filter_number][0]}
+            result = g_dev['cam'].expose_command(req, opt, gather_status=True, no_AWS=True)
+            bright = result['patch']
+            # if no exposure, wait 10 sec
+            print("Lighted Screen flat:  ", bright, g_dev['fil'].filter_data[filter_number][0], '\n\n')
+
+            g_dev['obs'].update_status()
+            g_dev['scr'].screen_dark()
+            time.sleep(10)
+            print('Dark Screen; filter, bright:  ', filter_number, 0.0)
+            req = {'time': float(exp_time),  'alias': alias, 'image_type': 'screen flat'}
+            opt = {'size': 100, 'count': 2, 'filter': g_dev['fil'].filter_data[filter_number][0]}
+            result = g_dev['cam'].expose_command(req, opt, gather_status=True, no_AWS=True)
+            bright = result['patch']# if no exposure, wait 10 sec
+            print("Dark Screen flat, ending:  ", bright, g_dev['fil'].filter_data[filter_number][0], '\n\n')
+
+
             #breakpoint()
         g_dev['scr'].screen_dark()
         g_dev['obs'].update_status()

@@ -84,6 +84,7 @@ super_flat_O3 = None
 super_flat_HA = None
 super_flat_N2 = None
 super_flat_S2 = None
+dark_exposure_level = 0.0
 
 #This is a brute force linear version. This needs to be more sophisticated and camera independent.
 
@@ -91,7 +92,7 @@ def calibrate (hdu, lng_path, frame_type='light', start_x=0, start_y=0, quick=Fa
     #These variables are gloal in the sense they persist between calls (memoized so to speak, should use that facility.)
     global super_bias, super_bias_2, super_dark, super_dark_2, hotmap, hotpix, super_flat_air, super_flat_w, \
         super_flat_B, super_flat_V, super_flat_R, super_flat_EXO, super_flat_g, super_flat_r, super_flat_i, \
-        super_flat_O3, super_flat_HA, super_flat_N2, super_flat_S2
+        super_flat_O3, super_flat_HA, super_flat_N2, super_flat_S2, dark_exposure_level
     loud = True
     #This needs to deal with caching different binnings as well.  And do we skip all this for a quick
     if not quick:
@@ -137,7 +138,7 @@ def calibrate (hdu, lng_path, frame_type='light', start_x=0, start_y=0, quick=Fa
         #         print('WARN: No dark_1_90 Loaded.')
         if super_dark is None:
             try:
-                sdHdu = fits.open(lng_path + 'md_1.fits')
+                sdHdu = fits.open(lng_path + 'md_1_360.fits')
                 dark_exposure_level = sdHdu[0].header['EXPTIME']
                 super_dark = sdHdu[0].data/dark_exposure_level  #Convert to adu/sec
                 super_dark = super_dark.astype('float32')
@@ -146,13 +147,14 @@ def calibrate (hdu, lng_path, frame_type='light', start_x=0, start_y=0, quick=Fa
                 #fix = np.where(super_dark_360 < 0)
                 #super_dark_360[fix] = 0
                 quick_dark= True
-                print(lng_path + 'md_1.fits', 'Loaded')
+                dark_exposure_level = 360.
+                print(lng_path + 'md_1_360.fits', 'Loaded')
             except:
                quick_dark = False
                print('WARN: No dark_1 Loaded.')
         if super_dark_2 is None:
             try:
-                sdHdu = fits.open(lng_path + 'md_2.fits')
+                sdHdu = fits.open(lng_path + 'md_2_120.fits')
                 dark_2_exposure_level = sdHdu[0].header['EXPTIME']
                 super_dark_2  = sdHdu[0].data/dark_2_exposure_level  #Converto to ADU/sec
                 super_dark_2 = super_dark_2.astype('float32')
@@ -161,7 +163,8 @@ def calibrate (hdu, lng_path, frame_type='light', start_x=0, start_y=0, quick=Fa
                 #fix = np.where(super_dark_360 < 0)
                 #super_dark_360[fix] = 0
                 quick_dark_2 = True
-                print(lng_path + 'md_2.fits', 'Loaded')
+                dark_exposure_level = 120.
+                print(lng_path + 'md_2_120.fits', 'Loaded')
             except:
                 quick_dark_2 = False
                 print('WARN: No dark_2 Loaded.')
@@ -224,7 +227,7 @@ def calibrate (hdu, lng_path, frame_type='light', start_x=0, start_y=0, quick=Fa
         # NB Qualify if dark exists and by binning
         #Need to verify dark is not 0 seconds long!
         if super_dark is not None:  #  and quick_dark_90:
-            if data_exposure_level > 360:
+            if data_exposure_level > dark_exposure_level:
                 print("WARNING:  Master dark being used over-scaled")
             img =  (img - super_dark[start_x:(start_x + img.shape[0]), start_y:(start_y + img.shape[1]) \
                                 ]*data_exposure_level)

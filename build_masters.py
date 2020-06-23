@@ -487,7 +487,7 @@ def make_master_flat (alias, path, lng_path, selector_string, out_name, super_bi
 
 def debias_and_trim(camera_name, archive_path, out_path):
     #NB this needs to rename fit and fts files to fits
-    file_list = glob.glob(archive_path + "*M8*")
+    file_list = glob.glob(archive_path + "*M51*")
     file_list.sort
     print(file_list)
     print('# of files:  ', len(file_list))
@@ -547,14 +547,72 @@ def build_hot_image(camera_name, lng_path, in_image, out_name):
         img.data[iy][ix] = saved[iy][ix]
     img.write(lng_path + out_name, overwrite=True)
 
+def correct_image(camera_name, archive_path, lng_path, out_path):
+    file_list = glob.glob(archive_path + "*M8*")
+    file_list.sort
+    print(file_list)
+    print('# of files:  ', len(file_list))
+    #Get the master images:
+    sbHdu = fits.open(lng_path + 'mb_1.fits')
+    super_bias = sbHdu[0].data.astype('float32')
+    sdHdu = fits.open(lng_path + 'md_1_360.fits')
+    super_dark = sdHdu[0].data.astype('float32')
+    srHdu = fits.open(lng_path + 'mf_rp.fits')
+    super_rp = srHdu[0].data.astype('float32')
+    sgHdu = fits.open(lng_path + 'mf_gp.fits')
+    super_gp = sgHdu[0].data.astype('float32')
+    siHdu = fits.open(lng_path + 'mf_ip.fits')
+    super_ip = siHdu[0].data.astype('float32')
+    sHHdu = fits.open(lng_path + 'mf_HA.fits')
+    super_HA = sHHdu[0].data.astype('float32')
+    sOHdu = fits.open(lng_path + 'mf_O3.fits')
+    super_O3 = sOHdu[0].data.astype('float32')
+    shHdu = fits.open(lng_path + 'hm_1.fits')
+    hot_map = shHdu[0].data
+    hot_pix = np.where(hot_map > 1)
+    for image in file_list:
+
+        img = fits.open(image)
+        img[0].data = img[0].data.astype('float32')
+        img[0].data = img[0].data - super_bias
+        img_dur = img[0].header['EXPOSURE']
+        ratio = img_dur/360.
+        img[0].data -= super_dark*ratio
+        if image[-6] == 'g':
+            img[0].data /= super_gp
+        elif image[-6] == 'r' :
+            img[0].data /= super_rp
+        elif image[-6] == 'i' :
+            img[0].data /= super_ip
+        elif image[-6] in ['H','h'] :
+            img[0].data /= super_HA
+        elif image[-6] == 'O' :
+            img[0].data /= super_O3
+        else:
+            print("Incorrect filter suffix, no flat applied.")
+
+        median8(img[0].data, hot_pix)
+        img[0].header['CALIBRAT'] = 'B D F H'
+        file_name_split = image.split('\\')
+        print('Writing:  ', file_name_split[1])
+        img.writeto(out_path + file_name_split[1], overwrite=True)
+        img.close()
+
+
+
+
+
+
+
+
 if __name__ == '__main__':
     camera_name = 'sq01'  #  config.site_config['camera']['camera1']['name']
     #archive_path = "D:/000ptr_saf/archive/sq01/2020-06-13/"
     #archive_path = "D:/2020-06-19  Ha and O3 screen flats/"
-    archive_path = "D:/2020-06-11  QHY600 testing/"
-    out_path = "D:/2020-06-19 qhy600 hA AND O3 LAGOON IMAGES/trimmed_other/"
+    archive_path = "D:/2020-06-19 qhy600 hA AND O3 LAGOON IMAGES/Big batch/"
+    out_path = "D:/2020-06-19 qhy600 hA AND O3 LAGOON IMAGES/Big batch/calibrated/"
     lng_path = "D:/000ptr_saf/archive/sq01/lng/"
-    # debias_and_trim(camera_name, archive_path, out_path)
+    #debias_and_trim(camera_name, archive_path, out_path)
     # make_master_bias(camera_name, out_path, lng_path, '*f_3*', 'mb_1b.fits')
     # make_master_bias(camera_name, out_path, lng_path, '*b_2*', 'mb_2b.fits')
     # #make_master_bias(camera_name, archive_path, lng_path, '*b_3*', 'mb_3.fits')
@@ -567,7 +625,8 @@ if __name__ == '__main__':
     # #make_master_dark(camera_name, archive_path, lng_path, '*d_4_60*', 'md_4.fits', 'mb_4.fits')
     #make_master_flat(camera_name, archive_path, lng_path, filt, out_name, 'mb_1.fits', 'md_1.fits')
     # build_hot_map(camera_name, lng_path, "md_1_1080.fits", "hm_1")
-    build_hot_image(camera_name, lng_path, "md_1_1080.fits", "hm_1.fits")
+    #build_hot_image(camera_name, lng_path, "md_1_1080.fits", "hm_1.fits")
+    correct_image(camera_name, archive_path, lng_path, out_path)
     print('Fini')
     # NB Here we would logcially go on to get screen flats.
 
