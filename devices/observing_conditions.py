@@ -52,12 +52,12 @@ class ObservingConditions:
                 illum = int(illum)
             # Here we add in-line (To be changed) a preliminary OpenOK calculation:
             #  NB all parameters should come from config.
-            dew_point_gap = True#not (self.boltwood.Temperature  - self.boltwood.DewPoint) < 2
-            temp_bounds = True#not (self.boltwood.Temperature < 2.0) or (self.boltwood.Temperature > 35)
-            wind_limit = True#self.boltwood.WindSpeed < 10
-            sky_amb_limit  = True#self.boltwood.SkyTemperature < 27.5
-            humidity_limit = True#self.boltwood.Humidity < 85
-            rain_limit = True# self.boltwood.RainRate <= 0.001
+            dew_point_gap = not (self.boltwood.Temperature  - self.boltwood.DewPoint) < 2
+            temp_bounds = not (self.boltwood.Temperature < 2.0) or (self.boltwood.Temperature > 35)
+            wind_limit = self.boltwood.WindSpeed < 10
+            sky_amb_limit  = self.boltwood.SkyTemperature < 27.5
+            humidity_limit = self.boltwood.Humidity < 85
+            rain_limit = self.boltwood.RainRate <= 0.001
             self.wx_is_ok = dew_point_gap and temp_bounds and wind_limit and sky_amb_limit and \
                             humidity_limit and rain_limit
             if self.wx_is_ok:
@@ -209,11 +209,11 @@ class ObservingConditions:
                 open_poss = False
                 hz = 500000
             quick.append(time.time())
-            quick.append(-36.)#float(self.boltwood.SkyTemperature))
-            quick.append(25.)#float(self.boltwood.Temperature))
-            quick.append(50.)#float(self.boltwood.Humidity))
-            quick.append(-3.3)#float(self.boltwood.DewPoint))
-            quick.append(3.)#float(abs(self.boltwood.WindSpeed)))
+            quick.append(float(self.boltwood.SkyTemperature))
+            quick.append(float(self.boltwood.Temperature))
+            quick.append(float(self.boltwood.Humidity))
+            quick.append(float(self.boltwood.DewPoint))
+            quick.append(float(abs(self.boltwood.WindSpeed)))
             quick.append(float(784.0))   # 20200329 a SWAG!
             quick.append(float(illum))     # Add Solar, Lunar elev and phase
             quick.append(float(self.unihedron.SkyQuality))     # intended for Unihedron
