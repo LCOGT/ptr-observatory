@@ -116,60 +116,44 @@ class Camera:
         self.camera = win32com.client.Dispatch(driver)
         #self.camera = win32com.client.Dispatch('ASCOM.FLI.Kepler.Camera')
         #Need logic here if camera denies connection.
-        print("Connecting to ASCOM camera:", driver)
+        print("Connecting to:  ", driver)
 
 
         if driver[:5].lower() == 'ascom':
             print('ASCOM camera is initializing.')
-            self.camera.Connected = True
+            #Monkey patch in ASCOM specific methods.
+            self._connected = self._ascom_connected
+            self._connect = self._ascom_connect
+            self._setpoint = self._ascom_setpoint
+            self._temperature = self._ascom_temperature
+            self._expose = self._ascom_expose
+            self._stop_expose = self._ascom_stop_expose
             self.description = "ASCOM"
             self.maxim = False
             self.ascom = True
-            if self.camera.CanSetCCDTemperature:
-                self.camera.SetCCDTemperature = float(self.config['camera']['camera1'] \
-                                                      ['settings']['temp_setpoint'])
-                self.temperature_setpoint = self.camera.SetCCDTemperature
-                cooler_on = self.config['camera']['camera1'] \
-                                       ['settings']['cooler_on'] in ['True', 'true', 'Yes', 'yes', 'On', 'on']
-            self.camera.CoolerOn = cooler_on
-            self.current_filter = 2     #A WMD reference -- needs fixing.
-
             print('Control is ASCOM camera driver.')
         else:
             print('Maxim camera is initializing.')
-            #Monkey patch in Maxim specific
+            #Monkey patch in Maxim specific methods.
             self._connected = self._maxim_connected
             self._connect = self._maxim_connect
             self._setpoint = self._maxim_setpoint
             self._temperature = self._maxim_temperature
+            self._expose = self._maxim_expose
+            self._stop_expose = self._maxim_stop_expose
             self.description = 'MAXIM'
             self.maxim = True
             self.ascom = False
-            print(self._connect(True))
-            print(self._connected())
-            print(self._setpoint(float(self.config['camera']['camera1'] \
-                                      ['settings']['temp_setpoint'])))
-            print(self._temperature)
-
-            cooler_on = self.config['camera']['camera1'] \
-                                   ['settings']['cooler_on'] in ['True', 'true', 'Yes', 'yes', 'On', 'on']
-            self.camera.CoolerOn = cooler_on
-            self.current_filter = 0    #W in Apache Ridge case.
-
             print('Control is Maxim camera interface.')
-        # breakpoint()
-        # # #self.camera.StartSequence('D:\\archive\\archive\\sq01\\seq\\ptr_saf.seq')
-        # create_simple_sequence(exp_time=720, img_type=2,filter_name='V')
-        # self.camera.StartSequence('D:/archive/archive/sq01/seq/ptr_saf_darks.seq')
-        # for item in range(50):
-        #     seq = self.camera.SequenceRunning
-        #     print('Link:  ', self.camera.LinkEnabled,'  AutoSave:  ',  seq)
-        #     if not seq:
-        #         break
-        #     time.sleep(30)
-
-        # print('Exposure Finished:  ', item*0.5, ' seconds.')
-        # breakpoint()
+        print(self._connect(True))
+        print(self._connected())
+        print(self._setpoint(float(self.config['camera']['camera1']['settings']['temp_setpoint'])))
+        print(self._temperature)
+        cooler_on = self.config['camera']['camera1'] \
+                               ['settings']['cooler_on'] in ['True', 'true', 'Yes', 'yes', 'On', 'on']
+        self.camera.CoolerOn = cooler_on
+        # NB Should get and report cooer power
+        self.current_filter = 0    #W in Apache Ridge case. #This should come from congig, filter section
         self.exposure_busy = False
         self.cmd_in = None
         self.camera_message = '-'
@@ -256,10 +240,31 @@ class Camera:
         self.camera.TemperatureSetpoint = float(p_temp)
         return self.camera.TemperatureSetpoint
 
+    def _maxim_expose(self, exposure_time, imtypeb):
+        self.camera.Expose(exposure_time, imtypeb)
 
+    def _maxim_stop_expose(self):
+        self.camera.AbortExpose()
 
-    #  NB Need to add in ASCOM versions
+    def _ascom_connected(self):
+        return self.camera.Connected
 
+    def _ascom_connect(self, p_connect):
+        self.camera.Connected = p_connect
+        return self.camera.Connected
+
+    def _ascom_temperature(self):
+        return self.camera.CCDTemperature
+
+    def _ascom_setpoint(self, p_temp):
+        self.camera.SetCCDTemperature = float(p_temp)
+        return self.camera.SetCCDTemperature
+
+    def _ascom_expose(self, exposure_time, imtypeb):
+            self.camera.StartExposure(exposure_time, imtypeb)
+
+    def _ascom_stop_expose(self):
+            self.camera.StopExposure()   #ASCOM also has an AbortExposure method.
 
     def create_simple_sequence(self, exp_time=0, img_type=0, speed=0, suffix='', repeat=1, \
                         readout_mode="", filter_name='W', enabled=1, \
@@ -409,13 +414,14 @@ class Camera:
             bin_x = 1
             self.ccd_sum = '1 1'
         bin_y = bin_x   #NB This needs fixing someday!
+        breakpoint()
         self.bin = bin_x
         self.camera.BinX = bin_x
         self.camera.BinY = bin_y
         #gain = float(optional_params.get('gain', self.config['camera']['camera1'] \
         #                                              ['settings']['reference_gain'][bin_x - 1]))
         readout_time = float(self.config['camera']['camera1']['settings']['readout_time'][bin_x - 1])
-        exposure_time = float(required_params.get('time', 0.0))   #  0.0 may be the best default.
+        exposure_time = float(required_params.get('time', 0.00001))   #  0.0 may be the best default.
         self.estimated_readtime = (exposure_time + 2*readout_time)*1.25*3   #  3 is the outer retry loop maximum.
         #exposure_time = max(0.2, exposure_time)  #Saves the shutter, this needs qualify with imtype.
         imtype= required_params.get('image_type', 'Light')
@@ -445,7 +451,7 @@ class Camera:
             if imtype.lower() in ('screen flat', 'sky flat', 'guick'):
                 do_sep = False
         elif imtype.lower() == 'bias':
-            exposure_time = 0.0
+            exposure_time = 0.00001
             imtypeb = False
             frame_type = 'bias'
             no_AWS = False
@@ -664,15 +670,8 @@ class Camera:
                             self._connect(True)
                             print('2nd Reset LinkEnabled/Connected right before exposure')
                     #  At this point we really should be connected!!
-                    if self.ascom:
-                        #self.camera.AbortExposure()
-                        g_dev['ocn'].get_quick_status(self.pre_ocn)
-                        g_dev['foc'].get_quick_status(self.pre_foc)
-                        g_dev['rot'].get_quick_status(self.pre_rot)
-                        g_dev['mnt'].get_quick_status(self.pre_mnt)
-                        self.t2 = time.time()       #Immediately before Exposure
-                        self.camera.StartExposure(exposure_time, imtypeb)
-                    elif self.maxim:
+
+                    if self.maxim or self.ascom:
                         #print('Link Enable check:  ', self._connected())
                         g_dev['ocn'].get_quick_status(self.pre_ocn)
                         g_dev['foc'].get_quick_status(self.pre_foc)
@@ -691,7 +690,7 @@ class Camera:
                             img_type = 1
                         if frame_type == 'dark':
                             img_type = 2
-                        if frame_type in ('flat', 'screen flat', 'sky flat'):
+                        if frame_type in ('flat', 'screen flat','screen_flat', 'sky flat' 'sky_flat'):
                             img_type = 3
 
                         # self.create_simple_sequence(exp_time=exposure_time, img_type=img_type, \
@@ -701,10 +700,14 @@ class Camera:
                         # old_autosaves = glob.glob(self.camera_path + 'autosave/*.f*t*')
                         # for old in old_autosaves:
                         #     os.remove(old)
+                        if exposure_time < 0.00001:
+                            exposure_time = 0.00001
+                        if exposure_time > 3600:
+                            exposure_time = 3600
                         self.entry_time = self.t2
-                        self.camera.Expose (exposure_time, img_type)
+                        self._expose (exposure_time, img_type)
                         #self.camera.StartSequence('Q:/archive/sq01/seq/ptr_saf.seq')
-                        print("Starting autosave  at:  ", self.entry_time)
+                        #print("Starting autosave  at:  ", self.entry_time)
                     else:
                         print("Something terribly wrong, driver not recognized.!")
                         breakpoint()
@@ -720,7 +723,7 @@ class Camera:
                                          high=ldr_handle_high_time, script=self.script, opt=opt)  #  NB all these parameers are crazy!
                     self.exposure_busy = False
                     self.t10 = time.time()
-                    #self.camera.AbortExposure()
+                    #self._stop_expose()
                     print("inner expose took:  ", round(self.t10 - self.t_0 , 2), ' returned:  ', result)
                     self.retry_camera = 0
                     break
@@ -746,7 +749,7 @@ class Camera:
     def stop_command(self, required_params, optional_params):
         ''' Stop the current exposure and return the camera to Idle state. '''
         #NB NB This routine needs work!
-        #self.camera.AbortExposure()
+        #self._stop_expose()
         self.exposure_busy = False
 
         # Alternative: self.camera.StopExposure() will stop the exposure and
@@ -783,16 +786,15 @@ class Camera:
                     g_dev['foc'].get_quick_status(self.post_foc)
                     g_dev['ocn'].get_quick_status(self.post_ocn)
                 self.t5 = time.time()
-                if self.maxim and self.camera.ImageReady:
+                if (self.maxim or self.ascom) and self.camera.ImageReady:
                     self.t4 = time.time()
                     print("entered phase 3")
                     # self.t6 = time.time()
                     # breakpoint()
                     self.img = self.camera.ImageArray
                     self.t7 = time.time()
-                    self.camera.AbortExposure()   #We are now done with Maxim so free it up.
+                    self._stop_expose()  #Is this necessary?
                     self.img = np.array(self.img).transpose().astype('int32')
-
                     #Overscan remove and trim
                     pedastal = 200
                     iy, ix = self.img.shape
@@ -815,7 +817,7 @@ class Camera:
                     #     if (test_saturated.mean() + np.median(test_saturated))/2 > 50000:   # NB Should we sample a patch?
                     #         # NB How do we be sure Maxim does not hang?
                     #         print("Flat rejected, too bright:  ", round(test_saturated.mean, 0))
-                    #         self.camera.AbortExposure()
+                    #         self._stop_expose()
                     #         return 65535, 0   # signals to flat routine image was rejected
                     # else:
 
@@ -848,6 +850,7 @@ class Camera:
                         if g_dev['scr'] is not None and frame_type == 'screen flat':
                             hdu.header['SCREEN'] = int(g_dev['scr'].bright_setting)
                         hdu.header['IMAGETYP'] = frame_type   #This report is fixed and it should vary...NEEDS FIXING!
+                        #should replace with Monkey patched attributes.
                         if self.maxim:
                             hdu.header['SET-TEMP'] = round(self.camera.TemperatureSetpoint, 3)
                             hdu.header['CCD-TEMP'] = round(self.camera.Temperature, 3)
@@ -1031,7 +1034,9 @@ class Camera:
                         g_dev['obs'].update_status()
                         #NB Important decision here, do we flash calibrate screen and sky flats?  For now, Yes.
 
-                        cal_result = calibrate(hdu, lng_path, frame_type, start_x=start_x, start_y=start_y, quick=quick)
+                        #cal_result = calibrate(hdu, lng_path, frame_type, start_x=start_x, start_y=start_y, quick=quick)
+                        #hdu.writeto(red_path + raw_name01, overwrite=True)
+
                         '''
                         Here we need to consider just what local reductions and calibrations really make sense to
                         process in-line vs doing them in another process.  For all practical purposes evereything
@@ -1051,10 +1056,11 @@ class Camera:
                         # raw_data_size = hdu1[0].data.size
 
 
-                        hdu.writeto(red_path + raw_name01, overwrite=True)
+
                         #  NB Should this step be part of calibrate?  Second should we form and send a
                         #  CSV file to AWS and possibly overlay key star detections?
                         #  Possibly even astro solve and align a series or dither batch?
+                        do_sep = False
                         spot = None
                         if do_sep:
                             try:
@@ -1189,7 +1195,7 @@ class Camera:
                         self.img = None
 
                         # try:
-                        #     self.camera.AbortExposure()
+                        #     self._stop_expose()
                         # except:
                         #     pass
                         try:
@@ -1211,7 +1217,7 @@ class Camera:
                         print('Header assembly block failed: ', e)
                         breakpoint()
                         # try:
-                        #     self.camera.AbortExposure()
+                        #     self._stop_expose()
                         # except:
                         #     pass
                         try:
@@ -1266,7 +1272,7 @@ class Camera:
                 print('Was waiting for exposure end, arriving here is bad news:  ', e)
 
                 # try:
-                #     self.camera.AbortExposure()
+                #     self._stop_expose()
                 # except:
                 #     pass
                 try:
@@ -1281,7 +1287,7 @@ class Camera:
 
         #definitely try to clean up any messes.
         # try:
-        #     self.camera.AbortExposure()
+        #     self._stop_expose()
         # except:
         #     pass
         try:

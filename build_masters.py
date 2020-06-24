@@ -548,7 +548,7 @@ def build_hot_image(camera_name, lng_path, in_image, out_name):
     img.write(lng_path + out_name, overwrite=True)
 
 def correct_image(camera_name, archive_path, lng_path, out_path):
-    file_list = glob.glob(archive_path + "*M8*")
+    file_list = glob.glob(archive_path + "*M51*")
     file_list.sort
     print(file_list)
     print('# of files:  ', len(file_list))
@@ -609,10 +609,10 @@ if __name__ == '__main__':
     camera_name = 'sq01'  #  config.site_config['camera']['camera1']['name']
     #archive_path = "D:/000ptr_saf/archive/sq01/2020-06-13/"
     #archive_path = "D:/2020-06-19  Ha and O3 screen flats/"
-    archive_path = "D:/2020-06-19 qhy600 hA AND O3 LAGOON IMAGES/Big batch/"
-    out_path = "D:/2020-06-19 qhy600 hA AND O3 LAGOON IMAGES/Big batch/calibrated/"
+    archive_path = "D:/20200622 m51 w g r i/"
+    out_path = "D:/20200622 m51 w g r i/trimmed/"
     lng_path = "D:/000ptr_saf/archive/sq01/lng/"
-    #debias_and_trim(camera_name, archive_path, out_path)
+    # debias_and_trim(camera_name, archive_path, out_path)
     # make_master_bias(camera_name, out_path, lng_path, '*f_3*', 'mb_1b.fits')
     # make_master_bias(camera_name, out_path, lng_path, '*b_2*', 'mb_2b.fits')
     # #make_master_bias(camera_name, archive_path, lng_path, '*b_3*', 'mb_3.fits')
@@ -626,6 +626,8 @@ if __name__ == '__main__':
     #make_master_flat(camera_name, archive_path, lng_path, filt, out_name, 'mb_1.fits', 'md_1.fits')
     # build_hot_map(camera_name, lng_path, "md_1_1080.fits", "hm_1")
     #build_hot_image(camera_name, lng_path, "md_1_1080.fits", "hm_1.fits")
+    archive_path = out_path
+    out_path = "D:/20200622 m51 w g r i/reduced/"
     correct_image(camera_name, archive_path, lng_path, out_path)
     print('Fini')
     # NB Here we would logcially go on to get screen flats.

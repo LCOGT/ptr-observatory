@@ -13,7 +13,7 @@ THINGS TO FIX:
     20200316
 
     fully test flash calibration
-    genereate local masters
+    generate local masters
     create and send sources file created by sep
     verify operation with FLI16200 camera
 
@@ -272,13 +272,19 @@ class Observatory:
                     except Exception as e:
                         print(e)
                # print('scan_requests finished in:  ', round(time.time() - t1, 3), '  seconds')
+                ## Test Tim's code
+                url = "https://calendar.photonranch.org/dev/get-all-projects"
+                breakpoint()
+                all_projects = requests.post(url).json()
+                if all_projects is not None:
+                    print(all_projects)
                 return   # Continue   #This creates an infinite loop
             else:
                 print('Sequencer Hold asserted.')    #What we really want here is looking for a Cancel/Stop.
                 continue
 
     def update_status(self):
-        ''' Collect status from all devics and send an update to aws.
+        ''' Collect status from all devices and send an update to aws.
         Each device class is responsible for implementing the method
         `get_status` which returns a dictionary.
         '''
