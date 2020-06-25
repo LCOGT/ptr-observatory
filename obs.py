@@ -449,6 +449,7 @@ class Observatory:
                     time.sleep(.5)
                     continue
                 # Here we parse the input and calibrate it.
+
                 im_path = pri_image[0]
                 hdu = pri_image[1]
                 print('Name:  ', im_path, '   Hdu.data.shape:', hdu.data.shape)
