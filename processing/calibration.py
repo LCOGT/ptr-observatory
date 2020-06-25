@@ -3,17 +3,57 @@
 Created on Tue Nov 19 20:08:38 2019
 wer
 """
-
+import time
+import threading
+import queue
 import numpy as np
+#import matplotlib.pyplot as plt
 from astropy.io import fits
-
+from astropy.table import Table
+from astropy.utils.data import get_pkg_data_filename
+import sep
+from os.path import join, dirname, abspath
+from skimage import data, io, filters
+from skimage.transform import resize
+from skimage import img_as_float
+from skimage import exposure
+from skimage.io import imsave
+import matplotlib.pyplot as plt
+from PIL import Image
+from global_yard import g_dev
 '''
+Comments are obsolete as of 20200624  WER
 This is kludge code just to quickly partially calibrate images for the AWS 768^2 postage.
 WE need to re-think how this will work, ie use BONSAI locally or not.
 
 Name of module is a bit deceptive, this is more like 'create_postage'.
 '''
 
+
+#Here we set up the arriving queue of data. but at the end of the module load
+
+
+#These are essentially cached supers.  Probably they could be class variables. use memoize module??
+super_bias = None
+super_bias_2 = None
+super_dark = None
+super_dark_2 = None
+hotmap = None
+hotpix = None
+super_flat_w = None
+super_flat_air = None
+super_flat_B= None
+super_flat_V = None
+super_flat_R = None
+super_flat_EXO = None
+super_flat_g = None
+super_flat_r = None
+super_flat_i = None
+super_flat_O3 = None
+super_flat_HA = None
+super_flat_N2 = None
+super_flat_S2 = None
+dark_exposure_level = 0.0
 
 
 
@@ -63,28 +103,6 @@ def simpleColumnFix(img, col):
     img[:,col] = (img[:,fcol] + img[:,acol])/2
     img = img.astype(np.uint16)
     return img
-
-#These are essentially cached supers.  Probably they could be class variables.
-super_bias = None
-super_bias_2 = None
-super_dark = None
-super_dark_2 = None
-hotmap = None
-hotpix = None
-super_flat_w = None
-super_flat_air = None
-super_flat_B= None
-super_flat_V = None
-super_flat_R = None
-super_flat_EXO = None
-super_flat_g = None
-super_flat_r = None
-super_flat_i = None
-super_flat_O3 = None
-super_flat_HA = None
-super_flat_N2 = None
-super_flat_S2 = None
-dark_exposure_level = 0.0
 
 #This is a brute force linear version. This needs to be more sophisticated and camera independent.
 
@@ -282,6 +300,10 @@ def calibrate (hdu, lng_path, frame_type='light', start_x=0, start_y=0, quick=Fa
 
 
     '''
+
+
+
+
 
 if __name__ == '__main__':
     pass

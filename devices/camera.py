@@ -414,7 +414,6 @@ class Camera:
             bin_x = 1
             self.ccd_sum = '1 1'
         bin_y = bin_x   #NB This needs fixing someday!
-        breakpoint()
         self.bin = bin_x
         self.camera.BinX = bin_x
         self.camera.BinY = bin_y
@@ -562,7 +561,7 @@ class Camera:
             self.camera_num_y = self.len_y
             self.camera_start_y = 0
             self.area = 100
-            print("Defult area used. 100%")
+            print("Default area used. 100%")
 
         #Next apply any subframe setting here.  Be very careful to keep fractional specs and pixel values disinguished.
         if self.area == self.previous_area and sub_frame_fraction is not None and \
@@ -766,7 +765,7 @@ class Camera:
         print("Finish exposure Entered:  ", exposure_time, frame_type, counter,  \
                         gather_status, do_sep, no_AWS, start_x, start_y)
 
-        if gather_status:   #Does this need to be here
+        if gather_status:
             self.post_mnt = []
             self.post_rot = []
             self.post_foc = []
@@ -981,7 +980,7 @@ class Camera:
                         jpeg_name = self.config['site'] + '-' + current_camera_name + '-' + g_dev['day'] + '-' + \
                             next_seq  + '-' + im_type + '13.jpg'
                         text_name = self.config['site'] + '-' + current_camera_name + '-' + g_dev['day'] + '-' + \
-                            next_seq  + '-' +  im_type + '01.txt'
+                            next_seq  + '-' +  im_type + '00.txt'
 
                         im_path_r = self.camera_path
                         lng_path = self.lng_path
@@ -999,7 +998,7 @@ class Camera:
                         hdu.header['OBSTYPE'] = 'None'
                         #print('Creating:  ', im_path + g_dev['day'] + '\\to_AWS\\  ... subdirectory.')
 
-                        try:
+                        try:    #NB relocate this to Expose entry area.  Fill out except.
 
                             os.makedirs(im_path_r + g_dev['day'] + '/to_AWS/', exist_ok=True)
                             os.makedirs(im_path_r + g_dev['day'] + '/raw/', exist_ok=True)
@@ -1016,8 +1015,10 @@ class Camera:
                         text = open(im_path + text_name, 'w')  #This is always needed by AWS to set up database.
                         text.write(str(hdu.header))
                         text.close()
-                        text_data_size = len(str(hdu.header)) - 4096
+                        text_data_size = min(len(str(hdu.header)) - 4096, 2048)
+                        self.enqueue_for_AWS(text_data_size, im_path, text_name)
                         if not quick and not script in ('True', 'true', 'On', 'on'):
+                            self.to_reduce((raw_path + raw_name00, hdu))
                             hdu.writeto(raw_path + raw_name00, overwrite=True)
                         if script in ('True', 'true', 'On', 'on'):
                             hdu.writeto(cal_path + cal_name, overwrite=True)
@@ -1185,11 +1186,11 @@ class Camera:
                         imsave(im_path + jpeg_name, img3)
                         jpeg_data_size = img3.size - 1024
                         if not no_AWS:  #IN the no+AWS case should we skip more of the above processing?
-                            self.enqueue_image(text_data_size, im_path, text_name)
-                            self.enqueue_image(jpeg_data_size, im_path, jpeg_name)
+                            self.enqueue_for_AWS(text_data_size, im_path, text_name)
+                            self.enqueue_for_AWS(jpeg_data_size, im_path, jpeg_name)
                             if not quick:
-                                self.enqueue_image(db_data_size, im_path, db_name)
-                                self.enqueue_image(raw_data_size, raw_path, raw_name00)
+                                self.enqueue_for_AWS(db_data_size, im_path, db_name)
+                                self.enqueue_for_AWS(raw_data_size, raw_path, raw_name00)
                             print('Sent to AWS Queue.')
                         time.sleep(0.5)
                         self.img = None
@@ -1304,8 +1305,12 @@ class Camera:
         print('WHILE try, Failed exposure:  ', result )
         return result
 
-    def enqueue_image(self, priority, im_path, name):
+    def enqueue_for_AWS(self, priority, im_path, name):
         image = (im_path, name)
-        #print("stuffing Queue:  ", priority, im_path, name)
         g_dev['obs'].aws_queue.put((priority, image), block=False)
+
+    def to_reduce(self, to_red):
+        print('Passed to to_reduce:  ', to_red[0], to_red[1].data.shape, to_red[1].header['FILTER'])
+        g_dev['obs'].reduce_queue.put(to_red, block=False)
+
 

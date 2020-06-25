@@ -49,6 +49,7 @@ from devices.rotator import Rotator
 from devices.switch import Switch    #Nothing implemented yet 20200511
 from devices.screen import Screen
 from devices.sequencer import Sequencer
+import processing.calibration
 from global_yard import g_dev
 import bz2
 import httplib2
@@ -166,6 +167,13 @@ class Observatory:
         self.aws_queue_thread = threading.Thread(target=self.send_to_AWS, args=())
         self.aws_queue_thread.start()
 
+        # =============================================================================
+        # Here we set up the reduction Queue and Thread:
+        # =============================================================================
+        self.reduce_queue = queue.Queue(maxsize=50)
+        self.reduce_queue_thread = threading.Thread(target=self.reduce_image, args=())
+        self.reduce_queue_thread.start()
+
         # Build the site (from-AWS) Queue and start a thread.
         # self.site_queue = queue.SimpleQueue()
         # self.site_queue_thread = threading.Thread(target=self.get_from_AWS, args=())
@@ -273,11 +281,10 @@ class Observatory:
                         print(e)
                # print('scan_requests finished in:  ', round(time.time() - t1, 3), '  seconds')
                 ## Test Tim's code
-                url = "https://calendar.photonranch.org/dev/get-all-projects"
-                breakpoint()
-                all_projects = requests.post(url).json()
-                if all_projects is not None:
-                    print(all_projects)
+                # url = "https://projects.photonranch.org/dev/get-all-projects"
+                # all_projects = requests.post(url).json()
+                # if all_projects is not None:
+                #     print(all_projects)
                 return   # Continue   #This creates an infinite loop
             else:
                 print('Sequencer Hold asserted.')    #What we really want here is looking for a Cancel/Stop.
@@ -423,6 +430,49 @@ class Observatory:
             else:
                 time.sleep(0.2)
 
+    # Note this is another thread!
+    def reduce_image(self):
+        '''
+        The incoming object is typically a large fits HDU. Found in its
+        header will be both standard image parameters but destination filenames
+
+        '''
+        while True:
+            if not self.reduce_queue.empty():
+                print(self)
+                print(self.reduce_queue)
+                print(self.reduce_queue.empty)
+                pri_image = self.reduce_queue.get(block=False)
+                print(pri_image)
+                if pri_image is None:
+                    breakpoint
+                    time.sleep(.5)
+                    continue
+                # Here we parse the input and calibrate it.
+                im_path = pri_image[0]
+                hdu = pri_image[1]
+                print('Name:  ', im_path, '   Hdu.data.shape:', hdu.data.shape)
+                time.sleep(20)
+                print("SIMULATED REDUCTIONS COMPLETED!")
+                # if not (name[-3:] == 'jpg' or name[-3:] == 'txt'):
+                #     # compress first
+                #     to_bz2(im_path + name)
+                #     name = name + '.bz2'
+                # aws_req = {"object_name": name}
+                # aws_resp = g_dev['obs'].api.authenticated_request('POST', '/upload/', aws_req)
+                # with open(im_path + name, 'rb') as f:
+                #     files = {'file': (im_path + name, f)}
+                #     print('--> To AWS -->', str(im_path + name))
+                #     requests.post(aws_resp['url'], data=aws_resp['fields'],
+                #                   files=files)
+                # if name[-3:] == 'bz2' or name[-3:] == 'jpg' or \
+                #         name[-3:] == 'txt':
+                #     # os.remove(im_path + name)
+                #     pass
+                self.reduce_queue.task_done()
+
+            else:
+                time.sleep(.5)
 
 if __name__ == "__main__":
 
