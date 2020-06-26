@@ -106,7 +106,7 @@ def simpleColumnFix(img, col):
 
 #This is a brute force linear version. This needs to be more sophisticated and camera independent.
 
-def calibrate (hdu, lng_path, frame_type='light', start_x=0, start_y=0, quick=False):
+def calibrate (hdu, lng_path, frame_type='light', quick=False):
     #These variables are gloal in the sense they persist between calls (memoized so to speak, should use that facility.)
     global super_bias, super_bias_2, super_dark, super_dark_2, hotmap, hotpix, super_flat_air, super_flat_w, \
         super_flat_B, super_flat_V, super_flat_R, super_flat_EXO, super_flat_g, super_flat_r, super_flat_i, \

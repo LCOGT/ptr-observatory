@@ -772,9 +772,9 @@ class Camera:
             self.post_ocn = []
         counter = 0
         if self.bin == 1:
-            self.completion_time = self.entry_time + exposure_time + 30.5
+            self.completion_time = self.entry_time + exposure_time + 24
         else:
-            self.completion_time = self.entry_time + exposure_time + 19.36
+            self.completion_time = self.entry_time + exposure_time + 18   #?? Guess
 
         result = {'error': False}
         while True:     #THis is where we should have a camera probe throttle and timeout system
@@ -972,13 +972,13 @@ class Camera:
                                                     next_seq  + f_ext + '-'  + im_type + '00.fits'
                         raw_name00 = self.config['site'] + '-' + current_camera_name + '-' + g_dev['day'] + '-' + \
                             next_seq  + '-' + im_type + '00.fits'
-                        raw_name01 = self.config['site'] + '-' + current_camera_name + '-' + g_dev['day'] + '-' + \
+                        red_name01 = self.config['site'] + '-' + current_camera_name + '-' + g_dev['day'] + '-' + \
                             next_seq  + '-' + im_type + '01.fits'
                         #Cal_ and raw_ names are confusing
-                        db_name = self.config['site'] + '-' + current_camera_name + '-' + g_dev['day'] + '-' + \
-                            next_seq  + '-' + im_type + '13.fits'
+                        i768sq_name = self.config['site'] + '-' + current_camera_name + '-' + g_dev['day'] + '-' + \
+                            next_seq  + '-' + im_type + '10.fits'
                         jpeg_name = self.config['site'] + '-' + current_camera_name + '-' + g_dev['day'] + '-' + \
-                            next_seq  + '-' + im_type + '13.jpg'
+                            next_seq  + '-' + im_type + '10.jpg'
                         text_name = self.config['site'] + '-' + current_camera_name + '-' + g_dev['day'] + '-' + \
                             next_seq  + '-' +  im_type + '00.txt'
 
@@ -999,7 +999,8 @@ class Camera:
                         #print('Creating:  ', im_path + g_dev['day'] + '\\to_AWS\\  ... subdirectory.')
 
                         try:    #NB relocate this to Expose entry area.  Fill out except.
-
+                            im_path_r = self.camera_path
+                            lng_path = self.lng_path
                             os.makedirs(im_path_r + g_dev['day'] + '/to_AWS/', exist_ok=True)
                             os.makedirs(im_path_r + g_dev['day'] + '/raw/', exist_ok=True)
                             os.makedirs(im_path_r + g_dev['day'] + '/calib/', exist_ok=True)
@@ -1017,8 +1018,26 @@ class Camera:
                         text.close()
                         text_data_size = min(len(str(hdu.header)) - 4096, 2048)
                         self.enqueue_for_AWS(text_data_size, im_path, text_name)
+                        paths = {'im_path':  im_path,
+                                 'raw_path':  raw_path,
+                                 'cal_path':  cal_path,
+                                 'red_path':  red_path,
+                                 'cal_name':  cal_name,
+                                 'raw_name00': raw_name00,
+                                 'red_name01': red_name01,
+                                 'i768sq_name10': i768sq_name,
+                                 'i768sq_name11': i768sq_name,
+                                 'jpeg_name10': jpeg_name,
+                                 'jpeg_name11': jpeg_name,
+                                 'text_name00': text_name,
+                                 'text_name10': text_name,
+                                 'text_name11': text_name
+                                 }
+
+                        #NB  IT may be easiest for autofocus to do the sep run here:  Hot pix then AF.
+
                         if not quick and not script in ('True', 'true', 'On', 'on'):
-                            self.to_reduce((raw_path + raw_name00, hdu))
+                            self.to_reduce((paths, hdu))
                             hdu.writeto(raw_path + raw_name00, overwrite=True)
                         if script in ('True', 'true', 'On', 'on'):
                             hdu.writeto(cal_path + cal_name, overwrite=True)
@@ -1033,180 +1052,6 @@ class Camera:
 
                         print("\n\Finish-Exposure is complete:  " + raw_name00)#, raw_data_size, '\n')
                         g_dev['obs'].update_status()
-                        #NB Important decision here, do we flash calibrate screen and sky flats?  For now, Yes.
-
-                        #cal_result = calibrate(hdu, lng_path, frame_type, start_x=start_x, start_y=start_y, quick=quick)
-                        #hdu.writeto(red_path + raw_name01, overwrite=True)
-
-                        '''
-                        Here we need to consider just what local reductions and calibrations really make sense to
-                        process in-line vs doing them in another process.  For all practical purposes evereything
-                        below can be done in a different process, the exception perhaps has to do with autofocus
-                        processing.
-
-
-                        '''
-                        # Note we may be using different files if calibrate is null.
-                        # NB  We should only write this if calibrate actually succeeded to return a result ??
-
-                        #  if frame_type == 'sky flat':
-                        #      hdu.header['SKYSENSE'] = int(g_dev['scr'].bright_setting)
-                        #
-                        # if not quick:
-                        #     hdu1.writeto(im_path + raw_name01, overwrite=True)
-                        # raw_data_size = hdu1[0].data.size
-
-
-
-                        #  NB Should this step be part of calibrate?  Second should we form and send a
-                        #  CSV file to AWS and possibly overlay key star detections?
-                        #  Possibly even astro solve and align a series or dither batch?
-                        do_sep = False
-                        spot = None
-                        if do_sep:
-                            try:
-                                img = hdu.data.copy().astype('float')
-                                bkg = sep.Background(img)
-                                #bkg_rms = bkg.rms()
-                                img -= bkg
-                                sources = sep.extract(img_sub, 4.5, err=bkg.globalrms, minarea=9)#, filter_kernel=kern)
-                                sources.sort(order = 'cflux')
-                                print('No. of detections:  ', len(sources))
-                                sep_result = []
-                                spots = []
-                                for source in sources:
-                                    a0 = source['a']
-                                    b0 =  source['b']
-                                    r0 = 2*round(math.sqrt(a0**2 + b0**2), 2)
-                                    sep_result.append((round((source['x']), 2), round((source['y']), 2), round((source['cflux']), 2), \
-                                                   round(r0), 3))
-                                    spots.append(round((r0), 2))
-                                spot = np.array(spots)
-                                try:
-                                    spot = np.median(spot[-9:-2])   #  This grabs seven spots.
-                                    print(sep_result, '\n', 'Spot and flux:  ', spot, source['cflux'], len(sources), avg_foc[1], '\n')
-                                    if len(sep_result) < 5:
-                                        spot = None
-                                except:
-                                    spot = None
-                            except:
-                                spot = None
-                        if spot == None:
-                            if opt is not None:
-                                spot = opt.get('fwhm_sim', 0.0)
-
-                        # if not quick:
-                        #     hdu.header["PATCH"] = cal_result
-                        #     if spot is not None:
-                        #         hdu.header['SPOTFWHM'] = round(spot, 2)
-                        #     else:
-                        #         hdu.header['SPOTFWHM'] = "None"
-                        #     hdu1.writeto(im_path + raw_name01, overwrite=True)
-                        raw_data_size = hdu.data.size
-                        g_dev['obs'].update_status()
-                        #Here we need to process images which upon input, may not be square.  The way we will do that
-                        #is find which dimension is largest.  We then pad the opposite dimension with 1/2 of the difference,
-                        #and add vertical or horizontal lines filled with img(min)-2 but >=0.  The immediate last or first line
-                        #of fill adjacent to the image is set to 80% of img(max) so any subsequent subframing selections by the
-                        #user is informed. If the incoming image dimensions are odd, they wil be decreased by one.  In essence
-                        #we wre embedding a non-rectanglular image in a "square" and scaling it to 768^2.  We will impose a
-                        #minimum subframe reporting of 32 x 32
-
-                        in_shape = hdu.data.shape
-                        in_shape = [in_shape[0], in_shape[1]]   #Have to convert to a list, cannot manipulate a tuple,
-                        if in_shape[0]%2 == 1:
-                            in_shape[0] -= 1
-                        if in_shape[0] < 32:
-                            in_shape[0] = 32
-                        if in_shape[1]%2 == 1:
-                            in_shape[1] -= 1
-                        if in_shape[1] < 32:
-                            in_shape[1] = 32
-                        #Ok, we have an even array and a minimum 32x32 array.
-
-# =============================================================================
-# x = 2      From Numpy: a way to quickly embed an array in a larger one
-# y = 3
-# wall[x:x+block.shape[0], y:y+block.shape[1]] = block
-# =============================================================================
-
-                        if in_shape[0] < in_shape[1]:
-                            diff = int(abs(in_shape[1] - in_shape[0])/2)
-                            in_max = int(hdu.data.max()*0.8)
-                            in_min = int(hdu.data.min() - 2)
-                            if in_min < 0:
-                                in_min = 0
-                            new_img = np. zeros((in_shape[1], in_shape[1]))    #new square array
-                            new_img[0:diff - 1, :] = in_min
-                            new_img[diff-1, :] = in_max
-                            new_img[diff:(diff + in_shape[0]), :] = hdu.data
-                            new_img[(diff + in_shape[0]), :] = in_max
-                            new_img[(diff + in_shape[0] + 1):(2*diff + in_shape[0]), :] = in_min
-                            hdu.data = new_img
-                        elif in_shape[0] > in_shape[1]:
-                            #Same scheme as above, but expands second axis.
-                            diff = int((in_shape[0] - in_shape[1])/2)
-                            in_max = int(hdu.data.max()*0.8)
-                            in_min = int(hdu.data.min() - 2)
-                            if in_min < 0:
-                                in_min = 0
-                            new_img = np. zeros((in_shape[0], in_shape[0]))    #new square array
-                            new_img[:, 0:diff - 1] = in_min
-                            new_img[:, diff-1] = in_max
-                            new_img[:, diff:(diff + in_shape[1])] = hdu.data
-                            new_img[:, (diff + in_shape[1])] = in_max
-                            new_img[:, (diff + in_shape[1] + 1):(2*diff + in_shape[1])] = in_min
-                            hdu.data = new_img
-                        else:
-                            #nothing to do, the array is already square
-                            pass
-
-
-                        if quick:
-                            pass
-                        hdu.data = hdu.data.astype('uint16')
-                        resized_a = resize(hdu.data, (768, 768), preserve_range=True)
-                        #print(resized_a.shape, resized_a.astype('uint16'))
-                        hdu.data = resized_a.astype('uint16')
-
-                        db_data_size = hdu.data.size
-                        hdu.writeto(im_path + db_name, overwrite=True)
-                        hdu.data = resized_a.astype('float')
-                        #The following does a very lame contrast scaling.  A beer for best improvement on this code!!!
-                        istd = np.std(hdu.data)
-                        imean = np.mean(hdu.data)
-                        img3 = hdu.data/(imean + 3*istd)
-                        fix = np.where(img3 >= 0.999)
-                        fiz = np.where(img3 < 0)
-                        img3[fix] = .999
-                        img3[fiz] = 0
-                        #img3[:, 384] = 0.995
-                        #img3[384, :] = 0.995
-                        print(istd, img3.max(), img3.mean(), img3.min())
-                        imsave(im_path + jpeg_name, img3)
-                        jpeg_data_size = img3.size - 1024
-                        if not no_AWS:  #IN the no+AWS case should we skip more of the above processing?
-                            self.enqueue_for_AWS(text_data_size, im_path, text_name)
-                            self.enqueue_for_AWS(jpeg_data_size, im_path, jpeg_name)
-                            if not quick:
-                                self.enqueue_for_AWS(db_data_size, im_path, db_name)
-                                self.enqueue_for_AWS(raw_data_size, raw_path, raw_name00)
-                            print('Sent to AWS Queue.')
-                        time.sleep(0.5)
-                        self.img = None
-
-                        # try:
-                        #     self._stop_expose()
-                        # except:
-                        #     pass
-                        try:
-                            hdu = None
-                        except:
-                            pass
-                        try:
-                            hdu1 = None
-                        except:
-                            pass
                         result['mean_focus'] = avg_foc[1]
                         result['mean_rotation'] = avg_rot[1]
                         result['FWHM'] = None
@@ -1214,6 +1059,7 @@ class Camera:
                         result['patch'] = None
                         result['temperature'] = avg_foc[2]
                         return result
+
                     except Exception as e:
                         print('Header assembly block failed: ', e)
                         breakpoint()
