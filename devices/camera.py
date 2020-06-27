@@ -442,13 +442,19 @@ class Camera:
 
         sub_frame_fraction = optional_params.get('subframe', None)
         #  The following bit of code is convoluted.  Presumably when we get Autofocus working this will get cleaned up.
-        if imtype.lower() in ('light', 'light frame', 'screen flat', 'sky flat', 'experimental', 'toss'):
+        self.toss = False
+        self.do_sep = False
+        if imtype.lower() in ('light', 'light frame', 'screen flat', 'sky flat', 'experimental', 'test image'):
                                  #here we might eventually turn on spectrograph lamps as needed for the imtype.
             imtypeb = True    #imtypeb will passed to open the shutter.
             frame_type = imtype.lower()
             do_sep = True
+            self.do_sep = True
             if imtype.lower() in ('screen flat', 'sky flat', 'guick'):
                 do_sep = False
+                self.do_sep = False
+            if imtype.lower() == 'test image':
+                self.toss = True
         elif imtype.lower() == 'bias':
             exposure_time = 0.00001
             imtypeb = False
@@ -472,6 +478,7 @@ class Camera:
             do_sep = False
             imtypeb = True
             frame_type = 'light'
+
         else:
             imtypeb = True
             do_sep = True
@@ -787,7 +794,7 @@ class Camera:
                 self.t5 = time.time()
                 if (self.maxim or self.ascom) and self.camera.ImageReady:
                     self.t4 = time.time()
-                    print("entered phase 3")
+                    print("reading out camera, takes ~20 seconds.")
                     # self.t6 = time.time()
                     # breakpoint()
                     self.img = self.camera.ImageArray
@@ -820,7 +827,7 @@ class Camera:
                     #         return 65535, 0   # signals to flat routine image was rejected
                     # else:
 
-                    #     g_dev['obs'].update_status()
+                    g_dev['obs'].update_status()
 
                     counter = 0
                     if not quick and gather_status:
@@ -1033,7 +1040,7 @@ class Camera:
                                  'text_name10': text_name,
                                  'text_name11': text_name
                                  }
-
+                        print('Path dict:  ', paths)
                         #NB  IT may be easiest for autofocus to do the sep run here:  Hot pix then AF.
 
                         if not quick and not script in ('True', 'true', 'On', 'on'):
@@ -1050,7 +1057,8 @@ class Camera:
                             # hdu.close()
                         # raw_data_size = hdu.data.size
 
-                        print("\n\Finish-Exposure is complete:  " + raw_name00)#, raw_data_size, '\n')
+                        print("\n\Finish-Exposure is complete, saved:  " + raw_name00)#, raw_data_size, '\n')
+
                         g_dev['obs'].update_status()
                         result['mean_focus'] = avg_foc[1]
                         result['mean_rotation'] = avg_rot[1]
@@ -1078,12 +1086,14 @@ class Camera:
                         self.t7 = time.time()
                     return result['error': True]
                 else:     #here we are in waiting for imageReady loop and could send status and check Queue
-                    time.sleep(.3)
+                    time.sleep(2)
                     g_dev['obs'].update_status()   #THIS CALL MUST NOT ACCESS MAXIM OBJECT!
                     time_now = self.t7= time.time()
                     remaining = round(self.completion_time - time_now, 1)
-                    print("Time remaining:", remaining)
-                    loop_count = int((remaining/0.3)*0.7)
+                    print("Exposure time remaining:", remaining)
+
+                    # NB Turn this into a % for a progress bar.
+                    #loop_count = int((remaining/0.3)*0.7)
 
                     # print("Basic camera wait loop, be patient:  ", round(remaining, 1), ' sec.')
                     # for i in range(loop_count):

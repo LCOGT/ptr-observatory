@@ -477,25 +477,32 @@ class Observatory:
                 #          'text_name10': text_name
                 #          }
                 #
-                try:    #NB relocate this to Expose entry area.  Fill out except.
-                    im_path_r = g_dev['cam'].camera_path
-                    lng_path =  g_dev['cam'].lng_path
-                    # os.makedirs(im_path_r + g_dev['day'] + '/to_AWS/', exist_ok=True)
-                    # os.makedirs(im_path_r + g_dev['day'] + '/raw/', exist_ok=True)
-                    # os.makedirs(im_path_r + g_dev['day'] + '/calib/', exist_ok=True)
-                    # os.makedirs(im_path_r + g_dev['day'] + '/reduced/', exist_ok=True)
-                    #print('Created:  ',im_path + g_dev['day'] + '\\to_AWS\\' )
-                    im_path = im_path_r + g_dev['day'] + '/to_AWS/'
-                    raw_path = im_path_r + g_dev['day'] + '/raw/'
-                    cal_path = im_path_r + g_dev['day'] + '/calib/'
-                    red_path = im_path_r + g_dev['day'] + '/reduced/'
-                except:
-                    print('Path creation in Reductions failed.', lng_path)
+                # try:    #NB relocate this to Expose entry area.  Fill out except.
+                im_path_r = g_dev['cam'].camera_path
+                lng_path =  g_dev['cam'].lng_path
+                #     # os.makedirs(im_path_r + g_dev['day'] + '/to_AWS/', exist_ok=True)
+                #     # os.makedirs(im_path_r + g_dev['day'] + '/raw/', exist_ok=True)
+                #     # os.makedirs(im_path_r + g_dev['day'] + '/calib/', exist_ok=True)
+                #     # os.makedirs(im_path_r + g_dev['day'] + '/reduced/', exist_ok=True)
+                #     #print('Created:  ',im_path + g_dev['day'] + '\\to_AWS\\' )
+                #     im_path = im_path_r + g_dev['day'] + '/to_AWS/'
+                #     raw_path = im_path_r + g_dev['day'] + '/raw/'
+                #     cal_path = im_path_r + g_dev['day'] + '/calib/'
+                #     red_path = im_path_r + g_dev['day'] + '/reduced/'
+                # except:
+                #     print('Path creation in Reductions failed.', lng_path)
                #NB Important decision here, do we flash calibrate screen and sky flats?  For now, Yes.
 
                 #cal_result = calibrate(hdu, lng_path, frame_type, start_x=start_x, start_y=start_y, quick=quick)
+
                 hdu.writeto(paths['red_path'] + paths['red_name01'], overwrite=True)
-                print('WROTE TO: ', paths['red_path'] + paths['red_name01'])
+                # print(hdu.data)
+                # print('WROTE TO: ', paths['red_path'] + paths['red_name01'])
+                # if g_dev['cam'].toss:
+                #     print('lng_path:  ', lng_path)
+                #     hdu =  fits.open(lng_path + 'test/M8-0019ha')
+                #     print(hdu.data)
+
 
                 '''
                 Here we need to consider just what local reductions and calibrations really make sense to
@@ -621,8 +628,11 @@ class Observatory:
                 hdu.data = resized_a.astype('uint16')
 
                 i768sq_data_size = hdu.data.size
-                print('Sending to:  ', paths['im_path'] + paths['i768sq_name00'])
-                hdu.writeto(paths['im_path'] + paths['i768sq_name00'], overwrite=True)
+                print('ABOUT to print paths.')
+                print('Sending to:  ', paths['im_path'])
+                print('Also to:     ', paths['i768sq_name10'])
+                print("DID IT!")
+                hdu.writeto(paths['im_path'] + paths['i768sq_name10'], overwrite=True)
                 hdu.data = resized_a.astype('float')
                 #The following does a very lame contrast scaling.  A beer for best improvement on this code!!!
                 istd = np.std(hdu.data)
@@ -635,13 +645,13 @@ class Observatory:
                 #img3[:, 384] = 0.995
                 #img3[384, :] = 0.995
                 print(istd, img3.max(), img3.mean(), img3.min())
-                imsave(paths['im_path'] + paths['jpeg_name10'], img3)
+                imsave(paths['im_path'] + paths['jpeg_name10'], img3)  #NB File extension triggers JPEG conversion.
                 jpeg_data_size = img3.size - 1024
                 if not no_AWS:  #IN the no+AWS case should we skip more of the above processing?
                     #g_dev['cam'].enqueue_for_AWS(text_data_size, paths['im_path'], paths['text_name'])
                     g_dev['cam'].enqueue_for_AWS(jpeg_data_size, paths['im_path'], paths['jpeg_name10'])
                     if not quick:
-                        g_dev['cam'].enqueue_for_AWS(i768sq_data_size, paths['im_path'], paths['i768sq_name00'])
+                        g_dev['cam'].enqueue_for_AWS(i768sq_data_size, paths['im_path'], paths['i768sq_name10'])
                         g_dev['cam'].enqueue_for_AWS(raw_data_size, paths['raw_path'], paths['raw_name00'])
                     print('Sent to AWS Queue.')
                 time.sleep(0.5)
