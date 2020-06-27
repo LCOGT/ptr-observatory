@@ -487,7 +487,7 @@ def make_master_flat (alias, path, lng_path, selector_string, out_name, super_bi
 
 def debias_and_trim(camera_name, archive_path, out_path):
     #NB this needs to rename fit and fts files to fits
-    file_list = glob.glob(archive_path + "*M51*")
+    file_list = glob.glob(archive_path + "*6820*")
     file_list.sort
     print(file_list)
     print('# of files:  ', len(file_list))
@@ -548,7 +548,7 @@ def build_hot_image(camera_name, lng_path, in_image, out_name):
     img.write(lng_path + out_name, overwrite=True)
 
 def correct_image(camera_name, archive_path, lng_path, out_path):
-    file_list = glob.glob(archive_path + "*M51*")
+    file_list = glob.glob(archive_path + "*6820*")
     file_list.sort
     print(file_list)
     print('# of files:  ', len(file_list))
@@ -592,7 +592,7 @@ def correct_image(camera_name, archive_path, lng_path, out_path):
             print("Incorrect filter suffix, no flat applied.")
 
         median8(img[0].data, hot_pix)
-        img[0].header['CALIBRAT'] = 'B D F H'
+        img[0].header['CALIBRAT'] = 'B D SCF H'
         file_name_split = image.split('\\')
         print('Writing:  ', file_name_split[1])
         img.writeto(out_path + file_name_split[1], overwrite=True)
@@ -609,10 +609,10 @@ if __name__ == '__main__':
     camera_name = 'sq01'  #  config.site_config['camera']['camera1']['name']
     #archive_path = "D:/000ptr_saf/archive/sq01/2020-06-13/"
     #archive_path = "D:/2020-06-19  Ha and O3 screen flats/"
-    archive_path = "D:/20200622 m51 w g r i/"
-    out_path = "D:/20200622 m51 w g r i/trimmed/"
+    archive_path = "D:/20200627  NGC 6820 ha/"
+    out_path = "D:/20200627  NGC 6820 ha/trimmed/"
     lng_path = "D:/000ptr_saf/archive/sq01/lng/"
-    # debias_and_trim(camera_name, archive_path, out_path)
+    debias_and_trim(camera_name, archive_path, out_path)
     # make_master_bias(camera_name, out_path, lng_path, '*f_3*', 'mb_1b.fits')
     # make_master_bias(camera_name, out_path, lng_path, '*b_2*', 'mb_2b.fits')
     # #make_master_bias(camera_name, archive_path, lng_path, '*b_3*', 'mb_3.fits')
@@ -627,7 +627,7 @@ if __name__ == '__main__':
     # build_hot_map(camera_name, lng_path, "md_1_1080.fits", "hm_1")
     #build_hot_image(camera_name, lng_path, "md_1_1080.fits", "hm_1.fits")
     archive_path = out_path
-    out_path = "D:/20200622 m51 w g r i/reduced/"
+    out_path = "D:/20200627  NGC 6820 ha/reduced/"
     correct_image(camera_name, archive_path, lng_path, out_path)
     print('Fini')
     # NB Here we would logcially go on to get screen flats.

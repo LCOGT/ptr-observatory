@@ -1038,7 +1038,8 @@ class Camera:
                                  'jpeg_name11': jpeg_name,
                                  'text_name00': text_name,
                                  'text_name10': text_name,
-                                 'text_name11': text_name
+                                 'text_name11': text_name,
+                                 'frame_type':  frame_type
                                  }
                         print('Path dict:  ', paths)
                         #NB  IT may be easiest for autofocus to do the sep run here:  Hot pix then AF.

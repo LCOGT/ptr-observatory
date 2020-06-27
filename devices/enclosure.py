@@ -2,6 +2,7 @@ import win32com.client
 from global_yard import g_dev
 
 
+
 class Enclosure:
 
     def __init__(self, driver: str, name: str, config: dict, astro_events):
@@ -48,7 +49,8 @@ class Enclosure:
         if self.site == 'saf':
             status = {'shutter_status': stat_string,
                   'enclosure_slaving': str(self.enclosure.Slaved),
-                  'dome_azimuth': str(round(self.enclosure.Azimuth, 1)),                  'dome_slewing': str(self.enclosure.Slewing),
+                  'dome_azimuth': str(round(self.enclosure.Azimuth, 1)),
+                  'dome_slewing': str(self.enclosure.Slewing),
                   'enclosure_mode': str(self.mode),
                   'enclosure_message': str(self.state)}
         else:
@@ -148,12 +150,23 @@ class Enclosure:
         #  NB NB NB Directly calling enclosure methods is to be discouraged, go through commands so logging
         #           and so forth can be done in one place.
         obs_win_begin, sunZ88Op, sunZ88Cl, ephemNow = self.astro_events.getSunEvents()
+        az = g_dev['evnt'].sun_az_now()
+        az = az - 180.
+        if az < 0:
+            az += 360.
         if self.site == 'saf':
              shutter_str = "Dome."
         else:
             shutter_str = "Roof."
         if  obs_win_begin <= ephemNow <= sunZ88Cl:
-            self.enclosure.Slaved = True
+            #self.enclosure.Slaved = True
+            '''
+            get azimuth of Sun, subtract 180 and normalize, then if in Automatic, slew
+            opposite Sun.
+
+            '''
+            if obs_win_begin <= ephemNow <= sunset:   #NB There is no corresponding warm up phase in the Morning.
+                self.enclosure.SlewToAzimuth(-az)
             # nb tHIS SHOULD WORK DIFFERENT. Open then slew to Opposite az to Sun set.  Stay
             # there until telescope is unparked, then  slave the dome.  Or maybe leave it at
             # park, where Neyle can see it from house and always ready to respong to a Wx close.
@@ -175,7 +188,8 @@ class Enclosure:
             if self.status_string.lower() in ['closed', 'closing']:
 
                 self.enclosure.OpenShutter()   #<<<<NB NB NB Only enable when code is fully proven to work.
-                print("Night time Open issued to the "  + shutter_str)
+                self.enclosure.Slaved = True
+                print("Night time Open issued to the "  + shutter_str, +   '   Following Mounting.')
         elif (obs_win_begin >= ephemNow or ephemNow >= sunZ88Cl \
                 and self.mode ==
                 'Automatic') or close_cmd:
@@ -185,8 +199,9 @@ class Enclosure:
                 self.state = 'Daytime normally Closed the ' + shutter_str
             if self.status_string.lower() in ['open', 'opening']:
                 try:
+                    self.enclosure.Slaved = False
                     self.enclosure.CloseShutter()
-                    print("Daytime Close issued to the " + shutter_str)
+                    print("Daytime Close issued to the " + shutter_str  + "   No longer follwing Mount.")
                 except:
                     print("Shutter busy right now!")
         else:

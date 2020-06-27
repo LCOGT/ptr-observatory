@@ -493,8 +493,8 @@ class Observatory:
                 #     print('Path creation in Reductions failed.', lng_path)
                #NB Important decision here, do we flash calibrate screen and sky flats?  For now, Yes.
 
-                #cal_result = calibrate(hdu, lng_path, frame_type, start_x=start_x, start_y=start_y, quick=quick)
-
+                cal_result = calibrate(hdu, lng_path, paths['frame_type'], start_x=0, start_y=0, quick=False)
+                print("Calibrate returned:  ", hdu.data, cal_result)
                 hdu.writeto(paths['red_path'] + paths['red_name01'], overwrite=True)
                 # print(hdu.data)
                 # print('WROTE TO: ', paths['red_path'] + paths['red_name01'])

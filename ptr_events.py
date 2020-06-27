@@ -36,6 +36,7 @@ class Events:
 
     def __init__(self, config: dict):
         self.config = config
+        g_dev['evnt'] = self
         self.siteLatitude = round(float(self.config['latitude']), 8)    #  34 20 34.569   #34 + (20 + 34.549/60.)/60.
         self.siteLongitude = round(float(self.config['longitude']), 8) #-(119 + (40 + 52.061/60.)/60.) 119 40 52.061 W
         self.siteElevation =  round(float(self.config['longitude']), 3)
@@ -152,14 +153,30 @@ class Events:
         ptr.elev = self.siteElevation
         ptr.compute_pressure()
         ptr.temp = self.siteRefTemp
-
         sun.compute(ptr)
         #if loud: print('Sun Now: ', sun.ra, sun.dec, sun.az, sun.alt, ptr.date)
         moon.compute(ptr)
         # if loud: print('Moon Now: ', moon.ra, moon.dec, moon.az, moon.alt, ptr.date)
-
         return sun.ra, sun.dec, degrees(sun.alt), degrees(sun.az), moon.ra, moon.dec,\
             degrees(moon.alt), moon.size/3600
+
+    def sun_az_now(self):
+        sun = ephem.Sun()
+        sun.compute()
+        moon = ephem.Moon()
+        moon.compute()
+        #if loud: print('Sun: ', sun.ra, sun.dec, 'Moon: ', moon.ra, moon.dec)
+        ptr = ephem.Observer()     #Photon Ranch
+        ptr.lat = str(self.siteLatitude)
+        ptr.lon = str(self.siteLongitude)
+        ptr.elev = self.siteElevation
+        ptr.compute_pressure()
+        ptr.temp = self.siteRefTemp
+        sun.compute(ptr)
+        #if loud: print('Sun Now: ', sun.ra, sun.dec, sun.az, sun.alt, ptr.date)
+        moon.compute(ptr)
+        # if loud: print('Moon Now: ', moon.ra, moon.dec, moon.az, moon.alt, ptr.date)
+        return  degrees(sun.az)
 
     def _calcEveFlatValues(self, ptr, sun, pWhen, skyFlatEnd, loud=False, now_spot=False):
         # NB This needs to deal withthe Moon being too close!
