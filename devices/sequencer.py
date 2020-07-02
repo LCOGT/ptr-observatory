@@ -5,6 +5,7 @@ from random import shuffle
 from global_yard import g_dev
 import ephem
 import build_tycho as tycho
+from pprint import pprint
 
 '''
 Autofocus NOTE 20200122

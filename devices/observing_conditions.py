@@ -20,6 +20,7 @@ class ObservingConditions:
         self.sample_time = 0
         self.ok_to_open = 'No'
         self.observing_condtions_message = '-'
+        self.wx_is_ok = None
         if self.site == 'wmd':
             self.redis_server = redis.StrictRedis(host='10.15.0.15', port=6379, db=0,
                                                   decode_responses=True)
@@ -54,9 +55,9 @@ class ObservingConditions:
             #  NB all parameters should come from config.
             dew_point_gap = not (self.boltwood.Temperature  - self.boltwood.DewPoint) < 2
             temp_bounds = not (self.boltwood.Temperature < 2.0) or (self.boltwood.Temperature > 35)
-            wind_limit = self.boltwood.WindSpeed < 10
-            sky_amb_limit  = self.boltwood.SkyTemperature < 27.5
-            humidity_limit = self.boltwood.Humidity < 85
+            wind_limit = self.boltwood.WindSpeed < 25
+            sky_amb_limit  = self.boltwood.SkyTemperature < -30
+            humidity_limit = 3 < self.boltwood.Humidity < 80
             rain_limit = self.boltwood.RainRate <= 0.001
             self.wx_is_ok = dew_point_gap and temp_bounds and wind_limit and sky_amb_limit and \
                             humidity_limit and rain_limit

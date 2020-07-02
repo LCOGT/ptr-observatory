@@ -424,6 +424,9 @@ class Camera:
         self.estimated_readtime = (exposure_time + 2*readout_time)*1.25*3   #  3 is the outer retry loop maximum.
         #exposure_time = max(0.2, exposure_time)  #Saves the shutter, this needs qualify with imtype.
         imtype= required_params.get('image_type', 'Light')
+        if imtype.lower() in ['experimental']:
+            g_dev['enc'].wx_test = not g_dev['enc'].wx_test
+            return
 
         count = int(optional_params.get('count', 1))   #FOr now Repeats are external to full expose command.
         lcl_repeat = 1
@@ -1041,7 +1044,7 @@ class Camera:
                                  'text_name11': text_name,
                                  'frame_type':  frame_type
                                  }
-                        print('Path dict:  ', paths)
+                        #print('Path dict:  ', paths)
                         #NB  IT may be easiest for autofocus to do the sep run here:  Hot pix then AF.
 
                         if not quick and not script in ('True', 'true', 'On', 'on'):

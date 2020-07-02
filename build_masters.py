@@ -43,6 +43,7 @@ import numpy as np
 from scipy import stats
 import matplotlib.pyplot as plt
 from PIL import Image
+from pprint import pprint
 
 from skimage import data, io, filters
 from skimage.transform import resize
@@ -485,11 +486,12 @@ def make_master_flat (alias, path, lng_path, selector_string, out_name, super_bi
     create_super_flat(chunked_list, lng_path, out_name, super_bias_name, super_dark_name)
 
 
-def debias_and_trim(camera_name, archive_path, out_path):
+def debias_and_trim(camera_name, archive_path, selector_string, out_path):
     #NB this needs to rename fit and fts files to fits
-    file_list = glob.glob(archive_path + "*6820*")
-    file_list.sort
+    file_list = glob.glob(archive_path + selector_string)
+ #   file_list.sort
     print(file_list)
+    breakpoint()
     print('# of files:  ', len(file_list))
     for image in file_list:
         print('Processing:  ', image)
@@ -537,7 +539,7 @@ def build_hot_map(camera_name, lng_path, in_image, out_name):
 def build_hot_image(camera_name, lng_path, in_image, out_name):
     img = ccdproc.CCDData.read(lng_path + in_image, format='fits')
     img_std = img.data.std()
-    img_mean = img.data.mean()
+    #img_mean = img.data.mean()
     hot_pix = np.where(img.data > 2*img_std)
     saved = img.data.astype('int32')
     img.data -= img.data
@@ -547,8 +549,8 @@ def build_hot_image(camera_name, lng_path, in_image, out_name):
         img.data[iy][ix] = saved[iy][ix]
     img.write(lng_path + out_name, overwrite=True)
 
-def correct_image(camera_name, archive_path, lng_path, out_path):
-    file_list = glob.glob(archive_path + "*6820*")
+def correct_image(camera_name, archive_path, selector_string, lng_path, out_path):
+    file_list = glob.glob(archive_path + selector_string)
     file_list.sort
     print(file_list)
     print('# of files:  ', len(file_list))
@@ -567,6 +569,12 @@ def correct_image(camera_name, archive_path, lng_path, out_path):
     super_HA = sHHdu[0].data.astype('float32')
     sOHdu = fits.open(lng_path + 'mf_O3.fits')
     super_O3 = sOHdu[0].data.astype('float32')
+    sSHdu = fits.open(lng_path + 'mf_S2.fits')
+    super_S2 = sOHdu[0].data.astype('float32')
+    sNHdu = fits.open(lng_path + 'mf_N2.fits')
+    super_N2 = sOHdu[0].data.astype('float32')
+    swHdu = fits.open(lng_path + 'mf_w.fits')
+    super_w = sOHdu[0].data.astype('float32')
     shHdu = fits.open(lng_path + 'hm_1.fits')
     hot_map = shHdu[0].data
     hot_pix = np.where(hot_map > 1)
@@ -588,6 +596,12 @@ def correct_image(camera_name, archive_path, lng_path, out_path):
             img[0].data /= super_HA
         elif image[-6] == 'O' :
             img[0].data /= super_O3
+        elif image[-6] == 'S' :
+          img[0].data /= super_S2
+        elif image[-6] == 'N' :
+          img[0].data /= super_N2
+        elif image[-11] == 'w' :
+          img[0].data /= super_w
         else:
             print("Incorrect filter suffix, no flat applied.")
 
@@ -597,6 +611,82 @@ def correct_image(camera_name, archive_path, lng_path, out_path):
         print('Writing:  ', file_name_split[1])
         img.writeto(out_path + file_name_split[1], overwrite=True)
         img.close()
+
+def open_ordered_file_list(archive_path, selector_string):
+    file_list = glob.glob(archive_path + selector_string)
+    sorted_list = []
+    for image in file_list:
+        img = fits.open(image)
+        sorted_list.append((img[0].header['JD'], image))
+    sorted_list.sort()
+    return sorted_list
+
+
+def sep_image(camera_name, archive_path, selector_string, lng_path, out_path):
+    sorted_list = open_ordered_file_list(archive_path, selector_string)
+    #file_list.sort()
+    #print(file_list)
+    print('# of files:  ', len(sorted_list))
+    prior_img = None
+    final_jd = sorted_list[-1][0]
+    initial_jd = sorted_list[0][0]
+    dt_jd = (final_jd - initial_jd)*86400
+    dx = 136    # NB ultimately these should come from the data.
+    dy = 104
+    x_vel = dx/dt_jd
+    y_vel = dy/dt_jd
+
+    for entry in sorted_list:
+        #print('Cataloging:  ', image)
+        img = fits.open(entry[1])
+        try:
+            img_data = img[0].data.astype('float')
+            jd = img[0].header['JD']   #or entry[0]
+            bkg = sep.Background(img_data)
+            #bkg_rms = bkg.rms()
+            img_data -= bkg
+            sources = sep.extract(img_data, 4.5, err=bkg.globalrms, minarea=15)#, filter_kernel=kern)
+            sources.sort(order = 'cflux')
+            #print('No. of detections:  ', len(sources))
+            sep_result = []
+            spots = []
+            for source in sources[-3:]:
+                a0 = source['a']
+                b0 =  source['b']
+                del_t_now = (jd - initial_jd)*86400
+                cx = 1064 + x_vel*del_t_now
+                cy = 3742 + y_vel*del_t_now
+                print("Shifts:  ", int(x_vel*del_t_now), int(y_vel*del_t_now), del_t_now)
+                if cx - 60 < source['x'] < cx + 60  and cy - 60 < source['y'] < cy + 60:
+                    #sep_result.append([round(r0, 1), round((source['x']), 1), round((source['y']), 1), round((source['cflux']), 1), jd])
+                    print(source['x'], source['y'], source['cflux'], entry[1].split('\\')[1])
+
+                    # now_img = [round(r0, 1), round((source['x']), 1), round((source['x'])), 1), round((source['cflux']), 1), jd]
+                    # if prior_img is None:
+                    #     prior_img = [round(r0, 1), round((source['x']), 1), round((source['y']), 1), round((source['cflux']), 1), jd]
+                    # else:
+                    #     #Now we compute differences and velocities.
+                    #     delta_t = (now_img[4] - prior_img[4])*86400   #seconds
+                    #     delta_x = (now_img[1] - prior_img[1])*1
+                    #     delta_y = (now_img[2] - prior_img[2])*1
+                    #     print(delta_x/delta_t, delta_y/delta_t, delta_t)
+
+
+
+
+            #pprint(sep_result)
+
+            print('\n')
+            # try:
+            #     spot = np.median(spot[-9:-2])   #  This grabs seven spots.
+            #     print(sep_result,'Spot and flux:  ', spot, source['cflux'], len(sources), '\n')
+            #     if len(sep_result) < 5:
+            #         spot = None
+            # except:
+            #     spot = None
+        except:
+            spot = None
+
 
 
 
@@ -609,10 +699,10 @@ if __name__ == '__main__':
     camera_name = 'sq01'  #  config.site_config['camera']['camera1']['name']
     #archive_path = "D:/000ptr_saf/archive/sq01/2020-06-13/"
     #archive_path = "D:/2020-06-19  Ha and O3 screen flats/"
-    archive_path = "D:/20200627  NGC 6820 ha/"
-    out_path = "D:/20200627  NGC 6820 ha/trimmed/"
+    archive_path = "D:/20200701  fourth try M8 with multiiple filters/"
+    out_path = "D:/20200701  fourth try M8 with multiiple filters/trimmed/"
     lng_path = "D:/000ptr_saf/archive/sq01/lng/"
-    debias_and_trim(camera_name, archive_path, out_path)
+    # debias_and_trim(camera_name, archive_path, '*M8*', out_path)
     # make_master_bias(camera_name, out_path, lng_path, '*f_3*', 'mb_1b.fits')
     # make_master_bias(camera_name, out_path, lng_path, '*b_2*', 'mb_2b.fits')
     # #make_master_bias(camera_name, archive_path, lng_path, '*b_3*', 'mb_3.fits')
@@ -623,12 +713,15 @@ if __name__ == '__main__':
     # make_master_dark(camera_name, out_path, lng_path, '*d_2_120*', 'md_2b.fits', 'mb_2b.fits')
     # #make_master_dark(camera_name, archive_path, lng_path, '*d_3_90*', 'md_3.fits', 'mb_3.fits')
     # #make_master_dark(camera_name, archive_path, lng_path, '*d_4_60*', 'md_4.fits', 'mb_4.fits')
-    #make_master_flat(camera_name, archive_path, lng_path, filt, out_name, 'mb_1.fits', 'md_1.fits')
+    # make_master_flat(camera_name, archive_path, lng_path, filt, out_name, 'mb_1.fits', 'md_1.fits')
     # build_hot_map(camera_name, lng_path, "md_1_1080.fits", "hm_1")
-    #build_hot_image(camera_name, lng_path, "md_1_1080.fits", "hm_1.fits")
+    # build_hot_image(camera_name, lng_path, "md_1_1080.fits", "hm_1.fits")
     archive_path = out_path
-    out_path = "D:/20200627  NGC 6820 ha/reduced/"
-    correct_image(camera_name, archive_path, lng_path, out_path)
+    out_path = "D:/20200701  fourth try M8 with multiiple filters/reduced/"
+    # correct_image(camera_name, archive_path, '*M8*', lng_path, out_path)
+    archive_path = out_path
+    out_path = "D:/D:/20200701  fourth try M8 with multiiple filters/catalogs/"
+    sep_image(camera_name, archive_path, '**', lng_path, out_path)
     print('Fini')
     # NB Here we would logcially go on to get screen flats.
 

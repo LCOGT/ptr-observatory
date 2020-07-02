@@ -34,6 +34,7 @@ import argparse
 import json
 import importlib
 import numpy as np
+from pprint import pprint
 from api_calls import API_calls
 from skimage import data, io, filters
 from skimage.transform import resize
@@ -57,7 +58,7 @@ from devices.rotator import Rotator
 from devices.switch import Switch    #Nothing implemented yet 20200511
 from devices.screen import Screen
 from devices.sequencer import Sequencer
-import processing.calibration
+from processing.calibration import calibrate
 from global_yard import g_dev
 import bz2
 import httplib2
@@ -293,6 +294,16 @@ class Observatory:
                 # all_projects = requests.post(url).json()
                 # if all_projects is not None:
                 #     print(all_projects)
+                # url = "https://calendar.photonranch.org/dev/siteevents"
+                # body = json.dumps({
+                #     'site':  'saf',
+                #     'start':  '2020-06-28T20:00:00Z',
+                #     'end':    '2020-06-29T14:00:00Z',
+                #     'full_project_details:':  False})
+                # breakpoint()
+                # events = requests.post(url, body).json()
+                # if events is not None:
+                #     pprint(events)
                 return   # Continue   #This creates an infinite loop
             else:
                 print('Sequencer Hold asserted.')    #What we really want here is looking for a Cancel/Stop.
@@ -460,8 +471,8 @@ class Observatory:
 
                 paths = pri_image[0]
                 hdu = pri_image[1]
-                print('Name:  ', paths, '   Hdu.data.shape:', hdu.data.shape)
-                print("SIMULATED REDUCTIONS COMPLETED!")
+                #print('Name:  ', paths, '   Hdu.data.shape:', hdu.data.shape)
+                print("\nREDUCTIONS Starting!")
 
                 # paths = {'raw_path':  raw_path,
                 #          'cal_path':  cal_path,
@@ -493,8 +504,8 @@ class Observatory:
                 #     print('Path creation in Reductions failed.', lng_path)
                #NB Important decision here, do we flash calibrate screen and sky flats?  For now, Yes.
 
-                cal_result = calibrate(hdu, lng_path, paths['frame_type'], start_x=0, start_y=0, quick=False)
-                print("Calibrate returned:  ", hdu.data, cal_result)
+                cal_result = calibrate(hdu, lng_path, paths['frame_type'], quick=False)
+                #print("Calibrate returned:  ", hdu.data, cal_result)
                 hdu.writeto(paths['red_path'] + paths['red_name01'], overwrite=True)
                 # print(hdu.data)
                 # print('WROTE TO: ', paths['red_path'] + paths['red_name01'])
@@ -628,10 +639,10 @@ class Observatory:
                 hdu.data = resized_a.astype('uint16')
 
                 i768sq_data_size = hdu.data.size
-                print('ABOUT to print paths.')
-                print('Sending to:  ', paths['im_path'])
-                print('Also to:     ', paths['i768sq_name10'])
-                print("DID IT!")
+                # print('ABOUT to print paths.')
+                # print('Sending to:  ', paths['im_path'])
+                # print('Also to:     ', paths['i768sq_name10'])
+
                 hdu.writeto(paths['im_path'] + paths['i768sq_name10'], overwrite=True)
                 hdu.data = resized_a.astype('float')
                 #The following does a very lame contrast scaling.  A beer for best improvement on this code!!!
@@ -664,7 +675,7 @@ class Observatory:
                     hdu1 = None
                 except:
                     pass
-
+                print("\nREDUCTIONS COMPLETED!")
                 self.reduce_queue.task_done()
             else:
                 time.sleep(.5)

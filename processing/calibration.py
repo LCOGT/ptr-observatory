@@ -126,11 +126,10 @@ def simpleColumnFix(img, col):
 def calibrate (hdu, lng_path, frame_type='light', quick=False):
     #These variables are gloal in the sense they persist between calls (memoized so to speak, should use that facility.)
     global super_bias, super_bias_2, super_dark, super_dark_2, hot_map, hot_pix, screen_flat_air, screen_flat_w, \
-        screen_flat_B, screen_flat_V, screen_flat_R, screen_flat_gp, screen_flat_rp, screen_flat_pi, \
+        screen_flat_B, screen_flat_V, screen_flat_R, screen_flat_gp, screen_flat_rp, screen_flat_ip, \
         screen_flat_O3, screen_flat_HA, screen_flat_N2, screen_flat_S2, screen_flat_EXO, screen_flat_air, \
         dark_exposure_level
     loud = True
-    breakpoint()
     #This needs to deal with caching different binnings as well.  And do we skip all this for a quick
     if not quick:
         if super_bias is None:
@@ -272,7 +271,7 @@ def calibrate (hdu, lng_path, frame_type='light', quick=False):
                 screen_flat_ip = sfHdu[0].data.astype('float32')
                 quick_flat_ip = True
                 sfHdu.close()
-                if loud: print(lng_path + 'm1_ip.fits', 'Loaded')
+                if loud: print(lng_path + 'mf_ip.fits', 'Loaded')
             except:
                 quick_flat_ip = False
                 print('WARN: No ip Flat/Lum Loaded.')
@@ -318,7 +317,7 @@ def calibrate (hdu, lng_path, frame_type='light', quick=False):
                 print('WARN: No S2 Flat/Lum Loaded.')
         if screen_flat_EXO is None:
             try:
-                sfHdu = fits.open(lng_path + 'mf_EXO.fits')
+                sfHdu = fits.open(lng_path + 'mf_EO.fits')
                 screen_flat_EXO = sfHdu[0].data.astype('float32')
                 quick_flat_EXO = True
                 sfHdu.close()
@@ -347,7 +346,8 @@ def calibrate (hdu, lng_path, frame_type='light', quick=False):
             print('WARN: No Hot Map Loaded.')
 
     while True:   #Use break to drop through to exit.  i.e., do not calibrate frames we are acquring for calibration.
-
+        start_x = 0
+        start_y = 0
         cal_string = ''
         if not quick:
             img = hdu.data.astype('float32')
@@ -433,7 +433,7 @@ def calibrate (hdu, lng_path, frame_type='light', quick=False):
         if apply_hot:
             try:
                 median8(img, hot_pix)
-                cal_string += 'H'
+                cal_string += ', H'
             except:
                 print("Hot pixel correction failed.")
             if not quick: print('Hot Pixel result:  ', imageStats(img, loud))
@@ -446,9 +446,12 @@ def calibrate (hdu, lng_path, frame_type='light', quick=False):
     fix = np.where(hdu.data < 0)
     if not quick: print('# of < 0  pixels:  ', len(fix[0]))  #  Do not change values here.
     hdu.data[fix] = 0
-    # big_max = hdu.data.max()
-    # if big_max > 65535.:   #This scaling is problematic.
-    #     hdu.data = hdu.data*(65530./big_max)
+    big_max = hdu.data.max()
+    print("Max data value is:  ", big_max)
+    fix = np.where(hdu.data > 65530)
+    hdu.data[fix] = 65530.
+    hdu.data = hdu.data.astype('uint16')
+    result = {}
     result['mean_focus'] = None
     result['mean_rotation'] = None
     result['FWHM'] = None
