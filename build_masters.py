@@ -491,7 +491,6 @@ def debias_and_trim(camera_name, archive_path, selector_string, out_path):
     file_list = glob.glob(archive_path + selector_string)
  #   file_list.sort
     print(file_list)
-    breakpoint()
     print('# of files:  ', len(file_list))
     for image in file_list:
         print('Processing:  ', image)
@@ -650,16 +649,20 @@ def sep_image(camera_name, archive_path, selector_string, lng_path, out_path):
             #print('No. of detections:  ', len(sources))
             sep_result = []
             spots = []
-            for source in sources[-3:]:
+            plot_x = []
+            plot_y = []
+            for source in sources[-1:]:
                 a0 = source['a']
                 b0 =  source['b']
                 del_t_now = (jd - initial_jd)*86400
                 cx = 1064 + x_vel*del_t_now
                 cy = 3742 + y_vel*del_t_now
-                print("Shifts:  ", int(x_vel*del_t_now), int(y_vel*del_t_now), del_t_now)
-                if cx - 60 < source['x'] < cx + 60  and cy - 60 < source['y'] < cy + 60:
+                #print("Shifts:  ", int(x_vel*del_t_now), int(y_vel*del_t_now), del_t_now)
+                #if cx - 60 < source['x'] < cx + 60  and cy - 60 < source['y'] < cy + 60:
                     #sep_result.append([round(r0, 1), round((source['x']), 1), round((source['y']), 1), round((source['cflux']), 1), jd])
-                    print(source['x'], source['y'], source['cflux'], entry[1].split('\\')[1])
+                print(source['x'], source['y'], source['cflux'], entry[1].split('\\')[1])
+                plot_x.append(source['x'])
+                plot_y.append(source['y'])
 
                     # now_img = [round(r0, 1), round((source['x']), 1), round((source['x'])), 1), round((source['cflux']), 1), jd]
                     # if prior_img is None:
@@ -684,6 +687,7 @@ def sep_image(camera_name, archive_path, selector_string, lng_path, out_path):
             #         spot = None
             # except:
             #     spot = None
+            plt.scatter(plot_x, plot_y)
         except:
             spot = None
 
@@ -699,10 +703,10 @@ if __name__ == '__main__':
     camera_name = 'sq01'  #  config.site_config['camera']['camera1']['name']
     #archive_path = "D:/000ptr_saf/archive/sq01/2020-06-13/"
     #archive_path = "D:/2020-06-19  Ha and O3 screen flats/"
-    archive_path = "D:/20200701  fourth try M8 with multiiple filters/"
-    out_path = "D:/20200701  fourth try M8 with multiiple filters/trimmed/"
+    archive_path = "D:/20200702  Veil Neb and other HB images to be determined/"
+    out_path = "D:/20200702  Veil Neb and other HB images to be determined/trimmed/"
     lng_path = "D:/000ptr_saf/archive/sq01/lng/"
-    # debias_and_trim(camera_name, archive_path, '*M8*', out_path)
+    # debias_and_trim(camera_name, archive_path, '*HA*', out_path)
     # make_master_bias(camera_name, out_path, lng_path, '*f_3*', 'mb_1b.fits')
     # make_master_bias(camera_name, out_path, lng_path, '*b_2*', 'mb_2b.fits')
     # #make_master_bias(camera_name, archive_path, lng_path, '*b_3*', 'mb_3.fits')
@@ -717,11 +721,11 @@ if __name__ == '__main__':
     # build_hot_map(camera_name, lng_path, "md_1_1080.fits", "hm_1")
     # build_hot_image(camera_name, lng_path, "md_1_1080.fits", "hm_1.fits")
     archive_path = out_path
-    out_path = "D:/20200701  fourth try M8 with multiiple filters/reduced/"
-    # correct_image(camera_name, archive_path, '*M8*', lng_path, out_path)
+    out_path = "D:/20200702  Veil Neb and other HB images to be determined/reduced/"
+    # correct_image(camera_name, archive_path, '*HA*', lng_path, out_path)
     archive_path = out_path
-    out_path = "D:/D:/20200701  fourth try M8 with multiiple filters/catalogs/"
-    sep_image(camera_name, archive_path, '**', lng_path, out_path)
+    out_path = "D:/20200702  Veil Neb and other HB images to be determined/catalogs/"
+    sep_image(camera_name, archive_path, '*HA*', lng_path, out_path)
     print('Fini')
     # NB Here we would logcially go on to get screen flats.
 

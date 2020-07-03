@@ -237,7 +237,7 @@ class Enclosure:
                 self.enclosure.CloseShutter()
                 self.dome_opened = False
                 self.dome_homed = True
-                print("One time close of enclosure issued, often after a code restart.")
+                print("One time close of enclosure issued, normally after a code restart.")
 
 
 if __name__ =='__main__':
