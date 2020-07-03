@@ -158,7 +158,10 @@ class Enclosure:
             # there until telescope is unparked, then  slave the dome.  Or maybe leave it at
             # park, where Neyle can see it from house and always ready to respong to a Wx close.
         else:
-            self.enclosure.Slaved = False
+            try:
+                self.enclosure.Slaved = False
+            except:
+                pass    #Megawan (roofs) do not slave
 
         wx_is_ok = g_dev['ocn'].wx_is_ok
         if  (obs_win_begin < ephemNow < sunZ88Cl or open_cmd) \

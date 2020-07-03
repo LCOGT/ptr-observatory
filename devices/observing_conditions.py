@@ -6,7 +6,7 @@ from global_yard import g_dev
 
 #  core1_redis.set('<ptr-wx-1_state', json.dumps(wx), ex=120)
 #            core1_redis.get('<ptr-wx-1_state')
-#            core1_redis = redis.StrictRedis(host='10.15.0.15', port=6379, db=0,\
+#            core1_redis = redis.StrictRedis(host='10.15.0.109', port=6379, db=0,\
 #                                            decode_responses=True)
 
 
@@ -21,7 +21,7 @@ class ObservingConditions:
         self.ok_to_open = 'No'
         self.observing_condtions_message = '-'
         if self.site == 'wmd':
-            self.redis_server = redis.StrictRedis(host='10.15.0.15', port=6379, db=0,
+            self.redis_server = redis.StrictRedis(host='10.15.0.109', port=6379, db=0,
                                                   decode_responses=True)
             self.observing_conditions_connected = True
             print("observing_conditions: Redis connected = True")
@@ -115,9 +115,9 @@ class ObservingConditions:
             return status
         elif self.site == 'wmd':
             try:
-                breakpoint()
-                pass
-                #wx = eval(self.redis_server.get('<ptr-wx-1_state'))
+                # breakpoint()
+                # pass
+                wx = eval(self.redis_server.get('<ptr-wx-1_state'))
             except:
                 print('Redis is not returning Wx Data properly.')
             try:
@@ -127,6 +127,7 @@ class ObservingConditions:
                     illum = int(illum)
                 else:
                     illum = round(illum, 3)
+                self.wx_is_ok = True
                 status = {"temperature_C": wx["amb_temp C"],
                           "pressur_mbar": '978',
                           "humidity_%": wx["humidity %"],
@@ -161,9 +162,9 @@ class ObservingConditions:
                 time.sleep(1)
                 # This is meant to be a retry
                 try:
-                    breakpoint()
-                    pass
-                    #wx = eval(self.redis_server.get('<ptr-wx-1_state'))
+                    #breakpoint()
+                    #pass
+                    wx = eval(self.redis_server.get('<ptr-wx-1_state'))
                 except:
                     print('Redis is not turning Wx Data properly.')
                 status = {"temperature": wx["amb_temp C"],

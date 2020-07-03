@@ -41,8 +41,8 @@ site_config = {
                              #UTC and all translations to local time are 'informational.'  PTR will
                              #Not accept observatories whose master clocks run on local time, or where
                              #the longitude and value of apparent UTC disagree by more than a smidegon.
-    'latitude': '34.34293028',     #Decimal degrees, North is Positive
-    'longitude': '-119.68112805',   #Decimal degrees, West is negative
+    'latitude': '34.34595969',     #Decimal degrees, North is Positive
+    'longitude': '-119.681128055',   #Decimal degrees, West is negative
     'elevation': '317.75',    # meters above sea level
     'reference_ambient':  ['15.0'],  #Degrees Celsius.  Alternately 12 entries, one for every - mid month.
     'reference_pressure':  ['973'],  #mbar Alternately 12 entries, one for every - mid month.
