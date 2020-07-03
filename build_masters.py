@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+ # -*- coding: utf-8 -*-
 """
 Created on Sat Oct 26 16:35:36 2019
 
@@ -38,10 +38,12 @@ from os.path import join, dirname, abspath
 import sys
 import glob
 import math
+from random import shuffle
 import numpy as np
 from scipy import stats
 import matplotlib.pyplot as plt
 from PIL import Image
+from pprint import pprint
 
 from skimage import data, io, filters
 from skimage.transform import resize
@@ -64,7 +66,7 @@ from ccdproc import CCDData, Combiner
 import sep
 
 # from ptr-observatory.global_yard import g_dev
-import config
+#import config
 # import api_calls
 # import requests
 
@@ -107,35 +109,56 @@ def image_stats(img_img, p_median=False):
     #ADD Mode here someday.
     return round(img_mean, 2), round(img_std, 2)
 
-def fits_remove_overscan(ipath, opath):
+def median8(img, hot_pix):
+    #print('1: ',img_img.data)
+    axis1 = img.shape[0]
+    axis2 = img.shape[1]
+    for pix in range(len(hot_pix[0])):
+        iy = hot_pix[0][pix]
+        ix = hot_pix[1][pix]
+        med = []
+        if (0 < iy < axis1 - 1) and (0 < ix < axis2 - 1):   #Needs fixing for boundary condtions.
+                                                            #no changes to edge pixels as of 20200620 WER
+            med.append(img[iy-1][ix-1])
+            med.append(img[iy-1][ix])
+            med.append(img[iy-1][ix+1])
+            med.append(img[iy+1][ix-1])
+            med.append(img[iy+1][ix])
+            med.append(img[iy+1][ix+1])
+            med.append(img[iy][ix-1])
+            med.append(img[iy][ix+1])
+            med = np.median(np.array(med))
+            #print('2: ', iy, ix, img[iy][ix], med)
+            img[iy][ix] = med
+        #This can be slightly improved by edge and corner treatments.
+        #There may be an OOB condition.
+    return
+
+def remove_overscan(image_raw):
     '''
-#    Note this is cameras ea03amd ea04 specific!
+#    Note this is camera QHY600 specific!
     '''
 
-    fits_file_list = glob.glob(ipath + '\\*.fits')
-    print(str(len(fits_file_list)) + ' files found.')
-    count = 0
-    for fits_file in fits_file_list:
-        img_hdu = fits.open(fits_file)
-        file_name = fits_file.split('\\')[-1]
-        meta = img_hdu[0].header
-        if meta['NAXIS1'] == 2098 and meta['NAXIS2'] == 2048:
-            img = img_hdu[0].data.astype('float32')
-            overscan = img[:, 2050:]
-            biasline = np.median(overscan, axis=1)
-            biasmean = biasline.mean()
-            biasline = biasline.reshape((2048,1))
 
+    breakpoint()
+    if image_raw.meta['NAXIS1'] == 9600 and meta['NAXIS2'] == 6422:
+        img = img_hdu[0].data.astype('float32')
+        overscan_x = img[:, 2050:]
+        biasline = np.median(overscan, axis=1)
+        biasmean = biasline.mean()
+        biasline = biasline.reshape((2048,1))
+#over_2 = image_raw[-36:, :26]
+#np.median(image_raw.data[:, :22])
 
-            img_hdu[0].data = (img - biasline)[:2048,:2048].astype('uint16')
+        img_hdu[0].data = (img - biasline)[:2048,:2048].astype('uint16')
 
-            meta['HISTORY'] = 'Median overscan subtracted and trimmed. Mean = ' + str(round(biasmean,2))
+        meta['HISTORY'] = 'Median overscan subtracted and trimmed. Mean = ' + str(round(biasmean,2))
 
-            img_hdu.writeto(opath + file_name, clobber=True)
-            #Note this is equivalent to normal first time CCD wirte of a trimmed image
-            count += 1
-        else:
-            continue
+        img_hdu.writeto(opath + file_name, clobber=True)
+        #Note this is equivalent to normal first time CCD wirte of a trimmed image
+        count += 1
+    else:
+        pass
     print(count, '   Files overscan adjusted and trimmed.')
 
 
@@ -193,8 +216,8 @@ def chunkify(im_list, chunk_size):
         return out_list
 
 def create_super_bias(input_images, out_path, super_name):
-    first_image = ccdproc.CCDData.read(input_images[0][0], unit='adu')
-    last_image = ccdproc.CCDData.read(input_images[-1][-1], unit='adu')
+    first_image = ccdproc.CCDData.read(input_images[0][0])# , unit='adu')
+    last_image = ccdproc.CCDData.read(input_images[-1][-1])# , unit='adu')
     super_image =[]
     super_image_sigma = []
     num = 0
@@ -204,21 +227,23 @@ def create_super_bias(input_images, out_path, super_name):
         len_input = len(input_images[0])
         for img in range(len_input):
             print(input_images[0][img])
-            im=  ccdproc.CCDData.read(input_images[0][img], unit='adu')
+            im =  ccdproc.CCDData.read(input_images[0][img])# , unit='adu')
             im.data = im.data.astype(np.float32)
+            print(im.data.mean())
             inputs.append(im)
             num += 1
         print(inputs[-1])   #show the last one
         combiner = Combiner(inputs)
         combiner.sigma_clipping(low_thresh=2, high_thresh=3, func = np.ma.mean)
         im_temp = combiner.average_combine()
-        print(im_temp.data[2][3])
+        im_temp.data = im_temp.data.astype("float32")
+        print(im_temp.data.mean())
         super_image.append(im_temp)
         combiner = None   #get rid of big data no longer needed.
         inputs = None
         input_images.pop(0)
     #print('SI:  ', super_image)
-    #Now we combine the outer data to make the master
+    print("Now we combine the outer data to make the master.")
     #breakpoint()
     combiner = Combiner(super_image)
     combiner.sigma_clipping(low_thresh=2, high_thresh=3, func = np.ma.mean)
@@ -253,15 +278,15 @@ def create_super_bias(input_images, out_path, super_name):
 
 
 def create_super_dark(input_images, out_path, super_name, super_bias_name):
-    first_image = ccdproc.CCDData.read(input_images[0][0], unit='adu')
-    last_image = ccdproc.CCDData.read(input_images[-1][-1], unit='adu')
+    first_image = ccdproc.CCDData.read(input_images[0][0])
+    last_image = ccdproc.CCDData.read(input_images[-1][-1])
     super_image =[]
     super_image_sigma = []
     num = 0
     inputs = []
     print('SD:  ', len(input_images), input_images)
     try:
-        super_bias_img = ccdproc.CCDData.read(out_path + super_bias_name, ignore_missing_end=True, unit='adu')
+        super_bias_img = ccdproc.CCDData.read(out_path + super_bias_name, ignore_missing_end=True)
     except:
         print(out_path + super_bias_name, 'failed')
     while len(input_images) > 0:
@@ -271,12 +296,14 @@ def create_super_dark(input_images, out_path, super_name, super_bias_name):
         for img in range(len_input):
             print(input_images[0][img])
             corr_dark = ccdproc.subtract_bias(
-                       (ccdproc.CCDData.read(input_images[0][img], unit='adu')),
+                       (ccdproc.CCDData.read(input_images[0][img])),
                         super_bias_img)
             im = corr_dark
             im.data = im.data.astype(np.float32)
             inputs.append(im)
+            print(im.data.mean())
             num += 1
+        print(inputs[-1])
         combiner = Combiner(inputs)
         if len(inputs) > 9:
             im_temp= combiner.sigma_clipping(low_thresh=2, high_thresh=3, func = np.ma.median)
@@ -284,14 +311,14 @@ def create_super_dark(input_images, out_path, super_name, super_bias_name):
             im_temp = combiner.sigma_clipping(low_thresh=2, high_thresh=3, func = np.ma.mean)
         im_temp = combiner.average_combine()
         im_temp.data = im_temp.data.astype(np.float32)
-        print(im_temp.data[2][3])
+        print(im_temp.data.mean())
         #breakpoint()
         super_image.append(im_temp)
         combiner = None   #get rid of big data no longer needed.
         inputs = None
 
         input_images.pop(0)
-    #Now we combint the outer data to make the master
+    print("Now we combine the outer data to make the master.")
     combiner = Combiner(super_image)
     if len(super_image) > 9:
         super_img = combiner.sigma_clipping(low_thresh=2, high_thresh=3, func = np.ma.median)
@@ -315,14 +342,87 @@ def create_super_dark(input_images, out_path, super_name, super_bias_name):
     #hot and cold pix here.
     return
 
-def make_master_bias (alias, path,  lng_path ,selector_string, out_file):
+def create_super_flat(input_images, lng_path, super_name, super_bias_name,
+                      super_dark_name):
+
+    #chunked_list, lng_path, out_name, super_bias_name, super_dark_name
+    #super_dark = super_dark.subtract(super_dark.meta['PEDASTAL']*u.adu)
+    first_image = ccdproc.CCDData.read(input_images[0][0], format='fits')
+    #last_image = ccdproc.CCDData.read(input_images[-1][-1], format='fits')
+    super_image =[]
+    super_image_sigma = []
+    num = 0
+    inputs = []
+    print('SD:  ', len(input_images), input_images)
+    try:
+        super_bias = ccdproc.CCDData.read(lng_path + super_bias_name, ignore_missing_end=True)
+        super_bias = super_bias.add(super_bias.meta['PEDASTAL']*u.adu)
+        super_dark = ccdproc.CCDData.read(lng_path + super_dark_name, ignore_missing_end=True)
+        #super_dark = super_dark.subtract(super_dark.meta['PEDASTAL']*u.adu)   #SHOULD NOT BE NEEDED.
+    except:
+        print(out_path + super_bias_name, 'failed')
+    while len(input_images) > 0:
+        inputs = []
+        print('SD chunk:  ', len(input_images[0]), input_images[0])
+        len_input = len(input_images[0])
+        for img in range(len(input_images)):
+            img_in = ccdproc.CCDData.read(input_images[0][img],   format='fits', ignore_missing_end=True)
+            bias_corr = ccdproc.subtract_bias(img_in, super_bias)
+            #print('Dark:  ', super_dark.meta['EXPTIME'], img_in.meta['EXPTIME'], type(bias_corr), type(super_dark))
+            corr_flat = ccdproc.subtract_dark(bias_corr, super_dark, scale=True, \
+                        dark_exposure=super_dark.meta['EXPTIME']*u.s, \
+                        data_exposure =img_in.meta['EXPTIME']*u.s)
+            im = corr_flat
+            im.data /= np.median(im.data)
+            im.data = im.data.astype(np.float32)
+            inputs.append(im)
+            print(im.data.mean())
+            num += 1
+        print(inputs[-1])
+        combiner = Combiner(inputs)
+        if len(inputs) > 9:
+            im_temp= combiner.sigma_clipping(low_thresh=2, high_thresh=3, func = np.ma.median)
+        else:
+            im_temp = combiner.sigma_clipping(low_thresh=2, high_thresh=3, func = np.ma.mean)
+        im_temp = combiner.average_combine()
+        im_temp.data = im_temp.data.astype(np.float32)
+        print(im_temp.data.mean())
+        #breakpoint()
+        super_image.append(im_temp)
+        combiner = None   #get rid of big data no longer needed.
+        inputs = None
+        input_images.pop(0)
+    print("Now we combine the outer data to make the master.")
+    combiner = Combiner(super_image)
+    if len(super_image) > 5:
+        super_img = combiner.sigma_clipping(low_thresh=2, high_thresh=3, func = np.ma.median)
+    else:
+        super_img = combiner.sigma_clipping(low_thresh=2, high_thresh=3, func = np.ma.mean)
+    super_img = combiner.average_combine()
+    combiner = None
+    super_img.data = super_img.data.astype(np.float32)
+    super_img.meta = first_image.meta
+    mn, std = image_stats(super_img)
+    super_img.meta = first_image.meta
+    super_img.meta['NCOMBINE'] = num
+    super_img.meta['BSCALE'] = 1.0
+    super_img.meta['BZERO'] = 0.0         #NB This does not appear to go into headers.
+    super_img.meta['BUNIT'] = 'adu'
+    super_img.meta['CNTRMEAN'] = mn
+    super_img.meta['CNTRSTD'] = std
+    wstring = str(lng_path + super_name + '.fits')
+    super_img.write(wstring, overwrite=True, format='fits')
+    super_img = None    #Again get rid of big stale data
+    #hot and cold pix here.inputs.append(corr_flat)
+    return
+
+def make_master_bias (alias, path,  lng_path , selector_string, out_file):
 
     file_list = glob.glob(path + selector_string)
-    file_list.sort()
+    shuffle(file_list)
+    file_list = file_list[:9*9]   #Temporarily limit size of reduction.
     print('# of files:  ', len(file_list))
-
     print(file_list)
-
     if len(file_list) == 0:
         print("Empty list, returning.")
         return
@@ -335,6 +435,7 @@ def make_master_bias (alias, path,  lng_path ,selector_string, out_file):
         chunk = len(file_list)
     if chunk > 31: chunk = 31
     print('Chunk size:  ', chunk, len(file_list)//chunk)
+    chunk = 9
     chunked_list = chunkify(file_list, chunk)
     print(chunked_list)
     create_super_bias(chunked_list, lng_path, out_file )
@@ -342,7 +443,8 @@ def make_master_bias (alias, path,  lng_path ,selector_string, out_file):
 def make_master_dark (alias, path, lng_path, selector_string, out_file, super_bias_name):
     #breakpoint()
     file_list = glob.glob(path + selector_string)
-    file_list.sort
+    shuffle(file_list)
+    file_list = file_list[:9*9]   #Temporarily limit size of reduction.
     print('# of files:  ', len(file_list))
     print(file_list)
     if len(file_list) > 63:
@@ -354,479 +456,272 @@ def make_master_dark (alias, path, lng_path, selector_string, out_file, super_bi
         chunk = len(file_list)
     if chunk > 31: chunk = 31
     print('Chunk size:  ', chunk, len(file_list)//chunk)
+    chunk = 9
     chunked_list = chunkify(file_list, chunk)
     print(chunked_list)
     create_super_dark(chunked_list, lng_path, out_file, super_bias_name )
 
+def make_master_flat (alias, path, lng_path, selector_string, out_name, super_bias_name, \
+                      super_dark_name):
+    #breakpoint()
+    file_list = glob.glob(path + selector_string)
+    if len(file_list) < 3:
+        return
+    shuffle(file_list)
+    file_list = file_list[:9*9]   #Temporarily limit size of reduction.
+    print('# of files:  ', len(file_list))
+    print(file_list)
+    if len(file_list) > 63:
+        file_list = file_list[0:63]
+    if len(file_list) > 32:
+        chunk = int(math.sqrt(len(file_list)))
+        if chunk %2 == 0: chunk += 1
+    else:
+        chunk = len(file_list)
+    if chunk > 31: chunk = 31
+    print('Chunk size:  ', chunk, len(file_list)//chunk)
+    chunk = 9
+    chunked_list = chunkify(file_list, chunk)
+    print(chunked_list)
+    create_super_flat(chunked_list, lng_path, out_name, super_bias_name, super_dark_name)
+
+
+def debias_and_trim(camera_name, archive_path, selector_string, out_path):
+    #NB this needs to rename fit and fts files to fits
+    file_list = glob.glob(archive_path + selector_string)
+ #   file_list.sort
+    print(file_list)
+    breakpoint()
+    print('# of files:  ', len(file_list))
+    for image in file_list:
+        print('Processing:  ', image)
+        #breakpoint()
+        img = ccdproc.CCDData.read(image, unit='adu', format='fits')
+        # Overscan remove and trim
+        pedastal = 200
+        iy, ix = img.data.shape
+        if ix == 9600:
+            overscan = int(np.median(img.data[33:, -22:]))
+            trimed = img.data[36:,:-26].astype('int32') + pedastal - overscan
+            square = trimed[121:121+6144,1715:1715+6144]
+        elif ix == 4800:
+            overscan = int(np.median(img.data[17:, -11:]))
+            trimed = img.data[18:,:-13].astype('int32') + pedastal - overscan
+            square = trimed[61:61+3072,857:857+3072]
+        else:
+            print("Incorrect chip size or bin specified.")
+        smin = np.where(square < 0)    #finds negative pixels
+        std = square.std()
+        shot = np.where(square > (pedastal + 3*std))
+        print('Mean, std, overscan, # neg, hot pixels:  ', square.mean(), std, overscan, len(smin[0]), len(shot[0]))
+        square[smin] = 0               #marks them as 0
+        img.data = square.astype('uint16')
+        img.meta['PEDASTAL'] = -pedastal
+        img.meta['ERRORVAL'] = 0
+        img.meta['OVERSCAN'] = overscan
+        img.meta['HISTORY'] = "Maxim image debiased and trimmed."
+        img.write(out_path + image.split('\\')[1], overwrite=True)
+    print('Debias and trim Finished.')
+
+def build_hot_map(camera_name, lng_path, in_image, out_name):
+    img = ccdproc.CCDData.read(lng_path + in_image, format='fits')
+    img_std = img.data.std()
+    img_mean = img.data.mean()
+    hot_pix = np.where(img.data > 2*img_std)
+    # print(img_std, img_mean, len(hot_pix[0]), hot_pix)
+    # median8(img.data, hot_pix)
+    # img2_std = img.data.std()
+    # img2_mean = img.data.mean()
+    # hot2_pix = np.where(img.data > 1*img_std)
+    # print(img2_std, img2_mean, len(hot2_pix[0]), hot2_pix) #interating on this does not improve
+    return hot_pix
+
+def build_hot_image(camera_name, lng_path, in_image, out_name):
+    img = ccdproc.CCDData.read(lng_path + in_image, format='fits')
+    img_std = img.data.std()
+    #img_mean = img.data.mean()
+    hot_pix = np.where(img.data > 2*img_std)
+    saved = img.data.astype('int32')
+    img.data -= img.data
+    for pix in range(len(hot_pix[0])):
+        iy = hot_pix[0][pix]
+        ix = hot_pix[1][pix]
+        img.data[iy][ix] = saved[iy][ix]
+    img.write(lng_path + out_name, overwrite=True)
+
+def correct_image(camera_name, archive_path, selector_string, lng_path, out_path):
+    file_list = glob.glob(archive_path + selector_string)
+    file_list.sort
+    print(file_list)
+    print('# of files:  ', len(file_list))
+    #Get the master images:
+    sbHdu = fits.open(lng_path + 'mb_1.fits')
+    super_bias = sbHdu[0].data.astype('float32')
+    sdHdu = fits.open(lng_path + 'md_1_360.fits')
+    super_dark = sdHdu[0].data.astype('float32')
+    srHdu = fits.open(lng_path + 'mf_rp.fits')
+    super_rp = srHdu[0].data.astype('float32')
+    sgHdu = fits.open(lng_path + 'mf_gp.fits')
+    super_gp = sgHdu[0].data.astype('float32')
+    siHdu = fits.open(lng_path + 'mf_ip.fits')
+    super_ip = siHdu[0].data.astype('float32')
+    sHHdu = fits.open(lng_path + 'mf_HA.fits')
+    super_HA = sHHdu[0].data.astype('float32')
+    sOHdu = fits.open(lng_path + 'mf_O3.fits')
+    super_O3 = sOHdu[0].data.astype('float32')
+    sSHdu = fits.open(lng_path + 'mf_S2.fits')
+    super_S2 = sOHdu[0].data.astype('float32')
+    sNHdu = fits.open(lng_path + 'mf_N2.fits')
+    super_N2 = sOHdu[0].data.astype('float32')
+    swHdu = fits.open(lng_path + 'mf_w.fits')
+    super_w = sOHdu[0].data.astype('float32')
+    shHdu = fits.open(lng_path + 'hm_1.fits')
+    hot_map = shHdu[0].data
+    hot_pix = np.where(hot_map > 1)
+    for image in file_list:
+
+        img = fits.open(image)
+        img[0].data = img[0].data.astype('float32')
+        img[0].data = img[0].data - super_bias
+        img_dur = img[0].header['EXPOSURE']
+        ratio = img_dur/360.
+        img[0].data -= super_dark*ratio
+        if image[-6] == 'g':
+            img[0].data /= super_gp
+        elif image[-6] == 'r' :
+            img[0].data /= super_rp
+        elif image[-6] == 'i' :
+            img[0].data /= super_ip
+        elif image[-6] in ['H','h'] :
+            img[0].data /= super_HA
+        elif image[-6] == 'O' :
+            img[0].data /= super_O3
+        elif image[-6] == 'S' :
+          img[0].data /= super_S2
+        elif image[-6] == 'N' :
+          img[0].data /= super_N2
+        elif image[-11] == 'w' :
+          img[0].data /= super_w
+        else:
+            print("Incorrect filter suffix, no flat applied.")
+
+        median8(img[0].data, hot_pix)
+        img[0].header['CALIBRAT'] = 'B D SCF H'
+        file_name_split = image.split('\\')
+        print('Writing:  ', file_name_split[1])
+        img.writeto(out_path + file_name_split[1], overwrite=True)
+        img.close()
+
+def open_ordered_file_list(archive_path, selector_string):
+    file_list = glob.glob(archive_path + selector_string)
+    sorted_list = []
+    for image in file_list:
+        img = fits.open(image)
+        sorted_list.append((img[0].header['JD'], image))
+    sorted_list.sort()
+    return sorted_list
+
+
+def sep_image(camera_name, archive_path, selector_string, lng_path, out_path):
+    sorted_list = open_ordered_file_list(archive_path, selector_string)
+    #file_list.sort()
+    #print(file_list)
+    print('# of files:  ', len(sorted_list))
+    prior_img = None
+    final_jd = sorted_list[-1][0]
+    initial_jd = sorted_list[0][0]
+    dt_jd = (final_jd - initial_jd)*86400
+    dx = 136    # NB ultimately these should come from the data.
+    dy = 104
+    x_vel = dx/dt_jd
+    y_vel = dy/dt_jd
+
+    for entry in sorted_list:
+        #print('Cataloging:  ', image)
+        img = fits.open(entry[1])
+        try:
+            img_data = img[0].data.astype('float')
+            jd = img[0].header['JD']   #or entry[0]
+            bkg = sep.Background(img_data)
+            #bkg_rms = bkg.rms()
+            img_data -= bkg
+            sources = sep.extract(img_data, 4.5, err=bkg.globalrms, minarea=15)#, filter_kernel=kern)
+            sources.sort(order = 'cflux')
+            #print('No. of detections:  ', len(sources))
+            sep_result = []
+            spots = []
+            for source in sources[-3:]:
+                a0 = source['a']
+                b0 =  source['b']
+                del_t_now = (jd - initial_jd)*86400
+                cx = 1064 + x_vel*del_t_now
+                cy = 3742 + y_vel*del_t_now
+                print("Shifts:  ", int(x_vel*del_t_now), int(y_vel*del_t_now), del_t_now)
+                if cx - 60 < source['x'] < cx + 60  and cy - 60 < source['y'] < cy + 60:
+                    #sep_result.append([round(r0, 1), round((source['x']), 1), round((source['y']), 1), round((source['cflux']), 1), jd])
+                    print(source['x'], source['y'], source['cflux'], entry[1].split('\\')[1])
+
+                    # now_img = [round(r0, 1), round((source['x']), 1), round((source['x'])), 1), round((source['cflux']), 1), jd]
+                    # if prior_img is None:
+                    #     prior_img = [round(r0, 1), round((source['x']), 1), round((source['y']), 1), round((source['cflux']), 1), jd]
+                    # else:
+                    #     #Now we compute differences and velocities.
+                    #     delta_t = (now_img[4] - prior_img[4])*86400   #seconds
+                    #     delta_x = (now_img[1] - prior_img[1])*1
+                    #     delta_y = (now_img[2] - prior_img[2])*1
+                    #     print(delta_x/delta_t, delta_y/delta_t, delta_t)
+
+
+
+
+            #pprint(sep_result)
+
+            print('\n')
+            # try:
+            #     spot = np.median(spot[-9:-2])   #  This grabs seven spots.
+            #     print(sep_result,'Spot and flux:  ', spot, source['cflux'], len(sources), '\n')
+            #     if len(sep_result) < 5:
+            #         spot = None
+            # except:
+            #     spot = None
+        except:
+            spot = None
+
+
+
+
+
+
+
+
+
 if __name__ == '__main__':
-    camera_name = config.site_config['camera']['camera1']['name']
-    archive_path = "D:/archive/archive/kb01/autosave/"
-    lng_path = "D:/archive/archive/kb01/lng/"
-    # make_master_bias(camera_name, archive_path, lng_path, '*b_1*', 'mb_1.fits')
-    # make_master_bias(camera_name, archive_path, lng_path, '*b_2*', 'mb_2.fits')
-    # make_master_bias(camera_name, archive_path, lng_path, '*b_3*', 'mb_3.fits')
-    # make_master_bias(camera_name, archive_path, lng_path, '*b_4*', 'mb_4.fits')
-    #  make_master_dark(camera_name, archive_path, lng_path, '*d_1_120*', 'md_1_120.fits', 'mb_1.fits')
-    make_master_dark(camera_name, archive_path, lng_path, '*d_1_360*', 'md_1_360.fits', 'mb_1.fits')
-    make_master_dark(camera_name, archive_path, lng_path, '*d_2_180*', 'md_2_360.fits', 'mb_2.fits')   # Note error in first selector
-    make_master_dark(camera_name, archive_path, lng_path, '*d_3_90*', 'md_3_90.fits', 'mb_3.fits')
-    make_master_dark(camera_name, archive_path, lng_path, '*d_4_60*', 'md_4_60.fits', 'mb_4.fits')
+    camera_name = 'sq01'  #  config.site_config['camera']['camera1']['name']
+    #archive_path = "D:/000ptr_saf/archive/sq01/2020-06-13/"
+    #archive_path = "D:/2020-06-19  Ha and O3 screen flats/"
+    archive_path = "D:/20200701  fourth try M8 with multiiple filters/"
+    out_path = "D:/20200701  fourth try M8 with multiiple filters/trimmed/"
+    lng_path = "D:/000ptr_saf/archive/sq01/lng/"
+    # debias_and_trim(camera_name, archive_path, '*M8*', out_path)
+    # make_master_bias(camera_name, out_path, lng_path, '*f_3*', 'mb_1b.fits')
+    # make_master_bias(camera_name, out_path, lng_path, '*b_2*', 'mb_2b.fits')
+    # #make_master_bias(camera_name, archive_path, lng_path, '*b_3*', 'mb_3.fits')
+    # #make_master_bias(camera_name, archive_path, lng_path, '*b_4*', 'mb_4.fits')
+    # make_master_dark(camera_name, out_path, lng_path, '*d_1_1080*', 'md_1_1080.fits', 'mb_1b.fits')
+    # make_master_dark(camera_name, out_path, lng_path, '*d_1_360*', 'md_1b.fits', 'mb_1b.fits')
+    # make_master_bias(camera_name, out_path, lng_path, '*b_2*', 'mb_2b.fits')
+    # make_master_dark(camera_name, out_path, lng_path, '*d_2_120*', 'md_2b.fits', 'mb_2b.fits')
+    # #make_master_dark(camera_name, archive_path, lng_path, '*d_3_90*', 'md_3.fits', 'mb_3.fits')
+    # #make_master_dark(camera_name, archive_path, lng_path, '*d_4_60*', 'md_4.fits', 'mb_4.fits')
+    # make_master_flat(camera_name, archive_path, lng_path, filt, out_name, 'mb_1.fits', 'md_1.fits')
+    # build_hot_map(camera_name, lng_path, "md_1_1080.fits", "hm_1")
+    # build_hot_image(camera_name, lng_path, "md_1_1080.fits", "hm_1.fits")
+    archive_path = out_path
+    out_path = "D:/20200701  fourth try M8 with multiiple filters/reduced/"
+    # correct_image(camera_name, archive_path, '*M8*', lng_path, out_path)
+    archive_path = out_path
+    out_path = "D:/D:/20200701  fourth try M8 with multiiple filters/catalogs/"
+    sep_image(camera_name, archive_path, '**', lng_path, out_path)
     print('Fini')
     # NB Here we would logcially go on to get screen flats.
-    '''
-    # -*- coding: utf-8 -*-
-"""
-Created on Sun Feb  4 16:59:15 2018
 
-@author: WER
-Q:\archive\gf03\raw_kepler\2020-01-21
-"""
-
-"""
-
-Goal here is a general purpose reduction module.  Ultimate
-files are calibrated in units of e- and e-/s in the case
-of darks.
-
-"""
-
-import datetime as datetime
-
-from copy import copy, deepcopy
-import os
-import glob
-import sys
-import time
-from datetime import datetime, timedelta
-import win32com.client
-import os
-import threading
-import socket
-import shutil as sh
-
-import shelve
-import numpy as np
-import random
-import matplotlib
-import matplotlib.pyplot as plt
-matplotlib.rcParams['font.size'] = 8
-
-import random
-
-from scipy import stats
-
-
-from skimage import data, io #, filters
-from skimage.transform import resize
-from skimage import img_as_float
-from skimage import exposure
-
-from astropy.modeling import models
-from astropy import units as u
-from astropy import nddata
-from astropy.io import fits
-from astropy.io.fits import getheader
-
-import ccdproc
-from ccdproc import ImageFileCollection
-from astropy.io.fits import getheader
-
-from ccdproc import CCDData, Combiner
-
-
-
-
-simulate = True
-
-
-
-
-
-def imageOffset(img_img, p_median=False):
-    axis1 = img_img.meta['NAXIS1']
-    axis2 = img_img.meta['NAXIS2']
-    subAxis1 = axis1/2
-    patchHalf1 = axis1*0.45
-    subAxis2 = axis2/2
-    patchHalf2 = axis2*0.45
-    sub_img = img_img.data[int(subAxis1 - patchHalf1):int(subAxis1 + patchHalf1), int(subAxis2 - patchHalf2):int(subAxis2 + patchHalf2) ]
-    if p_median:
-        img_offset= np.median(sub_img)
-    else:
-        img_offset= sub_img.mean()
-    #ADD Mode here someday.
-    return img_offset
-
-def column_stats(img_img):
-    pass
-    return
-
-def hot_pixels(img_img, sigma=6):
-    mn = img_img.data.mean()
-    sd = img_img.data.std()
-    print(mn, sd)
-    hots = np.where(img_img.data > (mn + sigma*sd))
-    return hots
-
-def median8(img_img, hotPix):
-    img_img = img_img[0]
-    #print('1: ',img_img.data)
-    axis1 = img_img.header['NAXIS1']
-    axis2 = img_img.header['NAXIS2']
-
-    img = img_img.data
-    for pix in range(len(hot[0])):
-        iy = hot[0][pix]
-        ix = hot[1][pix]
-        if (0 < iy < axis1 - 2) and (0 < ix < axis2 - 2):
-            med = []
-            med.append(img[iy-1][ix-1])
-            med.append(img[iy-1][ix])
-            med.append(img[iy-1][ix+1])
-            med.append(img[iy+1][ix-1])
-            med.append(img[iy+1][ix])
-            med.append(img[iy+1][ix+1])
-            med.append(img[iy][ix-1])
-            med.append(img[iy][ix+1])
-            med = np.median(np.array(med))
-            #print('2: ', iy, ix, img[iy][ix], med)
-            img[iy][ix] = med
-        #This can be slightly improved by edge and corner treatments.
-        #There may be an OOB condition.
-    return
-
-def simpleColumnFix(img, col):
-    fcol = col - 1
-    acol = col + 1
-    img[:,col] = (img[:,fcol] + img[:,acol])/2
-    img = img.astype(np.uint16)
-
-    return img
-
-
-
-    '''
-#    Need to combine temperatures and keep track of them.
-#    Need to form appropriate averages.
-#
-#    The above is a bit sloppy.  We should writ the per day dir version of the
-#    superbias first, then based on if there exists a prior lng superbias that
-#    a new combined weighted bias is created.  The prior N <=4 days biases are
-#    kept then aged (1*5 + 2*4 + 3*3 + 4*2 + 5*1)/16
-#
-#    Need to examine for hot pixels and hot columns and make entries in the 1:!
-#    resolution bad pixel mask.
-    '''
-    return
-
-def create_super_dark( input_images, oPath, super_name, super_bias_name):
-    inputs = []
-    print('SD:  ', len(input_images), input_images, super_bias_name)
-    super_bias_img = ccdproc.CCDData.read(super_bias_name, ignore_missing_end=True)
-    for img in range(len(input_images)):
-        corr_dark = ccdproc.subtract_bias(
-                   (ccdproc.CCDData.read(input_images[img], unit='adu')),
-                    super_bias_img)
-        im = corr_dark
-        im.data = im.data.astype(np.float32)
-        im_offset= imageOffset(im, p_median=True)
-        im_offset = float(im_offset)
-        im.data -= im_offset
-        inputs.append(im)
-    combiner = Combiner(inputs)
-    super_img = combiner.median_combine()
-    #mn, std = imageStats(super_img)
-
-    #super_img = super_img.add(100*u.adu)
-    super_img.meta = inputs[0].meta
-    #super_img.meta['PEDESTAL'] = -100
-    super_img.meta['NCOMBINE'] = len(inputs)
-    #super_img.meta['CNTRMEAN'] = mn
-    #super_img.meta['CNTRSTD'] = std
-    s_name = super_name.split('.')
-    print('s_name_split:  ', s_name[0])
-    tstring = datetime.datetime.now().isoformat().split('.')[0].split(':')
-    wstring = str(oPath + '\\' + s_name[0] + '_' + \
-                        tstring[0]+tstring[1]+tstring[2] + \
-                        '.fits')
-    super_img.write(wstring, overwrite=True)
-
-    hots = hot_pixels(super_img)
-    print (len(hots), hots)
-    '''
-#    Need to trim negatives, and find hot pixels to create map.
-    '''
-    return
-
-def create_super_flat(input_images, oPath, super_name, super_bias_name,
-                      super_dark_name):
-    #NB Should cull low count input frames.
-    inputs = []
-    print('SF:  ', len(input_images))
-    super_bias = ccdproc.CCDData.read(super_bias_name, ignore_missing_end=True)
-    super_dark = ccdproc.CCDData.read(super_dark_name, ignore_missing_end=True)
-    #super_dark = super_dark.subtract(super_dark.meta['PEDASTAL']*u.adu)
-
-    for img in range(len(input_images)):
-        img_in = ccdproc.CCDData.read(input_images[img], unit='adu', ignore_missing_end=True)
-        bias_corr = ccdproc.subtract_bias(img_in, super_bias)
-        print('Hello:  ', super_dark.meta['EXPTIME'], img_in.meta['EXPTIME'], type(bias_corr), type(super_dark), img_in.meta)
-        corr_flat = ccdproc.subtract_dark(bias_corr, super_dark, scale=True, \
-                    dark_exposure=super_dark.meta['EXPTIME']*u.s, \
-                    data_exposure =img_in.meta['EXPTIME']*u.s)
-
-        #corr_flat = ccdproc.
-        inputs.append(corr_flat)
-    combiner = Combiner(inputs)
-    super_img = combiner.median_combine()
-    super_img.meta = inputs[0].meta
-
-    super_img.meta['NCOMBINE'] = len(inputs)
-    s_name = super_name.split('.')
-    print('s_name_split:  ', s_name[0])
-    tstring = datetime.datetime.now().isoformat().split('.')[0].split(':')
-    wstring = str(oPath + '\\' + s_name[0] + '_' + \
-                        tstring[0]+tstring[1]+tstring[2] + \
-                        '.fits')
-    super_img.write(wstring, overwrite=True)
-
-          #Turn the above into a circle region.
-    return
-
-
-keys = ['imagetyp', 'filter',  'exposure']#, 'xbinning', 'ybinning']
-
-filters = ['PL', 'PR', 'PG', 'PB', 'HA', 'O3',  'S2', 'N2', 'ContR', 'u', \
-           'g', 'r', 'i', 'zs', 'dif', 'air', 'dif-u', 'dif-g', 'dif-r', 'dif-i', 'dif-zs']
-
-
-detectors = []
-
-
-#
-#if __name__ == '__main__':
-#
-#    img = ccdproc.CCDData.read(path + 'b11.fits')
-#    print(img)
-#    rows = np.median(img, axis=0)
-#    row_med = np.median(rows)
-#    row_avg = np.mean(rows)
-#    row_diff = rows - row_med
-#    row_std = row_diff.std()
-
-
-# =============================================================================
-#ic1 = ImageFileCollection(path,
-#                           keywords=keys) # only keep track of keys
-#ic2 = copy.deepcopy(ic1)
-#ic1 = copy.deepcopy(ic2)
-# biases_1 = ic1.files_filtered(imagetyp='BIAS FRAME', exposure=0.0, xbinning=1,
-#                                ybinning=1)
-# ic1 = copy.deepcopy(ic2)
-
-#biases_2 = ic1.files_filtered(imagetyp='BIAS FRAME', exposure=0.0, xbinning=2,
-#                              ybinning=2)
-# ic1 = copy.deepcopy(ic2)
-# biases_3 = ic1.files_filtered(imagetyp='BIAS FRAME', exposure=0.0, xbinning=3,
-#                                ybinning=3)
-# =============================================================================
-#ic1 = copy.deepcopy(ic2)
-#biases_4 = ic1.files_filtered(imagetyp='BIAS FRAME', exposure=0.0, xbinning=4,
-#                               ybinning=4)
-#ic1 = copy.deepcopy(ic2)
-#biases_5 = ic1.files_filtered(imagetyp='BIAS FRAME', exposure=0.0, xbinning=5,
-#                               ybinning=5)
-#print('Biases:  ', len(biases_1), len(biases_2), len(biases_3), len(biases_4), \
-#      len(biases_5))
-
-#darks_2_30 = ic1.files_filtered(imagetyp='Dark Frame', exposure=30.0, xbinning=2,
-#                              ybinning=2)
-
-#flats_2_4  = ic1.files_filtered(imagetyp='Light Frame', exposure=4.0, xbinning=2,
-#                               ybinning=2)
-#ic1 = copy.deepcopy(ic2)
-#darks_1_120  = ic1.files_filtered(imagetyp='DARK FRAME', exposure=120.0, xbinning=1,
-#                               ybinning=1)
-#ic1 = copy.deepcopy(ic2)
-#darks_2_600 = ic1.files_filtered(imagetyp='DARK FRAME', exposure=600.0, xbinning=2,
-#                               ybinning=1)
-#ic1 = copy.deepcopy(ic2)
-#darks_2_120  = ic1.files_filtered(imagetyp='DARK FRAME', exposure=120.0, xbinning=2,
-#                               ybinning=1)
-#ic1 = copy.deepcopy(ic2)
-#darks_3_600 = ic1.files_filtered(imagetyp='DARK FRAME', exposure=600.0, xbinning=3,
-#                               ybinning=2)
-#ic1 = copy.deepcopy(ic2)
-#darks_3_120  = ic1.files_filtered(imagetyp='DARK FRAME', exposure=120.0, xbinning=3,
-#                               ybinning=2)
-#ic1 = copy.deepcopy(ic2)
-#darks_2_360 = ic1.files_filtered(imagetyp='DARK FRAME', exposure=360.0, xbinning=2,
-#                               ybinning=2)
-#ic1 = copy.deepcopy(ic2)
-#darks_2_720  = ic1.files_filtered(imagetyp='DARK FRAME', exposure=720.0, xbinning=2,
-#                               ybinning=2)
-#ic1 = copy.deepcopy(ic2)
-#darks_3_120  = ic1.files_filtered(imagetyp='DARK FRAME', exposure=120.0, xbinning=3,
-#                               ybinning=3)
-#ic1 = copy.deepcopy(ic2)
-#darks_4_60  = ic1.files_filtered(imagetyp='DARK FRAME', exposure=60.0, xbinning=4,
-#                               ybinning=4)
-#ic1 = copy.deepcopy(ic2)
-#darks_5_60  = ic1.files_filtered(imagetyp='DARK FRAME', exposure=60.0, xbinning=5,
-#                               ybinning=5)
-#print(len(darks_1_60), len(darks_1_180), len(darks_1_360), len(darks_1_720),
-#      len(darks_2_60), len(darks_2_180), len(darks_2_360), len(darks_2_720),
-#      len(darks_3_120), len(darks_4_60), len(darks_5_60))
-#flats_1_air = ic1.files_filtered(imagetyp='FLAT FRAME', filter='air', \
-#                                 xbinning=1, ybinning=1)
-#flats_1_W = ic1.files_filtered(imagetyp='FLAT FRAME', filter='W', \
-#                                 xbinning=1, ybinning=1)
-#flats_1_B = ic1.files_filtered(imagetyp='FLAT FRAME', filter='B', xbinning=1,
-#                               ybinning=1)
-#flats_1_g = ic1.files_filtered(imagetyp='FLAT FRAME', filter='g', xbinning=1,
-#                               ybinning=1)
-#flats_1_V = ic1.files_filtered(imagetyp='FLAT FRAME', filter='V', xbinning=1,
-#                               ybinning=1)
-#flats_1_r = ic1.files_filtered(imagetyp='FLAT FRAME', filter='r', xbinning=1,
-#                               ybinning=1)
-#flats_1_i = ic1.files_filtered(imagetyp='FLAT FRAME', filter='i', xbinning=1,
-#                               ybinning=2)
-#flats_1_zs = ic1.files_filtered(imagetyp='FLAT FRAME', filter='zs', xbinning=1,
-#                               ybinning=1)
-#flats_1_PL = ic1.files_filtered(imagetyp='FLAT FRAME', filter='PL', xbinning=1,
-#                               ybinning=1)
-#flats_1_PR = ic1.files_filtered(imagetyp='FLAT FRAME', filter='PR', xbinning=1,
-#                               ybinning=1)
-#flats_1_PG = ic1.files_filtered(imagetyp='FLAT FRAME', filter='PG', xbinning=1,
-#                               ybinning=1)
-#flats_1_PB = ic1.files_filtered(imagetyp='FLAT FRAME', filter='PB', xbinning=1,
-#                               ybinning=1)
-#flats_1_RC = ic1.files_filtered(imagetyp='FLAT FRAME', filter='RC', xbinning=1,
-#                               ybinning=1)
-#flats_1_NIR = ic1.files_filtered(imagetyp='FLAT FRAME', filter='NIR', xbinning=1,
-#                               ybinning=1)
-#flats_1_EXO = ic1.files_filtered(imagetyp='FLAT FRAME', filter='EXO', \
-#                                 xbinning=1, ybinning=1)
-#flats_1_Ha = ic1.files_filtered(imagetyp='FLAT FRAME', filter='Ha', xbinning=1,
-#                               ybinning=1)
-#flats_1_O3 = ic1.files_filtered(imagetyp='FLAT FRAME', filter='O3', xbinning=1,
-#                               ybinning=1)
-#flats_1_S2 = ic1.files_filtered(imagetyp='FLAT FRAME', filter='S2', xbinning=1,
-#                               ybinning=1)
-#flats_1_N2 = ic1.files_filtered(imagetyp='FLAT FRAME', filter='N2', xbinning=1,
-#                               ybinning=1)
-#flats_1_dark = ic1.files_filtered(imagetyp='FLAT FRAME', filter='dark', \
-#                                 binning=1, ybinning=1)
-#flats_2_air = ic1.files_filtered(imagetyp='FLAT FRAME', filter='air', \
-#                                 xbinning=1, ybinning=1)
-#flats_2_W = ic1.files_filtered(imagetyp='FLAT FRAME', filter='W', \
-#                                 xbinning=1, ybinning=1)
-#flats_2_B = ic1.files_filtered(imagetyp='FLAT FRAME', filter='B', xbinning=1,
-#                               ybinning=1)
-#flats_2_g = ic1.files_filtered(imagetyp='FLAT FRAME', filter='g', xbinning=1,
-#                               ybinning=1)
-#flats_2_V = ic1.files_filtered(imagetyp='FLAT FRAME', filter='V', xbinning=1,
-#                               ybinning=1)
-#flats_2_r = ic1.files_filtered(imagetyp='FLAT FRAME', filter='r', xbinning=1,
-#                               ybinning=1)
-#flats_2_i = ic1.files_filtered(imagetyp='FLAT FRAME', filter='i', xbinning=1,
-#                               ybinning=2)
-#flats_2_zs = ic1.files_filtered(imagetyp='FLAT FRAME', filter='zs', xbinning=1,
-#                               ybinning=1)
-#flats_2_PL = ic1.files_filtered(imagetyp='FLAT FRAME', filter='PL', xbinning=1,
-#                               ybinning=1)
-#flats_2_PR = ic1.files_filtered(imagetyp='FLAT FRAME', filter='PR', xbinning=1,
-#                               ybinning=1)
-#flats_2_PG = ic1.files_filtered(imagetyp='FLAT FRAME', filter='PG', xbinning=1,
-#                               ybinning=1)
-#flats_2_PB = ic1.files_filtered(imagetyp='FLAT FRAME', filter='PB', xbinning=1,
-#                               ybinning=1)
-#flats_2_RC = ic1.files_filtered(imagetyp='FLAT FRAME', filter='RC', xbinning=1,
-#                               ybinning=1)
-#flats_2_NIR = ic1.files_filtered(imagetyp='FLAT FRAME', filter='NIR', xbinning=1,
-#                               ybinning=1)
-#flats_2_EXO = ic1.files_filtered(imagetyp='FLAT FRAME', filter='EXO', \
-#                                 xbinning=1, ybinning=1)
-#flats_2_Ha = ic1.files_filtered(imagetyp='FLAT FRAME', filter='Ha', xbinning=1,
-#                               ybinning=1)
-#flats_2_O3 = ic1.files_filtered(imagetyp='FLAT FRAME', filter='O3', xbinning=1,
-#                               ybinning=1)
-#flats_2_S2 = ic1.files_filtered(imagetyp='FLAT FRAME', filter='S2', xbinning=1,
-#                               ybinning=1)
-#flats_2_N2 = ic1.files_filtered(imagetyp='FLAT FRAME', filter='N2', xbinning=1,
-#                               ybinning=1)
-#flats_2_dark = ic1.files_filtered(imagetyp='FLAT FRAME', filter='dark', \
-#                                 binning=1, ybinning=1)
-#print(len(flats_1_air), len(flats_1_B), len(flats_1_g), len(flats_1_V), \
-#      len(flats_1_r), len(flats_1_i), len(flats_1_zs), len(flats_1_W), \
-#      len(flats_1_EXO), len(flats_1_Ha), len(flats_1_O3), len(flats_1_S2), \
-#      len(flats_1_N2), len(flats_1_dark))
-#os.chdir(path)
-#try:
-#    os.mkdir('calibs')
-#except:
-#    pass
-
-print('starting reductions.')
-#if len(biases_5) >= 3:
-#    create_super_bias(biases_5, path, oPath, "b5.fits")
-#if len(biases_4) >= 3:
-#    create_super_bias(biases_4, path, oPath, "b4.fits")
-
-if __name__ == '__main__':
-    path = 'Q:\\archive\\gf01\\20190914\\calib\\'
-    opath = 'Q:/archive/ea03/20190503/'
-
-    print('Finding images in:  ', path)
-    imgs = glob.glob(path + '*-w-*.*')
-    p = []
-    q=[]
-    for i in range(len(imgs)//2):
-        print(imgs[i*2], imgs[i*2 + 1])
-        a = ccdproc.CCDData.read(imgs[i*2])
-        b = ccdproc.CCDData.read(imgs[i*2 + 1])
-        ma, sa = image_stats(a)
-        mb, ss = image_stats(b)
-        mc = (ma + mb)/2
-        r = ma/mb
-        b.data *= r
-        a.data = a.data - b.data
-        m2a, s2a = image_stats(a)
-        var = s2a*s2a/2
-        p.append(ma)
-        q.append(var)
-    out_slope, out_intercept, out_r_value, p_value, std_err = stats.linregress(p, q)
-           #out_slope, out_intercept, out_r_value, p_value, std_err = stats.linregress(v_outx, v_outy)
-    plt.scatter(p,q)
-    print(out_slope, out_intercept, out_r_value, p_value, std_err )
-
-#    os.chdir(path)
-#    #rename to *.fits
-#    try:
-#        os.mkdir(opath +'calibs')
-#    except:
-#        print('mkdir \'calibs\' creation faile)d at:  ', path)
-#    fits_renamer(path)
-
-#    ic1 = ImageFileCollection(path,
-#                               keywords=keys) # only keep track of keys
-#    ic2 = deepcopy(ic1)
-#    biases_1 = ic1.files_filtered(imagetyp='Light Frame', exposure=0.0)
-
-    print('Fini')
-
-#    img = ccdproc.CCDData.read(path + 'bd-0034_d1_360', unit="adu")
-#    print(img)
-
-# =============================================================================
-#    if len(biases_2) >= 7:
-#        create_super_bias(biases_2,  oPath, "mb_2.fits")
-#     if len(biases_1) >= 5:
-#         create_super_bias(biases_1, path, oPath, "b1.fits")
-# =============================================================================
-
-#    create_super_dark(darks_2_30, oPath, 'md_2_30.fits', oPath +'mb_2_2018-10-16T210946.fits')
-
-#   create_super_flat(flats_2_4, oPath, 'sc_2_30_air', oPath +'mb_2_2018-10-16T210946.fits', oPath + 'md_2_30_2018-10-16T220839.fits')
-
- '''

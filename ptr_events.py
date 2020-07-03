@@ -36,6 +36,7 @@ class Events:
 
     def __init__(self, config: dict):
         self.config = config
+        g_dev['evnt'] = self
         self.siteLatitude = round(float(self.config['latitude']), 8)    #  34 20 34.569   #34 + (20 + 34.549/60.)/60.
         self.siteLongitude = round(float(self.config['longitude']), 8) #-(119 + (40 + 52.061/60.)/60.) 119 40 52.061 W
         self.siteElevation =  round(float(self.config['longitude']), 3)
@@ -152,14 +153,30 @@ class Events:
         ptr.elev = self.siteElevation
         ptr.compute_pressure()
         ptr.temp = self.siteRefTemp
-
         sun.compute(ptr)
         #if loud: print('Sun Now: ', sun.ra, sun.dec, sun.az, sun.alt, ptr.date)
         moon.compute(ptr)
         # if loud: print('Moon Now: ', moon.ra, moon.dec, moon.az, moon.alt, ptr.date)
-
         return sun.ra, sun.dec, degrees(sun.alt), degrees(sun.az), moon.ra, moon.dec,\
             degrees(moon.alt), moon.size/3600
+
+    def sun_az_now(self):
+        sun = ephem.Sun()
+        sun.compute()
+        moon = ephem.Moon()
+        moon.compute()
+        #if loud: print('Sun: ', sun.ra, sun.dec, 'Moon: ', moon.ra, moon.dec)
+        ptr = ephem.Observer()     #Photon Ranch
+        ptr.lat = str(self.siteLatitude)
+        ptr.lon = str(self.siteLongitude)
+        ptr.elev = self.siteElevation
+        ptr.compute_pressure()
+        ptr.temp = self.siteRefTemp
+        sun.compute(ptr)
+        #if loud: print('Sun Now: ', sun.ra, sun.dec, sun.az, sun.alt, ptr.date)
+        moon.compute(ptr)
+        # if loud: print('Moon Now: ', moon.ra, moon.dec, moon.az, moon.alt, ptr.date)
+        return  degrees(sun.az)
 
     def _calcEveFlatValues(self, ptr, sun, pWhen, skyFlatEnd, loud=False, now_spot=False):
         # NB This needs to deal withthe Moon being too close!
@@ -285,9 +302,9 @@ class Events:
         sun.compute(ptr)
         #if loud: print('Sun 2: ', sun.ra, sun.dec, sun.az, sun.alt)
         sunZ88Op = ptr.next_setting(sun)
-        obs_win_begin = sunZ88Op - 30/1440
-        sunZ88Cl = ptr.next_rising(sun)
-        return (obs_win_begin, sunZ88Op, sunZ88Cl, ephem.now())
+        obs_win_begin = sunset - 60/1440
+        sunZ88Cl = sunrise
+        return (obs_win_begin, sunset, sunrise, ephem.now())
 
     def flat_spot_now(self):
         '''
@@ -389,9 +406,9 @@ class Events:
         ptr.horizon = '2'
         sun.compute(ptr)
         #if loud: print('Sun 2: ', sun.ra, sun.dec, sun.az, sun.alt)
-        sunZ88Op = ptr.next_setting(sun)
-        obs_win_begin = sunZ88Op - 30/1440      # Needs to come from site config
-        sunZ88Cl = ptr.next_rising(sun)
+        sunZ88Op = sunset #  ptr.next_setting(sun)
+        obs_win_begin = sunset - 60/1440      # Needs to come from site config  NB 1 hour
+        sunZ88Cl = sunrise # ptr.next_rising(sun)
         ptr.horizon = '-6'
         sun.compute(ptr)
         #if loud: print('Sun -6: ', sun.ra, sun.dec, sun.az, sun.alt)
@@ -476,7 +493,6 @@ class Events:
                 ('Eve Scrn Flats', ephem.Date(beginEveScreenFlats)),
                 ('End Eve Scrn Flats', ephem.Date(endEveScreenFlats)),
                 ('Obs Window Start', ephem.Date(obs_win_begin)),
-                ('Eve Sun <2 deg', sunZ88Op),
                 ('Sun Set', sunset),
                 ('Eve Sky Flats', ephem.Date((sunset + civilDusk)/2)),
                 ('Civil Dusk', civilDusk),
@@ -489,20 +505,23 @@ class Events:
                 ('Naut Dawn', nauticalDawn),
                 ('Civil Dawn', civilDawn),
                 ('Sun Rise', sunrise),
-                ('Morn Sun >2 deg', sunZ88Cl),
                 ('Moon Rise', ptr.previous_rising(moon)),
                 ('Moon Transit', ptr.previous_transit(moon)),
                 ('Moon Set', ptr.previous_setting(moon)),
                 ('Moon Rise', ptr.next_rising(moon)),
                 ('Moon Transit', ptr.next_transit(moon)),
                 ('Moon Rise', ptr.next_setting(moon))]
+
+                        #('Eve Sun <2 deg', sunZ88Op),
+                        #('Morn Sun >2 deg', sunZ88Cl),
+
         print("No report of post-close events is available yet. \n\n")
         evnt_sort = self._sortTuple(evnt)
         #Edit out rise and sets prior to or after operations.
         while evnt_sort[0][0] != 'Eve Bias Dark':
             evnt_sort.pop(0)
-        while evnt_sort[-1][0] != 'Morn Sun >2 deg':  # Ditto, see above.
-            evnt_sort.pop(-1)
+        # while evnt_sort[-1][0] != 'Morn Sun >2 deg':  # Ditto, see above.
+        #     evnt_sort.pop(-1)
         for evnt in evnt_sort:
             print(evnt[0], evnt[1])    # NB Additon of local times would be handy here.
         event_dict = {}

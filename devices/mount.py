@@ -100,8 +100,6 @@ class Mount:
             print(f"Tel/OTA connected.")
         print(self.mount.Description)
 
-
-
         #NB THe paddle needs a re-think and needs to be cast into its own thread. 20200310 WER
 #        self._paddle = serial.Serial('COM10', timeout=0.1)
 #        self._paddle.write(b'ver\n')
@@ -116,7 +114,6 @@ class Mount:
 #        self.paddle_thread = threading.Thread(target=self.paddle( self._paddle, self.mount), args=())
         #self.paddle_thread.start()
         print("exiting mount _init")
-
 
 #    def get_status(self):
 #        m = self.mount

@@ -5,6 +5,7 @@ from random import shuffle
 from global_yard import g_dev
 import ephem
 import build_tycho as tycho
+from pprint import pprint
 
 '''
 Autofocus NOTE 20200122
@@ -61,7 +62,7 @@ def create_simple_sequence(exp_time=0, img_type=0, speed=0, suffix='', repeat=1,
         binning = 4
     if filter_name == "":
         filter_name = 'W'
-    proto_file = open('D:/archive/archive/kb01/seq/ptr_saf.pro')
+    proto_file = open('D:/archive/archive/sq01/seq/ptr_saf.pro')
     proto = proto_file.readlines()
     proto_file.close()
     print(proto, '\n\n')
@@ -76,7 +77,7 @@ def create_simple_sequence(exp_time=0, img_type=0, speed=0, suffix='', repeat=1,
         proto[15] = proto[15][:12] + filter_name   + proto[15][13:]
         proto[11] = proto[11][:12] + str(enabled)  + proto[11][13:]
         proto[1]  = proto[1][:12]  + str(binning)  + proto[1][13:]
-    seq_file = open('D:/archive/archive/kb01/seq/ptr_saf.seq', 'w')
+    seq_file = open('D:/archive/archive/sq01/seq/ptr_saf.seq', 'w')
     for item in range(len(proto)):
         seq_file.write(proto[item])
     seq_file.close()
@@ -159,6 +160,8 @@ class Sequencer:
     def parse_command(self, command):
         req = command['required_params']
         opt = command['optional_params']
+        g_dev['cam'].user_id = command['user_id']
+        g_dev['cam'].user_name = command['user_name']
         action = command['action']
         script = command['required_params']['script']
         if action == "run" and script == 'focusAuto':
@@ -243,6 +246,9 @@ class Sequencer:
 
     def bias_dark_script(self, req=None, opt=None):
         """
+
+        20200618   THis has been drastically simplied for now to deal with QHY600M.
+
         This script may be auto-triggered as the bias_dark window opens, or
         by a qualified user.
         This auto script runs for about an hour.  No auto-triggered images are sent to AWS.
@@ -263,7 +269,7 @@ class Sequencer:
                    Once a week: 600 seconds, 5 each to build hot pixel map
 
         Parse parameters,
-        if sommething to do, put up sequencer_guard, estimated duration, factoring in
+        if something to do, put up sequencer_guard, estimated duration, factoring in
         event windows -- if in a window and count = 0, keep going until end of window.
         More biases and darks never hurt anyone.
         Connect Camera
@@ -273,26 +279,25 @@ class Sequencer:
 
         Loop until count goes to zero
 
-        Note this can be called by the Auto Sequencer OR invoked by a user.
+        Note this can be called by the Auto Sequencer OR invoked by a user with different counts
         """
-        if req is None:     #  NB This again should be a config item.
-            req = {'numOfBias': 63, 'bin3': True, 'numOfDark2': 3, 'bin4': False, 'bin1': True, \
-                    'darkTime': '360', 'hotMap': True, 'bin2': True, 'numOfDark': 9, 'dark2Time': '600', \
-                    'coldMap': True, 'script': 'genBiasDarkMaster', 'bin5': False}
+        if req is None:     #  NB This again should be a config item. 274 takes about 1 hour with SBIG 6303
+            req = {'numOfBias': 127, 'bin3': False, 'numOfDark2': 0, 'bin4': False, 'bin1': True, \
+                    'darkTime': '360', 'hotMap': True, 'bin2': false, 'numOfDark': 31, 'dark2Time': '720', \
+                    'coldMap': True, 'script': 'genBiasDarkMaster'}
             opt = {}
         self.sequencer_hold = True
         bias_list = []
-        num_bias = max(9, req['numOfBias'])
+        num_bias = max(15, req['numOfBias'])
+        breakpoint()
+        if req['bin4']:
+            bias_list.append([4, max(5, int(num_bias*19/255))])   #THis whole scheme is wrong. 20200525 WER
+        if req['bin3']:
+            bias_list.append([3, max(5, int(num_bias*35/255))])
+        if req['bin2']:
+            bias_list.append([2, max(9, int(num_bias*74/255))])
         if req['bin1']:
             bias_list.append([1, max(9, num_bias)])
-        if req['bin2']:
-            bias_list.append([2, max(9, num_bias)])
-        if req['bin3']:
-            bias_list.append([3, max(5, num_bias//2)])
-        if req['bin4']:
-            bias_list.append([4, max(5, num_bias//3)])
-        if req.get('bin5', False):
-            bias_list.append([5, max(5, num_bias//4)])
         print('Bias_list:  ', bias_list)
         total_num_biases = 0
         for item in bias_list:
@@ -317,10 +322,10 @@ class Sequencer:
             total_num_dark += item[1]
         print("Total # of dark frames, all binnings =  ", total_num_dark )
         long_dark_list = []
-        num_long_dark = max(3, req['numOfDark2'])
+        num_long_dark = max(0, req['numOfDark2'])
         long_dark_time = float(req['dark2Time'])
         if req['bin1']:
-            long_dark_list.append([1, max(3, num_long_dark)])
+            long_dark_list.append([1, max(0, num_long_dark)])
         if req['bin2']:
             long_dark_list.append([2, max(3, num_long_dark)])
         if req['bin3']:
@@ -476,9 +481,20 @@ class Sequencer:
             result = g_dev['cam'].expose_command(req, opt, gather_status=True, no_AWS=True, do_sep = False)
             bright2 = result['patch']
             time.sleep(2)
-            if bright2 > 35000:
+            if bright2 > 37500:
+                time.sleep(5)
                 g_dev['obs'].update_status()
-                time.sleep(10)
+                continue
+            g_dev['mnt'].slewToSkyFlatAsync()
+            g_dev['obs'].update_status()
+            req = {'time': float(exp_time),  'alias': name, 'image_type': 'sky flat'}
+            opt = {'size': 100, 'count': flat_count , 'filter': g_dev['fil'].filter_data[current_filter][0]}
+            result = g_dev['cam'].expose_command(req, opt, gather_status=True, no_AWS=True, do_sep = False)
+            bright2 = result['patch']
+            time.sleep(2)
+            if bright2 > 37500:
+                time.sleep(5)
+                g_dev['obs'].update_status()
                 continue
             print("Bright2 filter pop:  ", current_filter, bright, bright2)
             pop_list.pop(0)
@@ -492,19 +508,16 @@ class Sequencer:
 
 
     def screen_flat_script(self, req, opt):
-        breakpoint()
         if req['numFrames'] > 1:
             flat_count = req['numFrames']
         else:
             flat_count = 7    #   A dedugging compromise
 
-        #  NB here we ned to check cam at reasonable temp, or dwell until it is.
+        #  NB here we need to check cam at reasonable temp, or dwell until it is.
 
         alias = str(self.config['camera']['camera1']['name'])
         dark_count = 3
         exp_time = 5
-        #gain_calc = req['gainCalc']
-        #shut_comp =  req['shutterCompensation']
         if flat_count < 1: flat_count = 1
         g_dev['mnt'].park_command({}, {})
         #  NB:  g_dev['enc'].close
@@ -517,24 +530,51 @@ class Sequencer:
         req = {'time': 10,  'alias': alias, 'image_type': 'screen flat'}
         opt = {'size': 100, 'count': dark_count, 'filter': g_dev['fil'].filter_data[12][0]}  #  air has highest throughput
         # Skip for now;  bright, fwhm = g_dev['cam'].expose_command(req, opt, gather_status=True, no_AWS=True)
-        g_dev['scr'].screen_light_on()
+        # g_dev['scr'].screen_light_on()
+
         for filt in g_dev['fil'].filter_screen_sort:
+            #enter with screen dark
             filter_number = int(filt)
-            #g_dev['fil'].set_number_command(filter_number)  #THis faults
             print(filter_number, g_dev['fil'].filter_data[filter_number][0])
             screen_setting = g_dev['fil'].filter_data[filter_number][4][1]
             g_dev['scr'].set_screen_bright(int(screen_setting))
-            #  NB if changed we should wait 15 seconds. time.sleep(15)
             exp_time  = g_dev['fil'].filter_data[filter_number][4][0]
             g_dev['obs'].update_status()
-            print('Test Screen; filter, bright:  ', filter_number, screen_setting)
 
+            print('Dark Screen; filter, bright:  ', filter_number, 0.0)
             req = {'time': float(exp_time),  'alias': alias, 'image_type': 'screen flat'}
-            opt = {'size': 100, 'count': flat_count, 'filter': g_dev['fil'].filter_data[filter_number][0]}
-            bright, fwhm = g_dev['cam'].expose_command(req, opt, gather_status=True, no_AWS=True)
-            # if no exposure, wait 10 sec
-            print("Screen flat:  ", bright, g_dev['fil'].filter_data[filter_number][0], '\n\n')
+            opt = {'size': 100, 'count': 2, 'filter': g_dev['fil'].filter_data[filter_number][0]}
+            result = g_dev['cam'].expose_command(req, opt, gather_status=True, no_AWS=True)
+            bright = result['patch']
+            print("Dark Screen flat, starting:  ", bright, g_dev['fil'].filter_data[filter_number][0], '\n\n')
             g_dev['obs'].update_status()
+
+            print('Lighted Screen; filter, bright:  ', filter_number, screen_setting)
+            g_dev['scr'].screen_light_on()
+            time.sleep(10)
+            g_dev['obs'].update_status()
+            time.sleep(10)
+            g_dev['obs'].update_status()
+            time.sleep(10)
+            g_dev['obs'].update_status()
+            req = {'time': float(exp_time)/10.,  'alias': alias, 'image_type': 'screen flat'}
+            opt = {'size': 100, 'count': 2, 'filter': g_dev['fil'].filter_data[filter_number][0]}
+            result = g_dev['cam'].expose_command(req, opt, gather_status=True, no_AWS=True)
+            bright = result['patch']
+            # if no exposure, wait 10 sec
+            print("Lighted Screen flat:  ", bright, g_dev['fil'].filter_data[filter_number][0], '\n\n')
+
+            g_dev['obs'].update_status()
+            g_dev['scr'].screen_dark()
+            time.sleep(10)
+            print('Dark Screen; filter, bright:  ', filter_number, 0.0)
+            req = {'time': float(exp_time),  'alias': alias, 'image_type': 'screen flat'}
+            opt = {'size': 100, 'count': 2, 'filter': g_dev['fil'].filter_data[filter_number][0]}
+            result = g_dev['cam'].expose_command(req, opt, gather_status=True, no_AWS=True)
+            bright = result['patch']# if no exposure, wait 10 sec
+            print("Dark Screen flat, ending:  ", bright, g_dev['fil'].filter_data[filter_number][0], '\n\n')
+
+
             #breakpoint()
         g_dev['scr'].screen_dark()
         g_dev['obs'].update_status()

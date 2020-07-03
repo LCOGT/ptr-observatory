@@ -20,6 +20,7 @@ class ObservingConditions:
         self.sample_time = 0
         self.ok_to_open = 'No'
         self.observing_condtions_message = '-'
+        self.wx_is_ok = None
         if self.site == 'wmd':
             self.redis_server = redis.StrictRedis(host='10.15.0.109', port=6379, db=0,
                                                   decode_responses=True)
@@ -54,9 +55,9 @@ class ObservingConditions:
             #  NB all parameters should come from config.
             dew_point_gap = not (self.boltwood.Temperature  - self.boltwood.DewPoint) < 2
             temp_bounds = not (self.boltwood.Temperature < 2.0) or (self.boltwood.Temperature > 35)
-            wind_limit = self.boltwood.WindSpeed < 10
-            sky_amb_limit  = self.boltwood.SkyTemperature < 27.5
-            humidity_limit = self.boltwood.Humidity < 85
+            wind_limit = self.boltwood.WindSpeed < 25
+            sky_amb_limit  = self.boltwood.SkyTemperature < -30
+            humidity_limit = 3 < self.boltwood.Humidity < 80
             rain_limit = self.boltwood.RainRate <= 0.001
             self.wx_is_ok = dew_point_gap and temp_bounds and wind_limit and sky_amb_limit and \
                             humidity_limit and rain_limit
@@ -69,14 +70,14 @@ class ObservingConditions:
                 self.ok_to_open = 'Yes'
             else:
                 self.ok_to_open = "No"
-            status = {"temperature_C": str(round(self.boltwood.Temperature, 2)),
+            status = {"temperature_C": '25', #str(round(self.boltwood.Temperature, 2)),
                       "pressure_mbar": str(784.0),
-                      "humidity_%": str(self.boltwood.Humidity),
-                      "dewpoint_C": str(self.boltwood.DewPoint),
-                      "sky_temp_C": str(round(self.boltwood.SkyTemperature,2)),
-                      "last_sky_update_s":  str(round(self.boltwood.TimeSinceLastUpdate('SkyTemperature'), 2)),
-                      "wind_m/s": str(abs(round(self.boltwood.WindSpeed, 2))),
-                      'rain_rate': str(self.boltwood.RainRate),
+                      "humidity_%": '50',#str(self.boltwood.Humidity),
+                      "dewpoint_C": '-3.3',#str(self.boltwood.DewPoint),
+                      "sky_temp_C": '-36',#str(round(self.boltwood.SkyTemperature,2)),
+                      "last_sky_update_s":  "5",#str(round(self.boltwood.TimeSinceLastUpdate('SkyTemperature'), 2)),
+                      "wind_m/s": '3',#str(abs(round(self.boltwood.WindSpeed, 2))),
+                      'rain_rate': '0',#str(self.boltwood.RainRate),
                       'solar_flux_w/m^2': 'NA',
                       #  'cloud_cover_%': str(self.boltwood.CloudCover),
                       "calc_HSI_lux": str(illum),
@@ -102,7 +103,7 @@ class ObservingConditions:
             if  (obs_win_begin - quarter_hour < ephemNow < sunZ88Cl + quarter_hour) \
                  and self.unihedron.Connected and (time.time() >= self.sample_time + 30.):    #  Two samples a minute.
                 try:
-                    wl = open('D:/archive/wx_log.txt', 'a')   #  NB This is currently site specifc but in code w/o config.
+                    wl = open('D:/000ptr_saf/wx_log.txt', 'a')   #  NB This is currently site specifc but in code w/o config.
                     wl.write('wx, ' + str(time.time()) + ', ' + str(illum) + ', ' + str(mag - 20.01) + ', ' \
                              + str(self.unihedron.SkyQuality) + ", \n")
                     wl.close()

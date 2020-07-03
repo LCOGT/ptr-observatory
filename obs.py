@@ -13,7 +13,7 @@ THINGS TO FIX:
     20200316
 
     fully test flash calibration
-    genereate local masters
+    generate local masters
     create and send sources file created by sep
     verify operation with FLI16200 camera
 
@@ -33,15 +33,24 @@ import sys
 import argparse
 import json
 import importlib
+import numpy as np
+from pprint import pprint
 from api_calls import API_calls
+from skimage import data, io, filters
+from skimage.transform import resize
+from skimage import img_as_float
+from skimage import exposure
+from skimage.io import imsave
+import matplotlib.pyplot as plt
 
+from PIL import Image
 import ptr_events
 
 # import device classes
 from devices.camera import Camera
-from devices.enclosure import Enclosure
 from devices.filter_wheel import FilterWheel
 from devices.focuser import Focuser
+from devices.enclosure import Enclosure
 from devices.mount import Mount
 from devices.telescope import Telescope
 from devices.observing_conditions import ObservingConditions
@@ -49,6 +58,7 @@ from devices.rotator import Rotator
 from devices.switch import Switch    #Nothing implemented yet 20200511
 from devices.screen import Screen
 from devices.sequencer import Sequencer
+from processing.calibration import calibrate
 from global_yard import g_dev
 import bz2
 import httplib2
@@ -166,6 +176,13 @@ class Observatory:
         self.aws_queue_thread = threading.Thread(target=self.send_to_AWS, args=())
         self.aws_queue_thread.start()
 
+        # =============================================================================
+        # Here we set up the reduction Queue and Thread:
+        # =============================================================================
+        self.reduce_queue = queue.Queue(maxsize=50)
+        self.reduce_queue_thread = threading.Thread(target=self.reduce_image, args=())
+        self.reduce_queue_thread.start()
+
         # Build the site (from-AWS) Queue and start a thread.
         # self.site_queue = queue.SimpleQueue()
         # self.site_queue_thread = threading.Thread(target=self.get_from_AWS, args=())
@@ -272,13 +289,28 @@ class Observatory:
                     except Exception as e:
                         print(e)
                # print('scan_requests finished in:  ', round(time.time() - t1, 3), '  seconds')
+                ## Test Tim's code
+                # url = "https://projects.photonranch.org/dev/get-all-projects"
+                # all_projects = requests.post(url).json()
+                # if all_projects is not None:
+                #     print(all_projects)
+                # url = "https://calendar.photonranch.org/dev/siteevents"
+                # body = json.dumps({
+                #     'site':  'saf',
+                #     'start':  '2020-06-28T20:00:00Z',
+                #     'end':    '2020-06-29T14:00:00Z',
+                #     'full_project_details:':  False})
+                # breakpoint()
+                # events = requests.post(url, body).json()
+                # if events is not None:
+                #     pprint(events)
                 return   # Continue   #This creates an infinite loop
             else:
                 print('Sequencer Hold asserted.')    #What we really want here is looking for a Cancel/Stop.
                 continue
 
     def update_status(self):
-        ''' Collect status from all devics and send an update to aws.
+        ''' Collect status from all devices and send an update to aws.
         Each device class is responsible for implementing the method
         `get_status` which returns a dictionary.
         '''
@@ -401,9 +433,8 @@ class Observatory:
                     # compress first
                     to_bz2(im_path + name)
                     name = name + '.bz2'
-                aws_req = {"object_name": "raw_data/2019/" + name}
-                site_str = config.site_config['site']
-                aws_resp = g_dev['obs'].api.authenticated_request('POST', site_str +'/upload/', aws_req)
+                aws_req = {"object_name": name}
+                aws_resp = g_dev['obs'].api.authenticated_request('POST', '/upload/', aws_req)
                 with open(im_path + name, 'rb') as f:
                     files = {'file': (im_path + name, f)}
                     print('--> To AWS -->', str(im_path + name))
@@ -418,6 +449,236 @@ class Observatory:
             else:
                 time.sleep(0.2)
 
+    # Note this is another thread!
+    def reduce_image(self):
+        '''
+        The incoming object is typically a large fits HDU. Found in its
+        header will be both standard image parameters but destination filenames
+
+        '''
+        while True:
+            if not self.reduce_queue.empty():
+                # print(self)
+                # print(self.reduce_queue)
+                # print(self.reduce_queue.empty)
+                pri_image = self.reduce_queue.get(block=False)
+                #print(pri_image)
+                if pri_image is None:
+                    breakpoint
+                    time.sleep(.5)
+                    continue
+                # Here we parse the input and calibrate it.
+
+                paths = pri_image[0]
+                hdu = pri_image[1]
+                #print('Name:  ', paths, '   Hdu.data.shape:', hdu.data.shape)
+                print("\nREDUCTIONS Starting!")
+
+                # paths = {'raw_path':  raw_path,
+                #          'cal_path':  cal_path,
+                #          'red_path':  red_path,
+                #          'cal_name':  cal_name,
+                #          'raw_nam00': raw_name00,
+                #          'red_nam01': red_name01,
+                #          'i768sq_name00': i768sq_name,
+                #          'i768sq_name10': i768sq_name,
+                #          'jpeg_name10': jpeg_name,
+                #          'jpeg_name11': jpeg_name,
+                #          'text_name00': text_name,
+                #          'text_name10': text_name
+                #          }
+                #
+                # try:    #NB relocate this to Expose entry area.  Fill out except.
+                im_path_r = g_dev['cam'].camera_path
+                lng_path =  g_dev['cam'].lng_path
+                #     # os.makedirs(im_path_r + g_dev['day'] + '/to_AWS/', exist_ok=True)
+                #     # os.makedirs(im_path_r + g_dev['day'] + '/raw/', exist_ok=True)
+                #     # os.makedirs(im_path_r + g_dev['day'] + '/calib/', exist_ok=True)
+                #     # os.makedirs(im_path_r + g_dev['day'] + '/reduced/', exist_ok=True)
+                #     #print('Created:  ',im_path + g_dev['day'] + '\\to_AWS\\' )
+                #     im_path = im_path_r + g_dev['day'] + '/to_AWS/'
+                #     raw_path = im_path_r + g_dev['day'] + '/raw/'
+                #     cal_path = im_path_r + g_dev['day'] + '/calib/'
+                #     red_path = im_path_r + g_dev['day'] + '/reduced/'
+                # except:
+                #     print('Path creation in Reductions failed.', lng_path)
+               #NB Important decision here, do we flash calibrate screen and sky flats?  For now, Yes.
+
+                cal_result = calibrate(hdu, lng_path, paths['frame_type'], quick=False)
+                #print("Calibrate returned:  ", hdu.data, cal_result)
+                hdu.writeto(paths['red_path'] + paths['red_name01'], overwrite=True)
+                # print(hdu.data)
+                # print('WROTE TO: ', paths['red_path'] + paths['red_name01'])
+                # if g_dev['cam'].toss:
+                #     print('lng_path:  ', lng_path)
+                #     hdu =  fits.open(lng_path + 'test/M8-0019ha')
+                #     print(hdu.data)
+
+
+                '''
+                Here we need to consider just what local reductions and calibrations really make sense to
+                process in-line vs doing them in another process.  For all practical purposes everything
+                below can be done in a different process, the exception perhaps has to do with autofocus
+                processing.
+
+
+                '''
+                # Note we may be using different files if calibrate is null.
+                # NB  We should only write this if calibrate actually succeeded to return a result ??
+
+                #  if frame_type == 'sky flat':
+                #      hdu.header['SKYSENSE'] = int(g_dev['scr'].bright_setting)
+                #
+                # if not quick:
+                #     hdu1.writeto(im_path + raw_name01, overwrite=True)
+                # raw_data_size = hdu1[0].data.size
+
+
+
+                #  NB Should this step be part of calibrate?  Second should we form and send a
+                #  CSV file to AWS and possibly overlay key star detections?
+                #  Possibly even astro solve and align a series or dither batch?
+                no_AWS = False
+                quick = False
+                do_sep = False
+                spot = None
+                if do_sep:
+                    try:
+                        img = hdu.data.copy().astype('float')
+                        bkg = sep.Background(img)
+                        #bkg_rms = bkg.rms()
+                        img -= bkg
+                        sources = sep.extract(img_sub, 4.5, err=bkg.globalrms, minarea=9)#, filter_kernel=kern)
+                        sources.sort(order = 'cflux')
+                        print('No. of detections:  ', len(sources))
+                        sep_result = []
+                        spots = []
+                        for source in sources:
+                            a0 = source['a']
+                            b0 =  source['b']
+                            r0 = 2*round(math.sqrt(a0**2 + b0**2), 2)
+                            sep_result.append((round((source['x']), 2), round((source['y']), 2), round((source['cflux']), 2), \
+                                           round(r0), 3))
+                            spots.append(round((r0), 2))
+                        spot = np.array(spots)
+                        try:
+                            spot = np.median(spot[-9:-2])   #  This grabs seven spots.
+                            print(sep_result, '\n', 'Spot and flux:  ', spot, source['cflux'], len(sources), avg_foc[1], '\n')
+                            if len(sep_result) < 5:
+                                spot = None
+                        except:
+                            spot = None
+                    except:
+                        spot = None
+
+                raw_data_size = hdu.data.size
+                #g_dev['obs'].update_status()
+                #Here we need to process images which upon input, may not be square.  The way we will do that
+                #is find which dimension is largest.  We then pad the opposite dimension with 1/2 of the difference,
+                #and add vertical or horizontal lines filled with img(min)-2 but >=0.  The immediate last or first line
+                #of fill adjacent to the image is set to 80% of img(max) so any subsequent subframing selections by the
+                #user is informed. If the incoming image dimensions are odd, they will be decreased by one.  In essence
+                #we wre embedding a non-rectanglular image in a "square" and scaling it to 768^2.  We will impose a
+                #minimum subframe reporting of 32 x 32
+
+                in_shape = hdu.data.shape
+                in_shape = [in_shape[0], in_shape[1]]   #Have to convert to a list, cannot manipulate a tuple,
+                if in_shape[0]%2 == 1:
+                    in_shape[0] -= 1
+                if in_shape[0] < 32:
+                    in_shape[0] = 32
+                if in_shape[1]%2 == 1:
+                    in_shape[1] -= 1
+                if in_shape[1] < 32:
+                    in_shape[1] = 32
+                #Ok, we have an even array and a minimum 32x32 array.
+
+                # =============================================================================
+                # x = 2      From Numpy: a way to quickly embed an array in a larger one
+                # y = 3
+                # wall[x:x+block.shape[0], y:y+block.shape[1]] = block
+                # =============================================================================
+
+                if in_shape[0] < in_shape[1]:
+                    diff = int(abs(in_shape[1] - in_shape[0])/2)
+                    in_max = int(hdu.data.max()*0.8)
+                    in_min = int(hdu.data.min() - 2)
+                    if in_min < 0:
+                        in_min = 0
+                    new_img = np. zeros((in_shape[1], in_shape[1]))    #new square array
+                    new_img[0:diff - 1, :] = in_min
+                    new_img[diff-1, :] = in_max
+                    new_img[diff:(diff + in_shape[0]), :] = hdu.data
+                    new_img[(diff + in_shape[0]), :] = in_max
+                    new_img[(diff + in_shape[0] + 1):(2*diff + in_shape[0]), :] = in_min
+                    hdu.data = new_img
+                elif in_shape[0] > in_shape[1]:
+                    #Same scheme as above, but expands second axis.
+                    diff = int((in_shape[0] - in_shape[1])/2)
+                    in_max = int(hdu.data.max()*0.8)
+                    in_min = int(hdu.data.min() - 2)
+                    if in_min < 0:
+                        in_min = 0
+                    new_img = np. zeros((in_shape[0], in_shape[0]))    #new square array
+                    new_img[:, 0:diff - 1] = in_min
+                    new_img[:, diff-1] = in_max
+                    new_img[:, diff:(diff + in_shape[1])] = hdu.data
+                    new_img[:, (diff + in_shape[1])] = in_max
+                    new_img[:, (diff + in_shape[1] + 1):(2*diff + in_shape[1])] = in_min
+                    hdu.data = new_img
+                else:
+                    #nothing to do, the array is already square
+                    pass
+
+
+                if quick:
+                    pass
+                hdu.data = hdu.data.astype('uint16')
+                resized_a = resize(hdu.data, (768, 768), preserve_range=True)
+                #print(resized_a.shape, resized_a.astype('uint16'))
+                hdu.data = resized_a.astype('uint16')
+
+                i768sq_data_size = hdu.data.size
+                # print('ABOUT to print paths.')
+                # print('Sending to:  ', paths['im_path'])
+                # print('Also to:     ', paths['i768sq_name10'])
+
+                hdu.writeto(paths['im_path'] + paths['i768sq_name10'], overwrite=True)
+                hdu.data = resized_a.astype('float')
+                #The following does a very lame contrast scaling.  A beer for best improvement on this code!!!
+                istd = np.std(hdu.data)
+                imean = np.mean(hdu.data)
+                img3 = hdu.data/(imean + 3*istd)
+                fix = np.where(img3 >= 0.999)
+                fiz = np.where(img3 < 0)
+                img3[fix] = .999
+                img3[fiz] = 0
+                #img3[:, 384] = 0.995
+                #img3[384, :] = 0.995
+                print(istd, img3.max(), img3.mean(), img3.min())
+                imsave(paths['im_path'] + paths['jpeg_name10'], img3)  #NB File extension triggers JPEG conversion.
+                jpeg_data_size = img3.size - 1024
+                if not no_AWS:  #IN the no+AWS case should we skip more of the above processing?
+                    #g_dev['cam'].enqueue_for_AWS(text_data_size, paths['im_path'], paths['text_name'])
+                    g_dev['cam'].enqueue_for_AWS(jpeg_data_size, paths['im_path'], paths['jpeg_name10'])
+                    if not quick:
+                        g_dev['cam'].enqueue_for_AWS(i768sq_data_size, paths['im_path'], paths['i768sq_name10'])
+                        g_dev['cam'].enqueue_for_AWS(raw_data_size, paths['raw_path'], paths['raw_name00'])
+                    print('Sent to AWS Queue.')
+                time.sleep(0.5)
+                self.img = None   #Clean up all big objects.
+                try:
+                    hdu = None
+                except:
+                    pass
+                try:
+                    hdu1 = None
+                except:
+                    pass
+                print("\nREDUCTIONS COMPLETED!")
+                self.reduce_queue.task_done()
+            else:
+                time.sleep(.5)
 
 if __name__ == "__main__":
 
