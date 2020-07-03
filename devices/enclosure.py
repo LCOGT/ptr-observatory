@@ -157,6 +157,18 @@ class Enclosure:
             shutter_str = "Dome."
         else:
             shutter_str = "Roof."
+
+        if  obs_win_begin <= ephemNow <= sunZ88Cl:
+            self.enclosure.Slaved = True
+            # nb tHIS SHOULD WORK DIFFERENT. Open then slew to Opposite az to Sun set.  Stay
+            # there until telescope is unparked, then  slave the dome.  Or maybe leave it at
+            # park, where Neyle can see it from house and always ready to respong to a Wx close.
+        else:
+            try:
+                self.enclosure.Slaved = False
+            except:
+                pass    #Megawan (roofs) do not slave
+
         wx_is_ok = g_dev['ocn'].wx_is_ok
 
         #  Check the Wx and go into the Wx hold sequence.   The third hold Closes and
