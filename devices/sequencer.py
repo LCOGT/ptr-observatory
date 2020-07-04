@@ -433,14 +433,11 @@ class Sequencer:
 
         """
         self.guard = True
-        print('Eve Sky Flat sequence Starting, Telescope will un-park.')
-        name = str(self.config['camera']['camera1']['name'])
-        dark_count = 1
+        print('Eve Sky Flat sequence Starting, Enclosure PRESUMED Open. Telescope will un-park.')
+        camera_name = str(self.config['camera']['camera1']['name'])
         flat_count = 1
         exp_time = 3
-        #int(req['numFrames'])
-        #gain_calc = req['gainCalc']
-        #shut_comp =  req['shutterCompensation']
+        #  NB Sometime, try 2:2 binning and interpolate a 1:1 flat.  This might run a lot faster.
         if flat_count < 1: flat_count = 1
         g_dev['mnt'].unpark_command({}, {})
         g_dev['enc'].Slaved = True  #Bring the dome into the picture.
@@ -449,60 +446,34 @@ class Sequencer:
         g_dev['obs'].update_status()
         #  We should probe to be sure dome is open, otherwise this is a test when closed and
         #  we can speed it up
-        #Here we need to switch off any IR or dome lighting.
-        #Take a 10 s dark screen air flat to sense ambient
-        req = {'time': 10,  'alias': name, 'image_type': 'screen flat'}
-        opt = {'size': 100, 'count': dark_count, 'filter': g_dev['fil'].filter_data[0][0]}
-        #g_dev['cam'].expose_command(req, opt, gather_status = False, no_AWS=True)
-        g_dev['mnt'].slewToSkyFlatAsync()
+        #Here we may need to switch off any
+        #  Pick up list of filters is sky flat order of lowest to highest transparency.
         pop_list = self.config['filter_wheel']['filter_wheel1']['settings']['filter_sky_sort']
-        while len(pop_list) > 0:
+        obs_win_begin, sunset, sunrise, ephemNow = self.astro_events.getSunEvents()
+        while len(pop_list) > 0 and (ephemNow < g_dev['events']['End Eve Sky Flats']
+                                  or True):
             current_filter = int(pop_list[0])
-            g_dev['fil'].set_number_command(current_filter)
-            g_dev['mnt'].slewToSkyFlatAsync()
-            req = {'time': float(exp_time),  'alias': name, 'image_type': 'sky flat'}
-            opt = {'size': 100, 'count': flat_count, 'filter': g_dev['fil'].filter_data[current_filter][0]}
-            result = g_dev['cam'].expose_command(req, opt, gather_status=True, no_AWS=True, do_sep = False)
-            bright = result['patch']
-            g_dev['obs'].update_status()
-            print("Bright:  ", bright)
-            if bright > 35000:    #NB should gate with end of skyflat window as well.
-                time.sleep(10)  #  (30)
-                g_dev['obs'].update_status()
-                time.sleep(10)
-                g_dev['obs'].update_status()
-                time.sleep(10)
-                g_dev['obs'].update_status()
+            acquired_count = 0
+            #g_dev['fil'].set_number_command(current_filter)
+            #g_dev['mnt'].slewToSkyFlatAsync()
+            bright = 65000
+            while acquired_count < flat_count:
+                g_dev['mnt'].slewToSkyFlatAsync()
+                req = {'time': float(exp_time),  'alias': camera_name, 'image_type': 'sky flat', 'script': 'On'}
+                opt = {'size': 100, 'count': 1, 'filter': g_dev['fil'].filter_data[current_filter][0]}
+                result = g_dev['cam'].expose_command(req, opt, gather_status=True, no_AWS=True, do_sep = False)
+                bright = result['patch']    #  Patch should be circular and 20% of Chip area. ToDo project
+                print("Bright:  ", bright)  #  Others are 'NE', 'NW', 'SE', 'SW'.
+                if bright > 35000 and (ephemNow < g_dev['events']['End Eve Sky Flats']
+                                  or True):    #NB should gate with end of skyflat window as well.
+                    for i in range(6):
+                        time.sleep(5)  #  #0 seconds of wait time.  Maybe shorten for wide bands?
+                else:
+                    acquired_count += 1
+                    if acquired_count == flat_count:
+                        pop_list.pop(0)
                 continue
-            g_dev['mnt'].slewToSkyFlatAsync()
-            g_dev['obs'].update_status()
-            req = {'time': float(exp_time),  'alias': name, 'image_type': 'sky flat'}
-            opt = {'size': 100, 'count': flat_count , 'filter': g_dev['fil'].filter_data[current_filter][0]}
-            result = g_dev['cam'].expose_command(req, opt, gather_status=True, no_AWS=True, do_sep = False)
-            bright2 = result['patch']
-            time.sleep(2)
-            if bright2 > 37500:
-                time.sleep(5)
-                g_dev['obs'].update_status()
-                continue
-            g_dev['mnt'].slewToSkyFlatAsync()
-            g_dev['obs'].update_status()
-            req = {'time': float(exp_time),  'alias': name, 'image_type': 'sky flat'}
-            opt = {'size': 100, 'count': flat_count , 'filter': g_dev['fil'].filter_data[current_filter][0]}
-            result = g_dev['cam'].expose_command(req, opt, gather_status=True, no_AWS=True, do_sep = False)
-            bright2 = result['patch']
-            time.sleep(2)
-            if bright2 > 37500:
-                time.sleep(5)
-                g_dev['obs'].update_status()
-                continue
-            print("Bright2 filter pop:  ", current_filter, bright, bright2)
-            pop_list.pop(0)
-            g_dev['obs'].update_status()
-            if len(pop_list) < 1:
-                break
-            continue
-        g_dev['mnt'].park_command({}, {})  #  NB this is provisional
+        g_dev['mnt'].park_command({}, {})  #  NB this is provisional, Ok when simulating
         print('\nSky flat complete.\n')
         self.guard = False
 
@@ -515,7 +486,7 @@ class Sequencer:
 
         #  NB here we need to check cam at reasonable temp, or dwell until it is.
 
-        alias = str(self.config['camera']['camera1']['name'])
+        camera_name = str(self.config['camera']['camera1']['name'])
         dark_count = 3
         exp_time = 5
         if flat_count < 1: flat_count = 1
@@ -527,7 +498,7 @@ class Sequencer:
         #Here we need to switch off any IR or dome lighting.
         #Take a 10 s dark screen air flat to record ambient
         # Park Telescope
-        req = {'time': 10,  'alias': alias, 'image_type': 'screen flat'}
+        req = {'time': 10,  'alias': camera_name, 'image_type': 'screen flat'}
         opt = {'size': 100, 'count': dark_count, 'filter': g_dev['fil'].filter_data[12][0]}  #  air has highest throughput
         # Skip for now;  bright, fwhm = g_dev['cam'].expose_command(req, opt, gather_status=True, no_AWS=True)
         # g_dev['scr'].screen_light_on()
@@ -542,7 +513,7 @@ class Sequencer:
             g_dev['obs'].update_status()
 
             print('Dark Screen; filter, bright:  ', filter_number, 0.0)
-            req = {'time': float(exp_time),  'alias': alias, 'image_type': 'screen flat'}
+            req = {'time': float(exp_time),  'alias': camera_name, 'image_type': 'screen flat'}
             opt = {'size': 100, 'count': 2, 'filter': g_dev['fil'].filter_data[filter_number][0]}
             result = g_dev['cam'].expose_command(req, opt, gather_status=True, no_AWS=True)
             bright = result['patch']
@@ -557,7 +528,7 @@ class Sequencer:
             g_dev['obs'].update_status()
             time.sleep(10)
             g_dev['obs'].update_status()
-            req = {'time': float(exp_time)/10.,  'alias': alias, 'image_type': 'screen flat'}
+            req = {'time': float(exp_time)/10.,  'alias': camera_name, 'image_type': 'screen flat'}
             opt = {'size': 100, 'count': 2, 'filter': g_dev['fil'].filter_data[filter_number][0]}
             result = g_dev['cam'].expose_command(req, opt, gather_status=True, no_AWS=True)
             bright = result['patch']
@@ -568,7 +539,7 @@ class Sequencer:
             g_dev['scr'].screen_dark()
             time.sleep(10)
             print('Dark Screen; filter, bright:  ', filter_number, 0.0)
-            req = {'time': float(exp_time),  'alias': alias, 'image_type': 'screen flat'}
+            req = {'time': float(exp_time),  'alias': camera_name, 'image_type': 'screen flat'}
             opt = {'size': 100, 'count': 2, 'filter': g_dev['fil'].filter_data[filter_number][0]}
             result = g_dev['cam'].expose_command(req, opt, gather_status=True, no_AWS=True)
             bright = result['patch']# if no exposure, wait 10 sec

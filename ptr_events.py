@@ -406,19 +406,24 @@ class Events:
         ptr.horizon = '2'
         sun.compute(ptr)
         #if loud: print('Sun 2: ', sun.ra, sun.dec, sun.az, sun.alt)
-        sunZ88Op = sunset #  ptr.next_setting(sun)
+        #sunZ88Op = sunset #  ptr.next_setting(sun)
         obs_win_begin = sunset - 60/1440      # Needs to come from site config  NB 1 hour
-        sunZ88Cl = sunrise # ptr.next_rising(sun)
+        #sunZ88Cl = sunrise # ptr.next_rising(sun)
+        ptr.horizon = '-3'
+        sun.compute(ptr)
+        #if loud: print('Sun -6: ', sun.ra, sun.dec, sun.az, sun.alt)
+        eve_skyFlatBegin = ptr.next_setting(sun)
+        morn_skyFlatEnd = ptr.next_rising(sun)
         ptr.horizon = '-6'
         sun.compute(ptr)
         #if loud: print('Sun -6: ', sun.ra, sun.dec, sun.az, sun.alt)
         civilDusk = ptr.next_setting(sun)
         civilDawn = ptr.next_rising(sun)
-        ptr.horizon = '-10'
+        ptr.horizon = '-11.75'
         sun.compute(ptr)
         #if loud: print('Sun -14.9: ', sun.ra, sun.dec, sun.az, sun.alt)
-        skyFlatEnd = ptr.next_setting(sun)
-        skyFlatBegin = ptr.next_rising(sun)
+        eve_skyFlatEnd = ptr.next_setting(sun)
+        morn_skyFlatBegin = ptr.next_rising(sun)
         ptr.horizon = '-12'
         sun.compute(ptr)
         #if loud: print('Sun -12: ', sun.ra, sun.dec, sun.az, sun.alt)
@@ -442,9 +447,9 @@ class Events:
         mid_moon_dec = moon.dec
         mid_moon_phase = moon.phase
         eveFlatStartRa, eveFlatStartDec, eveFlatEndRa, eveFlatEndDec, \
-        eveRaDot, eveDecDot = self._calcEveFlatValues(ptr, sun, obs_win_begin, skyFlatEnd, loud=True)
+        eveRaDot, eveDecDot = self._calcEveFlatValues(ptr, sun, obs_win_begin, eve_skyFlatEnd, loud=True)
         mornFlatStartRa, mornFlatStartDec, mornFlatEndRa, mornFlatEndDec, mornRaDot, \
-                        mornDecDot = self._calcMornFlatValues(ptr, sun, skyFlatBegin, sunZ88Cl, \
+                        mornDecDot = self._calcMornFlatValues(ptr, sun, morn_skyFlatBegin, sunrise, \
                                                         sunrise, loud=True)
         endEveScreenFlats = obs_win_begin - LONGESTSCREEN
         beginEveScreenFlats = endEveScreenFlats - SCREENFLATDURATION
@@ -456,7 +461,7 @@ class Events:
         # morning screen flats begin, followed by bias dark and then
         # morning reductions.  So the times below are the latest case.
 
-        beginMornScreenFlats = sunZ88Cl + 4/1440    #  4 min allowed for close up.
+        beginMornScreenFlats = sunrise + 4/1440    #  4 min allowed for close up.
         endMornScreenFlats = beginMornScreenFlats + SCREENFLATDURATION
         beginMornBiasDark = endMornScreenFlats + LONGESTSCREEN
         endMornBiasDark = beginMornBiasDark + MORNBIASDARKDURATION
@@ -494,16 +499,17 @@ class Events:
                 ('End Eve Scrn Flats', ephem.Date(endEveScreenFlats)),
                 ('Obs Window Start', ephem.Date(obs_win_begin)),
                 ('Sun Set', sunset),
-                ('Eve Sky Flats', ephem.Date((sunset + civilDusk)/2)),
+                ('Eve Sky Flats', ephem.Date(eve_skyFlatBegin)),
                 ('Civil Dusk', civilDusk),
+                ('End Eve Sky Flats', eve_skyFlatEnd),
                 ('Naut Dusk', nauticalDusk),
-                ('End Eve Sky Flats', skyFlatEnd),
                 ('Astro Dark', astroDark),
                 ('Middle of Night', middleNight),
                 ('End Astro Dark', astroEnd),
-                ('Morn Sky Flats', skyFlatBegin),
                 ('Naut Dawn', nauticalDawn),
+                ('Morn Sky Flats', morn_skyFlatBegin),
                 ('Civil Dawn', civilDawn),
+                ('endMorn Sky Flats', morn_skyFlatEnd),
                 ('Sun Rise', sunrise),
                 ('Moon Rise', ptr.previous_rising(moon)),
                 ('Moon Transit', ptr.previous_transit(moon)),

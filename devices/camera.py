@@ -388,7 +388,7 @@ class Camera:
     '''
 
     def expose_command(self, required_params, optional_params,  \
-                       gather_status = True, do_sep=False, no_AWS=False, quick=False, halt=False):
+                       gather_status = True, do_sep=True, no_AWS=False, quick=False):
         '''
         This is Phase 1:  Setup the camera.
         Apply settings and start an exposure.
@@ -464,17 +464,20 @@ class Camera:
             frame_type = 'bias'
             no_AWS = False
             do_sep = False
+            self.do_sep = False
             # Consider forcing filter to dark if such a filter exists.
         elif imtype.lower() == 'dark':
             imtypeb = False
             frame_type = 'dark'
             no_AWS = False
             do_sep = False
+            self.do_sep = False
             # Consider forcing filter to dark if such a filter exists.
         elif imtype.lower() == 'screen flat':
             frame_type = 'screen flat'
         elif imtype.lower() == 'sky flat':
             frame_type = 'flat'
+            self.do_sep = False
         elif imtype.lower() == 'quick':
             quick = True
             no_AWS = False   # Send only an informational JPEG??
@@ -630,7 +633,7 @@ class Camera:
             self.previous_area = self.area
             self.bpt_flag = False
         #  NB Important: None of above code talks to the camera!
-        result = (-1, -1)  #  This is a default return just in case
+        result = {}  #  This is a default return just in case
         for seq in range(count):
             #  SEQ is the outer repeat loop and takes count images; those individual exposures are wrapped in a
             #  retry-3-times framework with an additional timeout included in it.
@@ -647,7 +650,7 @@ class Camera:
                 #case where a timeout is a smart idea.
                 #Wait for external motion to cease before exposing.  Note this precludes satellite tracking.
                 while g_dev['foc'].focuser.IsMoving or g_dev['rot'].rotator.IsMoving or \
-                      g_dev['mnt'].mount.Slewing or g_dev['enc'].enclosure.Slewing:
+                      g_dev['mnt'].mount.Slewing or g_dev['enc'].enclosure.Slewing:   #Filter is moving??
                     print(">>")
                     time.sleep(0.2)
                     if seq > 0:
@@ -728,7 +731,7 @@ class Camera:
                     do_sep=False
                     #We go here to keep this subroutine a reasonable length, Basically still in Phase 2
                     result = self.finish_exposure(exposure_time,  frame_type, count - seq, \
-                                         gather_status, do_sep, no_AWS, dist_x, dist_y, quick=quick, halt=halt, low=ldr_handle_time, \
+                                         gather_status, do_sep, no_AWS, dist_x, dist_y, quick=quick, low=ldr_handle_time, \
                                          high=ldr_handle_high_time, script=self.script, opt=opt)  #  NB all these parameers are crazy!
                     self.exposure_busy = False
                     self.t10 = time.time()
@@ -769,7 +772,7 @@ class Camera:
     ##  NB the number of  keywords is questionable.
 
     def finish_exposure(self, exposure_time, frame_type, counter, \
-                        gather_status=True, do_sep=False, no_AWS=False, start_x=None, start_y=None, quick=False, halt=False, \
+                        gather_status=True, do_sep=False, no_AWS=False, start_x=None, start_y=None, quick=False, \
                         low=0, high=0, script='False', opt=None):
         #print("Finish exposure Entered:  ", self.af_step, exposure_time, frame_type, counter, ' to go!')
         print("Finish exposure Entered:  ", exposure_time, frame_type, counter,  \
@@ -820,15 +823,15 @@ class Camera:
                     smin = np.where(square < 0)    #finds negative pixels
                     square[smin] = 0               #marks them as 0
                     self.img = square.astype('uint16')
+                    test_saturated = np.array(self.img)[1536:4608, 1536:4608]
+                    #test_saturated += 50000   #Only a test.
+                    bi_mean = (test_saturated.mean() + np.median(test_saturated))/2
 
-                    # if frame_type[-4:] == 'flat':
-                    #     test_saturated = np.array(self.img)
-                    #     if (test_saturated.mean() + np.median(test_saturated))/2 > 50000:   # NB Should we sample a patch?
-                    #         # NB How do we be sure Maxim does not hang?
-                    #         print("Flat rejected, too bright:  ", round(test_saturated.mean, 0))
-                    #         self._stop_expose()
-                    #         return 65535, 0   # signals to flat routine image was rejected
-                    # else:
+                    if frame_type[-4:] == 'flat' and bi_mean > 33000:
+                        print("Flat rejected, too bright:  ", round(bi_mean, 0))
+                        result = {}
+                        result['patch'] = bi_mean
+                        return result   # signals to flat routine image was rejected
 
                     g_dev['obs'].update_status()
 
@@ -877,6 +880,7 @@ class Camera:
                         hdu.header['PEDASTAL'] = -pedastal
                         hdu.header['ERRORVAL'] = 0
                         hdu.header['OVERSCAN'] = overscan
+                        hdu.header['PATCH'] = bi_mean    #  A crude value for the central exposure
                         hdu.header['CCDSUM'] = self.ccd_sum
                         hdu.header['XORGSUBF'] = self.camera_start_x    #This makes little sense to fix...  NB ALL NEEDS TO COME FROM CONFIG!!
                         hdu.header['YORGSUBF'] = self.camera_start_y
@@ -1027,7 +1031,6 @@ class Camera:
                         text.write(str(hdu.header))
                         text.close()
                         text_data_size = min(len(str(hdu.header)) - 4096, 2048)
-                        self.enqueue_for_AWS(text_data_size, im_path, text_name)
                         paths = {'im_path':  im_path,
                                  'raw_path':  raw_path,
                                  'cal_path':  cal_path,
@@ -1048,6 +1051,7 @@ class Camera:
                         #NB  IT may be easiest for autofocus to do the sep run here:  Hot pix then AF.
 
                         if not quick and not script in ('True', 'true', 'On', 'on'):
+                            self.enqueue_for_AWS(text_data_size, im_path, text_name)
                             self.to_reduce((paths, hdu))
                             hdu.writeto(raw_path + raw_name00, overwrite=True)
                         if script in ('True', 'true', 'On', 'on'):
@@ -1056,7 +1060,7 @@ class Camera:
                                 os.remove(self.camera_path + 'newest.fits')
                             except:
                                 pass    #  print ("File newest.fits not found, this is probably OK")
-                            return {'patch': 0.0}   #  Note we are not calibrating. Just saving the file.
+                            return {'patch': bi_mean}   #  Note we are not calibrating. Just saving the file.
                             # NB^ We always write files to raw, except quick(autofocus) frames.
                             # hdu.close()
                         # raw_data_size = hdu.data.size
@@ -1068,7 +1072,7 @@ class Camera:
                         result['mean_rotation'] = avg_rot[1]
                         result['FWHM'] = None
                         result['half_FD'] = None
-                        result['patch'] = None
+                        result['patch'] = bi_mean
                         result['temperature'] = avg_foc[2]
                         return result
 
