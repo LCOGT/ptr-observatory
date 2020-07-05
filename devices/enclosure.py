@@ -165,6 +165,7 @@ class Enclosure:
             # park, where Neyle can see it from house and always ready to respong to a Wx close.
         else:
             try:
+                breakpoint()
                 self.enclosure.Slaved = False
             except:
                 pass    #Megawan (roofs) do not slave
@@ -176,7 +177,6 @@ class Enclosure:
 
         #  NB NB what do we want to do if Wx goes bad outside of the window?
         if (not wx_is_ok or self.wx_test) and self.status_string.lower() in ['open', 'opening']:
-            breakpoint()
             self.enclosure.Slaved = False
             self.enclosure.CloseShutter()
             self.dome_opened = False
@@ -205,7 +205,7 @@ class Enclosure:
                     except:
                         pass
                     self.dome_homed = False
-                    self.enclosure.Slaved = False
+                    #self.enclosure.Slaved = False
 
 
             if  (obs_win_begin < ephemNow < sunrise or open_cmd) \
@@ -213,7 +213,6 @@ class Enclosure:
                     and wx_is_ok \
                     and self.wait_time <= 0 \
                     and self.enclosure.ShutterStatus == 1: #Closed
-                breakpoint()
                 if open_cmd:
                     self.state = 'User Opened the ' + shutter_str
                 else:

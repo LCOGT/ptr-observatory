@@ -247,7 +247,7 @@ class Sequencer:
     def bias_dark_script(self, req=None, opt=None):
         """
 
-        20200618   THis has been drastically simplied for now to deal with QHY600M.
+        20200618   THis has been drastically simplied for now to deal with only QHY600M.
 
         This script may be auto-triggered as the bias_dark window opens, or
         by a qualified user.

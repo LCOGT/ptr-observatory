@@ -301,9 +301,7 @@ class Events:
         ptr.horizon = '2'
         sun.compute(ptr)
         #if loud: print('Sun 2: ', sun.ra, sun.dec, sun.az, sun.alt)
-        sunZ88Op = ptr.next_setting(sun)
         obs_win_begin = sunset - 60/1440
-        sunZ88Cl = sunrise
         return (obs_win_begin, sunset, sunrise, ephem.now())
 
     def flat_spot_now(self):
@@ -406,10 +404,9 @@ class Events:
         ptr.horizon = '2'
         sun.compute(ptr)
         #if loud: print('Sun 2: ', sun.ra, sun.dec, sun.az, sun.alt)
-        #sunZ88Op = sunset #  ptr.next_setting(sun)
+
         obs_win_begin = sunset - 60/1440      # Needs to come from site config  NB 1 hour
-        #sunZ88Cl = sunrise # ptr.next_rising(sun)
-        ptr.horizon = '-3'
+        ptr.horizon = '-1.5'
         sun.compute(ptr)
         #if loud: print('Sun -6: ', sun.ra, sun.dec, sun.az, sun.alt)
         eve_skyFlatBegin = ptr.next_setting(sun)
@@ -518,8 +515,6 @@ class Events:
                 ('Moon Transit', ptr.next_transit(moon)),
                 ('Moon Rise', ptr.next_setting(moon))]
 
-                        #('Eve Sun <2 deg', sunZ88Op),
-                        #('Morn Sun >2 deg', sunZ88Cl),
 
         print("No report of post-close events is available yet. \n\n")
         evnt_sort = self._sortTuple(evnt)
