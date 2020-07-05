@@ -34,6 +34,7 @@ import argparse
 import json
 import importlib
 import numpy as np
+
 from pprint import pprint
 from api_calls import API_calls
 from skimage import data, io, filters
@@ -156,21 +157,18 @@ class Observatory:
             'filter_wheel'
             ]
 
-        # Send the config to aws   # NB NB NB This has faulted.
-        self.update_config()
-
         # Instantiate the helper class for astronomical events
-
         self.astro_events = ptr_events.Events(self.config)
         self.astro_events.compute_day_directory()
         self.astro_events.display_events()
+        # Send the config to aws   # NB NB NB This has faulted.
+        self.update_config()
         # Use the configuration to instantiate objects for all devices.
         self.create_devices(config)
         self.loud_status = False
         g_dev['obs'] = self
         self.g_dev = g_dev
         self.time_last_status = time.time() - 3
-
         # Build the to-AWS Queue and start a thread.
         self.aws_queue = queue.PriorityQueue()
         self.aws_queue_thread = threading.Thread(target=self.send_to_AWS, args=())
@@ -236,6 +234,7 @@ class Observatory:
         Send the config to aws.
         '''
         uri = f"{self.name}/config/"
+        self.config['events'] = g_dev['events']
         response = self.api.authenticated_request("PUT", uri, self.config)
         if response:
             print("Config uploaded successfully.")

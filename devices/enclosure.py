@@ -165,7 +165,6 @@ class Enclosure:
             # park, where Neyle can see it from house and always ready to respong to a Wx close.
         else:
             try:
-                breakpoint()
                 self.enclosure.Slaved = False
             except:
                 pass    #Megawan (roofs) do not slave

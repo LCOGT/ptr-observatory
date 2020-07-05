@@ -19,7 +19,7 @@ from math import degrees
 # print('ObsImports:  ', config, '\n\'', config.site_config['site'])
 from global_yard import *
 from astropy.time import Time
-
+from pprint import pprint
 
 # NB Change these to hours not fractions of a day.  Should come from site config not be in code here.
 SCREENFLATDURATION = 90/1440            #1.5 hours
@@ -489,45 +489,57 @@ class Events:
         print('Night Duration :    ', str(round(duration, 2)) + ' hr')
         print('Moon Ra; Dec   :    ', round(mid_moon_ra, 2), ";  ", round(mid_moon_dec, 1))
         print('Moon phase %   :    ', round(mid_moon_phase, 1), '%\n')
-        print("Key events for the evening, presented by the Solar System.")
-        evnt = [('Eve Bias Dark', ephem.Date(beginEveBiasDark)),
-                ('End Eve Bias Dark', ephem.Date(endEveBiasDark)),
-                ('Eve Scrn Flats', ephem.Date(beginEveScreenFlats)),
-                ('End Eve Scrn Flats', ephem.Date(endEveScreenFlats)),
-                ('Obs Window Start', ephem.Date(obs_win_begin)),
-                ('Sun Set', sunset),
-                ('Eve Sky Flats', ephem.Date(eve_skyFlatBegin)),
-                ('Civil Dusk', civilDusk),
-                ('End Eve Sky Flats', eve_skyFlatEnd),
-                ('Naut Dusk', nauticalDusk),
-                ('Astro Dark', astroDark),
-                ('Middle of Night', middleNight),
-                ('End Astro Dark', astroEnd),
-                ('Naut Dawn', nauticalDawn),
-                ('Morn Sky Flats', morn_skyFlatBegin),
-                ('Civil Dawn', civilDawn),
-                ('endMorn Sky Flats', morn_skyFlatEnd),
-                ('Sun Rise', sunrise),
-                ('Moon Rise', ptr.previous_rising(moon)),
-                ('Moon Transit', ptr.previous_transit(moon)),
-                ('Moon Set', ptr.previous_setting(moon)),
-                ('Moon Rise', ptr.next_rising(moon)),
-                ('Moon Transit', ptr.next_transit(moon)),
-                ('Moon Rise', ptr.next_setting(moon))]
+        print("Key events for the evening, presented by the Solar System: \n")
+        evnt = [('Eve Bias Dark      ', ephem.Date(beginEveBiasDark)),
+                ('End Eve Bias Dark  ', ephem.Date(endEveBiasDark)),
+                ('Eve Scrn Flats     ', ephem.Date(beginEveScreenFlats)),
+                ('End Eve Scrn Flats ', ephem.Date(endEveScreenFlats)),
+                ('Obs Window Start   ', ephem.Date(obs_win_begin)),
+                ('Cool Down, Open    ', ephem.Date(obs_win_begin + 0.5/1440)),
+                ('Sun Set            ', sunset),
+                ('Eve Sky Flats      ', ephem.Date(eve_skyFlatBegin)),
+                ('Civil Dusk         ', civilDusk),
+                ('End Eve Sky Flats  ', eve_skyFlatEnd),
+                ('Clock & Auto Focus ', ephem.Date(eve_skyFlatEnd + 1/1440.)),
+                ('Naut Dusk          ', nauticalDusk),
+                ('Observing Begins   ', ephem.Date(nauticalDusk + 5/1440.)),
+                ('Astro Dark         ', astroDark),
+                ('Middle of Night    ', middleNight),
+                ('End Astro Dark     ', astroEnd),
+                ('Observing Ends     ', ephem.Date(nauticalDawn - 5/1440.)),
+                ('Final Clock & AF   ', ephem.Date(nauticalDawn - 4/1440.)),
+                ('Naut Dawn          ', nauticalDawn),
+                ('Morn Sky Flats     ', morn_skyFlatBegin),
+                ('Civil Dawn         ', civilDawn),
+                ('End Morn Sky Flats ', morn_skyFlatEnd),
+                ('Dome Closes        ', ephem.Date(morn_skyFlatEnd + 0.5/1440)),
+                ('Sun Rise           ', sunrise),
+                ('Moon Rise          ', ptr.previous_rising(moon)),
+                ('Moon Transit       ', ptr.previous_transit(moon)),
+                ('Moon Set           ', ptr.previous_setting(moon)),
+                ('Moon Rise          ', ptr.next_rising(moon)),
+                ('Moon Transit       ', ptr.next_transit(moon)),
+                ('Moon Set           ', ptr.next_setting(moon))]
 
 
-        print("No report of post-close events is available yet. \n\n")
+        #print("No report of post-close events is available yet. \n\n")
         evnt_sort = self._sortTuple(evnt)
+        day_dir = self.compute_day_directory()
         #Edit out rise and sets prior to or after operations.
-        while evnt_sort[0][0] != 'Eve Bias Dark':
+        while evnt_sort[0][0] != 'Eve Bias Dark      ':
             evnt_sort.pop(0)
         # while evnt_sort[-1][0] != 'Morn Sun >2 deg':  # Ditto, see above.
         #     evnt_sort.pop(-1)
+        while evnt_sort[-1][0] in ['Moon Rise          ', 'Moon Transit       ']:
+            evnt_sort.pop(-1)
+        evnt_sort
         for evnt in evnt_sort:
-            print(evnt[0], evnt[1])    # NB Additon of local times would be handy here.
+            print(evnt[0], 'UTC: ', evnt[1], "  MDT: ", ephem.Date(evnt[1] -1 + 18/24.))    # NB Additon of local times would be handy here.
         event_dict = {}
         for item in evnt_sort:
-            event_dict[item[0]]= item[1]
+            event_dict[item[0].strip()]= item[1]
+        event_dict['use_by'] = ephem.Date(sunrise + 4/24.)
+        event_dict['day_directory'] = str(day_dir)
         g_dev['events'] = event_dict
 
         # print("g_dev['events']:  ", g_dev['events'])

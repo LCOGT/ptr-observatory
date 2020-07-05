@@ -1078,7 +1078,6 @@ class Camera:
 
                     except Exception as e:
                         print('Header assembly block failed: ', e)
-                        breakpoint()
                         # try:
                         #     self._stop_expose()
                         # except:

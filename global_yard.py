@@ -18,6 +18,7 @@ g_dev = {
         'fil': None,
         'cam': None,
         'day': None,
+        'events': None
         }
 
-#NBNB This whole idea breaks down if we have multiple devices or any given type.
+#NBNB This whole idea breaks down if we have multiple devices of any given type.
