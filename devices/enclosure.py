@@ -177,7 +177,7 @@ class Enclosure:
         #  NB NB what do we want to do if Wx goes bad outside of the window?
         if (not wx_is_ok or self.wx_test) and self.status_string.lower() in ['open', 'opening']:
             self.enclosure.Slaved = False
-            self.enclosure.CloseShutter()
+            self.enclosure.CloseShutter()  # NB Problem here if shutter already active.
             self.dome_opened = False
             self.dome_homed = True
             if self.wx_test:
