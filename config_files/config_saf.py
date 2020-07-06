@@ -6,6 +6,7 @@ Updated 202003115 18:18 WER
 @author: wrosing
 '''
 import json
+from pprint import pprint
 
 #NB NB NB json is not bi-directional with tuples (), use lists [], nested if tuples as needed, instead.
 
@@ -27,7 +28,7 @@ site_config = {
         },
     'name': 'Apache Ridge Observatory',
     'location': 'Santa Fe, New Mexico,  USA',
-    'site_path':  'D:/archive/',    #Path to where all Photon Ranch data and state are to be found
+    'site_path':  'D:/000ptr_saf/',    #Path to where all Photon Ranch data and state are to be found
     'observatory_url': 'https://starz-r-us.sky/clearskies2',   #This is meant to be optional
     'description':  '''
                     Now is the time for all good persons
@@ -117,7 +118,7 @@ site_config = {
             'name': 'Main OTA',
             'desc':  'Ceravolo 300mm F4.9',
             'driver': 'none',                     #Essentially this device is informational.  It is mostly about the optics.
-            'collecting_area':  '31809',
+            'collecting_area':  '49303',
             'obscuration':  '55%',
             'aperture': '300',
             'focal_length': '1470',
@@ -175,11 +176,11 @@ site_config = {
             'desc':  'Optec Gemini',
             'driver': 'ASCOM.OptecGemini.Focuser',
 			'com_port':  'None',
-            'reference':  '8050',    #Nominal at 20C Primary temperature
+            'reference':  '10065',    #Nominal at 20C Primary temperature
             'ref_temp':   '15',    #Update when pinning reference
             'coef_c': '0',   #negative means focus moves out as Primary gets colder
-            'coef_0': '8050',  #Nominal intercept when Primary is at 0.0 C.
-            'coef_date':  '20200505',    #Per Neyle   SWAG
+            'coef_0': '10065',  #Nominal intercept when Primary is at 0.0 C. Looks wrong!
+            'coef_date':  '20200615',    #Per Neyle   SWAG
             'minimum': '0',     #NB this area is confusing steps and microns, and need fixing.
             'maximum': '12700',
             'step_size': '1',       #This is probably 0.09090909090909...
@@ -202,23 +203,23 @@ site_config = {
                 'filter_count': '13',    # dark filer not implemented yet.
                 'filter_reference': '0',   #We choose to use W as the default filter.
                 'filter_data': [['filter', 'filter_index', 'filter_offset', 'sky_gain', 'screen_gain', 'abbreviation'],
-                        ['W',    '(0,  0)',     '0', ' 0.01', ['2.15', ' 17'], 'w '],   # 0 Mul Screen@100% by saturate*exp
-                        ['B',    '(1,  0)',     '0', ' 63.6', ['23  ', ' 17'], 'B '],   # 1
-                        ['V',    '(2,  0)',     '0', ' 0.01', ['7.74', ' 17'], 'V '],   # 2
-                        ['R',    '(3,  0)',     '0', ' 0.01', ['6.3 ', ' 17'], 'R '],   # 3
-                        ["g'",   '(4,  0)',     '0', '114.0', ['8.4 ', ' 17'], "g'"],   # 4
-                        ["r'",   '(5,  0)',     '0', '00.01', ['7   ', ' 17'], "r'"],   # 5
-                        ["i'",   '(6,  0)',     '0', '00.01', ['5.75', ' 17'], "i'"],   # 6
-                        ['O3',   '(7,  0)',     '0', '09.75', ['300' , '170'], 'O3'],   # 7
-                        ['HA',   '(8,  0)',     '0', '09.42', ['300' , '170'], 'HA'],   # 8
-                        ['S2',   '(9,  0)',     '0', '09.80', ['300' , '170'], 'S2'],   # 9
-                        ['N2',   '(10, 0)',     '0', '09.34', ['300' , '170'], "N2"],   # 10
-                        ['EXO',  '(11, 0)',     '0', ' 0.01', ['1.68', ' 17'], 'ex'],   # 11
-                        ['air',  '(12, 0)', '-1000', ' 0.01', ['1.4 ', ' 17'], 'ai'],   # 12
-                        ['dark', '(13, 0)',     '0', ' 0.01', ['15  ', ' 17'], 'dk']],  # 13  20200315 This needs to be set up as a \
+                        ['w',    '(0,  0)',     '0', ' 0.01', ['6   ', ' 20'], 'w '],   # 0 Mul Screen@100% by saturate*exp
+                        ['B',    '(1,  0)',     '0', ' 63.6', ['35  ', ' 20'], 'B '],   # 1
+                        ['V',    '(2,  0)',     '0', ' 0.01', ['15  ', ' 20'], 'V '],   # 2
+                        ['R',    '(3,  0)',     '0', ' 0.01', ['20  ', ' 20'], 'R '],   # 3
+                        ["gp",   '(4,  0)',     '0', '114.0', ['13  ', ' 20'], "gp"],   # 4
+                        ["rp",   '(5,  0)',     '0', '00.01', ['20  ', ' 20'], "rp"],   # 5
+                        ["ip",   '(6,  0)',     '0', '00.01', ['33  ', ' 20'], "ip"],   # 6
+                        ['O3',   '(7,  0)',     '0', '09.75', ['360' , '170'], 'O3'],   # 7 430  use 2x215?
+                        ['HA',   '(8,  0)',     '0', '09.42', ['360' , '170'], 'HA'],   # 8 4500
+                        ['S2',   '(9,  0)',     '0', '09.80', ['360' , '170'], 'S2'],   # 9 6300
+                        ['N2',   '(10, 0)',     '0', '09.34', ['360' , '170'], "N2"],   # 10 4700
+                        ['EXO',  '(11, 0)',     '0', ' 0.01', ['6.5 ', ' 20'], 'ex'],   # 11
+                        ['air',  '(12, 0)', '-1000', ' 0.01', ['4.5 ', ' 20'], 'ai'],   # 12
+                        ['dark', '(13, 0)',     '0', ' 0.01', ['15  ', ' 20'], 'dk']],  # 13  20200315 This needs to be set up as a \
                         #  'dark' filter =   cascade of say N2 and B or O3 and i.
                         #Screen = 100; QHY400 ~ 92% DQE   HDR Mode    Screen = 160 sat  20190825 measured.
-                'filter_screen_sort':  ['12', '0', '11', '2', '3', '5', '6', '4', '1'],   # don't use narrow yet, '7', '8', '10', '9'],
+                'filter_screen_sort':  ['12', '0', '11', '2', '3', '5', '6', '4', '1'],   # don't use narrow yet,  '8', '10', '9'], useless to try.
                 'filter_sky_sort':  ['9', '10', '8', '7', '1', '4', '6', '5', '3', '2', '11', '0', '12']  #Least to most throughput
             },
         },
@@ -228,39 +229,48 @@ site_config = {
     'camera': {
         'camera1': {
             'parent': 'telescope1',
-            'name': 'kb01',      #Important because this points to a server file structure by that name.
-            'desc':  'SBIG Kodak 6303',
-            'driver':  "Maxim.CCDCamera",   #'ASCOM.FLI.Kepler.Camera',  #"Maxim.CCDCamera"
-            'detector':  'Kodak 6303',
-            'manufacturer':  'SBIG/Diffraction Limited',
+            'name': 'sq01',      #Important because this points to a server file structure by that name.
+            'desc':  'QHY 600Pro',
+            'driver':  "ASCOM.QHYCCD.Camera",   #"Maxim.CCDCamera",   #'ASCOM.FLI.Kepler.Camera',
+            'detector':  'Sony IMX455',
+            'manufacturer':  'QHY',
             'settings': {
-                'temp_setpoint': '-10',
+                'temp_setpoint': '-7.5',
+                'calib_setpoints': ['-10', '-7.5', '-5', '-7.5' ],  #  Picked by day-of-year mod len(list)
+                'day_warm': 'False',
                 'cooler_on': 'True',
                 'x_start':  '0',
                 'y_start':  '0',
-                'x_width':  '3100',   #NB Should be set up with overscan, which this camera is!  20200315 WER
-                'y_width':  '2056',
-                'x_chip':  '3072',   #NB Should specify the active pixel area.   20200315 WER
-                'y_chip':  '2048',
-                'x_pixel':  '9.0',
-                'y_pixel':  '9.0',
-                'overscan_x': '28',
-                'overscan_y': '8',
-                'north_offset': '0.0',
+                'x_width':  '9600',   #NB Should be set up with overscan, which this camera is!  20200315 WER
+                'y_width':  '6422',
+                'x_chip':  '9576',   #NB Should specify the active pixel area.   20200315 WER
+                'y_chip':  '6388',
+                'x_trim_offset':  '8',   #  NB these four entries are guesses.
+                'y_trim_offset':  '8',
+                'x_bias_start':  '9577',
+                'y_bias_start' : '6389',
+                'x_pixel':  '3.76',
+                'y_pixel':  '3.76',
+                'overscan_x': '24',
+                'overscan_y': '34',
+                'north_offset': '0.0',    #  These three are normally 0.0 for the primary telescope
                 'east_offset': '0.0',
                 'rotation': '0.0',
-                'min_exposure': '0.100',
+                'min_exposure': '0.001',
                 'max_exposure': '600.0',
                 'can_subframe':  'true',
-                'min_subframe':  '16:16',
-                'is_cmos':  'false',
-                'reference_gain': ['1.49', '2.71' ],     #One val for each binning.
-                'reference_noise': ['4' ],
-                'reference_dark': ['0.2', '0.0' ],    #Guesses?
+                'min_subframe':  '128,128',
+                'bin_modes':  [['1, 1'], ['2, 2']],     #Meaning no binning if list has only one entry\
+                'default_bin':  '1,1',    #Always square and matched to seeing situation by owner
+                'readout_time':  ['4', '4'],
+                'rbi_delay':  '0',      # This being zero says RBI is not available, eg. for SBIG.
+                'is_cmos':  'True',
+                'can_set_gain':  'True',
+                'reference_gain': ['28', '28'],     #One val for each binning.
+                'reference_noise': ['2', '2'],    #  NB Guess
+                'reference_dark': ['0.2', '0.0'],    #Guesses?
                 'saturate':  '55000',
-                'area': ['100%', '2X-jpg', '71%', '50%', '1X-jpg', '33%', '25%', '1/2 jpg'],  #NB Area does not include overscan.
-                'bin_modes':  [['1', '1'], ['2', '2'], ['3', '3'], ['4', '4']],     #Meaning no binning if list has only one entry\
-                'default_bin':  '2',    #Always square and matched to seeing situation by owner
+                'area': ['100%', '2X-jpg', '71%', '50%', '1X-jpg', '33%', '25%', '1/2 jpg', 'chip'],  #NB Area does not include overscan.
                 'has_darkslide':  'false',
                  #darkslide':  ['Auto', 'Open', 'Close'],
                 'has_screen': 'true',
