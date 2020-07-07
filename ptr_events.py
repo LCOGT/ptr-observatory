@@ -533,14 +533,17 @@ class Events:
         while evnt_sort[-1][0] in ['Moon Rise          ', 'Moon Transit       ']:
             evnt_sort.pop(-1)
         evnt_sort
+        timezone = "  " + self.config['timezone'] + ": "
+        offset = self.config['time_offset']
         for evnt in evnt_sort:
-            print(evnt[0], 'UTC: ', evnt[1], "  MDT: ", ephem.Date(evnt[1] -1 + 18/24.))    # NB Additon of local times would be handy here.
+            print(evnt[0], 'UTC: ', evnt[1], timezone, ephem.Date(evnt[1] + float(offset)/24.))    # NB Additon of local times would be handy here.
         event_dict = {}
         for item in evnt_sort:
             event_dict[item[0].strip()]= item[1]
         event_dict['use_by'] = ephem.Date(sunrise + 4/24.)
         event_dict['day_directory'] = str(day_dir)
         g_dev['events'] = event_dict
+
 
         # print("g_dev['events']:  ", g_dev['events'])
 

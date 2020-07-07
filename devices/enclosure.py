@@ -9,6 +9,7 @@ class Enclosure:
         self.name = name
         self.astro_events = astro_events
         self.site = config['site']
+        self.config = config
         g_dev['enc'] = self
         win32com.client.pythoncom.CoInitialize()
         self.enclosure = win32com.client.Dispatch(driver)
@@ -16,6 +17,12 @@ class Enclosure:
         self.enclosure.Connected = True
         print(f"enclosure connected.")
         print(self.enclosure.Description)
+        breakpoint()
+        self.is_dome = self.config['enclosure']['enclosure1']['is_dome']
+        if self.is_dome in ['false', 'False', False]:
+            self.is_dome = False
+        else:
+            self.is_dome = True
         self.state = 'Closed.  Initialized class property value.'
         self.mode = 'Manual'   #  Auto|User Control|User Close|Disable
         self.enclosure_message = '-'
@@ -158,16 +165,18 @@ class Enclosure:
         else:
             shutter_str = "Roof."
 
-        if  obs_win_begin <= ephemNow <= sunrise:
-            self.enclosure.Slaved = True
+        if  (obs_win_begin <= ephemNow <= sunrise):  #NB obs_win_begin is abstruse
+            if self.is_dome:
+                self.enclosure.Slaved = True
             # nb tHIS SHOULD WORK DIFFERENT. Open then slew to Opposite az to Sun set.  Stay
             # there until telescope is unparked, then  slave the dome.  Or maybe leave it at
             # park, where Neyle can see it from house and always ready to respong to a Wx close.
         else:
-            try:
-                self.enclosure.Slaved = False
-            except:
-                pass    #Megawan (roofs) do not slave
+            if self.is_dome:
+                try:
+                    self.enclosure.Slaved = False   #NB This logic os convoluted.
+                except:
+                    pass    #Megawan (roofs) do not slave
 
         wx_is_ok = g_dev['ocn'].wx_is_ok
 
@@ -176,8 +185,9 @@ class Enclosure:
 
         #  NB NB what do we want to do if Wx goes bad outside of the window?
         if (not wx_is_ok or self.wx_test) and self.status_string.lower() in ['open', 'opening']:
-            self.enclosure.Slaved = False
-            self.enclosure.CloseShutter()  # NB Problem here if shutter already active.
+            if self.is_dome:
+                self.enclosure.Slaved = False
+                self.enclosure.CloseShutter()  # NB Problem here if shutter already active.
             self.dome_opened = False
             self.dome_homed = True
             if self.wx_test:
@@ -199,11 +209,14 @@ class Enclosure:
                     self.dome_opened = True
                     self.dome_homed = True
                 if self.status_string.lower() in ['open']:
-                    try:
-                        self.enclosure.SlewToAzimuth(az)
-                    except:
-                        pass
-                    self.dome_homed = False
+                    if self.is_dome:
+                        try:
+                            self.enclosure.SlewToAzimuth(az)
+                        except:
+                            pass
+                        self.dome_homed = False
+                    else:
+                        self.dome_homed = False  
                     #self.enclosure.Slaved = False
 
 
@@ -220,7 +233,8 @@ class Enclosure:
                 #A countdown to re-open
                 if self.status_string.lower() in ['closed', 'closing']:
                     self.enclosure.OpenShutter()   #<<<<NB NB NB Only enable when code is fully proven to work.
-                    self.enclosure.Slaved = True
+                    if self.isDome:
+                        self.enclosure.Slaved = True
                     print("Night time Open issued to the "  + shutter_str, +   '   Following Mounting.')
             elif (obs_win_begin >= ephemNow or ephemNow >= sunrise \
                     and self.mode ==
@@ -231,7 +245,8 @@ class Enclosure:
                     self.state = 'Daytime normally Closed the ' + shutter_str
                 if self.status_string.lower() in ['open', 'opening']:
                     try:
-                        self.enclosure.Slaved = False
+                        if self.is_dome:      #NB a decorator could eliminate this overused if-statement.
+                            self.enclosure.Slaved = False
                         self.enclosure.CloseShutter()
                         print("Daytime Close issued to the " + shutter_str  + "   No longer follwing Mount.")
                     except:
@@ -243,7 +258,8 @@ class Enclosure:
             #  NB this happens regardless of automatic mode.
 
             if not self.dome_homed:
-                self.enclosure.Slaved = False
+                if self.is_dome:
+                    self.enclosure.Slaved = False
                 self.enclosure.CloseShutter()
                 self.dome_opened = False
                 self.dome_homed = True

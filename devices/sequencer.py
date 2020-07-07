@@ -440,7 +440,8 @@ class Sequencer:
         #  NB Sometime, try 2:2 binning and interpolate a 1:1 flat.  This might run a lot faster.
         if flat_count < 1: flat_count = 1
         g_dev['mnt'].unpark_command({}, {})
-        g_dev['enc'].Slaved = True  #Bring the dome into the picture.
+        if g_dev['enc'].is_dome:
+            g_dev['enc'].Slaved = True  #Bring the dome into the picture.
         g_dev['obs'].update_status()
         g_dev['scr'].screen_dark()
         g_dev['obs'].update_status()
@@ -458,7 +459,8 @@ class Sequencer:
             #g_dev['mnt'].slewToSkyFlatAsync()
             bright = 65000
             while acquired_count < flat_count:
-                g_dev['mnt'].slewToSkyFlatAsync()
+                if g_dev['enc'].is_dome:
+                    g_dev['mnt'].slewToSkyFlatAsync()
                 req = {'time': float(exp_time),  'alias': camera_name, 'image_type': 'sky flat', 'script': 'On'}
                 opt = {'size': 100, 'count': 1, 'filter': g_dev['fil'].filter_data[current_filter][0]}
                 result = g_dev['cam'].expose_command(req, opt, gather_status=True, no_AWS=True, do_sep = False)

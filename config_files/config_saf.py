@@ -37,7 +37,8 @@ site_config = {
                     ''',    #i.e, a multi-line text block supplied by the owner.
 
     'mpc_code':  'ZZ24',    #This is made up for now.
-    'timezone': 'MST',       #We might be smart to require some Python DateTime String Constant here
+    'time_offset':  '-6.0',
+    'timezone': 'MDT',       #We might be smart to require some Python DateTime String Constant here
                              #since this is a serious place where misconfigurations occur.  We run on
                              #UTC and all translations to local time are 'informational.'  PTR will
                              #Not accept observatories whose master clocks run on local time, or where
@@ -216,7 +217,7 @@ site_config = {
                         ['N2',   '(10, 0)',     '0', '09.34', ['360' , '170'], "N2"],   # 10 4700
                         ['EXO',  '(11, 0)',     '0', ' 0.01', ['6.5 ', ' 20'], 'ex'],   # 11
                         ['air',  '(12, 0)', '-1000', ' 0.01', ['4.5 ', ' 20'], 'ai'],   # 12
-                        ['dark', '(13, 0)',     '0', ' 0.01', ['15  ', ' 20'], 'dk']],  # 13  20200315 This needs to be set up as a \
+                        ['dark', '(13, 0)',     '0', ' 0.01', ['15  ', ' 20'], 'dk']]  # 13  20200315 This needs to be set up as a \
                         #  'dark' filter =   cascade of say N2 and B or O3 and i.
                         #Screen = 100; QHY400 ~ 92% DQE   HDR Mode    Screen = 160 sat  20190825 measured.
                 'filter_screen_sort':  ['12', '0', '11', '2', '3', '5', '6', '4', '1'],   # don't use narrow yet,  '8', '10', '9'], useless to try.
