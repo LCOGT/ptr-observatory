@@ -183,6 +183,7 @@ class Enclosure:
         #  turns off Autmatic for owner re-enable.
 
         #  NB NB what do we want to do if Wx goes bad outside of the window?
+
         if (not wx_is_ok or self.wx_test) and self.status_string.lower() in ['open', 'opening']:
             if self.is_dome:
                 self.enclosure.Slaved = False
@@ -215,7 +216,7 @@ class Enclosure:
                             pass
                         self.dome_homed = False
                     else:
-                        self.dome_homed = False  
+                        self.dome_homed = False
                     #self.enclosure.Slaved = False
 
 
@@ -236,8 +237,7 @@ class Enclosure:
                         self.enclosure.Slaved = True
                     print("Night time Open issued to the "  + shutter_str, +   '   Following Mounting.')
             elif (obs_win_begin >= ephemNow or ephemNow >= sunrise \
-                    and self.mode ==
-                    'Automatic') or close_cmd:
+                    and self.mode == 'Automatic') or close_cmd:
                 if close_cmd:
                     self.state = 'User Closed the '  + shutter_str
                 else:
