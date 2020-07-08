@@ -17,7 +17,6 @@ class Enclosure:
         self.enclosure.Connected = True
         print(f"enclosure connected.")
         print(self.enclosure.Description)
-        breakpoint()
         self.is_dome = self.config['enclosure']['enclosure1']['is_dome']
         if self.is_dome in ['false', 'False', False]:
             self.is_dome = False
@@ -164,19 +163,19 @@ class Enclosure:
             shutter_str = "Dome."
         else:
             shutter_str = "Roof."
-
-        if  (obs_win_begin <= ephemNow <= sunrise):  #NB obs_win_begin is abstruse
-            if self.is_dome:
-                self.enclosure.Slaved = True
-            # nb tHIS SHOULD WORK DIFFERENT. Open then slew to Opposite az to Sun set.  Stay
-            # there until telescope is unparked, then  slave the dome.  Or maybe leave it at
-            # park, where Neyle can see it from house and always ready to respong to a Wx close.
-        else:
-            if self.is_dome:
-                try:
-                    self.enclosure.Slaved = False   #NB This logic os convoluted.
-                except:
-                    pass    #Megawan (roofs) do not slave
+        # NB THis code causes oscillation.
+        # if  (obs_win_begin <= ephemNow <= sunrise):  #NB obs_win_begin is abstruse
+        #     if self.is_dome:
+        #         self.enclosure.Slaved = False
+        #     # nb tHIS SHOULD WORK DIFFERENT. Open then slew to Opposite az to Sun set.  Stay
+        #     # there until telescope is unparked, then  slave the dome.  Or maybe leave it at
+        #     # park, where Neyle can see it from house and always ready to respong to a Wx close.
+        # else:
+        #     if self.is_dome:
+        #         try:
+        #             self.enclosure.Slaved = False   #NB This logic os convoluted.
+        #         except:
+        #             pass    #Megawan (roofs) do not slave
 
         wx_is_ok = g_dev['ocn'].wx_is_ok
 
@@ -188,7 +187,7 @@ class Enclosure:
         if (not wx_is_ok or self.wx_test) and self.status_string.lower() in ['open', 'opening']:
             if self.is_dome:
                 self.enclosure.Slaved = False
-                self.enclosure.CloseShutter()  # NB Problem here if shutter already active.
+#                self.enclosure.CloseShutter()  # NB Problem here if shutter already active.
             self.dome_opened = False
             self.dome_homed = True
             if self.wx_test:
@@ -205,6 +204,7 @@ class Enclosure:
             if  obs_win_begin <= ephemNow <= sunset and self.mode == 'Automatic':
                 print('\nSlew to opposite the azimuth of the Sun, open and cool-down. Az =  ', az)
                 #NB There is no corresponding warm up phase in the Morning.
+
                 if self.status_string.lower() in ['closed', 'closing']:
                     self.enclosure.OpenShutter()
                     self.dome_opened = True
@@ -260,7 +260,7 @@ class Enclosure:
             if not self.dome_homed:
                 if self.is_dome:
                     self.enclosure.Slaved = False
-                self.enclosure.CloseShutter()
+                #self.enclosure.CloseShutter()
                 self.dome_opened = False
                 self.dome_homed = True
                 print("One time close of enclosure issued, normally after a code restart.")

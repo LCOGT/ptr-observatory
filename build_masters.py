@@ -703,10 +703,10 @@ if __name__ == '__main__':
     camera_name = 'sq01'  #  config.site_config['camera']['camera1']['name']
     #archive_path = "D:/000ptr_saf/archive/sq01/2020-06-13/"
     #archive_path = "D:/2020-06-19  Ha and O3 screen flats/"
-    archive_path = "D:/20200702  Veil Neb and other HB images to be determined/"
-    out_path = "D:/20200702  Veil Neb and other HB images to be determined/trimmed/"
+    archive_path = "D:/20200707 Bubble Neb NGC7635  Ha O3 S2/"
+    out_path = "D:/20200707 Bubble Neb NGC7635  Ha O3 S2/trimmed/"
     lng_path = "D:/000ptr_saf/archive/sq01/lng/"
-    # debias_and_trim(camera_name, archive_path, '*HA*', out_path)
+    #debias_and_trim(camera_name, archive_path, '*7635*', out_path)
     # make_master_bias(camera_name, out_path, lng_path, '*f_3*', 'mb_1b.fits')
     # make_master_bias(camera_name, out_path, lng_path, '*b_2*', 'mb_2b.fits')
     # #make_master_bias(camera_name, archive_path, lng_path, '*b_3*', 'mb_3.fits')
@@ -721,11 +721,12 @@ if __name__ == '__main__':
     # build_hot_map(camera_name, lng_path, "md_1_1080.fits", "hm_1")
     # build_hot_image(camera_name, lng_path, "md_1_1080.fits", "hm_1.fits")
     archive_path = out_path
-    out_path = "D:/20200702  Veil Neb and other HB images to be determined/reduced/"
-    # correct_image(camera_name, archive_path, '*HA*', lng_path, out_path)
+    out_path = "D:/20200707 Bubble Neb NGC7635  Ha O3 S2/reduced/"
+    correct_image(camera_name, archive_path, '*7635*', lng_path, out_path)
     archive_path = out_path
-    out_path = "D:/20200702  Veil Neb and other HB images to be determined/catalogs/"
-    sep_image(camera_name, archive_path, '*HA*', lng_path, out_path)
+    out_path =":D:/20200707 Bubble Neb NGC7635  Ha O3 S2/catalogs/"
+    # sep_image(camera_name, archive_path, '*HA*', lng_path, out_path)
+    # calc_filter_gains(camera_name, archive_path, '**', lng_path, out_path)
     print('Fini')
     # NB Here we would logcially go on to get screen flats.
 
