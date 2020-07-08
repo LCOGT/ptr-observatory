@@ -398,6 +398,7 @@ class Camera:
         '''
         print('Expose Entered.  req:  ', required_params, 'opt:  ', optional_params)
         opt = optional_params
+        breakpoint()
         self.t_0 = time.time()
         self.hint = optional_params.get('hint', '')
         self.script = required_params.get('script', 'None')
@@ -508,8 +509,8 @@ class Camera:
             self.cameraBinx = self.bin_x
             self.bin_y = min(bin_y, self.camera_max_y_bin)
             self.cameraBinY = self.bin_y
-        self.len_x = 3100 # self.camera.CameraXSize//self.bin_x
-        self.len_y = 2058 # self.camera.CameraYSize//self.bin_y    #Unit is binned pixels.
+        self.len_x = 9600 # self.camera.CameraXSize//self.bin_x
+        self.len_y = 6422 # self.camera.CameraYSize//self.bin_y    #Unit is binned pixels.
         self.len_xs = 0  # THIS IS A HACK, indicating no overscan.
         # print(self.len_x, self.len_y)
 
