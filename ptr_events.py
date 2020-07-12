@@ -8,7 +8,7 @@ This is a temporary script file.
 #Computer clock is UTC, Windows Time Zone is UTC, no Daylight slaving.
 '''
 This is also very old code just grafted on. Needs variable renaming, and a good scrub.
-THIS IS A TEST
+
 '''
 
 from math import *
@@ -280,7 +280,8 @@ class Events:
     def getSunEvents(self):
         '''
         This is used in the enclosure module to determine if is a good time
-        of day to open.
+        of day to open.  THIS CODE IS EVIL, it duplicates another computation and can be a source
+        of divergent values.
         '''
         sun = ephem.Sun()
         #sun.compute(dayNow)
@@ -301,7 +302,7 @@ class Events:
         ptr.horizon = '2'
         sun.compute(ptr)
         #if loud: print('Sun 2: ', sun.ra, sun.dec, sun.az, sun.alt)
-        obs_win_begin = sunset - 60/1440
+        obs_win_begin = sunset - 240/1440
         return (obs_win_begin, sunset, sunrise, ephem.now())
 
     def flat_spot_now(self):
@@ -405,7 +406,7 @@ class Events:
         sun.compute(ptr)
         #if loud: print('Sun 2: ', sun.ra, sun.dec, sun.az, sun.alt)
 
-        obs_win_begin = sunset - 60/1440      # Needs to come from site config  NB 1 hour
+        obs_win_begin = sunset - 240/1440      # Needs to come from site config  NB 1 hour
         ptr.horizon = '-1.5'
         sun.compute(ptr)
         #if loud: print('Sun -6: ', sun.ra, sun.dec, sun.az, sun.alt)
@@ -480,6 +481,8 @@ class Events:
         #     pass
         # finally:
         #     pass
+
+        #  NB NB Should add sit time to this report.
         print('Events module reporting for duty. \n')
         print('Ephem date     :    ', dayNow)
         print("Julian Day     :    ")
@@ -494,7 +497,7 @@ class Events:
                 ('End Eve Bias Dark  ', ephem.Date(endEveBiasDark)),
                 ('Eve Scrn Flats     ', ephem.Date(beginEveScreenFlats)),
                 ('End Eve Scrn Flats ', ephem.Date(endEveScreenFlats)),
-                ('Obs Window Start   ', ephem.Date(obs_win_begin)),
+                ('Obs Window Start   ', ephem.Date(obs_win_begin)),  #Enclosure may open.
                 ('Cool Down, Open    ', ephem.Date(obs_win_begin + 0.5/1440)),
                 ('Sun Set            ', sunset),
                 ('Eve Sky Flats      ', ephem.Date(eve_skyFlatBegin)),
@@ -512,7 +515,7 @@ class Events:
                 ('Morn Sky Flats     ', morn_skyFlatBegin),
                 ('Civil Dawn         ', civilDawn),
                 ('End Morn Sky Flats ', morn_skyFlatEnd),
-                ('Dome Closes        ', ephem.Date(morn_skyFlatEnd + 0.5/1440)),
+                ('Obs Window Closes  ', ephem.Date(morn_skyFlatEnd + 0.5/1440)),   #Enclosure must close
                 ('Sun Rise           ', sunrise),
                 ('Moon Rise          ', ptr.previous_rising(moon)),
                 ('Moon Transit       ', ptr.previous_transit(moon)),

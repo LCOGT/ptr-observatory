@@ -521,6 +521,43 @@ def debias_and_trim(camera_name, archive_path, selector_string, out_path):
         img.meta['HISTORY'] = "Maxim image debiased and trimmed."
         img.write(out_path + image.split('\\')[1], overwrite=True)
     print('Debias and trim Finished.')
+    
+def mod_debias_and_trim(camera_name, archive_path, selector_string, out_path):
+    #NB this needs to rename fit and fts files to fits
+    breakpoint()
+    file_list = glob.glob(archive_path + selector_string)
+ #   file_list.sort
+    print(file_list)
+    print('# of files:  ', len(file_list))
+    for image in file_list:
+        print('Processing:  ', image)
+        #breakpoint()
+        img = ccdproc.CCDData.read(image, unit='adu', format='fits')
+        # Overscan remove and trim
+        pedastal = 200
+        iy, ix = img.data.shape
+
+        if ix == 9600:
+            overscan = int(np.median(img.data[33:, -22:]))
+            trimed = img.data[36:,:-26].astype('int32') + pedastal - overscan
+            square = trimed[121:121+6144,1715:1715+6144]
+        elif ix == 4800 and False:
+            overscan = int(np.median(img.data[17:, -11:]))
+            trimed = img.data[18:,:-13].astype('int32') + pedastal - overscan
+            square = trimed[61:61+3072,857:857+3072]
+        elif ix == 4800:
+            pass
+            square = img.data
+            overscan = 0#THere is nothing to do
+            
+        else:
+            print("Incorrect chip size or bin specified.")
+        img.meta['PRE-RA'] = float(image[-21:-15])
+        img.meta['PRE-DEC'] = float(image[-10:-4])
+
+        img.meta['HISTORY'] = "Maxim image pre-ra, dec updated."
+        img.write(out_path + image.split('\\')[1], overwrite=True)
+    print('Debias and trim Finished.')
 
 def build_hot_map(camera_name, lng_path, in_image, out_name):
     img = ccdproc.CCDData.read(lng_path + in_image, format='fits')
@@ -553,59 +590,61 @@ def correct_image(camera_name, archive_path, selector_string, lng_path, out_path
     file_list.sort
     print(file_list)
     print('# of files:  ', len(file_list))
+    breakpoint()
     #Get the master images:
     sbHdu = fits.open(lng_path + 'mb_1.fits')
     super_bias = sbHdu[0].data.astype('float32')
     sdHdu = fits.open(lng_path + 'md_1_360.fits')
     super_dark = sdHdu[0].data.astype('float32')
-    srHdu = fits.open(lng_path + 'mf_rp.fits')
-    super_rp = srHdu[0].data.astype('float32')
-    sgHdu = fits.open(lng_path + 'mf_gp.fits')
-    super_gp = sgHdu[0].data.astype('float32')
-    siHdu = fits.open(lng_path + 'mf_ip.fits')
-    super_ip = siHdu[0].data.astype('float32')
-    sHHdu = fits.open(lng_path + 'mf_HA.fits')
-    super_HA = sHHdu[0].data.astype('float32')
-    sOHdu = fits.open(lng_path + 'mf_O3.fits')
-    super_O3 = sOHdu[0].data.astype('float32')
-    sSHdu = fits.open(lng_path + 'mf_S2.fits')
-    super_S2 = sOHdu[0].data.astype('float32')
-    sNHdu = fits.open(lng_path + 'mf_N2.fits')
-    super_N2 = sOHdu[0].data.astype('float32')
-    swHdu = fits.open(lng_path + 'mf_w.fits')
-    super_w = sOHdu[0].data.astype('float32')
+    # srHdu = fits.open(lng_path + 'mf_rp.fits')
+    # super_rp = srHdu[0].data.astype('float32')
+    # sgHdu = fits.open(lng_path + 'mf_gp.fits')
+    # super_gp = sgHdu[0].data.astype('float32')
+    # siHdu = fits.open(lng_path + 'mf_ip.fits')
+    # super_ip = siHdu[0].data.astype('float32')
+    # sHHdu = fits.open(lng_path + 'mf_HA.fits')
+    # super_HA = sHHdu[0].data.astype('float32')
+    # sOHdu = fits.open(lng_path + 'mf_O3.fits')
+    # super_O3 = sOHdu[0].data.astype('float32')
+    # sSHdu = fits.open(lng_path + 'mf_S2.fits')
+    # super_S2 = sOHdu[0].data.astype('float32')
+    # sNHdu = fits.open(lng_path + 'mf_N2.fits')
+    # super_N2 = sOHdu[0].data.astype('float32')
+    # swHdu = fits.open(lng_path + 'mf_w.fits')
+    # super_w = sOHdu[0].data.astype('float32')
     shHdu = fits.open(lng_path + 'hm_1.fits')
     hot_map = shHdu[0].data
     hot_pix = np.where(hot_map > 1)
     for image in file_list:
 
         img = fits.open(image)
+        breakpoint()
         img[0].data = img[0].data.astype('float32')
         img[0].data = img[0].data - super_bias
         img_dur = img[0].header['EXPOSURE']
         ratio = img_dur/360.
         img[0].data -= super_dark*ratio
-        if image[-6] == 'g':
-            img[0].data /= super_gp
-        elif image[-6] == 'r' :
-            img[0].data /= super_rp
-        elif image[-6] == 'i' :
-            img[0].data /= super_ip
-        elif image[-6] in ['H','h'] :
-            img[0].data /= super_HA
-        elif image[-6] == 'O' :
-            img[0].data /= super_O3
-        elif image[-6] == 'S' :
-          img[0].data /= super_S2
-        elif image[-6] == 'N' :
-          img[0].data /= super_N2
-        elif image[-11] == 'w' :
-          img[0].data /= super_w
-        else:
-            print("Incorrect filter suffix, no flat applied.")
+        # if image[-6] == 'g':
+        #     img[0].data /= super_gp
+        # elif image[-6] == 'r' :
+        #     img[0].data /= super_rp
+        # elif image[-6] == 'i' :
+        #     img[0].data /= super_ip
+        # elif image[-6] in ['H','h'] :
+        #     img[0].data /= super_HA
+        # elif image[-6] == 'O' :
+        #     img[0].data /= super_O3
+        # elif image[-6] == 'S' :
+        #   img[0].data /= super_S2
+        # elif image[-6] == 'N' :
+        #   img[0].data /= super_N2
+        # elif image[-11] == 'w' :
+        #   img[0].data /= super_w
+        # else:
+        #     print("Incorrect filter suffix, no flat applied.")
 
         median8(img[0].data, hot_pix)
-        img[0].header['CALIBRAT'] = 'B D SCF H'
+        img[0].header['CALIBRAT'] = 'B D  H'  #SCF SKF
         file_name_split = image.split('\\')
         print('Writing:  ', file_name_split[1])
         img.writeto(out_path + file_name_split[1], overwrite=True)
@@ -692,7 +731,75 @@ def sep_image(camera_name, archive_path, selector_string, lng_path, out_path):
             spot = None
 
 
-
+def prepare_tpoint(camera_name, archive_path, selector_string, lng_path, out_path):
+    file_list = glob.glob(archive_path + selector_string)
+    file_list.sort
+    print(file_list)
+    print('# of files:  ', len(file_list))
+    out_f = open(out_path + "tpoint_input.dat", 'w')
+    out_f.write('0.3m Ceravolo, AP1600, Apache Ridge Observatory\n')
+    out_f.write(':NODA\n')
+    out_f.write(':EQUAT\n')
+    out_f.write('30 33 16\n') #35.554444
+    for image in file_list:
+        img = fits.open(image)
+        try:
+            if img[0].header['PLTSOLVD'] == True:
+                pre_ra = img[0].header['PRE-RA']
+                pre_dec = img[0].header['PRE-DEC']
+                meas_ha = img[0].header['OBJCTHA']  #Unit is hours
+                meas_ra = img[0].header['OBJCTRA']
+                meas_dec = img[0].header['OBJCTDEC']
+                pier = img[0].header['PIERSIDE']
+                m_ra = meas_ra.split()
+                m_dec = meas_dec.split()
+                ra = float(m_ra[0]) + (float(m_ra[2])/60. + float(m_ra[1]))/60.
+                if float(m_dec[0]) < 0:
+                    sgn_dec = -1
+                else:
+                    sgn_dec = 1
+                dec = sgn_dec*(abs(float(m_dec[0])) + (float(m_dec[2])/60 + float(m_dec[2]))/60.)
+                sid = round(ra + float(meas_ha), 4)
+                if sid >= 24:
+                    sid -= 24.
+                if sid < 0: 
+                    sid += 24.
+                sid_h = int(sid)
+                sid_m = round(((sid - sid_h)*60), 2)
+                sid_str = str(sid_h) + " " + str(sid_m)
+                if pier == "EAST":
+                    ra -= 12
+                    dec = 180 - dec
+                    if ra < 0:
+                        ra += 24
+                    if dec < 0:
+                        sign_dec = -1
+                    else:
+                        sign_dec = 1
+                        dec = abs(dec)
+                    dec_d = int(dec) 
+                    dec_md = (dec - dec_d)*60
+                    dec_m = int(dec_md)
+                    dec_s = round(((dec_md - dec_m)*60), 1)
+                    if dec >= 0:
+                        dec_str = "+" + str(dec_d) + " " + str(dec_m) + " " + str(dec_s)
+                    else:    
+                        dec_str = "-" + str(dec_d) + " " + str(dec_m) + " " + str(dec_s)
+                    ra_h = int(ra) 
+                    ra_mh = (ra - ra_h)*60
+                    ra_m = int(ra_mh)
+                    ra_s = round(((ra_mh - ra_m)*60), 2)
+                    ra_str = str(ra_h) + " " + str(ra_m) + " " + str(ra_s)
+                    
+                    
+                    out_f.write(pre_ra + "  " + pre_dec + "  " + ra_str + "  " + dec_str + "  " + sid_str + "  " + pier + '\n')
+                else:
+                    pier = 'WEST'
+                    out_f.write(pre_ra + "  " + pre_dec + "  " + meas_ra + "  " + meas_dec + "  " + sid_str + "  " + pier +'\n')
+        except:
+            continue
+    out_f.write('END\n')
+    out_f.close()
 
 
 
@@ -703,10 +810,12 @@ if __name__ == '__main__':
     camera_name = 'sq01'  #  config.site_config['camera']['camera1']['name']
     #archive_path = "D:/000ptr_saf/archive/sq01/2020-06-13/"
     #archive_path = "D:/2020-06-19  Ha and O3 screen flats/"
-    archive_path = "D:/20200707 Bubble Neb NGC7635  Ha O3 S2/"
-    out_path = "D:/20200707 Bubble Neb NGC7635  Ha O3 S2/trimmed/"
+    archive_path = "D:/000ptr_saf/archive/sq01/20200709/raw/reduced/Small/"
+    out_path = "D:/000ptr_saf/archive/sq01/20200709/raw/reduced/Small/"
     lng_path = "D:/000ptr_saf/archive/sq01/lng/"
-    #debias_and_trim(camera_name, archive_path, '*7635*', out_path)
+    # debias_and_trim(camera_name, archive_path, '*EX00*', out_path)
+    #mod_debias_and_trim(camera_name, archive_path, '*APPM-2020-07-12*', out_path)
+    prepare_tpoint(camera_name, archive_path, '*APPM*',lng_path, out_path)
     # make_master_bias(camera_name, out_path, lng_path, '*f_3*', 'mb_1b.fits')
     # make_master_bias(camera_name, out_path, lng_path, '*b_2*', 'mb_2b.fits')
     # #make_master_bias(camera_name, archive_path, lng_path, '*b_3*', 'mb_3.fits')
@@ -721,12 +830,14 @@ if __name__ == '__main__':
     # build_hot_map(camera_name, lng_path, "md_1_1080.fits", "hm_1")
     # build_hot_image(camera_name, lng_path, "md_1_1080.fits", "hm_1.fits")
     archive_path = out_path
-    out_path = "D:/20200707 Bubble Neb NGC7635  Ha O3 S2/reduced/"
-    correct_image(camera_name, archive_path, '*7635*', lng_path, out_path)
+    archive_path = "D:/000ptr_saf/archive/sq01/20200709/raw/trimmed/"
+    out_path = "D:/000ptr_saf/archive/sq01/20200709/raw/reduced/"
+    #correct_image(camera_name, archive_path, '*EX00*', lng_path, out_path)
+    #mod_correct_image(camera_name, archive_path, '*EX00*', lng_path, out_path)
     archive_path = out_path
-    out_path =":D:/20200707 Bubble Neb NGC7635  Ha O3 S2/catalogs/"
-    # sep_image(camera_name, archive_path, '*HA*', lng_path, out_path)
-    # calc_filter_gains(camera_name, archive_path, '**', lng_path, out_path)
+    #out_path =":D:/20200707 Bubble Neb NGC7635  Ha O3 S2/catalogs/"
+    #sep_image(camera_name, archive_path, '*7635*', lng_path, out_path)
+    #calc_filter_gains(camera_name, archive_path, '**', lng_path, out_path)
     print('Fini')
     # NB Here we would logcially go on to get screen flats.
 

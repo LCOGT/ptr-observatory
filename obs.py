@@ -167,6 +167,7 @@ class Observatory:
         self.create_devices(config)
         self.loud_status = False
         g_dev['obs'] = self
+        g_dev['cfg'] = config    
         self.g_dev = g_dev
         self.time_last_status = time.time() - 3
         # Build the to-AWS Queue and start a thread.
@@ -452,7 +453,7 @@ class Observatory:
     def reduce_image(self):
         '''
         The incoming object is typically a large fits HDU. Found in its
-        header will be both standard image parameters but destination filenames
+        header will be both standard image parameters and destination filenames
 
         '''
         while True:

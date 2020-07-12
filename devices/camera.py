@@ -244,7 +244,7 @@ class Camera:
         self.camera.Expose(exposure_time, imtypeb)
 
     def _maxim_stop_expose(self):
-        self.camera.AbortExpose()
+        self.camera.AbortExposure()
 
     def _ascom_connected(self):
         return self.camera.Connected
@@ -398,7 +398,6 @@ class Camera:
         '''
         print('Expose Entered.  req:  ', required_params, 'opt:  ', optional_params)
         opt = optional_params
-        breakpoint()
         self.t_0 = time.time()
         self.hint = optional_params.get('hint', '')
         self.script = required_params.get('script', 'None')
@@ -437,8 +436,7 @@ class Camera:
         #  Here we set up the filter, and later on possibly roational composition.
         requested_filter_name = str(optional_params.get('filter', 'w'))   #Default should come from config.
         self.current_filter = requested_filter_name
-        #  Patch around early filter change to test relaibility of autosave
-        #g_dev['fil'].set_name_command({'filter': requested_filter_name}, {})
+        g_dev['fil'].set_name_command({'filter': requested_filter_name}, {})
 
         #  NBNB Changing filter may cause a need to shift focus
         self.current_offset = '????'#g_dev['fil'].filter_offset  #TEMP   NBNBNB This needs fixing
@@ -858,7 +856,7 @@ class Camera:
                         hdu.header['DATE-OBS'] = datetime.datetime.isoformat(datetime.datetime.utcfromtimestamp(self.t2))
                         hdu.header['EXPTIME']  = exposure_time   #This is the exposure in seconds specified by the user
                         hdu.header['EXPOSURE'] = exposure_time   #Ideally this needs to be calculated from actual times
-                        hdu.header['FILTER ']  = self.current_filter
+                        hdu.header['FILTER ']  = self.current_filter  # NB this should read from the wheel!
                         hdu.header['FILTEROF']  = self.current_offset
                         if g_dev['scr'] is not None and frame_type == 'screen flat':
                             hdu.header['SCREEN'] = int(g_dev['scr'].bright_setting)
@@ -1061,7 +1059,8 @@ class Camera:
                                 os.remove(self.camera_path + 'newest.fits')
                             except:
                                 pass    #  print ("File newest.fits not found, this is probably OK")
-                            return {'patch': bi_mean}   #  Note we are not calibrating. Just saving the file.
+                            return {'patch': bi_mean,
+                                    'calc_sky': avg_ocn[7]}   #  Note we are not calibrating. Just saving the file.
                             # NB^ We always write files to raw, except quick(autofocus) frames.
                             # hdu.close()
                         # raw_data_size = hdu.data.size

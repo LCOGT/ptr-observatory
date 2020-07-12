@@ -53,20 +53,26 @@ class FilterWheel:
             self.filter_offset = eval(self.filter_data[self.filter_reference][2])
             #We assume camera object has been created before the filter object.
             #Note filter may be commanded directly by AWS or provided in an expose
-            #command as an optioal parameter.
+            #command as an optional parameter.
         else:
-            self.dual = False
-            self.maxim = False
             '''
+            We default here to setting up a single wheel ASCOM driver.
+            
             We need to distinguish here between an independent ASCOM filter wheel
             and a filter that is supported by maxim.  That is specified if a Maxim
             based driver is supplied. IF so it is NOT actually Dispatched, instead
-            we assume access is via the MAxim camera application.  So basically we
+            we assume access is via the Maxim camera application.  So basically we
             fake having an independnet filter wheel.  IF the filter supplied is
             an ASCOM.filter then we set this device up normally.  Eg., SAF is an
             example of this version of the setup.
 
             '''
+            self.maxim = False
+            self.dual = False
+            win32com.client.pythoncom.CoInitialize()
+            breakpoint()
+            self.filter_front = win32com.client.Dispatch(driver)
+            self.filter_front.Connected = True
             #self.filter_front = win32com.client.Dispatch(driver)
             #self.filter_front.Connected = True
             print("Entered a filter area with no code in it.")

@@ -4,6 +4,27 @@ import redis
 import time
 from global_yard import g_dev
 
+'''
+
+This module contains the weather class.  When get_status() is called the weather situation
+is evaluated and self.wx_is_ok  and self.open_is_ok is evaluated and published along
+with self.status, a dictionary.
+
+This module should be expanded to integrate multiple Wx sources, particularly Davis and
+SkyAlert.
+
+Weather holds are counted only when they INITIATE withing the Observing window. So if a
+hold started just before the window and opening was late that does not count for anti-
+flapping purposes.
+
+This is module sends 'signals' through the Events layer then TO the enclosure by checking
+as sender that an OPEN for example can get through the Events layer. It is Mandatory
+the receiver (the enclosure in this case) also checks the Events layer.  The events layer
+is populated once per observing day with default values.  However the dictionary entries
+can be modified for debugging or simulation purposes.
+
+'''
+
 #  core1_redis.set('<ptr-wx-1_state', json.dumps(wx), ex=120)
 #            core1_redis.get('<ptr-wx-1_state')
 #            core1_redis = redis.StrictRedis(host='10.15.0.109', port=6379, db=0,\
@@ -21,6 +42,18 @@ class ObservingConditions:
         self.ok_to_open = 'No'
         self.observing_condtions_message = '-'
         self.wx_is_ok = None
+        self.wx_hold = False
+        self.wx_hold_updated = time.time()   #This is meant for a stale check on the Wx hold report
+        self.wx_hold_tally = 0
+        self.wx_clamp = False
+        self.clamp_latch = False
+        self.wait_time = 0        #A countdown to re-open
+        self.wx_close = False     #If made true by Wx code, a 15 minute timeout will begin when Wx turns OK
+        self.wx_hold_time = None
+        self.wx_hold_count = 0     #if >=5 inhibits reopening for Wx
+        self.wait_time = 0        #A countdown to re-open
+        self.wx_close = False     #If made true by Wx code, a 15 minute timeout will begin when Wx turns OK
+        self.wx_test = False    #Purely a debugging aid.
         if self.site == 'wmd':
             self.redis_server = redis.StrictRedis(host='10.15.0.109', port=6379, db=0,
                                                   decode_responses=True)
@@ -65,7 +98,8 @@ class ObservingConditions:
                 wx_str = "Yes"
             else:
                 wx_str = "No"   #Ideally we add the dominant reason in prioirty order.
-            # Many other gates can be here.
+
+            #The following may be more restictive since it includes local measured ambient light.
             if self.boltwood_oktoopen.IsSafe and dew_point_gap and temp_bounds:
                 self.ok_to_open = 'Yes'
             else:
@@ -112,8 +146,7 @@ class ObservingConditions:
                     print("Wx log did not write.")
 
 
-
-            return status
+            self.status = status
         elif self.site == 'wmd':
             try:
                 # breakpoint()
@@ -194,12 +227,70 @@ class ObservingConditions:
                         self.sample_time = time.time()
                     except:
                         print("Wx log did not write.")
-            return status
         else:
             print("Big fatal error")
 
+        '''
+        Now lets compute Wx hold condition.  Class is set up to assume Wx has been good.
+        The very first time though at Noon, self.open_is_ok will always be False but the
+        Weather, which does not include ambient light, can be good.  We will assume that
+        changes in ambient light are dealt with more by the Events module.
+
+        We want the wx_hold signal to go up and down as a guage on the quality of the
+        afternoon.  If there are a lot of cycles, that indicates unsettled conditons even
+        if any particular instant is perfect.  So we set self.wx_hold to false during class
+        __init__().
+
+        When we get to this point of the code first time we expect self.wx_is_ok to be true
+        '''
+        obs_win_begin, sunset, sunrise, ephemNow = self.astro_events.getSunEvents()
+        if (self.wx_is_ok and not self.wx_test) and not self.wx_hold:     #Normal condition, possibly nothing to do.
+            self.wx_hold_updated = time.time()
+
+        elif (not self.wx_is_ok or self.wx_test) and not self.wx_hold:     #Wx bad and no hold yet.
+            #Bingo we need to start a cycle
+            self.wx_hold = True
+            if self.wx_test:
+                self.wx_hold_time = time.time() + 20    #20 seconds
+            else:
+                self.wx_hold_time = time.time() + 600    #10 minutes
+            self.wx_hold_tally += 1     #  This counts all day and night long.
+            self.wx_hold_updated = time.time()
+            if obs_win_begin <= ephemNow <= sunrise:     #Gate the real holds to be in the Obseving window.
+                self.wx_hold_count += 1
+                #We choose to tell enclosure manager to close.
+                print("Wx hold asserted, flap#:", self.wx_hold_count)
+            if self.wx_test: self.wx_hold_count += 1   #NB do not leave this alive
+
+        elif (not self.wx_is_ok or self.wx_test) and self.wx_hold:     #WX is bad and we are on hold.
+            self.wx_hold_updated = time.time()
+            #Stay here as long as we need to. No point in reporting or logging.
+        else:
+            pass
+
+        if (self.wx_is_ok or self.wx_test) and self.wx_hold:     #Wx now good and still on hold.
+            if self.wx_hold_count < 5:
+                if time.time() >= self.wx_hold_time:
+                    #Time to release the hold.
+                    self.wx_hold = False
+                    print("Wx hold released, flap#:", self.wx_hold_count)
+                    #We choose to let the enclosure manager discover it can re-open.
+            else:
+                #Never release the hold without some special high level intervention.
+                if not self.clamp_latch:
+                    print('Sorry, Tobor is clamping enclosure shut for the night.')
+                self.clamp_latch = True
+                self.wx_clamp = True
+
+            self.wx_hold_updated = time.time()
+
+        return status
+
+
     def get_quick_status(self, quick):
         # wx = eval(self.redis_server.get('<ptr-wx-1_state'))
+
+        #  NB NB This routine does NOT update self.wx_ok
 
         if self.site == 'saf':
             # Should incorporate Davis data into this data set, and Unihedron.

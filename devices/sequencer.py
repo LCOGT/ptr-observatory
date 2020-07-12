@@ -164,6 +164,7 @@ class Sequencer:
         g_dev['cam'].user_name = command['user_name']
         action = command['action']
         script = command['required_params']['script']
+
         if action == "run" and script == 'focusAuto':
 #            req = {'time': 0.2,  'alias': 'gf01', 'image_type': 'toss', 'filter': 2}
 #            opt = {'size': 100, 'count': 1}
@@ -173,7 +174,7 @@ class Sequencer:
             self.screen_flat_script(req, opt)
         elif action == "run" and script == 'genSkyFlatMasters':
             self.sky_flat_script(req, opt)
-        elif action == "run" and script in ['32TargetPointingRun', 'pointing_run', 'makeModel']:
+        elif action == "run" and script in ['32TargetPointingRun', 'pointingRun', 'makeModel']:
             self.equatorial_pointing_run(req, opt)
         elif action == "run" and script in ("genBiasDarkMaster", "genBiasDarkMasters"):
             self.bias_dark_script(req, opt)
@@ -450,6 +451,7 @@ class Sequencer:
         #Here we may need to switch off any
         #  Pick up list of filters is sky flat order of lowest to highest transparency.
         pop_list = self.config['filter_wheel']['filter_wheel1']['settings']['filter_sky_sort']
+        print('filters by low to high transmission:  ', pop_list)
         obs_win_begin, sunset, sunrise, ephemNow = self.astro_events.getSunEvents()
         while len(pop_list) > 0 and (ephemNow < g_dev['events']['End Eve Sky Flats']
                                   or True):
@@ -463,6 +465,7 @@ class Sequencer:
                     g_dev['mnt'].slewToSkyFlatAsync()
                 req = {'time': float(exp_time),  'alias': camera_name, 'image_type': 'sky flat', 'script': 'On'}
                 opt = {'size': 100, 'count': 1, 'filter': g_dev['fil'].filter_data[current_filter][0]}
+                print("using:  ", g_dev['fil'].filter_data[current_filter][0])
                 result = g_dev['cam'].expose_command(req, opt, gather_status=True, no_AWS=True, do_sep = False)
                 bright = result['patch']    #  Patch should be circular and 20% of Chip area. ToDo project
                 print("Bright:  ", bright)  #  Others are 'NE', 'NW', 'SE', 'SW'.
@@ -470,6 +473,7 @@ class Sequencer:
                                   or True):    #NB should gate with end of skyflat window as well.
                     for i in range(6):
                         time.sleep(5)  #  #0 seconds of wait time.  Maybe shorten for wide bands?
+                        g_dev['obs'].update_status()
                 else:
                     acquired_count += 1
                     if acquired_count == flat_count:
@@ -632,6 +636,7 @@ class Sequencer:
         #  NB here we could re-solve with the overlay spot just to verify solution is sane.
         self.sequencer_hold = False   #Allow comand checks.
         self.guard = False
+        return
 
     def focus_fine_script(self, req, opt):
         '''
@@ -751,8 +756,9 @@ class Sequencer:
         Launch reduction
 
 A variant on this is cover a grid, cover a + sign shape.
-
+IF sweep
         '''
+        self.guard = True
         ha_deg_steps = (-72.5, -62.5, -52.5, -42.5, -32.5, -22.5, -12.5, -2.5, 7.5,
                         17.5, 27.5, 37.5, 47.5, 57.5, 67.5, 72.5, 62.5, 52.5, 42.5,
                         32.5, 22.5, 12.5, 2.5, -7.5, -17.5, -27.5, -37.5, -47.5,
@@ -766,25 +772,40 @@ A variant on this is cover a grid, cover a + sign shape.
                 target_ra += 24.
             while target_ra >=24:
                 target_ra -= 24.
-            req = {'ra':  target_ra,
-                   'dec':  0.0}
+            target_dec = 0
+                
+                #  Go to closest Mag 7.5 Tycho * with no flip
+            focus_star = tycho.dist_sort_targets(target_ra, target_dec, \
+                               g_dev['mnt'].mount.SiderealTime)
+            print("Going to near focus star " + str(focus_star[0]) + "  degrees away.")
+            req = {'ra':  focus_star[1][1],
+                   'dec': focus_star[1][0]
+                   }
             opt = {}
             g_dev['mnt'].go_command(req, opt)
             while g_dev['mnt'].mount.Slewing or g_dev['enc'].enclosure.Slewing:
                 g_dev['obs'].update_status()
                 time.sleep(0.5)
+
             time.sleep(3)
             g_dev['obs'].update_status()
-            time.sleep(3)
+            # req = {'time': 10,  'alias': cam_name, 'image_type': 'Light Frame'}
+            # opt = {'size': 100, 'count': 1, 'filter': g_dev['fil'].filter_data[0][0], 'hint': 'Equator pointing run.'}
+            # result = g_dev['cam'].expose_command(req, opt)
             g_dev['obs'].update_status()
-            req = {'time': 10,  'alias': cam_name, 'image_type': 'Light Frame'}
-            opt = {'size': 100, 'count': 1, 'filter': g_dev['fil'].filter_data[0][0], 'hint': 'Equator pointing run.'}
-            result = g_dev['cam'].expose_command(req, opt)
-            g_dev['obs'].update_status()
+            result = 'simulated'
             print('Result:  ', result)
         g_dev['mnt'].stop_command()
         print("Equatorial sweep completed. Happy reducing.")
-        pass
+        self.guard = False
+        return
+        
+        
+        # #Grid 
+        
+        # for dec in np.arange(-30,85,9.583):
+        #     for ha in np.arange(-6, 6, 9.583/15):
+        # pass
 
 
 

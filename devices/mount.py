@@ -91,6 +91,7 @@ class Mount:
         self.inst = 'tel1'
         self.tel = tel
         self.mount_message = "-"
+
         #print('Can Move Axis is Possible.', self.mount.CanMoveAxis(0), self.mount.CanMoveAxis(1))
 
         #  NB THis tel concept is a remnant of a bad dream

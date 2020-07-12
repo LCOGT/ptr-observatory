@@ -3,6 +3,20 @@ from global_yard import g_dev
 
 import time
 
+'''
+Curently this module interfaces to a Dome (az control) or a pop-top roof style enclosure.
+
+This module contains a Manager, which is called during a normal status scan which emits
+Commands to Open and close based on Events and the weather condition. Call the manager
+if you want to do something with the dome since it coordinates with the Events dictionary.
+
+The Events time periods apply a collar, if you will, around when automatic dome opening
+is possible.  The event phases are found in g_dev['events'].  The basic window is defined
+with respect to Sunset and Sunrise so it varies each day.
+
+
+'''
+
 class Enclosure:
 
     def __init__(self, driver: str, name: str, config: dict, astro_events):
@@ -25,14 +39,10 @@ class Enclosure:
         self.state = 'Closed.  Initialized class property value.'
         self.mode = 'Manual'   #  Auto|User Control|User Close|Disable
         self.enclosure_message = '-'
-        self.cycles = 0           #if >=3 inhibits reopening for Wx
-        self.wait_time = 0        #A countdown to re-open
-        self.wx_close = False     #If made true by Wx code, a 15 minute timeout will begin when Wx turns OK
         self.external_close = False   #If made true by operator system will not reopen for the night
         self.dome_opened = False   #memory of prior issued commands  Restarting code may close dome one time.
         self.dome_homed = False
-        self.wx_test = False
-        self.wx_hold_time = None
+
 
 
     def get_status(self) -> dict:
@@ -144,8 +154,15 @@ class Enclosure:
         self.dome_home = True
         pass
 
-    def wx_is_ok(self):   #A placeholder for a proper weather class or ASCOM device.
-        return True
+    def guarded_open(self):
+        if g_dev['ocn'].wx_is_ok:     # NB Is Wx ok really the right criterion???
+            try:
+                self.enclosure.OpenShutter()
+                return True
+            except:
+                return False
+        return False
+
 
     def manager(self, open_cmd=False, close_cmd=False):     #This is the place where the enclosure is autonomus during operating hours. Delicut Code!!!
         '''
@@ -155,10 +172,10 @@ class Enclosure:
 
         #  NB NB NB Gather some facts:
         obs_win_begin, sunset, sunrise, ephemNow = self.astro_events.getSunEvents()
-        az = g_dev['evnt'].sun_az_now()
-        az = az - 180.
-        if az < 0:
-            az += 360.
+        az_opposite_sun = g_dev['evnt'].sun_az_now()
+        az_opposite_sun -= 180.
+        if az_opposite_sun < 0:
+            az_opposite_sun += 360.
         if self.site == 'saf':
             shutter_str = "Dome."
         else:
@@ -179,52 +196,43 @@ class Enclosure:
 
         wx_is_ok = g_dev['ocn'].wx_is_ok
 
-        #  Check the Wx and go into the Wx hold sequence.   The third hold Closes and
-        #  turns off Autmatic for owner re-enable.
 
-        #  NB NB what do we want to do if Wx goes bad outside of the window?
 
-        if (not wx_is_ok or self.wx_test) and self.status_string.lower() in ['open', 'opening']:
-            if self.is_dome:
-                self.enclosure.Slaved = False
-#                self.enclosure.CloseShutter()  # NB Problem here if shutter already active.
-            self.dome_opened = False
-            self.dome_homed = True
-            if self.wx_test:
-                self.wx_hold_time = time.time() + 120    #2 minutes
-            else:
-                self.wx_hold_time = time.time() + 900    #15 minutes
-            self.cycles += 1
-            print("Weather close issued, cycle:  ", self.cycles)
 
         #NB NB First deal with the possible observing window being available or not.
 
-        if  obs_win_begin <= ephemNow <= sunrise:
+        if  g_dev['events']['Obs Window Start'] <= ephemNow <= g_dev['events']['Sun Rise']:
             #  We are now in the full operational window.
-            if  obs_win_begin <= ephemNow <= sunset and self.mode == 'Automatic':
-                print('\nSlew to opposite the azimuth of the Sun, open and cool-down. Az =  ', az)
+            if  g_dev['events']['Obs Window Start'] <= ephemNow <= g_dev['events']['Sun Set'] and self.mode == 'Automatic':
+                print('\nSlew to opposite the azimuth of the Sun, open and cool-down. Az =  ', az_opposite_sun)
                 #NB There is no corresponding warm up phase in the Morning.
-
-                if self.status_string.lower() in ['closed', 'closing']:
-                    self.enclosure.OpenShutter()
+                if self.status_string.lower() in ['closed']:  #, 'closing']:
+                    success =self.guarded_open()
                     self.dome_opened = True
                     self.dome_homed = True
-                if self.status_string.lower() in ['open']:
+                if self.status_string.lower() in ['open']:    #WE found it open.
                     if self.is_dome:
                         try:
-                            self.enclosure.SlewToAzimuth(az)
+                            self.enclosure.SlewToAzimuth(az_opposite_sun)
                         except:
                             pass
                         self.dome_homed = False
                     else:
                         self.dome_homed = False
-                    #self.enclosure.Slaved = False
+                else:
+                    if self.status_string.lower() in ['closed']:    #, 'closing']:
+                        try:
+                            success = guarded_open()
+                            self.dome_opened = True
+                            self.dome_homed = True
+                        except:
+                            pass      #If this faults next pass should pick it up.
+
 
 
             if  (obs_win_begin < ephemNow < sunrise or open_cmd) \
                     and self.mode == 'Automatic' \
-                    and wx_is_ok \
-                    and self.wait_time <= 0 \
+                    and g_dev['ocn'].wx_is_ok \
                     and self.enclosure.ShutterStatus == 1: #Closed
                 if open_cmd:
                     self.state = 'User Opened the ' + shutter_str
@@ -233,7 +241,7 @@ class Enclosure:
                 self.cycles += 1           #if >=3 inhibits reopening for Wx  -- may need shelving so this persists.
                 #A countdown to re-open
                 if self.status_string.lower() in ['closed', 'closing']:
-                    self.enclosure.OpenShutter()   #<<<<NB NB NB Only enable when code is fully proven to work.
+                    success =self.guarded_open()   #<<<<NB NB NB Only enable when code is fully proven to work.
                     if self.isDome:
                         self.enclosure.Slaved = True
                     print("Night time Open issued to the "  + shutter_str, +   '   Following Mounting.')
@@ -260,7 +268,11 @@ class Enclosure:
             if not self.dome_homed:
                 if self.is_dome:
                     self.enclosure.Slaved = False
-                #self.enclosure.CloseShutter()
+                try:
+                    if self.status_string.lower() in ['open']:
+                        self.enclosure.CloseShutter()   #ASCOM DOME will fault if it is Opening or closing
+                except:
+                    print('Dome close cmd appeared to fault.')
                 self.dome_opened = False
                 self.dome_homed = True
                 print("One time close of enclosure issued, normally after a code restart.")
