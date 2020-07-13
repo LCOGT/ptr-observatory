@@ -73,7 +73,7 @@ site_config = {
             'controlled_by': 'mount1',
 			'is_dome': 'true',
             'mode': 'Automatic',
-            'cool_down': '30.0',     #  Minutes prior to sunZ88Op time.
+            'cool_down': '60.0',     #  Minutes prior to sunset.
             'settings': {
                 'lights':  ['Auto', 'White', 'Red', 'IR', 'Off'],       #A way to encode possible states or options???
                                                                         #First Entry is always default condition.
@@ -198,10 +198,10 @@ site_config = {
         "filter_wheel1": {
             "parent": "telescope1",
             "name": "FLI filter wheel",
-            "desc":  'FLI Centerline 50mm round.',
-            "driver": 'MAXIM',
+            "desc":  'FLI Centerline 50mm square.',
+            "driver": 'MAXIM',  #'ASCOM.FLI.FilterWheel',   #
             'settings': {
-                'filter_count': '13',    # dark filer not implemented yet.
+                'filter_count': '13',
                 'filter_reference': '0',   #We choose to use W as the default filter.
                 'filter_data': [['filter', 'filter_index', 'filter_offset', 'sky_gain', 'screen_gain', 'abbreviation'],
                         ['w',    '(0,  0)',     '0', ' 0.01', ['6   ', ' 20'], 'w '],   # 0 Mul Screen@100% by saturate*exp
@@ -217,7 +217,7 @@ site_config = {
                         ['N2',   '(10, 0)',     '0', '09.34', ['360' , '170'], "N2"],   # 10 4700
                         ['EXO',  '(11, 0)',     '0', ' 0.01', ['6.5 ', ' 20'], 'ex'],   # 11
                         ['air',  '(12, 0)', '-1000', ' 0.01', ['4.5 ', ' 20'], 'ai'],   # 12
-                        ['dark', '(13, 0)',     '0', ' 0.01', ['15  ', ' 20'], 'dk']]  # 13  20200315 This needs to be set up as a \
+                        ['dark', '(13, 0)',     '0', ' 0.01', ['15  ', ' 20'], 'dk']],  # 13  20200315 This needs to be set up as a \
                         #  'dark' filter =   cascade of say N2 and B or O3 and i.
                         #Screen = 100; QHY400 ~ 92% DQE   HDR Mode    Screen = 160 sat  20190825 measured.
                 'filter_screen_sort':  ['12', '0', '11', '2', '3', '5', '6', '4', '1'],   # don't use narrow yet,  '8', '10', '9'], useless to try.
@@ -232,7 +232,7 @@ site_config = {
             'parent': 'telescope1',
             'name': 'sq01',      #Important because this points to a server file structure by that name.
             'desc':  'QHY 600Pro',
-            'driver':  "ASCOM.QHYCCD.Camera",   #"Maxim.CCDCamera",   #'ASCOM.FLI.Kepler.Camera',
+            'driver':  "Maxim.CCDCamera",   #"ASCOM.QHYCCD.Camera",   #'ASCOM.FLI.Kepler.Camera',
             'detector':  'Sony IMX455',
             'manufacturer':  'QHY',
             'settings': {
