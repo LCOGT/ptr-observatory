@@ -302,7 +302,7 @@ class Events:
         ptr.horizon = '2'
         sun.compute(ptr)
         #if loud: print('Sun 2: ', sun.ra, sun.dec, sun.az, sun.alt)
-        obs_win_begin = sunset - 240/1440
+        obs_win_begin = sunset - 60/1440
         return (obs_win_begin, sunset, sunrise, ephem.now())
 
     def flat_spot_now(self):
@@ -405,8 +405,7 @@ class Events:
         ptr.horizon = '2'
         sun.compute(ptr)
         #if loud: print('Sun 2: ', sun.ra, sun.dec, sun.az, sun.alt)
-
-        obs_win_begin = sunset - 240/1440      # Needs to come from site config  NB 1 hour
+        obs_win_begin = sunset - 60/1440      # Needs to come from site config  NB 1 hour
         ptr.horizon = '-1.5'
         sun.compute(ptr)
         #if loud: print('Sun -6: ', sun.ra, sun.dec, sun.az, sun.alt)
