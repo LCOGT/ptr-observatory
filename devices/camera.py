@@ -784,9 +784,9 @@ class Camera:
             self.post_ocn = []
         counter = 0
         if self.bin == 1:
-            self.completion_time = self.entry_time + exposure_time + 24
+            self.completion_time = self.entry_time + exposure_time + 9
         else:
-            self.completion_time = self.entry_time + exposure_time + 18   #?? Guess
+            self.completion_time = self.entry_time + exposure_time + 5   #?? Guess
 
         result = {'error': False}
         while True:     #THis is where we should have a camera probe throttle and timeout system
@@ -960,15 +960,19 @@ class Camera:
     #                        except:
     #                            hdu.header['GAIN'] = 1.18
                         hdu.header['GAINUNIT'] = 'e-/ADU'
-                        hdu.header['GAIN'] = 1.2   #20190911   LDR-LDC mode set in ascom
-                        hdu.header['RDNOISE'] = 8
+                        hdu.header['GAIN'] = .584   #20190911   LDR-LDC mode set in ascom
+                        hdu.header['RDNOISE'] = 3.5
                         hdu.header['CMOSCAM'] = self.is_cmos
+                        hdu.header['CAMGAIN'] = .584
+                        hdu.header['CAMOFFS'] = 6
+                        hdu.header['CAMUSBT'] = 100
+                        hdu.header['FULLWELL'] = 38310
                         #hdu.header['CMOSMODE'] = 'HDR-HDC'  #Need to figure out how to read this from setup.
                         hdu.header['SATURATE'] = int(self.config['camera']['camera1']['settings']['saturate'])
                         #NB This needs to be properly computed
                         pix_ang = (self.camera.PixelSizeX*self.camera.BinX/(float(self.config['telescope'] \
                                                   ['telescope1']['focal_length'])*1000.))
-                        hdu.header['PIXSCALE'] = round(math.degrees(math.atan(pix_ang))*3600., 2)
+                        hdu.header['PIXSCALE'] = round(math.degrees(math.atan(pix_ang))*3600., 3)
 
 
                         #Need to assemble a complete header here

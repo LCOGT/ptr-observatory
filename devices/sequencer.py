@@ -773,13 +773,15 @@ IF sweep
             while target_ra >=24:
                 target_ra -= 24.
             target_dec = 0
-                
                 #  Go to closest Mag 7.5 Tycho * with no flip
             focus_star = tycho.dist_sort_targets(target_ra, target_dec, \
                                g_dev['mnt'].mount.SiderealTime)
+            if focus_star is None:
+                print("No near star, skipping.")   #This should not happen.
+                continue
             print("Going to near focus star " + str(focus_star[0]) + "  degrees away.")
             req = {'ra':  focus_star[1][1],
-                   'dec': focus_star[1][0]
+                   'dec': focus_star[1][0]     #Note order in important (dec, ra)
                    }
             opt = {}
             g_dev['mnt'].go_command(req, opt)
