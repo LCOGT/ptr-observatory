@@ -68,16 +68,17 @@ class Enclosure:
 
         if self.site == 'saf':
             status = {'shutter_status': stat_string,
-                  'enclosure_slaving': str(self.enclosure.Slaved),
-                  'dome_azimuth': str(round(self.enclosure.Azimuth, 1)),
-                  'dome_slewing': str(self.enclosure.Slewing),
-                  'enclosure_mode': str(self.mode),
-                  'enclosure_message': str(self.state)}
+                      'enclosure_slaving': str(self.enclosure.Slaved),
+                      'dome_azimuth': str(round(self.enclosure.Azimuth, 1)),
+                      'dome_slewing': str(self.enclosure.Slewing),
+                      'enclosure_mode': str(self.mode),
+                      'enclosure_message': str(self.state)}
         else:
             status = {'roof_status': stat_string,
-                  'enclosure_slaving': str(self.enclosure.Slaved),
-                  'enclosure_mode': str(self.mode),
-                  'enclosure_message': str(self.state)}
+                      'shutter_status': stat_string,
+                      'enclosure_slaving': str(self.enclosure.Slaved),
+                      'enclosure_mode': str(self.mode),
+                      'enclosure_message': str(self.state)}
         #print('Enclosure status:  ', status
         self.status_string = stat_string
         self.manager()   #There be monsters here. <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
@@ -270,12 +271,13 @@ class Enclosure:
                     self.enclosure.Slaved = False
                 try:
                     if self.status_string.lower() in ['open']:
-                        self.enclosure.CloseShutter()   #ASCOM DOME will fault if it is Opening or closing
+                        pass
+                        #self.enclosure.CloseShutter()   #ASCOM DOME will fault if it is Opening or closing
                 except:
                     print('Dome close cmd appeared to fault.')
                 self.dome_opened = False
                 self.dome_homed = True
-                print("One time close of enclosure issued, normally after a code restart.")
+                print("One time close of enclosure NOT NOT NOT issued, normally after a code restart.")
 
 
 if __name__ =='__main__':

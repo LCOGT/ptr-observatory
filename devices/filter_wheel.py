@@ -180,6 +180,8 @@ class FilterWheel:
         ''' set the filter position by filter name '''
         print(f"filter cmd: set_name", req, opt)
         filter_name = req['filter']
+        if filter_name =="W":
+            filter_name = 'w'
         for match in range(int(self.config['filter_wheel']['filter_wheel1']['settings']['filter_count'])):
             if filter_name == self.filter_data[match][0]:
                 filt_pointer = match
