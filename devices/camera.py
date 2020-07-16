@@ -337,10 +337,10 @@ class Camera:
         self.user_id = command['user_id']
         self.user_name = command['user_name']
 # =============================================================================
-# # =============================================================================
-        if opt['filter'] == 'dark' and opt['bin'] == '2,2':    # Special case, AWS broken 20200405
-             g_dev['seq'].screen_flat_script(req, opt)
-# # =============================================================================
+# # # =============================================================================
+#         if opt['filter'] == 'dark' and opt['bin'] == '2,2':    # Special case, AWS broken 20200405
+#              g_dev['seq'].screen_flat_script(req, opt)
+# # # =============================================================================
 # =============================================================================
         if action == "expose" and not self.exposure_busy :
             self.expose_command(req, opt, do_sep=True, quick=False)
@@ -427,17 +427,19 @@ class Camera:
         if imtype.lower() in ['experimental']:
             g_dev['enc'].wx_test = not g_dev['enc'].wx_test
             return
-
         count = int(optional_params.get('count', 1))   #FOr now Repeats are external to full expose command.
         lcl_repeat = 1
         if count < 1:
             count = 1   #Hence frame does not repeat unless count > 1
 
         #  Here we set up the filter, and later on possibly roational composition.
-        requested_filter_name = str(optional_params.get('filter', 'w'))   #Default should come from config.
-        self.current_filter = requested_filter_name
-        g_dev['fil'].set_name_command({'filter': requested_filter_name}, {})
-
+        try:    #20200716   FW throwing error (-4)
+            requested_filter_name = str(optional_params.get('filter', 'w'))   #Default should come from config.
+            self.current_filter = requested_filter_name
+            g_dev['fil'].set_name_command({'filter': requested_filter_name}, {})
+        except Exception as e:
+            print(e)
+            breakpoint()
         #  NBNB Changing filter may cause a need to shift focus
         self.current_offset = '????'#g_dev['fil'].filter_offset  #TEMP   NBNBNB This needs fixing
         #  NB nothing being done here to get focus set properly. Where is this effected?
@@ -717,8 +719,6 @@ class Camera:
                             exposure_time = 3600
                         self.entry_time = self.t2
                         self._expose (exposure_time, img_type)
-                        #self.camera.StartSequence('Q:/archive/sq01/seq/ptr_saf.seq')
-                        #print("Starting autosave  at:  ", self.entry_time)
                     else:
                         print("Something terribly wrong, driver not recognized.!")
                         breakpoint()
@@ -776,7 +776,11 @@ class Camera:
         #print("Finish exposure Entered:  ", self.af_step, exposure_time, frame_type, counter, ' to go!')
         print("Finish exposure Entered:  ", exposure_time, frame_type, counter,  \
                         gather_status, do_sep, no_AWS, start_x, start_y)
-
+        try:
+            pass
+        except Exception as e:
+            print(e)
+            
         if gather_status:
             self.post_mnt = []
             self.post_rot = []
@@ -835,6 +839,7 @@ class Camera:
                     g_dev['obs'].update_status()
 
                     counter = 0
+
                     if not quick and gather_status:
                         avg_mnt = g_dev['mnt'].get_average_status(self.pre_mnt, self.post_mnt)
                         avg_foc = g_dev['foc'].get_average_status(self.pre_foc, self.post_foc)

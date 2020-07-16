@@ -409,7 +409,7 @@ class Events:
         ptr.horizon = '-1.5'
         sun.compute(ptr)
         #if loud: print('Sun -6: ', sun.ra, sun.dec, sun.az, sun.alt)
-        eve_skyFlatBegin = sunset + 1/1440. #ptr.next_setting(sun)
+        eve_skyFlatBegin = sunset -30/1440. #ptr.next_setting(sun)
         morn_skyFlatEnd = ptr.next_rising(sun)
         ptr.horizon = '-6'
         sun.compute(ptr)
@@ -498,8 +498,8 @@ class Events:
                 ('End Eve Scrn Flats ', ephem.Date(endEveScreenFlats)),
                 ('Obs Window Start   ', ephem.Date(obs_win_begin)),  #Enclosure may open.
                 ('Cool Down, Open    ', ephem.Date(obs_win_begin + 0.5/1440)),
-                ('Sun Set            ', sunset),
                 ('Eve Sky Flats      ', ephem.Date(eve_skyFlatBegin)),
+                ('Sun Set            ', sunset),
                 ('Civil Dusk         ', civilDusk),
                 ('End Eve Sky Flats  ', eve_skyFlatEnd),
                 ('Clock & Auto Focus ', ephem.Date(eve_skyFlatEnd + 1/1440.)),

@@ -200,13 +200,13 @@ class Enclosure:
 
 
 
-        #NB NB First deal with the possible observing window being available or not.
+        #  NB NB First deal with the possible observing window being available or not.
 
         if  g_dev['events']['Obs Window Start'] <= ephemNow <= g_dev['events']['Sun Rise']:
             #  We are now in the full operational window.
-            if  g_dev['events']['Obs Window Start'] <= ephemNow <= g_dev['events']['Sun Set'] and self.mode == 'Automatic':
-                print('\nSlew to opposite the azimuth of the Sun, open and cool-down. Az =  ', az_opposite_sun)
-                #NB There is no corresponding warm up phase in the Morning.
+            if g_dev['events']['Obs Window Start'] <= ephemNow <= g_dev['events']['Sun Set'] and self.mode == 'Automatic':
+                #  print('\nSlew to opposite the azimuth of the Sun, open and cool-down. Az =  ', az_opposite_sun)
+                #  NB There is no corresponding warm up phase in the Morning.
                 if self.status_string.lower() in ['closed']:  #, 'closing']:
                     success =self.guarded_open()
                     self.dome_opened = True
@@ -231,16 +231,16 @@ class Enclosure:
 
 
 
-            if  (obs_win_begin < ephemNow < sunrise or open_cmd) \
+            if (obs_win_begin < ephemNow < sunrise or open_cmd) \
                     and self.mode == 'Automatic' \
                     and g_dev['ocn'].wx_is_ok \
-                    and self.enclosure.ShutterStatus == 1: #Closed
+                    and self.enclosure.ShutterStatus == 1: #  Closed
                 if open_cmd:
                     self.state = 'User Opened the ' + shutter_str
                 else:
                     self.state = 'Automatic nightime Open ' + shutter_str + '   Wx is OK; in Observing window.'
                 self.cycles += 1           #if >=3 inhibits reopening for Wx  -- may need shelving so this persists.
-                #A countdown to re-open
+                #  A countdown to re-open
                 if self.status_string.lower() in ['closed', 'closing']:
                     success =self.guarded_open()   #<<<<NB NB NB Only enable when code is fully proven to work.
                     if self.isDome:
