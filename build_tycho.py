@@ -24,7 +24,7 @@ import pprint
 
 iso_day = datetime.date.today().isocalendar()
 equinox_years = round((iso_day[0] + ((iso_day[1]-1)*7 + (iso_day[2] ))/365), 2) - 2000
-tycho_cat = open("E:/Users/User/Documents/GitHub/ptr-observatory/support_info/tycho_mag_7.dat", 'r')
+tycho_cat = open("C:/Users/obs/Documents/GitHub/ptr-observatory/support_info/tycho_mag_7.dat", 'r')  #Get set up properly wiht relative file specification
 tycho_tuple = []
 for line in tycho_cat:
     entry = line.split(' ')
@@ -97,7 +97,7 @@ def dist_sort_targets(pRa, pDec, pSidTime):
     '''
     Given incoming Ra and Dec produce a list of tuples sorted by distance
     of Nav Star from that point, closest first. In additon full site
-    Horizon cull is applied.
+    Horizon cull is applied and an anti-flip provision.
     '''
     #print(pRa, pDec, pSidTime)
     global tycho_tuple

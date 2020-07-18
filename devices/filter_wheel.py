@@ -179,14 +179,30 @@ class FilterWheel:
     def set_name_command(self, req: dict, opt: dict):
         ''' set the filter position by filter name '''
         print(f"filter cmd: set_name", req, opt)
-        filter_name = req['filter']
+        try:
+            filter_name = req['filter_name']
+        except:
+            try:
+                filter_name = req['filter']
+            except:
+                print("filter dictionary is screwed up big time.")
+        if filter_name =="W":     #  NB This is a temp patch
+            filter_name = 'w'
+        if filter_name =="r":
+            filter_name = 'rp'
+        if filter_name =="g":
+            filter_name = 'gp'
+        if filter_name =="i":
+            filter_name = 'ip'
+        if filter_name =="u":
+            filter_name = 'up'
         for match in range(int(self.config['filter_wheel']['filter_wheel1']['settings']['filter_count'])):
             if filter_name == self.filter_data[match][0]:
                 filt_pointer = match
-#                break
+                break
 #            else:
 #                print('Filter name appears to be incorrect. Check for proper case.')
-        print(filt_pointer)
+        print('Filter pointer:  ', filt_pointer)
         self.filter_number = filt_pointer
         self.filter_selected = filter_name
         filter_selections = eval(self.filter_data[filt_pointer][1])
@@ -208,9 +224,9 @@ class FilterWheel:
                 breakpoint()
             self.filter_offset = int(self.filter_data[filt_pointer][2])
         elif self.maxim:
-            g_dev['cam'].camera.Filter = filter_selections[0]
+            #g_dev['cam'].camera.Filter = filter_selections[0]
             time.sleep(0.2)
-            g_dev['cam'].camera.GuiderFilter = filter_selections[1]
+            #g_dev['cam'].camera.GuiderFilter = filter_selections[1]
         else:
              return  (filter_selections, int(self.filter_data[filt_pointer][2]))
 
