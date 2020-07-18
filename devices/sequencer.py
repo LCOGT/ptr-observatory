@@ -436,7 +436,7 @@ class Sequencer:
         self.guard = True
         print('Eve Sky Flat sequence Starting, Enclosure PRESUMED Open. Telescope will un-park.')
         camera_name = str(self.config['camera']['camera1']['name'])
-        flat_count = 1
+        flat_count = 5
         exp_time = 3
         #  NB Sometime, try 2:2 binning and interpolate a 1:1 flat.  This might run a lot faster.
         if flat_count < 1: flat_count = 1
@@ -471,7 +471,7 @@ class Sequencer:
                 print("Bright:  ", bright)  #  Others are 'NE', 'NW', 'SE', 'SW'.
                 if bright > 35000 and (ephemNow < g_dev['events']['End Eve Sky Flats']
                                   or True):    #NB should gate with end of skyflat window as well.
-                    for i in range(6):
+                    for i in range(1):
                         time.sleep(5)  #  #0 seconds of wait time.  Maybe shorten for wide bands?
                         g_dev['obs'].update_status()
                 else:
