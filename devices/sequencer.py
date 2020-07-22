@@ -214,7 +214,6 @@ class Sequencer:
                    'darkTime': 360, 'hotMap': True, 'bin2': True, 'numOfDark': 3, 'dark2Time': 600, \
                    'coldMap': True, 'script': 'genBiasDarkMaster', 'bin5': False}
             opt = {}
-            breakpoint()
             self.bias_dark_script(req, opt)
         # elif (events[] <= ephem_now <= events[]):
         #     pass
@@ -437,7 +436,7 @@ class Sequencer:
         self.guard = True
         print('Eve Sky Flat sequence Starting, Enclosure PRESUMED Open. Telescope will un-park.')
         camera_name = str(self.config['camera']['camera1']['name'])
-        flat_count = 1
+        flat_count = 5
         exp_time = 3
         #  NB Sometime, try 2:2 binning and interpolate a 1:1 flat.  This might run a lot faster.
         if flat_count < 1: flat_count = 1
@@ -469,8 +468,9 @@ class Sequencer:
                 print("using:  ", g_dev['fil'].filter_data[current_filter][0])
                 result = g_dev['cam'].expose_command(req, opt, gather_status=True, no_AWS=True, do_sep = False)
                 bright = result['patch']    #  Patch should be circular and 20% of Chip area. ToDo project
-                print("\nSky Bright:  ", bright, '\n')  #  Others are 'NE', 'NW', 'SE', 'SW'.
-                if bright > 35000 and ephemNow < g_dev['events']['End Eve Sky Flats']:
+                print("Bright:  ", bright)  #  Others are 'NE', 'NW', 'SE', 'SW'.
+                if bright > 35000 and (ephemNow < g_dev['events']['End Eve Sky Flats']
+                                  or True):    #NB should gate with end of skyflat window as well.
                     for i in range(1):
                         time.sleep(5)  #  #0 seconds of wait time.  Maybe shorten for wide bands?
                         g_dev['obs'].update_status()
@@ -478,7 +478,6 @@ class Sequencer:
                     acquired_count += 1
                     if acquired_count == flat_count:
                         pop_list.pop(0)
-                    #  Here we might scale up exposures to get more counts, once we have gains.
                 continue
         g_dev['mnt'].park_command({}, {})  #  NB this is provisional, Ok when simulating
         print('\nSky flat complete.\n')
