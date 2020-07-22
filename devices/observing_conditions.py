@@ -2,6 +2,8 @@
 import win32com.client
 import redis
 import time
+import requests
+import json
 from global_yard import g_dev
 
 '''
@@ -80,6 +82,7 @@ class ObservingConditions:
 
 
     def get_status(self):
+
         if self.site == 'saf':
             illum, mag = self.astro_events.illuminationNow()
             if illum > 500:
@@ -97,27 +100,42 @@ class ObservingConditions:
             if self.wx_is_ok:
                 wx_str = "Yes"
             else:
-                wx_str = "No"   #Ideally we add the dominant reason in prioirty order.
-
+                wx_str = "No"   #Ideally we add the dominant reason in priority order.
             #The following may be more restictive since it includes local measured ambient light.
             if self.boltwood_oktoopen.IsSafe and dew_point_gap and temp_bounds:
                 self.ok_to_open = 'Yes'
             else:
                 self.ok_to_open = "No"
-            status = {"temperature_C": '25', #str(round(self.boltwood.Temperature, 2)),
-                      "pressure_mbar": str(784.0),
-                      "humidity_%": '50',#str(self.boltwood.Humidity),
-                      "dewpoint_C": '-3.3',#str(self.boltwood.DewPoint),
-                      "sky_temp_C": '-36',#str(round(self.boltwood.SkyTemperature,2)),
-                      "last_sky_update_s":  "5",#str(round(self.boltwood.TimeSinceLastUpdate('SkyTemperature'), 2)),
-                      "wind_m/s": '3',#str(abs(round(self.boltwood.WindSpeed, 2))),
-                      'rain_rate': '0',#str(self.boltwood.RainRate),
+            status = {"temperature_C": str(round(self.boltwood.Temperature, 2)),
+                      "pressure_mbar": "784.0",
+                      "humidity_%": str(self.boltwood.Humidity),
+                      "dewpoint_C": str(self.boltwood.DewPoint),
+                      "sky_temp_C": str(round(self.boltwood.SkyTemperature,2)),
+                      "last_sky_update_s":  str(round(self.boltwood.TimeSinceLastUpdate('SkyTemperature'), 2)),
+                      "wind_m/s": str(abs(round(self.boltwood.WindSpeed, 2))),
+                      'rain_rate': str(self.boltwood.RainRate),
                       'solar_flux_w/m^2': 'NA',
-                      #  'cloud_cover_%': str(self.boltwood.CloudCover),
+                      'cloud_cover_%': str(self.boltwood.CloudCover),
                       "calc_HSI_lux": str(illum),
                       "calc_sky_mpsas": str(round((mag - 20.01),2)),    #  Provenance of 20.01 is dubious 20200504 WER
                       "wx_ok": wx_str,  #str(self.boltwood_oktoimage.IsSafe),
-                      "open_ok": str(self.ok_to_open)
+                      "open_ok": self.ok_to_open
+                      #"image_ok": str(self.boltwood_oktoimage.IsSafe)
+                      }
+            status2 = {"temperature_C": round(self.boltwood.Temperature, 2),
+                      "pressure_mbar": 784.0,
+                      "humidity_%": self.boltwood.Humidity,
+                      "dewpoint_C": self.boltwood.DewPoint,
+                      "sky_temp_C": round(self.boltwood.SkyTemperature,2),
+                      "last_sky_update_s":  round(self.boltwood.TimeSinceLastUpdate('SkyTemperature'), 2),
+                      "wind_m/s": abs(round(self.boltwood.WindSpeed, 2)),
+                      'rain_rate': self.boltwood.RainRate,
+                      'solar_flux_w/m^2': 'NA',
+                      'cloud_cover_%': self.boltwood.CloudCover,
+                      "calc_HSI_lux": illum,
+                      "calc_sky_mpsas": round((mag - 20.01),2),    #  Provenance of 20.01 is dubious 20200504 WER
+                      "wx_ok": wx_str,  #str(self.boltwood_oktoimage.IsSafe),
+                      "open_ok": self.ok_to_open
                       #"image_ok": str(self.boltwood_oktoimage.IsSafe)
                       }
 
@@ -126,10 +144,10 @@ class ObservingConditions:
                 if uni_measure == 0:
                     uni_measure = round((mag - 20.01),2)   #  Fixes Unihedron when sky is too bright
                 status["meas_sky_mpsas"] = str(uni_measure)
+                status2["meas_sky_mpsas"] = uni_measure
             else:
-                status["meas_sky_mpsas"] = str(round((mag - 20.01),2))    #  Provenance of 20.01 is dubious 20200504 WER
-
-
+                status["meas_sky_mpsas"] = str(round((mag - 20.01),2))
+                status2["meas_sky_mpsas"] = round((mag - 20.01),2) #  Provenance of 20.01 is dubious 20200504 WER
 
             # Only write when around dark, put in CSV format
             obs_win_begin, sunZ88Op, sunZ88Cl, ephemNow = g_dev['obs'].astro_events.getSunEvents()
@@ -256,11 +274,12 @@ class ObservingConditions:
                 self.wx_hold_time = time.time() + 600    #10 minutes
             self.wx_hold_tally += 1     #  This counts all day and night long.
             self.wx_hold_updated = time.time()
+            print("Wx Hold entered.")
             if obs_win_begin <= ephemNow <= sunrise:     #Gate the real holds to be in the Obseving window.
                 self.wx_hold_count += 1
                 #We choose to tell enclosure manager to close.
                 print("Wx hold asserted, flap#:", self.wx_hold_count)
-            if self.wx_test: self.wx_hold_count += 1   #NB do not leave this alive
+ 
 
         elif (not self.wx_is_ok or self.wx_test) and self.wx_hold:     #WX is bad and we are on hold.
             self.wx_hold_updated = time.time()
@@ -269,7 +288,7 @@ class ObservingConditions:
             pass
 
         if (self.wx_is_ok or self.wx_test) and self.wx_hold:     #Wx now good and still on hold.
-            if self.wx_hold_count < 5:
+            if self.wx_hold_count < 3:
                 if time.time() >= self.wx_hold_time:
                     #Time to release the hold.
                     self.wx_hold = False
@@ -283,7 +302,16 @@ class ObservingConditions:
                 self.wx_clamp = True
 
             self.wx_hold_updated = time.time()
-
+        url = "https://api.photonranch.org/api/weather/write"
+        data = json.dumps({
+            "weatherData": status2,
+            "site": 'saf',
+            "timestamp_s": int(time.time())
+            })
+        try:
+            requests.post(url, data)
+        except:
+            print("Wx post failed.")
         return status
 
 

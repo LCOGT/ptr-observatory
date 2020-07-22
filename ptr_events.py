@@ -302,8 +302,8 @@ class Events:
         ptr.horizon = '2'
         sun.compute(ptr)
         #if loud: print('Sun 2: ', sun.ra, sun.dec, sun.az, sun.alt)
-        obs_win_begin = sunset - 90/1440
-        return (obs_win_begin, sunset, sunrise, ephem.now())
+        ops_win_begin = sunset - 60/1440
+        return (ops_win_begin, sunset, sunrise, ephem.now())
 
     def flat_spot_now(self):
         '''
@@ -405,7 +405,7 @@ class Events:
         ptr.horizon = '2'
         sun.compute(ptr)
         #if loud: print('Sun 2: ', sun.ra, sun.dec, sun.az, sun.alt)
-        obs_win_begin = sunset - 90/1440      # Needs to come from site config  NB 1 hour
+        ops_win_begin = sunset - 60/1440      # Needs to come from site config  NB 1 hour
         ptr.horizon = '-1.5'
         sun.compute(ptr)
         #if loud: print('Sun -6: ', sun.ra, sun.dec, sun.az, sun.alt)
@@ -444,11 +444,11 @@ class Events:
         mid_moon_dec = moon.dec
         mid_moon_phase = moon.phase
         eveFlatStartRa, eveFlatStartDec, eveFlatEndRa, eveFlatEndDec, \
-        eveRaDot, eveDecDot = self._calcEveFlatValues(ptr, sun, obs_win_begin, eve_skyFlatEnd, loud=True)
+        eveRaDot, eveDecDot = self._calcEveFlatValues(ptr, sun, ops_win_begin, eve_skyFlatEnd, loud=True)
         mornFlatStartRa, mornFlatStartDec, mornFlatEndRa, mornFlatEndDec, mornRaDot, \
                         mornDecDot = self._calcMornFlatValues(ptr, sun, morn_skyFlatBegin, sunrise, \
                                                         sunrise, loud=True)
-        endEveScreenFlats = obs_win_begin - LONGESTSCREEN
+        endEveScreenFlats = ops_win_begin - LONGESTSCREEN
         beginEveScreenFlats = endEveScreenFlats - SCREENFLATDURATION
         endEveBiasDark = beginEveScreenFlats - LONGESTDARK
         beginEveBiasDark = endEveBiasDark - BIASDARKDURATION
@@ -496,8 +496,8 @@ class Events:
                 ('End Eve Bias Dark  ', ephem.Date(endEveBiasDark)),
                 ('Eve Scrn Flats     ', ephem.Date(beginEveScreenFlats)),
                 ('End Eve Scrn Flats ', ephem.Date(endEveScreenFlats)),
-                ('Obs Window Start   ', ephem.Date(obs_win_begin)),  #Enclosure may open.
-                ('Cool Down, Open    ', ephem.Date(obs_win_begin + 0.5/1440)),
+                ('Ops Window Start   ', ephem.Date(ops_win_begin)),  #Enclosure may open.
+                ('Cool Down, Open    ', ephem.Date(ops_win_begin + 0.5/1440)),
                 ('Eve Sky Flats      ', ephem.Date(eve_skyFlatBegin)),
                 ('Sun Set            ', sunset),
                 ('Civil Dusk         ', civilDusk),
@@ -514,7 +514,7 @@ class Events:
                 ('Morn Sky Flats     ', morn_skyFlatBegin),
                 ('Civil Dawn         ', civilDawn),
                 ('End Morn Sky Flats ', morn_skyFlatEnd),
-                ('Obs Window Closes  ', ephem.Date(morn_skyFlatEnd + 0.5/1440)),   #Enclosure must close
+                ('Ops Window Closes  ', ephem.Date(morn_skyFlatEnd + 0.5/1440)),   #Enclosure must close
                 ('Sun Rise           ', sunrise),
                 ('Moon Rise          ', ptr.previous_rising(moon)),
                 ('Moon Transit       ', ptr.previous_transit(moon)),
@@ -532,6 +532,7 @@ class Events:
             evnt_sort.pop(0)
         # while evnt_sort[-1][0] != 'Morn Sun >2 deg':  # Ditto, see above.
         #     evnt_sort.pop(-1)
+
         while evnt_sort[-1][0] in ['Moon Rise          ', 'Moon Transit       ']:
             evnt_sort.pop(-1)
         evnt_sort
