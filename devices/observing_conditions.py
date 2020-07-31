@@ -181,7 +181,7 @@ class ObservingConditions:
                     illum = round(illum, 3)
                 self.wx_is_ok = True
                 status = {"temperature_C": wx["amb_temp C"],
-                          "pressur_mbar": '978',
+                          "pressure_mbar": '978',
                           "humidity_%": wx["humidity %"],
                           "dewpoint_C": wx["dewpoint C"],
                           "calc_HSI_lux": str(illum),

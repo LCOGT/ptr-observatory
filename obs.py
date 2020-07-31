@@ -236,6 +236,7 @@ class Observatory:
         '''
         uri = f"{self.name}/config/"
         self.config['events'] = g_dev['events']
+        #print(self.config)
         response = self.api.authenticated_request("PUT", uri, self.config)
         if response:
             print("Config uploaded successfully.")

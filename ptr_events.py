@@ -402,6 +402,12 @@ class Events:
         sunset = ptr.next_setting(sun)
         middleNight = ptr.next_antitransit(sun)
         sunrise = ptr.next_rising(sun)
+        next_moonrise = ptr.next_rising(moon)
+        next_moontransit = ptr.next_transit(moon)
+        next_moonset = ptr.next_setting(moon)
+        last_moonrise = ptr.previous_rising(moon)
+        last_moontransit = ptr.previous_transit(moon)
+        last_moonset = ptr.previous_setting(moon)
         ptr.horizon = '2'
         sun.compute(ptr)
         #if loud: print('Sun 2: ', sun.ra, sun.dec, sun.az, sun.alt)
@@ -434,7 +440,7 @@ class Events:
         astroDark = ptr.next_setting(sun)
         astroEnd = ptr.next_rising(sun)
         duration = (astroEnd - astroDark)*24
-        ptr.date = middleNight
+        ptr.date = dayNow - 1#middleNight
         moon.compute(ptr)
         sun=ephem.Sun()
         sun.compute(ptr)
@@ -516,13 +522,12 @@ class Events:
                 ('End Morn Sky Flats ', morn_skyFlatEnd),
                 ('Ops Window Closes  ', ephem.Date(morn_skyFlatEnd + 0.5/1440)),   #Enclosure must close
                 ('Sun Rise           ', sunrise),
-                ('Moon Rise          ', ptr.previous_rising(moon)),
-                ('Moon Transit       ', ptr.previous_transit(moon)),
-                ('Moon Set           ', ptr.previous_setting(moon)),
-                ('Moon Rise          ', ptr.next_rising(moon)),
-                ('Moon Transit       ', ptr.next_transit(moon)),
-                ('Moon Set           ', ptr.next_setting(moon))]
-
+                ('Prior Moon Rise    ', last_moonrise),
+                ('Prior Moon Transit ', last_moontransit),
+                ('Prior Moon Set     ', last_moonset),
+                ('Moon Rise          ', next_moonrise),
+                ('Moon Transit       ', next_moontransit),
+                ('Moon Set           ', next_moonset)]
 
         #print("No report of post-close events is available yet. \n\n")
         evnt_sort = self._sortTuple(evnt)
@@ -533,8 +538,8 @@ class Events:
         # while evnt_sort[-1][0] != 'Morn Sun >2 deg':  # Ditto, see above.
         #     evnt_sort.pop(-1)
 
-        while evnt_sort[-1][0] in ['Moon Rise          ', 'Moon Transit       ']:
-            evnt_sort.pop(-1)
+        while evnt_sort[-1][0] in ['Moon Rise          ', 'Moon Transit       ', ]:
+             evnt_sort.pop(-1)
         evnt_sort
         timezone = "  " + self.config['timezone'] + ": "
         offset = self.config['time_offset']

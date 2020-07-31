@@ -24,7 +24,7 @@ import pprint
 
 iso_day = datetime.date.today().isocalendar()
 equinox_years = round((iso_day[0] + ((iso_day[1]-1)*7 + (iso_day[2] ))/365), 2) - 2000
-tycho_cat = open("E:/Users/User/Documents/GitHub/ptr-observatory/support_info/tycho_mag_7.dat", 'r')  #Get set up properly wiht relative file specification
+tycho_cat = open("C:/Users/obs/Documents/GitHub/ptr-observatory/support_info/tycho_mag_7.dat", 'r')  #Get set up properly wiht relative file specification
 tycho_tuple = []
 for line in tycho_cat:
     entry = line.split(' ')
@@ -154,7 +154,6 @@ def az_sort_targets(pSidTime, alt_lim=20):
             continue
         sortedTargetList.append((round(az, 3), star))
     sortedTargetList.sort()
-    breakpoint()
     #print('distSortTargets', len(targetList), targetList, '\n\n')
     #print('distSortTargets', len(sortedTargetList), SortedTargetList, '\n\n')
     return sortedTargetList     #  NB NB NBNeed to guard against an empty list.
