@@ -175,7 +175,7 @@ class Sequencer:
         elif action == "run" and script == 'genSkyFlatMasters':
             self.sky_flat_script(req, opt)
         elif action == "run" and script in ['32TargetPointingRun', 'pointingRun', 'makeModel']:
-            self.equatorial_pointing_run(req, opt)
+            self.sky_grid_pointing_run(req, opt)
         elif action == "run" and script in ("genBiasDarkMaster", "genBiasDarkMasters"):
             self.bias_dark_script(req, opt)
         elif action == "run" and script == "takeLRGBstack":
@@ -232,8 +232,8 @@ class Sequencer:
         elif  (events['Eve Sky Flats'] < ephem_now < events['End Eve Sky Flats'])  \
                 and g_dev['enc'].mode == 'Automatic' \
                 and g_dev['ocn'].wx_is_ok \
-                and g_dev['enc'].wait_time <= 0 \
-                and not self.guard:
+                and not g_dev['ocn'].wx_hold \
+                and not self.guard:      #  and g_dev['ocn'].wait_time <= 0 \
             self.guard = True
             self.current_script = "Eve Sky Flat script"
             self.sky_flat_script({}, {})   #Null command dictionaries
@@ -437,7 +437,7 @@ class Sequencer:
         print('Eve Sky Flat sequence Starting, Enclosure PRESUMED Open. Telescope will un-park.')
         camera_name = str(self.config['camera']['camera1']['name'])
         flat_count = 5
-        exp_time = 3
+        exp_time = .1
         #  NB Sometime, try 2:2 binning and interpolate a 1:1 flat.  This might run a lot faster.
         if flat_count < 1: flat_count = 1
         g_dev['mnt'].unpark_command({}, {})
@@ -453,8 +453,8 @@ class Sequencer:
         pop_list = self.config['filter_wheel']['filter_wheel1']['settings']['filter_sky_sort']
         print('filters by low to high transmission:  ', pop_list)
         obs_win_begin, sunset, sunrise, ephemNow = self.astro_events.getSunEvents()
-        while len(pop_list) > 0 and (ephemNow < g_dev['events']['End Eve Sky Flats']
-                                  or True):
+        while len(pop_list) > 0 and (ephemNow < g_dev['events']['End Eve Sky Flats']):
+
             current_filter = int(pop_list[0])
             acquired_count = 0
             #g_dev['fil'].set_number_command(current_filter)
@@ -801,7 +801,86 @@ IF sweep
         print("Equatorial sweep completed. Happy reducing.")
         self.guard = False
         return
-        
+ 
+    def sky_grid_pointing_run(self, reg, opt, spacing=10, vertical=False, grid=False, alt_minimum=25):
+        '''
+        unpark telescope
+        if not open, open dome
+        go to zenith & expose (Consider using Nearest mag 7 grid star.)
+        verify reasonable transparency
+            Ultimately, check focus, find a good exposure level
+        go to -72.5 degrees of ha, 0  expose
+        ha += 10; repeat to Ha = 67.5
+        += 5, expose
+        -= 10 until -67.5
+
+        if vertical go ha = -0.25 and step dec 85 -= 10 to -30 then
+        flip and go other way with offset 5 deg.
+
+        For Grid use Patrick Wallace's Mag 7 Tyco star grid it covers
+        sky equal-area, has a bright star as target and wraps around
+        both axes to better sample the encoders. Choose and load the
+        grid coarseness.
+        '''
+        '''
+        Prompt for ACCP model to be turned off
+        if closed:
+           If WxOk: open
+        if parked:
+             unpark
+
+         pick grid star near zenith in west (no flip)
+              expose 10 s
+              solve
+              Is there a bright object in field?
+              adjust exposure if needed.
+        Go to (-72.5deg HA, dec = 0),
+             Expose, calibrate, save file.  Consider
+             if we can real time solve or just gather.
+        step 10 degrees forward untl ha is 77.5
+        at 77.5 adjust target to (72.5, 0) and step
+        backward.  Stop when you get to -77.5.
+        park
+        Launch reduction
+
+A variant on this is cover a grid, cover a + sign shape.
+IF sweep
+        '''
+        self.guard = True
+        print("Starting sky sweep.")
+        g_dev['mnt'].unpark_command()
+        #cam_name = str(self.config['camera']['camera1']['name'])
+        breakpoint()
+        sid = g_dev['mnt'].mount.SiderealTime
+        grid_stars = tycho.az_sort_targets(sid, 35, sid)
+        #last_az = 0.01
+        for grid_star in grid_stars:
+            breakpoint()
+            if grid_star is None:
+                print("No near star, skipping.")   #This should not happen.
+                continue
+            print("Going to near grid star " + str(grid_star[0]) + "  degrees away.")
+            req = {'ra':  grid_star[1][1],
+                   'dec': grid_star[1][0]     #Note order in important (dec, ra)
+                   }
+            opt = {}
+            g_dev['mnt'].go_command(req, opt)
+            while g_dev['mnt'].mount.Slewing or g_dev['enc'].enclosure.Slewing:
+                g_dev['obs'].update_status()
+                time.sleep(0.5)
+
+            time.sleep(3)
+            g_dev['obs'].update_status()
+            # req = {'time': 10,  'alias': cam_name, 'image_type': 'Light Frame'}
+            # opt = {'size': 100, 'count': 1, 'filter': g_dev['fil'].filter_data[0][0], 'hint': 'Equator pointing run.'}
+            # result = g_dev['cam'].expose_command(req, opt)
+            g_dev['obs'].update_status()
+            result = 'simulated'
+            print('Result:  ', result)
+        g_dev['mnt'].stop_command()
+        print("Equatorial sweep completed. Happy reducing.")
+        self.guard = False
+        return       
         
         # #Grid 
         

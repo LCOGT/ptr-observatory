@@ -15,7 +15,7 @@ with self.status, a dictionary.
 This module should be expanded to integrate multiple Wx sources, particularly Davis and
 SkyAlert.
 
-Weather holds are counted only when they INITIATE withing the Observing window. So if a
+Weather holds are counted only when they INITIATE within the Observing window. So if a
 hold started just before the window and opening was late that does not count for anti-
 flapping purposes.
 
@@ -45,13 +45,13 @@ class ObservingConditions:
         self.observing_condtions_message = '-'
         self.wx_is_ok = None
         self.wx_hold = False
-        self.wx_hold_updated = time.time()   #This is meant for a stale check on the Wx hold report
+        self.wx_hold_last_updated = time.time()   #This is meant for a stale check on the Wx hold report
         self.wx_hold_tally = 0
         self.wx_clamp = False
         self.clamp_latch = False
         self.wait_time = 0        #A countdown to re-open
         self.wx_close = False     #If made true by Wx code, a 15 minute timeout will begin when Wx turns OK
-        self.wx_hold_time = None
+        self.wx_hold_until_time = None
         self.wx_hold_count = 0     #if >=5 inhibits reopening for Wx
         self.wait_time = 0        #A countdown to re-open
         self.wx_close = False     #If made true by Wx code, a 15 minute timeout will begin when Wx turns OK
@@ -93,7 +93,7 @@ class ObservingConditions:
             temp_bounds = not (self.boltwood.Temperature < 2.0) or (self.boltwood.Temperature > 35)
             wind_limit = self.boltwood.WindSpeed < 35/2.235   #Boltwood report m/s, Clarity may report in MPH
             sky_amb_limit  = self.boltwood.SkyTemperature < -30
-            humidity_limit = 3 < self.boltwood.Humidity < 80
+            humidity_limit = 1 < self.boltwood.Humidity < 80
             rain_limit = self.boltwood.RainRate <= 0.001
             self.wx_is_ok = dew_point_gap and temp_bounds and wind_limit and sky_amb_limit and \
                             humidity_limit and rain_limit
@@ -150,9 +150,9 @@ class ObservingConditions:
                 status2["meas_sky_mpsas"] = round((mag - 20.01),2) #  Provenance of 20.01 is dubious 20200504 WER
 
             # Only write when around dark, put in CSV format
-            obs_win_begin, sunZ88Op, sunZ88Cl, ephemNow = g_dev['obs'].astro_events.getSunEvents()
+            obs_win_begin, sunset, sunrise, ephemNow = g_dev['obs'].astro_events.getSunEvents()
             quarter_hour = 0.15/24
-            if  (obs_win_begin - quarter_hour < ephemNow < sunZ88Cl + quarter_hour) \
+            if  (obs_win_begin - quarter_hour < ephemNow < sunrise + quarter_hour) \
                  and self.unihedron.Connected and (time.time() >= self.sample_time + 30.):    #  Two samples a minute.
                 try:
                     wl = open('D:/000ptr_saf/wx_log.txt', 'a')   #  NB This is currently site specifc but in code w/o config.
@@ -263,36 +263,38 @@ class ObservingConditions:
         '''
         obs_win_begin, sunset, sunrise, ephemNow = self.astro_events.getSunEvents()
         if (self.wx_is_ok and not self.wx_test) and not self.wx_hold:     #Normal condition, possibly nothing to do.
-            self.wx_hold_updated = time.time()
+            self.wx_hold_last_updated = time.time()
 
         elif (not self.wx_is_ok or self.wx_test) and not self.wx_hold:     #Wx bad and no hold yet.
             #Bingo we need to start a cycle
             self.wx_hold = True
             if self.wx_test:
-                self.wx_hold_time = time.time() + 20    #20 seconds
+                self.wx_hold_until_time = time.time() + 20    #20 seconds
             else:
-                self.wx_hold_time = time.time() + 600    #10 minutes
+                self.wx_hold_until_time = time.time() + 600    #10 minutes
             self.wx_hold_tally += 1     #  This counts all day and night long.
-            self.wx_hold_updated = time.time()
+            self.wx_hold_last_updated = time.time()
             print("Wx Hold entered.")
             if obs_win_begin <= ephemNow <= sunrise:     #Gate the real holds to be in the Obseving window.
                 self.wx_hold_count += 1
-                #We choose to tell enclosure manager to close.
-                print("Wx hold asserted, flap#:", self.wx_hold_count)
+                #We choose to let the enclosure manager handle the close.
+                print("Wx hold asserted, flap#:", self.wx_hold_count, self.wx_hold_tally)
  
 
         elif (not self.wx_is_ok or self.wx_test) and self.wx_hold:     #WX is bad and we are on hold.
-            self.wx_hold_updated = time.time()
+            self.wx_hold_last_updated = time.time()
             #Stay here as long as we need to. No point in reporting or logging.
         else:
             pass
 
         if (self.wx_is_ok or self.wx_test) and self.wx_hold:     #Wx now good and still on hold.
             if self.wx_hold_count < 3:
-                if time.time() >= self.wx_hold_time:
+                if time.time() >= self.wx_hold_until_time:
                     #Time to release the hold.
                     self.wx_hold = False
-                    print("Wx hold released, flap#:", self.wx_hold_count)
+                    self.wx_hold_until_time = time.time()
+                    self.wx_hold_last_updated = time.time()
+                    print("Wx hold released, flap#:", self.wx_hold_count, self.wx_hold_tally)
                     #We choose to let the enclosure manager discover it can re-open.
             else:
                 #Never release the hold without some special high level intervention.
@@ -301,7 +303,7 @@ class ObservingConditions:
                 self.clamp_latch = True
                 self.wx_clamp = True
 
-            self.wx_hold_updated = time.time()
+            self.wx_hold_last_updated = time.time()
         url = "https://api.photonranch.org/api/weather/write"
         data = json.dumps({
             "weatherData": status2,
