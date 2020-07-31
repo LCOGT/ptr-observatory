@@ -444,13 +444,13 @@ class Camera:
         #                                              ['settings']['reference_gain'][bin_x - 1]))
         readout_time = float(self.config['camera']['camera1']['settings']['readout_time'][bin_x - 1])
         exposure_time = float(required_params.get('time', 0.00001))   #  0.0 may be the best default.
-        self.estimated_readtime = (exposure_time + readout_time)*1.25*3   #  3 is the outer retry loop maximum.
+        self.estimated_readtime = (exposure_time + 2*readout_time)*1.25*3   #  3 is the outer retry loop maximum.
         #exposure_time = max(0.2, exposure_time)  #Saves the shutter, this needs qualify with imtype.
         imtype= required_params.get('image_type', 'Light')
-        # if imtype.lower() in ['experimental']:
-        #     g_dev['enc'].wx_test = not g_dev['enc'].wx_test
-        #     return
-        count = int(optional_params.get('count', 1))   #For now, Repeats are external to full expose command.
+        if imtype.lower() in ['experimental']:
+            g_dev['enc'].wx_test = not g_dev['enc'].wx_test
+            return
+        count = int(optional_params.get('count', 1))   #FOr now Repeats are external to full expose command.
         lcl_repeat = 1
         if count < 1:
             count = 1   #Hence frame does not repeat unless count > 1
@@ -741,7 +741,6 @@ class Camera:
                         if exposure_time > 3600:
                             exposure_time = 3600
                         self.entry_time = self.t2
-                        print('Expose called at:  ', self.entry_time)
                         self._expose (exposure_time, img_type)
                     else:
                         print("Something terribly wrong, driver not recognized.!")
@@ -759,11 +758,11 @@ class Camera:
                     self.exposure_busy = False
                     self.t10 = time.time()
                     #self._stop_expose()
-                    print("t_0 to finish_expose took:  ", round(self.t10 - self.t_0 , 2), ' returned:  ', result)
+                    print("inner expose took:  ", round(self.t10 - self.t_0 , 2), ' returned:  ', result)
                     self.retry_camera = 0
                     break
                 except Exception as e:
-                    print('Expose top level Exception:  ', e)
+                    print('Exception:  ', e)
                     self.retry_camera -= 1
                     continue
             #  This point demarcates the retry_3_times loop
@@ -826,14 +825,12 @@ class Camera:
                     g_dev['ocn'].get_quick_status(self.post_ocn)
                 self.t5 = time.time()
                 if (self.maxim or self.ascom) and self.camera.ImageReady:
-                    print("Reading out camera.")
                     self.t4 = time.time()
+                    print("reading out camera, takes ~20 seconds.")
                     # self.t6 = time.time()
                     # breakpoint()
                     self.img = self.camera.ImageArray
                     self.t7 = time.time()
-                    print("Readout took:  ", round(self.t7 - self.t4), ' seconds.')
-                    
                     self._stop_expose()  #Is this necessary?
                     #Consider doing a Maxim dummy write to flush. 
                     if self.maxim:
@@ -846,20 +843,14 @@ class Camera:
                         overscan = int(np.median(self.img[33:, -22:]))
                         trimed = self.img[36:,:-26] + pedastal - overscan
                         square = trimed[121:121+6144,1715:1715+6144]
-                        smin = np.where(square < 0) 
-                        square[smin] = 0               #marks them as 0
-                        self.img = square.astype('uint16')
-                        test_saturated = np.array(self.img)[1536:4608, 1536:4608]
                     elif ix == 4800:
                         overscan = int(np.median(self.img[17:, -11:]))
                         trimed = self.img[18:,:-13] + pedastal - overscan
                         square = trimed[61:61+3072,857:857+3072]
-                        smin = np.where(square < 0) 
-                        square[smin] = 0               #marks them as 0
-                        self.img = square.astype('uint16')
-                        test_saturated = np.array(self.img)[768:2304, 768:2304]
                     else:
                         print("Incorrect chip size or bin specified.")
+                    smin = np.where(square < 0)    #finds negative pixels
+                    square[smin] = 0               #marks them as 0
                     self.img = square.astype('uint16')
                     test_saturated = np.array(self.img)[1536:4608, 1536:4608]
                     #test_saturated += 50000   #Only a test.
@@ -1092,7 +1083,7 @@ class Camera:
                                  }
                         #print('Path dict:  ', paths)
                         #NB  IT may be easiest for autofocus to do the sep run here:  Hot pix then AF.
-                        script = True
+
                         if not quick and not script in ('True', 'true', 'On', 'on'):
                             self.enqueue_for_AWS(text_data_size, im_path, text_name)
                             self.to_reduce((paths, hdu))
@@ -1141,7 +1132,35 @@ class Camera:
                     g_dev['obs'].update_status()   #THIS CALL MUST NOT ACCESS MAXIM OBJECT!
                     time_now = self.t7= time.time()
                     remaining = round(self.completion_time - time_now, 1)
-                    print("Estimated exposure time remaining:  ", remaining)
+                    print("Exposure time remaining:", remaining)
+
+                    # NB Turn this into a % for a progress bar.
+                    #loop_count = int((remaining/0.3)*0.7)
+
+                    # print("Basic camera wait loop, be patient:  ", round(remaining, 1), ' sec.')
+                    # for i in range(loop_count):
+                    #     #g_dev['obs'].update_status()
+                    #     time.sleep(0.3)
+                    #     if i % 30 == 0:
+                    #         time_now = self.t7= time.time()
+                    #         remaining = round(self.completion_time - time_now, 1)
+                    #         print("Basic camera dwell loop, be patient:  ", round(remaining, 1), ' sec.')
+                    #         g_dev['obs'].update_status()
+
+
+                        # if i % 100 == 45:
+                        #     lcl_connected = self._connected()
+                        #     if i < loop_count*0.95 and not lcl_connected:
+                        #         print("Connected dr0pped")
+                        #         breakpoint()
+                        #     print('Camera is connected:  ', lcl_connected)
+                        # if i % 100 == 75:
+                        #     lcl_running = self.camera.SequenceRunning
+                        #     if i < loop_count * 0.95 and not lcl_running:
+                        #         print("Sequence dropped out.")
+                        #         breakpoint()
+                        #     else:
+                        #         print('Sequencer is Busy:  ', lcl_running)
 
                     #it takes about 15 seconds from AWS to get here for a bias.
             except Exception as e:

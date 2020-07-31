@@ -437,7 +437,7 @@ class Sequencer:
         print('Eve Sky Flat sequence Starting, Enclosure PRESUMED Open. Telescope will un-park.')
         camera_name = str(self.config['camera']['camera1']['name'])
         flat_count = 5
-        exp_time = 3
+        exp_time = .1
         #  NB Sometime, try 2:2 binning and interpolate a 1:1 flat.  This might run a lot faster.
         if flat_count < 1: flat_count = 1
         g_dev['mnt'].unpark_command({}, {})
