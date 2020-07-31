@@ -145,10 +145,13 @@ class Camera:
             self.maxim = True
             self.ascom = False
             print('Control is Maxim camera interface.')
-        print(self._connect(True))
-        print(self._connected())
-        print(self._setpoint(float(self.config['camera']['camera1']['settings']['temp_setpoint'])))
-        print(self._temperature)
+            self.app = win32com.client.Dispatch("Maxim.Application")
+            self.app.TelescopeConnected = True
+            print("Maxim Telescope Connected: ", self.app.TelescopeConnected)
+        print('Maxim is connected:  ', self._connect(True))
+        #  print(self._connected())
+        print('Setpoint:  ',self._setpoint(float(self.config['camera']['camera1']['settings']['temp_setpoint'])))
+        print('Chip Temperature:  ', self._temperature())
         cooler_on = self.config['camera']['camera1'] \
                                ['settings']['cooler_on'] in ['True', 'true', 'Yes', 'yes', 'On', 'on']
         self.camera.CoolerOn = cooler_on
@@ -156,6 +159,7 @@ class Camera:
         self.current_filter = 0    #W in Apache Ridge case. #This should come from congig, filter section
         self.exposure_busy = False
         self.cmd_in = None
+        self.t7 = None
         self.camera_message = '-'
         self.alias = self.config['camera']['camera1']['name']
         self.site_path = self.config['site_path']
@@ -397,15 +401,34 @@ class Camera:
         image data.
         '''
         print('Expose Entered.  req:  ', required_params, 'opt:  ', optional_params)
+        print("Checking if Maxim is still connected!")
+        if self.t7 is not None and (time.time() - self.t7 > 30):
+            self._connect(False)
+            self._connect(True)
+            self.camera.CoolerOn = True
+            
+        # try:
+        #     probe = False
+        #     breakpoint()
+        #     self._connect(False)
+        #     self._connect(True)
+        #     probe = self.connected()
+        #     self.camera.CoolerOn = True
+        #     print("Maxim is  connected:  ", probe)
+        # except:
+        #     print("Reconnecting Maxim failed, try again.")
+        #     self._connect(False)
+        #     self._connect(True)
+        #     self.camera.CoolerOn = True
         opt = optional_params
         self.t_0 = time.time()
         self.hint = optional_params.get('hint', '')
         self.script = required_params.get('script', 'None')
         bin_x = optional_params.get('bin', self.config['camera']['camera1'] \
                                                       ['settings']['default_bin'])  #NB this should pick up config default.
-        if bin_x == '4, 4':# For now this is thei highest level of binning supported.
+        if bin_x == '4, 4':# For now this is the highest level of binning supported.
             bin_x = 2
-        elif bin_x == '3, 3':   #replace with in and various formats or stip spaces.
+        elif bin_x == '3, 3':   #replace with in and various formats or strip spaces.
             bin_x = 2
         elif bin_x == '2, 2':
             bin_x = 2
@@ -809,6 +832,9 @@ class Camera:
                     self.img = self.camera.ImageArray
                     self.t7 = time.time()
                     self._stop_expose()  #Is this necessary?
+                    #Consider doing a Maxim dummy write to flush. 
+                    if self.maxim:
+                        self.camera.SaveImage("D:/000ptr_saf/garbage/junk.fit")   #  Need to empty this patch.
                     self.img = np.array(self.img).transpose().astype('int32')
                     #Overscan remove and trim
                     pedastal = 200

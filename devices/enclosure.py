@@ -39,7 +39,7 @@ class Enclosure:
         self.state = 'Closed.  Initialized class property value.'
         self.mode = 'Manual'   #  Auto|User Control|User Close|Disable
         self.enclosure_message = '-'
-        self.external_close = False   #If made true by operator system will not reopen for the night
+        self.external_close = False   #If made true by operator,  system will not reopen for the night
         self.dome_opened = False   #memory of prior issued commands  Restarting code may close dome one time.
         self.dome_homed = False
         self.cycles = 0
@@ -157,6 +157,7 @@ class Enclosure:
         pass
 
     def guarded_open(self):
+        #The guard is excessively redundant.
         if g_dev['ocn'].wx_is_ok and not (g_dev['ocn'].wx_hold \
                                           or g_dev['ocn'].clamp_latch):     # NB Is Wx ok really the right criterion???
             try:
@@ -209,6 +210,7 @@ class Enclosure:
             #  We are now in the full operational window.
             if g_dev['events']['Ops Window Start'] <= ephemNow <= g_dev['events']['Sun Set'] \
                 and self.mode == 'Automatic' and not wx_hold:
+                #  Basically if in above winow and Automatic and Not Wx_hold: if closed, open up.
                 #  print('\nSlew to opposite the azimuth of the Sun, open and cool-down. Az =  ', az_opposite_sun)
                 #  NB There is no corresponding warm up phase in the Morning.
                 if self.status_string.lower() in ['closed']:  #, 'closing']:
@@ -246,42 +248,49 @@ class Enclosure:
                 self.cycles += 1           #if >=3 inhibits reopening for Wx  -- may need shelving so this persists.
                 #  A countdown to re-open
                 if self.status_string.lower() in ['closed', 'closing']:
-                    success =self.guarded_open()   #<<<<NB NB NB Only enable when code is fully proven to work.
+                    self.guarded_open()   #<<<<NB NB NB Only enable when code is fully proven to work.
                     if self.isDome:
                         self.enclosure.Slaved = True
-                    print("Night time Open issued to the "  + shutter_str, +   '   Following Mounting.')
-            elif (obs_win_begin >= ephemNow or ephemNow >= sunrise \
-                    and self.mode == 'Automatic') or close_cmd:
-                if close_cmd:
-                    self.state = 'User Closed the '  + shutter_str
-                else:
-                    self.state = 'Daytime normally Closed the ' + shutter_str
-                if self.status_string.lower() in ['open', 'opening']:
-                    try:
-                        if self.is_dome:      #NB a decorator could eliminate this overused if-statement.
-                            self.enclosure.Slaved = False
-                        self.enclosure.CloseShutter()
-                        print("Daytime Close issued to the " + shutter_str  + "   No longer fololwing Mount.")
-                    except:
-                        print("Shutter busy right now!")
+                    print("Night time Open issued to the "  + shutter_str, +   ' and is now following Mounting.')
+        elif (obs_win_begin >= ephemNow or ephemNow >= sunrise) \
+                and self.mode == 'Automatic' or close_cmd:
+            if close_cmd:
+                self.state = 'User Closed the '  + shutter_str
+            else:
+                self.state = 'Daytime normally Closed the ' + shutter_str
+            if self.status_string.lower() in ['open', 'opening'] \
+                or not self.enclosure.AtHome:
+                try:
+                    if self.is_dome:
+                        self.enclosure.Slaved = False
+                    self.enclosure.CloseShutter()
+                    self.dome_opened = False
+                    self.dome_homed = True
+                    print("Daytime Close issued to the " + shutter_str  + "   No longer following Mount.")
+                except:
+                    print("Shutter busy right now!")
         else:
             #  We are outside of the observing window so close the dome, with a one time command to
             #  deal with the case of software restarts. Do not pound on the dome because it makes
             #  off-hours entry difficult.
             #  NB this happens regardless of automatic mode.
+            #  The dome may come up reporting closed when it is open, but it does report unhomed as
+            #  the condition not AtHome.
 
+    
             if not self.dome_homed:
                 if self.is_dome:
                     self.enclosure.Slaved = False
                 try:
-                    if self.status_string.lower() in ['open']:
-                        pass
-                        #self.enclosure.CloseShutter()   #ASCOM DOME will fault if it is Opening or closing
+                    if self.status_string.lower() in ['open'] \
+                        or not self.enclosure.AtHome:
+                        #pass
+                        self.enclosure.CloseShutter()   #ASCOM DOME will fault if it is Opening or closing
                 except:
                     print('Dome close cmd appeared to fault.')
                 self.dome_opened = False
                 self.dome_homed = True
-                print("One time close of enclosure NOT NOT NOT issued, normally after a code restart.")
+                print("One time close of enclosure issued, normally done during Python code restart.")
 
 
 if __name__ =='__main__':

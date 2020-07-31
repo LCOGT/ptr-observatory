@@ -11,6 +11,7 @@ import socket
 import struct
 import os
 import shelve
+import math
 from collections import namedtuple
 from astropy.time import Time
 from astropy import units as u
@@ -38,6 +39,60 @@ for line in tycho_cat:
     tycho_tuple.append((dec_degrees, ra_hours))
 tycho_cat.close()
 tycho_tuple.sort()
+
+def reduceHa(pHa):
+    while pHa <= -12:
+        pHa += 24.0
+    while pHa > 12:
+        pHa -= 24.0
+    return pHa
+
+def reduceRa(pRa):
+    while pRa < 0:
+        pRa += 24.0
+    while pRa >= 24:
+        pRa -= 24.0
+    return pRa
+
+def reduceDec( pDec):
+    if pDec > 90.0:
+        pDec = 90.0
+    if pDec < -90.0:
+        pDec = -90.0
+    return pDec
+
+def reduceAlt(pAlt):
+    if pAlt > 90.0:
+        pAlt = 90.0
+    if pAlt < -90.0:
+        pAlt = -90.0
+    return pAlt
+
+def reduceAz(pAz):
+    while pAz < 0.0:
+        pAz += 360
+    while pAz >= 360.0:
+        pAz -= 360.0
+    return pAz
+
+def transform_haDec_to_azAlt(pLocal_hour_angle, pDec):
+    lat = 35.554444
+    latr = math.radians(lat)
+    sinLat = math.sin(latr)
+    cosLat = math.cos(latr)
+    decr = math.radians(pDec)
+    sinDec = math.sin(decr)
+    cosDec = math.cos(decr)
+    mHar = math.radians(15.*pLocal_hour_angle)
+    sinHa = math.sin(mHar)
+    cosHa = math.cos(mHar)
+    altitude = math.degrees(math.asin(sinLat*sinDec + cosLat*cosDec*cosHa))
+    y = sinHa
+    x = cosHa*sinLat - math.tan(decr)*cosLat
+    azimuth = math.degrees(math.atan2(y, x)) + 180
+    azimuth = reduceAz(azimuth)
+    altitude = reduceAlt(altitude)
+    return (azimuth, altitude)#, local_hour_angle)
 
 def dist_sort_targets(pRa, pDec, pSidTime):
     '''
@@ -71,16 +126,63 @@ def dist_sort_targets(pRa, pDec, pSidTime):
             cat_sign = -1
         else:
             cat_sign = 1
+        
         if cat_sign == sign:
             sep = c1.separation(c2)
+            if sep.degree > 65 :
+                continue
             sortedTargetList.append((sep.degree, star))
     sortedTargetList.sort()
     #print('distSortTargets', len(targetList), targetList, '\n\n')
-    #print('distSortTargets', len(sortedTargetList), SortedTargetList, '\n\n')
+    print('distSortTargets', len(sortedTargetList), sortedTargetList, '\n\n')
     return sortedTargetList[0]
 
+def az_sort_targets(pRa, pDec, pSidTime):
+    '''
+    Given incoming Ra and Dec produce a list of tuples sorted by distance
+    of Nav Star from that point, closest first. In additon full site
+    Horizon cull is applied.
+    '''
+    #print(pRa, pDec, pSidTime)
+    global tycho_tuple
+    breakpoint()
+    ha =   pSidTime - pRa
+    while ha < -12:
+        ha += 24
+    while ha >= 12:
+        ha -= 12
+    if ha < 0:
+        sign = -1
+    else:
+        sign = 1
+
+    c1 = SkyCoord(ra=pRa*u.hr, dec=pDec*u.deg)
+    sortedTargetList = []
+    for star in tycho_tuple:
+        #if horizonCheck(star[0], star[1], pSidTime):
+        c2 = SkyCoord(ra=star[1]*u.hr, dec=star[0]*u.deg)
+        cat_ha = pSidTime - star[1]
+        while cat_ha < -12:
+            cat_ha += 24
+        while cat_ha >= 12:
+            cat_ha -= 12
+        if cat_ha < 0:
+            cat_sign = -1
+        else:
+            cat_sign = 1
+        az, alt = transform_haDec_to_azAlt(cat_ha, star[0])
+        #if cat_sign == sign:
+        sep = c1.separation(c2)
+        if sep.degree > 65 or alt < 25:
+            continue
+        sortedTargetList.append((az, star))
+    sortedTargetList.sort()
+    #print('distSortTargets', len(targetList), targetList, '\n\n')
+    print('AzSortTargets', len(sortedTargetList[::2]), sortedTargetList[::2], '\n\n')
+    return sortedTargetList[::2]
+
 if __name__ == '__main__':
-    print (dist_sort_targets(0, 34, 23))
+    print (az_sort_targets(17, 35, 17))
 
 
 
