@@ -289,6 +289,10 @@ def create_super_dark(input_images, out_path, super_name, super_bias_name):
         super_bias_img = ccdproc.CCDData.read(out_path + super_bias_name, ignore_missing_end=True)
     except:
         print(out_path + super_bias_name, 'failed')
+    try:
+        super_bias_img.data += super_bias_img.meta['PEDASTAL']
+    except:
+        pass
     while len(input_images) > 0:
         inputs = []
         print('SD chunk:  ', len(input_images[0]), input_images[0])
@@ -298,6 +302,7 @@ def create_super_dark(input_images, out_path, super_name, super_bias_name):
             corr_dark = ccdproc.subtract_bias(
                        (ccdproc.CCDData.read(input_images[0][img])),
                         super_bias_img)
+            corr_dark = corr_dark.add(corr_dark.meta['PEDASTAL']*u.adu)
             im = corr_dark
             im.data = im.data.astype(np.float32)
             inputs.append(im)
@@ -306,9 +311,9 @@ def create_super_dark(input_images, out_path, super_name, super_bias_name):
         print(inputs[-1])
         combiner = Combiner(inputs)
         if len(inputs) > 9:
-            im_temp= combiner.sigma_clipping(low_thresh=2, high_thresh=3, func = np.ma.median)
+            im_temp= combiner.sigma_clipping(low_thresh=2, high_thresh=3, func=np.ma.median)
         else:
-            im_temp = combiner.sigma_clipping(low_thresh=2, high_thresh=3, func = np.ma.mean)
+            im_temp = combiner.sigma_clipping(low_thresh=2, high_thresh=3, func=np.ma.mean)
         im_temp = combiner.average_combine()
         im_temp.data = im_temp.data.astype(np.float32)
         print(im_temp.data.mean())
@@ -321,9 +326,9 @@ def create_super_dark(input_images, out_path, super_name, super_bias_name):
     print("Now we combine the outer data to make the master.")
     combiner = Combiner(super_image)
     if len(super_image) > 9:
-        super_img = combiner.sigma_clipping(low_thresh=2, high_thresh=3, func = np.ma.median)
+        super_img = combiner.sigma_clipping(low_thresh=2, high_thresh=3, func=np.ma.median)
     else:
-        super_img = combiner.sigma_clipping(low_thresh=2, high_thresh=3, func = np.ma.mean)
+        super_img = combiner.sigma_clipping(low_thresh=2, high_thresh=3, func=np.ma.mean)
     super_img = combiner.average_combine()
     combiner = None
     super_img.data = super_img.data.astype(np.float32)
@@ -420,7 +425,7 @@ def make_master_bias (alias, path,  lng_path , selector_string, out_file):
 
     file_list = glob.glob(path + selector_string)
     shuffle(file_list)
-    file_list = file_list[:9*9]   #Temporarily limit size of reduction.
+    file_list = file_list[:9*3]   #Temporarily limit size of reduction.
     print('# of files:  ', len(file_list))
     print(file_list)
     if len(file_list) == 0:
@@ -807,34 +812,35 @@ def prepare_tpoint(camera_name, archive_path, selector_string, lng_path, out_pat
 
 
 if __name__ == '__main__':
-    camera_name = 'sq01'  #  config.site_config['camera']['camera1']['name']
-    #archive_path = "D:/000ptr_saf/archive/sq01/2020-06-13/"
-    #archive_path = "D:/2020-06-19  Ha and O3 screen flats/"
-    archive_path = "D:/000ptr_saf/archive/sq01/20200709/raw/reduced/Small/"
-    out_path = "D:/000ptr_saf/archive/sq01/20200709/raw/reduced/Small/"
-    lng_path = "D:/000ptr_saf/archive/sq01/lng/"
-    # debias_and_trim(camera_name, archive_path, '*EX00*', out_path)
-    #mod_debias_and_trim(camera_name, archive_path, '*APPM-2020-07-12*', out_path)
-    prepare_tpoint(camera_name, archive_path, '*APPM*',lng_path, out_path)
-    # make_master_bias(camera_name, out_path, lng_path, '*f_3*', 'mb_1b.fits')
-    # make_master_bias(camera_name, out_path, lng_path, '*b_2*', 'mb_2b.fits')
+    camera_name = 'sq02'  #  config.site_config['camera']['camera1']['name']
+    # archive_path = "D:/000ptr_saf/archive/sq01/20200709/raw/reduced/Small/"
+    # out_path = "D:/000ptr_saf/archive/sq01/20200709/raw/reduced/Small/"
+    # lng_path = "D:/000ptr_saf/archive/sq01/lng/"
+    archive_path = "Q:/archive/sq01/2020-07-27/"
+    out_path = "Q:/archive/sq02/20200727/reduced/"
+    lng_path = "Q:/archive/sq02//lng/"
+    # debias_and_trim(camera_name, archive_path, '*sq02_bd*', out_path)
+    # mod_debias_and_trim(camera_name, archive_path, '*APPM-2020-07-12*', out_path)
+    # prepare_tpoint(camera_name, archive_path, '*APPM*',lng_path, out_path)
+    # make_master_bias(camera_name, out_path, lng_path, '*b_1*', 'mb_1.fits')
+    # make_master_bias(camera_name, out_path, lng_path, '*b_2*', 'mb_2.fits')
     # #make_master_bias(camera_name, archive_path, lng_path, '*b_3*', 'mb_3.fits')
     # #make_master_bias(camera_name, archive_path, lng_path, '*b_4*', 'mb_4.fits')
-    # make_master_dark(camera_name, out_path, lng_path, '*d_1_1080*', 'md_1_1080.fits', 'mb_1b.fits')
+    #make_master_dark(camera_name, out_path, lng_path, '*d_1*', 'md_1.fits', 'mb_1.fits')
     # make_master_dark(camera_name, out_path, lng_path, '*d_1_360*', 'md_1b.fits', 'mb_1b.fits')
-    # make_master_bias(camera_name, out_path, lng_path, '*b_2*', 'mb_2b.fits')
-    # make_master_dark(camera_name, out_path, lng_path, '*d_2_120*', 'md_2b.fits', 'mb_2b.fits')
+    #make_master_bias(camera_name, out_path, lng_path, '*b_2*', 'mb_2.fits')
+    # make_master_dark(camera_name, out_path, lng_path, '*d_2_90*', 'md_2.fits', 'mb_2.fits')
     # #make_master_dark(camera_name, archive_path, lng_path, '*d_3_90*', 'md_3.fits', 'mb_3.fits')
     # #make_master_dark(camera_name, archive_path, lng_path, '*d_4_60*', 'md_4.fits', 'mb_4.fits')
     # make_master_flat(camera_name, archive_path, lng_path, filt, out_name, 'mb_1.fits', 'md_1.fits')
-    # build_hot_map(camera_name, lng_path, "md_1_1080.fits", "hm_1")
-    # build_hot_image(camera_name, lng_path, "md_1_1080.fits", "hm_1.fits")
-    archive_path = out_path
-    archive_path = "D:/000ptr_saf/archive/sq01/20200709/raw/trimmed/"
-    out_path = "D:/000ptr_saf/archive/sq01/20200709/raw/reduced/"
+    # build_hot_map(camera_name, lng_path, "md_1.fits", "hm_1")
+    build_hot_image(camera_name, lng_path, "md_1.fits", "hm_1.fits")
+    # archive_path = out_path
+    # archive_path = "D:/000ptr_saf/archive/sq01/20200709/raw/trimmed/"
+    # out_path = "D:/000ptr_saf/archive/sq01/20200709/raw/reduced/"
     #correct_image(camera_name, archive_path, '*EX00*', lng_path, out_path)
     #mod_correct_image(camera_name, archive_path, '*EX00*', lng_path, out_path)
-    archive_path = out_path
+   #  archive_path = out_path
     #out_path =":D:/20200707 Bubble Neb NGC7635  Ha O3 S2/catalogs/"
     #sep_image(camera_name, archive_path, '*7635*', lng_path, out_path)
     #calc_filter_gains(camera_name, archive_path, '**', lng_path, out_path)

@@ -53,18 +53,18 @@ class Focuser:
         self.site = config['site']
         self.name = name
         self.site_path = config['site_path']
-        self.camera_name = config['camera']['camera1']['name']
+        self.camera_name = config['camera']['camera2']['name']
         g_dev['foc'] = self
         self.config = config['focuser']['focuser1']
         win32com.client.pythoncom.CoInitialize()
         self.focuser = win32com.client.Dispatch(driver)
         self.focuser.Connected = True
         self.focuser.TempComp = False
-        self.micron_to_steps = float(config['focuser']['focuser1']['unit_conversion'])
-        self.steps_to_micron = 1/self.micron_to_steps
+        self.steps_to_micron= float(config['focuser']['focuser1']['unit_conversion'])
+        self.micron_to_steps = 1/self.steps_to_micron
         self.focuser_message = '-'
         print(f"focuser connected.")
-        print(self.focuser.Description, "At:  ", round(self.focuser.Position/self.micron_to_steps, 1))
+        print(self.focuser.Description, "At:  ", round(self.focuser.Position*self.steps_to_micron, 1))
         time.sleep(0.2)
         try:
             try:
@@ -84,7 +84,7 @@ class Focuser:
         if -5 <= temp_primary <= 45:
             # NB this math is awkward, should use delta_temp
 
-            trial =round(float(self.config['coef_c'])*temp_primary + float(self.config['coef_0']), 1)
+            trial =round(-float(self.config['coef_c'])*temp_primary + float(self.config['coef_0']), 1)
             trial = max(trial,500)  #These values would change for Gemini to more like 11900 max
             trial = min(trial, 12150)
             print('Calculated focus compensated position:  ', trial)

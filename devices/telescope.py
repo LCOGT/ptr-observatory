@@ -27,7 +27,7 @@ class Telescope:
         self.device_name = name
         self.settings = settings
         self.rdsys = 'J.now'
-        self.inst = 'tel1'
+        self.inst = name[:3] + name[-1]
         self.tel = tel
         self.telescope_message = "-"
         self.site_coordinates = EarthLocation(lat=float(config['latitude'])*u.deg, \
@@ -35,7 +35,7 @@ class Telescope:
                         height=float(config['elevation'])*u.m)
 
 
-        if not tel:
+        if not tel:    # This looks like ol debugging cruft.
             print(f"Mount is connected.")
         else:
             print(self.inst + "  is connected.")
