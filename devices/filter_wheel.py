@@ -11,9 +11,9 @@ class FilterWheel:
         g_dev['fil']= self
         self.config = config['filter_wheel']
         #print("FW:  ", config)
-        self.filter_data = self.config['filter_wheel2']['settings']['filter_data'][1:]
-        self.filter_screen_sort = self.config['filter_wheel2']['settings']['filter_screen_sort']
-        self.filter_reference = int(self.config['filter_wheel2']['settings']['filter_reference'])
+        self.filter_data = self.config['filter_wheel1']['settings']['filter_data'][1:]
+        self.filter_screen_sort = self.config['filter_wheel1']['settings']['filter_screen_sort']
+        self.filter_reference = int(self.config['filter_wheel1']['settings']['filter_reference'])
         #THIS CODE DOES NOT implemnt a filter via the Maxim application which is passed in
         #as a valid instance of class camera.
         self.filter_message = '-'
@@ -62,7 +62,7 @@ class FilterWheel:
                 filter_pos = str(ser.read().decode())
                 print("QHY filter is Home", filter_pos )
                 self.filter_number = 0
-                self.filter_name = 'rggb'
+                self.filter_name = 'lpr'
             except:
                 print("QHY Filter not connected.")
                 
@@ -213,7 +213,6 @@ class FilterWheel:
                 print("filter dictionary is screwed up big time.")
         if filter_name == 'rggb' and self.filter_number == 0:
             return
-        breakpoint()
         if filter_name =="W":     #  NB This is a temp patch
             filter_name = 'w'
         if filter_name =="r":
@@ -224,7 +223,7 @@ class FilterWheel:
             filter_name = 'ip'
         if filter_name =="u":
             filter_name = 'up'
-        for match in range(int(self.config['filter_wheel2']['settings']['filter_count'])):
+        for match in range(int(self.config['filter_wheel1']['settings']['filter_count'])):
             if filter_name == self.filter_data[match][0]:
                 filt_pointer = match
                 break
