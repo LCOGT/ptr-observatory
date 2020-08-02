@@ -7,7 +7,7 @@ from global_yard import g_dev
 
 class Screen(object):
     def __init__(self, driver: str, name: str):
-        self.name = name
+        self.name = name    # name[:3] + name[-1]
         g_dev['scr'] = self
         self.driver = driver
         self.description = 'Optec Alnitak 24" screen'

@@ -1,6 +1,7 @@
 import win32com.client
 from global_yard import g_dev
 import time
+import serial
 
 
 class FilterWheel:
@@ -8,11 +9,11 @@ class FilterWheel:
     def __init__(self, driver: str, name: str, config: dict):
         self.name = name
         g_dev['fil']= self
-        self.config = config
+        self.config = config['filter_wheel']
         #print("FW:  ", config)
-        self.filter_data = self.config['filter_wheel']['filter_wheel1']['settings']['filter_data'][1:]
-        self.filter_screen_sort = self.config['filter_wheel']['filter_wheel1']['settings']['filter_screen_sort']
-        self.filter_reference = int(self.config['filter_wheel']['filter_wheel1']['settings']['filter_reference'])
+        self.filter_data = self.config['filter_wheel2']['settings']['filter_data'][1:]
+        self.filter_screen_sort = self.config['filter_wheel2']['settings']['filter_screen_sort']
+        self.filter_reference = int(self.config['filter_wheel2']['settings']['filter_reference'])
         #THIS CODE DOES NOT implemnt a filter via the Maxim application which is passed in
         #as a valid instance of class camera.
         self.filter_message = '-'
@@ -54,6 +55,20 @@ class FilterWheel:
             #We assume camera object has been created before the filter object.
             #Note filter may be commanded directly by AWS or provided in an expose
             #command as an optional parameter.
+        elif driver.lower() == 'com22':
+            self.custom = True
+            try:
+                ser = serial.Serial("COM22", timeout=12)
+                filter_pos = str(ser.read().decode())
+                print("QHY filter is Home", filter_pos )
+                self.filter_number = 0
+                self.filter_name = 'rggb'
+            except:
+                print("QHY Filter not connected.")
+                
+                
+                
+            
         else:
             '''
             We default here to setting up a single wheel ASCOM driver.
@@ -80,7 +95,17 @@ class FilterWheel:
 
 
     def get_status(self):
+        if self.custom is True:
+            status = {
+                'filter_name': str(self.filter_name),
+                'filter_number': str(self.filter_number),
+                'filter_offset': str(0),
+                'wheel_is_moving': 'false'
+                }
+            return status
+            
         try:
+            breakpoint()
             if self.filter_front.Position == -1 or self.filter_back.Position == -1:
                 f_move = 'true'
             else:
@@ -153,6 +178,7 @@ class FilterWheel:
         ''' set the filter position by  param string filter position index '''
         'NBNBNB This routine may not be correct'
         print(f"filter cmd: set_position")
+        breakpoint()
         filter_selections = eval(self.filter_data[int(req['filter_num'])][1])
         print('Selections:  ', filter_selections)
         if self.dual:
@@ -186,6 +212,9 @@ class FilterWheel:
                 filter_name = req['filter']
             except:
                 print("filter dictionary is screwed up big time.")
+        if filter_name == 'rggb' and self.filter_number == 0:
+            return
+        breakpoint()
         if filter_name =="W":     #  NB This is a temp patch
             filter_name = 'w'
         if filter_name =="r":
@@ -233,6 +262,7 @@ class FilterWheel:
     def home_command(self, req: dict, opt: dict):
         ''' set the filter to the home position '''  #NB this is setting to defaault not Home.
         print(f"filter cmd: home", req, opt)
+        breakpoint()
         while self.filter_back.Position == -1:
             time.sleep(0.1)
         self.filter_back.Position = 2

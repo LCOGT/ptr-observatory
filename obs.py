@@ -134,11 +134,8 @@ class Observatory:
 
         # This is the class through which we can make authenticated api calls.
         self.api = API_calls()
-
         self.command_interval = 2   # seconds between polls for new commands
-
         self.status_interval = 3    # NOTE THESE IMPLEMENTED AS A DELTA NOT A RATE.
-
         self.name = name
         self.config = config
         self.last_request = None
@@ -149,15 +146,15 @@ class Observatory:
             'enclosure',
             'mount',
             'telescope',
+            'screen',
             'rotator',
             'focuser',
-            'screen',
+            'filter_wheel',
             'camera',
-            'sequencer',
-            'filter_wheel'
+            'sequencer'          
             ]
-
         # Instantiate the helper class for astronomical events
+        #Soon the primary event / time values come from AWS>
         self.astro_events = ptr_events.Events(self.config)
         self.astro_events.compute_day_directory()
         self.astro_events.display_events()
