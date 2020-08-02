@@ -98,14 +98,14 @@ class FilterWheel:
 
 
     def get_status(self):
-        if self.custom is True:
-            status = {
-                'filter_name': str(self.filter_name),
-                'filter_number': str(self.filter_number),
-                'filter_offset': str(0),
-                'wheel_is_moving': 'false'
-                }
-            return status
+        # if self.custom is True:
+        #     status = {
+        #         'filter_name': str(self.filter_name),
+        #         'filter_number': str(self.filter_number),
+        #         'filter_offset': str(0),
+        #         'wheel_is_moving': 'false'
+        #         }
+        #     return status
             
         try:
             if self.filter_front.Position == -1 or self.filter_back.Position == -1:
@@ -227,7 +227,7 @@ class FilterWheel:
             filter_name = 'ip'
         if filter_name =="u":
             filter_name = 'up'
-        for match in range(int(self.config['filter_wheel']['filter_wheel1']['settings']['filter_count'])):
+        for match in range(int(self.config['filter_wheel2']['settings']['filter_count'])):
             if filter_name == self.filter_data[match][0]:
                 filt_pointer = match
                 break

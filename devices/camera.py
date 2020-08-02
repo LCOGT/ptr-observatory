@@ -160,9 +160,9 @@ class Camera:
             print('Maxim is connected:  ', self._connect(True))
 
         #  print(self._connected())
-        print('Setpoint:  ',self._setpoint(float(self.config['camera']['camera1']['settings']['temp_setpoint'])))
+        print('Setpoint:  ',self._setpoint(float(self.config['camera']['camera2']['settings']['temp_setpoint'])))
         print('Chip Temperature:  ', self._temperature())
-        cooler_on = self.config['camera']['camera1'] \
+        cooler_on = self.config['camera']['camera2'] \
                                ['settings']['cooler_on'] in ['True', 'true', 'Yes', 'yes', 'On', 'on']
         self.camera.CoolerOn = cooler_on
         # NB Should get and report cooer power
