@@ -864,7 +864,7 @@ class Camera:
                     if frame_type[-4:] == 'flat' and bi_mean > 33000:
                         print("Flat rejected, too bright:  ", round(bi_mean, 0))
                         result = {}
-                        result['patch'] = bi_mean
+                        result['patch'] = round(bi_mean, 1)
                         return result   # signals to flat routine image was rejected
 
                     g_dev['obs'].update_status()
@@ -1112,7 +1112,8 @@ class Camera:
                         result['mean_rotation'] = avg_rot[1]
                         result['FWHM'] = None
                         result['half_FD'] = None
-                        result['patch'] = bi_mean
+                        result['patch'] = round(bi_mean, 1)
+                        result['calc_sky'] = avg_ocn[7]
                         result['temperature'] = avg_foc[2]
                         return result
 
