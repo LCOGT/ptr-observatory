@@ -171,7 +171,7 @@ class Camera:
         self.cmd_in = None
         self.t7 = None
         self.camera_message = '-'
-        self.alias = self.config['camera']['camera2']['name']
+        self.alias = self.config['camera']['camera1']['name']
         self.site_path = self.config['site_path']
         self.archive_path = self.site_path +'archive/'
         self.camera_path = self.archive_path  + self.alias+ "/"
@@ -183,9 +183,9 @@ class Camera:
         except:
             print ("File newest.fits not found, this is probably OK")
         self.is_cmos = False
-        if self.config['camera']['camera2']['settings']['is_cmos']  == 'true':
+        if self.config['camera']['camera1']['settings']['is_cmos']  == 'true':
             self.is_cmos = True
-        self.camera_model = self.config['camera']['camera2']['desc']
+        self.camera_model = self.config['camera']['camera1']['desc']
         #NB We are reading from the actual camera or setting as the case may be.  For initial setup,
         #   we pull from config for some of the various settings.
         try:
@@ -196,8 +196,8 @@ class Camera:
             print('Camera only accepts Bins = 1.')
             self.camera.BinX = 1
             self.camera.BinY = 1
-        self.overscan_x =  int(self.config['camera']['camera2']['settings']['overscan_x'])
-        self.overscan_y =  int(self.config['camera']['camera2']['settings']['overscan_y'])
+        self.overscan_x =  int(self.config['camera']['camera1']['settings']['overscan_x'])
+        self.overscan_y =  int(self.config['camera']['camera1']['settings']['overscan_y'])
         self.camera_x_size = self.camera.CameraXSize  #unbinned values.
         self.camera_y_size = self.camera.CameraYSize  #unbinned
         self.camera_max_x_bin = self.camera.MaxBinX
@@ -435,7 +435,7 @@ class Camera:
         self.t_0 = time.time()
         self.hint = optional_params.get('hint', '')
         self.script = required_params.get('script', 'None')
-        bin_x = optional_params.get('bin', self.config['camera']['camera2'] \
+        bin_x = optional_params.get('bin', self.config['camera']['camera1'] \
                                                       ['settings']['default_bin'])  #NB this should pick up config default.
         if bin_x == '4, 4':# For now this is the highest level of binning supported.
             bin_x = 2
@@ -451,9 +451,9 @@ class Camera:
         self.bin = bin_x
         self.camera.BinX = bin_x
         self.camera.BinY = bin_y
-        #gain = float(optional_params.get('gain', self.config['camera']['camera2'] \
+        #gain = float(optional_params.get('gain', self.config['camera']['camera1'] \
         #                                              ['settings']['reference_gain'][bin_x - 1]))
-        readout_time = float(self.config['camera']['camera2']['settings']['readout_time'][bin_x - 1])
+        readout_time = float(self.config['camera']['camera1']['settings']['readout_time'][bin_x - 1])
         exposure_time = float(required_params.get('time', 0.00001))   #  0.0 may be the best default.
         self.estimated_readtime = (exposure_time + 2*readout_time)*1.25*3   #  3 is the outer retry loop maximum.
         #exposure_time = max(0.2, exposure_time)  #Saves the shutter, this needs qualify with imtype.
@@ -997,9 +997,9 @@ class Camera:
                             hdu.header['SKY-HZ'] = avg_ocn[8]
                             if g_dev['enc'] is not None:
                                 hdu.header['ROOF']  = g_dev['enc'].get_status()['shutter_status']   #"Open/Closed"
-                        hdu.header['DETECTOR'] = self.config['camera']['camera2']['detector']
-                        hdu.header['CAMNAME'] = self.config['camera']['camera2']['name']
-                        hdu.header['CAMMANUF'] = self.config['camera']['camera2']['manufacturer']
+                        hdu.header['DETECTOR'] = self.config['camera']['camera1']['detector']
+                        hdu.header['CAMNAME'] = self.config['camera']['camera1']['name']
+                        hdu.header['CAMMANUF'] = self.config['camera']['camera1']['manufacturer']
     #                        try:
     #                            hdu.header['GAIN'] = g_dev['cam'].camera.gain
                         #print('Gain was read;  ', g_dev['cam'].camera.gain)
@@ -1014,7 +1014,7 @@ class Camera:
                         hdu.header['CAMUSBT'] = 100
                         hdu.header['FULLWELL'] = 38310
                         #hdu.header['CMOSMODE'] = 'HDR-HDC'  #Need to figure out how to read this from setup.
-                        hdu.header['SATURATE'] = int(self.config['camera']['camera2']['settings']['saturate'])
+                        hdu.header['SATURATE'] = int(self.config['camera']['camera1']['settings']['saturate'])
                         #NB This needs to be properly computed
                         pix_ang = (self.camera.PixelSizeX*self.camera.BinX/(float(self.config['telescope'] \
                                                   ['telescope2']['focal_length'])*1000.))
@@ -1024,7 +1024,7 @@ class Camera:
                         #Need to assemble a complete header here
                         #hdu1.writeto('Q:\\archive\\ea03\\new2b.fits')#, overwrite=True)
                         #NB rename to ccurrent_camera
-                        current_camera_name = self.config['camera']['camera2']['name']
+                        current_camera_name = self.config['camera']['camera1']['name']
                         # NB This needs more deveopment
                         im_type = 'EX'   #or EN for engineering....
                         f_ext = ""

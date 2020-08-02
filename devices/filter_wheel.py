@@ -11,9 +11,9 @@ class FilterWheel:
         g_dev['fil']= self
         self.config = config['filter_wheel']
         #print("FW:  ", config)
-        self.filter_data = self.config['filter_wheel2']['settings']['filter_data'][1:]
-        self.filter_screen_sort = self.config['filter_wheel2']['settings']['filter_screen_sort']
-        self.filter_reference = int(self.config['filter_wheel2']['settings']['filter_reference'])
+        self.filter_data = self.config['filter_wheel1']['settings']['filter_data'][1:]
+        self.filter_screen_sort = self.config['filter_wheel1']['settings']['filter_screen_sort']
+        self.filter_reference = int(self.config['filter_wheel1']['settings']['filter_reference'])
         #THIS CODE DOES NOT implemnt a filter via the Maxim application which is passed in
         #as a valid instance of class camera.
         self.filter_message = '-'
@@ -31,6 +31,7 @@ class FilterWheel:
 #            HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\ASCOM\FilterWheel Drivers\ASCOM.FLI.FilterWheel1
             print("filters are connected")
             self.dual = True
+            self.custom = False
             self.filter_selected = self.filter_data[self.filter_reference][0]
             self.filter_number = int(self.filter_reference)
             self.filter_offset = eval(self.filter_data[self.filter_reference][2])
@@ -48,6 +49,7 @@ class FilterWheel:
         elif driver.lower() in ['maxim', 'maximdl', 'maximdlpro']:
             self.maxim = True
             self.dual = False
+            self.custom = False
             self.filter_selected = self.filter_data[self.filter_reference][0]   #This is the defaultexpected after a
                                                                                 #Home or power-up cycle.
             self.filter_number = int(self.filter_reference)
@@ -84,8 +86,9 @@ class FilterWheel:
             '''
             self.maxim = False
             self.dual = False
-            win32com.client.pythoncom.CoInitialize()
+            self.custom = False
             breakpoint()
+            win32com.client.pythoncom.CoInitialize()
             self.filter_front = win32com.client.Dispatch(driver)
             self.filter_front.Connected = True
             #self.filter_front = win32com.client.Dispatch(driver)
@@ -105,7 +108,6 @@ class FilterWheel:
             return status
             
         try:
-            breakpoint()
             if self.filter_front.Position == -1 or self.filter_back.Position == -1:
                 f_move = 'true'
             else:
