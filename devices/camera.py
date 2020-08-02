@@ -160,9 +160,9 @@ class Camera:
             print('Maxim is connected:  ', self._connect(True))
 
         #  print(self._connected())
-        print('Setpoint:  ',self._setpoint(float(self.config['camera']['camera2']['settings']['temp_setpoint'])))
+        print('Setpoint:  ',self._setpoint(float(self.config['camera']['camera1']['settings']['temp_setpoint'])))
         print('Chip Temperature:  ', self._temperature())
-        cooler_on = self.config['camera']['camera2'] \
+        cooler_on = self.config['camera']['camera1'] \
                                ['settings']['cooler_on'] in ['True', 'true', 'Yes', 'yes', 'On', 'on']
         self.camera.CoolerOn = cooler_on
         # NB Should get and report cooer power
@@ -878,7 +878,7 @@ class Camera:
                     if frame_type[-4:] == 'flat' and bi_mean > 32767:
                         print("Flat rejected, too bright:  ", round(bi_mean, 0))
                         result = {}
-                        result['patch'] = bi_mean
+                        result['patch'] = round(bi_mean, 1)
                         return result   # signals to flat routine image was rejected
                     #g_dev['obs'].update_status()
                     counter = 0
@@ -930,10 +930,10 @@ class Camera:
                         hdu.header['XORGSUBF'] = self.camera_start_x    #This makes little sense to fix...  NB ALL NEEDS TO COME FROM CONFIG!!
                         hdu.header['YORGSUBF'] = self.camera_start_y
                         hdu.header['READOUTM'] = 'Monochrome'    #NB this needs to be updated
-                        hdu.header['TELESCOP'] = self.config['telescope']['telescope2']['desc']
-                        hdu.header['FOCAL']    = round(float(self.config['telescope']['telescope2']['focal_length']), 2)
-                        hdu.header['APR-DIA']  = round(float(self.config['telescope']['telescope2']['aperture']), 2)
-                        hdu.header['APR-AREA'] = round(float(self.config['telescope']['telescope2']['collecting_area']), 1)
+                        hdu.header['TELESCOP'] = self.config['telescope']['telescope1']['desc']
+                        hdu.header['FOCAL']    = round(float(self.config['telescope']['telescope1']['focal_length']), 2)
+                        hdu.header['APR-DIA']  = round(float(self.config['telescope']['telescope1']['aperture']), 2)
+                        hdu.header['APR-AREA'] = round(float(self.config['telescope']['telescope1']['collecting_area']), 1)
                         hdu.header['SITELAT']  = round(float(self.config['latitude']), 6)
                         hdu.header['SITE-LNG'] = round(float(self.config['longitude']), 6)
                         hdu.header['SITE-ELV'] = round(float(self.config['elevation']), 2)
@@ -1017,7 +1017,7 @@ class Camera:
                         hdu.header['SATURATE'] = int(self.config['camera']['camera1']['settings']['saturate'])
                         #NB This needs to be properly computed
                         pix_ang = (self.camera.PixelSizeX*self.camera.BinX/(float(self.config['telescope'] \
-                                                  ['telescope2']['focal_length'])*1000.))
+                                                  ['telescope1']['focal_length'])*1000.))
                         hdu.header['PIXSCALE'] = round(math.degrees(math.atan(pix_ang))*3600., 3)
 
 
@@ -1122,7 +1122,7 @@ class Camera:
                         result['mean_rotation'] = avg_rot[1]
                         result['FWHM'] = None
                         result['half_FD'] = None
-                        result['patch'] = bi_mean
+                        result['patch'] = round(bi_mean, 1)
                         result['calc_sky'] = avg_ocn[7]
                         result['temperature'] = avg_foc[2]
                         return result

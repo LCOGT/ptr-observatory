@@ -216,7 +216,6 @@ class FilterWheel:
                 print("filter dictionary is screwed up big time.")
         if filter_name == 'rggb' and self.filter_number == 0:
             return
-        breakpoint()
         if filter_name =="W":     #  NB This is a temp patch
             filter_name = 'w'
         if filter_name =="r":
@@ -227,7 +226,7 @@ class FilterWheel:
             filter_name = 'ip'
         if filter_name =="u":
             filter_name = 'up'
-        for match in range(int(self.config['filter_wheel2']['settings']['filter_count'])):
+        for match in range(int(self.config['filter_wheel1']['settings']['filter_count'])):
             if filter_name == self.filter_data[match][0]:
                 filt_pointer = match
                 break
