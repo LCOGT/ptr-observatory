@@ -29,7 +29,7 @@ import serial
 #                                 ^
 # SyntaxError: EOL while scanning string literal
 
-import ser = serial.Serial("COM22", timeout=1)
+ser = serial.Serial("COM22", timeout=1)
 # 
 
 # ser.read()
