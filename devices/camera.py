@@ -130,6 +130,7 @@ class Camera:
             self.description = "ASCOM"
             self.maxim = False
             self.ascom = True
+            print('ASCOM is connected:  ', self._connect(True))
             print('Control is ASCOM camera driver.')
         else:
             print('Maxim camera is initializing.')
@@ -407,7 +408,7 @@ class Camera:
         '''
         print('Expose Entered.  req:  ', required_params, 'opt:  ', optional_params)
         print("Checking if Maxim is still connected!")
-        if self.t7 is not None and (time.time() - self.t7 > 30):
+        if self.t7 is not None and (time.time() - self.t7 > 30) and self.maxim:
             self._connect(False)
             self._connect(True)
             self.camera.CoolerOn = True
@@ -543,6 +544,7 @@ class Camera:
         # print(self.len_x, self.len_y)
 
         # "area": ['100%', '2X-jpg', '71%', '50%', '1X-jpg', '33%', '25%', '1/2 jpg', 'chip' ]
+        breakpoint()
         if type(area) == str and area.lower() == "1x-jpg":
             self.camera_num_x = 768                 # 768 is the size of the JPEG
             self.camera_start_x = 1659              # NB Where are these absolute numbers coming from?  This needs testing!!
@@ -777,38 +779,17 @@ class Camera:
         print("full expose seq took:  ", round(self.t11 - self.t_0 , 2), ' returned:  ', result)
         return result
 
-#        for i in range(20):
-#            pc = c.PercentCompleted
-#            print(f"{pc}%")
-#            if pc >= 100:
-#                self.save_image()
-#                break
-#            time.sleep(1)
-
     def stop_command(self, required_params, optional_params):
         ''' Stop the current exposure and return the camera to Idle state. '''
         #NB NB This routine needs work!
-        #self._stop_expose()
         self.exposure_busy = False
-
-        # Alternative: self.camera.StopExposure() will stop the exposure and
-        # initiate the readout process.
-
-
-
+        
     ##  NB the number of  keywords is questionable.
-
     def finish_exposure(self, exposure_time, frame_type, counter, \
                         gather_status=True, do_sep=False, no_AWS=False, start_x=None, start_y=None, quick=False, \
                         low=0, high=0, script='False', opt=None):
-        #print("Finish exposure Entered:  ", self.af_step, exposure_time, frame_type, counter, ' to go!')
-        print("Finish exposure Entered:  ", exposure_time, frame_type, counter,  \
-                        gather_status, do_sep, no_AWS, start_x, start_y)
-        try:
-            pass
-        except Exception as e:
-            print(e)
-            
+        print("Finish exposure Entered:  ", exposure_time, frame_type, counter, \
+              gather_status, do_sep, no_AWS, start_x, start_y)
         if gather_status:
             self.post_mnt = []
             self.post_rot = []
@@ -818,397 +799,293 @@ class Camera:
         if self.bin == 1:
             self.completion_time = self.entry_time + exposure_time + 9
         else:
-            self.completion_time = self.entry_time + exposure_time + 5   #?? Guess
-
+            self.completion_time = self.entry_time + exposure_time + 5
         result = {'error': False}
-        while True:     #THis is where we should have a camera probe throttle and timeout system
-            try:
-                if not quick and  gather_status:
-                    g_dev['mnt'].get_quick_status(self.post_mnt)
-                    g_dev['rot'].get_quick_status(self.post_rot)
-                    g_dev['foc'].get_quick_status(self.post_foc)
-                    g_dev['ocn'].get_quick_status(self.post_ocn)
-                self.t5 = time.time()
-                if (self.maxim or self.ascom) and self.camera.ImageReady:
-                    self.t4 = time.time()
-                    print("reading out camera, takes ~20 seconds.")
-                    # self.t6 = time.time()
-                    # breakpoint()
-                    self.img = self.camera.ImageArray
-                    self.t7 = time.time()
-                    self._stop_expose()  #Is this necessary?
-                    #Consider doing a Maxim dummy write to flush. 
+        while True:
+            g_dev['mnt'].get_quick_status(self.post_mnt)
+            g_dev['rot'].get_quick_status(self.post_rot)
+            g_dev['foc'].get_quick_status(self.post_foc)
+            g_dev['ocn'].get_quick_status(self.post_ocn)
+            self.t5 = time.time()
+            if (self.maxim or self.ascom) and self.camera.ImageReady:
+                self.t4 = time.time()
+                print("reading out camera, takes ~20 seconds.")
+                time.sleep(0.5)   #  THIS appears to be necessary. 20200804 WER
+                self.img = self.camera.ImageArray
+                self.t7 = time.time()
+                print('readout took:  ', round(self.t7 - self.t4, 1), ' sec,')
+               
+                self._stop_expose()  # Is this necessary?
+                if self.maxim:
+                    self.camera.SaveImage("D:/000ptr_saf/garbage/junk.fit")
+                self.img = np.array(self.img).transpose()  #  .astype('int32')
+                # Overscan remove and trim.
+                pedastal = 200
+                iy, ix = self.img.shape
+                if ix == 9600:
+                    overscan = int(np.median(self.img[33:, -22:]))
+                    trimed = self.img[36 :, : -26] + pedastal - overscan
+                    square = trimed[121 : 121 + 6144, 1715 : 1715 + 6144]
+                elif ix == 4800:
+                    overscan = int(np.median(self.img[17:, -11:]))
+                    trimed = self.img[18 :, : -13] + pedastal - overscan
+                    square = trimed[61:61 + 3072, 857:857 + 3072]
+                else:
+                    print("Incorrect chip size or bin specified.")
+                smin = np.where(square < 0)    # finds negative pixels
+                square[smin] = 0               # marks them as 0
+                self.img = square.astype('uint16')
+                test_saturated = np.array(self.img)[1536:4608, 1536:4608]
+                bi_mean = (test_saturated.mean() + np.median(test_saturated))/2
+                if frame_type[-4:] == 'flat' and bi_mean > 33000:
+                    print("Flat rejected, too bright:  ", round(bi_mean, 0))
+                    result = {}
+                    result['patch'] = round(bi_mean, 1)
+                    return result   #  signals to flat routine image was rejected
+                g_dev['obs'].update_status()
+                counter = 0
+                avg_mnt = g_dev['mnt'].get_average_status(self.pre_mnt, self.post_mnt)
+                avg_foc = g_dev['foc'].get_average_status(self.pre_foc, self.post_foc)
+                avg_rot = g_dev['rot'].get_average_status(self.pre_rot, self.post_rot)
+                avg_ocn = g_dev['ocn'].get_average_status(self.pre_ocn, self.post_ocn)
+                try:
+                    time.sleep(2)
+                    hdu = fits.PrimaryHDU(self.img)
+                    self.img = None    #  Does this free up any resource?
+                    hdu.header['BUNIT'] = 'adu'
+                    hdu.header['DATE-OBS'] = datetime.datetime.isoformat(datetime.datetime.utcfromtimestamp(self.t2))
+                    hdu.header['EXPTIME'] = exposure_time   #This is the exposure in seconds specified by the user
+                    hdu.header['EXPOSURE'] = exposure_time   #Ideally this needs to be calculated from actual times
+                    hdu.header['FILTER '] = self.current_filter  # NB this should read from the wheel!
+                    hdu.header['FILTEROF'] = self.current_offset
+                    hdu.header['IMAGETYP'] = frame_type   #This report is fixed and it should vary...NEEDS FIXING!
+                    if g_dev['scr'] is not None and frame_type == 'screen flat':
+                        hdu.header['SCREEN'] = int(g_dev['scr'].bright_setting)
+                    #should replace with Monkey patched attributes.
                     if self.maxim:
-                        self.camera.SaveImage("D:/000ptr_saf/garbage/junk.fit")   #  Need to empty this patch.
-                    self.img = np.array(self.img).transpose().astype('int32')
-                    #Overscan remove and trim
-                    pedastal = 200
-                    iy, ix = self.img.shape
-                    if ix == 9600:
-                        overscan = int(np.median(self.img[33:, -22:]))
-                        trimed = self.img[36:,:-26] + pedastal - overscan
-                        square = trimed[121:121+6144,1715:1715+6144]
-                    elif ix == 4800:
-                        overscan = int(np.median(self.img[17:, -11:]))
-                        trimed = self.img[18:,:-13] + pedastal - overscan
-                        square = trimed[61:61+3072,857:857+3072]
-                    else:
-                        print("Incorrect chip size or bin specified.")
-                    smin = np.where(square < 0)    #finds negative pixels
-                    square[smin] = 0               #marks them as 0
-                    self.img = square.astype('uint16')
-                    test_saturated = np.array(self.img)[1536:4608, 1536:4608]
-                    #test_saturated += 50000   #Only a test.
-                    bi_mean = (test_saturated.mean() + np.median(test_saturated))/2
-
-                    if frame_type[-4:] == 'flat' and bi_mean > 33000:
-                        print("Flat rejected, too bright:  ", round(bi_mean, 0))
-                        result = {}
-                        result['patch'] = round(bi_mean, 1)
-                        return result   # signals to flat routine image was rejected
-
-                    g_dev['obs'].update_status()
-
-                    counter = 0
-
-                    if not quick and gather_status:
-                        avg_mnt = g_dev['mnt'].get_average_status(self.pre_mnt, self.post_mnt)
-                        avg_foc = g_dev['foc'].get_average_status(self.pre_foc, self.post_foc)
-                        avg_rot = g_dev['rot'].get_average_status(self.pre_rot, self.post_rot)
-                        avg_ocn = g_dev['ocn'].get_average_status(self.pre_ocn, self.post_ocn)
-                    else:
-                        avg_foc = [0,0]   #This needs a serious clean-up
+                        hdu.header['SET-TEMP'] = round(self.camera.TemperatureSetpoint, 3)
+                        hdu.header['CCD-TEMP'] = round(self.camera.Temperature, 3)
+                    if self.ascom:
+                        hdu.header['SET-TEMP'] = round(self.camera.SetCCDTemperature, 3)
+                        hdu.header['CCD-TEMP'] = round(self.camera.CCDTemperature, 3)
+                    hdu.header['XPIXSZ']   = round(float(self.camera.PixelSizeX*self.camera.BinX), 3)      #Should this adjust with binning?
+                    hdu.header['YPIXSZ']   = round(float(self.camera.PixelSizeY*self.camera.BinY), 3)
                     try:
-                        #Save the raw data after adding fits header information.
-#                        if not quick:
-                        time.sleep(2)
-                        # img_name = glob.glob(self.camera_path + 'autosave/*.f*t*')
-                        # img_name.sort()
-                        # hdu1 =  fits.open(img_name[-1])
-                        hdu = fits.PrimaryHDU(self.img)
-                        self.img = None    #does this free up any resource?
-
-                        hdu.header['BUNIT']    = 'adu'
-                        hdu.header['DATE-OBS'] = datetime.datetime.isoformat(datetime.datetime.utcfromtimestamp(self.t2))
-                        hdu.header['EXPTIME']  = exposure_time   #This is the exposure in seconds specified by the user
-                        hdu.header['EXPOSURE'] = exposure_time   #Ideally this needs to be calculated from actual times
-                        hdu.header['FILTER ']  = self.current_filter  # NB this should read from the wheel!
-                        hdu.header['FILTEROF']  = self.current_offset
-                        if g_dev['scr'] is not None and frame_type == 'screen flat':
-                            hdu.header['SCREEN'] = int(g_dev['scr'].bright_setting)
-                        hdu.header['IMAGETYP'] = frame_type   #This report is fixed and it should vary...NEEDS FIXING!
-                        #should replace with Monkey patched attributes.
-                        if self.maxim:
-                            hdu.header['SET-TEMP'] = round(self.camera.TemperatureSetpoint, 3)
-                            hdu.header['CCD-TEMP'] = round(self.camera.Temperature, 3)
-                        if self.ascom:
-                            hdu.header['SET-TEMP'] = round(self.camera.SetCCDTemperature, 3)
-                            hdu.header['CCD-TEMP'] = round(self.camera.CCDTemperature, 3)
-                        hdu.header['XPIXSZ']   = round(float(self.camera.PixelSizeX*self.camera.BinX), 3)      #Should this adjust with binning?
-                        hdu.header['YPIXSZ']   = round(float(self.camera.PixelSizeY*self.camera.BinY), 3)
-                        try:
-                            hdu.header['XBINING'] = self.camera.BinX
-                            hdu.header['YBINING'] = self.camera.BinY
-                        except:
-                            hdu.header['XBINING'] = 1
-                            hdu.header['YBINING'] = 1
-                        hdu.header['PEDASTAL'] = -pedastal
-                        hdu.header['ERRORVAL'] = 0
-                        hdu.header['OVERSCAN'] = overscan
-                        hdu.header['PATCH'] = bi_mean    #  A crude value for the central exposure
-                        hdu.header['CCDSUM'] = self.ccd_sum
-                        hdu.header['XORGSUBF'] = self.camera_start_x    #This makes little sense to fix...  NB ALL NEEDS TO COME FROM CONFIG!!
-                        hdu.header['YORGSUBF'] = self.camera_start_y
-                        hdu.header['READOUTM'] = 'Monochrome'    #NB this needs to be updated
-                        hdu.header['TELESCOP'] = self.config['telescope']['telescope1']['desc']
-                        hdu.header['FOCAL']    = round(float(self.config['telescope']['telescope1']['focal_length']), 2)
-                        hdu.header['APR-DIA']  = round(float(self.config['telescope']['telescope1']['aperture']), 2)
-                        hdu.header['APR-AREA'] = round(float(self.config['telescope']['telescope1']['collecting_area']), 1)
-                        hdu.header['SITELAT']  = round(float(self.config['latitude']), 6)
-                        hdu.header['SITE-LNG'] = round(float(self.config['longitude']), 6)
-                        hdu.header['SITE-ELV'] = round(float(self.config['elevation']), 2)
-                        hdu.header['MPC-CODE'] = 'zzzzz'       # This is made up for now.
-                        hdu.header['JD-START'] = 'bogus'       # Julian Date at start of exposure
-                        hdu.header['JD-HELIO'] = 'bogus'       # Heliocentric Julian Date at exposure midpoint
-                        hdu.header['OBJECT']   = ''
-                        hdu.header['SID-TIME'] = self.pre_mnt[3]
-                        hdu.header['OBJCTRA']  = self.pre_mnt[1]
-                        hdu.header['OBJCTDEC'] = self.pre_mnt[2]
-                        hdu.header['OBRARATE'] = self.pre_mnt[4]
-                        hdu.header['OBDECRAT'] = self.pre_mnt[5]
-                        hdu.header['INSTRUME'] = self.camera_model
-                        hdu.header['OBSERVER'] = 'WER DEV'
-                        hdu.header['NOTE']     = self.hint[0:54]            #Needs to be truncated.
-                        hdu.header['FLIPSTAT'] = 'None'
-                        hdu.header['SEQCOUNT'] = int(counter)
-                        hdu.header['DITHER']   = 0
-                        hdu.header['OPERATOR'] = "WER"
-                        hdu.header['ENCLOSE']  = "Clamshell"   #Need to document shutter status, azimuth, internal light.
-                        hdu.header['DOMEAZ']  = "NA"   #Need to document shutter status, azimuth, internal light.
-                        hdu.header['ENCLIGHT'] ="Off/White/Red/IR"
-                        if not quick and gather_status:
-                            hdu.header['MNT-SIDT'] = avg_mnt['sidereal_time']
-                            ha = avg_mnt['right_ascension'] - avg_mnt['sidereal_time']
-                            hdu.header['MNT-RA'] = avg_mnt['right_ascension']
-                            while ha >= 12:
-                                ha -= 24.
-                            while ha < -12:
-                                ha += 24.
-                            hdu.header['MNT-HA'] = round(ha, 4)
-                            hdu.header['MNT-DEC'] = avg_mnt['declination']
-                            hdu.header['MNT-RAV'] = avg_mnt['tracking_right_ascension_rate']
-                            hdu.header['MNT-DECV'] = avg_mnt['tracking_declination_rate']
-                            hdu.header['AZIMUTH '] = avg_mnt['azimuth']
-                            hdu.header['ALTITUDE'] = avg_mnt['altitude']
-                            hdu.header['ZENITH  '] = avg_mnt['zenith_distance']
-                            hdu.header['AIRMASS '] = avg_mnt['airmass']
-                            hdu.header['MNTRDSYS'] = avg_mnt['coordinate_system']
-                            hdu.header['POINTINS'] = avg_mnt['instrument']
-                            hdu.header['MNT-PARK'] = avg_mnt['is_parked']
-                            hdu.header['MNT-SLEW'] = avg_mnt['is_slewing']
-                            hdu.header['MNT-TRAK'] = avg_mnt['is_tracking']
-                            hdu.header['OTA'] = ""
-                            hdu.header['SELECTEL'] = "tel1"
-                            hdu.header['ROTATOR'] = ""
-                            hdu.header['ROTANGLE'] = avg_rot[1]
-                            hdu.header['ROTMOVNG'] = avg_rot[2]
-                            hdu.header['FOCUS'] = ""
-                            hdu.header['FOCUSPOS'] = avg_foc[1]
-                            hdu.header['FOCUSTMP'] = avg_foc[2]
-                            hdu.header['FOCUSMOV'] = avg_foc[3]
-                            hdu.header['WX'] = ""
-                            hdu.header['SKY-TEMP'] = avg_ocn[1]
-                            hdu.header['AIR-TEMP'] = avg_ocn[2]
-                            hdu.header['HUMIDITY'] = avg_ocn[3]
-                            hdu.header['DEWPOINT'] = avg_ocn[4]
-                            hdu.header['WIND'] = avg_ocn[5]
-                            hdu.header['PRESSURE'] = avg_ocn[6]
-                            hdu.header['CALC-LUX'] = avg_ocn[7]
-                            hdu.header['SKY-HZ'] = avg_ocn[8]
-                            if g_dev['enc'] is not None:
-                                hdu.header['ROOF']  = g_dev['enc'].get_status()['shutter_status']   #"Open/Closed"
-                        hdu.header['DETECTOR'] = self.config['camera']['camera1']['detector']
-                        hdu.header['CAMNAME'] = self.config['camera']['camera1']['name']
-                        hdu.header['CAMMANUF'] = self.config['camera']['camera1']['manufacturer']
-    #                        try:
-    #                            hdu.header['GAIN'] = g_dev['cam'].camera.gain
-                        #print('Gain was read;  ', g_dev['cam'].camera.gain)
-    #                        except:
-    #                            hdu.header['GAIN'] = 1.18
-                        hdu.header['GAINUNIT'] = 'e-/ADU'
-                        hdu.header['GAIN'] = .584   #20190911   LDR-LDC mode set in ascom
-                        hdu.header['RDNOISE'] = 3.5
-                        hdu.header['CMOSCAM'] = self.is_cmos
-                        hdu.header['CAMGAIN'] = .584
-                        hdu.header['CAMOFFS'] = 6
-                        hdu.header['CAMUSBT'] = 100
-                        hdu.header['FULLWELL'] = 38310
-                        #hdu.header['CMOSMODE'] = 'HDR-HDC'  #Need to figure out how to read this from setup.
-                        hdu.header['SATURATE'] = int(self.config['camera']['camera1']['settings']['saturate'])
-                        #NB This needs to be properly computed
-                        pix_ang = (self.camera.PixelSizeX*self.camera.BinX/(float(self.config['telescope'] \
-                                                  ['telescope1']['focal_length'])*1000.))
-                        hdu.header['PIXSCALE'] = round(math.degrees(math.atan(pix_ang))*3600., 3)
-
-
-                        #Need to assemble a complete header here
-                        #hdu1.writeto('Q:\\archive\\ea03\\new2b.fits')#, overwrite=True)
-                        #NB rename to ccurrent_camera
-                        current_camera_name = self.config['camera']['camera1']['name']
-                        # NB This needs more deveopment
-                        im_type = 'EX'   #or EN for engineering....
-                        f_ext = ""
-                        next_seq = next_sequence(current_camera_name)
-                        if frame_type[-4:] == 'flat':
-                            f_ext = '-' + str(self.current_filter)    #Append flat string to local image name
-                        cal_name = self.config['site'] + '-' + current_camera_name + '-' + g_dev['day'] + '-' + \
-                                                    next_seq  + f_ext + '-'  + im_type + '00.fits'
-                        raw_name00 = self.config['site'] + '-' + current_camera_name + '-' + g_dev['day'] + '-' + \
-                            next_seq  + '-' + im_type + '00.fits'
-                        red_name01 = self.config['site'] + '-' + current_camera_name + '-' + g_dev['day'] + '-' + \
-                            next_seq  + '-' + im_type + '01.fits'
-                        #Cal_ and raw_ names are confusing
-                        i768sq_name = self.config['site'] + '-' + current_camera_name + '-' + g_dev['day'] + '-' + \
-                            next_seq  + '-' + im_type + '10.fits'
-                        jpeg_name = self.config['site'] + '-' + current_camera_name + '-' + g_dev['day'] + '-' + \
-                            next_seq  + '-' + im_type + '10.jpg'
-                        text_name = self.config['site'] + '-' + current_camera_name + '-' + g_dev['day'] + '-' + \
-                            next_seq  + '-' +  im_type + '00.txt'
-
+                        hdu.header['XBINING'] = self.camera.BinX
+                        hdu.header['YBINING'] = self.camera.BinY
+                    except:
+                        hdu.header['XBINING'] = 1
+                        hdu.header['YBINING'] = 1
+                    hdu.header['PEDASTAL'] = -pedastal
+                    hdu.header['ERRORVAL'] = 0
+                    hdu.header['OVERSCAN'] = overscan
+                    hdu.header['PATCH'] = bi_mean    #  A crude value for the central exposure
+                    hdu.header['CCDSUM'] = self.ccd_sum
+                    hdu.header['XORGSUBF'] = self.camera_start_x    #This makes little sense to fix...  NB ALL NEEDS TO COME FROM CONFIG!!
+                    hdu.header['YORGSUBF'] = self.camera_start_y
+                    hdu.header['READOUTM'] = 'Monochrome'    #NB this needs to be updated
+                    hdu.header['TELESCOP'] = self.config['telescope']['telescope1']['desc']
+                    hdu.header['FOCAL']    = round(float(self.config['telescope']['telescope1']['focal_length']), 2)
+                    hdu.header['APR-DIA']  = round(float(self.config['telescope']['telescope1']['aperture']), 2)
+                    hdu.header['APR-AREA'] = round(float(self.config['telescope']['telescope1']['collecting_area']), 1)
+                    hdu.header['SITELAT']  = round(float(self.config['latitude']), 6)
+                    hdu.header['SITE-LNG'] = round(float(self.config['longitude']), 6)
+                    hdu.header['SITE-ELV'] = round(float(self.config['elevation']), 2)
+                    hdu.header['MPC-CODE'] = 'zzzzz'       # This is made up for now.
+                    hdu.header['JD-START'] = 'bogus'       # Julian Date at start of exposure
+                    hdu.header['JD-HELIO'] = 'bogus'       # Heliocentric Julian Date at exposure midpoint
+                    hdu.header['OBJECT']   = ''
+                    hdu.header['SID-TIME'] = self.pre_mnt[3]
+                    hdu.header['OBJCTRA']  = self.pre_mnt[1]
+                    hdu.header['OBJCTDEC'] = self.pre_mnt[2]
+                    hdu.header['OBRARATE'] = self.pre_mnt[4]
+                    hdu.header['OBDECRAT'] = self.pre_mnt[5]
+                    hdu.header['INSTRUME'] = self.camera_model
+                    hdu.header['OBSERVER'] = 'WER DEV'
+                    hdu.header['NOTE']     = self.hint[0:54]            #Needs to be truncated.
+                    hdu.header['FLIPSTAT'] = 'None'
+                    hdu.header['SEQCOUNT'] = int(counter)
+                    hdu.header['DITHER']   = 0
+                    hdu.header['OPERATOR'] = "WER"
+                    hdu.header['ENCLOSE']  = "Clamshell"   #Need to document shutter status, azimuth, internal light.
+                    hdu.header['DOMEAZ']  = "NA"   #Need to document shutter status, azimuth, internal light.
+                    hdu.header['ENCLIGHT'] ="Off/White/Red/IR"
+                    #  if gather_status:
+                    hdu.header['MNT-SIDT'] = avg_mnt['sidereal_time']
+                    ha = avg_mnt['right_ascension'] - avg_mnt['sidereal_time']
+                    hdu.header['MNT-RA'] = avg_mnt['right_ascension']
+                    while ha >= 12:
+                        ha -= 24.
+                    while ha < -12:
+                        ha += 24.
+                    hdu.header['MNT-HA'] = round(ha, 4)
+                    hdu.header['MNT-DEC'] = avg_mnt['declination']
+                    hdu.header['MNT-RAV'] = avg_mnt['tracking_right_ascension_rate']
+                    hdu.header['MNT-DECV'] = avg_mnt['tracking_declination_rate']
+                    hdu.header['AZIMUTH '] = avg_mnt['azimuth']
+                    hdu.header['ALTITUDE'] = avg_mnt['altitude']
+                    hdu.header['ZENITH  '] = avg_mnt['zenith_distance']
+                    hdu.header['AIRMASS '] = avg_mnt['airmass']
+                    hdu.header['MNTRDSYS'] = avg_mnt['coordinate_system']
+                    hdu.header['POINTINS'] = avg_mnt['instrument']
+                    hdu.header['MNT-PARK'] = avg_mnt['is_parked']
+                    hdu.header['MNT-SLEW'] = avg_mnt['is_slewing']
+                    hdu.header['MNT-TRAK'] = avg_mnt['is_tracking']
+                    hdu.header['OTA'] = ""
+                    hdu.header['SELECTEL'] = "tel1"
+                    hdu.header['ROTATOR'] = ""
+                    hdu.header['ROTANGLE'] = avg_rot[1]
+                    hdu.header['ROTMOVNG'] = avg_rot[2]
+                    hdu.header['FOCUS'] = ""
+                    hdu.header['FOCUSPOS'] = avg_foc[1]
+                    hdu.header['FOCUSTMP'] = avg_foc[2]
+                    hdu.header['FOCUSMOV'] = avg_foc[3]
+                    hdu.header['WX'] = ""
+                    hdu.header['SKY-TEMP'] = avg_ocn[1]
+                    hdu.header['AIR-TEMP'] = avg_ocn[2]
+                    hdu.header['HUMIDITY'] = avg_ocn[3]
+                    hdu.header['DEWPOINT'] = avg_ocn[4]
+                    hdu.header['WIND'] = avg_ocn[5]
+                    hdu.header['PRESSURE'] = avg_ocn[6]
+                    hdu.header['CALC-LUX'] = avg_ocn[7]
+                    hdu.header['SKY-HZ'] = avg_ocn[8]
+                    if g_dev['enc'] is not None:
+                        hdu.header['ROOF']  = g_dev['enc'].get_status()['shutter_status']   #"Open/Closed"
+                    hdu.header['DETECTOR'] = self.config['camera']['camera1']['detector']
+                    hdu.header['CAMNAME'] = self.config['camera']['camera1']['name']
+                    hdu.header['CAMMANUF'] = self.config['camera']['camera1']['manufacturer']
+                    hdu.header['GAINUNIT'] = 'e-/ADU'
+                    hdu.header['GAIN'] = .584   #20190911   LDR-LDC mode set in ascom
+                    hdu.header['RDNOISE'] = 3.5
+                    hdu.header['CMOSCAM'] = self.is_cmos
+                    hdu.header['CAMGAIN'] = 0
+                    hdu.header['CAMBITS'] = 16
+                    hdu.header['CAMOFFS'] = 10
+                    hdu.header['CAMUSBT'] = 60
+                    hdu.header['FULLWELL'] = 32767
+                    hdu.header['SATURATE'] = int(self.config['camera']['camera1']['settings']['saturate'])
+                    pix_ang = (self.camera.PixelSizeX*self.camera.BinX/(float(self.config['telescope'] \
+                                              ['telescope1']['focal_length'])*1000.))
+                    hdu.header['PIXSCALE'] = round(math.degrees(math.atan(pix_ang))*3600., 3)
+                    current_camera_name = self.config['camera']['camera1']['name']
+                    # NB This needs more deveopment
+                    im_type = 'EX'   #or EN for engineering....
+                    f_ext = ""
+                    next_seq = next_sequence(current_camera_name)
+                    if frame_type[-4:] == 'flat':
+                        f_ext = '-' + str(self.current_filter)    #Append flat string to local image name
+                    cal_name = self.config['site'] + '-' + current_camera_name + '-' + g_dev['day'] + '-' + \
+                                                next_seq  + f_ext + '-'  + im_type + '00.fits'
+                    raw_name00 = self.config['site'] + '-' + current_camera_name + '-' + g_dev['day'] + '-' + \
+                        next_seq  + '-' + im_type + '00.fits'
+                    red_name01 = self.config['site'] + '-' + current_camera_name + '-' + g_dev['day'] + '-' + \
+                        next_seq  + '-' + im_type + '01.fits'
+                    #Cal_ and raw_ names are confusing
+                    i768sq_name = self.config['site'] + '-' + current_camera_name + '-' + g_dev['day'] + '-' + \
+                        next_seq  + '-' + im_type + '10.fits'
+                    jpeg_name = self.config['site'] + '-' + current_camera_name + '-' + g_dev['day'] + '-' + \
+                        next_seq  + '-' + im_type + '10.jpg'
+                    text_name = self.config['site'] + '-' + current_camera_name + '-' + g_dev['day'] + '-' + \
+                        next_seq  + '-' +  im_type + '00.txt'
+                    im_path_r = self.camera_path
+                    lng_path = self.lng_path
+                    hdu.header['DAY-OBS'] = g_dev['day']
+                    hdu.header['DATE'] = datetime.datetime.isoformat(datetime.datetime.utcfromtimestamp(self.t2))
+                    hdu.header['ISMASTER'] = False
+                    hdu.header['FILEPATH'] = str(im_path_r) +'to_AWS/'
+                    hdu.header['FILENAME'] = str(raw_name00)
+                    hdu.header['USERNAME'] = self.user_name
+                    hdu.header ['USERID'] = self.user_id
+                    hdu.header['REQNUM'] = '00000001'
+                    hdu.header['BLKUID'] = 'None'
+                    hdu.header['BLKSDATE'] = 'None'
+                    hdu.header['MOLUID'] = 'None'
+                    hdu.header['OBSTYPE'] = 'None'
+                    try:    #NB relocate this to Expose entry area.  Fill out except.
                         im_path_r = self.camera_path
                         lng_path = self.lng_path
-                        hdu.header['DAY-OBS'] = g_dev['day']
-                        hdu.header['DATE'] = datetime.datetime.isoformat(datetime.datetime.utcfromtimestamp(self.t2))
-                        hdu.header['ISMASTER'] = False
-                        hdu.header['FILEPATH'] = str(im_path_r) +'to_AWS/'
-                        hdu.header['FILENAME'] = str(raw_name00)
-                        hdu.header['USERNAME'] = self.user_name
-                        hdu.header ['USERID'] = self.user_id
-                        hdu.header['REQNUM'] = '00000001'
-                        hdu.header['BLKUID'] = 'None'
-                        hdu.header['BLKSDATE'] = 'None'
-                        hdu.header['MOLUID'] = 'None'
-                        hdu.header['OBSTYPE'] = 'None'
-                        #print('Creating:  ', im_path + g_dev['day'] + '\\to_AWS\\  ... subdirectory.')
+                        os.makedirs(im_path_r + g_dev['day'] + '/to_AWS/', exist_ok=True)
+                        os.makedirs(im_path_r + g_dev['day'] + '/raw/', exist_ok=True)
+                        os.makedirs(im_path_r + g_dev['day'] + '/calib/', exist_ok=True)
+                        os.makedirs(im_path_r + g_dev['day'] + '/reduced/', exist_ok=True)
+                        #print('Created:  ',im_path + g_dev['day'] + '\\to_AWS\\' )
+                        im_path = im_path_r + g_dev['day'] + '/to_AWS/'
+                        raw_path = im_path_r + g_dev['day'] + '/raw/'
+                        cal_path = im_path_r + g_dev['day'] + '/calib/'
+                        red_path = im_path_r + g_dev['day'] + '/reduced/'
+                    except:
+                        pass
 
-                        try:    #NB relocate this to Expose entry area.  Fill out except.
-                            im_path_r = self.camera_path
-                            lng_path = self.lng_path
-                            os.makedirs(im_path_r + g_dev['day'] + '/to_AWS/', exist_ok=True)
-                            os.makedirs(im_path_r + g_dev['day'] + '/raw/', exist_ok=True)
-                            os.makedirs(im_path_r + g_dev['day'] + '/calib/', exist_ok=True)
-                            os.makedirs(im_path_r + g_dev['day'] + '/reduced/', exist_ok=True)
-                            #print('Created:  ',im_path + g_dev['day'] + '\\to_AWS\\' )
-                            im_path = im_path_r + g_dev['day'] + '/to_AWS/'
-                            raw_path = im_path_r + g_dev['day'] + '/raw/'
-                            cal_path = im_path_r + g_dev['day'] + '/calib/'
-                            red_path = im_path_r + g_dev['day'] + '/reduced/'
-                        except:
-                            pass
-
-                        text = open(im_path + text_name, 'w')  #This is always needed by AWS to set up database.
-                        text.write(str(hdu.header))
-                        text.close()
-                        text_data_size = min(len(str(hdu.header)) - 4096, 2048)
-                        paths = {'im_path':  im_path,
-                                 'raw_path':  raw_path,
-                                 'cal_path':  cal_path,
-                                 'red_path':  red_path,
-                                 'cal_name':  cal_name,
-                                 'raw_name00': raw_name00,
-                                 'red_name01': red_name01,
-                                 'i768sq_name10': i768sq_name,
-                                 'i768sq_name11': i768sq_name,
-                                 'jpeg_name10': jpeg_name,
-                                 'jpeg_name11': jpeg_name,
-                                 'text_name00': text_name,
-                                 'text_name10': text_name,
-                                 'text_name11': text_name,
-                                 'frame_type':  frame_type
-                                 }
-                        #print('Path dict:  ', paths)
-                        #NB  IT may be easiest for autofocus to do the sep run here:  Hot pix then AF.
-
-                        if not quick and not script in ('True', 'true', 'On', 'on'):
-                            self.enqueue_for_AWS(text_data_size, im_path, text_name)
-                            self.to_reduce((paths, hdu))
-                            hdu.writeto(raw_path + raw_name00, overwrite=True)
-                        if script in ('True', 'true', 'On', 'on'):
-                            hdu.writeto(cal_path + cal_name, overwrite=True)
-                            try:
-                                os.remove(self.camera_path + 'newest.fits')
-                            except:
-                                pass    #  print ("File newest.fits not found, this is probably OK")
-                            return {'patch': bi_mean,
-                                    'calc_sky': avg_ocn[7]}   #  Note we are not calibrating. Just saving the file.
-                            # NB^ We always write files to raw, except quick(autofocus) frames.
-                            # hdu.close()
-                        # raw_data_size = hdu.data.size
-
-                        print("\n\Finish-Exposure is complete, saved:  " + raw_name00)#, raw_data_size, '\n')
-
-                        g_dev['obs'].update_status()
-                        result['mean_focus'] = avg_foc[1]
-                        result['mean_rotation'] = avg_rot[1]
-                        result['FWHM'] = None
-                        result['half_FD'] = None
-                        result['patch'] = round(bi_mean, 1)
-                        result['calc_sky'] = avg_ocn[7]
-                        result['temperature'] = avg_foc[2]
-                        return result
-
-                    except Exception as e:
-                        print('Header assembly block failed: ', e)
-                        # try:
-                        #     self._stop_expose()
-                        # except:
-                        #     pass
+                    text = open(im_path + text_name, 'w')  #This is always needed by AWS to set up database.
+                    text.write(str(hdu.header))
+                    text.close()
+                    text_data_size = min(len(str(hdu.header)) - 4096, 2048)
+                    paths = {'im_path':  im_path,
+                             'raw_path':  raw_path,
+                             'cal_path':  cal_path,
+                             'red_path':  red_path,
+                             'cal_name':  cal_name,
+                             'raw_name00': raw_name00,
+                             'red_name01': red_name01,
+                             'i768sq_name10': i768sq_name,
+                             'i768sq_name11': i768sq_name,
+                             'jpeg_name10': jpeg_name,
+                             'jpeg_name11': jpeg_name,
+                             'text_name00': text_name,
+                             'text_name10': text_name,
+                             'text_name11': text_name,
+                             'frame_type':  frame_type
+                             }
+                    if not quick and not script in ('True', 'true', 'On', 'on'):
+                        self.enqueue_for_AWS(text_data_size, im_path, text_name)
+                        self.to_reduce((paths, hdu))
+                        hdu.writeto(raw_path + raw_name00, overwrite=True)
+                    if script in ('True', 'true', 'On', 'on'):
+                        hdu.writeto(cal_path + cal_name, overwrite=True)
                         try:
-                            hdu = None
+                            os.remove(self.camera_path + 'newest.fits')
                         except:
-                            pass
-                        try:
-                            hdu1 = None
-                        except:
-                            pass
-                        self.t7 = time.time()
-                    return result['error': True]
-                else:     #here we are in waiting for imageReady loop and could send status and check Queue
-                    time.sleep(2)
-                    g_dev['obs'].update_status()   #THIS CALL MUST NOT ACCESS MAXIM OBJECT!
-                    time_now = self.t7= time.time()
-                    remaining = round(self.completion_time - time_now, 1)
-                    print("Exposure time remaining:", remaining)
+                            pass    #  print ("File newest.fits not found, this is probably OK")
+                        return {'patch': bi_mean,
+                                'calc_sky': avg_ocn[7]}   #  Note we are not calibrating. Just saving the file.
+                    print("\n\Finish-Exposure is complete, saved:  " + raw_name00)#, raw_data_size, '\n')
+                    g_dev['obs'].update_status()
+                    result['mean_focus'] = avg_foc[1]
+                    result['mean_rotation'] = avg_rot[1]
+                    result['FWHM'] = None
+                    result['half_FD'] = None
+                    result['patch'] = round(bi_mean, 1)
+                    result['calc_sky'] = avg_ocn[7]
+                    result['temperature'] = avg_foc[2]
+                    return result
+                except Exception as e:
+                    print('Header assembly block failed: ', e)
+                    try:
+                        hdu = None
+                    except:
+                        pass
+                    try:
+                        hdu1 = None
+                    except:
+                        pass
+                    self.t7 = time.time()
+                    result = {'error': True}
+                return result
+            else:
+                time.sleep(2)
+                g_dev['obs'].update_status()
+                self.t7 = time.time()
+                remaining = round(self.completion_time - self.t7, 1)
+                print("Exposure time remaining:", remaining)
+                #it takes about 15 seconds from AWS to get here for a bias.
+        # except Exception as e:
+        #     breakpoint()
+        #     counter += 1
+        #     time.sleep(.01)
+        #     print('Was waiting for exposure end, arriving here is bad news:  ', e)
 
-                    # NB Turn this into a % for a progress bar.
-                    #loop_count = int((remaining/0.3)*0.7)
-
-                    # print("Basic camera wait loop, be patient:  ", round(remaining, 1), ' sec.')
-                    # for i in range(loop_count):
-                    #     #g_dev['obs'].update_status()
-                    #     time.sleep(0.3)
-                    #     if i % 30 == 0:
-                    #         time_now = self.t7= time.time()
-                    #         remaining = round(self.completion_time - time_now, 1)
-                    #         print("Basic camera dwell loop, be patient:  ", round(remaining, 1), ' sec.')
-                    #         g_dev['obs'].update_status()
-
-
-                        # if i % 100 == 45:
-                        #     lcl_connected = self._connected()
-                        #     if i < loop_count*0.95 and not lcl_connected:
-                        #         print("Connected dr0pped")
-                        #         breakpoint()
-                        #     print('Camera is connected:  ', lcl_connected)
-                        # if i % 100 == 75:
-                        #     lcl_running = self.camera.SequenceRunning
-                        #     if i < loop_count * 0.95 and not lcl_running:
-                        #         print("Sequence dropped out.")
-                        #         breakpoint()
-                        #     else:
-                        #         print('Sequencer is Busy:  ', lcl_running)
-
-                    #it takes about 15 seconds from AWS to get here for a bias.
-            except Exception as e:
-                breakpoint()
-                counter += 1
-                time.sleep(.01)
-                #This should be counted down for a loop cancel.
-                print('Was waiting for exposure end, arriving here is bad news:  ', e)
-
-                # try:
-                #     self._stop_expose()
-                # except:
-                #     pass
-                try:
-                    hdu = None
-                except:
-                    pass
-                try:
-                    hdu1 = None
-                except:
-                    pass
-                return  result['error': True]
-
-        #definitely try to clean up any messes.
-        # try:
-        #     self._stop_expose()
-        # except:
-        #     pass
-        try:
-            hdu = None
-        except:
-            pass
-        try:
-            hdu1 = None
-        except:
-            pass
-
-        self.t8 = time.time()
-        result['error': True]
-        print('WHILE try, Failed exposure:  ', result )
-        return result
-
+        # result = {'error': True}
+        # return  result
     def enqueue_for_AWS(self, priority, im_path, name):
         image = (im_path, name)
         g_dev['obs'].aws_queue.put((priority, image), block=False)

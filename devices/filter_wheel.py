@@ -87,13 +87,10 @@ class FilterWheel:
             self.maxim = False
             self.dual = False
             self.custom = False
-            breakpoint()
             win32com.client.pythoncom.CoInitialize()
             self.filter_front = win32com.client.Dispatch(driver)
             self.filter_front.Connected = True
-            #self.filter_front = win32com.client.Dispatch(driver)
-            #self.filter_front.Connected = True
-            print("Entered a filter area with no code in it.")
+            print("Currently QHY RS232 FW")
 
 
 
@@ -214,8 +211,7 @@ class FilterWheel:
                 filter_name = req['filter']
             except:
                 print("filter dictionary is screwed up big time.")
-        if filter_name == 'rggb' and self.filter_number == 0:
-            return
+
         if filter_name =="W":     #  NB This is a temp patch
             filter_name = 'w'
         if filter_name =="r":
@@ -258,7 +254,13 @@ class FilterWheel:
             time.sleep(0.2)
             #g_dev['cam'].camera.GuiderFilter = filter_selections[1]
         else:
-             return  (filter_selections, int(self.filter_data[filt_pointer][2]))
+            try:
+                while self.filter_front.Position == -1:
+                    time.sleep(0.4)
+                self.filter_front.Position = filter_selections[0]
+            except:
+                breakpoint()
+            self.filter_offset = float(self.filter_data[filt_pointer][2])
 
     def home_command(self, req: dict, opt: dict):
         ''' set the filter to the home position '''  #NB this is setting to defaault not Home.
