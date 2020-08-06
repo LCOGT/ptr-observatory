@@ -812,6 +812,7 @@ IF sweep
         return
  
     def sky_grid_pointing_run(self, reg, opt, spacing=10, vertical=False, grid=False, alt_minimum=25):
+        camera_name = str(self.config['camera']['camera1']['name'])
         '''
         unpark telescope
         if not open, open dome
@@ -855,7 +856,7 @@ IF sweep
 A variant on this is cover a grid, cover a + sign shape.
 IF sweep
         '''
-        self.guard = True
+        self.sky_guard = True
         print("Starting sky sweep.")
         g_dev['mnt'].unpark_command({}, {})
         if g_dev['enc'].is_dome:
