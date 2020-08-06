@@ -520,7 +520,7 @@ class Camera:
             do_sep = True
         # NBNB This area still needs work to cleanly define shutter, calibration, sep and AWS actions.
 
-        area = optional_params.get('size', 100)
+        area = optional_params.get('area', 100)
         if area is None or area == 'chip':   #  Temporary patch to deal with 'chip'
             area = 100
         sub_frame_fraction = optional_params.get('subframe', None)
@@ -538,38 +538,14 @@ class Camera:
             self.cameraBinx = self.bin_x
             self.bin_y = min(bin_y, self.camera_max_y_bin)
             self.cameraBinY = self.bin_y
-        self.len_x = 9600 # self.camera.CameraXSize//self.bin_x
-        self.len_y = 6422 # self.camera.CameraYSize//self.bin_y    #Unit is binned pixels.
+        self.len_x = self.camera.CameraXSize//self.bin_x
+        self.len_y = self.camera.CameraYSize//self.bin_y    #Unit is binned pixels.
         self.len_xs = 0  # THIS IS A HACK, indicating no overscan.
         # print(self.len_x, self.len_y)
+        #  NB Area is just a series of subframes centered on the chip.
+        # "area": ['100%', '71%', '50%',  '35%', '25%', '12%']
 
-        # "area": ['100%', '2X-jpg', '71%', '50%', '1X-jpg', '33%', '25%', '1/2 jpg', 'chip' ]
-        breakpoint()
-        if type(area) == str and area.lower() == "1x-jpg":
-            self.camera_num_x = 768                 # 768 is the size of the JPEG
-            self.camera_start_x = 1659              # NB Where are these absolute numbers coming from?  This needs testing!!
-            self.camera_num_y = 768
-            self.camera_start_y = 1659
-            self.area = 37.5
-        elif type(area) == str and area.lower() == "2x-jpg":
-            self.camera_num_x = 1536
-            self.camera_start_x = 1280
-            self.camera_num_y = 1536
-            self.camera_start_y = 1280
-            self.area = 75
-        elif type(area) == str and area.lower() == "1/2 jpg":
-            self.camera_num_x = 384
-            self.camera_start_x = 832
-            self.camera_num_y = 384
-            self.camera_start_y = 832
-            self.area = 18.75
-        elif type(area) == str:     #Just default to a small area, for now 1/16th.
-            self.camera_num_x = self.len_x//4
-            self.camera_start_x = int(self.len_xs/2.667)
-            self.camera_num_y = self.len_y//4
-            self.camera_start_y = int(self.len_y/2.667)
-            self.area = 100
-        elif 72 < area <= 100:
+        if 72 < area <= 100:
             self.camera_num_x = self.len_x
             self.camera_start_x = 0
             self.camera_num_y = self.len_y
@@ -582,23 +558,29 @@ class Camera:
             self.camera_start_y = int(self.len_y/6.827)
             self.area = 71
         elif area == 50:
-            self.camera_num_x = self.len_xs//2
-            self.camera_start_x = self.len_xs//4
+            self.camera_num_x = self.len_x//2
+            self.camera_start_x = self.len_x//4
             self.camera_num_y = self.len_y//2
             self.camera_start_y = self.len_y//4
             self.area = 50
-        elif 33 <= area <= 35:
-            self.camera_num_x = int(self.len_xs/2.829)
-            self.camera_start_x = int(self.len_xs/3.093)
+        elif 33 <= area <= 37:
+            self.camera_num_x = int(self.len_/2.829)
+            self.camera_start_x = int(self.len_xx/3.093)
             self.camera_num_y = int(self.len_y/2.829)
             self.camera_start_y = int(self.len_y/3.093)
-            self.area = 33
+            self.area = 35
         elif area == 25:
             self.camera_num_x = self.len_xs//4
             self.camera_start_x = int(self.len_xs/2.667)
             self.camera_num_y = self.len_y//4
             self.camera_start_y = int(self.len_y/2.667)
             self.area = 25
+        elif 11 <= area <= 13:
+            self.camera_num_x = self.len_xs//4
+            self.camera_start_x = int(self.len_xs/2.667)
+            self.camera_num_y = self.len_y//4
+            self.camera_start_y = int(self.len_y/2.667)
+            self.area = 12
         else:
             self.camera_num_x = self.len_x
             self.camera_start_x = 0
@@ -680,9 +662,15 @@ class Camera:
                 #Check here for filter, guider, still moving  THIS IS A CLASSIC
                 #case where a timeout is a smart idea.
                 #Wait for external motion to cease before exposing.  Note this precludes satellite tracking.
+                st = "" 
                 while g_dev['foc'].focuser.IsMoving or g_dev['rot'].rotator.IsMoving or \
                       g_dev['mnt'].mount.Slewing or g_dev['enc'].enclosure.Slewing:   #Filter is moving??
-                    print(">>")
+                    if g_dev['foc'].focuser.IsMoving: st += 'f>'
+                    if g_dev['rot'].rotator.IsMoving: st += 'r>'
+                    if g_dev['mnt'].mount.Slewing: st += 'm>'
+                    if g_dev['enc'].enclosure.Slewing: st += 'd>'
+                    print(st)
+                    st = ""
                     time.sleep(0.2)
                     if seq > 0:
                         g_dev['obs'].update_status()
@@ -1040,7 +1028,7 @@ class Camera:
                         self.enqueue_for_AWS(text_data_size, im_path, text_name)
                         self.to_reduce((paths, hdu))
                         hdu.writeto(raw_path + raw_name00, overwrite=True)
-                    if script in ('True', 'true', 'On', 'on'):
+                    if script in ('True', 'true', 'On', 'on') or quick:
                         hdu.writeto(cal_path + cal_name, overwrite=True)
                         try:
                             os.remove(self.camera_path + 'newest.fits')

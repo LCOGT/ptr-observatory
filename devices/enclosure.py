@@ -157,7 +157,7 @@ class Enclosure:
         pass
 
     def guarded_open(self):
-        #The guard is excessively redundant.
+        #The guard is obsessively redundant!
         if g_dev['ocn'].wx_is_ok and not (g_dev['ocn'].wx_hold \
                                           or g_dev['ocn'].clamp_latch):     # NB Is Wx ok really the right criterion???
             try:

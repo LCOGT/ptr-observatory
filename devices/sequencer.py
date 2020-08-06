@@ -142,7 +142,8 @@ class Sequencer:
         self.sequencer_message = '-'
         print(f"sequencer connected.")
         print(self.description)
-        self.guard = False
+        self.sky_guard = False
+        self.af_guard = False
 
     def get_status(self):
         status = {
@@ -232,15 +233,15 @@ class Sequencer:
         elif  (events['Eve Sky Flats'] < ephem_now < events['End Eve Sky Flats'])  \
                 and g_dev['enc'].mode == 'Automatic' \
                 and g_dev['ocn'].wx_is_ok \
-                and not g_dev['ocn'].wx_hold \
-                and not self.guard:      #  and g_dev['ocn'].wait_time <= 0 \
-            self.guard = True
-            self.current_script = "Eve Sky Flat script"
-            self.sky_flat_script({}, {})   #Null command dictionaries
-            self.guard = False
+                and not g_dev['ocn'].wx_hold  #   \
+                #and not self.guard:      #  and g_dev['ocn'].wait_time <= 0 \
+            if not self.sky_guard:
+                #Start it up.
+                self.sky_guard = True
+                self.current_script = "Eve Sky Flat script"
+                self.sky_flat_script({}, {})   #Null command dictionaries
         else:
             self.current_script = "No current script"
-            self.guard = False
             #print("No active script is scheduled.")
         pass
 
@@ -433,11 +434,11 @@ class Sequencer:
         Note we want Moon at least 30 degrees away
 
         """
-        self.guard = True
+        self.sky_guard = True
         print('Eve Sky Flat sequence Starting, Enclosure PRESUMED Open. Telescope will un-park.')
         camera_name = str(self.config['camera']['camera1']['name'])
         flat_count = 5
-        exp_time = .1
+        exp_time = .003
         #  NB Sometime, try 2:2 binning and interpolate a 1:1 flat.  This might run a lot faster.
         if flat_count < 1: flat_count = 1
         g_dev['mnt'].unpark_command({}, {})
@@ -452,9 +453,17 @@ class Sequencer:
         #  Pick up list of filters is sky flat order of lowest to highest transparency.
         pop_list = self.config['filter_wheel']['filter_wheel1']['settings']['filter_sky_sort']
         print('filters by low to high transmission:  ', pop_list)
+        length = len(pop_list)
         obs_win_begin, sunset, sunrise, ephemNow = self.astro_events.getSunEvents()
         while len(pop_list) > 0 and (ephemNow < g_dev['events']['End Eve Sky Flats']):
-
+            if length > 9:
+                exp_time = 0.003
+            elif length > 6:
+                exp_time = 0.006
+            elif length > 3:
+                exp_time = 0.009
+            else:
+                exp_time = 0.015  
             current_filter = int(pop_list[0])
             acquired_count = 0
             #g_dev['fil'].set_number_command(current_filter)
@@ -469,7 +478,7 @@ class Sequencer:
                 result = g_dev['cam'].expose_command(req, opt, gather_status=True, no_AWS=True, do_sep = False)
                 bright = result['patch']    #  Patch should be circular and 20% of Chip area. ToDo project
                 print("Bright:  ", bright)  #  Others are 'NE', 'NW', 'SE', 'SW'.
-                if bright > 35000 and (ephemNow < g_dev['events']['End Eve Sky Flats']
+                if bright > 32767 and (ephemNow < g_dev['events']['End Eve Sky Flats']
                                   or True):    #NB should gate with end of skyflat window as well.
                     for i in range(1):
                         time.sleep(5)  #  #0 seconds of wait time.  Maybe shorten for wide bands?
@@ -481,7 +490,7 @@ class Sequencer:
                 continue
         g_dev['mnt'].park_command({}, {})  #  NB this is provisional, Ok when simulating
         print('\nSky flat complete.\n')
-        self.guard = False
+        self.sky_guard = False
 
 
     def screen_flat_script(self, req, opt):
@@ -577,7 +586,7 @@ class Sequencer:
                         result['patch'] = cal_result
                         result['temperature'] = avg_foc[2]  This is probably tube not reported by Gemini.
         '''
-        self.guard = True
+        self.af_guard = True
         print('AF entered with:  ', req, opt)
         #self.sequencer_hold = True  #Blocks command checks.
         start_ra = g_dev['mnt'].RightAscension
@@ -635,7 +644,7 @@ class Sequencer:
         g_dev['mnt'].SlewToCoordinatesAsync(start_ra, start_dec)   #Return to pre-focus pointing.
         #  NB here we could re-solve with the overlay spot just to verify solution is sane.
         self.sequencer_hold = False   #Allow comand checks.
-        self.guard = False
+        self.af_guard = False
         return
 
     def focus_fine_script(self, req, opt):
@@ -848,35 +857,53 @@ IF sweep
         '''
         self.guard = True
         print("Starting sky sweep.")
+        g_dev['mnt'].unpark_command({}, {})
+        if g_dev['enc'].is_dome:
+            g_dev['enc'].Slaved = True  #Bring the dome into the picture.
+        g_dev['obs'].update_status()
+        g_dev['scr'].screen_dark()
+        g_dev['obs'].update_status()
         g_dev['mnt'].unpark_command()
         #cam_name = str(self.config['camera']['camera1']['name'])
-        breakpoint()
+
         sid = g_dev['mnt'].mount.SiderealTime
-        grid_stars = tycho.az_sort_targets(sid, 35, sid)
-        #last_az = 0.01
+        grid_stars = tycho.az_sort_targets(sid, grid=4)  #4 produces about 50 targets.
+        lenght = len(grid_stars)
+        last_az = 0.5
+        count = 0
         for grid_star in grid_stars:
-            breakpoint()
             if grid_star is None:
                 print("No near star, skipping.")   #This should not happen.
                 continue
-            print("Going to near grid star " + str(grid_star[0]) + "  degrees away.")
+            if grid_star[0] < last_az:   #Consider also insisting on a reasonable HA
+                continue
+            last_az = grid_star[0] + 0.001
+            print("Going to near grid star " + str(grid_star) + " (az, (dec, ra)")
             req = {'ra':  grid_star[1][1],
-                   'dec': grid_star[1][0]     #Note order in important (dec, ra)
+                   'dec': grid_star[1][0]     #Note order is important (dec, ra)
                    }
             opt = {}
             g_dev['mnt'].go_command(req, opt)
+            time.sleep(0.5)
+            st = ''
             while g_dev['mnt'].mount.Slewing or g_dev['enc'].enclosure.Slewing:
+                if g_dev['mnt'].mount.Slewing: st += 'm>'
+                if g_dev['enc'].enclosure.Slewing: st += 'd>'
+                print(st)
+                st = ''
                 g_dev['obs'].update_status()
                 time.sleep(0.5)
 
             time.sleep(3)
             g_dev['obs'].update_status()
-            # req = {'time': 10,  'alias': cam_name, 'image_type': 'Light Frame'}
-            # opt = {'size': 100, 'count': 1, 'filter': g_dev['fil'].filter_data[0][0], 'hint': 'Equator pointing run.'}
-            # result = g_dev['cam'].expose_command(req, opt)
+            req = {'time': 5,  'alias': 'sq01', 'image_type': 'quick'}
+            opt = {'size': 100, 'count': 1, 'bin': '2,2', 'filter': g_dev['fil'].filter_data[0][0], 'hint': 'Tycho grid.'}
+            result = g_dev['cam'].expose_command(req, opt)
             g_dev['obs'].update_status()
-            result = 'simulated'
-            print('Result:  ', result)
+            result = 'simulated result.'
+            count += 1
+            print('\n\nResult:  ', result,   'To go count:  ', lenght - count,  '\n\n')
+            
         g_dev['mnt'].stop_command()
         print("Equatorial sweep completed. Happy reducing.")
         self.guard = False

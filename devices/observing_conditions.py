@@ -106,38 +106,75 @@ class ObservingConditions:
                 self.ok_to_open = 'Yes'
             else:
                 self.ok_to_open = "No"
-            status = {"temperature_C": str(round(self.boltwood.Temperature, 2)),
-                      "pressure_mbar": "784.0",
-                      "humidity_%": str(self.boltwood.Humidity),
-                      "dewpoint_C": str(self.boltwood.DewPoint),
-                      "sky_temp_C": str(round(self.boltwood.SkyTemperature,2)),
-                      "last_sky_update_s":  str(round(self.boltwood.TimeSinceLastUpdate('SkyTemperature'), 2)),
-                      "wind_m/s": str(abs(round(self.boltwood.WindSpeed, 2))),
-                      'rain_rate': str(self.boltwood.RainRate),
-                      'solar_flux_w/m^2': 'NA',
-                      'cloud_cover_%': str(self.boltwood.CloudCover),
-                      "calc_HSI_lux": str(illum),
-                      "calc_sky_mpsas": str(round((mag - 20.01),2)),    #  Provenance of 20.01 is dubious 20200504 WER
-                      "wx_ok": wx_str,  #str(self.boltwood_oktoimage.IsSafe),
-                      "open_ok": self.ok_to_open
-                      #"image_ok": str(self.boltwood_oktoimage.IsSafe)
-                      }
-            status2 = {"temperature_C": round(self.boltwood.Temperature, 2),
-                      "pressure_mbar": 784.0,
-                      "humidity_%": self.boltwood.Humidity,
-                      "dewpoint_C": self.boltwood.DewPoint,
-                      "sky_temp_C": round(self.boltwood.SkyTemperature,2),
-                      "last_sky_update_s":  round(self.boltwood.TimeSinceLastUpdate('SkyTemperature'), 2),
-                      "wind_m/s": abs(round(self.boltwood.WindSpeed, 2)),
-                      'rain_rate': self.boltwood.RainRate,
-                      'solar_flux_w/m^2': 'NA',
-                      'cloud_cover_%': self.boltwood.CloudCover,
-                      "calc_HSI_lux": illum,
-                      "calc_sky_mpsas": round((mag - 20.01),2),    #  Provenance of 20.01 is dubious 20200504 WER
-                      "wx_ok": wx_str,  #str(self.boltwood_oktoimage.IsSafe),
-                      "open_ok": self.ok_to_open
-                      #"image_ok": str(self.boltwood_oktoimage.IsSafe)
-                      }
+            try:   #Boltwood cloud cover occasionally faults. 20200805 WER
+                status = {"temperature_C": str(round(self.boltwood.Temperature, 2)),
+                          "pressure_mbar": "784.0",
+                          "humidity_%": str(self.boltwood.Humidity),
+                          "dewpoint_C": str(self.boltwood.DewPoint),
+                          "sky_temp_C": str(round(self.boltwood.SkyTemperature,2)),
+                          "last_sky_update_s":  str(round(self.boltwood.TimeSinceLastUpdate('SkyTemperature'), 2)),
+                          "wind_m/s": str(abs(round(self.boltwood.WindSpeed, 2))),
+                          'rain_rate': str(self.boltwood.RainRate),
+                          'solar_flux_w/m^2': 'NA',
+                          #'cloud_cover_%': str(self.boltwood.CloudCover),
+                          "calc_HSI_lux": str(illum),
+                          "calc_sky_mpsas": str(round((mag - 20.01),2)),    #  Provenance of 20.01 is dubious 20200504 WER
+                          "wx_ok": wx_str,  #str(self.boltwood_oktoimage.IsSafe),
+                          "open_ok": self.ok_to_open
+                          #"image_ok": str(self.boltwood_oktoimage.IsSafe)
+                          }
+                status2 = {"temperature_C": round(self.boltwood.Temperature, 2),
+                          "pressure_mbar": 784.0,
+                          "humidity_%": self.boltwood.Humidity,
+                          "dewpoint_C": self.boltwood.DewPoint,
+                          "sky_temp_C": round(self.boltwood.SkyTemperature,2),
+                          "last_sky_update_s":  round(self.boltwood.TimeSinceLastUpdate('SkyTemperature'), 2),
+                          "wind_m/s": abs(round(self.boltwood.WindSpeed, 2)),
+                          'rain_rate': self.boltwood.RainRate,
+                          'solar_flux_w/m^2': 'NA',
+                          #'cloud_cover_%': self.boltwood.CloudCover,
+                          "calc_HSI_lux": illum,
+                          "calc_sky_mpsas": round((mag - 20.01),2),    #  Provenance of 20.01 is dubious 20200504 WER
+                          "wx_ok": wx_str,  #str(self.boltwood_oktoimage.IsSafe),
+                          "open_ok": self.ok_to_open
+                          #"image_ok": str(self.boltwood_oktoimage.IsSafe)
+                          }
+            except:
+                time.sleep(2)
+                
+                status = {"temperature_C": str(round(self.boltwood.Temperature, 2)),
+                          "pressure_mbar": "784.0",
+                          "humidity_%": str(self.boltwood.Humidity),
+                          "dewpoint_C": str(self.boltwood.DewPoint),
+                          "sky_temp_C": str(round(self.boltwood.SkyTemperature,2)),
+                          "last_sky_update_s":  str(round(self.boltwood.TimeSinceLastUpdate('SkyTemperature'), 2)),
+                          "wind_m/s": str(abs(round(self.boltwood.WindSpeed, 2))),
+                          'rain_rate': str(self.boltwood.RainRate),
+                          'solar_flux_w/m^2': 'NA',
+                          #cloud_cover_%': str(self.boltwood.CloudCover),
+                          "calc_HSI_lux": str(illum),
+                          "calc_sky_mpsas": str(round((mag - 20.01),2)),    #  Provenance of 20.01 is dubious 20200504 WER
+                          "wx_ok": wx_str,  #str(self.boltwood_oktoimage.IsSafe),
+                          "open_ok": self.ok_to_open
+                          #"image_ok": str(self.boltwood_oktoimage.IsSafe)
+                          }
+                status2 = {"temperature_C": round(self.boltwood.Temperature, 2),
+                          "pressure_mbar": 784.0,
+                          "humidity_%": self.boltwood.Humidity,
+                          "dewpoint_C": self.boltwood.DewPoint,
+                          "sky_temp_C": round(self.boltwood.SkyTemperature,2),
+                          "last_sky_update_s":  round(self.boltwood.TimeSinceLastUpdate('SkyTemperature'), 2),
+                          "wind_m/s": abs(round(self.boltwood.WindSpeed, 2)),
+                          'rain_rate': self.boltwood.RainRate,
+                          'solar_flux_w/m^2': 'NA',
+                          #'cloud_cover_%': self.boltwood.CloudCover,
+                          "calc_HSI_lux": illum,
+                          "calc_sky_mpsas": round((mag - 20.01),2),    #  Provenance of 20.01 is dubious 20200504 WER
+                          "wx_ok": wx_str,  #str(self.boltwood_oktoimage.IsSafe),
+                          "open_ok": self.ok_to_open
+                          #"image_ok": str(self.boltwood_oktoimage.IsSafe)
+                          }
+                
 
             if self.unihedron.Connected:
                 uni_measure = self.unihedron.SkyQuality   #  Provenance of 20.01 is dubious 20200504 WER

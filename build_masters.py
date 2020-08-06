@@ -817,10 +817,10 @@ if __name__ == '__main__':
     camera_name = 'sq01'  #  config.site_config['camera']['camera1']['name']
     #archive_path = "D:/000ptr_saf/archive/sq01/2020-06-13/"
     #archive_path = "D:/2020-06-19  Ha and O3 screen flats/"
-    archive_path = "D:/20200730  BUBBLE NEBULA hA  s2 o3/"
-    out_path = "D:/20200730  BUBBLE NEBULA hA  s2 o3/trimmed/"
+    archive_path = "D:/20200804  Bubble again Ha etc/"
+    out_path = "D:/20200804  Bubble again Ha etc/trimmed/"
     lng_path = "D:/000ptr_saf/archive/sq01/lng/"
-    #debias_and_trim(camera_name, archive_path, '*bU*', out_path)
+    debias_and_trim(camera_name, archive_path, '*HA*', out_path)
     # mod_debias_and_trim(camera_name, archive_path, '*APPM-2020-07-12*', out_path)
     # prepare_tpoint(camera_name, archive_path, '*APPM*',lng_path, out_path)
     # make_master_bias(camera_name, out_path, lng_path, '*f_3*', 'mb_1b.fits')
@@ -840,9 +840,9 @@ if __name__ == '__main__':
     # build_hot_map(camera_name, lng_path, "md_1_1080.fits", "hm_1")
     # build_hot_image(camera_name, lng_path, "md_1_1080.fits", "hm_1.fits")
     # archive_path = out_path
-    archive_path = "D:/20200730  BUBBLE NEBULA hA  s2 o3/trimmed/"
-    out_path = "D:/20200730  BUBBLE NEBULA hA  s2 o3/reduced/"
-    correct_image(camera_name, archive_path, '*bU*', lng_path, out_path)
+    archive_path = "D:/20200804  Bubble again Ha etc/trimmed/"
+    out_path = "D:/20200804  Bubble again Ha etc/reduced/"
+    correct_image(camera_name, archive_path, '*HA*', lng_path, out_path)
     # mod_correct_image(camera_name, archive_path, '*EX00*', lng_path, out_path)
     # archive_path = out_path
     # out_path =":D:/20200707 Bubble Neb NGC7635  Ha O3 S2/catalogs/"
