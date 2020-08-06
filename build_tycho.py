@@ -25,7 +25,7 @@ from pprint import pprint
 
 iso_day = datetime.date.today().isocalendar()
 equinox_years = round((iso_day[0] + ((iso_day[1]-1)*7 + (iso_day[2] ))/365), 2) - 2000
-tycho_cat = open("E:/Users/User/Documents/GitHub/ptr-observatory/support_info/tycho_mag_7.dat", 'r')
+tycho_cat = open("../ptr-observatory/support_info/tycho_mag_7.dat", 'r')
 
 tycho_tuple = []
 count = 0

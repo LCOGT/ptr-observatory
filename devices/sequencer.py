@@ -216,25 +216,10 @@ class Sequencer:
                    'coldMap': True, 'script': 'genBiasDarkMaster', 'bin5': False}
             opt = {}
             self.bias_dark_script(req, opt)
-        # elif (events[] <= ephem_now <= events[]):
-        #     pass
-        # elif (events[] <= ephem_now <= events[]):
-        #     pass
-        # elif (events[] <= ephem_now <= events[]):
-        #     pass
-        # elif (events[] <= ephem_now <= events[]):
-        #     pass
-        # elif (events[] <= ephem_now <= events[]):
-        #     pass
-        # elif (events[] <= ephem_now <= events[]):
-        #     pass
-        # elif (events[] <= ephem_now <= events[]):
-        #     pass
         elif  (events['Eve Sky Flats'] < ephem_now < events['End Eve Sky Flats'])  \
                 and g_dev['enc'].mode == 'Automatic' \
                 and g_dev['ocn'].wx_is_ok \
-                and not g_dev['ocn'].wx_hold  #   \
-                #and not self.guard:      #  and g_dev['ocn'].wait_time <= 0 \
+                and not g_dev['ocn'].wx_hold:
             if not self.sky_guard:
                 #Start it up.
                 self.sky_guard = True
