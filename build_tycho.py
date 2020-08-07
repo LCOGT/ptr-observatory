@@ -25,7 +25,7 @@ from pprint import pprint
 
 iso_day = datetime.date.today().isocalendar()
 equinox_years = round((iso_day[0] + ((iso_day[1]-1)*7 + (iso_day[2] ))/365), 2) - 2000
-tycho_cat = open("E:/Users/User/Documents/GitHub/ptr-observatory/support_info/tycho_mag_7.dat", 'r')
+tycho_cat = open(".../ptr-observatory/support_info/tycho_mag_7.dat", 'r')
 
 tycho_tuple = []
 count = 0
@@ -81,7 +81,7 @@ def reduceAz(pAz):
     return pAz
 
 def transform_haDec_to_azAlt(pLocal_hour_angle, pDec):
-    lat = 35.554444
+    lat = 35.554444   # NB Bad form.
     latr = math.radians(lat)
     sinLat = math.sin(latr)
     cosLat = math.cos(latr)
@@ -130,7 +130,7 @@ def az_sort_targets(pSidTime, grid=4):
     of Nav Star from that point, closest first. In additon full site
     Horizon cull is applied.
     '''
-    
+       # NB Bad form. Pick up constants from config.
     sorted_target_list = dist_sort_targets(pSidTime, 35.55, pSidTime)
     #print(len(sorted_target_list))
     az_sorted_targets = []
@@ -141,7 +141,7 @@ def az_sort_targets(pSidTime, grid=4):
         az, alt = transform_haDec_to_azAlt(cat_ha, star[1][0])
         #if cat_sign == sign:
 
-        if  alt < 25 or alt > 81:
+        if  alt < 25 or alt > 84:
             continue
         az_sorted_targets.append((az, star[1]))
     az_sorted_targets.sort()
