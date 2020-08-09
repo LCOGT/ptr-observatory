@@ -648,11 +648,18 @@ def correct_image(camera_name, archive_path, selector_string, lng_path, out_path
             print("Incorrect filter suffix, no flat applied.")
 
         median8(img[0].data, hot_pix)
+        img[0].data = img[0].data.astype('float32')
+        
         img[0].header['CALIBRAT'] = 'B D SCF H'  #SCF SKF
         file_name_split = image.split('\\')
         print('Writing:  ', file_name_split[1])
- 
-        img.writeto(out_path + file_name_split[1], overwrite=True)
+        img_bk_data = img[0].data
+        #  img.writeto(out_path + file_name_split[1], overwrite=True)
+        img.writeto(out_path[:-1]+'_floating/' + file_name_split[1], overwrite=True)
+        #  img[0].data = img_bk_data.astype('uint16')
+        #  img.writeto(out_path[:-1]+'_unsigned_16int/' + file_name_split[1], overwrite=True)
+        img[0].data = (img[0].data*10).astype('int32')
+        img.writeto(out_path[:-1]+'_scaled_10X_32int/' + file_name_split[1], overwrite=True)
         img.close()
 
 def open_ordered_file_list(archive_path, selector_string):
@@ -734,14 +741,99 @@ def sep_image(camera_name, archive_path, selector_string, lng_path, out_path):
             plt.scatter(plot_x, plot_y)
         except:
             spot = None
+def APPM_prepare_TPOINT():   #   'C:/ProgramData/Astro-Physics/APCC/Models/APPM-2020-08-07-031103 Trimmed.csv'
+    try:
+        img.close()
+    except:
+        pass
+    img = open('C:/ProgramData/Astro-Physics/APCC/Models/APPM-2020-08-07-031103 Trimmed.csv', 'r')
+    out_f = open('C:/ProgramData/Astro-Physics/APCC/Models/' + "saf_model.dat", 'w')
+    out_f.write('0.3m Ceravolo, AP1600, Apache Ridge Observatory\n')
+    out_f.write(':NODA\n')
+    out_f.write(':EQUAT\n')
+    out_f.write('35 33 16\n') #35.554444
+    out_f.write('\n')
+    count = 0
+    for group in range(34):
+        count +=1
+        l1 = img.readline().split(',')
+        l2 = img.readline().split(',')
+        l3 = img.readline().split(',')
+        l4 = img.readline().split(',')
+        l5 = img.readline().split(',')
+        l6 = img.readline().split(',')
+        l7 = img.readline().split(',')
+        l8 = img.readline().split(',')
+        l9 = img.readline().split(',')
+        tgt = [l6[5][:2], l6[6][:2], l6[7][:4], l6[9][:3], l6[10][:2], l6[11][1:3]]
+        if tgt[3][0] != '-':
+            tgt[3] = '+'+ tgt[3][:2]
+        act = [l7[5][:2], l7[6][:2], l7[7][:4], l7[9][:3], l7[10][:2], l7[11][1:3], l7[12][:9]]
+        if act[3][0] != '-':
+            act[3] = '+'+ act[3][:2]
+            if act[6][-1] == ')':
+                act[6] = act[6][:-1]
+        sid = [l3[4][6:13]]
+        flip = [l1[2][5:6]]  #  , l1[3], l1[4]]
+        act1 = act.copy()
+        if flip[0] == 'F':
+            #  TEl points West so flip.
+            ra =int(act[0]) + 12
+            if ra >= 24:
+                ra -= 24
+            act[0] = str(ra)
+            dec = float(act[6])
+            dec = 180 - dec
+            deg = int(dec)
+            min_sec = (dec - deg)*60
+            mins = int(min_sec)
+            sec = round(((min_sec) - mins)*60, 2)
+            act[3] = str(deg)
+            act[4] = str(mins)
+            act[5] = str(sec)
+            
+        # print(count, tgt, act1, sid, flip)
+        # print(count, tgt, act, sid, flip, '\n\n')
+        
+        pre_ra = tgt[0]
+        pre_ram = tgt[1]
+        pre_ras = tgt[2]
+        pre_dec = tgt[3]
+        pre_decm = tgt[4]
+        pre_decs = tgt[5]
+        post_ra = act[0]
+        post_ram = act[1]
+        post_ras = tgt[2]
+        post_dec = act[3]
+        post_decm = tgt[4]
+        post_decs = tgt[5]
+        sid_h = int(float(sid[0]))
+        sid_m = round((float(sid[0]) - sid_h)*60, 3)
+        sid_h_st = str(sid_h)
+        sid_m_st = str(sid_m)
+        
+        if flip[0] == 'T':
+            pier = 'EAST'
+        else:
+            pier = 'WEST'
+        pre_ras = pre_ra + ' ' + pre_ram + ' ' + pre_ras + " "
+        pre_decst = pre_dec + ' ' + pre_decm + ' ' + pre_decs + " "
+        post_ras = post_ra + ' ' + post_ram + ' ' + post_ras + " "
+        post_decst = post_dec + ' ' + post_decm + ' ' + post_decs + " "
+        out_f.write(pre_ras  + pre_decst + post_ras + post_decst  + sid_h_st + ' ' + sid_m_st + ' ' + pier + '\n')
+        print(pre_ras  + pre_decst + post_ras + post_decst  + sid_h_st + ' ' + sid_m_st + ' ' + pier)
+    out_f.write('END\n')
+    out_f.close()
 
+        
+        
 
 def prepare_tpoint(camera_name, archive_path, selector_string, lng_path, out_path):
     file_list = glob.glob(archive_path + selector_string)
     file_list.sort
     print(file_list)
     print('# of files:  ', len(file_list))
-    out_f = open(out_path + "tpoint_input.dat", 'w')
+    out_f = open(out_path + "tpoint_input.dat", 'r')
     out_f.write('0.3m Ceravolo, AP1600, Apache Ridge Observatory\n')
     out_f.write(':NODA\n')
     out_f.write(':EQUAT\n')
@@ -794,8 +886,8 @@ def prepare_tpoint(camera_name, archive_path, selector_string, lng_path, out_pat
                     ra_mh = (ra - ra_h)*60
                     ra_m = int(ra_mh)
                     ra_s = round(((ra_mh - ra_m)*60), 2)
-                    ra_str = str(ra_h) + " " + str(ra_m) + " " + str(ra_s)
                     
+                    ra_str = str(ra_h) + " " + str(ra_m) + " " + str(ra_s)
                     
                     out_f.write(pre_ra + "  " + pre_dec + "  " + ra_str + "  " + dec_str + "  " + sid_str + "  " + pier + '\n')
                 else:
@@ -816,10 +908,11 @@ if __name__ == '__main__':
     camera_name = 'sq01'  #  config.site_config['camera']['camera1']['name']
     #archive_path = "D:/000ptr_saf/archive/sq01/2020-06-13/"
     #archive_path = "D:/2020-06-19  Ha and O3 screen flats/"
-    archive_path = "D:/20200804  Bubble again Ha etc/"
-    out_path = "D:/20200804  Bubble again Ha etc/trimmed/"
+    archive_path = "D:/20200809 Bubble_Neb  Ha/"
+    out_path = "D:/20200809 Bubble_Neb  Ha/trimmed/"
     lng_path = "D:/000ptr_saf/archive/sq01/lng/"
-    debias_and_trim(camera_name, archive_path, '*HA*', out_path)
+    #APPM_prepare_TPOINT()
+    #debias_and_trim(camera_name, archive_path, '*HA*', out_path)
     # mod_debias_and_trim(camera_name, archive_path, '*APPM-2020-07-12*', out_path)
     # prepare_tpoint(camera_name, archive_path, '*APPM*',lng_path, out_path)
     # make_master_bias(camera_name, out_path, lng_path, '*f_3*', 'mb_1b.fits')
@@ -839,8 +932,8 @@ if __name__ == '__main__':
     # build_hot_map(camera_name, lng_path, "md_1_1080.fits", "hm_1")
     # build_hot_image(camera_name, lng_path, "md_1_1080.fits", "hm_1.fits")
     # archive_path = out_path
-    archive_path = "D:/20200804  Bubble again Ha etc/trimmed/"
-    out_path = "D:/20200804  Bubble again Ha etc/reduced/"
+    archive_path = "D:/20200809 Bubble_Neb  Ha/trimmed/"
+    out_path = "D:/20200809 Bubble_Neb  Ha/reduced/"
     correct_image(camera_name, archive_path, '*HA*', lng_path, out_path)
     # mod_correct_image(camera_name, archive_path, '*EX00*', lng_path, out_path)
     # archive_path = out_path
