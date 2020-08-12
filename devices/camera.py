@@ -432,9 +432,9 @@ class Camera:
         self.script = required_params.get('script', 'None')
         bin_x = optional_params.get('bin', self.config['camera']['camera1'] \
                                                       ['settings']['default_bin'])  #NB this should pick up config default.
-        if bin_x == '4, 4':# For now this is the highest level of binning supported.
+        if bin_x == '4, 4':     # For now this is the highest level of binning supported.
             bin_x = 2
-        elif bin_x == '3, 3':   #replace with in and various formats or strip spaces.
+        elif bin_x == '3, 3':   # replace with in and various formats or strip spaces.
             bin_x = 2
         elif bin_x == '2, 2':
             bin_x = 2
@@ -721,7 +721,7 @@ class Camera:
                             img_type = 1
                         if frame_type == 'dark':
                             img_type = 2
-                        if frame_type in ('flat', 'screen flat','screen_flat', 'sky flat' 'sky_flat'):
+                        if frame_type in ('flat', 'screen flat','screen_flat', 'sky flat', 'sky_flat'):
                             img_type = 3
 
                         # self.create_simple_sequence(exp_time=exposure_time, img_type=img_type, \
@@ -735,6 +735,7 @@ class Camera:
                             exposure_time = 0.00001
                         if exposure_time > 3600:
                             exposure_time = 3600
+                        print('Filter number is:  ', self.camera.Filter)
                         self.entry_time = self.t2
                         self._expose (exposure_time, img_type)
                     else:
@@ -778,11 +779,10 @@ class Camera:
                         low=0, high=0, script='False', opt=None):
         print("Finish exposure Entered:  ", exposure_time, frame_type, counter, \
               gather_status, do_sep, no_AWS, start_x, start_y)
-        if gather_status:
-            self.post_mnt = []
-            self.post_rot = []
-            self.post_foc = []
-            self.post_ocn = []
+        self.post_mnt = []
+        self.post_rot = []
+        self.post_foc = []
+        self.post_ocn = []
         counter = 0
         if self.bin == 1:
             self.completion_time = self.entry_time + exposure_time + 9
@@ -936,7 +936,7 @@ class Camera:
                     hdu.header['WIND'] = avg_ocn[5]
                     hdu.header['PRESSURE'] = avg_ocn[6]
                     hdu.header['CALC-LUX'] = avg_ocn[7]
-                    hdu.header['SKY-HZ'] = avg_ocn[8]
+                    hdu.header['SKY-LUX'] = avg_ocn[8]
                     if g_dev['enc'] is not None:
                         hdu.header['ROOF']  = g_dev['enc'].get_status()['shutter_status']   #"Open/Closed"
                     hdu.header['DETECTOR'] = self.config['camera']['camera1']['detector']
@@ -1029,13 +1029,17 @@ class Camera:
                         self.to_reduce((paths, hdu))
                         hdu.writeto(raw_path + raw_name00, overwrite=True)
                     if script in ('True', 'true', 'On', 'on') or quick:
-                        hdu.writeto(cal_path + cal_name, overwrite=True)
+                        if not self.hint[0:54] == 'Flush':
+                            hdu.writeto(cal_path + cal_name, overwrite=True)
+                        else:
+                            pass
                         try:
                             os.remove(self.camera_path + 'newest.fits')
                         except:
                             pass    #  print ("File newest.fits not found, this is probably OK")
-                        return {'patch': bi_mean,
-                                'calc_sky': avg_ocn[7]}   #  Note we are not calibrating. Just saving the file.
+                        result = {'patch': bi_mean,
+                                'calc_sky': avg_ocn[7]}
+                        return result#  Note we are not calibrating. Just saving the file.
                     print("\n\Finish-Exposure is complete, saved:  " + raw_name00)#, raw_data_size, '\n')
                     g_dev['obs'].update_status()
                     result['mean_focus'] = avg_foc[1]
@@ -1045,6 +1049,8 @@ class Camera:
                     result['patch'] = round(bi_mean, 1)
                     result['calc_sky'] = avg_ocn[7]
                     result['temperature'] = avg_foc[2]
+                    result['gain'] = round(bi_mean/(avg_ocn[7]*exposure_time), 6)
+                    result['filter'] = self.current_filter
                     return result
                 except Exception as e:
                     print('Header assembly block failed: ', e)

@@ -32,6 +32,20 @@ can be modified for debugging or simulation purposes.
 #            core1_redis = redis.StrictRedis(host='10.15.0.109', port=6379, db=0,\
 #                                            decode_responses=True)
 
+def linearize_unihedron(uni_value):
+    #  Based on 20080811 data
+    uni_value = float(uni_value)
+    if uni_value < -1.9:
+        uni_corr = 2.5**(-5.85 - uni_value)
+    elif uni_value < -3.8:
+        uni_corr = 2.5**(-5.15 - uni_value)
+    elif uni_value <= -12:
+        uni_corr = 2.5**(-4.88 - uni_value)
+    else:
+        uni_corr = 6000
+    return uni_corr
+        
+    
 
 class ObservingConditions:
 
@@ -180,8 +194,13 @@ class ObservingConditions:
                 uni_measure = self.unihedron.SkyQuality   #  Provenance of 20.01 is dubious 20200504 WER
                 if uni_measure == 0:
                     uni_measure = round((mag - 20.01),2)   #  Fixes Unihedron when sky is too bright
-                status["meas_sky_mpsas"] = str(uni_measure)
-                status2["meas_sky_mpsas"] = uni_measure
+                    status["meas_sky_mpsas"] = str(uni_measure)
+                    status2["meas_sky_mpsas"] = uni_measure
+                    self.meas_sky_lux = illum
+                else:
+                    self.meas_sky_lux = linearize_unihedron(uni_measure)
+                    status["meas_sky_mpsas"] = str(uni_measure)
+                    status2["meas_sky_mpsas"] = uni_measure
             else:
                 status["meas_sky_mpsas"] = str(round((mag - 20.01),2))
                 status2["meas_sky_mpsas"] = round((mag - 20.01),2) #  Provenance of 20.01 is dubious 20200504 WER
@@ -376,8 +395,14 @@ class ObservingConditions:
             quick.append(float(abs(self.boltwood.WindSpeed)))
             quick.append(float(784.0))   # 20200329 a SWAG!
             quick.append(float(illum))     # Add Solar, Lunar elev and phase
-            quick.append(float(self.unihedron.SkyQuality))     # intended for Unihedron
-            # print(quick)
+            uni_measure = self.unihedron.SkyQuality
+            if uni_measure == 0:
+                uni_measure = round((mag - 20.01),2)   #  Fixes Unihedron when sky is too bright
+                quick.append(float(uni_measure))
+                self.meas_sky_lux = illum
+            else:
+                self.meas_sky_lux = linearize_unihedron(uni_measure)
+                quick.append(float(self.meas_sky_lux))     # intended for Unihedron
             return quick
         elif self.site == 'wmd':
             wx = eval(self.redis_server.get('<ptr-wx-1_state'))

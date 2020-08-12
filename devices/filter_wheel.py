@@ -226,8 +226,7 @@ class FilterWheel:
             if filter_name == self.filter_data[match][0]:
                 filt_pointer = match
                 break
-#            else:
-#                print('Filter name appears to be incorrect. Check for proper case.')
+        print('Filter name appears to be:  ', self.filter_data[match][0])
         print('Filter pointer:  ', filt_pointer)
         self.filter_number = filt_pointer
         self.filter_selected = filter_name
@@ -250,7 +249,7 @@ class FilterWheel:
                 breakpoint()
             self.filter_offset = int(self.filter_data[filt_pointer][2])
         elif self.maxim:
-            #g_dev['cam'].camera.Filter = filter_selections[0]
+            g_dev['cam'].camera.Filter = filter_selections[0]
             time.sleep(0.2)
             #g_dev['cam'].camera.GuiderFilter = filter_selections[1]
         else:

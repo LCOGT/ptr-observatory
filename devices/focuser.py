@@ -63,7 +63,7 @@ class Focuser:
         self.steps_to_micron= float(config['focuser']['focuser1']['unit_conversion'])
         self.micron_to_steps = 1/self.steps_to_micron
         self.focuser_message = '-'
-        print(f"focuser connected.")
+        print("focuser connected.")
         print(self.focuser.Description, "At:  ", round(self.focuser.Position*self.steps_to_micron, 1))
         time.sleep(0.2)
         try:
@@ -77,7 +77,7 @@ class Focuser:
         except:
             self.reference = int(self.config['reference'])
             print("Focus reference derived from supplied Config dicitionary:  ", self.reference)
-        self.focuser.Move(int(float(self.reference)*self.micron_to_steps))
+        self.focuser.Move(int(float(self.reference)/self.micron_to_steps))
 
     def calculate_compensation(self, temp_primary):
 

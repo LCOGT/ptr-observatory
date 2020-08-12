@@ -118,16 +118,17 @@ def fit_quadratic(x, y):
 
 def bin_to_string(use_bin):
     if use_bin == 1:
-        return '1,1'
+        return '1, 1'
     if use_bin == 2:
-        return '2,2'
+        return '2, 2'
     if use_bin == 3:
-        return '3,3'
+        return '3, 3'
     if use_bin == 4:
-        return '4,4'
+        return '4, 4'
     if use_bin == 5:
-        return'5,5'
-    return '1,1'
+        return'5, 5'
+    else:
+        return '1, 1'
 
 class Sequencer:
 
@@ -167,16 +168,16 @@ class Sequencer:
         script = command['required_params']['script']
 
         if action == "run" and script == 'focusAuto':
-#            req = {'time': 0.2,  'alias': 'gf01', 'image_type': 'toss', 'filter': 2}
-#            opt = {'size': 100, 'count': 1}
-#            g_dev['cam'].expose_command(req, opt)   #Do not inhibit gather status for an autofocus.
             self.focus_auto_script(req, opt)
+        elif action == "run" and script == 'focusFine':
+            self.fine_focus_script(req, opt)
         elif action == "run" and script == 'genScreenFlatMasters':
             self.screen_flat_script(req, opt)
         elif action == "run" and script == 'genSkyFlatMasters':
             self.sky_flat_script(req, opt)
         elif action == "run" and script in ['32TargetPointingRun', 'pointingRun', 'makeModel']:
-            self.sky_grid_pointing_run(req, opt)
+            #self.sky_grid_pointing_run(req, opt)
+            self.vertical_pointing_run(req, opt)
         elif action == "run" and script in ("genBiasDarkMaster", "genBiasDarkMasters"):
             self.bias_dark_script(req, opt)
         elif action == "run" and script == "takeLRGBstack":
@@ -212,7 +213,7 @@ class Sequencer:
         #if True:
         if (events['Eve Bias Dark'] <= ephem_now <= events['End Eve Bias Dark']) and False:
             req = {'numOfBias': 31, 'bin3': True, 'numOfDark2': 3, 'bin4': False, 'bin1': True, \
-                   'darkTime': 360, 'hotMap': True, 'bin2': True, 'numOfDark': 3, 'dark2Time': 600, \
+                   'darkTime': 360, 'hotMap': True, 'bin2': True, 'numOfDark': 3, 'dark2Time': 120, \
                    'coldMap': True, 'script': 'genBiasDarkMaster', 'bin5': False}
             opt = {}
             self.bias_dark_script(req, opt)
@@ -236,165 +237,85 @@ class Sequencer:
 
         20200618   THis has been drastically simplied for now to deal with only QHY600M.
 
-        This script may be auto-triggered as the bias_dark window opens, or
-        by a qualified user.
-        This auto script runs for about an hour.  No auto-triggered images are sent to AWS.
-        Images go to the calibs folder in a day-directory.  After the script
-        ends build_masters.py executes in a different process and attempts
-        to process and update the bias-dark master images, which are sent to
-        AWS.
-
-        Ultimately it can be running and random incoming requests for the
-        camera will be honored between Bias dark images as a way to expidite
-        debugging. This is not advised for normal operations.  Scheme though
-        is sneak in BD images between commands to camera.  So this requires
-        we have a camera_busy guard in place.  IF this works well, notice
-        this means we could have a larger window to take longer darks.
-
-        Defaults:  Darks: 9 frames  500 seconds 1:1, 360 2:2  240 3:3  120:4:4
-                   Biases for each dark, 5 before, 4 after
-                   Once a week: 600 seconds, 5 each to build hot pixel map
-
-        Parse parameters,
-        if something to do, put up sequencer_guard, estimated duration, factoring in
-        event windows -- if in a window and count = 0, keep going until end of window.
-        More biases and darks never hurt anyone.
-        Connect Camera
-        set temperature target and wait for it (this could be first exposure of the day!)
-        Flush camera 2X
-        interleave the binnings with biases and darks so everthing is reasonably balanced.
-
-        Loop until count goes to zero
-
-        Note this can be called by the Auto Sequencer OR invoked by a user with different counts
+        May still have a bug where it latches up only outputting 2x2 frames.
+                 
         """
-        if req is None:     #  NB This again should be a config item. 274 takes about 1 hour with SBIG 6303
-            req = {'numOfBias': 127, 'bin3': False, 'numOfDark2': 0, 'bin4': False, 'bin1': True, \
-                    'darkTime': '360', 'hotMap': True, 'bin2': false, 'numOfDark': 31, 'dark2Time': '720', \
-                    'coldMap': True, 'script': 'genBiasDarkMaster'}
-            opt = {}
         self.sequencer_hold = True
+        if req is None:     #  NB Chunking factor is 9
+            req = {'numOfBias': 36, 'bin3': False, 'numOfDark2': 18, 'bin4': \
+                   False, 'bin1': True, 'darkTime': '360', 'hotMap': True, \
+                   'bin2': True, 'numOfDark': 18, 'dark2Time': '180', \
+                   'coldMap': True}
+            opt = {}
         bias_list = []
-        num_bias = max(15, req['numOfBias'])
-        breakpoint()
-        if req['bin4']:
-            bias_list.append([4, max(5, int(num_bias*19/255))])   #THis whole scheme is wrong. 20200525 WER
-        if req['bin3']:
-            bias_list.append([3, max(5, int(num_bias*35/255))])
-        if req['bin2']:
-            bias_list.append([2, max(9, int(num_bias*74/255))])
-        if req['bin1']:
-            bias_list.append([1, max(9, num_bias)])
+        num_bias = min(144, req['numOfBias'])
+        for i in range(num_bias):
+            if req['bin1']:
+                bias_list.append([1, 0])
+            if req['bin2']:
+                bias_list.append([2, 0])
         print('Bias_list:  ', bias_list)
-        total_num_biases = 0
-        for item in bias_list:
-            total_num_biases += item[1]
-        print("Total # of bias frames, all binnings =  ", total_num_biases )
+        total_num_biases = len(bias_list)
+        print("Total # of bias frames, all binnings =  ", total_num_biases, \
+              " Time req'd:  ", total_num_biases*6, ' sec.' )
+        
         dark_list = []
-        num_dark = max(5, req['numOfDark'])
+        num_dark = min(72, req['numOfDark'])   ## Implied this is 1:! binning darks.
         dark_time = float(req['darkTime'])
-        if req['bin1']:
-            dark_list.append([1, max(5, num_dark)])
-        if req['bin2']:
-            dark_list.append([2, max(5, num_dark)])
-        if req['bin3']:
-            dark_list.append([3, max(3, num_dark//2)])
-        if req['bin4']:
-            dark_list.append([4, max(3, num_dark//3)])
-        if req.get('bin5', False):
-            dark_list.append([5, max(3, num_dark//4)])
-        print('Dark_list:  ', dark_list)
-        total_num_dark = 0
-        for item in dark_list:
-            total_num_dark += item[1]
-        print("Total # of dark frames, all binnings =  ", total_num_dark )
-        long_dark_list = []
-        num_long_dark = max(0, req['numOfDark2'])
-        long_dark_time = float(req['dark2Time'])
-        if req['bin1']:
-            long_dark_list.append([1, max(0, num_long_dark)])
-        if req['bin2']:
-            long_dark_list.append([2, max(3, num_long_dark)])
-        if req['bin3']:
-            long_dark_list.append([3, max(3, num_long_dark//2)])   #  NB  need to create a make_odd function
-        if req['bin4']:
-            long_dark_list.append([4, max(3, num_long_dark//3)])
-        if req.get('bin5', False):
-            long_dark_list.append([5, max(3, num_long_dark//4)])
-        print('Long_dark_list:  ',  long_dark_list)
-        total_num_long_dark = 0
-        for item in long_dark_list:
-            total_num_long_dark += item[1]
-        print("Total # of long_dark frames, all binnings =  ", total_num_long_dark)
-        bias_time = 12.  #NB Pick up from camera config
-        total_time = bias_time*(total_num_biases + total_num_dark + total_num_long_dark)
+        for i in range(num_dark):
+             dark_list.append([1, dark_time])
+        total_num_dark = len(dark_list)
+        print("Total # of dark1 frames, all binnings =  ", total_num_dark )
+        
+        binx_dark_list = []
+        num_binx_dark = min(72, req['numOfDark2'])  ## Implied this is >1x1 binning darks.
+        binx_dark_time = float(req['dark2Time'])
+        for i in range(num_binx_dark):
+            binx_dark_list.append([2, num_binx_dark])
+        total_num_binx_dark = len(binx_dark_list)
+        print("Total # of binx_dark frames, all binnings =  ", total_num_binx_dark)
+        
+        bias_time = 6.  #NB Pick up from camera config  An avg for QHY600P
+        flush = 2
+        total_time = bias_time*(total_num_biases + flush + total_num_dark + total_num_binx_dark)
         #  NB Note higher bin readout not compensated for.
-        total_time += total_num_dark*float(req['darkTime']) + total_num_long_dark*float(req['dark2Time'])
+        total_time += total_num_dark*dark_time + total_num_binx_dark*binx_dark_time
         print('Approx duration of Bias Dark seguence:  ', total_time//60 + 1, ' min.')
-        bias_ratio = int(total_num_biases//(total_num_dark + total_num_long_dark + 0.1) + 1)
-        if bias_ratio < 1:
-            bias_ratio = 1
         #Flush twice
-        while len(bias_list) + len(dark_list) + len(long_dark_list) > 0:
-            if len(bias_list) > 0:
-                for bias in range(bias_ratio):
-                    if len(bias_list) == 0:
-                        pass
-                    shuffle(bias_list)
-                    use_bin = bias_list[0][0]   #  Pick up bin value
-                    if bias_list[0][1] > 1:
-                        bias_list[0][1] -= 1
-                    if bias_list[0][1] <= 1:
-                        bias_list.pop(0)
-                    print("Expose Bias using:  ", use_bin, bias_list)
-                    bin_str = bin_to_string(use_bin)
-                    req = {'time': 0.0,  'script': 'True', 'image_type': 'bias'}
-                    opt = {'size': 100, 'count': 1, 'bin': bin_str, \
-                           'filter': g_dev['fil'].filter_data[0][0]}
-                    result = g_dev['cam'].expose_command(req, opt, gather_status=False, no_AWS=True, \
-                                                do_sep=False, quick=False)
-                    print(result)
-
-                    if len(bias_list) < 1:
-                        print("Bias List exhausted.", bias_list)
-                        break
-            if len(dark_list) > 0:
-                for dark in range(1):
-                    shuffle(dark_list)
-                    use_bin = dark_list[0][0]   #  Pick up bin value
-                    if dark_list[0][1] > 1:
-                        dark_list[0][1] -= 1
-                    if dark_list[0][1] <= 1:
-                        dark_list.pop(0)
-                    print("Expose dark using:  ", use_bin, dark_list)
-                    bin_str = bin_to_string(use_bin)
-                    req = {'time':dark_time ,  'script': 'True', 'image_type': 'dark'}
-                    opt = {'size': 100, 'count': 1, 'bin': bin_str, \
-                           'filter': g_dev['fil'].filter_data[0][0]}
-
-                    g_dev['cam'].expose_command(req, opt, gather_status=False, no_AWS=True, \
-                                                do_sep=False, quick=False)
-                    if len(dark_list) < 1:
-                        print("Dark List exhausted.",dark_list)
-            if len(long_dark_list) > 0:
-                for long_dark in range(1):
-                    shuffle(long_dark_list)
-                    use_bin = long_dark_list[0][0]   #  Pick up bin value
-                    if long_dark_list[0][1] > 1:
-                        long_dark_list[0][1] -= 1
-                    if long_dark_list[0][1] <= 1:
-                        long_dark_list.pop(0)
-                    print("Expose long_dark using:  ", use_bin, long_dark_list)
-                    bin_str = bin_to_string(use_bin)
-                    req = {'time': long_dark_time,  'script': 'True', 'image_type': 'dark'}
-                    opt = {'size': 100, 'count': 1, 'bin': bin_str, \
-                           'filter': g_dev['fil'].filter_data[0][0]}
-
-                    g_dev['cam'].expose_command(req, opt, gather_status=False, no_AWS=True, \
-                                                do_sep=False, quick=False)
-                    if len(long_dark_list) < 1:
-                        print("Long_dark exhausted.", long_dark_list)
-        print("Bias dark acquisition is finished.")
+        print('Pre-flush twice.')  #NB Filter is 'dark'
+        bin_str = bin_to_string(1)
+        req = {'time': 0.0, 'script': 'True', 'image_type': 'bias'}
+        opt = {'size': 100, 'count': flush, 'bin': bin_str, \
+               'filter': g_dev['fil'].filter_data[-1][0], 'hint':  'Flush'}
+        result = g_dev['cam'].expose_command(req, opt, no_AWS=True, \
+                                             do_sep=False, quick=False)        
+        first_bias = bias_list[0]
+        big_list = bias_list[1:] + dark_list + binx_dark_list
+        shuffle(big_list)   #  Should distribute things more or less evenly.
+        big_list.insert(0, first_bias) #  Always start with a bias. 
+        while len(big_list) > 0:
+            use_bin = big_list[0][0]   #  Pick up bin value
+            bin_str = bin_to_string(use_bin)
+            print(bin_str)
+            exp = big_list[0][1]
+            if exp == 0:
+                print("Expose Bias using bin:  ", use_bin)   
+                req = {'time': 0.0,  'script': 'True', 'image_type': 'bias'}
+                opt = {'size': 100, 'count': 1, 'bin': bin_str, \
+                       'filter': g_dev['fil'].filter_data[-1][0]}
+            elif exp > 0:
+                print("Expose Dark using bin, exp:  ", use_bin, exp)
+                req = {'time': exp,  'script': 'True', 'image_type': 'dark'}
+                opt = {'size': 100, 'count': 1, 'bin': bin_str, \
+                       'filter': g_dev['fil'].filter_data[-1][0]} 
+            result = g_dev['cam'].expose_command(req, opt, no_AWS=True, \
+                                        do_sep=False, quick=False)
+            print(result)
+            big_list.pop(0)
+            if len(big_list) < 1:
+                print("B/D List exhausted.", big_list)
+                break
+        print("Bias/Dark acquisition is finished.")
         self.sequencer_hold = False
         return
 
@@ -422,13 +343,14 @@ class Sequencer:
         self.sky_guard = True
         print('Eve Sky Flat sequence Starting, Enclosure PRESUMED Open. Telescope will un-park.')
         camera_name = str(self.config['camera']['camera1']['name'])
-        flat_count = 5
+        flat_count =1
         exp_time = .003
         #  NB Sometime, try 2:2 binning and interpolate a 1:1 flat.  This might run a lot faster.
         if flat_count < 1: flat_count = 1
         g_dev['mnt'].unpark_command({}, {})
         if g_dev['enc'].is_dome:
             g_dev['enc'].Slaved = True  #Bring the dome into the picture.
+            print('\n\n SLAVED THE DOME HOPEFULLY!!!!\n\n')
         g_dev['obs'].update_status()
         g_dev['scr'].screen_dark()
         g_dev['obs'].update_status()
@@ -457,13 +379,23 @@ class Sequencer:
             while acquired_count < flat_count:
                 if g_dev['enc'].is_dome:
                     g_dev['mnt'].slewToSkyFlatAsync()
+                try:
+                    exp_time = 33000/(float(g_dev['fil'].filter_data[current_filter][3])*g_dev['ocn'].meas_sky_lux)
+                    if exp_time > 45:
+                        exp_time = 45
+                    if exp_time <0.0005:
+                        exp_time = 0.0005
+                    exp_time = round(exp_time, 4)
+                    print("Sky flat estimated exposure time is:  ", exp_time)
+                except:
+                    exp_time = 0.3
                 req = {'time': float(exp_time),  'alias': camera_name, 'image_type': 'sky flat', 'script': 'On'}
                 opt = {'size': 100, 'count': 1, 'filter': g_dev['fil'].filter_data[current_filter][0]}
                 print("using:  ", g_dev['fil'].filter_data[current_filter][0])
                 result = g_dev['cam'].expose_command(req, opt, gather_status=True, no_AWS=True, do_sep = False)
                 bright = result['patch']    #  Patch should be circular and 20% of Chip area. ToDo project
                 print("Bright:  ", bright)  #  Others are 'NE', 'NW', 'SE', 'SW'.
-                if bright > 32767 and (ephemNow < g_dev['events']['End Eve Sky Flats']
+                if bright > 40000 and (ephemNow < g_dev['events']['End Eve Sky Flats']
                                   or True):    #NB should gate with end of skyflat window as well.
                     for i in range(1):
                         time.sleep(5)  #  #0 seconds of wait time.  Maybe shorten for wide bands?
@@ -558,7 +490,7 @@ class Sequencer:
         V curve is a big move focus designed to fit two lines adjacent to the more normal focus curve.
         It finds the approximate focus, particulary for a new instrument. It requires 8 points plus
         a verify.
-        Quick focus consists of three points plus a verify.
+        Auto focus consists of three points plus a verify.
         Fine focus consists of five points plus a verify.
         Optionally individual images can be multiples of one to average out seeing.
         NBNBNB This code needs to go to known stars to be moe relaible and permit subframes
@@ -572,42 +504,56 @@ class Sequencer:
                         result['temperature'] = avg_foc[2]  This is probably tube not reported by Gemini.
         '''
         self.af_guard = True
+        sim = False
         print('AF entered with:  ', req, opt)
         #self.sequencer_hold = True  #Blocks command checks.
-        start_ra = g_dev['mnt'].RightAscension
-        start_dec = g_dev['mnt'].Declination
+        start_ra = g_dev['mnt'].mount.RightAscension   #Read these to go back.
+        start_dec = g_dev['mnt'].mount.Declination
+        focus_start = g_dev['foc'].focuser.Position/g_dev['foc'].steps_to_micron
         if req['target'] == 'near_tycho_star':   ## 'bin', 'area'  Other parameters
 
             #  Go to closest Mag 7.5 Tycho * with no flip
             focus_star = tycho.dist_sort_targets(g_dev['tel'].current_icrs_ra, g_dev['tel'].current_icrs_dec, \
                                     g_dev['tel'].current_sidereal)
-            print("Going to near focus star " + str(focus_star[0]) + "  degrees away.")
-            g_dev['mnt'].go_coord(focus_star[1][1], focus_star[1][0])
+            print("Going to near focus star " + str(focus_star[0][0]) + "  degrees away.")
+            g_dev['mnt'].go_coord(focus_star[0][1][1], focus_star[0][1][0])
             req = {'time': 5,  'alias':  str(self.config['camera']['camera1']['name']), 'image_type': 'light'}   #  NB Should pick up filter and constats from config
             opt = {'size': 100, 'count': 1, 'filter': 'W'}
         else:
             pass   #Just take time image where currently pointed.
             req = {'time': 10,  'alias':  str(self.config['camera']['camera1']['name']), 'image_type': 'light'}   #  NB Should pick up filter and constats from config
             opt = {'size': 100, 'count': 1, 'filter': 'W'}
-        foc_pos0 = g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron
-
+        foc_pos0 = focus_start
+        result = {}
         print('Autofocus Starting at:  ', foc_pos0, '\n\n')
-        throw = 100  # NB again, from config.  Units are microns
-        result = g_dev['cam'].expose_command(req, opt)
+        throw = 200  # NB again, from config.  Units are microns
+        if not sim:
+            result = g_dev['cam'].expose_command(req, opt)
+        else:
+            result['FWHM'] = 3
+            result['mean_focus'] = foc_pos0
         spot1 = result['FWHM']
         foc_pos1 = result['mean_focus']
         print('Autofocus Moving In.\n\n')
-        g_dev['foc'].focuser.Move((foc_pos0 - throw)*g_dev['foc'].micron_to_steps)
+        g_dev['foc'].focuser.Move((foc_pos0 - throw)*g_dev['foc'].steps_to_micron)
         #opt['fwhm_sim'] = 4.
-        result = g_dev['cam'].expose_command(req, opt)
+        if not sim:
+            result = g_dev['cam'].expose_command(req, opt)
+        else:
+            result['FWHM'] = 4
+            result['mean_focus'] = foc_pos1 - throw
         spot2 = result['FWHM']
         foc_pos2 = result['mean_focus']
         print('Autofocus Overtaveling Out.\n\n')
-        g_dev['foc'].focuser.Move((foc_pos0 + 2*throw)*g_dev['foc'].micron_to_steps)   #It is important to overshoot to overcome any backlash
+        g_dev['foc'].focuser.Move((foc_pos0 + 2*throw)*g_dev['foc'].steps_to_micron)   #It is important to overshoot to overcome any backlash
         print('Autofocus Moving back in half-way.\n\n')
-        g_dev['foc'].focuser.Move((foc_pos0 + throw)*g_dev['foc'].micron_to_steps)
+        g_dev['foc'].focuser.Move((foc_pos0 + throw)*g_dev['foc'].steps_to_micron)
         #opt['fwhm_sim'] = 5
-        result = g_dev['cam'].expose_command(req, opt)
+        if not sim:
+            result = g_dev['cam'].expose_command(req, opt)
+        else:
+            result['FWHM'] = 4.5
+            result['mean_focus'] = foc_pos2 + throw
         spot3 = result['FWHM']
         foc_pos3 = result['mean_focus']
         x = [foc_pos1, foc_pos2, foc_pos3]
@@ -616,23 +562,29 @@ class Sequencer:
         #Digits are to help out pdb commands!
         a1, b1, c1, d1 = fit_quadratic(x, y)
         new_spot = round(a1*d1*d1 + b1*d1 + c1, 2)
-        if x.min() <= d1 <= x.max:
+        if min(x) <= d1 <= max(x):
             print ('Moving to Solved focus:  ', round(d1, 2), ' calculated:  ',  new_spot)
-            g_dev['foc'].focuser.Move(int(d1)*g_dev['foc'].micron_to_steps)
-            result = g_dev['cam'].expose_command(req, opt, halt=True)
+            g_dev['foc'].focuser.Move(int(d1)*g_dev['foc'].steps_to_micron)
+            if not sim:
+                result = g_dev['cam'].expose_command(req, opt)
+            else:
+                result['FWHM'] = new_spot
+                result['mean_focus'] = d1
             spot4 = result['FWHM']
             foc_pos4 = result['mean_focus']
             print('\n\n\nFound best focus at:  ', foc_pos4,' measured is:  ',  round(spot4, 2), '\n\n\n')
         else:
             print('Autofocus did not converge. Moving back to starting focus:  ', focus_start)
-            g_dev['foc'].focuser.Move((focus_start)*g_dev['foc'].micron_to_steps)
-        g_dev['mnt'].SlewToCoordinatesAsync(start_ra, start_dec)   #Return to pre-focus pointing.
+            g_dev['foc'].focuser.Move((focus_start)*g_dev['foc'].steps_to_micron)
+        g_dev['mnt'].mount.SlewToCoordinatesAsync(start_ra, start_dec)   #Return to pre-focus pointing.
+        if sim:
+            g_dev['foc'].focuser.Move((focus_start)*g_dev['foc'].steps_to_micron)
         #  NB here we could re-solve with the overlay spot just to verify solution is sane.
         self.sequencer_hold = False   #Allow comand checks.
         self.af_guard = False
         return
 
-    def focus_fine_script(self, req, opt):
+    def fine_focus_script(self, req, opt):
         '''
         V curve is a big move focus designed to fit two lines adjacent to the more normal focus curve.
         It finds the approximate focus, particulary for a new instrument. It requires 8 points plus
@@ -644,46 +596,70 @@ class Sequencer:
         '''
         print('AF entered with:  ', req, opt)
         self.guard = True
+        sim = False
+
         #self.sequencer_hold = True  #Blocks command checks.
-        start_ra = g_dev['mnt'].RightAscension
-        start_dec = g_dev['mnt'].Declination
+        start_ra = g_dev['mnt'].mount.RightAscension
+        start_dec = g_dev['mnt'].mount.Declination
+        foc_start = g_dev['foc'].focuser.Position/g_dev['foc'].steps_to_micron
         if req['target'] == 'near_tycho_star':   ## 'bin', 'area'  Other parameters
             #  Go to closest Mag 7.5 Tycho * with no flip
             focus_star = tycho.dist_sort_targets(g_dev['tel'].current_icrs_ra, g_dev['tel'].current_icrs_dec, \
                                     g_dev['tel'].current_sidereal)
-            print("Going to near focus star " + str(focus_star[0]) + "  degrees away.")
-            g_dev['mnt'].go_coord(focus_star[1][1], focus_star[1][0])
+            print("Going to near focus star " + str(focus_star[0][0]) + "  degrees away.")
+            g_dev['mnt'].go_coord(focus_star[0][1][1], focus_star[0][1][0])
             req = {'time': 5,  'alias':  str(self.config['camera']['camera1']['name']), 'image_type': 'light'}   #  NB Should pick up filter and constats from config
             opt = {'size': 100, 'count': 1, 'filter': 'W'}
         else:
             pass   #Just take time image where currently pointed.
             req = {'time': 10,  'alias':  str(self.config['camera']['camera1']['name']), 'image_type': 'light'}   #  NB Should pick up filter and constats from config
             opt = {'size': 100, 'count': 1, 'filter': 'W'}
-        foc_pos0 = g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron
+        foc_pos0 = foc_start
+        result = {}
         print('Autofocus Starting at:  ', foc_pos0, '\n\n')
-        throw = 75  # NB again, from config.  Units are microns
-        result = g_dev['cam'].expose_command(req, opt)
+        throw = 100  # NB again, from config.  Units are microns
+        if not sim:
+            result = g_dev['cam'].expose_command(req, opt)
+        else:
+            result['FWHM'] = 4
+            result['mean_focus'] = foc_pos0
         spot1 = result['FWHM']
         foc_pos1 = result['mean_focus']
-        g_dev['foc'].focuser.Move((foc_pos0 - throw)*g_dev['foc'].micron_to_steps)
+        g_dev['foc'].focuser.Move((foc_pos0 - throw)*g_dev['foc'].steps_to_micron)
         #opt['fwhm_sim'] = 4.
-        result = g_dev['cam'].expose_command(req, opt)
+        if not sim:
+            result = g_dev['cam'].expose_command(req, opt)
+        else:
+            result['FWHM'] = 5
+            result['mean_focus'] = foc_pos0 - throw
         spot2 = result['FWHM']
         foc_pos2 = result['mean_focus']
-        g_dev['foc'].focuser.Move((foc_pos0 - 2*throw)*g_dev['foc'].micron_to_steps)
+        g_dev['foc'].focuser.Move((foc_pos0 - 2*throw)*g_dev['foc'].steps_to_micron)
         #opt['fwhm_sim'] = 4.
-        result = g_dev['cam'].expose_command(req, opt)
+        if not sim:
+            result = g_dev['cam'].expose_command(req, opt)
+        else:
+            result['FWHM'] = 6
+            result['mean_focus'] = foc_pos0 - 2*throw
         spot3 = result['FWHM']
         foc_pos3 = result['mean_focus']
-        g_dev['foc'].focuser.Move((foc_pos0 + 5*throw)*g_dev['foc'].micron_to_steps)   #It is important to overshoot to overcome any backlash
-        g_dev['foc'].focuser.Move((foc_pos0 - 2*throw)*g_dev['foc'].micron_to_steps)
+        g_dev['foc'].focuser.Move((foc_pos0 + 5*throw)*g_dev['foc'].steps_to_micron)   #It is important to overshoot to overcome any backlash
+        g_dev['foc'].focuser.Move((foc_pos0 + 2*throw)*g_dev['foc'].steps_to_micron)
         #opt['fwhm_sim'] = 5
-        result = g_dev['cam'].expose_command(req, opt)
+        if not sim:
+            result = g_dev['cam'].expose_command(req, opt)
+        else:
+            result['FWHM'] = 6.5
+            result['mean_focus'] = foc_pos0 + 2*throw
         spot4 = result['FWHM']
         foc_pos4 = result['mean_focus']
-        g_dev['foc'].focuser.Move((foc_pos0 - throw)*g_dev['foc'].micron_to_steps)
+        g_dev['foc'].focuser.Move((foc_pos0 + throw)*g_dev['foc'].steps_to_micron)
         #opt['fwhm_sim'] = 4.
-        result = g_dev['cam'].expose_command(req, opt)
+        if not sim:
+            result = g_dev['cam'].expose_command(req, opt)
+        else:
+            result['FWHM'] = 5.75
+            result['mean_focus'] = foc_pos0 + throw
         spot5 = result['FWHM']
         foc_pos5 = result['mean_focus']
         x = [foc_pos1, foc_pos2, foc_pos3, foc_pos4, foc_pos5]
@@ -692,17 +668,23 @@ class Sequencer:
         #Digits are to help out pdb commands!
         a1, b1, c1, d1 = fit_quadratic(x, y)
         new_spot = round(a1*d1*d1 + b1*d1 + c1, 2)
-        if x.min() <= d1 <= x.max:
+        if min(x) <= d1 <= max(x):
             print ('Moving to Solved focus:  ', round(d1, 2), ' calculated:  ',  new_spot)
-            g_dev['foc'].focuser.Move(int(d1)*g_dev['foc'].micron_to_steps)
-            result = g_dev['cam'].expose_command(req, opt, halt=True)
-            spot4 = result['FWHM']
+            g_dev['foc'].focuser.Move(int(d1)*g_dev['foc'].steps_to_micron)
+            if not sim:
+                result = g_dev['cam'].expose_command(req, opt)
+            else:
+                result['FWHM'] = new_spot
+                result['mean_focus'] = d1
+            spot6 = result['FWHM']
             foc_pos4 = result['mean_focus']
-            print('\n\n\nFound best focus at:  ', foc_pos4,' measured is:  ',  round(spot4, 2), '\n\n\n')
+            print('\n\n\nFound best focus at:  ', foc_pos4,' measured is:  ',  round(spot6, 2), '\n\n\n')
         else:
             print('Autofocus did not converge. Moving back to starting focus:  ', foc_pos0)
-            g_dev['foc'].focuser.Move((foc_pos0)*g_dev['foc'].micron_to_steps)
-        g_dev['mnt'].SlewToCoordinatesAsync(start_ra, start_dec)   #Return to pre-focus pointing.
+            g_dev['foc'].focuser.Move((foc_start)*g_dev['foc'].steps_to_micron)
+        g_dev['mnt'].mount.SlewToCoordinatesAsync(start_ra, start_dec)   #Return to pre-focus pointing.
+        if sim:
+            g_dev['foc'].focuser.Move((foc_start)*g_dev['foc'].steps_to_micron)
         #  NB here we coudld re-solve with the overlay spot just to verify solution is sane.
         self.sequencer_hold = False   #Allow comand checks.
         self.guard = False
@@ -954,7 +936,7 @@ IF sweep
         print("Starting West dec sweep, ha = 0.1")
         g_dev['mnt'].unpark_command()
         cam_name = str(self.config['camera']['camera1']['name'])
-        for ha in [-0.1, 0.1]:
+        for ha in [0.1, -0.1]:
             for degree_value in dec_steps:
                 target_ra =  g_dev['mnt'].mount.SiderealTime - ha
                 while target_ra < 0:

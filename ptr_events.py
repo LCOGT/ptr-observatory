@@ -180,7 +180,7 @@ class Events:
         return  degrees(sun.az)
 
     def _calcEveFlatValues(self, ptr, sun, pWhen, skyFlatEnd, loud=False, now_spot=False):
-        # NB This needs to deal withthe Moon being too close!
+        # NB This needs to deal with the Moon being too close!
         ptr.date = pWhen
         sun.compute(ptr)
         if loud: print('Sunset, sidtime:  ', pWhen, ptr.sidereal_time())
@@ -188,22 +188,26 @@ class Events:
         SunAz1 = degrees(sun.az) - 180
         while  SunAz1 < 0:
             SunAz1 += 360
-        liftAlt = (degrees(sun.alt) + 105)
-        if liftAlt <= 90:
-            SunAlt1 = liftAlt
+        SunAlt1 = degrees(sun.alt) + 105
+        if SunAlt1 > 90:
+            SunAlt1 = 180 - SunAlt1
         else:
-            SunAlt1 = 180 - liftAlt
-        if loud: print('Flat spot at:  ', SunAz1, SunAlt1)
+            SunAz1 = degrees(sun.az)
+        if loud: print('Flat spot at az alt:  ', SunAz1, SunAlt1)
         FlatStartRa, FlatStartDec = ptr.radec_of(str(SunAz1), str(SunAlt1))
         if loud: print('Ra/Dec of Flat spot:  ', FlatStartRa, FlatStartDec)
         ptr.date = skyFlatEnd
         sun.compute(ptr)
         if loud: print('Flat End  Sun:  ', sun.ra, sun.dec, sun.az, sun.alt)#SunRa = float(sun.ra)
         SunAz2 = degrees(sun.az) - 180
-        SunAlt2 =  degrees(sun.alt) + 105
-        if SunAlt2 > 90.:
-            SunAlt2 = 180 - degrees(sun.alt) + 105
-        if loud: print('Flatspot:  ', SunAz1, SunAlt1, SunAz2, SunAlt2)
+        while SunAz2 < 0:
+            SunAz2 += 360
+        SunAlt2 = degrees(sun.alt) + 105
+        if SunAlt2 > 90:
+            SunAlt2 = 180 - SunAlt2
+        else:
+            SunAz2 = degrees(sun.az)   
+        if loud: print('Flatspots:  ', SunAz1, SunAlt1, SunAz2, SunAlt2)
         FlatEndRa, FlatEndDec = ptr.radec_of(str(SunAz2), str(SunAlt2))
         if loud: print('Eve Flat:  ', FlatStartRa, FlatStartDec, FlatEndRa, FlatEndDec)
         span = 86400*(skyFlatEnd - pWhen)
@@ -219,24 +223,34 @@ class Events:
             return (degrees(FlatStartRa)/15, degrees(FlatStartDec), \
             degrees(FlatEndRa)/15, degrees(FlatEndDec), RaDot, DecDot)
 
-    def _calcMornFlatValues(self, ptr, sun, pWhen, sunZ88Cl, sunrise, loud=False):
+    def _calcMornFlatValues(self, ptr, sun, pWhen,  sunrise, loud=False):
         ptr.date = pWhen
         sun.compute(ptr)
         if loud: print()
         if loud: print('Morn Flat Start, sidtime:  ', pWhen, ptr.sidereal_time())
         if loud: print('Morn Flat Start Sun:  ', sun.ra, sun.dec, sun.az, sun.alt)
         SunAz1 = degrees(sun.az) + 180
-        SunAlt1 = (degrees(sun.alt) + 105)
+        while SunAz1 < 0:
+            SunAz1 += 360
+        SunAlt1 = degrees(sun.alt) + 105
         if SunAlt1 > 90.:
-            SunAlt1 = 180 -(degrees(sun.alt) + 105)
+            SunAlt1 = 180 - SunAlt1
+        else:
+            SunAz1 = degrees(sun.az)
         print('Flat spot at:  ', SunAz1, SunAlt1)
         FlatStartRa, FlatStartDec = ptr.radec_of(str(SunAz1), str(SunAlt1))
         print('Ra/Dec of Flat spot:  ', FlatStartRa, FlatStartDec)
-        ptr.date = sunZ88Cl
+        ptr.date = sunrise
         sun.compute(ptr)
         if loud: print('Flat End  Sun:  ', sun.ra, sun.dec, sun.az, sun.alt)#SunRa = float(sun.ra)
-        SunAz2 = degrees(sun.az) + 180
-        SunAlt2 = 180 -(degrees(sun.alt) + 105)
+        SunAz2 = degrees(sun.az) - 180
+        while SunAz2 < 0:
+            SunAz2 += 360
+        SunAlt2 = degrees(sun.alt) + 105
+        if SunAlt2 > 90:
+            SunAlt2 = 180 - SunAlt2
+        else:
+            SunAz2 = degrees(sun.az)
         if loud: print('Flatspot:  ', SunAz1, SunAlt1, SunAz2, SunAlt2)
         FlatEndRa, FlatEndDec = ptr.radec_of(str(SunAz2), str(SunAlt2))
         print('Morn Flat:  ', FlatStartRa, FlatStartDec, FlatEndRa, FlatEndDec)
@@ -300,9 +314,6 @@ class Events:
         sunset = ptr.next_setting(sun)
         middleNight = ptr.next_antitransit(sun)
         sunrise = ptr.next_rising(sun)
-        ptr.horizon = '2'
-        sun.compute(ptr)
-        #if loud: print('Sun 2: ', sun.ra, sun.dec, sun.az, sun.alt)
         ops_win_begin = sunset - 60/1440
         return (ops_win_begin, sunset, sunrise, ephem.now())
 
@@ -312,14 +323,14 @@ class Events:
         '''
         ra, dec, sun_alt, sun_az, *other = self._sunNow()
         print('Sun:  ', sun_az, sun_alt)
-        sun_az2 = sun_az - 180.
+        sun_az2 = sun_az - 180.   #  Opposite az of the Sun
         if sun_az2 < 0:
             sun_az2 += 360.
-        sun_alt2 = sun_alt + 105
-        if sun_alt2 > 90:
+        sun_alt2 = sun_alt + 105   #105 degrees along great circle through zenith
+        if sun_alt2 > 90:   # Over the zenith so specify alt at above azimuth
             sun_alt2 = 180 - sun_alt2
-        elif sun_alt2 <=90:
-            sun_az2 = sun_az
+        else:
+            sun_az2 = sun_az  # The sun is >15 degrees below horizon, use its az
 
         return(sun_az2, sun_alt2)
 
@@ -384,7 +395,7 @@ class Events:
         return DAY_Directory
 
     def display_events(self):   # Routine above needs to be called first.
-
+        global dayNow
         # print('Events module loaded at: ', ephem.now(), round((ephem.now()), 4))
         loud = True
         sun = ephem.Sun()
@@ -416,7 +427,7 @@ class Events:
         ptr.horizon = '-1.5'
         sun.compute(ptr)
         #if loud: print('Sun -6: ', sun.ra, sun.dec, sun.az, sun.alt)
-        eve_skyFlatBegin = sunset -30/1440. #ptr.next_setting(sun)
+        eve_skyFlatBegin = sunset - 30/1440. #ptr.next_setting(sun)
         morn_skyFlatEnd = ptr.next_rising(sun)
         ptr.horizon = '-6'
         sun.compute(ptr)
@@ -453,7 +464,7 @@ class Events:
         eveFlatStartRa, eveFlatStartDec, eveFlatEndRa, eveFlatEndDec, \
         eveRaDot, eveDecDot = self._calcEveFlatValues(ptr, sun, ops_win_begin, eve_skyFlatEnd, loud=True)
         mornFlatStartRa, mornFlatStartDec, mornFlatEndRa, mornFlatEndDec, mornRaDot, \
-                        mornDecDot = self._calcMornFlatValues(ptr, sun, morn_skyFlatBegin, sunrise, \
+                        mornDecDot = self._calcMornFlatValues(ptr, sun, morn_skyFlatBegin, \
                                                         sunrise, loud=True)
         endEveScreenFlats = ops_win_begin - LONGESTSCREEN
         beginEveScreenFlats = endEveScreenFlats - SCREENFLATDURATION
