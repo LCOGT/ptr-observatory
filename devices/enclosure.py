@@ -56,16 +56,22 @@ class Enclosure:
             shutter_status = 5
         if shutter_status == 0:
             stat_string = "Open"
+            self.shutter_is_closed = False
         elif shutter_status == 1:
              stat_string = "Closed"
+             self.shutter_is_closed = True
         elif shutter_status == 2:
              stat_string = "Opening"
+             self.shutter_is_closed = False
         elif shutter_status == 3:
              stat_string = "Closing"
+             self.shutter_is_closed = False
         elif shutter_status == 4:
              stat_string = "Error"
+             self.shutter_is_closed = False
         else:
              stat_string = "Fault"
+             self.shutter_is_closed = False
 
         if self.site == 'saf':
             status = {'shutter_status': stat_string,

@@ -275,7 +275,7 @@ class Sequencer:
         total_num_binx_dark = len(binx_dark_list)
         print("Total # of binx_dark frames, all binnings =  ", total_num_binx_dark)
         
-        bias_time = 6.  #NB Pick up from camera config  An avg for QHY600P
+        bias_time = 12.  #NB Pick up from camera config  An avg for QHY600P
         flush = 2
         total_time = bias_time*(total_num_biases + flush + total_num_dark + total_num_binx_dark)
         #  NB Note higher bin readout not compensated for.
@@ -504,12 +504,13 @@ class Sequencer:
                         result['temperature'] = avg_foc[2]  This is probably tube not reported by Gemini.
         '''
         self.af_guard = True
-        sim = False
-        print('AF entered with:  ', req, opt)
+        sim = False   # g_dev['enc'].shutter_is_closed
+        print('AF entered with:  ', req, opt, '\n .. and sim =  ', sim)
         #self.sequencer_hold = True  #Blocks command checks.
         start_ra = g_dev['mnt'].mount.RightAscension   #Read these to go back.
         start_dec = g_dev['mnt'].mount.Declination
-        focus_start = g_dev['foc'].focuser.Position/g_dev['foc'].steps_to_micron
+        focus_start = g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron
+        #  NBNBNB Need to preserve  and restore on exit, incoming filter setting
         if req['target'] == 'near_tycho_star':   ## 'bin', 'area'  Other parameters
 
             #  Go to closest Mag 7.5 Tycho * with no flip
@@ -528,45 +529,52 @@ class Sequencer:
         print('Autofocus Starting at:  ', foc_pos0, '\n\n')
         throw = 200  # NB again, from config.  Units are microns
         if not sim:
-            result = g_dev['cam'].expose_command(req, opt)
+            result = g_dev['cam'].expose_command(req, opt, no_AWS=True)  #  This is where we start.
         else:
             result['FWHM'] = 3
             result['mean_focus'] = foc_pos0
         spot1 = result['FWHM']
         foc_pos1 = result['mean_focus']
         print('Autofocus Moving In.\n\n')
-        g_dev['foc'].focuser.Move((foc_pos0 - throw)*g_dev['foc'].steps_to_micron)
+        g_dev['foc'].focuser.Move((foc_pos0 - throw)*g_dev['foc'].micron_to_steps)
         #opt['fwhm_sim'] = 4.
         if not sim:
-            result = g_dev['cam'].expose_command(req, opt)
+            result = g_dev['cam'].expose_command(req, opt, no_AWS=True)  #  This is moving in one throw.
         else:
             result['FWHM'] = 4
-            result['mean_focus'] = foc_pos1 - throw
+            result['mean_focus'] = foc_pos0 - throw
         spot2 = result['FWHM']
         foc_pos2 = result['mean_focus']
         print('Autofocus Overtaveling Out.\n\n')
-        g_dev['foc'].focuser.Move((foc_pos0 + 2*throw)*g_dev['foc'].steps_to_micron)   #It is important to overshoot to overcome any backlash
+        g_dev['foc'].focuser.Move((foc_pos0 + 3*throw)*g_dev['foc'].micron_to_steps)   #It is important to overshoot to overcome any backlash
         print('Autofocus Moving back in half-way.\n\n')
-        g_dev['foc'].focuser.Move((foc_pos0 + throw)*g_dev['foc'].steps_to_micron)
+        g_dev['foc'].focuser.Move((foc_pos0 + throw)*g_dev['foc'].micron_to_steps)
         #opt['fwhm_sim'] = 5
         if not sim:
-            result = g_dev['cam'].expose_command(req, opt)
+            result = g_dev['cam'].expose_command(req, opt, no_AWS=True)  #  This is moving out one throw.
         else:
             result['FWHM'] = 4.5
-            result['mean_focus'] = foc_pos2 + throw
+            result['mean_focus'] = foc_pos0 + throw
         spot3 = result['FWHM']
         foc_pos3 = result['mean_focus']
         x = [foc_pos1, foc_pos2, foc_pos3]
         y = [spot1, spot2, spot3]
         print('X, Y:  ', x, y)
-        #Digits are to help out pdb commands!
-        a1, b1, c1, d1 = fit_quadratic(x, y)
-        new_spot = round(a1*d1*d1 + b1*d1 + c1, 2)
+        try:
+            #Digits are to help out pdb commands!
+            a1, b1, c1, d1 = fit_quadratic(x, y)
+            new_spot = round(a1*d1*d1 + b1*d1 + c1, 2)
+        except:
+            print('Autofocus quadratic equation not converge. Moving back to starting focus:  ', focus_start)
+            g_dev['foc'].focuser.Move((focus_start)*g_dev['foc'].micron_to_steps)
+            self.sequencer_hold = False   #Allow comand checks.
+            self.af_guard = False
+            return            
         if min(x) <= d1 <= max(x):
             print ('Moving to Solved focus:  ', round(d1, 2), ' calculated:  ',  new_spot)
-            g_dev['foc'].focuser.Move(int(d1)*g_dev['foc'].steps_to_micron)
+            g_dev['foc'].focuser.Move(int(d1*g_dev['foc'].micron_to_steps))
             if not sim:
-                result = g_dev['cam'].expose_command(req, opt)
+                result = g_dev['cam'].expose_command(req, opt, no_AWS=True)  #  This is verifying the new focus.
             else:
                 result['FWHM'] = new_spot
                 result['mean_focus'] = d1
@@ -575,10 +583,10 @@ class Sequencer:
             print('\n\n\nFound best focus at:  ', foc_pos4,' measured is:  ',  round(spot4, 2), '\n\n\n')
         else:
             print('Autofocus did not converge. Moving back to starting focus:  ', focus_start)
-            g_dev['foc'].focuser.Move((focus_start)*g_dev['foc'].steps_to_micron)
+            g_dev['foc'].focuser.Move((focus_start)*g_dev['foc'].micron_to_steps)
         g_dev['mnt'].mount.SlewToCoordinatesAsync(start_ra, start_dec)   #Return to pre-focus pointing.
         if sim:
-            g_dev['foc'].focuser.Move((focus_start)*g_dev['foc'].steps_to_micron)
+            g_dev['foc'].focuser.Move((focus_start)*g_dev['foc'].micron_to_steps)
         #  NB here we could re-solve with the overlay spot just to verify solution is sane.
         self.sequencer_hold = False   #Allow comand checks.
         self.af_guard = False
@@ -596,12 +604,12 @@ class Sequencer:
         '''
         print('AF entered with:  ', req, opt)
         self.guard = True
-        sim = False
-
+        sim = g_dev['enc'].shutter_is_closed
+        print('AF entered with:  ', req, opt, '\n .. and sim =  ', sim)
         #self.sequencer_hold = True  #Blocks command checks.
         start_ra = g_dev['mnt'].mount.RightAscension
         start_dec = g_dev['mnt'].mount.Declination
-        foc_start = g_dev['foc'].focuser.Position/g_dev['foc'].steps_to_micron
+        foc_start = g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron
         if req['target'] == 'near_tycho_star':   ## 'bin', 'area'  Other parameters
             #  Go to closest Mag 7.5 Tycho * with no flip
             focus_star = tycho.dist_sort_targets(g_dev['tel'].current_icrs_ra, g_dev['tel'].current_icrs_dec, \
@@ -619,44 +627,44 @@ class Sequencer:
         print('Autofocus Starting at:  ', foc_pos0, '\n\n')
         throw = 100  # NB again, from config.  Units are microns
         if not sim:
-            result = g_dev['cam'].expose_command(req, opt)
+            result = g_dev['cam'].expose_command(req, opt, no_AWS=True)
         else:
             result['FWHM'] = 4
             result['mean_focus'] = foc_pos0
         spot1 = result['FWHM']
         foc_pos1 = result['mean_focus']
-        g_dev['foc'].focuser.Move((foc_pos0 - throw)*g_dev['foc'].steps_to_micron)
+        g_dev['foc'].focuser.Move((foc_pos0 - throw)*g_dev['foc'].micron_to_steps)
         #opt['fwhm_sim'] = 4.
         if not sim:
-            result = g_dev['cam'].expose_command(req, opt)
+            result = g_dev['cam'].expose_command(req, opt, no_AWS=True)
         else:
             result['FWHM'] = 5
             result['mean_focus'] = foc_pos0 - throw
         spot2 = result['FWHM']
         foc_pos2 = result['mean_focus']
-        g_dev['foc'].focuser.Move((foc_pos0 - 2*throw)*g_dev['foc'].steps_to_micron)
+        g_dev['foc'].focuser.Move((foc_pos0 - 2*throw)*g_dev['foc'].micron_to_steps)
         #opt['fwhm_sim'] = 4.
         if not sim:
-            result = g_dev['cam'].expose_command(req, opt)
+            result = g_dev['cam'].expose_command(req, opt, no_AWS=True)
         else:
             result['FWHM'] = 6
             result['mean_focus'] = foc_pos0 - 2*throw
         spot3 = result['FWHM']
         foc_pos3 = result['mean_focus']
-        g_dev['foc'].focuser.Move((foc_pos0 + 5*throw)*g_dev['foc'].steps_to_micron)   #It is important to overshoot to overcome any backlash
-        g_dev['foc'].focuser.Move((foc_pos0 + 2*throw)*g_dev['foc'].steps_to_micron)
+        g_dev['foc'].focuser.Move((foc_pos0 + 5*throw)*g_dev['foc'].micron_to_steps)   #It is important to overshoot to overcome any backlash
+        g_dev['foc'].focuser.Move((foc_pos0 + 2*throw)*g_dev['foc'].micron_to_steps)
         #opt['fwhm_sim'] = 5
         if not sim:
-            result = g_dev['cam'].expose_command(req, opt)
+            result = g_dev['cam'].expose_command(req, opt, no_AWS=True)
         else:
             result['FWHM'] = 6.5
             result['mean_focus'] = foc_pos0 + 2*throw
         spot4 = result['FWHM']
         foc_pos4 = result['mean_focus']
-        g_dev['foc'].focuser.Move((foc_pos0 + throw)*g_dev['foc'].steps_to_micron)
+        g_dev['foc'].focuser.Move((foc_pos0 + throw)*g_dev['foc'].micron_to_steps)
         #opt['fwhm_sim'] = 4.
         if not sim:
-            result = g_dev['cam'].expose_command(req, opt)
+            result = g_dev['cam'].expose_command(req, opt, no_AWS=True)
         else:
             result['FWHM'] = 5.75
             result['mean_focus'] = foc_pos0 + throw
@@ -665,12 +673,19 @@ class Sequencer:
         x = [foc_pos1, foc_pos2, foc_pos3, foc_pos4, foc_pos5]
         y = [spot1, spot2, spot3, spot4, spot5]
         print('X, Y:  ', x, y)
-        #Digits are to help out pdb commands!
-        a1, b1, c1, d1 = fit_quadratic(x, y)
-        new_spot = round(a1*d1*d1 + b1*d1 + c1, 2)
+        try:
+            #Digits are to help out pdb commands!
+            a1, b1, c1, d1 = fit_quadratic(x, y)
+            new_spot = round(a1*d1*d1 + b1*d1 + c1, 2)
+        except:
+            print('Autofocus quadratic equation not converge. Moving back to starting focus:  ', focus_start)
+            g_dev['foc'].focuser.Move((focus_start)*g_dev['foc'].micron_to_steps)
+            self.sequencer_hold = False   #Allow comand checks.
+            self.af_guard = False
+            return 
         if min(x) <= d1 <= max(x):
             print ('Moving to Solved focus:  ', round(d1, 2), ' calculated:  ',  new_spot)
-            g_dev['foc'].focuser.Move(int(d1)*g_dev['foc'].steps_to_micron)
+            g_dev['foc'].focuser.Move(int(d1*g_dev['foc'].micron_to_steps))
             if not sim:
                 result = g_dev['cam'].expose_command(req, opt)
             else:
@@ -681,10 +696,10 @@ class Sequencer:
             print('\n\n\nFound best focus at:  ', foc_pos4,' measured is:  ',  round(spot6, 2), '\n\n\n')
         else:
             print('Autofocus did not converge. Moving back to starting focus:  ', foc_pos0)
-            g_dev['foc'].focuser.Move((foc_start)*g_dev['foc'].steps_to_micron)
+            g_dev['foc'].focuser.Move((foc_start)*g_dev['foc'].micron_to_steps)
         g_dev['mnt'].mount.SlewToCoordinatesAsync(start_ra, start_dec)   #Return to pre-focus pointing.
         if sim:
-            g_dev['foc'].focuser.Move((foc_start)*g_dev['foc'].steps_to_micron)
+            g_dev['foc'].focuser.Move((foc_start)*g_dev['foc'].micron_to_steps)
         #  NB here we coudld re-solve with the overlay spot just to verify solution is sane.
         self.sequencer_hold = False   #Allow comand checks.
         self.guard = False

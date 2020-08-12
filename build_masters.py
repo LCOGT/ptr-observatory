@@ -912,7 +912,7 @@ if __name__ == '__main__':
     out_path = "D:/20200812 more bubble o3 s2/trimmed/"
     lng_path = "D:/000ptr_saf/archive/sq01/lng/"
     #APPM_prepare_TPOINT()
-    debias_and_trim(camera_name, archive_path, '*o3*', out_path)
+    # debias_and_trim(camera_name, archive_path, '*o3*', out_path)
     # mod_debias_and_trim(camera_name, archive_path, '*APPM-2020-07-12*', out_path)
     # prepare_tpoint(camera_name, archive_path, '*APPM*',lng_path, out_path)
     # make_master_bias(camera_name, out_path, lng_path, '*f_3*', 'mb_1b.fits')

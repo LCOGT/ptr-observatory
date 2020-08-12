@@ -1085,7 +1085,7 @@ class Camera:
         g_dev['obs'].aws_queue.put((priority, image), block=False)
 
     def to_reduce(self, to_red):
-        print('Passed to to_reduce:  ', to_red[0], to_red[1].data.shape, to_red[1].header['FILTER'])
+        #print('Passed to to_reduce:  ', to_red[0], to_red[1].data.shape, to_red[1].header['FILTER'])
         g_dev['obs'].reduce_queue.put(to_red, block=False)
 
 

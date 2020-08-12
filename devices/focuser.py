@@ -60,13 +60,13 @@ class Focuser:
         self.focuser = win32com.client.Dispatch(driver)
         self.focuser.Connected = True
         self.focuser.TempComp = False
-        self.steps_to_micron= float(config['focuser']['focuser1']['unit_conversion'])
-        self.micron_to_steps = 1/self.steps_to_micron
+        self.micron_to_steps= float(config['focuser']['focuser1']['unit_conversion'])
+        self.steps_to_micron = 1/self.micron_to_steps
         self.focuser_message = '-'
         print("focuser connected.")
         print(self.focuser.Description, "At:  ", round(self.focuser.Position*self.steps_to_micron, 1))
         time.sleep(0.2)
-        try:
+        try:   #  NB NB NB This mess neads cleaning up.
             try:
 
                 self.reference = self.calculate_compensation( self.focuser.Temperature)   #need to change to config supplied
@@ -77,7 +77,7 @@ class Focuser:
         except:
             self.reference = int(self.config['reference'])
             print("Focus reference derived from supplied Config dicitionary:  ", self.reference)
-        self.focuser.Move(int(float(self.reference)/self.micron_to_steps))
+        self.focuser.Move(int(float(self.reference)*self.micron_to_steps))
 
     def calculate_compensation(self, temp_primary):
 
@@ -95,7 +95,7 @@ class Focuser:
 
     def get_status(self):
         status = {
-            "focus_position": str(round(self.focuser.Position/self.micron_to_steps, 1)),
+            "focus_position": str(round(self.focuser.Position*self.steps_to_micron, 1)),
             "focus_moving": str(self.focuser.IsMoving).lower(),
             "focus_temperature": str(self.focuser.Temperature)
             }
@@ -103,7 +103,7 @@ class Focuser:
 
     def get_quick_status(self, quick):
         quick.append(time.time())
-        quick.append(self.focuser.Position/self.micron_to_steps)
+        quick.append(self.focuser.Position*self.steps_to_micron)
         quick.append(self.focuser.Temperature)
         quick.append(self.focuser.IsMoving)
         return quick
@@ -170,14 +170,14 @@ class Focuser:
                 print('>')
             self.update_job_status(command['ulid'], 'COMPLETE')
         elif action == "go_to_compensated":
-            reference = self.calculate_compensation( self.focuser.Temperature)
+            reference = self.calculate_compensation(self.focuser.Temperature)
             self.focuser.Move(reference*self.micron_to_steps)
             time.sleep(0.1)
             while self.focuser.IsMoving:
                 time.sleep(0.5)
                 print('>')
         elif action == "save_as_reference":
-            self.set_focal_ref(self.focuser.Position/self.micron_to_steps)  #Need to get the alias properly
+            self.set_focal_ref(self.focuser.Position*self.steps_to_micron)  #Need to get the alias properly
         else:
             print(f"Command <{action}> not recognized:", command)
 
@@ -188,14 +188,14 @@ class Focuser:
 
     def get_position(self, counts=False):
         if not counts:
-            return int(self.focuser.Position/self.micron_to_steps)
+            return int(self.focuser.Position*self.steps_to_micron)
 
     def move_relative_command(self, req: dict, opt: dict):
         ''' set the focus position by moving relative to current position '''
         #The string must start with a + or a - sign, otherwize treated as zero and no action.
 
         position_string = req['position']
-        position = int(self.focuser.Position/self.micron_to_steps)
+        position = int(self.focuser.Position*self.steps_to_micron)
         if position_string[0] != '-':
             relative = int(position_string)
             position += relative

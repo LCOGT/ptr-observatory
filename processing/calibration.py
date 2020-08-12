@@ -129,7 +129,7 @@ def calibrate (hdu, lng_path, frame_type='light', quick=False):
         screen_flat_B, screen_flat_V, screen_flat_R, screen_flat_gp, screen_flat_rp, screen_flat_ip, \
         screen_flat_O3, screen_flat_HA, screen_flat_N2, screen_flat_S2, screen_flat_EXO, screen_flat_air, \
         dark_exposure_level
-    loud = True
+    loud = False
     #This needs to deal with caching different binnings as well.  And do we skip all this for a quick
     if not quick:
         if super_bias is None:
@@ -144,7 +144,7 @@ def calibrate (hdu, lng_path, frame_type='light', quick=False):
                 if loud: print(lng_path + 'mb_1.fits', 'Loaded')
             except:
                 quick_bias = False
-                print('WARN: No Bias_1 Loaded.')
+                #print('WARN: No Bias_1 Loaded.')
         if super_bias_2 is None:
             try:
                 sbHdu = fits.open(lng_path + 'mb_2.fits')
@@ -157,7 +157,7 @@ def calibrate (hdu, lng_path, frame_type='light', quick=False):
                 if loud: print(lng_path + 'mb_2.fits', 'Loaded')
             except:
                 quick_bias = False
-                print('WARN: No Bias_2 Loaded.')
+                #print('WARN: No Bias_2 Loaded.')
         # if super_dark_90 is None:
         #     try:
         #         sdHdu = fits.open(lng_path + 'md_1_90.fits')
@@ -178,32 +178,32 @@ def calibrate (hdu, lng_path, frame_type='light', quick=False):
                 dark_exposure_level = sdHdu[0].header['EXPTIME']
                 super_dark = sdHdu[0].data/dark_exposure_level  #Convert to adu/sec
                 super_dark = super_dark.astype('float32')
-                print('sdark:  ', super_dark.mean())
+                if loud: print('sdark:  ', super_dark.mean())
                 sdHdu.close()
                 #fix = np.where(super_dark_360 < 0)
                 #super_dark_360[fix] = 0
                 quick_dark= True
                 dark_exposure_level = 360.
-                print(lng_path + 'md_1_360.fits', 'Loaded')
+                if loud: print(lng_path + 'md_1_360.fits', 'Loaded')
             except:
                quick_dark = False
-               print('WARN: No dark_1 Loaded.')
+               if loud: print('WARN: No dark_1 Loaded.')
         if super_dark_2 is None:
             try:
                 sdHdu = fits.open(lng_path + 'md_2_120.fits')
                 dark_2_exposure_level = sdHdu[0].header['EXPTIME']
                 super_dark_2  = sdHdu[0].data/dark_2_exposure_level  #Converto to ADU/sec
                 super_dark_2 = super_dark_2.astype('float32')
-                print('sdark_2:  ', super_dark_2.mean())
+                if loud: print('sdark_2:  ', super_dark_2.mean())
                 sdHdu.close()
                 #fix = np.where(super_dark_360 < 0)
                 #super_dark_360[fix] = 0
                 quick_dark_2 = True
                 dark_exposure_level = 120.
-                print(lng_path + 'md_2_120.fits', 'Loaded')
+                if loud: print(lng_path + 'md_2_120.fits', 'Loaded')
             except:
                 quick_dark_2 = False
-                print('WARN: No dark_2 Loaded.')
+                if loud: print('WARN: No dark_2 Loaded.')
 
         if screen_flat_w is None:
             try:
@@ -214,7 +214,7 @@ def calibrate (hdu, lng_path, frame_type='light', quick=False):
                 if loud: print(lng_path + 'm1_w.fits', 'Loaded')
             except:
                 quick_flat_w = False
-                print('WARN: No W Flat/Lum Loaded.')
+                if loud: print('WARN: No W Flat/Lum Loaded.')
         if screen_flat_B is None:
             try:
                 sfHdu = fits.open(lng_path + 'mf_B.fits')
@@ -224,7 +224,7 @@ def calibrate (hdu, lng_path, frame_type='light', quick=False):
                 if loud: print(lng_path + 'm1_B.fits', 'Loaded')
             except:
                 quick_flat_B = False
-                print('WARN: No B Flat/Lum Loaded.')
+                if loud: print('WARN: No B Flat/Lum Loaded.')
         if screen_flat_V is None:
             try:
                 sfHdu = fits.open(lng_path + 'mf_V.fits')
@@ -234,7 +234,7 @@ def calibrate (hdu, lng_path, frame_type='light', quick=False):
                 if loud: print(lng_path + 'm1_V.fits', 'Loaded')
             except:
                 quick_flat_V = False
-                print('WARN: No V Flat/Lum Loaded.')
+                if loud: print('WARN: No V Flat/Lum Loaded.')
         if screen_flat_R is None:
             try:
                 sfHdu = fits.open(lng_path + 'mf_R.fits')
@@ -244,7 +244,7 @@ def calibrate (hdu, lng_path, frame_type='light', quick=False):
                 if loud: print(lng_path + 'm1_R.fits', 'Loaded')
             except:
                 quick_flat_R = False
-                print('WARN: No R Flat/Lum Loaded.')
+                if loud: print('WARN: No R Flat/Lum Loaded.')
         if screen_flat_gp is None:
             try:
                 sfHdu = fits.open(lng_path + 'mf_gp.fits')
@@ -254,7 +254,7 @@ def calibrate (hdu, lng_path, frame_type='light', quick=False):
                 if loud: print(lng_path + 'm1_gp.fits', 'Loaded')
             except:
                 quick_flat_gp = False
-                print('WARN: No gp Flat/Lum Loaded.')
+                if loud: print('WARN: No gp Flat/Lum Loaded.')
         if screen_flat_rp is None:
             try:
                 sfHdu = fits.open(lng_path + 'mf_rp.fits')
@@ -264,7 +264,7 @@ def calibrate (hdu, lng_path, frame_type='light', quick=False):
                 if loud: print(lng_path + 'm1_rp.fits', 'Loaded')
             except:
                 quick_flat_rp = False
-                print('WARN: No rp Flat/Lum Loaded.')
+                if loud: print('WARN: No rp Flat/Lum Loaded.')
         if screen_flat_ip is None:
             try:
                 sfHdu = fits.open(lng_path + 'mf_ip.fits')
@@ -274,7 +274,7 @@ def calibrate (hdu, lng_path, frame_type='light', quick=False):
                 if loud: print(lng_path + 'mf_ip.fits', 'Loaded')
             except:
                 quick_flat_ip = False
-                print('WARN: No ip Flat/Lum Loaded.')
+                if loud: print('WARN: No ip Flat/Lum Loaded.')
         if screen_flat_HA is None:
             try:
                 sfHdu = fits.open(lng_path + 'mf_HA.fits')
@@ -284,7 +284,7 @@ def calibrate (hdu, lng_path, frame_type='light', quick=False):
                 if loud: print(lng_path + 'mf_HA.fits', 'Loaded')
             except:
                 quick_flat_HA = False
-                if not quick: print('WARN: No HA Flat/Lum Loaded.')
+                if loud: print('WARN: No HA Flat/Lum Loaded.')
         if screen_flat_O3:
             try:
                 sfHdu = fits.open(lng_path + 'mf_O3.fits')
@@ -294,7 +294,7 @@ def calibrate (hdu, lng_path, frame_type='light', quick=False):
                 if loud: print(lng_path + 'm1_O3.fits', 'Loaded')
             except:
                 quick_flat_O3 = False
-                print('WARN: No O3 Flat/Lum Loaded.')
+                if loud: print('WARN: No O3 Flat/Lum Loaded.')
         if screen_flat_N2 is None:
             try:
                 sfHdu = fits.open(lng_path + 'mf_N2.fits')
@@ -304,7 +304,7 @@ def calibrate (hdu, lng_path, frame_type='light', quick=False):
                 if loud: print(lng_path + 'm1_N2.fits', 'Loaded')
             except:
                 quick_flat_N2 = False
-                print('WARN: No N2 Flat/Lum Loaded.')
+                if loud: print('WARN: No N2 Flat/Lum Loaded.')
         if screen_flat_S2 is None:
             try:
                 sfHdu = fits.open(lng_path + 'mf_S2.fits')
@@ -314,7 +314,7 @@ def calibrate (hdu, lng_path, frame_type='light', quick=False):
                 if loud: print(lng_path + 'm1_S2.fits', 'Loaded')
             except:
                 quick_flat_S2 = False
-                print('WARN: No S2 Flat/Lum Loaded.')
+                if loud: print('WARN: No S2 Flat/Lum Loaded.')
         if screen_flat_EXO is None:
             try:
                 sfHdu = fits.open(lng_path + 'mf_EO.fits')
@@ -324,7 +324,7 @@ def calibrate (hdu, lng_path, frame_type='light', quick=False):
                 if loud: print(lng_path + 'm1_EXO.fits', 'Loaded')
             except:
                 quick_flat_EXO = False
-                print('WARN: No EXO Flat/Lum Loaded.')
+                if loud: print('WARN: No EXO Flat/Lum Loaded.')
         if screen_flat_air is None:
             try:
                 sfHdu = fits.open(lng_path + 'mf_air.fits')
@@ -334,7 +334,7 @@ def calibrate (hdu, lng_path, frame_type='light', quick=False):
                 if loud: print(lng_path + 'm1_air.fits', 'Loaded')
             except:
                 quick_flat_air = False
-                print('WARN: No air Flat/Lum Loaded.')
+                if loud: print('WARN: No air Flat/Lum Loaded.')
         try:
             shHdu = fits.open(lng_path + 'hm_1.fits')
             hot_map = shHdu[0].data
@@ -343,7 +343,7 @@ def calibrate (hdu, lng_path, frame_type='light', quick=False):
             if loud: print(lng_path + 'hm_1.fits', 'Loaded')
         except:
             apply_hot = False
-            print('WARN: No Hot Map Loaded.')
+            if loud: print('WARN: No Hot Map Loaded.')
 
     while True:   #Use break to drop through to exit.  i.e., do not calibrate frames we are acquring for calibration.
         start_x = 0
@@ -370,11 +370,11 @@ def calibrate (hdu, lng_path, frame_type='light', quick=False):
         #Need to verify dark is not 0 seconds long!
         if super_dark is not None:  #  and quick_dark_90:
             if data_exposure_level > dark_exposure_level:
-                print("WARNING:  Master dark being used over-scaled")
+                if loud: print("WARNING:  Master dark being used over-scaled")
             img =  (img - super_dark[start_x:(start_x + img.shape[0]), start_y:(start_y + img.shape[1]) \
                                 ]*data_exposure_level)
             if not quick:
-                print('QuickDark: ', imageStats(img, loud))
+                if loud: print('QuickDark: ', imageStats(img, loud))
             cal_string += ', D'
         else:
             if not quick: print('INFO:  Light exposure too small, skipped this step.')
@@ -428,15 +428,17 @@ def calibrate (hdu, lng_path, frame_type='light', quick=False):
                 img = img/scr_flat
                 cal_string +=', SCF'
             except:
-                print("Flat field math failed.")
-            if not quick: print('QuickFlat result:  ', imageStats(img, loud))
+                if loud: print("Flat field math failed.")
+            if not quick: 
+                if loud:  print('QuickFlat result:  ', imageStats(img, loud))
         if apply_hot:
             try:
                 median8(img, hot_pix)
                 cal_string += ', H'
             except:
                 print("Hot pixel correction failed.")
-            if not quick: print('Hot Pixel result:  ', imageStats(img, loud))
+            if not quick: 
+                if loud: print('Hot Pixel result:  ', imageStats(img, loud))
 
         break    #If we get this far we are done.
     if cal_string == '':
@@ -447,7 +449,7 @@ def calibrate (hdu, lng_path, frame_type='light', quick=False):
     if not quick: print('# of < 0  pixels:  ', len(fix[0]))  #  Do not change values here.
     hdu.data[fix] = 0
     big_max = hdu.data.max()
-    print("Max data value is:  ", big_max)
+    if loud: print("Max data value is:  ", big_max)
     fix = np.where(hdu.data > 65530)
     hdu.data[fix] = 65530.
     hdu.data = hdu.data.astype('uint16')

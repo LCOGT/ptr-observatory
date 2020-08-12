@@ -470,7 +470,7 @@ class Observatory:
                 paths = pri_image[0]
                 hdu = pri_image[1]
                 #print('Name:  ', paths, '   Hdu.data.shape:', hdu.data.shape)
-                print("\nREDUCTIONS Starting!")
+                #print("\nREDUCTIONS Starting!")
 
                 # paths = {'raw_path':  raw_path,
                 #          'cal_path':  cal_path,
@@ -548,7 +548,7 @@ class Observatory:
                         img -= bkg
                         sources = sep.extract(img_sub, 4.5, err=bkg.globalrms, minarea=9)#, filter_kernel=kern)
                         sources.sort(order = 'cflux')
-                        print('No. of detections:  ', len(sources))
+                        #print('No. of detections:  ', len(sources))
                         sep_result = []
                         spots = []
                         for source in sources:
@@ -561,7 +561,7 @@ class Observatory:
                         spot = np.array(spots)
                         try:
                             spot = np.median(spot[-9:-2])   #  This grabs seven spots.
-                            print(sep_result, '\n', 'Spot and flux:  ', spot, source['cflux'], len(sources), avg_foc[1], '\n')
+                            print(sep_result, '\n', 'Spot ,flux, #_sources, avg_focus:  ', spot, source['cflux'], len(sources), avg_foc[1], '\n')
                             if len(sep_result) < 5:
                                 spot = None
                         except:
@@ -653,7 +653,7 @@ class Observatory:
                 img3[fiz] = 0
                 #img3[:, 384] = 0.995
                 #img3[384, :] = 0.995
-                print(istd, img3.max(), img3.mean(), img3.min())
+                #print(istd, img3.max(), img3.mean(), img3.min())
                 imsave(paths['im_path'] + paths['jpeg_name10'], img3)  #NB File extension triggers JPEG conversion.
                 jpeg_data_size = img3.size - 1024
                 if not no_AWS:  #IN the no+AWS case should we skip more of the above processing?
@@ -662,7 +662,7 @@ class Observatory:
                     if not quick:
                         g_dev['cam'].enqueue_for_AWS(i768sq_data_size, paths['im_path'], paths['i768sq_name10'])
                         g_dev['cam'].enqueue_for_AWS(raw_data_size, paths['raw_path'], paths['raw_name00'])
-                    print('Sent to AWS Queue.')
+                    #print('Sent to AWS Queue.')
                 time.sleep(0.5)
                 self.img = None   #Clean up all big objects.
                 try:
