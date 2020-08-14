@@ -1,3 +1,5 @@
+
+
 # -*- coding: utf-8 -*-
 '''
 Created on Fri Feb 07,  11:57:41 2020
@@ -38,6 +40,7 @@ site_config = {
 
     'mpc_code':  'ZZ24',    #This is made up for now.
     'time_offset':  '-6.0',
+    'TZ_database_name':  'America/Denver', 
     'timezone': 'MDT',       #We might be smart to require some Python DateTime String Constant here
                              #since this is a serious place where misconfigurations occur.  We run on
                              #UTC and all translations to local time are 'informational.'  PTR will
@@ -79,6 +82,14 @@ site_config = {
                                                                         #First Entry is always default condition.
                 'roof_shutter':  ['Auto', 'Open', 'Close', 'Lock Closed', 'Unlock'],
             },
+            'eve_bias_dark_dur':  2.0,   #hours Duration, prior to next.
+            'eve_screen_flat_dur': 1.0,   #hours Duration, prior to next.
+            'operations_begin':  -1.0,   #  - hours from Sunset
+            'eve_cooldown_offset': -.99,   #  - hours beforeSunset
+            'eve_sky_flat_offset':  0.5,   #  - hours beforeSunset 
+            'morn_sky_flat_offset':  0.4,   #  + hours after Sunrise
+            'morning_close_offset':  0.41,   #  + hours after Sunrise
+            'operations_end':  0.42,
         },
     },
 
@@ -137,6 +148,9 @@ site_config = {
                                                 #for tel1.  Units are arcseconds.
                 'offset_declination': '0.0',
                 'offset_flexure': '0.0',
+                'west_flip_ ha_offset': 0.0,  #new terms.
+                'west_flip_ ca_offset': 0.0,
+                'west_flip_ dec_offset': 0.0
             },
         },
     },
@@ -177,11 +191,11 @@ site_config = {
             'desc':  'Optec Gemini',
             'driver': 'ASCOM.OptecGemini.Focuser',
 			'com_port':  'None',
-            'reference':  '10065',    #Nominal at 20C Primary temperature
-            'ref_temp':   '15',    #Update when pinning reference
+            'reference':  '9271',    #Nominal at 20C Primary temperature
+            'ref_temp':   '18.5',    #Update when pinning reference
             'coef_c': '0',   #negative means focus moves out as Primary gets colder
-            'coef_0': '10065',  #Nominal intercept when Primary is at 0.0 C. Looks wrong!
-            'coef_date':  '20200615',    #Per Neyle   SWAG
+            'coef_0': '9271',  #Nominal intercept when Primary is at 0.0 C. Looks wrong!
+            'coef_date':  '20200812',    #Per Neyle   SWAG
             'minimum': '0',     #NB this area is confusing steps and microns, and need fixing.
             'maximum': '12700',
             'step_size': '1',       #This is probably 0.09090909090909...
@@ -199,29 +213,29 @@ site_config = {
             "parent": "telescope1",
             "name": "FLI filter wheel",
             "desc":  'FLI Centerline 50mm square.',
-            "driver": 'MAXIM',  #'ASCOM.FLI.FilterWheel',   #
+            "driver": 'MAXIM',  # 'ASCOM.FLI.FilterWheel',   #'MAXIM',
             'settings': {
-                'filter_count': '13',
+                'filter_count': '14',
                 'filter_reference': '0',   #We choose to use W as the default filter.
                 'filter_data': [['filter', 'filter_index', 'filter_offset', 'sky_gain', 'screen_gain', 'abbreviation'],
-                        ['w',    '(0,  0)',     '0', ' 0.01', ['6   ', ' 20'], 'w '],   # 0 Mul Screen@100% by saturate*exp
-                        ['B',    '(1,  0)',     '0', ' 63.6', ['35  ', ' 20'], 'B '],   # 1
-                        ['V',    '(2,  0)',     '0', ' 0.01', ['15  ', ' 20'], 'V '],   # 2
-                        ['R',    '(3,  0)',     '0', ' 0.01', ['20  ', ' 20'], 'R '],   # 3
-                        ["gp",   '(4,  0)',     '0', '114.0', ['13  ', ' 20'], "gp"],   # 4
-                        ["rp",   '(5,  0)',     '0', '00.01', ['20  ', ' 20'], "rp"],   # 5
-                        ["ip",   '(6,  0)',     '0', '00.01', ['33  ', ' 20'], "ip"],   # 6
-                        ['O3',   '(7,  0)',     '0', '09.75', ['360' , '170'], 'O3'],   # 7 430  use 2x215?
-                        ['HA',   '(8,  0)',     '0', '09.42', ['360' , '170'], 'HA'],   # 8 4500
-                        ['S2',   '(9,  0)',     '0', '09.80', ['360' , '170'], 'S2'],   # 9 6300
-                        ['N2',   '(10, 0)',     '0', '09.34', ['360' , '170'], "N2"],   # 10 4700
-                        ['EXO',  '(11, 0)',     '0', ' 0.01', ['6.5 ', ' 20'], 'ex'],   # 11
-                        ['air',  '(12, 0)', '-1000', ' 0.01', ['4.5 ', ' 20'], 'ai'],   # 12
-                        ['dark', '(13, 0)',     '0', ' 0.01', ['15  ', ' 20'], 'dk']],  # 13  20200315 This needs to be set up as a \
+                        ['w',    '(0,  0)',     '0', '88.1', ['6   ', ' 20'], 'w '],   # 0 Mul Screen@100% by saturate*exp
+                        ['B',    '(1,  0)',     '0', '38.7', ['35  ', ' 20'], 'B '],   # 1
+                        ['V',    '(2,  0)',     '0', '28.3', ['15  ', ' 20'], 'V '],   # 2
+                        ['R',    '(3,  0)',     '0', '16.7', ['20  ', ' 20'], 'R '],   # 3
+                        ["gp",   '(4,  0)',     '0', '59.8', ['13  ', ' 20'], "gp"],   # 4
+                        ["rp",   '(5,  0)',     '0', '16.7', ['20  ', ' 20'], "rp"],   # 5
+                        ["ip",   '(6,  0)',     '0', '3.98', ['33  ', ' 20'], "ip"],   # 6
+                        ['O3',   '(7,  0)',     '0', '1.23', ['360' , '170'], 'O3'],   # 7
+                        ['HA',   '(8,  0)',     '0', '0.29', ['360' , '170'], 'HA'],   # 8
+                        ['S2',   '(9,  0)',     '0', '0.32', ['360' , '170'], 'S2'],   # 9
+                        ['N2',   '(10, 0)',     '0', '0.30', ['360' , '170'], "N2"],   # 10
+                        ['EXO',  '(11, 0)',     '0', '42.6', ['6.5 ', ' 20'], 'ex'],   # 11
+                        ['air',  '(12, 0)',  '-800', '100 ', ['4.5 ', ' 20'], 'ai'],   # 12
+                        ['dark', '(13, 0)',     '0', ' 1  ', ['15  ', ' 20'], 'dk']],  # 13
                         #  'dark' filter =   cascade of say N2 and B or O3 and i.
-                        #Screen = 100; QHY400 ~ 92% DQE   HDR Mode    Screen = 160 sat  20190825 measured.
+                        
                 'filter_screen_sort':  ['12', '0', '11', '2', '3', '5', '6', '4', '1'],   # don't use narrow yet,  '8', '10', '9'], useless to try.
-                'filter_sky_sort':  ['9', '10', '8', '7', '1', '4', '6', '5', '3', '2', '11', '0', '12']  #Least to most throughput
+                'filter_sky_sort':  ['8', '10', '9', '7', '6', '5', '3', '2', '4', '1', '11', '0', '12']  #Least to most throughput
             },
         },
     },
@@ -232,12 +246,12 @@ site_config = {
             'parent': 'telescope1',
             'name': 'sq01',      #Important because this points to a server file structure by that name.
             'desc':  'QHY 600Pro',
-            'driver':  "Maxim.CCDCamera",   #"ASCOM.QHYCCD.Camera",   #'ASCOM.FLI.Kepler.Camera',
+            'driver':  "Maxim.CCDCamera",   #"ASCOM.QHYCCD.Camera",   #  'ASCOM.FLI.Kepler.Camera',
             'detector':  'Sony IMX455',
             'manufacturer':  'QHY',
             'settings': {
                 'temp_setpoint': '-7.5',
-                'calib_setpoints': ['-10', '-7.5', '-5', '-7.5' ],  #  Picked by day-of-year mod len(list)
+                'calib_setpoints': ['-7.5', '-6.5', '-5.5', '-4.5' ],  #  Picked by day-of-year mod len(list)
                 'day_warm': 'False',
                 'cooler_on': 'True',
                 'x_start':  '0',
@@ -255,9 +269,9 @@ site_config = {
                 'overscan_x': '24',
                 'overscan_y': '34',
                 'north_offset': '0.0',    #  These three are normally 0.0 for the primary telescope
-                'east_offset': '0.0',
-                'rotation': '0.0',
-                'min_exposure': '0.001',
+                'east_offset': '0.0',     #  Not sure why these three are even here.
+                'rotation': '0.0',        #  Probably remove.
+                'min_exposure': '0.00001',
                 'max_exposure': '600.0',
                 'can_subframe':  'true',
                 'min_subframe':  '128,128',
@@ -266,14 +280,16 @@ site_config = {
                 'readout_time':  ['4', '4'],
                 'rbi_delay':  '0',      # This being zero says RBI is not available, eg. for SBIG.
                 'is_cmos':  'True',
+                'is_color':  'False',
+                'can_set_gain':  'True',
+                'bayer_pattern':  'None',    #Need to verify
                 'can_set_gain':  'True',
                 'reference_gain': ['28', '28'],     #One val for each binning.
-                'reference_noise': ['2', '2'],    #  NB Guess
+                'reference_noise': ['3.2', '3.2'],    #  NB Guess
                 'reference_dark': ['0.2', '0.0'],    #Guesses?
                 'saturate':  '55000',
-                'area': ['100%', '2X-jpg', '71%', '50%', '1X-jpg', '33%', '25%', '1/2 jpg', 'chip'],  #NB Area does not include overscan.
+                'area': ['100%', '71%', '50%',  '35%', '25%', '12%'],  #NB Area does not include overscan.
                 'has_darkslide':  'false',
-                 #darkslide':  ['Auto', 'Open', 'Close'],
                 'has_screen': 'true',
                 'screen_settings':  {
                     'screen_saturation':  '157.0',   #This reflects WMD setting and needs proper values.
