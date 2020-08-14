@@ -14,6 +14,7 @@ This is also very old code just grafted on. Needs variable renaming, and a good 
 from math import *
 import shelve
 import ephem
+import skyfield as skf
 from datetime import datetime, timedelta
 from math import degrees
 # print('ObsImports:  ', config, '\n\'', config.site_config['site'])
