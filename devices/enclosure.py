@@ -285,9 +285,9 @@ class Enclosure:
 
     
             if not self.dome_homed:
-                breakpoint()
-                self.dome_homed = True
-                return
+                # breakpoint()
+                # self.dome_homed = True
+                # return
                 if self.is_dome:
                     self.enclosure.Slaved = False
                 try:

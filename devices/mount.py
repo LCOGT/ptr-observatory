@@ -49,7 +49,7 @@ from astropy.coordinates import SkyCoord, FK5, ICRS, FK4, Distance, \
                          EarthLocation, AltAz
 #from astroquery.vizier import Vizier
 #from astroquery.simbad import Simbad
-#from devices.pywinusb_paddle import *
+from devices.pywinusb_paddle import *
 
 
 
@@ -102,17 +102,19 @@ class Mount:
         print(self.mount.Description)
 
         #NB THe paddle needs a re-think and needs to be cast into its own thread. 20200310 WER
-#        self._paddle = serial.Serial('COM10', timeout=0.1)
-#        self._paddle.write(b'ver\n')
-#        print(self._paddle.read(13).decode()[-8:])
+        self._paddle = serial.Serial('COM28', timeout=0.1)
+        self._paddle.write(b'ver\n')
+        print(self._paddle.read(13).decode()[-8:])
+
 #        self._paddle.write(b"gpio iodir 00ff\n")
 #        self._paddle.write(b"gpio readall\n")
-        self.paddleing = False
+        self.paddleing = True
 #        print('a:',self._paddle.read(20).decode())
 #        print('b:',self._paddle.read(20).decode())
 #        print('c:',self._paddle.read(20).decode())
 #        print("Paddle  not operational??")
-#        self.paddle_thread = threading.Thread(target=self.paddle( self._paddle, self.mount), args=())
+        self._paddle.close()
+        #self.paddle_thread = threading.Thread(target=self.paddle, args=())
         #self.paddle_thread.start()
         print("exiting mount _init")
 
@@ -157,7 +159,7 @@ class Mount:
 
     def get_status(self):
         self.check_connect()
-        #self.paddle()
+        self.paddle()
         alt = self.mount.Altitude
         zen = round((90 - alt), 3)
         if zen > 90:
@@ -512,15 +514,21 @@ class Mount:
 
         Normally this will never be started, unless we are operating locally in the observatory.
         '''
-
-        self._paddle.write(b"gpio readall\n")
-        temp = self._paddle.read(21).decode()
+        return    #Temporary disable 20200817
+    
+        self._paddle = serial.Serial('COM28', timeout=0.1)
+        self._paddle.write(b"gpio iodir 00ff\n")  #returns  16
+        self._paddle.write(b"gpio readall\n")     #  returns 13
+        temp_0 = self._paddle.read(21).decode()   #  This is a restate of read, a toss
+        temp_1 = self._paddle.read(21).decode()
+        print(len(temp_1))
+        self._paddle.close()
         #print ('|' + temp[16:18] +'|')
-        button = temp[17]
-        spd= temp[16]
+        button = temp_1[14]
+        spd= temp_1[13]
         direc = ''
         speed = 0.0
-        #print("Btn:  ", button, "Spd:  ", speed, "Dir:  ", direc)
+        print("Btn:  ", button, "Spd:  ", speed, "Dir:  ", direc)
         if button == 'E': direc = 'N'
         if button == 'B': direc = 'S'
         if button == 'D': direc = 'E'
@@ -594,31 +602,47 @@ class Mount:
             EW = -1
             NS = -1
 
-        #print(button, spd, direc, speed)
+        print(button, spd, direc, speed)
 #            if direc != '':
         #print(direc, speed)
         _mount = self.mount
         #Need to add diagonal moves
         if direc == 'N':
-            _mount.DeclinationRate = NS*speed
-            self.paddleing = True
+            try:
+                _mount.DeclinationRate = NS*speed
+                self.paddleing = True
+            except:
+                pass
             print('cmd:  ', direc,  NS*speed)
         if direc == 'S':
-            _mount.DeclinationRate = -NS*speed
-            self.paddleing = True
+            try:
+                _mount.DeclinationRate = -NS*speed
+                self.paddleing = True
+            except:
+                pass
             print('cmd:  ',direc,  -NS*speed)
         if direc == 'E':
-            _mount.RightAscensionRate = EW*speed/15.   #Not quite the correct divisor.
-            self.paddleing = True
+            try:
+                _mount.RightAscensionRate = EW*speed/15.   #Not quite the correct divisor.
+                self.paddleing = True
+            except:
+                pass
             print('cmd:  ',direc, EW*speed/15.)
         if direc == 'W':
-            _mount.RightAscensionRate = -EW*speed/15.
-            self.paddleing = True
+            try:
+                _mount.RightAscensionRate = -EW*speed/15.
+                self.paddleing = True
+            except:
+                pass
             print('cmd:  ',direc, -EW*speed/15.)
         if direc == '':
-            _mount.DeclinationRate = 0.0
-            _mount.RightAscensionRate = 0.0
+            try:
+                _mount.DeclinationRate = 0.0
+                _mount.RightAscensionRate = 0.0
+            except:
+                print("Rate set excepetion.")
             self.paddleing = False
+        self._paddle.close()
         return
 
 
