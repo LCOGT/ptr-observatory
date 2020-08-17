@@ -435,7 +435,8 @@ class Observatory:
                 aws_resp = g_dev['obs'].api.authenticated_request('POST', '/upload/', aws_req)
                 with open(im_path + name, 'rb') as f:
                     files = {'file': (im_path + name, f)}
-                    print('--> To AWS -->', str(im_path + name))
+                    if name[-3:] == 'jpg':
+                        print('--> To AWS -->', str(im_path + name))
                     requests.post(aws_resp['url'], data=aws_resp['fields'],
                                   files=files)
                 if name[-3:] == 'bz2' or name[-3:] == 'jpg' or \
@@ -646,16 +647,18 @@ class Observatory:
                 #The following does a very lame contrast scaling.  A beer for best improvement on this code!!!
                 istd = np.std(hdu.data)
                 imean = np.mean(hdu.data)
-                img3 = hdu.data/(imean + 3*istd)
+                if (imean + 3*istd) != 0:    #This does divide by zero in some bias images.
+                    img3 = hdu.data/(imean + 3*istd)
+                else:
+                    img3 = hdu.data
                 fix = np.where(img3 >= 0.999)
                 fiz = np.where(img3 < 0)
                 img3[fix] = .999
                 img3[fiz] = 0
-                #img3[:, 384] = 0.995
-                #img3[384, :] = 0.995
-                #print(istd, img3.max(), img3.mean(), img3.min())
-                imsave(paths['im_path'] + paths['jpeg_name10'], img3)  #NB File extension triggers JPEG conversion.
-                jpeg_data_size = img3.size - 1024
+                img4 = img3*256
+                img4 = img4.astype('uint8')   #Eliminates a user warning.
+                imsave(paths['im_path'] + paths['jpeg_name10'], img4)  #NB File extension triggers JPEG conversion.
+                jpeg_data_size = abs(img4.size - 1024)
                 if not no_AWS:  #IN the no+AWS case should we skip more of the above processing?
                     #g_dev['cam'].enqueue_for_AWS(text_data_size, paths['im_path'], paths['text_name'])
                     g_dev['cam'].enqueue_for_AWS(jpeg_data_size, paths['im_path'], paths['jpeg_name10'])

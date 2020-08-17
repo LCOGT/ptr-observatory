@@ -146,9 +146,9 @@ class FilterWheel:
 
     def set_number_command(self, filter_number):
         ''' set the filter position by numeric filter position index '''
-        print(f"filter cmd: set_number")
+        #print(f"filter cmd: set_number")
         filter_selections = eval(self.filter_data[int(filter_number)][1])
-        print('Selections:  ', filter_selections)
+        #print('Selections:  ', filter_selections)
         self.filter_number = filter_number
         self.filter_selected = self.filter_data[filter_number][0]
         if self.dual:
@@ -176,10 +176,10 @@ class FilterWheel:
     def set_position_command(self, req: dict, opt: dict):
         ''' set the filter position by  param string filter position index '''
         'NBNBNB This routine may not be correct'
-        print(f"filter cmd: set_position")
+        #print(f"filter cmd: set_position")
         breakpoint()
         filter_selections = eval(self.filter_data[int(req['filter_num'])][1])
-        print('Selections:  ', filter_selections)
+        #print('Selections:  ', filter_selections)
         if self.dual:
             try:
                 while self.filter_front.Position == -1:
@@ -203,7 +203,7 @@ class FilterWheel:
 
     def set_name_command(self, req: dict, opt: dict):
         ''' set the filter position by filter name '''
-        print(f"filter cmd: set_name", req, opt)
+        #print(f"filter cmd: set_name", req, opt)
         try:
             filter_name = req['filter_name']
         except:
@@ -226,12 +226,12 @@ class FilterWheel:
             if filter_name == self.filter_data[match][0]:
                 filt_pointer = match
                 break
-        print('Filter name appears to be:  ', self.filter_data[match][0])
-        print('Filter pointer:  ', filt_pointer)
+        print('Filter name is:  ', self.filter_data[match][0])
+        #print('Filter pointer:  ', filt_pointer)
         self.filter_number = filt_pointer
         self.filter_selected = filter_name
         filter_selections = eval(self.filter_data[filt_pointer][1])
-        print('Selections:  ', filter_selections)
+        #print('Selections:  ', filter_selections)
         if self.dual:
             try:
                 while self.filter_front.Position == -1:
@@ -249,9 +249,10 @@ class FilterWheel:
                 breakpoint()
             self.filter_offset = int(self.filter_data[filt_pointer][2])
         elif self.maxim:
+            
             g_dev['cam'].camera.Filter = filter_selections[0]
             time.sleep(0.2)
-            #g_dev['cam'].camera.GuiderFilter = filter_selections[1]
+            g_dev['cam'].camera.GuiderFilter = filter_selections[1]
         else:
             try:
                 while self.filter_front.Position == -1:
