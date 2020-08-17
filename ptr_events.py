@@ -14,9 +14,9 @@ This is also very old code just grafted on. Needs variable renaming, and a good 
 from math import *
 import shelve
 import ephem
-import skyfield as skf
 from datetime import datetime, timedelta
 from math import degrees
+import skyfield as skf
 # print('ObsImports:  ', config, '\n\'', config.site_config['site'])
 from global_yard import *
 from astropy.time import Time
