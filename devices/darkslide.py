@@ -7,7 +7,7 @@ Created on Sat Aug 15 19:19:56 2020
 
 import serial
 
-#  NBNB This needs to be integrated iwth config and camera.
+#  NBNB This needs to be integrated with config and camera.
 class Darkslide(object):
     
    def __init__(self):

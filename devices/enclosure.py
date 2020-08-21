@@ -74,8 +74,16 @@ class Enclosure:
              self.shutter_is_closed = False
 
         if self.site == 'saf':
-            status = {'shutter_status': stat_string,
+           try:
+               status = {'shutter_status': stat_string,
                       'enclosure_slaving': str(self.enclosure.Slaved),
+                      'dome_azimuth': str(round(self.enclosure.Azimuth, 1)),
+                      'dome_slewing': str(self.enclosure.Slewing),
+                      'enclosure_mode': str(self.mode),
+                      'enclosure_message': str(self.state)}
+           except:
+               status = {'shutter_status': stat_string,
+                      'enclosure_slaving': 'unknown',
                       'dome_azimuth': str(round(self.enclosure.Azimuth, 1)),
                       'dome_slewing': str(self.enclosure.Slewing),
                       'enclosure_mode': str(self.mode),
@@ -83,7 +91,7 @@ class Enclosure:
         else:
             status = {'roof_status': stat_string,
                       'shutter_status': stat_string,
-                      'enclosure_slaving': str(self.enclosure.Slaved),
+                      'enclosure_slaving': str(self.enclosure.Slaved),   #  What should  this mean for a roof? T/F = Open/Closed?
                       'enclosure_mode': str(self.mode),
                       'enclosure_message': str(self.state)}
         #print('Enclosure status:  ', status
