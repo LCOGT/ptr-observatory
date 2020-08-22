@@ -525,12 +525,13 @@ class Sequencer:
                         result['temperature'] = avg_foc[2]  This is probably tube not reported by Gemini.
         '''
         self.af_guard = True
-        sim = False   # g_dev['enc'].shutter_is_closed
+        sim = g_dev['enc'].shutter_is_closed
         print('AF entered with:  ', req, opt, '\n .. and sim =  ', sim)
         #self.sequencer_hold = True  #Blocks command checks.
         start_ra = g_dev['mnt'].mount.RightAscension   #Read these to go back.
         start_dec = g_dev['mnt'].mount.Declination
         focus_start = g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron
+        print("Saved ra dec focus:  ", start_ra, start_dec, focus_start)
         #  NBNBNB Need to preserve  and restore on exit, incoming filter setting
         if req['target'] == 'near_tycho_star':   ## 'bin', 'area'  Other parameters
 
@@ -550,7 +551,7 @@ class Sequencer:
         print('Autofocus Starting at:  ', foc_pos0, '\n\n')
         throw = 200  # NB again, from config.  Units are microns
         if not sim:
-            result = g_dev['cam'].expose_command(req, opt, no_AWS=True, script = 'focus_auto_script_0')  #  This is where we start.
+            result = g_dev['cam'].expose_command(req, opt, no_AWS=True), ## , script = 'focus_auto_script_0')  #  This is where we start.
         else:
             result['FWHM'] = 3
             result['mean_focus'] = foc_pos0
@@ -560,7 +561,7 @@ class Sequencer:
         g_dev['foc'].focuser.Move((foc_pos0 - throw)*g_dev['foc'].micron_to_steps)
         #opt['fwhm_sim'] = 4.
         if not sim:
-            result = g_dev['cam'].expose_command(req, opt, no_AWS=True, script = 'focus_auto_script_1')  #  This is moving in one throw.
+            result = g_dev['cam'].expose_command(req, opt, no_AWS=True), ## , script = 'focus_auto_script_1')  #  This is moving in one throw.
         else:
             result['FWHM'] = 4
             result['mean_focus'] = foc_pos0 - throw
@@ -572,7 +573,7 @@ class Sequencer:
         g_dev['foc'].focuser.Move((foc_pos0 + throw)*g_dev['foc'].micron_to_steps)
         #opt['fwhm_sim'] = 5
         if not sim:
-            result = g_dev['cam'].expose_command(req, opt, no_AWS=True, script = 'focus_auto_script_2')  #  This is moving out one throw.
+            result = g_dev['cam'].expose_command(req, opt, no_AWS=True), ## , script = 'focus_auto_script_2')  #  This is moving out one throw.
         else:
             result['FWHM'] = 4.5
             result['mean_focus'] = foc_pos0 + throw
@@ -595,7 +596,7 @@ class Sequencer:
             print ('Moving to Solved focus:  ', round(d1, 2), ' calculated:  ',  new_spot)
             g_dev['foc'].focuser.Move(int(d1*g_dev['foc'].micron_to_steps))
             if not sim:
-                result = g_dev['cam'].expose_command(req, opt, no_AWS=True, script = 'focus_auto_script_3')  #  This is verifying the new focus.
+                result = g_dev['cam'].expose_command(req, opt, no_AWS=True),  #   script = 'focus_auto_script_3')  #  This is verifying the new focus.
             else:
                 result['FWHM'] = new_spot
                 result['mean_focus'] = d1
@@ -605,6 +606,7 @@ class Sequencer:
         else:
             print('Autofocus did not converge. Moving back to starting focus:  ', focus_start)
             g_dev['foc'].focuser.Move((focus_start)*g_dev['foc'].micron_to_steps)
+        print("Returning to:  ", start_ra, start_dec)
         g_dev['mnt'].mount.SlewToCoordinatesAsync(start_ra, start_dec)   #Return to pre-focus pointing.
         if sim:
             g_dev['foc'].focuser.Move((focus_start)*g_dev['foc'].micron_to_steps)
@@ -631,6 +633,7 @@ class Sequencer:
         start_ra = g_dev['mnt'].mount.RightAscension
         start_dec = g_dev['mnt'].mount.Declination
         foc_start = g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron
+        print("Saved ra dec focus:  ", start_ra,_start_dec, focus_start)
         if req['target'] == 'near_tycho_star':   ## 'bin', 'area'  Other parameters
             #  Go to closest Mag 7.5 Tycho * with no flip
             focus_star = tycho.dist_sort_targets(g_dev['tel'].current_icrs_ra, g_dev['tel'].current_icrs_dec, \
@@ -718,6 +721,7 @@ class Sequencer:
         else:
             print('Autofocus did not converge. Moving back to starting focus:  ', foc_pos0)
             g_dev['foc'].focuser.Move((foc_start)*g_dev['foc'].micron_to_steps)
+        print("Returning to:  ", saved_ra, saved_dec)
         g_dev['mnt'].mount.SlewToCoordinatesAsync(start_ra, start_dec)   #Return to pre-focus pointing.
         if sim:
             g_dev['foc'].focuser.Move((foc_start)*g_dev['foc'].micron_to_steps)

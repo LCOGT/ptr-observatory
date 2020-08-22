@@ -1035,6 +1035,7 @@ class Camera:
                              'frame_type':  frame_type
                              }
                     script = None
+                    breakpoint()
                     if not quick and not script in ('True', 'true', 'On', 'on'):
                         self.enqueue_for_AWS(text_data_size, im_path, text_name)
                         self.to_reduce((paths, hdu))

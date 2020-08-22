@@ -263,7 +263,7 @@ class Enclosure:
                 #  A countdown to re-open
                 if self.status_string.lower() in ['closed', 'closing']:
                     self.guarded_open()   #<<<<NB NB NB Only enable when code is fully proven to work.
-                    if self.isDome:
+                    if self.is_Dome:
                         self.enclosure.Slaved = True
                     print("Night time Open issued to the "  + shutter_str, +   ' and is now following Mounting.')
         elif (obs_win_begin >= ephemNow or ephemNow >= sunrise) \
