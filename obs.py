@@ -178,6 +178,9 @@ class Observatory:
         self.reduce_queue = queue.Queue(maxsize=50)
         self.reduce_queue_thread = threading.Thread(target=self.reduce_image, args=())
         self.reduce_queue_thread.start()
+        self.blocks = None
+        self.projects = None
+        
 
         # Build the site (from-AWS) Queue and start a thread.
         # self.site_queue = queue.SimpleQueue()
@@ -288,20 +291,21 @@ class Observatory:
                         print(e)
                # print('scan_requests finished in:  ', round(time.time() - t1, 3), '  seconds')
                 ## Test Tim's code
-                # url = "https://projects.photonranch.org/dev/get-all-projects"
-                # all_projects = requests.post(url).json()
-                # if all_projects is not None:
-                #     print(all_projects)
-                # url = "https://calendar.photonranch.org/dev/siteevents"
-                # body = json.dumps({
-                #     'site':  'saf',
-                #     'start':  '2020-06-28T20:00:00Z',
-                #     'end':    '2020-06-29T14:00:00Z',
-                #     'full_project_details:':  False})
-                # breakpoint()
-                # events = requests.post(url, body).json()
-                # if events is not None:
-                #     pprint(events)
+                url = "https://projects.photonranch.org/dev/get-all-projects"
+                if self.projects is None:
+                    all_projects = requests.post(url).json()
+                    if all_projects is not None:
+                        self.projects = all_projects
+                url = "https://calendar.photonranch.org/dev/siteevents"
+                body = json.dumps({
+                    'site':  'saf',
+                    'start':  '2020-08-16T20:00:00Z',
+                    'end':    '2020-08-29T14:00:00Z',
+                     'full_project_details:':  False})
+                if self.blocks is None:
+                    events = requests.post(url, body).json()
+                    if events is not None:
+                        self.blocks = events
                 return   # Continue   #This creates an infinite loop
             else:
                 print('Sequencer Hold asserted.')    #What we really want here is looking for a Cancel/Stop.

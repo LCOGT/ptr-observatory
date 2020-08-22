@@ -802,16 +802,18 @@ class Camera:
             self.t5 = time.time()
             if (self.maxim or self.ascom) and self.camera.ImageReady:
                 self.t4 = time.time()
-                print("reading out camera, takes ~12 seconds.")
+                #max_img = fits.open('D:/000ptr_saf/archive/sq01/maxim_as_cam/CCD Image 42.fit')
+                #self.img_m  =max_img[0].data
+                #self.t55 = time.time()
+                print("reading out camera, takes ~6 seconds.")
                 time.sleep(0.5)   #  This delay appears to be necessary. 20200804 WER
                 self.img = self.camera.ImageArray
-                self.t7 = time.time()
-                print('expose took:  ', round(self.t4 - self.t2, 1),' sec.')
-                print('readout took:  ', round(self.t7 - self.t4, 1), ' sec.')
-               
+                self.t7 = time.time()          
                 self._stop_expose()  # Is this necessary?
                 # if self.maxim:
                 #     self.camera.SaveImage("D:/000ptr_saf/garbage/junk.fit")
+                # print(self.t4 - self.t2, self.t7 - self.t2, self.t4 - self.t2)  #  , self.t55 - self.t2, self.t55 - self.t4)
+                print('readout took:  ', round(self.t7 - self.t4, 1), ' sec,')
                 self.img = np.array(self.img).transpose()  #  .astype('int32')
                 # Overscan remove and trim.
                 pedastal = 200
@@ -827,7 +829,9 @@ class Camera:
                 else:
                     print("Incorrect chip size or bin specified.")
                 smin = np.where(square < 0)    # finds negative pixels
-                square[smin] = 0               # marks them as 0
+                square[smin] = 0
+                self.t77 = time.time()
+                print('readout & Trim took:  ', round(self.t77 - self.t4, 1), ' sec,')# marks them as 0
                 self.img = square.astype('uint16')
                 test_saturated = np.array(self.img)[1536:4608, 1536:4608]
                 bi_mean = (test_saturated.mean() + np.median(test_saturated))/2
@@ -1030,6 +1034,8 @@ class Camera:
                              'text_name11': text_name,
                              'frame_type':  frame_type
                              }
+                    script = None
+                    breakpoint()
                     if not quick and not script in ('True', 'true', 'On', 'on'):
                         self.enqueue_for_AWS(text_data_size, im_path, text_name)
                         self.to_reduce((paths, hdu))

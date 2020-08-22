@@ -91,10 +91,7 @@ class Mount:
         self.inst = 'tel1'
         self.tel = tel
         self.mount_message = "-"
-
-        #print('Can Move Axis is Possible.', self.mount.CanMoveAxis(0), self.mount.CanMoveAxis(1))
-
-        #  NB THis tel concept is a remnant of a bad dream
+        self.has_paddle = config['mount']['mount1']['has_paddle']
         if not tel:
             print(f"Mount connected.")
         else:
@@ -102,20 +99,21 @@ class Mount:
         print(self.mount.Description)
 
         #NB THe paddle needs a re-think and needs to be cast into its own thread. 20200310 WER
-        self._paddle = serial.Serial('COM28', timeout=0.1)
-        self._paddle.write(b'ver\n')
-        print(self._paddle.read(13).decode()[-8:])
-
-#        self._paddle.write(b"gpio iodir 00ff\n")
-#        self._paddle.write(b"gpio readall\n")
-        self.paddleing = True
-#        print('a:',self._paddle.read(20).decode())
-#        print('b:',self._paddle.read(20).decode())
-#        print('c:',self._paddle.read(20).decode())
-#        print("Paddle  not operational??")
-        self._paddle.close()
-        #self.paddle_thread = threading.Thread(target=self.paddle, args=())
-        #self.paddle_thread.start()
+        if self.has_paddle:
+            self._paddle = serial.Serial('COM28', timeout=0.1)
+            self._paddle.write(b'ver\n')
+            print(self._paddle.read(13).decode()[-8:])
+    
+    #        self._paddle.write(b"gpio iodir 00ff\n")
+    #        self._paddle.write(b"gpio readall\n")
+            self.paddleing = True
+    #        print('a:',self._paddle.read(20).decode())
+    #        print('b:',self._paddle.read(20).decode())
+    #        print('c:',self._paddle.read(20).decode())
+    #        print("Paddle  not operational??")
+            self._paddle.close()
+            #self.paddle_thread = threading.Thread(target=self.paddle, args=())
+            #self.paddle_thread.start()
         print("exiting mount _init")
 
 #    def get_status(self):
