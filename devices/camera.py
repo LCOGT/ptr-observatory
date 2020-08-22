@@ -806,7 +806,8 @@ class Camera:
                 time.sleep(0.5)   #  This delay appears to be necessary. 20200804 WER
                 self.img = self.camera.ImageArray
                 self.t7 = time.time()
-                print('readout took:  ', round(self.t7 - self.t4, 1), ' sec,')
+                print('expose took:  ', round(self.t4 - self.t2, 1),' sec.')
+                print('readout took:  ', round(self.t7 - self.t4, 1), ' sec.')
                
                 self._stop_expose()  # Is this necessary?
                 # if self.maxim:

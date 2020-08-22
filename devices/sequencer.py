@@ -248,7 +248,7 @@ class Sequencer:
                    'coldMap': True}
             opt = {}
         bias_list = []
-        num_bias = min(144, req['numOfBias'])
+        num_bias = min(90, req['numOfBias'])
         for i in range(num_bias):
             if req['bin1']:
                 bias_list.append([1, 0])
@@ -257,10 +257,10 @@ class Sequencer:
         print('Bias_list:  ', bias_list)
         total_num_biases = len(bias_list)
         print("Total # of bias frames, all binnings =  ", total_num_biases, \
-              " Time req'd:  ", total_num_biases*6, ' sec.' )
+              " Time req'd:  ", total_num_biases*12.5, ' sec.' )
         
         dark_list = []
-        num_dark = min(72, req['numOfDark'])   ## Implied this is 1:! binning darks.
+        num_dark = min(45, req['numOfDark'])   ## Implied this is 1:! binning darks.
         dark_time = float(req['darkTime'])
         for i in range(num_dark):
              dark_list.append([1, dark_time])
@@ -268,7 +268,7 @@ class Sequencer:
         print("Total # of dark1 frames, all binnings =  ", total_num_dark )
         
         binx_dark_list = []
-        num_binx_dark = min(72, req['numOfDark2'])  ## Implied this is >1x1 binning darks.
+        num_binx_dark = min(3, req['numOfDark2'])  ## Implied this is >1x1 binning darks.
         binx_dark_time = float(req['dark2Time'])
         for i in range(num_binx_dark):
             binx_dark_list.append([2, num_binx_dark])
