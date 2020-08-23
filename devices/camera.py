@@ -831,7 +831,7 @@ class Camera:
                 smin = np.where(square < 0)    # finds negative pixels
                 square[smin] = 0
                 self.t77 = time.time()
-                print('readout & Trim took:  ', round(self.t77 - self.t4, 1), ' sec,')# marks them as 0
+                print('readout, transpose & Trim took:  ', round(self.t77 - self.t4, 1), ' sec,')# marks them as 0
                 self.img = square.astype('uint16')
                 test_saturated = np.array(self.img)[1536:4608, 1536:4608]
                 bi_mean = (test_saturated.mean() + np.median(test_saturated))/2
@@ -1035,7 +1035,6 @@ class Camera:
                              'frame_type':  frame_type
                              }
                     script = None
-                    breakpoint()
                     if not quick and not script in ('True', 'true', 'On', 'on'):
                         self.enqueue_for_AWS(text_data_size, im_path, text_name)
                         self.to_reduce((paths, hdu))
