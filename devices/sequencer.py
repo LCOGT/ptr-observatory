@@ -231,6 +231,7 @@ class Sequencer:
                   g_dev['obs'].projects is not None:     #  THIS DOES NEED TO BE FENCED BY TIME and not repeated.
              blocks = g_dev['obs'].blocks
              projects = g_dev['obs'].projects
+
              #  print('Block, project length:  ', len(blocks), len(projects))
              #  print(blocks, projects)
              for block in blocks:  #  This merges project spec into the blocks.
@@ -245,11 +246,19 @@ class Sequencer:
                  now_date_timeZ = datetime.datetime.now().isoformat().split('.')[0] +'Z'
                  if block['start'] <= now_date_timeZ < block['end']:
                      pass
+                     print("Here we would enter an observing block:  ",
+                           block)
+                     breakpoint()
+                 #OK here we go to a generalized block execution routine that runs
+                 #until exhaustion of the observing window.
+                 else:
+                     pass
+                 #print("Block tested for observatility")
                 
                     
         else:
             self.current_script = "No current script"
-            #print("No active script is scheduled.")
+            print("No active script is scheduled.")
         pass
 
 
@@ -525,7 +534,7 @@ class Sequencer:
                         result['temperature'] = avg_foc[2]  This is probably tube not reported by Gemini.
         '''
         self.af_guard = True
-        sim = g_dev['enc'].shutter_is_closed
+        sim = False  #g_dev['enc'].shutter_is_closed
         print('AF entered with:  ', req, opt, '\n .. and sim =  ', sim)
         #self.sequencer_hold = True  #Blocks command checks.
         start_ra = g_dev['mnt'].mount.RightAscension   #Read these to go back.
@@ -540,11 +549,11 @@ class Sequencer:
                                     g_dev['tel'].current_sidereal)
             print("Going to near focus star " + str(focus_star[0][0]) + "  degrees away.")
             g_dev['mnt'].go_coord(focus_star[0][1][1], focus_star[0][1][0])
-            req = {'time': 5,  'alias':  str(self.config['camera']['camera1']['name']), 'image_type': 'light'}   #  NB Should pick up filter and constats from config
+            req = {'time': 5,  'alias':  str(self.config['camera']['camera1']['name']), 'image_type': 'auto_focus'}   #  NB Should pick up filter and constats from config
             opt = {'size': 100, 'count': 1, 'filter': 'W'}
         else:
             pass   #Just take time image where currently pointed.
-            req = {'time': 10,  'alias':  str(self.config['camera']['camera1']['name']), 'image_type': 'light'}   #  NB Should pick up filter and constats from config
+            req = {'time': 10,  'alias':  str(self.config['camera']['camera1']['name']), 'image_type': 'auto_focus'}   #  NB Should pick up filter and constats from config
             opt = {'size': 100, 'count': 1, 'filter': 'W'}
         foc_pos0 = focus_start
         result = {}
@@ -613,6 +622,7 @@ class Sequencer:
         #  NB here we could re-solve with the overlay spot just to verify solution is sane.
         self.sequencer_hold = False   #Allow comand checks.
         self.af_guard = False
+        #  NB NB We may want to consider sending the result image patch to AWS
         return
 
     def fine_focus_script(self, req, opt):
@@ -640,11 +650,11 @@ class Sequencer:
                                     g_dev['tel'].current_sidereal)
             print("Going to near focus star " + str(focus_star[0][0]) + "  degrees away.")
             g_dev['mnt'].go_coord(focus_star[0][1][1], focus_star[0][1][0])
-            req = {'time': 5,  'alias':  str(self.config['camera']['camera1']['name']), 'image_type': 'light'}   #  NB Should pick up filter and constats from config
+            req = {'time': 5,  'alias':  str(self.config['camera']['camera1']['name']), 'image_type': 'auto_focus'}   #  NB Should pick up filter and constats from config
             opt = {'size': 100, 'count': 1, 'filter': 'W'}
         else:
             pass   #Just take time image where currently pointed.
-            req = {'time': 10,  'alias':  str(self.config['camera']['camera1']['name']), 'image_type': 'light'}   #  NB Should pick up filter and constats from config
+            req = {'time': 10,  'alias':  str(self.config['camera']['camera1']['name']), 'image_type': 'auto_focus'}   #  NB Should pick up filter and constats from config
             opt = {'size': 100, 'count': 1, 'filter': 'W'}
         foc_pos0 = foc_start
         result = {}

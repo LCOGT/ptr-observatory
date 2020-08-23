@@ -217,6 +217,7 @@ class Camera:
         self.f_positions = []
         self.t_0 = time.time()
         self.hint = None
+        self.focus_cache = None
         self.darkslide = False
         if self.config['camera']['camera1']['settings']['has_darkslide'] == 'true':
             self.darkslide = True
@@ -409,20 +410,20 @@ class Camera:
         #print('Expose Entered.  req:  ', required_params, 'opt:  ', optional_params)
         #print("Checking if Maxim is still connected!")
         #  self.t7 is last time camera was read out
-        if self.t7 is not None and (time.time() - self.t7 > 30) and self.maxim:
+        #if self.t7 is not None and (time.time() - self.t7 > 30) and self.maxim:
+        try:
+            probe = self.camera.CoolerOn
+            if not probe:
+                self.camera.CoolerOn = True
+                print('Found coller off.')
+        except exception as e:
+            print("\n\nMaxim was not connected:  ", e, '\n\n')
             try:
-                probe = self.camera.CoolerOn
-                if not probe:
-                    self.camera.CoolerOn = True
-                    print('Found coller off.')
-            except exception as e:
-                print("\n\nMaxim was not connected:  ", e, '\n\n')
-                try:
-                    self._connect(False)
-                    self._connect(True)
-                    self.camera.CoolerOn = True
-                except:
-                    print('Maxim reconnect failed.')
+                self._connect(False)
+                self._connect(True)
+                self.camera.CoolerOn = True
+            except:
+                print('Maxim reconnect failed.')
         opt = optional_params
         self.t_0 = time.time()
         self.hint = optional_params.get('hint', '')
@@ -474,13 +475,14 @@ class Camera:
         #  The following bit of code is convoluted.  Presumably when we get Autofocus working this will get cleaned up.
         self.toss = False
         self.do_sep = False
-        if imtype.lower() in ('light', 'light frame', 'screen flat', 'sky flat', 'experimental', 'test image'):
+        if imtype.lower() in ('light', 'light frame', 'screen flat', 'sky flat', 'experimental', \
+                              'test image', 'auto_focus', 'focus'):
                                  #here we might eventually turn on spectrograph lamps as needed for the imtype.
             imtypeb = True    #imtypeb will passed to open the shutter.
             frame_type = imtype.lower()
             do_sep = True
             self.do_sep = True
-            if imtype.lower() in ('screen flat', 'sky flat', 'guick'):
+            if imtype.lower() in ('screen flat', 'sky flat', 'quick'):
                 do_sep = False
                 self.do_sep = False
             if imtype.lower() == 'test image':
@@ -511,7 +513,6 @@ class Camera:
             do_sep = False
             imtypeb = True
             frame_type = 'light'
-
         else:
             imtypeb = True
             do_sep = True
@@ -758,7 +759,7 @@ class Camera:
                                          gather_status, do_sep, no_AWS, dist_x, dist_y, \
                                          quick=quick, low=ldr_handle_time, \
                                          high=ldr_handle_high_time, \
-                                         script=self.script, opt=opt)  #  NB all these parameers are crazy!
+                                         script=self.script, opt=opt)  #  NB all these parameters are crazy!
                     self.exposure_busy = False
                     self.t10 = time.time()
                     #self._stop_expose()
@@ -771,7 +772,7 @@ class Camera:
                     continue
         #  This is the loop point for the seq count loop
         self.t11 = time.time()
-        print("full expose seq took:  ", round(self.t11 - self.t_0 , 2))  # , ' returned:  ', result)
+        print("full expose seq took:  ", round(self.t11 - self.t_0 , 2), 'returning:  ', result)
         return result
 
     def stop_command(self, required_params, optional_params):
@@ -815,6 +816,36 @@ class Camera:
                 # print(self.t4 - self.t2, self.t7 - self.t2, self.t4 - self.t2)  #  , self.t55 - self.t2, self.t55 - self.t4)
                 print('readout took:  ', round(self.t7 - self.t4, 1), ' sec,')
                 self.img = np.array(self.img).transpose()  #  .astype('int32')
+                
+                
+                '''
+                If image type == 'auto-focus' then we want a much faster
+                processing step right here.  Basically subtract a dark of
+                the same duration and binning. Use unsigned.  Try a duration 
+                of 5 seconds until we get a better calibration on the tyco 
+                stars.
+                
+                Be prepared to hot pixel smash and deal wit a subframe.
+                
+                Do a try:
+                    sep
+                and if it suceeds, pass on the filtered result. we should in
+                general be getting the Tycho star and its position.  Occasionally
+                we may get a brigter star in the field, but we should be able to
+                always find the tycho star and do a local centering.
+                
+                No file saves to improve speed.
+                If autofocus, cache the 5 sec dark.
+                Subtract it.
+                Apply hot pixel mask.
+                Sep
+                Analyse results.
+                REport back
+                
+                
+                
+                
+                '''
                 # Overscan remove and trim.
                 pedastal = 200
                 iy, ix = self.img.shape
@@ -840,6 +871,38 @@ class Camera:
                     result = {}
                     result['patch'] = round(bi_mean, 1)
                     return result   #  signals to flat routine image was rejected
+                elif frame_type[-5:] == 'focus':
+                    if self.focus_cache is None:
+                        focus_img = fits.open('D:/000ptr_saf/archive/sq01/lng/fmd_5.fits')
+                        self.focus_cache = focus_img[0].data
+                    #  :subtract the focus dark:
+                        self.img = self.img
+                    self.img = self.img - self.focus_cache + 100   #maintain a + pedestal for sep
+                    self.img = self.img.astype("float")
+                    #Fix hot pixels here.
+                    bkg = sep.Background(self.img)
+                    self.img = self.img - bkg
+                    sources = sep.extract(self.img, 4.5, err=bkg.globalrms, minarea=9)
+                    sources.sort(order = 'cflux')
+                    print('No. of detections:  ', len(sources))
+                    breakpoint()
+                    sep_result = []
+                    spots = []
+                    plot_x = []
+                    plot_y = []
+                    for source in sources[-1:]:
+                        a0 = source['a']
+                        b0 =  source['b']
+                        #print("Shifts:  ", int(x_vel*del_t_now), int(y_vel*del_t_now), del_t_now)
+                        #if cx - 60 < source['x'] < cx + 60  and cy - 60 < source['y'] < cy + 60:
+                            #sep_result.append([round(r0, 1), round((source['x']), 1), round((source['y']), 1), round((source['cflux']), 1), jd])
+                        print(source['x'], source['y'], source['cflux'], entry[1].split('\\')[1])
+                        plot_x.append(source['x'])
+                        plot_y.append(source['y'])
+                    result['FWHM'] = 3
+                    result['mean_focus'] = foc_pos0
+                    return result
+                        
                 g_dev['obs'].update_status()
                 counter = 0
                 avg_mnt = g_dev['mnt'].get_average_status(self.pre_mnt, self.post_mnt)

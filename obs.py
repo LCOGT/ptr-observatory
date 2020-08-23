@@ -295,7 +295,8 @@ class Observatory:
                 if self.projects is None:
                     all_projects = requests.post(url).json()
                     if all_projects is not None:
-                        self.projects = all_projects
+                        self.projects = [all_projects[3]]   #NOTE creating a list with a dict entry as item 0
+                        self.projects.append(all_projects[1])
                 url = "https://calendar.photonranch.org/dev/siteevents"
                 body = json.dumps({
                     'site':  'saf',
@@ -305,7 +306,7 @@ class Observatory:
                 if self.blocks is None:
                     events = requests.post(url, body).json()
                     if events is not None:
-                        self.blocks = events
+                        self.blocks = events[2:]
                 return   # Continue   #This creates an infinite loop
             else:
                 print('Sequencer Hold asserted.')    #What we really want here is looking for a Cancel/Stop.
