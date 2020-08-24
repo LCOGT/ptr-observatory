@@ -373,6 +373,7 @@ class Sequencer:
         self.sky_guard = True
         print('Eve Sky Flat sequence Starting, Enclosure PRESUMED Open. Telescope will un-park.')
         camera_name = str(self.config['camera']['camera1']['name'])
+        breakpoint()
         flat_count =1
         exp_time = .003
         #  NB Sometime, try 2:2 binning and interpolate a 1:1 flat.  This might run a lot faster.
