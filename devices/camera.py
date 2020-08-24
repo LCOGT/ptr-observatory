@@ -810,7 +810,7 @@ class Camera:
                 time.sleep(0.5)   #  This delay appears to be necessary. 20200804 WER
                 self.img = self.camera.ImageArray
                 self.t7 = time.time()          
-                self._stop_expose()  # Is this necessary?
+                #lself._stop_expose()  # Is this necessary?
                 # if self.maxim:
                 #     self.camera.SaveImage("D:/000ptr_saf/garbage/junk.fit")
                 # print(self.t4 - self.t2, self.t7 - self.t2, self.t4 - self.t2)  #  , self.t55 - self.t2, self.t55 - self.t4)
@@ -847,10 +847,10 @@ class Camera:
                 
                 '''
                 # Overscan remove and trim.
-                breakpoint()
-                trial_img = fits.open('Q:/archive/sq01/maxim_cam/2020-08-23/CCD Image 260.fit')
-                self.img = trial_image[0].data
-                frame_type = 'focus'
+                    # breakpoint()
+                    # trial_image = fits.open('Q:/archive/sq01/maxim_cam/2020-08-23/CCD Image 260.fit')
+                    # self.img = trial_image[0].data
+                    # frame_type = 'focus'
                 pedastal = 200
                 iy, ix = self.img.shape
                 if ix == 9600:
@@ -874,7 +874,13 @@ class Camera:
                     print("Flat rejected, too bright:  ", round(bi_mean, 0))
                     result = {}
                     result['patch'] = round(bi_mean, 1)
-                    return result   # signals to flat routine image was rejected
+                    return result   # signals to flat routine image was rejected                      
+                g_dev['obs'].update_status()
+                counter = 0
+                avg_mnt = g_dev['mnt'].get_average_status(self.pre_mnt, self.post_mnt)
+                avg_foc = g_dev['foc'].get_average_status(self.pre_foc, self.post_foc)
+                avg_rot = g_dev['rot'].get_average_status(self.pre_rot, self.post_rot)
+                avg_ocn = g_dev['ocn'].get_average_status(self.pre_ocn, self.post_ocn)
                 if frame_type[-5:] =='focus':
                     if self.focus_cache is None:
                         focus_img = fits.open(self.lng_path + 'fmd_5.fits')
@@ -884,7 +890,7 @@ class Camera:
                     #Fix hot pixels here.
                     bkg = sep.Background(self.img)
                     self.img = self.img - bkg
-                    sources = sep.extract(self.img, 4.5, err=bkg.globalrms, minarea=9)
+                    sources = sep.extract(self.img, 4.5, err=bkg.globalrms, minarea=15)
                     sources.sort(order = 'cflux')
                     print('No. of detections:  ', len(sources))
                     breakpoint()
@@ -892,25 +898,18 @@ class Camera:
                     spots = []
                     plot_x = []
                     plot_y = []
-                    for source in sources[-1:]:
+                    for source in sources[-10:]:
                         a0 = source['a']
                         b0 =  source['b']
-                        #print("Shifts:  ", int(x_vel*del_t_now), int(y_vel*del_t_now), del_t_now)
-                        #if cx - 60 < source['x'] < cx + 60  and cy - 60 < source['y'] < cy + 60:
-                            #sep_result.append([round(r0, 1), round((source['x']), 1), round((source['y']), 1), round((source['cflux']), 1), jd])
-                        print(source['x'], source['y'], source['cflux'], entry[1].split('\\')[1])
-                        plot_x.append(source['x'])
-                        plot_y.append(source['y'])
-                    result['FWHM'] = 3
-                    result['mean_focus'] = foc_pos0
+                        r0 = math.sqrt(a0*a0 + b0*b0)
+                        r1 = math.sqrt((3072 - source['x'])**2 + (3072 - source['y'])**2)
+                        #kr, kf = sep.kron_radius(self.img, source['x'], source['y'], source['a'], source['b'], source['theta'], 6.0)
+                        print(source['x'], source['y'], , r0, r1)  # , kr, kf)
+                    result['FWHM'] = round(r0, 3)
+                    result['mean_focus'] =  avg_foc[1]
+                    result['center_dist'] = round(r1, 2)
+                    result['center_flux'] = int(source['cflux'])
                     return result
-                        
-                g_dev['obs'].update_status()
-                counter = 0
-                avg_mnt = g_dev['mnt'].get_average_status(self.pre_mnt, self.post_mnt)
-                avg_foc = g_dev['foc'].get_average_status(self.pre_foc, self.post_foc)
-                avg_rot = g_dev['rot'].get_average_status(self.pre_rot, self.post_rot)
-                avg_ocn = g_dev['ocn'].get_average_status(self.pre_ocn, self.post_ocn)
                 try:
                     time.sleep(2)
                     hdu = fits.PrimaryHDU(self.img)
