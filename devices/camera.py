@@ -847,6 +847,10 @@ class Camera:
                 
                 '''
                 # Overscan remove and trim.
+                breakpoint()
+                trial_img = fits.open('Q:/archive/sq01/maxim_cam/2020-08-23/CCD Image 260.fit')
+                self.img = trial_image[0].data
+                frame_type = 'focus'
                 pedastal = 200
                 iy, ix = self.img.shape
                 if ix == 9600:
@@ -862,7 +866,7 @@ class Camera:
                 smin = np.where(square < 0)    # finds negative pixels
                 square[smin] = 0
                 self.t77 = time.time()
-                print('readout & Trim took:  ', round(self.t77 - self.t4, 1), ' sec,')# marks them as 0
+                print('readout, transpose & Trim took:  ', round(self.t77 - self.t4, 1), ' sec,')# marks them as 0
                 self.img = square.astype('uint16')
                 test_saturated = np.array(self.img)[1536:4608, 1536:4608]
                 bi_mean = (test_saturated.mean() + np.median(test_saturated))/2
@@ -870,13 +874,11 @@ class Camera:
                     print("Flat rejected, too bright:  ", round(bi_mean, 0))
                     result = {}
                     result['patch'] = round(bi_mean, 1)
-                    return result   #  signals to flat routine image was rejected
-                elif frame_type[-5:] == 'focus':
+                    return result   # signals to flat routine image was rejected
+                if frame_type[-5:] =='focus':
                     if self.focus_cache is None:
-                        focus_img = fits.open('D:/000ptr_saf/archive/sq01/lng/fmd_5.fits')
+                        focus_img = fits.open(self.lng_path + 'fmd_5.fits')
                         self.focus_cache = focus_img[0].data
-                    #  :subtract the focus dark:
-                        self.img = self.img
                     self.img = self.img - self.focus_cache + 100   #maintain a + pedestal for sep
                     self.img = self.img.astype("float")
                     #Fix hot pixels here.
@@ -1098,7 +1100,6 @@ class Camera:
                              'frame_type':  frame_type
                              }
                     script = None
-                    breakpoint()
                     if not quick and not script in ('True', 'true', 'On', 'on'):
                         self.enqueue_for_AWS(text_data_size, im_path, text_name)
                         self.to_reduce((paths, hdu))

@@ -60,12 +60,11 @@ class Focuser:
         self.focuser = win32com.client.Dispatch(driver)
         self.focuser.Connected = True
         self.focuser.TempComp = False
-        self.micron_to_steps= float(config['focuser']['focuser1']['unit_conversion'])
+        self.micron_to_steps= float(config['focuser']['focuser1']['unit_conversion'])   #  Note tis can be a bogus value
         self.steps_to_micron = 1/self.micron_to_steps
         self.focuser_message = '-'
         print("focuser connected.")
         print(self.focuser.Description, "At:  ", round(self.focuser.Position*self.steps_to_micron, 1))
-        time.sleep(0.2)
         try:   #  NB NB NB This mess neads cleaning up.
             try:
 

@@ -112,6 +112,8 @@ class Mount:
     #        print('c:',self._paddle.read(20).decode())
     #        print("Paddle  not operational??")
             self._paddle.close()
+        else:
+            self.paddeling = False
             #self.paddle_thread = threading.Thread(target=self.paddle, args=())
             #self.paddle_thread.start()
         print("exiting mount _init")

@@ -246,9 +246,9 @@ class Sequencer:
                  now_date_timeZ = datetime.datetime.now().isoformat().split('.')[0] +'Z'
                  if block['start'] <= now_date_timeZ < block['end']:
                      pass
-                     print("Here we would enter an observing block:  ",
-                           block)
-                     breakpoint()
+                     # print("Here we would enter an observing block:  ",
+                     #       block)
+                     # breakpoint()
                  #OK here we go to a generalized block execution routine that runs
                  #until exhaustion of the observing window.
                  else:
