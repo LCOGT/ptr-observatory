@@ -374,7 +374,7 @@ class Sequencer:
         print('Eve Sky Flat sequence Starting, Enclosure PRESUMED Open. Telescope will un-park.')
         camera_name = str(self.config['camera']['camera1']['name'])
         breakpoint()
-        flat_count =1
+        flat_count = 5
         exp_time = .003
         #  NB Sometime, try 2:2 binning and interpolate a 1:1 flat.  This might run a lot faster.
         if flat_count < 1: flat_count = 1
@@ -393,15 +393,9 @@ class Sequencer:
         print('filters by low to high transmission:  ', pop_list)
         length = len(pop_list)
         obs_win_begin, sunset, sunrise, ephemNow = self.astro_events.getSunEvents()
+        scale = 1.0
         while len(pop_list) > 0 and (ephemNow < g_dev['events']['End Eve Sky Flats']):
-            if length > 9:
-                exp_time = 0.003
-            elif length > 6:
-                exp_time = 0.006
-            elif length > 3:
-                exp_time = 0.009
-            else:
-                exp_time = 0.015  
+
             current_filter = int(pop_list[0])
             acquired_count = 0
             #g_dev['fil'].set_number_command(current_filter)
@@ -411,9 +405,9 @@ class Sequencer:
                 if g_dev['enc'].is_dome:
                     g_dev['mnt'].slewToSkyFlatAsync()
                 try:
-                    exp_time = 33000/(float(g_dev['fil'].filter_data[current_filter][3])*g_dev['ocn'].meas_sky_lux)
-                    if exp_time > 45:
-                        exp_time = 45
+                    exp_time = scale*33000/(float(g_dev['fil'].filter_data[current_filter][3])*g_dev['ocn'].meas_sky_lux)
+                    if exp_time > 30:
+                        exp_time = 30
                     if exp_time <0.0005:
                         exp_time = 0.0005
                     exp_time = round(exp_time, 4)
@@ -425,6 +419,14 @@ class Sequencer:
                 print("using:  ", g_dev['fil'].filter_data[current_filter][0])
                 result = g_dev['cam'].expose_command(req, opt, gather_status=True, no_AWS=True, do_sep = False)
                 bright = result['patch']    #  Patch should be circular and 20% of Chip area. ToDo project
+                try:
+                    scale = 33000/bright
+                    if scale > 3:
+                        scale = 3.0
+                    if scale < 0.33:
+                        scale = 0.33
+                except:
+                    scale = 1.0
                 print("Bright:  ", bright)  #  Others are 'NE', 'NW', 'SE', 'SW'.
                 if bright > 40000 and (ephemNow < g_dev['events']['End Eve Sky Flats']
                                   or True):    #NB should gate with end of skyflat window as well.

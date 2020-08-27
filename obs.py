@@ -180,6 +180,7 @@ class Observatory:
         self.reduce_queue_thread.start()
         self.blocks = None
         self.projects = None
+        self.events_new = None
         
 
         # Build the site (from-AWS) Queue and start a thread.
@@ -307,6 +308,11 @@ class Observatory:
                     events = requests.post(url, body).json()
                     if events is not None:
                         self.blocks = events[2:]
+                if self.events_new is None:
+                    url = 'https://api.photonranch.org/api/events?site=saf'
+
+                    self.events_new = requests.get(url).json()
+
                 return   # Continue   #This creates an infinite loop
             else:
                 print('Sequencer Hold asserted.')    #What we really want here is looking for a Cancel/Stop.

@@ -893,18 +893,13 @@ class Camera:
                     sources = sep.extract(self.img, 4.5, err=bkg.globalrms, minarea=15)
                     sources.sort(order = 'cflux')
                     print('No. of detections:  ', len(sources))
-                    breakpoint()
-                    sep_result = []
-                    spots = []
-                    plot_x = []
-                    plot_y = []
-                    for source in sources[-10:]:
+                    for source in sources[-1:]:
                         a0 = source['a']
                         b0 =  source['b']
                         r0 = math.sqrt(a0*a0 + b0*b0)
                         r1 = math.sqrt((3072 - source['x'])**2 + (3072 - source['y'])**2)
                         #kr, kf = sep.kron_radius(self.img, source['x'], source['y'], source['a'], source['b'], source['theta'], 6.0)
-                        print(source['x'], source['y'], , r0, r1)  # , kr, kf)
+                        print(source['x'], source['y'], r0, r1)  # , kr, kf)
                     result['FWHM'] = round(r0, 3)
                     result['mean_focus'] =  avg_foc[1]
                     result['center_dist'] = round(r1, 2)

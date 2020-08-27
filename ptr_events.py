@@ -14,9 +14,13 @@ This is also very old code just grafted on. Needs variable renaming, and a good 
 from math import *
 import shelve
 import ephem
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
+import time
+import pytz
 from math import degrees
-import skyfield as skf
+import skyfield 
+from skyfield import api, almanac
+from skyfield.nutationlib import iau2000b
 # print('ObsImports:  ', config, '\n\'', config.site_config['site'])
 from global_yard import *
 from astropy.time import Time
@@ -563,6 +567,7 @@ class Events:
         event_dict['use_by'] = ephem.Date(sunrise + 4/24.)
         event_dict['day_directory'] = str(day_dir)
         g_dev['events'] = event_dict
+
 
 
         # print("g_dev['events']:  ", g_dev['events'])
