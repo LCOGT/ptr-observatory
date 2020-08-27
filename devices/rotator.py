@@ -26,6 +26,7 @@ class Rotator:
         mechanical rotator position angle and the true Equatorial Position
         Angle of the imager, and compensate for any difference.
         '''
+        #NB we had an exception here with Target position.
         status = {
             "position_angle": str(round(self.rotator.TargetPosition, 4)),
             "rotator_moving": str(self.rotator.IsMoving).lower(),
