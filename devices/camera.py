@@ -87,7 +87,40 @@ def reset_sequence(pCamera):
     return seq
 
 # Default filter needs to be pulled from site camera or filter config
-# NB this routine is duplicated in sequencer.py. Bad form.
+def create_simple_autosave(self, exp_time=0, img_type=0, speed=0, suffix='', repeat=1, \
+                    readout_mode="RAW Mono", filter_name='W', enabled=1, \
+                    binning=1, binmode=0, column=1):
+    exp_time = round(abs(float(exp_time)), 3)
+    if img_type > 3:
+        img_type = 0
+    repeat = abs(int(repeat))
+    if repeat < 1:
+        repeat = 1
+    binning = abs(int(binning))
+    if binning > 24:
+        binning = 2
+    if filter_name == "":
+        filter_name = 'w'
+    proto_file = open(self.camera_path +'seq/ptr_proto.pro')
+    proto = proto_file.readlines()
+    proto_file.close()
+    #print(proto, '\n\n')
+    if column == 1:
+        proto[51] = proto[51][:9]  + str(img_type) + proto[51][10:]
+        proto[50] = proto[50][:9]  + str(exp_time) + proto[50][12:]
+        proto[48] = proto[48][:12] + str(suffix)   + proto[48][12:]
+        proto[47] = proto[47][:10] + str(speed)    + proto[47][11:]
+        proto[31] = proto[31][:11] + str(repeat)   + proto[31][12:]
+        proto[29] = proto[29][:17] + readout_mode  + proto[29][20:]
+        proto[13] = proto[13][:12] + filter_name   + proto[13][13:]
+        proto[10] = proto[10][:12] + str(enabled)  + proto[10][13:]
+        proto[1]  = proto[1][:12]  + str(binning)  + proto[1][13:]
+    seq_file = open(self.camera_path +'seq/ptr_wmd.seq', 'w')
+    breakpoint()
+    for item in range(len(proto)):
+        seq_file.write(proto[item])
+    seq_file.close()
+   # print(proto)
 
 
 
@@ -160,6 +193,7 @@ class Camera:
         cooler_on = self.config['camera']['camera1'] \
                                ['settings']['cooler_on'] in ['True', 'true', 'Yes', 'yes', 'On', 'on']
         self.camera.CoolerOn = cooler_on
+        self.use_file_mode = self.config['camera']['camera1']['use_file_mode']
         # NB Should get and report cooer power
         self.current_filter = 0    #W in Apache Ridge case. #This should come from congig, filter section
         self.exposure_busy = False
@@ -173,13 +207,16 @@ class Camera:
         self.autosave_path = self.camera_path +'autosave/'
         self.lng_path = self.camera_path + "lng/"
         self.seq_path = self.camera_path + "seq/"
+        self.file_mode_path =  self.config['camera']['camera1']['file_mode_path']
         try:
-            os.remove(self.camera_path + 'newest.fits')   #NB This needs to properly clean out all autosaves
+            for file_path in glob.glob(self.file_mode_path + '*.f*t*'):
+                os.remove(file_path)
         except:
-            print ("File newest.fits not found, this is probably OK")
-        self.is_cmos = False
-        if self.config['camera']['camera1']['settings']['is_cmos']  == 'true':
+            print ("*.fits files on D: not found, this is normally OK.")
+        if self.config['camera']['camera1']['settings']['is_cmos']  == 'True':
             self.is_cmos = True
+        else:
+            self.is_cmos = False
         self.camera_model = self.config['camera']['camera1']['desc']
         #NB We are reading from the actual camera or setting as the case may be.  For initial setup,
         #   we pull from config for some of the various settings.
@@ -215,13 +252,16 @@ class Camera:
         self.af_step = -1
         self.f_spot_dia = []
         self.f_positions = []
-        self.t_0 = time.time()
+
         self.hint = None
         self.focus_cache = None
         self.darkslide = False
         if self.config['camera']['camera1']['settings']['has_darkslide'] == 'true':
             self.darkslide = True
-            self.darkslide_instance = Darkslide()
+            self.darkslide_instance = Darkslide()     #  NB eventually default after reboot should be closed.
+            self.darkslide_instance.openDarkslide()   #  Consider turing off IR Obsy light at same time..
+            self.darkslide_open = True
+
 
     #Patchable methods   NB These could be default ASCOM
     def _connected(self):
@@ -276,46 +316,40 @@ class Camera:
 
     def _ascom_stop_expose(self):
             self.camera.StopExposure()   #ASCOM also has an AbortExposure method.
-
-    # def create_simple_sequence(self, exp_time=0, img_type=0, speed=0, suffix='', repeat=1, \
-    #                     readout_mode="", filter_name='W', enabled=1, \
-    #                     binning=1, binmode=0, column=1):
-    #     exp_time = round(abs(float(exp_time)), 3)
-    #     if img_type > 3:
-    #         img_type = 0
-    #     repeat = abs(int(repeat))
-    #     if repeat < 1:
-    #         repeat = 1
-    #     binning = abs(int(binning))
-    #     if binning > 4:
-    #         binning = 4
-    #     if filter_name == "":
-    #         filter_name = 'W'
-    #     proto_file = open(self.seq_path + 'ptr_saf_pro.seq', 'r')
-    #     proto = proto_file.readlines()
-    #     proto_file.close()
-    #     # for i in range(len(proto)):
-    #     #     print(i, proto[i])
-
-    #     if column == 1:
-    #         proto[50] = proto[50][:9]  + str(exp_time) + proto[50][12:]
-    #         proto[51] = proto[51][:9]  + str(img_type) + proto[51][10:]
-    #         proto[48] = proto[48][:12] + str(suffix)   + proto[48][12:]
-    #         proto[47] = proto[47][:10] + str(speed)    + proto[47][11:]
-    #         proto[31] = proto[31][:11] + str(repeat)   + proto[31][12:]
-    #         proto[29] = proto[29][:17] + readout_mode  + proto[29][20:]
-    #         proto[13] = proto[13][:12] + filter_name   + proto[13][13:]
-    #         proto[10] = proto[10][:12] + str(enabled)  + proto[10][13:]
-    #         proto[1]  = proto[1][:12]  + str(binning)  + proto[1][13:]
-    #     seq_file = open(self.seq_path + 'ptr_saf.seq', 'w')
-    #     for item in range(len(proto)):
-    #         seq_file.write(proto[item])
-    #     seq_file.close()
-    #     # print(proto)
-
-
-    # #  TEST  create_simple_sequence(exp_time=0, img_type=0, suffix='', repeat=1, \
-    # #                       binning=3, filter_name='air')
+    
+    def create_simple_autosave(self, exp_time=0, img_type=0, speed=0, suffix='', \
+                               repeat=1, readout_mode="Normal", filter_name='W', \
+                               enabled=1, binning=1, binmode=0, column=1):
+        exp_time = round(abs(float(exp_time)), 3)
+        if img_type > 3:
+            img_type = 0
+        repeat = abs(int(repeat))
+        if repeat < 1:
+            repeat = 1
+        binning = abs(int(binning))
+        if binning > 24:
+            binning = 2
+        if filter_name == "":
+            filter_name = 'w'
+        proto_file = open(self.camera_path +'seq/ptr_proto.pro')
+        proto = proto_file.readlines()
+        proto_file.close()
+        #print(proto, '\n\n')
+        if column == 1:
+            proto[51] = proto[51][:9]  + str(img_type) + proto[51][10:]
+            proto[50] = proto[50][:9]  + str(exp_time) + proto[50][12:]
+            proto[48] = proto[48][:12] + str(suffix)   + proto[48][12:]
+            proto[47] = proto[47][:10] + str(speed)    + proto[47][11:]
+            proto[31] = proto[31][:11] + str(repeat)   + proto[31][12:]
+            proto[29] = proto[29][:17] + readout_mode  + proto[29][23:]
+            proto[13] = proto[13][:12] + filter_name   + proto[13][13:]
+            proto[10] = proto[10][:12] + str(enabled)  + proto[10][13:]
+            proto[1]  = proto[1][:12]  + str(binning)  + proto[1][13:]
+        seq_file = open(self.camera_path +'seq/ptr_wmd.seq', 'w')
+        for item in range(len(proto)):
+            seq_file.write(proto[item])
+        seq_file.close()
+       # print(proto)                binning=3, filter_name='air')
 
 
     def get_status(self):
@@ -347,12 +381,6 @@ class Camera:
         action = command['action']
         self.user_id = command['user_id']
         self.user_name = command['user_name']
-# =============================================================================
-# # # =============================================================================
-#         if opt['filter'] == 'dark' and opt['bin'] == '2,2':    # Special case, AWS broken 20200405
-#              g_dev['seq'].screen_flat_script(req, opt)
-# # # =============================================================================
-# =============================================================================
         if action == "expose" and not self.exposure_busy :
             self.expose_command(req, opt, do_sep=True, quick=False)
             self.exposure_busy = False     #Hangup needs to be guarded with a timeout.
@@ -417,15 +445,15 @@ class Camera:
                 self.camera.CoolerOn = True
                 print('Found coller off.')
         except exception as e:
-            print("\n\nMaxim was not connected:  ", e, '\n\n')
+            print("\n\nCamera was not connected:  ", e, '\n\n')
             try:
                 self._connect(False)
                 self._connect(True)
                 self.camera.CoolerOn = True
             except:
-                print('Maxim reconnect failed.')
+                print('Camerareconnect failed.')
         opt = optional_params
-        self.t_0 = time.time()
+        self.t0 = time.time()
         self.hint = optional_params.get('hint', '')
         self.script = required_params.get('script', 'None')
         bin_x = optional_params.get('bin', self.config['camera']['camera1'] \
@@ -447,7 +475,8 @@ class Camera:
         #gain = float(optional_params.get('gain', self.config['camera']['camera1'] \
         #                                              ['settings']['reference_gain'][bin_x - 1]))
         readout_time = float(self.config['camera']['camera1']['settings']['readout_time'][bin_x - 1])
-        exposure_time = float(required_params.get('time', 0.00001))   #  0.0 may be the best default.
+        exposure_time = float(required_params.get('time', 0.0001))   #  0.0 may be the best default.  Use QHY min spec?  Config item?
+        exposure_time = min(exposure_time, 600.)
         self.estimated_readtime = (exposure_time + 2*readout_time)*1.25*3   #  3 is the outer retry loop maximum.
         #exposure_time = max(0.2, exposure_time)  #Saves the shutter, this needs qualify with imtype.
         imtype= required_params.get('image_type', 'Light')
@@ -466,7 +495,7 @@ class Camera:
             g_dev['fil'].set_name_command({'filter': requested_filter_name}, {})
         except Exception as e:
             print(e)
-            breakpoint()
+            #breakpoint()
         #  NBNB Changing filter may cause a need to shift focus
         self.current_offset = '????'#g_dev['fil'].filter_offset  #TEMP   NBNBNB This needs fixing
         #  NB nothing being done here to get focus set properly. Where is this effected?
@@ -685,7 +714,7 @@ class Camera:
                     self.t1 = time.time()
                     self.exposure_busy = True
                     #print('First Entry to inner Camera loop:  ')  #  Do not reference camera, self.camera.StartX, self.camera.StartY, self.camera.NumX, self.camera.NumY, exposure_time)
-                    #First lets verify we are connected or try to reconnect.
+                    #First lets verify we are connected or try to reconnect.   #Consider uniform ests in a routine, start with reading CoolerOn
                     try:
                         if not self._connected():
                             breakpoint()
@@ -706,45 +735,50 @@ class Camera:
                         g_dev['foc'].get_quick_status(self.pre_foc)
                         g_dev['rot'].get_quick_status(self.pre_rot)
                         g_dev['mnt'].get_quick_status(self.pre_mnt)
-                        self.t2 = time.time()
-                        ldr_handle_high_time = None  #  This is not maxim-specific
                         ldr_handle_time = None
-                        try:
-                            os.remove(self.camera_path + 'newest.fits')
-                        except:
-                            pass   #  print ("File newest.fits not found, this is probably OK")
-                        # breakpoint()
-                        # if imtypeb:
-                        #     img_type = 0
-                        # if frame_type == 'bias':
-                        #     img_type = 1
-                        # if frame_type == 'dark':
-                        #     img_type = 2
-                        # if frame_type in ('flat', 'screen flat','screen_flat', 'sky flat', 'sky_flat'):
-                        #     img_type = 3
+                        # try:
+                        #     os.remove(self.camera_path + 'newest.fits')
+                        # except:
+                        #     pass   #  print ("File newest.fits not found, this is probably OK")                        self.t2 = time.time()
+                        ldr_handle_high_time = None  #  This is not maxim-specific
 
-                        # self.create_simple_sequence(exp_time=exposure_time, img_type=img_type, \
-                        #                        filter_name=self.current_filter, binning=bin_x, \
-                        #                        repeat=lcl_repeat)
-                        # #Clear out priors.
-                        # old_autosaves = glob.glob(self.camera_path + 'autosave/*.f*t*')
-                        # for old in old_autosaves:
-                        #     os.remove(old)
-                        if exposure_time < 0.001:
-                            exposure_time = 0.0000
-                        if exposure_time > 3600:
-                            exposure_time = 3600
-                        print('Filter number is:  ', self.camera.Filter)
+                        #print('Filter number is:  ', self.camera.Filter)
+                        try:
+                            for file_path in glob.glob('D:*.fit'): 
+                                os.remove(file_path)
+                        except:
+                            pass
                         if self.darkslide and imtypeb:
                             self.darkslide_instance.openDarkslide()
-                            time.sleep(0.2)
+                            self.darkslide_open = True
+                            time.sleep(0.1)
                         elif self.darkslide and not imtypeb:
                             self.darkslide_instance.closeDarkslide()
-                            time.sleep(0.2)
+                            self.darkslide_open = False
+                            time.sleep(0.1)
                         else:
                             pass
-                        self.entry_time = self.t2
-                        self._expose (exposure_time, imtypeb)
+                        if self.use_file_mode:
+                            if imtypeb:
+                                img_type = 0
+                            if frame_type == 'bias':
+                                img_type = 1
+                            if frame_type == 'dark':
+                                img_type = 2
+                            if frame_type in ('flat', 'screen flat', 'sky flat'):
+                                img_type = 3
+                            self.create_simple_autosave(exp_time=exposure_time, img_type=img_type, \
+                                                   filter_name=self.current_filter, binning=bin_x, \
+                                                   repeat=lcl_repeat)
+                            for file_path in glob.glob(self.file_mode_path + '*.f*t*'):
+                                os.remove(file_path)
+                            self.t2 = time.time()
+                            self.camera.StartSequence(self.camera_path + 'seq/ptr_wmd.seq')
+                            print("Starting autosave  at:  ", self.t2)
+                        else:
+                            #This is the standard call to Maxim
+                            self.t2 = time.time()
+                            self._expose (exposure_time, imtypeb)
                     else:
                         print("Something terribly wrong, driver not recognized.!")
                         breakpoint()
@@ -752,8 +786,6 @@ class Camera:
                         result['error': True]
                         return result
                     self.t9 = time.time()
-
-                    do_sep=False
                     #We go here to keep this subroutine a reasonable length, Basically still in Phase 2
                     result = self.finish_exposure(exposure_time,  frame_type, count - seq, \
                                          gather_status, do_sep, no_AWS, dist_x, dist_y, \
@@ -762,8 +794,8 @@ class Camera:
                                          script=self.script, opt=opt)  #  NB all these parameters are crazy!
                     self.exposure_busy = False
                     self.t10 = time.time()
-                    #self._stop_expose()
-                    #print("inner expose took:  ", round(self.t10 - self.t_0 , 2), ' returned:  ', result)
+                    #  self._stop_expose()
+                    #  print("inner expose took:  ", round(self.t10 - self.t0 , 2), ' returned:  ', result)
                     self.retry_camera = 0
                     break
                 except Exception as e:
@@ -772,7 +804,7 @@ class Camera:
                     continue
         #  This is the loop point for the seq count loop
         self.t11 = time.time()
-        print("full expose seq took:  ", round(self.t11 - self.t_0 , 2), 'returning:  ', result)
+        print("full expose seq took:  ", round(self.t11 - self.t0 , 2), 'returning:  ', result)
         return result
 
     def stop_command(self, required_params, optional_params):
@@ -791,66 +823,48 @@ class Camera:
         self.post_ocn = []
         counter = 0
         if self.bin == 1:
-            self.completion_time = self.entry_time + exposure_time + 9
+            self.completion_time = self.t2 + exposure_time + 15
         else:
-            self.completion_time = self.entry_time + exposure_time + 5
+            self.completion_time = self.t2 + exposure_time + 10
         result = {'error': False}
         while True:    #This loop really needs a timeout.
-            g_dev['mnt'].get_quick_status(self.post_mnt)
+            g_dev['mnt'].get_quick_status(self.post_mnt)   #Need to pick which pass was closest to image completion
             g_dev['rot'].get_quick_status(self.post_rot)
             g_dev['foc'].get_quick_status(self.post_foc)
             g_dev['ocn'].get_quick_status(self.post_ocn)
-            self.t5 = time.time()
-            if (self.maxim or self.ascom) and self.camera.ImageReady:
-                self.t4 = time.time()
-                #max_img = fits.open('D:/000ptr_saf/archive/sq01/maxim_as_cam/CCD Image 42.fit')
-                #self.img_m  =max_img[0].data
-                #self.t55 = time.time()
-                print("reading out camera, takes ~6 seconds.")
-                time.sleep(0.5)   #  This delay appears to be necessary. 20200804 WER
-                self.img = self.camera.ImageArray
-                self.t7 = time.time()          
-                #lself._stop_expose()  # Is this necessary?
-                # if self.maxim:
-                #     self.camera.SaveImage("D:/000ptr_saf/garbage/junk.fit")
-                # print(self.t4 - self.t2, self.t7 - self.t2, self.t4 - self.t2)  #  , self.t55 - self.t2, self.t55 - self.t4)
-                print('readout took:  ', round(self.t7 - self.t4, 1), ' sec,')
-                self.img = np.array(self.img).transpose()  #  .astype('int32')
-                
-                
-                '''
-                If image type == 'auto-focus' then we want a much faster
-                processing step right here.  Basically subtract a dark of
-                the same duration and binning. Use unsigned.  Try a duration 
-                of 5 seconds until we get a better calibration on the tyco 
-                stars.
-                
-                Be prepared to hot pixel smash and deal wit a subframe.
-                
-                Do a try:
-                    sep
-                and if it suceeds, pass on the filtered result. we should in
-                general be getting the Tycho star and its position.  Occasionally
-                we may get a brigter star in the field, but we should be able to
-                always find the tycho star and do a local centering.
-                
-                No file saves to improve speed.
-                If autofocus, cache the 5 sec dark.
-                Subtract it.
-                Apply hot pixel mask.
-                Sep
-                Analyse results.
-                REport back
-                
-                
-                
-                
-                '''
-                # Overscan remove and trim.
-                    # breakpoint()
-                    # trial_image = fits.open('Q:/archive/sq01/maxim_cam/2020-08-23/CCD Image 260.fit')
-                    # self.img = trial_image[0].data
-                    # frame_type = 'focus'
+            incoming_image_list = glob.glob(self.file_mode_path + '*.f*t*')
+            self.t4 = time.time()
+            if len(incoming_image_list) >= 1:   #   self.camera.ImageReady:
+               #print("reading out camera, takes ~6 seconds.")
+                time.sleep(3)
+                tries = 0
+                delay = 1
+                while True and tries <10:
+                    try:
+                        new_image = fits.open(incoming_image_list[-1])  #  Sometimes glob picks up a file not yet fully formed.
+                        print("Read new image no exception thrown.")
+                        time.sleep(delay)
+                    except exception as e:
+                        tries += 1
+                        print('In except: ', e)
+                        time.sleep(delay)
+                        new_image.close()
+                        continue
+                    self.img = new_image[0].data   #  NB We could pick up Maxim header info here
+                    iy, ix = self.img.shape
+                    if len(self.img)*len(self.img[0]) != iy*ix:
+                        new_image.close()
+                        continue
+                    break
+                print ('Grab took :  ', tries*delay, ' sec')                    
+                self.t5 = time.time()
+                new_image.close()
+               # time.sleep(0.1)   #  This delay appears to be necessary. 20200804 WER
+                #self.img = self.camera.ImageArray
+                #self.t7 = time.time()          
+                print('expose  took: ', round(self.t4 - self.t2, 2), ' sec,')
+                print('readout took: ', round(self.t5 - self.t4, 2), ' sec,')
+                #self.img = np.array(self.img).transpose()  #  .astype('int32')
                 pedastal = 200
                 iy, ix = self.img.shape
                 if ix == 9600:
@@ -1137,11 +1151,12 @@ class Camera:
                     result = {'error': True}
                 return result
             else:
-                time.sleep(2)
-                g_dev['obs'].update_status()
+                time.sleep(.3)
+                #g_dev['obs'].update_status()
                 self.t7 = time.time()
                 remaining = round(self.completion_time - self.t7, 1)
                 print("Exposure time remaining:", remaining)
+
                 #it takes about 15 seconds from AWS to get here for a bias.
         # except Exception as e:
         #     breakpoint()
