@@ -101,7 +101,7 @@ def create_simple_autosave(self, exp_time=0, img_type=0, speed=0, suffix='', rep
         binning = 2
     if filter_name == "":
         filter_name = 'w'
-    proto_file = open(self.camera_path +'seq/ptr_proto.pro')
+    proto_file = open(self.camera_path +'seq/ptr_proto.seq')
     proto = proto_file.readlines()
     proto_file.close()
     #print(proto, '\n\n')
@@ -331,7 +331,7 @@ class Camera:
             binning = 2
         if filter_name == "":
             filter_name = 'w'
-        proto_file = open(self.camera_path +'seq/ptr_proto.pro')
+        proto_file = open(self.camera_path +'seq/ptr_proto.seq')
         proto = proto_file.readlines()
         proto_file.close()
         #print(proto, '\n\n')
@@ -443,15 +443,21 @@ class Camera:
             probe = self.camera.CoolerOn
             if not probe:
                 self.camera.CoolerOn = True
-                print('Found coller off.')
+                print('Found cooler off.')
+                try:
+                    self._connect(False)
+                    self._connect(True)
+                    self.camera.CoolerOn = True
+                except:
+                    print('Camera reconnect failed @ expose entry.')
         except exception as e:
-            print("\n\nCamera was not connected:  ", e, '\n\n')
+            print("\n\nCamera was not connected @ expose entry:  ", e, '\n\n')
             try:
                 self._connect(False)
                 self._connect(True)
                 self.camera.CoolerOn = True
             except:
-                print('Camerareconnect failed.')
+                print('Camera reconnect failed @ expose entry.')
         opt = optional_params
         self.t0 = time.time()
         self.hint = optional_params.get('hint', '')
@@ -716,17 +722,18 @@ class Camera:
                     #print('First Entry to inner Camera loop:  ')  #  Do not reference camera, self.camera.StartX, self.camera.StartY, self.camera.NumX, self.camera.NumY, exposure_time)
                     #First lets verify we are connected or try to reconnect.   #Consider uniform ests in a routine, start with reading CoolerOn
                     try:
-                        if not self._connected():
-                            breakpoint()
+                        probe = self.camera.CoolerOn
+                        if not probe:
+                            self.camera.CoolerOn = True
+                            print('Found coller off.')
+                    except exception as e:
+                        print("\n\nCamera was not connected @ expose camera retry:  ", e, '\n\n')
+                        try:
+                            self._connect(False)
                             self._connect(True)
-                            print('1st Reset LinkEnabled/Connected right before exposure')
-                    except:
-                        print("2nd Retry to set up camera connected.")
-                        time.sleep(2)
-                        if not self._connected:
-                            breakpoint()
-                            self._connect(True)
-                            print('2nd Reset LinkEnabled/Connected right before exposure')
+                            self.camera.CoolerOn = True
+                        except:
+                            print('Camera reconnect failed @ expose camera retry.')
                     #  At this point we really should be connected!!
 
                     if self.maxim or self.ascom:
@@ -823,9 +830,9 @@ class Camera:
         self.post_ocn = []
         counter = 0
         if self.bin == 1:
-            self.completion_time = self.t2 + exposure_time + 15
+            self.completion_time = self.t2 + exposure_time + 7
         else:
-            self.completion_time = self.t2 + exposure_time + 10
+            self.completion_time = self.t2 + exposure_time + 5
         result = {'error': False}
         while True:    #This loop really needs a timeout.
             g_dev['mnt'].get_quick_status(self.post_mnt)   #Need to pick which pass was closest to image completion
@@ -834,37 +841,39 @@ class Camera:
             g_dev['ocn'].get_quick_status(self.post_ocn)
             incoming_image_list = glob.glob(self.file_mode_path + '*.f*t*')
             self.t4 = time.time()
-            if len(incoming_image_list) >= 1:   #   self.camera.ImageReady:
-               #print("reading out camera, takes ~6 seconds.")
-                time.sleep(3)
-                tries = 0
-                delay = 1
-                while True and tries <10:
-                    try:
-                        new_image = fits.open(incoming_image_list[-1])  #  Sometimes glob picks up a file not yet fully formed.
-                        print("Read new image no exception thrown.")
-                        time.sleep(delay)
-                    except exception as e:
-                        tries += 1
-                        print('In except: ', e)
-                        time.sleep(delay)
+            if (not self.use_file_mode and self.camera.ImageReady) or (self.use_file_mode and len(incoming_image_list) >= 1):   #   self.camera.ImageReady:
+                #print("reading out camera, takes ~6 seconds.")
+                if self.use_file_mode:
+                    time.sleep(3)
+                    tries = 0
+                    delay = 1
+                    while True and tries <10:
+                        try:
+                            new_image = fits.open(incoming_image_list[-1])  #  Sometimes glob picks up a file not yet fully formed.
+                            print("Read new image no exception thrown.")
+                            time.sleep(delay)
+                        except exception as e:
+                            tries += 1
+                            print('In except: ', e)
+                            time.sleep(delay)
+                            new_image.close()
+                            continue
+                        self.img = new_image[0].data   #  NB We could pick up Maxim header info here
+                        iy, ix = self.img.shape
                         new_image.close()
-                        continue
-                    self.img = new_image[0].data   #  NB We could pick up Maxim header info here
-                    iy, ix = self.img.shape
-                    if len(self.img)*len(self.img[0]) != iy*ix:
-                        new_image.close()
-                        continue
-                    break
-                print ('Grab took :  ', tries*delay, ' sec')                    
-                self.t5 = time.time()
-                new_image.close()
-               # time.sleep(0.1)   #  This delay appears to be necessary. 20200804 WER
-                #self.img = self.camera.ImageArray
-                #self.t7 = time.time()          
+                        if len(self.img)*len(self.img[0]) != iy*ix:
+                            
+                            continue
+                        break
+                    print ('Grab took :  ', tries*delay, ' sec')
+                else:
+                    time.sleep(0.1)   #  This delay appears to be necessary. 20200804 WER
+                    self.img = self.camera.ImageArray   #As read this is a Windows Safe Array 
+                    self.img = np.array(self.img).transpose()  #  .astype('int32')                       
+                self.t5 = time.time()         
                 print('expose  took: ', round(self.t4 - self.t2, 2), ' sec,')
                 print('readout took: ', round(self.t5 - self.t4, 2), ' sec,')
-                #self.img = np.array(self.img).transpose()  #  .astype('int32')
+
                 pedastal = 200
                 iy, ix = self.img.shape
                 if ix == 9600:
@@ -883,12 +892,12 @@ class Camera:
                 print('readout, transpose & Trim took:  ', round(self.t77 - self.t4, 1), ' sec,')# marks them as 0
                 self.img = square.astype('uint16')
                 test_saturated = np.array(self.img)[1536:4608, 1536:4608]
-                bi_mean = (test_saturated.mean() + np.median(test_saturated))/2
-                if frame_type[-4:] == 'flat' and bi_mean > 33000:
-                    print("Flat rejected, too bright:  ", round(bi_mean, 0))
-                    result = {}
-                    result['patch'] = round(bi_mean, 1)
-                    return result   # signals to flat routine image was rejected                      
+                bi_mean = round((test_saturated.mean() + np.median(test_saturated))/2, 0)
+                if frame_type[-4:] == 'flat':
+                    if bi_mean > 33000:
+                        print("Flat rejected, too bright:  ", bi_mean)
+                        result['patch'] = bi_mean
+                        return result   # signals to flat routine image was rejected, prompt return                      
                 g_dev['obs'].update_status()
                 counter = 0
                 avg_mnt = g_dev['mnt'].get_average_status(self.pre_mnt, self.post_mnt)
@@ -1131,7 +1140,7 @@ class Camera:
                     result['mean_rotation'] = avg_rot[1]
                     result['FWHM'] = None
                     result['half_FD'] = None
-                    result['patch'] = round(bi_mean, 1)
+                    result['patch'] = bi_mean
                     result['calc_sky'] = avg_ocn[7]
                     result['temperature'] = avg_foc[2]
                     result['gain'] = round(bi_mean/(avg_ocn[7]*exposure_time), 6)
@@ -1151,7 +1160,7 @@ class Camera:
                     result = {'error': True}
                 return result
             else:
-                time.sleep(.3)
+                time.sleep(.8)
                 #g_dev['obs'].update_status()
                 self.t7 = time.time()
                 remaining = round(self.completion_time - self.t7, 1)
