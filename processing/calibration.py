@@ -454,6 +454,7 @@ def calibrate (hdu, lng_path, frame_type='light', quick=False):
     hdu.data[fix] = 65530.
     hdu.data = hdu.data.astype('uint16')
     result = {}
+    result['error'] = False
     result['mean_focus'] = None
     result['mean_rotation'] = None
     result['FWHM'] = None

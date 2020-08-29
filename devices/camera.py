@@ -87,42 +87,6 @@ def reset_sequence(pCamera):
     return seq
 
 # Default filter needs to be pulled from site camera or filter config
-def create_simple_autosave(self, exp_time=0, img_type=0, speed=0, suffix='', repeat=1, \
-                    readout_mode="RAW Mono", filter_name='W', enabled=1, \
-                    binning=1, binmode=0, column=1):
-    exp_time = round(abs(float(exp_time)), 3)
-    if img_type > 3:
-        img_type = 0
-    repeat = abs(int(repeat))
-    if repeat < 1:
-        repeat = 1
-    binning = abs(int(binning))
-    if binning > 24:
-        binning = 2
-    if filter_name == "":
-        filter_name = 'w'
-    proto_file = open(self.camera_path +'seq/ptr_proto.seq')
-    proto = proto_file.readlines()
-    proto_file.close()
-    #print(proto, '\n\n')
-    if column == 1:
-        proto[51] = proto[51][:9]  + str(img_type) + proto[51][10:]
-        proto[50] = proto[50][:9]  + str(exp_time) + proto[50][12:]
-        proto[48] = proto[48][:12] + str(suffix)   + proto[48][12:]
-        proto[47] = proto[47][:10] + str(speed)    + proto[47][11:]
-        proto[31] = proto[31][:11] + str(repeat)   + proto[31][12:]
-        proto[29] = proto[29][:17] + readout_mode  + proto[29][20:]
-        proto[13] = proto[13][:12] + filter_name   + proto[13][13:]
-        proto[10] = proto[10][:12] + str(enabled)  + proto[10][13:]
-        proto[1]  = proto[1][:12]  + str(binning)  + proto[1][13:]
-    seq_file = open(self.camera_path +'seq/ptr_wmd.seq', 'w')
-    breakpoint()
-    for item in range(len(proto)):
-        seq_file.write(proto[item])
-    seq_file.close()
-   # print(proto)
-
-
 
 class Camera:
 
@@ -261,6 +225,7 @@ class Camera:
             self.darkslide_instance = Darkslide()     #  NB eventually default after reboot should be closed.
             self.darkslide_instance.openDarkslide()   #  Consider turing off IR Obsy light at same time..
             self.darkslide_open = True
+        #  NB  Shouldset up default filter @ default focus.
 
 
     #Patchable methods   NB These could be default ASCOM
@@ -830,9 +795,9 @@ class Camera:
         self.post_ocn = []
         counter = 0
         if self.bin == 1:
-            self.completion_time = self.t2 + exposure_time + 7
+            self.completion_time = self.t2 + exposure_time + 14
         else:
-            self.completion_time = self.t2 + exposure_time + 5
+            self.completion_time = self.t2 + exposure_time + 7.5
         result = {'error': False}
         while True:    #This loop really needs a timeout.
             g_dev['mnt'].get_quick_status(self.post_mnt)   #Need to pick which pass was closest to image completion
@@ -896,6 +861,7 @@ class Camera:
                 if frame_type[-4:] == 'flat':
                     if bi_mean > 33000:
                         print("Flat rejected, too bright:  ", bi_mean)
+                        result['error'] = False
                         result['patch'] = bi_mean
                         return result   # signals to flat routine image was rejected, prompt return                      
                 g_dev['obs'].update_status()
@@ -1096,7 +1062,7 @@ class Camera:
                     except:
                         pass
 
-                    text = open(im_path + text_name, 'w')  #This is always needed by AWS to set up database.
+                    text = open(im_path + text_name, 'w')  #This is needed by AWS to set up database.
                     text.write(str(hdu.header))
                     text.close()
                     text_data_size = min(len(str(hdu.header)) - 4096, 2048)
@@ -1117,6 +1083,13 @@ class Camera:
                              'frame_type':  frame_type
                              }
                     script = None
+                    '''
+                    self.enqueue_image(text_data_size, im_path, text_name)
+                    self.enqueue_image(jpeg_data_size, im_path, jpeg_name)
+                    if not quick:
+                        self.enqueue_image(db_data_size, im_path, db_name)
+                        self.enqueue_image(raw_data_size, im_path, raw_name01)
+                    '''
                     if not quick and not script in ('True', 'true', 'On', 'on'):
                         self.enqueue_for_AWS(text_data_size, im_path, text_name)
                         self.to_reduce((paths, hdu))
@@ -1145,6 +1118,7 @@ class Camera:
                     result['temperature'] = avg_foc[2]
                     result['gain'] = round(bi_mean/(avg_ocn[7]*exposure_time), 6)
                     result['filter'] = self.current_filter
+                    result['error'] == False
                     return result
                 except Exception as e:
                     print('Header assembly block failed: ', e)
@@ -1160,7 +1134,7 @@ class Camera:
                     result = {'error': True}
                 return result
             else:
-                time.sleep(.8)
+                time.sleep(1)
                 #g_dev['obs'].update_status()
                 self.t7 = time.time()
                 remaining = round(self.completion_time - self.t7, 1)

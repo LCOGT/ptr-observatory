@@ -446,8 +446,8 @@ class Observatory:
                 aws_resp = g_dev['obs'].api.authenticated_request('POST', '/upload/', aws_req)
                 with open(im_path + name, 'rb') as f:
                     files = {'file': (im_path + name, f)}
-                    if name[-3:] == 'jpg':
-                        print('--> To AWS -->', str(im_path + name))
+                    #if name[-3:] == 'jpg':
+                    print('--> To AWS -->', str(im_path + name))
                     requests.post(aws_resp['url'], data=aws_resp['fields'],
                                   files=files)
                 if name[-3:] == 'bz2' or name[-3:] == 'jpg' or \
@@ -673,10 +673,16 @@ class Observatory:
                 if not no_AWS:  #IN the no+AWS case should we skip more of the above processing?
                     #g_dev['cam'].enqueue_for_AWS(text_data_size, paths['im_path'], paths['text_name'])
                     g_dev['cam'].enqueue_for_AWS(jpeg_data_size, paths['im_path'], paths['jpeg_name10'])
+                    g_dev['cam'].enqueue_for_AWS(i768sq_data_size, paths['im_path'], paths['i768sq_name10'])
+                    #if not quick:
+                    g_dev['cam'].enqueue_for_AWS(raw_data_size, paths['red_path'], paths['red_name01'])
+                '''
+                    self.enqueue_image(text_data_size, im_path, text_name)
+                    self.enqueue_image(jpeg_data_size, im_path, jpeg_name)
                     if not quick:
-                        g_dev['cam'].enqueue_for_AWS(i768sq_data_size, paths['im_path'], paths['i768sq_name10'])
-                        g_dev['cam'].enqueue_for_AWS(raw_data_size, paths['raw_path'], paths['raw_name00'])
-                    #print('Sent to AWS Queue.')
+                        self.enqueue_image(db_data_size, im_path, db_name)
+                        self.enqueue_image(raw_data_size, im_path, raw_name01)
+                '''          #print('Sent to AWS Queue.')
                 time.sleep(0.5)
                 self.img = None   #Clean up all big objects.
                 try:
@@ -707,7 +713,7 @@ if __name__ == "__main__":
     # config = importlib.import_module(config_file_name)
     # print(f"Starting up {config.site_name}.")
     # Start up the observatory
-    # patch_httplib()     # NB at some point we should check this improves performance, I think it does.  WER
+
     import config
     o = Observatory(config.site_name, config.site_config)
     o.run()
