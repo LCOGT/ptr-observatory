@@ -81,13 +81,16 @@ class Enclosure:
                       'dome_slewing': str(self.enclosure.Slewing),
                       'enclosure_mode': str(self.mode),
                       'enclosure_message': str(self.state)}
+               self.prior_status = status
            except:
-               status = {'shutter_status': stat_string,
-                      'enclosure_slaving': 'unknown',
-                      'dome_azimuth': str(round(self.enclosure.Azimuth, 1)),
-                      'dome_slewing': str(self.enclosure.Slewing),
-                      'enclosure_mode': str(self.mode),
-                      'enclosure_message': str(self.state)}
+               status = self.prior_status
+               print("Prior status used for saf dome azimuth")
+               # status = {'shutter_status': stat_string,
+               #        'enclosure_slaving': 'unknown',
+               #        'dome_azimuth': str(round(self.enclosure.Azimuth, 1)),
+               #        'dome_slewing': str(self.enclosure.Slewing),
+               #        'enclosure_mode': str(self.mode),
+               #        'enclosure_message': str(self.state)}
         else:
             status = {'roof_status': stat_string,
                       'shutter_status': stat_string,

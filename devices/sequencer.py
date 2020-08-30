@@ -375,6 +375,7 @@ class Sequencer:
         camera_name = str(self.config['camera']['camera1']['name'])
         flat_count = 5
         exp_time = .003
+        breakpoint()
         #  NB Sometime, try 2:2 binning and interpolate a 1:1 flat.  This might run a lot faster.
         if flat_count < 1: flat_count = 1
         g_dev['mnt'].unpark_command({}, {})
@@ -390,7 +391,7 @@ class Sequencer:
         #  Pick up list of filters is sky flat order of lowest to highest transparency.
         pop_list = self.config['filter_wheel']['filter_wheel1']['settings']['filter_sky_sort']
         print('filters by low to high transmission:  ', pop_list)
-        length = len(pop_list)
+        #length = len(pop_list)
         obs_win_begin, sunset, sunrise, ephemNow = self.astro_events.getSunEvents()
         scale = 1.0
         while len(pop_list) > 0 and (ephemNow < g_dev['events']['End Eve Sky Flats']):
@@ -410,7 +411,7 @@ class Sequencer:
                     if exp_time <0.0005:
                         exp_time = 0.0005
                     exp_time = round(exp_time, 4)
-                    print("Sky flat estimated exposure time is:  ", exp_time)
+                    print("Sky flat estimated exposure time, scale are:  ", exp_time, scale)
                 except:
                     exp_time = 0.3
                 req = {'time': float(exp_time),  'alias': camera_name, 'image_type': 'sky flat', 'script': 'On'}
@@ -446,25 +447,28 @@ class Sequencer:
         if req['numFrames'] > 1:
             flat_count = req['numFrames']
         else:
-            flat_count = 7    #   A dedugging compromise
+            flat_count = 1    #   A dedugging compromise
 
         #  NB here we need to check cam at reasonable temp, or dwell until it is.
 
         camera_name = str(self.config['camera']['camera1']['name'])
-        dark_count = 3
-        exp_time = 5
+        dark_count = 1
+        exp_time = 15
         if flat_count < 1: flat_count = 1
         g_dev['mnt'].park_command({}, {})
         #  NB:  g_dev['enc'].close
         g_dev['obs'].update_status()
+        g_dev['scr'].set_screen_bright(0)
         g_dev['scr'].screen_dark()
+        time.sleep(5)
         g_dev['obs'].update_status()
         #Here we need to switch off any IR or dome lighting.
         #Take a 10 s dark screen air flat to record ambient
         # Park Telescope
-        req = {'time': 10,  'alias': camera_name, 'image_type': 'screen flat'}
-        opt = {'size': 100, 'count': dark_count, 'filter': g_dev['fil'].filter_data[12][0]}  #  air has highest throughput
-        # Skip for now;  bright, fwhm = g_dev['cam'].expose_command(req, opt, gather_status=True, no_AWS=True)
+        req = {'time': exp_time,  'alias': camera_name, 'image_type': 'screen flat'}
+        opt = {'size': 100, 'count': dark_count, 'filter': g_dev['fil'].filter_data[12][0], 'hint': 'screen dark'}  #  air has highest throughput
+        result = g_dev['cam'].expose_command(req, opt, gather_status=True, no_AWS=True)
+        print('First dark 30-sec patch, filter = "air":  ', result['patch'])
         # g_dev['scr'].screen_light_on()
 
         for filt in g_dev['fil'].filter_screen_sort:
@@ -472,49 +476,49 @@ class Sequencer:
             filter_number = int(filt)
             print(filter_number, g_dev['fil'].filter_data[filter_number][0])
             screen_setting = g_dev['fil'].filter_data[filter_number][4][1]
-            g_dev['scr'].set_screen_bright(int(screen_setting))
+            g_dev['scr'].set_screen_bright(0)
+            g_dev['scr'].screen_dark()
+            time.sleep(5)
             exp_time  = g_dev['fil'].filter_data[filter_number][4][0]
             g_dev['obs'].update_status()
-
-            print('Dark Screen; filter, bright:  ', filter_number, 0.0)
+            print('Dark Screen; filter, bright:  ', filter_number, 0)
             req = {'time': float(exp_time),  'alias': camera_name, 'image_type': 'screen flat'}
-            opt = {'size': 100, 'count': 2, 'filter': g_dev['fil'].filter_data[filter_number][0]}
+            opt = {'size': 100, 'count': 1, 'filter': g_dev['fil'].filter_data[filter_number][0], 'hint': 'screen pre-filter dark'}
             result = g_dev['cam'].expose_command(req, opt, gather_status=True, no_AWS=True)
-            bright = result['patch']
-            print("Dark Screen flat, starting:  ", bright, g_dev['fil'].filter_data[filter_number][0], '\n\n')
+            print("Dark Screen flat, starting:  ", result['patch'], g_dev['fil'].filter_data[filter_number][0], '\n\n')
             g_dev['obs'].update_status()
-
             print('Lighted Screen; filter, bright:  ', filter_number, screen_setting)
+            g_dev['scr'].set_screen_bright(int(screen_setting))
             g_dev['scr'].screen_light_on()
             time.sleep(10)
+            # g_dev['obs'].update_status()
+            # time.sleep(10)
+            # g_dev['obs'].update_status()
+            # time.sleep(10)
             g_dev['obs'].update_status()
-            time.sleep(10)
-            g_dev['obs'].update_status()
-            time.sleep(10)
-            g_dev['obs'].update_status()
-            req = {'time': float(exp_time)/10.,  'alias': camera_name, 'image_type': 'screen flat'}
-            opt = {'size': 100, 'count': 2, 'filter': g_dev['fil'].filter_data[filter_number][0]}
-            result = g_dev['cam'].expose_command(req, opt, gather_status=True, no_AWS=True)
-            bright = result['patch']
-            # if no exposure, wait 10 sec
-            print("Lighted Screen flat:  ", bright, g_dev['fil'].filter_data[filter_number][0], '\n\n')
-
-            g_dev['obs'].update_status()
-            g_dev['scr'].screen_dark()
-            time.sleep(10)
-            print('Dark Screen; filter, bright:  ', filter_number, 0.0)
             req = {'time': float(exp_time),  'alias': camera_name, 'image_type': 'screen flat'}
-            opt = {'size': 100, 'count': 2, 'filter': g_dev['fil'].filter_data[filter_number][0]}
+            opt = {'size': 100, 'count': flat_count, 'filter': g_dev['fil'].filter_data[filter_number][0], 'hint': 'screen filter light'}
             result = g_dev['cam'].expose_command(req, opt, gather_status=True, no_AWS=True)
-            bright = result['patch']# if no exposure, wait 10 sec
-            print("Dark Screen flat, ending:  ", bright, g_dev['fil'].filter_data[filter_number][0], '\n\n')
+            # if no exposure, wait 10 sec
+            print("Lighted Screen flat:  ", result['patch'], g_dev['fil'].filter_data[filter_number][0], '\n\n')
+            g_dev['obs'].update_status()
+            g_dev['scr'].set_screen_bright(0)
+            g_dev['scr'].screen_dark()
+            time.sleep(5)
+            g_dev['obs'].update_status()
+            print('Dark Screen; filter, bright:  ', filter_number, 0)
+            req = {'time': float(exp_time),  'alias': camera_name, 'image_type': 'screen flat'}
+            opt = {'size': 100, 'count': 1, 'filter': g_dev['fil'].filter_data[filter_number][0], 'hint': 'screen post-filter dark'}
+            result = g_dev['cam'].expose_command(req, opt, gather_status=True, no_AWS=True)
+            print("Dark Screen flat, ending:  ",result['patch'], g_dev['fil'].filter_data[filter_number][0], '\n\n')
 
 
             #breakpoint()
+        g_dev['scr'].set_screen_bright(0)
         g_dev['scr'].screen_dark()
         g_dev['obs'].update_status()
         g_dev['mnt'].park_command({}, {})
-        print('Eve Sky Flat sequence completed, Telescope is parked.')
+        print('Sky Flat sequence completed, Telescope is parked.')
         self.guard = False
 
     def focus_auto_script(self, req, opt):
@@ -566,8 +570,8 @@ class Sequencer:
         else:
             result['FWHM'] = 3
             result['mean_focus'] = foc_pos0
-        spot1 = result['FWHM']
-        foc_pos1 = result['mean_focus']
+        spot1 = result[0]['FWHM']
+        foc_pos1 = result[0]['mean_focus']
         print('Autofocus Moving In.\n\n')
         g_dev['foc'].focuser.Move((foc_pos0 - throw)*g_dev['foc'].micron_to_steps)
         #opt['fwhm_sim'] = 4.
@@ -576,8 +580,8 @@ class Sequencer:
         else:
             result['FWHM'] = 4
             result['mean_focus'] = foc_pos0 - throw
-        spot2 = result['FWHM']
-        foc_pos2 = result['mean_focus']
+        spot2 = result[0]['FWHM']
+        foc_pos2 = result[0]['mean_focus']
         print('Autofocus Overtaveling Out.\n\n')
         g_dev['foc'].focuser.Move((foc_pos0 + 3*throw)*g_dev['foc'].micron_to_steps)   #It is important to overshoot to overcome any backlash
         print('Autofocus Moving back in half-way.\n\n')
@@ -588,8 +592,8 @@ class Sequencer:
         else:
             result['FWHM'] = 4.5
             result['mean_focus'] = foc_pos0 + throw
-        spot3 = result['FWHM']
-        foc_pos3 = result['mean_focus']
+        spot3 = result[0]['FWHM']
+        foc_pos3 = result[0]['mean_focus']
         x = [foc_pos1, foc_pos2, foc_pos3]
         y = [spot1, spot2, spot3]
         print('X, Y:  ', x, y)
@@ -611,8 +615,8 @@ class Sequencer:
             else:
                 result['FWHM'] = new_spot
                 result['mean_focus'] = d1
-            spot4 = result['FWHM']
-            foc_pos4 = result['mean_focus']
+            spot4 = result[0]['FWHM']
+            foc_pos4 = result[0]['mean_focus']
             print('\n\n\nFound best focus at:  ', foc_pos4,' measured is:  ',  round(spot4, 2), '\n\n\n')
         else:
             print('Autofocus did not converge. Moving back to starting focus:  ', focus_start)

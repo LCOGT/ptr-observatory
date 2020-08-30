@@ -689,9 +689,14 @@ class Camera:
                     try:
                         probe = self.camera.CoolerOn
                         if not probe:
-                            self.camera.CoolerOn = True
-                            print('Found coller off.')
-                    except exception as e:
+                            print('Found cooler off.')
+                            try:
+                                self._connect(False)
+                                self._connect(True)
+                                self.camera.CoolerOn = True
+                            except:
+                                print('Camera reconnect failed @ expose camera retry.')
+                    except Exception as e:
                         print("\n\nCamera was not connected @ expose camera retry:  ", e, '\n\n')
                         try:
                             self._connect(False)
@@ -806,6 +811,26 @@ class Camera:
             g_dev['ocn'].get_quick_status(self.post_ocn)
             incoming_image_list = glob.glob(self.file_mode_path + '*.f*t*')
             self.t4 = time.time()
+            try:
+                probe = self.camera.CoolerOn
+                if not probe:
+                    print('Found cooler off.')
+                    try:
+                        self._connect(False)
+                        self._connect(True)
+                        self.camera.CoolerOn = True
+                    except:
+                        print('Camera reconnect failed @ Finish camera entry.')
+            except Exception as e:
+                print("\n\nCamera was not connected @ Finish camera entry:  ", e, '\n\n')
+                try:
+                    self._connect(False)
+                    self._connect(True)
+                    self.camera.CoolerOn = True
+                except:
+                    print('Camera reconnect failed @ expose camera retry.')
+            #  At this point we really should be connected!!
+            
             if (not self.use_file_mode and self.camera.ImageReady) or (self.use_file_mode and len(incoming_image_list) >= 1):   #   self.camera.ImageReady:
                 #print("reading out camera, takes ~6 seconds.")
                 if self.use_file_mode:
@@ -859,9 +884,9 @@ class Camera:
                 test_saturated = np.array(self.img)[1536:4608, 1536:4608]
                 bi_mean = round((test_saturated.mean() + np.median(test_saturated))/2, 0)
                 if frame_type[-4:] == 'flat':
-                    if bi_mean > 33000:
+                    if bi_mean > 45000:
                         print("Flat rejected, too bright:  ", bi_mean)
-                        result['error'] = False
+                        result['error'] = True
                         result['patch'] = bi_mean
                         return result   # signals to flat routine image was rejected, prompt return                      
                 g_dev['obs'].update_status()
@@ -1139,6 +1164,11 @@ class Camera:
                 self.t7 = time.time()
                 remaining = round(self.completion_time - self.t7, 1)
                 print("Exposure time remaining:", remaining)
+                if remaining < -30:
+                    print("Camera timed out, not connected")
+                    result = {'error': True}
+                    return result
+                    
 
                 #it takes about 15 seconds from AWS to get here for a bias.
         # except Exception as e:
