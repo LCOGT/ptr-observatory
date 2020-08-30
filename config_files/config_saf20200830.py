@@ -16,6 +16,7 @@ site_name = 'saf'
 
 site_config = {
     'site': site_name,
+    'debug_site_mode' = False,
     'defaults': {
         'observing_conditions': 'observing_conditions1',
         'enclosure': 'enclosure1',
@@ -104,7 +105,7 @@ site_config = {
             'desc':  'AP 1600 GoTo',
             'driver': 'AstroPhysicsV2.Telescope',
             'alignment': 'Equatorial',
-            'has_paddle': 'false',      #paddle refers to something supported in the python code, not the AP paddle.
+            'has_paddle': False,      #paddle refers to something supported in the python code, not the AP paddle.
             'pointing_tel': 'tel1',     #This can be changed to 'tel2'... by user.  This establishes a default.
             'settings': {
 			    'latitude_offset': '0.0',     #Decimal degrees, North is Positive   These *could* be slightly different than site.
@@ -218,24 +219,26 @@ site_config = {
                 'filter_count': '14',
                 'filter_reference': '0',   #We choose to use W as the default filter.
                 'filter_data': [['filter', 'filter_index', 'filter_offset', 'sky_gain', 'screen_gain', 'abbreviation'],
-                        ['w',    '(0,  0)',     '0', '88.1', ['6   ', ' 20'], 'w '],   # 0 Mul Screen@100% by saturate*exp
-                        ['B',    '(1,  0)',     '0', '38.7', ['35  ', ' 20'], 'B '],   # 1
-                        ['V',    '(2,  0)',     '0', '28.3', ['15  ', ' 20'], 'V '],   # 2
-                        ['R',    '(3,  0)',     '0', '16.7', ['20  ', ' 20'], 'R '],   # 3
-                        ["gp",   '(4,  0)',     '0', '59.8', ['13  ', ' 20'], "gp"],   # 4
-                        ["rp",   '(5,  0)',     '0', '16.7', ['20  ', ' 20'], "rp"],   # 5
-                        ["ip",   '(6,  0)',     '0', '3.98', ['33  ', ' 20'], "ip"],   # 6
-                        ['O3',   '(7,  0)',     '0', '1.23', ['360' , '170'], 'O3'],   # 7
-                        ['HA',   '(8,  0)',     '0', '0.29', ['360' , '170'], 'HA'],   # 8
-                        ['S2',   '(9,  0)',     '0', '0.32', ['360' , '170'], 'S2'],   # 9
-                        ['N2',   '(10, 0)',     '0', '0.30', ['360' , '170'], "N2"],   # 10
-                        ['EXO',  '(11, 0)',     '0', '42.6', ['6.5 ', ' 20'], 'ex'],   # 11
-                        ['air',  '(12, 0)',  '-800', '100 ', ['4.5 ', ' 20'], 'ai'],   # 12
-                        ['dark', '(13, 0)',     '0', ' 1  ', ['15  ', ' 20'], 'dk']],  # 13
+                        ['w',    '(0,  0)',     '0', '88',   ['0.45', ' 20'], 'w '],   # 0 Mul Screen@100% by saturate*exp
+                        ['B',    '(1,  0)',     '0', '31',   ['2   ', ' 20'], 'B '],   # 1
+                        ['V',    '(2,  0)',     '0', '31',   ['.77 ', ' 20'], 'V '],   # 2
+                        ['R',    '(3,  0)',     '0', '25',   ['1.2 ', ' 20'], 'R '],   # 3
+                        ["gp",   '(4,  0)',     '0', '54',   ['.65 ', ' 20'], "gp"],   # 4
+                        ["rp",   '(5,  0)',     '0', '25',   ['1.0 ', ' 20'], "rp"],   # 5
+                        ["ip",   '(6,  0)',     '0', '9.1',  ['10  ', '170'], "ip"],   # 6
+                        ['O3',   '(7,  0)',     '0', '12.5', ['360' , '170'], 'O3'],   # 7
+                        ['HA',   '(8,  0)',     '0', '0.40', ['360' , '170'], 'HA'],   # 8
+                        ['S2',   '(9,  0)',     '0', '0.43', ['360' , '170'], 'S2'],   # 9
+                        ['N2',   '(10, 0)',     '0', '0.41', ['360' , '170'], "N2"],   # 10
+                        ['EXO',  '(11, 0)',     '0', '42.6', ['0.65', ' 20'], 'ex'],   # 11
+                        ['air',  '(12, 0)',  '-800', '100 ', ['.32 ', ' 20'], 'ai'],   # 12
+                        ['dark', '(13, 0)',     '0', ' 1  ', ['30  ', '170'], 'dk']],  # 13
                         #  'dark' filter =   cascade of say N2 and B or O3 and i.
+                        #  Starting off, if divided by aperture mm^2, the gains are filter specific as
+                        #  a starting point.
                         
-                'filter_screen_sort':  ['12', '0', '11', '2', '3', '5', '6', '4', '1'],   # don't use narrow yet,  '8', '10', '9'], useless to try.
-                'filter_sky_sort':  ['8', '10', '9', '7', '6', '5', '3', '2', '4', '1', '11', '0', '12']  #Least to most throughput
+                'filter_screen_sort':  ['12', '0', '11', '2', '3', '5', '4', '1', '6'],   # don't use narrow yet,  '8', '10', '9'], useless to try.
+                'filter_sky_sort':  ['8', '10', '9', '6', '7', '5', '3', '2', '1', '11', '4', '0', '12']  #Least to most throughput
             },
         },
     },
@@ -249,6 +252,8 @@ site_config = {
             'driver':  "Maxim.CCDCamera",   #"ASCOM.QHYCCD.Camera",   #  'ASCOM.FLI.Kepler.Camera',
             'detector':  'Sony IMX455',
             'manufacturer':  'QHY',
+            'use_file_mode':  False,
+            'file_mode_path':  'D:/000ptr_saf/archive/sq01/autosaves/',
             'settings': {
                 'temp_setpoint': '-7.5',
                 'calib_setpoints': ['-7.5', '-6.5', '-5.5', '-4.5' ],  #  Picked by day-of-year mod len(list)
