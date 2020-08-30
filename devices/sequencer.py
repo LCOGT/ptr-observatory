@@ -566,7 +566,7 @@ class Sequencer:
         print('Autofocus Starting at:  ', foc_pos0, '\n\n')
         throw = 200  # NB again, from config.  Units are microns
         if not sim:
-            result = g_dev['cam'].expose_command(req, opt, no_AWS=True), ## , script = 'focus_auto_script_0')  #  This is where we start.
+            result = g_dev['cam'].expose_command(req, opt, no_AWS=True) ## , script = 'focus_auto_script_0')  #  This is where we start.
         else:
             result['FWHM'] = 3
             result['mean_focus'] = foc_pos0
@@ -576,7 +576,7 @@ class Sequencer:
         g_dev['foc'].focuser.Move((foc_pos0 - throw)*g_dev['foc'].micron_to_steps)
         #opt['fwhm_sim'] = 4.
         if not sim:
-            result = g_dev['cam'].expose_command(req, opt, no_AWS=True), ## , script = 'focus_auto_script_1')  #  This is moving in one throw.
+            result = g_dev['cam'].expose_command(req, opt, no_AWS=True) ## , script = 'focus_auto_script_1')  #  This is moving in one throw.
         else:
             result['FWHM'] = 4
             result['mean_focus'] = foc_pos0 - throw
@@ -588,7 +588,7 @@ class Sequencer:
         g_dev['foc'].focuser.Move((foc_pos0 + throw)*g_dev['foc'].micron_to_steps)
         #opt['fwhm_sim'] = 5
         if not sim:
-            result = g_dev['cam'].expose_command(req, opt, no_AWS=True), ## , script = 'focus_auto_script_2')  #  This is moving out one throw.
+            result = g_dev['cam'].expose_command(req, opt, no_AWS=True) ## , script = 'focus_auto_script_2')  #  This is moving out one throw.
         else:
             result['FWHM'] = 4.5
             result['mean_focus'] = foc_pos0 + throw
@@ -611,7 +611,7 @@ class Sequencer:
             print ('Moving to Solved focus:  ', round(d1, 2), ' calculated:  ',  new_spot)
             g_dev['foc'].focuser.Move(int(d1*g_dev['foc'].micron_to_steps))
             if not sim:
-                result = g_dev['cam'].expose_command(req, opt, no_AWS=True),  #   script = 'focus_auto_script_3')  #  This is verifying the new focus.
+                result = g_dev['cam'].expose_command(req, opt, no_AWS=True)  #   script = 'focus_auto_script_3')  #  This is verifying the new focus.
             else:
                 result['FWHM'] = new_spot
                 result['mean_focus'] = d1
