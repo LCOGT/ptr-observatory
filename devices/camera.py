@@ -415,7 +415,7 @@ class Camera:
                     self.camera.CoolerOn = True
                 except:
                     print('Camera reconnect failed @ expose entry.')
-        except exception as e:
+        except Exception as e:
             print("\n\nCamera was not connected @ expose entry:  ", e, '\n\n')
             try:
                 self._connect(False)
@@ -842,32 +842,32 @@ class Camera:
                             new_image = fits.open(incoming_image_list[-1])  #  Sometimes glob picks up a file not yet fully formed.
                             print("Read new image no exception thrown.")
                             time.sleep(delay)
-                        except exception as e:
+                        except Exception as e:
                             tries += 1
                             print('In except: ', e)
                             time.sleep(delay)
                             new_image.close()
                             continue
                         self.img = new_image[0].data   #  NB We could pick up Maxim header info here
-                        iy, ix = self.img.shape
+                        #self.img = np.array(self.img).transpose()
+                        iy, ix = self.img.shape        #FITS open fixes C ordering to Fortran
                         new_image.close()
-                        if len(self.img)*len(self.img[0]) != iy*ix:
-                            
+                        if len(self.img)*len(self.img[0]) != iy*ix:   
                             continue
                         break
                     print ('Grab took :  ', tries*delay, ' sec')
                 else:
                     time.sleep(0.1)   #  This delay appears to be necessary. 20200804 WER
                     self.img = self.camera.ImageArray   #As read this is a Windows Safe Array 
-                    self.img = np.array(self.img).transpose()  #  .astype('int32')                       
+                    self.img = np.array(self.img).transpose()  #  .astype('int32')
+                    iy, ix = self.img.shape                       
                 self.t5 = time.time()         
                 print('expose  took: ', round(self.t4 - self.t2, 2), ' sec,')
                 print('readout took: ', round(self.t5 - self.t4, 2), ' sec,')
-
                 pedastal = 200
-                iy, ix = self.img.shape
                 if ix == 9600:
-                    overscan = int(np.median(self.img[33:, -22:]))
+                    overscan = int(np.median(self.img[-34:]))
+                    #overscan = int(np.median(self.img[33:, -22:]))
                     trimed = self.img[36 :, : -26] + pedastal - overscan
                     square = trimed[121 : 121 + 6144, 1715 : 1715 + 6144]
                 elif ix == 4800:
@@ -907,7 +907,6 @@ class Camera:
                     sources = sep.extract(self.img, 4.5, err=bkg.globalrms, minarea=15)
                     sources.sort(order = 'cflux')
                     print('No. of detections:  ', len(sources))
-                    breakpoint()
                     for source in sources[-1:]:
                         a0 = source['a']
                         b0 = source['b']
@@ -916,7 +915,6 @@ class Camera:
                         r1 = math.sqrt((3072 - source['x'])**2 + (3072 - source['y'])**2)
                         #kr, kf = sep.kron_radius(self.img, source['x'], source['y'], source['a'], source['b'], source['theta'], 6.0)
                         print(source['x'], source['y'], r0, r1)  # , kr, kf)
-                    breakpoint()
                     result['FWHM'] = round(r0, 3)
                     result['mean_focus'] =  avg_foc[1]
                     result['center_dist'] = round(r1, 2)
@@ -1068,8 +1066,11 @@ class Camera:
                     hdu.header['ISMASTER'] = False
                     hdu.header['FILEPATH'] = str(im_path_r) +'to_AWS/'
                     hdu.header['FILENAME'] = str(raw_name00)
-                    hdu.header['USERNAME'] = self.user_name
-                    hdu.header ['USERID'] = self.user_id
+                    try:
+                        hdu.header['USERNAME'] = self.user_name
+                        hdu.header ['USERID'] = self.user_id
+                    except:
+                        print("User_name or id not found.")
                     hdu.header['REQNUM'] = '00000001'
                     hdu.header['BLKUID'] = 'None'
                     hdu.header['BLKSDATE'] = 'None'

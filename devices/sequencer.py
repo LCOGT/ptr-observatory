@@ -375,7 +375,6 @@ class Sequencer:
         camera_name = str(self.config['camera']['camera1']['name'])
         flat_count = 5
         exp_time = .003
-        breakpoint()
         #  NB Sometime, try 2:2 binning and interpolate a 1:1 flat.  This might run a lot faster.
         if flat_count < 1: flat_count = 1
         g_dev['mnt'].unpark_command({}, {})
@@ -395,15 +394,14 @@ class Sequencer:
         obs_win_begin, sunset, sunrise, ephemNow = self.astro_events.getSunEvents()
         scale = 1.0
         while len(pop_list) > 0 and (ephemNow < g_dev['events']['End Eve Sky Flats']):
-
             current_filter = int(pop_list[0])
             acquired_count = 0
             #g_dev['fil'].set_number_command(current_filter)
             #g_dev['mnt'].slewToSkyFlatAsync()
             bright = 65000
             while acquired_count < flat_count:
-                if g_dev['enc'].is_dome:
-                    g_dev['mnt'].slewToSkyFlatAsync()
+                #if g_dev['enc'].is_dome:   #Does not apply
+                g_dev['mnt'].slewToSkyFlatAsync()
                 try:
                     exp_time = scale*33000/(float(g_dev['fil'].filter_data[current_filter][3])*g_dev['ocn'].meas_sky_lux)
                     if exp_time > 30:
@@ -417,6 +415,7 @@ class Sequencer:
                 req = {'time': float(exp_time),  'alias': camera_name, 'image_type': 'sky flat', 'script': 'On'}
                 opt = {'size': 100, 'count': 1, 'filter': g_dev['fil'].filter_data[current_filter][0]}
                 print("using:  ", g_dev['fil'].filter_data[current_filter][0])
+                breakpoint()
                 result = g_dev['cam'].expose_command(req, opt, gather_status=True, no_AWS=True, do_sep = False)
                 bright = result['patch']    #  Patch should be circular and 20% of Chip area. ToDo project
                 try:
@@ -570,8 +569,8 @@ class Sequencer:
         else:
             result['FWHM'] = 3
             result['mean_focus'] = foc_pos0
-        spot1 = result[0]['FWHM']
-        foc_pos1 = result[0]['mean_focus']
+        spot1 = result['FWHM']
+        foc_pos1 = result['mean_focus']
         print('Autofocus Moving In.\n\n')
         g_dev['foc'].focuser.Move((foc_pos0 - throw)*g_dev['foc'].micron_to_steps)
         #opt['fwhm_sim'] = 4.
@@ -580,8 +579,8 @@ class Sequencer:
         else:
             result['FWHM'] = 4
             result['mean_focus'] = foc_pos0 - throw
-        spot2 = result[0]['FWHM']
-        foc_pos2 = result[0]['mean_focus']
+        spot2 = result['FWHM']
+        foc_pos2 = result['mean_focus']
         print('Autofocus Overtaveling Out.\n\n')
         g_dev['foc'].focuser.Move((foc_pos0 + 3*throw)*g_dev['foc'].micron_to_steps)   #It is important to overshoot to overcome any backlash
         print('Autofocus Moving back in half-way.\n\n')
@@ -592,8 +591,8 @@ class Sequencer:
         else:
             result['FWHM'] = 4.5
             result['mean_focus'] = foc_pos0 + throw
-        spot3 = result[0]['FWHM']
-        foc_pos3 = result[0]['mean_focus']
+        spot3 = result['FWHM']
+        foc_pos3 = result['mean_focus']
         x = [foc_pos1, foc_pos2, foc_pos3]
         y = [spot1, spot2, spot3]
         print('X, Y:  ', x, y)
@@ -615,8 +614,8 @@ class Sequencer:
             else:
                 result['FWHM'] = new_spot
                 result['mean_focus'] = d1
-            spot4 = result[0]['FWHM']
-            foc_pos4 = result[0]['mean_focus']
+            spot4 = result['FWHM']
+            foc_pos4 = result['mean_focus']
             print('\n\n\nFound best focus at:  ', foc_pos4,' measured is:  ',  round(spot4, 2), '\n\n\n')
         else:
             print('Autofocus did not converge. Moving back to starting focus:  ', focus_start)
