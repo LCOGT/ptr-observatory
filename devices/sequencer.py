@@ -1,12 +1,12 @@
 
-import win32com.client
+
 import time
 import datetime
 from random import shuffle
 from global_yard import g_dev
 import ephem
 import build_tycho as tycho
-from pprint import pprint
+#from pprint import pprint
 
 '''
 Autofocus NOTE 20200122
@@ -142,15 +142,15 @@ class Sequencer:
         self.description = "Sequencer for script execution."
         self.sequencer_hold = False
         self.sequencer_message = '-'
-        print(f"sequencer connected.")
+        print("sequencer connected.")
         print(self.description)
         self.sky_guard = False
         self.af_guard = False
 
     def get_status(self):
         status = {
-            "active_script": 'none',
-            "sequencer_busy":  'false'
+            "active_script": None,
+            "sequencer_busy":  False
         }
         if not self.sequencer_hold:   #  NB THis should be wrapped in a timeout.
             self.manager()      #  There be dragons here!  <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
@@ -648,7 +648,7 @@ class Sequencer:
         start_ra = g_dev['mnt'].mount.RightAscension
         start_dec = g_dev['mnt'].mount.Declination
         foc_start = g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron
-        print("Saved ra dec focus:  ", start_ra,_start_dec, focus_start)
+        print("Saved ra dec focus:  ", start_ra, start_dec, foc_start)
         if req['target'] == 'near_tycho_star':   ## 'bin', 'area'  Other parameters
             #  Go to closest Mag 7.5 Tycho * with no flip
             focus_star = tycho.dist_sort_targets(g_dev['tel'].current_icrs_ra, g_dev['tel'].current_icrs_dec, \
@@ -717,8 +717,8 @@ class Sequencer:
             a1, b1, c1, d1 = fit_quadratic(x, y)
             new_spot = round(a1*d1*d1 + b1*d1 + c1, 2)
         except:
-            print('Autofocus quadratic equation not converge. Moving back to starting focus:  ', focus_start)
-            g_dev['foc'].focuser.Move((focus_start)*g_dev['foc'].micron_to_steps)
+            print('Autofocus quadratic equation not converge. Moving back to starting focus:  ', foc_start)
+            g_dev['foc'].focuser.Move((foc_start)*g_dev['foc'].micron_to_steps)
             self.sequencer_hold = False   #Allow comand checks.
             self.af_guard = False
             return 
@@ -736,7 +736,7 @@ class Sequencer:
         else:
             print('Autofocus did not converge. Moving back to starting focus:  ', foc_pos0)
             g_dev['foc'].focuser.Move((foc_start)*g_dev['foc'].micron_to_steps)
-        print("Returning to:  ", saved_ra, saved_dec)
+        print("Returning to:  ", start_ra, start_dec)
         g_dev['mnt'].mount.SlewToCoordinatesAsync(start_ra, start_dec)   #Return to pre-focus pointing.
         if sim:
             g_dev['foc'].focuser.Move((foc_start)*g_dev['foc'].micron_to_steps)
@@ -797,7 +797,7 @@ IF sweep
 
         print("Starting equatorial sweep.")
         g_dev['mnt'].unpark_command()
-        cam_name = str(self.config['camera']['camera1']['name'])
+        #cam_name = str(self.config['camera']['camera1']['name'])
         for ha_degree_value in ha_deg_steps:
             target_ra =  g_dev['mnt'].mount.SiderealTime - ha_degree_value/15.
             while target_ra < 0:
@@ -837,7 +837,7 @@ IF sweep
         return
  
     def sky_grid_pointing_run(self, reg, opt, spacing=10, vertical=False, grid=False, alt_minimum=25):
-        camera_name = str(self.config['camera']['camera1']['name'])
+        #camera_name = str(self.config['camera']['camera1']['name'])
         '''
         unpark telescope
         if not open, open dome
@@ -990,7 +990,7 @@ IF sweep
         
         print("Starting West dec sweep, ha = 0.1")
         g_dev['mnt'].unpark_command()
-        cam_name = str(self.config['camera']['camera1']['name'])
+        #cam_name = str(self.config['camera']['camera1']['name'])
         for ha in [0.1, -0.1]:
             for degree_value in dec_steps:
                 target_ra =  g_dev['mnt'].mount.SiderealTime - ha

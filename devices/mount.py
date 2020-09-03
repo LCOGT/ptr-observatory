@@ -176,7 +176,7 @@ class Mount:
         #print(self.device_name, self.name)
         if self.tel == False:
             status = {
-                f'timestamp': str(round(time.time(), 3)),
+                'timestamp': round(time.time(), 3),
 #                f'right_ascension': str(self.mount.RightAscension),
 #                f'declination': str(self.mount.Declination),
 #                f'sidereal_time': str(self.mount.SiderealTime),
@@ -187,11 +187,11 @@ class Mount:
 #                f'zenith_distance': str(zen),
 #                f'airmass': str(airmass),
 #                f'coordinate_system': str(self.rdsys),
-                f'pointing_telescope': str(self.inst),  #needs fixing
-                f'is_parked': str(self.mount.AtPark).lower(),
-                f'is_tracking': str(self.mount.Tracking).lower(),
-                f'is_slewing': str(self.mount.Slewing).lower(),
-                f'message': self.mount_message[:32]
+                'pointing_telescope': self.inst,  #needs fixing
+                'is_parked': self.mount.AtPark,
+                'is_tracking': self.mount.Tracking,
+                'is_slewing': self.mount.Slewing,
+                'message': self.mount_message[:32]
             }
         elif self.tel == True:
             self.current_sidereal = self.mount.SiderealTime
@@ -208,20 +208,20 @@ class Mount:
                 self.current_icrs_ra = self.mount.RightAscension
                 self.current_icrs_dec = self.mount.Declination
             status = {
-                f'timestamp': str(round(time.time(), 3)),
-                f'right_ascension': str(round(self.current_icrs_ra, 5)),  #
-                f'declination': str(round(self.current_icrs_dec, 4)),
-                f'sidereal_time': str(round(self.current_sidereal, 5)),
-                f'tracking_right_ascension_rate': str(self.mount.RightAscensionRate),   #Will use asec/s not s/s as ASCOM does.
-                f'tracking_declination_rate': str(self.mount.DeclinationRate),
-                f'azimuth': str(round(self.mount.Azimuth, 3)),
-                f'altitude': str(round(alt, 3)),
-                f'zenith_distance': str(round(zen, 3)),
-                f'airmass': str(round(airmass,4)),
-                f'coordinate_system': str(self.rdsys),
-                f'equinox':  self.equinox_now,
-                f'pointing_instrument': str(self.inst),  # needs fixing
-                f'message': self.mount_message[:32]
+                'timestamp': round(time.time(), 3),
+                'right_ascension': round(self.current_icrs_ra, 5),
+                'declination': round(self.current_icrs_dec, 4),
+                'sidereal_time': round(self.current_sidereal, 5),
+                'tracking_right_ascension_rate': round(self.mount.RightAscensionRate, 9),   #Will use asec/s not s/s as ASCOM does.
+                'tracking_declination_rate': round(self.mount.DeclinationRate, 8),
+                'azimuth': round(self.mount.Azimuth, 3),
+                'altitude': round(alt, 3),
+                'zenith_distance': round(zen, 3),
+                'airmass': round(airmass,4),
+                'coordinate_system': str(self.rdsys),
+                'equinox':  self.equinox_now,
+                'pointing_instrument': str(self.inst),  # needs fixing
+                'message': self.mount_message[:32]
 #                f'is_parked': (self.mount.AtPark),
 #                f'is_tracking': str(self.mount.Tracking),
 #                f'is_slewing': str(self.mount.Slewing)
@@ -320,34 +320,34 @@ class Mount:
         if air_avg > 20.0:
             air_avg = 20.0
         if pre[10] and post[10]:
-            park_avg = "T"
+            park_avg = True
         else:
-            park_avg = "F"
+            park_avg = False
         if pre[11] or post[11]:
-            track_avg = "T"
+            track_avg = True
         else:
-            track_avg = "F"
+            track_avg = False
         if pre[12] or post[12]:
-            slew_avg = "T"
+            slew_avg = True
         else:
-            slew_avg = "F"
+            slew_avg = False
 
         status = {
-            f'timestamp': t_avg,
-            f'right_ascension': ra_avg,
-            f'declination': dec_avg,
-            f'sidereal_time': sid_avg,
-            f'tracking_right_ascension_rate': rar_avg,
-            f'tracking_declination_rate': decr_avg,
-            f'azimuth':  az_avg,
-            f'altitude': alt_avg,
-            f'zenith_distance': zen_avg,
-            f'airmass': air_avg,
-            f'coordinate_system': str(self.rdsys),
-            f'instrument': str(self.inst),
-            f'is_parked': park_avg,
-            f'is_tracking': track_avg,
-            f'is_slewing': slew_avg
+            'timestamp': t_avg,
+            'right_ascension': ra_avg,
+            'declination': dec_avg,
+            'sidereal_time': sid_avg,
+            'tracking_right_ascension_rate': rar_avg,
+            'tracking_declination_rate': decr_avg,
+            'azimuth':  az_avg,
+            'altitude': alt_avg,
+            'zenith_distance': zen_avg,
+            'airmass': air_avg,
+            'coordinate_system': str(self.rdsys),
+            'instrument': str(self.inst),
+            'is_parked': park_avg,
+            'is_tracking': track_avg,
+            'is_slewing': slew_avg
 
         }
         return status  #json.dumps(status)

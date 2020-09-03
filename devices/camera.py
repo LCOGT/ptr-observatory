@@ -1,31 +1,31 @@
 import win32com.client
-import pythoncom
-import redis
+#import pythoncom
+#import redis
 import time
 import datetime
 import os
 import math
 import numpy as np
 from astropy.io import fits
-from astropy.table import Table
-from astropy.utils.data import get_pkg_data_filename
+#from astropy.table import Table
+#from astropy.utils.data import get_pkg_data_filename
 import sep
 import glob
 import shelve
 
-from os.path import join, dirname, abspath
+#from os.path import join, dirname, abspath
 
-from skimage import data, io, filters
-from skimage.transform import resize
-from skimage import img_as_float
-from skimage import exposure
-from skimage.io import imsave
-import matplotlib.pyplot as plt
+# from skimage import data, io, filters
+# from skimage.transform import resize
+# from skimage import img_as_float
+# from skimage import exposure
+# from skimage.io import imsave
+# import matplotlib.pyplot as plt
 
-from PIL import Image
+# from PIL import Image
 from global_yard import g_dev
-from processing.calibration import calibrate
-from devices.sequencer import Sequencer
+#from processing.calibration import calibrate
+#from devices.sequencer import Sequencer
 from devices.darkslide import Darkslide
 
 """
@@ -321,15 +321,15 @@ class Camera:
         #status = {"type":"camera"}
         status = {}
         if self.exposure_busy:
-            status['busy_lock'] = 'true'
+            status['busy_lock'] = True
         else:
-            status['busy_lock'] = 'false'
+            status['busy_lock'] = False
         if self.maxim:
             cam_stat = 'Not implemented yet' #
             #print('AutoSave:  ', self.camera.SequenceRunning)
         if self.ascom:
             cam_stat = 'Not implemented yet' #self.camera.CameraState
-        status['status'] = str(cam_stat).lower()  #The state could be expanded to be more meaningful.
+        status['status'] = cam_stat  #The state could be expanded to be more meaningful.
         return status
 #        if self.maxim:
 #            status['ccd_temperature'] = str(round(self.camera.Temperature , 3))
@@ -1060,7 +1060,7 @@ class Camera:
                     text_name = self.config['site'] + '-' + current_camera_name + '-' + g_dev['day'] + '-' + \
                         next_seq  + '-' +  im_type + '00.txt'
                     im_path_r = self.camera_path
-                    lng_path = self.lng_path
+                    #lng_path = self.lng_path
                     hdu.header['DAY-OBS'] = g_dev['day']
                     hdu.header['DATE'] = datetime.datetime.isoformat(datetime.datetime.utcfromtimestamp(self.t2))
                     hdu.header['ISMASTER'] = False
@@ -1078,7 +1078,7 @@ class Camera:
                     hdu.header['OBSTYPE'] = 'None'
                     try:    #NB relocate this to Expose entry area.  Fill out except.
                         im_path_r = self.camera_path
-                        lng_path = self.lng_path
+                        #lng_path = self.lng_path
                         os.makedirs(im_path_r + g_dev['day'] + '/to_AWS/', exist_ok=True)
                         os.makedirs(im_path_r + g_dev['day'] + '/raw/', exist_ok=True)
                         os.makedirs(im_path_r + g_dev['day'] + '/calib/', exist_ok=True)
@@ -1155,10 +1155,10 @@ class Camera:
                         hdu = None
                     except:
                         pass
-                    try:
-                        hdu1 = None
-                    except:
-                        pass
+                    # try:
+                    #     hdu1 = None
+                    # except:
+                    #     pass
                     self.t7 = time.time()
                     result = {'error': True}
                 return result

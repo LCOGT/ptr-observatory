@@ -101,7 +101,7 @@ class Telescope:
         #print(self.device_name, self.name)
         if self.tel == False:
             status = {
-                f'timestamp': str(round(time.time(), 3)),
+                'timestamp': round(time.time(), 3),
 #                f'right_ascension': str(self.mount.RightAscension),
 #                f'declination': str(self.mount.Declination),
 #                f'sidreal_time': str(self.mount.SiderealTime),
@@ -112,11 +112,11 @@ class Telescope:
 #                f'zenith_distance': str(zen),
 #                f'airmass': str(airmass),
 #                f'coordinate_system': str(self.rdsys),
-                f'pointing_telescope': str(self.inst),  #needs fixing
-                f'is_parked': str(g_dev['mnt'].mount.AtPark).lower(),
-                f'is_tracking': str(g_dev['mnt'].mount.Tracking).lower(),
-                f'is_slewing': str(g_dev['mnt'].mount.Slewing).lower(),
-                f'message': g_dev['mnt'].mount_message[:32]
+                'pointing_telescope': str(self.inst),  #needs fixing
+                'is_parked': g_dev['mnt'].mount.AtPark,
+                'is_tracking': g_dev['mnt'].mount.Tracking,
+                'is_slewing': g_dev['mnt'].mount.Slewing,
+                'message': g_dev['mnt'].mount_message[:32]
             }
         elif self.tel == True:
             self.current_sidereal = g_dev['mnt'].mount.SiderealTime
@@ -131,25 +131,25 @@ class Telescope:
                 self.current_icrs_dec = icrs_coord.dec.degree
             else:
                 self.current_icrs_ra = g_dev['mnt'].mount.RightAscension
-                self.current_icrs_dec = sg_dev['mnt'].mount.Declination
+                self.current_icrs_dec = g_dev['mnt'].mount.Declination
             status = {
-                f'timestamp': str(round(time.time(), 3)),
-                f'right_ascension': str(round(self.current_icrs_ra, 5)),  #
-                f'declination': str(round(self.current_icrs_dec, 4)),
-                f'sidereal_time': str(round(self.current_sidereal, 5)),
-                f'tracking_right_ascension_rate': str(g_dev['mnt'].mount.RightAscensionRate),   #Will use asec/s not s/s as ASCOM does.
-                f'tracking_declination_rate': str(g_dev['mnt'].mount.DeclinationRate),
-                f'azimuth': str(round(g_dev['mnt'].mount.Azimuth, 3)),
-                f'altitude': str(round(alt, 3)),
-                f'zenith_distance': str(round(zen, 3)),
-                f'airmass': airmass_string,
-                f'coordinate_system': str(self.rdsys),
-                f'equinox':  self.equinox_now,
-                f'pointing_instrument': str(self.inst),  # needs fixing
-                f'message': g_dev['mnt'].mount_message[:32]
-#                f'is_parked': (self.mount.AtPark),
-#                f'is_tracking': str(self.mount.Tracking),
-#                f'is_slewing': str(self.mount.Slewing)
+                'timestamp': round(time.time(), 3),
+                'right_ascension': round(self.current_icrs_ra, 5),  #
+                'declination': round(self.current_icrs_dec, 4),
+                'sidereal_time': round(self.current_sidereal, 5),
+                'tracking_right_ascension_rate': round(g_dev['mnt'].mount.RightAscensionRate, 9),   #Will use asec/s not s/s as ASCOM does.
+                'tracking_declination_rate': round(g_dev['mnt'].mount.DeclinationRate, 8),
+                'azimuth': round(g_dev['mnt'].mount.Azimuth, 3),
+                'altitude': round(alt, 3),
+                'zenith_distance': round(zen, 3),
+                'airmass': airmass_string,
+                'coordinate_system': self.rdsys,
+                'equinox':  self.equinox_now,
+                'pointing_instrument': str(self.inst),  # needs fixing
+                'message': g_dev['mnt'].mount_message[:32]
+#                'is_parked': (self.mount.AtPark),
+#                'is_tracking': str(self.mount.Tracking),
+#                'is_slewing': str(self.mount.Slewing)
 
             }
         else:
@@ -216,34 +216,34 @@ class Telescope:
         zen_avg = round((pre[8] + post[8])/2, 3)
         air_avg = round((pre[9] + post[9])/2, 4)
         if pre[10] and post[10]:
-            park_avg = "T"
+            park_avg = True
         else:
-            park_avg = "F"
+            park_avg = False
         if pre[11] or post[11]:
-            track_avg = "T"
+            track_avg =True
         else:
-            track_avg = "F"
+            track_avg = False
         if pre[12] or post[12]:
-            slew_avg = "T"
+            slew_avg = True
         else:
-            slew_avg = "F"
+            slew_avg = False
 
         status = {
-            f'timestamp': t_avg,
-            f'right_ascension': ra_avg,
-            f'declination': dec_avg,
-            f'sidreal_time': sid_avg,
-            f'tracking_right_ascansion_rate': rar_avg,
-            f'tracking_declination_rate': decr_avg,
-            f'azimuth':  az_avg,
-            f'alttitude': alt_avg,
-            f'zenith_distance': zen_avg,
-            f'airmass': air_avg,
-            f'coordinate_system': str(self.rdsys),
-            f'instrument': str(self.inst),
-            f'is_parked': park_avg,
-            f'is_tracking': track_avg,
-            f'is_slewing': slew_avg
+            'timestamp': t_avg,
+            'right_ascension': ra_avg,
+            'declination': dec_avg,
+            'sidreal_time': sid_avg,
+            'tracking_right_ascansion_rate': rar_avg,
+            'tracking_declination_rate': decr_avg,
+            'azimuth':  az_avg,
+            'alttitude': alt_avg,
+            'zenith_distance': zen_avg,
+            'airmass': air_avg,
+            'coordinate_system': str(self.rdsys),
+            'instrument': str(self.inst),
+            'is_parked': park_avg,
+            'is_tracking': track_avg,
+            'is_slewing': slew_avg
 
         }
         return status  #json.dumps(status)

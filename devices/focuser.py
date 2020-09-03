@@ -94,9 +94,9 @@ class Focuser:
 
     def get_status(self):
         status = {
-            "focus_position": str(round(self.focuser.Position*self.steps_to_micron, 1)),
-            "focus_moving": str(self.focuser.IsMoving).lower(),
-            "focus_temperature": str(self.focuser.Temperature)
+            "focus_position": round(self.focuser.Position*self.steps_to_micron, 1),
+            "focus_moving": self.focuser.IsMoving,
+            "focus_temperature": self.focuser.Temperature
             }
         return status
 
@@ -113,9 +113,9 @@ class Focuser:
         average.append(round((pre[1] + post[1])/2, 3))
         average.append(round((pre[2] + post[2])/2, 3))
         if pre[3] or post[3]:
-            average.append('T')
+            average.append(True)
         else:
-            average.append('F')
+            average.append(False)
         return average
 
     def update_job_status(self, cmd_id, status, seconds_remaining=-1):

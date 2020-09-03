@@ -11,11 +11,11 @@ class FilterWheel:
         g_dev['fil']= self
         self.config = config['filter_wheel']
         #print("FW:  ", config)
-        self.filter_data = self.config['filter_wheel1']['settings']['filter_data'][1:]
+        self.filter_data = self.config['filter_wheel1']['settings']['filter_data'][1:]  #  Stips off column heading entry
         self.filter_screen_sort = self.config['filter_wheel1']['settings']['filter_screen_sort']
         self.filter_reference = int(self.config['filter_wheel1']['settings']['filter_reference'])
-        #THIS CODE DOES NOT implemnt a filter via the Maxim application which is passed in
-        #as a valid instance of class camera.
+        #  THIS CODE DOES NOT implement a filter via the Maxim application which is passed in
+        #  as a valid instance of class camera.
         self.filter_message = '-'
         print('Please NOTE: Filter wheel may block for many seconds while first connecting & homing.')
         if type(driver) == list:
@@ -33,17 +33,17 @@ class FilterWheel:
             self.dual = True
             self.custom = False
             self.filter_selected = self.filter_data[self.filter_reference][0]
-            self.filter_number = int(self.filter_reference)
-            self.filter_offset = eval(self.filter_data[self.filter_reference][2])
+            self.filter_number = self.filter_reference
+            self.filter_offset = self.filter_data[self.filter_reference][2]
             #First setup:
             time.sleep(1)
             while self.filter_front.Position == -1:
                 time.sleep(0.2)
-            self.filter_front.Position = eval(self.filter_data[self.filter_reference][1])[1]
+            self.filter_front.Position = self.filter_data[self.filter_reference][1][1]
             time.sleep(1)
             while self.filter_back.Position == -1:
                 time.sleep(0.2)
-            self.filter_back.Position = eval(self.filter_data[self.filter_reference][1])[0]
+            self.filter_back.Position = self.filter_data[self.filter_reference][1][0]
             time.sleep(1)
             print(self.filter_front.Names, self.filter_back.Names, self.filter_selected, self.filter_offset)
         elif driver.lower() in ['maxim', 'maximdl', 'maximdlpro']:
@@ -52,8 +52,8 @@ class FilterWheel:
             self.custom = False
             self.filter_selected = self.filter_data[self.filter_reference][0]   #This is the defaultexpected after a
                                                                                 #Home or power-up cycle.
-            self.filter_number = int(self.filter_reference)
-            self.filter_offset = eval(self.filter_data[self.filter_reference][2])
+            self.filter_number = self.filter_reference
+            self.filter_offset = self.filter_data[self.filter_reference][2]
             #We assume camera object has been created before the filter object.
             #Note filter may be commanded directly by AWS or provided in an expose
             #command as an optional parameter.
@@ -106,22 +106,22 @@ class FilterWheel:
             
         try:
             if self.filter_front.Position == -1 or self.filter_back.Position == -1:
-                f_move = 'true'
+                f_move = True
             else:
-                f_move = 'false'
+                f_move = False
             status = {
-                'filter_name': str(self.filter_selected),
-                'filter_number': str(self.filter_number),
-                'filter_offset': str(self.filter_offset),
+                'filter_name': self.filter_selected,
+                'filter_number': self.filter_number,
+                'filter_offset': self.filter_offset,
                 'wheel_is_moving': f_move
                 }
             return status
         except:
-            f_move = 'false'
+            f_move = False
             status = {
-                'filter_name': str('none'),
-                'filter_number': str(0),
-                'filter_offset': str(0.0),
+                'filter_name': None,
+                'filter_number': 0,
+                'filter_offset': 0.0,
                 'wheel_is_moving': f_move
                 }
             return status
@@ -137,7 +137,7 @@ class FilterWheel:
         elif action == "home":
             self.home_command(req, opt)
         else:
-            print(f"Command <{action}> not recognized.")
+            print("Command <{action}> not recognized.")
 
 
     ###############################
@@ -146,7 +146,7 @@ class FilterWheel:
 
     def set_number_command(self, filter_number):
         ''' set the filter position by numeric filter position index '''
-        #print(f"filter cmd: set_number")
+        #print("filter cmd: set_number")
         filter_selections = eval(self.filter_data[int(filter_number)][1])
         #print('Selections:  ', filter_selections)
         self.filter_number = filter_number
@@ -176,7 +176,7 @@ class FilterWheel:
     def set_position_command(self, req: dict, opt: dict):
         ''' set the filter position by  param string filter position index '''
         'NBNBNB This routine may not be correct'
-        #print(f"filter cmd: set_position")
+        #print("filter cmd: set_position")
         breakpoint()
         filter_selections = eval(self.filter_data[int(req['filter_num'])][1])
         #print('Selections:  ', filter_selections)
@@ -203,7 +203,7 @@ class FilterWheel:
 
     def set_name_command(self, req: dict, opt: dict):
         ''' set the filter position by filter name '''
-        #print(f"filter cmd: set_name", req, opt)
+        #print("filter cmd: set_name", req, opt)
         try:
             filter_name = req['filter_name']
         except:
@@ -264,7 +264,7 @@ class FilterWheel:
 
     def home_command(self, req: dict, opt: dict):
         ''' set the filter to the home position '''  #NB this is setting to defaault not Home.
-        print(f"filter cmd: home", req, opt)
+        print("filter cmd: home", req, opt)
         breakpoint()
         while self.filter_back.Position == -1:
             time.sleep(0.1)

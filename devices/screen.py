@@ -90,8 +90,8 @@ class Screen(object):
     def get_status(self):
 
         status = {
-            "bright_setting": str(round(self.bright_setting, 1)),
-            "dark_setting": str(self.dark_setting).lower()
+            "bright_setting": round(self.bright_setting, 1),
+            "dark_setting": self.dark_setting
         }
         return status
 
