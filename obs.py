@@ -29,22 +29,23 @@ import threading
 import queue
 import requests
 import os
-import sys
-import argparse
+#import sys
+#import argparse
 import json
-import importlib
+#import importlib
 import numpy as np
+import math
 
-from pprint import pprint
+#from pprint import pprint
 from api_calls import API_calls
-from skimage import data, io, filters
+#from skimage import data, io, filters
 from skimage.transform import resize
-from skimage import img_as_float
-from skimage import exposure
+#from skimage import img_as_float
+#from skimage import exposure
 from skimage.io import imsave
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 
-from PIL import Image
+#from PIL import Image
 import ptr_events
 
 # import device classes
@@ -56,16 +57,17 @@ from devices.mount import Mount
 from devices.telescope import Telescope
 from devices.observing_conditions import ObservingConditions
 from devices.rotator import Rotator
-from devices.switch import Switch    #Nothing implemented yet 20200511
+#from devices.switch import Switch    #Nothing implemented yet 20200511
 from devices.screen import Screen
 from devices.sequencer import Sequencer
 from processing.calibration import calibrate
 from global_yard import g_dev
 import bz2
 import httplib2
+import sep
 
 
-# TODO: move this function to a better location
+# move this function to a better location
 def to_bz2(filename, delete=False):
     try:
         uncomp = open(filename, 'rb')
@@ -83,7 +85,7 @@ def to_bz2(filename, delete=False):
         return False
 
 
-# TODO: move this function to a better location
+# move this function to a better location
 def from_bz2(filename, delete=False):
     try:
         comp = open(filename, 'rb')
@@ -100,7 +102,7 @@ def from_bz2(filename, delete=False):
         return False
 
 
-# TODO: move this function to a better location
+# move this function to a better location
 # The following function is a monkey patch to speed up outgoing large files.
 # NB does not appear to work. 20200408 WER
 def patch_httplib(bsize=400000):
@@ -108,24 +110,24 @@ def patch_httplib(bsize=400000):
     if bsize is None:
         bsize = 8192
 
-    def send(self, data, sblocks=bsize):
-        """Send `data' to the server."""
+    def send(self, p_data, sblocks=bsize):
+        """Send `p_data' to the server."""
         if self.sock is None:
             if self.auto_open:
                 self.connect()
             else:
                 raise httplib2.NotConnected()
         if self.debuglevel > 0:
-            print("send:", repr(data))
-        if hasattr(data, 'read') and not isinstance(data, list):
+            print("send:", repr(p_data))
+        if hasattr(p_data, 'read') and not isinstance(p_data, list):
             if self.debuglevel > 0:
                 print("sendIng a read()able")
-            datablock = data.read(sblocks)
+            datablock = p_data.read(sblocks)
             while datablock:
                 self.sock.sendall(datablock)
-                datablock = data.read(sblocks)
+                datablock = p_data.read(sblocks)
         else:
-            self.sock.sendall(data)
+            self.sock.sendall(p_data)
     httplib2.httplib.HTTPConnection.send = send
 
 
@@ -269,7 +271,7 @@ class Observatory:
             time.sleep(self.command_interval)
            #  t1 = time.time()
             if not g_dev['seq'].sequencer_hold:
-                url = f"https://jobs.photonranch.org/jobs/getnewjobs"
+                url = "https://jobs.photonranch.org/jobs/getnewjobs"
                 body = {"site": self.name}
                 # uri = f"{self.name}/{mount}/command/"
                 cmd = {}
@@ -352,8 +354,8 @@ class Observatory:
                 # ...and add it to main status dict.
                 status[dev_type][device_name] = device.get_status()
         # Include the time that the status was assembled and sent.
-        status["timestamp"] = str(round((time.time() + t1)/2., 3))
-        status['send_heartbeat'] = 'false'
+        status["timestamp"] = round((time.time() + t1)/2., 3)
+        status['send_heartbeat'] = False
         if loud:
             print('Status Sent:  \n', status)   # from Update:  ', status))
         else:
@@ -364,7 +366,7 @@ class Observatory:
         try:    # 20190926  tHIS STARTED THROWING EXCEPTIONS OCCASIONALLY
             #print("AWS uri:  ", uri)
             #print('Status to be sent:  \n', status, '\n')
-            response = self.api.authenticated_request("PUT", uri, status)   # response = is not  used
+            self.api.authenticated_request("PUT", uri, status)   # response = is not  used
             #print("AWS Response:  ",response)
             self.time_last_status = time.time()
         except:
@@ -409,7 +411,7 @@ class Observatory:
         try:
             # self.update_thread = threading.Thread(target=self.update_status).start()
             # Each mount operates async and has its own command queue to scan.
-            # TODO: is it better to use just one command queue per site?
+            # is it better to use just one command queue per site?
             # for mount in self.all_devices['mount'].keys():
             #     self.scan_thread = threading.Thread(
             #         target=self.scan_requests,
@@ -499,7 +501,7 @@ class Observatory:
                 #          }
                 #
                 # try:    #NB relocate this to Expose entry area.  Fill out except.
-                im_path_r = g_dev['cam'].camera_path
+                #im_path_r = g_dev['cam'].camera_path
                 lng_path =  g_dev['cam'].lng_path
                 #     # os.makedirs(im_path_r + g_dev['day'] + '/to_AWS/', exist_ok=True)
                 #     # os.makedirs(im_path_r + g_dev['day'] + '/raw/', exist_ok=True)
@@ -514,7 +516,8 @@ class Observatory:
                 #     print('Path creation in Reductions failed.', lng_path)
                #NB Important decision here, do we flash calibrate screen and sky flats?  For now, Yes.
 
-                cal_result = calibrate(hdu, lng_path, paths['frame_type'], quick=False)
+                #cal_result = 
+                calibrate(hdu, lng_path, paths['frame_type'], quick=False)
                 #print("Calibrate returned:  ", hdu.data, cal_result)
                 hdu.writeto(paths['red_path'] + paths['red_name01'], overwrite=True)
                 # print(hdu.data)
@@ -557,8 +560,8 @@ class Observatory:
                         img = hdu.data.copy().astype('float')
                         bkg = sep.Background(img)
                         #bkg_rms = bkg.rms()
-                        img -= bkg
-                        sources = sep.extract(img_sub, 4.5, err=bkg.globalrms, minarea=9)#, filter_kernel=kern)
+                        img = img - bkg
+                        sources = sep.extract(img, 4.5, err=bkg.globalrms, minarea=9)#, filter_kernel=kern)
                         sources.sort(order = 'cflux')
                         #print('No. of detections:  ', len(sources))
                         sep_result = []
@@ -573,7 +576,7 @@ class Observatory:
                         spot = np.array(spots)
                         try:
                             spot = np.median(spot[-9:-2])   #  This grabs seven spots.
-                            print(sep_result, '\n', 'Spot ,flux, #_sources, avg_focus:  ', spot, source['cflux'], len(sources), avg_foc[1], '\n')
+                            #print(sep_result, '\n', 'Spot ,flux, #_sources, avg_focus:  ', spot, source['cflux'], len(sources), avg_foc[1], '\n')
                             if len(sep_result) < 5:
                                 spot = None
                         except:
@@ -689,10 +692,10 @@ class Observatory:
                     hdu = None
                 except:
                     pass
-                try:
-                    hdu1 = None
-                except:
-                    pass
+                # try:
+                #     hdu1 = None
+                # except:
+                #     pass
                 print("\nREDUCTIONS COMPLETED!")
                 self.reduce_queue.task_done()
             else:
@@ -717,12 +720,3 @@ if __name__ == "__main__":
     import config
     o = Observatory(config.site_name, config.site_config)
     o.run()
-
-
-
-def OLD_CODE():
-    '''
-    This is a place for code that is not currently used but saved for reference later.
-    If there is code in here that you know is no longer needed, please delete it!
-
-    '''

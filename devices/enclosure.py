@@ -29,10 +29,10 @@ class Enclosure:
         self.enclosure = win32com.client.Dispatch(driver)
         print(self.enclosure)
         self.enclosure.Connected = True
-        print(f"enclosure connected.")
+        print("enclosure connected.")
         print(self.enclosure.Description)
         self.is_dome = self.config['enclosure']['enclosure1']['is_dome']
-        if self.is_dome in ['false', 'False', False]:
+        if not self.is_dome:
             self.is_dome = False
         else:
             self.is_dome = True
@@ -49,6 +49,7 @@ class Enclosure:
     def get_status(self) -> dict:
         #<<<<The next attibute reference fails at SAF, usually spurious Dome Ring Open report.
         #<<< Have seen other instances of failing.
+
         try:
             shutter_status = self.enclosure.ShutterStatus
         except:
@@ -76,11 +77,11 @@ class Enclosure:
         if self.site == 'saf':
            try:
                status = {'shutter_status': stat_string,
-                      'enclosure_slaving': str(self.enclosure.Slaved),
-                      'dome_azimuth': str(round(self.enclosure.Azimuth, 1)),
-                      'dome_slewing': str(self.enclosure.Slewing),
-                      'enclosure_mode': str(self.mode),
-                      'enclosure_message': str(self.state)}
+                      'enclosure_slaving': self.enclosure.Slaved,
+                      'dome_azimuth': round(self.enclosure.Azimuth, 1),
+                      'dome_slewing': self.enclosure.Slewing,
+                      'enclosure_mode': self.mode,
+                      'enclosure_message': self.state}
                self.prior_status = status
            except:
                status = self.prior_status
@@ -94,9 +95,9 @@ class Enclosure:
         else:
             status = {'roof_status': stat_string,
                       'shutter_status': stat_string,
-                      'enclosure_slaving': str(self.enclosure.Slaved),   #  What should  this mean for a roof? T/F = Open/Closed?
-                      'enclosure_mode': str(self.mode),
-                      'enclosure_message': str(self.state)}
+                      'enclosure_slaving': self.enclosure.Slaved,   #  What should  this mean for a roof? T/F = Open/Closed?
+                      'enclosure_mode': self.mode,
+                      'enclosure_message': self.state}
         #print('Enclosure status:  ', status
         self.status_string = stat_string
         self.manager()   #There be monsters here. <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
@@ -127,7 +128,7 @@ class Enclosure:
         elif action == "park":
             self.park_command(req, opt)
         else:
-            print(f"Command <{action}> not recognized.")
+            print("Command <{action}> not recognized.")
 
 
     ###############################
@@ -137,7 +138,7 @@ class Enclosure:
     def open_command(self, req: dict, opt: dict):
         ''' open the enclosure '''
         self.manager(open_cmd=True)
-        print(f"enclosure cmd: open")
+        print("enclosure cmd: open")
         self.dome_open = True
         self.dome_home = True
         pass
@@ -145,31 +146,31 @@ class Enclosure:
     def close_command(self, req: dict, opt: dict):
         ''' close the enclosure '''
         self.manager(close_cmd=True)
-        print(f"enclosure cmd: close")
+        print("enclosure cmd: close")
         self.dome_open = False
         self.dome_home = True
         pass
 
     def slew_alt_command(self, req: dict, opt: dict):
-        print(f"enclosure cmd: slew_alt")
+        print("enclosure cmd: slew_alt")
         pass
 
     def slew_az_command(self, req: dict, opt: dict):
-        print(f"enclosure cmd: slew_az")
+        print("enclosure cmd: slew_az")
         self.dome_home = False    #As a general rule
         pass
 
     def sync_az_command(self, req: dict, opt: dict):
-        print(f"enclosure cmd: sync_alt")
+        print("enclosure cmd: sync_alt")
         pass
 
     def sync_mount_command(self, req: dict, opt: dict):
-        print(f"enclosure cmd: sync_az")
+        print("enclosure cmd: sync_az")
         pass
 
     def park_command(self, req: dict, opt: dict):
         ''' park the enclosure if it's a dome '''
-        print(f"enclosure cmd: park")
+        print("enclosure cmd: park")
         self.dome_home = True
         pass
 

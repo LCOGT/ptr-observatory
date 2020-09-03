@@ -28,8 +28,8 @@ class Rotator:
         '''
         #NB we had an exception here with Target position.
         status = {
-            "position_angle": str(round(self.rotator.TargetPosition, 4)),
-            "rotator_moving": str(self.rotator.IsMoving).lower(),
+            "position_angle": round(self.rotator.TargetPosition, 4),
+            "rotator_moving": self.rotator.IsMoving,
         }
         #print(self.rotator.TargetPosition)
         return status
@@ -46,9 +46,9 @@ class Rotator:
         average.append(round((pre[0] + post[0])/2, 3))
         average.append(round((pre[1] + post[1])/2, 3))
         if pre[2] or post[2]:
-            average.append('T')
+            average.append(True)
         else:
-            average.append('F')
+            average.append(False)
         return average
 
     def parse_command(self, command):

@@ -12,11 +12,11 @@ This is also very old code just grafted on. Needs variable renaming, and a good 
 '''
 
 from math import *
-import shelve
+#import shelve
 import ephem
-from datetime import datetime, timedelta, timezone
+from datetime import datetime
 import time
-import pytz
+#import pytz
 from math import degrees
 import skyfield 
 from skyfield import api, almanac

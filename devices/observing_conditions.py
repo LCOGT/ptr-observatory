@@ -86,9 +86,9 @@ class ObservingConditions:
             self.boltwood_oktoimage = win32com.client.Dispatch(driver_3)
             self.boltwood_oktoimage.Connected = True
             print("observing_conditions: Boltwood connected = True")
-            if config['observing_conditions']['observing_conditions1']['has_unihedron'].lower() == 'true':
+            if config['observing_conditions']['observing_conditions1']['has_unihedron']:
                 driver = config['observing_conditions']['observing_conditions1']['uni_driver']
-                port = config['observing_conditions']['observing_conditions1']['unihedron_port'].lower()
+                port = config['observing_conditions']['observing_conditions1']['unihedron_port']
                 self.unihedron = win32com.client.Dispatch(driver)
                 self.unihedron.Connected = True
                 print("observing_conditions: Unihedron connected = True, on COM" + str(port))
@@ -121,18 +121,18 @@ class ObservingConditions:
             else:
                 self.ok_to_open = "No"
             try:   #Boltwood cloud cover occasionally faults. 20200805 WER
-                status = {"temperature_C": str(round(self.boltwood.Temperature, 2)),
-                          "pressure_mbar": "784.0",
-                          "humidity_%": str(self.boltwood.Humidity),
-                          "dewpoint_C": str(self.boltwood.DewPoint),
-                          "sky_temp_C": str(round(self.boltwood.SkyTemperature,2)),
-                          "last_sky_update_s":  str(round(self.boltwood.TimeSinceLastUpdate('SkyTemperature'), 2)),
-                          "wind_m/s": str(abs(round(self.boltwood.WindSpeed, 2))),
-                          'rain_rate': str(self.boltwood.RainRate),
-                          'solar_flux_w/m^2': 'NA',
-                          #'cloud_cover_%': str(self.boltwood.CloudCover),
-                          "calc_HSI_lux": str(illum),
-                          "calc_sky_mpsas": str(round((mag - 20.01),2)),    #  Provenance of 20.01 is dubious 20200504 WER
+                status = {"temperature_C": round(self.boltwood.Temperature, 2),
+                          "pressure_mbar": 784.,
+                          "humidity_%": self.boltwood.Humidity,
+                          "dewpoint_C": self.boltwood.DewPoint,
+                          "sky_temp_C": round(self.boltwood.SkyTemperature,2),
+                          "last_sky_update_s":  round(self.boltwood.TimeSinceLastUpdate('SkyTemperature'), 2),
+                          "wind_m/s": abs(round(self.boltwood.WindSpeed, 2)),
+                          'rain_rate': self.boltwood.RainRate,
+                          'solar_flux_w/m^2': None,
+                          'cloud_cover_%': str(self.boltwood.CloudCover),
+                          "calc_HSI_lux": illum,
+                          "calc_sky_mpsas": round((mag - 20.01),2),    #  Provenance of 20.01 is dubious 20200504 WER
                           "wx_ok": wx_str,  #str(self.boltwood_oktoimage.IsSafe),
                           "open_ok": self.ok_to_open
                           #"image_ok": str(self.boltwood_oktoimage.IsSafe)
@@ -156,18 +156,18 @@ class ObservingConditions:
             except:
                 time.sleep(2)
                 
-                status = {"temperature_C": str(round(self.boltwood.Temperature, 2)),
-                          "pressure_mbar": "784.0",
-                          "humidity_%": str(self.boltwood.Humidity),
-                          "dewpoint_C": str(self.boltwood.DewPoint),
-                          "sky_temp_C": str(round(self.boltwood.SkyTemperature,2)),
-                          "last_sky_update_s":  str(round(self.boltwood.TimeSinceLastUpdate('SkyTemperature'), 2)),
-                          "wind_m/s": str(abs(round(self.boltwood.WindSpeed, 2))),
-                          'rain_rate': str(self.boltwood.RainRate),
-                          'solar_flux_w/m^2': 'NA',
-                          #cloud_cover_%': str(self.boltwood.CloudCover),
-                          "calc_HSI_lux": str(illum),
-                          "calc_sky_mpsas": str(round((mag - 20.01),2)),    #  Provenance of 20.01 is dubious 20200504 WER
+                status = {"temperature_C": round(self.boltwood.Temperature, 2),
+                          "pressure_mbar": 784.,
+                          "humidity_%": self.boltwood.Humidity,
+                          "dewpoint_C": self.boltwood.DewPoint,
+                          "sky_temp_C": round(self.boltwood.SkyTemperature,2),
+                          "last_sky_update_s":  round(self.boltwood.TimeSinceLastUpdate('SkyTemperature'), 2),
+                          "wind_m/s": abs(round(self.boltwood.WindSpeed, 2)),
+                          'rain_rate': self.boltwood.RainRate,
+                          'solar_flux_w/m^2': None,
+                          'cloud_cover_%': str(self.boltwood.CloudCover),
+                          "calc_HSI_lux": illum,
+                          "calc_sky_mpsas": round((mag - 20.01),2),    #  Provenance of 20.01 is dubious 20200504 WER
                           "wx_ok": wx_str,  #str(self.boltwood_oktoimage.IsSafe),
                           "open_ok": self.ok_to_open
                           #"image_ok": str(self.boltwood_oktoimage.IsSafe)
@@ -194,15 +194,15 @@ class ObservingConditions:
                 uni_measure = self.unihedron.SkyQuality   #  Provenance of 20.01 is dubious 20200504 WER
                 if uni_measure == 0:
                     uni_measure = round((mag - 20.01),2)   #  Fixes Unihedron when sky is too bright
-                    status["meas_sky_mpsas"] = str(uni_measure)
+                    status["meas_sky_mpsas"] = uni_measure
                     status2["meas_sky_mpsas"] = uni_measure
                     self.meas_sky_lux = illum
                 else:
                     self.meas_sky_lux = linearize_unihedron(uni_measure)
-                    status["meas_sky_mpsas"] = str(uni_measure)
+                    status["meas_sky_mpsas"] = uni_measure
                     status2["meas_sky_mpsas"] = uni_measure
             else:
-                status["meas_sky_mpsas"] = str(round((mag - 20.01),2))
+                status["meas_sky_mpsas"] = round((mag - 20.01),2)
                 status2["meas_sky_mpsas"] = round((mag - 20.01),2) #  Provenance of 20.01 is dubious 20200504 WER
 
             # Only write when around dark, put in CSV format
