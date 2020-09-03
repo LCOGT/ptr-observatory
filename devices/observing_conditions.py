@@ -236,20 +236,20 @@ class ObservingConditions:
                 else:
                     illum = round(illum, 3)
                 self.wx_is_ok = True
-                status = {"temperature_C": wx["amb_temp C"],
-                          "pressure_mbar": '978',
-                          "humidity_%": wx["humidity %"],
-                          "dewpoint_C": wx["dewpoint C"],
-                          "calc_HSI_lux": str(illum),
-                          "sky_temp_C": wx["sky C"],
-                          "time_to_open_h": wx["time to open"],
-                          "time_to_close_h": wx["time to close"],
-                          "wind_m/s": wx["wind m/s"],
+                status = {"temperature_C": float(wx["amb_temp C"]),
+                          "pressure_mbar": 978.0,
+                          "humidity_%": float(wx["humidity %"]),
+                          "dewpoint_C": float(wx["dewpoint C"]),
+                          "calc_HSI_lux": illum,
+                          "sky_temp_C": float(wx["sky C"]),
+                          "time_to_open_h": float(wx["time to open"]),
+                          "time_to_close_h": float(wx["time to close"]),
+                          "wind_m/s": float(wx["wind m/s"]),
                           "ambient_light": wx["light"],
                           "open_ok": wx["open_possible"],
                           "wx_ok": wx["open_possible"],
-                          "meas_sky_mpsas": wx['meas_sky_mpsas'],
-                          "calc_sky_mpsas": str(round((mag - 20.01), 2))
+                          "meas_sky_mpsas": float(wx['meas_sky_mpsas']),
+                          "calc_sky_mpsas": round((mag - 20.01), 2)
                           }
                         # Only write when around dark, put in CSV format
                 # sunZ88Op, sunZ88Cl, ephemNow = g_dev['obs'].astro_events.getSunEvents()
@@ -275,18 +275,20 @@ class ObservingConditions:
                     wx = eval(self.redis_server.get('<ptr-wx-1_state'))
                 except:
                     print('Redis is not turning Wx Data properly.')
-                status = {"temperature": wx["amb_temp C"],
-                          "pressure": ' ---- ',
-                          "humidity": wx["humidity %"],
-                          "dewpoint": wx["dewpoint C"],
-                          "calc_sky_lux": wx["illum lux"],
-                          "sky_temp": wx["sky C"],
-                          "time_to_open": wx["time to open"],
-                          "time_to_close": wx["time to close"],
-                          "wind_m/s": wx['wind m/s'],
-                          "ambient_light":  wx["light"],
-                          "open_possible":  wx["open_possible"],
-                          "brightness_hz": wx['bright hz']
+                status = {"temperature_C": float(wx["amb_temp C"]),
+                          "pressure_mbar": 978.0,
+                          "humidity_%": float(wx["humidity %"]),
+                          "dewpoint_C": float(wx["dewpoint C"]),
+                          "calc_HSI_lux": illum,
+                          "sky_temp_C": float(wx["sky C"]),
+                          "time_to_open_h": float(wx["time to open"]),
+                          "time_to_close_h": float(wx["time to close"]),
+                          "wind_m/s": float(wx["wind m/s"]),
+                          "ambient_light": wx["light"],
+                          "open_ok": wx["open_possible"],
+                          "wx_ok": wx["open_possible"],
+                          "meas_sky_mpsas": float(wx['meas_sky_mpsas']),
+                          "calc_sky_mpsas": round((mag - 20.01), 2)
                           }
                         # Only write when around dark, put in CSV format
                 sunZ88Op, sunZ88Cl, ephemNow = g_dev['obs'].astro_events.getSunEvents()
