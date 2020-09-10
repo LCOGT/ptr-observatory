@@ -147,18 +147,11 @@ class Camera:
             self.app.TelescopeConnected = True
             print("Maxim Telescope Connected: ", self.app.TelescopeConnected)
             print('Control is Maxim camera interface.')
-        print('Cooler Setpoint:  ', self._setpoint(float(self.config['camera']['camera1']['settings']['temp_setpoint'])))
-        print(self._temperature())
-        cooler_on = self.config['camera']['camera1'] 
         print('Maxim is connected:  ', self._connect(True))
-
-        print('Setpoint:  ', self._setpoint(float(self.config['camera']['camera1']['settings']['temp_setpoint'])))
-        print('Chip Temperature:  ', self._temperature())
-        cooler_on = self.config['camera']['camera1'] \
-                               ['settings']['cooler_on'] in ['True', 'true', 'Yes', 'yes', 'On', 'on']
-        self.camera.CoolerOn = cooler_on
+        print('Cooler Setpoint:   ', self._setpoint(float(self.config['camera']['camera1']['settings']['temp_setpoint'])))
+        print('Cooler started @:  ', self._temperature)
+        self.camera.CoolerOn = self.config['camera']['camera1']['settings']['cooler_on']
         self.use_file_mode = self.config['camera']['camera1']['use_file_mode']
-        # NB Should get and report cooer power
         self.current_filter = 0    #W in Apache Ridge case. #This should come from congig, filter section
         self.exposure_busy = False
         self.cmd_in = None
@@ -752,6 +745,7 @@ class Camera:
                             self.t2 = time.time()
                             self.camera.StartSequence(self.camera_path + 'seq/ptr_wmd.seq')
                             print("Starting autosave  at:  ", self.t2)
+                            breakpoint()
                         else:
                             #This is the standard call to Maxim
                             self.t2 = time.time()
@@ -809,6 +803,9 @@ class Camera:
             g_dev['rot'].get_quick_status(self.post_rot)
             g_dev['foc'].get_quick_status(self.post_foc)
             g_dev['ocn'].get_quick_status(self.post_ocn)
+            if time.time() < self.completion_time:   #  NB Testing here if glob too early is delaying reaout.
+                time.sleep(1)
+                continue
             incoming_image_list = glob.glob(self.file_mode_path + '*.f*t*')
             self.t4 = time.time()
             try:
