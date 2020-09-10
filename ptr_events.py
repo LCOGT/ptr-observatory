@@ -318,7 +318,7 @@ class Events:
         sunset = ptr.next_setting(sun)
         middleNight = ptr.next_antitransit(sun)
         sunrise = ptr.next_rising(sun)
-        ops_win_begin = sunset - 60/1440
+        ops_win_begin = sunset - 89/1440
         return (ops_win_begin, sunset, sunrise, ephem.now())
 
     def flat_spot_now(self):
@@ -427,11 +427,11 @@ class Events:
         ptr.horizon = '2'
         sun.compute(ptr)
         #if loud: print('Sun 2: ', sun.ra, sun.dec, sun.az, sun.alt)
-        ops_win_begin = sunset - 60/1440      # Needs to come from site config  NB 1 hour
+        ops_win_begin = sunset - 89/1440      # Needs to come from site config  NB 1 hour
         ptr.horizon = '-1.5'
         sun.compute(ptr)
         #if loud: print('Sun -6: ', sun.ra, sun.dec, sun.az, sun.alt)
-        eve_skyFlatBegin = sunset - 30/1440. #ptr.next_setting(sun)
+        eve_skyFlatBegin = sunset - 60/1440. #ptr.next_setting(sun)
         morn_skyFlatEnd = ptr.next_rising(sun)
         ptr.horizon = '-6'
         sun.compute(ptr)
