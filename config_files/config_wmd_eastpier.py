@@ -52,6 +52,7 @@ site_name = 'wmd'    #NB These must be unique across all of PTR. Pre-pend with a
 
 site_config = {
     'site': 'wmd',
+    'debug_site_mode': True,
     'defaults': {
         'observing_conditions': 'observing_conditions1',
         'enclosure': 'enclosure1',

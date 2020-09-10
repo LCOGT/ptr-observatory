@@ -19,6 +19,11 @@ from astropy.coordinates import SkyCoord, FK5, ICRS, FK4, Distance, \
 #from astroquery.simbad import Simbad
 
 #The mount is not threaded and uses non-blocking seek.
+'''
+NGP
+12 51 36.7151981
++27 06 11.193172
+'''
 class Telescope:
 
     def __init__(self, driver: str, name: str, settings: dict, config: dict, tel=False):

@@ -849,26 +849,27 @@ class Camera:
                             new_image.close()
                             continue
                         self.img = new_image[0].data   #  NB We could pick up Maxim header info here
-                        iy, ix = self.img.shape
+                        #self.img = np.array(self.img).transpose()
+                        iy, ix = self.img.shape        #FITS open fixes C ordering to Fortran
                         new_image.close()
-                        if len(self.img)*len(self.img[0]) != iy*ix:
-                            
+                        if len(self.img)*len(self.img[0]) != iy*ix:   
                             continue
                         break
                     print ('Grab took :  ', tries*delay, ' sec')
                 else:
                     time.sleep(0.1)   #  This delay appears to be necessary. 20200804 WER
                     self.img = self.camera.ImageArray   #As read this is a Windows Safe Array 
-                    self.img = np.array(self.img).transpose()  #  .astype('int32')                       
+                    self.img = np.array(self.img).transpose()  #  .astype('int32')
+                    iy, ix = self.img.shape                       
                 self.t5 = time.time()         
                 print('expose  took: ', round(self.t4 - self.t2, 2), ' sec,')
                 print('readout took: ', round(self.t5 - self.t4, 2), ' sec,')
-
                 pedastal = 200
                 iy, ix = self.img.shape
                 #  NB NB  Be very careful this is the exact code using in build_master and calibration  modules.
                 if ix == 9600:
-                    overscan = int(np.median(self.img[33:, -22:]))
+                    overscan = int(np.median(self.img[-34:]))
+                    #overscan = int(np.median(self.img[33:, -22:]))
                     trimed = self.img[36 :, : -26] + pedastal - overscan
                     square = trimed[121 : 121 + 6144, 1715 : 1715 + 6144]
                 elif ix == 4800:
@@ -1070,8 +1071,11 @@ class Camera:
                     hdu.header['ISMASTER'] = False
                     hdu.header['FILEPATH'] = str(im_path_r) +'to_AWS/'
                     hdu.header['FILENAME'] = str(raw_name00)
-                    hdu.header['USERNAME'] = self.user_name
-                    hdu.header ['USERID'] = self.user_id
+                    try:
+                        hdu.header['USERNAME'] = self.user_name
+                        hdu.header ['USERID'] = self.user_id
+                    except:
+                        print("User_name or id not found.")
                     hdu.header['REQNUM'] = '00000001'
                     hdu.header['BLKUID'] = 'None'
                     hdu.header['BLKSDATE'] = 'None'

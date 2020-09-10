@@ -376,7 +376,6 @@ class Sequencer:
         camera_name = str(self.config['camera']['camera1']['name'])
         flat_count = 5
         exp_time = .003
-        breakpoint()
         #  NB Sometime, try 2:2 binning and interpolate a 1:1 flat.  This might run a lot faster.
         if flat_count < 1: flat_count = 1
         g_dev['mnt'].unpark_command({}, {})
@@ -397,15 +396,14 @@ class Sequencer:
         scale = 1.0
         prior_scale = 1
         while len(pop_list) > 0 and (ephemNow < g_dev['events']['End Eve Sky Flats']):
-
             current_filter = int(pop_list[0])
             acquired_count = 0
             #g_dev['fil'].set_number_command(current_filter)
             #g_dev['mnt'].slewToSkyFlatAsync()
             bright = 65000
             while acquired_count < flat_count:
-                if g_dev['enc'].is_dome:
-                    g_dev['mnt'].slewToSkyFlatAsync()
+                #if g_dev['enc'].is_dome:   #Does not apply
+                g_dev['mnt'].slewToSkyFlatAsync()
                 try:
                     exp_time = prior_scale*scale*33000/(float(g_dev['fil'].filter_data[current_filter][3])*g_dev['ocn'].meas_sky_lux)
                     if exp_time > 30:
@@ -420,6 +418,7 @@ class Sequencer:
                 req = {'time': float(exp_time),  'alias': camera_name, 'image_type': 'sky flat', 'script': 'On'}
                 opt = {'size': 100, 'count': 1, 'filter': g_dev['fil'].filter_data[current_filter][0]}
                 print("using:  ", g_dev['fil'].filter_data[current_filter][0])
+                breakpoint()
                 result = g_dev['cam'].expose_command(req, opt, gather_status=True, no_AWS=True, do_sep = False)
                 bright = result['patch']    #  Patch should be circular and 20% of Chip area. ToDo project
                 try:
