@@ -271,6 +271,7 @@ class Sequencer:
                  
         """
         self.sequencer_hold = True
+        breakpoint()
         if req is None:     #  NB Chunking factor is 9
             req = {'numOfBias': 36, 'bin3': False, 'numOfDark2': 18, 'bin4': \
                    False, 'bin1': True, 'darkTime': '360', 'hotMap': True, \
@@ -293,15 +294,15 @@ class Sequencer:
         num_dark = min(45, req['numOfDark'])   ## Implied this is 1:! binning darks.
         dark_time = float(req['darkTime'])
         for i in range(num_dark):
-             dark_list.append([1, dark_time])
+             dark_list.append([2, dark_time])   #NB Hardwired bin
         total_num_dark = len(dark_list)
         print("Total # of dark1 frames, all binnings =  ", total_num_dark )
         
         binx_dark_list = []
-        num_binx_dark = min(3, req['numOfDark2'])  ## Implied this is >1x1 binning darks.
+        num_binx_dark = min(45, req['numOfDark2'])  ## Implied this is >1x1 binning darks.
         binx_dark_time = float(req['dark2Time'])
         for i in range(num_binx_dark):
-            binx_dark_list.append([2, num_binx_dark])
+            binx_dark_list.append([2, binx_dark_time])
         total_num_binx_dark = len(binx_dark_list)
         print("Total # of binx_dark frames, all binnings =  ", total_num_binx_dark)
         
@@ -313,7 +314,7 @@ class Sequencer:
         print('Approx duration of Bias Dark seguence:  ', total_time//60 + 1, ' min.')
         #Flush twice
         print('Pre-flush twice.')  #NB Filter is 'dark'
-        bin_str = bin_to_string(1)
+        bin_str = bin_to_string(21)
         req = {'time': 0.0, 'script': 'True', 'image_type': 'bias'}
         opt = {'size': 100, 'count': flush, 'bin': bin_str, \
                'filter': g_dev['fil'].filter_data[-1][0], 'hint':  'Flush'}
@@ -393,6 +394,7 @@ class Sequencer:
         #length = len(pop_list)
         obs_win_begin, sunset, sunrise, ephemNow = self.astro_events.getSunEvents()
         scale = 1.0
+        prior_scale = 1
         while len(pop_list) > 0 and (ephemNow < g_dev['events']['End Eve Sky Flats']):
             current_filter = int(pop_list[0])
             acquired_count = 0
@@ -403,12 +405,13 @@ class Sequencer:
                 #if g_dev['enc'].is_dome:   #Does not apply
                 g_dev['mnt'].slewToSkyFlatAsync()
                 try:
-                    exp_time = scale*33000/(float(g_dev['fil'].filter_data[current_filter][3])*g_dev['ocn'].meas_sky_lux)
+                    exp_time = prior_scale*scale*33000/(float(g_dev['fil'].filter_data[current_filter][3])*g_dev['ocn'].meas_sky_lux)
                     if exp_time > 30:
                         exp_time = 30
                     if exp_time <0.0005:
                         exp_time = 0.0005
                     exp_time = round(exp_time, 4)
+                    prior_scale = prior_scale*scale
                     print("Sky flat estimated exposure time, scale are:  ", exp_time, scale)
                 except:
                     exp_time = 0.3
@@ -436,6 +439,8 @@ class Sequencer:
                     acquired_count += 1
                     if acquired_count == flat_count:
                         pop_list.pop(0)
+                        scale = 1
+                        pror_scale = 1
                 continue
         g_dev['mnt'].park_command({}, {})  #  NB this is provisional, Ok when simulating
         print('\nSky flat complete.\n')

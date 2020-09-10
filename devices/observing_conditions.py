@@ -70,6 +70,8 @@ class ObservingConditions:
         self.wait_time = 0        #A countdown to re-open
         self.wx_close = False     #If made true by Wx code, a 15 minute timeout will begin when Wx turns OK
         self.wx_test = False    #Purely a debugging aid.
+        self.prior_status = None
+        self.prior_status_2 = None
         if self.site == 'wmd':
             self.redis_server = redis.StrictRedis(host='10.15.0.109', port=6379, db=0,
                                                   decode_responses=True)
@@ -121,6 +123,7 @@ class ObservingConditions:
             else:
                 self.ok_to_open = "No"
             try:   #Boltwood cloud cover occasionally faults. 20200805 WER
+            # Faults continuing but very rare.  20200909
                 status = {"temperature_C": round(self.boltwood.Temperature, 2),
                           "pressure_mbar": 784.,
                           "humidity_%": self.boltwood.Humidity,
@@ -153,41 +156,49 @@ class ObservingConditions:
                           "open_ok": self.ok_to_open
                           #"image_ok": str(self.boltwood_oktoimage.IsSafe)
                           }
+                self.prior_status = status
+                self.prior_status_2 = status2
             except:
                 time.sleep(2)
                 
-                status = {"temperature_C": round(self.boltwood.Temperature, 2),
-                          "pressure_mbar": 784.,
-                          "humidity_%": self.boltwood.Humidity,
-                          "dewpoint_C": self.boltwood.DewPoint,
-                          "sky_temp_C": round(self.boltwood.SkyTemperature,2),
-                          "last_sky_update_s":  round(self.boltwood.TimeSinceLastUpdate('SkyTemperature'), 2),
-                          "wind_m/s": abs(round(self.boltwood.WindSpeed, 2)),
-                          'rain_rate': self.boltwood.RainRate,
-                          'solar_flux_w/m^2': None,
-                          'cloud_cover_%': str(self.boltwood.CloudCover),
-                          "calc_HSI_lux": illum,
-                          "calc_sky_mpsas": round((mag - 20.01),2),    #  Provenance of 20.01 is dubious 20200504 WER
-                          "wx_ok": wx_str,  #str(self.boltwood_oktoimage.IsSafe),
-                          "open_ok": self.ok_to_open
-                          #"image_ok": str(self.boltwood_oktoimage.IsSafe)
-                          }
-                status2 = {"temperature_C": round(self.boltwood.Temperature, 2),
-                          "pressure_mbar": 784.0,
-                          "humidity_%": self.boltwood.Humidity,
-                          "dewpoint_C": self.boltwood.DewPoint,
-                          "sky_temp_C": round(self.boltwood.SkyTemperature,2),
-                          "last_sky_update_s":  round(self.boltwood.TimeSinceLastUpdate('SkyTemperature'), 2),
-                          "wind_m/s": abs(round(self.boltwood.WindSpeed, 2)),
-                          'rain_rate': self.boltwood.RainRate,
-                          'solar_flux_w/m^2': 'NA',
-                          #'cloud_cover_%': self.boltwood.CloudCover,
-                          "calc_HSI_lux": illum,
-                          "calc_sky_mpsas": round((mag - 20.01),2),    #  Provenance of 20.01 is dubious 20200504 WER
-                          "wx_ok": wx_str,  #str(self.boltwood_oktoimage.IsSafe),
-                          "open_ok": self.ok_to_open
-                          #"image_ok": str(self.boltwood_oktoimage.IsSafe)
-                          }
+                try:
+                    status = {"temperature_C": round(self.boltwood.Temperature, 2),
+                              "pressure_mbar": 784.,
+                              "humidity_%": self.boltwood.Humidity,
+                              "dewpoint_C": self.boltwood.DewPoint,
+                              "sky_temp_C": round(self.boltwood.SkyTemperature,2),
+                              "last_sky_update_s":  round(self.boltwood.TimeSinceLastUpdate('SkyTemperature'), 2),
+                              "wind_m/s": abs(round(self.boltwood.WindSpeed, 2)),
+                              'rain_rate': self.boltwood.RainRate,
+                              'solar_flux_w/m^2': None,
+                              'cloud_cover_%': str(self.boltwood.CloudCover),
+                              "calc_HSI_lux": illum,
+                              "calc_sky_mpsas": round((mag - 20.01),2),    #  Provenance of 20.01 is dubious 20200504 WER
+                              "wx_ok": wx_str,  #str(self.boltwood_oktoimage.IsSafe),
+                              "open_ok": self.ok_to_open
+                              #"image_ok": str(self.boltwood_oktoimage.IsSafe)
+                              }
+                    status2 = {"temperature_C": round(self.boltwood.Temperature, 2),
+                              "pressure_mbar": 784.0,
+                              "humidity_%": self.boltwood.Humidity,
+                              "dewpoint_C": self.boltwood.DewPoint,
+                              "sky_temp_C": round(self.boltwood.SkyTemperature,2),
+                              "last_sky_update_s":  round(self.boltwood.TimeSinceLastUpdate('SkyTemperature'), 2),
+                              "wind_m/s": abs(round(self.boltwood.WindSpeed, 2)),
+                              'rain_rate': self.boltwood.RainRate,
+                              'solar_flux_w/m^2': 'NA',
+                              #'cloud_cover_%': self.boltwood.CloudCover,
+                              "calc_HSI_lux": illum,
+                              "calc_sky_mpsas": round((mag - 20.01),2),    #  Provenance of 20.01 is dubious 20200504 WER
+                              "wx_ok": wx_str,  #str(self.boltwood_oktoimage.IsSafe),
+                              "open_ok": self.ok_to_open
+                              #"image_ok": str(self.boltwood_oktoimage.IsSafe)
+                              }
+                    self.prior_status = status
+                    self.prior_status_2 = status2
+                except:
+                    self.prior_status = status
+                    self.prior_status_2 = status2
                 
 
             if self.unihedron.Connected:

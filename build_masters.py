@@ -423,8 +423,17 @@ def create_super_flat(input_images, lng_path, super_name, super_bias_name,
 def make_master_bias (alias, path,  lng_path , selector_string, out_file):
 
     file_list = glob.glob(path + selector_string)
-    shuffle(file_list)
-    file_list = file_list[:9*3]   #Temporarily limit size of reduction.
+    #shuffle(file_list)
+    #file_list = file_list[:9*3]   #Temporarily limit size of reduction.
+    print("Pre cull:  ", len(file_list))
+    new_list = []
+    for item in range(len(file_list)):
+        candidate = fits.open(file_list[item])
+        if candidate[0].header['IMAGETYP'].lower() == 'bias':
+            new_list.append(file_list[item])
+            candidate.close()
+        #if imtype != "bias": pop it out of list
+    file_list = new_list    
     print('# of files:  ', len(file_list))
     print(file_list)
     if len(file_list) == 0:
@@ -443,13 +452,51 @@ def make_master_bias (alias, path,  lng_path , selector_string, out_file):
     chunked_list = chunkify(file_list, chunk)
     print(chunked_list)
     create_super_bias(chunked_list, lng_path, out_file )
+    
+def analyze_bias_stack(alias, path,  lng_path , selector_string, out_file):
+
+    file_list = glob.glob(path + selector_string)
+    #shuffle(file_list)
+    #file_list = file_list[:9*3]   #Temporarily limit size of reduction.
+    print("Pre cull:  ", len(file_list))
+    new_list = []
+    for item in range(len(file_list)):
+        candidate = fits.open(file_list[item])
+        if candidate[0].header['IMAGETYP'].lower() == 'bias':
+            new_list.append(file_list[item])
+            candidate.close()
+        #if imtype != "bias": pop it out of list
+    file_list = new_list    
+    print('# of files:  ', len(file_list))
+    print(file_list)
+    if len(file_list) == 0:
+        print("Empty list, returning.")
+        return
+    for frame in file_list:
+        image =  ccdproc.CCDData.read(frame, format='fits', ignore_missing_end=True)
+        image.data = image.data.astype('int32') + image.header['pedastal']
+        mean, std = image_stats(image)
+        cold = np.where(image.data < -2*std)
+        breakpoint()
+        print(image_stats(image))
+
 
 def make_master_dark (alias, path, lng_path, selector_string, out_file, super_bias_name):
     #breakpoint()
     file_list = glob.glob(path + selector_string)
     shuffle(file_list)
-    file_list = file_list[:9*9]   #Temporarily limit size of reduction.
+    #file_list = file_list[:9*9]   #Temporarily limit size of reduction.
+    print("Pre cull:  ", len(file_list))
+    new_list = []
+    for item in range(len(file_list)):
+        candidate = fits.open(file_list[item])
+        if candidate[0].header['IMAGETYP'].lower() == 'dark':
+            new_list.append(file_list[item])
+            candidate.close()
+        #if imtype != "bias": pop it out of list
+    file_list = new_list  
     print('# of files:  ', len(file_list))
+    breakpoint
     print(file_list)
     if len(file_list) > 63:
         file_list = file_list[0:63]
@@ -540,6 +587,10 @@ def mod_debias_and_trim(camera_name, archive_path, selector_string, out_path):
         # Overscan remove and trim
         pedastal = 200
         iy, ix = img.data.shape
+# =============================================================================
+#       THIS CODE IS MESSED UP!  
+# =============================================================================
+
 
         if ix == 9600:
             overscan = int(np.median(img.data[33:, -22:]))
@@ -596,27 +647,27 @@ def correct_image(camera_name, archive_path, selector_string, lng_path, out_path
     print('# of files:  ', len(file_list))
 
     #Get the master images:
-    sbHdu = fits.open(lng_path + 'mb_1.fits')
+    sbHdu = fits.open(lng_path + 'mb_2.fits')
     super_bias = sbHdu[0].data.astype('float32')
-    sdHdu = fits.open(lng_path + 'md_1_360.fits')
+    sdHdu = fits.open(lng_path + 'md_2_180.fits')
     super_dark = sdHdu[0].data.astype('float32')
-    srHdu = fits.open(lng_path + 'mf_rp.fits')
+    srHdu = fits.open(lng_path + 'mf_rp_2.fits')
     super_rp = srHdu[0].data.astype('float32')
-    sgHdu = fits.open(lng_path + 'mf_gp.fits')
+    sgHdu = fits.open(lng_path + 'mf_gp_2.fits')
     super_gp = sgHdu[0].data.astype('float32')
-    siHdu = fits.open(lng_path + 'mf_ip.fits')
+    siHdu = fits.open(lng_path + 'mf_ip_2.fits')
     super_ip = siHdu[0].data.astype('float32')
-    sHHdu = fits.open(lng_path + 'mf_HA.fits')
+    sHHdu = fits.open(lng_path + 'mf_HA_2.fits')
     super_HA = sHHdu[0].data.astype('float32')
-    sOHdu = fits.open(lng_path + 'mf_O3.fits')
+    sOHdu = fits.open(lng_path + 'mf_O3_2.fits')
     super_O3 = sOHdu[0].data.astype('float32')
-    sSHdu = fits.open(lng_path + 'mf_S2.fits')
+    sSHdu = fits.open(lng_path + 'mf_S2_2.fits')
     super_S2 = sOHdu[0].data.astype('float32')
-    sNHdu = fits.open(lng_path + 'mf_N2.fits')
+    sNHdu = fits.open(lng_path + 'mf_N2_2.fits')
     super_N2 = sOHdu[0].data.astype('float32')
-    swHdu = fits.open(lng_path + 'mf_w.fits')
+    swHdu = fits.open(lng_path + 'mf_w_2.fits')
     super_w = sOHdu[0].data.astype('float32')
-    shHdu = fits.open(lng_path + 'hm_1.fits')
+    shHdu = fits.open(lng_path + 'hm_2.fits')
     hot_map = shHdu[0].data
     hot_pix = np.where(hot_map > 1)
     for image in file_list:
@@ -646,7 +697,6 @@ def correct_image(camera_name, archive_path, selector_string, lng_path, out_path
           img[0].data /= super_w
         else:
             print("Incorrect filter suffix, no flat applied.")
-
         median8(img[0].data, hot_pix)
         img[0].data = img[0].data.astype('float32')
         
@@ -908,22 +958,22 @@ if __name__ == '__main__':
     camera_name = 'sq01'  #  config.site_config['camera']['camera1']['name']
     #archive_path = "D:/000ptr_saf/archive/sq01/2020-06-13/"
     #archive_path = "D:/2020-06-19  Ha and O3 screen flats/"
-    archive_path = "D:/000ptr_saf/archive/sq01/calib/2020-08-23/"
-    out_path = "D:/000ptr_saf/archive/sq01/calib/2020-08-23/trimmed/"
+    archive_path = "D:/000ptr_saf/archive/sq01/20200906/raw/"
+    out_path = "D:/20200906 F9 tests-Bubble Nebula/trimmed/"
     lng_path = "D:/000ptr_saf/archive/sq01/lng/"
     #APPM_prepare_TPOINT()
-    debias_and_trim(camera_name, archive_path, '*bd*', out_path)
+    #debias_and_trim(camera_name, archive_path, '*f9*', out_path)
     # mod_debias_and_trim(camera_name, archive_path, '*APPM-2020-07-12*', out_path)
     # prepare_tpoint(camera_name, archive_path, '*APPM*',lng_path, out_path)
     # make_master_bias(camera_name, out_path, lng_path, '*f_3*', 'mb_1b.fits')
-    # make_master_bias(camera_name, out_path, lng_path, '*b_2*', 'mb_2b.fits')
-
+    make_master_bias(camera_name, archive_path, lng_path, '*EX*', 'mb_2.fits')
+    # analyze_bias_stack(camera_name, archive_path, lng_path, '*EX*', 'mb_2.fits')
     # #make_master_bias(camera_name, archive_path, lng_path, '*b_3*', 'mb_3.fits')
     # #make_master_bias(camera_name, archive_path, lng_path, '*b_4*', 'mb_4.fits')
-    #make_master_dark(camera_name, out_path, lng_path, '*d_1*', 'md_1.fits', 'mb_1.fits')
+    # make_master_dark(camera_name, out_path, lng_path, '*d_1*', 'md_1.fits', 'mb_1.fits')
     # make_master_dark(camera_name, out_path, lng_path, '*d_1_360*', 'md_1b.fits', 'mb_1b.fits')
-    #make_master_bias(camera_name, out_path, lng_path, '*b_2*', 'mb_2.fits')
-    # make_master_dark(camera_name, out_path, lng_path, '*d_2_90*', 'md_2.fits', 'mb_2.fits')
+    # make_master_bias(camera_name, out_path, lng_path, '*b_2*', 'mb_2.fits')
+    make_master_dark(camera_name, archive_path, lng_path, '*EX*', 'md_2_180.fits', 'mb_2.fits')
     # #make_master_dark(camera_name, archive_path, lng_path, '*d_3_90*', 'md_3.fits', 'mb_3.fits')
     # #make_master_dark(camera_name, archive_path, lng_path, '*d_4_60*', 'md_4.fits', 'mb_4.fits')
     # make_master_flat(camera_name, archive_path, lng_path, filt, out_name, 'mb_1.fits', 'md_1.fits')
@@ -932,9 +982,9 @@ if __name__ == '__main__':
     # build_hot_map(camera_name, lng_path, "md_1_1080.fits", "hm_1")
     # build_hot_image(camera_name, lng_path, "md_1_1080.fits", "hm_1.fits")
     # archive_path = out_path
-    archive_path = "D:/000ptr_saf/archive/sq01/calib/2020-08-23/trimmed/"
-    out_path = "D:/20200812 more bubble o3 s2/reduced/"
-    #correct_image(camera_name, archive_path, '*bd*', lng_path, out_path)
+    #archive_path = out_path#"D:/000ptr_saf/archive/sq01/calib/2020-08-23/trimmed/"
+    #out_path = "D:/20200906 F9 tests-Bubble Nebula/reduced/"
+    #correct_image(camera_name, archive_path, '*ex*', lng_path, out_path)
     # mod_correct_image(camera_name, archive_path, '*EX00*', lng_path, out_path)
     # archive_path = out_path
     # out_path =":D:/20200707 Bubble Neb NGC7635  Ha O3 S2/catalogs/"

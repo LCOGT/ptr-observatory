@@ -440,19 +440,19 @@ class Camera:
         #                                              ['settings']['reference_gain'][bin_x - 1]))
         readout_time = float(self.config['camera']['camera1']['settings']['readout_time'][bin_x - 1])
         exposure_time = float(required_params.get('time', 0.0001))   #  0.0 may be the best default.  Use QHY min spec?  Config item?
-        exposure_time = min(exposure_time, 600.)
+        exposure_time = min(exposure_time, 1440.)
         self.estimated_readtime = (exposure_time + 2*readout_time)*1.25*3   #  3 is the outer retry loop maximum.
         #exposure_time = max(0.2, exposure_time)  #Saves the shutter, this needs qualify with imtype.
         imtype= required_params.get('image_type', 'Light')
         if imtype.lower() in ['experimental']:
             g_dev['enc'].wx_test = not g_dev['enc'].wx_test
             return
-        count = int(optional_params.get('count', 1))   #FOr now Repeats are external to full expose command.
+        count = int(optional_params.get('count', 1))   #  For now Repeats are external to full expose command.
         lcl_repeat = 1
         if count < 1:
             count = 1   #Hence frame does not repeat unless count > 1
 
-        #  Here we set up the filter, and later on possibly roational composition.
+        #  Here we set up the filter, and later on possibly rotational composition.
         try:    #20200716   FW throwing error (-4)
             requested_filter_name = str(optional_params.get('filter', 'w'))   #Default should come from config.
             self.current_filter = requested_filter_name
@@ -862,6 +862,8 @@ class Camera:
                 print('expose  took: ', round(self.t4 - self.t2, 2), ' sec,')
                 print('readout took: ', round(self.t5 - self.t4, 2), ' sec,')
                 pedastal = 200
+                iy, ix = self.img.shape
+                #  NB NB  Be very careful this is the exact code using in build_master and calibration  modules.
                 if ix == 9600:
                     overscan = int(np.median(self.img[-34:]))
                     #overscan = int(np.median(self.img[33:, -22:]))
@@ -873,8 +875,8 @@ class Camera:
                     square = trimed[61:61 + 3072, 857:857 + 3072]
                 else:
                     print("Incorrect chip size or bin specified.")
-                smin = np.where(square < 0)    # finds negative pixels
-                square[smin] = 0
+                #smin = np.where(square < 0)    # finds negative pixels  NB <0 where pedastal is 200. Useless!
+                #square[smin] = 0
                 self.t77 = time.time()
                 print('readout, transpose & Trim took:  ', round(self.t77 - self.t4, 1), ' sec,')# marks them as 0
                 self.img = square.astype('uint16')
@@ -893,10 +895,13 @@ class Camera:
                 avg_rot = g_dev['rot'].get_average_status(self.pre_rot, self.post_rot)
                 avg_ocn = g_dev['ocn'].get_average_status(self.pre_ocn, self.post_ocn)
                 if frame_type[-5:] =='focus':
-                    if self.focus_cache is None:
-                        focus_img = fits.open(self.lng_path + 'fmd_5.fits')
-                        self.focus_cache = focus_img[0].data
-                    self.img = self.img - self.focus_cache + 100   #maintain a + pedestal for sep
+                    # NB NB 20200908   Patch out dark correction.
+                    # if self.focus_cache is None:
+                    #     focus_img = fits.open(self.lng_path + 'fmd_5.fits')
+                    #     self.focus_cache = focus_img[0].data
+                    # self.img = self.img - self.focus_cache + 100   #maintain a + pedestal for sep
+                    self.img = self.img + 100   #maintain a + pedestal for sep  THIS SHOULD not be needed for a raw input file.
+                    
                     self.img = self.img.astype("float")
                     #Fix hot pixels here.
                     bkg = sep.Background(self.img)
@@ -908,8 +913,8 @@ class Camera:
                         a0 = source['a']
                         b0 = source['b']
                         r0 = math.sqrt(a0*a0 + b0*b0)
-                        # NB note the following fails with 2:2 8inning!!!!!
-                        r1 = math.sqrt((3072 - source['x'])**2 + (3072 - source['y'])**2)
+                        # NB note the following fails with 1:1 8inning!!!!!
+                        r1 = math.sqrt((1536 - source['x'])**2 + (1536 - source['y'])**2)
                         #kr, kf = sep.kron_radius(self.img, source['x'], source['y'], source['a'], source['b'], source['theta'], 6.0)
                         print(source['x'], source['y'], r0, r1)  # , kr, kf)
                     result['FWHM'] = round(r0, 3)
