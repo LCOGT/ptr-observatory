@@ -31,6 +31,7 @@ class Enclosure:
         self.enclosure.Connected = True
         print("enclosure connected.")
         print(self.enclosure.Description)
+        breakpoint()
         self.is_dome = self.config['enclosure']['enclosure1']['is_dome']
         if not self.is_dome:
             self.is_dome = False
