@@ -144,12 +144,12 @@ class Camera:
             self.ascom = False
             print('Maxim is connected:  ', self._connect(True))
             self.app = win32com.client.Dispatch("Maxim.Application")
-            self.app.TelescopeConnected = True
-            print("Maxim Telescope Connected: ", self.app.TelescopeConnected)
-            print('Control is Maxim camera interface.')
+            #self.app.TelescopeConnected = True
+            #print("Maxim Telescope Connected: ", self.app.TelescopeConnected)
+            print('Control is Maxim camera interface, Telescope Not Connected.')
         print('Maxim is connected:  ', self._connect(True))
         print('Cooler Setpoint:   ', self._setpoint(float(self.config['camera']['camera1']['settings']['temp_setpoint'])))
-        print('Cooler started @:  ', self._temperature)
+        print('Cooler started @:  ', self._temperature())
         self.camera.CoolerOn = self.config['camera']['camera1']['settings']['cooler_on']
         self.use_file_mode = self.config['camera']['camera1']['use_file_mode']
         self.current_filter = 0    #W in Apache Ridge case. #This should come from config, filter section
