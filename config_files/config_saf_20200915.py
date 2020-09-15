@@ -30,6 +30,7 @@ site_config = {
         'sequencer': 'sequencer1'
         },
     'name': 'Apache Ridge Observatory',
+    'telescope_description':  '0m3 f9/4.9 Ceravolo Astrograph',
     'location': 'Santa Fe, New Mexico,  USA',
     'site_path':  'D:/000ptr_saf/',    #  Path to where all Photon Ranch data and state are to be found
     'observatory_url': 'https://starz-r-us.sky/clearskies2',   #  This is meant to be optional
