@@ -6,7 +6,7 @@ from random import shuffle
 from global_yard import g_dev
 import ephem
 import build_tycho as tycho
-#from pprint import pprint
+from pprint import pprint
 
 '''
 Autofocus NOTE 20200122
@@ -146,6 +146,7 @@ class Sequencer:
         print(self.description)
         self.sky_guard = False
         self.af_guard = False
+        self.block_guard = False
 
     def get_status(self):
         status = {
@@ -229,31 +230,35 @@ class Sequencer:
                 self.sky_flat_script({}, {})   #Null command dictionaries
         elif g_dev['obs'].blocks is not None and \
                   g_dev['obs'].projects is not None:     #  THIS DOES NEED TO BE FENCED BY TIME and not repeated.
-             blocks = g_dev['obs'].blocks
-             projects = g_dev['obs'].projects
 
-             #  print('Block, project length:  ', len(blocks), len(projects))
-             #  print(blocks, projects)
-             for block in blocks:  #  This merges project spec into the blocks.
-                 for project in projects:
-                     if block['project_id'] == project['project_name'] \
-                             + '#' + project['created_at']:
-                        block['project'] = project
-                        
-                 # NB NB NB Need to sort blocks in ascending start time order.
-                 # Do not start a block within 15 min of end time???
-             for block in blocks:
-                 now_date_timeZ = datetime.datetime.now().isoformat().split('.')[0] +'Z'
-                 if block['start'] <= now_date_timeZ < block['end']:
-                     pass
-                     # print("Here we would enter an observing block:  ",
-                     #       block)
-                     # breakpoint()
-                 #OK here we go to a generalized block execution routine that runs
-                 #until exhaustion of the observing window.
-                 else:
-                     pass
-                 #print("Block tested for observatility")
+            block = g_dev['obs'].blocks
+            project = g_dev['obs'].projects
+   
+            # breakpoint()
+            # for block in blocks:  #  This merges project spec into the blocks.
+            #     for project in projects:
+            if block['project_id'] == project['project_name'] + '#' + project['created_at']:
+                block['project'] = project
+                       
+            #     # NB NB NB Need to sort blocks in ascending start time order.
+            #     # Do not start a block within 15 min of end time???
+            # breakpoint()
+            # for block in blocks:
+            now_date_timeZ = datetime.datetime.now().isoformat().split('.')[0] +'Z'           
+            #if (block['start'] <= now_date_timeZ < block['end']) and not self.block_guard:
+
+            #self.block_guard = True
+            #self.execute_block(block)
+            #print("Would have entered a block here.")
+                
+                # print("Here we would enter an observing block:  ",
+                #       block)
+                # breakpoint()
+            #OK here we go to a generalized block execution routine that runs
+            #until exhaustion of the observing window.
+            # else:
+            #     pass
+            #print("Block tested for observatility")
                 
                     
         else:
@@ -261,6 +266,59 @@ class Sequencer:
             print("No active script is scheduled.")
         pass
 
+    def execute_block(self, block_specification):
+        self.block_guard = True
+        block = block_specification
+        # #unpark, open dome etc.
+        # #if not end of block
+        breakpoint()
+        g_dev['mnt'].unpark_command({}, {})
+        for target in block['project']['project_targets']:
+            dest_ra = float(target['ra'])
+            dest_dec = float(target['dec'])
+            dest_name =target['name']
+            if dest_name[0] == 'L':
+                dest_ra -= 2.5  #Hack for early testing, please remove
+                print("Early test hack in execute_block.")
+            g_dev['mnt'].go_coord(dest_ra, dest_dec)
+            for exposure in block['project']['exposures']:
+                color = exposure['filter']
+                exp_time = 1.0# float(exposure['exposure']) 
+                #dither = exposure['dither'] 
+                binning = int(exposure['bin'])
+                count = int(exposure['count'])
+                #  We should add a frame repeat count
+                imtype = exposure['imtype'] 
+                #defocus = exposure['defocus']
+                if color[0] == 'B':  color = 'B'   #Map generic filters to site specific ones.
+                if color[0] == 'G':  color = 'V'
+                if color[0] == 'R':  color = 'R'
+                if color[0] == 'L':  color = 'w'
+                if color[0] == 'W':  color = 'w'
+                if color[0] == 'g':  color = 'gp'
+                if color[0] == 'r':  color = 'rp'
+                if color[0] == 'i':  color = 'ip'
+                if count <=0:
+                    continue
+                req = {'time': exp_time,  'alias':  str(self.config['camera']['camera1']['name']), 'image_type': imtype}   #  NB Should pick up filter and constats from config
+                opt = {'size': 100, 'count': 1, 'bin': binning, 'filter_name': color, 'hint': block['project_id'] + "##" + dest_name}
+ 
+                result = g_dev['cam'].expose_command(req, opt, gather_status=True, no_AWS=False)
+                breakpoint()
+                print(result)
+                exposure['count'] = count - 1
+                
+            
+        #      go to print(target['ra'])  if airmas limit, moon distance, etc
+        #      for color in block['project']['exposures']
+        #           print(color['filter'])
+        
+        
+        
+        
+        
+        self.block_guard = False
+        return
 
     def bias_dark_script(self, req=None, opt=None):
         """

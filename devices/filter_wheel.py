@@ -178,7 +178,7 @@ class FilterWheel:
         'NBNBNB This routine may not be correct'
         #print("filter cmd: set_position")
         breakpoint()
-        filter_selections = eval(self.filter_data[int(req['filter_num'])][1])
+        filter_selections = self.filter_data[int(req['filter_num'])][1]
         #print('Selections:  ', filter_selections)
         if self.dual:
             try:
@@ -227,11 +227,11 @@ class FilterWheel:
                 filt_pointer = match
                 break
         print('Filter name is:  ', self.filter_data[match][0])
-        #print('Filter pointer:  ', filt_pointer)
+        print('Filter pointer:  ', filt_pointer)
         self.filter_number = filt_pointer
         self.filter_selected = filter_name
-        filter_selections = eval(self.filter_data[filt_pointer][1])
-        #print('Selections:  ', filter_selections)
+        filter_selections = self.filter_data[filt_pointer][1]   # eliminated eval with config format to Python values.
+        print('Selections:  ', filter_selections)
         if self.dual:
             try:
                 while self.filter_front.Position == -1:
