@@ -72,7 +72,7 @@ class ObservingConditions:
         self.wx_test = False    #Purely a debugging aid.
         self.prior_status = None
         self.prior_status_2 = None
-        if self.site == 'wmd':
+        if self.site in ['wmd', 'wmd2']:
             self.redis_server = redis.StrictRedis(host='10.15.0.109', port=6379, db=0,
                                                   decode_responses=True)
             self.observing_conditions_connected = True
@@ -232,7 +232,7 @@ class ObservingConditions:
 
 
             self.status = status
-        elif self.site == 'wmd':
+        elif self.site == 'wmd' or self.site == 'wmd2':
             try:
                 # breakpoint()
                 # pass

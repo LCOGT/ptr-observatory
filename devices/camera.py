@@ -144,15 +144,15 @@ class Camera:
             self.ascom = False
             print('Maxim is connected:  ', self._connect(True))
             self.app = win32com.client.Dispatch("Maxim.Application")
-            self.app.TelescopeConnected = True
-            print("Maxim Telescope Connected: ", self.app.TelescopeConnected)
-            print('Control is Maxim camera interface.')
+            #self.app.TelescopeConnected = True
+            #print("Maxim Telescope Connected: ", self.app.TelescopeConnected)
+            print('Control is Maxim camera interface, Telescope Not Connected.')
         print('Maxim is connected:  ', self._connect(True))
         print('Cooler Setpoint:   ', self._setpoint(float(self.config['camera']['camera1']['settings']['temp_setpoint'])))
-        print('Cooler started @:  ', self._temperature)
+        print('Cooler started @:  ', self._temperature())
         self.camera.CoolerOn = self.config['camera']['camera1']['settings']['cooler_on']
         self.use_file_mode = self.config['camera']['camera1']['use_file_mode']
-        self.current_filter = 0    #W in Apache Ridge case. #This should come from congig, filter section
+        self.current_filter = 0    #W in Apache Ridge case. #This should come from config, filter section
         self.exposure_busy = False
         self.cmd_in = None
         self.t7 = None
@@ -278,6 +278,9 @@ class Camera:
     def create_simple_autosave(self, exp_time=0, img_type=0, speed=0, suffix='', \
                                repeat=1, readout_mode="Normal", filter_name='W', \
                                enabled=1, binning=1, binmode=0, column=1):
+        '''
+        Creates a valid Maxium Autosaave file.
+        '''
         exp_time = round(abs(float(exp_time)), 3)
         if img_type > 3:
             img_type = 0
