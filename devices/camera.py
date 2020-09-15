@@ -903,6 +903,7 @@ class Camera:
                     #     focus_img = fits.open(self.lng_path + 'fmd_5.fits')
                     #     self.focus_cache = focus_img[0].data
                     # self.img = self.img - self.focus_cache + 100   #maintain a + pedestal for sep
+                    breakpoint()
                     self.img = self.img + 100   #maintain a + pedestal for sep  THIS SHOULD not be needed for a raw input file.
                     
                     self.img = self.img.astype("float")

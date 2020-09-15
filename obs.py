@@ -298,18 +298,18 @@ class Observatory:
                 if self.projects is None:
                     all_projects = requests.post(url).json()
                     if all_projects is not None:
-                        self.projects = [all_projects[3]]   #NOTE creating a list with a dict entry as item 0
-                        self.projects.append(all_projects[1])
+                        self.projects = all_projects[2]   #NOTE creating a list with a dict entry as item 0
+                        #self.projects.append(all_projects[1])
                 url = "https://calendar.photonranch.org/dev/siteevents"
                 body = json.dumps({
                     'site':  'saf',
-                    'start':  '2020-08-16T20:00:00Z',
-                    'end':    '2020-08-29T14:00:00Z',
-                     'full_project_details:':  False})
+                    'start':  '2020-09-14T13:00:00Z',
+                    'end':    '2020-10-31T12:59:59Z',
+                    'full_project_details:':  False})
                 if self.blocks is None:
-                    events = requests.post(url, body).json()
-                    if events is not None:
-                        self.blocks = events[2:]
+                    blocks = requests.post(url, body).json()
+                    if blocks is not None:
+                        self.blocks = blocks[0]
                 if self.events_new is None:
                     url = 'https://api.photonranch.org/api/events?site=saf'
 
