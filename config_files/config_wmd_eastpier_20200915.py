@@ -12,11 +12,11 @@ import json
 Ports.txt
 Tested 20200813  
 
-Skyroof Ard    COM13
-PWL-500        COM14 +
-               COM15
-Alnitak East   COM6
-Numato Paddle  COM28
+Skyroof Arduino  COM13
+PWL-500          COM14 +
+                 COM15
+Alnitak East     COM6
+Numato Paddle    COM28
 
 Located on AP180F9 w QHY600CProC:
 
@@ -67,6 +67,7 @@ site_config = {
         'sequencer': 'sequencer1'
         },
     'name': 'West Mountain Drive Observatory',
+    'telescope_description': '0m35 f7.2 Planewave CDK',
     'site_path': 'Q:/',     #Really important, this is where state and results are stored. Can be a NAS server.
     'location': 'Santa Barbara, Californa,  USA',
     'observatory_url': 'https://starz-r-us.sky/clearskies',
@@ -228,8 +229,7 @@ site_config = {
             'has_cover': False,
             'settings': {
                 'fans': ['Auto','High', 'Low', 'Off'],
-                'offset_collimation': 0.0,    #If the mount model is current, these numbers are usually near 0.0
-                                                #for tel1.  Units are arcseconds.
+                'offset_collimation': 0.0,    #  Units of asec
                 'offset_declination': 0.0,
                 'offset_flexure': 0.0,
                 },
@@ -239,29 +239,28 @@ site_config = {
             #     'parent': 'mount1',
             #     'name': 'Aux OTA',
             #     'desc':  'AP180 F9 Starfire',    #'Astro=Physics AP185 Refractor',
-            #     'driver': 'None',                     #Essentially this device is informational.  It is mostly about the optics.
-            #     'startup_script':  'None',
-            #     'recover_script':  'None',
-            #     'shutdown_script':  'None',  
-            #     'collecting_area':  '25447',     #  Sq mm.
-            #     'obscuration':  '0.0%',
-            #     'aperture': '180',
-            #     'f-ratio':  '9',   #This and focal_length can be refined after a solve.
-            #     'focal_length': '1620',   #Please replace with measured value
-            #     'has_dew_heater':  'false',
-            #     'screen_name': 'screen1',
-            #     'focuser_name':  'focuser1',
-            #     'rotator_name':  'rotator1',
-            #     'camera_name':  'camera1',
-            #     'filter_wheel_name':  'filter1',
-            #     'has_fans':  'false',
-            #     'has_cover':  'true',
+            #     'driver': None,                     #Essentially this device is informational.  It is mostly about the optics.
+            #     'startup_script':  None,
+            #     'recover_script':  None,
+            #     'shutdown_script':  None,  
+            #     'collecting_area':  25447,     #  Sq mm.
+            #     'obscuration':  0.0,
+            #     'aperture': 180,
+            #     'f-ratio':  9,   #This and focal_length can be refined after a solve.
+            #     'focal_length': 1620,   #Please replace with measured value
+            #     'has_dew_heater':  False,
+            #     'screen_name': 'screen2',
+            #     'focuser_name':  'focuser2',
+            #     'rotator_name':  'rotator2',
+            #     'camera_name':  'sqc01',
+            #     'filter_wheel_name':  'filter2',
+            #     'has_fans':  False,
+            #     'has_cover':  True,
             #     'settings': {
-            #         'fans': ['none'],
-            #         'offset_collimation': '0.0',    #If the mount model is current, these numbers are usually near 0.0
-            #                                         #for tel1.  Units are arcseconds.
-            #         'offset_declination': '0.0',
-            #         'offset_flexure': '0.0',
+            #         'fans': ['Auto','High', 'Low', 'Off'],
+            #         'offset_collimation': 0.0,    #If the mount model is current, these numbers are usually near 0.0
+            #         'offset_declination':0.0,
+            #         'offset_flexure': 0.0,
             #         },
             # },
     },
