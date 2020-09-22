@@ -209,7 +209,8 @@ class Camera:
         self.af_step = -1
         self.f_spot_dia = []
         self.f_positions = []
-
+        self.overscan_bin_1 = None   #Remember last overscan if we take a subframe
+        self.overscan_bin_2 = None
         self.hint = None
         self.focus_cache = None
         self.darkslide = False
@@ -425,11 +426,11 @@ class Camera:
         self.script = required_params.get('script', 'None')
         bin_x = optional_params.get('bin', self.config['camera']['camera1'] \
                                                       ['settings']['default_bin'])  #NB this should pick up config default.
-        if bin_x == '4, 4':     # For now this is the highest level of binning supported.
+        if bin_x == '4,4':     # For now this is the highest level of binning supported.
             bin_x = 2
-        elif bin_x == '3, 3':   # replace with in and various formats or strip spaces.
+        elif bin_x == '3,3':   # replace with in and various formats or strip spaces.
             bin_x = 2
-        elif bin_x == '2, 2':
+        elif bin_x == '2,2':
             bin_x = 2
             self.ccd_sum = '2 2'
         else:
@@ -580,8 +581,8 @@ class Camera:
             self.camera_start_x = 0
             self.camera_num_y = self.len_y
             self.camera_start_y = 0
-            self.area = 100
-            print("Default area used. 100%")
+            self.area = 150
+            print("Default area used. 150%:  ", self.len_x,self.len_y )
 
         #Next apply any subframe setting here.  Be very careful to keep fractional specs and pixel values disinguished.
         if self.area == self.previous_area and sub_frame_fraction is not None and \
@@ -718,7 +719,8 @@ class Camera:
                         #print('Filter number is:  ', self.camera.Filter)
                         try:
                             for file_path in glob.glob('D:*.fit'): 
-                                os.remove(file_path)
+                                #os.remove(file_path)
+                                pass
                         except:
                             pass
                         if self.darkslide and imtypeb:
@@ -858,32 +860,49 @@ class Camera:
                     print ('Grab took :  ', tries*delay, ' sec')
                 else:
                     time.sleep(0.1)   #  This delay appears to be necessary. 20200804 WER
-                    self.img = self.camera.ImageArray   #As read this is a Windows Safe Array 
-                    self.img = np.array(self.img).transpose()  #  .astype('int32')
-                    iy, ix = self.img.shape                       
+                    self.img_safe = self.camera.ImageArray   #As read, this is a Windows Safe Array
+                    self.img_untransposed = np.array(self.img_safe) #incoming is (4800,3211) for QHY600Pro 2:2 Bin
+                    print(self.img_untransposed.shape)
+                    self.img = self.img_untransposed.transpose()
+                    #  print('incoming shape:  ', self.img.shape)                      
                 self.t5 = time.time()         
                 print('expose  took: ', round(self.t4 - self.t2, 2), ' sec,')
                 print('readout took: ', round(self.t5 - self.t4, 2), ' sec,')
-                pedastal = 200
                 iy, ix = self.img.shape
-                #  NB NB  Be very careful this is the exact code using in build_master and calibration  modules.
-                if ix == 9600:
-                    overscan = int(np.median(self.img[-34:]))
-                    #overscan = int(np.median(self.img[33:, -22:]))
-                    trimed = self.img[36 :, : -26] + pedastal - overscan
-                    square = trimed[121 : 121 + 6144, 1715 : 1715 + 6144]
+                print('incoming shape:  ', ix, iy)
+                breakpoint()
+                #  NB NB  Be very careful this is the exact code used in build_master and calibration  modules.
+                #  NB Note this is QHY600 specific code.  Needs to be supplied in camera config as sliced regions.
+                pedastal = 100
+                iy, ix = self.img.shape
+                if opt['area'] == 150 and ix == 9600:
+                    overscan = int((np.median(self.img[0:34, :]) + np.median(self.img[:, 9578:]))/2)
+                    trimmed = self.img[34:,:-24].astype('int32') + pedastal - overscan
+                    square = trimmed
+                elif opt['area'] == 150 and ix == 4800:
+                    overscan = int((np.median(self.img[0:17, :]) + np.median(self.img[:, 4789:]))/2)
+                    trimmed = self.img[17:,:-12].astype('int32') + pedastal - overscan
+                    square = trimmed   
+                elif ix == 9600:
+                    overscan = int((np.median(self.img[0:34, :]) + np.median(self.img[:, 9578:]))/2)
+                    trimmed = self.img[36:,:-26].astype('int32') + pedastal - overscan
+                    square = trimmed[121:121+6144,1715:1715+6144]
                 elif ix == 4800:
-                    overscan = int(np.median(self.img[17:, -11:]))
-                    trimed = self.img[18 :, : -13] + pedastal - overscan
-                    square = trimed[61:61 + 3072, 857:857 + 3072]
+                    overscan = int((np.median(self.img[0:17, :]) + np.median(self.img[:, 4789:]))/2)
+                    trimmed = self
+                    img.data[18:,:-13].astype('int32') + pedastal - overscan
+                    square = trimmed[61:61+3072,857:857+3072]
                 else:
                     print("Incorrect chip size or bin specified.")
                 #smin = np.where(square < 0)    # finds negative pixels  NB <0 where pedastal is 200. Useless!
                 #square[smin] = 0
                 self.t77 = time.time()
                 print('readout, transpose & Trim took:  ', round(self.t77 - self.t4, 1), ' sec,')# marks them as 0
+                #Should we consider correcting the image right here with cached bias, dark and hot pixel
+                #processing so downstream processing is reliable.  Maybe only do this for focus?
                 self.img = square.astype('uint16')
-                test_saturated = np.array(self.img)[1536:4608, 1536:4608]
+                ix, iy = self.img.shape
+                test_saturated = np.array(self.img[ix//3:ix*2//3, iy//3:iy*2//3])
                 bi_mean = round((test_saturated.mean() + np.median(test_saturated))/2, 0)
                 if frame_type[-4:] == 'flat':
                     if bi_mean > 45000:

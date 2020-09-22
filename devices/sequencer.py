@@ -474,9 +474,8 @@ class Sequencer:
                 except:
                     exp_time = 0.3
                 req = {'time': float(exp_time),  'alias': camera_name, 'image_type': 'sky flat', 'script': 'On'}
-                opt = {'size': 100, 'count': 1, 'filter': g_dev['fil'].filter_data[current_filter][0]}
+                opt = {'size': 100, 'count': 1, 'bin':  '2,2', 'area': 150, 'filter': g_dev['fil'].filter_data[current_filter][0]}
                 print("using:  ", g_dev['fil'].filter_data[current_filter][0])
-                breakpoint()
                 result = g_dev['cam'].expose_command(req, opt, gather_status=True, no_AWS=True, do_sep = False)
                 bright = result['patch']    #  Patch should be circular and 20% of Chip area. ToDo project
                 try:

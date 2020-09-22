@@ -124,6 +124,9 @@ class ObservingConditions:
                 self.ok_to_open = "No"
             try:   #Boltwood cloud cover occasionally faults. 20200805 WER
             # Faults continuing but very rare.  20200909
+                status = {}   #This code faults when Rain is reported the Cloudcover does not
+                              #return properly
+                status2 = {}
                 status = {"temperature_C": round(self.boltwood.Temperature, 2),
                           "pressure_mbar": 784.,
                           "humidity_%": self.boltwood.Humidity,
@@ -140,6 +143,7 @@ class ObservingConditions:
                           "open_ok": self.ok_to_open
                           #"image_ok": str(self.boltwood_oktoimage.IsSafe)
                           }
+                status2 = {}
                 status2 = {"temperature_C": round(self.boltwood.Temperature, 2),
                           "pressure_mbar": 784.0,
                           "humidity_%": self.boltwood.Humidity,
@@ -162,8 +166,10 @@ class ObservingConditions:
                 time.sleep(2)
                 
                 try:
+                    status = {}
+                    status2 = {}
                     status = {"temperature_C": round(self.boltwood.Temperature, 2),
-                              "pressure_mbar": 784.,
+                          "pressure_mbar": 784.,
                               "humidity_%": self.boltwood.Humidity,
                               "dewpoint_C": self.boltwood.DewPoint,
                               "sky_temp_C": round(self.boltwood.SkyTemperature,2),
@@ -178,6 +184,7 @@ class ObservingConditions:
                               "open_ok": self.ok_to_open
                               #"image_ok": str(self.boltwood_oktoimage.IsSafe)
                               }
+                    status2 = {}
                     status2 = {"temperature_C": round(self.boltwood.Temperature, 2),
                               "pressure_mbar": 784.0,
                               "humidity_%": self.boltwood.Humidity,

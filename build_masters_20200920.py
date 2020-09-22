@@ -93,12 +93,16 @@ def fits_renamer(path):
         print("No files needed renaming.")
 
 def image_stats(img_img, p_median=False):
-    axis1 = img_img.meta['NAXIS1']
-    axis2 = img_img.meta['NAXIS2']
+    try:
+        axis1 = img_img.meta['NAXIS1']
+        axis2 = img_img.meta['NAXIS2']       
+    except:
+        axis1 = img_img.header['NAXIS1']
+        axis2 = img_img.header['NAXIS2']
     subAxis1 = axis1/2
-    patchHalf1 = axis1/5
+    patchHalf1 = axis1/10
     subAxis2 = axis2/2
-    patchHalf2 = axis2/5
+    patchHalf2 = axis2/10
     sub_img = img_img.data[int(subAxis1 - patchHalf1):int(subAxis1 + patchHalf1), int(subAxis2 - patchHalf2):int(subAxis2 + patchHalf2) ]
     if p_median:
         img_mean = np.median(sub_img)
@@ -215,8 +219,8 @@ def chunkify(im_list, chunk_size):
         return out_list
 
 def create_super_bias(input_images, out_path, super_name):
-    first_image = ccdproc.CCDData.read(input_images[0][0])# , unit='adu')
-    last_image = ccdproc.CCDData.read(input_images[-1][-1])# , unit='adu')
+    first_image = ccdproc.CCDData.read(input_images[0][0], unit='adu')
+    last_image = ccdproc.CCDData.read(input_images[-1][-1], unit='adu')
     super_image =[]
     super_image_sigma = []
     num = 0
@@ -226,7 +230,7 @@ def create_super_bias(input_images, out_path, super_name):
         len_input = len(input_images[0])
         for img in range(len_input):
             print(input_images[0][img])
-            im =  ccdproc.CCDData.read(input_images[0][img])# , unit='adu')
+            im =  ccdproc.CCDData.read(input_images[0][img], unit='adu')
             im.data = im.data.astype(np.float32)
             print(im.data.mean())
             inputs.append(im)
@@ -246,7 +250,7 @@ def create_super_bias(input_images, out_path, super_name):
     #breakpoint()
     combiner = Combiner(super_image)
     combiner.sigma_clipping(low_thresh=2, high_thresh=3, func = np.ma.mean)
-    super_img= combiner.average_combine()
+    super_img = combiner.average_combine()
     super_image = None    #Again get rid of big stale data
     combiner = None
     super_img.data = super_img.data.astype(np.float32)
@@ -423,13 +427,13 @@ def create_super_flat(input_images, lng_path, super_name, super_bias_name,
 def make_master_bias (alias, path,  lng_path , selector_string, out_file):
 
     file_list = glob.glob(path + selector_string)
-    #shuffle(file_list)
+    shuffle(file_list)
     #file_list = file_list[:9*3]   #Temporarily limit size of reduction.
     print("Pre cull:  ", len(file_list))
     new_list = []
     for item in range(len(file_list)):
         candidate = fits.open(file_list[item])
-        if candidate[0].header['IMAGETYP'].lower() == 'bias':
+        if candidate[0].header['IMAGETYP'].lower() in ['bias', 'zero', 'bias frame']:
             new_list.append(file_list[item])
             candidate.close()
         #if imtype != "bias": pop it out of list
@@ -448,7 +452,7 @@ def make_master_bias (alias, path,  lng_path , selector_string, out_file):
         chunk = len(file_list)
     if chunk > 31: chunk = 31
     print('Chunk size:  ', chunk, len(file_list)//chunk)
-    chunk = 9
+    chunk = 5
     chunked_list = chunkify(file_list, chunk)
     print(chunked_list)
     create_super_bias(chunked_list, lng_path, out_file )
@@ -537,43 +541,65 @@ def make_master_flat (alias, path, lng_path, selector_string, out_name, super_bi
     create_super_flat(chunked_list, lng_path, out_name, super_bias_name, super_dark_name)
 
 
-def debias_and_trim(camera_name, archive_path, selector_string, out_path):
+def de_offset_and_trim(camera_name, archive_path, selector_string, out_path, full=False, norm=False):
     #NB this needs to rename fit and fts files to fits
     file_list = glob.glob(archive_path + selector_string)
  #   file_list.sort
     print(file_list)
     print('# of files:  ', len(file_list))
-    breakpoint()
     for image in file_list:
         print('Processing:  ', image)
         #breakpoint()
-        img = ccdproc.CCDData.read(image, unit='adu', format='fits')
+        image_hdr = fits.open(image)
+        img = image_hdr[0]
+        #img = ccdproc.CCDData.read(image, unit='adu', format='fits')
         # Overscan remove and trim
-        pedastal = 200
+        if not norm:
+            pedastal = 0.0
+        else:
+            pedastal = 100.0
         iy, ix = img.data.shape
-        if ix == 9600:
-            overscan = int(np.median(img.data[33:, -22:]))
-            trimed = img.data[36:,:-26].astype('int32') + pedastal - overscan
-            square = trimed[121:121+6144,1715:1715+6144]
+        if full and ix == 9600:
+            overscan = int((np.median(img.data[0:34, :]) + np.median(img.data[:, 9578:]))/2)
+            trimmed = img.data[34:,:-24].astype('int32') + pedastal - overscan
+            square = trimmed
+        elif full and ix == 4800:
+            overscan = int((np.median(img.data[0:17, :]) + np.median(img.data[:, 4789:]))/2)
+            trimmed = img.data[17:,:-12].astype('int32') + pedastal - overscan
+            square = trimmed   
+        elif ix == 9600:
+            overscan = int((np.median(img.data[0:34, :]) + np.median(img.data[:, 9578:]))/2)
+            trimmed = img.data[36:,:-26].astype('int32') + pedastal - overscan
+            square = trimmed[121:121+6144,1715:1715+6144]
         elif ix == 4800:
-            overscan = int(np.median(img.data[17:, -11:]))
-            trimed = img.data[18:,:-13].astype('int32') + pedastal - overscan
-            square = trimed[61:61+3072,857:857+3072]
+            overscan = int((np.median(img.data[0:17, :]) + np.median(img.data[:, 4789:]))/2)
+            trimmed = img.data[18:,:-13].astype('int32') + pedastal - overscan
+            square = trimmed[61:61+3072,857:857+3072]
         else:
             print("Incorrect chip size or bin specified.")
-        smin = np.where(square < 0)    #finds negative pixels
         std = square.std()
-        shot = np.where(square > (pedastal + 3*std))
-        print('Mean, std, overscan, # neg, hot pixels:  ', square.mean(), std, overscan, len(smin[0]), len(shot[0]))
-        square[smin] = 0               #marks them as 0
-        img.data = square.astype('uint16')
-        img.meta['NAXIS1'] = square.shape[0]
-        img.meta['NAXIS2'] = square.shape[1]  
-        img.meta['PEDASTAL'] = -pedastal
-        img.meta['ERRORVAL'] = 0
-        img.meta['OVERSCAN'] = overscan
-        img.meta['HISTORY'] = "Maxim image debiased and trimmed."
-        img.write(out_path + image.split('\\')[1], overwrite=True)
+        smin = np.where(square < (pedastal - 6*std))    #finds negative pixels
+        shot = np.where(square > (pedastal + 5*std))
+        print('Mean, min, max, std, overscan, # neg, hot pixels:  ', square.mean(), square.min(), square.max(), std, overscan, len(smin[0]), len(shot[0]))
+        square[smin] = 0               #marks them as , note pedastal is 100
+        if not norm:img.data = square.astype('uint16')
+        img.header['NAXIS1'] = square.shape[0]
+        img.header['NAXIS2'] = square.shape[1]
+        img.header['BUNIT'] = 'adu'
+        img.header['PEDASTAL'] = -pedastal
+        img.header['ERRORVAL'] = 0
+        img.header['OVERSCAN'] = overscan
+        img.header['HISTORY'] = "Maxim image debiased and trimmed."
+        #img.write(out_path + image.split('\\')[1], overwrite=True)
+
+        if norm:
+            img.data = square.astype('float32')
+            med, std = image_stats(img, p_median=True)
+            img.data = img.data/med
+            img.header['HISTORY'] = "Normalized to median of central 10%"
+            img.header['PATCH'] = med
+        image_hdr.writeto(out_path + image.split('\\')[1], overwrite=True)
+        image_hdr.close()
     print('Debias and trim Finished.')
     
 def mod_debias_and_trim(camera_name, archive_path, selector_string, out_path):
@@ -648,7 +674,7 @@ def correct_image(camera_name, archive_path, selector_string, lng_path, out_path
     file_list.sort
     print(file_list)
     print('# of files:  ', len(file_list))
-
+    breakpoint()
     #Get the master images:
     sbHdu = fits.open(lng_path + 'mb_2.fits')
     super_bias = sbHdu[0].data.astype('float32')
@@ -961,14 +987,14 @@ if __name__ == '__main__':
     camera_name = 'sq01'  #  config.site_config['camera']['camera1']['name']
     #archive_path = "D:/000ptr_saf/archive/sq01/2020-06-13/"
     #archive_path = "D:/2020-06-19  Ha and O3 screen flats/"
-    archive_path = "D:/20200920 M27 Dumbell Nebula/"
-    out_path = "D:/20200920 M27 Dumbell Nebula/trimmed/"
-    lng_path = "D:/000ptr_saf/archive/sq01/lng/"   #Rename this to oldLng to preserve calibrations
+    archive_path = "D:/000ptr_saf/archive/sq01/calib/2020_09_21_flats_2/"
+    out_path = "D:/000ptr_saf/archive/sq01/calib/2020_09_21_flats_2/trimmed/"
+    lng_path = "D:/000ptr_saf/archive/sq01/lng/"
     #APPM_prepare_TPOINT()
-    #debias_and_trim(camera_name, archive_path, '*27*', out_path)
+    de_offset_and_trim(camera_name, archive_path, '**', out_path, full=True, norm = True)
     # mod_debias_and_trim(camera_name, archive_path, '*APPM-2020-07-12*', out_path)
     # prepare_tpoint(camera_name, archive_path, '*APPM*',lng_path, out_path)
-    # make_master_bias(camera_name, out_path, lng_path, '*f_3*', 'mb_1b.fits')
+    # make_master_bias(camera_name, archive_path, lng_path, '*b_1-4*', 'fb_1-4.fits')
     # make_master_bias(camera_name, archive_path, lng_path, '*EX*', 'mb_2.fits')
     # analyze_bias_stack(camera_name, archive_path, lng_path, '*EX*', 'mb_2.fits')
     # #make_master_bias(camera_name, archive_path, lng_path, '*b_3*', 'mb_3.fits')
@@ -984,10 +1010,10 @@ if __name__ == '__main__':
 
     # build_hot_map(camera_name, lng_path, "md_1_1080.fits", "hm_1")
     # build_hot_image(camera_name, lng_path, "md_1_1080.fits", "hm_1.fits")
-    archive_path = out_path
-    #archive_path = "D:/20200914 M33 second try/trimmed/"
-    out_path = "D:/20200920 M27 Dumbell Nebula/reduced/"
-    correct_image(camera_name, archive_path, '*27*', lng_path, out_path)
+    # archive_path = out_path
+    # archive_path = "D:/20200914 M33 second try/trimmed/"
+    # out_path = "D:/20200920 M27 Dumbell Nebula/reduced/"
+    #correct_image(camera_name, archive_path, '*27*', lng_path, out_path)
     # mod_correct_image(camera_name, archive_path, '*EX00*', lng_path, out_path)
     # archive_path = out_path
     # out_path =":D:/20200707 Bubble Neb NGC7635  Ha O3 S2/catalogs/"
