@@ -869,8 +869,7 @@ class Camera:
                 print('expose  took: ', round(self.t4 - self.t2, 2), ' sec,')
                 print('readout took: ', round(self.t5 - self.t4, 2), ' sec,')
                 iy, ix = self.img.shape
-                print('incoming shape:  ', ix, iy)
-                breakpoint()
+                #print('incoming shape:  ', ix, iy)
                 #  NB NB  Be very careful this is the exact code used in build_master and calibration  modules.
                 #  NB Note this is QHY600 specific code.  Needs to be supplied in camera config as sliced regions.
                 pedastal = 100
@@ -879,7 +878,7 @@ class Camera:
                     overscan = int((np.median(self.img[0:34, :]) + np.median(self.img[:, 9578:]))/2)
                     trimmed = self.img[34:,:-24].astype('int32') + pedastal - overscan
                     square = trimmed
-                elif opt['area'] == 150 and ix == 4800:
+                elif opt['area'] == 150  and ix == 4800:
                     overscan = int((np.median(self.img[0:17, :]) + np.median(self.img[:, 4789:]))/2)
                     trimmed = self.img[17:,:-12].astype('int32') + pedastal - overscan
                     square = trimmed   
@@ -1059,7 +1058,7 @@ class Camera:
                     hdu.header['CAMBITS'] = 16
                     hdu.header['CAMOFFS'] = 10
                     hdu.header['CAMUSBT'] = 60
-                    hdu.header['FULLWELL'] = 32767
+                    hdu.header['FULLWELL'] = 65535
                     hdu.header['SATURATE'] = int(self.config['camera']['camera1']['settings']['saturate'])
                     pix_ang = (self.camera.PixelSizeX*self.camera.BinX/(float(self.config['telescope'] \
                                               ['telescope1']['focal_length'])*1000.))
