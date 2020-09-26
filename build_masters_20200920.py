@@ -641,6 +641,7 @@ def correct_image(camera_name, archive_path, selector_string, lng_path, out_path
     super_bias += pedastal
     sdHdu = fits.open(lng_path + 'fd_2_120-4.fits')
     super_dark = sdHdu[0].data.astype('float32')
+    super_dark_exp = sdHdu[0].header['EXPOSURE']
     srHdu = fits.open(lng_path + 'ff_2_rp.fits')
     super_rp = srHdu[0].data.astype('float32')
     sgHdu = fits.open(lng_path + 'ff_2_gp.fits')
@@ -657,18 +658,27 @@ def correct_image(camera_name, archive_path, selector_string, lng_path, out_path
     super_N2 = sNHdu[0].data.astype('float32')
     swHdu = fits.open(lng_path + 'ff_2_w.fts')
     super_w = swHdu[0].data.astype('float32')
-    shHdu = fits.open(lng_path + 'fh_2.fits')
-    hot_map = shHdu[0].data
-    hot_pix = np.where(hot_map > 1)  #??
+    # shHdu = fits.open(lng_path + 'fh_2.fits')
+    # hot_map = shHdu[0].data
+    # hot_pix = np.where(hot_map > 1)  #
+    four_std = 4*super_dark.std()   #making this more adaptive 
+    hot_pix = np.where(super_dark > four_std)
     for image in file_list:
 
         img = fits.open(image)
 
         img[0].data = img[0].data.astype('float32')
-
-        img[0].data = img[0].data - super_bias
+        try:
+            pedastal = img[0].header['PEDASTAL']
+            img[0].data = img[0].data + pedastal - super_bias
+        except:
+            img[0].data = img[0].data - super_bias
         img_dur = img[0].header['EXPOSURE']
-        ratio = img_dur/180.
+        try:
+            ratio = img_dur/abs(super_dark_exp)
+        except:
+            ratio = 0    #Do not correct for dark
+            
         img[0].data -= super_dark*ratio
         if image[-6] == 'g':
             img[0].data /= super_gp
@@ -676,7 +686,7 @@ def correct_image(camera_name, archive_path, selector_string, lng_path, out_path
             img[0].data /= super_rp
         elif image[-6] == 'i' :
             img[0].data /= super_ip
-        elif image[-6] in ['H','h', 'A', 'a'] :
+        elif image[-6] in ['H','h'] :
             img[0].data /= super_HA
         elif image[-6] == 'O' :
             img[0].data /= super_O3
@@ -689,9 +699,11 @@ def correct_image(camera_name, archive_path, selector_string, lng_path, out_path
         else:
             print("Incorrect filter suffix, no flat applied.")
         median8(img[0].data, hot_pix)
-        img[0].data = img[0].data.astype('float32')
-        
-        img[0].header['CALIBRAT'] = 'B D SCF H'  #SCF SKF
+        #cold = np.where(img[0].data <= 0)
+        #median8(img[0].data, cold)
+        #cast_32 = img[0].data.astype('float32')
+        #img[0].data = cast_32
+        img[0].header['CALIBRAT'] = 'B D SKF H'  #SCF SKF
         file_name_split = image.split('\\')
         print('Writing:  ', file_name_split[1])
         #  img_bk_data = img[0].data
@@ -949,11 +961,11 @@ if __name__ == '__main__':
     camera_name = 'sq01'  #  config.site_config['camera']['camera1']['name']
     #archive_path = "D:/000ptr_saf/archive/sq01/2020-06-13/"
     #archive_path = "D:/2020-06-19  Ha and O3 screen flats/"
-    archive_path = "D:/20200925 M33 7th try/"
+    archive_path = "D:/20200924 M33 6th try/"
     out_path = archive_path + 'trimmed/'
     lng_path = "D:/000ptr_saf/archive/sq01/lng/"
     #APPM_prepare_TPOINT()
-    # de_offset_and_trim(camera_name, archive_path, '*M33*f*t*', out_path, full=True, norm=False)
+    de_offset_and_trim(camera_name, archive_path, '*M33*f*t*', out_path, full=True, norm=False)
     # prepare_tpoint(camera_name, archive_path, '*APPM*',lng_path, out_path)
     # make_master_bias(camera_name, archive_path, lng_path, '*b_1-4*', 'fb_1-4.fits')
     # make_master_bias(camera_name, archive_path, lng_path, '*EX*', 'mb_2.fits')
