@@ -301,7 +301,7 @@ class Sequencer:
                 if count <=0:
                     continue
                 req = {'time': exp_time,  'alias':  str(self.config['camera']['camera1']['name']), 'image_type': imtype}   #  NB Should pick up filter and constats from config
-                opt = {'size': 100, 'count': 1, 'bin': binning, 'filter_name': color, 'hint': block['project_id'] + "##" + dest_name}
+                opt = {'area': 100, 'count': 1, 'bin': binning, 'filter_name': color, 'hint': block['project_id'] + "##" + dest_name}
  
                 result = g_dev['cam'].expose_command(req, opt, gather_status=True, no_AWS=False)
                 breakpoint()
@@ -374,7 +374,7 @@ class Sequencer:
         print('Pre-flush twice.')  #NB Filter is 'dark'
         bin_str = bin_to_string(21)
         req = {'time': 0.0, 'script': 'True', 'image_type': 'bias'}
-        opt = {'size': 100, 'count': flush, 'bin': bin_str, \
+        opt = {'area': 100, 'count': flush, 'bin': bin_str, \
                'filter': g_dev['fil'].filter_data[-1][0], 'hint':  'Flush'}
         result = g_dev['cam'].expose_command(req, opt, no_AWS=True, \
                                              do_sep=False, quick=False)        
@@ -390,12 +390,12 @@ class Sequencer:
             if exp == 0:
                 print("Expose Bias using bin:  ", use_bin)   
                 req = {'time': 0.0,  'script': 'True', 'image_type': 'bias'}
-                opt = {'size': 100, 'count': 1, 'bin': bin_str, \
+                opt = {'area': 100, 'count': 1, 'bin': bin_str, \
                        'filter': g_dev['fil'].filter_data[-1][0]}
             elif exp > 0:
                 print("Expose Dark using bin, exp:  ", use_bin, exp)
                 req = {'time': exp,  'script': 'True', 'image_type': 'dark'}
-                opt = {'size': 100, 'count': 1, 'bin': bin_str, \
+                opt = {'area': 100, 'count': 1, 'bin': bin_str, \
                        'filter': g_dev['fil'].filter_data[-1][0]} 
             result = g_dev['cam'].expose_command(req, opt, no_AWS=True, \
                                         do_sep=False, quick=False)
@@ -474,7 +474,7 @@ class Sequencer:
                 except:
                     exp_time = 0.3
                 req = {'time': float(exp_time),  'alias': camera_name, 'image_type': 'sky flat', 'script': 'On'}
-                opt = {'size': 100, 'count': 1, 'bin':  '2,2', 'area': 150, 'filter': g_dev['fil'].filter_data[current_filter][0]}
+                opt = {'area': 100, 'count': 1, 'bin':  '2,2', 'area': 150, 'filter': g_dev['fil'].filter_data[current_filter][0]}
                 print("using:  ", g_dev['fil'].filter_data[current_filter][0])
                 result = g_dev['cam'].expose_command(req, opt, gather_status=True, no_AWS=True, do_sep = False)
                 bright = result['patch']    #  Patch should be circular and 20% of Chip area. ToDo project
@@ -527,7 +527,7 @@ class Sequencer:
         #Take a 10 s dark screen air flat to record ambient
         # Park Telescope
         req = {'time': exp_time,  'alias': camera_name, 'image_type': 'screen flat'}
-        opt = {'size': 100, 'count': dark_count, 'filter': g_dev['fil'].filter_data[12][0], 'hint': 'screen dark'}  #  air has highest throughput
+        opt = {'area': 100, 'count': dark_count, 'filter': g_dev['fil'].filter_data[12][0], 'hint': 'screen dark'}  #  air has highest throughput
         result = g_dev['cam'].expose_command(req, opt, gather_status=True, no_AWS=True)
         print('First dark 30-sec patch, filter = "air":  ', result['patch'])
         # g_dev['scr'].screen_light_on()
@@ -544,7 +544,7 @@ class Sequencer:
             g_dev['obs'].update_status()
             print('Dark Screen; filter, bright:  ', filter_number, 0)
             req = {'time': float(exp_time),  'alias': camera_name, 'image_type': 'screen flat'}
-            opt = {'size': 100, 'count': 1, 'filter': g_dev['fil'].filter_data[filter_number][0], 'hint': 'screen pre-filter dark'}
+            opt = {'area': 100, 'count': 1, 'filter': g_dev['fil'].filter_data[filter_number][0], 'hint': 'screen pre-filter dark'}
             result = g_dev['cam'].expose_command(req, opt, gather_status=True, no_AWS=True)
             print("Dark Screen flat, starting:  ", result['patch'], g_dev['fil'].filter_data[filter_number][0], '\n\n')
             g_dev['obs'].update_status()
@@ -558,7 +558,7 @@ class Sequencer:
             # time.sleep(10)
             g_dev['obs'].update_status()
             req = {'time': float(exp_time),  'alias': camera_name, 'image_type': 'screen flat'}
-            opt = {'size': 100, 'count': flat_count, 'filter': g_dev['fil'].filter_data[filter_number][0], 'hint': 'screen filter light'}
+            opt = {'area': 100, 'count': flat_count, 'filter': g_dev['fil'].filter_data[filter_number][0], 'hint': 'screen filter light'}
             result = g_dev['cam'].expose_command(req, opt, gather_status=True, no_AWS=True)
             # if no exposure, wait 10 sec
             print("Lighted Screen flat:  ", result['patch'], g_dev['fil'].filter_data[filter_number][0], '\n\n')
@@ -569,7 +569,7 @@ class Sequencer:
             g_dev['obs'].update_status()
             print('Dark Screen; filter, bright:  ', filter_number, 0)
             req = {'time': float(exp_time),  'alias': camera_name, 'image_type': 'screen flat'}
-            opt = {'size': 100, 'count': 1, 'filter': g_dev['fil'].filter_data[filter_number][0], 'hint': 'screen post-filter dark'}
+            opt = {'area': 100, 'count': 1, 'filter': g_dev['fil'].filter_data[filter_number][0], 'hint': 'screen post-filter dark'}
             result = g_dev['cam'].expose_command(req, opt, gather_status=True, no_AWS=True)
             print("Dark Screen flat, ending:  ",result['patch'], g_dev['fil'].filter_data[filter_number][0], '\n\n')
 
@@ -616,18 +616,21 @@ class Sequencer:
                                     g_dev['tel'].current_sidereal)
             print("Going to near focus star " + str(focus_star[0][0]) + "  degrees away.")
             g_dev['mnt'].go_coord(focus_star[0][1][1], focus_star[0][1][0])
-            req = {'time': 5,  'alias':  str(self.config['camera']['camera1']['name']), 'image_type': 'auto_focus'}   #  NB Should pick up filter and constats from config
-            opt = {'size': 100, 'count': 1, 'filter': 'W'}
+            req = {'time': 4,  'alias':  str(self.config['camera']['camera1']['name']), 'image_type': 'auto_focus'}   #  NB Should pick up filter and constats from config
+            opt = {'area': 100, 'bin':  '2,2', 'count': 1, 'filter': 'W'}
+            #We will use a dedicated single calibration frame.
         else:
             pass   #Just take time image where currently pointed.
             req = {'time': 10,  'alias':  str(self.config['camera']['camera1']['name']), 'image_type': 'auto_focus'}   #  NB Should pick up filter and constats from config
-            opt = {'size': 100, 'count': 1, 'filter': 'W'}
+            opt = {'area': 100, 'bin':  '2,2', 'count': 1, 'filter': 'W'}
         foc_pos0 = focus_start
         result = {}
         print('Autofocus Starting at:  ', foc_pos0, '\n\n')
         throw = 200  # NB again, from config.  Units are microns
+        result = g_dev['cam'].expose_command(req, opt, no_AWS=True)
         if not sim:
-            result = g_dev['cam'].expose_command(req, opt, no_AWS=True) ## , script = 'focus_auto_script_0')  #  This is where we start.
+            pass
+            #result = g_dev['cam'].expose_command(req, opt, no_AWS=True) ## , script = 'focus_auto_script_0')  #  This is where we start.
         else:
             result['FWHM'] = 3
             result['mean_focus'] = foc_pos0
@@ -718,11 +721,11 @@ class Sequencer:
             print("Going to near focus star " + str(focus_star[0][0]) + "  degrees away.")
             g_dev['mnt'].go_coord(focus_star[0][1][1], focus_star[0][1][0])
             req = {'time': 5,  'alias':  str(self.config['camera']['camera1']['name']), 'image_type': 'auto_focus'}   #  NB Should pick up filter and constats from config
-            opt = {'size': 100, 'count': 1, 'filter': 'W'}
+            opt = {'area': 100, 'count': 1, 'filter': 'W'}
         else:
             pass   #Just take time image where currently pointed.
             req = {'time': 10,  'alias':  str(self.config['camera']['camera1']['name']), 'image_type': 'auto_focus'}   #  NB Should pick up filter and constats from config
-            opt = {'size': 100, 'count': 1, 'filter': 'W'}
+            opt = {'area': 100, 'count': 1, 'filter': 'W'}
         foc_pos0 = foc_start
         result = {}
         print('Autofocus Starting at:  ', foc_pos0, '\n\n')
@@ -888,7 +891,7 @@ IF sweep
             time.sleep(3)
             g_dev['obs'].update_status()
             #req = {'time': 5,  'alias': 'sq01', 'image_type': 'quick'}
-            #opt = {'size': 100, 'count': 1, 'bin': '2,2', 'filter': g_dev['fil'].filter_data[0][0], 'hint': 'Equator Run.'}
+            #opt = {'area': 100, 'count': 1, 'bin': '2,2', 'filter': g_dev['fil'].filter_data[0][0], 'hint': 'Equator Run.'}
             #result = g_dev['cam'].expose_command(req, opt)
             g_dev['obs'].update_status()
             result = 'simulated'
@@ -985,7 +988,7 @@ IF sweep
             time.sleep(3)
             g_dev['obs'].update_status()
             req = {'time': 5,  'alias': 'sq01', 'image_type': 'quick'}
-            opt = {'size': 100, 'count': 1, 'bin': '2,2', 'filter': g_dev['fil'].filter_data[0][0], 'hint': 'Tycho grid.'}
+            opt = {'area': 100, 'count': 1, 'bin': '2,2', 'filter': g_dev['fil'].filter_data[0][0], 'hint': 'Tycho grid.'}
             result = g_dev['cam'].expose_command(req, opt)
             g_dev['obs'].update_status()
             result = 'simulated result.'
@@ -1079,7 +1082,7 @@ IF sweep
                 time.sleep(3)
                 g_dev['obs'].update_status()
                 #req = {'time': 5,  'alias': 'sq01', 'image_type': 'quick'}
-                #opt = {'size': 100, 'count': 1, 'bin': '2,2', 'filter': g_dev['fil'].filter_data[0][0], 'hint': 'Vertical Run.'}
+                #opt = {'area': 100, 'count': 1, 'bin': '2,2', 'filter': g_dev['fil'].filter_data[0][0], 'hint': 'Vertical Run.'}
                 #result = g_dev['cam'].expose_command(req, opt)
                 g_dev['obs'].update_status()
                 result = 'simulated'
