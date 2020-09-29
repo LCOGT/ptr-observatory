@@ -209,7 +209,8 @@ class Camera:
         self.af_step = -1
         self.f_spot_dia = []
         self.f_positions = []
-
+        self.overscan_bin_1 = None   #Remember last overscan if we take a subframe
+        self.overscan_bin_2 = None
         self.hint = None
         self.focus_cache = None
         self.darkslide = False
@@ -425,11 +426,11 @@ class Camera:
         self.script = required_params.get('script', 'None')
         bin_x = optional_params.get('bin', self.config['camera']['camera1'] \
                                                       ['settings']['default_bin'])  #NB this should pick up config default.
-        if bin_x == '4, 4':     # For now this is the highest level of binning supported.
+        if bin_x == '4,4':     # For now this is the highest level of binning supported.
             bin_x = 2
-        elif bin_x == '3, 3':   # replace with in and various formats or strip spaces.
+        elif bin_x == '3,3':   # replace with in and various formats or strip spaces.
             bin_x = 2
-        elif bin_x == '2, 2':
+        elif bin_x == '2,2':
             bin_x = 2
             self.ccd_sum = '2 2'
         else:
@@ -580,8 +581,8 @@ class Camera:
             self.camera_start_x = 0
             self.camera_num_y = self.len_y
             self.camera_start_y = 0
-            self.area = 100
-            print("Default area used. 100%")
+            self.area = 150
+            print("Default area used. 150%:  ", self.len_x,self.len_y )
 
         #Next apply any subframe setting here.  Be very careful to keep fractional specs and pixel values disinguished.
         if self.area == self.previous_area and sub_frame_fraction is not None and \
@@ -718,7 +719,8 @@ class Camera:
                         #print('Filter number is:  ', self.camera.Filter)
                         try:
                             for file_path in glob.glob('D:*.fit'): 
-                                os.remove(file_path)
+                                #os.remove(file_path)
+                                pass
                         except:
                             pass
                         if self.darkslide and imtypeb:
@@ -790,7 +792,7 @@ class Camera:
                         gather_status=True, do_sep=False, no_AWS=False, start_x=None, start_y=None, quick=False, \
                         low=0, high=0, script='False', opt=None):
         print("Finish exposure Entered:  ", exposure_time, frame_type, counter, \
-              gather_status, do_sep, no_AWS, start_x, start_y)
+              gather_status, do_sep, no_AWS, start_x, start_y, opt['area'])
         self.post_mnt = []
         self.post_rot = []
         self.post_foc = []
@@ -858,32 +860,46 @@ class Camera:
                     print ('Grab took :  ', tries*delay, ' sec')
                 else:
                     time.sleep(0.1)   #  This delay appears to be necessary. 20200804 WER
-                    self.img = self.camera.ImageArray   #As read this is a Windows Safe Array 
-                    self.img = np.array(self.img).transpose()  #  .astype('int32')
-                    iy, ix = self.img.shape                       
+                    self.img_safe = self.camera.ImageArray   #As read, this is a Windows Safe Array
+                    self.img_untransposed = np.array(self.img_safe) #incoming is (4800,3211) for QHY600Pro 2:2 Bin
+                    print(self.img_untransposed.shape)
+                    self.img = self.img_untransposed.transpose()
+                    #  print('incoming shape:  ', self.img.shape)                      
                 self.t5 = time.time()         
                 print('expose  took: ', round(self.t4 - self.t2, 2), ' sec,')
                 print('readout took: ', round(self.t5 - self.t4, 2), ' sec,')
-                pedastal = 200
+                #  NB NB  Be very careful this is the exact code used in build_master and calibration  modules.
+                #  NB Note this is QHY600 specific code.  Needs to be supplied in camera config as sliced regions.
+                pedastal = 100
                 iy, ix = self.img.shape
-                #  NB NB  Be very careful this is the exact code using in build_master and calibration  modules.
-                if ix == 9600:
-                    overscan = int(np.median(self.img[-34:]))
-                    #overscan = int(np.median(self.img[33:, -22:]))
-                    trimed = self.img[36 :, : -26] + pedastal - overscan
-                    square = trimed[121 : 121 + 6144, 1715 : 1715 + 6144]
+                print('incoming shape, x, y:  ', ix, iy)
+                if opt['area'] == 150 and ix == 9600:
+                    overscan = int((np.median(self.img[0:34, :]) + np.median(self.img[:, 9578:]))/2)
+                    trimmed = self.img[34:, :-24].astype('int32') + pedastal - overscan
+                    square = trimmed
+                elif opt['area'] == 150  and ix == 4800:
+                    overscan = int((np.median(self.img[0:17, :]) + np.median(self.img[:, 4789:]))/2)
+                    trimmed = self.img[17:, :-12].astype('int32') + pedastal - overscan
+                    square = trimmed   
+                elif ix == 9600:
+                    overscan = int((np.median(self.img[0:34, :]) + np.median(self.img[:, 9578:]))/2)
+                    trimmed = self.img[34:, :-26].astype('int32') + pedastal - overscan
+                    square = trimmed[:, 1594:1594 + 6388]
                 elif ix == 4800:
-                    overscan = int(np.median(self.img[17:, -11:]))
-                    trimed = self.img[18 :, : -13] + pedastal - overscan
-                    square = trimed[61:61 + 3072, 857:857 + 3072]
+                    overscan = int((np.median(self.img[0:17, :]) + np.median(self.img[:, 4789:]))/2)
+                    trimmed = self.img[17:, :-13].astype('int32') + pedastal - overscan
+                    square = trimmed[:, 797:797 + 3194]
                 else:
                     print("Incorrect chip size or bin specified.")
                 #smin = np.where(square < 0)    # finds negative pixels  NB <0 where pedastal is 200. Useless!
                 #square[smin] = 0
                 self.t77 = time.time()
                 print('readout, transpose & Trim took:  ', round(self.t77 - self.t4, 1), ' sec,')# marks them as 0
+                #Should we consider correcting the image right here with cached bias, dark and hot pixel
+                #processing so downstream processing is reliable.  Maybe only do this for focus?
                 self.img = square.astype('uint16')
-                test_saturated = np.array(self.img)[1536:4608, 1536:4608]
+                ix, iy = self.img.shape
+                test_saturated = np.array(self.img[ix//3:ix*2//3, iy//3:iy*2//3])
                 bi_mean = round((test_saturated.mean() + np.median(test_saturated))/2, 0)
                 if frame_type[-4:] == 'flat':
                     if bi_mean > 45000:
@@ -899,6 +915,7 @@ class Camera:
                 avg_ocn = g_dev['ocn'].get_average_status(self.pre_ocn, self.post_ocn)
                 if frame_type[-5:] =='focus':
                     # NB NB 20200908   Patch out dark correction.
+                    # NB at least hit this with a hot pixel map?
                     # if self.focus_cache is None:
                     #     focus_img = fits.open(self.lng_path + 'fmd_5.fits')
                     #     self.focus_cache = focus_img[0].data
@@ -907,18 +924,23 @@ class Camera:
                     self.img = self.img + 100   #maintain a + pedestal for sep  THIS SHOULD not be needed for a raw input file.
                     
                     self.img = self.img.astype("float")
-                    #Fix hot pixels here.
+                                                          #  Fix hot pixels here.
+                    print(self.img.flags)
+                    self.img = self.img.copy(order='C')   #  NB Should we move this up to 
+                                                          #  where we read the array
                     bkg = sep.Background(self.img)
                     self.img = self.img - bkg
                     sources = sep.extract(self.img, 4.5, err=bkg.globalrms, minarea=15)
                     sources.sort(order = 'cflux')
                     print('No. of detections:  ', len(sources))
+                    ix, iy = self.img.shape
+                    ix = ix//2
+                    iy = iy//2
                     for source in sources[-1:]:
                         a0 = source['a']
                         b0 = source['b']
                         r0 = math.sqrt(a0*a0 + b0*b0)
-                        # NB note the following fails with 1:1 8inning!!!!!
-                        r1 = math.sqrt((1536 - source['x'])**2 + (1536 - source['y'])**2)
+                        r1 = math.sqrt((ix - source['x'])**2 + (iy - source['y'])**2)
                         #kr, kf = sep.kron_radius(self.img, source['x'], source['y'], source['a'], source['b'], source['theta'], 6.0)
                         print(source['x'], source['y'], r0, r1)  # , kr, kf)
                     result['FWHM'] = round(r0, 3)
@@ -1040,7 +1062,7 @@ class Camera:
                     hdu.header['CAMBITS'] = 16
                     hdu.header['CAMOFFS'] = 10
                     hdu.header['CAMUSBT'] = 60
-                    hdu.header['FULLWELL'] = 32767
+                    hdu.header['FULLWELL'] = 65535
                     hdu.header['SATURATE'] = int(self.config['camera']['camera1']['settings']['saturate'])
                     pix_ang = (self.camera.PixelSizeX*self.camera.BinX/(float(self.config['telescope'] \
                                               ['telescope1']['focal_length'])*1000.))

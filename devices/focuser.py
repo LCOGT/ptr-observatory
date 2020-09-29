@@ -95,9 +95,13 @@ class Focuser:
     def get_status(self):
         status = {
             "focus_position": round(self.focuser.Position*self.steps_to_micron, 1),
-            "focus_moving": self.focuser.IsMoving,
-            "focus_temperature": self.focuser.Temperature
+            "focus_moving": self.focuser.IsMoving
+            #"focus_temperature": self.focuser.Temperature
             }
+        try:
+            status["focus_temperature"] = self.focuser.Temperature
+        except:
+            status['focus_temperature'] = self.reference
         return status
 
     def get_quick_status(self, quick):
