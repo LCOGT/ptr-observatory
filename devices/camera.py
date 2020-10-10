@@ -107,6 +107,10 @@ class Camera:
         """
 
         self.name = name
+        g_dev['cam_retry_driver'] = driver
+        g_dev['cam_retry_name'] = name
+        g_dev['cam_retry_config'] = config
+        g_dev['cam_retry_doit'] = False
         g_dev['cam'] = self
         self.config = config
         win32com.client.pythoncom.CoInitialize()
@@ -426,11 +430,11 @@ class Camera:
         self.script = required_params.get('script', 'None')
         bin_x = optional_params.get('bin', self.config['camera']['camera1'] \
                                                       ['settings']['default_bin'])  #NB this should pick up config default.
-        if bin_x == '4,4':     # For now this is the highest level of binning supported.
+        if bin_x == '4, 4':     # For now this is the highest level of binning supported.
             bin_x = 2
-        elif bin_x == '3,3':   # replace with in and various formats or strip spaces.
+        elif bin_x == '3, 3':   # replace with in and various formats or strip spaces.
             bin_x = 2
-        elif bin_x == '2,2':
+        elif bin_x == 2 or bin_x in ['2, 2', '2,2']:
             bin_x = 2
             self.ccd_sum = '2 2'
         else:
@@ -692,15 +696,20 @@ class Camera:
                                 self._connect(True)
                                 self.camera.CoolerOn = True
                             except:
-                                print('Camera reconnect failed @ expose camera retry.')
+                                print('Camera reconnect failed @ expose camera entry.')
+
+                                g_dev['cam_retry_doit'] = True
                     except Exception as e:
                         print("\n\nCamera was not connected @ expose camera retry:  ", e, '\n\n')
+
                         try:
                             self._connect(False)
                             self._connect(True)
                             self.camera.CoolerOn = True
                         except:
                             print('Camera reconnect failed @ expose camera retry.')
+
+                            g_dev['cam_retry_doit'] = True
                     #  At this point we really should be connected!!
 
                     if self.maxim or self.ascom:
@@ -860,10 +869,10 @@ class Camera:
                     print ('Grab took :  ', tries*delay, ' sec')
                 else:
                     time.sleep(0.1)   #  This delay appears to be necessary. 20200804 WER
-                    self.img_safe = self.camera.ImageArray   #As read, this is a Windows Safe Array
+                    self.img_safe = self.camera.ImageArray   #As read, this is a Windows Safe Array of Longs
                     self.img_untransposed = np.array(self.img_safe) #incoming is (4800,3211) for QHY600Pro 2:2 Bin
                     print(self.img_untransposed.shape)
-                    self.img = self.img_untransposed.transpose()
+                    self.img = self.img_untransposed    #   .transpose()  Only use this if Maxim has changed orientation.
                     #  print('incoming shape:  ', self.img.shape)                      
                 self.t5 = time.time()         
                 print('expose  took: ', round(self.t4 - self.t2, 2), ' sec,')
@@ -873,26 +882,25 @@ class Camera:
                 #  NB NB  Be very careful this is the exact code used in build_master and calibration  modules.
                 #  NB Note this is QHY600 specific code.  Needs to be supplied in camera config as sliced regions.
                 pedastal = 100
-                iy, ix = self.img.shape
-                if opt['area'] == 150 and ix == 9600:
-                    overscan = int((np.median(self.img[0:34, :]) + np.median(self.img[:, 9578:]))/2)
-                    trimmed = self.img[34:,:-24].astype('int32') + pedastal - overscan
-                    square = trimmed
-                elif opt['area'] == 150  and ix == 4800:
-                    overscan = int((np.median(self.img[0:17, :]) + np.median(self.img[:, 4789:]))/2)
-                    trimmed = self.img[17:,:-12].astype('int32') + pedastal - overscan
-                    square = trimmed   
-                elif ix == 9600:
-                    overscan = int((np.median(self.img[0:34, :]) + np.median(self.img[:, 9578:]))/2)
-                    trimmed = self.img[36:,:-26].astype('int32') + pedastal - overscan
-                    square = trimmed[121:121+6144,1715:1715+6144]
+                ix, iy = self.img.shape
+                if ix == 9600:
+                    overscan = int((np.median(self.img[32:, -33:]) + np.median(self.img[0:29, :]))/2) - 1
+                    trimmed = self.img[32:, :-34].astype('int32') + pedastal - overscan
+                    if opt['area'] == 150:
+                        square = trimmed
+                    else:
+                        square = trimmed[1590:1590 + 6388, :]
                 elif ix == 4800:
-                    overscan = int((np.median(self.img[0:17, :]) + np.median(self.img[:, 4789:]))/2)
-                    trimmed = self
-                    img.data[18:,:-13].astype('int32') + pedastal - overscan
-                    square = trimmed[61:61+3072,857:857+3072]
+                    overscan = int((np.median(self.img[16:, -17:]) + np.median(self.img[0:14, :]))/2) -1
+                    trimmed = self.img[16:, :-17].astype('int32') + pedastal - overscan
+                    if opt['area'] == 150:
+                        square = trimmed
+                    else:
+                        square = trimmed[795:795 + 3194, :]
                 else:
                     print("Incorrect chip size or bin specified.")
+                square = square.transpose()
+                #This may need a re-think:   Maybe kill neg and anything really hot if there are only a few.
                 #smin = np.where(square < 0)    # finds negative pixels  NB <0 where pedastal is 200. Useless!
                 #square[smin] = 0
                 self.t77 = time.time()
@@ -901,10 +909,10 @@ class Camera:
                 #processing so downstream processing is reliable.  Maybe only do this for focus?
                 self.img = square.astype('uint16')
                 ix, iy = self.img.shape
-                test_saturated = np.array(self.img[ix//3:ix*2//3, iy//3:iy*2//3])
+                test_saturated = np.array(self.img[ix//3:ix*2//3, iy//3:iy*2//3])  # 1/9th the chip area
                 bi_mean = round((test_saturated.mean() + np.median(test_saturated))/2, 0)
                 if frame_type[-4:] == 'flat':
-                    if bi_mean > 45000:
+                    if bi_mean >= self.config['camera']['camera1']['settings']['saturate']:
                         print("Flat rejected, too bright:  ", bi_mean)
                         result['error'] = True
                         result['patch'] = bi_mean
@@ -921,16 +929,21 @@ class Camera:
                     #     focus_img = fits.open(self.lng_path + 'fmd_5.fits')
                     #     self.focus_cache = focus_img[0].data
                     # self.img = self.img - self.focus_cache + 100   #maintain a + pedestal for sep
-                    breakpoint()
-                    self.img = self.img + 100   #maintain a + pedestal for sep  THIS SHOULD not be needed for a raw input file.
+                    #self.img = self.img + 100   #maintain a + pedestal for sep  THIS SHOULD not be needed for a raw input file.
                     
                     self.img = self.img.astype("float")
+                    #print(self.img.flags)
+                    self.img = self.img.copy(order='C')   #  NB Should we move this up to 
+                                                          #  where we read the array
                     #Fix hot pixels here.
                     bkg = sep.Background(self.img)
                     self.img = self.img - bkg
                     sources = sep.extract(self.img, 4.5, err=bkg.globalrms, minarea=15)
                     sources.sort(order = 'cflux')
                     print('No. of detections:  ', len(sources))
+                    r0 = 0
+                    r1 = 0
+
                     for source in sources[-1:]:
                         a0 = source['a']
                         b0 = source['b']
@@ -942,7 +955,7 @@ class Camera:
                     result['FWHM'] = round(r0, 3)
                     result['mean_focus'] =  avg_foc[1]
                     result['center_dist'] = round(r1, 2)
-                    result['center_flux'] = int(source['cflux'])
+                    result['center_flux'] = int(0)  # source['cflux'])
                     return result
                 try:
                     time.sleep(2)
@@ -976,6 +989,7 @@ class Camera:
                     hdu.header['ERRORVAL'] = 0
                     hdu.header['OVERSCAN'] = overscan
                     hdu.header['PATCH'] = bi_mean    #  A crude value for the central exposure
+                    hdu.header['IMGAREA'] = opt['area']
                     hdu.header['CCDSUM'] = self.ccd_sum
                     hdu.header['XORGSUBF'] = self.camera_start_x    #This makes little sense to fix...  NB ALL NEEDS TO COME FROM CONFIG!!
                     hdu.header['YORGSUBF'] = self.camera_start_y
@@ -1058,7 +1072,7 @@ class Camera:
                     hdu.header['CAMBITS'] = 16
                     hdu.header['CAMOFFS'] = 10
                     hdu.header['CAMUSBT'] = 60
-                    hdu.header['FULLWELL'] = 65535
+                    hdu.header['FULLWELL'] = 65535    #THIS should be a config item
                     hdu.header['SATURATE'] = int(self.config['camera']['camera1']['settings']['saturate'])
                     pix_ang = (self.camera.PixelSizeX*self.camera.BinX/(float(self.config['telescope'] \
                                               ['telescope1']['focal_length'])*1000.))
@@ -1066,10 +1080,18 @@ class Camera:
                     current_camera_name = self.config['camera']['camera1']['name']
                     # NB This needs more deveopment
                     im_type = 'EX'   #or EN for engineering....
-                    f_ext = ""
                     next_seq = next_sequence(current_camera_name)
-                    if frame_type[-4:] == 'flat':
-                        f_ext = '-' + str(self.current_filter)    #Append flat string to local image name
+                    f_ext = ""
+                    if frame_type in ('bias', 'dark', 'screen_flat', 'sky_flat', 'sky flat', 'screen flat'):
+                        f_ext = "-"
+                        if opt['area'] == 150:
+                            f_ext += 'f'
+                        if frame_type[0:4] in ('bias', 'dark'):
+                            f_ext += frame_type[0] + "_" + str(self.camera.BinX)
+                        if frame_type in ('screen_flat', 'sky_flat', 'sky flat', 'screen flat'):
+                            f_ext = f_ext + frame_type[:2] + "_" + str(self.camera.BinX) + '_' + str(self.current_filter) 
+                    # if frame_type[-4:] == 'flat':
+                    #     f_ext = '-' + str(self.current_filter)    #Append flat string to local image name
                     cal_name = self.config['site'] + '-' + current_camera_name + '-' + g_dev['day'] + '-' + \
                                                 next_seq  + f_ext + '-'  + im_type + '00.fits'
                     raw_name00 = self.config['site'] + '-' + current_camera_name + '-' + g_dev['day'] + '-' + \
@@ -1148,9 +1170,10 @@ class Camera:
                         self.to_reduce((paths, hdu))
                         hdu.writeto(raw_path + raw_name00, overwrite=True)
 
-                    if frame_type in ('bias', 'dark', 'screen_flat', 'sky_flat') or quick:
+                    if frame_type in ('bias', 'dark', 'screen_flat', 'sky_flat', 'screen flat', 'sky flat'):
                         if not self.hint[0:54] == 'Flush':
                             hdu.writeto(cal_path + cal_name, overwrite=True)
+                            
                         else:
                             pass
                         try:

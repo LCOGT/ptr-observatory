@@ -232,6 +232,7 @@ class FilterWheel:
         self.filter_selected = filter_name
         filter_selections = self.filter_data[filt_pointer][1]   # eliminated eval with config format to Python values.
         print('Selections:  ', filter_selections)
+ 
         if self.dual:
             try:
                 while self.filter_front.Position == -1:

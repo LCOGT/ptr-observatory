@@ -3,6 +3,7 @@
 import time
 import datetime
 from random import shuffle
+import copy
 from global_yard import g_dev
 import ephem
 import build_tycho as tycho
@@ -222,7 +223,7 @@ class Sequencer:
         elif  (events['Eve Sky Flats'] < ephem_now < events['End Eve Sky Flats'])  \
                 and g_dev['enc'].mode == 'Automatic' \
                 and g_dev['ocn'].wx_is_ok \
-                and not g_dev['ocn'].wx_hold:
+                and not g_dev['ocn'].wx_hold and False:
             if not self.sky_guard:
                 #Start it up.
                 self.sky_guard = True
@@ -233,23 +234,26 @@ class Sequencer:
 
             block = g_dev['obs'].blocks
             project = g_dev['obs'].projects
-   
-            # breakpoint()
+
             # for block in blocks:  #  This merges project spec into the blocks.
             #     for project in projects:
             if block['project_id'] == project['project_name'] + '#' + project['created_at']:
-                block['project'] = project
-                       
+                block['project'] = project                   
             #     # NB NB NB Need to sort blocks in ascending start time order.
             #     # Do not start a block within 15 min of end time???
             # breakpoint()
             # for block in blocks:
             now_date_timeZ = datetime.datetime.now().isoformat().split('.')[0] +'Z'           
-            #if (block['start'] <= now_date_timeZ < block['end']) and not self.block_guard:
-
-            #self.block_guard = True
-            #self.execute_block(block)
-            #print("Would have entered a block here.")
+            if (block['start'] <= now_date_timeZ < block['end']) and not self.block_guard:
+                self.block_guard = True
+                self.execute_block(block)
+                print("Should have left a block here.")
+                '''
+                When a scheduled block is completed it is not re-entered or the block needs to 
+                be restored.  IN the execute block we need to make a deepcopy of the input block
+                so it does not get modified.
+                '''
+                breakpoint()
                 
                 # print("Here we would enter an observing block:  ",
                 #       block)
@@ -263,62 +267,124 @@ class Sequencer:
                     
         else:
             self.current_script = "No current script"
-            print("No active script is scheduled.")
-        pass
+            #print("No active script is scheduled.")
+            return
+            
 
     def execute_block(self, block_specification):
         self.block_guard = True
-        block = block_specification
+        block = copy.deepcopy(block_specification)
         # #unpark, open dome etc.
         # #if not end of block
-        breakpoint()
         g_dev['mnt'].unpark_command({}, {})
+        timer = time.time() - 120
+        req2 = {'target': 'near_tycho_star', 'area': 150}
+        opt = {}
+        '''
+        # to do is Targets*Mosaic*(sum of filters * count)
+        
+        Assume for now we only have one target and no mosaic factor.
+        The the first thing to do is figure out how many exposures
+        in the series.  If enhance AF is true they need to be injected
+        at some point, but af does not decrement. This is still left to do
+        
+        
+        '''
+
         for target in block['project']['project_targets']:
             dest_ra = float(target['ra'])
             dest_dec = float(target['dec'])
             dest_name =target['name']
-            if dest_name[0] == 'L':
-                dest_ra -= 2.5  #Hack for early testing, please remove
-                print("Early test hack in execute_block.")
             g_dev['mnt'].go_coord(dest_ra, dest_dec)
+            #Compute how many to do.
+            left_to_do = 0
+            ended = False
+
             for exposure in block['project']['exposures']:
-                color = exposure['filter']
-                exp_time = 1.0# float(exposure['exposure']) 
-                #dither = exposure['dither'] 
-                binning = int(exposure['bin'])
-                count = int(exposure['count'])
-                #  We should add a frame repeat count
-                imtype = exposure['imtype'] 
-                #defocus = exposure['defocus']
-                if color[0] == 'B':  color = 'B'   #Map generic filters to site specific ones.
-                if color[0] == 'G':  color = 'V'
-                if color[0] == 'R':  color = 'R'
-                if color[0] == 'L':  color = 'w'
-                if color[0] == 'W':  color = 'w'
-                if color[0] == 'g':  color = 'gp'
-                if color[0] == 'r':  color = 'rp'
-                if color[0] == 'i':  color = 'ip'
-                if count <=0:
-                    continue
-                req = {'time': exp_time,  'alias':  str(self.config['camera']['camera1']['name']), 'image_type': imtype}   #  NB Should pick up filter and constats from config
-                opt = {'size': 100, 'count': 1, 'bin': binning, 'filter_name': color, 'hint': block['project_id'] + "##" + dest_name}
- 
-                result = g_dev['cam'].expose_command(req, opt, gather_status=True, no_AWS=False)
-                breakpoint()
-                print(result)
-                exposure['count'] = count - 1
+                if exposure['area'] in ['300', 300, '220', 220, '150', 150]:
+                    left_to_do += int(exposure['count'])*4
+                    exposure['count'] = int(exposure['count'])*4   #Do not multiply the count string value as a dict entry!
+                    print('mosaic')
+                else:
+                    left_to_do += int(exposure['count'])
+                    print('singleton')
                 
-            
-        #      go to print(target['ra'])  if airmas limit, moon distance, etc
-        #      for color in block['project']['exposures']
-        #           print(color['filter'])
-        
-        
-        
-        
-        
+            print("Left to do initial value:  ", left_to_do)
+            req = {'target': 'near_tycho_star'}
+   
+            while left_to_do > 0 and not ended:
+
+                #cycle thrugh exposures decrementing counts    MAY want to double check left-to do but do nut remultiply by 4
+                for exposure in block['project']['exposures']:
+                    if block_specification['project']['project_constraints']['frequent_autofocus'] == True and (time.time() - timer) >= 0:
+                        breakpoint()
+                        self.focus_auto_script(req2, opt)
+                        timer = time.time()
+                    print("Executing: ", exposure, left_to_do)
+                    color = exposure['filter']
+                    exp_time = 1.0# float(exposure['exposure']) 
+                    #dither = exposure['dither'] 
+                    binning = int(exposure['bin'])
+                    count = int(exposure['count'])
+                    #  We should add a frame repeat count
+                    imtype = exposure['imtype'] 
+                    #defocus = exposure['defocus']
+                    if color[0] == 'B':  
+                        color = 'B'   #Map generic filters to site specific ones.
+                    if color[0] == 'G':  
+                        color = 'V'
+                    if color[0] == 'R':  
+                        color = 'R'
+                    if color[0] == 'L':  
+                        color = 'w'
+                    if color[0] == 'W':  
+                        color = 'w'
+                    if color[0] == 'g':  
+                        color = 'gp'
+                    if color[0] == 'r':  
+                        color = 'rp'
+                    if color[0] == 'i':  
+                        color = 'ip'
+                    if color[0] == 'H':  
+                        color = 'HA'
+                    if count <= 0:
+                         continue
+                    #At this point we have 1 to four exposures to make in this filter.  Note different areas can be defined. 
+                    if exposure['area'] in ['300', 300, '220', 220, '150', 150]:
+                        offset = [(1.5, 1.), (-1.5, 1.), (-1.5, -1.), (1.5, -1.)] #Four mosaic quadrants 36 x 24mm chip
+                        if exposure['area'] in ['300', 300]:
+                            pitch = 0.375
+                        if exposure['area'] in ['220', 220]:
+                            pitch = 0.25
+                        if exposure['area'] in ['150', 150]:
+                            pitch = 0.125                        
+                    else:
+                        offset = [(0., 0.)] #Zero(no) mosaic offset
+                        pitch = 0.
+                    for displacement in offset:
+                        d_ra = displacement[0]*pitch*0.05089517  #Hours  These and pixscale should be computed in config.
+                        d_dec = displacement[1]*pitch*0.574485   #Deg
+                        new_ra = dest_ra + d_ra
+                        while new_ra > 24:
+                            new_ra -= 24
+                        while new_ra <= 0.:
+                            new_ra += 24
+                        print('Seeking to:  ', new_ra, dest_dec + d_dec)
+                        g_dev['mnt'].go_coord(new_ra, dest_dec + d_dec)    #This needs full angle checks
+                        if imtype in ['light'] and count > 0:
+                            req = {'time': exp_time,  'alias':  str(self.config['camera']['camera1']['name']), 'image_type': imtype}   #  NB Should pick up filter and constants from config
+                            opt = {'area': 150, 'count': 1, 'bin': binning, 'filter': color, 'hint': block['project_id'] + "##" + dest_name}
+                            result = g_dev['cam'].expose_command(req, opt, gather_status=True, no_AWS=False)
+                            count -= 1
+                            exposure['count'] = count
+                            left_to_do -= 1
+                            print("Left to do:  ", left_to_do)
+                    now_date_timeZ = datetime.datetime.now().isoformat().split('.')[0] +'Z'           
+                    ended = now_date_timeZ >= block['end']    
+        print("Fini!")
         self.block_guard = False
         return
+
 
     def bias_dark_script(self, req=None, opt=None):
         """
@@ -329,13 +395,13 @@ class Sequencer:
                  
         """
         self.sequencer_hold = True
-        breakpoint()
+
         if req is None:     #  NB Chunking factor is 9
             req = {'numOfBias': 36, 'bin3': False, 'numOfDark2': 18, 'bin4': \
                    False, 'bin1': True, 'darkTime': '360', 'hotMap': True, \
                    'bin2': True, 'numOfDark': 18, 'dark2Time': '180', \
                    'coldMap': True}
-            opt = {}
+            opt = {'area': 150,}
         bias_list = []
         num_bias = min(90, req['numOfBias'])
         for i in range(num_bias):
@@ -352,34 +418,59 @@ class Sequencer:
         num_dark = min(45, req['numOfDark'])   ## Implied this is 1:! binning darks.
         dark_time = float(req['darkTime'])
         for i in range(num_dark):
-             dark_list.append([2, dark_time])   #NB Hardwired bin
+             if req['bin1']:
+                 dark_list.append([1, dark_time])   #NB Hardwired bin
+             if req['bin2']:
+                 dark_list.append([2, dark_time])
         total_num_dark = len(dark_list)
         print("Total # of dark1 frames, all binnings =  ", total_num_dark )
         
-        binx_dark_list = []
-        num_binx_dark = min(45, req['numOfDark2'])  ## Implied this is >1x1 binning darks.
-        binx_dark_time = float(req['dark2Time'])
-        for i in range(num_binx_dark):
-            binx_dark_list.append([2, binx_dark_time])
-        total_num_binx_dark = len(binx_dark_list)
-        print("Total # of binx_dark frames, all binnings =  ", total_num_binx_dark)
+        num_dark = min(45, req['numOfDark2'])   ## Implied this is 1:! binning darks.
+        dark2_time = float(req['dark2Time'])
+        for i in range(num_dark):
+             if req['bin1']:
+                 dark_list.append([1, dark2_time])   #NB Hardwired bin
+             if req['bin2']:
+                 dark_list.append([2, dark2_time])
+        total_num_dark = len(dark_list)
+        print("Total # of dark1+2 frames, all binnings =  ", total_num_dark )
+        # binx_dark_list = []
+        # num_binx_dark = min(45, req['numOfDark2'])  ## Implied this is >1x1 binning darks.
+        # binx_dark_time = float(req['dark2Time'])
+        # for i in range(num_binx_dark):
+        #             dark_list = []
+        # num_dark = min(45, req['numOfDark'])   ## Implied this is 1:! binning darks.
+        # dark_time = float(req['darkTime'])
+        # for i in range(num_dark):
+        #      if req['bin1']:
+        #          dark_list.append([1, dark_time])   #NB Hardwired bin
+        #      if req['bin2']:
+        #          dark_list.append([2, dark_time])
+        # total_num_dark = len(dark_list)
+        # print("Total # of dark1 frames, all binnings =  ", total_num_dark )
+        # binx_dark_list.append([2, binx_dark_time])
+        #     binx_dark_list.append([1, binx_dark_time])
+            
+        # total_num_binx_dark = len(binx_dark_list)
+        # print("Total # of binx_dark frames, all binnings =  ", total_num_binx_dark)
         
         bias_time = 12.  #NB Pick up from camera config  An avg for QHY600P
         flush = 2
-        total_time = bias_time*(total_num_biases + flush + total_num_dark + total_num_binx_dark)
+        total_time = bias_time*(total_num_biases + flush + total_num_dark )
         #  NB Note higher bin readout not compensated for.
-        total_time += total_num_dark*dark_time + total_num_binx_dark*binx_dark_time
-        print('Approx duration of Bias Dark seguence:  ', total_time//60 + 1, ' min.')
+        total_time += total_num_dark*dark_time 
+        print('Approx duration of Bias Dark sequence:  ', total_time//60 + 1, ' min.')
         #Flush twice
         print('Pre-flush twice.')  #NB Filter is 'dark'
-        bin_str = bin_to_string(21)
+        bin_str = bin_to_string(2)
         req = {'time': 0.0, 'script': 'True', 'image_type': 'bias'}
-        opt = {'size': 100, 'count': flush, 'bin': bin_str, \
+        opt = {'area': 150, 'count': flush, 'bin': bin_str, \
                'filter': g_dev['fil'].filter_data[-1][0], 'hint':  'Flush'}
-        result = g_dev['cam'].expose_command(req, opt, no_AWS=True, \
-                                             do_sep=False, quick=False)        
+        # result = g_dev['cam'].expose_command(req, opt, no_AWS=True, \
+        #                                      do_sep=False, quick=False)        
+        print("Pre-flush frames skipped.")
         first_bias = bias_list[0]
-        big_list = bias_list[1:] + dark_list + binx_dark_list
+        big_list = bias_list[1:] + dark_list
         shuffle(big_list)   #  Should distribute things more or less evenly.
         big_list.insert(0, first_bias) #  Always start with a bias. 
         while len(big_list) > 0:
@@ -390,12 +481,12 @@ class Sequencer:
             if exp == 0:
                 print("Expose Bias using bin:  ", use_bin)   
                 req = {'time': 0.0,  'script': 'True', 'image_type': 'bias'}
-                opt = {'size': 100, 'count': 1, 'bin': bin_str, \
+                opt = {'area': 150, 'count': 1, 'bin': bin_str, \
                        'filter': g_dev['fil'].filter_data[-1][0]}
             elif exp > 0:
                 print("Expose Dark using bin, exp:  ", use_bin, exp)
                 req = {'time': exp,  'script': 'True', 'image_type': 'dark'}
-                opt = {'size': 100, 'count': 1, 'bin': bin_str, \
+                opt = {'area': 150, 'count': 1, 'bin': bin_str, \
                        'filter': g_dev['fil'].filter_data[-1][0]} 
             result = g_dev['cam'].expose_command(req, opt, no_AWS=True, \
                                         do_sep=False, quick=False)
@@ -432,7 +523,7 @@ class Sequencer:
         self.sky_guard = True
         print('Eve Sky Flat sequence Starting, Enclosure PRESUMED Open. Telescope will un-park.')
         camera_name = str(self.config['camera']['camera1']['name'])
-        flat_count = 5
+        flat_count = 11
         exp_time = .003
         #  NB Sometime, try 2:2 binning and interpolate a 1:1 flat.  This might run a lot faster.
         if flat_count < 1: flat_count = 1
@@ -459,11 +550,14 @@ class Sequencer:
             #g_dev['fil'].set_number_command(current_filter)
             #g_dev['mnt'].slewToSkyFlatAsync()
             bright = 65000
+            scale = 1.0
+            prior_scale = 1
+            #breakpoint()
             while acquired_count < flat_count:
                 #if g_dev['enc'].is_dome:   #Does not apply
                 g_dev['mnt'].slewToSkyFlatAsync()
                 try:
-                    exp_time = prior_scale*scale*33000/(float(g_dev['fil'].filter_data[current_filter][3])*g_dev['ocn'].meas_sky_lux)
+                    exp_time = prior_scale*scale*40000/(float(g_dev['fil'].filter_data[current_filter][3])*g_dev['ocn'].meas_sky_lux)
                     if exp_time > 30:
                         exp_time = 30
                     if exp_time <0.0005:
@@ -474,12 +568,12 @@ class Sequencer:
                 except:
                     exp_time = 0.3
                 req = {'time': float(exp_time),  'alias': camera_name, 'image_type': 'sky flat', 'script': 'On'}
-                opt = {'size': 100, 'count': 1, 'bin':  '2,2', 'area': 150, 'filter': g_dev['fil'].filter_data[current_filter][0]}
+                opt = { 'count': 1, 'bin':  '2,2', 'area': 150, 'filter': g_dev['fil'].filter_data[current_filter][0]}
                 print("using:  ", g_dev['fil'].filter_data[current_filter][0])
                 result = g_dev['cam'].expose_command(req, opt, gather_status=True, no_AWS=True, do_sep = False)
                 bright = result['patch']    #  Patch should be circular and 20% of Chip area. ToDo project
                 try:
-                    scale = 33000/bright
+                    scale = 40000/bright
                     if scale > 3:
                         scale = 3.0
                     if scale < 0.33:
@@ -487,7 +581,7 @@ class Sequencer:
                 except:
                     scale = 1.0
                 print("Bright:  ", bright)  #  Others are 'NE', 'NW', 'SE', 'SW'.
-                if bright > 40000 and (ephemNow < g_dev['events']['End Eve Sky Flats']
+                if bright > 45000 and (ephemNow < g_dev['events']['End Eve Sky Flats']
                                   or True):    #NB should gate with end of skyflat window as well.
                     for i in range(1):
                         time.sleep(5)  #  #0 seconds of wait time.  Maybe shorten for wide bands?
@@ -497,7 +591,7 @@ class Sequencer:
                     if acquired_count == flat_count:
                         pop_list.pop(0)
                         scale = 1
-                        pror_scale = 1
+                        prior_scale = 1
                 continue
         g_dev['mnt'].park_command({}, {})  #  NB this is provisional, Ok when simulating
         print('\nSky flat complete.\n')
@@ -527,7 +621,7 @@ class Sequencer:
         #Take a 10 s dark screen air flat to record ambient
         # Park Telescope
         req = {'time': exp_time,  'alias': camera_name, 'image_type': 'screen flat'}
-        opt = {'size': 100, 'count': dark_count, 'filter': g_dev['fil'].filter_data[12][0], 'hint': 'screen dark'}  #  air has highest throughput
+        opt = {'area': 100, 'count': dark_count, 'filter': g_dev['fil'].filter_data[12][0], 'hint': 'screen dark'}  #  air has highest throughput
         result = g_dev['cam'].expose_command(req, opt, gather_status=True, no_AWS=True)
         print('First dark 30-sec patch, filter = "air":  ', result['patch'])
         # g_dev['scr'].screen_light_on()
@@ -544,7 +638,7 @@ class Sequencer:
             g_dev['obs'].update_status()
             print('Dark Screen; filter, bright:  ', filter_number, 0)
             req = {'time': float(exp_time),  'alias': camera_name, 'image_type': 'screen flat'}
-            opt = {'size': 100, 'count': 1, 'filter': g_dev['fil'].filter_data[filter_number][0], 'hint': 'screen pre-filter dark'}
+            opt = {'area': 100, 'count': 1, 'filter': g_dev['fil'].filter_data[filter_number][0], 'hint': 'screen pre-filter dark'}
             result = g_dev['cam'].expose_command(req, opt, gather_status=True, no_AWS=True)
             print("Dark Screen flat, starting:  ", result['patch'], g_dev['fil'].filter_data[filter_number][0], '\n\n')
             g_dev['obs'].update_status()
@@ -558,7 +652,7 @@ class Sequencer:
             # time.sleep(10)
             g_dev['obs'].update_status()
             req = {'time': float(exp_time),  'alias': camera_name, 'image_type': 'screen flat'}
-            opt = {'size': 100, 'count': flat_count, 'filter': g_dev['fil'].filter_data[filter_number][0], 'hint': 'screen filter light'}
+            opt = {'area': 100, 'count': flat_count, 'filter': g_dev['fil'].filter_data[filter_number][0], 'hint': 'screen filter light'}
             result = g_dev['cam'].expose_command(req, opt, gather_status=True, no_AWS=True)
             # if no exposure, wait 10 sec
             print("Lighted Screen flat:  ", result['patch'], g_dev['fil'].filter_data[filter_number][0], '\n\n')
@@ -569,7 +663,7 @@ class Sequencer:
             g_dev['obs'].update_status()
             print('Dark Screen; filter, bright:  ', filter_number, 0)
             req = {'time': float(exp_time),  'alias': camera_name, 'image_type': 'screen flat'}
-            opt = {'size': 100, 'count': 1, 'filter': g_dev['fil'].filter_data[filter_number][0], 'hint': 'screen post-filter dark'}
+            opt = {'area': 100, 'count': 1, 'filter': g_dev['fil'].filter_data[filter_number][0], 'hint': 'screen post-filter dark'}
             result = g_dev['cam'].expose_command(req, opt, gather_status=True, no_AWS=True)
             print("Dark Screen flat, ending:  ",result['patch'], g_dev['fil'].filter_data[filter_number][0], '\n\n')
 
@@ -600,8 +694,9 @@ class Sequencer:
                         result['patch'] = cal_result
                         result['temperature'] = avg_foc[2]  This is probably tube not reported by Gemini.
         '''
+        req2 = copy.deepcopy(req)
         self.af_guard = True
-        sim =g_dev['enc'].shutter_is_closed
+        sim = g_dev['enc'].shutter_is_closed
         print('AF entered with:  ', req, opt, '\n .. and sim =  ', sim)
         #self.sequencer_hold = True  #Blocks command checks.
         start_ra = g_dev['mnt'].mount.RightAscension   #Read these to go back.
@@ -609,7 +704,7 @@ class Sequencer:
         focus_start = g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron
         print("Saved ra dec focus:  ", start_ra, start_dec, focus_start)
         #  NBNBNB Need to preserve  and restore on exit, incoming filter setting
-        if req['target'] == 'near_tycho_star':   ## 'bin', 'area'  Other parameters
+        if req2['target'] == 'near_tycho_star':   ## 'bin', 'area'  Other parameters
 
             #  Go to closest Mag 7.5 Tycho * with no flip
             focus_star = tycho.dist_sort_targets(g_dev['tel'].current_icrs_ra, g_dev['tel'].current_icrs_dec, \
@@ -617,13 +712,14 @@ class Sequencer:
             print("Going to near focus star " + str(focus_star[0][0]) + "  degrees away.")
             g_dev['mnt'].go_coord(focus_star[0][1][1], focus_star[0][1][0])
             req = {'time': 5,  'alias':  str(self.config['camera']['camera1']['name']), 'image_type': 'auto_focus'}   #  NB Should pick up filter and constats from config
-            opt = {'size': 100, 'count': 1, 'filter': 'W'}
+            opt = {'area': 150, 'count': 1, 'filter': 'w'}
         else:
-            pass   #Just take time image where currently pointed.
+            pass   #Just take an image where currently pointed.
             req = {'time': 10,  'alias':  str(self.config['camera']['camera1']['name']), 'image_type': 'auto_focus'}   #  NB Should pick up filter and constats from config
-            opt = {'size': 100, 'count': 1, 'filter': 'W'}
+            opt = {'area': 150, 'count': 1, 'filter': 'w'}
         foc_pos0 = focus_start
         result = {}
+        print("temporary patch in Sim values")
         print('Autofocus Starting at:  ', foc_pos0, '\n\n')
         throw = 200  # NB again, from config.  Units are microns
         if not sim:
@@ -718,11 +814,11 @@ class Sequencer:
             print("Going to near focus star " + str(focus_star[0][0]) + "  degrees away.")
             g_dev['mnt'].go_coord(focus_star[0][1][1], focus_star[0][1][0])
             req = {'time': 5,  'alias':  str(self.config['camera']['camera1']['name']), 'image_type': 'auto_focus'}   #  NB Should pick up filter and constats from config
-            opt = {'size': 100, 'count': 1, 'filter': 'W'}
+            opt = {'area': 100, 'count': 1, 'filter': 'W'}
         else:
             pass   #Just take time image where currently pointed.
             req = {'time': 10,  'alias':  str(self.config['camera']['camera1']['name']), 'image_type': 'auto_focus'}   #  NB Should pick up filter and constats from config
-            opt = {'size': 100, 'count': 1, 'filter': 'W'}
+            opt = {'area': 100, 'count': 1, 'filter': 'W'}
         foc_pos0 = foc_start
         result = {}
         print('Autofocus Starting at:  ', foc_pos0, '\n\n')
@@ -888,7 +984,7 @@ IF sweep
             time.sleep(3)
             g_dev['obs'].update_status()
             #req = {'time': 5,  'alias': 'sq01', 'image_type': 'quick'}
-            #opt = {'size': 100, 'count': 1, 'bin': '2,2', 'filter': g_dev['fil'].filter_data[0][0], 'hint': 'Equator Run.'}
+            #opt = {'area': 100, 'count': 1, 'bin': '2,2', 'filter': g_dev['fil'].filter_data[0][0], 'hint': 'Equator Run.'}
             #result = g_dev['cam'].expose_command(req, opt)
             g_dev['obs'].update_status()
             result = 'simulated'
@@ -985,7 +1081,7 @@ IF sweep
             time.sleep(3)
             g_dev['obs'].update_status()
             req = {'time': 5,  'alias': 'sq01', 'image_type': 'quick'}
-            opt = {'size': 100, 'count': 1, 'bin': '2,2', 'filter': g_dev['fil'].filter_data[0][0], 'hint': 'Tycho grid.'}
+            opt = {'area': 100, 'count': 1, 'bin': '2,2', 'filter': g_dev['fil'].filter_data[0][0], 'hint': 'Tycho grid.'}
             result = g_dev['cam'].expose_command(req, opt)
             g_dev['obs'].update_status()
             result = 'simulated result.'
@@ -1079,7 +1175,7 @@ IF sweep
                 time.sleep(3)
                 g_dev['obs'].update_status()
                 #req = {'time': 5,  'alias': 'sq01', 'image_type': 'quick'}
-                #opt = {'size': 100, 'count': 1, 'bin': '2,2', 'filter': g_dev['fil'].filter_data[0][0], 'hint': 'Vertical Run.'}
+                #opt = {'area': 100, 'count': 1, 'bin': '2,2', 'filter': g_dev['fil'].filter_data[0][0], 'hint': 'Vertical Run.'}
                 #result = g_dev['cam'].expose_command(req, opt)
                 g_dev['obs'].update_status()
                 result = 'simulated'
