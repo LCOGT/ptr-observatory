@@ -802,7 +802,7 @@ class Camera:
                         gather_status=True, do_sep=False, no_AWS=False, start_x=None, start_y=None, quick=False, \
                         low=0, high=0, script='False', opt=None):
         print("Finish exposure Entered:  ", exposure_time, frame_type, counter, \
-              gather_status, do_sep, no_AWS, start_x, start_y)
+              gather_status, do_sep, no_AWS, start_x, start_y, opt['area'])
         self.post_mnt = []
         self.post_rot = []
         self.post_foc = []
@@ -878,13 +878,11 @@ class Camera:
                 self.t5 = time.time()         
                 print('expose  took: ', round(self.t4 - self.t2, 2), ' sec,')
                 print('readout took: ', round(self.t5 - self.t4, 2), ' sec,')
-                iy, ix = self.img.shape
-                #print('incoming shape:  ', ix, iy)
                 #  NB NB  Be very careful this is the exact code used in build_master and calibration  modules.
                 #  NB Note this is QHY600 specific code.  Needs to be supplied in camera config as sliced regions.
                 pedastal = 100
                 ix, iy = self.img.shape
-                if ix == 9600:
+                 if ix == 9600:
                     overscan = int((np.median(self.img[32:, -33:]) + np.median(self.img[0:29, :]))/2) - 1
                     trimmed = self.img[32:, :-34].astype('int32') + pedastal - overscan
                     if opt['area'] in [150, 'Full', 'full']:
@@ -926,6 +924,7 @@ class Camera:
                 avg_ocn = g_dev['ocn'].get_average_status(self.pre_ocn, self.post_ocn)
                 if frame_type[-5:] =='focus':
                     # NB NB 20200908   Patch out dark correction.
+                    # NB at least hit this with a hot pixel map?
                     # if self.focus_cache is None:
                     #     focus_img = fits.open(self.lng_path + 'fmd_5.fits')
                     #     self.focus_cache = focus_img[0].data

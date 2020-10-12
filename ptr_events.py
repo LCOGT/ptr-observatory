@@ -18,9 +18,9 @@ from datetime import datetime
 import time
 #import pytz
 from math import degrees
-import skyfield 
-from skyfield import api, almanac
-from skyfield.nutationlib import iau2000b
+# import skyfield 
+# from skyfield import api, almanac
+# from skyfield.nutationlib import iau2000b
 # print('ObsImports:  ', config, '\n\'', config.site_config['site'])
 from global_yard import *
 from astropy.time import Time
