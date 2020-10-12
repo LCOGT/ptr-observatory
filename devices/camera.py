@@ -863,7 +863,7 @@ class Camera:
                     self.img_safe = self.camera.ImageArray   #As read, this is a Windows Safe Array
                     self.img_untransposed = np.array(self.img_safe) #incoming is (4800,3211) for QHY600Pro 2:2 Bin
                     print(self.img_untransposed.shape)
-                    self.img = self.img_untransposed.transpose()
+                    self.img = self.img_untransposed   # .transpose()
                     #  print('incoming shape:  ', self.img.shape)                      
                 self.t5 = time.time()         
                 print('expose  took: ', round(self.t4 - self.t2, 2), ' sec,')
@@ -871,28 +871,29 @@ class Camera:
                 #  NB NB  Be very careful this is the exact code used in build_master and calibration  modules.
                 #  NB Note this is QHY600 specific code.  Needs to be supplied in camera config as sliced regions.
                 pedastal = 100
-                iy, ix = self.img.shape
+                ix, iy = self.img.shape
                 print('incoming shape, x, y:  ', ix, iy)
+                breakpoint()
                 if opt['area'] == 150 and ix == 9600:
-                    overscan = int((np.median(self.img[0:34, :]) + np.median(self.img[:, 9578:]))/2)
+                    overscan = int((np.median(self.img[0:34, :]) + np.median(self.img[:, 6378:]))/2)
                     trimmed = self.img[34:, :-24].astype('int32') + pedastal - overscan
                     square = trimmed
                 elif opt['area'] == 150  and ix == 4800:
-                    overscan = int((np.median(self.img[0:17, :]) + np.median(self.img[:, 4789:]))/2)
+                    overscan = int((np.median(self.img[0:17, :]) + np.median(self.img[:, 3189:]))/2)
                     trimmed = self.img[17:, :-12].astype('int32') + pedastal - overscan
                     square = trimmed   
                 elif ix == 9600:
-                    overscan = int((np.median(self.img[0:34, :]) + np.median(self.img[:, 9578:]))/2)
+                    overscan = int((np.median(self.img[0:34, :]) + np.median(self.img[:, 6378:]))/2)
                     trimmed = self.img[34:, :-26].astype('int32') + pedastal - overscan
                     square = trimmed[:, 1594:1594 + 6388]
                 elif ix == 4800:
-                    overscan = int((np.median(self.img[0:17, :]) + np.median(self.img[:, 4789:]))/2)
+                    overscan = int((np.median(self.img[0:17, :]) + np.median(self.img[:, 3189:]))/2)
                     trimmed = self.img[17:, :-13].astype('int32') + pedastal - overscan
                     square = trimmed[:, 797:797 + 3194]
                 else:
                     print("Incorrect chip size or bin specified.")
-                #smin = np.where(square < 0)    # finds negative pixels  NB <0 where pedastal is 200. Useless!
-                #square[smin] = 0
+                smin = np.where(square < 0)    # finds negative pixels  NB <0 where pedastal is 100. Useless!
+                square[smin] = 0
                 self.t77 = time.time()
                 print('readout, transpose & Trim took:  ', round(self.t77 - self.t4, 1), ' sec,')# marks them as 0
                 #Should we consider correcting the image right here with cached bias, dark and hot pixel
@@ -920,7 +921,6 @@ class Camera:
                     #     focus_img = fits.open(self.lng_path + 'fmd_5.fits')
                     #     self.focus_cache = focus_img[0].data
                     # self.img = self.img - self.focus_cache + 100   #maintain a + pedestal for sep
-                    breakpoint()
                     self.img = self.img + 100   #maintain a + pedestal for sep  THIS SHOULD not be needed for a raw input file.
                     
                     self.img = self.img.astype("float")

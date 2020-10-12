@@ -430,6 +430,7 @@ def make_master_bias (alias, path,  lng_path , selector_string, out_file):
     shuffle(file_list)
     #file_list = file_list[:9*3]   #Temporarily limit size of reduction.
     print("Pre cull:  ", len(file_list))
+    breakpoint()
     new_list = []
     for item in range(len(file_list)):
         candidate = fits.open(file_list[item])
@@ -452,7 +453,7 @@ def make_master_bias (alias, path,  lng_path , selector_string, out_file):
         chunk = len(file_list)
     if chunk > 31: chunk = 31
     print('Chunk size:  ', chunk, len(file_list)//chunk)
-    chunk = 5
+    chunk = 9
     chunked_list = chunkify(file_list, chunk)
     print(chunked_list)
     create_super_bias(chunked_list, lng_path, out_file )
@@ -547,6 +548,9 @@ def de_offset_and_trim(camera_name, archive_path, selector_string, out_path, ful
  #   file_list.sort
     print(file_list)
     print('# of files:  ', len(file_list))
+    p22 = 0
+    p30 = 0
+    p_else = 0
     for image in file_list:
         print('Processing:  ', image)
         image_hdr = fits.open(image)
@@ -557,25 +561,57 @@ def de_offset_and_trim(camera_name, archive_path, selector_string, out_path, ful
             pedastal = 0.0
         else:
             pedastal = 100.0
-        iy, ix = img.data.shape
-        if full and ix == 9600:
-            overscan = int((np.median(img.data[0:34, :]) + np.median(img.data[:, 9578:]))/2)
-            trimmed = img.data[34:,:-24].astype('int32') + pedastal - overscan
-            square = trimmed
-        elif full and ix == 4800:
-            overscan = int((np.median(img.data[0:17, :]) + np.median(img.data[:, 4789:]))/2)
-            trimmed = img.data[17:,:-12].astype('int32') + pedastal - overscan
-            square = trimmed   
-        elif ix == 9600:
-            overscan = int((np.median(img.data[0:34, :]) + np.median(img.data[:, 9578:]))/2)
-            trimmed = img.data[36:,:-26].astype('int32') + pedastal - overscan
-            square = trimmed[121:121+6144,1715:1715+6144]
+        img.data = img.data.transpose()  #Do this for convenience of sorting trimming details.
+        ix, iy = img.data.shape
+        '''
+        img.data[22:24,-35:]
+        array([[  0,   0, 132, 132, 131, 122, 125, 127, 136, 135, 135, 123,         
+        '''
+        if ix == 9600:
+            #  NB  The special casing is fixing a problem with WMD SQ01 camera.
+            if img.data[22, -34] == 0:
+                p22 += 1
+                overscan = int((np.median(img.data[24:, -33:]) + np.median(img.data[0:21, :]))/2) - 1
+                trimmed = img.data[24:-8, :-34].astype('int32') + pedastal - overscan
+                square = trimmed
+                shift_error = -8
+            elif img.data[30, -34] == 0:
+                p30 += 1
+                overscan = int((np.median(img.data[32:, -33:]) + np.median(img.data[0:29, :]))/2) - 1
+                trimmed = img.data[32:, :-34].astype('int32') + pedastal - overscan
+                square = trimmed
+                shift_error = 0
+                p_else +=1
+            else:
+                p_else +=1
+                breakpoint()
+            if full:
+                square = trimmed
+            else:
+                square = trimmed[1590:1590 + 6388, :]
         elif ix == 4800:
-            overscan = int((np.median(img.data[0:17, :]) + np.median(img.data[:, 4789:]))/2)
-            trimmed = img.data[18:,:-13].astype('int32') + pedastal - overscan
-            square = trimmed[61:61+3072,857:857+3072]
+            if img.data[11, -18] == 0:
+                p22 += 1
+                overscan = int((np.median(img.data[12:, -17:]) + np.median(img.data[0:10, :]))/2) - 1 
+                trimmed = img.data[12:-4, :-17].astype('int32') + pedastal - overscan
+                shift_error = -4
+                square = trimmed 
+            elif img.data[15, -18] == 0:
+                p30 += 1
+                overscan = int((np.median(img.data[16:, -17:]) + np.median(img.data[0:14, :]))/2) -1 
+                trimmed = img.data[16:, :-17].astype('int32') + pedastal - overscan
+                square = trimmed
+                shift_error = 0
+            else:
+                p_else +=1
+                breakpoint()
+            if full:
+                square = trimmed
+            else:
+                square = trimmed[795:795 + 3194, :]
         else:
             print("Incorrect chip size or bin specified.")
+        square = square.transpose()
         std = square.std()
         smin = np.where(square < (pedastal - 6*std))    #finds negative pixels
         shot = np.where(square > (pedastal + 5*std))
@@ -588,6 +624,9 @@ def de_offset_and_trim(camera_name, archive_path, selector_string, out_path, ful
         img.header['PEDASTAL'] = -pedastal
         img.header['ERRORVAL'] = 0
         img.header['OVERSCAN'] = overscan
+        if shift_error:
+            img.header['SHIFTERR'] = shift_error
+            
         img.header['HISTORY'] = "Maxim image debiased and trimmed."
         #img.write(out_path + image.split('\\')[1], overwrite=True)
 
@@ -961,13 +1000,13 @@ if __name__ == '__main__':
     camera_name = 'sq01'  #  config.site_config['camera']['camera1']['name']
     #archive_path = "D:/000ptr_saf/archive/sq01/2020-06-13/"
     #archive_path = "D:/2020-06-19  Ha and O3 screen flats/"
-    archive_path = "D:/20200924 M33 6th try/"
+    archive_path = "D:/archive/sq01/maxim/"
     out_path = archive_path + 'trimmed/'
-    lng_path = "D:/000ptr_saf/archive/sq01/lng/"
+    lng_path = "D:/archive/sq01/lng/"
     #APPM_prepare_TPOINT()
-    de_offset_and_trim(camera_name, archive_path, '*M33*f*t*', out_path, full=True, norm=False)
+    #de_offset_and_trim(camera_name, archive_path, '*b_*f*t*', out_path, full=True, norm=False)
     # prepare_tpoint(camera_name, archive_path, '*APPM*',lng_path, out_path)
-    # make_master_bias(camera_name, archive_path, lng_path, '*b_1-4*', 'fb_1-4.fits')
+    make_master_bias(camera_name, out_path, lng_path, '*b_2*', 'fb_2.fits')
     # make_master_bias(camera_name, archive_path, lng_path, '*EX*', 'mb_2.fits')
     # analyze_bias_stack(camera_name, archive_path, lng_path, '*EX*', 'mb_2.fits')
     # #make_master_bias(camera_name, archive_path, lng_path, '*b_3*', 'mb_3.fits')
@@ -981,10 +1020,10 @@ if __name__ == '__main__':
     # make_master_flat(camera_name, archive_path, lng_path, filt, out_name, 'mb_1.fits', 'md_1.fits')
     # build_hot_map(camera_name, lng_path, "md_1_1080.fits", "hm_1")
     # build_hot_image(camera_name, lng_path, "md_1_1080.fits", "hm_1.fits")
-    archive_path = out_path
+    #archive_path = out_path
     # archive_path = "D:/20200914 M33 second try/trimmed/"
     # out_path = "D:/20200920 M27 Dumbell Nebula/reduced/"
-    correct_image(camera_name, archive_path, '*M33*f*t*', lng_path, out_path)
+    # correct_image(camera_name, archive_path, '*M33*f*t*', lng_path, out_path)
     # mod_correct_image(camera_name, archive_path, '*EX00*', lng_path, out_path)
     # archive_path = out_path
     # out_path =":D:/20200707 Bubble Neb NGC7635  Ha O3 S2/catalogs/"

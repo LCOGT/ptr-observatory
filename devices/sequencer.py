@@ -329,7 +329,6 @@ class Sequencer:
                  
         """
         self.sequencer_hold = True
-        breakpoint()
         if req is None:     #  NB Chunking factor is 9
             req = {'numOfBias': 36, 'bin3': False, 'numOfDark2': 18, 'bin4': \
                    False, 'bin1': True, 'darkTime': '360', 'hotMap': True, \
@@ -346,7 +345,7 @@ class Sequencer:
         print('Bias_list:  ', bias_list)
         total_num_biases = len(bias_list)
         print("Total # of bias frames, all binnings =  ", total_num_biases, \
-              " Time req'd:  ", total_num_biases*12.5, ' sec.' )
+              " Time req'd:  ", total_num_biases*4, ' sec.' )
         
         dark_list = []
         num_dark = min(45, req['numOfDark'])   ## Implied this is 1:! binning darks.
@@ -364,7 +363,7 @@ class Sequencer:
         total_num_binx_dark = len(binx_dark_list)
         print("Total # of binx_dark frames, all binnings =  ", total_num_binx_dark)
         
-        bias_time = 12.  #NB Pick up from camera config  An avg for QHY600P
+        bias_time = 4.  #NB Pick up from camera config  An avg for QHY600P
         flush = 2
         total_time = bias_time*(total_num_biases + flush + total_num_dark + total_num_binx_dark)
         #  NB Note higher bin readout not compensated for.
@@ -374,13 +373,14 @@ class Sequencer:
         print('Pre-flush twice.')  #NB Filter is 'dark'
         bin_str = bin_to_string(21)
         req = {'time': 0.0, 'script': 'True', 'image_type': 'bias'}
-        opt = {'area': 100, 'count': flush, 'bin': bin_str, \
+        opt = {'area': 150, 'count': flush, 'bin': bin_str, \
                'filter': g_dev['fil'].filter_data[-1][0], 'hint':  'Flush'}
-        result = g_dev['cam'].expose_command(req, opt, no_AWS=True, \
-                                             do_sep=False, quick=False)        
+        # result = g_dev['cam'].expose_command(req, opt, no_AWS=True, \
+        #                                      do_sep=False, quick=False)        
         first_bias = bias_list[0]
         big_list = bias_list[1:] + dark_list + binx_dark_list
         shuffle(big_list)   #  Should distribute things more or less evenly.
+        breakpoint()
         big_list.insert(0, first_bias) #  Always start with a bias. 
         while len(big_list) > 0:
             use_bin = big_list[0][0]   #  Pick up bin value
@@ -390,12 +390,12 @@ class Sequencer:
             if exp == 0:
                 print("Expose Bias using bin:  ", use_bin)   
                 req = {'time': 0.0,  'script': 'True', 'image_type': 'bias'}
-                opt = {'area': 100, 'count': 1, 'bin': bin_str, \
+                opt = {'area': 150, 'count': 1, 'bin': bin_str, \
                        'filter': g_dev['fil'].filter_data[-1][0]}
             elif exp > 0:
                 print("Expose Dark using bin, exp:  ", use_bin, exp)
                 req = {'time': exp,  'script': 'True', 'image_type': 'dark'}
-                opt = {'area': 100, 'count': 1, 'bin': bin_str, \
+                opt = {'area': 150, 'count': 1, 'bin': bin_str, \
                        'filter': g_dev['fil'].filter_data[-1][0]} 
             result = g_dev['cam'].expose_command(req, opt, no_AWS=True, \
                                         do_sep=False, quick=False)
