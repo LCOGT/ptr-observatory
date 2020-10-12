@@ -270,6 +270,7 @@ class Sequencer:
             now_date_timeZ = datetime.datetime.now().isoformat().split('.')[0] +'Z'           
             if (block['start'] <= now_date_timeZ < block['end']) and not self.block_guard :
                 self.block_guard = True
+                breakpoint()
                 self.execute_block(block)
                 print("Should have left a block here.")
                 '''

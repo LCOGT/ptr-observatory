@@ -882,7 +882,7 @@ class Camera:
                 #  NB Note this is QHY600 specific code.  Needs to be supplied in camera config as sliced regions.
                 pedastal = 100
                 ix, iy = self.img.shape
-                 if ix == 9600:
+                if ix == 9600:
                     overscan = int((np.median(self.img[32:, -33:]) + np.median(self.img[0:29, :]))/2) - 1
                     trimmed = self.img[32:, :-34].astype('int32') + pedastal - overscan
                     if opt['area'] in [150, 'Full', 'full']:
@@ -1103,7 +1103,7 @@ class Camera:
                         next_seq  + '-' + im_type + '01.fits'
                     red_name01b = red_name01[:-9] + self.current_filter +"-" + red_name01[-9:]
                     if self.pane is not None:
-                        red_name01b = red_name01b[:-9] + str(abs(self.pane)) + "-" + red_name01b[-9:]
+                        red_name01b = red_name01b[:-9] + 'p' + str(abs(self.pane)) + "-" + red_name01b[-9:]
                     #Cal_ and raw_ names are confusing
                     i768sq_name = self.config['site'] + '-' + current_camera_name + '-' + g_dev['day'] + '-' + \
                         next_seq  + '-' + im_type + '10.fits'
