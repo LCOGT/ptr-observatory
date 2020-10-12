@@ -7,6 +7,7 @@ import copy
 from global_yard import g_dev
 import ephem
 import build_tycho as tycho
+
 from pprint import pprint
 
 '''
@@ -232,8 +233,31 @@ class Sequencer:
         elif g_dev['obs'].blocks is not None and \
                   g_dev['obs'].projects is not None:     #  THIS DOES NEED TO BE FENCED BY TIME and not repeated.
 
-            block = g_dev['obs'].blocks
-            project = g_dev['obs'].projects
+            block = g_dev['obs'].blocks[0]
+            project = g_dev['obs'].projects[1]
+            project['exposures'][0]['area']=600
+            '''
+            evaluate supplied projects for observable and mark as same. Discard
+            unobservable projects.  Projects may be "site" projects or 'ptr' (network wide:
+            All, Owner, PTR-network, North, South.)
+                
+                The westernmost project is offered to run unless there is a runnable scheduled block.
+                for any given time, ar the constraints met? Airmass < x, Moon Phaze < y, moon dist > z,
+                flip rules
+            
+            
+            '''
+            # breakpoint()
+            # #Figure out which are observable.  Currently only supports one target/proj
+            # observable = []
+            # for projects in projects:
+            #     ra = projects['project_targets']['ra']
+            #     dec = projects['project_targets']['dec']
+            #     sid = g_dev['mnt'].mount.SiderealTime
+            #     ha = tycho.reduceHA(sid - ra)
+            #     az, alt = transform_haDec_to_azAlt(ha, dec)
+                
+            #block['start'] = '2020-10-11T00:30:00Z'    
 
             # for block in blocks:  #  This merges project spec into the blocks.
             #     for project in projects:
@@ -244,7 +268,7 @@ class Sequencer:
             # breakpoint()
             # for block in blocks:
             now_date_timeZ = datetime.datetime.now().isoformat().split('.')[0] +'Z'           
-            if (block['start'] <= now_date_timeZ < block['end']) and not self.block_guard:
+            if (block['start'] <= now_date_timeZ < block['end']) and not self.block_guard :
                 self.block_guard = True
                 self.execute_block(block)
                 print("Should have left a block here.")
@@ -253,7 +277,7 @@ class Sequencer:
                 be restored.  IN the execute block we need to make a deepcopy of the input block
                 so it does not get modified.
                 '''
-                breakpoint()
+            
                 
                 # print("Here we would enter an observing block:  ",
                 #       block)
@@ -277,7 +301,7 @@ class Sequencer:
         # #unpark, open dome etc.
         # #if not end of block
         g_dev['mnt'].unpark_command({}, {})
-        timer = time.time() - 120
+        timer = time.time() - 1  #This should force an immediate autofocus.
         req2 = {'target': 'near_tycho_star', 'area': 150}
         opt = {}
         '''
@@ -317,12 +341,12 @@ class Sequencer:
                 #cycle thrugh exposures decrementing counts    MAY want to double check left-to do but do nut remultiply by 4
                 for exposure in block['project']['exposures']:
                     if block_specification['project']['project_constraints']['frequent_autofocus'] == True and (time.time() - timer) >= 0:
-                        breakpoint()
+                        
                         self.focus_auto_script(req2, opt)
-                        timer = time.time()
+                        timer = time.time() + 600   #!0 min for degubgging.
                     print("Executing: ", exposure, left_to_do)
                     color = exposure['filter']
-                    exp_time = 1.0# float(exposure['exposure']) 
+                    exp_time =  float(exposure['exposure']) 
                     #dither = exposure['dither'] 
                     binning = int(exposure['bin'])
                     count = int(exposure['count'])
@@ -352,15 +376,23 @@ class Sequencer:
                     #At this point we have 1 to four exposures to make in this filter.  Note different areas can be defined. 
                     if exposure['area'] in ['300', 300, '220', 220, '150', 150]:
                         offset = [(1.5, 1.), (-1.5, 1.), (-1.5, -1.), (1.5, -1.)] #Four mosaic quadrants 36 x 24mm chip
+                        pane = 1
                         if exposure['area'] in ['300', 300]:
                             pitch = 0.375
                         if exposure['area'] in ['220', 220]:
                             pitch = 0.25
                         if exposure['area'] in ['150', 150]:
-                            pitch = 0.125                        
+                            pitch = 0.125
+                    elif exposure['area'] in ['600', 600]:
+                        offset = [(0., 0.), (1.5, 0.), (1.5, 1.), (0., 1.), (-1.5, 1.), (-1.5, 0.), \
+                                  (-1.5, -1.), (0., -1.), (1.5, -1.), ] #Nine mosaic quadrants 36 x 24mm chip
+                        pitch = 0.75
+                        pane = 0
+                
                     else:
                         offset = [(0., 0.)] #Zero(no) mosaic offset
                         pitch = 0.
+                        pane = 0
                     for displacement in offset:
                         d_ra = displacement[0]*pitch*0.05089517  #Hours  These and pixscale should be computed in config.
                         d_dec = displacement[1]*pitch*0.574485   #Deg
@@ -373,12 +405,14 @@ class Sequencer:
                         g_dev['mnt'].go_coord(new_ra, dest_dec + d_dec)    #This needs full angle checks
                         if imtype in ['light'] and count > 0:
                             req = {'time': exp_time,  'alias':  str(self.config['camera']['camera1']['name']), 'image_type': imtype}   #  NB Should pick up filter and constants from config
-                            opt = {'area': 150, 'count': 1, 'bin': binning, 'filter': color, 'hint': block['project_id'] + "##" + dest_name}
+                            opt = {'area': 150, 'count': 1, 'bin': binning, 'filter': color, \
+                                   'hint': block['project_id'] + "##" + dest_name, 'pane': pane}
                             result = g_dev['cam'].expose_command(req, opt, gather_status=True, no_AWS=False)
                             count -= 1
                             exposure['count'] = count
                             left_to_do -= 1
                             print("Left to do:  ", left_to_do)
+                        pane += 1
                     now_date_timeZ = datetime.datetime.now().isoformat().split('.')[0] +'Z'           
                     ended = now_date_timeZ >= block['end']    
         print("Fini!")
@@ -711,17 +745,17 @@ class Sequencer:
                                     g_dev['tel'].current_sidereal)
             print("Going to near focus star " + str(focus_star[0][0]) + "  degrees away.")
             g_dev['mnt'].go_coord(focus_star[0][1][1], focus_star[0][1][0])
-            req = {'time': 5,  'alias':  str(self.config['camera']['camera1']['name']), 'image_type': 'auto_focus'}   #  NB Should pick up filter and constats from config
-            opt = {'area': 150, 'count': 1, 'filter': 'w'}
+            req = {'time': 12.5,  'alias':  str(self.config['camera']['camera1']['name']), 'image_type': 'auto_focus'}   #  NB Should pick up filter and constats from config
+            opt = {'area': 150, 'count': 1, 'bin': '2, 2', 'filter': 'w'}
         else:
             pass   #Just take an image where currently pointed.
-            req = {'time': 10,  'alias':  str(self.config['camera']['camera1']['name']), 'image_type': 'auto_focus'}   #  NB Should pick up filter and constats from config
-            opt = {'area': 150, 'count': 1, 'filter': 'w'}
+            req = {'time': 15,  'alias':  str(self.config['camera']['camera1']['name']), 'image_type': 'auto_focus'}   #  NB Should pick up filter and constats from config
+            opt = {'area': 150, 'count': 1, 'bin': '2, 2', 'filter': 'w'}
         foc_pos0 = focus_start
         result = {}
         print("temporary patch in Sim values")
         print('Autofocus Starting at:  ', foc_pos0, '\n\n')
-        throw = 200  # NB again, from config.  Units are microns
+        throw = 600  # NB again, from config.  Units are microns
         if not sim:
             result = g_dev['cam'].expose_command(req, opt, no_AWS=True) ## , script = 'focus_auto_script_0')  #  This is where we start.
         else:
@@ -758,7 +792,9 @@ class Sequencer:
             #Digits are to help out pdb commands!
             a1, b1, c1, d1 = fit_quadratic(x, y)
             new_spot = round(a1*d1*d1 + b1*d1 + c1, 2)
+
         except:
+
             print('Autofocus quadratic equation not converge. Moving back to starting focus:  ', focus_start)
             g_dev['foc'].focuser.Move((focus_start)*g_dev['foc'].micron_to_steps)
             self.sequencer_hold = False   #Allow comand checks.
@@ -775,6 +811,7 @@ class Sequencer:
             spot4 = result['FWHM']
             foc_pos4 = result['mean_focus']
             print('\n\n\nFound best focus at:  ', foc_pos4,' measured is:  ',  round(spot4, 2), '\n\n\n')
+            g_dev['foc'].af_log(foc_pos4, spot4, new_spot)
         else:
             print('Autofocus did not converge. Moving back to starting focus:  ', focus_start)
             g_dev['foc'].focuser.Move((focus_start)*g_dev['foc'].micron_to_steps)

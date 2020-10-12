@@ -428,13 +428,14 @@ class Camera:
         self.t0 = time.time()
         self.hint = optional_params.get('hint', '')
         self.script = required_params.get('script', 'None')
+        self.pane = optional_params.get('pane', None)
         bin_x = optional_params.get('bin', self.config['camera']['camera1'] \
                                                       ['settings']['default_bin'])  #NB this should pick up config default.
         if bin_x == '4, 4':     # For now this is the highest level of binning supported.
             bin_x = 2
         elif bin_x == '3, 3':   # replace with in and various formats or strip spaces.
             bin_x = 2
-        elif bin_x == 2 or bin_x in ['2, 2', '2,2']:
+        elif bin_x in [2, '2, 2', '2,2']:
             bin_x = 2
             self.ccd_sum = '2 2'
         else:
@@ -519,16 +520,16 @@ class Camera:
             do_sep = True
         # NBNB This area still needs work to cleanly define shutter, calibration, sep and AWS actions.
 
-        area = optional_params.get('area', 100)
-        if area is None or area == 'chip':   #  Temporary patch to deal with 'chip'
-            area = 100
+        area = optional_params.get('area', 150)
+        if area is None or area in['Full', 'full', 'chip', 'Chip']:   #  Temporary patch to deal with 'chip'
+            area = 150
         sub_frame_fraction = optional_params.get('subframe', None)
         # Need to put in support for chip mode once we have implmented in-line bias correct and trim.
         try:
             if type(area) == str and area[-1] == '%':
                 area = int(area[0:-1])
         except:
-            area = 100
+            area = 150     #was 100 in ancient times.
         if bin_y == 0 or self.camera_max_x_bin != self.camera_max_y_bin:
             self.bin_x = min(bin_x, self.camera_max_x_bin)
             self.cameraBinY = self.bin_y
@@ -886,14 +887,14 @@ class Camera:
                 if ix == 9600:
                     overscan = int((np.median(self.img[32:, -33:]) + np.median(self.img[0:29, :]))/2) - 1
                     trimmed = self.img[32:, :-34].astype('int32') + pedastal - overscan
-                    if opt['area'] == 150:
+                    if opt['area'] in [150, 'Full', 'full']:
                         square = trimmed
                     else:
                         square = trimmed[1590:1590 + 6388, :]
                 elif ix == 4800:
                     overscan = int((np.median(self.img[16:, -17:]) + np.median(self.img[0:14, :]))/2) -1
                     trimmed = self.img[16:, :-17].astype('int32') + pedastal - overscan
-                    if opt['area'] == 150:
+                    if opt['area'] in [150, 'Full', 'full']:
                         square = trimmed
                     else:
                         square = trimmed[795:795 + 3194, :]
@@ -943,22 +944,22 @@ class Camera:
                     print('No. of detections:  ', len(sources))
                     r0 = 0
                     r1 = 0
-
-                    for source in sources[-1:]:
-                        a0 = source['a']
-                        b0 = source['b']
-                        r0 = math.sqrt(a0*a0 + b0*b0)
-                        # NB note the following fails with 1:1 8inning!!!!!
-                        r1 = math.sqrt((1536 - source['x'])**2 + (1536 - source['y'])**2)
-                        #kr, kf = sep.kron_radius(self.img, source['x'], source['y'], source['a'], source['b'], source['theta'], 6.0)
-                        print(source['x'], source['y'], r0, r1)  # , kr, kf)
+                    # X and Y may be transposed, check this out.
+                    sourcef = sources[-2]
+                    a0 = sourcef['a']
+                    b0 = sourcef['b']
+                    r0 = math.sqrt(a0*a0 + b0*b0)
+                    # NB note the following fails with 1:1 binning!!!!!  Need to derive centers from shape of image
+                    r1 = math.sqrt((2392 - sourcef['x'])**2 + (1597 - sourcef['y'])**2)
+                    #kr, kf = sep.kron_radius(self.img, source['x'], source['y'], source['a'], source['b'], source['theta'], 6.0)
+                    print(sourcef['x'], sourcef['y'], r0, r1)  # , kr, kf)
                     result['FWHM'] = round(r0, 3)
                     result['mean_focus'] =  avg_foc[1]
                     result['center_dist'] = round(r1, 2)
                     result['center_flux'] = int(0)  # source['cflux'])
+
                     return result
                 try:
-                    time.sleep(2)
                     hdu = fits.PrimaryHDU(self.img)
                     self.img = None    #  Does this free up any resource?
                     hdu.header['BUNIT'] = 'adu'
@@ -994,6 +995,9 @@ class Camera:
                     hdu.header['XORGSUBF'] = self.camera_start_x    #This makes little sense to fix...  NB ALL NEEDS TO COME FROM CONFIG!!
                     hdu.header['YORGSUBF'] = self.camera_start_y
                     hdu.header['READOUTM'] = 'Monochrome'    #NB this needs to be updated
+                    if self.pane is not None:
+                        hdu.header['MOSAIC'] = True
+                        hdu.header['PANE'] = self.pane
                     hdu.header['TELESCOP'] = self.config['telescope']['telescope1']['desc']
                     hdu.header['FOCAL']    = round(float(self.config['telescope']['telescope1']['focal_length']), 2)
                     hdu.header['APR-DIA']  = round(float(self.config['telescope']['telescope1']['aperture']), 2)
@@ -1076,7 +1080,7 @@ class Camera:
                     hdu.header['SATURATE'] = int(self.config['camera']['camera1']['settings']['saturate'])
                     pix_ang = (self.camera.PixelSizeX*self.camera.BinX/(float(self.config['telescope'] \
                                               ['telescope1']['focal_length'])*1000.))
-                    hdu.header['PIXSCALE'] = round(math.degrees(math.atan(pix_ang))*3600., 3)
+                    hdu.header['PIXSCALE'] = round(math.degrees(math.atan(pix_ang))*3600., 4)
                     current_camera_name = self.config['camera']['camera1']['name']
                     # NB This needs more deveopment
                     im_type = 'EX'   #or EN for engineering....
@@ -1098,6 +1102,9 @@ class Camera:
                         next_seq  + '-' + im_type + '00.fits'
                     red_name01 = self.config['site'] + '-' + current_camera_name + '-' + g_dev['day'] + '-' + \
                         next_seq  + '-' + im_type + '01.fits'
+                    red_name01b = red_name01[:-9] + self.current_filter +"-" + red_name01[-9:]
+                    if self.pane is not None:
+                        red_name01b = red_name01b[:-9] + str(abs(self.pane)) + "-" + red_name01b[-9:]
                     #Cal_ and raw_ names are confusing
                     i768sq_name = self.config['site'] + '-' + current_camera_name + '-' + g_dev['day'] + '-' + \
                         next_seq  + '-' + im_type + '10.fits'
@@ -1106,6 +1113,7 @@ class Camera:
                     text_name = self.config['site'] + '-' + current_camera_name + '-' + g_dev['day'] + '-' + \
                         next_seq  + '-' +  im_type + '00.txt'
                     im_path_r = self.camera_path
+
                     #lng_path = self.lng_path
                     hdu.header['DAY-OBS'] = g_dev['day']
                     hdu.header['DATE'] = datetime.datetime.isoformat(datetime.datetime.utcfromtimestamp(self.t2))
@@ -1148,6 +1156,7 @@ class Camera:
                              'cal_name':  cal_name,
                              'raw_name00': raw_name00,
                              'red_name01': red_name01,
+                             'red_name01b': red_name01b,
                              'i768sq_name10': i768sq_name,
                              'i768sq_name11': i768sq_name,
                              'jpeg_name10': jpeg_name,

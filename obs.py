@@ -139,6 +139,7 @@ class Observatory:
         self.command_interval = 2   # seconds between polls for new commands
         self.status_interval = 3    # NOTE THESE IMPLEMENTED AS A DELTA NOT A RATE.
         self.name = name
+        self.site_name = name
         self.config = config
         self.last_request = None
         self.stopped = False
@@ -298,18 +299,18 @@ class Observatory:
                 url = "https://calendar.photonranch.org/dev/siteevents"
                 body = json.dumps({
                     'site':  'saf',
-                    'start':  '2020-10-09T12:00:00Z',
-                    'end':    '2020-10-11T15:59:59Z',
-                    'full_project_details:':  False})
+                    'start':  '2020-10-10T12:00:00Z',
+                    'end':    '2020-10-13T15:59:59Z',
+                    'full_project_details:':  True})
                 if self.blocks is None:
                     blocks = requests.post(url, body).json()
                     if len(blocks) > 0:   #   is not None:
-                        self.blocks = blocks[0]
+                        self.blocks = blocks
                 url = "https://projects.photonranch.org/dev/get-all-projects"
                 if self.projects is None:
                     all_projects = requests.post(url).json()
                     if len(all_projects) > 0:   #   is not None:
-                        self.projects = all_projects[0]   #NOTE creating a list with a dict entry as item 0
+                        self.projects = all_projects  #NOTE creating a list with a dict entry as item 0
                         #self.projects.append(all_projects[1])
                 '''
                 Design Note.  blocks relate to scheduled time at a site so we expect AWS to mediate block 
@@ -532,10 +533,19 @@ class Observatory:
                 #     print('Path creation in Reductions failed.', lng_path)
                #NB Important decision here, do we flash calibrate screen and sky flats?  For now, Yes.
 
-                #cal_result = 
+                #cal_result =
                 calibrate(hdu, lng_path, paths['frame_type'], quick=False)
                 #print("Calibrate returned:  ", hdu.data, cal_result)
-                hdu.writeto(paths['red_path'] + paths['red_name01'], overwrite=True)
+                wpath = paths['red_path'] + paths['red_name01b']
+                hdu.writeto(wpath, overwrite=True)
+                if self.name == 'saf':
+                    wpath = 'Q' + wpath[1:]
+                    try:
+                        os.makedirs(wpath[:43])    #This whole section is fragile.
+                        hdu.writeto(wpath, overwrite=True)
+                    except:
+                        print("Failed to write reduced to Q: at saf site.")
+                    pass
                 # print(hdu.data)
                 # print('WROTE TO: ', paths['red_path'] + paths['red_name01'])
                 # if g_dev['cam'].toss:

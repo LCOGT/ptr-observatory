@@ -20,6 +20,7 @@ from astropy.coordinates import SkyCoord, FK5, ICRS, FK4, Distance, \
 from astroquery.vizier import Vizier
 from astroquery.simbad import Simbad
 import ephem
+from global_yard import g_dev
 from pprint import pprint
 
 
@@ -81,7 +82,7 @@ def reduceAz(pAz):
     return pAz
 
 def transform_haDec_to_azAlt(pLocal_hour_angle, pDec):
-    lat = 35.554444   # NB Bad form.
+    lat = g_dev['evnt'].siteLatitude
     latr = math.radians(lat)
     sinLat = math.sin(latr)
     cosLat = math.cos(latr)

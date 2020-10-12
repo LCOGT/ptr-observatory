@@ -130,14 +130,15 @@ def calibrate (hdu, lng_path, frame_type='light', quick=False):
         screen_flat_O3, screen_flat_HA, screen_flat_N2, screen_flat_S2, screen_flat_EXO, screen_flat_air, \
         dark_exposure_level
     loud = False
+
     #This needs to deal with caching different binnings as well.  And do we skip all this for a quick
     if not quick:
         if super_bias is None:
             try:
                 sbHdu = fits.open(lng_path + 'fb_1-4.fits')
                 super_bias = sbHdu[0].data#.astype('float32')
-                pedastal = shHdu[0].header['PEDASTAL']
-                super_bias = superbias + pedastal
+                pedastal = sbHdu[0].header['PEDASTAL']
+                super_bias = super_bias + pedastal
                 #Temp fix
                 #fix = np.where(super_bias > 400)
                 #super_bias[fix] = int(super_bias.mean())
@@ -147,18 +148,20 @@ def calibrate (hdu, lng_path, frame_type='light', quick=False):
             except:
                 quick_bias = False
                 print('WARN: No Bias_1 Loaded.')
+                breakpoint()
         if super_bias_2 is None:
             try:
                 sbHdu = fits.open(lng_path + 'fb_2-4.fits')
                 super_bias_2 = sbHdu[0].data#.astype('float32')
-                pedastal = shHdu[0].header['PEDASTAL']
-                super_bias_2 = superbias_2 + pedastal
+                pedastal = sbHdu[0].header['PEDASTAL']
+                super_bias_2 = super_bias_2 + pedastal
                 sbHdu.close()
                 quick_bias = True
                 if loud: print(lng_path + 'fb_2-4.fits', 'Loaded')
             except:
                 quick_bias = False
                 print('WARN: No Bias_2 Loaded.')
+                breakpoint()
         # if super_dark_90 is None:
         #     try:
         #         sdHdu = fits.open(lng_path + 'md_1_90.fits')
