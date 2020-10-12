@@ -9,8 +9,7 @@ import shelve
 import requests
 import json
 
-#TEMP COEFF ESTIMATED 20190824   fx= round(-164.0673*C_pri +13267.37, 1)  #A very good 1.5C span.  9986@20C. Random Hyst ~ 500 microns! :((( )))
-#-104.769 + 12457.5   2019083
+
 
 '''
 class Probe(object):
@@ -247,12 +246,22 @@ class Focuser:
     def set_focal_ref(self, ref):
         camShelf = shelve.open(self.site_path + 'ptr_night_shelf/' + self.camera_name)
         camShelf['Focus Ref'] = ref
+        camShelf['af_log'] = []
+        camShelf.close()
+        return
+    
+    def af_log(self, ref, fwhm, solved):
+        camShelf = shelve.open(self.site_path + 'ptr_night_shelf/' + self.camera_name, writeback=True)
+        camShelf['af_log'].append((ref, fwhm, solved, self.focuser.Temperature, time.time()))
         camShelf.close()
         return
 
+
     def get_focal_ref(self):
         camShelf = shelve.open(self.site_path + 'ptr_night_shelf/' + self.camera_name)
-        return camShelf['Focus Ref']
+        focus_ref = camShelf['Focus Ref']
+        camShelf.close()
+        return focus_ref
 
 if __name__ == '__main__':
     pass

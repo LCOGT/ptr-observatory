@@ -139,6 +139,7 @@ class Observatory:
         self.command_interval = 2   # seconds between polls for new commands
         self.status_interval = 3    # NOTE THESE IMPLEMENTED AS A DELTA NOT A RATE.
         self.name = name
+        self.site_name = name
         self.config = config
         self.last_request = None
         self.stopped = False
@@ -281,35 +282,47 @@ class Observatory:
                                                    data=json.dumps(body)).json()
                 # Make sure the list is sorted in the order the jobs were issued
                 # Note: the ulid for a job is a unique lexicographically-sortable id
-                unread_commands.sort(key=lambda x: x["ulid"])
-                # Process each job one at a time
-                for cmd in unread_commands:
-                    print(cmd)
-                    deviceInstance = cmd['deviceInstance']
-                    deviceType = cmd['deviceType']
-                    device = self.all_devices[deviceType][deviceInstance]
-                    try:
-                        device.parse_command(cmd)
-                    except Exception as e:
-                        print(e)
+                if len(unread_commands) > 0:
+                    unread_commands.sort(key=lambda x: x["ulid"])
+                    # Process each job one at a time
+                    for cmd in unread_commands:
+                        print(cmd)
+                        deviceInstance = cmd['deviceInstance']
+                        deviceType = cmd['deviceType']
+                        device = self.all_devices[deviceType][deviceInstance]
+                        try:
+                            device.parse_command(cmd)
+                        except Exception as e:
+                            print(e)
                # print('scan_requests finished in:  ', round(time.time() - t1, 3), '  seconds')
                 ## Test Tim's code
-                url = "https://projects.photonranch.org/dev/get-all-projects"
-                if self.projects is None:
-                    all_projects = requests.post(url).json()
-                    if all_projects is not None:
-                        self.projects = all_projects[2]   #NOTE creating a list with a dict entry as item 0
-                        #self.projects.append(all_projects[1])
                 url = "https://calendar.photonranch.org/dev/siteevents"
                 body = json.dumps({
                     'site':  'saf',
-                    'start':  '2020-09-14T13:00:00Z',
-                    'end':    '2020-10-31T12:59:59Z',
-                    'full_project_details:':  False})
+                    'start':  '2020-10-10T12:00:00Z',
+                    'end':    '2020-10-13T15:59:59Z',
+                    'full_project_details:':  True})
                 if self.blocks is None:
                     blocks = requests.post(url, body).json()
-                    if blocks is not None:
-                        self.blocks = blocks[0]
+                    if len(blocks) > 0:   #   is not None:
+                        self.blocks = blocks
+                url = "https://projects.photonranch.org/dev/get-all-projects"
+                if self.projects is None:
+                    all_projects = requests.post(url).json()
+                    if len(all_projects) > 0:   #   is not None:
+                        self.projects = all_projects  #NOTE creating a list with a dict entry as item 0
+                        #self.projects.append(all_projects[1])
+                '''
+                Design Note.  blocks relate to scheduled time at a site so we expect AWS to mediate block 
+                assignments.  Priority of blocks is determined by the owner and a 'equipment match' for
+                background projects.
+                
+                Projects on the other hand can be a very large pool so have to manage becomes an issue.
+                TO the extent a project is not visible at a site, aws should not present it.  If it is
+                visible and passes the owners priority it should then be presented to the site.
+                
+                '''
+
                 if self.events_new is None:
                     url = 'https://api.photonranch.org/api/events?site=saf'
 
@@ -327,7 +340,11 @@ class Observatory:
         '''
 
         # This stopping mechanism allows for threads to close cleanly.
-        loud = False
+        loud = False        
+        if g_dev['cam_retry_doit']:
+            del g_dev['cam']
+            device = Camera(g_dev['cam_retry_driver'], g_dev['cam_retry_name'], g_dev['cam_retry_config'])
+            print("Deleted and re-created:  ,", device)
         # Wait a bit between status updates
         while time.time() < self.time_last_status + self.status_interval:
             # time.sleep(self.st)atus_interval  #This was prior code
@@ -387,23 +404,23 @@ class Observatory:
 
         Sequences that are self-dispatched primarily relate to Bias darks, screen and sky
         flats, opening and closing.  Status for these jobs is reported via the normal
-        sequencer status mechanism. Guard flags to preveent careless interrupts will be
+        sequencer status mechanism. Guard flags to prevent careless interrupts will be
         implemented as well as Cancel of a sequence if emitted by the Cancel botton on
         the AWS Sequence tab.
 
-        Flat acquisition will include auomatic rejection of any image that has a mean
-        intensity > cam.saturate.  The camera will return without further processing and
+        Flat acquisition will include automatic rejection of any image that has a mean
+        intensity > camera saturate.  The camera will return without further processing and
         no image will be returned to AWS or stored locally.  We should log the Unihedron and
-        calc_illum values where filter first enter non-saturation.  Once we know those values
+        calc_illum values where filters first enter non-saturation.  Once we know those values
         we can spend much less effort taking frames that are saturated. Save The Shutter!
 
         """
 
         self.update_status()
         try:
-            self.scan_requests('mount1')   #NBNBNB THis has faulted, needs to be Try/Except
+            self.scan_requests('mount1')   #NBNBNB THis has faulted, usually empty input lists.
         except:
-            print("self.scan_requests('mount1') threw an exception.")
+            print("self.scan_requests('mount1') threw an exception, probably empty input queues.")
 
         g_dev['seq'].manager()  #  Go see if there is something new to do.
 
@@ -516,10 +533,19 @@ class Observatory:
                 #     print('Path creation in Reductions failed.', lng_path)
                #NB Important decision here, do we flash calibrate screen and sky flats?  For now, Yes.
 
-                #cal_result = 
+                #cal_result =
                 calibrate(hdu, lng_path, paths['frame_type'], quick=False)
                 #print("Calibrate returned:  ", hdu.data, cal_result)
-                hdu.writeto(paths['red_path'] + paths['red_name01'], overwrite=True)
+                wpath = paths['red_path'] + paths['red_name01b']
+                hdu.writeto(wpath, overwrite=True)
+                if self.name == 'saf':
+                    wpath = 'Q' + wpath[1:]
+                    try:
+                        os.makedirs(wpath[:43])    #This whole section is fragile.
+                        hdu.writeto(wpath, overwrite=True)
+                    except:
+                        print("Failed to write reduced to Q: at saf site.")
+                    pass
                 # print(hdu.data)
                 # print('WROTE TO: ', paths['red_path'] + paths['red_name01'])
                 # if g_dev['cam'].toss:
@@ -614,7 +640,7 @@ class Observatory:
 
                 if in_shape[0] < in_shape[1]:
                     diff = int(abs(in_shape[1] - in_shape[0])/2)
-                    in_max = int(hdu.data.max()*0.8)
+                    in_max = int(hdu.data.mean()*0.8)
                     in_min = int(hdu.data.min() - 2)
                     if in_min < 0:
                         in_min = 0
@@ -628,7 +654,7 @@ class Observatory:
                 elif in_shape[0] > in_shape[1]:
                     #Same scheme as above, but expands second axis.
                     diff = int((in_shape[0] - in_shape[1])/2)
-                    in_max = int(hdu.data.max()*0.8)
+                    in_max = int(hdu.data.mean()*0.8)
                     in_min = int(hdu.data.min() - 2)
                     if in_min < 0:
                         in_min = 0
@@ -678,14 +704,7 @@ class Observatory:
                     g_dev['cam'].enqueue_for_AWS(jpeg_data_size, paths['im_path'], paths['jpeg_name10'])
                     g_dev['cam'].enqueue_for_AWS(i768sq_data_size, paths['im_path'], paths['i768sq_name10'])
                     #if not quick:
-                    g_dev['cam'].enqueue_for_AWS(raw_data_size, paths['red_path'], paths['red_name01'])
-                '''
-                    self.enqueue_image(text_data_size, im_path, text_name)
-                    self.enqueue_image(jpeg_data_size, im_path, jpeg_name)
-                    if not quick:
-                        self.enqueue_image(db_data_size, im_path, db_name)
-                        self.enqueue_image(raw_data_size, im_path, raw_name01)
-                '''          #print('Sent to AWS Queue.')
+                #print('Sent to AWS Queue.')
                 time.sleep(0.5)
                 self.img = None   #Clean up all big objects.
                 try:

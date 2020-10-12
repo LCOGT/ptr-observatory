@@ -18,9 +18,9 @@ from datetime import datetime
 import time
 #import pytz
 from math import degrees
-import skyfield 
-from skyfield import api, almanac
-from skyfield.nutationlib import iau2000b
+# import skyfield 
+# from skyfield import api, almanac
+# from skyfield.nutationlib import iau2000b
 # print('ObsImports:  ', config, '\n\'', config.site_config['site'])
 from global_yard import *
 from astropy.time import Time
@@ -44,7 +44,7 @@ class Events:
         g_dev['evnt'] = self
         self.siteLatitude = round(float(self.config['latitude']), 8)    #  34 20 34.569   #34 + (20 + 34.549/60.)/60.
         self.siteLongitude = round(float(self.config['longitude']), 8) #-(119 + (40 + 52.061/60.)/60.) 119 40 52.061 W
-        self.siteElevation =  round(float(self.config['longitude']), 3)
+        self.siteElevation =  round(float(self.config['elevation']), 3)
         self.siteRefTemp =  round(float(self.config['reference_ambient'][0]), 2)       #These should be a monthly average data.
         self.siteRefPress =  round(float(self.config['reference_pressure'][0]), 2)
 
@@ -456,7 +456,7 @@ class Events:
         astroDark = ptr.next_setting(sun)
         astroEnd = ptr.next_rising(sun)
         duration = (astroEnd - astroDark)*24
-        ptr.date = dayNow - 1#middleNight
+        ptr.date = middleNight
         moon.compute(ptr)
         sun=ephem.Sun()
         sun.compute(ptr)
@@ -560,6 +560,7 @@ class Events:
         timezone = "  " + self.config['timezone'] + ": "
         offset = self.config['time_offset']
         for evnt in evnt_sort:
+
             print(evnt[0], 'UTC: ', evnt[1], timezone, ephem.Date(evnt[1] + float(offset)/24.))    # NB Additon of local times would be handy here.
         event_dict = {}
         for item in evnt_sort:
