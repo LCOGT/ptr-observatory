@@ -944,6 +944,7 @@ class Camera:
                     sources = sep.extract(self.img, 4.5, err=bkg.globalrms, minarea=15)
                     sources.sort(order = 'cflux')
                     print('No. of detections:  ', len(sources))
+                    ix, iy = self.img.shape
                     r0 = 0
                     r1 = 0
                     # X and Y may be transposed, check this out.
@@ -951,14 +952,29 @@ class Camera:
                     a0 = sourcef['a']
                     b0 = sourcef['b']
                     r0 = math.sqrt(a0*a0 + b0*b0)
-                    # NB note the following fails with 1:1 binning!!!!!  Need to derive centers from shape of image
-                    r1 = math.sqrt((2392 - sourcef['x'])**2 + (1597 - sourcef['y'])**2)
+                    r1 = math.sqrt((ix - sourcef['x'])**2 + (iy - sourcef['y'])**2)
                     #kr, kf = sep.kron_radius(self.img, source['x'], source['y'], source['a'], source['b'], source['theta'], 6.0)
                     print(sourcef['x'], sourcef['y'], r0, r1)  # , kr, kf)
                     result['FWHM'] = round(r0, 3)
                     result['mean_focus'] =  avg_foc[1]
                     result['center_dist'] = round(r1, 2)
                     result['center_flux'] = int(0)  # source['cflux'])
+                    # if True:
+                    #     r00 = []
+                    #     r11 = []
+                    #     index = 0
+                    #     for in_source in sources:
+                    #         a0 = in_source['a']
+                    #         b0 = in_source['b']
+                    #         r0 = math.sqrt(a0*a0 + b0*b0)
+                    #         r1 = math.sqrt((ix - in_source['x'])**2 + (iy - in_source['y'])**2)
+                    #         r00.append((r0, index))
+                    #         r11.append((r1, index))
+                    #         index += 1
+                    #     r0m = np.median(r00[0])
+                    #     print("Median source:  ". r0m)
+                    #     breakpoint()
+                    
 
                     return result
                 try:
@@ -1194,6 +1210,9 @@ class Camera:
                         result = {'patch': bi_mean,
                                 'calc_sky': avg_ocn[7]}
                         return result#  Note we are not calibrating. Just saving the file.
+                    # elif frame_type in 'light':
+                    #     self.enqueue_for_AWS(raw_data_size, im_path, red_name01)
+                        
                     print("\n\Finish-Exposure is complete, saved:  " + raw_name00)#, raw_data_size, '\n')
                     g_dev['obs'].update_status()
                     result['mean_focus'] = avg_foc[1]

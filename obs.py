@@ -299,8 +299,8 @@ class Observatory:
                 url = "https://calendar.photonranch.org/dev/siteevents"
                 body = json.dumps({
                     'site':  'saf',
-                    'start':  '2020-10-10T12:00:00Z',
-                    'end':    '2020-10-13T15:59:59Z',
+                    'start':  '2020-10-14T12:00:00Z',
+                    'end':    '2020-10-17T15:59:59Z',
                     'full_project_details:':  True})
                 if self.blocks is None:
                     blocks = requests.post(url, body).json()
@@ -317,7 +317,7 @@ class Observatory:
                 assignments.  Priority of blocks is determined by the owner and a 'equipment match' for
                 background projects.
                 
-                Projects on the other hand can be a very large pool so have to manage becomes an issue.
+                Projects on the other hand can be a very large pool so how to manage becomes an issue.
                 TO the extent a project is not visible at a site, aws should not present it.  If it is
                 visible and passes the owners priority it should then be presented to the site.
                 
@@ -541,7 +541,7 @@ class Observatory:
                 if self.name == 'saf':
                     wpath = 'Q' + wpath[1:]
                     try:
-                        os.makedirs(wpath[:43])    #This whole section is fragile.
+                        os.makedirs(wpath[:44], exist_ok=True)    #This whole section is fragile.
                         hdu.writeto(wpath, overwrite=True)
                     except:
                         print("Failed to write reduced to Q: at saf site.")

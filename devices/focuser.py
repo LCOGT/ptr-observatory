@@ -66,26 +66,23 @@ class Focuser:
         print(self.focuser.Description, "At:  ", round(self.focuser.Position*self.steps_to_micron, 1))
         try:   #  NB NB NB This mess neads cleaning up.
             try:
-
+            
                 self.reference = self.calculate_compensation( self.focuser.Temperature)   #need to change to config supplied
-                print("Focus reference updated from Compensated value:  ", self.reference)
+                print("Focus position set from temp compensated value:  ", self.reference)
             except:
                 self.reference = float(self.get_focal_ref())   #need to change to config supplied
                 print("Focus reference updated from Night Shelf:  ", self.reference)
         except:
             self.reference = int(self.config['reference'])
-            print("Focus reference derived from supplied Config dicitionary:  ", self.reference)
+            print("Focus reference derived from supplied config file for 10C:  ", self.reference)
         self.focuser.Move(int(float(self.reference)*self.micron_to_steps))
 
     def calculate_compensation(self, temp_primary):
-
         if -5 <= temp_primary <= 45:
-            # NB this math is awkward, should use delta_temp
-
-            trial =round(-float(self.config['coef_c'])*temp_primary + float(self.config['coef_0']), 1)
+            trial =round(float(self.config['coef_0'] + float(self.config['coef_c'])*temp_primary), 1)
             trial = max(trial,500)  #These values would change for Gemini to more like 11900 max
             trial = min(trial, 12150)
-            print('Calculated focus compensated position:  ', trial)
+            #print('Calculated focus compensated position:  ', trial)
             return int(trial)
         else:
             print('Primary out of range -5 to 45C, using reference focus')
@@ -250,7 +247,8 @@ class Focuser:
         camShelf.close()
         return
     
-    def af_log(self, ref, fwhm, solved):
+    def af_log(self, ref, fwhm, solved):   #  Note once focus comp is in place this data is lame and
+                                           #  need to be combined with great care.
         camShelf = shelve.open(self.site_path + 'ptr_night_shelf/' + self.camera_name, writeback=True)
         camShelf['af_log'].append((ref, fwhm, solved, self.focuser.Temperature, time.time()))
         camShelf.close()

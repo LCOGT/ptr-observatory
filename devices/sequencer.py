@@ -235,14 +235,19 @@ class Sequencer:
 
             block = g_dev['obs'].blocks[0]
             project = g_dev['obs'].projects[1]
-            project['exposures'][0]['area']=600
+
+
+
+
+            
+
             '''
             evaluate supplied projects for observable and mark as same. Discard
             unobservable projects.  Projects may be "site" projects or 'ptr' (network wide:
             All, Owner, PTR-network, North, South.)
                 
                 The westernmost project is offered to run unless there is a runnable scheduled block.
-                for any given time, ar the constraints met? Airmass < x, Moon Phaze < y, moon dist > z,
+                for any given time, are the constraints met? Airmass < x, Moon Phaze < y, moon dist > z,
                 flip rules
             
             
@@ -270,7 +275,7 @@ class Sequencer:
             now_date_timeZ = datetime.datetime.now().isoformat().split('.')[0] +'Z'           
             if (block['start'] <= now_date_timeZ < block['end']) and not self.block_guard :
                 self.block_guard = True
-                breakpoint()
+
                 self.execute_block(block)
                 print("Should have left a block here.")
                 '''
@@ -295,7 +300,72 @@ class Sequencer:
             #print("No active script is scheduled.")
             return
             
+    def clock_the_system(self, other_side=False):
+        '''
+        
+        This routine carefully starts up the telescope and verifies the telescope is
+        properly reporting correct coordiates and the dome is correctly positioning.
+        Once a star field is returned, the system solves and synchs the telescope and
+        dome if necessary.  Next a detailed autofocus is performed on a Tycho star of 
+        known mag and position.  The final reading from the autofocus is used for one
+        last clocking.
+        
+        other_side = True causes the telescope to then flip and repeat the process.
+        From differences in the solutions, flip_shift offsets can be calculated.
+        
+        If this routine does not solve, the night is potentially lost so an alert 
+        messagge should be sent to the owner and telops, the enclosure closed and 
+        left in manual, the telescope parked and instruments are put to bed.
+        
+        This routing is designed to begin when the altitude of the Sun is -9 degrees.  
+        The target azimuth will change so the Moon is always 15 or more degrees away.
+        
+        If called in the Morning and the routing fails, the system is still put to 
+        bed but a less urgent message is sent to the owner and telops.
 
+        Returns
+        -------
+        None.
+
+        '''
+        
+        '''
+        if dome is closed: simulate
+        if not simulate, check sun is down
+                         check dome is open
+                         
+        go to 90 az 60 alt then near tycho star
+        Image and look for stars (or load simulated frames)
+        
+        If stars not present:
+            slew dome right-left increasing to find stars
+        if +/- 90 az change in dome does not work then 
+        things are very wrong -- close down and email list.
+        
+        if stars present, then autofocus with wide tolerance
+        if after 5 tries no luck -- close down and email list. 
+        
+        if good autofocus then last frame is the check frame.
+        
+        Try to astrometrically solve it.  if it solves, synch the
+        telescope.  Wait for dome to get in position and 
+        
+        Take second image, solve and synch again.
+        
+        If tel motion > 1 amin, do one last time.
+        
+        Look at dome Az -- is dome following the telescope? 
+        Report if necessary
+        
+        return control.
+        
+        
+        
+        
+        
+        
+        '''
+        
     def execute_block(self, block_specification):
         self.block_guard = True
         block = copy.deepcopy(block_specification)
@@ -316,7 +386,7 @@ class Sequencer:
         
         '''
 
-        for target in block['project']['project_targets']:
+        for target in block['project']['project_targets']:   #  NB NB NB Do multi-target projeects make sense???
             dest_ra = float(target['ra'])
             dest_dec = float(target['dec'])
             dest_name =target['name']
@@ -326,25 +396,36 @@ class Sequencer:
             ended = False
 
             for exposure in block['project']['exposures']:
-                if exposure['area'] in ['300', 300, '220', 220, '150', 150]:
-                    left_to_do += int(exposure['count'])*4
-                    exposure['count'] = int(exposure['count'])*4   #Do not multiply the count string value as a dict entry!
-                    print('mosaic')
+                multiplex = 0
+                if exposure['area'] in ['300', '300%', 300, '220', '220%', 220, '150', '150%', 150]:
+                    multiplex = 4
+                if exposure['area'] in ['600', '600%', 600]:
+                    multiplex = 9
+                if multiplex > 1:
+                    left_to_do += int(exposure['count'])*multiplex
+                    exposure['count'] = int(exposure['count'])*multiplex  #Do not multiply the count string value as a dict entry!
+                    print('# of mosaic panes:  ', multiplex)
                 else:
                     left_to_do += int(exposure['count'])
-                    print('singleton')
+                    print('Singleton image')
                 
             print("Left to do initial value:  ", left_to_do)
             req = {'target': 'near_tycho_star'}
-   
+            initial_focus = True
             while left_to_do > 0 and not ended:
-
+                if initial_focus:
+                    self.focus_auto_script(req2, opt, throw = 700)
+                    initial_focus = False    #  Make above on-time event per block
+                    timer = time.time() + 600   #11 min for debugging
+                    #at block startup this should mean two AF cycles. Cosider using 5-point for the first.
+                    
                 #cycle thrugh exposures decrementing counts    MAY want to double check left-to do but do nut remultiply by 4
                 for exposure in block['project']['exposures']:
                     if block_specification['project']['project_constraints']['frequent_autofocus'] == True and (time.time() - timer) >= 0:
                         
-                        self.focus_auto_script(req2, opt)
-                        timer = time.time() + 600   #!0 min for degubgging.
+                        self.focus_auto_script(req2, opt, throw = 500)
+                        initial_focus = False
+                        timer = time.time() + 600   #10 min for debugging.
                     print("Executing: ", exposure, left_to_do)
                     color = exposure['filter']
                     exp_time =  float(exposure['exposure']) 
@@ -375,16 +456,16 @@ class Sequencer:
                     if count <= 0:
                          continue
                     #At this point we have 1 to four exposures to make in this filter.  Note different areas can be defined. 
-                    if exposure['area'] in ['300', 300, '220', 220, '150', 150]:
+                    if exposure['area'] in ['300', '300%', 300, '220', '220%', 220, '150', '150%', 150]:
                         offset = [(1.5, 1.), (-1.5, 1.), (-1.5, -1.), (1.5, -1.)] #Four mosaic quadrants 36 x 24mm chip
                         pane = 1
-                        if exposure['area'] in ['300', 300]:
+                        if exposure['area'] in ['300', '300%', 300]:
                             pitch = 0.375
-                        if exposure['area'] in ['220', 220]:
+                        if exposure['area'] in ['220', '220%', 220]:
                             pitch = 0.25
-                        if exposure['area'] in ['150', 150]:
+                        if exposure['area'] in ['150', '150%', 150]:
                             pitch = 0.125
-                    elif exposure['area'] in ['600', 600]:
+                    elif exposure['area'] in ['600', '600%', 600]:
                         offset = [(0., 0.), (1.5, 0.), (1.5, 1.), (0., 1.), (-1.5, 1.), (-1.5, 0.), \
                                   (-1.5, -1.), (0., -1.), (1.5, -1.), ] #Nine mosaic quadrants 36 x 24mm chip
                         pitch = 0.75
@@ -712,7 +793,7 @@ class Sequencer:
         print('Sky Flat sequence completed, Telescope is parked.')
         self.guard = False
 
-    def focus_auto_script(self, req, opt):
+    def focus_auto_script(self, req, opt, throw=600):
         '''
         V curve is a big move focus designed to fit two lines adjacent to the more normal focus curve.
         It finds the approximate focus, particulary for a new instrument. It requires 8 points plus
@@ -757,7 +838,7 @@ class Sequencer:
         result = {}
         print("temporary patch in Sim values")
         print('Autofocus Starting at:  ', foc_pos0, '\n\n')
-        throw = 600  # NB again, from config.  Units are microns
+        #throw = throw  # NB again, from config.  Units are microns  Passed as default paramter
         if not sim:
             result = g_dev['cam'].expose_command(req, opt, no_AWS=True) ## , script = 'focus_auto_script_0')  #  This is where we start.
         else:
