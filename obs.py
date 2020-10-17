@@ -673,7 +673,7 @@ class Observatory:
                 if quick:
                     pass
                 hdu.data = hdu.data.astype('uint16')
-                resized_a = resize(hdu.data, (768, 768), preserve_range=True)
+                resized_a = resize(hdu.data, (1280, 960), preserve_range=True)
                 #print(resized_a.shape, resized_a.astype('uint16'))
                 hdu.data = resized_a.astype('uint16')
 
