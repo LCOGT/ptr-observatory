@@ -235,6 +235,7 @@ class Sequencer:
 
             block = g_dev['obs'].blocks[0]
             project = g_dev['obs'].projects[1]
+            breakpoint()
 
 
 
@@ -417,7 +418,7 @@ class Sequencer:
                 if initial_focus:
                     self.focus_auto_script(req2, opt, throw = 700)
                     initial_focus = False    #  Make above on-time event per block
-                    timer = time.time() + 600   #11 min for debugging
+                    timer = time.time() + 1800   #10 min for debugging
                     #at block startup this should mean two AF cycles. Cosider using 5-point for the first.
                     
                 #cycle thrugh exposures decrementing counts    MAY want to double check left-to do but do nut remultiply by 4
