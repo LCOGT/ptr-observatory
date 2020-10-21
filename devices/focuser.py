@@ -249,6 +249,7 @@ class Focuser:
     
     def af_log(self, ref, fwhm, solved):   #  Note once focus comp is in place this data is lame and
                                            #  need to be combined with great care.
+                                           
         camShelf = shelve.open(self.site_path + 'ptr_night_shelf/' + self.camera_name, writeback=True)
         camShelf['af_log'].append((ref, fwhm, solved, self.focuser.Temperature, time.time()))
         camShelf.close()

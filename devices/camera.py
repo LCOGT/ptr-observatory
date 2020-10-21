@@ -439,8 +439,8 @@ class Camera:
             bin_x = 2
             self.ccd_sum = '2 2'
         else:
-            bin_x = 1
-            self.ccd_sum = '1 1'
+            bin_x = 2  #  1
+            self.ccd_sum = '2 2'  #  '1 1'
         bin_y = bin_x   #NB This needs fixing someday!
         self.bin = bin_x
         self.camera.BinX = bin_x
@@ -478,9 +478,9 @@ class Camera:
         self.toss = False
         self.do_sep = False
         if imtype.lower() in ('light', 'light frame', 'screen flat', 'sky flat', 'experimental', \
-                              'test image', 'auto_focus', 'focus'):
-                                 #here we might eventually turn on spectrograph lamps as needed for the imtype.
-            imtypeb = True    #imtypeb will passed to open the shutter.
+                              'test image', 'auto_focus', 'focus', 'autofocus probe'):
+                                #here we might eventually turn on spectrograph lamps as needed for the imtype.
+            imtypeb = True      #imtypeb will passed to open the shutter.
             frame_type = imtype.lower()
             do_sep = True
             self.do_sep = True
@@ -818,7 +818,7 @@ class Camera:
             g_dev['rot'].get_quick_status(self.post_rot)
             g_dev['foc'].get_quick_status(self.post_foc)
             g_dev['ocn'].get_quick_status(self.post_ocn)
-            if time.time() < self.completion_time:   #  NB Testing here if glob too early is delaying reaout.
+            if time.time() < self.completion_time:   #  NB Testing here if glob too early is delaying readout.
                 time.sleep(1)
                 continue
             incoming_image_list = glob.glob(self.file_mode_path + '*.f*t*')
@@ -923,17 +923,17 @@ class Camera:
                 avg_foc = g_dev['foc'].get_average_status(self.pre_foc, self.post_foc)
                 avg_rot = g_dev['rot'].get_average_status(self.pre_rot, self.post_rot)
                 avg_ocn = g_dev['ocn'].get_average_status(self.pre_ocn, self.post_ocn)
-                if frame_type[-5:] =='focus':
+                if frame_type[-5:] in ['focus', 'probe']:
                     # NB NB 20200908   Patch out dark correction.
                     # NB at least hit this with a hot pixel map?
                     # if self.focus_cache is None:
-                    #     focus_img = fits.open(self.lng_path + 'fmd_5.fits')
+                    #     focus_img = fits.open(self.lng_path + 'fd_2_12p5.fits')
                     #     self.focus_cache = focus_img[0].data
                     # self.img = self.img - self.focus_cache + 100   #maintain a + pedestal for sep
-
                     self.img = self.img + 100   #maintain a + pedestal for sep  THIS SHOULD not be needed for a raw input file.
-
-                    
+                    if frame_type[-5:] == 'probe':
+                        focus_img = fits.open(self.lng_path + 'focus_sample.fits')
+                        self.img = focus_img[0].data.transpose()
                     self.img = self.img.astype("float")
                     #print(self.img.flags)
                     self.img = self.img.copy(order='C')   #  NB Should we move this up to 
@@ -941,24 +941,47 @@ class Camera:
                     #Fix hot pixels here.
                     bkg = sep.Background(self.img)
                     self.img = self.img - bkg
-                    sources = sep.extract(self.img, 4.5, err=bkg.globalrms, minarea=15)
+                    sources = sep.extract(self.img, 4.5, err=bkg.globalrms, minarea=15)  # Minarea should deal with hot pixels.
                     sources.sort(order = 'cflux')
                     print('No. of detections:  ', len(sources))
                     ix, iy = self.img.shape
                     r0 = 0
                     r1 = 0
                     # X and Y may be transposed, check this out.
-                    sourcef = sources[-2]
-                    a0 = sourcef['a']
-                    b0 = sourcef['b']
-                    r0 = math.sqrt(a0*a0 + b0*b0)
-                    r1 = math.sqrt((ix - sourcef['x'])**2 + (iy - sourcef['y'])**2)
-                    #kr, kf = sep.kron_radius(self.img, source['x'], source['y'], source['a'], source['b'], source['theta'], 6.0)
-                    print(sourcef['x'], sourcef['y'], r0, r1)  # , kr, kf)
-                    result['FWHM'] = round(r0, 3)
+                    """
+                    ToDo here:  1) do not deal with a source nearer than 5% to an edge.
+                    2) do not pick any saturated sources.
+                    3) form a histogram and then pick the median winner
+                    4) generate data for a report.
+                    5) save data and image for engineering runs.
+                    
+                    
+                    """
+                    border_x = int(ix*0.125)
+                    border_y = int(iy*0.125)
+                    r0 = []
+                    for sourcef in sources:
+                        if border_x < sourcef['x'] < ix - border_x and \
+                            border_y < sourcef['y'] < iy - border_y and \
+                            sourcef['peak']  < 60000 and sourcef['cpeak'] < 60000:
+                            a0 = sourcef['a']
+                            b0 = sourcef['b']
+                            r0.append(round(math.sqrt(a0*a0 + b0*b0), 2))#, round(math.sqrt((ix - sourcef['x'])**2 + (iy - sourcef['y'])**2), 2)))
+                    #r0.sort()
+                    #print('r0:  ', len(r0), r0)
+                    #print('median, mean:  ', np.median(r0), np.mean(r0))
+                    # sourcef = sources[-2]
+                    # a0 = sourcef['a']
+                    # b0 = sourcef['b']
+                    # r0 = math.sqrt(a0*a0 + b0*b0)
+                    # r1 = math.sqrt((ix - sourcef['x'])**2 + (iy - sourcef['y'])**2)
+                    # #kr, kf = sep.kron_radius(self.img, source['x'], source['y'], source['a'], source['b'], source['theta'], 6.0)
+                    # print(sourcef['x'], sourcef['y'], r0, r1)  # , kr, kf)
+                    result['FWHM'] = round(np.median(r0), 3)
                     result['mean_focus'] =  avg_foc[1]
-                    result['center_dist'] = round(r1, 2)
-                    result['center_flux'] = int(0)  # source['cflux'])
+                    if frame_type[-5:] == 'probe':
+                        self.img = self.img.transpose()
+                    focus_image = True
                     # if True:
                     #     r00 = []
                     #     r11 = []
@@ -976,7 +999,7 @@ class Camera:
                     #     breakpoint()
                     
 
-                    return result
+                    #return result
                 try:
                     hdu = fits.PrimaryHDU(self.img)
                     self.img = None    #  Does this free up any resource?
@@ -1192,11 +1215,17 @@ class Camera:
                         self.enqueue_image(db_data_size, im_path, db_name)
                         self.enqueue_image(raw_data_size, im_path, raw_name01)
                     '''
-                    if not quick and not script in ('True', 'true', 'On', 'on'):
+                    if focus_image:
+                        hdu.writeto(cal_path + cal_name, overwrite=True)
+                        focus_image = False
+                        return result
+                    
+                    if not quick  and not script in ('True', 'true', 'On', 'on'):
                         self.enqueue_for_AWS(text_data_size, im_path, text_name)
                         self.to_reduce((paths, hdu))
                         hdu.writeto(raw_path + raw_name00, overwrite=True)
-
+                    
+                    
                     if frame_type in ('bias', 'dark', 'screen_flat', 'sky_flat', 'screen flat', 'sky flat'):
                         if not self.hint[0:54] == 'Flush':
                             hdu.writeto(cal_path + cal_name, overwrite=True)
@@ -1217,7 +1246,8 @@ class Camera:
                     g_dev['obs'].update_status()
                     result['mean_focus'] = avg_foc[1]
                     result['mean_rotation'] = avg_rot[1]
-                    result['FWHM'] = None
+                    if not focus_image:
+                        result['FWHM'] = None
                     result['half_FD'] = None
                     result['patch'] = bi_mean
                     result['calc_sky'] = avg_ocn[7]

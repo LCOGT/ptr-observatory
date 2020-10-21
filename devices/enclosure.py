@@ -139,7 +139,7 @@ class Enclosure:
     def open_command(self, req: dict, opt: dict):
         ''' open the enclosure '''
         self.manager(open_cmd=True)
-        print("enclosure cmd: open")
+        print("enclosure cmd: open.   FAKE REPORT!  Manual opening outside of obs hours not supported.")
         self.dome_open = True
         self.dome_home = True
         pass
@@ -147,7 +147,7 @@ class Enclosure:
     def close_command(self, req: dict, opt: dict):
         ''' close the enclosure '''
         self.manager(close_cmd=True)
-        print("enclosure cmd: close")
+        print("enclosure cmd: close.   FAKE REPORT!  Manual opening outside of obs hours not supported.")
         self.dome_open = False
         self.dome_home = True
         pass

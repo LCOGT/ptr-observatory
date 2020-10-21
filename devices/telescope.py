@@ -16,9 +16,11 @@ from astropy import units as u
 from astropy.coordinates import SkyCoord, FK5, ICRS, FK4, Distance, \
                                 EarthLocation, AltAz
 
-#This should be removed or put in a try
-from astropy.utils.iers import conf
-conf.auto_max_age = None                
+# =============================================================================
+# #This should be removed or put in a try
+# from astropy.utils.iers import conf
+# conf.auto_max_age = None                
+# =============================================================================
 #from astroquery.vizier import Vizier
 #from astroquery.simbad import Simbad
 

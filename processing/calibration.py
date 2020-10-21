@@ -374,7 +374,6 @@ def calibrate (hdu, lng_path, frame_type='light', quick=False):
 # =============================================================================
         if frame_type == 'bias':
             break    #  Do not bias calibrate a bias.
-            breakpoint()
         if super_bias is not None and binning == 1 :
             img = img - super_bias[start_x:(start_x + img.shape[0]), start_y:(start_y + img.shape[1])]  #hdu.header['NAXIS2, NAXIS1']
             if not quick:

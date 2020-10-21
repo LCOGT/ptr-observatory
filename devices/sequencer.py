@@ -7,6 +7,7 @@ import copy
 from global_yard import g_dev
 import ephem
 import build_tycho as tycho
+import config 
 
 from pprint import pprint
 
@@ -233,9 +234,45 @@ class Sequencer:
         elif g_dev['obs'].blocks is not None and \
                   g_dev['obs'].projects is not None:     #  THIS DOES NEED TO BE FENCED BY TIME and not repeated.
 
-            block = g_dev['obs'].blocks[0]
-            project = g_dev['obs'].projects[1]
-            breakpoint()
+            blocks = g_dev['obs'].blocks
+            projects = g_dev['obs'].projects
+            debug = False
+            if debug:
+                print("# of Blocks, projects:  ", len(g_dev['obs'].blocks),  len(g_dev['obs'].projects))
+           
+            # NB without deepcopy decrementing counts in blocks will be local to the machine an subject
+            # to over_write as the respons from AWS updates. This is particularly important for owner
+            # and background blocks.
+            
+            #First, sort blocks to be in ascending order, just to promote clarity. Remove expired projects.
+            
+            for block in blocks:  #  This merges project spec into the blocks.
+                for project in projects:
+                    if block['project_id'] == project['project_name'] + '#' + project['created_at']:
+                        block['project'] = project
+                        #print('Scheduled so removing:  ', project['project_name'])
+                        projects.remove(project)
+                        
+            #The residual in projects can be treaded as background.
+            #print('Background:  ', len(projects), '\n\n', projects)
+            
+            house = []
+            for project in projects:
+                if project['user_id'] in config.site_config['owner']:  # and not expired, etc.
+                     house.append(project)
+            #print("House Projects:  ", len(house), house)
+                        
+            #Next cull empty blocks  (Note project ID may contain Sequences.)
+            
+            #Now we have a time-ordered list of blocks or user-sessions. We assume the execute block
+            #Code, once dispatched, will correctly exit a block and take down its guard so that a
+            #New block can execute.  At this first pass of coding, that method is synchronous to this thread.
+            
+            # while someting to do for the night:
+            #   if not self.execute_block_guard and #start# <= Now < #end#:
+            #       execute_block, ...  set block guard.
+            
+
 
 
 
@@ -263,28 +300,24 @@ class Sequencer:
             #     sid = g_dev['mnt'].mount.SiderealTime
             #     ha = tycho.reduceHA(sid - ra)
             #     az, alt = transform_haDec_to_azAlt(ha, dec)
-                
-            #block['start'] = '2020-10-11T00:30:00Z'    
-
-            # for block in blocks:  #  This merges project spec into the blocks.
-            #     for project in projects:
-            if block['project_id'] == project['project_name'] + '#' + project['created_at']:
-                block['project'] = project                   
-            #     # NB NB NB Need to sort blocks in ascending start time order.
             #     # Do not start a block within 15 min of end time???
-            # breakpoint()
-            # for block in blocks:
-            now_date_timeZ = datetime.datetime.now().isoformat().split('.')[0] +'Z'           
-            if (block['start'] <= now_date_timeZ < block['end']) and not self.block_guard :
-                self.block_guard = True
-
-                self.execute_block(block)
-                print("Should have left a block here.")
-                '''
-                When a scheduled block is completed it is not re-entered or the block needs to 
-                be restored.  IN the execute block we need to make a deepcopy of the input block
-                so it does not get modified.
-                '''
+            for block in blocks:
+                now_date_timeZ = datetime.datetime.now().isoformat().split('.')[0] +'Z'           
+                if (block['start'] <= now_date_timeZ < block['end']) and not self.block_guard :
+                    #here we might have to cleanly terminate a background project.
+                    self.block_guard = True
+                    self.execute_block(block)
+                    print("Should have left a block here.")
+                    '''
+                    When a scheduled block is completed it is not re-entered or the block needs to 
+                    be restored.  IN the execute block we need to make a deepcopy of the input block
+                    so it does not get modified.
+                    '''
+                else:
+                    pass
+                    #here we would look through owner background projects.
+                continue    #This is frought with peril if the locks list is updated.
+            return
             
                 
                 # print("Here we would enter an observing block:  ",

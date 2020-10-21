@@ -299,10 +299,10 @@ class Observatory:
                 url = "https://calendar.photonranch.org/dev/siteevents"
                 body = json.dumps({
                     'site':  'saf',
-                    'start':  '2020-10-14T15:00:00Z',
-                    'end':    '2020-10-17T20:59:59Z',
+                    'start':  '2020-10-18T12:00:00Z',
+                    'end':    '2020-10-19T14:00:59Z',
                     'full_project_details:':  True})
-                if self.blocks is None:
+                if self.blocks is None:   #This currently prevents pick up changes.  OK for the moment.
                     blocks = requests.post(url, body).json()
                     if len(blocks) > 0:   #   is not None:
                         self.blocks = blocks

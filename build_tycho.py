@@ -22,7 +22,9 @@ from astroquery.simbad import Simbad
 import ephem
 from global_yard import g_dev
 from pprint import pprint
-
+#This should be removed or put in a try
+from astropy.utils.iers import conf
+#conf.auto_max_age = None 
 
 iso_day = datetime.date.today().isocalendar()
 equinox_years = round((iso_day[0] + ((iso_day[1]-1)*7 + (iso_day[2] ))/365), 2) - 2000
