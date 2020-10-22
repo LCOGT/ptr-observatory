@@ -536,9 +536,11 @@ class Observatory:
                 #cal_result =
                 calibrate(hdu, lng_path, paths['frame_type'], quick=False)
                 #print("Calibrate returned:  ", hdu.data, cal_result)
-                wpath = paths['red_path'] + paths['red_name01b']
-                hdu.writeto(wpath, overwrite=True)
+                wpath = paths['im_path'] + paths['red_name01']
+                hdu.writeto(wpath, overwrite=True)  # NB overwrite == True is dangerous in production code.
+                reduced_data_size = hdu.data.size
                 if self.name == 'saf':
+                    wpath = paths['red_path'] + paths['red_name01_lcl']
                     wpath = 'Q' + wpath[1:]
                     try:
                         os.makedirs(wpath[:44], exist_ok=True)    #This whole section is fragile.
@@ -610,7 +612,7 @@ class Observatory:
                     except:
                         spot = None
 
-                raw_data_size = hdu.data.size
+                reduced_data_size = hdu.data.size
                 #g_dev['obs'].update_status()
                 #Here we need to process images which upon input, may not be square.  The way we will do that
                 #is find which dimension is largest.  We then pad the opposite dimension with 1/2 of the difference,
@@ -638,42 +640,49 @@ class Observatory:
                 # wall[x:x+block.shape[0], y:y+block.shape[1]] = block
                 # =============================================================================
 
-                if in_shape[0] < in_shape[1]:
-                    diff = int(abs(in_shape[1] - in_shape[0])/2)
-                    in_max = int(hdu.data.mean()*0.8)
-                    in_min = int(hdu.data.min() - 2)
-                    if in_min < 0:
-                        in_min = 0
-                    new_img = np. zeros((in_shape[1], in_shape[1]))    #new square array
-                    new_img[0:diff - 1, :] = in_min
-                    new_img[diff-1, :] = in_max
-                    new_img[diff:(diff + in_shape[0]), :] = hdu.data
-                    new_img[(diff + in_shape[0]), :] = in_max
-                    new_img[(diff + in_shape[0] + 1):(2*diff + in_shape[0]), :] = in_min
-                    hdu.data = new_img
-                elif in_shape[0] > in_shape[1]:
-                    #Same scheme as above, but expands second axis.
-                    diff = int((in_shape[0] - in_shape[1])/2)
-                    in_max = int(hdu.data.mean()*0.8)
-                    in_min = int(hdu.data.min() - 2)
-                    if in_min < 0:
-                        in_min = 0
-                    new_img = np. zeros((in_shape[0], in_shape[0]))    #new square array
-                    new_img[:, 0:diff - 1] = in_min
-                    new_img[:, diff-1] = in_max
-                    new_img[:, diff:(diff + in_shape[1])] = hdu.data
-                    new_img[:, (diff + in_shape[1])] = in_max
-                    new_img[:, (diff + in_shape[1] + 1):(2*diff + in_shape[1])] = in_min
-                    hdu.data = new_img
-                else:
-                    #nothing to do, the array is already square
-                    pass
+# =============================================================================
+#                 if in_shape[0] < in_shape[1]:
+#                     diff = int(abs(in_shape[1] - in_shape[0])/2)
+#                     in_max = int(hdu.data.mean()*0.8)
+#                     in_min = int(hdu.data.min() - 2)
+#                     if in_min < 0:
+#                         in_min = 0
+#                     new_img = np. zeros((in_shape[1], in_shape[1]))    #new square array
+#                     new_img[0:diff - 1, :] = in_min
+#                     new_img[diff-1, :] = in_max
+#                     new_img[diff:(diff + in_shape[0]), :] = hdu.data
+#                     new_img[(diff + in_shape[0]), :] = in_max
+#                     new_img[(diff + in_shape[0] + 1):(2*diff + in_shape[0]), :] = in_min
+#                     hdu.data = new_img
+#                 elif in_shape[0] > in_shape[1]:
+#                     #Same scheme as above, but expands second axis.
+#                     diff = int((in_shape[0] - in_shape[1])/2)
+#                     in_max = int(hdu.data.mean()*0.8)
+#                     in_min = int(hdu.data.min() - 2)
+#                     if in_min < 0:
+#                         in_min = 0
+#                     new_img = np. zeros((in_shape[0], in_shape[0]))    #new square array
+#                     new_img[:, 0:diff - 1] = in_min
+#                     new_img[:, diff-1] = in_max
+#                     new_img[:, diff:(diff + in_shape[1])] = hdu.data
+#                     new_img[:, (diff + in_shape[1])] = in_max
+#                     new_img[:, (diff + in_shape[1] + 1):(2*diff + in_shape[1])] = in_min
+#                     hdu.data = new_img
+#                 else:
+#                     #nothing to do, the array is already square
+#                     pass
+# =============================================================================
 
 
                 if quick:
                     pass
                 hdu.data = hdu.data.astype('uint16')
-                resized_a = resize(hdu.data, (768, 768), preserve_range=True)
+                iy, ix = hdu.data.shape
+
+                if iy == ix:
+                    resized_a = resize(hdu.data, (768,768), preserve_range=True)
+                else:
+                    resized_a = resize(hdu.data, (int(768*iy/ix), 768), preserve_range=True)  #  We should trim chips so ratio is exact.
                 #print(resized_a.shape, resized_a.astype('uint16'))
                 hdu.data = resized_a.astype('uint16')
 
@@ -703,6 +712,8 @@ class Observatory:
                     #g_dev['cam'].enqueue_for_AWS(text_data_size, paths['im_path'], paths['text_name'])
                     g_dev['cam'].enqueue_for_AWS(jpeg_data_size, paths['im_path'], paths['jpeg_name10'])
                     g_dev['cam'].enqueue_for_AWS(i768sq_data_size, paths['im_path'], paths['i768sq_name10'])
+                    print('File size to AWS:', reduced_data_size)
+                    g_dev['cam'].enqueue_for_AWS(reduced_data_size, paths['im_path'], paths['red_name01'])
                     #if not quick:
                 #print('Sent to AWS Queue.')
                 time.sleep(0.5)

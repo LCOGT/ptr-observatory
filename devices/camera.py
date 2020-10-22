@@ -405,6 +405,7 @@ class Camera:
         #print("Checking if Maxim is still connected!")
         #  self.t7 is last time camera was read out
         #if self.t7 is not None and (time.time() - self.t7 > 30) and self.maxim:
+        self.t0 = time.time()
         try:
             probe = self.camera.CoolerOn
             if not probe:
@@ -425,7 +426,6 @@ class Camera:
             except:
                 print('Camera reconnect failed @ expose entry.')
         opt = optional_params
-        self.t0 = time.time()
         self.hint = optional_params.get('hint', '')
         self.script = required_params.get('script', 'None')
         self.pane = optional_params.get('pane', None)
@@ -447,10 +447,10 @@ class Camera:
         self.camera.BinY = bin_y
         #gain = float(optional_params.get('gain', self.config['camera']['camera1'] \
         #                                              ['settings']['reference_gain'][bin_x - 1]))
-        readout_time = float(self.config['camera']['camera1']['settings']['readout_time'][bin_x - 1])
+        readout_time = float(self.config['camera']['camera1']['settings']['cycle_time'][bin_x - 1])
         exposure_time = float(required_params.get('time', 0.0001))   #  0.0 may be the best default.  Use QHY min spec?  Config item?
         exposure_time = min(exposure_time, 1440.)
-        self.estimated_readtime = (exposure_time + 2*readout_time)*1.25*3   #  3 is the outer retry loop maximum.
+        self.estimated_readtime = (exposure_time + readout_time)   #  3 is the outer retry loop maximum.
         #exposure_time = max(0.2, exposure_time)  #Saves the shutter, this needs qualify with imtype.
         imtype= required_params.get('image_type', 'Light')
         if imtype.lower() in ['experimental']:
@@ -521,13 +521,17 @@ class Camera:
         # NBNB This area still needs work to cleanly define shutter, calibration, sep and AWS actions.
 
         area = optional_params.get('area', 150)
-        if area is None or area in['Full', 'full', 'chip', 'Chip']:   #  Temporary patch to deal with 'chip'
-            area = 150
+        # if area is None or area in['Full', 'full', 'chip', 'Chip']:   #  Temporary patch to deal with 'chip'
+        #     area = 150
         sub_frame_fraction = optional_params.get('subframe', None)
         # Need to put in support for chip mode once we have implmented in-line bias correct and trim.
         try:
-            if type(area) == str and area[-1] == '%':
+            if type(area) == str and area[-1] == '%':  #Re-use of variable is crappy coding
                 area = int(area[0:-1])
+            elif area in ('Sqr', 'sqr', '100%'):
+                area = 100
+            elif area in ('Full', 'full', '150%', 'Chip', 'chip'):
+                area = 150
         except:
             area = 150     #was 100 in ancient times.
         if bin_y == 0 or self.camera_max_x_bin != self.camera_max_y_bin:
@@ -545,13 +549,13 @@ class Camera:
         #  NB Area is just a series of subframes centered on the chip.
         # "area": ['100%', '71%', '50%',  '35%', '25%', '12%']
 
-        if 72 < area <= 100:
+        if 72 < area <= 100:  #  This is completely incorrect, this section needs a total re-think 20201021 WER
             self.camera_num_x = self.len_x
             self.camera_start_x = 0
             self.camera_num_y = self.len_y
             self.camera_start_y = 0
             self.area = 100
-        elif 70 <= area <= 72:
+        elif 70 <= area <= 72:  # This needs complete rework.
             self.camera_num_x = int(self.len_xs/1.4142)
             self.camera_start_x = int(self.len_xs/6.827)
             self.camera_num_y = int(self.len_y/1.4142)
@@ -647,6 +651,7 @@ class Camera:
             self.bpt_flag = False
         #  NB Important: None of above code talks to the camera!
         result = {}  #  This is a default return just in case
+        num_retries = 0
         for seq in range(count):
             #  SEQ is the outer repeat loop and takes count images; those individual exposures are wrapped in a
             #  retry-3-times framework with an additional timeout included in it.
@@ -787,10 +792,15 @@ class Camera:
                 except Exception as e:
                     print('Exception in camera retry loop:  ', e)
                     self.retry_camera -= 1
+                    num_retries += 1
                     continue
         #  This is the loop point for the seq count loop
         self.t11 = time.time()
-        print("full expose seq took:  ", round(self.t11 - self.t0 , 2), 'returning:  ', result)
+        print("\n\nFull expose seq took:  ", round(self.t11 - self.t0 , 2), ' Retries;  ', num_retries,  ' Returning:  ', result, '\n\n')
+        try:
+            print(' 0 sec cycle time:  ', round((self.t11 - self.t0)/count - exposure_time , 2) )
+        except:
+            pass
         return result
 
     def stop_command(self, required_params, optional_params):
@@ -809,9 +819,9 @@ class Camera:
         self.post_ocn = []
         counter = 0
         if self.bin == 1:
-            self.completion_time = self.t2 + exposure_time + 14
+            self.completion_time = self.t2 + exposure_time + 18
         else:
-            self.completion_time = self.t2 + exposure_time + 7.5
+            self.completion_time = self.t2 + exposure_time + 15
         result = {'error': False}
         while True:    #This loop really needs a timeout.
             g_dev['mnt'].get_quick_status(self.post_mnt)   #Need to pick which pass was closest to image completion
@@ -878,6 +888,7 @@ class Camera:
                 self.t5 = time.time()         
                 print('expose  took: ', round(self.t4 - self.t2, 2), ' sec,')
                 print('readout took: ', round(self.t5 - self.t4, 2), ' sec,')
+                print('it all took: ', round(self.t5 - self.t2, 2), ' sec,')
                 #  NB NB  Be very careful this is the exact code used in build_master and calibration  modules.
                 #  NB Note this is QHY600 specific code.  Needs to be supplied in camera config as sliced regions.
                 pedastal = 100
@@ -997,7 +1008,8 @@ class Camera:
                     #     r0m = np.median(r00[0])
                     #     print("Median source:  ". r0m)
                     #     breakpoint()
-                    
+                else:
+                    focus_image = False
 
                     #return result
                 try:
@@ -1143,9 +1155,9 @@ class Camera:
                         next_seq  + '-' + im_type + '00.fits'
                     red_name01 = self.config['site'] + '-' + current_camera_name + '-' + g_dev['day'] + '-' + \
                         next_seq  + '-' + im_type + '01.fits'
-                    red_name01b = red_name01[:-9] + self.current_filter +"-" + red_name01[-9:]
+                    red_name01_lcl = red_name01[:-9] + self.current_filter +"-" + red_name01[-9:]
                     if self.pane is not None:
-                        red_name01b = red_name01b[:-9] + 'p' + str(abs(self.pane)) + "-" + red_name01b[-9:]
+                        red_name01_lcl = red_name01b[:-9] + 'p' + str(abs(self.pane)) + "-" + red_name01b[-9:]
                     #Cal_ and raw_ names are confusing
                     i768sq_name = self.config['site'] + '-' + current_camera_name + '-' + g_dev['day'] + '-' + \
                         next_seq  + '-' + im_type + '10.fits'
@@ -1171,18 +1183,16 @@ class Camera:
                     hdu.header['BLKSDATE'] = 'None'
                     hdu.header['MOLUID'] = 'None'
                     hdu.header['OBSTYPE'] = 'None'
-                    try:    #NB relocate this to Expose entry area.  Fill out except.
+                    try: #  NB relocate this to Expose entry area.  Fill out except.  Might want to check on available space.
                         im_path_r = self.camera_path
-                        #lng_path = self.lng_path
                         os.makedirs(im_path_r + g_dev['day'] + '/to_AWS/', exist_ok=True)
                         os.makedirs(im_path_r + g_dev['day'] + '/raw/', exist_ok=True)
                         os.makedirs(im_path_r + g_dev['day'] + '/calib/', exist_ok=True)
                         os.makedirs(im_path_r + g_dev['day'] + '/reduced/', exist_ok=True)
-                        #print('Created:  ',im_path + g_dev['day'] + '\\to_AWS\\' )
-                        im_path = im_path_r + g_dev['day'] + '/to_AWS/'
-                        raw_path = im_path_r + g_dev['day'] + '/raw/'
-                        cal_path = im_path_r + g_dev['day'] + '/calib/'
-                        red_path = im_path_r + g_dev['day'] + '/reduced/'
+                        im_path   = im_path_r + g_dev['day'] + '/to_AWS/'
+                        raw_path  = im_path_r + g_dev['day'] + '/raw/'
+                        cal_path  = im_path_r + g_dev['day'] + '/calib/'
+                        red_path  = im_path_r + g_dev['day'] + '/reduced/'
                     except:
                         pass
 
@@ -1197,7 +1207,7 @@ class Camera:
                              'cal_name':  cal_name,
                              'raw_name00': raw_name00,
                              'red_name01': red_name01,
-                             'red_name01b': red_name01b,
+                             'red_name01_lcl': red_name01_lcl,
                              'i768sq_name10': i768sq_name,
                              'i768sq_name11': i768sq_name,
                              'jpeg_name10': jpeg_name,
@@ -1216,6 +1226,8 @@ class Camera:
                         self.enqueue_image(raw_data_size, im_path, raw_name01)
                     '''
                     if focus_image:
+                        #Note we do not reduce focus images, except above in focus processing.
+                        cal_name = cal_name[:-9] + 'FO' + cal_name['-7:']  # remove 'EX' add 'FO'   Could add seq to this
                         hdu.writeto(cal_path + cal_name, overwrite=True)
                         focus_image = False
                         return result
@@ -1239,8 +1251,8 @@ class Camera:
                         result = {'patch': bi_mean,
                                 'calc_sky': avg_ocn[7]}
                         return result#  Note we are not calibrating. Just saving the file.
-                    # elif frame_type in 'light':
-                    #     self.enqueue_for_AWS(raw_data_size, im_path, red_name01)
+                    # elif frame_type in ['light']:
+                    #     self.enqueue_for_AWS(reduced_data_size, im_path, red_name01)
                         
                     print("\n\Finish-Exposure is complete, saved:  " + raw_name00)#, raw_data_size, '\n')
                     g_dev['obs'].update_status()
