@@ -9,7 +9,8 @@ Created on Sun Dec 11 23:27:31 2016
 '''
 
 This code is confusing because it is mixing degree, hour and radian measure in
-a way that is not obvious.  Hungarian might help here.
+a way that is not obvious.  Hungarian might help here or append _d, _r, _h, _am, _as, _m, _s
+Conversion constants could be CAP-case as in R2D, R2AS, H2S, etc.
 
 '''
 
