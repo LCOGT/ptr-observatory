@@ -47,9 +47,14 @@ from astropy.time import Time
 from astropy import units as u
 from astropy.coordinates import SkyCoord, FK5, ICRS, FK4, Distance, \
                          EarthLocation, AltAz
+                         #This should be removed or put in a try
+# =============================================================================
+# from astropy.utils.iers import conf
+# #conf.auto_max_age = None 
+# =============================================================================
 #from astroquery.vizier import Vizier
 #from astroquery.simbad import Simbad
-#from devices.pywinusb_paddle import *
+from devices.pywinusb_paddle import *
 
 
 
@@ -91,10 +96,7 @@ class Mount:
         self.inst = 'tel1'
         self.tel = tel
         self.mount_message = "-"
-
-        #print('Can Move Axis is Possible.', self.mount.CanMoveAxis(0), self.mount.CanMoveAxis(1))
-
-        #  NB THis tel concept is a remnant of a bad dream
+        self.has_paddle = config['mount']['mount1']['has_paddle']
         if not tel:
             print(f"Mount connected.")
         else:
@@ -102,18 +104,23 @@ class Mount:
         print(self.mount.Description)
 
         #NB THe paddle needs a re-think and needs to be cast into its own thread. 20200310 WER
-#        self._paddle = serial.Serial('COM10', timeout=0.1)
-#        self._paddle.write(b'ver\n')
-#        print(self._paddle.read(13).decode()[-8:])
-#        self._paddle.write(b"gpio iodir 00ff\n")
-#        self._paddle.write(b"gpio readall\n")
-        self.paddleing = False
-#        print('a:',self._paddle.read(20).decode())
-#        print('b:',self._paddle.read(20).decode())
-#        print('c:',self._paddle.read(20).decode())
-#        print("Paddle  not operational??")
-#        self.paddle_thread = threading.Thread(target=self.paddle( self._paddle, self.mount), args=())
-        #self.paddle_thread.start()
+        if self.has_paddle:
+            self._paddle = serial.Serial('COM28', timeout=0.1)
+            self._paddle.write(b'ver\n')
+            print(self._paddle.read(13).decode()[-8:])
+    
+    #        self._paddle.write(b"gpio iodir 00ff\n")
+    #        self._paddle.write(b"gpio readall\n")
+            self.paddleing = True
+    #        print('a:',self._paddle.read(20).decode())
+    #        print('b:',self._paddle.read(20).decode())
+    #        print('c:',self._paddle.read(20).decode())
+    #        print("Paddle  not operational??")
+            self._paddle.close()
+        else:
+            self.paddeling = False
+            #self.paddle_thread = threading.Thread(target=self.paddle, args=())
+            #self.paddle_thread.start()
         print("exiting mount _init")
 
 #    def get_status(self):
@@ -157,7 +164,7 @@ class Mount:
 
     def get_status(self):
         self.check_connect()
-        #self.paddle()
+        self.paddle()
         alt = self.mount.Altitude
         zen = round((90 - alt), 3)
         if zen > 90:
@@ -174,7 +181,7 @@ class Mount:
         #print(self.device_name, self.name)
         if self.tel == False:
             status = {
-                f'timestamp': str(round(time.time(), 3)),
+                'timestamp': round(time.time(), 3),
 #                f'right_ascension': str(self.mount.RightAscension),
 #                f'declination': str(self.mount.Declination),
 #                f'sidereal_time': str(self.mount.SiderealTime),
@@ -185,11 +192,11 @@ class Mount:
 #                f'zenith_distance': str(zen),
 #                f'airmass': str(airmass),
 #                f'coordinate_system': str(self.rdsys),
-                f'pointing_telescope': str(self.inst),  #needs fixing
-                f'is_parked': str(self.mount.AtPark).lower(),
-                f'is_tracking': str(self.mount.Tracking).lower(),
-                f'is_slewing': str(self.mount.Slewing).lower(),
-                f'message': self.mount_message[:32]
+                'pointing_telescope': self.inst,  #needs fixing
+                'is_parked': self.mount.AtPark,
+                'is_tracking': self.mount.Tracking,
+                'is_slewing': self.mount.Slewing,
+                'message': self.mount_message[:32]
             }
         elif self.tel == True:
             self.current_sidereal = self.mount.SiderealTime
@@ -206,20 +213,20 @@ class Mount:
                 self.current_icrs_ra = self.mount.RightAscension
                 self.current_icrs_dec = self.mount.Declination
             status = {
-                f'timestamp': str(round(time.time(), 3)),
-                f'right_ascension': str(round(self.current_icrs_ra, 5)),  #
-                f'declination': str(round(self.current_icrs_dec, 4)),
-                f'sidereal_time': str(round(self.current_sidereal, 5)),
-                f'tracking_right_ascension_rate': str(self.mount.RightAscensionRate),   #Will use asec/s not s/s as ASCOM does.
-                f'tracking_declination_rate': str(self.mount.DeclinationRate),
-                f'azimuth': str(round(self.mount.Azimuth, 3)),
-                f'altitude': str(round(alt, 3)),
-                f'zenith_distance': str(round(zen, 3)),
-                f'airmass': str(round(airmass,4)),
-                f'coordinate_system': str(self.rdsys),
-                f'equinox':  self.equinox_now,
-                f'pointing_instrument': str(self.inst),  # needs fixing
-                f'message': self.mount_message[:32]
+                'timestamp': round(time.time(), 3),
+                'right_ascension': round(self.current_icrs_ra, 5),
+                'declination': round(self.current_icrs_dec, 4),
+                'sidereal_time': round(self.current_sidereal, 5),
+                'tracking_right_ascension_rate': round(self.mount.RightAscensionRate, 9),   #Will use asec/s not s/s as ASCOM does.
+                'tracking_declination_rate': round(self.mount.DeclinationRate, 8),
+                'azimuth': round(self.mount.Azimuth, 3),
+                'altitude': round(alt, 3),
+                'zenith_distance': round(zen, 3),
+                'airmass': round(airmass,4),
+                'coordinate_system': str(self.rdsys),
+                'equinox':  self.equinox_now,
+                'pointing_instrument': str(self.inst),  # needs fixing
+                'message': self.mount_message[:32]
 #                f'is_parked': (self.mount.AtPark),
 #                f'is_tracking': str(self.mount.Tracking),
 #                f'is_slewing': str(self.mount.Slewing)
@@ -318,34 +325,34 @@ class Mount:
         if air_avg > 20.0:
             air_avg = 20.0
         if pre[10] and post[10]:
-            park_avg = "T"
+            park_avg = True
         else:
-            park_avg = "F"
+            park_avg = False
         if pre[11] or post[11]:
-            track_avg = "T"
+            track_avg = True
         else:
-            track_avg = "F"
+            track_avg = False
         if pre[12] or post[12]:
-            slew_avg = "T"
+            slew_avg = True
         else:
-            slew_avg = "F"
+            slew_avg = False
 
         status = {
-            f'timestamp': t_avg,
-            f'right_ascension': ra_avg,
-            f'declination': dec_avg,
-            f'sidereal_time': sid_avg,
-            f'tracking_right_ascension_rate': rar_avg,
-            f'tracking_declination_rate': decr_avg,
-            f'azimuth':  az_avg,
-            f'altitude': alt_avg,
-            f'zenith_distance': zen_avg,
-            f'airmass': air_avg,
-            f'coordinate_system': str(self.rdsys),
-            f'instrument': str(self.inst),
-            f'is_parked': park_avg,
-            f'is_tracking': track_avg,
-            f'is_slewing': slew_avg
+            'timestamp': t_avg,
+            'right_ascension': ra_avg,
+            'declination': dec_avg,
+            'sidereal_time': sid_avg,
+            'tracking_right_ascension_rate': rar_avg,
+            'tracking_declination_rate': decr_avg,
+            'azimuth':  az_avg,
+            'altitude': alt_avg,
+            'zenith_distance': zen_avg,
+            'airmass': air_avg,
+            'coordinate_system': str(self.rdsys),
+            'instrument': str(self.inst),
+            'is_parked': park_avg,
+            'is_tracking': track_avg,
+            'is_slewing': slew_avg
 
         }
         return status  #json.dumps(status)
@@ -512,15 +519,21 @@ class Mount:
 
         Normally this will never be started, unless we are operating locally in the observatory.
         '''
-
-        self._paddle.write(b"gpio readall\n")
-        temp = self._paddle.read(21).decode()
+        return    #Temporary disable 20200817
+    
+        self._paddle = serial.Serial('COM28', timeout=0.1)
+        self._paddle.write(b"gpio iodir 00ff\n")  #returns  16
+        self._paddle.write(b"gpio readall\n")     #  returns 13
+        temp_0 = self._paddle.read(21).decode()   #  This is a restate of read, a toss
+        temp_1 = self._paddle.read(21).decode()
+        print(len(temp_1))
+        self._paddle.close()
         #print ('|' + temp[16:18] +'|')
-        button = temp[17]
-        spd= temp[16]
+        button = temp_1[14]
+        spd= temp_1[13]
         direc = ''
         speed = 0.0
-        #print("Btn:  ", button, "Spd:  ", speed, "Dir:  ", direc)
+        print("Btn:  ", button, "Spd:  ", speed, "Dir:  ", direc)
         if button == 'E': direc = 'N'
         if button == 'B': direc = 'S'
         if button == 'D': direc = 'E'
@@ -594,31 +607,47 @@ class Mount:
             EW = -1
             NS = -1
 
-        #print(button, spd, direc, speed)
+        print(button, spd, direc, speed)
 #            if direc != '':
         #print(direc, speed)
         _mount = self.mount
         #Need to add diagonal moves
         if direc == 'N':
-            _mount.DeclinationRate = NS*speed
-            self.paddleing = True
+            try:
+                _mount.DeclinationRate = NS*speed
+                self.paddleing = True
+            except:
+                pass
             print('cmd:  ', direc,  NS*speed)
         if direc == 'S':
-            _mount.DeclinationRate = -NS*speed
-            self.paddleing = True
+            try:
+                _mount.DeclinationRate = -NS*speed
+                self.paddleing = True
+            except:
+                pass
             print('cmd:  ',direc,  -NS*speed)
         if direc == 'E':
-            _mount.RightAscensionRate = EW*speed/15.   #Not quite the correct divisor.
-            self.paddleing = True
+            try:
+                _mount.RightAscensionRate = EW*speed/15.   #Not quite the correct divisor.
+                self.paddleing = True
+            except:
+                pass
             print('cmd:  ',direc, EW*speed/15.)
         if direc == 'W':
-            _mount.RightAscensionRate = -EW*speed/15.
-            self.paddleing = True
+            try:
+                _mount.RightAscensionRate = -EW*speed/15.
+                self.paddleing = True
+            except:
+                pass
             print('cmd:  ',direc, -EW*speed/15.)
         if direc == '':
-            _mount.DeclinationRate = 0.0
-            _mount.RightAscensionRate = 0.0
+            try:
+                _mount.DeclinationRate = 0.0
+                _mount.RightAscensionRate = 0.0
+            except:
+                print("Rate set excepetion.")
             self.paddleing = False
+        self._paddle.close()
         return
 
 

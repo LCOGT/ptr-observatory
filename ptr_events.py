@@ -12,10 +12,15 @@ This is also very old code just grafted on. Needs variable renaming, and a good 
 '''
 
 from math import *
-import shelve
+#import shelve
 import ephem
-from datetime import datetime, timedelta
+from datetime import datetime
+import time
+#import pytz
 from math import degrees
+# import skyfield 
+# from skyfield import api, almanac
+# from skyfield.nutationlib import iau2000b
 # print('ObsImports:  ', config, '\n\'', config.site_config['site'])
 from global_yard import *
 from astropy.time import Time
@@ -39,7 +44,7 @@ class Events:
         g_dev['evnt'] = self
         self.siteLatitude = round(float(self.config['latitude']), 8)    #  34 20 34.569   #34 + (20 + 34.549/60.)/60.
         self.siteLongitude = round(float(self.config['longitude']), 8) #-(119 + (40 + 52.061/60.)/60.) 119 40 52.061 W
-        self.siteElevation =  round(float(self.config['longitude']), 3)
+        self.siteElevation =  round(float(self.config['elevation']), 3)
         self.siteRefTemp =  round(float(self.config['reference_ambient'][0]), 2)       #These should be a monthly average data.
         self.siteRefPress =  round(float(self.config['reference_pressure'][0]), 2)
 
@@ -179,7 +184,7 @@ class Events:
         return  degrees(sun.az)
 
     def _calcEveFlatValues(self, ptr, sun, pWhen, skyFlatEnd, loud=False, now_spot=False):
-        # NB This needs to deal withthe Moon being too close!
+        # NB This needs to deal with the Moon being too close!
         ptr.date = pWhen
         sun.compute(ptr)
         if loud: print('Sunset, sidtime:  ', pWhen, ptr.sidereal_time())
@@ -187,22 +192,26 @@ class Events:
         SunAz1 = degrees(sun.az) - 180
         while  SunAz1 < 0:
             SunAz1 += 360
-        liftAlt = (degrees(sun.alt) + 105)
-        if liftAlt <= 90:
-            SunAlt1 = liftAlt
+        SunAlt1 = degrees(sun.alt) + 105
+        if SunAlt1 > 90:
+            SunAlt1 = 180 - SunAlt1
         else:
-            SunAlt1 = 180 - liftAlt
-        if loud: print('Flat spot at:  ', SunAz1, SunAlt1)
+            SunAz1 = degrees(sun.az)
+        if loud: print('Flat spot at az alt:  ', SunAz1, SunAlt1)
         FlatStartRa, FlatStartDec = ptr.radec_of(str(SunAz1), str(SunAlt1))
         if loud: print('Ra/Dec of Flat spot:  ', FlatStartRa, FlatStartDec)
         ptr.date = skyFlatEnd
         sun.compute(ptr)
         if loud: print('Flat End  Sun:  ', sun.ra, sun.dec, sun.az, sun.alt)#SunRa = float(sun.ra)
         SunAz2 = degrees(sun.az) - 180
-        SunAlt2 =  degrees(sun.alt) + 105
-        if SunAlt2 > 90.:
-            SunAlt2 = 180 - degrees(sun.alt) + 105
-        if loud: print('Flatspot:  ', SunAz1, SunAlt1, SunAz2, SunAlt2)
+        while SunAz2 < 0:
+            SunAz2 += 360
+        SunAlt2 = degrees(sun.alt) + 105
+        if SunAlt2 > 90:
+            SunAlt2 = 180 - SunAlt2
+        else:
+            SunAz2 = degrees(sun.az)   
+        if loud: print('Flatspots:  ', SunAz1, SunAlt1, SunAz2, SunAlt2)
         FlatEndRa, FlatEndDec = ptr.radec_of(str(SunAz2), str(SunAlt2))
         if loud: print('Eve Flat:  ', FlatStartRa, FlatStartDec, FlatEndRa, FlatEndDec)
         span = 86400*(skyFlatEnd - pWhen)
@@ -218,24 +227,34 @@ class Events:
             return (degrees(FlatStartRa)/15, degrees(FlatStartDec), \
             degrees(FlatEndRa)/15, degrees(FlatEndDec), RaDot, DecDot)
 
-    def _calcMornFlatValues(self, ptr, sun, pWhen, sunZ88Cl, sunrise, loud=False):
+    def _calcMornFlatValues(self, ptr, sun, pWhen,  sunrise, loud=False):
         ptr.date = pWhen
         sun.compute(ptr)
         if loud: print()
         if loud: print('Morn Flat Start, sidtime:  ', pWhen, ptr.sidereal_time())
         if loud: print('Morn Flat Start Sun:  ', sun.ra, sun.dec, sun.az, sun.alt)
         SunAz1 = degrees(sun.az) + 180
-        SunAlt1 = (degrees(sun.alt) + 105)
+        while SunAz1 < 0:
+            SunAz1 += 360
+        SunAlt1 = degrees(sun.alt) + 105
         if SunAlt1 > 90.:
-            SunAlt1 = 180 -(degrees(sun.alt) + 105)
+            SunAlt1 = 180 - SunAlt1
+        else:
+            SunAz1 = degrees(sun.az)
         print('Flat spot at:  ', SunAz1, SunAlt1)
         FlatStartRa, FlatStartDec = ptr.radec_of(str(SunAz1), str(SunAlt1))
         print('Ra/Dec of Flat spot:  ', FlatStartRa, FlatStartDec)
-        ptr.date = sunZ88Cl
+        ptr.date = sunrise
         sun.compute(ptr)
         if loud: print('Flat End  Sun:  ', sun.ra, sun.dec, sun.az, sun.alt)#SunRa = float(sun.ra)
-        SunAz2 = degrees(sun.az) + 180
-        SunAlt2 = 180 -(degrees(sun.alt) + 105)
+        SunAz2 = degrees(sun.az) - 180
+        while SunAz2 < 0:
+            SunAz2 += 360
+        SunAlt2 = degrees(sun.alt) + 105
+        if SunAlt2 > 90:
+            SunAlt2 = 180 - SunAlt2
+        else:
+            SunAz2 = degrees(sun.az)
         if loud: print('Flatspot:  ', SunAz1, SunAlt1, SunAz2, SunAlt2)
         FlatEndRa, FlatEndDec = ptr.radec_of(str(SunAz2), str(SunAlt2))
         print('Morn Flat:  ', FlatStartRa, FlatStartDec, FlatEndRa, FlatEndDec)
@@ -299,11 +318,8 @@ class Events:
         sunset = ptr.next_setting(sun)
         middleNight = ptr.next_antitransit(sun)
         sunrise = ptr.next_rising(sun)
-        ptr.horizon = '2'
-        sun.compute(ptr)
-        #if loud: print('Sun 2: ', sun.ra, sun.dec, sun.az, sun.alt)
-        obs_win_begin = sunset - 240/1440
-        return (obs_win_begin, sunset, sunrise, ephem.now())
+        ops_win_begin = sunset - 89/1440
+        return (ops_win_begin, sunset, sunrise, ephem.now())
 
     def flat_spot_now(self):
         '''
@@ -311,14 +327,14 @@ class Events:
         '''
         ra, dec, sun_alt, sun_az, *other = self._sunNow()
         print('Sun:  ', sun_az, sun_alt)
-        sun_az2 = sun_az - 180.
+        sun_az2 = sun_az - 180.   #  Opposite az of the Sun
         if sun_az2 < 0:
             sun_az2 += 360.
-        sun_alt2 = sun_alt + 105
-        if sun_alt2 > 90:
+        sun_alt2 = sun_alt + 105   #105 degrees along great circle through zenith
+        if sun_alt2 > 90:   # Over the zenith so specify alt at above azimuth
             sun_alt2 = 180 - sun_alt2
-        elif sun_alt2 <=90:
-            sun_az2 = sun_az
+        else:
+            sun_az2 = sun_az  # The sun is >15 degrees below horizon, use its az
 
         return(sun_az2, sun_alt2)
 
@@ -383,7 +399,7 @@ class Events:
         return DAY_Directory
 
     def display_events(self):   # Routine above needs to be called first.
-
+        global dayNow
         # print('Events module loaded at: ', ephem.now(), round((ephem.now()), 4))
         loud = True
         sun = ephem.Sun()
@@ -402,15 +418,20 @@ class Events:
         sunset = ptr.next_setting(sun)
         middleNight = ptr.next_antitransit(sun)
         sunrise = ptr.next_rising(sun)
+        next_moonrise = ptr.next_rising(moon)
+        next_moontransit = ptr.next_transit(moon)
+        next_moonset = ptr.next_setting(moon)
+        last_moonrise = ptr.previous_rising(moon)
+        last_moontransit = ptr.previous_transit(moon)
+        last_moonset = ptr.previous_setting(moon)
         ptr.horizon = '2'
         sun.compute(ptr)
         #if loud: print('Sun 2: ', sun.ra, sun.dec, sun.az, sun.alt)
-
-        obs_win_begin = sunset - 240/1440      # Needs to come from site config  NB 1 hour
+        ops_win_begin = sunset - 89/1440      # Needs to come from site config  NB 1 hour
         ptr.horizon = '-1.5'
         sun.compute(ptr)
         #if loud: print('Sun -6: ', sun.ra, sun.dec, sun.az, sun.alt)
-        eve_skyFlatBegin = sunset + 1/1440. #ptr.next_setting(sun)
+        eve_skyFlatBegin = sunset - 60/1440. #ptr.next_setting(sun)
         morn_skyFlatEnd = ptr.next_rising(sun)
         ptr.horizon = '-6'
         sun.compute(ptr)
@@ -445,11 +466,11 @@ class Events:
         mid_moon_dec = moon.dec
         mid_moon_phase = moon.phase
         eveFlatStartRa, eveFlatStartDec, eveFlatEndRa, eveFlatEndDec, \
-        eveRaDot, eveDecDot = self._calcEveFlatValues(ptr, sun, obs_win_begin, eve_skyFlatEnd, loud=True)
+        eveRaDot, eveDecDot = self._calcEveFlatValues(ptr, sun, ops_win_begin, eve_skyFlatEnd, loud=True)
         mornFlatStartRa, mornFlatStartDec, mornFlatEndRa, mornFlatEndDec, mornRaDot, \
-                        mornDecDot = self._calcMornFlatValues(ptr, sun, morn_skyFlatBegin, sunrise, \
+                        mornDecDot = self._calcMornFlatValues(ptr, sun, morn_skyFlatBegin, \
                                                         sunrise, loud=True)
-        endEveScreenFlats = obs_win_begin - LONGESTSCREEN
+        endEveScreenFlats = ops_win_begin - LONGESTSCREEN
         beginEveScreenFlats = endEveScreenFlats - SCREENFLATDURATION
         endEveBiasDark = beginEveScreenFlats - LONGESTDARK
         beginEveBiasDark = endEveBiasDark - BIASDARKDURATION
@@ -497,10 +518,10 @@ class Events:
                 ('End Eve Bias Dark  ', ephem.Date(endEveBiasDark)),
                 ('Eve Scrn Flats     ', ephem.Date(beginEveScreenFlats)),
                 ('End Eve Scrn Flats ', ephem.Date(endEveScreenFlats)),
-                ('Obs Window Start   ', ephem.Date(obs_win_begin)),  #Enclosure may open.
-                ('Cool Down, Open    ', ephem.Date(obs_win_begin + 0.5/1440)),
-                ('Sun Set            ', sunset),
+                ('Ops Window Start   ', ephem.Date(ops_win_begin)),  #Enclosure may open.
+                ('Cool Down, Open    ', ephem.Date(ops_win_begin + 0.5/1440)),
                 ('Eve Sky Flats      ', ephem.Date(eve_skyFlatBegin)),
+                ('Sun Set            ', sunset),
                 ('Civil Dusk         ', civilDusk),
                 ('End Eve Sky Flats  ', eve_skyFlatEnd),
                 ('Clock & Auto Focus ', ephem.Date(eve_skyFlatEnd + 1/1440.)),
@@ -515,15 +536,14 @@ class Events:
                 ('Morn Sky Flats     ', morn_skyFlatBegin),
                 ('Civil Dawn         ', civilDawn),
                 ('End Morn Sky Flats ', morn_skyFlatEnd),
-                ('Obs Window Closes  ', ephem.Date(morn_skyFlatEnd + 0.5/1440)),   #Enclosure must close
+                ('Ops Window Closes  ', ephem.Date(morn_skyFlatEnd + 0.5/1440)),   #Enclosure must close
                 ('Sun Rise           ', sunrise),
-                ('Moon Rise          ', ptr.previous_rising(moon)),
-                ('Moon Transit       ', ptr.previous_transit(moon)),
-                ('Moon Set           ', ptr.previous_setting(moon)),
-                ('Moon Rise          ', ptr.next_rising(moon)),
-                ('Moon Transit       ', ptr.next_transit(moon)),
-                ('Moon Set           ', ptr.next_setting(moon))]
-
+                ('Prior Moon Rise    ', last_moonrise),
+                ('Prior Moon Transit ', last_moontransit),
+                ('Prior Moon Set     ', last_moonset),
+                ('Moon Rise          ', next_moonrise),
+                ('Moon Transit       ', next_moontransit),
+                ('Moon Set           ', next_moonset)]
 
         #print("No report of post-close events is available yet. \n\n")
         evnt_sort = self._sortTuple(evnt)
@@ -533,12 +553,14 @@ class Events:
             evnt_sort.pop(0)
         # while evnt_sort[-1][0] != 'Morn Sun >2 deg':  # Ditto, see above.
         #     evnt_sort.pop(-1)
-        while evnt_sort[-1][0] in ['Moon Rise          ', 'Moon Transit       ']:
-            evnt_sort.pop(-1)
+
+        while evnt_sort[-1][0] in ['Moon Rise          ', 'Moon Transit       ', ]:
+             evnt_sort.pop(-1)
         evnt_sort
         timezone = "  " + self.config['timezone'] + ": "
         offset = self.config['time_offset']
         for evnt in evnt_sort:
+
             print(evnt[0], 'UTC: ', evnt[1], timezone, ephem.Date(evnt[1] + float(offset)/24.))    # NB Additon of local times would be handy here.
         event_dict = {}
         for item in evnt_sort:
@@ -546,6 +568,7 @@ class Events:
         event_dict['use_by'] = ephem.Date(sunrise + 4/24.)
         event_dict['day_directory'] = str(day_dir)
         g_dev['events'] = event_dict
+
 
 
         # print("g_dev['events']:  ", g_dev['events'])

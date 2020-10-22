@@ -9,8 +9,7 @@ import shelve
 import requests
 import json
 
-#TEMP COEFF ESTIMATED 20190824   fx= round(-164.0673*C_pri +13267.37, 1)  #A very good 1.5C span.  9986@20C. Random Hyst ~ 500 microns! :((( )))
-#-104.769 + 12457.5   2019083
+
 
 '''
 class Probe(object):
@@ -60,34 +59,30 @@ class Focuser:
         self.focuser = win32com.client.Dispatch(driver)
         self.focuser.Connected = True
         self.focuser.TempComp = False
-        self.micron_to_steps = float(config['focuser']['focuser1']['unit_conversion'])
+        self.micron_to_steps= float(config['focuser']['focuser1']['unit_conversion'])   #  Note tis can be a bogus value
         self.steps_to_micron = 1/self.micron_to_steps
         self.focuser_message = '-'
-        print(f"focuser connected.")
-        print(self.focuser.Description, "At:  ", round(self.focuser.Position/self.micron_to_steps, 1))
-        time.sleep(0.2)
-        try:
+        print("focuser connected.")
+        print(self.focuser.Description, "At:  ", round(self.focuser.Position*self.steps_to_micron, 1))
+        try:   #  NB NB NB This mess neads cleaning up.
             try:
-
+            
                 self.reference = self.calculate_compensation( self.focuser.Temperature)   #need to change to config supplied
-                print("Focus reference updated from Compensated value:  ", self.reference)
+                print("Focus position set from temp compensated value:  ", self.reference)
             except:
                 self.reference = float(self.get_focal_ref())   #need to change to config supplied
                 print("Focus reference updated from Night Shelf:  ", self.reference)
         except:
             self.reference = int(self.config['reference'])
-            print("Focus reference derived from supplied Config dicitionary:  ", self.reference)
+            print("Focus reference derived from supplied config file for 10C:  ", self.reference)
         self.focuser.Move(int(float(self.reference)*self.micron_to_steps))
 
     def calculate_compensation(self, temp_primary):
-
         if -5 <= temp_primary <= 45:
-            # NB this math is awkward, should use delta_temp
-
-            trial =round(float(self.config['coef_c'])*temp_primary + float(self.config['coef_0']), 1)
+            trial =round(float(self.config['coef_0'] + float(self.config['coef_c'])*temp_primary), 1)
             trial = max(trial,500)  #These values would change for Gemini to more like 11900 max
             trial = min(trial, 12150)
-            print('Calculated focus compensated position:  ', trial)
+            #print('Calculated focus compensated position:  ', trial)
             return int(trial)
         else:
             print('Primary out of range -5 to 45C, using reference focus')
@@ -95,15 +90,19 @@ class Focuser:
 
     def get_status(self):
         status = {
-            "focus_position": str(round(self.focuser.Position/self.micron_to_steps, 1)),
-            "focus_moving": str(self.focuser.IsMoving).lower(),
-            "focus_temperature": str(self.focuser.Temperature)
+            "focus_position": round(self.focuser.Position*self.steps_to_micron, 1),
+            "focus_moving": self.focuser.IsMoving
+            #"focus_temperature": self.focuser.Temperature
             }
+        try:
+            status["focus_temperature"] = self.focuser.Temperature
+        except:
+            status['focus_temperature'] = self.reference
         return status
 
     def get_quick_status(self, quick):
         quick.append(time.time())
-        quick.append(self.focuser.Position/self.micron_to_steps)
+        quick.append(self.focuser.Position*self.steps_to_micron)
         quick.append(self.focuser.Temperature)
         quick.append(self.focuser.IsMoving)
         return quick
@@ -114,9 +113,9 @@ class Focuser:
         average.append(round((pre[1] + post[1])/2, 3))
         average.append(round((pre[2] + post[2])/2, 3))
         if pre[3] or post[3]:
-            average.append('T')
+            average.append(True)
         else:
-            average.append('F')
+            average.append(False)
         return average
 
     def update_job_status(self, cmd_id, status, seconds_remaining=-1):
@@ -170,14 +169,14 @@ class Focuser:
                 print('>')
             self.update_job_status(command['ulid'], 'COMPLETE')
         elif action == "go_to_compensated":
-            reference = self.calculate_compensation( self.focuser.Temperature)
+            reference = self.calculate_compensation(self.focuser.Temperature)
             self.focuser.Move(reference*self.micron_to_steps)
             time.sleep(0.1)
             while self.focuser.IsMoving:
                 time.sleep(0.5)
                 print('>')
         elif action == "save_as_reference":
-            self.set_focal_ref(self.focuser.Position/self.micron_to_steps)  #Need to get the alias properly
+            self.set_focal_ref(self.focuser.Position*self.steps_to_micron)  #Need to get the alias properly
         else:
             print(f"Command <{action}> not recognized:", command)
 
@@ -188,14 +187,14 @@ class Focuser:
 
     def get_position(self, counts=False):
         if not counts:
-            return int(self.focuser.Position/self.micron_to_steps)
+            return int(self.focuser.Position*self.steps_to_micron)
 
     def move_relative_command(self, req: dict, opt: dict):
         ''' set the focus position by moving relative to current position '''
         #The string must start with a + or a - sign, otherwize treated as zero and no action.
 
         position_string = req['position']
-        position = int(self.focuser.Position/self.micron_to_steps)
+        position = int(self.focuser.Position*self.steps_to_micron)
         if position_string[0] != '-':
             relative = int(position_string)
             position += relative
@@ -244,12 +243,24 @@ class Focuser:
     def set_focal_ref(self, ref):
         camShelf = shelve.open(self.site_path + 'ptr_night_shelf/' + self.camera_name)
         camShelf['Focus Ref'] = ref
+        camShelf['af_log'] = []
+        camShelf.close()
+        return
+    
+    def af_log(self, ref, fwhm, solved):   #  Note once focus comp is in place this data is lame and
+                                           #  need to be combined with great care.
+                                           
+        camShelf = shelve.open(self.site_path + 'ptr_night_shelf/' + self.camera_name, writeback=True)
+        camShelf['af_log'].append((ref, fwhm, solved, self.focuser.Temperature, time.time()))
         camShelf.close()
         return
 
+
     def get_focal_ref(self):
         camShelf = shelve.open(self.site_path + 'ptr_night_shelf/' + self.camera_name)
-        return camShelf['Focus Ref']
+        focus_ref = camShelf['Focus Ref']
+        camShelf.close()
+        return focus_ref
 
 if __name__ == '__main__':
     pass

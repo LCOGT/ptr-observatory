@@ -18,15 +18,15 @@ from astropy.time import Time
 from astropy import units as u
 from astropy.coordinates import SkyCoord, FK5, ICRS, FK4, Distance, \
                          EarthLocation, AltAz
-from astroquery.vizier import Vizier
-from astroquery.simbad import Simbad
+#from astroquery.vizier import Vizier
+#from astroquery.simbad import Simbad
 import ephem
-from global_yard import g_dev
+#from global_yard import g_dev
 
 
 iso_day = datetime.date.today().isocalendar()
 equinox_years = round((iso_day[0] + ((iso_day[1]-1)*7 + (iso_day[2] ))/365), 2) - 2000
-tycho_cat = open("E:/Users/User/Documents/GitHub/ptr-observatory/support_info/tycho_mag_7.dat", 'r')
+tycho_cat = open("../ptr-observatory/support_info/tycho_mag_7.dat", 'r')
 
 tycho_tuple = []
 for line in tycho_cat:
@@ -44,7 +44,8 @@ tycho_tuple.sort()
 print('# of Tycho stars in grid:  ', len(tycho_tuple))
 
 def transform_haDec_to_azAlt(pLocal_hour_angle, pDec):
-    lat = g_dev['cfg']['latitude']
+    #lat = g_dev['cfg']['latitude']
+    lat=35.554444
     latr = math.radians(lat)
     sinLat = math.sin(latr)
     cosLat = math.cos(latr)
@@ -65,55 +66,57 @@ def transform_haDec_to_azAlt(pLocal_hour_angle, pDec):
 
     return azimuth, altitude
 
-def dist_sort_targets(pRa, pDec, pSidTime, horizon=20):
+def dist_sort_targets(pRa, pDec, pSidTime, horizon=25):
     '''
     Given incoming Ra and Dec produce a list of tuples sorted by distance
     of Nav Star from that point, closest first. In additon full site
     Horizon cull is applied.
     '''
-
-
-    #print(pRa, pDec, pSidTime)
     global tycho_tuple
+
+
+    # #print(pRa, pDec, pSidTime)
+    # We compute which side of sky it is on so we do not flip.
     ha =   pSidTime - pRa
     while ha < -12:
         ha += 24
     while ha >= 12:
         ha -= 12
     if ha < 0:
-        sign = -1
+        target_sign = -1
     else:
-        sign = 1
+        target_sign = 1
 
     c1 = SkyCoord(ra=pRa*u.hr, dec=pDec*u.deg)
-    
+
     sortedTargetList = []
     for star in tycho_tuple:
-        #if horizonCheck(star[0], star[1], pSidTime):
+        #  Convert catalog Ra, Dec to an Astropy SkyCoordinate.
         c2 = SkyCoord(ra=star[1]*u.hr, dec=star[0]*u.deg )
         cat_ha = pSidTime - star[1]
         while cat_ha < -12:
             cat_ha += 24
         while cat_ha >= 12:
             cat_ha -= 12
-
-        azimuth, altitude = transform_haDec_to_azAlt(ha, star[0])#  lat=35.554444)
+        #Compute its AltAz coordinates:
+        azimuth, altitude = transform_haDec_to_azAlt(cat_ha, star[0])#  lat=35.554444)
         if altitude < horizon:
-            continue 
+            continue
         if cat_ha < 0:
             cat_sign = -1
         else:
             cat_sign = 1
-        if cat_sign == sign:
+        #  This should be paramaterized with mount type.
+        if cat_sign == target_sign:    # This prevents a flip
             sep = c1.separation(c2)
+
             sortedTargetList.append((sep.degree, star))
     sortedTargetList.sort()
-    #print('distSortTargets', len(targetList), targetList, '\n\n')
-    #print('distSortTargets', len(sortedTargetList), SortedTargetList, '\n\n')
+    #print('distSortTargets', len(sortedTargetList), sortedTargetList, '\n\n')
     return sortedTargetList[0]
 
 if __name__ == '__main__':
-    print (dist_sort_targets(11, 0, 16))
+    print (dist_sort_targets(1, 9, 0))
 
 
 

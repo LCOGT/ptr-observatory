@@ -29,22 +29,23 @@ import threading
 import queue
 import requests
 import os
-import sys
-import argparse
+#import sys
+#import argparse
 import json
-import importlib
+#import importlib
 import numpy as np
+import math
 
-from pprint import pprint
+#from pprint import pprint
 from api_calls import API_calls
-from skimage import data, io, filters
+#from skimage import data, io, filters
 from skimage.transform import resize
-from skimage import img_as_float
-from skimage import exposure
+#from skimage import img_as_float
+#from skimage import exposure
 from skimage.io import imsave
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 
-from PIL import Image
+#from PIL import Image
 import ptr_events
 
 # import device classes
@@ -56,16 +57,17 @@ from devices.mount import Mount
 from devices.telescope import Telescope
 from devices.observing_conditions import ObservingConditions
 from devices.rotator import Rotator
-from devices.switch import Switch    #Nothing implemented yet 20200511
+#from devices.switch import Switch    #Nothing implemented yet 20200511
 from devices.screen import Screen
 from devices.sequencer import Sequencer
 from processing.calibration import calibrate
 from global_yard import g_dev
 import bz2
 import httplib2
+import sep
 
 
-# TODO: move this function to a better location
+# move this function to a better location
 def to_bz2(filename, delete=False):
     try:
         uncomp = open(filename, 'rb')
@@ -83,7 +85,7 @@ def to_bz2(filename, delete=False):
         return False
 
 
-# TODO: move this function to a better location
+# move this function to a better location
 def from_bz2(filename, delete=False):
     try:
         comp = open(filename, 'rb')
@@ -100,7 +102,7 @@ def from_bz2(filename, delete=False):
         return False
 
 
-# TODO: move this function to a better location
+# move this function to a better location
 # The following function is a monkey patch to speed up outgoing large files.
 # NB does not appear to work. 20200408 WER
 def patch_httplib(bsize=400000):
@@ -108,24 +110,24 @@ def patch_httplib(bsize=400000):
     if bsize is None:
         bsize = 8192
 
-    def send(self, data, sblocks=bsize):
-        """Send `data' to the server."""
+    def send(self, p_data, sblocks=bsize):
+        """Send `p_data' to the server."""
         if self.sock is None:
             if self.auto_open:
                 self.connect()
             else:
                 raise httplib2.NotConnected()
         if self.debuglevel > 0:
-            print("send:", repr(data))
-        if hasattr(data, 'read') and not isinstance(data, list):
+            print("send:", repr(p_data))
+        if hasattr(p_data, 'read') and not isinstance(p_data, list):
             if self.debuglevel > 0:
                 print("sendIng a read()able")
-            datablock = data.read(sblocks)
+            datablock = p_data.read(sblocks)
             while datablock:
                 self.sock.sendall(datablock)
-                datablock = data.read(sblocks)
+                datablock = p_data.read(sblocks)
         else:
-            self.sock.sendall(data)
+            self.sock.sendall(p_data)
     httplib2.httplib.HTTPConnection.send = send
 
 
@@ -134,12 +136,10 @@ class Observatory:
 
         # This is the class through which we can make authenticated api calls.
         self.api = API_calls()
-
         self.command_interval = 2   # seconds between polls for new commands
-
         self.status_interval = 3    # NOTE THESE IMPLEMENTED AS A DELTA NOT A RATE.
-
         self.name = name
+        self.site_name = name
         self.config = config
         self.last_request = None
         self.stopped = False
@@ -149,15 +149,15 @@ class Observatory:
             'enclosure',
             'mount',
             'telescope',
+            'screen',
             'rotator',
             'focuser',
-            'screen',
+            'filter_wheel',
             'camera',
-            'sequencer',
-            'filter_wheel'
+            'sequencer'          
             ]
-
         # Instantiate the helper class for astronomical events
+        #Soon the primary event / time values come from AWS>
         self.astro_events = ptr_events.Events(self.config)
         self.astro_events.compute_day_directory()
         self.astro_events.display_events()
@@ -181,6 +181,10 @@ class Observatory:
         self.reduce_queue = queue.Queue(maxsize=50)
         self.reduce_queue_thread = threading.Thread(target=self.reduce_image, args=())
         self.reduce_queue_thread.start()
+        self.blocks = None
+        self.projects = None
+        self.events_new = None
+        
 
         # Build the site (from-AWS) Queue and start a thread.
         # self.site_queue = queue.SimpleQueue()
@@ -236,6 +240,7 @@ class Observatory:
         '''
         uri = f"{self.name}/config/"
         self.config['events'] = g_dev['events']
+        #print(self.config)
         response = self.api.authenticated_request("PUT", uri, self.config)
         if response:
             print("Config uploaded successfully.")
@@ -267,7 +272,7 @@ class Observatory:
             time.sleep(self.command_interval)
            #  t1 = time.time()
             if not g_dev['seq'].sequencer_hold:
-                url = f"https://jobs.photonranch.org/jobs/getnewjobs"
+                url = "https://jobs.photonranch.org/jobs/getnewjobs"
                 body = {"site": self.name}
                 # uri = f"{self.name}/{mount}/command/"
                 cmd = {}
@@ -277,33 +282,52 @@ class Observatory:
                                                    data=json.dumps(body)).json()
                 # Make sure the list is sorted in the order the jobs were issued
                 # Note: the ulid for a job is a unique lexicographically-sortable id
-                unread_commands.sort(key=lambda x: x["ulid"])
-                # Process each job one at a time
-                for cmd in unread_commands:
-                    print(cmd)
-                    deviceInstance = cmd['deviceInstance']
-                    deviceType = cmd['deviceType']
-                    device = self.all_devices[deviceType][deviceInstance]
-                    try:
-                        device.parse_command(cmd)
-                    except Exception as e:
-                        print(e)
+                if len(unread_commands) > 0:
+                    unread_commands.sort(key=lambda x: x["ulid"])
+                    # Process each job one at a time
+                    for cmd in unread_commands:
+                        print(cmd)
+                        deviceInstance = cmd['deviceInstance']
+                        deviceType = cmd['deviceType']
+                        device = self.all_devices[deviceType][deviceInstance]
+                        try:
+                            device.parse_command(cmd)
+                        except Exception as e:
+                            print(e)
                # print('scan_requests finished in:  ', round(time.time() - t1, 3), '  seconds')
                 ## Test Tim's code
-                # url = "https://projects.photonranch.org/dev/get-all-projects"
-                # all_projects = requests.post(url).json()
-                # if all_projects is not None:
-                #     print(all_projects)
-                # url = "https://calendar.photonranch.org/dev/siteevents"
-                # body = json.dumps({
-                #     'site':  'saf',
-                #     'start':  '2020-06-28T20:00:00Z',
-                #     'end':    '2020-06-29T14:00:00Z',
-                #     'full_project_details:':  False})
-                # breakpoint()
-                # events = requests.post(url, body).json()
-                # if events is not None:
-                #     pprint(events)
+                url = "https://calendar.photonranch.org/dev/siteevents"
+                body = json.dumps({
+                    'site':  'saf',
+                    'start':  '2020-10-18T12:00:00Z',
+                    'end':    '2020-10-19T14:00:59Z',
+                    'full_project_details:':  True})
+                if self.blocks is None:   #This currently prevents pick up changes.  OK for the moment.
+                    blocks = requests.post(url, body).json()
+                    if len(blocks) > 0:   #   is not None:
+                        self.blocks = blocks
+                url = "https://projects.photonranch.org/dev/get-all-projects"
+                if self.projects is None:
+                    all_projects = requests.post(url).json()
+                    if len(all_projects) > 0:   #   is not None:
+                        self.projects = all_projects  #NOTE creating a list with a dict entry as item 0
+                        #self.projects.append(all_projects[1])
+                '''
+                Design Note.  blocks relate to scheduled time at a site so we expect AWS to mediate block 
+                assignments.  Priority of blocks is determined by the owner and a 'equipment match' for
+                background projects.
+                
+                Projects on the other hand can be a very large pool so how to manage becomes an issue.
+                TO the extent a project is not visible at a site, aws should not present it.  If it is
+                visible and passes the owners priority it should then be presented to the site.
+                
+                '''
+
+                if self.events_new is None:
+                    url = 'https://api.photonranch.org/api/events?site=saf'
+
+                    self.events_new = requests.get(url).json()
+
                 return   # Continue   #This creates an infinite loop
             else:
                 print('Sequencer Hold asserted.')    #What we really want here is looking for a Cancel/Stop.
@@ -316,7 +340,11 @@ class Observatory:
         '''
 
         # This stopping mechanism allows for threads to close cleanly.
-        loud = False
+        loud = False        
+        if g_dev['cam_retry_doit']:
+            del g_dev['cam']
+            device = Camera(g_dev['cam_retry_driver'], g_dev['cam_retry_name'], g_dev['cam_retry_config'])
+            print("Deleted and re-created:  ,", device)
         # Wait a bit between status updates
         while time.time() < self.time_last_status + self.status_interval:
             # time.sleep(self.st)atus_interval  #This was prior code
@@ -343,8 +371,8 @@ class Observatory:
                 # ...and add it to main status dict.
                 status[dev_type][device_name] = device.get_status()
         # Include the time that the status was assembled and sent.
-        status["timestamp"] = str(round((time.time() + t1)/2., 3))
-        status['send_heartbeat'] = 'false'
+        status["timestamp"] = round((time.time() + t1)/2., 3)
+        status['send_heartbeat'] = False
         if loud:
             print('Status Sent:  \n', status)   # from Update:  ', status))
         else:
@@ -355,7 +383,7 @@ class Observatory:
         try:    # 20190926  tHIS STARTED THROWING EXCEPTIONS OCCASIONALLY
             #print("AWS uri:  ", uri)
             #print('Status to be sent:  \n', status, '\n')
-            response = self.api.authenticated_request("PUT", uri, status)   # response = is not  used
+            self.api.authenticated_request("PUT", uri, status)   # response = is not  used
             #print("AWS Response:  ",response)
             self.time_last_status = time.time()
         except:
@@ -376,23 +404,23 @@ class Observatory:
 
         Sequences that are self-dispatched primarily relate to Bias darks, screen and sky
         flats, opening and closing.  Status for these jobs is reported via the normal
-        sequencer status mechanism. Guard flags to preveent careless interrupts will be
+        sequencer status mechanism. Guard flags to prevent careless interrupts will be
         implemented as well as Cancel of a sequence if emitted by the Cancel botton on
         the AWS Sequence tab.
 
-        Flat acquisition will include auomatic rejection of any image that has a mean
-        intensity > cam.saturate.  The camera will return without further processing and
+        Flat acquisition will include automatic rejection of any image that has a mean
+        intensity > camera saturate.  The camera will return without further processing and
         no image will be returned to AWS or stored locally.  We should log the Unihedron and
-        calc_illum values where filter first enter non-saturation.  Once we know those values
+        calc_illum values where filters first enter non-saturation.  Once we know those values
         we can spend much less effort taking frames that are saturated. Save The Shutter!
 
         """
 
         self.update_status()
         try:
-            self.scan_requests('mount1')   #NBNBNB THis has faulted, needs to be Try/Except
+            self.scan_requests('mount1')   #NBNBNB THis has faulted, usually empty input lists.
         except:
-            print("self.scan_requests('mount1') threw an exception.")
+            print("self.scan_requests('mount1') threw an exception, probably empty input queues.")
 
         g_dev['seq'].manager()  #  Go see if there is something new to do.
 
@@ -400,7 +428,7 @@ class Observatory:
         try:
             # self.update_thread = threading.Thread(target=self.update_status).start()
             # Each mount operates async and has its own command queue to scan.
-            # TODO: is it better to use just one command queue per site?
+            # is it better to use just one command queue per site?
             # for mount in self.all_devices['mount'].keys():
             #     self.scan_thread = threading.Thread(
             #         target=self.scan_requests,
@@ -437,6 +465,7 @@ class Observatory:
                 aws_resp = g_dev['obs'].api.authenticated_request('POST', '/upload/', aws_req)
                 with open(im_path + name, 'rb') as f:
                     files = {'file': (im_path + name, f)}
+                    #if name[-3:] == 'jpg':
                     print('--> To AWS -->', str(im_path + name))
                     requests.post(aws_resp['url'], data=aws_resp['fields'],
                                   files=files)
@@ -472,7 +501,7 @@ class Observatory:
                 paths = pri_image[0]
                 hdu = pri_image[1]
                 #print('Name:  ', paths, '   Hdu.data.shape:', hdu.data.shape)
-                print("\nREDUCTIONS Starting!")
+                #print("\nREDUCTIONS Starting!")
 
                 # paths = {'raw_path':  raw_path,
                 #          'cal_path':  cal_path,
@@ -489,7 +518,7 @@ class Observatory:
                 #          }
                 #
                 # try:    #NB relocate this to Expose entry area.  Fill out except.
-                im_path_r = g_dev['cam'].camera_path
+                #im_path_r = g_dev['cam'].camera_path
                 lng_path =  g_dev['cam'].lng_path
                 #     # os.makedirs(im_path_r + g_dev['day'] + '/to_AWS/', exist_ok=True)
                 #     # os.makedirs(im_path_r + g_dev['day'] + '/raw/', exist_ok=True)
@@ -504,9 +533,19 @@ class Observatory:
                 #     print('Path creation in Reductions failed.', lng_path)
                #NB Important decision here, do we flash calibrate screen and sky flats?  For now, Yes.
 
-                cal_result = calibrate(hdu, lng_path, paths['frame_type'], quick=False)
+                #cal_result =
+                calibrate(hdu, lng_path, paths['frame_type'], quick=False)
                 #print("Calibrate returned:  ", hdu.data, cal_result)
-                hdu.writeto(paths['red_path'] + paths['red_name01'], overwrite=True)
+                wpath = paths['red_path'] + paths['red_name01b']
+                hdu.writeto(wpath, overwrite=True)
+                if self.name == 'saf':
+                    wpath = 'Q' + wpath[1:]
+                    try:
+                        os.makedirs(wpath[:44], exist_ok=True)    #This whole section is fragile.
+                        hdu.writeto(wpath, overwrite=True)
+                    except:
+                        print("Failed to write reduced to Q: at saf site.")
+                    pass
                 # print(hdu.data)
                 # print('WROTE TO: ', paths['red_path'] + paths['red_name01'])
                 # if g_dev['cam'].toss:
@@ -547,10 +586,10 @@ class Observatory:
                         img = hdu.data.copy().astype('float')
                         bkg = sep.Background(img)
                         #bkg_rms = bkg.rms()
-                        img -= bkg
-                        sources = sep.extract(img_sub, 4.5, err=bkg.globalrms, minarea=9)#, filter_kernel=kern)
+                        img = img - bkg
+                        sources = sep.extract(img, 4.5, err=bkg.globalrms, minarea=9)#, filter_kernel=kern)
                         sources.sort(order = 'cflux')
-                        print('No. of detections:  ', len(sources))
+                        #print('No. of detections:  ', len(sources))
                         sep_result = []
                         spots = []
                         for source in sources:
@@ -563,7 +602,7 @@ class Observatory:
                         spot = np.array(spots)
                         try:
                             spot = np.median(spot[-9:-2])   #  This grabs seven spots.
-                            print(sep_result, '\n', 'Spot and flux:  ', spot, source['cflux'], len(sources), avg_foc[1], '\n')
+                            #print(sep_result, '\n', 'Spot ,flux, #_sources, avg_focus:  ', spot, source['cflux'], len(sources), avg_foc[1], '\n')
                             if len(sep_result) < 5:
                                 spot = None
                         except:
@@ -601,7 +640,7 @@ class Observatory:
 
                 if in_shape[0] < in_shape[1]:
                     diff = int(abs(in_shape[1] - in_shape[0])/2)
-                    in_max = int(hdu.data.max()*0.8)
+                    in_max = int(hdu.data.mean()*0.8)
                     in_min = int(hdu.data.min() - 2)
                     if in_min < 0:
                         in_min = 0
@@ -615,7 +654,7 @@ class Observatory:
                 elif in_shape[0] > in_shape[1]:
                     #Same scheme as above, but expands second axis.
                     diff = int((in_shape[0] - in_shape[1])/2)
-                    in_max = int(hdu.data.max()*0.8)
+                    in_max = int(hdu.data.mean()*0.8)
                     in_min = int(hdu.data.min() - 2)
                     if in_min < 0:
                         in_min = 0
@@ -648,33 +687,34 @@ class Observatory:
                 #The following does a very lame contrast scaling.  A beer for best improvement on this code!!!
                 istd = np.std(hdu.data)
                 imean = np.mean(hdu.data)
-                img3 = hdu.data/(imean + 3*istd)
+                if (imean + 3*istd) != 0:    #This does divide by zero in some bias images.
+                    img3 = hdu.data/(imean + 3*istd)
+                else:
+                    img3 = hdu.data
                 fix = np.where(img3 >= 0.999)
                 fiz = np.where(img3 < 0)
                 img3[fix] = .999
                 img3[fiz] = 0
-                #img3[:, 384] = 0.995
-                #img3[384, :] = 0.995
-                print(istd, img3.max(), img3.mean(), img3.min())
-                imsave(paths['im_path'] + paths['jpeg_name10'], img3)  #NB File extension triggers JPEG conversion.
-                jpeg_data_size = img3.size - 1024
+                img4 = img3*256
+                img4 = img4.astype('uint8')   #Eliminates a user warning.
+                imsave(paths['im_path'] + paths['jpeg_name10'], img4)  #NB File extension triggers JPEG conversion.
+                jpeg_data_size = abs(img4.size - 1024)
                 if not no_AWS:  #IN the no+AWS case should we skip more of the above processing?
                     #g_dev['cam'].enqueue_for_AWS(text_data_size, paths['im_path'], paths['text_name'])
                     g_dev['cam'].enqueue_for_AWS(jpeg_data_size, paths['im_path'], paths['jpeg_name10'])
-                    if not quick:
-                        g_dev['cam'].enqueue_for_AWS(i768sq_data_size, paths['im_path'], paths['i768sq_name10'])
-                        g_dev['cam'].enqueue_for_AWS(raw_data_size, paths['raw_path'], paths['raw_name00'])
-                    print('Sent to AWS Queue.')
+                    g_dev['cam'].enqueue_for_AWS(i768sq_data_size, paths['im_path'], paths['i768sq_name10'])
+                    #if not quick:
+                #print('Sent to AWS Queue.')
                 time.sleep(0.5)
                 self.img = None   #Clean up all big objects.
                 try:
                     hdu = None
                 except:
                     pass
-                try:
-                    hdu1 = None
-                except:
-                    pass
+                # try:
+                #     hdu1 = None
+                # except:
+                #     pass
                 print("\nREDUCTIONS COMPLETED!")
                 self.reduce_queue.task_done()
             else:
@@ -695,16 +735,7 @@ if __name__ == "__main__":
     # config = importlib.import_module(config_file_name)
     # print(f"Starting up {config.site_name}.")
     # Start up the observatory
-    # patch_httplib()     # NB at some point we should check this improves performance, I think it does.  WER
+
     import config
     o = Observatory(config.site_name, config.site_config)
     o.run()
-
-
-
-def OLD_CODE():
-    '''
-    This is a place for code that is not currently used but saved for reference later.
-    If there is code in here that you know is no longer needed, please delete it!
-
-    '''

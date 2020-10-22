@@ -1,6 +1,7 @@
 import win32com.client
 from global_yard import g_dev
 import time
+import serial
 
 
 class FilterWheel:
@@ -8,13 +9,13 @@ class FilterWheel:
     def __init__(self, driver: str, name: str, config: dict):
         self.name = name
         g_dev['fil']= self
-        self.config = config
+        self.config = config['filter_wheel']
         #print("FW:  ", config)
-        self.filter_data = self.config['filter_wheel']['filter_wheel1']['settings']['filter_data'][1:]
-        self.filter_screen_sort = self.config['filter_wheel']['filter_wheel1']['settings']['filter_screen_sort']
-        self.filter_reference = int(self.config['filter_wheel']['filter_wheel1']['settings']['filter_reference'])
-        #THIS CODE DOES NOT implemnt a filter via the Maxim application which is passed in
-        #as a valid instance of class camera.
+        self.filter_data = self.config['filter_wheel1']['settings']['filter_data'][1:]  #  Stips off column heading entry
+        self.filter_screen_sort = self.config['filter_wheel1']['settings']['filter_screen_sort']
+        self.filter_reference = int(self.config['filter_wheel1']['settings']['filter_reference'])
+        #  THIS CODE DOES NOT implement a filter via the Maxim application which is passed in
+        #  as a valid instance of class camera.
         self.filter_message = '-'
         print('Please NOTE: Filter wheel may block for many seconds while first connecting & homing.')
         if type(driver) == list:
@@ -30,30 +31,46 @@ class FilterWheel:
 #            HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\ASCOM\FilterWheel Drivers\ASCOM.FLI.FilterWheel1
             print("filters are connected")
             self.dual = True
+            self.custom = False
             self.filter_selected = self.filter_data[self.filter_reference][0]
-            self.filter_number = int(self.filter_reference)
-            self.filter_offset = eval(self.filter_data[self.filter_reference][2])
+            self.filter_number = self.filter_reference
+            self.filter_offset = self.filter_data[self.filter_reference][2]
             #First setup:
             time.sleep(1)
             while self.filter_front.Position == -1:
                 time.sleep(0.2)
-            self.filter_front.Position = eval(self.filter_data[self.filter_reference][1])[1]
+            self.filter_front.Position = self.filter_data[self.filter_reference][1][1]
             time.sleep(1)
             while self.filter_back.Position == -1:
                 time.sleep(0.2)
-            self.filter_back.Position = eval(self.filter_data[self.filter_reference][1])[0]
+            self.filter_back.Position = self.filter_data[self.filter_reference][1][0]
             time.sleep(1)
             print(self.filter_front.Names, self.filter_back.Names, self.filter_selected, self.filter_offset)
         elif driver.lower() in ['maxim', 'maximdl', 'maximdlpro']:
             self.maxim = True
             self.dual = False
+            self.custom = False
             self.filter_selected = self.filter_data[self.filter_reference][0]   #This is the defaultexpected after a
                                                                                 #Home or power-up cycle.
-            self.filter_number = int(self.filter_reference)
-            self.filter_offset = eval(self.filter_data[self.filter_reference][2])
+            self.filter_number = self.filter_reference
+            self.filter_offset = self.filter_data[self.filter_reference][2]
             #We assume camera object has been created before the filter object.
             #Note filter may be commanded directly by AWS or provided in an expose
             #command as an optional parameter.
+        elif driver.lower() == 'com22':
+            self.custom = True
+            try:
+                ser = serial.Serial("COM22", timeout=12)
+                filter_pos = str(ser.read().decode())
+                print("QHY filter is Home", filter_pos )
+                self.filter_number = 0
+                self.filter_name = 'lpr'
+            except:
+                print("QHY Filter not connected.")
+                
+                
+                
+            
         else:
             '''
             We default here to setting up a single wheel ASCOM driver.
@@ -69,35 +86,42 @@ class FilterWheel:
             '''
             self.maxim = False
             self.dual = False
+            self.custom = False
             win32com.client.pythoncom.CoInitialize()
-            breakpoint()
             self.filter_front = win32com.client.Dispatch(driver)
             self.filter_front.Connected = True
-            #self.filter_front = win32com.client.Dispatch(driver)
-            #self.filter_front.Connected = True
-            print("Entered a filter area with no code in it.")
+            print("Currently QHY RS232 FW")
 
 
 
     def get_status(self):
+        # if self.custom is True:
+        #     status = {
+        #         'filter_name': str(self.filter_name),
+        #         'filter_number': str(self.filter_number),
+        #         'filter_offset': str(0),
+        #         'wheel_is_moving': 'false'
+        #         }
+        #     return status
+            
         try:
             if self.filter_front.Position == -1 or self.filter_back.Position == -1:
-                f_move = 'true'
+                f_move = True
             else:
-                f_move = 'false'
+                f_move = False
             status = {
-                'filter_name': str(self.filter_selected),
-                'filter_number': str(self.filter_number),
-                'filter_offset': str(self.filter_offset),
+                'filter_name': self.filter_selected,
+                'filter_number': self.filter_number,
+                'filter_offset': self.filter_offset,
                 'wheel_is_moving': f_move
                 }
             return status
         except:
-            f_move = 'false'
+            f_move = False
             status = {
-                'filter_name': str('none'),
-                'filter_number': str(0),
-                'filter_offset': str(0.0),
+                'filter_name': None,
+                'filter_number': 0,
+                'filter_offset': 0.0,
                 'wheel_is_moving': f_move
                 }
             return status
@@ -113,7 +137,7 @@ class FilterWheel:
         elif action == "home":
             self.home_command(req, opt)
         else:
-            print(f"Command <{action}> not recognized.")
+            print("Command <{action}> not recognized.")
 
 
     ###############################
@@ -122,9 +146,9 @@ class FilterWheel:
 
     def set_number_command(self, filter_number):
         ''' set the filter position by numeric filter position index '''
-        print(f"filter cmd: set_number")
+        #print("filter cmd: set_number")
         filter_selections = eval(self.filter_data[int(filter_number)][1])
-        print('Selections:  ', filter_selections)
+        #print('Selections:  ', filter_selections)
         self.filter_number = filter_number
         self.filter_selected = self.filter_data[filter_number][0]
         if self.dual:
@@ -152,9 +176,10 @@ class FilterWheel:
     def set_position_command(self, req: dict, opt: dict):
         ''' set the filter position by  param string filter position index '''
         'NBNBNB This routine may not be correct'
-        print(f"filter cmd: set_position")
-        filter_selections = eval(self.filter_data[int(req['filter_num'])][1])
-        print('Selections:  ', filter_selections)
+        #print("filter cmd: set_position")
+        breakpoint()
+        filter_selections = self.filter_data[int(req['filter_num'])][1]
+        #print('Selections:  ', filter_selections)
         if self.dual:
             try:
                 while self.filter_front.Position == -1:
@@ -178,19 +203,36 @@ class FilterWheel:
 
     def set_name_command(self, req: dict, opt: dict):
         ''' set the filter position by filter name '''
-        print(f"filter cmd: set_name", req, opt)
-        filter_name = req['filter']
-        for match in range(int(self.config['filter_wheel']['filter_wheel1']['settings']['filter_count'])):
+        #print("filter cmd: set_name", req, opt)
+        try:
+            filter_name = req['filter_name']
+        except:
+            try:
+                filter_name = req['filter']
+            except:
+                print("filter dictionary is screwed up big time.")
+
+        if filter_name =="W":     #  NB This is a temp patch
+            filter_name = 'w'
+        if filter_name =="r":
+            filter_name = 'rp'
+        if filter_name =="g":
+            filter_name = 'gp'
+        if filter_name =="i":
+            filter_name = 'ip'
+        if filter_name =="u":
+            filter_name = 'up'
+        for match in range(int(self.config['filter_wheel1']['settings']['filter_count'])):
             if filter_name == self.filter_data[match][0]:
                 filt_pointer = match
-#                break
-#            else:
-#                print('Filter name appears to be incorrect. Check for proper case.')
-        print(filt_pointer)
+                break
+        print('Filter name is:  ', self.filter_data[match][0])
+        print('Filter pointer:  ', filt_pointer)
         self.filter_number = filt_pointer
         self.filter_selected = filter_name
-        filter_selections = eval(self.filter_data[filt_pointer][1])
+        filter_selections = self.filter_data[filt_pointer][1]   # eliminated eval with config format to Python values.
         print('Selections:  ', filter_selections)
+ 
         if self.dual:
             try:
                 while self.filter_front.Position == -1:
@@ -208,15 +250,23 @@ class FilterWheel:
                 breakpoint()
             self.filter_offset = int(self.filter_data[filt_pointer][2])
         elif self.maxim:
+            
             g_dev['cam'].camera.Filter = filter_selections[0]
             time.sleep(0.2)
             g_dev['cam'].camera.GuiderFilter = filter_selections[1]
         else:
-             return  (filter_selections, int(self.filter_data[filt_pointer][2]))
+            try:
+                while self.filter_front.Position == -1:
+                    time.sleep(0.4)
+                self.filter_front.Position = filter_selections[0]
+            except:
+                breakpoint()
+            self.filter_offset = float(self.filter_data[filt_pointer][2])
 
     def home_command(self, req: dict, opt: dict):
         ''' set the filter to the home position '''  #NB this is setting to defaault not Home.
-        print(f"filter cmd: home", req, opt)
+        print("filter cmd: home", req, opt)
+        breakpoint()
         while self.filter_back.Position == -1:
             time.sleep(0.1)
         self.filter_back.Position = 2

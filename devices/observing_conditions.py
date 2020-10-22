@@ -2,6 +2,8 @@
 import win32com.client
 import redis
 import time
+import requests
+import json
 from global_yard import g_dev
 
 '''
@@ -13,7 +15,7 @@ with self.status, a dictionary.
 This module should be expanded to integrate multiple Wx sources, particularly Davis and
 SkyAlert.
 
-Weather holds are counted only when they INITIATE withing the Observing window. So if a
+Weather holds are counted only when they INITIATE within the Observing window. So if a
 hold started just before the window and opening was late that does not count for anti-
 flapping purposes.
 
@@ -30,6 +32,20 @@ can be modified for debugging or simulation purposes.
 #            core1_redis = redis.StrictRedis(host='10.15.0.109', port=6379, db=0,\
 #                                            decode_responses=True)
 
+def linearize_unihedron(uni_value):
+    #  Based on 20080811 data
+    uni_value = float(uni_value)
+    if uni_value < -1.9:
+        uni_corr = 2.5**(-5.85 - uni_value)
+    elif uni_value < -3.8:
+        uni_corr = 2.5**(-5.15 - uni_value)
+    elif uni_value <= -12:
+        uni_corr = 2.5**(-4.88 - uni_value)
+    else:
+        uni_corr = 6000
+    return uni_corr
+        
+    
 
 class ObservingConditions:
 
@@ -43,18 +59,21 @@ class ObservingConditions:
         self.observing_condtions_message = '-'
         self.wx_is_ok = None
         self.wx_hold = False
-        self.wx_hold_updated = time.time()   #This is meant for a stale check on the Wx hold report
+        self.wx_hold_last_updated = time.time()   #This is meant for a stale check on the Wx hold report
         self.wx_hold_tally = 0
         self.wx_clamp = False
         self.clamp_latch = False
         self.wait_time = 0        #A countdown to re-open
         self.wx_close = False     #If made true by Wx code, a 15 minute timeout will begin when Wx turns OK
-        self.wx_hold_time = None
+        self.wx_hold_until_time = None
         self.wx_hold_count = 0     #if >=5 inhibits reopening for Wx
         self.wait_time = 0        #A countdown to re-open
         self.wx_close = False     #If made true by Wx code, a 15 minute timeout will begin when Wx turns OK
         self.wx_test = False    #Purely a debugging aid.
-        if self.site == 'wmd':
+        self.wx_test_cycle = 0
+        self.prior_status = None
+        self.prior_status_2 = None
+        if self.site in ['wmd', 'wmd2']:
             self.redis_server = redis.StrictRedis(host='10.15.0.109', port=6379, db=0,
                                                   decode_responses=True)
             self.observing_conditions_connected = True
@@ -70,9 +89,9 @@ class ObservingConditions:
             self.boltwood_oktoimage = win32com.client.Dispatch(driver_3)
             self.boltwood_oktoimage.Connected = True
             print("observing_conditions: Boltwood connected = True")
-            if config['observing_conditions']['observing_conditions1']['has_unihedron'].lower() == 'true':
+            if config['observing_conditions']['observing_conditions1']['has_unihedron']:
                 driver = config['observing_conditions']['observing_conditions1']['uni_driver']
-                port = config['observing_conditions']['observing_conditions1']['unihedron_port'].lower()
+                port = config['observing_conditions']['observing_conditions1']['unihedron_port']
                 self.unihedron = win32com.client.Dispatch(driver)
                 self.unihedron.Connected = True
                 print("observing_conditions: Unihedron connected = True, on COM" + str(port))
@@ -80,6 +99,19 @@ class ObservingConditions:
 
 
     def get_status(self):
+        '''
+        Regularly calling this routine returns weather status dict for AWS, evaluates the Wx 
+        reporting and manages temporary closes, known as weather-holds.
+        
+        
+
+        Returns
+        -------
+        status : TYPE
+            DESCRIPTION.
+
+        '''
+
         if self.site == 'saf':
             illum, mag = self.astro_events.illuminationNow()
             if illum > 500:
@@ -88,53 +120,128 @@ class ObservingConditions:
             #  NB all parameters should come from config.
             dew_point_gap = not (self.boltwood.Temperature  - self.boltwood.DewPoint) < 2
             temp_bounds = not (self.boltwood.Temperature < 2.0) or (self.boltwood.Temperature > 35)
-            wind_limit = self.boltwood.WindSpeed < 35/2.235   #Boltwood report m/s, Clarity may report in MPH
+            wind_limit = self.boltwood.WindSpeed < 35/2.235   #Boltwood reports m/s, Clarity may report in MPH
             sky_amb_limit  = self.boltwood.SkyTemperature < -30
-            humidity_limit = 3 < self.boltwood.Humidity < 80
+            humidity_limit = 1 < self.boltwood.Humidity < 80
             rain_limit = self.boltwood.RainRate <= 0.001
             self.wx_is_ok = dew_point_gap and temp_bounds and wind_limit and sky_amb_limit and \
                             humidity_limit and rain_limit
+            #  NB  wx_is_ok does not include ambient light or altitude of the Sun
             if self.wx_is_ok:
                 wx_str = "Yes"
             else:
-                wx_str = "No"   #Ideally we add the dominant reason in prioirty order.
-
+                wx_str = "No"   #Ideally we add the dominant reason in priority order.
             #The following may be more restictive since it includes local measured ambient light.
+            #  This signal meant to simulate the Boltwood relay output.
             if self.boltwood_oktoopen.IsSafe and dew_point_gap and temp_bounds:
                 self.ok_to_open = 'Yes'
             else:
                 self.ok_to_open = "No"
-            status = {"temperature_C": '25', #str(round(self.boltwood.Temperature, 2)),
-                      "pressure_mbar": str(784.0),
-                      "humidity_%": '50',#str(self.boltwood.Humidity),
-                      "dewpoint_C": '-3.3',#str(self.boltwood.DewPoint),
-                      "sky_temp_C": '-36',#str(round(self.boltwood.SkyTemperature,2)),
-                      "last_sky_update_s":  "5",#str(round(self.boltwood.TimeSinceLastUpdate('SkyTemperature'), 2)),
-                      "wind_m/s": '3',#str(abs(round(self.boltwood.WindSpeed, 2))),
-                      'rain_rate': '0',#str(self.boltwood.RainRate),
-                      'solar_flux_w/m^2': 'NA',
-                      #  'cloud_cover_%': str(self.boltwood.CloudCover),
-                      "calc_HSI_lux": str(illum),
-                      "calc_sky_mpsas": str(round((mag - 20.01),2)),    #  Provenance of 20.01 is dubious 20200504 WER
-                      "wx_ok": wx_str,  #str(self.boltwood_oktoimage.IsSafe),
-                      "open_ok": str(self.ok_to_open)
-                      #"image_ok": str(self.boltwood_oktoimage.IsSafe)
-                      }
-
+            try:   #Boltwood cloud cover occasionally faults. 20200805 WER
+            # Faults continuing but very rare.  20200909
+                status = {}   #This code faults when Rain is reported the Cloudcover does not
+                              #return properly
+                status2 = {}
+                status = {"temperature_C": round(self.boltwood.Temperature, 2),
+                          "pressure_mbar": 784.,
+                          "humidity_%": self.boltwood.Humidity,
+                          "dewpoint_C": self.boltwood.DewPoint,
+                          "sky_temp_C": round(self.boltwood.SkyTemperature,2),
+                          "last_sky_update_s":  round(self.boltwood.TimeSinceLastUpdate('SkyTemperature'), 2),
+                          "wind_m/s": abs(round(self.boltwood.WindSpeed, 2)),
+                          'rain_rate': self.boltwood.RainRate,
+                          'solar_flux_w/m^2': None,
+                          'cloud_cover_%': str(self.boltwood.CloudCover),
+                          "calc_HSI_lux": illum,
+                          "calc_sky_mpsas": round((mag - 20.01),2),    #  Provenance of 20.01 is dubious 20200504 WER
+                          "wx_ok": wx_str,  #str(self.boltwood_oktoimage.IsSafe),
+                          "open_ok": self.ok_to_open
+                          #"image_ok": str(self.boltwood_oktoimage.IsSafe)
+                          }
+                status2 = {}
+                status2 = {"temperature_C": round(self.boltwood.Temperature, 2),
+                          "pressure_mbar": 784.0,
+                          "humidity_%": self.boltwood.Humidity,
+                          "dewpoint_C": self.boltwood.DewPoint,
+                          "sky_temp_C": round(self.boltwood.SkyTemperature,2),
+                          "last_sky_update_s":  round(self.boltwood.TimeSinceLastUpdate('SkyTemperature'), 2),
+                          "wind_m/s": abs(round(self.boltwood.WindSpeed, 2)),
+                          'rain_rate': self.boltwood.RainRate,
+                          'solar_flux_w/m^2': 'NA',
+                          #'cloud_cover_%': self.boltwood.CloudCover,
+                          "calc_HSI_lux": illum,
+                          "calc_sky_mpsas": round((mag - 20.01),2),    #  Provenance of 20.01 is dubious 20200504 WER
+                          "wx_ok": wx_str,  #str(self.boltwood_oktoimage.IsSafe),
+                          "open_ok": self.ok_to_open
+                          #"image_ok": str(self.boltwood_oktoimage.IsSafe)
+                          }
+                self.prior_status = status
+                self.prior_status_2 = status2
+            except:
+                #  Note this is trying to deal with a failed Boltwood report.
+                
+                try:
+                    status = {}
+                    status2 = {}
+                    status = {"temperature_C": round(self.boltwood.Temperature, 2),
+                          "pressure_mbar": 784.,
+                              "humidity_%": self.boltwood.Humidity,
+                              "dewpoint_C": self.boltwood.DewPoint,
+                              "sky_temp_C": round(self.boltwood.SkyTemperature,2),
+                              "last_sky_update_s":  round(self.boltwood.TimeSinceLastUpdate('SkyTemperature'), 2),
+                              "wind_m/s": abs(round(self.boltwood.WindSpeed, 2)),
+                              'rain_rate': self.boltwood.RainRate,
+                              'solar_flux_w/m^2': None,
+                              'cloud_cover_%': str(self.boltwood.CloudCover),
+                              "calc_HSI_lux": illum,
+                              "calc_sky_mpsas": round((mag - 20.01),2),    #  Provenance of 20.01 is dubious 20200504 WER
+                              "wx_ok": wx_str,  #str(self.boltwood_oktoimage.IsSafe),
+                              "open_ok": self.ok_to_open
+                              #"image_ok": str(self.boltwood_oktoimage.IsSafe)
+                              }
+                    status2 = {}
+                    status2 = {"temperature_C": round(self.boltwood.Temperature, 2),
+                              "pressure_mbar": 784.0,
+                              "humidity_%": self.boltwood.Humidity,
+                              "dewpoint_C": self.boltwood.DewPoint,
+                              "sky_temp_C": round(self.boltwood.SkyTemperature,2),
+                              "last_sky_update_s":  round(self.boltwood.TimeSinceLastUpdate('SkyTemperature'), 2),
+                              "wind_m/s": abs(round(self.boltwood.WindSpeed, 2)),
+                              'rain_rate': self.boltwood.RainRate,
+                              'solar_flux_w/m^2': 'NA',
+                              #'cloud_cover_%': self.boltwood.CloudCover,
+                              "calc_HSI_lux": illum,
+                              "calc_sky_mpsas": round((mag - 20.01),2),    #  Provenance of 20.01 is dubious 20200504 WER
+                              "wx_ok": wx_str,  #str(self.boltwood_oktoimage.IsSafe),
+                              "open_ok": self.ok_to_open
+                              #"image_ok": str(self.boltwood_oktoimage.IsSafe)
+                              }
+                    self.prior_status = status
+                    self.prior_status_2 = status2
+                except:
+                    self.prior_status = status
+                    self.prior_status_2 = status2
+                
+            #  Note we are still is saf specific site code.
             if self.unihedron.Connected:
                 uni_measure = self.unihedron.SkyQuality   #  Provenance of 20.01 is dubious 20200504 WER
                 if uni_measure == 0:
                     uni_measure = round((mag - 20.01),2)   #  Fixes Unihedron when sky is too bright
-                status["meas_sky_mpsas"] = str(uni_measure)
+                    status["meas_sky_mpsas"] = uni_measure
+                    status2["meas_sky_mpsas"] = uni_measure
+                    self.meas_sky_lux = illum
+                else:
+                    self.meas_sky_lux = linearize_unihedron(uni_measure)
+                    status["meas_sky_mpsas"] = uni_measure
+                    status2["meas_sky_mpsas"] = uni_measure
             else:
-                status["meas_sky_mpsas"] = str(round((mag - 20.01),2))    #  Provenance of 20.01 is dubious 20200504 WER
+                status["meas_sky_mpsas"] = round((mag - 20.01),2)
+                status2["meas_sky_mpsas"] = round((mag - 20.01),2) #  Provenance of 20.01 is dubious 20200504 WER
 
-
-
-            # Only write when around dark, put in CSV format
-            obs_win_begin, sunZ88Op, sunZ88Cl, ephemNow = g_dev['obs'].astro_events.getSunEvents()
+            # Only write when around dark, put in CSV format.  This is a logfile of the rapid sky brightness transition.
+            obs_win_begin, sunset, sunrise, ephemNow = g_dev['obs'].astro_events.getSunEvents()
             quarter_hour = 0.15/24
-            if  (obs_win_begin - quarter_hour < ephemNow < sunZ88Cl + quarter_hour) \
+            if  (obs_win_begin - quarter_hour < ephemNow < sunrise + quarter_hour) \
                  and self.unihedron.Connected and (time.time() >= self.sample_time + 30.):    #  Two samples a minute.
                 try:
                     wl = open('D:/000ptr_saf/wx_log.txt', 'a')   #  NB This is currently site specifc but in code w/o config.
@@ -144,10 +251,10 @@ class ObservingConditions:
                     self.sample_time = time.time()
                 except:
                     print("Wx log did not write.")
-
-
             self.status = status
-        elif self.site == 'wmd':
+            
+        #  Note we are now in WMD specific code.
+        elif self.site == 'wmd' or self.site == 'wmd2':
             try:
                 # breakpoint()
                 # pass
@@ -162,20 +269,20 @@ class ObservingConditions:
                 else:
                     illum = round(illum, 3)
                 self.wx_is_ok = True
-                status = {"temperature_C": wx["amb_temp C"],
-                          "pressur_mbar": '978',
-                          "humidity_%": wx["humidity %"],
-                          "dewpoint_C": wx["dewpoint C"],
-                          "calc_HSI_lux": str(illum),
-                          "sky_temp_C": wx["sky C"],
-                          "time_to_open_h": wx["time to open"],
-                          "time_to_close_h": wx["time to close"],
-                          "wind_m/s": wx["wind m/s"],
+                status = {"temperature_C": float(wx["amb_temp C"]),
+                          "pressure_mbar": 978.0,
+                          "humidity_%": float(wx["humidity %"]),
+                          "dewpoint_C": float(wx["dewpoint C"]),
+                          "calc_HSI_lux": illum,
+                          "sky_temp_C": float(wx["sky C"]),
+                          "time_to_open_h": float(wx["time to open"]),
+                          "time_to_close_h": float(wx["time to close"]),
+                          "wind_m/s": float(wx["wind m/s"]),
                           "ambient_light": wx["light"],
                           "open_ok": wx["open_possible"],
                           "wx_ok": wx["open_possible"],
-                          "meas_sky_mpsas": wx['meas_sky_mpsas'],
-                          "calc_sky_mpsas": str(round((mag - 20.01), 2))
+                          "meas_sky_mpsas": float(wx['meas_sky_mpsas']),
+                          "calc_sky_mpsas": round((mag - 20.01), 2)
                           }
                         # Only write when around dark, put in CSV format
                 # sunZ88Op, sunZ88Cl, ephemNow = g_dev['obs'].astro_events.getSunEvents()
@@ -201,18 +308,20 @@ class ObservingConditions:
                     wx = eval(self.redis_server.get('<ptr-wx-1_state'))
                 except:
                     print('Redis is not turning Wx Data properly.')
-                status = {"temperature": wx["amb_temp C"],
-                          "pressure": ' ---- ',
-                          "humidity": wx["humidity %"],
-                          "dewpoint": wx["dewpoint C"],
-                          "calc_sky_lux": wx["illum lux"],
-                          "sky_temp": wx["sky C"],
-                          "time_to_open": wx["time to open"],
-                          "time_to_close": wx["time to close"],
-                          "wind_m/s": wx['wind m/s'],
-                          "ambient_light":  wx["light"],
-                          "open_possible":  wx["open_possible"],
-                          "brightness_hz": wx['bright hz']
+                status = {"temperature_C": float(wx["amb_temp C"]),
+                          "pressure_mbar": 978.0,
+                          "humidity_%": float(wx["humidity %"]),
+                          "dewpoint_C": float(wx["dewpoint C"]),
+                          "calc_HSI_lux": illum,
+                          "sky_temp_C": float(wx["sky C"]),
+                          "time_to_open_h": float(wx["time to open"]),
+                          "time_to_close_h": float(wx["time to close"]),
+                          "wind_m/s": float(wx["wind m/s"]),
+                          "ambient_light": wx["light"],
+                          "open_ok": wx["open_possible"],
+                          "wx_ok": wx["open_possible"],
+                          "meas_sky_mpsas": float(wx['meas_sky_mpsas']),
+                          "calc_sky_mpsas": round((mag - 20.01), 2)
                           }
                         # Only write when around dark, put in CSV format
                 sunZ88Op, sunZ88Cl, ephemNow = g_dev['obs'].astro_events.getSunEvents()
@@ -244,36 +353,51 @@ class ObservingConditions:
         When we get to this point of the code first time we expect self.wx_is_ok to be true
         '''
         obs_win_begin, sunset, sunrise, ephemNow = self.astro_events.getSunEvents()
+        self.wx_test_trigger = False
+        if self.wx_test:
+            self.wx_test_cycle += 1  #This just counts up.
+            if self.wx_test_cycle % 10:
+                self.wx_test_trigger = True
+            
+            
+        
         if (self.wx_is_ok and not self.wx_test) and not self.wx_hold:     #Normal condition, possibly nothing to do.
-            self.wx_hold_updated = time.time()
+            self.wx_hold_last_updated = time.time()
 
-        elif (not self.wx_is_ok or self.wx_test) and not self.wx_hold:     #Wx bad and no hold yet.
+        elif (not self.wx_is_ok or self.wx_test_trigger) and not self.wx_hold:     #Wx bad and no hold yet.
             #Bingo we need to start a cycle
             self.wx_hold = True
             if self.wx_test:
-                self.wx_hold_time = time.time() + 20    #20 seconds
+                self.wx_hold_until_time = time.time() + 20    #20 seconds
             else:
-                self.wx_hold_time = time.time() + 600    #10 minutes
+                self.wx_hold_until_time = time.time() + 900    #15 minutes  This could be changed if open_ok.
             self.wx_hold_tally += 1     #  This counts all day and night long.
-            self.wx_hold_updated = time.time()
-            if obs_win_begin <= ephemNow <= sunrise:     #Gate the real holds to be in the Obseving window.
+            self.wx_hold_last_updated = time.time()
+            if obs_win_begin <= ephemNow <= sunrise:     #Gate the real holds to be in the Observing window.
                 self.wx_hold_count += 1
-                #We choose to tell enclosure manager to close.
-                print("Wx hold asserted, flap#:", self.wx_hold_count)
-            if self.wx_test: self.wx_hold_count += 1   #NB do not leave this alive
+                #We choose to let the enclosure manager handle the close.
+                print("Wx hold asserted, flap#:", self.wx_hold_count, self.wx_hold_tally)
+            else:
+                print("Wx Hold -- out of Observing window.")
+                
+ 
 
         elif (not self.wx_is_ok or self.wx_test) and self.wx_hold:     #WX is bad and we are on hold.
-            self.wx_hold_updated = time.time()
-            #Stay here as long as we need to. No point in reporting or logging.
+            self.wx_hold_last_updated = time.time()
+            #Stay here as long as we need to. 
+            if self.wx_test:
+                print("In a wx_test hold.")
         else:
             pass
 
         if (self.wx_is_ok or self.wx_test) and self.wx_hold:     #Wx now good and still on hold.
-            if self.wx_hold_count < 5:
-                if time.time() >= self.wx_hold_time:
+            if self.wx_hold_count < 3:
+                if time.time() >= self.wx_hold_until_time:
                     #Time to release the hold.
                     self.wx_hold = False
-                    print("Wx hold released, flap#:", self.wx_hold_count)
+                    self.wx_hold_until_time = time.time()
+                    self.wx_hold_last_updated = time.time()
+                    print("Wx hold released, flap#, tally#:", self.wx_hold_count, self.wx_hold_tally)
                     #We choose to let the enclosure manager discover it can re-open.
             else:
                 #Never release the hold without some special high level intervention.
@@ -282,12 +406,24 @@ class ObservingConditions:
                 self.clamp_latch = True
                 self.wx_clamp = True
 
-            self.wx_hold_updated = time.time()
-
+            self.wx_hold_last_updated = time.time()
+            
+        #This should be located right after forming the wx status
+        url = "https://api.photonranch.org/api/weather/write"
+        data = json.dumps({
+            "weatherData": status2,
+            "site": 'saf',
+            "timestamp_s": int(time.time())
+            })
+        try:
+            requests.post(url, data)
+        except:
+            print("Wx post failed.")
         return status
 
 
     def get_quick_status(self, quick):
+        #  This method is used for annotating fits headers.
         # wx = eval(self.redis_server.get('<ptr-wx-1_state'))
 
         #  NB NB This routine does NOT update self.wx_ok
@@ -309,8 +445,14 @@ class ObservingConditions:
             quick.append(float(abs(self.boltwood.WindSpeed)))
             quick.append(float(784.0))   # 20200329 a SWAG!
             quick.append(float(illum))     # Add Solar, Lunar elev and phase
-            quick.append(float(self.unihedron.SkyQuality))     # intended for Unihedron
-            # print(quick)
+            uni_measure = self.unihedron.SkyQuality
+            if uni_measure == 0:
+                uni_measure = round((mag - 20.01),2)   #  Fixes Unihedron when sky is too bright
+                quick.append(float(uni_measure))
+                self.meas_sky_lux = illum
+            else:
+                self.meas_sky_lux = linearize_unihedron(uni_measure)
+                quick.append(float(self.meas_sky_lux))     # intended for Unihedron
             return quick
         elif self.site == 'wmd':
             wx = eval(self.redis_server.get('<ptr-wx-1_state'))

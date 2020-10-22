@@ -29,25 +29,28 @@ class Enclosure:
         self.enclosure = win32com.client.Dispatch(driver)
         print(self.enclosure)
         self.enclosure.Connected = True
-        print(f"enclosure connected.")
+        print("enclosure connected.")
         print(self.enclosure.Description)
         self.is_dome = self.config['enclosure']['enclosure1']['is_dome']
-        if self.is_dome in ['false', 'False', False]:
+        if not self.is_dome:
             self.is_dome = False
         else:
             self.is_dome = True
         self.state = 'Closed.  Initialized class property value.'
         self.mode = 'Manual'   #  Auto|User Control|User Close|Disable
         self.enclosure_message = '-'
-        self.external_close = False   #If made true by operator system will not reopen for the night
+        self.external_close = False   #If made true by operator,  system will not reopen for the night
         self.dome_opened = False   #memory of prior issued commands  Restarting code may close dome one time.
         self.dome_homed = False
+        self.cycles = 0
+        self.prior_status = None
 
 
 
     def get_status(self) -> dict:
         #<<<<The next attibute reference fails at SAF, usually spurious Dome Ring Open report.
         #<<< Have seen other instances of failing.
+
         try:
             shutter_status = self.enclosure.ShutterStatus
         except:
@@ -55,29 +58,47 @@ class Enclosure:
             shutter_status = 5
         if shutter_status == 0:
             stat_string = "Open"
+            self.shutter_is_closed = False
         elif shutter_status == 1:
              stat_string = "Closed"
+             self.shutter_is_closed = True
         elif shutter_status == 2:
              stat_string = "Opening"
+             self.shutter_is_closed = False
         elif shutter_status == 3:
              stat_string = "Closing"
+             self.shutter_is_closed = False
         elif shutter_status == 4:
              stat_string = "Error"
+             self.shutter_is_closed = False
         else:
              stat_string = "Fault"
+             self.shutter_is_closed = False
 
         if self.site == 'saf':
-            status = {'shutter_status': stat_string,
-                  'enclosure_slaving': str(self.enclosure.Slaved),
-                  'dome_azimuth': str(round(self.enclosure.Azimuth, 1)),
-                  'dome_slewing': str(self.enclosure.Slewing),
-                  'enclosure_mode': str(self.mode),
-                  'enclosure_message': str(self.state)}
+           try:
+               status = {'shutter_status': stat_string,
+                      'enclosure_slaving': self.enclosure.Slaved,
+                      'dome_azimuth': round(self.enclosure.Azimuth, 1),
+                      'dome_slewing': self.enclosure.Slewing,
+                      'enclosure_mode': self.mode,
+                      'enclosure_message': self.state}
+               self.prior_status = status
+           except:
+               status = self.prior_status
+               print("Prior status used for saf dome azimuth")
+               # status = {'shutter_status': stat_string,
+               #        'enclosure_slaving': 'unknown',
+               #        'dome_azimuth': str(round(self.enclosure.Azimuth, 1)),
+               #        'dome_slewing': str(self.enclosure.Slewing),
+               #        'enclosure_mode': str(self.mode),
+               #        'enclosure_message': str(self.state)}
         else:
             status = {'roof_status': stat_string,
-                  'enclosure_slaving': str(self.enclosure.Slaved),
-                  'enclosure_mode': str(self.mode),
-                  'enclosure_message': str(self.state)}
+                      'shutter_status': stat_string,
+                      'enclosure_slaving': self.enclosure.Slaved,   #  What should  this mean for a roof? T/F = Open/Closed?
+                      'enclosure_mode': self.mode,
+                      'enclosure_message': self.state}
         #print('Enclosure status:  ', status
         self.status_string = stat_string
         self.manager()   #There be monsters here. <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
@@ -108,7 +129,7 @@ class Enclosure:
         elif action == "park":
             self.park_command(req, opt)
         else:
-            print(f"Command <{action}> not recognized.")
+            print("Command <{action}> not recognized.")
 
 
     ###############################
@@ -118,7 +139,7 @@ class Enclosure:
     def open_command(self, req: dict, opt: dict):
         ''' open the enclosure '''
         self.manager(open_cmd=True)
-        print(f"enclosure cmd: open")
+        print("enclosure cmd: open.   FAKE REPORT!  Manual opening outside of obs hours not supported.")
         self.dome_open = True
         self.dome_home = True
         pass
@@ -126,36 +147,38 @@ class Enclosure:
     def close_command(self, req: dict, opt: dict):
         ''' close the enclosure '''
         self.manager(close_cmd=True)
-        print(f"enclosure cmd: close")
+        print("enclosure cmd: close.   FAKE REPORT!  Manual opening outside of obs hours not supported.")
         self.dome_open = False
         self.dome_home = True
         pass
 
     def slew_alt_command(self, req: dict, opt: dict):
-        print(f"enclosure cmd: slew_alt")
+        print("enclosure cmd: slew_alt")
         pass
 
     def slew_az_command(self, req: dict, opt: dict):
-        print(f"enclosure cmd: slew_az")
+        print("enclosure cmd: slew_az")
         self.dome_home = False    #As a general rule
         pass
 
     def sync_az_command(self, req: dict, opt: dict):
-        print(f"enclosure cmd: sync_alt")
+        print("enclosure cmd: sync_alt")
         pass
 
     def sync_mount_command(self, req: dict, opt: dict):
-        print(f"enclosure cmd: sync_az")
+        print("enclosure cmd: sync_az")
         pass
 
     def park_command(self, req: dict, opt: dict):
         ''' park the enclosure if it's a dome '''
-        print(f"enclosure cmd: park")
+        print("enclosure cmd: park")
         self.dome_home = True
         pass
 
     def guarded_open(self):
-        if g_dev['ocn'].wx_is_ok:     # NB Is Wx ok really the right criterion???
+        #The guard is obsessively redundant!
+        if g_dev['ocn'].wx_is_ok and not (g_dev['ocn'].wx_hold \
+                                          or g_dev['ocn'].clamp_latch):     # NB Is Wx ok really the right criterion???
             try:
                 self.enclosure.OpenShutter()
                 return True
@@ -195,19 +218,22 @@ class Enclosure:
         #             pass    #Megawan (roofs) do not slave
 
         wx_is_ok = g_dev['ocn'].wx_is_ok
+        wx_hold = g_dev['ocn'].wx_hold
 
 
 
 
-        #NB NB First deal with the possible observing window being available or not.
+        #  NB NB First deal with the possible observing window being available or not.
 
-        if  g_dev['events']['Obs Window Start'] <= ephemNow <= g_dev['events']['Sun Rise']:
+        if  g_dev['events']['Ops Window Start'] <= ephemNow <= g_dev['events']['Sun Rise']:
             #  We are now in the full operational window.
-            if  g_dev['events']['Obs Window Start'] <= ephemNow <= g_dev['events']['Sun Set'] and self.mode == 'Automatic':
-                print('\nSlew to opposite the azimuth of the Sun, open and cool-down. Az =  ', az_opposite_sun)
-                #NB There is no corresponding warm up phase in the Morning.
+            if g_dev['events']['Ops Window Start'] <= ephemNow <= g_dev['events']['Sun Set'] \
+                and self.mode == 'Automatic' and not wx_hold:
+                #  Basically if in above winow and Automatic and Not Wx_hold: if closed, open up.
+                #  print('\nSlew to opposite the azimuth of the Sun, open and cool-down. Az =  ', az_opposite_sun)
+                #  NB There is no corresponding warm up phase in the Morning.
                 if self.status_string.lower() in ['closed']:  #, 'closing']:
-                    success =self.guarded_open()
+                    success = self.guarded_open()
                     self.dome_opened = True
                     self.dome_homed = True
                 if self.status_string.lower() in ['open']:    #WE found it open.
@@ -230,52 +256,63 @@ class Enclosure:
 
 
 
-            if  (obs_win_begin < ephemNow < sunrise or open_cmd) \
+            if (obs_win_begin < ephemNow < sunrise or open_cmd) \
                     and self.mode == 'Automatic' \
                     and g_dev['ocn'].wx_is_ok \
-                    and self.enclosure.ShutterStatus == 1: #Closed
+                    and self.enclosure.ShutterStatus == 1: #  Closed
                 if open_cmd:
                     self.state = 'User Opened the ' + shutter_str
                 else:
                     self.state = 'Automatic nightime Open ' + shutter_str + '   Wx is OK; in Observing window.'
                 self.cycles += 1           #if >=3 inhibits reopening for Wx  -- may need shelving so this persists.
-                #A countdown to re-open
+                #  A countdown to re-open
                 if self.status_string.lower() in ['closed', 'closing']:
-                    success =self.guarded_open()   #<<<<NB NB NB Only enable when code is fully proven to work.
-                    if self.isDome:
+                    self.guarded_open()   #<<<<NB NB NB Only enable when code is fully proven to work.
+                    if self.is_Dome:
                         self.enclosure.Slaved = True
-                    print("Night time Open issued to the "  + shutter_str, +   '   Following Mounting.')
-            elif (obs_win_begin >= ephemNow or ephemNow >= sunrise \
-                    and self.mode == 'Automatic') or close_cmd:
-                if close_cmd:
-                    self.state = 'User Closed the '  + shutter_str
-                else:
-                    self.state = 'Daytime normally Closed the ' + shutter_str
-                if self.status_string.lower() in ['open', 'opening']:
-                    try:
-                        if self.is_dome:      #NB a decorator could eliminate this overused if-statement.
-                            self.enclosure.Slaved = False
-                        self.enclosure.CloseShutter()
-                        print("Daytime Close issued to the " + shutter_str  + "   No longer follwing Mount.")
-                    except:
-                        print("Shutter busy right now!")
+                    print("Night time Open issued to the "  + shutter_str, +   ' and is now following Mounting.')
+        elif (obs_win_begin >= ephemNow or ephemNow >= sunrise) \
+                and self.mode == 'Automatic' or close_cmd:
+            if close_cmd:
+                self.state = 'User Closed the '  + shutter_str
+            else:
+                self.state = 'Daytime normally Closed the ' + shutter_str
+            if self.status_string.lower() in ['open', 'opening'] \
+                or not self.enclosure.AtHome:
+                try:
+                    if self.is_dome:
+                        self.enclosure.Slaved = False
+                    self.enclosure.CloseShutter()
+                    self.dome_opened = False
+                    self.dome_homed = True
+                    print("Daytime Close issued to the " + shutter_str  + "   No longer following Mount.")
+                except:
+                    print("Shutter busy right now!")
         else:
             #  We are outside of the observing window so close the dome, with a one time command to
             #  deal with the case of software restarts. Do not pound on the dome because it makes
             #  off-hours entry difficult.
             #  NB this happens regardless of automatic mode.
+            #  The dome may come up reporting closed when it is open, but it does report unhomed as
+            #  the condition not AtHome.
 
+    
             if not self.dome_homed:
+                # breakpoint()
+                # self.dome_homed = True
+                # return
                 if self.is_dome:
                     self.enclosure.Slaved = False
                 try:
-                    if self.status_string.lower() in ['open']:
-                        self.enclosure.CloseShutter()   #ASCOM DOME will fault if it is Opening or closing
+                    if self.status_string.lower() in ['open'] \
+                        or not self.enclosure.AtHome:
+                        pass
+                        #self.enclosure.CloseShutter()   #ASCOM DOME will fault if it is Opening or closing
                 except:
                     print('Dome close cmd appeared to fault.')
                 self.dome_opened = False
                 self.dome_homed = True
-                print("One time close of enclosure issued, normally after a code restart.")
+                print("One time close of enclosure issued, normally done during Python code restart.")
 
 
 if __name__ =='__main__':
