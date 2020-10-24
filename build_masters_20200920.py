@@ -648,7 +648,7 @@ def de_offset_and_trim(camera_name, archive_path, selector_string, out_path, ful
         if  norm:
             pedastal = 0.0
         else:
-            p<<<<<<< HEAD
+            pedastal = 200    #I guess fox for a corrupt import here at this line.
         img.data = img.data.transpose()  #Do this for convenience of sorting trimming details.
         ix, iy = img.data.shape
         '''
@@ -1042,14 +1042,15 @@ def prepare_tpoint(camera_name, archive_path, selector_string, lng_path, out_pat
     file_list.sort
     print(file_list)
     print('# of files:  ', len(file_list))
-    out_f = open(out_path + "tpoint_input.dat", 'r')
+    out_f = open(out_path + "tpoint_input.dat", 'w')
     out_f.write('0.3m Ceravolo, AP1600, Apache Ridge Observatory\n')
     out_f.write(':NODA\n')
     out_f.write(':EQUAT\n')
-    out_f.write('30 33 16\n') #35.554444
+    out_f.write('35 33 15.84\n') #35.554444
     for image in file_list:
         img = fits.open(image)
         try:
+            breakpoint()
             if img[0].header['PLTSOLVD'] == True:
                 pre_ra = img[0].header['PRE-RA']
                 pre_dec = img[0].header['PRE-DEC']
@@ -1229,13 +1230,13 @@ if __name__ == '__main__':
     #archive_path = "D:/000ptr_saf/archive/sq01/2020-06-13/"
     #archive_path = "D:/2020-06-19  Ha and O3 screen flats/"
 
-    archive_path = "D:/20201011 M31 W g r i/"
+    archive_path = "D:/000ptr_saf/archive/sq01/20201022/raw/"
     #
-    out_path = 'D:/m31 20201006  fourth/trimmed/'
+    out_path = 'D:/000ptr_saf/archive/sq01/20201022/tpoint/'
     lng_path = "D:/000ptr_saf/archive/sq01/lng/"
     #APPM_prepare_TPOINT()
     #de_offset_and_trim(camera_name, archive_path, '**f*t*', out_path, full=True, norm=False)
-    # prepare_tpoint(camera_name, archive_path, '*APPM*',lng_path, out_path)
+    prepare_tpoint(camera_name, archive_path, '*.fits',lng_path, out_path)
     #organize_calib(camera_name, archive_path, out_path, lng_path, '1', 'fb_1-4.fits')
     #compute_sky_gains(camera_name, archive_path, out_path, lng_path, '1', 'fb_1-4.fits')
     #make_master_bias(camera_name, archive_path, out_path, lng_path, '*b_1*', 'fb_1-4.fits')
@@ -1256,9 +1257,9 @@ if __name__ == '__main__':
 
     archive_path = 'D:/000ptr_saf/archive/sq01/20201010/raw/'
     # archive_path = "D:/20200914 M33 second try/trimmed/"
-    out_path = 'Q:/M31 Moasic/20201002_BDH'
+    #out_path = 'Q:/M31 Moasic/20201002_BDH'
     #correct_image(camera_name, archive_path, '**f*t*', lng_path, out_path)
-    annotate_image(camera_name, archive_path, '**f*t*', lng_path, out_path)
+    #annotate_image(camera_name, archive_path, '**f*t*', lng_path, out_path)
 
     # mod_correct_image(camera_name, archive_path, '*EX00*', lng_path, out_path)
     # archive_path = out_path

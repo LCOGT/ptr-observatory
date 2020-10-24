@@ -181,8 +181,8 @@ class Sequencer:
         elif action == "run" and script == 'genSkyFlatMasters':
             self.sky_flat_script(req, opt)
         elif action == "run" and script in ['32TargetPointingRun', 'pointingRun', 'makeModel']:
-            #self.sky_grid_pointing_run(req, opt)
-            self.vertical_pointing_run(req, opt)
+            self.sky_grid_pointing_run(req, opt)
+            #self.vertical_pointing_run(req, opt)
         elif action == "run" and script in ("genBiasDarkMaster", "genBiasDarkMasters"):
             self.bias_dark_script(req, opt)
         elif action == "run" and script == "takeLRGBstack":
@@ -1206,9 +1206,16 @@ IF sweep
         #cam_name = str(self.config['camera']['camera1']['name'])
 
         sid = g_dev['mnt'].mount.SiderealTime
-        grid_stars = tycho.az_sort_targets(sid, grid=4)  #4 produces about 50 targets.
-        lenght = len(grid_stars)
-        last_az = 0.5
+        if reg['gridType'] == 'medium':  # ~50
+            grid = 4
+        if reg['gridType'] == 'coarse':  # ~30
+            grid = 7
+        if reg['gridType'] == 'fine':    # ~100
+            grid = 2
+        grid_stars = tycho.az_sort_targets(sid, grid=grid)  #4 produces about 50 targets.
+        length = len(grid_stars)
+        print(length, "Targets chosen for grid.")
+        last_az = 0.25
         count = 0
         for grid_star in grid_stars:
             if grid_star is None:
@@ -1235,13 +1242,13 @@ IF sweep
 
             time.sleep(3)
             g_dev['obs'].update_status()
-            req = {'time': 5,  'alias': 'sq01', 'image_type': 'quick'}
-            opt = {'area': 100, 'count': 1, 'bin': '2,2', 'filter': g_dev['fil'].filter_data[0][0], 'hint': 'Tycho grid.'}
+            req = {'time': 10,  'alias': 'sq01', 'image_type': 'quick'}
+            opt = {'area': 150, 'count': 1, 'bin': '2,2', 'filter': g_dev['fil'].filter_data[0][0], 'hint': 'Tycho grid.'}
             result = g_dev['cam'].expose_command(req, opt)
             g_dev['obs'].update_status()
             result = 'simulated result.'
             count += 1
-            print('\n\nResult:  ', result,   'To go count:  ', lenght - count,  '\n\n')
+            print('\n\nResult:  ', result,   'To go count:  ', length - count,  '\n\n')
             
         g_dev['mnt'].stop_command()
         print("Equatorial sweep completed. Happy reducing.")

@@ -1061,15 +1061,24 @@ class Camera:
                     hdu.header['MPC-CODE'] = 'zzzzz'       # This is made up for now.
                     hdu.header['JD-START'] = 'bogus'       # Julian Date at start of exposure
                     hdu.header['JD-HELIO'] = 'bogus'       # Heliocentric Julian Date at exposure midpoint
-                    hdu.header['OBJECT']   = ''
+                    hdu.header['OBJECT']   = g_dev['mnt'].object
+                    hdu.header['TARG-RA'] = g_dev['mnt'].current_icrs_ra
+                    hdu.header['TARG-DEC'] = g_dev['mnt'].current_icrs_dec
+                    hdu.header['TARG-CHK'] = g_dev['mnt'].current_icrs_ra + g_dev['mnt'].current_icrs_dec
+                    hdu.header['CATNAME']  = g_dev['mnt'].object
+                    hdu.header['CAT-RA'] = g_dev['mnt'].current_icrs_ra
+                    hdu.header['CAT-DEC'] =g_dev['mnt'].current_icrs_dec
+                    hdu.header['TARGRAH'] = g_dev['mnt'].current_icrs_ra
+                    hdu.header['TARGDECD'] =g_dev['mnt'].current_icrs_dec
                     hdu.header['SID-TIME'] = self.pre_mnt[3]
                     hdu.header['OBJCTRA']  = self.pre_mnt[1]
                     hdu.header['OBJCTDEC'] = self.pre_mnt[2]
                     hdu.header['OBRARATE'] = self.pre_mnt[4]
                     hdu.header['OBDECRAT'] = self.pre_mnt[5]
+                    breakpoint()
                     hdu.header['INSTRUME'] = self.camera_model
                     hdu.header['OBSERVER'] = 'WER DEV'
-                    hdu.header['NOTE']     = self.hint[0:54]            #Needs to be truncated.
+                    hdu.header['OBSNOTE']     = self.hint[0:54]            #Needs to be truncated.
                     hdu.header['FLIPSTAT'] = 'None'
                     hdu.header['SEQCOUNT'] = int(counter)
                     hdu.header['DITHER']   = 0
@@ -1232,9 +1241,10 @@ class Camera:
                         focus_image = False
                         return result
                     
-                    if not quick  and not script in ('True', 'true', 'On', 'on'):
-                        self.enqueue_for_AWS(text_data_size, im_path, text_name)
-                        self.to_reduce((paths, hdu))
+                    if  not script in ('True', 'true', 'On', 'on'):   #  not quick and    #Was moved 20201022 for grid
+                        if not quick:
+                            self.enqueue_for_AWS(text_data_size, im_path, text_name)
+                            self.to_reduce((paths, hdu))
                         hdu.writeto(raw_path + raw_name00, overwrite=True)
                     
                     

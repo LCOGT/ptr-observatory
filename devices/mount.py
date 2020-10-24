@@ -363,7 +363,7 @@ class Mount:
         action = command['action']
         self.check_connect()
         if action == "go":
-            self.go_command(req, opt)
+            self.go_command(req, opt)   #  Entered from Target Explorer or Telescope tabs.
         elif action == "stop":
             self.stop_command(req, opt)
         elif action == "home":
@@ -401,7 +401,7 @@ class Mount:
 
     def go_command(self, req, opt):
         ''' Slew to the given ra/dec coordinates. '''
-        print("mount cmd: slewing mount", req, opt)
+        print("mount cmd. slewing mount, req, opt:  ", req, opt)
 
         ''' unpark the telescope mount '''  #  NB can we check if unparked and save time?
         if self.mount.CanPark:
@@ -420,7 +420,7 @@ class Mount:
 
         # Arcseconds per SI second, default = 0.0
         tracking_rate_dec = opt.get('tracking_rate_dec', 0)
-
+        breakpoint()
         if self.mount.EquatorialSystem == 1:
             self.get_current_times()   #  NB We should find a way to refresh this once a day, esp. for status return.
             icrs_coord = SkyCoord(float(req['ra'])*u.hour, float(req['dec'])*u.degree, frame='icrs')
@@ -433,6 +433,13 @@ class Mount:
         self.mount.DeclinationRate = tracking_rate_dec
         self.current_icrs_ra = icrs_coord.ra.hour
         self.current_icrs_dec = icrs_coord.dec.degree
+        try:
+            self.object = opt.get("object", "")
+            print("Going to:  ", self.object)
+        except:
+            self.object = ""
+            print("Go to object not named.")
+        
 
     def go_coord(self, ra, dec):
         ''' Slew to the given ra/dec coordinates, supplied in ICRS '''
@@ -447,7 +454,7 @@ class Mount:
 
         # Arcseconds per SI second, default = 0.0
         tracking_rate_dec =0#opt.get('tracking_rate_dec', 0)
-
+        breakpoint()
         if self.mount.EquatorialSystem == 1:
             self.get_current_times()   #  NB We should find a way to refresh this once a day, esp. for status return.
             icrs_coord = SkyCoord(ra*u.hour, dec*u.degree, frame='icrs')
