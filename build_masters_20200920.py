@@ -1042,53 +1042,93 @@ def prepare_tpoint(camera_name, archive_path, selector_string, lng_path, out_pat
     file_list.sort
     print(file_list)
     print('# of files:  ', len(file_list))
-    out_f = open(out_path + "tpoint_input.dat", 'w')
+    out_f = open(out_path + "tptinput.dat", 'w')
     out_f.write('0.3m Ceravolo, AP1600, Apache Ridge Observatory\n')
     out_f.write(':NODA\n')
     out_f.write(':EQUAT\n')
     out_f.write('35 33 15.84\n') #35.554444
+    out_f_w = open(out_path + "tptinput_w.dat", 'w')
+    out_f_w.write('0.3m Ceravolo, AP1600, Apache Ridge Observatory\n')
+    out_f_w.write(':NODA\n')
+    out_f_w.write(':EQUAT\n')
+    out_f_w.write('35 33 15.84\n') #35.554444
+    count = 0
     for image in file_list:
-        img = fits.open(image)
+        img = fits.open(image)   
         try:
-            breakpoint()
             if img[0].header['PLTSOLVD'] == True:
-                pre_ra = img[0].header['PRE-RA']
-                pre_dec = img[0].header['PRE-DEC']
-                meas_ha = img[0].header['OBJCTHA']  #Unit is hours
-                meas_ra = img[0].header['OBJCTRA']
-                meas_dec = img[0].header['OBJCTDEC']
-                pier = img[0].header['PIERSIDE']
+                pre_ra = img[0].header['CAT-RA']
+                ra = pre_ra
+                ra_h = int(ra) 
+                ra_mh = (ra - ra_h)*60
+                ra_m = int(ra_mh)
+                ra_s = round(((ra_mh - ra_m)*60), 2)
+                pre_ra_str = str(ra_h) + " " + str(ra_m) + " " + str(ra_s)
+                pre_dec = img[0].header['CAT-DEC']
+                dec = pre_dec
+                sgn_dec = 1
+                if dec < 0:
+                    sgn_dec = -1
+                dec = abs(dec)
+                dec_d = int(dec) 
+                dec_md = (dec - dec_d)*60
+                dec_m = int(dec_md)
+                dec_s = round(((dec_md - dec_m)*60), 1)
+                if sgn_dec == 1:
+                    pre_dec_str = "+" + str(dec_d) + " " + str(dec_m) + " " + str(dec_s)
+                else:    
+                    pre_dec_str = "-" + str(dec_d) + " " + str(dec_m) + " " + str(dec_s)
+                meas_ha = img[0].header['MNT-HA']  #Unit is hours  Temporarily defective before 20201025
+                meas_ra = img[0].header['RA']
+                meas_dec = img[0].header['DEC']
+                meas_sid = img[0].header['MNT-SIDT']
+                #pier = img[0].header['PIERSIDE']
                 m_ra = meas_ra.split()
                 m_dec = meas_dec.split()
-                ra = float(m_ra[0]) + (float(m_ra[2])/60. + float(m_ra[1]))/60.
+                ra = float(m_ra[0]) + (float(m_ra[2])/60. + float(m_ra[1]))/60
+                m1_ra = ra
+                sgn_dec = 1
                 if float(m_dec[0]) < 0:
                     sgn_dec = -1
-                else:
-                    sgn_dec = 1
-                dec = sgn_dec*(abs(float(m_dec[0])) + (float(m_dec[2])/60 + float(m_dec[2]))/60.)
-                sid = round(ra + float(meas_ha), 4)
-                if sid >= 24:
+                dec = sgn_dec*(abs(float(m_dec[0])) + (float(m_dec[2])/60 + float(m_dec[1]))/60.)
+                m1_dec = dec
+                #sid = round(ra + float(meas_ha), 4)
+                ha = meas_sid - ra  #Patch because meas HA was wrong. Remove when verified fixed 20201015
+                sid = meas_sid
+                while ha >= 12.:
+                    ha -= 24.
+                while ha < -12:
+                    ha += 24
+                while sid >= 24:
                     sid -= 24.
-                if sid < 0: 
+                while sid < 0: 
                     sid += 24.
                 sid_h = int(sid)
                 sid_m = round(((sid - sid_h)*60), 2)
                 sid_str = str(sid_h) + " " + str(sid_m)
-                if pier == "EAST":
+                if ha <= 0:
+                    pier = "EAST"
+                    out_f.write(pre_ra_str + "  " + pre_dec_str + "  " + meas_ra + "  " + meas_dec + "  " + sid_str + "  " + pier +'\n')
+                    count += 1
+                else:
+                    pier = "WEST"
+                    out_f_w.write(pre_ra_str + "  " + pre_dec_str + "  " + meas_ra + "  " + meas_dec + "  " + sid_str + "  " + pier +'\n')
+                if pier == "WEST":
+                    ra = m1_ra
+                    dec = m1_dec
                     ra -= 12
                     dec = 180 - dec
                     if ra < 0:
                         ra += 24
+                    sign_dec = 1
                     if dec < 0:
                         sign_dec = -1
-                    else:
-                        sign_dec = 1
-                        dec = abs(dec)
+                    dec = abs(dec)
                     dec_d = int(dec) 
                     dec_md = (dec - dec_d)*60
                     dec_m = int(dec_md)
                     dec_s = round(((dec_md - dec_m)*60), 1)
-                    if dec >= 0:
+                    if sign_dec == 1:
                         dec_str = "+" + str(dec_d) + " " + str(dec_m) + " " + str(dec_s)
                     else:    
                         dec_str = "-" + str(dec_d) + " " + str(dec_m) + " " + str(dec_s)
@@ -1096,17 +1136,18 @@ def prepare_tpoint(camera_name, archive_path, selector_string, lng_path, out_pat
                     ra_mh = (ra - ra_h)*60
                     ra_m = int(ra_mh)
                     ra_s = round(((ra_mh - ra_m)*60), 2)
-                    
                     ra_str = str(ra_h) + " " + str(ra_m) + " " + str(ra_s)
-                    
-                    out_f.write(pre_ra + "  " + pre_dec + "  " + ra_str + "  " + dec_str + "  " + sid_str + "  " + pier + '\n')
-                else:
-                    pier = 'WEST'
-                    out_f.write(pre_ra + "  " + pre_dec + "  " + meas_ra + "  " + meas_dec + "  " + sid_str + "  " + pier +'\n')
+                    out_f.write(pre_ra_str + "  " + pre_dec_str + "  " + ra_str + "  " + dec_str + "  " + sid_str + "  " + pier + '\n')
+                    count += 1
+                # else:
+                #     out_f.write(pre_ra_str + "  " + pre_dec_str + "  " + meas_ra + "  " + meas_dec + "  " + sid_str + "  " + pier +'\n')
         except:
             continue
     out_f.write('END\n')
     out_f.close()
+    print('Count for all file:  ', count)
+    out_f_w.write('END\n')
+    out_f_w.close()
 
 def annotate_image(camera_name, archive_path, selector_string, lng_path, out_path):
     file_list = glob.glob(archive_path + selector_string)
@@ -1230,9 +1271,9 @@ if __name__ == '__main__':
     #archive_path = "D:/000ptr_saf/archive/sq01/2020-06-13/"
     #archive_path = "D:/2020-06-19  Ha and O3 screen flats/"
 
-    archive_path = "D:/000ptr_saf/archive/sq01/20201022/raw/"
+    archive_path = "D:/000ptr_saf/archive/sq01/20201024/raw/"
     #
-    out_path = 'D:/000ptr_saf/archive/sq01/20201022/tpoint/'
+    out_path = 'D:/000ptr_saf/archive/sq01/20201024/tpoint/'
     lng_path = "D:/000ptr_saf/archive/sq01/lng/"
     #APPM_prepare_TPOINT()
     #de_offset_and_trim(camera_name, archive_path, '**f*t*', out_path, full=True, norm=False)

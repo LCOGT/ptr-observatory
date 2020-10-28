@@ -1212,7 +1212,7 @@ IF sweep
             grid = 7
         if reg['gridType'] == 'fine':    # ~100
             grid = 2
-        grid_stars = tycho.az_sort_targets(sid, grid=grid)  #4 produces about 50 targets.
+        grid_stars = tycho.az_sort_targets(sid, grid=2)  #4 produces about 50 targets.
         length = len(grid_stars)
         print(length, "Targets chosen for grid.")
         last_az = 0.25
@@ -1254,7 +1254,113 @@ IF sweep
         print("Equatorial sweep completed. Happy reducing.")
         self.sky_guard = False
         return       
-        
+
+    def rel_sky_grid_pointing_run(self, reg, opt, spacing=10, vertical=False, grid=False, alt_minimum=25):
+        #camera_name = str(self.config['camera']['camera1']['name'])
+        '''
+        unpark telescope
+        if not open, open dome
+        go to zenith & expose (Consider using Nearest mag 7 grid star.)
+        verify reasonable transparency
+            Ultimately, check focus, find a good exposure level
+        go to -72.5 degrees of ha, 0  expose
+        ha += 10; repeat to Ha = 67.5
+        += 5, expose
+        -= 10 until -67.5
+
+        if vertical go ha = -0.25 and step dec 85 -= 10 to -30 then
+        flip and go other way with offset 5 deg.
+
+        For Grid use Patrick Wallace's Mag 7 Tyco star grid it covers
+        sky equal-area, has a bright star as target and wraps around
+        both axes to better sample the encoders. Choose and load the
+        grid coarseness.
+        '''
+        '''
+        Prompt for ACCP model to be turned off
+        if closed:
+           If WxOk: open
+        if parked:
+             unpark
+
+         pick grid star near zenith in west (no flip)
+              expose 10 s
+              solve
+              Is there a bright object in field?
+              adjust exposure if needed.
+        Go to (-72.5deg HA, dec = 0),
+             Expose, calibrate, save file.  Consider
+             if we can real time solve or just gather.
+        step 10 degrees forward untl ha is 77.5
+        at 77.5 adjust target to (72.5, 0) and step
+        backward.  Stop when you get to -77.5.
+        park
+        Launch reduction
+
+A variant on this is cover a grid, cover a + sign shape.
+IF sweep
+        '''
+        self.sky_guard = True
+        print("Starting sky sweep.")
+        g_dev['mnt'].unpark_command({}, {})
+        if g_dev['enc'].is_dome:
+            g_dev['enc'].Slaved = True  #Bring the dome into the picture.
+        g_dev['obs'].update_status()
+        g_dev['scr'].screen_dark()
+        g_dev['obs'].update_status()
+        g_dev['mnt'].unpark_command()
+        #cam_name = str(self.config['camera']['camera1']['name'])
+
+        sid = g_dev['mnt'].mount.SiderealTime
+        if reg['gridType'] == 'medium':  # ~50
+            grid = 4
+        if reg['gridType'] == 'coarse':  # ~30
+            grid = 7
+        if reg['gridType'] == 'fine':    # ~100
+            grid = 2
+        grid_stars = tycho.tpt_grid
+        length = len(grid_stars)
+        print(length, "Targets chosen for grid.")
+        last_az = 0.25
+        count = 0
+        for grid_star in grid_stars:
+            if grid_star is None:
+                print("No near star, skipping.")   #This should not happen.
+                continue
+            if grid_star[0] < last_az:   #Consider also insisting on a reasonable HA
+                continue
+            last_az = grid_star[0] + 0.001
+            print("Going to near grid star " + str(grid_star) + " (az, (dec, ra)")
+            req = {'ra':  grid_star[1][1],
+                   'dec': grid_star[1][0]     #Note order is important (dec, ra)
+                   }
+            opt = {}
+            g_dev['mnt'].go_command(req, opt)
+            time.sleep(0.5)
+            st = ''
+            while g_dev['mnt'].mount.Slewing or g_dev['enc'].enclosure.Slewing:
+                if g_dev['mnt'].mount.Slewing: st += 'm>'
+                if g_dev['enc'].enclosure.Slewing: st += 'd>'
+                print(st)
+                st = ''
+                g_dev['obs'].update_status()
+                time.sleep(0.5)
+
+            time.sleep(3)
+            g_dev['obs'].update_status()
+            req = {'time': 10,  'alias': 'sq01', 'image_type': 'quick'}
+            opt = {'area': 150, 'count': 1, 'bin': '2,2', 'filter': g_dev['fil'].filter_data[0][0], 'hint': 'Tycho grid.'}
+            result = g_dev['cam'].expose_command(req, opt)
+            g_dev['obs'].update_status()
+            result = 'simulated result.'
+            count += 1
+            print('\n\nResult:  ', result,   'To go count:  ', length - count,  '\n\n')
+            
+        g_dev['mnt'].stop_command()
+        print("Equatorial sweep completed. Happy reducing.")
+        self.sky_guard = False
+        return    
+       
     def vertical_pointing_run(self, reg, opt, spacing=10, vertical=False, grid=False, alt_minimum=25):
         '''
         unpark telescope

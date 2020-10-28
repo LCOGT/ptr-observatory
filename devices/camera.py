@@ -223,6 +223,8 @@ class Camera:
             self.darkslide_instance = Darkslide()     #  NB eventually default after reboot should be closed.
             self.darkslide_instance.openDarkslide()   #  Consider turing off IR Obsy light at same time..
             self.darkslide_open = True
+        self.last_user_name = "unknown user name"
+        self.last_user_id ="unknown user ID"
         #  NB  Shouldset up default filter @ default focus.
 
 
@@ -346,7 +348,11 @@ class Camera:
         opt = command['optional_params']
         action = command['action']
         self.user_id = command['user_id']
+        if self.user_id != self.last_user_id:
+            self.last_user_id = self.user_id
         self.user_name = command['user_name']
+        if self.user_name != self.last_user_name:
+            self.last_user_name = self.user_name       
         if action == "expose" and not self.exposure_busy :
             self.expose_command(req, opt, do_sep=True, quick=False)
             self.exposure_busy = False     #Hangup needs to be guarded with a timeout.
@@ -1015,15 +1021,15 @@ class Camera:
                 try:
                     hdu = fits.PrimaryHDU(self.img)
                     self.img = None    #  Does this free up any resource?
-                    hdu.header['BUNIT'] = 'adu'
+                    hdu.header['BUNIT']    = 'adu'
                     hdu.header['DATE-OBS'] = datetime.datetime.isoformat(datetime.datetime.utcfromtimestamp(self.t2))
-                    hdu.header['EXPTIME'] = exposure_time   #This is the exposure in seconds specified by the user
+                    hdu.header['EXPTIME']  = exposure_time   #This is the exposure in seconds specified by the user
                     hdu.header['EXPOSURE'] = exposure_time   #Ideally this needs to be calculated from actual times
-                    hdu.header['FILTER '] = self.current_filter  # NB this should read from the wheel!
+                    hdu.header['FILTER ']  = self.current_filter  # NB this should read from the wheel!
                     hdu.header['FILTEROF'] = self.current_offset
                     hdu.header['IMAGETYP'] = frame_type   #This report is fixed and it should vary...NEEDS FIXING!
                     if g_dev['scr'] is not None and frame_type == 'screen flat':
-                        hdu.header['SCREEN'] = int(g_dev['scr'].bright_setting)
+                        hdu.header['SCREEN']   = int(g_dev['scr'].bright_setting)
                     #should replace with Monkey patched attributes.
                     if self.maxim:
                         hdu.header['SET-TEMP'] = round(self.camera.TemperatureSetpoint, 3)
@@ -1031,8 +1037,8 @@ class Camera:
                     if self.ascom:
                         hdu.header['SET-TEMP'] = round(self.camera.SetCCDTemperature, 3)
                         hdu.header['CCD-TEMP'] = round(self.camera.CCDTemperature, 3)
-                    hdu.header['XPIXSZ']   = round(float(self.camera.PixelSizeX*self.camera.BinX), 3)      #Should this adjust with binning?
-                    hdu.header['YPIXSZ']   = round(float(self.camera.PixelSizeY*self.camera.BinY), 3)
+                    hdu.header['XPIXSZ']      = round(float(self.camera.PixelSizeX*self.camera.BinX), 3)      #Should this adjust with binning?
+                    hdu.header['YPIXSZ']      = round(float(self.camera.PixelSizeY*self.camera.BinY), 3)
                     try:
                         hdu.header['XBINING'] = self.camera.BinX
                         hdu.header['YBINING'] = self.camera.BinY
@@ -1042,9 +1048,9 @@ class Camera:
                     hdu.header['PEDASTAL'] = -pedastal
                     hdu.header['ERRORVAL'] = 0
                     hdu.header['OVERSCAN'] = overscan
-                    hdu.header['PATCH'] = bi_mean    #  A crude value for the central exposure
-                    hdu.header['IMGAREA'] = opt['area']
-                    hdu.header['CCDSUM'] = self.ccd_sum
+                    hdu.header['PATCH']    = bi_mean    #  A crude value for the central exposure
+                    hdu.header['IMGAREA' ] = opt['area']
+                    hdu.header['CCDSUM']   = self.ccd_sum
                     hdu.header['XORGSUBF'] = self.camera_start_x    #This makes little sense to fix...  NB ALL NEEDS TO COME FROM CONFIG!!
                     hdu.header['YORGSUBF'] = self.camera_start_y
                     hdu.header['READOUTM'] = 'Monochrome'    #NB this needs to be updated
@@ -1062,41 +1068,42 @@ class Camera:
                     hdu.header['JD-START'] = 'bogus'       # Julian Date at start of exposure
                     hdu.header['JD-HELIO'] = 'bogus'       # Heliocentric Julian Date at exposure midpoint
                     hdu.header['OBJECT']   = g_dev['mnt'].object
-                    hdu.header['TARG-RA'] = g_dev['mnt'].current_icrs_ra
+                    hdu.header['TARG-RA']  = g_dev['mnt'].current_icrs_ra
                     hdu.header['TARG-DEC'] = g_dev['mnt'].current_icrs_dec
                     hdu.header['TARG-CHK'] = g_dev['mnt'].current_icrs_ra + g_dev['mnt'].current_icrs_dec
                     hdu.header['CATNAME']  = g_dev['mnt'].object
-                    hdu.header['CAT-RA'] = g_dev['mnt'].current_icrs_ra
-                    hdu.header['CAT-DEC'] =g_dev['mnt'].current_icrs_dec
-                    hdu.header['TARGRAH'] = g_dev['mnt'].current_icrs_ra
+                    hdu.header['CAT-RA']   = g_dev['mnt'].current_icrs_ra
+                    hdu.header['CAT-DEC']  =g_dev['mnt'].current_icrs_dec
+                    hdu.header['TARGRAH']  = g_dev['mnt'].current_icrs_ra
                     hdu.header['TARGDECD'] =g_dev['mnt'].current_icrs_dec
                     hdu.header['SID-TIME'] = self.pre_mnt[3]
                     hdu.header['OBJCTRA']  = self.pre_mnt[1]
                     hdu.header['OBJCTDEC'] = self.pre_mnt[2]
+                    hdu.header['OBJCTRA2'] = self.pre_mnt[1]
+                    hdu.header['OBJCDEC2'] = self.pre_mnt[2]
                     hdu.header['OBRARATE'] = self.pre_mnt[4]
                     hdu.header['OBDECRAT'] = self.pre_mnt[5]
-                    breakpoint()
                     hdu.header['INSTRUME'] = self.camera_model
                     hdu.header['OBSERVER'] = 'WER DEV'
-                    hdu.header['OBSNOTE']     = self.hint[0:54]            #Needs to be truncated.
-                    hdu.header['FLIPSTAT'] = 'None'
+                    hdu.header['OBSNOTE']  = self.hint[0:54]            #Needs to be truncated.
+                    hdu.header['FLIPSTAT'] = 'None'   # This is a maxim camera setup, not a flip status
                     hdu.header['SEQCOUNT'] = int(counter)
                     hdu.header['DITHER']   = 0
                     hdu.header['OPERATOR'] = "WER"
                     hdu.header['ENCLOSE']  = "Clamshell"   #Need to document shutter status, azimuth, internal light.
-                    hdu.header['DOMEAZ']  = "NA"   #Need to document shutter status, azimuth, internal light.
+                    hdu.header['DOMEAZ']   = "NA"   #Need to document shutter status, azimuth, internal light.
                     hdu.header['ENCLIGHT'] ="Off/White/Red/IR"
                     #  if gather_status:
                     hdu.header['MNT-SIDT'] = avg_mnt['sidereal_time']
-                    ha = avg_mnt['right_ascension'] - avg_mnt['sidereal_time']
-                    hdu.header['MNT-RA'] = avg_mnt['right_ascension']
+                    ha = avg_mnt['sidereal_time'] - avg_mnt['right_ascension'] 
+                    hdu.header['MNT-RA']   = avg_mnt['right_ascension']
                     while ha >= 12:
                         ha -= 24.
                     while ha < -12:
                         ha += 24.
-                    hdu.header['MNT-HA'] = round(ha, 4)
-                    hdu.header['MNT-DEC'] = avg_mnt['declination']
-                    hdu.header['MNT-RAV'] = avg_mnt['tracking_right_ascension_rate']
+                    hdu.header['MNT-HA']   = round(ha, 5)    #Note these are average mount observed values.
+                    hdu.header['MNT-DEC']  = avg_mnt['declination']
+                    hdu.header['MNT-RAV']  = avg_mnt['tracking_right_ascension_rate']
                     hdu.header['MNT-DECV'] = avg_mnt['tracking_declination_rate']
                     hdu.header['AZIMUTH '] = avg_mnt['azimuth']
                     hdu.header['ALTITUDE'] = avg_mnt['altitude']
@@ -1109,7 +1116,7 @@ class Camera:
                     hdu.header['MNT-TRAK'] = avg_mnt['is_tracking']
                     hdu.header['OTA'] = ""
                     hdu.header['SELECTEL'] = "tel1"
-                    hdu.header['ROTATOR'] = ""
+                    hdu.header['ROTATOR']  = ""
                     hdu.header['ROTANGLE'] = avg_rot[1]
                     hdu.header['ROTMOVNG'] = avg_rot[2]
                     hdu.header['FOCUS'] = ""
@@ -1121,28 +1128,43 @@ class Camera:
                     hdu.header['AIR-TEMP'] = avg_ocn[2]
                     hdu.header['HUMIDITY'] = avg_ocn[3]
                     hdu.header['DEWPOINT'] = avg_ocn[4]
-                    hdu.header['WIND'] = avg_ocn[5]
+                    hdu.header['WIND']     = avg_ocn[5]
                     hdu.header['PRESSURE'] = avg_ocn[6]
                     hdu.header['CALC-LUX'] = avg_ocn[7]
-                    hdu.header['SKY-LUX'] = avg_ocn[8]
+                    hdu.header['SKY-LUX']  = avg_ocn[8]
                     if g_dev['enc'] is not None:
-                        hdu.header['ROOF']  = g_dev['enc'].get_status()['shutter_status']   #"Open/Closed"
+                        hdu.header['ROOF'] = g_dev['enc'].get_status()['shutter_status']   #"Open/Closed"
                     hdu.header['DETECTOR'] = self.config['camera']['camera1']['detector']
-                    hdu.header['CAMNAME'] = self.config['camera']['camera1']['name']
+                    hdu.header['CAMNAME']  = self.config['camera']['camera1']['name']
                     hdu.header['CAMMANUF'] = self.config['camera']['camera1']['manufacturer']
                     hdu.header['GAINUNIT'] = 'e-/ADU'
-                    hdu.header['GAIN'] = .584   #20190911   LDR-LDC mode set in ascom
-                    hdu.header['RDNOISE'] = 3.5
-                    hdu.header['CMOSCAM'] = self.is_cmos
-                    hdu.header['CAMGAIN'] = 0
-                    hdu.header['CAMBITS'] = 16
-                    hdu.header['CAMOFFS'] = 10
-                    hdu.header['CAMUSBT'] = 60
+                    hdu.header['GAIN']     = .584   #20190911   LDR-LDC mode set in ascom
+                    hdu.header['RDNOISE']  = 3.5
+                    hdu.header['CMOSCAM']  = self.is_cmos
+                    hdu.header['CAMGAIN']  = 0
+                    hdu.header['CAMBITS']  = 16
+                    hdu.header['CAMOFFS']  = 10
+                    hdu.header['CAMUSBT']  = 60
                     hdu.header['FULLWELL'] = 65535    #THIS should be a config item
                     hdu.header['SATURATE'] = int(self.config['camera']['camera1']['settings']['saturate'])
                     pix_ang = (self.camera.PixelSizeX*self.camera.BinX/(float(self.config['telescope'] \
                                               ['telescope1']['focal_length'])*1000.))
                     hdu.header['PIXSCALE'] = round(math.degrees(math.atan(pix_ang))*3600., 4)
+                    hdu.header['REQNUM']   = '00000001'
+                    hdu.header['BLKUID']   = 'None'
+                    hdu.header['BLKSDATE'] = 'None'
+                    hdu.header['MOLUID']   = 'None'
+                    hdu.header['OBSTYPE']  = 'None'
+                    hdu.header['DAY-OBS']  = g_dev['day']
+                    hdu.header['DATE']     = datetime.datetime.isoformat(datetime.datetime.utcfromtimestamp(self.t2))
+                    hdu.header['ISMASTER'] = False
+                    try:
+                        hdu.header['USERNAME'] = self.user_name
+                        hdu.header ['USERID']  = self.user_id
+                    except:
+                        hdu.header['USERNAME'] = self.last_user_name
+                        hdu.header ['USERID']  = self.last_user_id
+                        print("User_name or id not found, using prior.")  #Insert last user namd and ID here if they are not supplied.
                     current_camera_name = self.config['camera']['camera1']['name']
                     # NB This needs more deveopment
                     im_type = 'EX'   #or EN for engineering....
@@ -1177,21 +1199,9 @@ class Camera:
                     im_path_r = self.camera_path
 
                     #lng_path = self.lng_path
-                    hdu.header['DAY-OBS'] = g_dev['day']
-                    hdu.header['DATE'] = datetime.datetime.isoformat(datetime.datetime.utcfromtimestamp(self.t2))
-                    hdu.header['ISMASTER'] = False
+
                     hdu.header['FILEPATH'] = str(im_path_r) +'to_AWS/'
                     hdu.header['FILENAME'] = str(raw_name00)
-                    try:
-                        hdu.header['USERNAME'] = self.user_name
-                        hdu.header ['USERID'] = self.user_id
-                    except:
-                        print("User_name or id not found.")
-                    hdu.header['REQNUM'] = '00000001'
-                    hdu.header['BLKUID'] = 'None'
-                    hdu.header['BLKSDATE'] = 'None'
-                    hdu.header['MOLUID'] = 'None'
-                    hdu.header['OBSTYPE'] = 'None'
                     try: #  NB relocate this to Expose entry area.  Fill out except.  Might want to check on available space.
                         im_path_r = self.camera_path
                         os.makedirs(im_path_r + g_dev['day'] + '/to_AWS/', exist_ok=True)

@@ -26,25 +26,8 @@ from pprint import pprint
 from astropy.utils.iers import conf
 #conf.auto_max_age = None 
 
-iso_day = datetime.date.today().isocalendar()
-equinox_years = round((iso_day[0] + ((iso_day[1]-1)*7 + (iso_day[2] ))/365), 2) - 2000
-#C:/Users/obs/Documents/GitHub/ptr-observatory/support_info
-tycho_cat = open("../ptr-observatory/support_info/tycho_mag_7.dat", 'r')
-tycho_tuple = []
-count = 0
-for line in tycho_cat:
-    entry = line.split(' ')
-    count += 1
-    ra_hours = round((float(entry[4])/60 + float(entry[3]))/60 + float(entry[2]) + equinox_years* float(entry[11])/3600, 5)
-    if entry[6][0] == '-':
-        sign = -1
-    else:
-        sign = 1
-    #print (entry, sign, float(entry[6][1:]), float(entry[7]), float(entry[8]))
-    dec_degrees = round(sign*(float(entry[8])/3600 + float(entry[7])/60 + float(entry[6][1:])) + equinox_years* float(entry[13])/3600, 4)
-    tycho_tuple.append((dec_degrees, ra_hours))
-tycho_cat.close()
-tycho_tuple.sort()
+
+    
 #print(count)
 
 
@@ -151,6 +134,51 @@ def az_sort_targets(pSidTime, grid=4):
     #print('distSortTargets', len(targetList), targetList, '\n\n')
     #print('AzSortTargets', az_sorted_targets[:],len(az_sorted_targets[:]), '\n\n')
     return az_sorted_targets[::int(grid)]
+#Run some code on module load:
+    
+iso_day = datetime.date.today().isocalendar()
+equinox_years = round((iso_day[0] + ((iso_day[1]-1)*7 + (iso_day[2] ))/365), 2) - 2000
+#C:/Users/obs/Documents/GitHub/ptr-observatory/support_info
+tycho_cat = open("../ptr-observatory/support_info/tycho_mag_7.dat", 'r')
+tycho_tuple = []
+count = 0
+for line in tycho_cat:
+    entry = line.split(' ')
+    count += 1
+    ra_hours = round((float(entry[4])/60 + float(entry[3]))/60 + float(entry[2]) + equinox_years* float(entry[11])/3600, 5)
+    if entry[6][0] == '-':
+        sign = -1
+    else:
+        sign = 1
+    #print (entry, sign, float(entry[6][1:]), float(entry[7]), float(entry[8]))
+    dec_degrees = round(sign*(float(entry[8])/3600 + float(entry[7])/60 + float(entry[6][1:])) + equinox_years* float(entry[13])/3600, 4)
+    tycho_tuple.append((dec_degrees, ra_hours))
+tycho_cat.close()
+tycho_tuple.sort()
 
+tpt_perfect = open("../ptr-observatory/processing/TPOINT/perfct.dat", 'r')
+tpt_tuple = []
+count = 0
+toss = tpt_perfect.readline()
+toss = tpt_perfect.readline()
+toss = tpt_perfect.readline()
+toss = tpt_perfect.readline()
+for line in tpt_perfect:
+    entry = line.split(' ')
+    if entry[0][0:3] == 'END':
+        break
+    ha  = reduceHa(-(int(entry[0]) + (int(entry[1]) + float(entry[2])/60.0)/60.))
+    if abs(ha)>6:
+        continue
+    if entry[3][0] == '-':
+        sign = -1
+    else:
+        sign = 1
+    dec = sign*(int(entry[3][1:]) + (int(entry[4]) + float(entry[5])/60)/60.)
+    count += 1
+    tpt_tuple.append((ha, dec))
+print(tpt_tuple)
+    
+    
 if __name__ == '__main__':
     print (len(az_sort_targets(17)))

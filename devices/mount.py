@@ -420,7 +420,6 @@ class Mount:
 
         # Arcseconds per SI second, default = 0.0
         tracking_rate_dec = opt.get('tracking_rate_dec', 0)
-        breakpoint()
         if self.mount.EquatorialSystem == 1:
             self.get_current_times()   #  NB We should find a way to refresh this once a day, esp. for status return.
             icrs_coord = SkyCoord(float(req['ra'])*u.hour, float(req['dec'])*u.degree, frame='icrs')
