@@ -17,20 +17,20 @@ site_name = 'saf'
 site_config = {
     'site': str(site_name),
     'debug_site_mode': False,
+    'owner':  ['google-oauth2|102124071738955888216'],  # Neyle,  Or this can be some aws handle.
     'defaults': {
         'observing_conditions': 'observing_conditions1',  #  These are used as keys, may go away.
         'enclosure': 'enclosure1',
+        'screen': 'screen1',
         'mount': 'mount1',
-        'telescope': 'telescope1',
+        'telescope': 'telescope1',     #How do we handle selector here, if at all?
         'focuser': 'focuser1',
         'rotator': 'rotator1',
-        'screen': 'screen1',
         'filter_wheel': 'filter_wheel1',
         'camera': 'camera1',
         'sequencer': 'sequencer1'
         },
     'name': 'Apache Ridge Observatory',
-    'telescope_description':  '0m3 f9/4.9 Ceravolo Astrograph',
     'location': 'Santa Fe, New Mexico,  USA',
     'site_path':  'D:/000ptr_saf/',    #  Path to where all Photon Ranch data and state are to be found
     'observatory_url': 'https://starz-r-us.sky/clearskies2',   #  This is meant to be optional
@@ -109,19 +109,36 @@ site_config = {
 			    'elevation_offset': 0.0,    # meters above sea level
                 'home_park_altitude': 0.0,
                 'home_park_azimuth': 180.,
-                'horizon':  20.,    #  Meant to be a circular horizon.  None if below is filled in.
+                'horizon':  20.,    #  Meant to be a circular horizon. Or set to None if below is filled in.
                 'horizon_detail': {  #  Meant to be something to draw on the Skymap with a spline fit.
                      '0.1': 10,
                      '90': 11.2,
                      '180.0': 10,
                      '270': 10,
-                },  #  We use a dict because of fragmented azimuth selections.
+                     '360': 10
+                },  #  We use a dict because of fragmented azimuth mesurements.
+            'model': {
+                'IH': 0.0,
+                'ID': 0.0,
+                'WIH': 0.0,
+                'WID': 0.0,
+                'CH': 0.0,
+                'NP': 0.0,
+                'MA': 0.0,
+                'ME': 0.0,
+                'TF': 0.0,
+                'TX': 0.0,
+                'HCES': 0.0,
+                'HCEC': 0.0,
+                'DCES': 0.0,
+                'DCEC': 0.0,
+                }
             },
         },
 
     },
 
-    'telescope': {
+    'telescope': {                            #Note telescope == OTA  Optical Tube Assembly.
         'telescope1': {
             'parent': 'mount1',
             'name': 'Main OTA',
@@ -130,11 +147,18 @@ site_config = {
             'collecting_area': 4930,
             'obscuration':  0.55,
             'aperture': 30,
-            'focal_length': 2692,   #  Converted to F9, measured 20200905
+            'focal_length': 2697,   #  Converted to F9, measured 20200905  11.1C
             'has_dew_heater':  False,
             'screen_name': 'screen1',
             'focuser_name':  'focuser1',
             'rotator_name':  'rotator1',
+            'has_instrument_selector': False,   #This is a default for a single instrument system
+            'selector_positions': 1,            #Note starts with 1
+            'instrument names':  ['camera1'],
+            'instrument aliases':  ['QHY600Mono'],
+            'configuration': {
+                 "position1": ["darkslide1", "filter_wheel1", "camera1"]
+                 },
             'camera_name':  'camera1',
             'filter_wheel_name':  'filter_wheel1',
             'has_fans':  True,
@@ -149,6 +173,9 @@ site_config = {
                 'west_flip_ ca_offset': 0.0,
                 'west_flip_ dec_offset': 0.0
             },
+
+
+
         },
     },
 
@@ -161,7 +188,7 @@ site_config = {
 			'com_port':  'COM10',
             'minimum': -180.,
             'maximum': 360.0,
-            'step_size':  0.0001,
+            'step_size':  0.0001,     #Is this correct?
             'backlash':  0.0,
             'unit':  'degree'    #  'steps'
         },
@@ -172,7 +199,7 @@ site_config = {
             'parent': 'telescope1',
             'name': 'screen',
             'desc':  'Optec Alnitak 16"',
-            'driver': 'COM14',  #  This needs to be a four or 5 character string as in 'COM8' or 'COM22'
+            'driver': 'COM14',  #  This needs to be a 4 or 5 character string as in 'COM8' or 'COM22'
             'minimum': 5,   #  This is the % of light emitted when Screen is on and nominally at 0% bright.
             'saturate': 255,  #  Out of 0 - 255, this is the last value where the screen is linear with output.
                               #  These values have a minor temperature sensitivity yet to quantify.
@@ -188,11 +215,11 @@ site_config = {
             'desc':  'Optec Gemini',
             'driver': 'ASCOM.OptecGemini.Focuser',
 			'com_port':  None,
-            'reference':  6500,    #  Nominal at 20C Primary temperature
-            'ref_temp':   18.5,    #  Update when pinning reference
-            'coef_c': 0.0,   #  negative means focus moves out as Primary gets colder
-            'coef_0': 9271,  #  Nominal intercept when Primary is at 0.0 C. Looks wrong!
-            'coef_date':  '20200904',    #  pure SWAG  -WER
+            'reference':  9612,    #  Nominal at 10C Primary temperature
+            'ref_temp':  10.,    #  Update when pinning reference
+            'coef_c': -70.9858,   #  negative means focus moves out as Primary gets colder
+            'coef_0': 10356.87,  #  Nominal intercept when Primary is at 0.0 C. Looks wrong!
+            'coef_date':  '20201018',    #This appears to be sensible result 3 nights 4 to 16C
             'minimum': 0,     #  NB this area is confusing steps and microns, and need fixing.
             'maximum': 12700,
             'step_size': 1,
@@ -214,26 +241,28 @@ site_config = {
             'settings': {
                 'filter_count': 14,
                 'home_filter':  0,
+                'default_filter': "w",
                 'filter_reference': 0,   #  We choose to use W as the default filter.
                 'filter_data': [['filter', 'filter_index', 'filter_offset', 'sky_gain', 'screen_gain', 'abbreviation'],
-                        ['w',    [0,  0],    0,    8, [0.45,  20], 'w '],   # 0 
-                        ['B',    [1,  0],    0,    3, [2   ,  20], 'B '],   # 1
-                        ['V',    [2,  0],    0,   31, [.77 ,  20], 'V '],   # 2
-                        ['R',    [3,  0],    0,   25, [1.2 ,  20], 'R '],   # 3
-                        ["gp",   [4,  0],    0,   54, [.65 ,  20], "gp"],   # 4
-                        ["rp",   [5,  0],    0,   25, [1.0 ,  20], "rp"],   # 5
-                        ["ip",   [6,  0],    0,    1, [10  , 170], "ip"],   # 6
-                        ['O3',   [7,  0],    0,   12, [360 , 170], 'O3'],   # 7
-                        ['HA',   [8,  0],    0, 0.40, [360 , 170], 'HA'],   # 8
-                        ['S2',   [9,  0],    0, 0.43, [360 , 170], 'S2'],   # 9
-                        ['N2',   [10, 0],    0, 0.41, [360 , 170], "N2"],   # 10
-                        ['EXO',  [11, 0],    0, 42.6, [0.65,  20], 'ex'],   # 11
-                        ['air',  [12, 0], -800,  100, [.32 ,  20], 'ai'],   # 12
-                        ['dark', [13, 0],    0,    1, [30  , 170], 'dk']],  # 13
+                        ['w',    [0,  0],    0, 249, [0.45,  20], 'w '],   # 0 
+                        ['B',    [1,  0],    0,  80, [2   ,  20], 'B '],   # 1
+                        ['V',    [2,  0],    0,  69, [.77 ,  20], 'V '],   # 2
+                        ['R',    [3,  0],    0,  46, [1.2 ,  20], 'R '],   # 3
+                        ["gp",   [4,  0],    0, 147, [.65 ,  20], "gp"],   # 4
+                        ["rp",   [5,  0],    0,  45, [1.0 ,  20], "rp"],   # 5
+                        ["ip",   [6,  0],    0,  12, [10  , 170], "ip"],   # 6
+                        ['O3',   [7,  0],    0, 2.6, [360 , 170], 'O3'],   # 7
+                        ['HA',   [8,  0],    0, 0.6, [360 , 170], 'HA'],   # 8
+                        ['S2',   [9,  0],    0, 0.7, [360 , 170], 'S2'],   # 9
+                        ['N2',   [10, 0],    0, 0.6, [360 , 170], "N2"],   # 10
+                        ['EXO',  [11, 0],    0, 112, [0.65,  20], 'ex'],   # 11
+                        ['air',  [12, 0], -800, 280, [.32 ,  20], 'ai'],   # 12
+                        ['dark', [13, 0],    0,  .1, [30  , 170], 'dk']],  # 13
                         #  'dark' filter =   cascade of say N2 and B or O3 and i.
                         
                 'filter_screen_sort':  [12, 0, 11, 2, 3, 5, 4, 1, 6],   #  don't use narrow yet,  8, 10, 9], useless to try.
-                'filter_sky_sort':  [8, 10, 9, 6, 7, 5, 3, 2, 1, 4, 11, 0, 12]  #  Least to most throughput
+                
+               'filter_sky_sort':  [12, 8]#, 10, 9, 7, 6, 5, 3, 2, 1, 4, 11, 0, 12]  #  Least to most throughput
             },
         },
     },
@@ -272,23 +301,23 @@ site_config = {
                 'east_offset': 0.0,     #  Not sure why these three are even here.
                 'rotation': 0.0,        #  Probably remove.
                 'min_exposure': 0.00001,
-                'max_exposure': 600.0,
+                'max_exposure': 300.0,
                 'can_subframe':  True,
-                'min_subframe':  [128, 128],
-                'bin_modes':  [[1, 1], [2, 2]],       #Meaning no binning if list has only one entry\
-                'default_bin':  [2, 2],    #  Always square and matched to seeing situation by owner
-                'readout_time':  [6, 4],
+                'min_subframe':  [[128, 128], '4, 4'],       #Meaning no binning choice if list has only one entry
+                'default_bin':  '2, 2',    #  Matched to seeing situation by owner
+                'cycle_time':  [18, 15, 15],  # 3x3 requires a 1, 1 reaout then a software bin, so slower.
                 'rbi_delay':  0.,      #  This being zero says RBI is not available, eg. for SBIG.
                 'is_cmos':  True,
                 'is_color':  False,
                 'can_set_gain':  True,
-                'bayer_pattern':  None,    #  Need to verify
+                'bayer_pattern':  None,    #  Need to verify R as in RGGB is pixel x=0, y=0, B is x=1, y = 1
                 'can_set_gain':  True,
-                'reference_gain': [28., 28.],     #  One val for each binning.
-                'reference_noise': [3.2, 3.2],
-                'reference_dark': [0.0, 0.0],
-                'saturate':  55000,
-                'areas_implemented': [100, 71, 50,  35, 25, 12],
+                'reference_gain': [10., 10., 10., 10.],     #  One val for each binning.
+                'reference_noise': [1.1, 1.1, 1.1, 1.1],    #  All SWAGs right now
+                'reference_dark': [0.0, 0.0, 0.0, 0.0],     #  Might these best be pedastal values?
+                'saturate':  50000,
+                'areas_implemented': ["600%", "300%", "220%", "150%", "Full", "Sqr", '71%', '50%',  '35%', '25%', '12%'],
+                'default_area':  "Full",
                 'has_darkslide':  False,
                 'has_screen': True,
                 'screen_settings':  {
