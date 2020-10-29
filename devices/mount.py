@@ -97,10 +97,13 @@ class Mount:
         self.tel = tel
         self.mount_message = "-"
         self.has_paddle = config['mount']['mount1']['has_paddle']
+        self.object = "Unspecified"
+        self.current_icrs_ra = "Unspecified_Ra"
+        self.current_icrs_dec = " Unspecified_Dec"
         if not tel:
-            print(f"Mount connected.")
+            print("Mount connected.")
         else:
-            print(f"Tel/OTA connected.")
+            print("Tel/OTA connected.")
         print(self.mount.Description)
 
         #NB THe paddle needs a re-think and needs to be cast into its own thread. 20200310 WER

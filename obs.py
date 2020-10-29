@@ -377,6 +377,9 @@ class Observatory:
             print('Status Sent:  \n', status)   # from Update:  ', status))
         else:
             print('.')   # We print this to stay informed of process on the console.
+            # breakpoint()
+            # self.send_log_to_frontend("WARN cam1 just fell on the floor!")
+            # self.send_log_to_frontend("ERROR enc1 dome just collapsed.")
             #  Consider inhibity unless status rate is low
         uri = f"{self.name}/status/"
         # NB None of the strings can be empty.  Otherwise this put faults.
@@ -477,7 +480,16 @@ class Observatory:
                 time.sleep(0.1)
             else:
                 time.sleep(0.2)
-
+    def send_user_log(self, p_log, p_level='INFO'):
+        url = "https://logs.photonranch.org/logs/newlog"
+        body = json.dumps({
+            'site': 'saf',
+            'log_message':  str(p_log),
+            'log_level': str(p_level),
+            'timestamp':  time.time()
+            })
+        resp = requests.post(url, body)
+        print(resp)
     # Note this is another thread!
     def reduce_image(self):
         '''

@@ -774,6 +774,7 @@ class Camera:
                             breakpoint()
                         else:
                             #This is the standard call to Maxim
+                            g_dev['obs'].send_user_log("Starting Camera1!", p_level='INFO')
                             self.t2 = time.time()
                             self._expose (exposure_time, imtypeb)
                     else:
