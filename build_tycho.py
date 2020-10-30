@@ -67,7 +67,11 @@ def reduceAz(pAz):
     return pAz
 
 def transform_haDec_to_azAlt(pLocal_hour_angle, pDec):
-    lat = g_dev['evnt'].siteLatitude
+    lat = 35.55444
+    try:
+        lat = g_dev['evnt'].siteLatitude
+    except:
+        pass
     latr = math.radians(lat)
     sinLat = math.sin(latr)
     cosLat = math.cos(latr)
@@ -110,7 +114,7 @@ def dist_sort_targets(pRa, pDec, pSidTime):
     #print('distSortTargets', len(sortedTargetList), '\n\n')
     return sortedTargetList
 
-def az_sort_targets(pSidTime, grid=4):
+def az_sort_targets(pSidTime, grid=1):
     '''
     Given incoming Ra and Dec produce a list of tuples sorted by distance
     of Nav Star from that point, closest first. In additon full site
@@ -156,8 +160,10 @@ for line in tycho_cat:
 tycho_cat.close()
 tycho_tuple.sort()
 
+#Run and set tpt_tuple to a grid.
+
 tpt_perfect = open("../ptr-observatory/processing/TPOINT/perfct.dat", 'r')
-tpt_tuple = []
+tpt_tuple1 = []
 count = 0
 toss = tpt_perfect.readline()
 toss = tpt_perfect.readline()
@@ -176,7 +182,12 @@ for line in tpt_perfect:
         sign = 1
     dec = sign*(int(entry[3][1:]) + (int(entry[4]) + float(entry[5])/60)/60.)
     count += 1
-    tpt_tuple.append((ha, dec))
+    az, alt = transform_haDec_to_azAlt(ha, dec)
+    tpt_tuple1.append((az, (ha, dec)))
+tpt_tuple1.sort()
+tpt_tuple = []
+for entry in tpt_tuple1:
+    tpt_tuple.append(entry[1])
 print(tpt_tuple)
     
     
