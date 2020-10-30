@@ -160,7 +160,7 @@ def calibrate (hdu, lng_path, frame_type='light', quick=False):
                 if loud: print(lng_path + 'fb_2-4.fits', 'Loaded')
             except:
                 quick_bias = False
-                print('WARN: No Bias_2 Loaded.')
+                g_dev['obs'].send_to_user(" No bias_2 loaded.", p_level ='WARNING')
                 breakpoint()
         # if super_dark_90 is None:
         #     try:
@@ -492,6 +492,7 @@ def calibrate (hdu, lng_path, frame_type='light', quick=False):
     result['half_FD'] = None
     result['patch'] = round((hdu.data.mean() + np.median(hdu.data))/2, 1)
     result['temperature'] = None
+    g_dev['obs'].send_to_user('Calibration complete.', p_level='INFO')
     return result
 
 

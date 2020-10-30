@@ -480,10 +480,10 @@ class Observatory:
                 time.sleep(0.1)
             else:
                 time.sleep(0.2)
-    def send_user_log(self, p_log, p_level='INFO'):
+    def send_to_user(self, p_log, p_level='INFO'):
         url = "https://logs.photonranch.org/logs/newlog"
         body = json.dumps({
-            'site': 'saf',
+            'site': self.config['site'],
             'log_message':  str(p_log),
             'log_level': str(p_level),
             'timestamp':  time.time()

@@ -774,7 +774,7 @@ class Camera:
                             breakpoint()
                         else:
                             #This is the standard call to Maxim
-                            g_dev['obs'].send_user_log("Starting Camera1!", p_level='INFO')
+                            g_dev['obs'].send_to_user("Starting Camera1!", p_level='INFO')
                             self.t2 = time.time()
                             self._expose (exposure_time, imtypeb)
                     else:
@@ -1288,6 +1288,8 @@ class Camera:
                     result['gain'] = round(bi_mean/(avg_ocn[7]*exposure_time), 6)
                     result['filter'] = self.current_filter
                     result['error'] == False
+                    g_dev['obs'].send_to_user("Expose cycle conpleted.", p_level='INFO')
+
                     return result
                 except Exception as e:
                     print('Header assembly block failed: ', e)
