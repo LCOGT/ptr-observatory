@@ -25,12 +25,15 @@ class Enclosure:
         self.site = config['site']
         self.config = config
         g_dev['enc'] = self
-        win32com.client.pythoncom.CoInitialize()
-        self.enclosure = win32com.client.Dispatch(driver)
-        print(self.enclosure)
-        self.enclosure.Connected = True
-        print("enclosure connected.")
-        print(self.enclosure.Description)
+        if self.site != 'wmd2':
+            win32com.client.pythoncom.CoInitialize()
+            self.enclosure = win32com.client.Dispatch(driver)
+            print(self.enclosure)
+            self.enclosure.Connected = True
+            print("ASCOM enclosure connected.")
+            print(self.enclosure.Description)
+        else:
+            print("'wmd2' enclosure linked to 'wmd'. ")
         self.is_dome = self.config['enclosure']['enclosure1']['is_dome']
         if not self.is_dome:
             self.is_dome = False
@@ -93,12 +96,20 @@ class Enclosure:
                #        'dome_slewing': str(self.enclosure.Slewing),
                #        'enclosure_mode': str(self.mode),
                #        'enclosure_message': str(self.state)}
-        else:
+        elif self.site == 'wmd':
             status = {'roof_status': stat_string,
                       'shutter_status': stat_string,
                       'enclosure_slaving': self.enclosure.Slaved,   #  What should  this mean for a roof? T/F = Open/Closed?
                       'enclosure_mode': self.mode,
                       'enclosure_message': self.state}
+        else:
+            status = {'roof_status': 'unknown',
+                      'shutter_status': 'unknown',
+                      'enclosure_slaving': 'unknown',   #  What should  this mean for a roof? T/F = Open/Closed?
+                      'enclosure_mode': 'unknown',
+                      'enclosure_message': 'unknown'
+                      }
+            stat_string = 'unknown'
         #print('Enclosure status:  ', status
         self.status_string = stat_string
         self.manager()   #There be monsters here. <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
