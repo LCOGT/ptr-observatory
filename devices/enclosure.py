@@ -1,6 +1,6 @@
 import win32com.client
 from global_yard import g_dev
-
+import redis
 import time
 
 '''
@@ -36,6 +36,9 @@ class Enclosure:
             self.is_dome = False
         else:
             self.is_dome = True
+        if self.site in ['wmd', 'wmd2']:
+            self.redis_server = redis.StrictRedis(host='10.15.0.109', port=6379, db=0,
+                                                  decode_responses=True)
         self.state = 'Closed.  Initialized class property value.'
         self.mode = 'Manual'   #  Auto|User Control|User Close|Disable
         self.enclosure_message = '-'
@@ -96,9 +99,15 @@ class Enclosure:
         else:
             status = {'roof_status': stat_string,
                       'shutter_status': stat_string,
-                      'enclosure_slaving': self.enclosure.Slaved,   #  What should  this mean for a roof? T/F = Open/Closed?
+                      'enclosure_synch': self.enclosure.Slaved,   #  What should  this mean for a roof? T/F = Open/Closed?
                       'enclosure_mode': self.mode,
                       'enclosure_message': self.state}
+            if self.site == 'wmd':
+                self.redis_server.set('roof_status', str(stat_string), ex=600)
+                self.redis_server.set("shutter_status", str(stat_string), ex=600)
+                self.redis_server.set('enclosure_synch', str(self.enclosure.Slaved), ex=600)
+                self.redis_server.set('enclosure_mode', str(self.mode), ex=600)
+                self.redis_server.set('enclosure_message', str(self.state), ex=600)
         #print('Enclosure status:  ', status
         self.status_string = stat_string
         self.manager()   #There be monsters here. <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<

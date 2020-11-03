@@ -114,7 +114,7 @@ def dist_sort_targets(pRa, pDec, pSidTime):
     #print('distSortTargets', len(sortedTargetList), '\n\n')
     return sortedTargetList
 
-def az_sort_targets(pSidTime, grid=1):
+def az_sort_targets(pSidTime, grid=4):
     '''
     Given incoming Ra and Dec produce a list of tuples sorted by distance
     of Nav Star from that point, closest first. In additon full site
@@ -126,7 +126,7 @@ def az_sort_targets(pSidTime, grid=1):
     az_sorted_targets = []
     for star in sorted_target_list:
         #if horizonCheck(star[0], star[1], pSidTime):
-        c2 = SkyCoord(ra=star[1]*u.hr, dec=star[0]*u.deg)
+        #c2 = SkyCoord(ra=star[1]*u.hr, dec=star[0]*u.deg)
         cat_ha = reduceHa(pSidTime - star[1][1])
         az, alt = transform_haDec_to_azAlt(cat_ha, star[1][0])
         #if cat_sign == sign:
