@@ -47,7 +47,7 @@ class Telescope:
 
 
         if not tel:    # This looks like ol debugging cruft.
-            print(f"Mount is connected.")
+            print("Mount is connected.")
         else:
             print(self.inst + "  is connected.")
 

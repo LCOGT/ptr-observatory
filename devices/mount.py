@@ -72,7 +72,7 @@ from devices.pywinusb_paddle import *
 
 tzOffset = -7
 
-mountOne = "PW_L500"
+mountOne = "PW_L600"
 mountOneAscom = None
 #The mount is not threaded and uses non-blocking seek.     "Note no doule quotes.
 class Mount:
@@ -96,7 +96,7 @@ class Mount:
         self.inst = 'tel1'
         self.tel = tel
         self.mount_message = "-"
-        self.has_paddle = config['mount']['mount1']['has_paddle']
+        self.has_paddle = config['mount']['mount2']['has_paddle']
         self.object = "Unspecified"
         self.current_icrs_ra = "Unspecified_Ra"
         self.current_icrs_dec = " Unspecified_Dec"

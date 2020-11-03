@@ -1,6 +1,6 @@
 import win32com.client
 from global_yard import g_dev
-
+import redis
 import time
 
 '''
@@ -26,6 +26,7 @@ class Enclosure:
         self.config = config
         g_dev['enc'] = self
         if self.site != 'wmd2':
+            breakpoint()
             win32com.client.pythoncom.CoInitialize()
             self.enclosure = win32com.client.Dispatch(driver)
             print(self.enclosure)
@@ -34,6 +35,9 @@ class Enclosure:
             print(self.enclosure.Description)
         else:
             print("'wmd2' enclosure linked to 'wmd'. ")
+        if self.site in ['wmd', 'wmd2']:
+            self.redis_server = redis.StrictRedis(host='10.15.0.109', port=6379, db=0,
+                                                  decode_responses=True)
         self.is_dome = self.config['enclosure']['enclosure1']['is_dome']
         if not self.is_dome:
             self.is_dome = False
@@ -53,35 +57,36 @@ class Enclosure:
     def get_status(self) -> dict:
         #<<<<The next attibute reference fails at SAF, usually spurious Dome Ring Open report.
         #<<< Have seen other instances of failing.
-
-        try:
-            shutter_status = self.enclosure.ShutterStatus
-        except:
-            print("self.enclosure.Roof.ShutterStatus -- Faulted. ")
-            shutter_status = 5
-        if shutter_status == 0:
-            stat_string = "Open"
-            self.shutter_is_closed = False
-        elif shutter_status == 1:
-             stat_string = "Closed"
-             self.shutter_is_closed = True
-        elif shutter_status == 2:
-             stat_string = "Opening"
-             self.shutter_is_closed = False
-        elif shutter_status == 3:
-             stat_string = "Closing"
-             self.shutter_is_closed = False
-        elif shutter_status == 4:
-             stat_string = "Error"
-             self.shutter_is_closed = False
-        else:
-             stat_string = "Fault"
-             self.shutter_is_closed = False
+        #core1_redis.set('unihedron1', str(mpsas) + ', ' + str(bright) + ', ' + str(illum), ex=600)
+        if self.site in ['saf', 'wmd']:
+            try:
+                shutter_status = self.enclosure.ShutterStatus
+            except:
+                print("self.enclosure.Roof.ShutterStatus -- Faulted. ")
+                shutter_status = 5
+            if shutter_status == 0:
+                stat_string = "Open"
+                self.shutter_is_closed = False
+            elif shutter_status == 1:
+                 stat_string = "Closed"
+                 self.shutter_is_closed = True
+            elif shutter_status == 2:
+                 stat_string = "Opening"
+                 self.shutter_is_closed = False
+            elif shutter_status == 3:
+                 stat_string = "Closing"
+                 self.shutter_is_closed = False
+            elif shutter_status == 4:
+                 stat_string = "Error"
+                 self.shutter_is_closed = False
+            else:
+                 stat_string = "Fault"
+                 self.shutter_is_closed = False
 
         if self.site == 'saf':
            try:
                status = {'shutter_status': stat_string,
-                      'enclosure_slaving': self.enclosure.Slaved,
+                      'enclosure_synch': self.enclosure.Slaved,
                       'dome_azimuth': round(self.enclosure.Azimuth, 1),
                       'dome_slewing': self.enclosure.Slewing,
                       'enclosure_mode': self.mode,
@@ -91,7 +96,7 @@ class Enclosure:
                status = self.prior_status
                print("Prior status used for saf dome azimuth")
                # status = {'shutter_status': stat_string,
-               #        'enclosure_slaving': 'unknown',
+               #        'enclosure_synch': 'unknown',
                #        'dome_azimuth': str(round(self.enclosure.Azimuth, 1)),
                #        'dome_slewing': str(self.enclosure.Slewing),
                #        'enclosure_mode': str(self.mode),
@@ -99,13 +104,24 @@ class Enclosure:
         elif self.site == 'wmd':
             status = {'roof_status': stat_string,
                       'shutter_status': stat_string,
-                      'enclosure_slaving': self.enclosure.Slaved,   #  What should  this mean for a roof? T/F = Open/Closed?
+                      'enclosure_synch': self.enclosure.Slaved,   #  What should  this mean for a roof? T/F = Open/Closed?
                       'enclosure_mode': self.mode,
                       'enclosure_message': self.state}
+        elif self.site == 'wmd2':
+            status = {'roof_status': self.redis_server.get('roof_status'),
+                      'shutter_status': self.redis_server.get('shutter_status'),
+                      'enclosure_synch': self.redis_server.get('enclosure_synch'),   #  What should  this mean for a roof? T/F = Open/Closed?
+                      'enclosure_mode': self.redis_server.get('enclosure_mode'),
+                      'enclosure_message': self.redis_server.get('enclosure_message')
+                      }
+            stat_string = status['shutter_status']
+
+
+            
         else:
             status = {'roof_status': 'unknown',
                       'shutter_status': 'unknown',
-                      'enclosure_slaving': 'unknown',   #  What should  this mean for a roof? T/F = Open/Closed?
+                      'enclosure_synch': 'unknown',   #  What should  this mean for a roof? T/F = Open/Closed?
                       'enclosure_mode': 'unknown',
                       'enclosure_message': 'unknown'
                       }
