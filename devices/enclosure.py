@@ -26,7 +26,6 @@ class Enclosure:
         self.config = config
         g_dev['enc'] = self
         if self.site != 'wmd2':
-            breakpoint()
             win32com.client.pythoncom.CoInitialize()
             self.enclosure = win32com.client.Dispatch(driver)
             print(self.enclosure)

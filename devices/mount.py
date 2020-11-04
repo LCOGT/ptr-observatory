@@ -81,6 +81,7 @@ class Mount:
         self.name = name
         self.astro_events = astro_events
         g_dev['mnt'] = self
+        self.site = config['site']
         self.device_name = name
         self.settings = settings
         win32com.client.pythoncom.CoInitialize()
@@ -96,7 +97,10 @@ class Mount:
         self.inst = 'tel1'
         self.tel = tel
         self.mount_message = "-"
-        self.has_paddle = config['mount']['mount2']['has_paddle']
+        if self.site == 'wmd2':
+            self.has_paddle = config['mount']['mount2']['has_paddle']
+        else:
+            self.has_paddle = config['mount']['mount1']['has_paddle']
         self.object = "Unspecified"
         self.current_icrs_ra = "Unspecified_Ra"
         self.current_icrs_dec = " Unspecified_Dec"
