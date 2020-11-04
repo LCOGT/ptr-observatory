@@ -110,16 +110,32 @@ class Enclosure:
                       'enclosure_synch': self.enclosure.Slaved,   #  What should  this mean for a roof? T/F = Open/Closed?
                       'enclosure_mode': self.mode,
                       'enclosure_message': self.state}
-
-            if self.site == 'wmd':
-                self.redis_server.set('roof_status', str(stat_string), ex=600)
-                self.redis_server.set("shutter_status", str(stat_string), ex=600)
-                self.redis_server.set('enclosure_synch', str(self.enclosure.Slaved), ex=600)
-                self.redis_server.set('enclosure_mode', str(self.mode), ex=600)
-                self.redis_server.set('enclosure_message', str(self.state), ex=600)        #print('Enclosure status:  ', status
+            self.redis_server.set('roof_status', str(stat_string), ex=600)
+            self.redis_server.set("shutter_status", str(stat_string), ex=600)
+            self.redis_server.set('enclosure_synch', str(self.enclosure.Slaved), ex=600)
+            self.redis_server.set('enclosure_mode', str(self.mode), ex=600)
+            self.redis_server.set('enclosure_message', str(self.state), ex=600)        #print('Enclosure status:  ', status
+        elif self.site == 'wmd2':
+            status = {'roof_status': self.redis_server.get('roof_status'),
+                      'shutter_status': self.redis_server.get('shutter_status'),
+                      'enclosure_synch': self.redis_server.get('enclosure_synch'),   #  What should  this mean for a roof? T/F = Open/Closed?
+                      'enclosure_mode': self.redis_server.get('enclosure_mode'),
+                      'enclosure_message': self.redis_server.get('enclosure_message')
+                      }
+            stat_string = status['shutter_status']
+        else:
+            status = {'roof_status': 'unknown',
+                      'shutter_status': 'unknown',
+                      'enclosure_synch': 'unknown',   #  What should  this mean for a roof? T/F = Open/Closed?
+                      'enclosure_mode': 'unknown',
+                      'enclosure_message': 'unknown'
+                      }
+            stat_string = 'unknown'
+        #print('Enclosure status:  ', status
         self.status_string = stat_string
         self.manager()   #There be monsters here. <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
         return status
+
 
     def parse_command(self, command):
         req = command['required_params']
