@@ -54,7 +54,7 @@ from astropy.coordinates import SkyCoord, FK5, ICRS, FK4, Distance, \
 # =============================================================================
 #from astroquery.vizier import Vizier
 #from astroquery.simbad import Simbad
-from devices.pywinusb_paddle import *
+#from devices.pywinusb_paddle import *
 
 
 
