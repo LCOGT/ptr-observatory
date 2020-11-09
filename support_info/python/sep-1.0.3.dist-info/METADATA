@@ -1,0 +1,20 @@
+Metadata-Version: 2.1
+Name: sep
+Version: 1.0.3
+Summary: Astronomical source extraction and photometry library
+Home-page: https://github.com/kbarbary/sep
+Author: Kyle Barbary
+Author-email: kylebarbary@gmail.com
+License: LGPLv3+
+Platform: UNKNOWN
+Classifier: Development Status :: 5 - Production/Stable
+Classifier: Programming Language :: Python :: 2
+Classifier: Programming Language :: Python :: 3
+Classifier: License :: OSI Approved :: GNU Lesser General Public License v3 or later (LGPLv3+)
+Classifier: Topic :: Scientific/Engineering :: Astronomy
+Classifier: Intended Audience :: Science/Research
+Requires-Dist: numpy
+
+http://sep.readthedocs.org
+
+

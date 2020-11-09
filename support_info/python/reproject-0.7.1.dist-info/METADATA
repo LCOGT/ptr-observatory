@@ -1,0 +1,65 @@
+Metadata-Version: 2.1
+Name: reproject
+Version: 0.7.1
+Summary: Reproject astronomical images
+Home-page: https://reproject.readthedocs.io
+Author: Thomas Robitaille, Christoph Deil, Adam Ginsburg
+Author-email: thomas.robitaille@gmail.com
+License: BSD 3-Clause
+Platform: UNKNOWN
+Requires-Python: >=3.6
+Description-Content-Type: text/x-rst
+Requires-Dist: numpy (>=1.13)
+Requires-Dist: astropy (>=3.2)
+Requires-Dist: astropy-healpix (>=0.2)
+Requires-Dist: scipy (>=1.1)
+Provides-Extra: docs
+Requires-Dist: sphinx-astropy ; extra == 'docs'
+Requires-Dist: pytest ; extra == 'docs'
+Requires-Dist: pyvo ; extra == 'docs'
+Requires-Dist: matplotlib ; extra == 'docs'
+Provides-Extra: test
+Requires-Dist: pytest-astropy ; extra == 'test'
+Requires-Dist: pytest-arraydiff ; extra == 'test'
+Requires-Dist: pytest-cov ; extra == 'test'
+Provides-Extra: testall
+Requires-Dist: asdf ; extra == 'testall'
+Requires-Dist: gwcs ; extra == 'testall'
+Requires-Dist: pyvo ; extra == 'testall'
+Requires-Dist: sunpy ; (platform_machine != "i686") and extra == 'testall'
+Requires-Dist: shapely ; (sys_platform != "win32" and python_version != "3.8") and extra == 'testall'
+
+|Build Status| |Coverage Status| |Powered by Astropy Badge|
+
+About
+=====
+
+The 'reproject' package is a Python package to reproject astronomical
+images using various techniques via a uniform interface. By
+*reprojection*, we mean the re-gridding of images from one world
+coordinate system to another (for example changing the pixel resolution,
+orientation, coordinate system). Currently, we have implemented
+reprojection of celestial images by interpolation (like
+`SWARP <http://www.astromatic.net/software/swarp>`__), as well as by
+finding the exact overlap between pixels on the celestial sphere (like
+`Montage <http://montage.ipac.caltech.edu/index.html>`__). It can also
+reproject to/from HEALPIX projections by relying on the
+`astropy-healpix <https://github.com/astropy/astropy-healpix>`__
+package.
+
+For more information, including on how to install the package, see
+https://reproject.readthedocs.io
+
+.. figure:: https://github.com/astrofrog/reproject/raw/master/docs/images/index-4.png
+   :alt: screenshot
+
+.. |Build Status| image:: https://dev.azure.com/astropy-project/reproject/_apis/build/status/astropy.reproject?branchName=master
+   :target: https://dev.azure.com/astropy-project/reproject/_build/latest?definitionId=3&branchName=master
+.. |Build status| image:: https://ci.appveyor.com/api/projects/status/0ifg4xonlyrc6eu4/branch/master?svg=true
+   :target: https://ci.appveyor.com/project/Astropy/reproject/branch/master
+.. |Coverage Status| image:: https://codecov.io/gh/astropy/reproject/branch/master/graph/badge.svg
+   :target: https://codecov.io/gh/astropy/reproject
+.. |Powered by Astropy Badge| image:: http://img.shields.io/badge/powered%20by-AstroPy-orange.svg?style=flat
+
+
+
