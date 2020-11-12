@@ -1,0 +1,61 @@
+APCC KeyGen
+
+Time Stamp:      Thursday June 11 2015 - 6:39:52 PM
+
+Source:          AP
+
+Product:         APCC Pro
+
+TransactionType: License reissue (generic)
+
+Serial:          0148
+
+ 
+
+****** LICENSE KEY FOLLOWS -- DO NOT EDIT ANYTHING IN THE NEXT 5 LINES ******
+
+Product: APCC Pro
+
+Name:    Wayne Rosing
+
+Email:   wrosing@lcogt.net
+
+Date:    2015-06-11
+
+RegCode: ^;[U-?nEV-K.cI-7+S,-1176
+
+******** END LICENSE KEY ********
+
+ 
+
+IP Address: 50.193.77.201
+
+IP Address: 50-193-77-201-static.hfc.comcastbusiness.net
+
+User agent:
+
+INSERT into Transactions (TransactionType,TransactionSource,CustomerID,ProductID,RegName,RegEmail,SerialNum,RegDate,RegKey,TransactionCount,TransactionDate,Price,IPAddress) Values('License reissue (generic)','AP','163','1','Wayne Rosing','wrosing@lcogt.net','0148','2015-06-11','^;[U-?nEV-K.cI-7+S,-1176','1','2015-06-11 18:39:52','0.00','50.193.77.201');
+
+ 
+
+ 
+
+ 
+
+Clear Skies,
+
+ 
+
+Marj Christen
+
+Astro-Physics, Inc
+
+11250 Forest Hills Rd
+
+Machesney Park, IL 61115
+
+Phone: 815-282-1513
+
+Fax: 815-282-9847
+
+www.astro-physics.com
