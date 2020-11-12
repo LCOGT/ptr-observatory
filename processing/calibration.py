@@ -148,7 +148,7 @@ def calibrate (hdu, lng_path, frame_type='light', quick=False):
             except:
                 quick_bias = False
                 print('WARN: No Bias_1 Loaded.')
-                breakpoint()
+
         if super_bias_2 is None:
             try:
                 sbHdu = fits.open(lng_path + 'fb_2-4.fits')
@@ -161,7 +161,7 @@ def calibrate (hdu, lng_path, frame_type='light', quick=False):
             except:
                 quick_bias = False
                 g_dev['obs'].send_to_user(" No bias_2 loaded.", p_level ='WARNING')
-                breakpoint()
+
         # if super_dark_90 is None:
         #     try:
         #         sdHdu = fits.open(lng_path + 'md_1_90.fits')
