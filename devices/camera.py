@@ -218,11 +218,12 @@ class Camera:
         self.hint = None
         self.focus_cache = None
         self.darkslide = False
-        if self.config['camera']['camera1']['settings']['has_darkslide'] == 'true':
+        if self.config['camera']['camera1']['settings']['has_darkslide']:
             self.darkslide = True
             self.darkslide_instance = Darkslide()     #  NB eventually default after reboot should be closed.
-            self.darkslide_instance.openDarkslide()   #  Consider turing off IR Obsy light at same time..
-            self.darkslide_open = True
+            self.darkslide_instance.closeDarkslide()   #  Consider turing off IR Obsy light at same time..
+            self.darkslide_open = False
+            print("Darkslide closed on startup.")
         self.last_user_name = "unknown user name"
         self.last_user_id ="unknown user ID"
         #  NB  Shouldset up default filter @ default focus.
@@ -323,6 +324,11 @@ class Camera:
     def get_status(self):
         #status = {"type":"camera"}
         status = {}
+        if self.config['camera']['camera1']['settings']['has_darkslide']:
+            ds = self.darkslide_instance.slideStatus
+            status['darkslide'] = str(ds)
+        else:
+            status['darkslide']    = 'unknown'  
         if self.exposure_busy:
             status['busy_lock'] = True
         else:

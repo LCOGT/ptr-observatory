@@ -12,16 +12,17 @@ class Darkslide(object):
     
    def __init__(self):
        self.slideStatus = 'unknown'
+       self.closeDarkslide()
    
    def openDarkslide(self):
-       self._com = serial.Serial('COM26', timeout=0.1)
+       self._com = serial.Serial('COM15', timeout=0.1)
        self._com.write(b'@')
        self.slideStatus = 'open'
        self._com.close()
        print("Darkside Opened.")
     
    def closeDarkslide(self):
-       self._com = serial.Serial('COM26', timeout=0.1)
+       self._com = serial.Serial('COM15', timeout=0.1)
        self._com.write(b'A')
        self.slideStatus = 'closed'
        self._com.close()
