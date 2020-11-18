@@ -65,6 +65,19 @@ from global_yard import g_dev
 import bz2
 import httplib2
 import sep
+import ssl
+
+#  THIS code flushes the SSL Certificat cache whihc sometime fouls up updating
+#  the astropy time scales.
+
+# try:
+#     _create_unverified_https_context = ssl._create_unverified_context
+# except AttributeError:
+# # Legacy Python that doesn't verify HTTPS certificates by default
+#     pass
+# else:
+#     # Handle target environment that doesn't support HTTPS verification
+#     ssl._create_default_https_context = _create_unverified_https_context
 
 
 # move this function to a better location
@@ -298,8 +311,8 @@ class Observatory:
                 url = "https://calendar.photonranch.org/dev/siteevents"
                 body = json.dumps({
                     'site':  'saf',
-                    'start':  '2020-10-18T12:00:00Z',
-                    'end':    '2020-10-19T14:00:59Z',
+                    'start':  '2020-11-17T00:00:00Z',
+                    'end':    '2020-11-20T14:00:59Z',
                     'full_project_details:':  True})
                 if self.blocks is None:   #This currently prevents pick up changes.  OK for the moment.
                     blocks = requests.post(url, body).json()

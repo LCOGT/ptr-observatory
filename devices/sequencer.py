@@ -221,7 +221,8 @@ class Sequencer:
                    'darkTime': 360, 'hotMap': True, 'bin2': True, 'numOfDark': 3, 'dark2Time': 120, \
                    'coldMap': True, 'script': 'genBiasDarkMaster', 'bin5': False}
             opt = {}
-            self.bias_dark_script(req, opt)
+            print('Skipping Eve Biad/Dark')
+            #self.bias_dark_script(req, opt)
         elif  (events['Eve Sky Flats'] < ephem_now < events['End Eve Sky Flats'])  \
                 and g_dev['enc'].mode == 'Automatic' \
                 and g_dev['ocn'].wx_is_ok \
@@ -230,7 +231,8 @@ class Sequencer:
                 #Start it up.
                 self.sky_guard = True
                 self.current_script = "Eve Sky Flat script"
-                self.sky_flat_script({}, {})   #Null command dictionaries
+                print('Skipping Eve Sky Flats')
+                #self.sky_flat_script({}, {})   #Null command dictionaries
         elif g_dev['obs'].blocks is not None and \
                   g_dev['obs'].projects is not None:     #  THIS DOES NEED TO BE FENCED BY TIME and not repeated.
 
@@ -710,10 +712,10 @@ class Sequencer:
                 g_dev['mnt'].slewToSkyFlatAsync()
                 try:
                     exp_time = prior_scale*scale*40000/(float(g_dev['fil'].filter_data[current_filter][3])*g_dev['ocn'].meas_sky_lux)
-                    if exp_time > 30:
-                        exp_time = 30
-                    if exp_time <0.0005:
-                        exp_time = 0.0005
+                    if exp_time > 300:
+                        exp_time = 300
+                    if exp_time <0.001:
+                        exp_time = 0.001
                     exp_time = round(exp_time, 4)
                     prior_scale = prior_scale*scale
                     print("Sky flat estimated exposure time, scale are:  ", exp_time, scale)
