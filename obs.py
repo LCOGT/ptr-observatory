@@ -313,7 +313,7 @@ class Observatory:
                     'site':  'saf',
                     'start':  '2020-11-17T00:00:00Z',
                     'end':    '2020-11-20T14:00:59Z',
-                    'full_project_details:':  True})
+                    'full_project_details:':  False})
                 if self.blocks is None:   #This currently prevents pick up changes.  OK for the moment.
                     blocks = requests.post(url, body).json()
                     if len(blocks) > 0:   #   is not None:
@@ -321,8 +321,9 @@ class Observatory:
                 url = "https://projects.photonranch.org/dev/get-all-projects"
                 if self.projects is None:
                     all_projects = requests.post(url).json()
+                    breakpoint()
                     if len(all_projects) > 0:   #   is not None:
-                        self.projects = all_projects  #NOTE creating a list with a dict entry as item 0
+                        self.projects = all_projects[4]  #NOTE creating a list with a dict entry as item 0
                         #self.projects.append(all_projects[1])
                 '''
                 Design Note.  blocks relate to scheduled time at a site so we expect AWS to mediate block 
