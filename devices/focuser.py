@@ -91,7 +91,9 @@ class Focuser:
     def get_status(self):
         status = {
             "focus_position": round(self.focuser.Position*self.steps_to_micron, 1),
-            "focus_moving": self.focuser.IsMoving
+            "focus_moving": self.focuser.IsMoving,
+            'comp': self.config['coef_c'],
+            'filter_offset': -123.4
             #"focus_temperature": self.focuser.Temperature
             }
         try:
