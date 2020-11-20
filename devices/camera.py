@@ -955,7 +955,7 @@ class Camera:
                     #     self.focus_cache = focus_img[0].data
                     # self.img = self.img - self.focus_cache + 100   #maintain a + pedestal for sep
                     self.img = self.img + 100   #maintain a + pedestal for sep  THIS SHOULD not be needed for a raw input file.
-                    if frame_type[-5:] == 'probe':
+                    if frame_type[-5:] == 'probee':  #  DISABLE THIS 20201118
                         focus_img = fits.open(self.lng_path + 'focus_sample.fits')
                         self.img = focus_img[0].data.transpose()
                     self.img = self.img.astype("float")
@@ -967,7 +967,7 @@ class Camera:
                     self.img = self.img - bkg
                     sources = sep.extract(self.img, 4.5, err=bkg.globalrms, minarea=15)  # Minarea should deal with hot pixels.
                     sources.sort(order = 'cflux')
-                    print('No. of detections:  ', len(sources))
+                    print('No. of detections:  ', len(sources))                  
                     ix, iy = self.img.shape
                     r0 = 0
                     r1 = 0
@@ -1253,7 +1253,7 @@ class Camera:
                     '''
                     if focus_image:
                         #Note we do not reduce focus images, except above in focus processing.
-                        cal_name = cal_name[:-9] + 'FO' + cal_name['-7:']  # remove 'EX' add 'FO'   Could add seq to this
+                        cal_name = cal_name[:-9] + 'FO' + cal_name[-7:]  # remove 'EX' add 'FO'   Could add seq to this
                         hdu.writeto(cal_path + cal_name, overwrite=True)
                         focus_image = False
                         return result

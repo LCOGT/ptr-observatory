@@ -188,7 +188,7 @@ tpt_tuple1.sort()
 tpt_tuple = []
 for entry in tpt_tuple1:
     tpt_tuple.append(entry[1])
-print(tpt_tuple)
+#print(tpt_tuple)
     
     
 if __name__ == '__main__':

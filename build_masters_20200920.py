@@ -636,6 +636,7 @@ def de_offset_and_trim(camera_name, archive_path, selector_string, out_path, ful
  #   file_list.sort
     print(file_list)
     print('# of files:  ', len(file_list))
+    breakpoint()
     p22 = 0
     p30 = 0
     p_else = 0
@@ -1271,13 +1272,13 @@ if __name__ == '__main__':
     #archive_path = "D:/000ptr_saf/archive/sq01/2020-06-13/"
     #archive_path = "D:/2020-06-19  Ha and O3 screen flats/"
 
-    archive_path = "D:/000ptr_saf/archive/sq01/20201024/raw/"
+    archive_path = "C:/000ptr_saf/archive/sq01/fromMaxim/"
     #
-    out_path = 'D:/000ptr_saf/archive/sq01/20201024/tpoint/'
-    lng_path = "D:/000ptr_saf/archive/sq01/lng/"
+    out_path = 'C:/000ptr_saf/archive/sq01/calib/'
+    lng_path = "C:/000ptr_saf/archive/sq01/lng/"
     #APPM_prepare_TPOINT()
-    #de_offset_and_trim(camera_name, archive_path, '**f*t*', out_path, full=True, norm=False)
-    prepare_tpoint(camera_name, archive_path, '*.fits',lng_path, out_path)
+    de_offset_and_trim(camera_name, archive_path, '*CCD*', out_path, full=True, norm=False)
+    #prepare_tpoint(camera_name, archive_path, '*.fits',lng_path, out_path)
     #organize_calib(camera_name, archive_path, out_path, lng_path, '1', 'fb_1-4.fits')
     #compute_sky_gains(camera_name, archive_path, out_path, lng_path, '1', 'fb_1-4.fits')
     #make_master_bias(camera_name, archive_path, out_path, lng_path, '*b_1*', 'fb_1-4.fits')

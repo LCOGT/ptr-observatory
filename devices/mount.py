@@ -44,6 +44,7 @@ from math import cos, radians    #"What plan do we have for making some imports 
 from global_yard import g_dev    #"Ditto guestion we are importing a single object instance."
 
 from astropy.time import Time
+
 from astropy import units as u
 from astropy.coordinates import SkyCoord, FK5, ICRS, FK4, Distance, \
                          EarthLocation, AltAz
