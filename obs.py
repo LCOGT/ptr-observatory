@@ -311,8 +311,8 @@ class Observatory:
                 url = "https://calendar.photonranch.org/dev/siteevents"
                 body = json.dumps({
                     'site':  'saf',
-                    'start':  '2020-11-17T00:00:00Z',
-                    'end':    '2020-11-20T14:00:59Z',
+                    'start':  '2020-11-21T22:00:00Z',
+                    'end':    '2020-11-24T14:00:59Z',
                     'full_project_details:':  False})
                 if self.blocks is None:   #This currently prevents pick up changes.  OK for the moment.
                     blocks = requests.post(url, body).json()
@@ -321,9 +321,9 @@ class Observatory:
                 url = "https://projects.photonranch.org/dev/get-all-projects"
                 if self.projects is None:
                     all_projects = requests.post(url).json()
-                    breakpoint()
+                    self.projects = []
                     if len(all_projects) > 0:   #   is not None:
-                        self.projects = all_projects[4]  #NOTE creating a list with a dict entry as item 0
+                        self.projects = all_projects   #.append(all_projects)  #NOTE creating a list with a dict entry as item 0
                         #self.projects.append(all_projects[1])
                 '''
                 Design Note.  blocks relate to scheduled time at a site so we expect AWS to mediate block 
@@ -564,6 +564,7 @@ class Observatory:
                 wpath = paths['im_path'] + paths['red_name01']
                 hdu.writeto(wpath, overwrite=True)  # NB overwrite == True is dangerous in production code.
                 reduced_data_size = hdu.data.size
+  
                 if self.name == 'saf':
                     wpath = paths['red_path'] + paths['red_name01_lcl']
                     wpath = 'Q' + wpath[1:]
