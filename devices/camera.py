@@ -1195,7 +1195,7 @@ class Camera:
                         next_seq  + '-' + im_type + '01.fits'
                     red_name01_lcl = red_name01[:-9] + self.current_filter +"-" + red_name01[-9:]
                     if self.pane is not None:
-                        red_name01_lcl = red_name01b[:-9] + 'p' + str(abs(self.pane)) + "-" + red_name01b[-9:]
+                        red_name01_lcl = red_name01_lcl[:-9] + 'p' + str(abs(self.pane)) + "-" + red_name01b[-9:]
                     #Cal_ and raw_ names are confusing
                     i768sq_name = self.config['site'] + '-' + current_camera_name + '-' + g_dev['day'] + '-' + \
                         next_seq  + '-' + im_type + '10.fits'
