@@ -183,7 +183,7 @@ class Camera:
         #   we pull from config for some of the various settings.
         try:
             self.camera.BinX = int(self.config['camera']['camera1']['settings']['default_bin'][0])
-            self.camera.BinY = int(self.config['camera']['camera1']['settings']['default_bin'][1])
+            self.camera.BinY = int(self.config['camera']['camera1']['settings']['default_bin'][-1])
             #NB we need to be sure AWS picks up this default.config.site_config['camera']['camera1']['settings']['default_bin'])
         except:
             print('Camera only accepts Bins = 1.')
@@ -191,12 +191,14 @@ class Camera:
             self.camera.BinY = 1
         self.overscan_x =  int(self.config['camera']['camera1']['settings']['overscan_x'])
         self.overscan_y =  int(self.config['camera']['camera1']['settings']['overscan_y'])
-        self.camera_x_size = self.camera.CameraXSize  #unbinned values.
+        self.camera_x_size = self.camera.CameraXSize  #unbinned values. QHY returns 2
         self.camera_y_size = self.camera.CameraYSize  #unbinned
         self.camera_max_x_bin = self.camera.MaxBinX
         self.camera_max_y_bin = self.camera.MaxBinY
         self.camera_start_x = self.camera.StartX
         self.camera_start_y = self.camera.StartY
+        self.camera.NumX = int(self.camera_x_size/self.camera.BinX)
+        self.camera.NumY = int(self.camera_y_size/self.camera.BinY)
         self.camera_num_x = self.camera.NumX    #These are affected binned values.
         self.camera_num_y = self.camera.NumY
         self.previous_start_fraction_x = 0.   #These are the subframe **fraction** values for the previous exposure.
@@ -769,6 +771,7 @@ class Camera:
                                 img_type = 2
                             if frame_type in ('flat', 'screen flat', 'sky flat'):
                                 img_type = 3
+                            #  This is a Maxim-only technique. Does not work with ASCOM Camera driver
                             self.create_simple_autosave(exp_time=exposure_time, img_type=img_type, \
                                                    filter_name=self.current_filter, binning=bin_x, \
                                                    repeat=lcl_repeat)
@@ -832,9 +835,9 @@ class Camera:
         self.post_ocn = []
         counter = 0
         if self.bin == 1:
-            self.completion_time = self.t2 + exposure_time + 18
+            self.completion_time = self.t2 + exposure_time + 1
         else:
-            self.completion_time = self.t2 + exposure_time + 15
+            self.completion_time = self.t2 + exposure_time + 1
         result = {'error': False}
         while True:    #This loop really needs a timeout.
             g_dev['mnt'].get_quick_status(self.post_mnt)   #Need to pick which pass was closest to image completion

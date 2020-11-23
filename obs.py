@@ -564,16 +564,18 @@ class Observatory:
                 wpath = paths['im_path'] + paths['red_name01']
                 hdu.writeto(wpath, overwrite=True)  # NB overwrite == True is dangerous in production code.
                 reduced_data_size = hdu.data.size
+                wpath = paths['red_path'] + paths['red_name01_lcl']    #This name is convienent for local sorting
+                hdu.writeto(wpath, overwrite=True)
   
-                if self.name == 'saf':
-                    wpath = paths['red_path'] + paths['red_name01_lcl']
-                    wpath = 'Q' + wpath[1:]
-                    try:
-                        os.makedirs(wpath[:44], exist_ok=True)    #This whole section is fragile.
-                        hdu.writeto(wpath, overwrite=True)
-                    except:
-                        print("Failed to write reduced to Q: at saf site.")
-                    pass
+                # if self.name == 'saf':
+                #     wpath = paths['red_path'] + paths['red_name01_lcl']
+                #     wpath = 'Q' + wpath[1:]
+                #     try:
+                #         os.makedirs(wpath[:44], exist_ok=True)    #This whole section is fragile.
+                #         hdu.writeto(wpath, overwrite=True)
+                #     except:
+                #         print("Failed to write reduced to Q: at saf site.")
+                #     pass
                 # print(hdu.data)
                 # print('WROTE TO: ', paths['red_path'] + paths['red_name01'])
                 # if g_dev['cam'].toss:

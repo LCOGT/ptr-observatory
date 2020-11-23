@@ -10,7 +10,7 @@ class FilterWheel:
         self.name = name
         g_dev['fil']= self
         self.config = config['filter_wheel']
-        #print("FW:  ", config)
+        print("FW:  ", self.config)
         self.filter_data = self.config['filter_wheel1']['settings']['filter_data'][1:]  #  Stips off column heading entry
         self.filter_screen_sort = self.config['filter_wheel1']['settings']['filter_screen_sort']
         self.filter_reference = int(self.config['filter_wheel1']['settings']['filter_reference'])
@@ -46,11 +46,29 @@ class FilterWheel:
             self.filter_back.Position = self.filter_data[self.filter_reference][1][0]
             time.sleep(1)
             print(self.filter_front.Names, self.filter_back.Names, self.filter_selected, self.filter_offset)
-        elif driver.lower() in ['maxim', 'maximdl', 'maximdlpro']:
+        elif driver.lower() in ["maxim.ccdcamera", 'maxim', 'maximdl', 'maximdlpro']:
+            print('Maxim controlled filter (ONLY) is initializing.')
+            win32com.client.pythoncom.CoInitialize()
+            self.filter = win32com.client.Dispatch(driver)
+            #Monkey patch in Maxim specific methods.
+            self._connected = self._maxim_connected
+            self._connect = self._maxim_connect
+            self._setpoint = self._maxim_setpoint
+            #self._temperature = self._maxim_temperature
+            #self._expose = self._maxim_expose
+            #self._stop_expose = self._maxim_stop_expose
+            self.description = 'Maxim as Filter Controller is connecting.'
+            print('Maxim is connected:  ', self._connect(True))
+            self._setpoint(float(100))
+            #self.app = win32com.client.Dispatch("Maxim.Application")
+            #self.app.TelescopeConnected = True
+            #print("Maxim Telescope Connected: ", self.app.TelescopeConnected)
+            print('Control is Maxim filter interface.')
             self.maxim = True
+            self.ascom = False
             self.dual = False
             self.custom = False
-            self.filter_selected = self.filter_data[self.filter_reference][0]   #This is the defaultexpected after a
+            self.filter_selected = self.filter_data[self.filter_reference][0]   #This is the default expected after a
                                                                                 #Home or power-up cycle.
             self.filter_number = self.filter_reference
             self.filter_offset = self.filter_data[self.filter_reference][2]
@@ -92,6 +110,29 @@ class FilterWheel:
             self.filter_front.Connected = True
             print("Currently QHY RS232 FW")
 
+    #The patches.   Note these are essentially a getter-setter/property constructs.
+    #  NB we are here talking to Maxim acting only as a filter controller.
+    def _maxim_connected(self):
+        return self.filter.LinkEnabled
+
+    def _maxim_connect(self, p_connect):
+        self.filter.LinkEnabled = p_connect
+        return self.filter.LinkEnabled
+
+    # def _maxim_temperature(self):
+    #     return self.camera.Temperature
+
+    def _maxim_setpoint(self, p_temp):
+        self.filter.TemperatureSetpoint = float(p_temp)
+        self.filter.CoolerOn = True
+        return self.filter.TemperatureSetpoint
+
+    # def _maxim_expose(self, exposure_time, imtypeb):
+    #     self.camera.Expose(exposure_time, imtypeb)
+
+    # def _maxim_stop_expose(self):
+    #     self.camera.AbortExposure()
+
 
 
     def get_status(self):
@@ -105,8 +146,12 @@ class FilterWheel:
         #     return status
             
         try:
-            if self.filter_front.Position == -1 or self.filter_back.Position == -1:
+            if self.dual and (self.filter_front.Position == -1 or self.filter_back.Position == -1):
                 f_move = True
+                print("At least one, of possibly two, filter wheels is moving.")
+            elif not self.dual and self.filter.Position == -1:
+                f_move = True
+                print('Maxim Filter is moving.')
             else:
                 f_move = False
             status = {
@@ -251,9 +296,10 @@ class FilterWheel:
             self.filter_offset = int(self.filter_data[filt_pointer][2])
         elif self.maxim:
             
-            g_dev['cam'].camera.Filter = filter_selections[0]
+            #g_dev['cam'].camera.Filter = filter_selections[0]   #  Pure Maxim WMD
+            self.filter.Filter = filter_selections[0]
             time.sleep(0.2)
-            g_dev['cam'].camera.GuiderFilter = filter_selections[1]
+            #g_dev['cam'].camera.GuiderFilter = filter_selections[1]
         else:
             try:
                 while self.filter_front.Position == -1:
@@ -264,7 +310,7 @@ class FilterWheel:
             self.filter_offset = float(self.filter_data[filt_pointer][2])
 
     def home_command(self, req: dict, opt: dict):
-        ''' set the filter to the home position '''  #NB this is setting to defaault not Home.
+        ''' set the filter to the home position '''  #NB this is setting to default not Home.
         print("filter cmd: home", req, opt)
         breakpoint()
         while self.filter_back.Position == -1:
