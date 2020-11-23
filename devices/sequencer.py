@@ -247,7 +247,7 @@ class Sequencer:
             # and background blocks.
             
             #First, sort blocks to be in ascending order, just to promote clarity. Remove expired projects.
-            
+
             for block in blocks:  #  This merges project spec into the blocks.
                 for project in projects:
                     if block['project_id'] == project['project_name'] + '#' + project['created_at']:
@@ -466,8 +466,11 @@ class Sequencer:
                     print("Executing: ", exposure, left_to_do)
                     color = exposure['filter']
                     exp_time =  float(exposure['exposure']) 
-                    #dither = exposure['dither'] 
-                    binning = int(exposure['bin'])
+                    #dither = exposure['dither']
+                    if exposure['bin'] in [2, '2,2', '2, 2', '2 2']:
+                        binning = 2
+                    else:
+                        binning = 1
                     count = int(exposure['count'])
                     #  We should add a frame repeat count
                     imtype = exposure['imtype'] 
@@ -677,7 +680,7 @@ class Sequencer:
         self.sky_guard = True
         print('Eve Sky Flat sequence Starting, Enclosure PRESUMED Open. Telescope will un-park.')
         camera_name = str(self.config['camera']['camera1']['name'])
-        flat_count = 11
+        flat_count = 9
         exp_time = .003
         #  NB Sometime, try 2:2 binning and interpolate a 1:1 flat.  This might run a lot faster.
         if flat_count < 1: flat_count = 1
@@ -704,7 +707,8 @@ class Sequencer:
             #g_dev['fil'].set_number_command(current_filter)
             #g_dev['mnt'].slewToSkyFlatAsync()
             bright = 65000
-            scale = 1.0
+            scale = 1.15   #20201121 adjustment
+            
             prior_scale = 1
             #breakpoint()
             while acquired_count < flat_count:
@@ -734,7 +738,8 @@ class Sequencer:
                         scale = 0.33
                 except:
                     scale = 1.0
-                print("Bright:  ", bright)  #  Others are 'NE', 'NW', 'SE', 'SW'.
+                print("Patch/Bright:  ", bright)  #  Others are 'NE', 'NW', 'SE', 'SW'.
+                #  THE following code looks like a debug patch gone rogue.
                 if bright > 45000 and (ephemNow < g_dev['events']['End Eve Sky Flats']
                                   or True):    #NB should gate with end of skyflat window as well.
                     for i in range(1):

@@ -411,7 +411,7 @@ def calibrate (hdu, lng_path, frame_type='light', quick=False):
             if not quick: print('INFO:  Dark correction skipped.')
         img_filter = hdu.header['FILTER']
         if frame_type[-4:]  == 'flat':   #  Note frame type ends 'flat, e.g arc_flat, screen_flat, sky_flat
-            break       #  Do not fla calibrate a flat.
+            break       #  Do not calibrate a flat.
         do_flat = False
         if binning == 2:
             if img_filter in ['w', 'W']:
