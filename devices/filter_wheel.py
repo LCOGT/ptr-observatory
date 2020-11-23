@@ -49,6 +49,7 @@ class FilterWheel:
         elif driver.lower() in ["maxim.ccdcamera", 'maxim', 'maximdl', 'maximdlpro']:
             print('Maxim controlled filter (ONLY) is initializing.')
             win32com.client.pythoncom.CoInitialize()
+            breakpoint()
             self.filter = win32com.client.Dispatch(driver)
             #Monkey patch in Maxim specific methods.
             self._connected = self._maxim_connected
