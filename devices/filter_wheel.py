@@ -11,6 +11,7 @@ class FilterWheel:
         g_dev['fil']= self
         self.config = config['filter_wheel']
         print("FW:  ", self.config)
+        self.dual_filter = self.config['filter_wheel1']['dual_wheel']
         self.filter_data = self.config['filter_wheel1']['settings']['filter_data'][1:]  #  Stips off column heading entry
         self.filter_screen_sort = self.config['filter_wheel1']['settings']['filter_screen_sort']
         self.filter_reference = int(self.config['filter_wheel1']['settings']['filter_reference'])
@@ -49,7 +50,6 @@ class FilterWheel:
         elif driver.lower() in ["maxim.ccdcamera", 'maxim', 'maximdl', 'maximdlpro']:
             print('Maxim controlled filter (ONLY) is initializing.')
             win32com.client.pythoncom.CoInitialize()
-            breakpoint()
             self.filter = win32com.client.Dispatch(driver)
             #Monkey patch in Maxim specific methods.
             self._connected = self._maxim_connected
@@ -213,7 +213,7 @@ class FilterWheel:
                 time.sleep(0.2)
             except:
                 breakpoint()
-            self.filter_offset = int(self.filter_data[filt_pointer][2])
+            self.filter_offset = int(self.filter_data[filter_number][2])
         elif self.maxim:
             g_dev['cam'].camera.Filter = filter_selections[0]
             time.sleep(0.1)
@@ -241,7 +241,7 @@ class FilterWheel:
                 time.sleep(0.2)
             except:
                 breakpoint()
-            self.filter_offset = int(self.filter_data[filt_pointer][2])
+            self.filter_offset = int(self.filter_data[filter_selections][2])
         elif self.maxim:
             g_dev['cam'].camera.Filter = filter_selections[0]
             time.sleep(0.2)
@@ -297,9 +297,16 @@ class FilterWheel:
             self.filter_offset = int(self.filter_data[filt_pointer][2])
         elif self.maxim:
             
+# =============================================================================
+#             flifil0 is closest to telescope,???
+#             flifil 1 is closest to camera.???
+# =============================================================================
             #g_dev['cam'].camera.Filter = filter_selections[0]   #  Pure Maxim WMD
             self.filter.Filter = filter_selections[0]
-            time.sleep(0.2)
+            time.sleep(0.1)
+            if self.dual_filter:
+                self.filter.GuiderFilter = filter_selections[1]
+                time.sleep(0.1)
             #g_dev['cam'].camera.GuiderFilter = filter_selections[1]
         else:
             try:
@@ -308,6 +315,7 @@ class FilterWheel:
                 self.filter_front.Position = filter_selections[0]
             except:
                 breakpoint()
+
             self.filter_offset = float(self.filter_data[filt_pointer][2])
 
     def home_command(self, req: dict, opt: dict):
