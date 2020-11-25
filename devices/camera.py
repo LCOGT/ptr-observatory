@@ -837,7 +837,7 @@ class Camera:
         if self.bin == 1:
             self.completion_time = self.t2 + exposure_time + 1
         else:
-            self.completion_time = self.t2 + exposure_time + 1
+            self.completion_time = self.t2 + exposure_time + 14
         result = {'error': False}
         while True:    #This loop really needs a timeout.
             g_dev['mnt'].get_quick_status(self.post_mnt)   #Need to pick which pass was closest to image completion

@@ -235,7 +235,7 @@ class Sequencer:
                 #self.sky_flat_script({}, {})   #Null command dictionaries
         elif g_dev['obs'].blocks is not None and \
                   g_dev['obs'].projects is not None:     #  THIS DOES NEED TO BE FENCED BY TIME and not repeated.
-
+            breakpoint()
             blocks = g_dev['obs'].blocks
             projects = g_dev['obs'].projects
             debug = False

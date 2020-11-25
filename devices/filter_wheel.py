@@ -60,7 +60,7 @@ class FilterWheel:
             #self._stop_expose = self._maxim_stop_expose
             self.description = 'Maxim as Filter Controller is connecting.'
             print('Maxim is connected:  ', self._connect(True))
-            self._setpoint(float(100))
+            self._setpoint(float(-100))
             #self.app = win32com.client.Dispatch("Maxim.Application")
             #self.app.TelescopeConnected = True
             #print("Maxim Telescope Connected: ", self.app.TelescopeConnected)
@@ -137,6 +137,7 @@ class FilterWheel:
 
 
     def get_status(self):
+
         # if self.custom is True:
         #     status = {
         #         'filter_name': str(self.filter_name),
@@ -147,14 +148,14 @@ class FilterWheel:
         #     return status
             
         try:
-            if self.dual and (self.filter_front.Position == -1 or self.filter_back.Position == -1):
-                f_move = True
-                print("At least one, of possibly two, filter wheels is moving.")
-            elif not self.dual and self.filter.Position == -1:
-                f_move = True
-                print('Maxim Filter is moving.')
-            else:
-                f_move = False
+            # if self.dual and (self.filter_front.Position == -1 or self.filter_back.Position == -1):
+            #     f_move = True
+            #     print("At least one, of possibly two, filter wheels is moving.")
+            # elif not self.dual and self.filter.Position == -1:
+            #     f_move = True
+            #     print('Maxim Filter is moving.')
+            # else:
+            f_move = False
             status = {
                 'filter_name': self.filter_selected,
                 'filter_number': self.filter_number,
