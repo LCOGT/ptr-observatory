@@ -410,10 +410,10 @@ class ObservingConditions:
             
         #This should be located right after forming the wx status
         url = "https://api.photonranch.org/api/weather/write"
-        breakpoint()
+
         data = json.dumps({
             "weatherData": status2,
-            "site": 'saf',
+            "site": self.site,
             "timestamp_s": int(time.time())
             })
         try:

@@ -235,7 +235,6 @@ class Sequencer:
                 #self.sky_flat_script({}, {})   #Null command dictionaries
         elif g_dev['obs'].blocks is not None and \
                   g_dev['obs'].projects is not None:     #  THIS DOES NEED TO BE FENCED BY TIME and not repeated.
-            breakpoint()
             blocks = g_dev['obs'].blocks
             projects = g_dev['obs'].projects
             debug = False
@@ -247,7 +246,6 @@ class Sequencer:
             # and background blocks.
             
             #First, sort blocks to be in ascending order, just to promote clarity. Remove expired projects.
-
             for block in blocks:  #  This merges project spec into the blocks.
                 for project in projects:
                     if block['project_id'] == project['project_name'] + '#' + project['created_at']:
