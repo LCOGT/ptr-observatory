@@ -35,6 +35,7 @@ import json
 #import importlib
 import numpy as np
 import math
+#import datetime
 
 #from pprint import pprint
 from api_calls import API_calls
@@ -309,12 +310,14 @@ class Observatory:
                # print('scan_requests finished in:  ', round(time.time() - t1, 3), '  seconds')
                 ## Test Tim's code
                 url = "https://calendar.photonranch.org/dev/siteevents"
+
+
                 body = json.dumps({
-                    'site':  'saf',
-                    'start':  '2020-11-21T23:22:00Z',
-                    'end':    '2020-11-30T14:00:59Z',
+                    'site':  self.config['site'],
+                    'start':  g_dev['d-a-y'] + 'T12:00:00Z',
+                    'end':    g_dev['next_day'] + 'T11:59:59Z',
                     'full_project_details:':  False})
-                if self.blocks is None:   #This currently prevents pick up changes.  OK for the moment.
+                if self.blocks is None:   #This currently prevents pick up of calendar changes.  OK for the moment.
                     blocks = requests.post(url, body).json()
                     if len(blocks) > 0:   #   is not None:
                         self.blocks = blocks
@@ -525,38 +528,9 @@ class Observatory:
 
                 paths = pri_image[0]
                 hdu = pri_image[1]
-                #print('Name:  ', paths, '   Hdu.data.shape:', hdu.data.shape)
-                #print("\nREDUCTIONS Starting!")
 
-                # paths = {'raw_path':  raw_path,
-                #          'cal_path':  cal_path,
-                #          'red_path':  red_path,
-                #          'cal_name':  cal_name,
-                #          'raw_nam00': raw_name00,
-                #          'red_nam01': red_name01,
-                #          'i768sq_name00': i768sq_name,
-                #          'i768sq_name10': i768sq_name,
-                #          'jpeg_name10': jpeg_name,
-                #          'jpeg_name11': jpeg_name,
-                #          'text_name00': text_name,
-                #          'text_name10': text_name
-                #          }
-                #
-                # try:    #NB relocate this to Expose entry area.  Fill out except.
-                #im_path_r = g_dev['cam'].camera_path
                 lng_path =  g_dev['cam'].lng_path
-                #     # os.makedirs(im_path_r + g_dev['day'] + '/to_AWS/', exist_ok=True)
-                #     # os.makedirs(im_path_r + g_dev['day'] + '/raw/', exist_ok=True)
-                #     # os.makedirs(im_path_r + g_dev['day'] + '/calib/', exist_ok=True)
-                #     # os.makedirs(im_path_r + g_dev['day'] + '/reduced/', exist_ok=True)
-                #     #print('Created:  ',im_path + g_dev['day'] + '\\to_AWS\\' )
-                #     im_path = im_path_r + g_dev['day'] + '/to_AWS/'
-                #     raw_path = im_path_r + g_dev['day'] + '/raw/'
-                #     cal_path = im_path_r + g_dev['day'] + '/calib/'
-                #     red_path = im_path_r + g_dev['day'] + '/reduced/'
-                # except:
-                #     print('Path creation in Reductions failed.', lng_path)
-               #NB Important decision here, do we flash calibrate screen and sky flats?  For now, Yes.
+                #NB Important decision here, do we flash calibrate screen and sky flats?  For now, Yes.
 
                 #cal_result =
                 calibrate(hdu, lng_path, paths['frame_type'], quick=False)
@@ -566,23 +540,6 @@ class Observatory:
                 reduced_data_size = hdu.data.size
                 wpath = paths['red_path'] + paths['red_name01_lcl']    #This name is convienent for local sorting
                 hdu.writeto(wpath, overwrite=True)
-  
-                # if self.name == 'saf':
-                #     wpath = paths['red_path'] + paths['red_name01_lcl']
-                #     wpath = 'Q' + wpath[1:]
-                #     try:
-                #         os.makedirs(wpath[:44], exist_ok=True)    #This whole section is fragile.
-                #         hdu.writeto(wpath, overwrite=True)
-                #     except:
-                #         print("Failed to write reduced to Q: at saf site.")
-                #     pass
-                # print(hdu.data)
-                # print('WROTE TO: ', paths['red_path'] + paths['red_name01'])
-                # if g_dev['cam'].toss:
-                #     print('lng_path:  ', lng_path)
-                #     hdu =  fits.open(lng_path + 'test/M8-0019ha')
-                #     print(hdu.data)
-
 
                 '''
                 Here we need to consider just what local reductions and calibrations really make sense to
