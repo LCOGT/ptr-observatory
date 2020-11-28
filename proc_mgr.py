@@ -3,6 +3,8 @@
 Created on Tue Nov 24 17:32:00 2020
 
 @author: obs
+Purloined from:
+https://medium.com/@elijahlopezz/get-all-running-processes-with-python-windows-5c1b2e016b2c
 """
 
 import re

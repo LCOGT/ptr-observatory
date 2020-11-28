@@ -425,6 +425,28 @@ class Sequencer:
             dest_ra = float(target['ra'])
             dest_dec = float(target['dec'])
             dest_name =target['name']
+            
+            ''' 
+            We be starting a block:
+            Open dome if alt Sun < 5 degrees
+            Unpark telescope
+            Slave the Dome
+            Go to Az of the target and take a 15 second W  Square
+            exposure -- better go to a tycho star near
+            the aimpoint at Alt ~30-35  Take an exposure, try to solve
+            an possibly synch.  But be above any horizon
+            effects.
+            
+            THen autofocus, then finally go to the object
+            whihc could be below Alt of 30.
+            all of aboe for first of night then at start of a block
+            do the square target check, then AF, then block, depending
+            on AF more Frequently setting.
+            
+            Consider a target check and even synch after a flip.
+            
+            
+            '''
             g_dev['mnt'].go_coord(dest_ra, dest_dec)
             #Compute how many to do.
             left_to_do = 0
@@ -503,7 +525,7 @@ class Sequencer:
                             pitch = 0.25
                         if exposure['area'] in ['150', '150%', 150]:
                             pitch = 0.125
-                    elif exposure['area'] in ['600', '600%', 600]:
+                    elif exposure['area'] in ['600', '600%', 600]:  # 9 exposures.
                         offset = [(0., 0.), (1.5, 0.), (1.5, 1.), (0., 1.), (-1.5, 1.), (-1.5, 0.), \
                                   (-1.5, -1.), (0., -1.), (1.5, -1.), ] #Nine mosaic quadrants 36 x 24mm chip
                         pitch = 0.75

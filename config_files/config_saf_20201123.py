@@ -264,7 +264,7 @@ site_config = {
                         
                 'filter_screen_sort':  [12, 0, 11, 2, 3, 5, 4, 1, 6],   #  don't use narrow yet,  8, 10, 9], useless to try.
                 
-               'filter_sky_sort':  [ 1, 4, 11, 0, 12]  #  Least to most throughput  8, 10, 9, 7, 6, 5, 3, 2,
+               'filter_sky_sort':  [8, 10, 9, 7, 6, 5, 3, 2, 1, 4, 11, 0, 12]  #  Least to most throughput  8, 10, 9, 7, 6, 5, 3, 2,
             },
         },
     },

@@ -132,7 +132,7 @@ def calibrate (hdu, lng_path, frame_type='light', quick=False):
     loud = False
 
     #This needs to deal with caching different binnings as well.  And do we skip all this for a quick
-
+    breakpoint()
     if not quick:
         if super_bias is None:
             try:
@@ -212,91 +212,91 @@ def calibrate (hdu, lng_path, frame_type='light', quick=False):
 
         if screen_flat_w is None:
             try:
-                sfHdu = fits.open(lng_path + 'ff_2w.fits')
+                sfHdu = fits.open(lng_path + 'ff_2_w.fits')
                 screen_flat_w = sfHdu[0].data.astype('float32')
                 quick_flat_w = True
                 sfHdu.close()
-                if loud: print(lng_path + 'ff_2w.fits', 'Loaded')
+                if loud: print(lng_path + 'ff_2_w.fits', 'Loaded')
             except:
                 quick_flat_w = False
                 if loud: print('WARN: No W Flat/Lum Loaded.')
         if screen_flat_B is None:
             try:
-                sfHdu = fits.open(lng_path + 'ff_2B.fits')
+                sfHdu = fits.open(lng_path + 'ff_2_B.fits')
                 screen_flat_B = sfHdu[0].data.astype('float32')
                 quick_flat_B = True
                 sfHdu.close()
-                if loud: print(lng_path + 'f1_2B.fits', 'Loaded')
+                if loud: print(lng_path + 'f1_2_B.fits', 'Loaded')
             except:
                 quick_flat_B = False
                 if loud: print('WARN: No B Flat/Lum Loaded.')
         if screen_flat_V is None:
             try:
-                sfHdu = fits.open(lng_path + 'ff_2V.fits')
+                sfHdu = fits.open(lng_path + 'ff_2_V.fits')
                 screen_flat_V = sfHdu[0].data.astype('float32')
                 quick_flat_V = True
                 sfHdu.close()
-                if loud: print(lng_path + 'f1_2V.fits', 'Loaded')
+                if loud: print(lng_path + 'f1_2_V.fits', 'Loaded')
             except:
                 quick_flat_V = False
                 if loud: print('WARN: No V Flat/Lum Loaded.')
         if screen_flat_R is None:
             try:
-                sfHdu = fits.open(lng_path + 'ff_2R.fits')
+                sfHdu = fits.open(lng_path + 'ff_2_R.fits')
                 screen_flat_R = sfHdu[0].data.astype('float32')
                 quick_flat_R = True
                 sfHdu.close()
-                if loud: print(lng_path + 'ff_2R.fits', 'Loaded')
+                if loud: print(lng_path + 'ff_2_R.fits', 'Loaded')
             except:
                 quick_flat_R = False
                 if loud: print('WARN: No R Flat/Lum Loaded.')
         if screen_flat_gp is None:
             try:
-                sfHdu = fits.open(lng_path + 'ff_2gp.fits')
+                sfHdu = fits.open(lng_path + 'ff_2_gp.fits')
                 screen_flat_gp = sfHdu[0].data.astype('float32')
                 quick_flat_gp = True
                 sfHdu.close()
-                if loud: print(lng_path + 'ff_2gp.fits', 'Loaded')
+                if loud: print(lng_path + 'ff_2_gp.fits', 'Loaded')
             except:
                 quick_flat_gp = False
                 if loud: print('WARN: No gp Flat/Lum Loaded.')
         if screen_flat_rp is None:
             try:
-                sfHdu = fits.open(lng_path + 'ff_2rp.fits')
+                sfHdu = fits.open(lng_path + 'ff_2_rp.fits')
                 screen_flat_rp = sfHdu[0].data.astype('float32')
                 quick_flat_rp = True
                 sfHdu.close()
-                if loud: print(lng_path + 'ff_2rp.fits', 'Loaded')
+                if loud: print(lng_path + 'ff_2_rp.fits', 'Loaded')
             except:
                 quick_flat_rp = False
                 if loud: print('WARN: No rp Flat/Lum Loaded.')
         if screen_flat_ip is None:
             try:
-                sfHdu = fits.open(lng_path + 'ff_2ip.fits')
+                sfHdu = fits.open(lng_path + 'ff_2_ip.fits')
                 screen_flat_ip = sfHdu[0].data.astype('float32')
                 quick_flat_ip = True
                 sfHdu.close()
-                if loud: print(lng_path + 'ff_2ip.fits', 'Loaded')
+                if loud: print(lng_path + 'ff_2_ip.fits', 'Loaded')
             except:
                 quick_flat_ip = False
                 if loud: print('WARN: No ip Flat/Lum Loaded.')
         if screen_flat_HA is None:
             try:
-                sfHdu = fits.open(lng_path + 'ff_2HA.fits')
+                sfHdu = fits.open(lng_path + 'ff_2_HA.fits')
                 screen_flat_HA = sfHdu[0].data.astype('float32')
                 quick_flat_HA = True
                 sfHdu.close()
-                if loud: print(lng_path + 'ff_2HA.fits', 'Loaded')
+                if loud: print(lng_path + 'ff_2_HA.fits', 'Loaded')
             except:
                 quick_flat_HA = False
                 if loud: print('WARN: No HA Flat/Lum Loaded.')
         if screen_flat_O3:
             try:
-                sfHdu = fits.open(lng_path + 'ff_2O3.fits')
+                sfHdu = fits.open(lng_path + 'ff_2_O3.fits')
                 screen_flat_O3 = sfHdu[0].data.astype('float32')
                 quick_flat_O3 = True
                 sfHdu.close()
-                if loud: print(lng_path + 'ff_2O3.fits', 'Loaded')
+                if loud: print(lng_path + 'ff_2_O3.fits', 'Loaded')
             except:
                 quick_flat_O3 = False
                 if loud: print('WARN: No O3 Flat/Lum Loaded.')
@@ -312,31 +312,31 @@ def calibrate (hdu, lng_path, frame_type='light', quick=False):
                 if loud: print('WARN: No N2 Flat/Lum Loaded.')
         if screen_flat_S2 is None:
             try:
-                sfHdu = fits.open(lng_path + 'ff_2S2.fits')
+                sfHdu = fits.open(lng_path + 'ff_2_S2.fits')
                 screen_flat_S2 = sfHdu[0].data.astype('float32')
                 quick_flat_S2 = True
                 sfHdu.close()
-                if loud: print(lng_path + 'ff_2S2.fits', 'Loaded')
+                if loud: print(lng_path + 'ff__2S2.fits', 'Loaded')
             except:
                 quick_flat_S2 = False
                 if loud: print('WARN: No S2 Flat/Lum Loaded.')
         if screen_flat_EXO is None:
             try:
-                sfHdu = fits.open(lng_path + 'ff_2EXO.fits')
+                sfHdu = fits.open(lng_path + 'ff_2_exo.fits')
                 screen_flat_EXO = sfHdu[0].data.astype('float32')
                 quick_flat_EXO = True
                 sfHdu.close()
-                if loud: print(lng_path + 'ff_2EXO.fits', 'Loaded')
+                if loud: print(lng_path + 'ff_2_exo.fits', 'Loaded')
             except:
                 quick_flat_EXO = False
                 if loud: print('WARN: No EXO Flat/Lum Loaded.')
         if screen_flat_air is None:
             try:
-                sfHdu = fits.open(lng_path + 'ff_2air.fits')
+                sfHdu = fits.open(lng_path + 'ff_2_air.fits')
                 screen_flat_air = sfHdu[0].data.astype('float32')
                 quick_flat_air = True
                 sfHdu.close()
-                if loud: print(lng_path + 'ff_2air.fits', 'Loaded')
+                if loud: print(lng_path + 'ff_2_air.fits', 'Loaded')
             except:
                 quick_flat_air = False
                 if loud: print('WARN: No air Flat/Lum Loaded.')
