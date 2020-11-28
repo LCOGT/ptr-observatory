@@ -67,7 +67,7 @@ import httplib2
 import sep
 import ssl
 
-#  THIS code flushes the SSL Certificat cache whihc sometime fouls up updating
+#  THIS code flushes the SSL Certificate cache whihc sometime fouls up updating
 #  the astropy time scales.
 
 # try:

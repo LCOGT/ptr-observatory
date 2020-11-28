@@ -60,7 +60,7 @@ class FilterWheel:
             #self._stop_expose = self._maxim_stop_expose
             self.description = 'Maxim as Filter Controller is connecting.'
             print('Maxim is connected:  ', self._connect(True))
-            self._setpoint(float(100))
+            self._setpoint(float(-100))
             #self.app = win32com.client.Dispatch("Maxim.Application")
             #self.app.TelescopeConnected = True
             #print("Maxim Telescope Connected: ", self.app.TelescopeConnected)
