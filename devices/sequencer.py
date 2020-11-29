@@ -235,7 +235,7 @@ class Sequencer:
                 #self.sky_flat_script({}, {})   #Null command dictionaries
         elif g_dev['obs'].blocks is not None and \
                   g_dev['obs'].projects is not None:     #  THIS DOES NEED TO BE FENCED BY TIME and not repeated.
-            breakpoint()
+
             blocks = g_dev['obs'].blocks
             projects = g_dev['obs'].projects
             debug = False
@@ -857,7 +857,7 @@ class Sequencer:
         print('Sky Flat sequence completed, Telescope is parked.')
         self.guard = False
 
-    def focus_auto_script(self, req, opt, throw=600):
+    def focus_auto_script(self, req, opt, throw=400):
         '''
         V curve is a big move focus designed to fit two lines adjacent to the more normal focus curve.
         It finds the approximate focus, particulary for a new instrument. It requires 8 points plus
@@ -875,11 +875,33 @@ class Sequencer:
                         result['patch'] = cal_result
                         result['temperature'] = avg_foc[2]  This is probably tube not reported by Gemini.
         '''
+        self.sequencer_hold = False   #Allow comand checks.
+        self.guard = False
+        return
         req2 = copy.deepcopy(req)
         self.af_guard = True
         sim = g_dev['enc'].shutter_is_closed
         print('AF entered with:  ', req, opt, '\n .. and sim =  ', sim)
         #self.sequencer_hold = True  #Blocks command checks.
+        #Here we jump in too  fast and need for mount to settle
+        try:
+            #Check here for filter, guider, still moving  THIS IS A CLASSIC
+            #case where a timeout is a smart idea.
+            #Wait for external motion to cease before exposing.  Note this precludes satellite tracking.
+            st = "" 
+            while g_dev['foc'].focuser.IsMoving or g_dev['rot'].rotator.IsMoving or \
+                  g_dev['mnt'].mount.Slewing or g_dev['enc'].enclosure.Slewing:   #Filter is moving??
+                if g_dev['foc'].focuser.IsMoving: st += 'f>'
+                if g_dev['rot'].rotator.IsMoving: st += 'r>'
+                if g_dev['mnt'].mount.Slewing: st += 'm>'
+                if g_dev['enc'].enclosure.Slewing: st += 'd>'
+                print(st)
+                st = ""
+                time.sleep(0.2)
+                if seq > 0:
+                    g_dev['obs'].update_status()
+        except:
+            print("Motion check faulted.")
         start_ra = g_dev['mnt'].mount.RightAscension   #Read these to go back.
         start_dec = g_dev['mnt'].mount.Declination
         focus_start = g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron

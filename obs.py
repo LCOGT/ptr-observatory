@@ -66,7 +66,7 @@ from global_yard import g_dev
 import bz2
 import httplib2
 import sep
-import ssl
+#import ssl
 
 #  THIS code flushes the SSL Certificate cache whihc sometime fouls up updating
 #  the astropy time scales.
