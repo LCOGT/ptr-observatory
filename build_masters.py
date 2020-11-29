@@ -649,7 +649,7 @@ def de_offset_and_trim(camera_name, archive_path, selector_string, out_path, ful
         if  norm:
             pedastal = 0.0
         else:
-            pedastal = 200    #I guess fox for a corrupt import here at this line.
+            pedastal = 100    #I guess fix for a corrupt import here at this line.
         img.data = img.data.transpose()  #Do this for convenience of sorting trimming details.
         ix, iy = img.data.shape
         '''
@@ -680,7 +680,7 @@ def de_offset_and_trim(camera_name, archive_path, selector_string, out_path, ful
             else:
                 square = trimmed[1590:1590 + 6388, :]
         elif ix == 4800:
-
+            #Shift error needs documenting!
             if img.data[11, -18] == 0:
                 p22 += 1
                 overscan = int((np.median(img.data[12:, -17:]) + np.median(img.data[0:10, :]))/2) - 1 
@@ -702,7 +702,8 @@ def de_offset_and_trim(camera_name, archive_path, selector_string, out_path, ful
             else:
                 square = trimmed[795:795 + 3194, :]
         else:
-            print("Incorrect chip size or bin specified.")
+            print("Incorrect chip size or bin specified or already-converted:  skipping.")
+            continue
         square = square.transpose()
         std = square.std()
         smin = np.where(square < (pedastal - 6*std))    #finds negative pixels
@@ -1289,12 +1290,12 @@ if __name__ == '__main__':
     #archive_path = "D:/000ptr_saf/archive/sq01/2020-06-13/"
     #archive_path = "D:/2020-06-19  Ha and O3 screen flats/"
 
-    archive_path = "Q:/000ptr_saf/archive/sq01/20201126/reduced/"
+    #archive_path = "Q:/archive/sq01/lng/"
     #
-    out_path = 'Q:/000ptr_saf/archive/sq01/20201126/re_reduced/'
-    lng_path = "Q:/000ptr_saf/archive/sq01/lng/"
+    #out_path = 'Q:/archive/sq01/lng/'
+    lng_path = "Q:/archive/sq01/lng/"
     #APPM_prepare_TPOINT()
-    #de_offset_and_trim(camera_name, archive_path, '*CCD*', out_path, full=True, norm=False)
+    #de_offset_and_trim(camera_name, archive_path, '**f*t*', out_path, full=True, norm=False)
     #prepare_tpoint(camera_name, archive_path, '*.f*t*', lng_path, out_path)
     #organize_calib(camera_name, archive_path, out_path, lng_path, '1', 'fb_1-4.fits')
     #compute_sky_gains(camera_name, archive_path, out_path, lng_path, '1', 'fb_1-4.fits')
@@ -1318,6 +1319,8 @@ if __name__ == '__main__':
     # archive_path = "D:/20200914 M33 second try/trimmed/"
     #out_path = 'Q:/M31 Moasic/20201002_BDH'
     #correct_image(camera_name, archive_path, '**f*t*', lng_path, out_path)
+    archive_path = 'Q:/archive/sq01/20201127/reduced/'
+    out_path = 'Q:/archive/sq01/20201127/re_reduced/'
     annotate_image(camera_name, archive_path, '**f*t*', lng_path, out_path)
 
     # mod_correct_image(camera_name, archive_path, '*EX00*', lng_path, out_path)

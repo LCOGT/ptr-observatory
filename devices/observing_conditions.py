@@ -73,6 +73,7 @@ class ObservingConditions:
         self.wx_test_cycle = 0
         self.prior_status = None
         self.prior_status_2 = None
+        self.wmd_fail_counter = 0
         if self.site in ['wmd', 'wmd2']:
             self.redis_server = redis.StrictRedis(host='10.15.0.109', port=6379, db=0,
                                                   decode_responses=True)
@@ -259,8 +260,12 @@ class ObservingConditions:
                 # breakpoint()
                 # pass
                 wx = eval(self.redis_server.get('<ptr-wx-1_state'))
+                illum = float(wx["illum lux"])
+                self.last_wx = wx
             except:
                 print('Redis is not returning Wx Data properly.')
+                wx = self.last_wx
+                
             try:
                 illum, mag = self.astro_events.illuminationNow()
                 illum = float(wx["illum lux"])
@@ -301,13 +306,17 @@ class ObservingConditions:
                 return status
             except:
                 time.sleep(1)
+                self.wmd_fail_counter += 1
                 # This is meant to be a retry
                 try:
                     #breakpoint()
                     #pass
                     wx = eval(self.redis_server.get('<ptr-wx-1_state'))
+                    illum = float(wx["illum lux"])
+                    self.last_wx = wx
                 except:
                     print('Redis is not turning Wx Data properly.')
+                    wx = self.last_wx
                 status = {"temperature_C": float(wx["amb_temp C"]),
                           "pressure_mbar": 978.0,
                           "humidity_%": float(wx["humidity %"]),
@@ -325,8 +334,8 @@ class ObservingConditions:
                           }
                         # Only write when around dark, put in CSV format
                 sunZ88Op, sunZ88Cl, ephemNow = g_dev['obs'].astro_events.getSunEvents()
-                quarter_hour = 0.75/24    #  Note temp changed to 3/4 of an hour.
-                if  (sunZ88Op - quarter_hour < ephemNow < sunZ88Cl + quarter_hour) and (time.time() >= \
+                two_hours = 2/24    #  Note changed to 2 hours.
+                if  (sunZ88Op - two_hours < ephemNow < sunZ88Cl + two_hours) and (time.time() >= \
                      self.sample_time + 30.):    #  Two samples a minute.
                     try:
                         wl = open('Q:/archive/wx_log.txt', 'a')
