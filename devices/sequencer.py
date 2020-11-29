@@ -897,8 +897,7 @@ class Sequencer:
                 print(st)
                 st = ""
                 time.sleep(0.2)
-                if seq > 0:
-                    g_dev['obs'].update_status()
+                g_dev['obs'].update_status()
         except:
             print("Motion check faulted.")
         start_ra = g_dev['mnt'].mount.RightAscension   #Read these to go back.
@@ -921,7 +920,7 @@ class Sequencer:
             opt = {'area': 150, 'count': 1, 'bin': '2, 2', 'filter': 'w'}
         foc_pos0 = focus_start
         result = {}
-        print("temporary patch in Sim values")
+        #print("temporary patch in Sim values")
         print('Autofocus Starting at:  ', foc_pos0, '\n\n')
         #throw = throw  # NB again, from config.  Units are microns  Passed as default paramter
         if not sim:
@@ -942,7 +941,7 @@ class Sequencer:
         spot2 = result['FWHM']
         foc_pos2 = result['mean_focus']
         print('Autofocus Overtaveling Out.\n\n')
-        g_dev['foc'].focuser.Move((foc_pos0 + 3*throw)*g_dev['foc'].micron_to_steps)   #It is important to overshoot to overcome any backlash
+        g_dev['foc'].focuser.Move((foc_pos0 + 2*throw)*g_dev['foc'].micron_to_steps)   #It is important to overshoot to overcome any backlash
         print('Autofocus Moving back in half-way.\n\n')
         g_dev['foc'].focuser.Move((foc_pos0 + throw)*g_dev['foc'].micron_to_steps)
         #opt['fwhm_sim'] = 5
