@@ -472,7 +472,7 @@ class Sequencer:
             initial_focus = True
             while left_to_do > 0 and not ended:
                 if initial_focus:
-                    self.focus_auto_script(req2, opt, throw = 700)
+                    self.focus_auto_script(req2, opt, throw = 500)
                     initial_focus = False    #  Make above on-time event per block
                     timer = time.time() + 1800   #10 min for debugging
                     #at block startup this should mean two AF cycles. Cosider using 5-point for the first.
@@ -483,7 +483,7 @@ class Sequencer:
                         
                         self.focus_auto_script(req2, opt, throw = 500)
                         initial_focus = False
-                        timer = time.time() + 600   #10 min for debugging.
+                        timer = time.time() + 1200   #10 min for debugging.
                     print("Executing: ", exposure, left_to_do)
                     color = exposure['filter']
                     exp_time =  float(exposure['exposure']) 
@@ -550,7 +550,7 @@ class Sequencer:
                             req = {'time': exp_time,  'alias':  str(self.config['camera']['camera1']['name']), 'image_type': imtype}   #  NB Should pick up filter and constants from config
                             opt = {'area': 150, 'count': 1, 'bin': binning, 'filter': color, \
                                    'hint': block['project_id'] + "##" + dest_name, 'pane': pane}
-                            result = g_dev['cam'].expose_command(req, opt, gather_status=True, no_AWS=False)
+                            g_dev['cam'].expose_command(req, opt, gather_status=True, no_AWS=False)
                             count -= 1
                             exposure['count'] = count
                             left_to_do -= 1

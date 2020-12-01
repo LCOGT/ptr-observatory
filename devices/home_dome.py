@@ -26,11 +26,7 @@ def rotate(pX, pY, pTheta):
     sTheta = math.sin(pTheta)
     return pX * cTheta - pY * sTheta, pX * sTheta + pY * cTheta
 
-def adjust_saf_dome_offset(in_az, in_alt, station):    #degrees
-    '''
-    CV 19.47E 5.74S, AP 13.49 E, 6.7N, AVG 16.46 E, 0.95N
-    
-    '''
+def adjust_saf_dome(mnt_az, mnt_alt, station='CV', radius=60):
     if station == 'CV':
         eo = 19.47
         so = 5.74
@@ -38,52 +34,31 @@ def adjust_saf_dome_offset(in_az, in_alt, station):    #degrees
         eo = 13.49
         so = -6.70       
     elif station == 'Both':
-        eo = 16.46
-        so = -0.95        
+        eo = 16.685
+        so = -0.96        
     else:
         eo = 0
         so = 0
-    #  Surveyor's azimuth used here.
-    offset = 0    
-    if 0 <= in_az <= 90:    # Tel on West side looking East
-        offset += -eo*math.cos(math.degrees(in_alt))
-        offset += so*math.sin(math.degrees(in_alt))
-    elif 90 < in_az < 180:
-        offset += eo*math.cos(math.degrees(in_alt))
-        offset += so*math.sin(math.degrees(in_alt))
-    elif 180 <= in_az < 270:    # Tel on East side looking West
-        offset += -eo*math.cos(math.degrees(in_alt))
-        offset += so*math.sin(math.degrees(in_alt))
-    elif 270 <= in_az <=360:
-        offset += eo*math.cos(math.degrees(in_alt))
-        offset += so*math.sin(math.degrees(in_alt))
+    if mnt_az <= 180:
+        flip = 1
     else:
-        print("Bogus input.")
+        flip = -1        
+    dip = mnt_alt - math.degrees(math.asin(so*flip/radius))
+    south_lever = math.cos(math.radians(dip))*radius
+    twist = math.degrees(math.atan2(eo*flip, south_lever))
+    dome_az = mnt_az - twist
+    while dome_az < 0.0:
+        dome_az += 360.0
+    while dome_az >= 360.:
+        dome_az -= 360.0
+    return dome_az
     
-    return round(offset, 1)    
-        
 
-        
-#    else:               # Tel on West Side looking East
-# =============================================================================
-#     #Note need to convert Surveyor's az to mathematical angle.
-#     tx, ty, tz = sphRect(in_az - 180, in_alt)    #x is South, Y is east
-#     print('eo, so:  ', eo, so)
-#     print('tx, ty, tz:  ', tx, ty, tz)
-#     rx, ry = rotate(tx, ty, math.radians(eo))
-#     print('rx, ry, tz:  ', rx, ry, tz)
-#     rry, rz = rotate(ry, tz, math.radians(-so))
-#     print('rx, rry, rz:  ', rx, rry, rz)
-#     m_out_az, out_alt = rectSph(rx, rry, rz)
-#     print('m_out_az:  ', m_out_az)
-#     out_az = 180 - m_out_az    #Back to Surveyor's azimuth
-#     while out_az < 0:
-#         out_az += 360
-#     while out_az >= 360:
-#         out_az -= 360
-#     print(round(out_az, 2), round(out_alt,2))
-# =============================================================================
     
+
+    
+
+
 
 class HomeDome(object):
     
