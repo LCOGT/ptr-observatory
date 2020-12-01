@@ -152,13 +152,13 @@ def calibrate (hdu, lng_path, frame_type='light', quick=False):
 
         if super_bias_2 is None:
             try:
-                sbHdu = fits.open(lng_path + 'b_2-10.fits')
+                sbHdu = fits.open(lng_path + 'b_2.fits')
                 super_bias_2 = sbHdu[0].data#.astype('float32')
                 pedastal = sbHdu[0].header['PEDASTAL']
                 super_bias_2 = super_bias_2 + pedastal
                 sbHdu.close()
                 quick_bias = True
-                if loud: print(lng_path + 'b_2-10.fits', 'Loaded')
+                if loud: print(lng_path + 'b_2.fits', 'Loaded')
             except:
                 quick_bias = False
                 g_dev['obs'].send_to_user(" No bias_2 loaded.", p_level ='WARNING')
@@ -195,7 +195,7 @@ def calibrate (hdu, lng_path, frame_type='light', quick=False):
                if loud: print('WARN: No dark_1 Loaded.')
         if super_dark_2 is None:
             try:
-                sdHdu = fits.open(lng_path + 'd_2_120-10.fits')
+                sdHdu = fits.open(lng_path + 'd_2_300-25.fits')
                 dark_2_exposure_level = sdHdu[0].header['EXPTIME']
                 super_dark_2  = sdHdu[0].data/dark_2_exposure_level  #Converto to ADU/sec
                 super_dark_2 = super_dark_2.astype('float32')
@@ -204,8 +204,8 @@ def calibrate (hdu, lng_path, frame_type='light', quick=False):
                 #fix = np.where(super_dark_360 < 0)
                 #super_dark_360[fix] = 0
                 quick_dark_2 = True
-                dark_exposure_level = 120.
-                if loud: print(lng_path + 'd_2_120-10.fits', 'Loaded')
+                dark_exposure_level = 300.
+                if loud: print(lng_path + 'd_2_300-25.fits', 'Loaded')
             except:
                 quick_dark_2 = False
                 if loud: print('WARN: No dark_2 Loaded.')
@@ -341,11 +341,11 @@ def calibrate (hdu, lng_path, frame_type='light', quick=False):
                 quick_flat_air = False
                 if loud: print('WARN: No air Flat/Lum Loaded.')
         try:
-            shHdu = fits.open(lng_path + 'h_2-10.fits')
+            shHdu = fits.open(lng_path + 'h_2-25.fits')
             hot_map = shHdu[0].data
             hot_pix = np.where(hot_map > 1)
             apply_hot = True
-            if loud: print(lng_path + 'h_2-10.fits', 'Loaded')
+            if loud: print(lng_path + 'h_2-25.fits', 'Loaded')
         except:
             apply_hot = False
             if loud: print('WARN: No Hot Map Loaded.')
