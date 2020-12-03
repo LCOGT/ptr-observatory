@@ -309,21 +309,20 @@ class Observatory:
                             print(e)
                # print('scan_requests finished in:  ', round(time.time() - t1, 3), '  seconds')
                 ## Test Tim's code
-                url = "https://calendar.photonranch.org/dev/siteevents"
-
-
+                breakpoint()
+                url_blk = "https://calendar.photonranch.org/dev/siteevents"
                 body = json.dumps({
                     'site':  self.config['site'],
                     'start':  g_dev['d-a-y'] + 'T12:00:00Z',
                     'end':    g_dev['next_day'] + 'T11:59:59Z',
-                    'full_project_details:':  False})
+                    'full_project_details:':  True})
                 if self.blocks is None:   #This currently prevents pick up of calendar changes.  OK for the moment.
-                    blocks = requests.post(url, body).json()
+                    blocks = requests.post(url_blk, body).json()
                     if len(blocks) > 0:   #   is not None:
                         self.blocks = blocks
-                url = "https://projects.photonranch.org/dev/get-all-projects"
+                url_proj = "https://projects.photonranch.org/dev/get-all-projects"
                 if self.projects is None:
-                    all_projects = requests.post(url).json()
+                    all_projects = requests.post(url_proj).json()
                     self.projects = []
                     if len(all_projects) > 0:   #   is not None:
                         self.projects = all_projects   #.append(all_projects)  #NOTE creating a list with a dict entry as item 0
