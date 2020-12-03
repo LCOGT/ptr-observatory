@@ -239,9 +239,10 @@ class Sequencer:
             blocks = g_dev['obs'].blocks
             projects = g_dev['obs'].projects
             debug = False
+
             if debug:
                 print("# of Blocks, projects:  ", len(g_dev['obs'].blocks),  len(g_dev['obs'].projects))
-           
+            breakpoint()
             # NB without deepcopy decrementing counts in blocks will be local to the machine an subject
             # to over_write as the respons from AWS updates. This is particularly important for owner
             # and background blocks.
