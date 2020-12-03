@@ -58,13 +58,13 @@ class FilterWheel:
             #self._temperature = self._maxim_temperature
             #self._expose = self._maxim_expose
             #self._stop_expose = self._maxim_stop_expose
-            self.description = 'Maxim as Filter Controller is connecting.'
+            self.description = 'Maxim ais Filter Controller.'
             print('Maxim is connected:  ', self._connect(True))
             self._setpoint(float(-100))
             #self.app = win32com.client.Dispatch("Maxim.Application")
             #self.app.TelescopeConnected = True
             #print("Maxim Telescope Connected: ", self.app.TelescopeConnected)
-            print('Control is Maxim filter interface.')
+            print('Filter ontrol is via Maxim filter interface.')
             self.maxim = True
             self.ascom = False
             self.dual = False
