@@ -309,13 +309,12 @@ class Observatory:
                             print(e)
                # print('scan_requests finished in:  ', round(time.time() - t1, 3), '  seconds')
                 ## Test Tim's code
-                breakpoint()
                 url_blk = "https://calendar.photonranch.org/dev/siteevents"
                 body = json.dumps({
                     'site':  self.config['site'],
                     'start':  g_dev['d-a-y'] + 'T12:00:00Z',
                     'end':    g_dev['next_day'] + 'T11:59:59Z',
-                    'full_project_details:':  True})
+                    'full_project_details:':  False})
                 if self.blocks is None:   #This currently prevents pick up of calendar changes.  OK for the moment.
                     blocks = requests.post(url_blk, body).json()
                     if len(blocks) > 0:   #   is not None:
@@ -396,12 +395,12 @@ class Observatory:
             # self.send_log_to_frontend("WARN cam1 just fell on the floor!")
             # self.send_log_to_frontend("ERROR enc1 dome just collapsed.")
             #  Consider inhibity unless status rate is low
-        uri = f"{self.name}/status/"
+        uri_status = f"{self.name}/status/"
         # NB None of the strings can be empty.  Otherwise this put faults.
         try:    # 20190926  tHIS STARTED THROWING EXCEPTIONS OCCASIONALLY
             #print("AWS uri:  ", uri)
             #print('Status to be sent:  \n', status, '\n')
-            self.api.authenticated_request("PUT", uri, status)   # response = is not  used
+            self.api.authenticated_request("PUT", uri_status, status)   # response = is not  used
             #print("AWS Response:  ",response)
             self.time_last_status = time.time()
         except:
@@ -496,14 +495,14 @@ class Observatory:
             else:
                 time.sleep(0.2)
     def send_to_user(self, p_log, p_level='INFO'):
-        url = "https://logs.photonranch.org/logs/newlog"
+        url_log = "https://logs.photonranch.org/logs/newlog"
         body = json.dumps({
             'site': self.config['site'],
             'log_message':  str(p_log),
             'log_level': str(p_level),
             'timestamp':  time.time()
             })
-        resp = requests.post(url, body)
+        resp = requests.post(url_log, body)
         print(resp)
     # Note this is another thread!
     def reduce_image(self):
