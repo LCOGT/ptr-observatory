@@ -242,7 +242,6 @@ class Sequencer:
 
             if debug:
                 print("# of Blocks, projects:  ", len(g_dev['obs'].blocks),  len(g_dev['obs'].projects))
-            breakpoint()
             # NB without deepcopy decrementing counts in blocks will be local to the machine an subject
             # to over_write as the respons from AWS updates. This is particularly important for owner
             # and background blocks.
@@ -451,7 +450,7 @@ class Sequencer:
             '''
             g_dev['mnt'].go_coord(dest_ra, dest_dec)
             #Compute how many to do.
-            left_to_do = 0
+            left_to_do = 1
             ended = False
 
             for exposure in block['project']['exposures']:
