@@ -780,7 +780,6 @@ class Camera:
                             self.t2 = time.time()
                             self.camera.StartSequence(self.camera_path + 'seq/ptr_wmd.seq')
                             print("Starting autosave  at:  ", self.t2)
-                            breakpoint()
                         else:
                             #This is the standard call to Maxim
                             g_dev['obs'].send_to_user("Starting Camera1!", p_level='INFO')
@@ -837,7 +836,7 @@ class Camera:
         if self.bin == 1:
             self.completion_time = self.t2 + exposure_time + 1
         else:
-            self.completion_time = self.t2 + exposure_time + 14
+            self.completion_time = self.t2 + exposure_time + 2
         result = {'error': False}
         while True:    #This loop really needs a timeout.
             g_dev['mnt'].get_quick_status(self.post_mnt)   #Need to pick which pass was closest to image completion
@@ -847,7 +846,7 @@ class Camera:
             if time.time() < self.completion_time:   #  NB Testing here if glob too early is delaying readout.
                 time.sleep(1)
                 continue
-            incoming_image_list = glob.glob(self.file_mode_path + '*.f*t*')
+            incoming_image_list = []   #glob.glob(self.file_mode_path + '*.f*t*')
             self.t4 = time.time()
             try:
                 probe = self.camera.CoolerOn

@@ -19,7 +19,7 @@ build more substantial lower noise masters.  Priors are aged and once too old ar
 we want to weight older priors lower than the current fresh one.
 
 NB NB The chunking logic is flawed and needs a re-work, and always submit an
-odd number of items to a median filter.  Use sigma-clipped mean id # of items
+odd number of items to a median filter.  Use sigma-clipped mean if # of items
 falls below 9.
 
 """
@@ -768,49 +768,60 @@ def correct_image(camera_name, archive_path, selector_string, lng_path, out_path
     pprint(file_list)
     print('# of files:  ', len(file_list))
     #Get the master images:
-    sbHdu = fits.open(lng_path + 'fb_2-4.fits')
+    sbHdu = fits.open(lng_path + 'b_2-10.fits')
     super_bias = sbHdu[0].data.astype('float32')
     pedastal = sbHdu[0].header['PEDASTAL']
     super_bias += pedastal
-    sdHdu = fits.open(lng_path + 'fd_2_120-4.fits')
+    
+    sdHdu = fits.open(lng_path + 'd_2_160-10.fits')
     super_dark = sdHdu[0].data.astype('float32')
+   # pedastal = sbHdu[0].header['PEDASTAL']
+    #super_dark += pedastal
     super_dark_exp = sdHdu[0].header['EXPOSURE']
-    sBHdu = fits.open(lng_path + 'ff_2B.fits')
+    hot_pix = np.where(super_dark > 2*super_dark.std())
+    cold_pix = np.where(super_dark < -0.5*super_dark.std())
+
+    sdHdu = fits.open(lng_path + 'd_2_480-10.fits')
+    super_dark_480 = sdHdu[0].data.astype('float32')
+    #pedastal = sbHdu[0].header['PEDASTAL']
+    #super_dark += pedastal
+    super_dark_exp_480 = sdHdu[0].header['EXPOSURE']
+    
+    sBHdu = fits.open(lng_path + 'ff_2_B.fits')
     super_B = sBHdu[0].data.astype('float32')
-    sVHdu = fits.open(lng_path + 'ff_2V.fits')
+    sVHdu = fits.open(lng_path + 'ff_2_V.fits')
     super_V = sVHdu[0].data.astype('float32')
-    sRHdu = fits.open(lng_path + 'ff_2ip.fits')
+    sRHdu = fits.open(lng_path + 'ff_2_R.fits')
     super_R = sRHdu[0].data.astype('float32')
-    srHdu = fits.open(lng_path + 'ff_2R.fits')
+    srHdu = fits.open(lng_path + 'ff_2_rp.fits')
     super_rp = srHdu[0].data.astype('float32')
-    sgHdu = fits.open(lng_path + 'ff_2gp.fits')
+    sgHdu = fits.open(lng_path + 'ff_2_gp.fits')
     super_gp = sgHdu[0].data.astype('float32')
-    siHdu = fits.open(lng_path + 'ff_2ip.fits')
+    siHdu = fits.open(lng_path + 'ff_2_ip.fits')
     super_ip = siHdu[0].data.astype('float32')
-    sHHdu = fits.open(lng_path + 'ff_2HA.fits')
+    sHHdu = fits.open(lng_path + 'ff_2_HA.fits')
     super_HA = sHHdu[0].data.astype('float32')
-    sOHdu = fits.open(lng_path + 'ff_2O33.fits')
+    sOHdu = fits.open(lng_path + 'ff_2_O3.fits')
     super_O3 = sOHdu[0].data.astype('float32')
-    sSHdu = fits.open(lng_path + 'ff_2S2.fits')
+    sSHdu = fits.open(lng_path + 'ff_2_S2.fits')
     super_S2 = sSHdu[0].data.astype('float32')
-    sNHdu = fits.open(lng_path + 'ff_2N2.fits')
+    sNHdu = fits.open(lng_path + 'ff_2_N2.fits')
     super_N2 = sNHdu[0].data.astype('float32')
-    swHdu = fits.open(lng_path + 'ff_2w.fits')
+    swHdu = fits.open(lng_path + 'ff_2_w.fits')
     super_w = swHdu[0].data.astype('float32')
-    swHdu = fits.open(lng_path + 'ff_2EXO.fits')
+    swHdu = fits.open(lng_path + 'ff_2_exo.fits')
     super_EXO = swHdu[0].data.astype('float32')
-    swHdu = fits.open(lng_path + 'ff_2air.fits')
-    super_air = swHdu[0].data.astype('float32')
-    shHdu = fits.open(lng_path + 'fh_2-4.fits')
-    hot_map = shHdu[0].data
-    hot_pix = np.where(hot_map > 1)  #
-    four_std = 4*super_dark.std()   #making this more adaptive 
-    hot_pix = np.where(super_dark > four_std)
+    #swHdu = fits.open(lng_path + 'ff_2air.fits')
+    #super_air = swHdu[0].data.astype('float32')
+    shHdu = fits.open(lng_path + 'h_2-10.fits')
+    # hot_map = shHdu[0].data
+    # hot_pix = np.where(hot_map > 1)  #
+    # four_std = 2*super_dark.std()   #making this more adaptive 
+    # hot_pix = np.where(super_dark > four_std)
     for image in file_list:
-
         img = fits.open(image)
-
         img[0].data = img[0].data.astype('float32')
+        breakpoint()
         try:
             pedastal = img[0].header['PEDASTAL']
             img[0].data = img[0].data + pedastal - super_bias
@@ -821,7 +832,9 @@ def correct_image(camera_name, archive_path, selector_string, lng_path, out_path
             ratio = img_dur/abs(super_dark_exp)
         except:
             ratio = 0    #Do not correct for dark
-            
+        # for ratio in [1, 0.875,0.825, 0.75, 0.7]:
+        #     new = img[0].data - super_dark*ratio
+        #     print(ratio, new.mean(), new.std())
         img[0].data -= super_dark*ratio
         # if image[-3:] in ['fit', 'fts']:   #Patch a short fits suffix
         #     image = image + ('s')
@@ -848,21 +861,21 @@ def correct_image(camera_name, archive_path, selector_string, lng_path, out_path
           img[0].data /= super_N2
         elif image[-5] in ['W', 'w'] or fits_filter == 'w':
           img[0].data /= super_w
-        elif image[-7] in ['E', 'e'] or fits_filter == 'EXO':
+        elif image[-7] in ['E', 'e'] or fits_filter == 'exo':
           img[0].data /= super_EXO
-        elif image[-7] in ['A', 'a'] or fits_filter == 'air':
-          img[0].data /= super_air
+        # elif image[-7] in ['A', 'a'] or fits_filter == 'air':
+        #   img[0].data /= super_air
         else:
             breakpoint()
             print("Incorrect filter suffix, no flat applied.")
         median8(img[0].data, hot_pix)
-        #cold = np.where(img[0].data <= 0)
-        #median8(img[0].data, cold)
+        median8(img[0].data, cold_pix)
         #cast_32 = img[0].data.astype('float32')
         #img[0].data = cast_32
-        img[0].header['CALIBRAT'] = 'B D SKF H'  #SCF SKF
+        img[0].header['CALIBRAT'] = 'B D SKF H C'  #SCF SKF
         file_name_split = image.split('\\')
         print('Writing:  ', file_name_split[1])
+        breakpoint()
         #  img_bk_data = img[0].data
         #  img.writeto(out_path + file_name_split[1], overwrite=True)
         os.makedirs("Q" + archive_path[1:-1]+'_floating/', exist_ok=True)
@@ -878,9 +891,15 @@ def open_ordered_file_list(archive_path, selector_string):
     sorted_list = []
     for image in file_list:
         img = fits.open(image)
-        sorted_list.append((img[0].header['JD'], image))
+        hh = int((img[0].header['DATE-OBS'][11:13]))
+        mm = int((img[0].header['DATE-OBS'][14:16]))
+        ss = float((img[0].header['DATE-OBS'][17:]))
+        tm = ss + 60*mm + 3600*hh
+        if '-w-p0' in image:
+            sorted_list.append((tm, image))
     sorted_list.sort()
     return sorted_list
+
 
 
 def sep_image(camera_name, archive_path, selector_string, lng_path, out_path):
@@ -891,7 +910,7 @@ def sep_image(camera_name, archive_path, selector_string, lng_path, out_path):
     prior_img = None
     final_jd = sorted_list[-1][0]
     initial_jd = sorted_list[0][0]
-    dt_jd = (final_jd - initial_jd)*86400
+    dt_jd = (final_jd - initial_jd)  #seconds
     dx = 136    # NB ultimately these should come from the data.
     dy = 104
     x_vel = dx/dt_jd
@@ -899,12 +918,15 @@ def sep_image(camera_name, archive_path, selector_string, lng_path, out_path):
     plot_x = []
     plot_y = []
     first = False
-    for entry in sorted_list[7:9]:
+    for entry in sorted_list:
         #print('Cataloging:  ', image)
         img = fits.open(entry[1])
         try:
             img_data = img[0].data.astype('float')
-            jd = img[0].header['JD']   #or entry[0]
+            hh = int((img[0].header['DATE-OBS'][11:13]))
+            mm = int((img[0].header['DATE-OBS'][14:16]))
+            ss = float((img[0].header['DATE-OBS'][17:]))
+            jd = ss + 60*mm + 3600*hh
             bkg = sep.Background(img_data)
             #bkg_rms = bkg.rms()
             img_data -= bkg
@@ -913,8 +935,6 @@ def sep_image(camera_name, archive_path, selector_string, lng_path, out_path):
             #print('No. of detections:  ', len(sources))
             sep_result = []
             spots = []
-            print(sources[-7:])
-            
             for sourcea in sources[-1:]:
                 if not first:
                     first_x = sourcea['x'] 
@@ -923,12 +943,12 @@ def sep_image(camera_name, archive_path, selector_string, lng_path, out_path):
                 a0 = sourcea['a']
                 b0 = sourcea['b']
                 del_t_now = (jd - initial_jd)*86400
-                cx = 1064 + x_vel*del_t_now
-                cy = 3742 + y_vel*del_t_now
+                #cx = 1064 + x_vel*del_t_now
+                #cy = 3742 + y_vel*del_t_now
                 #print("Shifts:  ", int(x_vel*del_t_now), int(y_vel*del_t_now), del_t_now)
                 #if cx - 60 < source['x'] < cx + 60  and cy - 60 < source['y'] < cy + 60:
                     #sep_result.append([round(r0, 1), round((source['x']), 1), round((source['y']), 1), round((source['cflux']), 1), jd])
-                print(sourcea['x'], sourcea['y'], sourcea['cflux'], entry[1].split('\\')[1])
+                print(sourcea['x'], sourcea['y'], sourcea['cflux'],len(sources), entry[1].split('\\')[1])
                 plot_x.append((sourcea['x'] - first_x)*0.26)
                 plot_y.append((sourcea['y'] - first_y)*0.26)
 
@@ -947,7 +967,6 @@ def sep_image(camera_name, archive_path, selector_string, lng_path, out_path):
 
             #pprint(sep_result)
 
-            print('\n')
             # try:
             #     spot = np.median(spot[-9:-2])   #  This grabs seven spots.
             #     print(sep_result,'Spot and flux:  ', spot, source['cflux'], len(sources), '\n')
@@ -959,7 +978,7 @@ def sep_image(camera_name, archive_path, selector_string, lng_path, out_path):
 
         except:
             spot = None
-    breakpoint()
+
 def APPM_prepare_TPOINT():   #   'C:/ProgramData/Astro-Physics/APCC/Models/APPM-2020-08-07-031103 Trimmed.csv'
     try:
         img.close()
@@ -1168,9 +1187,12 @@ def annotate_image(camera_name, archive_path, selector_string, lng_path, out_pat
     super_bias = sbHdu[0].data.astype('float32')
     pedastal = sbHdu[0].header['PEDASTAL']
     super_bias += pedastal
-    sdHdu = fits.open(lng_path + 'd_2_120-10.fits')
+    sdHdu = fits.open(lng_path + 'd_2_180-10.fits')
     super_dark = sdHdu[0].data.astype('float32')
     super_dark_exp = sdHdu[0].header['EXPOSURE']
+    sdHdu = fits.open(lng_path + 'd_2_480-10.fits')
+    super_dark_480 = sdHdu[0].data.astype('float32')
+    super_dark_exp_480 = sdHdu[0].header['EXPOSURE']
     sBHdu = fits.open(lng_path + 'ff_2_B.fits')
     super_B = sBHdu[0].data.astype('float32')
     sVHdu = fits.open(lng_path + 'ff_2_V.fits')
@@ -1290,12 +1312,12 @@ if __name__ == '__main__':
     #archive_path = "D:/000ptr_saf/archive/sq01/2020-06-13/"
     #archive_path = "D:/2020-06-19  Ha and O3 screen flats/"
 
-    #archive_path = "Q:/archive/sq01/lng/"
+    archive_path = "C:/000ptr_saf/archive/sq01/20201204 HorseHead Neb/trimmed/"
     #
-    #out_path = 'Q:/archive/sq01/lng/'
-    lng_path = "Q:/archive/sq01/lng/"
+    out_path = 'C:/000ptr_saf/archive/sq01/20201204 HorseHead Neb/reduced/'
+    lng_path = "C:/000ptr_saf/archive/sq01/lng/"
     #APPM_prepare_TPOINT()
-    #de_offset_and_trim(camera_name, archive_path, '**f*t*', out_path, full=True, norm=False)
+    #de_offset_and_trim(camera_name, archive_path, '*BD*.*', out_path, full=True, norm=False)
     #prepare_tpoint(camera_name, archive_path, '*.f*t*', lng_path, out_path)
     #organize_calib(camera_name, archive_path, out_path, lng_path, '1', 'fb_1-4.fits')
     #compute_sky_gains(camera_name, archive_path, out_path, lng_path, '1', 'fb_1-4.fits')
@@ -1318,15 +1340,15 @@ if __name__ == '__main__':
     #archive_path = 'C:/20201122 HorseHead Neb/'
     # archive_path = "D:/20200914 M33 second try/trimmed/"
     #out_path = 'Q:/M31 Moasic/20201002_BDH'
-    #correct_image(camera_name, archive_path, '**f*t*', lng_path, out_path)
-    archive_path = 'Q:/archive/sq01/20201127/reduced/'
-    out_path = 'Q:/archive/sq01/20201127/re_reduced/'
-    annotate_image(camera_name, archive_path, '**f*t*', lng_path, out_path)
+    correct_image(camera_name, archive_path, '**f*t*', lng_path, out_path)
+    #archive_path = 'Q:/archive/sq01/20201127/reduced/'
+    #out_path = 'Q:/archive/sq01/20201127/re_reduced/'
+    #annotate_image(camera_name, archive_path, '**f*t*', lng_path, out_path)
 
     # mod_correct_image(camera_name, archive_path, '*EX00*', lng_path, out_path)
-    # archive_path = out_path
-    # out_path =":D:/20200707 Bubble Neb NGC7635  Ha O3 S2/catalogs/"
-    #sep_image(camera_name, archive_path, '*Head*', lng_path, out_path)
+    #archive_path = 'Q:/000ptr_saf/archive/sq01/20201203/reduced/'
+    #out_path ='Q:/000ptr_saf/archive/sq01/20201203/reduced/catalogs/'
+    #sep_image(camera_name, archive_path, '*EX01*.*', lng_path, out_path)
 
     print('Fini')
     # NB Here we would logcially go on to get screen flats.

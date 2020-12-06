@@ -10,7 +10,7 @@ class FilterWheel:
         self.name = name
         g_dev['fil']= self
         self.config = config['filter_wheel']
-        print("FW:  ", self.config)
+        #print("FW:  ", self.config)
         self.dual_filter = self.config['filter_wheel1']['dual_wheel']
         self.filter_data = self.config['filter_wheel1']['settings']['filter_data'][1:]  #  Stips off column heading entry
         self.filter_screen_sort = self.config['filter_wheel1']['settings']['filter_screen_sort']

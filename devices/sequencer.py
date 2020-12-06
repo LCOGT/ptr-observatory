@@ -171,7 +171,6 @@ class Sequencer:
         g_dev['cam'].user_name = command['user_name']
         action = command['action']
         script = command['required_params']['script']
-
         if action == "run" and script == 'focusAuto':
             self.focus_auto_script(req, opt)
         elif action == "run" and script == 'focusFine':
@@ -857,7 +856,7 @@ class Sequencer:
         print('Sky Flat sequence completed, Telescope is parked.')
         self.guard = False
 
-    def focus_auto_script(self, req, opt, throw=400):
+    def focus_auto_script(self, req, opt, throw=500):
         '''
         V curve is a big move focus designed to fit two lines adjacent to the more normal focus curve.
         It finds the approximate focus, particulary for a new instrument. It requires 8 points plus
@@ -877,7 +876,6 @@ class Sequencer:
         '''
         self.sequencer_hold = False   #Allow comand checks.
         self.guard = False
-        return
         req2 = copy.deepcopy(req)
         self.af_guard = True
         sim = g_dev['enc'].shutter_is_closed
@@ -942,7 +940,7 @@ class Sequencer:
         spot2 = result['FWHM']
         foc_pos2 = result['mean_focus']
         print('Autofocus Overtaveling Out.\n\n')
-        g_dev['foc'].focuser.Move((foc_pos0 + 2*throw)*g_dev['foc'].micron_to_steps)   #It is important to overshoot to overcome any backlash
+        g_dev['foc'].focuser.Move((foc_pos0 - 3*throw)*g_dev['foc'].micron_to_steps)   #It is important to overshoot to overcome any backlash
         print('Autofocus Moving back in half-way.\n\n')
         g_dev['foc'].focuser.Move((foc_pos0 + throw)*g_dev['foc'].micron_to_steps)
         #opt['fwhm_sim'] = 5
@@ -1004,6 +1002,7 @@ class Sequencer:
         NBNBNB This code needs to go to known stars to be moe relaible and permit subframes
         '''
         print('AF entered with:  ', req, opt)
+        breakpoint()
         self.guard = True
         sim = g_dev['enc'].shutter_is_closed
         print('AF entered with:  ', req, opt, '\n .. and sim =  ', sim)

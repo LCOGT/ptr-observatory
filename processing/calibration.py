@@ -38,6 +38,7 @@ super_bias = None
 super_bias_2 = None
 super_dark = None
 super_dark_2 = None
+super_dark_2_long = None
 hot_map = None
 hot_pix = None
 screen_flat_w = None
@@ -71,7 +72,7 @@ sky_flat_S2 = None
 sky_flat_EXO = None
 sky_flat_air = None
 dark_exposure_level = 0.0
-
+dark_long_exposure_level = 0.0
 
 
 def imageStats(img_img, loud=False):
@@ -128,7 +129,7 @@ def calibrate (hdu, lng_path, frame_type='light', quick=False):
     global super_bias, super_bias_2, super_dark, super_dark_2, hot_map, hot_pix, screen_flat_air, screen_flat_w, \
         screen_flat_B, screen_flat_V, screen_flat_R, screen_flat_gp, screen_flat_rp, screen_flat_ip, \
         screen_flat_O3, screen_flat_HA, screen_flat_N2, screen_flat_S2, screen_flat_EXO, screen_flat_air, \
-        dark_exposure_level
+        dark_exposure_level, super_dark_2_long
     loud = False
 
     #This needs to deal with caching different binnings as well.  And do we skip all this for a quick
@@ -188,14 +189,13 @@ def calibrate (hdu, lng_path, frame_type='light', quick=False):
                 #fix = np.where(super_dark_360 < 0)
                 #super_dark_360[fix] = 0
                 quick_dark= True
-                dark_exposure_level = 360.
                 if loud: print(lng_path + 'd_1_180-10.fits', 'Loaded')
             except:
                quick_dark = False
                if loud: print('WARN: No dark_1 Loaded.')
         if super_dark_2 is None:
             try:
-                sdHdu = fits.open(lng_path + 'd_2_300-25.fits')
+                sdHdu = fits.open(lng_path + 'd_2.fits')
                 dark_2_exposure_level = sdHdu[0].header['EXPTIME']
                 super_dark_2  = sdHdu[0].data/dark_2_exposure_level  #Converto to ADU/sec
                 super_dark_2 = super_dark_2.astype('float32')
@@ -204,12 +204,26 @@ def calibrate (hdu, lng_path, frame_type='light', quick=False):
                 #fix = np.where(super_dark_360 < 0)
                 #super_dark_360[fix] = 0
                 quick_dark_2 = True
-                dark_exposure_level = 300.
-                if loud: print(lng_path + 'd_2_300-25.fits', 'Loaded')
+                if loud: print(lng_path + 'd_2.fits', 'Loaded')
             except:
                 quick_dark_2 = False
                 if loud: print('WARN: No dark_2 Loaded.')
-
+        if super_dark_2_long is None:
+            try:
+                sdHdu = fits.open(lng_path + 'd_2_long.fits')
+                dark_2_long_exposure_level = sdHdu[0].header['EXPTIME']
+                super_dark_2_long  = sdHdu[0].data/dark_2_long_exposure_level  #Converto to ADU/sec
+                super_dark_2_long = super_dark_2_long.astype('float32')
+                if loud: print('sdark_2:  ', super_dark_2_long.mean())
+                sdHdu.close()
+                #fix = np.where(super_dark_360 < 0)
+                #super_dark_360[fix] = 0
+                quick_dark_2_long = True
+                if loud: print(lng_path + 'd_2_long.fits', 'Loaded')
+            except:
+                quick_dark_2_long = False
+                if loud: print('WARN: No dark_2_long Loaded.')
+                
         if screen_flat_w is None:
             try:
                 sfHdu = fits.open(lng_path + 'ff_2_w.fits')
@@ -341,16 +355,23 @@ def calibrate (hdu, lng_path, frame_type='light', quick=False):
                 quick_flat_air = False
                 if loud: print('WARN: No air Flat/Lum Loaded.')
         try:
-            shHdu = fits.open(lng_path + 'h_2-25.fits')
+            shHdu = fits.open(lng_path + 'h_2.fits')
             hot_map = shHdu[0].data
             hot_pix = np.where(hot_map > 1)
             apply_hot = True
-            if loud: print(lng_path + 'h_2-25.fits', 'Loaded')
+            if loud: print(lng_path + 'h_2.fits', 'Loaded')
         except:
             apply_hot = False
-            if loud: print('WARN: No Hot Map Loaded.')
+            if loud: print('WARN: No Hot Map Bin 2 Loaded.')
 
     while True:   #Use break to drop through to exit.  i.e., do not calibrate frames we are acquring for calibration.
+        
+# =============================================================================
+# # =============================================================================
+# #           NB NB NB For the moment we have limited bin 1 and sub-frame calibrations
+# # =============================================================================
+# =============================================================================
+        
         start_x = 0
         start_y = 0
         cal_string = ''
@@ -373,6 +394,7 @@ def calibrate (hdu, lng_path, frame_type='light', quick=False):
 # #           NB NB NB For the moment we have limited bin 1 and sub-frame calibrations
 # # =============================================================================
 # =============================================================================
+
         if frame_type == 'bias':
             break    #  Do not bias calibrate a bias.
         if super_bias is not None and binning == 1 :
@@ -484,7 +506,7 @@ def calibrate (hdu, lng_path, frame_type='light', quick=False):
     if loud: print("Max data value is:  ", big_max)
     fix = np.where(hdu.data > 65530)
     hdu.data[fix] = 65530.
-    hdu.data = hdu.data.astype('uint16')
+    hdu.data = hdu.data.astype('uint16')  #NB NB NB Why this step??
     result = {}
     result['error'] = False
     result['mean_focus'] = None
