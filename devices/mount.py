@@ -383,13 +383,15 @@ class Mount:
         elif action in ["pivot", 'zero', 'ra=sid, dec=0']:
             req['ra'] = self.mount.SiderealTime
             req['dec'] = 0.0
-            self.go_command(req, opt)
+            self.go_command(req, opt, offset=False)
         elif action == "park":
             self.park_command(req, opt)
         elif action == "unpark":
             self.unpark_command(req, opt)
         elif action == 'center_on_pixels':
             print (command)
+            breakpoint()
+            self.go_command(req, opt, offset=True)
         elif action == 'sky_flat_position':
             self.slewToSkyFlatAsync()
         else:
@@ -407,17 +409,34 @@ class Mount:
     #        Mount Commands       #
     ###############################
 
-    def go_command(self, req, opt):
+    def go_command(self, req, opt,  offset=False):
         ''' Slew to the given ra/dec coordinates. '''
         print("mount cmd. slewing mount, req, opt:  ", req, opt)
 
         ''' unpark the telescope mount '''  #  NB can we check if unparked and save time?
+    
         if self.mount.CanPark:
             #print("mount cmd: unparking mount")
             self.mount.Unpark()
         try:
-            ra = float(req['ra'])
-            dec = float(req['dec'])
+            if offset:   #THe offset version supplies offsets, need to get actual mount coordinates.
+                offset_x = float(req['image_x']) - 0.5   #Fraction of field.
+                offset_y = float(req['image_y']) - 0.5
+                field_x = 0.38213275235200206*2/15.   #2 accounts for binning, 15 for hours.
+                field_y = 0.2551300253995927*2
+                ra = self.mount.RightAscension - offset_x*field_x
+                while ra >= 24:
+                    ra -= 24
+                while ra < 0:
+                    ra += 24
+                dec = self.mount.Declination - offset_y*field_y
+                #NB NB NB Need to normalize dec
+                #NB NB NB Need to add in de-rotation here.
+                self.mount.SlewToCoordinatesAsync(ra, dec)
+                return
+            else:
+                ra = float(req['ra'])
+                dec = float(req['dec'])
         except:
             print("Bad coordinates supplied.")
             self.message = "Bad coordinates supplied, try again."

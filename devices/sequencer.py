@@ -422,8 +422,14 @@ class Sequencer:
         '''
 
         for target in block['project']['project_targets']:   #  NB NB NB Do multi-target projeects make sense???
-            dest_ra = float(target['ra'])
-            dest_dec = float(target['dec'])
+            dest_ra = float(target['ra']) - \
+                float(block_specification['project']['project_constraints']['ra_offset'])/15.
+            if dest_ra < 0:
+                dest_ra += 24
+            if dest_ra >= 24:
+                dest_ra -= 24
+            dest_dec = float(target['dec']) - float(block_specification['project']['project_constraints']['dec_offset'])
+            #Should normalize
             dest_name =target['name']
             
             ''' 
@@ -448,6 +454,9 @@ class Sequencer:
             
             '''
             g_dev['mnt'].go_coord(dest_ra, dest_dec)
+            print("CAUTION:  rotator may block")
+            g_dev['rot'].rotator.MoveAbsolute(float(block_specification['project']['project_constraints']['position_angle']))
+            
             #Compute how many to do.
             left_to_do = 1
             ended = False
@@ -556,7 +565,7 @@ class Sequencer:
                             print("Left to do:  ", left_to_do)
                         pane += 1
                     now_date_timeZ = datetime.datetime.now().isoformat().split('.')[0] +'Z'           
-                    ended = now_date_timeZ >= block['end']    
+                    ended = now_date_timeZ >= block['end']  # Or mount has flipped, too low, too bright. 
         print("Fini!")
         self.block_guard = False
         return

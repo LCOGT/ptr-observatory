@@ -636,12 +636,13 @@ def de_offset_and_trim(camera_name, archive_path, selector_string, out_path, ful
  #   file_list.sort
     print(file_list)
     print('# of files:  ', len(file_list))
-    breakpoint()
+
     p22 = 0
     p30 = 0
     p_else = 0
+    shift_error = None
     for image in file_list:
-        print('Processing:  ', image)
+        #print('Processing:  ', image)
         image_hdr = fits.open(image)
         img = image_hdr[0]
         #img = ccdproc.CCDData.read(image, unit='adu', format='fits')
@@ -657,7 +658,13 @@ def de_offset_and_trim(camera_name, archive_path, selector_string, out_path, ful
         array([[  0,   0, 132, 132, 131, 122, 125, 127, 136, 135, 135, 123,         
         '''
         if ix == 9600:
-            #  NB  The special casing is fixing a problem with WMD SQ01 camera.
+# =============================================================================
+# # =============================================================================
+# #             #  NB  The special casing is fixing a problem with WMD SQ01 camera.
+# #             #  NB  Need to check exact same pixels are passing through as in the
+# #             #  Camera code.
+# # =============================================================================
+# =============================================================================
             if img.data[22, -34] == 0:
                 p22 += 1
                 overscan = int((np.median(img.data[24:, -33:]) + np.median(img.data[0:21, :]))/2) - 1
@@ -670,7 +677,6 @@ def de_offset_and_trim(camera_name, archive_path, selector_string, out_path, ful
                 trimmed = img.data[32:, :-34].astype('int32') + pedastal - overscan
                 square = trimmed
                 shift_error = 0
-                p_else +=1
             else:
                 p_else +=1
                 breakpoint()
@@ -706,8 +712,11 @@ def de_offset_and_trim(camera_name, archive_path, selector_string, out_path, ful
             continue
         square = square.transpose()
         std = square.std()
-        smin = np.where(square < (pedastal - 6*std))    #finds negative pixels
+        smin = np.where(square < (pedastal - 5*std))    #finds negative pixels
         shot = np.where(square > (pedastal + 5*std))
+        # lmax = square[-200:, :200].max()
+        # lhpix = np.where(square == lmax)
+        # print(lmax, lhpix[0], lhpix[1])
         print('Mean, min, max, std, overscan, # neg, hot pixels:  ', square.mean(), square.min(), square.max(), std, overscan, len(smin[0]), len(shot[0]))
         square[smin] = 0               #marks them as , note pedastal is 100
         if not norm:img.data = square.astype('uint16')
@@ -717,9 +726,11 @@ def de_offset_and_trim(camera_name, archive_path, selector_string, out_path, ful
         img.header['PEDASTAL'] = -pedastal
         img.header['ERRORVAL'] = 0
         img.header['OVERSCAN'] = overscan
+        med, std = image_stats(img, p_median=True)
         if shift_error:
             img.header['SHIFTERR'] = shift_error
-            
+        img.header['PATCHMED'] = med
+        img.header['PATCHSTD'] = std   
         img.header['HISTORY'] = "Maxim image debiased and trimmed."
         #img.write(out_path + image.split('\\')[1], overwrite=True)
 
@@ -728,11 +739,12 @@ def de_offset_and_trim(camera_name, archive_path, selector_string, out_path, ful
             med, std = image_stats(img, p_median=True)
             img.data = img.data/med
             img.header['HISTORY'] = "Normalized to median of central 10%"
-            img.header['PATCH'] = med
+            img.header['PATCHMED'] = med
+            img.header['PATCHSTD'] = std
         os.makedirs(archive_path + 'trimmed/', exist_ok=True)
         image_hdr.writeto(archive_path + 'trimmed/' + image.split('\\')[1], overwrite=True)
         image_hdr.close()
-    print('Debias and trim Finished.')
+    print('Debias and trim Finished. P22, P30', p22, p30)
     
 
 
@@ -768,24 +780,24 @@ def correct_image(camera_name, archive_path, selector_string, lng_path, out_path
     pprint(file_list)
     print('# of files:  ', len(file_list))
     #Get the master images:
-    sbHdu = fits.open(lng_path + 'b_2-10.fits')
+    sbHdu = fits.open(lng_path + 'b_2.fits')
     super_bias = sbHdu[0].data.astype('float32')
     pedastal = sbHdu[0].header['PEDASTAL']
     super_bias += pedastal
     
-    sdHdu = fits.open(lng_path + 'd_2_160-10.fits')
+    sdHdu = fits.open(lng_path + 'd_2.fits')
     super_dark = sdHdu[0].data.astype('float32')
    # pedastal = sbHdu[0].header['PEDASTAL']
     #super_dark += pedastal
     super_dark_exp = sdHdu[0].header['EXPOSURE']
-    hot_pix = np.where(super_dark > 2*super_dark.std())
-    cold_pix = np.where(super_dark < -0.5*super_dark.std())
+    hot_pix = np.where(super_dark > super_dark.std())
+    
 
-    sdHdu = fits.open(lng_path + 'd_2_480-10.fits')
-    super_dark_480 = sdHdu[0].data.astype('float32')
-    #pedastal = sbHdu[0].header['PEDASTAL']
-    #super_dark += pedastal
-    super_dark_exp_480 = sdHdu[0].header['EXPOSURE']
+    # sdHdu = fits.open(lng_path + 'd_2_480-10.fits')
+    # super_dark_480 = sdHdu[0].data.astype('float32')
+    # #pedastal = sbHdu[0].header['PEDASTAL']
+    # #super_dark += pedastal
+    # super_dark_exp_480 = sdHdu[0].header['EXPOSURE']
     
     sBHdu = fits.open(lng_path + 'ff_2_B.fits')
     super_B = sBHdu[0].data.astype('float32')
@@ -813,15 +825,15 @@ def correct_image(camera_name, archive_path, selector_string, lng_path, out_path
     super_EXO = swHdu[0].data.astype('float32')
     #swHdu = fits.open(lng_path + 'ff_2air.fits')
     #super_air = swHdu[0].data.astype('float32')
-    shHdu = fits.open(lng_path + 'h_2-10.fits')
-    # hot_map = shHdu[0].data
-    # hot_pix = np.where(hot_map > 1)  #
-    # four_std = 2*super_dark.std()   #making this more adaptive 
-    # hot_pix = np.where(super_dark > four_std)
+    shHdu = fits.open(lng_path + 'h_2.fits')
+    hot_map = shHdu[0].data
+    hot_pix = np.where(hot_map > 1)  #
+    four_std = 2*super_dark.std()   #making this more adaptive 
+    hot_pix = np.where(super_dark > four_std)
     for image in file_list:
         img = fits.open(image)
         img[0].data = img[0].data.astype('float32')
-        breakpoint()
+ 
         try:
             pedastal = img[0].header['PEDASTAL']
             img[0].data = img[0].data + pedastal - super_bias
@@ -868,18 +880,21 @@ def correct_image(camera_name, archive_path, selector_string, lng_path, out_path
         else:
             breakpoint()
             print("Incorrect filter suffix, no flat applied.")
+
         median8(img[0].data, hot_pix)
+        cold_pix = np.where(img[0].data < -0.5*super_dark.std())
         median8(img[0].data, cold_pix)
         #cast_32 = img[0].data.astype('float32')
         #img[0].data = cast_32
         img[0].header['CALIBRAT'] = 'B D SKF H C'  #SCF SKF
         file_name_split = image.split('\\')
         print('Writing:  ', file_name_split[1])
-        breakpoint()
+
         #  img_bk_data = img[0].data
-        #  img.writeto(out_path + file_name_split[1], overwrite=True)
-        os.makedirs("Q" + archive_path[1:-1]+'_floating/', exist_ok=True)
-        img.writeto("Q" + archive_path[1:-1]+'_floating/' + file_name_split[1], overwrite=True)
+        new_path = out_path + file_name_split[1]
+        img.writeto(new_path, overwrite=True)
+        os.makedirs("Q" + out_path[1:-1], exist_ok=True)
+        img.writeto("Q" + out_path[1:-1]+'/' + file_name_split[1], overwrite=True)
         #  img[0].data = img_bk_data.astype('uint16')
         #  img.writeto(out_path[:-1]+'_unsigned_16int/' + file_name_split[1], overwrite=True)
         #img[0].data = (img[0].data*10).astype('int32')
@@ -907,6 +922,7 @@ def sep_image(camera_name, archive_path, selector_string, lng_path, out_path):
     #file_list.sort()
     #print(file_list)
     print('# of files:  ', len(sorted_list))
+    breakpoint()
     prior_img = None
     final_jd = sorted_list[-1][0]
     initial_jd = sorted_list[0][0]
@@ -917,8 +933,11 @@ def sep_image(camera_name, archive_path, selector_string, lng_path, out_path):
     y_vel = dy/dt_jd
     plot_x = []
     plot_y = []
+    first_x = 0
+    first_y = 0
+    first_t = 0
     first = False
-    for entry in sorted_list:
+    for entry in sorted_list[:-40]:
         #print('Cataloging:  ', image)
         img = fits.open(entry[1])
         try:
@@ -939,16 +958,17 @@ def sep_image(camera_name, archive_path, selector_string, lng_path, out_path):
                 if not first:
                     first_x = sourcea['x'] 
                     first_y = sourcea['y']
+                    first_t = jd
                     first = True
                 a0 = sourcea['a']
                 b0 = sourcea['b']
-                del_t_now = (jd - initial_jd)*86400
+                del_t_now = (jd - first_t)
                 #cx = 1064 + x_vel*del_t_now
                 #cy = 3742 + y_vel*del_t_now
                 #print("Shifts:  ", int(x_vel*del_t_now), int(y_vel*del_t_now), del_t_now)
                 #if cx - 60 < source['x'] < cx + 60  and cy - 60 < source['y'] < cy + 60:
                     #sep_result.append([round(r0, 1), round((source['x']), 1), round((source['y']), 1), round((source['cflux']), 1), jd])
-                print(sourcea['x'], sourcea['y'], sourcea['cflux'],len(sources), entry[1].split('\\')[1])
+                print(del_t_now, del_t_now//239.346, del_t_now%239.346, sourcea['x']-first_x, sourcea['y'] - first_y, sourcea['cflux'],len(sources), entry[1].split('\\')[1])
                 plot_x.append((sourcea['x'] - first_x)*0.26)
                 plot_y.append((sourcea['y'] - first_y)*0.26)
 
@@ -1312,12 +1332,12 @@ if __name__ == '__main__':
     #archive_path = "D:/000ptr_saf/archive/sq01/2020-06-13/"
     #archive_path = "D:/2020-06-19  Ha and O3 screen flats/"
 
-    archive_path = "C:/000ptr_saf/archive/sq01/20201204 HorseHead Neb/trimmed/"
+    archive_path = "Q:/000ptr_saf/archive/sq01/20201207/reduced/"
     #
-    out_path = 'C:/000ptr_saf/archive/sq01/20201204 HorseHead Neb/reduced/'
+    out_path = 'Q:/000ptr_saf/archive/sq01/20201207/reduced/'
     lng_path = "C:/000ptr_saf/archive/sq01/lng/"
     #APPM_prepare_TPOINT()
-    #de_offset_and_trim(camera_name, archive_path, '*BD*.*', out_path, full=True, norm=False)
+    #de_offset_and_trim(camera_name, archive_path, '*H*H*.*', out_path, full=True, norm=False)
     #prepare_tpoint(camera_name, archive_path, '*.f*t*', lng_path, out_path)
     #organize_calib(camera_name, archive_path, out_path, lng_path, '1', 'fb_1-4.fits')
     #compute_sky_gains(camera_name, archive_path, out_path, lng_path, '1', 'fb_1-4.fits')
@@ -1337,10 +1357,9 @@ if __name__ == '__main__':
     # build_hot_map(camera_name, lng_path, "md_1_1080.fits", "hm_1")
     # build_hot_image(camera_name, lng_path, "md_1_1080.fits", "hm_1.fits")
 
-    #archive_path = 'C:/20201122 HorseHead Neb/'
-    # archive_path = "D:/20200914 M33 second try/trimmed/"
-    #out_path = 'Q:/M31 Moasic/20201002_BDH'
-    correct_image(camera_name, archive_path, '**f*t*', lng_path, out_path)
+    #archive_path = 'QC:/000ptr_saf/archive/sq01/20201207 HH/trimmed/'
+    #out_path = "Q:/000ptr_saf/archive/sq01/20201207 HH/reduced/"
+    #correct_image(camera_name, archive_path, '*H*H*.*', lng_path, out_path)
     #archive_path = 'Q:/archive/sq01/20201127/reduced/'
     #out_path = 'Q:/archive/sq01/20201127/re_reduced/'
     #annotate_image(camera_name, archive_path, '**f*t*', lng_path, out_path)
@@ -1348,7 +1367,7 @@ if __name__ == '__main__':
     # mod_correct_image(camera_name, archive_path, '*EX00*', lng_path, out_path)
     #archive_path = 'Q:/000ptr_saf/archive/sq01/20201203/reduced/'
     #out_path ='Q:/000ptr_saf/archive/sq01/20201203/reduced/catalogs/'
-    #sep_image(camera_name, archive_path, '*EX01*.*', lng_path, out_path)
+    sep_image(camera_name, archive_path, '*.*', lng_path, out_path)
 
     print('Fini')
     # NB Here we would logcially go on to get screen flats.

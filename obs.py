@@ -68,7 +68,7 @@ import httplib2
 import sep
 #import ssl
 
-#  THIS code flushes the SSL Certificate cache whihc sometime fouls up updating
+#  THIS code flushes the SSL Certificate cache which sometimes fouls up updating
 #  the astropy time scales.
 
 # try:
@@ -285,17 +285,18 @@ class Observatory:
             time.sleep(self.command_interval)
            #  t1 = time.time()
             if not g_dev['seq'].sequencer_hold:
-                url = "https://jobs.photonranch.org/jobs/getnewjobs"
+                url_job = "https://jobs.photonranch.org/jobs/getnewjobs"
                 body = {"site": self.name}
                 # uri = f"{self.name}/{mount}/command/"
                 cmd = {}
                 # Get a list of new jobs to complete (this request
                 # marks the commands as "RECEIVED")
-                unread_commands = requests.request('POST', url, \
+                unread_commands = requests.request('POST', url_job, \
                                                    data=json.dumps(body)).json()
                 # Make sure the list is sorted in the order the jobs were issued
                 # Note: the ulid for a job is a unique lexicographically-sortable id
                 if len(unread_commands) > 0:
+                    print(unread_commands)
                     unread_commands.sort(key=lambda x: x["ulid"])
                     # Process each job one at a time
                     for cmd in unread_commands:
@@ -313,7 +314,7 @@ class Observatory:
                 body = json.dumps({
                     'site':  self.config['site'],
                     'start':  g_dev['d-a-y'] + 'T12:00:00Z',
-                    'end':    g_dev['next_day'] + 'T11:59:59Z',
+                    'end':    g_dev['next_day'] + 'T19:59:59Z',
                     'full_project_details:':  False})
                 if self.blocks is None:   #This currently prevents pick up of calendar changes.  OK for the moment.
                     blocks = requests.post(url_blk, body).json()
