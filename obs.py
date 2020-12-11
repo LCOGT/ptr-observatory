@@ -66,6 +66,7 @@ from global_yard import g_dev
 import bz2
 import httplib2
 import sep
+from auto_stretch.stretch import Stretch
 #import ssl
 
 #  THIS code flushes the SSL Certificate cache which sometimes fouls up updating
@@ -678,19 +679,28 @@ class Observatory:
                 hdu.writeto(paths['im_path'] + paths['i768sq_name10'], overwrite=True)
                 hdu.data = resized_a.astype('float')
                 #The following does a very lame contrast scaling.  A beer for best improvement on this code!!!
-                istd = np.std(hdu.data)
-                imean = np.mean(hdu.data)
-                if (imean + 3*istd) != 0:    #This does divide by zero in some bias images.
-                    img3 = hdu.data/(imean + 3*istd)
-                else:
-                    img3 = hdu.data
-                fix = np.where(img3 >= 0.999)
-                fiz = np.where(img3 < 0)
-                img3[fix] = .999
-                img3[fiz] = 0
-                img4 = img3*256
-                img4 = img4.astype('uint8')   #Eliminates a user warning.
-                imsave(paths['im_path'] + paths['jpeg_name10'], img4)  #NB File extension triggers JPEG conversion.
+
+                # Old contrast scaling code:
+                #istd = np.std(hdu.data)
+                #imean = np.mean(hdu.data)
+                #if (imean + 3*istd) != 0:    #This does divide by zero in some bias images.
+                #    img3 = hdu.data/(imean + 3*istd)
+                #else:
+                #    img3 = hdu.data
+                #fix = np.where(img3 >= 0.999)
+                #fiz = np.where(img3 < 0)
+                #img3[fix] = .999
+                #img3[fiz] = 0
+                #img4 = img3*256
+                #img4 = img4.astype('uint8')   #Eliminates a user warning.
+                #imsave(paths['im_path'] + paths['jpeg_name10'], img4)  #NB File extension triggers JPEG conversion.
+
+                # New contrast scaling code: 
+                stretched_data_float = Stretch().stretch(hdu.data)
+                stretched_data_uint8 = img4.astype('uint8')  # Eliminates a user warning
+                imsave(paths['im_path'] + paths['jpeg_name10'], stretched_data_uint8)
+                img4 = stretched_data_uint8  # keep old name for compatibility
+
                 jpeg_data_size = abs(img4.size - 1024)
                 if not no_AWS:  #IN the no+AWS case should we skip more of the above processing?
                     #g_dev['cam'].enqueue_for_AWS(text_data_size, paths['im_path'], paths['text_name'])
