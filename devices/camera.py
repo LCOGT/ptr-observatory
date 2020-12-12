@@ -909,22 +909,62 @@ class Camera:
                 pedastal = 100
                 ix, iy = self.img.shape
 
+                # if ix == 9600:
+                #     overscan = int((np.median(self.img[32:, -33:]) + np.median(self.img[0:29, :]))/2) - 1
+                #     trimmed = self.img[32:, :-34].astype('int32') + pedastal - overscan
+                #     if opt['area'] in [150, 'Full', 'full']:
+                #         square = trimmed
+                #     else:
+                #         square = trimmed[1590:1590 + 6388, :]
+                # elif ix == 4800:
+                #     overscan = int((np.median(self.img[16:, -17:]) + np.median(self.img[0:14, :]))/2) -1
+                #     trimmed = self.img[16:, :-17].astype('int32') + pedastal - overscan
+                #     if opt['area'] in [150, 'Full', 'full']:
+                #         square = trimmed
+                #     else:
+                #         square = trimmed[795:795 + 3194, :]
+                # else:
+                #     print("Incorrect chip size or bin specified.")
+                    
                 if ix == 9600:
-                    overscan = int((np.median(self.img[32:, -33:]) + np.median(self.img[0:29, :]))/2) - 1
-                    trimmed = self.img[32:, :-34].astype('int32') + pedastal - overscan
-                    if opt['area'] in [150, 'Full', 'full']:
+                    if self.img[22, -34] == 0:
+ 
+                        overscan = int((np.median(self.img[24:, -33:]) + np.median(self.img[0:21, :]))/2) - 1
+                        trimmed = self.img[24:-8, :-34].astype('int32') + pedastal - overscan
+                        square = trimmed
+                    elif self.img[30, -34] == 0:
+                        overscan = int((np.median(self.img[32:, -33:]) + np.median(self.img[0:29, :]))/2) - 1
+                        trimmed = self.img[32:, :-34].astype('int32') + pedastal - overscan
                         square = trimmed
                     else:
-                        square = trimmed[1590:1590 + 6388, :]
+                        breakpoint()
+        
+                    # if full:
+                    #     square = trimmed
+                    # else:
+                    #     square = trimmed[1590:1590 + 6388, :]
                 elif ix == 4800:
-                    overscan = int((np.median(self.img[16:, -17:]) + np.median(self.img[0:14, :]))/2) -1
-                    trimmed = self.img[16:, :-17].astype('int32') + pedastal - overscan
-                    if opt['area'] in [150, 'Full', 'full']:
+                    #Shift error needs documenting!
+                    if self.img[11, -18] == 0:
+                        overscan = int((np.median(self.img[12:, -17:]) + np.median(self.img[0:10, :]))/2) - 1 
+                        trimmed = self.img[12:-4, :-17].astype('int32') + pedastal - overscan
+                        square = trimmed 
+                    elif self.img[15, -18] == 0:
+                        overscan = int((np.median(self.img[16:, -17:]) + np.median(self.img[0:14, :]))/2) -1 
+                        trimmed = self.img[16:, :-17].astype('int32') + pedastal - overscan
                         square = trimmed
+
                     else:
-                        square = trimmed[795:795 + 3194, :]
+                        breakpoint()
+        
+                    # if full:
+                    #     square = trimmed
+                    # else:
+                    #     square = trimmed[795:795 + 3194, :]
                 else:
-                    print("Incorrect chip size or bin specified.")
+                    print("Incorrect chip size or bin specified or already-converted:  skipping.")
+                    continue
+                
                 square = square.transpose()
                 #This may need a re-think:   Maybe kill neg and anything really hot if there are only a few.
                 #smin = np.where(square < 0)    # finds negative pixels  NB <0 where pedastal is 200. Useless!

@@ -487,21 +487,28 @@ def calibrate (hdu, lng_path, frame_type='light', quick=False):
                 if loud:  print('QuickFlat result:  ', imageStats(img, loud))
         if apply_hot and binning == 2:
             try:
+                hot_pix = np.where(super_dark_2_long > super_dark_2_long.std())
                 median8(img, hot_pix)
                 cal_string += ', H'
+                
             except:
                 print("Hot pixel correction failed.")
             if not quick: 
                 if loud: print('Hot Pixel result:  ', imageStats(img, loud))
+            try:
+                cold_pix = np.where(img <= -img.std())
+                median8(img, cold_pix)
+            except:
+                print("Cold pixel correction failed.")
 
         break    #If we get this far we are done.
     if cal_string == '':
         cal_string = 'Uncalibrated'
     hdu.header['CALHIST'] = cal_string
     hdu.data = img.astype('float32')  #This is meant to catch an image cast to 'float64'
-    fix = np.where(hdu.data < 0)
-    if not quick: print('# of < 0  pixels:  ', len(fix[0]))  #  Do not change values here.
-    hdu.data[fix] = 0
+    # fix = np.where(hdu.data < 0)
+    # if not quick: print('# of < 0  pixels:  ', len(fix[0]))  #  Do not change values here.
+    # hdu.data[fix] = 0
     big_max = hdu.data.max()
     if loud: print("Max data value is:  ", big_max)
     fix = np.where(hdu.data > 65530)

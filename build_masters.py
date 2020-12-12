@@ -657,7 +657,6 @@ def de_offset_and_trim(camera_name, archive_path, selector_string, out_path, ful
         img.data[22:24,-35:]
         array([[  0,   0, 132, 132, 131, 122, 125, 127, 136, 135, 135, 123,         
         '''
-        if ix == 9600:
 # =============================================================================
 # # =============================================================================
 # #             #  NB  The special casing is fixing a problem with WMD SQ01 camera.
@@ -665,6 +664,8 @@ def de_offset_and_trim(camera_name, archive_path, selector_string, out_path, ful
 # #             #  Camera code.
 # # =============================================================================
 # =============================================================================
+
+        if ix == 9600:
             if img.data[22, -34] == 0:
                 p22 += 1
                 overscan = int((np.median(img.data[24:, -33:]) + np.median(img.data[0:21, :]))/2) - 1
@@ -1203,47 +1204,48 @@ def annotate_image(camera_name, archive_path, selector_string, lng_path, out_pat
     pprint(file_list)
     print('# of files:  ', len(file_list))
     #Get the master images:
-    sbHdu = fits.open(lng_path + 'b_2-10.fits')
+    sbHdu = fits.open(lng_path + 'b_2.fits')
     super_bias = sbHdu[0].data.astype('float32')
     pedastal = sbHdu[0].header['PEDASTAL']
     super_bias += pedastal
-    sdHdu = fits.open(lng_path + 'd_2_180-10.fits')
+    sdHdu = fits.open(lng_path + 'd_2.fits')
     super_dark = sdHdu[0].data.astype('float32')
     super_dark_exp = sdHdu[0].header['EXPOSURE']
-    sdHdu = fits.open(lng_path + 'd_2_480-10.fits')
-    super_dark_480 = sdHdu[0].data.astype('float32')
-    super_dark_exp_480 = sdHdu[0].header['EXPOSURE']
-    sBHdu = fits.open(lng_path + 'ff_2_B.fits')
-    super_B = sBHdu[0].data.astype('float32')
-    sVHdu = fits.open(lng_path + 'ff_2_V.fits')
-    super_V = sVHdu[0].data.astype('float32')
-    sRHdu = fits.open(lng_path + 'ff_2_R.fits')
-    super_R = sRHdu[0].data.astype('float32')
-    srHdu = fits.open(lng_path + 'ff_2_rp.fits')
-    super_rp = srHdu[0].data.astype('float32')
-    sgHdu = fits.open(lng_path + 'ff_2_gp.fits')
-    super_gp = sgHdu[0].data.astype('float32')
-    siHdu = fits.open(lng_path + 'ff_2_ip.fits')
-    super_ip = siHdu[0].data.astype('float32')
+    sdHdu = fits.open(lng_path + 'd_2_long.fits')
+    super_dark_long = sdHdu[0].data.astype('float32')
+    #super_dark_exp_long = sdHdu[0].header['EXPOSURE']
+    hot_pix = np.where(super_dark_long > super_dark_long.std())
+    # sBHdu = fits.open(lng_path + 'ff_2_B.fits')
+    # super_B = sBHdu[0].data.astype('float32')
+    # sVHdu = fits.open(lng_path + 'ff_2_V.fits')
+    # super_V = sVHdu[0].data.astype('float32')
+    # sRHdu = fits.open(lng_path + 'ff_2_R.fits')
+    # super_R = sRHdu[0].data.astype('float32')
+    # srHdu = fits.open(lng_path + 'ff_2_rp.fits')
+    # super_rp = srHdu[0].data.astype('float32')
+    # sgHdu = fits.open(lng_path + 'ff_2_gp.fits')
+    # super_gp = sgHdu[0].data.astype('float32')
+    # siHdu = fits.open(lng_path + 'ff_2_ip.fits')
+    # super_ip = siHdu[0].data.astype('float32')
     sHHdu = fits.open(lng_path + 'ff_2_HA.fits')
     super_HA = sHHdu[0].data.astype('float32')
-    sOHdu = fits.open(lng_path + 'ff_2_O3.fits')
-    super_O3 = sOHdu[0].data.astype('float32')
-    sSHdu = fits.open(lng_path + 'ff_2_S2.fits')
-    super_S2 = sSHdu[0].data.astype('float32')
-    sNHdu = fits.open(lng_path + 'ff_2_N2.fits')
-    super_N2 = sNHdu[0].data.astype('float32')
-    swHdu = fits.open(lng_path + 'ff_2_w.fits')
-    super_w = swHdu[0].data.astype('float32')
-    swHdu = fits.open(lng_path + 'ff_2_exo.fits')
-    super_EXO = swHdu[0].data.astype('float32')
-    swHdu = fits.open(lng_path + 'ff_2_air.fits')
-    super_air = swHdu[0].data.astype('float32')
-    sAvgHdu = fits.open(lng_path + 'ff_2_avg.fits')
-    super_avg = sAvgHdu[0].data.astype('float32')
-    shHdu = fits.open(lng_path + 'h_2-10.fits')
-    hot_map = shHdu[0].data
-    hot_pix = np.where(hot_map > 1)  #
+    # sOHdu = fits.open(lng_path + 'ff_2_O3.fits')
+    # super_O3 = sOHdu[0].data.astype('float32')
+    # sSHdu = fits.open(lng_path + 'ff_2_S2.fits')
+    # super_S2 = sSHdu[0].data.astype('float32')
+    # sNHdu = fits.open(lng_path + 'ff_2_N2.fits')
+    # super_N2 = sNHdu[0].data.astype('float32')
+    # swHdu = fits.open(lng_path + 'ff_2_w.fits')
+    # super_w = swHdu[0].data.astype('float32')
+    # swHdu = fits.open(lng_path + 'ff_2_exo.fits')
+    # super_EXO = swHdu[0].data.astype('float32')
+    # swHdu = fits.open(lng_path + 'ff_2_air.fits')
+    # super_air = swHdu[0].data.astype('float32')
+    # sAvgHdu = fits.open(lng_path + 'ff_2_avg.fits')
+    # super_avg = sAvgHdu[0].data.astype('float32')
+    #shHdu = fits.open(lng_path + 'h_2.fits')
+    #hot_map = shHdu[0].data
+    # hot_pix = np.where(hot_map > 1)  #
     # four_std = 4*super_dark.std()   #making this more adaptive 
     # hot_pix = np.where(super_dark > four_std)
     for image in file_list:
@@ -1251,67 +1253,66 @@ def annotate_image(camera_name, archive_path, selector_string, lng_path, out_pat
         img = fits.open(image)
 
 
+
         img[0].data = img[0].data.astype('float32')
-# =============================================================================
-#         try:
-#             pedastal = img[0].header['PEDASTAL']
-#             img[0].data = img[0].data + pedastal - super_bias
-#         except:
-#             img[0].data = img[0].data - super_bias
-#         img_dur = img[0].header['EXPOSURE']
-#         try:
-#             ratio = img_dur/abs(super_dark_exp)
-#         except:
-#             ratio = 0    #Do not correct for dark
-#             
-#         img[0].data -= super_dark*ratio
-#         # if image[-3:] in ['fit', 'fts']:   #Patch a short fits suffix
-#         #     image = image + ('s')
-# =============================================================================
+        try:
+            pedastal = img[0].header['PEDASTAL']
+            img[0].data = img[0].data + pedastal - super_bias
+        except:
+            img[0].data = img[0].data - super_bias
+        img_dur = img[0].header['EXPOSURE']
+        try:
+            ratio = img_dur/abs(super_dark_exp)
+        except:
+            ratio = 0    #Do not correct for dark
+            
+        img[0].data -= super_dark*ratio
+        # if image[-3:] in ['fit', 'fts']:   #Patch a short fits suffix
+        #     image = image + ('s')
         fits_filter = img[0].header['FILTER']
-        if image[-5] == 'B' or fits_filter == 'B':
-            img[0].data /= super_B
-        elif image[-5] == 'V' or fits_filter == 'V':
-            img[0].data /= super_V
-        elif image[-5] == 'R' or fits_filter == 'R':
-            img[0].data /= super_R
-        elif image[-6] == 'g' or fits_filter == 'gp':
-            img[0].data /= super_gp
-        elif image[-6] == 'r' or fits_filter == 'rp':
-            img[0].data /= super_rp
-        elif image[-6] == 'i' or fits_filter == 'ip':
-            img[0].data /= super_ip
-        elif image[-6] in ['H','h']  or fits_filter == 'HA':
+        # if image[-5] == 'B' or fits_filter == 'B':
+        #     img[0].data /= super_B
+        # elif image[-5] == 'V' or fits_filter == 'V':
+        #     img[0].data /= super_V
+        # elif image[-5] == 'R' or fits_filter == 'R':
+        #     img[0].data /= super_R
+        # elif image[-6] == 'g' or fits_filter == 'gp':
+        #     img[0].data /= super_gp
+        # elif image[-6] == 'r' or fits_filter == 'rp':
+        #     img[0].data /= super_rp
+        # elif image[-6] == 'i' or fits_filter == 'ip':
+        #     img[0].data /= super_ip
+        if image[-6] in ['H','h']  or fits_filter == 'HA':
             img[0].data /= super_HA
-        elif image[-6] == 'O: or fits_filter == O3':
-            img[0].data /= super_O3
-        elif image[-6] == 'S' or fits_filter == 'S2':
-          img[0].data /= super_S2
-        elif image[-6] == 'N' or fits_filter == 'N2':
-          img[0].data /= super_N2
-        elif image[-5] in ['W', 'w'] or fits_filter == 'w':
-          img[0].data /= super_w
-        elif image[-7] in ['E', 'e'] or fits_filter == 'exo':
-          img[0].data /= super_EXO
-        elif image[-7] in ['AIR', 'air', 'Air'] or fits_filter == 'air':
-          img[0].data /= super_air
-        else:
-            if image[-7] in ['AVG', 'avg', 'Avg'] or fits_filter == 'avg':
-                img[0].data /= super_avg
-                print("Avg filter applied to unknown flat type.")
-            else:
-                breakpoint()
-                print("Incorrect filter suffix, no flat applied.")
+        # elif image[-6] == 'O: or fits_filter == O3':
+        #     img[0].data /= super_O3
+        # elif image[-6] == 'S' or fits_filter == 'S2':
+        #   img[0].data /= super_S2
+        # elif image[-6] == 'N' or fits_filter == 'N2':
+        #   img[0].data /= super_N2
+        # elif image[-5] in ['W', 'w'] or fits_filter == 'w':
+        #   img[0].data /= super_w
+        # elif image[-7] in ['E', 'e'] or fits_filter == 'exo':
+        #   img[0].data /= super_EXO
+        # elif image[-7] in ['AIR', 'air', 'Air'] or fits_filter == 'air':
+        #   img[0].data /= super_air
+        # else:
+        #     if image[-7] in ['AVG', 'avg', 'Avg'] or fits_filter == 'avg':
+        #         img[0].data /= super_avg
+        #         print("Avg filter applied to unknown flat type.")
+        #     else:
+        #         breakpoint()
+        #         print("Incorrect filter suffix, no flat applied.")
         median8(img[0].data, hot_pix)
-        #cold = np.where(img[0].data <= 0)
-        #median8(img[0].data, cold)
+        cold = np.where(img[0].data <= -img[0].data.std())
+        median8(img[0].data, cold)
         #cast_32 = img[0].data.astype('float32')
         #img[0].data = cast_32
-        img[0].header['CALIBRAT'] = 'B D F H'  #SCF SKF
-        if not(img[0].header['FILTER'] in ['S2, N2']):
-            file_name_split = image.split('\\')
+        img[0].header['CALIBRAT'] = 'B D F H C'  #SCF SKF
+        #if not(img[0].header['FILTER'] in ['S2, N2']):
+        file_name_split = image.split('\\')
         # #  img_bk_data = img[0].data
-            img.writeto(out_path + file_name_split[1], overwrite=True)
+        img.writeto(out_path + file_name_split[1], overwrite=True)
         # #os.makedirs("Q" + archive_path[1:-1]+'_floating/', exist_ok=True)
         # file_name = file_name_split[1]
         # new_file = file_name[:-9] + fits_filter +"-" +file_name[-9:]
@@ -1332,12 +1333,12 @@ if __name__ == '__main__':
     #archive_path = "D:/000ptr_saf/archive/sq01/2020-06-13/"
     #archive_path = "D:/2020-06-19  Ha and O3 screen flats/"
 
-    archive_path = "Q:/000ptr_saf/archive/sq01/20201207/reduced/"
+    archive_path = "Q:/000ptr_saf/archive/sq01/20201212 ans HH/trimmed/"
     #
-    out_path = 'Q:/000ptr_saf/archive/sq01/20201207/reduced/'
-    lng_path = "C:/000ptr_saf/archive/sq01/lng/"
+    out_path = 'Q:/000ptr_saf/archive/sq01/20201212 ans HH/reduced/'
+    lng_path = "Q:/000ptr_saf/archive/sq01/lng/"
     #APPM_prepare_TPOINT()
-    #de_offset_and_trim(camera_name, archive_path, '*H*H*.*', out_path, full=True, norm=False)
+    #de_offset_and_trim(camera_name, archive_path, '*HH*.*', out_path, full=True, norm=False)
     #prepare_tpoint(camera_name, archive_path, '*.f*t*', lng_path, out_path)
     #organize_calib(camera_name, archive_path, out_path, lng_path, '1', 'fb_1-4.fits')
     #compute_sky_gains(camera_name, archive_path, out_path, lng_path, '1', 'fb_1-4.fits')
@@ -1362,12 +1363,12 @@ if __name__ == '__main__':
     #correct_image(camera_name, archive_path, '*H*H*.*', lng_path, out_path)
     #archive_path = 'Q:/archive/sq01/20201127/reduced/'
     #out_path = 'Q:/archive/sq01/20201127/re_reduced/'
-    #annotate_image(camera_name, archive_path, '**f*t*', lng_path, out_path)
+    annotate_image(camera_name, archive_path, '**f*t*', lng_path, out_path)
 
     # mod_correct_image(camera_name, archive_path, '*EX00*', lng_path, out_path)
     #archive_path = 'Q:/000ptr_saf/archive/sq01/20201203/reduced/'
     #out_path ='Q:/000ptr_saf/archive/sq01/20201203/reduced/catalogs/'
-    sep_image(camera_name, archive_path, '*.*', lng_path, out_path)
+    #sep_image(camera_name, archive_path, '*.*', lng_path, out_path)
 
     print('Fini')
     # NB Here we would logcially go on to get screen flats.
