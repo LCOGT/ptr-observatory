@@ -133,7 +133,6 @@ def calibrate (hdu, lng_path, frame_type='light', quick=False):
     loud = False
 
     #This needs to deal with caching different binnings as well.  And do we skip all this for a quick
-
     if not quick:
         if super_bias is None:
             try:
@@ -149,7 +148,7 @@ def calibrate (hdu, lng_path, frame_type='light', quick=False):
                 if loud: print(lng_path + 'b_1-10.fits', 'Loaded')
             except:
                 quick_bias = False
-                print('WARN: No Bias_1 Loaded.')
+                #print('WARN: No Bias_1 Loaded.')
 
         if super_bias_2 is None:
             try:
@@ -487,12 +486,19 @@ def calibrate (hdu, lng_path, frame_type='light', quick=False):
                 if loud:  print('QuickFlat result:  ', imageStats(img, loud))
         if apply_hot and binning == 2:
             try:
+                hot_pix = np.where(super_dark_2_long > super_dark_2_long.std())
                 median8(img, hot_pix)
                 cal_string += ', H'
+                
             except:
                 print("Hot pixel correction failed.")
             if not quick: 
                 if loud: print('Hot Pixel result:  ', imageStats(img, loud))
+            try:
+                cold_pix = np.where(img <= -img.std())
+                median8(img, cold_pix)
+            except:
+                print("Cold pixel correction failed.")
 
         break    #If we get this far we are done.
     if cal_string == '':
@@ -500,7 +506,7 @@ def calibrate (hdu, lng_path, frame_type='light', quick=False):
     hdu.header['CALHIST'] = cal_string
     hdu.data = img.astype('float32')  #This is meant to catch an image cast to 'float64'
     fix = np.where(hdu.data < 0)
-    if not quick: print('# of < 0  pixels:  ', len(fix[0]))  #  Do not change values here.
+    if loud: print('# of < 0  pixels:  ', len(fix[0]))  #  Do not change values here.
     hdu.data[fix] = 0
     big_max = hdu.data.max()
     if loud: print("Max data value is:  ", big_max)

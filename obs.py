@@ -44,8 +44,9 @@ from skimage.transform import resize
 #from skimage import img_as_float
 #from skimage import exposure
 from skimage.io import imsave
-#import matplotlib.pyplot as plt
-
+import matplotlib.pyplot as plt
+import sep
+from astropy.io import fits
 #from PIL import Image
 import ptr_events
 
@@ -65,7 +66,7 @@ from processing.calibration import calibrate
 from global_yard import g_dev
 import bz2
 import httplib2
-import sep
+from auto_stretch.stretch import Stretch
 #import ssl
 
 #  THIS code flushes the SSL Certificate cache which sometimes fouls up updating
@@ -503,8 +504,10 @@ class Observatory:
             'log_level': str(p_level),
             'timestamp':  time.time()
             })
-        resp = requests.post(url_log, body)
-        print(resp)
+        try:
+            resp = requests.post(url_log, body)
+        except:
+            print("Log did not send.", resp)
     # Note this is another thread!
     def reduce_image(self):
         '''
@@ -528,7 +531,10 @@ class Observatory:
                 paths = pri_image[0]
                 hdu = pri_image[1]
 
-                lng_path =  g_dev['cam'].lng_path
+                try:
+                    lng_path ="C:/lng/"   #Temp speed patch
+                except:
+                    lng_path =  g_dev['cam'].lng_path
                 #NB Important decision here, do we flash calibrate screen and sky flats?  For now, Yes.
 
                 #cal_result =
@@ -539,6 +545,14 @@ class Observatory:
                 reduced_data_size = hdu.data.size
                 wpath = paths['red_path'] + paths['red_name01_lcl']    #This name is convienent for local sorting
                 hdu.writeto(wpath, overwrite=True)
+                #patch to test Midtone Contrast
+                
+                # image = 'Q:/000ptr_saf/archive/sq01/20201212 ans HH/reduced/HH--SigClip.fits'
+                # hdu_new = fits.open(image)
+                # hdu =hdu_new[0]
+
+
+
 
                 '''
                 Here we need to consider just what local reductions and calibrations really make sense to
@@ -606,16 +620,16 @@ class Observatory:
                 #we wre embedding a non-rectanglular image in a "square" and scaling it to 768^2.  We will impose a
                 #minimum subframe reporting of 32 x 32
 
-                in_shape = hdu.data.shape
-                in_shape = [in_shape[0], in_shape[1]]   #Have to convert to a list, cannot manipulate a tuple,
-                if in_shape[0]%2 == 1:
-                    in_shape[0] -= 1
-                if in_shape[0] < 32:
-                    in_shape[0] = 32
-                if in_shape[1]%2 == 1:
-                    in_shape[1] -= 1
-                if in_shape[1] < 32:
-                    in_shape[1] = 32
+                # in_shape = hdu.data.shape
+                # in_shape = [in_shape[0], in_shape[1]]   #Have to convert to a list, cannot manipulate a tuple,
+                # if in_shape[0]%2 == 1:
+                #     in_shape[0] -= 1
+                # if in_shape[0] < 32:
+                #     in_shape[0] = 32
+                # if in_shape[1]%2 == 1:
+                #     in_shape[1] -= 1
+                # if in_shape[1] < 32:
+                #     in_shape[1] = 32
                 #Ok, we have an even array and a minimum 32x32 array.
 
                 # =============================================================================
@@ -658,8 +672,7 @@ class Observatory:
 # =============================================================================
 
 
-                if quick:
-                    pass
+
                 hdu.data = hdu.data.astype('uint16')
                 iy, ix = hdu.data.shape
 
@@ -678,20 +691,40 @@ class Observatory:
                 hdu.writeto(paths['im_path'] + paths['i768sq_name10'], overwrite=True)
                 hdu.data = resized_a.astype('float')
                 #The following does a very lame contrast scaling.  A beer for best improvement on this code!!!
-                istd = np.std(hdu.data)
-                imean = np.mean(hdu.data)
-                if (imean + 3*istd) != 0:    #This does divide by zero in some bias images.
-                    img3 = hdu.data/(imean + 3*istd)
-                else:
-                    img3 = hdu.data
-                fix = np.where(img3 >= 0.999)
-                fiz = np.where(img3 < 0)
-                img3[fix] = .999
-                img3[fiz] = 0
-                img4 = img3*256
-                img4 = img4.astype('uint8')   #Eliminates a user warning.
-                imsave(paths['im_path'] + paths['jpeg_name10'], img4)  #NB File extension triggers JPEG conversion.
-                jpeg_data_size = abs(img4.size - 1024)
+                #Looks like Tim wins a beer.
+                # Old contrast scaling code:
+                #istd = np.std(hdu.data)
+                #imean = np.mean(hdu.data)
+                #if (imean + 3*istd) != 0:    #This does divide by zero in some bias images.
+                #    img3 = hdu.data/(imean + 3*istd)
+                #else:
+                #    img3 = hdu.data
+                #fix = np.where(img3 >= 0.999)
+                #fiz = np.where(img3 < 0)
+                #img3[fix] = .999
+                #img3[fiz] = 0
+                #img4 = img3*256
+                #img4 = img4.astype('uint8')   #Eliminates a user warning.
+                #imsave(paths['im_path'] + paths['jpeg_name10'], img4)  #NB File extension triggers JPEG conversion.
+                # New contrast scaling code: 
+                stretched_data_float = Stretch().stretch(hdu.data)
+                stretched_256 = 255*stretched_data_float
+                hot = np.where(stretched_256 > 255)
+                cold = np.where(stretched_256 < 0)
+                stretched_256[hot] = 255
+                stretched_256[cold] = 0
+                print("pre-unit8< hot, cold:  ", len(hot[0]), len(cold[0]))
+                stretched_data_uint8 = stretched_256.astype('uint8')  # Eliminates a user warning
+                hot = np.where(stretched_data_uint8 > 255)
+                cold = np.where(stretched_data_uint8 < 0)
+                stretched_data_uint8[hot] = 255
+                stretched_data_uint8[cold] = 0
+                print("post-unit8< hot, cold:  ", len(hot[0]), len(cold[0]))                
+                imsave(paths['im_path'] + paths['jpeg_name10'], stretched_data_uint8)
+                #img4 = stretched_data_uint8  # keep old name for compatibility
+
+                jpeg_data_size = abs(stretched_data_uint8.size - 1024)                # istd = np.std(hdu.data)
+
                 if not no_AWS:  #IN the no+AWS case should we skip more of the above processing?
                     #g_dev['cam'].enqueue_for_AWS(text_data_size, paths['im_path'], paths['text_name'])
                     g_dev['cam'].enqueue_for_AWS(jpeg_data_size, paths['im_path'], paths['jpeg_name10'])
