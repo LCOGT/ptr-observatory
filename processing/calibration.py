@@ -133,7 +133,6 @@ def calibrate (hdu, lng_path, frame_type='light', quick=False):
     loud = False
 
     #This needs to deal with caching different binnings as well.  And do we skip all this for a quick
-
     if not quick:
         if super_bias is None:
             try:
@@ -149,7 +148,7 @@ def calibrate (hdu, lng_path, frame_type='light', quick=False):
                 if loud: print(lng_path + 'b_1-10.fits', 'Loaded')
             except:
                 quick_bias = False
-                print('WARN: No Bias_1 Loaded.')
+                #print('WARN: No Bias_1 Loaded.')
 
         if super_bias_2 is None:
             try:
@@ -506,9 +505,9 @@ def calibrate (hdu, lng_path, frame_type='light', quick=False):
         cal_string = 'Uncalibrated'
     hdu.header['CALHIST'] = cal_string
     hdu.data = img.astype('float32')  #This is meant to catch an image cast to 'float64'
-    # fix = np.where(hdu.data < 0)
-    # if not quick: print('# of < 0  pixels:  ', len(fix[0]))  #  Do not change values here.
-    # hdu.data[fix] = 0
+    fix = np.where(hdu.data < 0)
+    if loud: print('# of < 0  pixels:  ', len(fix[0]))  #  Do not change values here.
+    hdu.data[fix] = 0
     big_max = hdu.data.max()
     if loud: print("Max data value is:  ", big_max)
     fix = np.where(hdu.data > 65530)
