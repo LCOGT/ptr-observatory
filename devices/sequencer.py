@@ -541,7 +541,7 @@ class Sequencer:
                     elif exposure['area'] in ['600', '600%', 600]:  # 9 exposures.
                         offset = [(0., 0.), (1.5, 0.), (1.5, 1.), (0., 1.), (-1.5, 1.), (-1.5, 0.), \
                                   (-1.5, -1.), (0., -1.), (1.5, -1.), ] #Nine mosaic quadrants 36 x 24mm chip
-                        pitch = 0.75
+                        pitch = 0.4375
                         pane = 0
                 
                     else:
@@ -549,12 +549,18 @@ class Sequencer:
                         pitch = 0.
                         pane = 0
                     for displacement in offset:
+<<<<<<< Updated upstream
                         if True:
                             d_ra = displacement[0]*pitch*(0.5751*4784/3600./15.)  # = 0.0509496 Hours  These and pixscale should be computed in config.
                             d_dec = displacement[1]*pitch*(0.5751*3194/3600)  # = 0.0.5102414999999999   #Deg
                         else:
                             d_ra = displacement[0]*pitch*(0.6052*4784/3600./15.)   #Hours  These and pixscale should be computed in config.
                             d_dec = displacement[1]*pitch*(0.6052*3194/3600)   #Deg
+=======
+                        #NB THIS IS SITE SPECIFIC CODE!!! FIX IT.
+                        d_ra = displacement[0]*pitch*0.0536  #Hours  These and pixscale should be computed in config.
+                        d_dec = displacement[1]*pitch*0.5369   #Deg
+>>>>>>> Stashed changes
                         new_ra = dest_ra + d_ra
                         while new_ra > 24:
                             new_ra -= 24

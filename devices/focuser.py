@@ -64,6 +64,7 @@ class Focuser:
         self.focuser_message = '-'
         print("focuser connected.")
         print(self.focuser.Description, "At:  ", round(self.focuser.Position*self.steps_to_micron, 1))
+
         try:   #  NB NB NB This mess neads cleaning up.
             try:
             
