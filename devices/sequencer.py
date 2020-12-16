@@ -549,18 +549,14 @@ class Sequencer:
                         pitch = 0.
                         pane = 0
                     for displacement in offset:
-<<<<<<< Updated upstream
+
                         if True:
                             d_ra = displacement[0]*pitch*(0.5751*4784/3600./15.)  # = 0.0509496 Hours  These and pixscale should be computed in config.
                             d_dec = displacement[1]*pitch*(0.5751*3194/3600)  # = 0.0.5102414999999999   #Deg
                         else:
                             d_ra = displacement[0]*pitch*(0.6052*4784/3600./15.)   #Hours  These and pixscale should be computed in config.
                             d_dec = displacement[1]*pitch*(0.6052*3194/3600)   #Deg
-=======
-                        #NB THIS IS SITE SPECIFIC CODE!!! FIX IT.
-                        d_ra = displacement[0]*pitch*0.0536  #Hours  These and pixscale should be computed in config.
-                        d_dec = displacement[1]*pitch*0.5369   #Deg
->>>>>>> Stashed changes
+
                         new_ra = dest_ra + d_ra
                         while new_ra > 24:
                             new_ra -= 24
