@@ -78,7 +78,7 @@ class Focuser:
         self.focuser.Move(int(float(self.reference)*self.micron_to_steps))
 
     def calculate_compensation(self, temp_primary):
-        if -5 <= temp_primary <= 45:
+        if -15 <= temp_primary <= 45:
             trial =round(float(self.config['coef_0'] + float(self.config['coef_c'])*temp_primary), 1)
             trial = max(trial,500)  #These values would change for Gemini to more like 11900 max
             trial = min(trial, 12150)

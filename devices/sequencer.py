@@ -464,7 +464,7 @@ class Sequencer:
             for exposure in block['project']['exposures']:
                 multiplex = 0
                 if exposure['area'] in ['300', '300%', 300, '220', '220%', 220, '150', '150%', 150]:
-                    multiplex = 4
+                    multiplex = 5
                 if exposure['area'] in ['600', '600%', 600]:
                     multiplex = 9
                 if multiplex > 1:
@@ -480,7 +480,7 @@ class Sequencer:
             initial_focus = True
             while left_to_do > 0 and not ended:
                 if initial_focus:
-                    self.focus_auto_script(req2, opt, throw = 500)
+                    self.fine_focus_script(req2, opt, throw = 500)
                     initial_focus = False    #  Make above on-time event per block
                     timer = time.time() + 1800   #10 min for debugging
                     #at block startup this should mean two AF cycles. Cosider using 5-point for the first.
@@ -491,7 +491,7 @@ class Sequencer:
                         
                         self.focus_auto_script(req2, opt, throw = 500)
                         initial_focus = False
-                        timer = time.time() + 1200   #10 min for debugging.
+                        timer = time.time() + 1800   #10 min for debugging.
                     print("Executing: ", exposure, left_to_do)
                     color = exposure['filter']
                     exp_time =  float(exposure['exposure']) 
@@ -504,6 +504,7 @@ class Sequencer:
                     #  We should add a frame repeat count
                     imtype = exposure['imtype'] 
                     #defocus = exposure['defocus']
+#                    if g_dev['site'] == 'saf':   #THis should be in config.
                     if color[0] == 'B':  
                         color = 'B'   #Map generic filters to site specific ones.
                     if color[0] == 'G':  
@@ -524,15 +525,18 @@ class Sequencer:
                         color = 'HA'
                     if count <= 0:
                          continue
-                    #At this point we have 1 to four exposures to make in this filter.  Note different areas can be defined. 
-                    if exposure['area'] in ['300', '300%', 300, '220', '220%', 220, '150', '150%', 150]:
-                        offset = [(1.5, 1.), (-1.5, 1.), (-1.5, -1.), (1.5, -1.)] #Four mosaic quadrants 36 x 24mm chip
+                    #At this point we have 1 to 9 exposures to make in this filter.  Note different areas can be defined. 
+                    if exposure['area'] in ['300', '300%', 300, '220', '220%', 220, '150', '150%', 150, '250', '250%', 250]:
+                        offset = [(0.0, 0.0), (1.5, 1.), (-1.5, 1.), (-1.5, -1.), (1.5, -1.)] #Four mosaic quadrants 36 x 24mm chip
                         pane = 1
+                        #Exact details of the expansions need to be calculated for accurate naming. 20201215 WER
                         if exposure['area'] in ['300', '300%', 300]:
-                            pitch = 0.375
-                        if exposure['area'] in ['220', '220%', 220]:
+                            pitch = 0.3125
+                        if exposure['area'] in ['220', '220%', 220, '250', '250%', 250, ]:
                             pitch = 0.25
                         if exposure['area'] in ['150', '150%', 150]:
+                            pitch = 0.1875
+                        if exposure['area'] in ['125', '125%', 125]:
                             pitch = 0.125
                     elif exposure['area'] in ['600', '600%', 600]:  # 9 exposures.
                         offset = [(0., 0.), (1.5, 0.), (1.5, 1.), (0., 1.), (-1.5, 1.), (-1.5, 0.), \
@@ -545,8 +549,12 @@ class Sequencer:
                         pitch = 0.
                         pane = 0
                     for displacement in offset:
-                        d_ra = displacement[0]*pitch*0.05089517  #Hours  These and pixscale should be computed in config.
-                        d_dec = displacement[1]*pitch*0.574485   #Deg
+                        if g_dev['site'] == 'saf':
+                            d_ra = displacement[0]*pitch*(0.5751*4784/3600./15.)  # = 0.0509496 Hours  These and pixscale should be computed in config.
+                            d_dec = displacement[1]*pitch*(0.5751*3194/3600)  # = 0.0.5102414999999999   #Deg
+                        else:
+                            d_ra = displacement[0]*pitch*(0.6052*4784/3600./15.)   #Hours  These and pixscale should be computed in config.
+                            d_dec = displacement[1]*pitch*(0.6052*3194/3600)   #Deg
                         new_ra = dest_ra + d_ra
                         while new_ra > 24:
                             new_ra -= 24
@@ -891,6 +899,10 @@ class Sequencer:
         print('AF entered with:  ', req, opt, '\n .. and sim =  ', sim)
         #self.sequencer_hold = True  #Blocks command checks.
         #Here we jump in too  fast and need for mount to settle
+        start_ra = g_dev['mnt'].mount.RightAscension   #Read these to go back.
+        start_dec = g_dev['mnt'].mount.Declination
+        focus_start = g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron
+        print("Saved ra dec focus:  ", start_ra, start_dec, focus_start)
         try:
             #Check here for filter, guider, still moving  THIS IS A CLASSIC
             #case where a timeout is a smart idea.
@@ -908,10 +920,7 @@ class Sequencer:
                 g_dev['obs'].update_status()
         except:
             print("Motion check faulted.")
-        start_ra = g_dev['mnt'].mount.RightAscension   #Read these to go back.
-        start_dec = g_dev['mnt'].mount.Declination
-        focus_start = g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron
-        print("Saved ra dec focus:  ", start_ra, start_dec, focus_start)
+
         #  NBNBNB Need to preserve  and restore on exit, incoming filter setting
         if req2['target'] == 'near_tycho_star':   ## 'bin', 'area'  Other parameters
 
@@ -960,35 +969,55 @@ class Sequencer:
             result['mean_focus'] = foc_pos0 + throw
         spot3 = result['FWHM']
         foc_pos3 = result['mean_focus']
-        x = [foc_pos1, foc_pos2, foc_pos3]
-        y = [spot1, spot2, spot3]
-        print('X, Y:  ', x, y)
-        try:
-            #Digits are to help out pdb commands!
-            a1, b1, c1, d1 = fit_quadratic(x, y)
-            new_spot = round(a1*d1*d1 + b1*d1 + c1, 2)
-
-        except:
-
-            print('Autofocus quadratic equation not converge. Moving back to starting focus:  ', focus_start)
-            g_dev['foc'].focuser.Move((focus_start)*g_dev['foc'].micron_to_steps)
+        x = [foc_pos2, foc_pos1, foc_pos3]
+        y = [spot2, spot1, spot3]
+        print('X, Y:  ', x, y, 'Desire center to be smallest.')
+        if spot1 < spot2 and spot1 < spot3:
+            try:
+                #Digits are to help out pdb commands!
+                a1, b1, c1, d1 = fit_quadratic(x, y)
+                new_spot = round(a1*d1*d1 + b1*d1 + c1, 2)
+    
+            except:
+    
+                print('Autofocus quadratic equation not converge. Moving back to starting focus:  ', focus_start)
+                g_dev['foc'].focuser.Move((focus_start)*g_dev['foc'].micron_to_steps)
+                self.sequencer_hold = False   #Allow comand checks.
+                self.af_guard = False
+                return            
+            if min(x) <= d1 <= max(x):
+                print ('Moving to Solved focus:  ', round(d1, 2), ' calculated:  ',  new_spot)
+                g_dev['foc'].focuser.Move(int(d1*g_dev['foc'].micron_to_steps))
+                if not sim:
+                    result = g_dev['cam'].expose_command(req, opt, no_AWS=True)  #   script = 'focus_auto_script_3')  #  This is verifying the new focus.
+                else:
+                    result['FWHM'] = new_spot
+                    result['mean_focus'] = d1
+                spot4 = result['FWHM']
+                foc_pos4 = result['mean_focus']
+                print('\n\n\nFound best focus at:  ', foc_pos4,' measured is:  ',  round(spot4, 2), '\n\n\n')
+                g_dev['foc'].af_log(foc_pos4, spot4, new_spot)
+                print("Returning to:  ", start_ra, start_dec)
+                g_dev['mnt'].mount.SlewToCoordinatesAsync(start_ra, start_dec)   #Return to pre-focus pointing.
+            if sim:
+                g_dev['foc'].focuser.Move((focus_start)*g_dev['foc'].micron_to_steps)
+            #  NB here we could re-solve with the overlay spot just to verify solution is sane.
             self.sequencer_hold = False   #Allow comand checks.
             self.af_guard = False
-            return            
-        if min(x) <= d1 <= max(x):
-            print ('Moving to Solved focus:  ', round(d1, 2), ' calculated:  ',  new_spot)
-            g_dev['foc'].focuser.Move(int(d1*g_dev['foc'].micron_to_steps))
-            if not sim:
-                result = g_dev['cam'].expose_command(req, opt, no_AWS=True)  #   script = 'focus_auto_script_3')  #  This is verifying the new focus.
-            else:
-                result['FWHM'] = new_spot
-                result['mean_focus'] = d1
-            spot4 = result['FWHM']
-            foc_pos4 = result['mean_focus']
-            print('\n\n\nFound best focus at:  ', foc_pos4,' measured is:  ',  round(spot4, 2), '\n\n\n')
-            g_dev['foc'].af_log(foc_pos4, spot4, new_spot)
+            #  NB NB We may want to consider sending the result image patch to AWS
+            return
+        elif spot2 <= spot1:
+            print("It appears camera is too far out, shifting in and try again.")
+            breakpoint()
+            #I think we exit and call a wider 5 point focus
+            
+        elif spot3 < - spot1:
+            print("It appears camera is too far in, shifting out and try again.")
+            breakpoint()
+            
+            
         else:
-            print('Autofocus did not converge. Moving back to starting focus:  ', focus_start)
+            print('Spots are really wrong so moving back to starting focus:  ', focus_start)
             g_dev['foc'].focuser.Move((focus_start)*g_dev['foc'].micron_to_steps)
         print("Returning to:  ", start_ra, start_dec)
         g_dev['mnt'].mount.SlewToCoordinatesAsync(start_ra, start_dec)   #Return to pre-focus pointing.
@@ -1000,7 +1029,7 @@ class Sequencer:
         #  NB NB We may want to consider sending the result image patch to AWS
         return
 
-    def fine_focus_script(self, req, opt):
+    def fine_focus_script(self, req, opt, throw = 600):
         '''
         V curve is a big move focus designed to fit two lines adjacent to the more normal focus curve.
         It finds the approximate focus, particulary for a new instrument. It requires 8 points plus
@@ -1011,7 +1040,6 @@ class Sequencer:
         NBNBNB This code needs to go to known stars to be moe relaible and permit subframes
         '''
         print('AF entered with:  ', req, opt)
-        breakpoint()
         self.guard = True
         sim = g_dev['enc'].shutter_is_closed
         print('AF entered with:  ', req, opt, '\n .. and sim =  ', sim)
@@ -1020,13 +1048,30 @@ class Sequencer:
         start_dec = g_dev['mnt'].mount.Declination
         foc_start = g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron
         print("Saved ra dec focus:  ", start_ra, start_dec, foc_start)
+        try:
+            #Check here for filter, guider, still moving  THIS IS A CLASSIC
+            #case where a timeout is a smart idea.
+            #Wait for external motion to cease before exposing.  Note this precludes satellite tracking.
+            st = "" 
+            while g_dev['foc'].focuser.IsMoving or g_dev['rot'].rotator.IsMoving or \
+                  g_dev['mnt'].mount.Slewing or g_dev['enc'].enclosure.Slewing:   #Filter is moving??
+                if g_dev['foc'].focuser.IsMoving: st += 'f>'
+                if g_dev['rot'].rotator.IsMoving: st += 'r>'
+                if g_dev['mnt'].mount.Slewing: st += 'm>'
+                if g_dev['enc'].enclosure.Slewing: st += 'd>'
+                print(st)
+                st = ""
+                time.sleep(0.2)
+                g_dev['obs'].update_status()
+        except:
+            print("Motion check faulted.")
         if req['target'] == 'near_tycho_star':   ## 'bin', 'area'  Other parameters
             #  Go to closest Mag 7.5 Tycho * with no flip
             focus_star = tycho.dist_sort_targets(g_dev['tel'].current_icrs_ra, g_dev['tel'].current_icrs_dec, \
                                     g_dev['tel'].current_sidereal)
             print("Going to near focus star " + str(focus_star[0][0]) + "  degrees away.")
             g_dev['mnt'].go_coord(focus_star[0][1][1], focus_star[0][1][0])
-            req = {'time': 5,  'alias':  str(self.config['camera']['camera1']['name']), 'image_type': 'auto_focus'}   #  NB Should pick up filter and constats from config
+            req = {'time': 15,  'alias':  str(self.config['camera']['camera1']['name']), 'image_type': 'auto_focus'}   #  NB Should pick up filter and constats from config
             opt = {'area': 100, 'count': 1, 'filter': 'W'}
         else:
             pass   #Just take time image where currently pointed.
@@ -1061,6 +1106,7 @@ class Sequencer:
             result['mean_focus'] = foc_pos0 - 2*throw
         spot3 = result['FWHM']
         foc_pos3 = result['mean_focus']
+        #Need to check we are not going out too far!
         g_dev['foc'].focuser.Move((foc_pos0 + 5*throw)*g_dev['foc'].micron_to_steps)   #It is important to overshoot to overcome any backlash
         g_dev['foc'].focuser.Move((foc_pos0 + 2*throw)*g_dev['foc'].micron_to_steps)
         #opt['fwhm_sim'] = 5
