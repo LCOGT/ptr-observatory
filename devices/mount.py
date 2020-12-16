@@ -390,7 +390,6 @@ class Mount:
             self.unpark_command(req, opt)
         elif action == 'center_on_pixels':
             print (command)
-            breakpoint()
             self.go_command(req, opt, offset=True)
         elif action == 'sky_flat_position':
             self.slewToSkyFlatAsync()
@@ -422,8 +421,12 @@ class Mount:
             if offset:   #THe offset version supplies offsets, need to get actual mount coordinates.
                 offset_x = float(req['image_x']) - 0.5   #Fraction of field.
                 offset_y = float(req['image_y']) - 0.5
-                field_x = 0.38213275235200206*2/15.   #2 accounts for binning, 15 for hours.
-                field_y = 0.2551300253995927*2
+                if self.site == 'saf':
+                    field_x = 0.38213275235200206*2/15.   #2 accounts for binning, 15 for hours.
+                    field_y = 0.2551300253995927*2
+                else:
+                    field_x = (2679/2563)*0.38213275235200206*2/15.   #2 accounts for binning, 15 for hours.
+                    field_y = (2679/2563)*0.2551300253995927*2                 
                 ra = self.mount.RightAscension - offset_x*field_x
                 while ra >= 24:
                     ra -= 24
