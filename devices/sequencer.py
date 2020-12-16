@@ -549,7 +549,7 @@ class Sequencer:
                         pitch = 0.
                         pane = 0
                     for displacement in offset:
-                        if g_dev['site'] == 'saf':
+                        if True:
                             d_ra = displacement[0]*pitch*(0.5751*4784/3600./15.)  # = 0.0509496 Hours  These and pixscale should be computed in config.
                             d_dec = displacement[1]*pitch*(0.5751*3194/3600)  # = 0.0.5102414999999999   #Deg
                         else:
@@ -1088,6 +1088,17 @@ class Sequencer:
             result['mean_focus'] = foc_pos0
         spot1 = result['FWHM']
         foc_pos1 = result['mean_focus']
+        
+        if not sim:
+            result = g_dev['cam'].expose_command(req, opt, no_AWS=True) ## , script = 'focus_auto_script_0')  #  This is where we start.
+        else:
+            result['FWHM'] = 3
+            result['mean_focus'] = foc_pos0
+        spot1 = result['FWHM']
+        foc_pos1 = result['mean_focus']
+        print('Autofocus Moving In.\n\n')
+        
+        
         g_dev['foc'].focuser.Move((foc_pos0 - throw)*g_dev['foc'].micron_to_steps)
         #opt['fwhm_sim'] = 4.
         if not sim:

@@ -112,7 +112,7 @@ class Camera:
         g_dev['cam_retry_config'] = config
         g_dev['cam_retry_doit'] = False
         g_dev['cam'] = self
-        self.config = config
+        self.config = config        
         win32com.client.pythoncom.CoInitialize()
         self.camera = win32com.client.Dispatch(driver)
         #self.camera = win32com.client.Dispatch('ASCOM.FLI.Kepler.Camera')
@@ -415,6 +415,7 @@ class Camera:
         not the slower File Path.  THe mode used for focusing or other operations where we do not want to save any
         image data.
         '''
+        breakpoint()
         #print('Expose Entered.  req:  ', required_params, 'opt:  ', optional_params)
         #print("Checking if Maxim is still connected!")
         #  self.t7 is last time camera was read out

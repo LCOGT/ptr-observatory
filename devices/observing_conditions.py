@@ -120,7 +120,7 @@ class ObservingConditions:
             # Here we add in-line (To be changed) a preliminary OpenOK calculation:
             #  NB all parameters should come from config.
             dew_point_gap = not (self.boltwood.Temperature  - self.boltwood.DewPoint) < 2
-            temp_bounds = not (self.boltwood.Temperature < 2.0) or (self.boltwood.Temperature > 35)
+            temp_bounds = not (self.boltwood.Temperature < -12) or (self.boltwood.Temperature > 35)
             wind_limit = self.boltwood.WindSpeed < 35/2.235   #Boltwood reports m/s, Clarity may report in MPH
             sky_amb_limit  = self.boltwood.SkyTemperature < -30
             humidity_limit = 1 < self.boltwood.Humidity < 80
