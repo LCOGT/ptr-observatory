@@ -181,8 +181,9 @@ class Observatory:
         # Use the configuration to instantiate objects for all devices.
         self.create_devices(config)
         self.loud_status = False
-        g_dev['obs'] = self
-        g_dev['cfg'] = config    
+        #g_dev['obs']: self
+        site_str = config['site']
+        g_dev['site']:  site_str
         self.g_dev = g_dev
         self.time_last_status = time.time() - 3
         # Build the to-AWS Queue and start a thread.

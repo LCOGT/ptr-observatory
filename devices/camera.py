@@ -228,6 +228,9 @@ class Camera:
             print("Darkslide closed on startup.")
         self.last_user_name = "unknown user name"
         self.last_user_id ="unknown user ID"
+        
+ 
+
         #  NB  Shouldset up default filter @ default focus.
 
 

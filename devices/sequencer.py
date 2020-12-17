@@ -550,18 +550,25 @@ class Sequencer:
                         pitch = 0.
                         pane = 0
                     for displacement in offset:
-
-                        if True:
+                        
+                        if g_dev['site'] == 'saf':
                             d_ra = displacement[0]*pitch*(0.5751*4784/3600./15.)  # = 0.0509496 Hours  These and pixscale should be computed in config.
                             d_dec = displacement[1]*pitch*(0.5751*3194/3600)  # = 0.0.5102414999999999   #Deg
-                        else:
+                        elif g_dev['site'] == 'wmd':
                             d_ra = displacement[0]*pitch*(0.6052*4784/3600./15.)   #Hours  These and pixscale should be computed in config.
                             d_dec = displacement[1]*pitch*(0.6052*3194/3600)   #Deg
+                        elif g_dev['site'] == 'wmd2':
+                            d_ra = displacement[0]*pitch*(0.6052*4784/3600./15.)   #Hours  These and pixscale should be computed in config.
+                            d_dec = displacement[1]*pitch*(0.6052*3194/3600) 
+                        else:
+                            print('Image scale for site not found')
+                            breakpoint()
                         new_ra = dest_ra + d_ra
                         while new_ra > 24:
                             new_ra -= 24
                         while new_ra <= 0.:
                             new_ra += 24
+                        #NB need to properly reduce for mosaic near Pole!!!
                         print('Seeking to:  ', new_ra, dest_dec + d_dec)
                         g_dev['mnt'].go_coord(new_ra, dest_dec + d_dec)    #This needs full angle checks
                         if imtype in ['light'] and count > 0:
@@ -874,6 +881,8 @@ class Sequencer:
         g_dev['mnt'].park_command({}, {})
         print('Sky Flat sequence completed, Telescope is parked.')
         self.guard = False
+        
+    
 
     def focus_auto_script(self, req, opt, throw=500):
         '''
