@@ -182,6 +182,9 @@ class Observatory:
         self.create_devices(config)
         self.loud_status = False
         #g_dev['obs']: self
+        g_dev['obs'] = self 
+
+
         site_str = config['site']
         g_dev['site']:  site_str
         self.g_dev = g_dev
