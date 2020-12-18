@@ -1022,7 +1022,7 @@ class Sequencer:
             breakpoint()
             #I think we exit and call a wider 5 point focus
             
-        elif spot3 < - spot1:
+        elif spot3 <= spot1:
             print("It appears camera is too far in, shifting out and try again.")
             breakpoint()
             
