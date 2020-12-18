@@ -528,7 +528,7 @@ class Sequencer:
                          continue
                     #At this point we have 1 to 9 exposures to make in this filter.  Note different areas can be defined. 
                     if exposure['area'] in ['300', '300%', 300, '220', '220%', 220, '150', '150%', 150, '250', '250%', 250]:
-                        offset = [(0.0, 0.0), (1.5, 1.), (-1.5, 1.), (-1.5, -1.), (1.5, -1.)] #Four mosaic quadrants 36 x 24mm chip
+                        offset = [(0.0, 0.0), (-1.5, 1.), (1.5, 1.), (1.5, -1.), (-1.5, -1.)] #Four mosaic quadrants 36 x 24mm chip
                         pane = 1
                         #Exact details of the expansions need to be calculated for accurate naming. 20201215 WER
                         if exposure['area'] in ['300', '300%', 300]:
@@ -540,9 +540,9 @@ class Sequencer:
                         if exposure['area'] in ['125', '125%', 125]:
                             pitch = 0.125
                     elif exposure['area'] in ['600', '600%', 600]:  # 9 exposures.
-                        offset = [(0., 0.), (1.5, 0.), (1.5, 1.), (0., 1.), (-1.5, 1.), (-1.5, 0.), \
-                                  (-1.5, -1.), (0., -1.), (1.5, -1.), ] #Nine mosaic quadrants 36 x 24mm chip
-                        pitch = 0.4375
+                        offset = [(0., 0.), (-1.5, 0.), (-1.5, 1.), (0., 1.), (1.5, 1.), (1.5, 0.), \
+                                  (1.5, -1.), (0., -1.), (-1.5, -1.), ] #Nine mosaic quadrants 36 x 24mm chip
+                        pitch = 0.375
                         pane = 0
                 
                     else:
@@ -1017,15 +1017,9 @@ class Sequencer:
             self.af_guard = False
             #  NB NB We may want to consider sending the result image patch to AWS
             return
-        elif spot2 <= spot1:
-            print("It appears camera is too far out, shifting in and try again.")
-
-            #I think we exit and call a wider 5 point focus
-            
-        elif spot3 <= spot1:
-            print("It appears camera is too far in, shifting out and try again.")
- 
-            
+        elif spot2 <= spot1 or spot3 <= spot1:
+            print("It appears camera is too far out; try again with fine_focus_script.")
+            self.fine_focus_script(req, opt, throw=750)
         else:
             print('Spots are really wrong so moving back to starting focus:  ', focus_start)
             g_dev['foc'].focuser.Move((focus_start)*g_dev['foc'].micron_to_steps)
