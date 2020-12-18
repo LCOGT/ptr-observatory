@@ -1019,13 +1019,12 @@ class Sequencer:
             return
         elif spot2 <= spot1:
             print("It appears camera is too far out, shifting in and try again.")
-            breakpoint()
+
             #I think we exit and call a wider 5 point focus
             
         elif spot3 <= spot1:
             print("It appears camera is too far in, shifting out and try again.")
-            breakpoint()
-            
+ 
             
         else:
             print('Spots are really wrong so moving back to starting focus:  ', focus_start)
