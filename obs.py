@@ -489,7 +489,7 @@ class Observatory:
                 with open(im_path + name, 'rb') as f:
                     files = {'file': (im_path + name, f)}
                     #if name[-3:] == 'jpg':
-                    print('--> To AWS -->', str(im_path + name))
+                    #print('--> To AWS -->', str(im_path + name))
                     requests.post(aws_resp['url'], data=aws_resp['fields'],
                                   files=files)
                 if name[-3:] == 'bz2' or name[-3:] == 'jpg' or \
@@ -535,10 +535,7 @@ class Observatory:
                 paths = pri_image[0]
                 hdu = pri_image[1]
 
-                try:
-                    lng_path ="C:/lng/"   #Temp speed patch
-                except:
-                    lng_path =  g_dev['cam'].lng_path
+                lng_path =  g_dev['cam'].lng_path
                 #NB Important decision here, do we flash calibrate screen and sky flats?  For now, Yes.
 
                 #cal_result =
@@ -549,6 +546,9 @@ class Observatory:
                 reduced_data_size = hdu.data.size
                 wpath = paths['red_path'] + paths['red_name01_lcl']    #This name is convienent for local sorting
                 hdu.writeto(wpath, overwrite=True)
+                if self.site_name == 'saf':
+                    wpath = paths['red_path_aux'] + paths['red_name01_lcl']
+                    hdu.writeto(wpath, overwrite=True)
                 #patch to test Midtone Contrast
                 
                 # image = 'Q:/000ptr_saf/archive/sq01/20201212 ans HH/reduced/HH--SigClip.fits'
@@ -733,7 +733,7 @@ class Observatory:
                     #g_dev['cam'].enqueue_for_AWS(text_data_size, paths['im_path'], paths['text_name'])
                     g_dev['cam'].enqueue_for_AWS(jpeg_data_size, paths['im_path'], paths['jpeg_name10'])
                     g_dev['cam'].enqueue_for_AWS(i768sq_data_size, paths['im_path'], paths['i768sq_name10'])
-                    print('File size to AWS:', reduced_data_size)
+                    #print('File size to AWS:', reduced_data_size)
                     g_dev['cam'].enqueue_for_AWS(reduced_data_size, paths['im_path'], paths['red_name01'])
                     #if not quick:
                 #print('Sent to AWS Queue.')
@@ -747,7 +747,7 @@ class Observatory:
                 #     hdu1 = None
                 # except:
                 #     pass
-                print("\nREDUCTIONS COMPLETED!")
+                print("\nReduction completed.")
                 self.reduce_queue.task_done()
             else:
                 time.sleep(.5)

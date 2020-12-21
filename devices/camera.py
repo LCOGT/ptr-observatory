@@ -28,6 +28,8 @@ from global_yard import g_dev
 #from devices.sequencer import Sequencer
 from devices.darkslide import Darkslide
 
+#string  = \\HOUSE-COMPUTER\saf_archive_2\archive
+
 """
 Camera note 20200427.
 
@@ -165,6 +167,7 @@ class Camera:
         self.site_path = self.config['site_path']
         self.archive_path = self.site_path +'archive/'
         self.camera_path = self.archive_path  + self.alias+ "/"
+        self.alt_path = '//house-computer/saf_archive_2/archive/sq01/'
         self.autosave_path = self.camera_path +'autosave/'
         self.lng_path = self.camera_path + "lng/"
         self.seq_path = self.camera_path + "seq/"
@@ -408,6 +411,7 @@ class Camera:
     The system boots up and selects the reference filter and reference focus.
 
     '''
+    
 
     def expose_command(self, required_params, optional_params,  \
                        gather_status = True, do_sep=True, no_AWS=False, quick=False):
@@ -928,7 +932,7 @@ class Camera:
                 #         square = trimmed[795:795 + 3194, :]
                 # else:
                 #     print("Incorrect chip size or bin specified.")
-                    
+                #I think the shift has to do with different binnings.   
                 if ix == 9600:
                     if self.img[22, -34] == 0:
  
@@ -1264,6 +1268,7 @@ class Camera:
                         raw_path  = im_path_r + g_dev['day'] + '/raw/'
                         cal_path  = im_path_r + g_dev['day'] + '/calib/'
                         red_path  = im_path_r + g_dev['day'] + '/reduced/'
+                        
                     except:
                         pass
 
@@ -1275,6 +1280,7 @@ class Camera:
                              'raw_path':  raw_path,
                              'cal_path':  cal_path,
                              'red_path':  red_path,
+                             'red_path_aux':  None,
                              'cal_name':  cal_name,
                              'raw_name00': raw_name00,
                              'red_name01': red_name01,
@@ -1288,6 +1294,10 @@ class Camera:
                              'text_name11': text_name,
                              'frame_type':  frame_type
                              }
+                    if  self.config['site'] == 'saf':
+                        os.makedirs(self.alt_path +  g_dev['day'] + '/reduced/', exist_ok=True)
+                        red_path_aux = self.alt_path +  g_dev['day'] + '/reduced/'
+                        paths['red_path_aux'] = red_path_aux
                     script = None
                     '''
                     self.enqueue_image(text_data_size, im_path, text_name)
