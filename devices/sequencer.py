@@ -1085,23 +1085,22 @@ class Sequencer:
         foc_pos0 = foc_start
         result = {}
         print('Autofocus Starting at:  ', foc_pos0, '\n\n')
-        throw = 100  # NB again, from config.  Units are microns
+        #throw = 100  # NB again, from config.  Units are microns
         if not sim:
             result = g_dev['cam'].expose_command(req, opt, no_AWS=True)
         else:
             result['FWHM'] = 4
             result['mean_focus'] = foc_pos0
         spot1 = result['FWHM']
-        foc_pos1 = result['mean_focus']
+        foc_pos1 = result['mean_focus']  
+        # if not sim:
+        #     result = g_dev['cam'].expose_command(req, opt, no_AWS=True) ## , script = 'focus_auto_script_0')  #  This is where we start.
+        # else:
+        #     result['FWHM'] = 3
+        #     result['mean_focus'] = foc_pos0
+        # spot1 = result['FWHM']
+        # foc_pos1 = result['mean_focus']
         
-        if not sim:
-            result = g_dev['cam'].expose_command(req, opt, no_AWS=True) ## , script = 'focus_auto_script_0')  #  This is where we start.
-        else:
-            result['FWHM'] = 3
-            result['mean_focus'] = foc_pos0
-        spot1 = result['FWHM']
-        foc_pos1 = result['mean_focus']
-        print('Autofocus Moving In.\n\n')
         
         
         g_dev['foc'].focuser.Move((foc_pos0 - throw)*g_dev['foc'].micron_to_steps)
@@ -1113,6 +1112,7 @@ class Sequencer:
             result['mean_focus'] = foc_pos0 - throw
         spot2 = result['FWHM']
         foc_pos2 = result['mean_focus']
+        print('Autofocus Moving In, second time.\n\n')
         g_dev['foc'].focuser.Move((foc_pos0 - 2*throw)*g_dev['foc'].micron_to_steps)
         #opt['fwhm_sim'] = 4.
         if not sim:
@@ -1123,8 +1123,10 @@ class Sequencer:
         spot3 = result['FWHM']
         foc_pos3 = result['mean_focus']
         #Need to check we are not going out too far!
-        g_dev['foc'].focuser.Move((foc_pos0 + 5*throw)*g_dev['foc'].micron_to_steps)   #It is important to overshoot to overcome any backlash
-        g_dev['foc'].focuser.Move((foc_pos0 + 2*throw)*g_dev['foc'].micron_to_steps)
+        print('Autofocus Moving out 4X.\n\n')
+        g_dev['foc'].focuser.Move((foc_pos0 + 4*throw)*g_dev['foc'].micron_to_steps)
+        print('Autofocus back in for backlash\n\n')#It is important to overshoot to overcome any backlash
+        g_dev['foc'].focuser.Move((foc_pos0 - 1*throw)*g_dev['foc'].micron_to_steps)
         #opt['fwhm_sim'] = 5
         if not sim:
             result = g_dev['cam'].expose_command(req, opt, no_AWS=True)
