@@ -905,6 +905,7 @@ class Sequencer:
         self.sequencer_hold = False   #Allow comand checks.
         self.guard = False
         req2 = copy.deepcopy(req)
+        opt2 = copy.deepcopy(opt)
         self.af_guard = True
         sim = g_dev['enc'].shutter_is_closed
         print('AF entered with:  ', req, opt, '\n .. and sim =  ', sim)
@@ -1019,7 +1020,7 @@ class Sequencer:
             return
         elif spot2 <= spot1 or spot3 <= spot1:
             print("It appears camera is too far out; try again with fine_focus_script.")
-            self.fine_focus_script(req, opt, throw=750)
+            self.fine_focus_script(req2, opt2, throw=750)
         else:
             print('Spots are really wrong so moving back to starting focus:  ', focus_start)
             g_dev['foc'].focuser.Move((focus_start)*g_dev['foc'].micron_to_steps)
@@ -1141,8 +1142,8 @@ class Sequencer:
             result['mean_focus'] = foc_pos0 + throw
         spot5 = result['FWHM']
         foc_pos5 = result['mean_focus']
-        x = [foc_pos1, foc_pos2, foc_pos3, foc_pos4, foc_pos5]
-        y = [spot1, spot2, spot3, spot4, spot5]
+        x = [foc_pos3, foc_pos2, foc_pos1, foc_pos54, foc_pos4]
+        y = [spot3, spot2, spot1, spot5, spot4]
         print('X, Y:  ', x, y)
         try:
             #Digits are to help out pdb commands!

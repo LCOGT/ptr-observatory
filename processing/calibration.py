@@ -406,7 +406,7 @@ def calibrate (hdu, lng_path, frame_type='light', quick=False):
             if not quick:
                 if loud: print('QuickBias_2 result (high):  ', imageStats(img, False))
             cal_string += 'B'
-            data_exposure_level = hdu.header['EXPTIME']
+        data_exposure_level = hdu.header['EXPTIME']
         if frame_type == 'dark':
             break   #  Do not dark calibrate a dark.
 
@@ -421,7 +421,7 @@ def calibrate (hdu, lng_path, frame_type='light', quick=False):
                 if loud: print('QuickDark_1: ', imageStats(img, loud))
             cal_string += ', D'
         elif super_dark_2 is not None and binning == 2:
-            if data_exposure_level > dark_exposure_level:
+            if data_exposure_level > dark_2_exposure_level:
                 if loud: print("WARNING:  Master dark being used over-scaled")
             img =  (img - super_dark_2[start_x:(start_x + img.shape[0]), start_y:(start_y + img.shape[1]) \
                                 ]*data_exposure_level)
