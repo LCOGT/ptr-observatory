@@ -717,13 +717,13 @@ class Observatory:
                 cold = np.where(stretched_256 < 0)
                 stretched_256[hot] = 255
                 stretched_256[cold] = 0
-                print("pre-unit8< hot, cold:  ", len(hot[0]), len(cold[0]))
+                #print("pre-unit8< hot, cold:  ", len(hot[0]), len(cold[0]))
                 stretched_data_uint8 = stretched_256.astype('uint8')  # Eliminates a user warning
                 hot = np.where(stretched_data_uint8 > 255)
                 cold = np.where(stretched_data_uint8 < 0)
                 stretched_data_uint8[hot] = 255
                 stretched_data_uint8[cold] = 0
-                print("post-unit8< hot, cold:  ", len(hot[0]), len(cold[0]))                
+                #print("post-unit8< hot, cold:  ", len(hot[0]), len(cold[0]))                
                 imsave(paths['im_path'] + paths['jpeg_name10'], stretched_data_uint8)
                 #img4 = stretched_data_uint8  # keep old name for compatibility
 

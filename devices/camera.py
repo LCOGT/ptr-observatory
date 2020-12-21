@@ -820,7 +820,8 @@ class Camera:
         self.t11 = time.time()
         print("\n\nFull expose seq took:  ", round(self.t11 - self.t0 , 2), ' Retries;  ', num_retries,  ' Returning:  ', result, '\n\n')
         try:
-            print(' 0 sec cycle time:  ', round((self.t11 - self.t0)/count - exposure_time , 2) )
+            #print(' 0 sec cycle time:  ', round((self.t11 - self.t0)/count - exposure_time , 2) )
+            pass
         except:
             pass
         return result
@@ -1336,7 +1337,7 @@ class Camera:
                     # elif frame_type in ['light']:
                     #     self.enqueue_for_AWS(reduced_data_size, im_path, red_name01)
                         
-                    print("\n\Finish-Exposure is complete, saved:  " + raw_name00)#, raw_data_size, '\n')
+                   #print("\n\Finish-Exposure is complete, saved:  " + raw_name00)#, raw_data_size, '\n')
                     g_dev['obs'].update_status()
                     result['mean_focus'] = avg_foc[1]
                     result['mean_rotation'] = avg_rot[1]
