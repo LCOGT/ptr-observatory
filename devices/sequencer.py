@@ -551,7 +551,7 @@ class Sequencer:
                         pane = 0
                     for displacement in offset:
 
-                        if True:
+                        if g_dev['site'] == 'saf':
                             d_ra = displacement[0]*pitch*(0.5751*4784/3600./15.)  # = 0.0509496 Hours  These and pixscale should be computed in config.
                             d_dec = displacement[1]*pitch*(0.5751*3194/3600)  # = 0.0.5102414999999999   #Deg
                         elif g_dev['site'] == 'wmd':
