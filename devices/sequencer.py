@@ -1124,9 +1124,9 @@ class Sequencer:
         foc_pos3 = result['mean_focus']
         #Need to check we are not going out too far!
         print('Autofocus Moving out 4X.\n\n')
-        g_dev['foc'].focuser.Move((foc_pos0 + 4*throw)*g_dev['foc'].micron_to_steps)
+        g_dev['foc'].focuser.Move((foc_pos0 + 3*throw)*g_dev['foc'].micron_to_steps)
         print('Autofocus back in for backlash\n\n')#It is important to overshoot to overcome any backlash
-        g_dev['foc'].focuser.Move((foc_pos0 - 1*throw)*g_dev['foc'].micron_to_steps)
+        g_dev['foc'].focuser.Move((foc_pos0 + 2*throw)*g_dev['foc'].micron_to_steps)
         #opt['fwhm_sim'] = 5
         if not sim:
             result = g_dev['cam'].expose_command(req, opt, no_AWS=True)
@@ -1144,7 +1144,7 @@ class Sequencer:
             result['mean_focus'] = foc_pos0 + throw
         spot5 = result['FWHM']
         foc_pos5 = result['mean_focus']
-        x = [foc_pos3, foc_pos2, foc_pos1, foc_pos54, foc_pos4]
+        x = [foc_pos3, foc_pos2, foc_pos1, foc_pos5, foc_pos4]
         y = [spot3, spot2, spot1, spot5, spot4]
         print('X, Y:  ', x, y)
         try:

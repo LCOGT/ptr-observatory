@@ -196,6 +196,7 @@ def calibrate (hdu, lng_path, frame_type='light', quick=False):
             try:
                 sdHdu = fits.open(lng_path + 'd_2.fits')
                 dark_2_exposure_level = sdHdu[0].header['EXPTIME']
+
                 super_dark_2  = sdHdu[0].data/dark_2_exposure_level  #Converto to ADU/sec
                 super_dark_2 = super_dark_2.astype('float32')
                 if loud: print('sdark_2:  ', super_dark_2.mean())
