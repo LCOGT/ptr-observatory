@@ -246,7 +246,6 @@ class Sequencer:
             # and background blocks.
             
             #First, sort blocks to be in ascending order, just to promote clarity. Remove expired projects.
-
             for block in blocks:  #  This merges project spec into the blocks.
                 for project in projects:
                     if block['project_id'] == project['project_name'] + '#' + project['created_at']:
@@ -256,7 +255,6 @@ class Sequencer:
                         
             #The residual in projects can be treaded as background.
             #print('Background:  ', len(projects), '\n\n', projects)
-            
             house = []
             for project in projects:
                 if project['user_id'] in config.site_config['owner']:  # and not expired, etc.
@@ -481,7 +479,8 @@ class Sequencer:
             initial_focus = True
             while left_to_do > 0 and not ended:
                 if initial_focus:
-                    self.fine_focus_script(req2, opt, throw = 500)
+                    self.focus_script(req2, opt, throw = 500)   #fine_focus_script can be used here
+                    just_focused = True
                     initial_focus = False    #  Make above on-time event per block
                     timer = time.time() + 1800   #10 min for debugging
                     #at block startup this should mean two AF cycles. Cosider using 5-point for the first.
@@ -492,7 +491,8 @@ class Sequencer:
                         
                         self.focus_auto_script(req2, opt, throw = 500)
                         initial_focus = False
-                        timer = time.time() + 1800   #10 min for debugging.
+                        just_focused = True
+                        timer = time.time() + 1800   #30 minutes to refocus
                     print("Executing: ", exposure, left_to_do)
                     color = exposure['filter']
                     exp_time =  float(exposure['exposure']) 
@@ -528,8 +528,12 @@ class Sequencer:
                          continue
                     #At this point we have 1 to 9 exposures to make in this filter.  Note different areas can be defined. 
                     if exposure['area'] in ['300', '300%', 300, '220', '220%', 220, '150', '150%', 150, '250', '250%', 250]:
-                        offset = [(0.0, 0.0), (-1.5, 1.), (1.5, 1.), (1.5, -1.), (-1.5, -1.)] #Four mosaic quadrants 36 x 24mm chip
-                        pane = 1
+                        if block_specification['project_constraints']['add_center_to_mosaic']:
+                            offset = [(0.0, 0.0), (-1.5, 1.), (1.5, 1.), (1.5, -1.), (-1.5, -1.)] #Aimpoint + Four mosaic quadrants 36 x 24mm chip
+                            pane = 0
+                        else:
+                            offset = [(-1.5, 1.), (1.5, 1.), (1.5, -1.), (-1.5, -1.)] #Four mosaic quadrants 36 x 24mm chip
+                            pane = 1
                         #Exact details of the expansions need to be calculated for accurate naming. 20201215 WER
                         if exposure['area'] in ['300', '300%', 300]:
                             pitch = 0.3125
@@ -550,19 +554,17 @@ class Sequencer:
                         pitch = 0.
                         pane = 0
                     for displacement in offset:
-
-                        if g_dev['site'] == 'saf':
+                        if g_dev['cam_retry_config']['site'] == 'saf':
                             d_ra = displacement[0]*pitch*(0.5751*4784/3600./15.)  # = 0.0509496 Hours  These and pixscale should be computed in config.
                             d_dec = displacement[1]*pitch*(0.5751*3194/3600)  # = 0.0.5102414999999999   #Deg
-                        elif g_dev['site'] == 'wmd':
+                        elif g_dev['cam_retry_config']['site'] == 'wmd':
                             d_ra = displacement[0]*pitch*(0.6052*4784/3600./15.)   #Hours  These and pixscale should be computed in config.
                             d_dec = displacement[1]*pitch*(0.6052*3194/3600)   #Deg
-                        elif g_dev['site'] == 'wmd2':
+                        elif g_dev['cam_retry_config']['site'] == 'wmd2':
                             d_ra = displacement[0]*pitch*(0.6052*4784/3600./15.)   #Hours  These and pixscale should be computed in config.
                             d_dec = displacement[1]*pitch*(0.6052*3194/3600) 
                         else:
-                            print('Image scale for site not found')
-                            breakpoint()
+                            print('Image scale for site not supplied')
                         new_ra = dest_ra + d_ra
                         while new_ra > 24:
                             new_ra -= 24
@@ -570,7 +572,10 @@ class Sequencer:
                             new_ra += 24
                         #NB need to properly reduce for mosaic near Pole!!!
                         print('Seeking to:  ', new_ra, dest_dec + d_dec)
-                        g_dev['mnt'].go_coord(new_ra, dest_dec + d_dec)    #This needs full angle checks
+                        g_dev['mnt'].go_coord(new_ra, dest_dec + d_dec)  # This needs full angle checks
+                        if not just_focused:
+                            g_dev['foc'].adjust_focus()
+                        just_focused = False
                         if imtype in ['light'] and count > 0:
                             req = {'time': exp_time,  'alias':  str(self.config['camera']['camera1']['name']), 'image_type': imtype}   #  NB Should pick up filter and constants from config
                             opt = {'area': 150, 'count': 1, 'bin': binning, 'filter': color, \
@@ -582,8 +587,15 @@ class Sequencer:
                             print("Left to do:  ", left_to_do)
                         pane += 1
                     now_date_timeZ = datetime.datetime.now().isoformat().split('.')[0] +'Z'           
-                    ended = now_date_timeZ >= block['end']  # Or mount has flipped, too low, too bright. 
+                    ended = now_date_timeZ >= block['end']\
+                            or g_dev['airmass'] > block_specification['project']['project_constraints']['max_airmass'] \
+                            or g_dev['ha'] > block_specification['project']['project_constraints']['max_ha']# Or mount has flipped, too low, too bright. 
         print("Fini!")
+        if block_specification['project']['project_constraints']['close_on_block_completion']:
+            g_dev['mnt'].park_command({}, {})
+            g_dev['enc'].enclosure.Slaved = False
+            g_dev['enc'].close_command({}, {})
+            print("Auto close attempted at end of block.")
         self.block_guard = False
         return
 
@@ -999,7 +1011,11 @@ class Sequencer:
                 return            
             if min(x) <= d1 <= max(x):
                 print ('Moving to Solved focus:  ', round(d1, 2), ' calculated:  ',  new_spot)
-                g_dev['foc'].focuser.Move(int(d1*g_dev['foc'].micron_to_steps))
+                pos = int(d1*g_dev['foc'].micron_to_steps)
+                g_dev['foc'].focuser.Move(pos)
+                g_dev['foc'].last_known_focus = pos
+                g_dev['foc'].last_temperature = g_dev['foc'].focuser.Temperature
+                g_dev['foc'].last_source = "focus_auto_script"
                 if not sim:
                     result = g_dev['cam'].expose_command(req, opt, no_AWS=True)  #   script = 'focus_auto_script_3')  #  This is verifying the new focus.
                 else:
@@ -1033,6 +1049,7 @@ class Sequencer:
         self.af_guard = False
         #  NB NB We may want to consider sending the result image patch to AWS
         return
+
 
     def fine_focus_script(self, req, opt, throw = 600):
         '''
@@ -1159,7 +1176,12 @@ class Sequencer:
             return 
         if min(x) <= d1 <= max(x):
             print ('Moving to Solved focus:  ', round(d1, 2), ' calculated:  ',  new_spot)
-            g_dev['foc'].focuser.Move(int(d1*g_dev['foc'].micron_to_steps))
+            #Saves a base for relative focus adjusts.
+            pos = int(d1*g_dev['foc'].micron_to_steps)
+            g_dev['foc'].focuser.Move(pos)
+            g_dev['foc'].last_known_focus = pos
+            g_dev['foc'].last_temperature = g_dev['foc'].focuser.Temperature
+            g_dev['foc'].last_source = "focus_auto_script"
             if not sim:
                 result = g_dev['cam'].expose_command(req, opt)
             else:

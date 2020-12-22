@@ -1159,6 +1159,7 @@ class Camera:
                     while ha < -12:
                         ha += 24.
                     hdu.header['MNT-HA']   = round(ha, 5)    #Note these are average mount observed values.
+                    g_dev['ha'] = round(ha, 5)
                     hdu.header['MNT-DEC']  = avg_mnt['declination']
                     hdu.header['MNT-RAV']  = avg_mnt['tracking_right_ascension_rate']
                     hdu.header['MNT-DECV'] = avg_mnt['tracking_declination_rate']
@@ -1166,6 +1167,7 @@ class Camera:
                     hdu.header['ALTITUDE'] = avg_mnt['altitude']
                     hdu.header['ZENITH  '] = avg_mnt['zenith_distance']
                     hdu.header['AIRMASS '] = avg_mnt['airmass']
+                    g_dev['airmass'] = avg_mnt['airmass']
                     hdu.header['MNTRDSYS'] = avg_mnt['coordinate_system']
                     hdu.header['POINTINS'] = avg_mnt['instrument']
                     hdu.header['MNT-PARK'] = avg_mnt['is_parked']
