@@ -422,11 +422,11 @@ class Mount:
                 offset_x = float(req['image_x']) - 0.5   #Fraction of field.
                 offset_y = float(req['image_y']) - 0.5
                 if self.site == 'saf':
-                    field_x = 0.38213275235200206*2/15.   #2 accounts for binning, 15 for hours.
-                    field_y = 0.2551300253995927*2
+                    field_x = 0#0.38213275235200206*2/15.   #2 accounts for binning, 15 for hours.
+                    field_y = 0#0.2551300253995927*2
                 else:
-                    field_x = (2679/2563)*0.38213275235200206*2/15.   #2 accounts for binning, 15 for hours.
-                    field_y = (2679/2563)*0.2551300253995927*2                 
+                    field_x = 0#(2679/2563)*0.38213275235200206*2/15.   #2 accounts for binning, 15 for hours.
+                    field_y = 0#(2679/2563)*0.2551300253995927*2                 
                 ra = self.mount.RightAscension - offset_x*field_x
                 while ra >= 24:
                     ra -= 24

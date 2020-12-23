@@ -905,6 +905,7 @@ class Sequencer:
         self.sequencer_hold = False   #Allow comand checks.
         self.guard = False
         req2 = copy.deepcopy(req)
+        opt2 = copy.deepcopy(opt)
         self.af_guard = True
         sim = g_dev['enc'].shutter_is_closed
         print('AF entered with:  ', req, opt, '\n .. and sim =  ', sim)
@@ -983,7 +984,7 @@ class Sequencer:
         x = [foc_pos2, foc_pos1, foc_pos3]
         y = [spot2, spot1, spot3]
         print('X, Y:  ', x, y, 'Desire center to be smallest.')
-        if spot1 < spot2 and spot1 < spot3:
+        if spot2 > spot1 and spot1 < spot3:
             try:
                 #Digits are to help out pdb commands!
                 a1, b1, c1, d1 = fit_quadratic(x, y)
@@ -1006,8 +1007,9 @@ class Sequencer:
                     result['mean_focus'] = d1
                 spot4 = result['FWHM']
                 foc_pos4 = result['mean_focus']
-                print('\n\n\nFound best focus at:  ', foc_pos4,' measured is:  ',  round(spot4, 2), '\n\n\n')
-                g_dev['foc'].af_log(foc_pos4, spot4, new_spot)
+                print('\n\n\nFound best focus at:  ', foc_pos4,' measured is:  ',  round(new_spot, 2), '\n\n\n')
+                temp = g_dev['foc'].focuser.Temperature
+                g_dev['foc'].af_log(temp, foc_pos4, spot4, new_spot, x, y)
                 print("Returning to:  ", start_ra, start_dec)
                 g_dev['mnt'].mount.SlewToCoordinatesAsync(start_ra, start_dec)   #Return to pre-focus pointing.
             if sim:
@@ -1019,7 +1021,7 @@ class Sequencer:
             return
         elif spot2 <= spot1 or spot3 <= spot1:
             print("It appears camera is too far out; try again with fine_focus_script.")
-            self.fine_focus_script(req, opt, throw=750)
+            self.fine_focus_script(req2, opt2, throw=750)
         else:
             print('Spots are really wrong so moving back to starting focus:  ', focus_start)
             g_dev['foc'].focuser.Move((focus_start)*g_dev['foc'].micron_to_steps)
@@ -1051,7 +1053,7 @@ class Sequencer:
         start_ra = g_dev['mnt'].mount.RightAscension
         start_dec = g_dev['mnt'].mount.Declination
         foc_start = g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron
-        print("Saved ra dec focus:  ", start_ra, start_dec, foc_start)
+        print("Fine_focus_script; Saved ra dec focus:  ", start_ra, start_dec, foc_start)
         try:
             #Check here for filter, guider, still moving  THIS IS A CLASSIC
             #case where a timeout is a smart idea.
@@ -1141,8 +1143,9 @@ class Sequencer:
             result['mean_focus'] = foc_pos0 + throw
         spot5 = result['FWHM']
         foc_pos5 = result['mean_focus']
-        x = [foc_pos1, foc_pos2, foc_pos3, foc_pos4, foc_pos5]
-        y = [spot1, spot2, spot3, spot4, spot5]
+        # Put in parabolic order. Center should be near best focus
+        x = [foc_pos3, foc_pos2, foc_pos1, foc_pos3, foc_pos5, foc_pos4]
+        y = [spot3, spot2, spot1, spot5, spot4]
         print('X, Y:  ', x, y)
         try:
             #Digits are to help out pdb commands!
@@ -1165,6 +1168,8 @@ class Sequencer:
             spot6 = result['FWHM']
             foc_pos4 = result['mean_focus']
             print('\n\n\nFound best focus at:  ', foc_pos4,' measured is:  ',  round(spot6, 2), '\n\n\n')
+            temp = g_dev['foc'].focuser.Temperature
+            g_dev['foc'].af_log(temp, foc_pos4, spot4, round(spot6, 2), x, y)
         else:
             print('Autofocus did not converge. Moving back to starting focus:  ', foc_pos0)
             g_dev['foc'].focuser.Move((foc_start)*g_dev['foc'].micron_to_steps)
