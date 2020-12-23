@@ -28,6 +28,8 @@ from global_yard import g_dev
 #from devices.sequencer import Sequencer
 from devices.darkslide import Darkslide
 
+#string  = \\HOUSE-COMPUTER\saf_archive_2\archive
+
 """
 Camera note 20200427.
 
@@ -165,6 +167,7 @@ class Camera:
         self.site_path = self.config['site_path']
         self.archive_path = self.site_path +'archive/'
         self.camera_path = self.archive_path  + self.alias+ "/"
+        self.alt_path = '//house-computer/saf_archive_2/archive/sq01/'
         self.autosave_path = self.camera_path +'autosave/'
         self.lng_path = self.camera_path + "lng/"
         self.seq_path = self.camera_path + "seq/"
@@ -408,6 +411,7 @@ class Camera:
     The system boots up and selects the reference filter and reference focus.
 
     '''
+    
 
     def expose_command(self, required_params, optional_params,  \
                        gather_status = True, do_sep=True, no_AWS=False, quick=False):
@@ -816,7 +820,8 @@ class Camera:
         self.t11 = time.time()
         print("\n\nFull expose seq took:  ", round(self.t11 - self.t0 , 2), ' Retries;  ', num_retries,  ' Returning:  ', result, '\n\n')
         try:
-            print(' 0 sec cycle time:  ', round((self.t11 - self.t0)/count - exposure_time , 2) )
+            #print(' 0 sec cycle time:  ', round((self.t11 - self.t0)/count - exposure_time , 2) )
+            pass
         except:
             pass
         return result
@@ -928,7 +933,7 @@ class Camera:
                 #         square = trimmed[795:795 + 3194, :]
                 # else:
                 #     print("Incorrect chip size or bin specified.")
-                    
+                #I think the shift has to do with different binnings.   
                 if ix == 9600:
                     if self.img[22, -34] == 0:
  
@@ -1154,6 +1159,7 @@ class Camera:
                     while ha < -12:
                         ha += 24.
                     hdu.header['MNT-HA']   = round(ha, 5)    #Note these are average mount observed values.
+                    g_dev['ha'] = round(ha, 5)
                     hdu.header['MNT-DEC']  = avg_mnt['declination']
                     hdu.header['MNT-RAV']  = avg_mnt['tracking_right_ascension_rate']
                     hdu.header['MNT-DECV'] = avg_mnt['tracking_declination_rate']
@@ -1161,6 +1167,7 @@ class Camera:
                     hdu.header['ALTITUDE'] = avg_mnt['altitude']
                     hdu.header['ZENITH  '] = avg_mnt['zenith_distance']
                     hdu.header['AIRMASS '] = avg_mnt['airmass']
+                    g_dev['airmass'] = avg_mnt['airmass']
                     hdu.header['MNTRDSYS'] = avg_mnt['coordinate_system']
                     hdu.header['POINTINS'] = avg_mnt['instrument']
                     hdu.header['MNT-PARK'] = avg_mnt['is_parked']
@@ -1264,6 +1271,7 @@ class Camera:
                         raw_path  = im_path_r + g_dev['day'] + '/raw/'
                         cal_path  = im_path_r + g_dev['day'] + '/calib/'
                         red_path  = im_path_r + g_dev['day'] + '/reduced/'
+                        
                     except:
                         pass
 
@@ -1275,6 +1283,7 @@ class Camera:
                              'raw_path':  raw_path,
                              'cal_path':  cal_path,
                              'red_path':  red_path,
+                             'red_path_aux':  None,
                              'cal_name':  cal_name,
                              'raw_name00': raw_name00,
                              'red_name01': red_name01,
@@ -1288,6 +1297,10 @@ class Camera:
                              'text_name11': text_name,
                              'frame_type':  frame_type
                              }
+                    if  self.config['site'] == 'saf':
+                        os.makedirs(self.alt_path +  g_dev['day'] + '/reduced/', exist_ok=True)
+                        red_path_aux = self.alt_path +  g_dev['day'] + '/reduced/'
+                        paths['red_path_aux'] = red_path_aux
                     script = None
                     '''
                     self.enqueue_image(text_data_size, im_path, text_name)
@@ -1326,7 +1339,7 @@ class Camera:
                     # elif frame_type in ['light']:
                     #     self.enqueue_for_AWS(reduced_data_size, im_path, red_name01)
                         
-                    print("\n\Finish-Exposure is complete, saved:  " + raw_name00)#, raw_data_size, '\n')
+                   #print("\n\Finish-Exposure is complete, saved:  " + raw_name00)#, raw_data_size, '\n')
                     g_dev['obs'].update_status()
                     result['mean_focus'] = avg_foc[1]
                     result['mean_rotation'] = avg_rot[1]

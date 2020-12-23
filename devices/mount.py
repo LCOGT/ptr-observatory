@@ -17,7 +17,7 @@ solutions provided.  This is probably a WER task to sort out.  From the AWS user
 catalog positions, nominally ICRS, particularly as realized by the current GAIA release.  Other objects (Messier) as an example
 we always try to go through Strassbourg to get coordinates.  Updates to those happen but they are carefully vetted.  We can
 start with nominal poblished catalogs whihc generally give names, Ra and dec, Season, mag etc but update them IFF the
-Strassborug data is more current.  Star charts are harder.  But there is some new stuff in the Ppixinsight realse we might
+Strassborug data is more current.  Star charts are harder.  But there is some new stuff in the Pixinsight realse we might
 want to take advantage of.
 
 Refraction and mount models need to be added, but the problem is the state of mounting code over various manufactures is a
@@ -511,7 +511,7 @@ class Mount:
         ''' slew to the home position '''
         print("mount cmd: homing mount")
         if self.mount.AtHome:
-            print(f"Mount is at home.")
+            print("Mount is at home.")
         elif False: #self.mount.CanFindHome:    # NB what is this all about?
             print(f"can find home: {self.mount.CanFindHome}")
             self.mount.Unpark()
@@ -520,7 +520,7 @@ class Mount:
             #self.mount.SlewToAltAzAsync(home_alt, home_az)
             self.mount.FindHome()
         else:
-            print(f"Mount is not capable of finding home. Slewing to zenith.")
+            print("Mount is not capable of finding home. Slewing to zenith.")
             self.mount.SlewToAltAzAsync(88., 0.)
 
     def flat_panel_command(self, req, opt):

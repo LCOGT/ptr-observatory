@@ -196,6 +196,7 @@ def calibrate (hdu, lng_path, frame_type='light', quick=False):
             try:
                 sdHdu = fits.open(lng_path + 'd_2.fits')
                 dark_2_exposure_level = sdHdu[0].header['EXPTIME']
+
                 super_dark_2  = sdHdu[0].data/dark_2_exposure_level  #Converto to ADU/sec
                 super_dark_2 = super_dark_2.astype('float32')
                 if loud: print('sdark_2:  ', super_dark_2.mean())
@@ -406,7 +407,7 @@ def calibrate (hdu, lng_path, frame_type='light', quick=False):
             if not quick:
                 if loud: print('QuickBias_2 result (high):  ', imageStats(img, False))
             cal_string += 'B'
-            data_exposure_level = hdu.header['EXPTIME']
+        data_exposure_level = hdu.header['EXPTIME']
         if frame_type == 'dark':
             break   #  Do not dark calibrate a dark.
         # NB NB NB THis data Exposure level code seems wrong.
