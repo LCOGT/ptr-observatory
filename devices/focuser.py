@@ -91,6 +91,7 @@ class Focuser:
             trial =round(float(self.config['coef_0'] + float(self.config['coef_c'])*temp_primary), 1)
             trial = max(trial,500)  #These values would change for Gemini to more like 11900 max
             trial = min(trial, 12150)
+            
             #print('Calculated focus compensated position:  ', trial)
             return int(trial)
         else:
@@ -203,7 +204,7 @@ class Focuser:
     def adjust_focus(self):
         #Note the adjustment is relative to the last formal focus procedure.
         try:
-            temp_delta = self.focuser.Temperature - self.last_temperature()
+            temp_delta = self.focuser.Temperature - self.last_temperature
             if abs(temp_delta)> 0.01:
                 req = {'position':  str(temp_delta*float(self.config['coef_c']))}
                 opt = {}

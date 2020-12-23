@@ -402,6 +402,7 @@ class Sequencer:
         
     def execute_block(self, block_specification):
         self.block_guard = True
+        # NB we assume the dome is open and already slaving.
         block = copy.deepcopy(block_specification)
         # #unpark, open dome etc.
         # #if not end of block
@@ -420,7 +421,7 @@ class Sequencer:
         
         '''
 
-        for target in block['project']['project_targets']:   #  NB NB NB Do multi-target projeects make sense???
+        for target in block['project']['project_targets']:   #  NB NB NB Do multi-target projects make sense???
             dest_ra = float(target['ra']) - \
                 float(block_specification['project']['project_constraints']['ra_offset'])/15.
             if dest_ra < 0:
@@ -463,7 +464,10 @@ class Sequencer:
             for exposure in block['project']['exposures']:
                 multiplex = 0
                 if exposure['area'] in ['300', '300%', 300, '220', '220%', 220, '150', '150%', 150]:
-                    multiplex = 5
+                    if block_specification['project']['project_constraints']['add_center_to_mosaic']:
+                        multiplex = 5
+                    else:
+                        multiplex = 4
                 if exposure['area'] in ['600', '600%', 600]:
                     multiplex = 9
                 if multiplex > 1:
@@ -479,7 +483,7 @@ class Sequencer:
             initial_focus = True
             while left_to_do > 0 and not ended:
                 if initial_focus:
-                    self.focus_script(req2, opt, throw = 500)   #fine_focus_script can be used here
+                    self.fine_focus_script(req2, opt, throw = 500)   #fine_focus_script can be used here
                     just_focused = True
                     initial_focus = False    #  Make above on-time event per block
                     timer = time.time() + 1800   #10 min for debugging
@@ -528,7 +532,7 @@ class Sequencer:
                          continue
                     #At this point we have 1 to 9 exposures to make in this filter.  Note different areas can be defined. 
                     if exposure['area'] in ['300', '300%', 300, '220', '220%', 220, '150', '150%', 150, '250', '250%', 250]:
-                        if block_specification['project_constraints']['add_center_to_mosaic']:
+                        if block_specification['project']['project_constraints']['add_center_to_mosaic']:
                             offset = [(0.0, 0.0), (-1.5, 1.), (1.5, 1.), (1.5, -1.), (-1.5, -1.)] #Aimpoint + Four mosaic quadrants 36 x 24mm chip
                             pane = 0
                         else:
@@ -588,8 +592,8 @@ class Sequencer:
                         pane += 1
                     now_date_timeZ = datetime.datetime.now().isoformat().split('.')[0] +'Z'           
                     ended = now_date_timeZ >= block['end']\
-                            or g_dev['airmass'] > block_specification['project']['project_constraints']['max_airmass'] \
-                            or g_dev['ha'] > block_specification['project']['project_constraints']['max_ha']# Or mount has flipped, too low, too bright. 
+                            or g_dev['airmass'] >float( block_specification['project']['project_constraints']['max_airmass']) \
+                            or g_dev['ha'] > float(block_specification['project']['project_constraints']['max_ha'])# Or mount has flipped, too low, too bright. 
         print("Fini!")
         if block_specification['project']['project_constraints']['close_on_block_completion']:
             g_dev['mnt'].park_command({}, {})

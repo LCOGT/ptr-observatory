@@ -1167,7 +1167,7 @@ class Camera:
                     hdu.header['ALTITUDE'] = avg_mnt['altitude']
                     hdu.header['ZENITH  '] = avg_mnt['zenith_distance']
                     hdu.header['AIRMASS '] = avg_mnt['airmass']
-                    g_dev['airmass'] = avg_mnt['airmass']
+                    g_dev['airmass'] = float(avg_mnt['airmass'])
                     hdu.header['MNTRDSYS'] = avg_mnt['coordinate_system']
                     hdu.header['POINTINS'] = avg_mnt['instrument']
                     hdu.header['MNT-PARK'] = avg_mnt['is_parked']
