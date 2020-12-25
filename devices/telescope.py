@@ -31,6 +31,15 @@ NGP
 12 51 36.7151981
 +27 06 11.193172
 '''
+
+def ra_fix(ra):
+    while ra >= 24:
+        ra -= 24
+    while ra < 0:
+        ra += 24
+        #need to make this a full function
+    return ra
+
 class Telescope:
 
     def __init__(self, driver: str, name: str, settings: dict, config: dict, tel=False):
@@ -127,10 +136,11 @@ class Telescope:
             }
         elif self.tel == True:
             self.current_sidereal = g_dev['mnt'].mount.SiderealTime
+            ra_off, dec_off = g_dev['mnt'].get_mount_ref() 
             if g_dev['mnt'].mount.EquatorialSystem == 1:
                 self.get_current_times()
-                jnow_ra = g_dev['mnt'].mount.RightAscension
-                jnow_dec = g_dev['mnt'].mount.Declination
+                jnow_ra = ra_fix(g_dev['mnt'].mount.RightAscension - ra_off)
+                jnow_dec = g_dev['mnt'].mount.Declination - dec_off
                 jnow_coord = SkyCoord(jnow_ra*u.hour, jnow_dec*u.degree, frame='fk5', \
                           equinox=self.equinox_now)
                 icrs_coord = jnow_coord.transform_to(ICRS)
@@ -177,9 +187,10 @@ class Telescope:
         airmass = round(sec_z - 0.0018167*(sec_z - 1) - 0.002875*((sec_z - 1)**2) - 0.0008083*((sec_z - 1)**3),3)
         if airmass > 10: airmass = 10
         airmass = round(airmass, 4)
+        ra_off, dec_off = g_dev['mnt'].get_mount_ref() 
         pre.append(time.time())
-        pre.append(self.mount.RightAscension)
-        pre.append(self.mount.Declination)
+        pre.append(ra_fix(self.mount.RightAscension - ra_off))
+        pre.append(self.mount.Declination - dec_off)
         pre.append(self.mount.SiderealTime)
         pre.append(self.mount.RightAscensionRate)
         pre.append(self.mount.DeclinationRate)

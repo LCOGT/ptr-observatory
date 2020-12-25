@@ -492,8 +492,9 @@ class Camera:
             #breakpoint()
         #  NBNB Changing filter may cause a need to shift focus
         self.current_offset = '????'#g_dev['fil'].filter_offset  #TEMP   NBNBNB This needs fixing
-        #  NB nothing being done here to get focus set properly. Where is this effected?
-
+        # Here we adjust for focus temp and filter offset
+        if not imtype.lower() in ['auto_focus', 'focus', 'autofocus probe']:
+            g_dev['foc'].adjust_focus(loud=True)
         sub_frame_fraction = optional_params.get('subframe', None)
         #  The following bit of code is convoluted.  Presumably when we get Autofocus working this will get cleaned up.
         self.toss = False

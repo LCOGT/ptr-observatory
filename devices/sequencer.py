@@ -192,6 +192,8 @@ class Sequencer:
             self.stop_command(req, opt)
         elif action == "home":
             self.home_command(req, opt)
+        elif action == 'run' and script == 'calibrateAtFieldCenter':
+            g_dev['mnt'].go_command(req, opt, calibrate=True)
         else:
             print('Sequencer command:  ', command, ' not recognized.')
 
@@ -407,6 +409,7 @@ class Sequencer:
         # #unpark, open dome etc.
         # #if not end of block
         g_dev['mnt'].unpark_command({}, {})
+        #NB  Servo the Dome??
         timer = time.time() - 1  #This should force an immediate autofocus.
         req2 = {'target': 'near_tycho_star', 'area': 150}
         opt = {}
@@ -930,7 +933,7 @@ class Sequencer:
         start_ra = g_dev['mnt'].mount.RightAscension   #Read these to go back.
         start_dec = g_dev['mnt'].mount.Declination
         focus_start = g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron
-        print("Saved ra dec focus:  ", start_ra, start_dec, focus_start)
+        print("Saved ra, dec, focus:  ", start_ra, start_dec, focus_start)
         try:
             #Check here for filter, guider, still moving  THIS IS A CLASSIC
             #case where a timeout is a smart idea.
@@ -1017,7 +1020,7 @@ class Sequencer:
                 print ('Moving to Solved focus:  ', round(d1, 2), ' calculated:  ',  new_spot)
                 pos = int(d1*g_dev['foc'].micron_to_steps)
                 g_dev['foc'].focuser.Move(pos)
-                g_dev['foc'].last_known_focus = pos
+                g_dev['foc'].last_known_focus = d1*g_dev['foc']
                 g_dev['foc'].last_temperature = g_dev['foc'].focuser.Temperature
                 g_dev['foc'].last_source = "focus_auto_script"
                 if not sim:
@@ -1183,7 +1186,7 @@ class Sequencer:
             #Saves a base for relative focus adjusts.
             pos = int(d1*g_dev['foc'].micron_to_steps)
             g_dev['foc'].focuser.Move(pos)
-            g_dev['foc'].last_known_focus = pos
+            g_dev['foc'].last_known_focus = d1
             g_dev['foc'].last_temperature = g_dev['foc'].focuser.Temperature
             g_dev['foc'].last_source = "focus_auto_script"
             if not sim:

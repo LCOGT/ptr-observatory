@@ -214,7 +214,7 @@ class FilterWheel:
                 time.sleep(0.2)
             except:
                 breakpoint()
-            self.filter_offset = int(self.filter_data[filter_number][2])
+            self.filter_offset = float(self.filter_data[filter_number][2])
         elif self.maxim:
             g_dev['cam'].camera.Filter = filter_selections[0]
             time.sleep(0.1)
@@ -242,7 +242,7 @@ class FilterWheel:
                 time.sleep(0.2)
             except:
                 breakpoint()
-            self.filter_offset = int(self.filter_data[filter_selections][2])
+            self.filter_offset = float(self.filter_data[filter_selections][2])
         elif self.maxim:
             g_dev['cam'].camera.Filter = filter_selections[0]
             time.sleep(0.2)
@@ -279,7 +279,7 @@ class FilterWheel:
         self.filter_selected = filter_name
         filter_selections = self.filter_data[filt_pointer][1]   # eliminated eval with config format to Python values.
         print('Selections:  ', filter_selections)
- 
+        self.filter_offset = float(self.filter_data[filt_pointer][2])
         if self.dual:
             try:
                 while self.filter_front.Position == -1:
@@ -295,7 +295,7 @@ class FilterWheel:
                 time.sleep(0.2)
             except:
                 breakpoint()
-            self.filter_offset = int(self.filter_data[filt_pointer][2])
+            self.filter_offset = float(self.filter_data[filt_pointer][2])
         elif self.maxim:
             
 # =============================================================================

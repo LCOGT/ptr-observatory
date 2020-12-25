@@ -40,6 +40,7 @@ import pythoncom
 import serial
 import time, json
 import datetime
+import shelve
 from math import cos, radians    #"What plan do we have for making some imports be done this way, elg, import numpy as np...?"
 from global_yard import g_dev    #"Ditto guestion we are importing a single object instance."
 
@@ -76,6 +77,15 @@ tzOffset = -7
 mountOne = "PW_L600"
 mountOneAscom = None
 #The mount is not threaded and uses non-blocking seek.     "Note no doule quotes.
+
+def ra_fix(ra):
+    while ra >= 24:
+        ra -= 24
+    while ra < 0:
+        ra += 24
+        #need to make this a full function
+    return ra
+
 class Mount:
 
     def __init__(self, driver: str, name: str, settings: dict, config: dict, astro_events, tel=False):
@@ -83,6 +93,7 @@ class Mount:
         self.astro_events = astro_events
         g_dev['mnt'] = self
         self.site = config['site']
+        self.site_path = config['site_path']
         self.device_name = name
         self.settings = settings
         win32com.client.pythoncom.CoInitialize()
@@ -105,11 +116,16 @@ class Mount:
         self.object = "Unspecified"
         self.current_icrs_ra = "Unspecified_Ra"
         self.current_icrs_dec = " Unspecified_Dec"
+        self.offset_received = None
         if not tel:
             print("Mount connected.")
         else:
             print("Tel/OTA connected.")
         print(self.mount.Description)
+        try:
+            ra1, dec1 = self.get_mount_ref()
+        except:
+            self.reset_mount_ref()
 
         #NB THe paddle needs a re-think and needs to be cast into its own thread. 20200310 WER
         if self.has_paddle:
@@ -207,19 +223,21 @@ class Mount:
                 'message': self.mount_message[:32]
             }
         elif self.tel == True:
+            breakpoint()
             self.current_sidereal = self.mount.SiderealTime
+            ra_off, dec_off = self.get_mount_ref() 
             if self. mount.EquatorialSystem == 1:
                 self.get_current_times()
-                jnow_ra = self.mount.RightAscension
-                jnow_dec = self.mount.Declination
+                jnow_ra = ra_fix(self.mount.RightAscension - ra_off)
+                jnow_dec = self.mount.Declination - dec_off
                 jnow_coord = SkyCoord(jnow_ra*u.hour, jnow_dec*u.degree, frame='fk5', \
                           equinox=self.equinox_now)
                 icrs_coord = jnow_coord.transform_to(ICRS)
-                self.current_icrs_ra = icrs_coord.ra.hour
+                self.current_icrs_ra = icrs_coord.ra.hour 
                 self.current_icrs_dec = icrs_coord.dec.degree
             else:
-                self.current_icrs_ra = self.mount.RightAscension
-                self.current_icrs_dec = self.mount.Declination
+                self.current_icrs_ra = ra_fix(self.mount.RightAscension - ra_off)    #May not be applied in positioning
+                self.current_icrs_dec = self.mount.Declination - dec_off
             status = {
                 'timestamp': round(time.time(), 3),
                 'right_ascension': round(self.current_icrs_ra, 5),
@@ -271,6 +289,7 @@ class Mount:
 
 
     def get_quick_status(self, pre):
+
         self.check_connect()
         alt = self.mount.Altitude
         zen = round((90 - alt), 3)
@@ -284,9 +303,10 @@ class Mount:
         airmass = abs(round(sec_z - 0.0018167*(sec_z - 1) - 0.002875*((sec_z - 1)**2) - 0.0008083*((sec_z - 1)**3),3))
         if airmass > 10: airmass = 10
         airmass = round(airmass, 4)
+        ra_off, dec_off = self.get_mount_ref() 
         pre.append(time.time())
-        pre.append(self.mount.RightAscension)
-        pre.append(self.mount.Declination)
+        pre.append(ra_fix(self.mount.RightAscension - ra_off))
+        pre.append(self.mount.Declination - dec_off)
         pre.append(self.mount.SiderealTime)
         pre.append(self.mount.RightAscensionRate)
         pre.append(self.mount.DeclinationRate)
@@ -318,6 +338,7 @@ class Mount:
 
 
     def get_average_status(self, pre, post):    #Add HA to this calculation.
+
         self.check_connect()
         t_avg = round((pre[0] + post[0])/2, 3)
         #print(t_avg)
@@ -391,6 +412,9 @@ class Mount:
         elif action == 'center_on_pixels':
             print (command)
             self.go_command(req, opt, offset=True)
+        elif action == 'calibrateAtFieldCenter':
+            print (command)
+            self.go_command(req, opt, calibrate=True)
         elif action == 'sky_flat_position':
             self.slewToSkyFlatAsync()
         else:
@@ -408,41 +432,61 @@ class Mount:
     #        Mount Commands       #
     ###############################
 
-    def go_command(self, req, opt,  offset=False):
+    def go_command(self, req, opt,  offset=False, calibrate=False):
         ''' Slew to the given ra/dec coordinates. '''
         print("mount cmd. slewing mount, req, opt:  ", req, opt)
 
         ''' unpark the telescope mount '''  #  NB can we check if unparked and save time?
-    
         if self.mount.CanPark:
             #print("mount cmd: unparking mount")
             self.mount.Unpark()
         try:
-            if offset:   #THe offset version supplies offsets, need to get actual mount coordinates.
+            if offset:   #This offset version supplies offsets as a fraction of the Full field.
                 offset_x = float(req['image_x']) - 0.5   #Fraction of field.
                 offset_y = float(req['image_y']) - 0.5
                 if self.site == 'saf':
-                    field_x = 0#0.38213275235200206*2/15.   #2 accounts for binning, 15 for hours.
-                    field_y = 0#0.2551300253995927*2
+                    field_x = 0.38213275235200206*2/15.   #2 accounts for binning, 15 for hours.
+                    field_y = 0.2551300253995927*2
                 else:
-                    field_x = 0#(2679/2563)*0.38213275235200206*2/15.   #2 accounts for binning, 15 for hours.
-                    field_y = 0#(2679/2563)*0.2551300253995927*2                 
-                ra = self.mount.RightAscension - offset_x*field_x
-                while ra >= 24:
-                    ra -= 24
-                while ra < 0:
-                    ra += 24
-                dec = self.mount.Declination - offset_y*field_y
+                    field_x = (2679/2563)*0.38213275235200206*2/15.   #2 accounts for binning, 15 for hours.
+                    field_y = (2679/2563)*0.2551300253995927*2
+                self.ra_offset = -offset_x*field_x
+                self.dec_offset = -offset_y*field_y
+                ra = ra_fix(self.mount.RightAscension + self.ra_offset)
+                dec = self.mount.Declination + self.dec_offset
                 #NB NB NB Need to normalize dec
-                #NB NB NB Need to add in de-rotation here.
+                #NB NB NB Need to add in de-rotation her
                 self.mount.SlewToCoordinatesAsync(ra, dec)
+                self.offset_received = True
                 return
+            elif calibrate:  #Note does not need req or opt
+                if self.offset_received:
+                    ra_off, dec_off = self.get_mount_ref()
+                    ra_off += self.ra_offset
+                    dec_off += self.dec_offset
+                    self.set_mount_ref( ra_off, dec_off)
+                    self.ra_offset = 0
+                    self.dec_offset = 0
+                    self.offset_received = False
+                else:
+                    print("No outstanding offset available for calibration, resetting.")
+                    #We could use this path to clear a calibration.
+                    self.reset_mount_ref()
+                    self.ra_offset = 0
+                    self.dec_offset = 0
+                    self.offset_received = False
             else:
                 ra = float(req['ra'])
                 dec = float(req['dec'])
+                self.ra_offset = 0
+                self.dec_offset = 0
+                self.offset_received = False
         except:
             print("Bad coordinates supplied.")
             self.message = "Bad coordinates supplied, try again."
+            self.offset_received = False
+            self.ra_offset = 0
+            self.dec_offset = 0
             return
 
         # Offset from sidereal in arcseconds per SI second, default = 0.0
@@ -450,12 +494,14 @@ class Mount:
 
         # Arcseconds per SI second, default = 0.0
         tracking_rate_dec = opt.get('tracking_rate_dec', 0)
+        ra_off, dec_off = self.get_mount_ref() 
         if self.mount.EquatorialSystem == 1:
             self.get_current_times()   #  NB We should find a way to refresh this once a day, esp. for status return.
             icrs_coord = SkyCoord(float(req['ra'])*u.hour, float(req['dec'])*u.degree, frame='icrs')
             jnow_coord = icrs_coord.transform_to(FK5(equinox=self.equinox_now))
-            ra = jnow_coord.ra.hour
-            dec = jnow_coord.dec.degree
+            ra = jnow_coord.ra.hour + ra_off
+            dec = jnow_coord.dec.degree + dec_off
+            ra = ra_fix(ra)
         self.mount.Tracking = True
         self.mount.SlewToCoordinatesAsync(ra, dec)
         self.mount.RightAscensionRate = tracking_rate_ra
@@ -472,23 +518,24 @@ class Mount:
 
     def go_coord(self, ra, dec):
         ''' Slew to the given ra/dec coordinates, supplied in ICRS '''
-
+        #Thes should be coerced and use above code.
         ''' unpark the telescope mount '''  #  NB can we check if unparked and save time?
         if self.mount.CanPark:
             #print("mount cmd: unparking mount")
             self.mount.Unpark()
-
         # Offset from sidereal in arcseconds per SI second, default = 0.0
         tracking_rate_ra = 0#opt.get('tracking_rate_ra', 0)
-
         # Arcseconds per SI second, default = 0.0
         tracking_rate_dec =0#opt.get('tracking_rate_dec', 0)
+        ra_off, dec_off = self.get_mount_ref() 
         if self.mount.EquatorialSystem == 1:
             self.get_current_times()   #  NB We should find a way to refresh this once a day, esp. for status return.
             icrs_coord = SkyCoord(ra*u.hour, dec*u.degree, frame='icrs')
             jnow_coord = icrs_coord.transform_to(FK5(equinox=self.equinox_now))
-            ra = jnow_coord.ra.hour
-            dec = jnow_coord.dec.degree
+            ra = ra_fix(jnow_coord.ra.hour + ra_off)
+            dec = jnow_coord.dec.degree + dec_off
+            ra = ra_fix(ra)               
+            #NB Dec needs proper fixing
         self.mount.Tracking = True
         self.mount.SlewToCoordinatesAsync(ra, dec)
         self.mount.RightAscensionRate = tracking_rate_ra
@@ -685,8 +732,25 @@ class Mount:
         self._paddle.close()
         return
 
+    def set_mount_ref(self, ra, dec):
+        mnt_shelf = shelve.open(self.site_path + 'ptr_night_shelf/' + 'mount1')
+        mnt_shelf['ra_cal_offset'] = ra
+        mnt_shelf['dec_cal_offset'] = dec
+        mnt_shelf.close()
+        return
 
+    def get_mount_ref(self):
+        mnt_shelf = shelve.open(self.site_path + 'ptr_night_shelf/' + 'mount1')
+        ra = mnt_shelf['ra_cal_offset']
+        dec = mnt_shelf['dec_cal_offset']
+        mnt_shelf.close()
+        return ra, dec
 
+    def reset_mount_ref(self):
+        mnt_shelf = shelve.open(self.site_path + 'ptr_night_shelf/' + 'mount1')
+        mnt_shelf['ra_cal_offset'] = 0.000
+        mnt_shelf['dec_cal_offset'] = -0.00
+        return
 
         '''
          class Darkslide(object):

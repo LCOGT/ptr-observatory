@@ -589,6 +589,7 @@ class Observatory:
                     try:
                         img = hdu.data.copy().astype('float')
                         bkg = sep.Background(img)
+                        breakpoint()
                         #bkg_rms = bkg.rms()
                         img = img - bkg
                         sources = sep.extract(img, 4.5, err=bkg.globalrms, minarea=9)#, filter_kernel=kern)

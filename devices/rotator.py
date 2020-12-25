@@ -12,8 +12,8 @@ class Rotator:
         self.rotator = win32com.client.Dispatch(driver)
         self.rotator.Connected = True
         self.rotator_message = '-'
-        print(f"rotator connected.")
-        print(self.rotator.Description)
+        print("Rotator connected,  at:  ", round(self.rotator.TargetPosition, 4))
+        #print(self.rotator.Description)
 
     def get_status(self):
         '''
@@ -73,13 +73,13 @@ class Rotator:
     ###############################
 
     def move_relative_command(self, req: dict, opt: dict):
-        ''' set the focus position by moving relative to current position '''
+        ''' set the rotators position by moving relative to current position '''
         print(f"rotator cmd: move_relative")
         position = float(req['position'])
         self.rotator.Move(position)
 
     def move_absolute_command(self, req: dict, opt: dict):
-        ''' set the focus position by moving to an absolute position '''
+        ''' set the rotator position by moving to an absolute position '''
         print(f"rotator cmd: move_absolute")
         position = float(req['position'])
         self.rotator.MoveAbsolute(position)

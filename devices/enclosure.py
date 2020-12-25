@@ -280,7 +280,7 @@ class Enclosure:
                 else:
                     if self.status_string.lower() in ['closed']:    #, 'closing']:
                         try:
-                            success = self.guarded_open()
+                            self.guarded_open()
                             self.dome_opened = True
                             self.dome_homed = True
                         except:
