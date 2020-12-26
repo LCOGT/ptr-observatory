@@ -479,7 +479,7 @@ class Sequencer:
             initial_focus = True
             while left_to_do > 0 and not ended:
                 if initial_focus:
-                    self.focus_script(req2, opt, throw = 500)   #fine_focus_script can be used here
+                    self.focus_auto_script(req2, opt, throw = 500)   #fine_focus_script can be used here
                     just_focused = True
                     initial_focus = False    #  Make above on-time event per block
                     timer = time.time() + 1800   #10 min for debugging

@@ -73,7 +73,7 @@ class Focuser:
                 self.last_temperature = self.focuser.Temperature
                 self.reference = self.calculate_compensation( self.focuser.Temperature)   #need to change to config supplied
                 print("Focus position set from temp compensated value:  ", self.reference)
-                self.last_known_focus = self.reference()
+                self.last_known_focus = self.reference
                 self.last_source = "Focuser__init__  Calculate Comp references Config"
             except:
                 self.reference = float(self.get_focal_ref())   #need to change to config supplied
@@ -285,7 +285,7 @@ class Focuser:
 
     def get_focal_ref(self):
         cam_shelf = shelve.open(self.site_path + 'ptr_night_shelf/' + self.camera_name)
-        focus_ref = camShelf['Focus Ref']
+        focus_ref = cam_shelf['Focus Ref']
         cam_shelf.close()
         return focus_ref
 
