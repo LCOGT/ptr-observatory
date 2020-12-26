@@ -241,7 +241,7 @@ def calibrate (hdu, lng_path, frame_type='light', quick=False):
                 screen_flat_B = sfHdu[0].data.astype('float32')
                 quick_flat_B = True
                 sfHdu.close()
-                if loud: print(lng_path + 'f1_2_B.fits', 'Loaded')
+                if loud: print(lng_path + 'ff_2_B.fits', 'Loaded')
             except:
                 quick_flat_B = False
                 if loud: print('WARN: No B Flat/Lum Loaded.')
@@ -251,7 +251,7 @@ def calibrate (hdu, lng_path, frame_type='light', quick=False):
                 screen_flat_V = sfHdu[0].data.astype('float32')
                 quick_flat_V = True
                 sfHdu.close()
-                if loud: print(lng_path + 'f1_2_V.fits', 'Loaded')
+                if loud: print(lng_path + 'ff_2_V.fits', 'Loaded')
             except:
                 quick_flat_V = False
                 if loud: print('WARN: No V Flat/Lum Loaded.')
