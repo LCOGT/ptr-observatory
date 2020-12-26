@@ -72,6 +72,7 @@ sky_flat_S2 = None
 sky_flat_EXO = None
 sky_flat_air = None
 dark_exposure_level = 0.0
+dark_2_exposure_level = 0
 dark_long_exposure_level = 0.0
 
 
@@ -129,7 +130,7 @@ def calibrate (hdu, lng_path, frame_type='light', quick=False):
     global super_bias, super_bias_2, super_dark, super_dark_2, hot_map, hot_pix, screen_flat_air, screen_flat_w, \
         screen_flat_B, screen_flat_V, screen_flat_R, screen_flat_gp, screen_flat_rp, screen_flat_ip, \
         screen_flat_O3, screen_flat_HA, screen_flat_N2, screen_flat_S2, screen_flat_EXO, screen_flat_air, \
-        dark_exposure_level, super_dark_2_long
+        dark_exposure_level, super_dark_2_long, dark_2_exposure_level
     loud = False
 
     #This needs to deal with caching different binnings as well.  And do we skip all this for a quick
@@ -240,7 +241,7 @@ def calibrate (hdu, lng_path, frame_type='light', quick=False):
                 screen_flat_B = sfHdu[0].data.astype('float32')
                 quick_flat_B = True
                 sfHdu.close()
-                if loud: print(lng_path + 'f1_2_B.fits', 'Loaded')
+                if loud: print(lng_path + 'ff_2_B.fits', 'Loaded')
             except:
                 quick_flat_B = False
                 if loud: print('WARN: No B Flat/Lum Loaded.')
@@ -250,7 +251,7 @@ def calibrate (hdu, lng_path, frame_type='light', quick=False):
                 screen_flat_V = sfHdu[0].data.astype('float32')
                 quick_flat_V = True
                 sfHdu.close()
-                if loud: print(lng_path + 'f1_2_V.fits', 'Loaded')
+                if loud: print(lng_path + 'ff_2_V.fits', 'Loaded')
             except:
                 quick_flat_V = False
                 if loud: print('WARN: No V Flat/Lum Loaded.')
@@ -425,7 +426,7 @@ def calibrate (hdu, lng_path, frame_type='light', quick=False):
             if data_exposure_level > dark_2_exposure_level:
                 if loud: print("WARNING:  Master dark being used over-scaled")
             img =  (img - super_dark_2[start_x:(start_x + img.shape[0]), start_y:(start_y + img.shape[1]) \
-                                ]*data_2_exposure_level)
+                                ]*data_exposure_level)
             if not quick:
                 if loud: print('QuickDark_2: ', imageStats(img, loud))
             cal_string += ', D'

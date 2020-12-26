@@ -192,6 +192,8 @@ class Sequencer:
             self.stop_command(req, opt)
         elif action == "home":
             self.home_command(req, opt)
+        elif action == 'run' and script == 'calibrateAtFieldCenter':
+            g_dev['mnt'].go_command(req, opt, calibrate=True)
         else:
             print('Sequencer command:  ', command, ' not recognized.')
 
@@ -251,7 +253,7 @@ class Sequencer:
                     if block['project_id'] == project['project_name'] + '#' + project['created_at']:
                         block['project'] = project
                         #print('Scheduled so removing:  ', project['project_name'])
-                        projects.remove(project)
+                        #projects.remove(project)
                         
             #The residual in projects can be treaded as background.
             #print('Background:  ', len(projects), '\n\n', projects)
@@ -300,22 +302,27 @@ class Sequencer:
             #     ha = tycho.reduceHA(sid - ra)
             #     az, alt = transform_haDec_to_azAlt(ha, dec)
             #     # Do not start a block within 15 min of end time???
+            print("Initial length:  ", len(blocks))
             for block in blocks:
                 now_date_timeZ = datetime.datetime.now().isoformat().split('.')[0] +'Z'           
                 if (block['start'] <= now_date_timeZ < block['end']) and not self.block_guard :
                     #here we might have to cleanly terminate a background project.
                     self.block_guard = True
-                    self.execute_block(block)
-                    print("Should have left a block here.")
+                    completed_block = self.execute_block(block)
+                    print("Should have completed a block here.")
+                    print("Pre-pop length:  ", len(blocks))
+                    for index in range(len(blocks)):
+                        if blocks[index]['event_id'] == completed_block['event_id']:
+                            blocks.pop(index)
+                    print("Post-pop length:  ", len(blocks))
+                    
+
                     '''
                     When a scheduled block is completed it is not re-entered or the block needs to 
                     be restored.  IN the execute block we need to make a deepcopy of the input block
                     so it does not get modified.
                     '''
-                else:
-                    pass
-                    #here we would look through owner background projects.
-                continue    #This is frought with peril if the locks list is updated.
+                continue    #This is frought with peril if the blocks list is updated.
             return
             
                 
@@ -402,10 +409,12 @@ class Sequencer:
         
     def execute_block(self, block_specification):
         self.block_guard = True
+        # NB we assume the dome is open and already slaving.
         block = copy.deepcopy(block_specification)
         # #unpark, open dome etc.
         # #if not end of block
         g_dev['mnt'].unpark_command({}, {})
+        #NB  Servo the Dome??
         timer = time.time() - 1  #This should force an immediate autofocus.
         req2 = {'target': 'near_tycho_star', 'area': 150}
         opt = {}
@@ -420,7 +429,7 @@ class Sequencer:
         
         '''
 
-        for target in block['project']['project_targets']:   #  NB NB NB Do multi-target projeects make sense???
+        for target in block['project']['project_targets']:   #  NB NB NB Do multi-target projects make sense???
             dest_ra = float(target['ra']) - \
                 float(block_specification['project']['project_constraints']['ra_offset'])/15.
             if dest_ra < 0:
@@ -457,13 +466,16 @@ class Sequencer:
             g_dev['rot'].rotator.MoveAbsolute(float(block_specification['project']['project_constraints']['position_angle']))
             
             #Compute how many to do.
-            left_to_do = 1
+            left_to_do = 0
             ended = False
 
             for exposure in block['project']['exposures']:
                 multiplex = 0
                 if exposure['area'] in ['300', '300%', 300, '220', '220%', 220, '150', '150%', 150]:
-                    multiplex = 5
+                    if block_specification['project']['project_constraints']['add_center_to_mosaic']:
+                        multiplex = 5
+                    else:
+                        multiplex = 4
                 if exposure['area'] in ['600', '600%', 600]:
                     multiplex = 9
                 if multiplex > 1:
@@ -528,7 +540,7 @@ class Sequencer:
                          continue
                     #At this point we have 1 to 9 exposures to make in this filter.  Note different areas can be defined. 
                     if exposure['area'] in ['300', '300%', 300, '220', '220%', 220, '150', '150%', 150, '250', '250%', 250]:
-                        if block_specification['project_constraints']['add_center_to_mosaic']:
+                        if block_specification['project']['project_constraints']['add_center_to_mosaic']:
                             offset = [(0.0, 0.0), (-1.5, 1.), (1.5, 1.), (1.5, -1.), (-1.5, -1.)] #Aimpoint + Four mosaic quadrants 36 x 24mm chip
                             pane = 0
                         else:
@@ -587,9 +599,9 @@ class Sequencer:
                             print("Left to do:  ", left_to_do)
                         pane += 1
                     now_date_timeZ = datetime.datetime.now().isoformat().split('.')[0] +'Z'           
-                    ended = now_date_timeZ >= block['end']\
-                            or g_dev['airmass'] > block_specification['project']['project_constraints']['max_airmass'] \
-                            or g_dev['ha'] > block_specification['project']['project_constraints']['max_ha']# Or mount has flipped, too low, too bright. 
+                    ended = left_to_do <= 0 or now_date_timeZ >= block['end']\
+                            or g_dev['airmass'] >float( block_specification['project']['project_constraints']['max_airmass']) \
+                            or g_dev['ha'] > float(block_specification['project']['project_constraints']['max_ha'])# Or mount has flipped, too low, too bright. 
         print("Fini!")
         if block_specification['project']['project_constraints']['close_on_block_completion']:
             g_dev['mnt'].park_command({}, {})
@@ -597,7 +609,7 @@ class Sequencer:
             g_dev['enc'].close_command({}, {})
             print("Auto close attempted at end of block.")
         self.block_guard = False
-        return
+        return block_specification #used to flush the que as it completes.
 
 
     def bias_dark_script(self, req=None, opt=None):
@@ -926,7 +938,7 @@ class Sequencer:
         start_ra = g_dev['mnt'].mount.RightAscension   #Read these to go back.
         start_dec = g_dev['mnt'].mount.Declination
         focus_start = g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron
-        print("Saved ra dec focus:  ", start_ra, start_dec, focus_start)
+        print("Saved ra, dec, focus:  ", start_ra, start_dec, focus_start)
         try:
             #Check here for filter, guider, still moving  THIS IS A CLASSIC
             #case where a timeout is a smart idea.
@@ -1013,7 +1025,7 @@ class Sequencer:
                 print ('Moving to Solved focus:  ', round(d1, 2), ' calculated:  ',  new_spot)
                 pos = int(d1*g_dev['foc'].micron_to_steps)
                 g_dev['foc'].focuser.Move(pos)
-                g_dev['foc'].last_known_focus = pos
+                g_dev['foc'].last_known_focus = d1
                 g_dev['foc'].last_temperature = g_dev['foc'].focuser.Temperature
                 g_dev['foc'].last_source = "focus_auto_script"
                 if not sim:
@@ -1093,7 +1105,7 @@ class Sequencer:
                                     g_dev['tel'].current_sidereal)
             print("Going to near focus star " + str(focus_star[0][0]) + "  degrees away.")
             g_dev['mnt'].go_coord(focus_star[0][1][1], focus_star[0][1][0])
-            req = {'time': 15,  'alias':  str(self.config['camera']['camera1']['name']), 'image_type': 'auto_focus'}   #  NB Should pick up filter and constats from config
+            req = {'time': 7.5,  'alias':  str(self.config['camera']['camera1']['name']), 'image_type': 'auto_focus'}   #  NB Should pick up filter and constats from config
             opt = {'area': 100, 'count': 1, 'filter': 'W'}
         else:
             pass   #Just take time image where currently pointed.
@@ -1179,7 +1191,7 @@ class Sequencer:
             #Saves a base for relative focus adjusts.
             pos = int(d1*g_dev['foc'].micron_to_steps)
             g_dev['foc'].focuser.Move(pos)
-            g_dev['foc'].last_known_focus = pos
+            g_dev['foc'].last_known_focus = d1
             g_dev['foc'].last_temperature = g_dev['foc'].focuser.Temperature
             g_dev['foc'].last_source = "focus_auto_script"
             if not sim:
