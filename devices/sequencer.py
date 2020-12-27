@@ -302,7 +302,7 @@ class Sequencer:
             #     ha = tycho.reduceHA(sid - ra)
             #     az, alt = transform_haDec_to_azAlt(ha, dec)
             #     # Do not start a block within 15 min of end time???
-            print("Initial length:  ", len(blocks))
+            #print("Initial length:  ", len(blocks))
             for block in blocks:
                 now_date_timeZ = datetime.datetime.now().isoformat().split('.')[0] +'Z'           
                 if (block['start'] <= now_date_timeZ < block['end']) and not self.block_guard :

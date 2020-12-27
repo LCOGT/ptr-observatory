@@ -1052,7 +1052,7 @@ class Camera:
                     # r1 = math.sqrt((ix - sourcef['x'])**2 + (iy - sourcef['y'])**2)
                     # #kr, kf = sep.kron_radius(self.img, source['x'], source['y'], source['a'], source['b'], source['theta'], 6.0)
                     # print(sourcef['x'], sourcef['y'], r0, r1)  # , kr, kf)
-                    result['FWHM'] = round(np.median(r0), 3)
+                    result['FWHM'] = round(np.median(r0)*2, 3)
                     result['mean_focus'] =  avg_foc[1]
                     if frame_type[-5:] == 'probe':
                         self.img = self.img.transpose()
