@@ -81,7 +81,7 @@ class Focuser:
         except:
             self.reference = int(self.config['reference'])
             print("Focus reference derived from supplied config file for 10C:  ", self.reference)
-            #The config referenc should be a table of values 
+            #The config reference should be a table of value
         self.focuser.Move(int(float(self.reference)*self.micron_to_steps))
 
 
