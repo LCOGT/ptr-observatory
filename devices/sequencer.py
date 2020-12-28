@@ -598,7 +598,11 @@ class Sequencer:
         print("Fini!")
         if block_specification['project']['project_constraints']['close_on_block_completion']:
             g_dev['mnt'].park_command({}, {})
-            g_dev['enc'].enclosure.Slaved = False
+            # NB NBNeed to write a more robust and generalized clean up.
+            try:
+                g_dev['enc'].enclosure.Slaved = False
+            except:
+                pass
             g_dev['enc'].close_command({}, {})
             print("Auto close attempted at end of block.")
         self.block_guard = False
