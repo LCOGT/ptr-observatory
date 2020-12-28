@@ -10,7 +10,7 @@ import build_tycho as tycho
 import config 
 
 from pprint import pprint
-
+from devices.mount import ra_fix, ra_dec_fix
 '''
 Autofocus NOTE 20200122
 
@@ -432,12 +432,8 @@ class Sequencer:
         for target in block['project']['project_targets']:   #  NB NB NB Do multi-target projects make sense???
             dest_ra = float(target['ra']) - \
                 float(block_specification['project']['project_constraints']['ra_offset'])/15.
-            if dest_ra < 0:
-                dest_ra += 24
-            if dest_ra >= 24:
-                dest_ra -= 24
             dest_dec = float(target['dec']) - float(block_specification['project']['project_constraints']['dec_offset'])
-            #Should normalize
+            dest_ra, dest_dec = ra_dec_fix(dest_ra,dest_dec)
             dest_name =target['name']
             
             ''' 
@@ -578,13 +574,10 @@ class Sequencer:
                         else:
                             print('Image scale for site not supplied')
                         new_ra = dest_ra + d_ra
-                        while new_ra > 24:
-                            new_ra -= 24
-                        while new_ra <= 0.:
-                            new_ra += 24
-                        #NB need to properly reduce for mosaic near Pole!!!
-                        print('Seeking to:  ', new_ra, dest_dec + d_dec)
-                        g_dev['mnt'].go_coord(new_ra, dest_dec + d_dec)  # This needs full angle checks
+                        new_dec= dest_dec + d_dec
+                        new_ra, new_dec = ra_dec_fix(new_ra, new_dec)
+                        print('Seeking to:  ', new_ra, new_dec)
+                        g_dev['mnt'].go_coord(new_ra, new_dec)  # This needs full angle checks
                         if not just_focused:
                             g_dev['foc'].adjust_focus()
                         just_focused = False
@@ -609,7 +602,7 @@ class Sequencer:
             g_dev['enc'].close_command({}, {})
             print("Auto close attempted at end of block.")
         self.block_guard = False
-        return block_specification #used to flush the que as it completes.
+        return block_specification #used to flush the queue as it completes.
 
 
     def bias_dark_script(self, req=None, opt=None):
@@ -1268,11 +1261,7 @@ IF sweep
         g_dev['mnt'].unpark_command()
         #cam_name = str(self.config['camera']['camera1']['name'])
         for ha_degree_value in ha_deg_steps:
-            target_ra =  g_dev['mnt'].mount.SiderealTime - ha_degree_value/15.
-            while target_ra < 0:
-                target_ra += 24.
-            while target_ra >=24:
-                target_ra -= 24.
+            target_ra = ra_fix(g_dev['mnt'].mount.SiderealTime - ha_degree_value/15.)
             target_dec = 0
             #     #  Go to closest Mag 7.5 Tycho * with no flip
             # focus_star = tycho.dist_sort_targets(target_ra, target_dec, \
@@ -1575,11 +1564,8 @@ IF sweep
         #cam_name = str(self.config['camera']['camera1']['name'])
         for ha in [0.1, -0.1]:
             for degree_value in dec_steps:
-                target_ra =  g_dev['mnt'].mount.SiderealTime - ha
-                while target_ra < 0:
-                    target_ra += 24.
-                while target_ra >=24:
-                    target_ra -= 24.
+                target_ra =  ra_fix(g_dev['mnt'].mount.SiderealTime - ha)
+
     
                 #     #  Go to closest Mag 7.5 Tycho * with no flip
                 # focus_star = tycho.dist_sort_targets(target_ra, target_dec, \
