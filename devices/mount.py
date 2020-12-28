@@ -83,8 +83,16 @@ def ra_fix(ra):
         ra -= 24
     while ra < 0:
         ra += 24
-        #need to make this a full function
     return ra
+
+def ra_dec_fix(ra, dec):
+    if dec > 90:
+        dec = 180 - dec
+        ra -= 12
+    if dec < -90:
+        dec = -180 - dec
+        ra += 12
+    ra = ra_fix(ra)
 
 class Mount:
 
@@ -117,6 +125,8 @@ class Mount:
         self.current_icrs_ra = "Unspecified_Ra"
         self.current_icrs_dec = " Unspecified_Dec"
         self.offset_received = None
+        self.east_ra_correction = config['mount']['mount1']['east_ra_correction']
+        self.east_dec_correction = config['mount']['mount1']['east_dec_correction'] 
         if not tel:
             print("Mount connected.")
         else:
@@ -305,6 +315,7 @@ class Mount:
         airmass = round(airmass, 4)
         ra_off, dec_off = self.get_mount_ref() 
         pre.append(time.time())
+        
         pre.append(ra_fix(self.mount.RightAscension - ra_off))
         pre.append(self.mount.Declination - dec_off)
         pre.append(self.mount.SiderealTime)
@@ -452,10 +463,16 @@ class Mount:
                     field_y = (2679/2563)*0.2551300253995927*2
                 self.ra_offset = -offset_x*field_x
                 self.dec_offset = -offset_y*field_y
-                ra = ra_fix(self.mount.RightAscension + self.ra_offset)
-                dec = self.mount.Declination + self.dec_offset
-                #NB NB NB Need to normalize dec
-                #NB NB NB Need to add in de-rotation her
+                ra, dec = ra_dec_fix(self.mount.RightAscension + self.ra_offset, self.mount.Declination + self.dec_offset)
+            
+                pier_east = 0
+                pier_west = 1
+                pier_unknown = -1
+                new_pierside = self.mount.DestinationSideOfPier(ra, dec)
+                if new_pierside == pier_east:
+                    ra += self.east_ra_correction  #NB it takes a restart to pick up a new correction.
+                    dec += self.east_dec_correction
+                    ra, dec = ra_dec_fix(ra, dec)
                 self.mount.SlewToCoordinatesAsync(ra, dec)
                 self.offset_received = True
                 return
@@ -501,8 +518,16 @@ class Mount:
             jnow_coord = icrs_coord.transform_to(FK5(equinox=self.equinox_now))
             ra = jnow_coord.ra.hour + ra_off
             dec = jnow_coord.dec.degree + dec_off
-            ra = ra_fix(ra)
+            ra, dec = ra_dec_fix(ra, dec)
         self.mount.Tracking = True
+        pier_east = 0
+        pier_west = 1
+        pier_unknown = -1
+        new_pierside = self.mount.DestinationSideOfPier(ra, dec)
+        if new_pierside == pier_east:
+            ra += self.east_ra_correction  #NB it takes a restart to pick up a new correction.
+            dec += self.east_dec_correction
+            ra, dec = ra_dec_fix(ra, dec)
         self.mount.SlewToCoordinatesAsync(ra, dec)
         self.mount.RightAscensionRate = tracking_rate_ra
         self.mount.DeclinationRate = tracking_rate_dec
@@ -534,9 +559,16 @@ class Mount:
             jnow_coord = icrs_coord.transform_to(FK5(equinox=self.equinox_now))
             ra = ra_fix(jnow_coord.ra.hour + ra_off)
             dec = jnow_coord.dec.degree + dec_off
-            ra = ra_fix(ra)               
-            #NB Dec needs proper fixing
+            ra, dec = ra_dec_fix(ra, dec)              
         self.mount.Tracking = True
+        pier_east = 0
+        pier_west = 1
+        pier_unknown = -1
+        new_pierside = self.mount.DestinationSideOfPier(ra, dec)
+        if new_pierside == pier_east:
+            ra += self.east_ra_correction  #NB it takes a restart to pick up a new correction.
+            dec += self.east_dec_correction
+            ra, dec = ra_dec_fix(ra, dec)
         self.mount.SlewToCoordinatesAsync(ra, dec)
         self.mount.RightAscensionRate = tracking_rate_ra
         self.mount.DeclinationRate = tracking_rate_dec
