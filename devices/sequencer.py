@@ -7,8 +7,8 @@ import copy
 from global_yard import g_dev
 import ephem
 import build_tycho as tycho
-import config 
-
+import config
+import shelve
 from pprint import pprint
 
 '''
@@ -150,6 +150,11 @@ class Sequencer:
         self.sky_guard = False
         self.af_guard = False
         self.block_guard = False
+        try:
+            self.is_in_completes(None)
+        except:
+            self.reset_completes()
+
 
     def get_status(self):
         status = {
@@ -172,9 +177,9 @@ class Sequencer:
         action = command['action']
         script = command['required_params']['script']
         if action == "run" and script == 'focusAuto':
-            self.focus_auto_script(req, opt)
+            self.auto_focus_script(req, opt)
         elif action == "run" and script == 'focusFine':
-            self.fine_focus_script(req, opt)
+            self.coarse_focus_script(req, opt)
         elif action == "run" and script == 'genScreenFlatMasters':
             self.screen_flat_script(req, opt)
         elif action == "run" and script == 'genSkyFlatMasters':
@@ -261,39 +266,18 @@ class Sequencer:
             for project in projects:
                 if project['user_id'] in config.site_config['owner']:  # and not expired, etc.
                      house.append(project)
-            #print("House Projects:  ", len(house), house)
-                        
-            #Next cull empty blocks  (Note project ID may contain Sequences.)
-            
-            #Now we have a time-ordered list of blocks or user-sessions. We assume the execute block
-            #Code, once dispatched, will correctly exit a block and take down its guard so that a
-            #New block can execute.  At this first pass of coding, that method is synchronous to this thread.
-            
-            # while someting to do for the night:
-            #   if not self.execute_block_guard and #start# <= Now < #end#:
-            #       execute_block, ...  set block guard.
-            
-
-
-
-
-
-
-            
-
             '''
             evaluate supplied projects for observable and mark as same. Discard
             unobservable projects.  Projects may be "site" projects or 'ptr' (network wide:
             All, Owner, PTR-network, North, South.)
-                
                 The westernmost project is offered to run unless there is a runnable scheduled block.
                 for any given time, are the constraints met? Airmass < x, Moon Phaze < y, moon dist > z,
                 flip rules
-            
-            
+
             '''
             # breakpoint()
             # #Figure out which are observable.  Currently only supports one target/proj
+            # NB Observing events without a project are "observable."
             # observable = []
             # for projects in projects:
             #     ra = projects['project_targets']['ra']
@@ -305,24 +289,19 @@ class Sequencer:
             #print("Initial length:  ", len(blocks))
             for block in blocks:
                 now_date_timeZ = datetime.datetime.now().isoformat().split('.')[0] +'Z'           
-                if (block['start'] <= now_date_timeZ < block['end']) and not self.block_guard :
-                    #here we might have to cleanly terminate a background project.
+                if not self.block_guard \
+                    and (block['start'] <= now_date_timeZ < block['end']) \
+                    and not self.is_in_completes(block['event_id']):
                     self.block_guard = True
                     completed_block = self.execute_block(block)
-                    print("Should have completed a block here.")
-                    print("Pre-pop length:  ", len(blocks))
-                    for index in range(len(blocks)):
-                        if blocks[index]['event_id'] == completed_block['event_id']:
-                            blocks.pop(index)
-                    print("Post-pop length:  ", len(blocks))
-                    
-
+                    self.append_completes(completed_block['event_id'])
+                    self.block_guard = False
                     '''
                     When a scheduled block is completed it is not re-entered or the block needs to 
                     be restored.  IN the execute block we need to make a deepcopy of the input block
                     so it does not get modified.
                     '''
-                continue    #This is frought with peril if the blocks list is updated.
+            print('block list exhausted')  
             return
             
                 
@@ -491,7 +470,7 @@ class Sequencer:
             initial_focus = True
             while left_to_do > 0 and not ended:
                 if initial_focus:
-                    self.focus_auto_script(req2, opt, throw = 500)   #fine_focus_script can be used here
+                    self.auto_focus_script(req2, opt, throw = 500)   #coarse_focus_script can be used here
                     just_focused = True
                     initial_focus = False    #  Make above on-time event per block
                     timer = time.time() + 1800   #10 min for debugging
@@ -501,7 +480,7 @@ class Sequencer:
                 for exposure in block['project']['exposures']:
                     if block_specification['project']['project_constraints']['frequent_autofocus'] == True and (time.time() - timer) >= 0:
                         
-                        self.focus_auto_script(req2, opt, throw = 500)
+                        self.auto_focus_script(req2, opt, throw = 500)
                         initial_focus = False
                         just_focused = True
                         timer = time.time() + 1800   #30 minutes to refocus
@@ -912,7 +891,7 @@ class Sequencer:
         
     
 
-    def focus_auto_script(self, req, opt, throw=500):
+    def auto_focus_script(self, req, opt, throw=500):
         '''
         V curve is a big move focus designed to fit two lines adjacent to the more normal focus curve.
         It finds the approximate focus, particulary for a new instrument. It requires 8 points plus
@@ -981,7 +960,7 @@ class Sequencer:
         print('Autofocus Starting at:  ', foc_pos0, '\n\n')
         #throw = throw  # NB again, from config.  Units are microns  Passed as default paramter
         if not sim:
-            result = g_dev['cam'].expose_command(req, opt, no_AWS=True) ## , script = 'focus_auto_script_0')  #  This is where we start.
+            result = g_dev['cam'].expose_command(req, opt, no_AWS=True) ## , script = 'auto_focus_script_0')  #  This is where we start.
         else:
             result['FWHM'] = 3
             result['mean_focus'] = foc_pos0
@@ -991,7 +970,7 @@ class Sequencer:
         g_dev['foc'].focuser.Move((foc_pos0 - throw)*g_dev['foc'].micron_to_steps)
         #opt['fwhm_sim'] = 4.
         if not sim:
-            result = g_dev['cam'].expose_command(req, opt, no_AWS=True) ## , script = 'focus_auto_script_1')  #  This is moving in one throw.
+            result = g_dev['cam'].expose_command(req, opt, no_AWS=True) ## , script = 'auto_focus_script_1')  #  This is moving in one throw.
         else:
             result['FWHM'] = 4
             result['mean_focus'] = foc_pos0 - throw
@@ -1003,7 +982,7 @@ class Sequencer:
         g_dev['foc'].focuser.Move((foc_pos0 + throw)*g_dev['foc'].micron_to_steps)
         #opt['fwhm_sim'] = 5
         if not sim:
-            result = g_dev['cam'].expose_command(req, opt, no_AWS=True) ## , script = 'focus_auto_script_2')  #  This is moving out one throw.
+            result = g_dev['cam'].expose_command(req, opt, no_AWS=True) ## , script = 'auto_focus_script_2')  #  This is moving out one throw.
         else:
             result['FWHM'] = 4.5
             result['mean_focus'] = foc_pos0 + throw
@@ -1031,9 +1010,9 @@ class Sequencer:
                 g_dev['foc'].focuser.Move(pos)
                 g_dev['foc'].last_known_focus = d1
                 g_dev['foc'].last_temperature = g_dev['foc'].focuser.Temperature
-                g_dev['foc'].last_source = "focus_auto_script"
+                g_dev['foc'].last_source = "auto_focus_script"
                 if not sim:
-                    result = g_dev['cam'].expose_command(req, opt, no_AWS=True)  #   script = 'focus_auto_script_3')  #  This is verifying the new focus.
+                    result = g_dev['cam'].expose_command(req, opt, no_AWS=True)  #   script = 'auto_focus_script_3')  #  This is verifying the new focus.
                 else:
                     result['FWHM'] = new_spot
                     result['mean_focus'] = d1
@@ -1051,8 +1030,8 @@ class Sequencer:
             #  NB NB We may want to consider sending the result image patch to AWS
             return
         elif spot2 <= spot1 or spot3 <= spot1:
-            print("It appears camera is too far out; try again with fine_focus_script.")
-            self.fine_focus_script(req2, opt2, throw=750)
+            print("It appears camera is too far out; try again with coarse_focus_script.")
+            self.coarse_focus_script(req2, opt2, throw=750)
         else:
             print('Spots are really wrong so moving back to starting focus:  ', focus_start)
             g_dev['foc'].focuser.Move((focus_start)*g_dev['foc'].micron_to_steps)
@@ -1067,7 +1046,7 @@ class Sequencer:
         return
 
 
-    def fine_focus_script(self, req, opt, throw = 600):
+    def coarse_focus_script(self, req, opt, throw = 600):
         '''
         V curve is a big move focus designed to fit two lines adjacent to the more normal focus curve.
         It finds the approximate focus, particulary for a new instrument. It requires 8 points plus
@@ -1127,7 +1106,7 @@ class Sequencer:
         spot1 = result['FWHM']
         foc_pos1 = result['mean_focus']  
         # if not sim:
-        #     result = g_dev['cam'].expose_command(req, opt, no_AWS=True) ## , script = 'focus_auto_script_0')  #  This is where we start.
+        #     result = g_dev['cam'].expose_command(req, opt, no_AWS=True) ## , script = 'auto_focus_script_0')  #  This is where we start.
         # else:
         #     result['FWHM'] = 3
         #     result['mean_focus'] = foc_pos0
@@ -1197,7 +1176,7 @@ class Sequencer:
             g_dev['foc'].focuser.Move(pos)
             g_dev['foc'].last_known_focus = d1
             g_dev['foc'].last_temperature = g_dev['foc'].focuser.Temperature
-            g_dev['foc'].last_source = "focus_auto_script"
+            g_dev['foc'].last_source = "coarse_focus_script"
             if not sim:
                 result = g_dev['cam'].expose_command(req, opt)
             else:
@@ -1207,7 +1186,7 @@ class Sequencer:
             foc_pos4 = result['mean_focus']
             print('\n\n\nFound best focus at:  ', foc_pos4,' measured is:  ',  round(spot6, 2), '\n\n\n')
         else:
-            print('Autofocus did not converge. Moving back to starting focus:  ', foc_pos0)
+            print('Coarse_focus did not converge. Moving back to starting focus:  ', foc_pos0)
             g_dev['foc'].focuser.Move((foc_start)*g_dev['foc'].micron_to_steps)
         print("Returning to:  ", start_ra, start_dec)
         g_dev['mnt'].mount.SlewToCoordinatesAsync(start_ra, start_dec)   #Return to pre-focus pointing.
@@ -1614,6 +1593,35 @@ IF sweep
         self.sky_guard = False
         return
 
+    def append_completes(self, block_id):
+        camera = self.config['camera']['camera1']['name']
+        seq_shelf = shelve.open(g_dev['cam'].site_path + 'ptr_night_shelf/' + camera)
+        print("block_id:  ", block_id)
+        lcl_list = seq_shelf['completed_blocks']
+        lcl_list.append(block_id)   #NB NB an in-line append did not work!
+        seq_shelf['completed_blocks']= lcl_list
+        print('Appended completes contains:  ', seq_shelf['completed_blocks'])
+        seq_shelf.close()
+        return 
+    
+    def is_in_completes(self, check_block_id):
+        camera = self.config['camera']['camera1']['name']
+        seq_shelf = shelve.open(g_dev['cam'].site_path + 'ptr_night_shelf/' + camera)
+        print('Completes contains:  ', seq_shelf['completed_blocks'])
+        if check_block_id in seq_shelf['completed_blocks']:
+            seq_shelf.close()
+            return True
+        else:
+            seq_shelf.close()
+            return False
+
+    
+    def reset_completes(self):
+        camera = self.config['camera']['camera1']['name']
+        seq_shelf = shelve.open(g_dev['cam'].site_path + 'ptr_night_shelf/' + str(camera))
+        seq_shelf['completed_blocks'] = []
+        seq_shelf.close()
+        return 
 
 
 

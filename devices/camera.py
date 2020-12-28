@@ -1006,9 +1006,9 @@ class Camera:
                     #     self.focus_cache = focus_img[0].data
                     # self.img = self.img - self.focus_cache + 100   #maintain a + pedestal for sep
                     self.img = self.img + 100   #maintain a + pedestal for sep  THIS SHOULD not be needed for a raw input file.
-                    if frame_type[-5:] == 'probee':  #  DISABLE THIS 20201118
-                        focus_img = fits.open(self.lng_path + 'focus_sample.fits')
-                        self.img = focus_img[0].data.transpose()
+                    # if frame_type[-5:] == 'probee':  #  DISABLE THIS 20201118
+                    #     focus_img = fits.open(self.lng_path + 'focus_sample.fits')
+                    #     self.img = focus_img[0].data.transpose()
                     self.img = self.img.astype("float")
                     #print(self.img.flags)
                     self.img = self.img.copy(order='C')   #  NB Should we move this up to 
@@ -1052,10 +1052,11 @@ class Camera:
                     # r1 = math.sqrt((ix - sourcef['x'])**2 + (iy - sourcef['y'])**2)
                     # #kr, kf = sep.kron_radius(self.img, source['x'], source['y'], source['a'], source['b'], source['theta'], 6.0)
                     # print(sourcef['x'], sourcef['y'], r0, r1)  # , kr, kf)
-                    result['FWHM'] = round(np.median(r0)*2, 3)
+                    scale = self.config['camera']['camera1']['settings']['pix_scale']
+                    result['FWHM'] = round(np.median(r0)*2*scale, 3)
                     result['mean_focus'] =  avg_foc[1]
-                    if frame_type[-5:] == 'probe':
-                        self.img = self.img.transpose()
+                    # if frame_type[-5:] == 'probe':
+                    #     self.img = self.img.transpose()
                     focus_image = True
                     # if True:
                     #     r00 = []
@@ -1207,9 +1208,9 @@ class Camera:
                     hdu.header['CAMUSBT']  = 60
                     hdu.header['FULLWELL'] = 65535    #THIS should be a config item
                     hdu.header['SATURATE'] = int(self.config['camera']['camera1']['settings']['saturate'])
-                    pix_ang = (self.camera.PixelSizeX*self.camera.BinX/(float(self.config['telescope'] \
+                    self.pix_ang = (self.camera.PixelSizeX*self.camera.BinX/(float(self.config['telescope'] \
                                               ['telescope1']['focal_length'])*1000.))
-                    hdu.header['PIXSCALE'] = round(math.degrees(math.atan(pix_ang))*3600., 4)
+                    hdu.header['PIXSCALE'] = round(math.degrees(math.atan(self.pix_ang))*3600., 4)
                     hdu.header['REQNUM']   = '00000001'
                     hdu.header['BLKUID']   = 'None'
                     hdu.header['BLKSDATE'] = 'None'

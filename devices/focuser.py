@@ -5,7 +5,7 @@ import serial
 from global_yard import g_dev
 #import config_east as config
 import shelve
-
+import datetime
 import requests
 import json
 
@@ -262,16 +262,18 @@ class Focuser:
         #Here we could spin until the move is completed, simplifying other devices.  Since normally these are short moves,
         #that may make the most sense to keep things seperated.
         '''
-        A new seek *may* cause a mount move, a filter,l rotator, and focus change.  How do we launch all of these in parallel, then
+        A new seek *may* cause a mount move, a filter, rotator, and focus change.  How do we launch all of these in parallel, then
         send status until each completes, then move on to exposing?
 
         '''
     def stop_command(self, req: dict, opt: dict):
         ''' stop focuser movement '''
         print(f"focuser cmd: stop")
+        
     def home_command(self, req: dict, opt: dict):
         ''' set the focuser to the home position'''
         print(f"focuser cmd: home")
+        
     def auto_command(self, req: dict, opt: dict):
         ''' autofocus '''
         print(f"focuser cmd: auto")
@@ -286,7 +288,7 @@ class Focuser:
     def af_log(self, ref, fwhm, solved):   #  Note once focus comp is in place this data is lame and
                                            #  need to be combined with great care.
         cam_shelf = shelve.open(self.site_path + 'ptr_night_shelf/' + self.camera_name, writeback=True)
-        cam_shelf['af_log'].append((ref, fwhm, solved, self.focuser.Temperature, time.time()))
+        cam_shelf['af_log'].append((ref, fwhm, solved, self.focuser.Temperature, datetime.datetime.now().isoformat()))
         cam_shelf.close()
         return
     
@@ -294,8 +296,6 @@ class Focuser:
         cam_shelf = shelve.open(self.site_path + 'ptr_night_shelf/' + self.camera_name, writeback=True)
         return cam_shelf['af_log']
         
-
-
     def get_focal_ref(self):
         cam_shelf = shelve.open(self.site_path + 'ptr_night_shelf/' + self.camera_name)
         focus_ref = cam_shelf['Focus Ref']
