@@ -150,6 +150,8 @@ class Sequencer:
         self.sky_guard = False
         self.af_guard = False
         self.block_guard = False
+        #breakpoint()
+        #self.reset_completes()
         try:
             self.is_in_completes(None)
         except:
@@ -262,6 +264,8 @@ class Sequencer:
                         
             #The residual in projects can be treaded as background.
             #print('Background:  ', len(projects), '\n\n', projects)
+            
+ 
             house = []
             for project in projects:
                 if project['user_id'] in config.site_config['owner']:  # and not expired, etc.

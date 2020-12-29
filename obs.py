@@ -321,12 +321,12 @@ class Observatory:
                     'start':  g_dev['d-a-y'] + 'T12:00:00Z',
                     'end':    g_dev['next_day'] + 'T19:59:59Z',
                     'full_project_details:':  False})
-                if self.blocks is None:   #This currently prevents pick up of calendar changes.  OK for the moment.
+                if True: #self.blocks is None:   #This currently prevents pick up of calendar changes.  OK for the moment.
                     blocks = requests.post(url_blk, body).json()
                     if len(blocks) > 0:   #   is not None:
                         self.blocks = blocks
                 url_proj = "https://projects.photonranch.org/dev/get-all-projects"
-                if self.projects is None:
+                if True: #self.projects is None:
                     all_projects = requests.post(url_proj).json()
                     self.projects = []
                     if len(all_projects) > 0:   #   is not None:

@@ -76,7 +76,7 @@ tzOffset = -7
 
 mountOne = "PW_L600"
 mountOneAscom = None
-#The mount is not threaded and uses non-blocking seek.     "Note no doule quotes.
+#The mount is not threaded and uses non-blocking seek. 
 
 def ra_fix(ra):
     while ra >= 24:
@@ -93,6 +93,7 @@ def ra_dec_fix(ra, dec):
         dec = -180 - dec
         ra += 12
     ra = ra_fix(ra)
+    return ra, dec
 
 class Mount:
 
@@ -126,7 +127,11 @@ class Mount:
         self.current_icrs_dec = " Unspecified_Dec"
         self.offset_received = None
         self.east_ra_correction = config['mount']['mount1']['east_ra_correction']
-        self.east_dec_correction = config['mount']['mount1']['east_dec_correction'] 
+        self.east_dec_correction = config['mount']['mount1']['east_dec_correction']
+        if abs(self.east_ra_correction) > 0 or abs(self.east_ra_correction) > 0:
+            self.flip_correction_needed = True
+        else:
+            self.flip_correction_needed = False
         if not tel:
             print("Mount connected.")
         else:
@@ -448,6 +453,7 @@ class Mount:
         print("mount cmd. slewing mount, req, opt:  ", req, opt)
 
         ''' unpark the telescope mount '''  #  NB can we check if unparked and save time?
+ 
         if self.mount.CanPark:
             #print("mount cmd: unparking mount")
             self.mount.Unpark()
@@ -464,15 +470,17 @@ class Mount:
                 self.ra_offset = -offset_x*field_x
                 self.dec_offset = -offset_y*field_y
                 ra, dec = ra_dec_fix(self.mount.RightAscension + self.ra_offset, self.mount.Declination + self.dec_offset)
-            
-                pier_east = 0
-                pier_west = 1
-                pier_unknown = -1
-                new_pierside = self.mount.DestinationSideOfPier(ra, dec)
-                if new_pierside == pier_east:
-                    ra += self.east_ra_correction  #NB it takes a restart to pick up a new correction.
-                    dec += self.east_dec_correction
-                    ra, dec = ra_dec_fix(ra, dec)
+                breakpoint()
+
+                if self.flip_correction_needed:
+                    pier_east = 0
+                    pier_west = 1
+                    pier_unknown = -1
+                    new_pierside = self.mount.DestinationSideOfPier(ra, dec)
+                    if new_pierside == pier_east:
+                        ra += self.east_ra_correction  #NB it takes a restart to pick up a new correction.
+                        dec += self.east_dec_correction
+                        ra, dec = ra_dec_fix(ra, dec)
                 self.mount.SlewToCoordinatesAsync(ra, dec)
                 self.offset_received = True
                 return
@@ -520,14 +528,15 @@ class Mount:
             dec = jnow_coord.dec.degree + dec_off
             ra, dec = ra_dec_fix(ra, dec)
         self.mount.Tracking = True
-        pier_east = 0
-        pier_west = 1
-        pier_unknown = -1
-        new_pierside = self.mount.DestinationSideOfPier(ra, dec)
-        if new_pierside == pier_east:
-            ra += self.east_ra_correction  #NB it takes a restart to pick up a new correction.
-            dec += self.east_dec_correction
-            ra, dec = ra_dec_fix(ra, dec)
+        if self.flip_correction_needed:
+            pier_east = 0
+            pier_west = 1
+            pier_unknown = -1
+            new_pierside = self.mount.DestinationSideOfPier(ra, dec)
+            if new_pierside == pier_east:
+                ra += self.east_ra_correction  #NB it takes a restart to pick up a new correction.
+                dec += self.east_dec_correction
+                ra, dec = ra_dec_fix(ra, dec)
         self.mount.SlewToCoordinatesAsync(ra, dec)
         self.mount.RightAscensionRate = tracking_rate_ra
         self.mount.DeclinationRate = tracking_rate_dec
@@ -535,7 +544,7 @@ class Mount:
         self.current_icrs_dec = icrs_coord.dec.degree
         try:
             self.object = opt.get("object", "")
-            print("Going to:  ", self.object)
+            print("Going to:  ", self.object)   #NB Needs cleaning up.
         except:
             self.object = ""
             print("Go to object not named.")
@@ -561,14 +570,15 @@ class Mount:
             dec = jnow_coord.dec.degree + dec_off
             ra, dec = ra_dec_fix(ra, dec)              
         self.mount.Tracking = True
-        pier_east = 0
-        pier_west = 1
-        pier_unknown = -1
-        new_pierside = self.mount.DestinationSideOfPier(ra, dec)
-        if new_pierside == pier_east:
-            ra += self.east_ra_correction  #NB it takes a restart to pick up a new correction.
-            dec += self.east_dec_correction
-            ra, dec = ra_dec_fix(ra, dec)
+        if self.flip_correction_needed:
+            pier_east = 0
+            pier_west = 1
+            pier_unknown = -1
+            new_pierside = self.mount.DestinationSideOfPier(ra, dec)
+            if new_pierside == pier_east:
+                ra += self.east_ra_correction  #NB it takes a restart to pick up a new correction.
+                dec += self.east_dec_correction
+                ra, dec = ra_dec_fix(ra, dec)
         self.mount.SlewToCoordinatesAsync(ra, dec)
         self.mount.RightAscensionRate = tracking_rate_ra
         self.mount.DeclinationRate = tracking_rate_dec
