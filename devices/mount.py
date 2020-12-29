@@ -130,6 +130,7 @@ class Mount:
         self.east_dec_correction = config['mount']['mount1']['east_dec_correction']
         if abs(self.east_ra_correction) > 0 or abs(self.east_ra_correction) > 0:
             self.flip_correction_needed = True
+            print("Flip correction needed.")
         else:
             self.flip_correction_needed = False
         if not tel:
@@ -137,6 +138,8 @@ class Mount:
         else:
             print("Tel/OTA connected.")
         print(self.mount.Description)
+        #breakpoint()
+        #self.reset_mount_ref()
         try:
             ra1, dec1 = self.get_mount_ref()
         except:
@@ -467,15 +470,16 @@ class Mount:
                 else:
                     field_x = (2679/2563)*0.38213275235200206*2/15.   #2 accounts for binning, 15 for hours.
                     field_y = (2679/2563)*0.2551300253995927*2
-                self.ra_offset = -offset_x*field_x
+                self.ra_offset = offset_x*field_x
                 self.dec_offset = -offset_y*field_y
                 ra, dec = ra_dec_fix(self.mount.RightAscension + self.ra_offset, self.mount.Declination + self.dec_offset)
-                breakpoint()
+
 
                 if self.flip_correction_needed:
                     pier_east = 0
                     pier_west = 1
                     pier_unknown = -1
+                    breakpoint()
                     new_pierside = self.mount.DestinationSideOfPier(ra, dec)
                     if new_pierside == pier_east:
                         ra += self.east_ra_correction  #NB it takes a restart to pick up a new correction.
@@ -574,6 +578,7 @@ class Mount:
             pier_east = 0
             pier_west = 1
             pier_unknown = -1
+            breakpoint()
             new_pierside = self.mount.DestinationSideOfPier(ra, dec)
             if new_pierside == pier_east:
                 ra += self.east_ra_correction  #NB it takes a restart to pick up a new correction.
@@ -791,7 +796,7 @@ class Mount:
     def reset_mount_ref(self):
         mnt_shelf = shelve.open(self.site_path + 'ptr_night_shelf/' + 'mount1')
         mnt_shelf['ra_cal_offset'] = 0.000
-        mnt_shelf['dec_cal_offset'] = -0.00
+        mnt_shelf['dec_cal_offset'] = 0.000
         return
 
         '''
