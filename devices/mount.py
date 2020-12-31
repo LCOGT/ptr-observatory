@@ -96,6 +96,12 @@ def ra_dec_fix(ra, dec):
     return ra, dec
 
 class Mount:
+    '''
+    Note the Mount is a purely physical device , while the telescope reflects
+    the optical pointing of the respective telescope.  However a reference tel=False
+    is used to set up the mount.  Ideally this should be a very rigid stable telescope
+    that is rarely disturbed or removed.
+    '''
 
     def __init__(self, driver: str, name: str, settings: dict, config: dict, astro_events, tel=False):
         self.name = name
@@ -108,7 +114,7 @@ class Mount:
         win32com.client.pythoncom.CoInitialize()
         self.mount = win32com.client.Dispatch(driver)
         self.mount.Connected = True
-#        print('Can Asynch:  ', self.mount.CanSlewAltAzAsync)
+#       print('Can Asynch:  ', self.mount.CanSlewAltAzAsync)
 
         #hould put config Lat, lon, etc into mount, or at least check it is correct.
         self.site_coordinates = EarthLocation(lat=float(config['latitude'])*u.deg, \
@@ -116,7 +122,7 @@ class Mount:
                                 height=float(config['elevation'])*u.m)
         self.rdsys = 'J.now'
         self.inst = 'tel1'
-        self.tel = tel
+        self.tel = tel   #for now this implies the primay telescope on a mounting.
         self.mount_message = "-"
         if self.site == 'wmd2':
             self.has_paddle = config['mount']['mount2']['has_paddle']
@@ -136,10 +142,10 @@ class Mount:
         if not tel:
             print("Mount connected.")
         else:
-            print("Tel/OTA connected.")
+            print(" Auxillary Tel/OTA connected.")
         print(self.mount.Description)
-        #breakpoint()
-        #self.reset_mount_ref()
+        # breakpoint()
+        # self.reset_mount_ref()
         try:
             ra1, dec1 = self.get_mount_ref()
         except:
@@ -203,10 +209,50 @@ class Mount:
             print('Found mount not connected via try: block fail, reconnecting.')
             self.mount.Connected = True
             return
+        
+    def get_mount_coordinates(self):
+        '''
+        Build up an ICRS coordinate from mount reported coordinates,
+        removing offset and pierside calibrations.  From either flip
+        the ICRS coordiate returned should be that of the object 
+        commanded, hence removign the offsets that are needed to 
+        position the mount on the axis.
+
+        Returns
+        -------
+        ra : TYPE
+            DESCRIPTION.
+        dec : TYPE
+            DESCRIPTION.
+
+        '''
+        ra_cal_off, dec_cal_off = self.get_mount_ref()   #Get from shelf.
+        pier_east = 0    # == 0  self.flip_correction_needed
+        if self. mount.EquatorialSystem == 1:
+            self.get_current_times()
+            jnow_ra = self.mount.RightAscension - ra_cal_off    # NB the offsets and corrections are subtracted.
+            jnow_dec = self.mount.Declination - dec_cal_off
+            if self.mount.sideOfPier == pier_east \
+                and self.flip_correction_needed:
+                jnow_ra -=  self.east_ra_correction   #Brought in from local calib.py file
+                jnow_dec -= self.east_dec_correction
+            jnow_ra, jnow_dec = ra_dec_fix(jnow_ra, jnow_dec)
+            jnow_coord = SkyCoord(jnow_ra*u.hour, jnow_dec*u.degree, frame='fk5', \
+                      equinox=self.equinox_now)
+            icrs_coord = jnow_coord.transform_to(ICRS)
+            self.current_icrs_ra = icrs_coord.ra.hour 
+            self.current_icrs_dec = icrs_coord.dec.degree
+        else:
+            #NB This is an unused and not completely implemented path, or does Planwave PWI-4 use it?
+            breakpoint()   #20201230 WE should not get here.
+            self.current_icrs_ra = ra_fix(self.mount.RightAscension - ra_cal_off)    #May not be applied in positioning
+            self.current_icrs_dec = self.mount.Declination - dec_cal_off
+        return self.current_icrs_ra, self.current_icrs_dec
 
     def get_status(self):
+        #This is for now 20201230, the primary place to source mount/tel status, needs fixing.
         self.check_connect()
-        self.paddle()
+        self.paddle()   # NB Should ohly be called if in config.
         alt = self.mount.Altitude
         zen = round((90 - alt), 3)
         if zen > 90:
@@ -221,7 +267,13 @@ class Mount:
         airmass = round(airmass, 4)
         #Be careful to preserve order
         #print(self.device_name, self.name)
+        
+# =============================================================================
+#       The notion of multiple telescopes has not been implemented yet.
+#       For now, 20201230 we use calls to mounting
+# =============================================================================
         if self.tel == False:
+            breakpoint()
             status = {
                 'timestamp': round(time.time(), 3),
 #                f'right_ascension': str(self.mount.RightAscension),
@@ -241,26 +293,13 @@ class Mount:
                 'message': self.mount_message[:32]
             }
         elif self.tel == True:
-            breakpoint()
             self.current_sidereal = self.mount.SiderealTime
-            ra_off, dec_off = self.get_mount_ref() 
-            if self. mount.EquatorialSystem == 1:
-                self.get_current_times()
-                jnow_ra = ra_fix(self.mount.RightAscension - ra_off)
-                jnow_dec = self.mount.Declination - dec_off
-                jnow_coord = SkyCoord(jnow_ra*u.hour, jnow_dec*u.degree, frame='fk5', \
-                          equinox=self.equinox_now)
-                icrs_coord = jnow_coord.transform_to(ICRS)
-                self.current_icrs_ra = icrs_coord.ra.hour 
-                self.current_icrs_dec = icrs_coord.dec.degree
-            else:
-                self.current_icrs_ra = ra_fix(self.mount.RightAscension - ra_off)    #May not be applied in positioning
-                self.current_icrs_dec = self.mount.Declination - dec_off
+            icrs_ra, icrs_dec = self.get_mount_coordinates()
             status = {
                 'timestamp': round(time.time(), 3),
-                'right_ascension': round(self.current_icrs_ra, 5),
-                'declination': round(self.current_icrs_dec, 4),
-                'sidereal_time': round(self.current_sidereal, 5),
+                'right_ascension': round(icrs_ra, 5),
+                'declination': round(icrs_dec, 4),
+                'sidereal_time': round(self.current_sidereal, 5),  #Should we add HA?
                 'tracking_right_ascension_rate': round(self.mount.RightAscensionRate, 9),   #Will use asec/s not s/s as ASCOM does.
                 'tracking_declination_rate': round(self.mount.DeclinationRate, 8),
                 'azimuth': round(self.mount.Azimuth, 3),
@@ -270,10 +309,10 @@ class Mount:
                 'coordinate_system': str(self.rdsys),
                 'equinox':  self.equinox_now,
                 'pointing_instrument': str(self.inst),  # needs fixing
+                'is_parked': (self.mount.AtPark),
+                'is_tracking': str(self.mount.Tracking),
+                'is_slewing': str(self.mount.Slewing),
                 'message': self.mount_message[:32]
-#                f'is_parked': (self.mount.AtPark),
-#                f'is_tracking': str(self.mount.Tracking),
-#                f'is_slewing': str(self.mount.Slewing)
             }
         else:
             print('Proper device_name is missing, or tel == None')
@@ -321,11 +360,12 @@ class Mount:
         airmass = abs(round(sec_z - 0.0018167*(sec_z - 1) - 0.002875*((sec_z - 1)**2) - 0.0008083*((sec_z - 1)**3),3))
         if airmass > 10: airmass = 10
         airmass = round(airmass, 4)
-        ra_off, dec_off = self.get_mount_ref() 
+        ra_off, dec_off = self.get_mount_ref()
+        # NB NB THis code would be safer as a dict or other explicity named structure
         pre.append(time.time())
-        
-        pre.append(ra_fix(self.mount.RightAscension - ra_off))
-        pre.append(self.mount.Declination - dec_off)
+        icrs_ra, icrs_dec = self.get_mount_coordinates()        
+        pre.append(icrs_ra)
+        pre.append(icrs_dec)
         pre.append(self.mount.SiderealTime)
         pre.append(self.mount.RightAscensionRate)
         pre.append(self.mount.DeclinationRate)
@@ -444,7 +484,7 @@ class Mount:
         self.ut_now = Time(datetime.datetime.now(), scale='utc', location=self.site_coordinates)   #From astropy.time
         self.sid_now = self.ut_now.sidereal_time('apparent')
         iso_day = datetime.date.today().isocalendar()
-        self.doy = ((iso_day[1]-1)*7 + (iso_day[2] ))
+        self.day = ((iso_day[1]-1)*7 + (iso_day[2] ))
         self.equinox_now = 'J' +str(round((iso_day[0] + ((iso_day[1]-1)*7 + (iso_day[2] ))/365), 2))
         return
     ###############################
@@ -461,7 +501,9 @@ class Mount:
             #print("mount cmd: unparking mount")
             self.mount.Unpark()
         try:
+            icrs_ra, icrs_dec = self.get_mount_coordinates() 
             if offset:   #This offset version supplies offsets as a fraction of the Full field.
+                #note it is based on mount coordinates.
                 offset_x = float(req['image_x']) - 0.5   #Fraction of field.
                 offset_y = float(req['image_y']) - 0.5
                 if self.site == 'saf':
@@ -470,40 +512,38 @@ class Mount:
                 else:
                     field_x = (2679/2563)*0.38213275235200206*2/15.   #2 accounts for binning, 15 for hours.
                     field_y = (2679/2563)*0.2551300253995927*2
-                self.ra_offset = offset_x*field_x
-                self.dec_offset = -offset_y*field_y
-                ra, dec = ra_dec_fix(self.mount.RightAscension + self.ra_offset, self.mount.Declination + self.dec_offset)
-
-
-                if self.flip_correction_needed:
-                    pier_east = 0
-                    pier_west = 1
-                    pier_unknown = -1
-                    breakpoint()
-                    new_pierside = self.mount.DestinationSideOfPier(ra, dec)
-                    if new_pierside == pier_east:
-                        ra += self.east_ra_correction  #NB it takes a restart to pick up a new correction.
-                        dec += self.east_dec_correction
-                        ra, dec = ra_dec_fix(ra, dec)
-                self.mount.SlewToCoordinatesAsync(ra, dec)
+                self.ra_offset = -offset_x*field_x/2   #NB NB 20201230 Signs needs to be verified.
+                self.dec_offset = offset_y*field_y/2
                 self.offset_received = True
-                return
+                #NB NB Position angle may need to be taken into account 20201230
+                #apply this to the current telescope position(which may already incorporate a calibration)
+                #need to get the ICRS telescope position
+                ra, dec = ra_dec_fix(icrs_ra + self.ra_offset, icrs_dec + self.dec_offset)
             elif calibrate:  #Note does not need req or opt
                 if self.offset_received:
-                    ra_off, dec_off = self.get_mount_ref()
-                    ra_off += self.ra_offset
-                    dec_off += self.dec_offset
-                    self.set_mount_ref( ra_off, dec_off)
+                    ra_cal_off, dec_cal_off = self.get_mount_ref()
+                    ra_cal_off += self.ra_offset
+                    dec_cal_off += self.dec_offset
+                    self.set_mount_ref(ra_cal_off, dec_cal_off)
                     self.ra_offset = 0
                     self.dec_offset = 0
                     self.offset_received = False
+                    icrs_ra, icrs_dec = self.get_mount_coordinates()
+                    ra = icrs_ra
+                    dec = icrs_dec
+                    #We could just return but will seek just to be safe
                 else:
-                    print("No outstanding offset available for calibration, resetting.")
-                    #We could use this path to clear a calibration.
+                    print("No outstanding offset available for calibration, reset existing calibration.")
+                    # NB We currently use this path to clear a calibration.  But should be ad explicit Command instead. 20201230
                     self.reset_mount_ref()
                     self.ra_offset = 0
                     self.dec_offset = 0
                     self.offset_received = False
+                    icrs_ra, icrs_dec = self.get_mount_coordinates()
+                    ra = icrs_ra
+                    dec = icrs_dec
+
+                    #We could just return but will seek just to be safe
             else:
                 ra = float(req['ra'])
                 dec = float(req['dec'])
@@ -517,78 +557,54 @@ class Mount:
             self.ra_offset = 0
             self.dec_offset = 0
             return
-
-        # Offset from sidereal in arcseconds per SI second, default = 0.0
+        # Tracking rate offsets from sidereal in arcseconds per SI second, default = 0.0
         tracking_rate_ra = opt.get('tracking_rate_ra', 0)
-
-        # Arcseconds per SI second, default = 0.0
         tracking_rate_dec = opt.get('tracking_rate_dec', 0)
-        ra_off, dec_off = self.get_mount_ref() 
-        if self.mount.EquatorialSystem == 1:
-            self.get_current_times()   #  NB We should find a way to refresh this once a day, esp. for status return.
-            icrs_coord = SkyCoord(float(req['ra'])*u.hour, float(req['dec'])*u.degree, frame='icrs')
-            jnow_coord = icrs_coord.transform_to(FK5(equinox=self.equinox_now))
-            ra = jnow_coord.ra.hour + ra_off
-            dec = jnow_coord.dec.degree + dec_off
-            ra, dec = ra_dec_fix(ra, dec)
-        self.mount.Tracking = True
-        if self.flip_correction_needed:
-            pier_east = 0
-            pier_west = 1
-            pier_unknown = -1
-            new_pierside = self.mount.DestinationSideOfPier(ra, dec)
-            if new_pierside == pier_east:
-                ra += self.east_ra_correction  #NB it takes a restart to pick up a new correction.
-                dec += self.east_dec_correction
-                ra, dec = ra_dec_fix(ra, dec)
-        self.mount.SlewToCoordinatesAsync(ra, dec)
-        self.mount.RightAscensionRate = tracking_rate_ra
-        self.mount.DeclinationRate = tracking_rate_dec
-        self.current_icrs_ra = icrs_coord.ra.hour
-        self.current_icrs_dec = icrs_coord.dec.degree
-        try:
-            self.object = opt.get("object", "")
-            print("Going to:  ", self.object)   #NB Needs cleaning up.
-        except:
-            self.object = ""
-            print("Go to object not named.")
-        
+        self.go_coord(ra, dec, tracking_rate_ra=tracking_rate_ra, tracking_rate_dec=tracking_rate_dec)
+        self.object = opt.get("object", "")
+        if self.object == "":
+            print("Go to unamed target.")
+        else:
+            print("Going to:  ", self.object)   #NB Needs cleaning up.   
 
-    def go_coord(self, ra, dec):
-        ''' Slew to the given ra/dec coordinates, supplied in ICRS '''
-        #Thes should be coerced and use above code.
-        ''' unpark the telescope mount '''  #  NB can we check if unparked and save time?
+    def go_coord(self, ra, dec, tracking_rate_ra=0, tracking_rate_dec=0):
+        ''' 
+        Slew to the given ra/dec coordinates, supplied in ICRS
+        Note no dependency of currrent position.    
+        unpark the telescope mount 
+        '''  #  NB can we check if unparked and save time?
         if self.mount.CanPark:
             #print("mount cmd: unparking mount")
             self.mount.Unpark()
-        # Offset from sidereal in arcseconds per SI second, default = 0.0
-        tracking_rate_ra = 0#opt.get('tracking_rate_ra', 0)
-        # Arcseconds per SI second, default = 0.0
-        tracking_rate_dec =0#opt.get('tracking_rate_dec', 0)
-        ra_off, dec_off = self.get_mount_ref() 
+        ra_cal_off, dec_cal_off = self.get_mount_ref() 
         if self.mount.EquatorialSystem == 1:
             self.get_current_times()   #  NB We should find a way to refresh this once a day, esp. for status return.
             icrs_coord = SkyCoord(ra*u.hour, dec*u.degree, frame='icrs')
             jnow_coord = icrs_coord.transform_to(FK5(equinox=self.equinox_now))
-            ra = ra_fix(jnow_coord.ra.hour + ra_off)
-            dec = jnow_coord.dec.degree + dec_off
-            ra, dec = ra_dec_fix(ra, dec)              
-        self.mount.Tracking = True
+            ra = jnow_coord.ra.hour
+            dec = jnow_coord.dec.degree
+            if self.offset_received:
+                ra +=  ra_cal_off + self.ra_offset 
+                dec +=  dec_cal_off + self.dec_offset              
         if self.flip_correction_needed:
             pier_east = 0
-            pier_west = 1
-            pier_unknown = -1
-            breakpoint()
-            new_pierside = self.mount.DestinationSideOfPier(ra, dec)
-            if new_pierside == pier_east:
-                ra += self.east_ra_correction  #NB it takes a restart to pick up a new correction.
-                dec += self.east_dec_correction
-                ra, dec = ra_dec_fix(ra, dec)
+            #pier_west = 1
+            #pier_unknown = -1
+            try:
+                new_pierside = self.mount.DestinationSideOfPier(ra, dec)  # A tuple gets returned.
+                if new_pierside[0] == pier_east:
+                    ra += self.east_ra_correction  #NB it takes a restart to pick up a new correction.
+                    dec += self.east_dec_correction
+            except:
+                #DestSide... not implemented in PWI_4
+                pass
+        ra, dec = ra_dec_fix(ra, dec)
+        self.mount.Tracking = True
         self.mount.SlewToCoordinatesAsync(ra, dec)
         self.mount.RightAscensionRate = tracking_rate_ra
         self.mount.DeclinationRate = tracking_rate_dec
-        self.current_icrs_ra = icrs_coord.ra.hour
-        self.current_icrs_dec = icrs_coord.dec.degree
+        #self.current_icrs_ra = icrs_coord.ra.hour   #NB this assignment is incorrect
+        #self.current_icrs_dec = icrs_coord.dec.degree
 
     def slewToSkyFlatAsync(self):
         az, alt = self.astro_events.flat_spot_now()
@@ -641,6 +657,7 @@ class Mount:
             self.mount.Unpark()
 
     def paddle(self):
+        return
         '''
         The real way this should work is monitor if a speed button is pushed, then log the time and
         start the thread.  If no button pushed for say 30 seconds, stop thread and re-join.  That way
@@ -648,150 +665,150 @@ class Mount:
 
         Normally this will never be started, unless we are operating locally in the observatory.
         '''
-        return    #Temporary disable 20200817
+#         return    #Temporary disable 20200817
     
-        self._paddle = serial.Serial('COM28', timeout=0.1)
-        self._paddle.write(b"gpio iodir 00ff\n")  #returns  16
-        self._paddle.write(b"gpio readall\n")     #  returns 13
-        temp_0 = self._paddle.read(21).decode()   #  This is a restate of read, a toss
-        temp_1 = self._paddle.read(21).decode()
-        print(len(temp_1))
-        self._paddle.close()
-        #print ('|' + temp[16:18] +'|')
-        button = temp_1[14]
-        spd= temp_1[13]
-        direc = ''
-        speed = 0.0
-        print("Btn:  ", button, "Spd:  ", speed, "Dir:  ", direc)
-        if button == 'E': direc = 'N'
-        if button == 'B': direc = 'S'
-        if button == 'D': direc = 'E'
-        if button == '7': direc = 'W'
-        if button == 'C': direc = 'NE'
-        if button == '9': direc = 'SE'
-        if button == '3': direc = 'SW'
-        if button == '6': direc = 'NW'
-        if spd ==  'C':
-            speed = 0.
-            EW = 1
-            NS = 1
-        if spd == '8':
-            speed = 15.
-            EW = 1
-            NS = 1
-        if spd ==  '4':
-            speed = 45.
-            EW = 1
-            NS = 1
-        if spd ==  '0':
-            speed = 135.
-            EW = 1
-            NS = 1
-        if spd ==  'D':
-            speed = 0.
-            EW = -1
-            NS = 1
-        if spd == '9':
-            speed = 15.
-            EW = -1
-            NS = 1
-        if spd ==  '5':
-            speed = 45.
-            EW = -1
-            NS = 1
-        if spd ==  '1':
-            speed = 135.
-            EW = -1
-            NS = 1
-        if spd ==  'E':
-            speed = 0.
-            EW = 1
-            NS = -1
-        if spd == 'A':
-            speed = 15.
-            EW = 1
-            NS = -1
-        if spd ==  '6':
-            speed = 45.
-            EW = 1
-            NS = -1
-        if spd ==  '2':
-            speed = 135.
-            EW = 1
-            NS = -1
-        if spd ==  'F':
-            speed = 0.
-            EW = -1
-            NS = -1
-        if spd == 'B':
-            speed = 15.
-            EW = -1
-            NS = -1
-        if spd == '7':
-            speed = 45.
-            EW = -1
-            NS = -1
-        if spd == '3':
-            speed = 135.
-            EW = -1
-            NS = -1
+#         self._paddle = serial.Serial('COM28', timeout=0.1)
+#         self._paddle.write(b"gpio iodir 00ff\n")  #returns  16
+#         self._paddle.write(b"gpio readall\n")     #  returns 13
+#         temp_0 = self._paddle.read(21).decode()   #  This is a restate of read, a toss
+#         temp_1 = self._paddle.read(21).decode()
+#         print(len(temp_1))
+#         self._paddle.close()
+#         #print ('|' + temp[16:18] +'|')
+#         button = temp_1[14]
+#         spd= temp_1[13]
+#         direc = ''
+#         speed = 0.0
+#         print("Btn:  ", button, "Spd:  ", speed, "Dir:  ", direc)
+#         if button == 'E': direc = 'N'
+#         if button == 'B': direc = 'S'
+#         if button == 'D': direc = 'E'
+#         if button == '7': direc = 'W'
+#         if button == 'C': direc = 'NE'
+#         if button == '9': direc = 'SE'
+#         if button == '3': direc = 'SW'
+#         if button == '6': direc = 'NW'
+#         if spd ==  'C':
+#             speed = 0.
+#             EW = 1
+#             NS = 1
+#         if spd == '8':
+#             speed = 15.
+#             EW = 1
+#             NS = 1
+#         if spd ==  '4':
+#             speed = 45.
+#             EW = 1
+#             NS = 1
+#         if spd ==  '0':
+#             speed = 135.
+#             EW = 1
+#             NS = 1
+#         if spd ==  'D':
+#             speed = 0.
+#             EW = -1
+#             NS = 1
+#         if spd == '9':
+#             speed = 15.
+#             EW = -1
+#             NS = 1
+#         if spd ==  '5':
+#             speed = 45.
+#             EW = -1
+#             NS = 1
+#         if spd ==  '1':
+#             speed = 135.
+#             EW = -1
+#             NS = 1
+#         if spd ==  'E':
+#             speed = 0.
+#             EW = 1
+#             NS = -1
+#         if spd == 'A':
+#             speed = 15.
+#             EW = 1
+#             NS = -1
+#         if spd ==  '6':
+#             speed = 45.
+#             EW = 1
+#             NS = -1
+#         if spd ==  '2':
+#             speed = 135.
+#             EW = 1
+#             NS = -1
+#         if spd ==  'F':
+#             speed = 0.
+#             EW = -1
+#             NS = -1
+#         if spd == 'B':
+#             speed = 15.
+#             EW = -1
+#             NS = -1
+#         if spd == '7':
+#             speed = 45.
+#             EW = -1
+#             NS = -1
+#         if spd == '3':
+#             speed = 135.
+#             EW = -1
+#             NS = -1
 
-        print(button, spd, direc, speed)
-#            if direc != '':
-        #print(direc, speed)
-        _mount = self.mount
-        #Need to add diagonal moves
-        if direc == 'N':
-            try:
-                _mount.DeclinationRate = NS*speed
-                self.paddleing = True
-            except:
-                pass
-            print('cmd:  ', direc,  NS*speed)
-        if direc == 'S':
-            try:
-                _mount.DeclinationRate = -NS*speed
-                self.paddleing = True
-            except:
-                pass
-            print('cmd:  ',direc,  -NS*speed)
-        if direc == 'E':
-            try:
-                _mount.RightAscensionRate = EW*speed/15.   #Not quite the correct divisor.
-                self.paddleing = True
-            except:
-                pass
-            print('cmd:  ',direc, EW*speed/15.)
-        if direc == 'W':
-            try:
-                _mount.RightAscensionRate = -EW*speed/15.
-                self.paddleing = True
-            except:
-                pass
-            print('cmd:  ',direc, -EW*speed/15.)
-        if direc == '':
-            try:
-                _mount.DeclinationRate = 0.0
-                _mount.RightAscensionRate = 0.0
-            except:
-                print("Rate set excepetion.")
-            self.paddleing = False
-        self._paddle.close()
-        return
+#         print(button, spd, direc, speed)
+# #            if direc != '':
+#         #print(direc, speed)
+#         _mount = self.mount
+#         #Need to add diagonal moves
+#         if direc == 'N':
+#             try:
+#                 _mount.DeclinationRate = NS*speed
+#                 self.paddleing = True
+#             except:
+#                 pass
+#             print('cmd:  ', direc,  NS*speed)
+#         if direc == 'S':
+#             try:
+#                 _mount.DeclinationRate = -NS*speed
+#                 self.paddleing = True
+#             except:
+#                 pass
+#             print('cmd:  ',direc,  -NS*speed)
+#         if direc == 'E':
+#             try:
+#                 _mount.RightAscensionRate = EW*speed/15.   #Not quite the correct divisor.
+#                 self.paddleing = True
+#             except:
+#                 pass
+#             print('cmd:  ',direc, EW*speed/15.)
+#         if direc == 'W':
+#             try:
+#                 _mount.RightAscensionRate = -EW*speed/15.
+#                 self.paddleing = True
+#             except:
+#                 pass
+#             print('cmd:  ',direc, -EW*speed/15.)
+#         if direc == '':
+#             try:
+#                 _mount.DeclinationRate = 0.0
+#                 _mount.RightAscensionRate = 0.0
+#             except:
+#                 print("Rate set excepetion.")
+#             self.paddleing = False
+#         self._paddle.close()
+#         return
 
-    def set_mount_ref(self, ra, dec):
+    def set_mount_ref(self, delta_ra, delta_dec):
         mnt_shelf = shelve.open(self.site_path + 'ptr_night_shelf/' + 'mount1')
-        mnt_shelf['ra_cal_offset'] = ra
-        mnt_shelf['dec_cal_offset'] = dec
+        mnt_shelf['ra_cal_offset'] = delta_ra
+        mnt_shelf['dec_cal_offset'] = delta_dec
         mnt_shelf.close()
         return
 
     def get_mount_ref(self):
         mnt_shelf = shelve.open(self.site_path + 'ptr_night_shelf/' + 'mount1')
-        ra = mnt_shelf['ra_cal_offset']
-        dec = mnt_shelf['dec_cal_offset']
+        delta_ra = mnt_shelf['ra_cal_offset']
+        delta_dec = mnt_shelf['dec_cal_offset']
         mnt_shelf.close()
-        return ra, dec
+        return delta_ra, delta_dec
 
     def reset_mount_ref(self):
         mnt_shelf = shelve.open(self.site_path + 'ptr_night_shelf/' + 'mount1')
