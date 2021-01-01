@@ -542,6 +542,12 @@ class Observatory:
                 #cal_result =
                 calibrate(hdu, lng_path, paths['frame_type'], quick=False)
                 #print("Calibrate returned:  ", hdu.data, cal_result)
+                #Before saving reduced or generating postage, we flip
+                #the images so East is left and North is up based on
+                #The keyword PIERSIDE defines the orientation.
+                if hdu.header['PIERSIDE'] == "Look West":
+                    hdu.data = np.flip(hdu.data)
+                    hdu.header['IMGFLIP'] = True
                 wpath = paths['im_path'] + paths['red_name01']
                 hdu.writeto(wpath, overwrite=True)  # NB overwrite == True is dangerous in production code.
                 reduced_data_size = hdu.data.size

@@ -144,8 +144,8 @@ class Mount:
         else:
             print(" Auxillary Tel/OTA connected.")
         print(self.mount.Description)
-        # breakpoint()
-        # self.reset_mount_ref()
+        #breakpoint()
+        #self.reset_mount_ref()
         try:
             ra1, dec1 = self.get_mount_ref()
         except:
