@@ -11,36 +11,32 @@ import time, json
 import datetime
 from math import cos, radians
 from global_yard import g_dev
+from devices.mount import ra_fix, ra_dec_fix
 
 from astropy.time import Time
 from astropy import units as u
 from astropy.coordinates import SkyCoord, FK5, ICRS, FK4, Distance, \
                                 EarthLocation, AltAz
 
-# =============================================================================
-# #This should be removed or put in a try
-# from astropy.utils.iers import conf
-# conf.auto_max_age = None                
-# =============================================================================
-#from astroquery.vizier import Vizier
-#from astroquery.simbad import Simbad
+
 
 #The mount is not threaded and uses non-blocking seek.
 '''
 NGP
-12 51 36.7151981
-+27 06 11.193172
+The galactic north pole is at RA = 12h 51.4m, Dec = +27⁰ 07' (2000.0), 
+the galactic centre at RA = 17h 45.6m, Dec = -28⁰ 56' (2000.0).
+
 '''
 
-def ra_fix(ra):
-    while ra >= 24:
-        ra -= 24
-    while ra < 0:
-        ra += 24
-        #need to make this a full function
-    return ra
+
 
 class Telescope:
+    '''
+    Note the telescope axis definitions and model are additive to the host mounting
+    alignments.
+    It is current tel = True  for saf as configured, implies uses the same optical train that was used
+    to set up the mounting. 
+    '''
 
     def __init__(self, driver: str, name: str, settings: dict, config: dict, tel=False):
         self.name = name
@@ -92,117 +88,125 @@ class Telescope:
         self.ut_now = Time(datetime.datetime.now(), scale='utc', location=self.site_coordinates)   #From astropy.time
         self.sid_now = self.ut_now.sidereal_time('apparent')
         iso_day = datetime.date.today().isocalendar()
-        self.doy = ((iso_day[1]-1)*7 + (iso_day[2] ))
+        self.day = ((iso_day[1]-1)*7 + (iso_day[2] ))
         self.equinox_now = 'J' +str(round((iso_day[0] + ((iso_day[1]-1)*7 + (iso_day[2] ))/365), 2))
         return
 
     def get_status(self):
-        alt = g_dev['mnt'].mount.Altitude
-        zen = round((90 - alt), 3)
-        if zen > 90:
-            zen = 90.0
-        if zen < 0.1:    #This can blow up when zen <=0!
-            new_z = 0.1
-        else:
-            new_z = zen
-        sec_z = 1/cos(radians(new_z))
-        airmass = abs(round(sec_z - 0.0018167*(sec_z - 1) - 0.002875*((sec_z - 1)**2) - 0.0008083*((sec_z - 1)**3),3))
-        if int(airmass) > 5:
-            airmass_string = " >> 5 "
-            airmass = 5.0
-        else:
-            airmass = round(airmass, 4)
-            airmass_string = str(airmass)
-        #Be careful to preserve order
-        #print(self.device_name, self.name)
-        if self.tel == False:
-            status = {
-                'timestamp': round(time.time(), 3),
-#                f'right_ascension': str(self.mount.RightAscension),
-#                f'declination': str(self.mount.Declination),
-#                f'sidreal_time': str(self.mount.SiderealTime),
-#                f'tracking_right_ascension_rate': str(self.mount.RightAscensionRate),
-#                f'tracking_declination_rate': str(self.mount.DeclinationRate),
-#                f'azimuth': str(self.mount.Azimuth),
-#                f'altitude': str(alt),
-#                f'zenith_distance': str(zen),
-#                f'airmass': str(airmass),
-#                f'coordinate_system': str(self.rdsys),
-                'pointing_telescope': str(self.inst),  #needs fixing
-                'is_parked': g_dev['mnt'].mount.AtPark,
-                'is_tracking': g_dev['mnt'].mount.Tracking,
-                'is_slewing': g_dev['mnt'].mount.Slewing,
-                'message': g_dev['mnt'].mount_message[:32]
-            }
-        elif self.tel == True:
-            self.current_sidereal = g_dev['mnt'].mount.SiderealTime
-            ra_off, dec_off = g_dev['mnt'].get_mount_ref() 
-            if g_dev['mnt'].mount.EquatorialSystem == 1:
-                self.get_current_times()
-                jnow_ra = ra_fix(g_dev['mnt'].mount.RightAscension - ra_off)
-                jnow_dec = g_dev['mnt'].mount.Declination - dec_off
-                jnow_coord = SkyCoord(jnow_ra*u.hour, jnow_dec*u.degree, frame='fk5', \
-                          equinox=self.equinox_now)
-                icrs_coord = jnow_coord.transform_to(ICRS)
-                self.current_icrs_ra = icrs_coord.ra.hour
-                self.current_icrs_dec = icrs_coord.dec.degree
-            else:
-                self.current_icrs_ra = g_dev['mnt'].mount.RightAscension
-                self.current_icrs_dec = g_dev['mnt'].mount.Declination
-            status = {
-                'timestamp': round(time.time(), 3),
-                'right_ascension': round(self.current_icrs_ra, 5),  #
-                'declination': round(self.current_icrs_dec, 4),
-                'sidereal_time': round(self.current_sidereal, 5),
-                'tracking_right_ascension_rate': round(g_dev['mnt'].mount.RightAscensionRate, 9),   #Will use asec/s not s/s as ASCOM does.
-                'tracking_declination_rate': round(g_dev['mnt'].mount.DeclinationRate, 8),
-                'azimuth': round(g_dev['mnt'].mount.Azimuth, 3),
-                'altitude': round(alt, 3),
-                'zenith_distance': round(zen, 3),
-                'airmass': airmass_string,
-                'coordinate_system': self.rdsys,
-                'equinox':  self.equinox_now,
-                'pointing_instrument': str(self.inst),  # needs fixing
-                'message': g_dev['mnt'].mount_message[:32]
-#                'is_parked': (self.mount.AtPark),
-#                'is_tracking': str(self.mount.Tracking),
-#                'is_slewing': str(self.mount.Slewing)
+        status = g_dev['mnt'].get_status()
+        return status
+#         #This is for now 20201230, NO LONGER primary place to source mount/tel status, needs fixing.
+#         alt = g_dev['mnt'].mount.Altitude
+#         zen = round((90 - alt), 3)
+#         if zen > 90:
+#             zen = 90.0
+#         if zen < 0.1:    #This can blow up when zen <=0!
+#             new_z = 0.1
+#         else:
+#             new_z = zen
+#         sec_z = 1/cos(radians(new_z))
+#         airmass = abs(round(sec_z - 0.0018167*(sec_z - 1) - 0.002875*((sec_z - 1)**2) - 0.0008083*((sec_z - 1)**3),3))
+#         if int(airmass) > 5:
+#             airmass_string = " >> 5 "
+#             airmass = 5.0
+#         else:
+#             airmass = round(airmass, 4)
+#             airmass_string = str(airmass)
+#         #Be careful to preserve order
+#         #print(self.device_name, self.name)
+#         if self.tel == False:
+#             breakpoint()
+#             status = {
+#                 'timestamp': round(time.time(), 3),
+# #                f'right_ascension': str(self.mount.RightAscension),
+# #                f'declination': str(self.mount.Declination),
+# #                f'sidreal_time': str(self.mount.SiderealTime),
+# #                f'tracking_right_ascension_rate': str(self.mount.RightAscensionRate),
+# #                f'tracking_declination_rate': str(self.mount.DeclinationRate),
+# #                f'azimuth': str(self.mount.Azimuth),
+# #                f'altitude': str(alt),
+# #                f'zenith_distance': str(zen),
+# #                f'airmass': str(airmass),
+# #                f'coordinate_system': str(self.rdsys),
+#                 'pointing_telescope': str(self.inst),  #needs fixing
+#                 'is_parked': g_dev['mnt'].mount.AtPark,
+#                 'is_tracking': g_dev['mnt'].mount.Tracking,
+#                 'is_slewing': g_dev['mnt'].mount.Slewing,
+#                 'message': g_dev['mnt'].mount_message[:32]
+#             }
+#         elif self.tel == True:  #  NB Note we are redirecting to the 'mnt' device.'
+#             breakpoint()
+#             self.current_sidereal = g_dev['mnt'].mount.SiderealTime
+#             ra_off, dec_off = g_dev['mnt'].get_mount_ref() 
+#             if g_dev['mnt'].mount.EquatorialSystem == 1:
+#                 self.get_current_times()
+#                 jnow_ra = ra_fix(g_dev['mnt'].mount.RightAscension - ra_off)
+#                 jnow_dec = g_dev['mnt'].mount.Declination - dec_off
+#                 jnow_coord = SkyCoord(jnow_ra*u.hour, jnow_dec*u.degree, frame='fk5', \
+#                           equinox=self.equinox_now)
+#                 icrs_coord = jnow_coord.transform_to(ICRS)
+#                 self.current_icrs_ra = icrs_coord.ra.hour
+#                 self.current_icrs_dec = icrs_coord.dec.degree
+#             else:
+#                 self.current_icrs_ra = g_dev['mnt'].mount.RightAscension
+#                 self.current_icrs_dec = g_dev['mnt'].mount.Declination
+#             breakpoint()
+#             status = {
+#                 'timestamp': round(time.time(), 3),
+#                 'right_ascension': round(self.current_icrs_ra, 5),  #
+#                 'declination': round(self.current_icrs_dec, 4),
+#                 'sidereal_time': round(self.current_sidereal, 5),
+#                 'tracking_right_ascension_rate': round(g_dev['mnt'].mount.RightAscensionRate, 9),   #Will use asec/s not s/s as ASCOM does.
+#                 'tracking_declination_rate': round(g_dev['mnt'].mount.DeclinationRate, 8),
+#                 'azimuth': round(g_dev['mnt'].mount.Azimuth, 3),
+#                 'altitude': round(alt, 3),
+#                 'zenith_distance': round(zen, 3),
+#                 'airmass': airmass_string,
+#                 'coordinate_system': self.rdsys,
+#                 'equinox':  self.equinox_now,
+#                 'pointing_instrument': str(self.inst),  # needs fixing
+#                 'message': g_dev['mnt'].mount_message[:32]
+# #                'is_parked': (self.mount.AtPark),
+# #                'is_tracking': str(self.mount.Tracking),
+# #                'is_slewing': str(self.mount.Slewing)
 
-            }
-        else:
-            print('Proper device_name is missing, or tel == None')
-            status = {'defective':  'status'}
+#             }
+#         else:
+#             print('Proper device_name is missing, or tel == None')
+#             status = {'defective':  'status'}
         return status  #json.dumps(status)
 
     def get_quick_status(self, pre):
-        alt = self.mount.Altitude
-        zen = round((90 - alt), 3)
-        if zen > 90:
-            zen = 90.0
-        if zen < 0.1:    #This can blow up when zen <=0!
-            new_z = 0.1
-        else:
-            new_z = zen
-        sec_z = 1/cos(radians(new_z))
-        airmass = round(sec_z - 0.0018167*(sec_z - 1) - 0.002875*((sec_z - 1)**2) - 0.0008083*((sec_z - 1)**3),3)
-        if airmass > 10: airmass = 10
-        airmass = round(airmass, 4)
-        ra_off, dec_off = g_dev['mnt'].get_mount_ref() 
-        pre.append(time.time())
-        pre.append(ra_fix(self.mount.RightAscension - ra_off))
-        pre.append(self.mount.Declination - dec_off)
-        pre.append(self.mount.SiderealTime)
-        pre.append(self.mount.RightAscensionRate)
-        pre.append(self.mount.DeclinationRate)
-        pre.append(self.mount.Azimuth)
-        pre.append(alt)
-        pre.append(zen)
-        pre.append(airmass)
-        pre.append(self.mount.AtPark)
-        pre.append(self.mount.Tracking)
-        pre.append(self.mount.Slewing)
-        #print(pre)
+        g_dev['mn'].get_quick_status(pre)
         return pre
+        # alt = self.mount.Altitude
+        # zen = round((90 - alt), 3)
+        # if zen > 90:
+        #     zen = 90.0
+        # if zen < 0.1:    #This can blow up when zen <=0!
+        #     new_z = 0.1
+        # else:
+        #     new_z = zen
+        # sec_z = 1/cos(radians(new_z))
+        # airmass = round(sec_z - 0.0018167*(sec_z - 1) - 0.002875*((sec_z - 1)**2) - 0.0008083*((sec_z - 1)**3),3)
+        # if airmass > 10: airmass = 10
+        # airmass = round(airmass, 4)
+        # ra_off, dec_off = g_dev['mnt'].get_mount_ref() 
+        # pre.append(time.time())
+        # pre.append(ra_fix(self.mount.RightAscension - ra_off))
+        # pre.append(self.mount.Declination - dec_off)
+        # pre.append(self.mount.SiderealTime)
+        # pre.append(self.mount.RightAscensionRate)
+        # pre.append(self.mount.DeclinationRate)
+        # pre.append(self.mount.Azimuth)
+        # pre.append(alt)
+        # pre.append(zen)
+        # pre.append(airmass)
+        # pre.append(self.mount.AtPark)
+        # pre.append(self.mount.Tracking)
+        # pre.append(self.mount.Slewing)
+        # #print(pre)
+        # return pre
 
     @classmethod
     def two_pi_avg(cls, pre, post, half):
@@ -220,7 +224,7 @@ class Telescope:
         return avg
 
 
-
+    #NB Note Mount not Telescope class used below
     def get_average_status(self, pre, post):
         t_avg = round((pre[0] + post[0])/2, 3)
         print(t_avg)

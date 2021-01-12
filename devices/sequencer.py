@@ -305,7 +305,7 @@ class Sequencer:
                     be restored.  IN the execute block we need to make a deepcopy of the input block
                     so it does not get modified.
                     '''
-            print('block list exhausted')  
+            #print('block list exhausted')  
             return
             
                 
@@ -945,8 +945,8 @@ class Sequencer:
         if req2['target'] == 'near_tycho_star':   ## 'bin', 'area'  Other parameters
 
             #  Go to closest Mag 7.5 Tycho * with no flip
-            focus_star = tycho.dist_sort_targets(g_dev['tel'].current_icrs_ra, g_dev['tel'].current_icrs_dec, \
-                                    g_dev['tel'].current_sidereal)
+            focus_star = tycho.dist_sort_targets(g_dev['mnt'].current_icrs_ra, g_dev['mnt'].current_icrs_dec, \
+                                    g_dev['mnt'].current_sidereal)
             print("Going to near focus star " + str(focus_star[0][0]) + "  degrees away.")
             g_dev['mnt'].go_coord(focus_star[0][1][1], focus_star[0][1][0])
             req = {'time': 12.5,  'alias':  str(self.config['camera']['camera1']['name']), 'image_type': 'auto_focus'}   #  NB Should pick up filter and constats from config
@@ -1085,8 +1085,8 @@ class Sequencer:
             print("Motion check faulted.")
         if req['target'] == 'near_tycho_star':   ## 'bin', 'area'  Other parameters
             #  Go to closest Mag 7.5 Tycho * with no flip
-            focus_star = tycho.dist_sort_targets(g_dev['tel'].current_icrs_ra, g_dev['tel'].current_icrs_dec, \
-                                    g_dev['tel'].current_sidereal)
+            focus_star = tycho.dist_sort_targets(g_dev['mnt'].current_icrs_ra, g_dev['mnt'].current_icrs_dec, \
+                                    g_dev['mnt'].current_sidereal)
             print("Going to near focus star " + str(focus_star[0][0]) + "  degrees away.")
             g_dev['mnt'].go_coord(focus_star[0][1][1], focus_star[0][1][0])
             req = {'time': 7.5,  'alias':  str(self.config['camera']['camera1']['name']), 'image_type': 'auto_focus'}   #  NB Should pick up filter and constats from config

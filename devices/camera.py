@@ -809,7 +809,7 @@ class Camera:
                     self.exposure_busy = False
                     self.t10 = time.time()
                     #  self._stop_expose()
-                    #  print("inner expose took:  ", round(self.t10 - self.t0 , 2), ' returned:  ', result)
+                    print("inner expose took:  ", round(self.t10 - self.t0 , 2), ' returned:  ', result)
                     self.retry_camera = 0
                     break
                 except Exception as e:
@@ -819,7 +819,7 @@ class Camera:
                     continue
         #  This is the loop point for the seq count loop
         self.t11 = time.time()
-        print("\n\nFull expose seq took:  ", round(self.t11 - self.t0 , 2), ' Retries;  ', num_retries,  ' Returning:  ', result, '\n\n')
+        print("\nFull expose seq took:  ", round(self.t11 - self.t0 , 2), ' Retries;  ', num_retries, 'Average: ', round((self.t11 - self.t0)/count, 2),  ' Returning:  ', result, '\n\n')
         try:
             #print(' 0 sec cycle time:  ', round((self.t11 - self.t0)/count - exposure_time , 2) )
             pass
@@ -831,6 +831,7 @@ class Camera:
         ''' Stop the current exposure and return the camera to Idle state. '''
         #  NB NB This routine needs work!
         self.exposure_busy = False
+        self.exposure_halted = True
 
     def finish_exposure(self, exposure_time, frame_type, counter, \
                         gather_status=True, do_sep=False, no_AWS=False, start_x=None, start_y=None, quick=False, \
@@ -845,7 +846,7 @@ class Camera:
         if self.bin == 1:
             self.completion_time = self.t2 + exposure_time + 1
         else:
-            self.completion_time = self.t2 + exposure_time + 2
+            self.completion_time = self.t2 + exposure_time + 1
         result = {'error': False}
         while True:    #This loop really needs a timeout.
             g_dev['mnt'].get_quick_status(self.post_mnt)   #Need to pick which pass was closest to image completion
@@ -853,30 +854,30 @@ class Camera:
             g_dev['foc'].get_quick_status(self.post_foc)
             g_dev['ocn'].get_quick_status(self.post_ocn)
             if time.time() < self.completion_time:   #  NB Testing here if glob too early is delaying readout.
-                time.sleep(1)
+                time.sleep(.5)
                 continue
             incoming_image_list = []   #glob.glob(self.file_mode_path + '*.f*t*')
-            self.t4 = time.time()
-            try:
-                probe = self.camera.CoolerOn
-                if not probe:
-                    print('Found cooler off.')
-                    try:
-                        self._connect(False)
-                        self._connect(True)
-                        self.camera.CoolerOn = True
-                    except:
-                        print('Camera reconnect failed @ Finish camera entry.')
-            except Exception as e:
-                print("\n\nCamera was not connected @ Finish camera entry:  ", e, '\n\n')
-                try:
-                    self._connect(False)
-                    self._connect(True)
-                    self.camera.CoolerOn = True
-                except:
-                    print('Camera reconnect failed @ expose camera retry.')
-            #  At this point we really should be connected!!
             
+            # try:
+            #     probe = self.camera.CoolerOn
+            #     if not probe:
+            #         print('Found cooler off.')
+            #         try:
+            #             self._connect(False)
+            #             self._connect(True)
+            #             self.camera.CoolerOn = True
+            #         except:
+            #             print('Camera reconnect failed @ Finish camera entry.')
+            # except Exception as e:
+            #     print("\n\nCamera was not connected @ Finish camera entry:  ", e, '\n\n')
+            #     try:
+            #         self._connect(False)
+            #         self._connect(True)
+            #         self.camera.CoolerOn = True
+            #     except:
+            #         print('Camera reconnect failed @ expose camera retry.')
+            #  At this point we really should be connected!!
+            self.t4 = time.time()
             if (not self.use_file_mode and self.camera.ImageReady) or (self.use_file_mode and len(incoming_image_list) >= 1):   #   self.camera.ImageReady:
                 #print("reading out camera, takes ~6 seconds.")
                 if self.use_file_mode:
@@ -904,15 +905,21 @@ class Camera:
                     print ('Grab took :  ', tries*delay, ' sec')
                 else:
                     time.sleep(0.1)   #  This delay appears to be necessary. 20200804 WER
-                    self.img_safe = self.camera.ImageArray   #As read, this is a Windows Safe Array of Longs
-                    self.img_untransposed = np.array(self.img_safe) #incoming is (4800,3211) for QHY600Pro 2:2 Bin
-                    print(self.img_untransposed.shape)
-                    self.img = self.img_untransposed    #   .transpose()  Only use this if Maxim has changed orientation.
+                    self.t4p4 = time.time()
+                    self.img_safe = self.camera.ImageArray
+                    self.t4p5 = time.time()#As read, this is a Windows Safe Array of Longs
+                    self.img = np.array(self.img_safe) # _untransposed   incoming is (4800,3211) for QHY600Pro 2:2 Bin
+                    #print(self.img_untransposed.shape)
+                    #self.img = self.img_untransposed    #   .transpose()  Only use this if Maxim has changed orientation.
                     #  print('incoming shape:  ', self.img.shape)                      
-                self.t5 = time.time()         
-                print('expose  took: ', round(self.t4 - self.t2, 2), ' sec,')
+                self.t5 = time.time()
+                pier_side = g_dev['mnt'].mount.sideOfPier    #0 = Tel Looking West, is flipped.
+                print('setup took:  ', round(self.t2 - self.t0))
+                print('time to first readout try: ', round(self.t4 - self.t2, 2), ' sec,')
+                print('to get safearray: ', round(self.t4p5 - self.t2, 2), ' sec,')
                 print('readout took: ', round(self.t5 - self.t4, 2), ' sec,')
                 print('it all took: ', round(self.t5 - self.t2, 2), ' sec,')
+
                 #  NB NB  Be very careful this is the exact code used in build_master and calibration  modules.
                 #  NB Note this is QHY600 specific code.  Needs to be supplied in camera config as sliced regions.
                 pedastal = 100
@@ -982,6 +989,7 @@ class Camera:
                 print('readout, transpose & Trim took:  ', round(self.t77 - self.t4, 1), ' sec,')# marks them as 0
                 #Should we consider correcting the image right here with cached bias, dark and hot pixel
                 #processing so downstream processing is reliable.  Maybe only do this for focus?
+                g_dev['obs'].send_to_user("Camera has read-out image", p_level='INFO')
                 self.img = square.astype('uint16')
                 ix, iy = self.img.shape
                 test_saturated = np.array(self.img[ix//3:ix*2//3, iy//3:iy*2//3])  # 1/9th the chip area
@@ -1151,7 +1159,7 @@ class Camera:
                     hdu.header['OPERATOR'] = "WER"
                     hdu.header['ENCLOSE']  = "Clamshell"   #Need to document shutter status, azimuth, internal light.
                     hdu.header['DOMEAZ']   = "NA"   #Need to document shutter status, azimuth, internal light.
-                    hdu.header['ENCLIGHT'] ="Off/White/Red/IR"
+                    hdu.header['ENCLIGHT'] ="Off/White/Red/NIR"
                     #  if gather_status:
                     hdu.header['MNT-SIDT'] = avg_mnt['sidereal_time']
                     ha = avg_mnt['sidereal_time'] - avg_mnt['right_ascension'] 
@@ -1175,6 +1183,13 @@ class Camera:
                     hdu.header['MNT-PARK'] = avg_mnt['is_parked']
                     hdu.header['MNT-SLEW'] = avg_mnt['is_slewing']
                     hdu.header['MNT-TRAK'] = avg_mnt['is_tracking']
+                    if pier_side == 0:
+                        hdu.header['PIERSIDE'] = 'Look West'
+                    elif pier_side == 1:
+                        hdu.header['PIERSIDE'] = 'Look East'
+                    else:
+                        hdu.header['PIERSIDE'] = 'Undefined'
+                    hdu.header['IMGFLIP'] = False
                     hdu.header['OTA'] = ""
                     hdu.header['SELECTEL'] = "tel1"
                     hdu.header['ROTATOR']  = ""
@@ -1323,12 +1338,11 @@ class Camera:
                             self.enqueue_for_AWS(text_data_size, im_path, text_name)
                             self.to_reduce((paths, hdu))
                         hdu.writeto(raw_path + raw_name00, overwrite=True)
-                    
-                    
+                        g_dev['obs'].send_to_user("Raw image saved locally. ", p_level='INFO')
+                        
                     if frame_type in ('bias', 'dark', 'screen_flat', 'sky_flat', 'screen flat', 'sky flat'):
                         if not self.hint[0:54] == 'Flush':
-                            hdu.writeto(cal_path + cal_name, overwrite=True)
-                            
+                            hdu.writeto(cal_path + cal_name, overwrite=True)                       
                         else:
                             pass
                         try:
@@ -1375,7 +1389,8 @@ class Camera:
                 #g_dev['obs'].update_status()
                 self.t7 = time.time()
                 remaining = round(self.completion_time - self.t7, 1)
-                print("Exposure time remaining:", remaining)
+                print("Exposure time remaining:  " + str(remaining))
+                g_dev['obs'].send_to_user("Exposure time remaining:  " + str(remaining), p_level='INFO')
                 if remaining < -30:
                     print("Camera timed out, not connected")
                     result = {'error': True}

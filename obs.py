@@ -36,7 +36,7 @@ import json
 import numpy as np
 import math
 #import datetime
-
+from pprint import pprint
 #from pprint import pprint
 from api_calls import API_calls
 #from skimage import data, io, filters
@@ -170,7 +170,7 @@ class Observatory:
             'filter_wheel',
             'camera',
             'sequencer'          
-            ]
+            ] #  'telescope',
         # Instantiate the helper class for astronomical events
         #Soon the primary event / time values come from AWS>
         self.astro_events = ptr_events.Events(self.config)
@@ -230,7 +230,7 @@ class Observatory:
                 elif dev_type == 'enclosure':
                     device = Enclosure(driver, name, self.config, self.astro_events)
                 elif dev_type == "mount":
-                    device = Mount(driver, name, settings, self.config, self.astro_events, tel=False)
+                    device = Mount(driver, name, settings, self.config, self.astro_events, tel=True) #NB this needs to be straightened out.
                 elif dev_type == "telescope":   # order of attaching is sensitive
                     device = Telescope(driver, name, settings, self.config, tel=True)
                 elif dev_type == "rotator":
@@ -329,7 +329,7 @@ class Observatory:
                 if True: #self.projects is None:
                     all_projects = requests.post(url_proj).json()
                     self.projects = []
-                    if len(all_projects) > 0:   #   is not None:
+                    if len(all_projects) > 0 and len(blocks)> 0:   #   is not None:
                         self.projects = all_projects   #.append(all_projects)  #NOTE creating a list with a dict entry as item 0
                         #self.projects.append(all_projects[1])
                 '''
@@ -362,6 +362,7 @@ class Observatory:
         # This stopping mechanism allows for threads to close cleanly.
         loud = False        
         if g_dev['cam_retry_doit']:
+            breakpoint()   #THis should be obsolete.
             del g_dev['cam']
             device = Camera(g_dev['cam_retry_driver'], g_dev['cam_retry_name'], g_dev['cam_retry_config'])
             print("Deleted and re-created:  ,", device)
@@ -541,6 +542,12 @@ class Observatory:
                 #cal_result =
                 calibrate(hdu, lng_path, paths['frame_type'], quick=False)
                 #print("Calibrate returned:  ", hdu.data, cal_result)
+                #Before saving reduced or generating postage, we flip
+                #the images so East is left and North is up based on
+                #The keyword PIERSIDE defines the orientation.
+                if hdu.header['PIERSIDE'] == "Look West":
+                    hdu.data = np.flip(hdu.data)
+                    hdu.header['IMGFLIP'] = True
                 wpath = paths['im_path'] + paths['red_name01']
                 hdu.writeto(wpath, overwrite=True)  # NB overwrite == True is dangerous in production code.
                 reduced_data_size = hdu.data.size
@@ -749,6 +756,7 @@ class Observatory:
                 # except:
                 #     pass
                 print("\nReduction completed.")
+                g_dev['obs'].send_to_user("An image reduction has completed.", p_level='INFO')
                 self.reduce_queue.task_done()
             else:
                 time.sleep(.5)

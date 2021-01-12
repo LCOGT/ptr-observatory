@@ -266,6 +266,10 @@ class FilterWheel:
 
         if filter_name =="W":     #  NB This is a temp patch
             filter_name = 'w'
+        if filter_name in ["Exo", "EXO"]:
+            filter_name = 'exo'
+        if filter_name =="Rc":
+            filter_name = 'R'
         if filter_name =="r":
             filter_name = 'rp'
         if filter_name =="g":

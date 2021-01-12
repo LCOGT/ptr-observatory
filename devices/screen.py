@@ -88,7 +88,7 @@ class Screen(object):
 
 
     def get_status(self):
-
+        breakpoint()
         status = {
             "bright_setting": round(self.bright_setting, 1),
             "dark_setting": self.dark_setting
