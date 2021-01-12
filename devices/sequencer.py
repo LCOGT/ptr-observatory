@@ -534,12 +534,14 @@ class Sequencer:
                             pitch = 0.1875
                         if exposure['area'] in ['125', '125%', 125]:
                             pitch = 0.125
-                    elif exposure['area'] in ['600', '600%', 600]:  # 9 exposures.
+                    elif exposure['area'] in ['600', '600%', 600, '450', '450%', 450]:  # 9 exposures.
                         offset = [(0., 0.), (-1.5, 0.), (-1.5, 1.), (0., 1.), (1.5, 1.), (1.5, 0.), \
                                   (1.5, -1.), (0., -1.), (-1.5, -1.), ] #Nine mosaic quadrants 36 x 24mm chip
-                        pitch = 0.375
-                        pane = 0
-                
+                        if exposure['area'] in ['600', '600%', 600]:
+                            pitch = 0.1875  #0.375  Until Tim impements the option.
+                        if exposure['area'] in ['450', '450%', 450]:
+                            pitch = 0.1875
+                            pane = 0
                     else:
                         offset = [(0., 0.)] #Zero(no) mosaic offset
                         pitch = 0.
@@ -739,8 +741,10 @@ class Sequencer:
             g_dev['enc'].Slaved = True  #Bring the dome into the picture.
             print('\n\n SLAVED THE DOME HOPEFULLY!!!!\n\n')
         g_dev['obs'].update_status()
-        g_dev['scr'].screen_dark()
-        g_dev['obs'].update_status()
+        try:
+            g_dev['scr'].screen_dark()
+        except:
+            pass
         #  We should probe to be sure dome is open, otherwise this is a test when closed and
         #  we can speed it up
         #Here we may need to switch off any
