@@ -289,6 +289,18 @@ class ObservingConditions:
                           "meas_sky_mpsas": float(wx['meas_sky_mpsas']),
                           "calc_sky_mpsas": round((mag - 20.01), 2)
                           }
+                                #Pulled over from saf
+                uni_measure = float(wx['meas_sky_mpsas'])   #  Provenance of 20.01 is dubious 20200504 WER
+
+                if uni_measure == 0:
+                    uni_measure = round((mag - 20.01),2)   #  Fixes Unihedron when sky is too bright
+                    status["meas_sky_mpsas"] = uni_measure
+                    #status2["meas_sky_mpsas"] = uni_measure
+                    self.meas_sky_lux = illum
+                else:
+                    self.meas_sky_lux = linearize_unihedron(uni_measure)
+                    status["meas_sky_mpsas"] = uni_measure
+                    #status2["meas_sky_mpsas"] = uni_measure
                         # Only write when around dark, put in CSV format
                 # sunZ88Op, sunZ88Cl, ephemNow = g_dev['obs'].astro_events.getSunEvents()
                 # quarter_hour = 0.75/24    #  Note temp changed to 3/4 of an hour.
@@ -303,48 +315,63 @@ class ObservingConditions:
                 #     except:
                 #         print("Wx log did not write.")
 
-                return status
+                #return status
             except:
-                time.sleep(1)
-                self.wmd_fail_counter += 1
-                # This is meant to be a retry
-                try:
-                    #breakpoint()
-                    #pass
-                    wx = eval(self.redis_server.get('<ptr-wx-1_state'))
-                    illum = float(wx["illum lux"])
-                    self.last_wx = wx
-                except:
-                    print('Redis is not turning Wx Data properly.')
-                    wx = self.last_wx
-                status = {"temperature_C": float(wx["amb_temp C"]),
-                          "pressure_mbar": 978.0,
-                          "humidity_%": float(wx["humidity %"]),
-                          "dewpoint_C": float(wx["dewpoint C"]),
-                          "calc_HSI_lux": illum,
-                          "sky_temp_C": float(wx["sky C"]),
-                          "time_to_open_h": float(wx["time to open"]),
-                          "time_to_close_h": float(wx["time to close"]),
-                          "wind_m/s": float(wx["wind m/s"]),
-                          "ambient_light": wx["light"],
-                          "open_ok": wx["open_possible"],
-                          "wx_ok": wx["open_possible"],
-                          "meas_sky_mpsas": float(wx['meas_sky_mpsas']),
-                          "calc_sky_mpsas": round((mag - 20.01), 2)
-                          }
+                pass
+                # time.sleep(1)
+                # self.wmd_fail_counter += 1
+                # # This is meant to be a retry
+                # try:
+                #     #breakpoint()
+                #     #pass
+                #     wx = eval(self.redis_server.get('<ptr-wx-1_state'))
+                #     illum = float(wx["illum lux"])
+                #     self.last_wx = wx
+                # except:
+                #     print('Redis is not turning Wx Data properly.')
+                #     wx = self.last_wx
+                # status = {"temperature_C": float(wx["amb_temp C"]),
+                #           "pressure_mbar": 978.0,
+                #           "humidity_%": float(wx["humidity %"]),
+                #           "dewpoint_C": float(wx["dewpoint C"]),
+                #           "calc_HSI_lux": illum,
+                #           "sky_temp_C": float(wx["sky C"]),
+                #           "time_to_open_h": float(wx["time to open"]),
+                #           "time_to_close_h": float(wx["time to close"]),
+                #           "wind_m/s": float(wx["wind m/s"]),
+                #           "ambient_light": wx["light"],
+                #           "open_ok": wx["open_possible"],
+                #           "wx_ok": wx["open_possible"],
+                #           "meas_sky_mpsas": float(wx['meas_sky_mpsas']),
+                #           "calc_sky_mpsas": round((mag - 20.01), 2)
+                #           }
+                # #Pulled over from saf
+                # breakpoint()
+                # uni_measure = float(wx['meas_sky_mpsas']) #  Provenance of 20.01 is dubious 20200504 WER
+                # if uni_measure == 0:
+                #     uni_measure = round((mag - 20.01),2)   #  Fixes Unihedron when sky is too bright
+                #     status["meas_sky_mpsas"] = uni_measure
+                #     #status2["meas_sky_mpsas"] = uni_measure
+                #     self.meas_sky_lux = illum
+                # else:
+                #     self.meas_sky_lux = linearize_unihedron(uni_measure)
+                #     status["meas_sky_mpsas"] = uni_measure
+                #     #status2["meas_sky_mpsas"] = uni_measure
+
                         # Only write when around dark, put in CSV format
-                sunZ88Op, sunZ88Cl, ephemNow = g_dev['obs'].astro_events.getSunEvents()
-                two_hours = 2/24    #  Note changed to 2 hours.
-                if  (sunZ88Op - two_hours < ephemNow < sunZ88Cl + two_hours) and (time.time() >= \
-                     self.sample_time + 30.):    #  Two samples a minute.
-                    try:
-                        wl = open('Q:/archive/wx_log.txt', 'a')
-                        wl.write('wx, ' + str(time.time()) + ', ' + str(illum) + ', ' + str(mag - 20.01) + ', ' \
-                                 + str(self.unihedron.SkyQuality) + ", \n")
-                        wl.close()
-                        self.sample_time = time.time()
-                    except:
-                        print("Wx log did not write.")
+            #ops_win_begin, sunset, sunrise, ephem.now
+            sunZ88Op, sunZ88Cl, sunrise, ephemNow = g_dev['obs'].astro_events.getSunEvents()
+            two_hours = 2/24    #  Note changed to 2 hours.
+            if  (sunZ88Op - two_hours < ephemNow < sunZ88Cl + two_hours) and (time.time() >= \
+                 self.sample_time + 30.):    #  Two samples a minute.
+                try:
+                    wl = open('Q:/archive/wx_log.txt', 'a')
+                    # wl.write('wx, ' + str(time.time()) + ', ' + str(illum) + ', ' + str(mag - 20.01) + ', ' \
+                    #          + str(self.unihedron.SkyQuality) + ", \n")
+                    wl.close()
+                    self.sample_time = time.time()
+                except:
+                    print("Wx log did not write.")
         else:
             print("Big fatal error")
 
@@ -419,9 +446,8 @@ class ObservingConditions:
             
         #This should be located right after forming the wx status
         url = "https://api.photonranch.org/api/weather/write"
-
         data = json.dumps({
-            "weatherData": status2,
+            "weatherData": status,
             "site": self.site,
             "timestamp_s": int(time.time())
             })

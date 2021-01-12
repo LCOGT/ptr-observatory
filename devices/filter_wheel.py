@@ -87,6 +87,11 @@ class FilterWheel:
             except:
                 print("QHY Filter not connected.")
                 
+                ###ser.write(b'1') get you to Duo
+                # 0 is lpr
+                # 2 is air
+                # 3 in dark
+                
                 
                 
             
