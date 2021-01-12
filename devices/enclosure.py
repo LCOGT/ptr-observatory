@@ -14,6 +14,8 @@ The Events time periods apply a collar, if you will, around when automatic dome 
 is possible.  The event phases are found in g_dev['events'].  The basic window is defined
 with respect to Sunset and Sunrise so it varies each day.
 
+NB,  Dome refers to a rotating roof that presumably needs aziumt alignmnet of some form
+Shutter, Roof, Slit, etc., are the same things.
 '''
 
 
@@ -35,13 +37,8 @@ class Enclosure:
         else:
             print("'wmd2' enclosure linked to 'wmd'. ")
         if self.site in ['wmd', 'wmd2']:
-            self.redis_server = redis.StrictRedis(host='10.15.0.109', port=6379, db=0,
-                                                  decode_responses=True)
+            self.redis_server = redis.StrictRedis(host='10.15.0.109', port=6379, db=0, decode_responses=True)
         self.is_dome = self.config['enclosure']['enclosure1']['is_dome']
-
-        if self.site in ['wmd', 'wmd2']:
-            self.redis_server = redis.StrictRedis(host='10.15.0.109', port=6379, db=0,
-                                                  decode_responses=True)
         self.state = 'Closed.  Initialized class property value.'
         self.mode = 'Manual'   #  Auto|User Control|User Close|Disable
         self.enclosure_message = '-'
@@ -50,8 +47,7 @@ class Enclosure:
         self.dome_homed = False
         self.cycles = 0
         self.prior_status = None
-
-
+        
 
     def get_status(self) -> dict:
         #<<<<The next attibute reference fails at SAF, usually spurious Dome Ring Open report.
@@ -210,8 +206,10 @@ class Enclosure:
                                           or g_dev['ocn'].clamp_latch):     # NB Is Wx ok really the right criterion???
             try:
                 self.enclosure.OpenShutter()
+                print("An actual shutter open command has been issued.")
                 return True
             except:
+                print("Attempt to open shutter failed at quarded_open command")
                 return False
         return False
 
@@ -228,25 +226,12 @@ class Enclosure:
         az_opposite_sun -= 180.
         if az_opposite_sun < 0:
             az_opposite_sun += 360.
-        if self.site == 'saf':
+        if az_opposite_sun >= 360:
+            az_opposite_sun -= 360.
+        if self.is_dome:
             shutter_str = "Dome."
         else:
             shutter_str = "Roof."
-        # NB THis code causes oscillation.
-        # if  (obs_win_begin <= ephemNow <= sunrise):  #NB obs_win_begin is abstruse
-        #     if self.is_dome:
-        #         self.enclosure.Slaved = False
-        #     # nb tHIS SHOULD WORK DIFFERENT. Open then slew to Opposite az to Sun set.  Stay
-        #     # there until telescope is unparked, then  slave the dome.  Or maybe leave it at
-        #     # park, where Neyle can see it from house and always ready to respong to a Wx close.
-        # else:
-        #     if self.is_dome:
-        #         try:
-        #             self.enclosure.Slaved = False   #NB This logic os convoluted.
-        #         except:
-        #             pass    #Megawan (roofs) do not slave
-
-        #wx_is_ok = g_dev['ocn'].wx_is_ok
         wx_hold = g_dev['ocn'].wx_hold
 
 
@@ -262,7 +247,7 @@ class Enclosure:
                 #  print('\nSlew to opposite the azimuth of the Sun, open and cool-down. Az =  ', az_opposite_sun)
                 #  NB There is no corresponding warm up phase in the Morning.
                 if self.status_string.lower() in ['closed']:  #, 'closing']:
-                    success = self.guarded_open()
+                    self.guarded_open()
                     self.dome_opened = True
                     self.dome_homed = True
                 if self.status_string.lower() in ['open']:    #WE found it open.
@@ -274,14 +259,14 @@ class Enclosure:
                         self.dome_homed = False
                     else:
                         self.dome_homed = False
-                else:
-                    if self.status_string.lower() in ['closed']:    #, 'closing']:
-                        try:
-                            self.guarded_open()
-                            self.dome_opened = True
-                            self.dome_homed = True
-                        except:
-                            pass      #If this faults next pass should pick it up.
+                # else:
+                #     if self.status_string.lower() in ['closed']:    #, 'closing']:
+                #         try:
+                #             self.guarded_open()
+                #             self.dome_opened = True
+                #             self.dome_homed = True
+                #         except:
+                #             pass      #If this faults next pass should pick it up.
 
 
 
