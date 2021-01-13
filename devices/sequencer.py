@@ -470,7 +470,8 @@ class Sequencer:
             initial_focus = True
             while left_to_do > 0 and not ended:
                 if initial_focus:
-                    self.auto_focus_script(req2, opt, throw = 500)   #coarse_focus_script can be used here
+                    if not g_dev['enc'].shutter_is_closed:
+                        self.auto_focus_script(req2, opt, throw = 500)   #coarse_focus_script can be used here
                     just_focused = True
                     initial_focus = False    #  Make above on-time event per block
                     timer = time.time() + 1800   #10 min for debugging
@@ -480,7 +481,8 @@ class Sequencer:
                 for exposure in block['project']['exposures']:
                     if block_specification['project']['project_constraints']['frequent_autofocus'] == True and (time.time() - timer) >= 0:
                         
-                        self.auto_focus_script(req2, opt, throw = 500)
+                        if not g_dev['enc'].shutter_is_closed:
+                            self.auto_focus_script(req2, opt, throw = 500)
                         initial_focus = False
                         just_focused = True
                         timer = time.time() + 1800   #30 minutes to refocus
@@ -518,7 +520,7 @@ class Sequencer:
                     if count <= 0:
                          continue
                     #At this point we have 1 to 9 exposures to make in this filter.  Note different areas can be defined. 
-                    if exposure['area'] in ['300', '300%', 300, '220', '220%', 220, '150', '150%', 150, '250', '250%', 250]:
+                    if exposure['area'] in ['300', '300%', 300, '220', '220%', 220, '150', '150%', 150, '250', '250%', 250]:  # 4 or 5 expsoures.
                         if block_specification['project']['project_constraints']['add_center_to_mosaic']:
                             offset = [(0.0, 0.0), (-1.5, 1.), (1.5, 1.), (1.5, -1.), (-1.5, -1.)] #Aimpoint + Four mosaic quadrants 36 x 24mm chip
                             pane = 0
@@ -534,14 +536,30 @@ class Sequencer:
                             pitch = 0.1875
                         if exposure['area'] in ['125', '125%', 125]:
                             pitch = 0.125
-                    elif exposure['area'] in ['600', '600%', 600, '450', '450%', 450]:  # 9 exposures.
+                    elif exposure['area'] in ['600', '600%', 600, '450', '450%', 450]:  # 8 or 9 exposures.
                         offset = [(0., 0.), (-1.5, 0.), (-1.5, 1.), (0., 1.), (1.5, 1.), (1.5, 0.), \
-                                  (1.5, -1.), (0., -1.), (-1.5, -1.), ] #Nine mosaic quadrants 36 x 24mm chip
+                                  (1.5, -1.), (0., -1.), (-1.5, -1.)] #Nine mosaic quadrants 36 x 24mm chip
                         if exposure['area'] in ['600', '600%', 600]:
-                            pitch = 0.1875  #0.375  Until Tim impements the option.
+                            pitch = 0.375  
                         if exposure['area'] in ['450', '450%', 450]:
                             pitch = 0.1875
                             pane = 0
+                    elif exposure['area'] in ['500', '500%',]:  # 4 or 5 exposures.  SQUARE
+                        step = 1.466667
+                        if block_specification['project']['project_constraints']['add_center_to_mosaic']:
+                            offset = [(0., 0.), (-1, 0.), (-1, step), (1, step), (1, 0), \
+                                      (1, -step), (-1, -step)] #Aimpoint + six mosaic quadrants 36 x 24mm chip
+                            pane = 0
+                        else:
+                            offset = [(-1, 0.), (-1, step),  (1, step), (1, 0), \
+                                      (1, -step), (-1, -step)] #Six mosaic quadrants 36 x 24mm chip  
+                            pane = 1
+                        pitch = 2*0.375
+                    elif exposure['area'] in ['+SQ', '133%']:  # 2 exposures.  SQUARE
+                        step = 1
+                        offset = [(-1, 0.), (1, 0)] #Two mosaic steps 36 x 24mm chip  Square
+                        pane = 1
+                        pitch = 2*0.125
                     else:
                         offset = [(0., 0.)] #Zero(no) mosaic offset
                         pitch = 0.
