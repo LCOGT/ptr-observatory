@@ -198,6 +198,7 @@ class Sequencer:
         elif action.lower() in ["stop", "cancel"]:
             self.stop_command(req, opt)
         elif action == "home":
+            breakpoint()
             self.home_command(req, opt)
         elif action == 'run' and script == 'calibrateAtFieldCenter':
             g_dev['mnt'].go_command(req, opt, calibrate=True)
@@ -544,7 +545,7 @@ class Sequencer:
                         if exposure['area'] in ['450', '450%', 450]:
                             pitch = 0.1875
                             pane = 0
-                    elif exposure['area'] in ['500', '500%',]:  # 4 or 5 exposures.  SQUARE
+                    elif exposure['area'] in ['500', '500%',]:  # 6 or 7 exposures.  SQUARE
                         step = 1.466667
                         if block_specification['project']['project_constraints']['add_center_to_mosaic']:
                             offset = [(0., 0.), (-1, 0.), (-1, step), (1, step), (1, 0), \
@@ -554,12 +555,12 @@ class Sequencer:
                             offset = [(-1, 0.), (-1, step),  (1, step), (1, 0), \
                                       (1, -step), (-1, -step)] #Six mosaic quadrants 36 x 24mm chip  
                             pane = 1
-                        pitch = 2*0.375
+                        pitch = .750
                     elif exposure['area'] in ['+SQ', '133%']:  # 2 exposures.  SQUARE
                         step = 1
-                        offset = [(-1, 0.), (1, 0)] #Two mosaic steps 36 x 24mm chip  Square
+                        offset = [(0, 1), (0, 1)] #Two mosaic steps 36 x 24mm chip  Square
                         pane = 1
-                        pitch = 2*0.125
+                        pitch = 0.25
                     else:
                         offset = [(0., 0.)] #Zero(no) mosaic offset
                         pitch = 0.
@@ -588,6 +589,7 @@ class Sequencer:
                             req = {'time': exp_time,  'alias':  str(self.config['camera']['camera1']['name']), 'image_type': imtype}   #  NB Should pick up filter and constants from config
                             opt = {'area': 150, 'count': 1, 'bin': binning, 'filter': color, \
                                    'hint': block['project_id'] + "##" + dest_name, 'pane': pane}
+                            print('Seq Blk sent to camera:  ', req, opt)
                             g_dev['cam'].expose_command(req, opt, gather_status=True, no_AWS=False)
                             count -= 1
                             exposure['count'] = count
