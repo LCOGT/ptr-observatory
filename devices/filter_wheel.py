@@ -65,6 +65,7 @@ class FilterWheel:
             #self.app.TelescopeConnected = True
             #print("Maxim Telescope Connected: ", self.app.TelescopeConnected)
             print('Filter control is via Maxim filter interface.')
+            print("Initial filter reported is:  ", self.filter.Filter)
             self.maxim = True
             self.ascom = False
             self.dual = False
@@ -286,7 +287,7 @@ class FilterWheel:
         print('Filter pointer:  ', filt_pointer)
         self.filter_number = filt_pointer
         self.filter_selected = filter_name
-        filter_selections = self.filter_data[filt_pointer][1]   # eliminated eval with config format to Python values.
+        filter_selections = self.filter_data[filt_pointer][1]
         print('Selections:  ', filter_selections)
         self.filter_offset = float(self.filter_data[filt_pointer][2])
         if self.dual:

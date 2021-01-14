@@ -12,6 +12,7 @@ from astropy.io import fits
 import sep
 import glob
 import shelve
+from pprint import pprint
 
 #from os.path import join, dirname, abspath
 
@@ -1094,6 +1095,7 @@ class Camera:
                     hdu.header['EXPOSURE'] = exposure_time   #Ideally this needs to be calculated from actual times
                     hdu.header['FILTER ']  = self.current_filter  # NB this should read from the wheel!
                     hdu.header['FILTEROF'] = self.current_offset
+                    hdu.header['FILTRNUM'] = g_dev['fil'].filter.Filter  #Get a number from the hardware or via Maxim.
                     hdu.header['IMAGETYP'] = frame_type   #This report is fixed and it should vary...NEEDS FIXING!
                     if g_dev['scr'] is not None and frame_type == 'screen flat':
                         hdu.header['SCREEN']   = int(g_dev['scr'].bright_setting)
@@ -1115,7 +1117,7 @@ class Camera:
                     hdu.header['PEDASTAL'] = -pedastal
                     hdu.header['ERRORVAL'] = 0
                     hdu.header['OVERSCAN'] = overscan
-                    hdu.header['PATCH']    = bi_mean    #  A crude value for the central exposure
+                    hdu.header['PATCH']    = bi_mean - pedastal    #  A crude value for the central exposure
                     hdu.header['IMGAREA' ] = opt['area']
                     hdu.header['CCDSUM']   = self.ccd_sum
                     hdu.header['XORGSUBF'] = self.camera_start_x    #This makes little sense to fix...  NB ALL NEEDS TO COME FROM CONFIG!!
