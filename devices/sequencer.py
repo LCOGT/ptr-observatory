@@ -555,10 +555,10 @@ class Sequencer:
                             offset = [(-1, 0.), (-1, step),  (1, step), (1, 0), \
                                       (1, -step), (-1, -step)] #Six mosaic quadrants 36 x 24mm chip  
                             pane = 1
-                        pitch = .750
+                        pitch = .375
                     elif exposure['area'] in ['+SQ', '133%']:  # 2 exposures.  SQUARE
                         step = 1
-                        offset = [(0, 1), (0, 1)] #Two mosaic steps 36 x 24mm chip  Square
+                        offset = [(0, -1), (0, 1)] #Two mosaic steps 36 x 24mm chip  Square
                         pane = 1
                         pitch = 0.25
                     else:
