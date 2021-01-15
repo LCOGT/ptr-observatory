@@ -520,6 +520,7 @@ class Mount:
                 #need to get the ICRS telescope position
                 ra, dec = ra_dec_fix(icrs_ra + self.ra_offset, icrs_dec + self.dec_offset)
             elif calibrate:  #Note does not need req or opt
+                breakpoint()
                 if self.offset_received:
                     ra_cal_off, dec_cal_off = self.get_mount_ref()
                     ra_cal_off += self.ra_offset
