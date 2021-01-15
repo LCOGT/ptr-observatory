@@ -68,7 +68,6 @@ class Focuser:
         self.last_known_focus = None
         self.last_temperature = None
         self.last_source = None
-        breakpoint()
         try:   #  NB NB NB This mess neads cleaning up.
             try:
                 self.last_temperature = self.focuser.Temperature
