@@ -452,13 +452,20 @@ class Sequencer:
 
             for exposure in block['project']['exposures']:
                 multiplex = 0
-                if exposure['area'] in ['300', '300%', 300, '220', '220%', 220, '150', '150%', 150]:
+                if exposure['area'] in ['300', '300%', 300, '220', '220%', 220, '150', '150%', 250, '250', '250%', 150]:
                     if block_specification['project']['project_constraints']['add_center_to_mosaic']:
                         multiplex = 5
                     else:
                         multiplex = 4
-                if exposure['area'] in ['600', '600%', 600]:
+                if exposure['area'] in ['600', '600%', 600, '450', '450%', 450]:
                     multiplex = 9
+                if exposure['area'] in ['500', '500%', 500]:
+                    if block_specification['project']['project_constraints']['add_center_to_mosaic']:
+                        multiplex = 7
+                    else:
+                        multiplex = 6
+                if exposure['area'] in ['+SQ', '133%']:
+                    multiplex = 2
                 if multiplex > 1:
                     left_to_do += int(exposure['count'])*multiplex
                     exposure['count'] = int(exposure['count'])*multiplex  #Do not multiply the count string value as a dict entry!
@@ -473,7 +480,9 @@ class Sequencer:
             while left_to_do > 0 and not ended:
                 if initial_focus:
                     if not g_dev['enc'].shutter_is_closed:
-                        self.auto_focus_script(req2, opt, throw = 500)   #coarse_focus_script can be used here
+                        self.auto_focus_script(req2, opt, throw = 500)
+                    else:
+                        print('Shutter closed, skipping AF cycle.0')  #coarse_focus_script can be used here
                     just_focused = True
                     initial_focus = False    #  Make above on-time event per block
                     timer = time.time() + 1800   #10 min for debugging
@@ -485,6 +494,8 @@ class Sequencer:
                         
                         if not g_dev['enc'].shutter_is_closed:
                             self.auto_focus_script(req2, opt, throw = 500)
+                        else:
+                            print('Shutter closed, skipping AF cycle.0')
                         initial_focus = False
                         just_focused = True
                         timer = time.time() + 1800   #30 minutes to refocus
@@ -561,7 +572,7 @@ class Sequencer:
                         step = 1
                         offset = [(0, -1), (0, 1)] #Two mosaic steps 36 x 24mm chip  Square
                         pane = 1
-                        pitch = 0.25
+                        pitch = 0.125
                     else:
                         offset = [(0., 0.)] #Zero(no) mosaic offset
                         pitch = 0.
@@ -1622,7 +1633,7 @@ IF sweep
     def is_in_completes(self, check_block_id):
         camera = self.config['camera']['camera1']['name']
         seq_shelf = shelve.open(g_dev['cam'].site_path + 'ptr_night_shelf/' + camera)
-        print('Completes contains:  ', seq_shelf['completed_blocks'])
+        #print('Completes contains:  ', seq_shelf['completed_blocks'])
         if check_block_id in seq_shelf['completed_blocks']:
             seq_shelf.close()
             return True
