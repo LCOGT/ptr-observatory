@@ -490,6 +490,14 @@ class Mount:
     ###############################
     #        Mount Commands       #
     ###############################
+    
+    '''
+    Having two similar functions here is consing and error prone.
+    Go Command responds to commands from AWS.  Go Coords responds to
+    internal changes of pointing occasion by the program and passed
+    in as ra and dec direc tparameters, not dictionaries.
+    
+    '''
 
     def go_command(self, req, opt,  offset=False, calibrate=False):
         ''' Slew to the given ra/dec coordinates. '''
@@ -504,6 +512,7 @@ class Mount:
             icrs_ra, icrs_dec = self.get_mount_coordinates() 
             if offset:   #This offset version supplies offsets as a fraction of the Full field.
                 #note it is based on mount coordinates.
+                #Note we never look up the req dictionary ra or dec.
                 offset_x = float(req['image_x']) - 0.5   #Fraction of field.
                 offset_y = float(req['image_y']) - 0.5
                 if self.site == 'saf':
@@ -520,22 +529,23 @@ class Mount:
                 #need to get the ICRS telescope position
                 ra, dec = ra_dec_fix(icrs_ra + self.ra_offset, icrs_dec + self.dec_offset)
             elif calibrate:  #Note does not need req or opt
-                breakpoint()
                 if self.offset_received:
                     ra_cal_off, dec_cal_off = self.get_mount_ref()
+                    print("Stored calibration offsets:  ",round(ra_cal_off, 5), round(dec_cal_off, 4))
                     ra_cal_off += self.ra_offset
                     dec_cal_off += self.dec_offset
                     self.set_mount_ref(ra_cal_off, dec_cal_off)
                     self.ra_offset = 0
                     self.dec_offset = 0
                     self.offset_received = False
-                    icrs_ra, icrs_dec = self.get_mount_coordinates()
+                    icrs_ra, icrs_dec = self.get_mount_coordinates()  #20210116 THis is returning some form of apparent
                     ra = icrs_ra
                     dec = icrs_dec
                     #We could just return but will seek just to be safe
                 else:
                     print("No outstanding offset available for calibration, reset existing calibration.")
                     # NB We currently use this path to clear a calibration.  But should be ad explicit Command instead. 20201230
+                    breakpoint()
                     self.reset_mount_ref()
                     self.ra_offset = 0
                     self.dec_offset = 0
@@ -546,6 +556,7 @@ class Mount:
 
                     #We could just return but will seek just to be safe
             else:
+                'Here we DO read the req dictiary ra and Dec.'
                 ra = float(req['ra'])
                 dec = float(req['dec'])
                 self.ra_offset = 0
