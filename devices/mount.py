@@ -470,9 +470,10 @@ class Mount:
             self.unpark_command(req, opt)
         elif action == 'center_on_pixels':
             print (command)
-            self.go_command(req, opt, offset=True)
+            self.go_command(req, opt, offset=True, calibrate=False)
         elif action == 'calibrateAtFieldCenter':
             print (command)
+            breakpoint()
             self.go_command(req, opt, calibrate=True)
         elif action == 'sky_flat_position':
             self.slewToSkyFlatAsync()
@@ -513,6 +514,7 @@ class Mount:
             if offset:   #This offset version supplies offsets as a fraction of the Full field.
                 #note it is based on mount coordinates.
                 #Note we never look up the req dictionary ra or dec.
+                breakpoint()
                 offset_x = float(req['image_x']) - 0.5   #Fraction of field.
                 offset_y = float(req['image_y']) - 0.5
                 if self.site == 'saf':
@@ -529,10 +531,11 @@ class Mount:
                 #need to get the ICRS telescope position
                 ra, dec = ra_dec_fix(icrs_ra + self.ra_offset, icrs_dec + self.dec_offset)
             elif calibrate:  #Note does not need req or opt
+                breakpoint()
                 if self.offset_received:
                     ra_cal_off, dec_cal_off = self.get_mount_ref()
                     print("Stored calibration offsets:  ",round(ra_cal_off, 5), round(dec_cal_off, 4))
-                    ra_cal_off += self.ra_offset
+                    ra_cal_off -= self.ra_offset
                     dec_cal_off += self.dec_offset
                     self.set_mount_ref(ra_cal_off, dec_cal_off)
                     self.ra_offset = 0
