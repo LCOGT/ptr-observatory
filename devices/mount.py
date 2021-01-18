@@ -518,7 +518,7 @@ class Mount:
                 #Note we never look up the req dictionary ra or dec.
                 if self.offset_received:
                     print("This is a second offset, are you sure you want to do this?")
-                breakpoint()
+                #
                 offset_x = float(req['image_x']) - 0.5   #Fraction of field.
                 offset_y = float(req['image_y']) - 0.5
                 if self.site == 'saf':
@@ -539,28 +539,28 @@ class Mount:
                 #Set up to go to the new position.
                 ra, dec = ra_dec_fix(icrs_ra + self.ra_offset, icrs_dec + self.dec_offset)
             elif calibrate:  #Note does not need req or opt
-                breakpoint()
+                #breakpoint()
                 if self.offset_received:
-                    breakpoint()
+                    #breakpoint()
                     ra_cal_off, dec_cal_off = self.get_mount_ref()
                     print("Stored calibration offsets:  ",round(ra_cal_off, 5), round(dec_cal_off, 4))
                     icrs_ra, icrs_dec = self.get_mount_coordinates()
                     accum_ra_offset = icrs_ra - self.ra_prior
                     accum_dec_offset = icrs_dec - self.dec_prior
-                    ra_cal_off += accum_ra_offset #self.ra_offset  #NB WE are adding an already correctly signed offset.The offset is positive to right of screen therefore a smaller numer on the RA line.
+                    ra_cal_off -= accum_ra_offset #self.ra_offset  #NB WE are adding an already correctly signed offset.The offset is positive to right of screen therefore a smaller numer on the RA line.
                     dec_cal_off += accum_dec_offset #self.dec_offset
                     self.set_mount_ref(ra_cal_off, dec_cal_off)
                     self.ra_offset = 0
                     self.dec_offset = 0
                     self.offset_received = False
                     icrs_ra, icrs_dec = self.get_mount_coordinates()  #20210116 THis is returning some form of apparent
-                    ra = icrs_ra
-                    dec = icrs_dec
+                    ra = self.ra_prior #icrs_ra
+                    dec = self.dec_prior #icrs_dec
                     #We could just return but will seek just to be safe
                 else:
                     print("No outstanding offset available for calibration, reset existing calibration.")
                     # NB We currently use this path to clear a calibration.  But should be ad explicit Command instead. 20201230
-                    breakpoint()
+                    #breakpoint()
                     self.reset_mount_ref()
                     self.ra_offset = 0
                     self.dec_offset = 0
