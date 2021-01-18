@@ -16,7 +16,7 @@ The missing thing is mount management is more uniform treatement of the frame of
 solutions provided.  This is probably a WER task to sort out.  From the AWS user point of view we want to start with Modern
 catalog positions, nominally ICRS, particularly as realized by the current GAIA release.  Other objects (Messier) as an example
 we always try to go through Strassbourg to get coordinates.  Updates to those happen but they are carefully vetted.  We can
-start with nominal poblished catalogs whihc generally give names, Ra and dec, Season, mag etc but update them IFF the
+start with nominal published catalogs which generally give names, Ra and dec, Season, mag etc but update them IFF the
 Strassborug data is more current.  Star charts are harder.  But there is some new stuff in the Pixinsight realse we might
 want to take advantage of.
 
@@ -144,8 +144,10 @@ class Mount:
         else:
             print(" Auxillary Tel/OTA connected.")
         print(self.mount.Description)
-        #breakpoint()
-        #self.reset_mount_ref()
+        self.ra_offset = 0
+        self.dec_offset = 0   #NB these shoudl alwys start off at zero.
+        breakpoint()
+        self.reset_mount_ref()
         try:
             ra1, dec1 = self.get_mount_ref()
         except:
@@ -514,6 +516,8 @@ class Mount:
             if offset:   #This offset version supplies offsets as a fraction of the Full field.
                 #note it is based on mount coordinates.
                 #Note we never look up the req dictionary ra or dec.
+                if self.offset_received:
+                    print("This is a second offset, are you sure you want to do this?")
                 breakpoint()
                 offset_x = float(req['image_x']) - 0.5   #Fraction of field.
                 offset_y = float(req['image_y']) - 0.5
@@ -523,20 +527,28 @@ class Mount:
                 else:
                     field_x = (2679/2563)*0.38213275235200206*2/15.   #2 accounts for binning, 15 for hours.
                     field_y = (2679/2563)*0.2551300253995927*2
-                self.ra_offset = -offset_x*field_x/2   #NB NB 20201230 Signs needs to be verified.
-                self.dec_offset = offset_y*field_y/2
-                self.offset_received = True
+                self.ra_offset += -offset_x*field_x/2   #NB NB 20201230 Signs needs to be verified.
+                self.dec_offset += offset_y*field_y/2
+                if not self.offset_received:
+                    self.ra_prior, self.dec_prior = icrs_ra, icrs_dec #Do not let this change.
+                self.offset_received = True   # NB Above we are accumulating offsets, but should not need to.
                 #NB NB Position angle may need to be taken into account 20201230
                 #apply this to the current telescope position(which may already incorporate a calibration)
-                #need to get the ICRS telescope position
+                #need to get the ICRS telescope position.
+                
+                #Set up to go to the new position.
                 ra, dec = ra_dec_fix(icrs_ra + self.ra_offset, icrs_dec + self.dec_offset)
             elif calibrate:  #Note does not need req or opt
                 breakpoint()
                 if self.offset_received:
+                    breakpoint()
                     ra_cal_off, dec_cal_off = self.get_mount_ref()
                     print("Stored calibration offsets:  ",round(ra_cal_off, 5), round(dec_cal_off, 4))
-                    ra_cal_off -= self.ra_offset
-                    dec_cal_off += self.dec_offset
+                    icrs_ra, icrs_dec = self.get_mount_coordinates()
+                    accum_ra_offset = icrs_ra - self.ra_prior
+                    accum_dec_offset = icrs_dec - self.dec_prior
+                    ra_cal_off += accum_ra_offset #self.ra_offset  #NB WE are adding an already correctly signed offset.The offset is positive to right of screen therefore a smaller numer on the RA line.
+                    dec_cal_off += accum_dec_offset #self.dec_offset
                     self.set_mount_ref(ra_cal_off, dec_cal_off)
                     self.ra_offset = 0
                     self.dec_offset = 0
@@ -554,8 +566,8 @@ class Mount:
                     self.dec_offset = 0
                     self.offset_received = False
                     icrs_ra, icrs_dec = self.get_mount_coordinates()
-                    ra = icrs_ra
-                    dec = icrs_dec
+                    ra = self.ra_prior #icrs_ra
+                    dec = self.dec_prior #icrs_dec
 
                     #We could just return but will seek just to be safe
             else:
