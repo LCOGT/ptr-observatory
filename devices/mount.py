@@ -529,6 +529,7 @@ class Mount:
                     field_y = (2679/2563)*0.2551300253995927*2
                 self.ra_offset += -offset_x*field_x/2   #NB NB 20201230 Signs needs to be verified.
                 self.dec_offset += offset_y*field_y/2
+                print("Offsets:  ", round(self.ra_offset, 5), round(self.dec_offset, 4))
                 if not self.offset_received:
                     self.ra_prior, self.dec_prior = icrs_ra, icrs_dec #Do not let this change.
                 self.offset_received = True   # NB Above we are accumulating offsets, but should not need to.
