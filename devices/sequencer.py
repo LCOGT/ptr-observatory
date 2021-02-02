@@ -770,7 +770,8 @@ class Sequencer:
         #  NB Sometime, try 2:2 binning and interpolate a 1:1 flat.  This might run a lot faster.
         if flat_count < 1: flat_count = 1
         g_dev['mnt'].unpark_command({}, {})
-        if g_dev['enc'].is_dome:
+        g_dev['mnt'].slewToSkyFlatAsync()
+        if g_dev['enc'].is_dome and not g_dev['enc'].mode == 'Automatic':
             g_dev['enc'].Slaved = True  #Bring the dome into the picture.
             print('\n\n SLAVED THE DOME HOPEFULLY!!!!\n\n')
         g_dev['obs'].update_status()

@@ -32,6 +32,10 @@ from devices.darkslide import Darkslide
 #string  = \\HOUSE-COMPUTER\saf_archive_2\archive
 
 """
+
+Camera note 20210131.  IF the QHY ASCOM driver is reloaded or updated use ASCOM
+Diagnostics to reesablish the camera binding.
+
 Camera note 20200427.
 
 The goal is refactor this module so we use class attributes more and do not carry them
@@ -972,7 +976,7 @@ class Camera:
                         square = trimmed
 
                     else:
-                        breakpoint()
+                        breakpoint()  #Usually a super saturated image get us here.
         
                     # if full:
                     #     square = trimmed
