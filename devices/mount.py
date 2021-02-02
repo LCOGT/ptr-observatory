@@ -229,14 +229,17 @@ class Mount:
 
         '''
         ra_cal_off, dec_cal_off = self.get_mount_ref()   #Get from shelf.
+        if ra_cal_off or dec_cal_off:
+            #breakpoint()
+            pass
         pier_east = 0    # == 0  self.flip_correction_needed
         if self. mount.EquatorialSystem == 1:
             self.get_current_times()
-            jnow_ra = self.mount.RightAscension - ra_cal_off    # NB the offsets and corrections are subtracted.
-            jnow_dec = self.mount.Declination - dec_cal_off
+            jnow_ra = self.mount.RightAscension + ra_cal_off    # NB the offsets are added here.
+            jnow_dec = self.mount.Declination + dec_cal_off
             if self.mount.sideOfPier == pier_east \
                 and self.flip_correction_needed:
-                jnow_ra -=  self.east_ra_correction   #Brought in from local calib.py file
+                jnow_ra -=  self.east_ra_correction   #Brought in from local calib.py file correction is subtracted.
                 jnow_dec -= self.east_dec_correction
             jnow_ra, jnow_dec = ra_dec_fix(jnow_ra, jnow_dec)
             jnow_coord = SkyCoord(jnow_ra*u.hour, jnow_dec*u.degree, frame='fk5', \
@@ -548,7 +551,7 @@ class Mount:
                     icrs_ra, icrs_dec = self.get_mount_coordinates()
                     accum_ra_offset = icrs_ra - self.ra_prior
                     accum_dec_offset = icrs_dec - self.dec_prior
-                    ra_cal_off -= accum_ra_offset #self.ra_offset  #NB WE are adding an already correctly signed offset.The offset is positive to right of screen therefore a smaller numer on the RA line.
+                    ra_cal_off += accum_ra_offset #self.ra_offset  #NB WE are adding an already correctly signed offset.The offset is positive to right of screen therefore a smaller numer on the RA line.
                     dec_cal_off += accum_dec_offset #self.dec_offset
                     self.set_mount_ref(ra_cal_off, dec_cal_off)
                     self.ra_offset = 0
@@ -561,7 +564,7 @@ class Mount:
                 else:
                     print("No outstanding offset available for calibration, reset existing calibration.")
                     # NB We currently use this path to clear a calibration.  But should be ad explicit Command instead. 20201230
-                    #breakpoint()
+                    # breakpoint()
                     self.reset_mount_ref()
                     self.ra_offset = 0
                     self.dec_offset = 0
@@ -575,7 +578,7 @@ class Mount:
                 'Here we DO read the req dictiary ra and Dec.'
                 ra = float(req['ra'])
                 dec = float(req['dec'])
-                self.ra_offset = 0
+                self.ra_offset = 0  #NB Not adding in self.ra_offset is correct unless a Calibrate occured.
                 self.dec_offset = 0
                 self.offset_received = False
         except:

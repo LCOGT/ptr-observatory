@@ -556,7 +556,7 @@ class Sequencer:
                             pitch = 0.375  
                         if exposure['area'] in ['450', '450%', 450]:
                             pitch = 0.1875
-                            pane = 0
+                        pane = 0
                     elif exposure['area'] in ['500', '500%',]:  # 6 or 7 exposures.  SQUARE
                         step = 1.466667
                         if block_specification['project']['project_constraints']['add_center_to_mosaic']:
@@ -580,7 +580,7 @@ class Sequencer:
                     for displacement in offset:
                         if g_dev['cam_retry_config']['site'] == 'saf':
                             d_ra = displacement[0]*pitch*(0.5751*4784/3600./15.)  # 0.764243 deg = 0.0509496 Hours  These and pixscale should be computed in config.
-                            d_dec = displacement[1]*pitch*(0.5751*3194/3600)  # = 0.0.5102414999999999   #Deg
+                            d_dec = displacement[1]*pitch*(0.5751*3194/3600)  # = 0.5102414999999999   #Deg
                         elif g_dev['cam_retry_config']['site'] == 'wmd':
                             d_ra = displacement[0]*pitch*(0.6052*4784/3600./15.)   #0.804243 deg Hours  These and pixscale should be computed in config.
                             d_dec = displacement[1]*pitch*(0.6052*3194/3600)   #0.536946Deg
@@ -597,6 +597,7 @@ class Sequencer:
                         if not just_focused:
                             g_dev['foc'].adjust_focus()
                         just_focused = False
+
                         if imtype in ['light'] and count > 0:
                             req = {'time': exp_time,  'alias':  str(self.config['camera']['camera1']['name']), 'image_type': imtype}   #  NB Should pick up filter and constants from config
                             opt = {'area': 150, 'count': 1, 'bin': binning, 'filter': color, \
@@ -769,7 +770,8 @@ class Sequencer:
         #  NB Sometime, try 2:2 binning and interpolate a 1:1 flat.  This might run a lot faster.
         if flat_count < 1: flat_count = 1
         g_dev['mnt'].unpark_command({}, {})
-        if g_dev['enc'].is_dome:
+        g_dev['mnt'].slewToSkyFlatAsync()
+        if g_dev['enc'].is_dome and not g_dev['enc'].mode == 'Automatic':
             g_dev['enc'].Slaved = True  #Bring the dome into the picture.
             print('\n\n SLAVED THE DOME HOPEFULLY!!!!\n\n')
         g_dev['obs'].update_status()
@@ -1650,6 +1652,36 @@ IF sweep
         return 
 
 
-
+    chip_x =0.764243
+    chip_y = 0.5102414
+    def tile_field(field_x, field_y, chip_x, chip_y, overlap=10):
+        trial_x = field_x/(chip_x* (100 - abs(overlap))/100)
+        trial_y = field_y/(chip_y* (100 - abs(overlap))/100)
+        proposed_x = round(trial_x + 0.25, 0)
+        proposed_y = round(trial_y + 0.25, 0)
+        span_x = chip_x*proposed_x
+        span_y = chip_y*proposed_y
+        over_span_x = span_x - field_x
+        over_span_y = span_y - field_y
+        span_y = chip_y*proposed_y
+        if proposed_x - 1 >= 1:
+            x_overlap = over_span_x/(proposed_x - 1)
+        else:
+            x_overlap =(field_x - span_x)/2
+        if proposed_y - 1 >=  1:
+            y_overlap = over_span_y/(proposed_y - 1)
+        else:            
+            y_overlap =(field_y - span_y)/2
+        if 0 <= x_overlap  < overlap/100:
+            proposed_x += 1
+            span_x = chip_x*proposed_x
+            over_span_x = span_x - field_x
+            x_overlap = over_span_x/(proposed_x - 1)
+        if 0 <= y_overlap < overlap/100:
+            proposed_y += 1
+            span_y = chip_y*proposed_y
+            over_span_y = span_y - field_y
+            y_overlap = over_span_y/(proposed_y - 1)          
+        return(proposed_x, proposed_y, x_overlap, y_overlap)
 
 

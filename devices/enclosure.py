@@ -47,6 +47,7 @@ class Enclosure:
         self.dome_homed = False
         self.cycles = 0
         self.prior_status = None
+        self.time_of_next_slew = time.time()
         
 
     def get_status(self) -> dict:
@@ -172,7 +173,7 @@ class Enclosure:
     def close_command(self, req: dict, opt: dict):
         ''' close the enclosure '''
         self.manager(close_cmd=True)
-        print("enclosure cmd: close.   FAKE REPORT!  Manual opening outside of obs hours not supported.")
+        print("enclosure cmd: close.")
         self.dome_open = False
         self.dome_home = True
         pass
@@ -238,8 +239,21 @@ class Enclosure:
 
 
         #  NB NB First deal with the possible observing window being available or not.
+        #  THis routine basically opens and keeps dome opposite the sun. Whether system
+        #  takes sky flats or not is determined by the scheduler or calendar.  Mounting
+        #  could be parked.
+        
+        #  At opposite end of night we will only open for morning skyflats if system
+        #  bserverved for some specified time??
+        
+        if (ephemNow < g_dev['events']['Ops Window Start'] or ephemNow > g_dev['events']['Ops Window Closes']) \
+            and self.mode == 'Automatic':
+            #We want to force  closure but not bang on the dome agent too hard.
+            breakpoint()
+            pass
+                        
 
-        if  g_dev['events']['Ops Window Start'] <= ephemNow <= g_dev['events']['Sun Rise']:
+        elif g_dev['events']['Ops Window Start'] <= ephemNow <= g_dev['events']['Sun Rise']:
             #  We are now in the full operational window.
             if g_dev['events']['Ops Window Start'] <= ephemNow <= g_dev['events']['Sun Set'] \
                 and self.mode == 'Automatic' and not wx_hold:
@@ -251,24 +265,23 @@ class Enclosure:
                     self.dome_opened = True
                     self.dome_homed = True
                 if self.status_string.lower() in ['open']:    #WE found it open.
-                    if self.is_dome:
+                    if self.is_dome and time.time() >= self.time_of_next_slew:
                         try:
                             self.enclosure.SlewToAzimuth(az_opposite_sun)
+                            print("Now slewing to an azimuth opposite the Sun.")
+                            dome_homed = False
+                            self.time_of_next_slew = time.time() + 15
                         except:
-                            pass
-                        self.dome_homed = False
+                            breakpoint()
+                        
                     else:
                         self.dome_homed = False
-                # else:
-                #     if self.status_string.lower() in ['closed']:    #, 'closing']:
-                #         try:
-                #             self.guarded_open()
-                #             self.dome_opened = True
-                #             self.dome_homed = True
-                #         except:
-                #             pass      #If this faults next pass should pick it up.
+            
+             
 
-
+        #  This routine basically opens and keeps dome opposite the sun. Whether system
+        #  takes images or not is determined by the scheduler or calendar.  Azimuth meant
+        #  to be determined by that of the telescope.
 
             if (obs_win_begin < ephemNow < sunrise or open_cmd) \
                     and self.mode == 'Automatic' \
