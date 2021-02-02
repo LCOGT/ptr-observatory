@@ -257,7 +257,7 @@ class ObservingConditions:
         #  Note we are now in WMD specific code.
         elif self.site == 'wmd' or self.site == 'wmd2':
             try:
-                # breakpoint()
+                #breakpoint()
                 # pass
                 wx = eval(self.redis_server.get('<ptr-wx-1_state'))
                 illum = float(wx["illum lux"])

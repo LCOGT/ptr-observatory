@@ -132,7 +132,7 @@ def calibrate (hdu, lng_path, frame_type='light', quick=False):
         screen_flat_O3, screen_flat_HA, screen_flat_N2, screen_flat_S2, screen_flat_EXO, screen_flat_air, \
         dark_exposure_level, super_dark_2_long, dark_2_exposure_level
     loud = False
-
+    breakpoint()
     #This needs to deal with caching different binnings as well.  And do we skip all this for a quick
     if not quick:
         if super_bias is None:

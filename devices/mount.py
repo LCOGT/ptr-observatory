@@ -146,8 +146,8 @@ class Mount:
         print(self.mount.Description)
         self.ra_offset = 0
         self.dec_offset = 0   #NB these shoudl alwys start off at zero.
-        breakpoint()
-        self.reset_mount_ref()
+        #breakpoint()
+        #self.reset_mount_ref()
         try:
             ra1, dec1 = self.get_mount_ref()
         except:
