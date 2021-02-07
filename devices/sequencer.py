@@ -491,7 +491,7 @@ class Sequencer:
                 #cycle thrugh exposures decrementing counts    MAY want to double check left-to do but do nut remultiply by 4
                 for exposure in block['project']['exposures']:
                     if block_specification['project']['project_constraints']['frequent_autofocus'] == True and (time.time() - timer) >= 0:
-                        
+                        #What purpose does this code serve, it appears to be a debug remnant? WER 20200206
                         if not g_dev['enc'].shutter_is_closed:
                             self.auto_focus_script(req2, opt, throw = 500)
                         else:
@@ -579,8 +579,8 @@ class Sequencer:
                         pane = 0
                     for displacement in offset:
                         if g_dev['cam_retry_config']['site'] == 'saf':
-                            d_ra = displacement[0]*pitch*(0.5751*4784/3600./15.)  # 0.764243 deg = 0.0509496 Hours  These and pixscale should be computed in config.
-                            d_dec = displacement[1]*pitch*(0.5751*3194/3600)  # = 0.5102414999999999   #Deg
+                            d_ra = displacement[0]*pitch*(1.077*4784/3600./15.)  # 0.764243 deg = 0.0509496 Hours  These and pixscale should be computed in config.
+                            d_dec = displacement[1]*pitch*(1.077*3194/3600)  # = 0.5102414999999999   #Deg
                         elif g_dev['cam_retry_config']['site'] == 'wmd':
                             d_ra = displacement[0]*pitch*(0.6052*4784/3600./15.)   #0.804243 deg Hours  These and pixscale should be computed in config.
                             d_dec = displacement[1]*pitch*(0.6052*3194/3600)   #0.536946Deg

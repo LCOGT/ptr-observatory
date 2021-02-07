@@ -267,9 +267,10 @@ class Enclosure:
                 if self.status_string.lower() in ['open']:    #WE found it open.
                     if self.is_dome and time.time() >= self.time_of_next_slew:
                         try:
+                            breakpoint()
                             self.enclosure.SlewToAzimuth(az_opposite_sun)
                             print("Now slewing to an azimuth opposite the Sun.")
-                            dome_homed = False
+                            self.dome_homed = False
                             self.time_of_next_slew = time.time() + 15
                         except:
                             breakpoint()
