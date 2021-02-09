@@ -150,8 +150,10 @@ class Mount:
         #self.reset_mount_ref()
         try:
             ra1, dec1 = self.get_mount_ref()
+            print("Mount reference:  ", ra1 ,dec1)
         except:
-            self.reset_mount_ref()
+            print("No mount ref found.")
+            pass
 
         #NB THe paddle needs a re-think and needs to be cast into its own thread. 20200310 WER
         if self.has_paddle:
@@ -235,8 +237,8 @@ class Mount:
         pier_east = 0    # == 0  self.flip_correction_needed
         if self. mount.EquatorialSystem == 1:
             self.get_current_times()
-            jnow_ra = self.mount.RightAscension + ra_cal_off    # NB the offsets are added here.
-            jnow_dec = self.mount.Declination + dec_cal_off
+            jnow_ra = self.mount.RightAscension - ra_cal_off    # NB the mnt_refs are subtracted here.
+            jnow_dec = self.mount.Declination - dec_cal_off
             if self.mount.sideOfPier == pier_east \
                 and self.flip_correction_needed:
                 jnow_ra -=  self.east_ra_correction   #Brought in from local calib.py file correction is subtracted.
@@ -589,6 +591,9 @@ class Mount:
         # Tracking rate offsets from sidereal in arcseconds per SI second, default = 0.0
         tracking_rate_ra = opt.get('tracking_rate_ra', 0)
         tracking_rate_dec = opt.get('tracking_rate_dec', 0)
+        delta_ra, delta_dec =self.get_mount_ref()
+        #breakpoint()
+        ra, dec = ra_dec_fix(ra + delta_ra, dec + delta_dec)   #Plus compensates for measured offset
         self.go_coord(ra, dec, tracking_rate_ra=tracking_rate_ra, tracking_rate_dec=tracking_rate_dec)
         self.object = opt.get("object", "")
         if self.object == "":
