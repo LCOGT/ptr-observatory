@@ -145,7 +145,7 @@ class Mount:
             print(" Auxillary Tel/OTA connected.")
         print(self.mount.Description)
         self.ra_offset = 0
-        self.dec_offset = 0   #NB these shoudl alwys start off at zero.
+        self.dec_offset = 0   #NB these should always start off at zero.
         #breakpoint()
         #self.reset_mount_ref()
         try:
@@ -524,12 +524,10 @@ class Mount:
                 #
                 offset_x = float(req['image_x']) - 0.5   #Fraction of field.
                 offset_y = float(req['image_y']) - 0.5
-                if self.site == 'saf':
-                    field_x = 0.38213275235200206*2/15.   #2 accounts for binning, 15 for hours.
-                    field_y = 0.2551300253995927*2
-                else:
-                    field_x = (2679/2563)*0.38213275235200206*2/15.   #2 accounts for binning, 15 for hours.
-                    field_y = (2679/2563)*0.2551300253995927*2
+                x_field_deg = g_dev['cam'].config['camera']['camera1']['settings']['x_field_deg']
+                y_field_deg = g_dev['cam'].config['camera']['camera1']['settings']['y_field_deg']
+                field_x = x_field_deg/15.   #  /15 for hours.
+                field_y = y_field_deg
                 self.ra_offset += -offset_x*field_x/2   #NB NB 20201230 Signs needs to be verified.
                 self.dec_offset += offset_y*field_y/2
                 print("Offsets:  ", round(self.ra_offset, 5), round(self.dec_offset, 4))
