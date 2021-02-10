@@ -32,6 +32,10 @@ from devices.darkslide import Darkslide
 #string  = \\HOUSE-COMPUTER\saf_archive_2\archive
 
 """
+
+Camera note 20210131.  IF the QHY ASCOM driver is reloaded or updated use ASCOM
+Diagnostics to reesablish the camera binding.
+
 Camera note 20200427.
 
 The goal is refactor this module so we use class attributes more and do not carry them
@@ -972,7 +976,7 @@ class Camera:
                         square = trimmed
 
                     else:
-                        breakpoint()
+                        breakpoint()  #Usually a super saturated image get us here.
         
                     # if full:
                     #     square = trimmed
@@ -1187,10 +1191,13 @@ class Camera:
                     hdu.header['MNT-TRAK'] = avg_mnt['is_tracking']
                     if pier_side == 0:
                         hdu.header['PIERSIDE'] = 'Look West'
+                        pier_string = 'lw-'
                     elif pier_side == 1:
                         hdu.header['PIERSIDE'] = 'Look East'
+                        pier_string = 'le-'
                     else:
                         hdu.header['PIERSIDE'] = 'Undefined'
+                        pier_string = ''
                     hdu.header['IMGFLIP'] = False
                     hdu.header['OTA'] = ""
                     hdu.header['SELECTEL'] = "tel1"
@@ -1264,9 +1271,9 @@ class Camera:
                         next_seq  + '-' + im_type + '00.fits'
                     red_name01 = self.config['site'] + '-' + current_camera_name + '-' + g_dev['day'] + '-' + \
                         next_seq  + '-' + im_type + '01.fits'
-                    red_name01_lcl = red_name01[:-9] + self.current_filter +"-" + red_name01[-9:]
+                    red_name01_lcl = red_name01[:-9]+ pier_string + self.current_filter +"-" + red_name01[-9:]
                     if self.pane is not None:
-                        red_name01_lcl = red_name01_lcl[:-9] + 'p' + str(abs(self.pane)) + "-" + red_name01_lcl[-9:]
+                        red_name01_lcl = red_name01_lcl[:-9] + pier_string + 'p' + str(abs(self.pane)) + "-" + red_name01_lcl[-9:]
                     #Cal_ and raw_ names are confusing
                     i768sq_name = self.config['site'] + '-' + current_camera_name + '-' + g_dev['day'] + '-' + \
                         next_seq  + '-' + im_type + '10.fits'

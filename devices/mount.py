@@ -145,13 +145,15 @@ class Mount:
             print(" Auxillary Tel/OTA connected.")
         print(self.mount.Description)
         self.ra_offset = 0
-        self.dec_offset = 0   #NB these shoudl alwys start off at zero.
-        breakpoint()
-        self.reset_mount_ref()
+        self.dec_offset = 0   #NB these should always start off at zero.
+        #breakpoint()
+        #self.reset_mount_ref()
         try:
             ra1, dec1 = self.get_mount_ref()
+            print("Mount reference:  ", ra1 ,dec1)
         except:
-            self.reset_mount_ref()
+            print("No mount ref found.")
+            pass
 
         #NB THe paddle needs a re-think and needs to be cast into its own thread. 20200310 WER
         if self.has_paddle:
@@ -229,14 +231,17 @@ class Mount:
 
         '''
         ra_cal_off, dec_cal_off = self.get_mount_ref()   #Get from shelf.
+        if ra_cal_off or dec_cal_off:
+            #breakpoint()
+            pass
         pier_east = 0    # == 0  self.flip_correction_needed
         if self. mount.EquatorialSystem == 1:
             self.get_current_times()
-            jnow_ra = self.mount.RightAscension - ra_cal_off    # NB the offsets and corrections are subtracted.
+            jnow_ra = self.mount.RightAscension - ra_cal_off    # NB the mnt_refs are subtracted here.
             jnow_dec = self.mount.Declination - dec_cal_off
             if self.mount.sideOfPier == pier_east \
                 and self.flip_correction_needed:
-                jnow_ra -=  self.east_ra_correction   #Brought in from local calib.py file
+                jnow_ra -=  self.east_ra_correction   #Brought in from local calib.py file correction is subtracted.
                 jnow_dec -= self.east_dec_correction
             jnow_ra, jnow_dec = ra_dec_fix(jnow_ra, jnow_dec)
             jnow_coord = SkyCoord(jnow_ra*u.hour, jnow_dec*u.degree, frame='fk5', \
@@ -521,12 +526,10 @@ class Mount:
                 #
                 offset_x = float(req['image_x']) - 0.5   #Fraction of field.
                 offset_y = float(req['image_y']) - 0.5
-                if self.site == 'saf':
-                    field_x = 0.38213275235200206*2/15.   #2 accounts for binning, 15 for hours.
-                    field_y = 0.2551300253995927*2
-                else:
-                    field_x = (2679/2563)*0.38213275235200206*2/15.   #2 accounts for binning, 15 for hours.
-                    field_y = (2679/2563)*0.2551300253995927*2
+                x_field_deg = g_dev['cam'].config['camera']['camera1']['settings']['x_field_deg']
+                y_field_deg = g_dev['cam'].config['camera']['camera1']['settings']['y_field_deg']
+                field_x = x_field_deg/15.   #  /15 for hours.
+                field_y = y_field_deg
                 self.ra_offset += -offset_x*field_x/2   #NB NB 20201230 Signs needs to be verified.
                 self.dec_offset += offset_y*field_y/2
                 print("Offsets:  ", round(self.ra_offset, 5), round(self.dec_offset, 4))
@@ -548,7 +551,7 @@ class Mount:
                     icrs_ra, icrs_dec = self.get_mount_coordinates()
                     accum_ra_offset = icrs_ra - self.ra_prior
                     accum_dec_offset = icrs_dec - self.dec_prior
-                    ra_cal_off -= accum_ra_offset #self.ra_offset  #NB WE are adding an already correctly signed offset.The offset is positive to right of screen therefore a smaller numer on the RA line.
+                    ra_cal_off += accum_ra_offset #self.ra_offset  #NB WE are adding an already correctly signed offset.The offset is positive to right of screen therefore a smaller numer on the RA line.
                     dec_cal_off += accum_dec_offset #self.dec_offset
                     self.set_mount_ref(ra_cal_off, dec_cal_off)
                     self.ra_offset = 0
@@ -561,7 +564,7 @@ class Mount:
                 else:
                     print("No outstanding offset available for calibration, reset existing calibration.")
                     # NB We currently use this path to clear a calibration.  But should be ad explicit Command instead. 20201230
-                    #breakpoint()
+                    # breakpoint()
                     self.reset_mount_ref()
                     self.ra_offset = 0
                     self.dec_offset = 0
@@ -575,7 +578,7 @@ class Mount:
                 'Here we DO read the req dictiary ra and Dec.'
                 ra = float(req['ra'])
                 dec = float(req['dec'])
-                self.ra_offset = 0
+                self.ra_offset = 0  #NB Not adding in self.ra_offset is correct unless a Calibrate occured.
                 self.dec_offset = 0
                 self.offset_received = False
         except:
@@ -588,6 +591,9 @@ class Mount:
         # Tracking rate offsets from sidereal in arcseconds per SI second, default = 0.0
         tracking_rate_ra = opt.get('tracking_rate_ra', 0)
         tracking_rate_dec = opt.get('tracking_rate_dec', 0)
+        delta_ra, delta_dec =self.get_mount_ref()
+        #breakpoint()
+        ra, dec = ra_dec_fix(ra + delta_ra, dec + delta_dec)   #Plus compensates for measured offset
         self.go_coord(ra, dec, tracking_rate_ra=tracking_rate_ra, tracking_rate_dec=tracking_rate_dec)
         self.object = opt.get("object", "")
         if self.object == "":
