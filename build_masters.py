@@ -919,59 +919,78 @@ def open_ordered_file_list(archive_path, selector_string):
 
 
 def sep_image(camera_name, archive_path, selector_string, lng_path, out_path):
-    sorted_list = open_ordered_file_list(archive_path, selector_string)
-    #file_list.sort()
+    #sorted_list = open_ordered_file_list(archive_path, selector_string)
+    sorted_list = glob.glob(archive_path + selector_string)
+    sorted_list.sort()
     #print(file_list)
     print('# of files:  ', len(sorted_list))
     breakpoint()
     prior_img = None
-    final_jd = sorted_list[-1][0]
-    initial_jd = sorted_list[0][0]
-    dt_jd = (final_jd - initial_jd)  #seconds
-    dx = 136    # NB ultimately these should come from the data.
-    dy = 104
-    x_vel = dx/dt_jd
-    y_vel = dy/dt_jd
-    plot_x = []
-    plot_y = []
-    first_x = 0
-    first_y = 0
-    first_t = 0
+    # final_jd = sorted_list[-1][0]
+    # initial_jd = sorted_list[0][0]
+    # dt_jd = (final_jd - initial_jd)  #seconds
+    # dx = 136    # NB ultimately these should come from the data.
+    # dy = 104
+    # x_vel = dx/dt_jd
+    # y_vel = dy/dt_jd
+    # plot_x = []
+    # plot_y = []
+    # first_x = 0
+    # first_y = 0
+    # first_t = 0
     first = False
-    for entry in sorted_list[:-40]:
+    for entry in sorted_list:
         #print('Cataloging:  ', image)
-        img = fits.open(entry[1])
+        if 'stars' in entry:
+            continue
         try:
+            img = fits.open(entry)
             img_data = img[0].data.astype('float')
-            hh = int((img[0].header['DATE-OBS'][11:13]))
-            mm = int((img[0].header['DATE-OBS'][14:16]))
-            ss = float((img[0].header['DATE-OBS'][17:]))
-            jd = ss + 60*mm + 3600*hh
+            exposure = img[0].header['EXPTIME']
+            pfilter = img[0].header['FILTER']
+            pier = img[0].header['PIERSIDE']
+            tra = img[0].header['TARG-RA']
+            tdec = img[0].header['TARG-DEC']
+            apart = entry.split('-')
+            if tra> 6.5623 or tra <6.52214 or tdec < 4.5444 or tdec > 5.1396:
+                print ("out of range:  ", apart[3])
+                continue
+            if pier == 'Unknown' or pier == 'Look East':
+                pier = 'No Flip'
+            apart = entry.split('-')
+            # hh = int((img[0].header['DATE-OBS'][11:13]))
+            # mm = int((img[0].header['DATE-OBS'][14:16]))
+            # ss = float((img[0].header['DATE-OBS'][17:]))
+            # jd = ss + 60*mm + 3600*hh
+
             bkg = sep.Background(img_data)
             #bkg_rms = bkg.rms()
             img_data -= bkg
-            sources = sep.extract(img_data, 4.5, err=bkg.globalrms, minarea=15)#, filter_kernel=kern)
-            sources.sort(order = 'cflux')
-            #print('No. of detections:  ', len(sources))
-            sep_result = []
-            spots = []
-            for sourcea in sources[-1:]:
-                if not first:
-                    first_x = sourcea['x'] 
-                    first_y = sourcea['y']
-                    first_t = jd
-                    first = True
-                a0 = sourcea['a']
-                b0 = sourcea['b']
-                del_t_now = (jd - first_t)
-                #cx = 1064 + x_vel*del_t_now
-                #cy = 3742 + y_vel*del_t_now
-                #print("Shifts:  ", int(x_vel*del_t_now), int(y_vel*del_t_now), del_t_now)
-                #if cx - 60 < source['x'] < cx + 60  and cy - 60 < source['y'] < cy + 60:
-                    #sep_result.append([round(r0, 1), round((source['x']), 1), round((source['y']), 1), round((source['cflux']), 1), jd])
-                print(del_t_now, del_t_now//239.346, del_t_now%239.346, sourcea['x']-first_x, sourcea['y'] - first_y, sourcea['cflux'],len(sources), entry[1].split('\\')[1])
-                plot_x.append((sourcea['x'] - first_x)*0.26)
-                plot_y.append((sourcea['y'] - first_y)*0.26)
+            if bkg.globalrms > 3 and exposure >= 10 and not pfilter == 'air':
+                sources = sep.extract(img_data, 4.5, err=bkg.globalrms, minarea=15)#, filter_kernel=kern)
+                sources.sort(order = 'cflux')
+                #if apart[3] == '00006135':  breakpoint()
+                print('RMS, No. of detections:  ', apart[3], apart[4], apart[5], bkg.globalrms, len(sources), exposure, pier)
+            else:
+                print("Low RMS, Skipped:  ", apart[3], apart[4], apart[5], bkg.globalrms, len(sources), exposure)
+            # spots = []
+            # for sourcea in sources[-1:]:
+            #     if not first:
+            #         first_x = sourcea['x'] 
+            #         first_y = sourcea['y']
+            #         first_t = jd
+            #         first = True
+            #     a0 = sourcea['a']
+            #     b0 = sourcea['b']
+            #     del_t_now = (jd - first_t)
+            #     #cx = 1064 + x_vel*del_t_now
+            #     #cy = 3742 + y_vel*del_t_now
+            #     #print("Shifts:  ", int(x_vel*del_t_now), int(y_vel*del_t_now), del_t_now)
+            #     #if cx - 60 < source['x'] < cx + 60  and cy - 60 < source['y'] < cy + 60:
+            #         #sep_result.append([round(r0, 1), round((source['x']), 1), round((source['y']), 1), round((source['cflux']), 1), jd])
+            #     print(del_t_now, del_t_now//239.346, del_t_now%239.346, sourcea['x']-first_x, sourcea['y'] - first_y, sourcea['cflux'],len(sources), entry[1].split('\\')[1])
+            #     plot_x.append((sourcea['x'] - first_x)*0.26)
+            #     plot_y.append((sourcea['y'] - first_y)*0.26)
 
                     # now_img = [round(r0, 1), round((source['x']), 1), round((source['x'])), 1), round((source['cflux']), 1), jd]
                     # if prior_img is None:
@@ -998,7 +1017,8 @@ def sep_image(camera_name, archive_path, selector_string, lng_path, out_path):
             #plt.scatter(plot_x, plot_y)
 
         except:
-            spot = None
+            breakpoint()
+            print("Skipped entry:  ", entry)
 
 def APPM_prepare_TPOINT():   #   'C:/ProgramData/Astro-Physics/APCC/Models/APPM-2020-08-07-031103 Trimmed.csv'
     try:
@@ -1335,10 +1355,10 @@ if __name__ == '__main__':
     #archive_path = "D:/000ptr_saf/archive/sq01/2020-06-13/"
     #archive_path = "D:/2020-06-19  Ha and O3 screen flats/"
 
-    archive_path = "C:/000ptr_saf/archive/sq01/fromMaxim/2020-12-20/trimmed/"
+    #archive_path = "Z:/wmd/saf_rosette_20/"
     #
-    out_path = 'C:/000ptr_saf/archive/sq01/fromMaxim/2020-12-20/trimmed/'
-    lng_path = "C:/000ptr_saf/archive/sq01/lng/"
+    #out_path = 'C:/000ptr_saf/archive/sq01/fromMaxim/2020-12-20/trimmed/'
+    #lng_path = "C:/000ptr_saf/archive/sq01/lng/"
     #APPM_prepare_TPOINT()
     #de_offset_and_trim(camera_name, archive_path, '*-00*.*', out_path, full=True, norm=False)
     #prepare_tpoint(camera_name, archive_path, '*.f*t*', lng_path, out_path)
@@ -1363,9 +1383,11 @@ if __name__ == '__main__':
     #archive_path = 'QC:/000ptr_saf/archive/sq01/20201207 HH/trimmed/'
     #out_path = "Q:/000ptr_saf/archive/sq01/20201207 HH/reduced/"
     #correct_image(camera_name, archive_path, '*H*H*.*', lng_path, out_path)
-    #archive_path = 'C:/000ptr_saf/archive/sq01/fromMaxim/2020-12-20/trimmed/'
-    out_path = '//house-computer/saf_archive_2/archive/sq01/20201219/reduced/'
-    annotate_image(camera_name, archive_path, '*-00*', lng_path, out_path)
+    archive_path = 'Z:/saf/rosette/'
+    out_path = 'Z:/saf/rosette/analysis/'
+    lng_path = "C:/000ptr_saf/archive/sq01/lng/"
+    #annotate_image(camera_name, archive_path, '*-00*', lng_path, out_path)
+    sep_image(camera_name, archive_path, '*.f*t*', lng_path, out_path)
 
     # mod_correct_image(camera_name, archive_path, '*EX00*', lng_path, out_path)
     #archive_path = 'Q:/000ptr_saf/archive/sq01/20201203/reduced/'
