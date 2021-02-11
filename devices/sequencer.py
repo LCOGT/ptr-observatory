@@ -538,7 +538,7 @@ class Sequencer:
                             offset = [(0.0, 0.0), (-1.5, 1.), (1.5, 1.), (1.5, -1.), (-1.5, -1.)] #Aimpoint + Four mosaic quadrants 36 x 24mm chip
                             pane = 0
                         else:
-                            offset = [(-1.5, 1.), (1.5, 1.), (1.5, -1.), (-1.5, -1.)] #Four mosaic quadrants 36 x 24mm chip
+                            offset = [(-1, 1.), (1, 1.), (1, -1.), (-1, -1.)] #Four mosaic quadrants 36 x 24mm chip
                             pane = 1
                         #Exact details of the expansions need to be calculated for accurate naming. 20201215 WER
                         if exposure['area'] in ['300', '300%', 300]:
@@ -787,7 +787,7 @@ class Sequencer:
             acquired_count = 0
             #g_dev['fil'].set_number_command(current_filter)
             #g_dev['mnt'].slewToSkyFlatAsync()
-            bright = 65000
+            bright =50000
             scale = 1.15   #20201121 adjustment
             
             prior_scale = 1
