@@ -256,6 +256,7 @@ class ObservingConditions:
             
         #  Note we are now in WMD specific code.
         elif self.site == 'wmd' or self.site == 'wmd2':
+            breakpoint()
             try:
                 #breakpoint()
                 # pass
