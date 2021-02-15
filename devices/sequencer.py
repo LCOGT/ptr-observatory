@@ -1035,6 +1035,8 @@ class Sequencer:
             if min(x) <= d1 <= max(x):
                 print ('Moving to Solved focus:  ', round(d1, 2), ' calculated:  ',  new_spot)
                 pos = int(d1*g_dev['foc'].micron_to_steps)
+                
+                
                 g_dev['foc'].focuser.Move(pos)
                 g_dev['foc'].last_known_focus = d1
                 g_dev['foc'].last_temperature = g_dev['foc'].focuser.Temperature
