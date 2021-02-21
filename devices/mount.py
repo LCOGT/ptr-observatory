@@ -524,8 +524,8 @@ class Mount:
                 if self.offset_received:
                     print("This is a second offset, are you sure you want to do this?")
                 #
-                offset_x = -float(req['image_x']) - 0.5   #Fraction of field.
-                offset_y = -float(req['image_y']) - 0.5
+                offset_x = float(req['image_x']) - 0.5   #Fraction of field.
+                offset_y = float(req['image_y']) - 0.5
                 x_field_deg = g_dev['cam'].config['camera']['camera1']['settings']['x_field_deg']
                 y_field_deg = g_dev['cam'].config['camera']['camera1']['settings']['y_field_deg']
                 field_x = x_field_deg/15.   #  /15 for hours.
@@ -545,7 +545,7 @@ class Mount:
             elif calibrate:  #Note does not need req or opt
                 #breakpoint()
                 if self.offset_received:
-                    #breakpoint()
+                    breakpoint()
                     ra_cal_off, dec_cal_off = self.get_mount_ref()
                     print("Stored calibration offsets:  ",round(ra_cal_off, 5), round(dec_cal_off, 4))
                     icrs_ra, icrs_dec = self.get_mount_coordinates()
