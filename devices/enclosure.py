@@ -249,7 +249,7 @@ class Enclosure:
         if (ephemNow < g_dev['events']['Ops Window Start'] or ephemNow > g_dev['events']['Ops Window Closes']) \
             and self.mode == 'Automatic':
             #We want to force  closure but not bang on the dome agent too hard.
-            breakpoint()
+            #breakpoint()
             pass
                         
 
@@ -267,13 +267,13 @@ class Enclosure:
                 if self.status_string.lower() in ['open']:    #WE found it open.
                     if self.is_dome and time.time() >= self.time_of_next_slew:
                         try:
-                            breakpoint()
+                            #breakpoint()
                             self.enclosure.SlewToAzimuth(az_opposite_sun)
                             print("Now slewing to an azimuth opposite the Sun.")
                             self.dome_homed = False
                             self.time_of_next_slew = time.time() + 15
                         except:
-                            breakpoint()
+                            pass#breakpoint()
                         
                     else:
                         self.dome_homed = False

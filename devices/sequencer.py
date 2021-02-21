@@ -198,7 +198,7 @@ class Sequencer:
         elif action.lower() in ["stop", "cancel"]:
             self.stop_command(req, opt)
         elif action == "home":
-            breakpoint()
+            #breakpoint()
             self.home_command(req, opt)
         elif action == 'run' and script == 'calibrateAtFieldCenter':
             g_dev['mnt'].go_command(req, opt, calibrate=True)
@@ -707,7 +707,7 @@ class Sequencer:
         first_bias = bias_list[0]
         big_list = bias_list[1:] + dark_list
         shuffle(big_list)   #  Should distribute things more or less evenly.
-        breakpoint()
+        #breakpoint()
         big_list.insert(0, first_bias) #  Always start with a bias. 
         while len(big_list) > 0:
             use_bin = big_list[0][0]   #  Pick up bin value
@@ -797,7 +797,7 @@ class Sequencer:
                 #if g_dev['enc'].is_dome:   #Does not apply
                 g_dev['mnt'].slewToSkyFlatAsync()
                 try:
-                    breakpoint()
+                    #breakpoint()
                     exp_time = prior_scale*scale*40000/(float(g_dev['fil'].filter_data[current_filter][3])*g_dev['ocn'].meas_sky_lux)
                     if exp_time > 300:
                         exp_time = 300

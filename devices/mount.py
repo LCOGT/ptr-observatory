@@ -251,7 +251,7 @@ class Mount:
             self.current_icrs_dec = icrs_coord.dec.degree
         else:
             #NB This is an unused and not completely implemented path, or does Planwave PWI-4 use it?
-            breakpoint()   #20201230 WE should not get here.
+            #breakpoint()   #20201230 WE should not get here.
             self.current_icrs_ra = ra_fix(self.mount.RightAscension - ra_cal_off)    #May not be applied in positioning
             self.current_icrs_dec = self.mount.Declination - dec_cal_off
         return self.current_icrs_ra, self.current_icrs_dec
@@ -280,7 +280,7 @@ class Mount:
 #       For now, 20201230 we use calls to mounting
 # =============================================================================
         if self.tel == False:
-            breakpoint()
+            #breakpoint()
             status = {
                 'timestamp': round(time.time(), 3),
 #                f'right_ascension': str(self.mount.RightAscension),
@@ -480,7 +480,7 @@ class Mount:
             self.go_command(req, opt, offset=True, calibrate=False)
         elif action == 'calibrateAtFieldCenter':
             print (command)
-            breakpoint()
+            #breakpoint()
             self.go_command(req, opt, calibrate=True)
         elif action == 'sky_flat_position':
             self.slewToSkyFlatAsync()

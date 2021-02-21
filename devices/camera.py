@@ -236,6 +236,10 @@ class Camera:
             print("Darkslide closed on startup.")
         self.last_user_name = "unknown user name"
         self.last_user_id ="unknown user ID"
+        # win32com.client.pythoncom.CoInitialize()
+        # breakpoint()
+        # self.solver = win32com.client.Dispatch("PinPoint")
+        # breakpoint()
         
  
 

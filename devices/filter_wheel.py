@@ -212,14 +212,14 @@ class FilterWheel:
                 self.filter_front.Position = self.filter_selected[1]
                 time.sleep(0.2)
             except:
-                breakpoint()
+                pass#breakpoint()
             try:
                 while self.filter_back.Position == -1:
                     time.sleep(0.4)
                 self.filter_back.Position = self.filter_selected[0]
                 time.sleep(0.2)
             except:
-                breakpoint()
+                pass#breakpoint()
             self.filter_offset = float(self.filter_data[filter_number][2])
         elif self.maxim:
             g_dev['cam'].camera.Filter = filter_selections[0]
@@ -230,7 +230,7 @@ class FilterWheel:
         ''' set the filter position by  param string filter position index '''
         'NBNBNB This routine may not be correct'
         #print("filter cmd: set_position")
-        breakpoint()
+        #breakpoint()
         filter_selections = self.filter_data[int(req['filter_num'])][1]
         #print('Selections:  ', filter_selections)
         if self.dual:
@@ -240,14 +240,14 @@ class FilterWheel:
                 self.filter_front.Position = filter_selections[1]
                 time.sleep(0.2)
             except:
-                breakpoint()
+                pass#breakpoint()
             try:
                 while self.filter_back.Position == -1:
                     time.sleep(0.4)
                 self.filter_back.Position = filter_selections[0]
                 time.sleep(0.2)
             except:
-                breakpoint()
+                pass#breakpoint()
             self.filter_offset = float(self.filter_data[filter_selections][2])
         elif self.maxim:
             g_dev['cam'].camera.Filter = filter_selections[0]
@@ -297,14 +297,14 @@ class FilterWheel:
                 self.filter_front.Position = filter_selections[1]
                 time.sleep(0.2)
             except:
-                breakpoint()
+                pass#breakpoint()
             try:
                 while self.filter_back.Position == -1:
                     time.sleep(0.4)
                 self.filter_back.Position = filter_selections[0]
                 time.sleep(0.2)
             except:
-                breakpoint()
+                pass#breakpoint()
             self.filter_offset = float(self.filter_data[filt_pointer][2])
         elif self.maxim:
             
@@ -325,14 +325,14 @@ class FilterWheel:
                     time.sleep(0.4)
                 self.filter_front.Position = filter_selections[0]
             except:
-                breakpoint()
+                pass#breakpoint()
 
             self.filter_offset = float(self.filter_data[filt_pointer][2])
 
     def home_command(self, req: dict, opt: dict):
         ''' set the filter to the home position '''  #NB this is setting to default not Home.
         print("filter cmd: home", req, opt)
-        breakpoint()
+        #breakpoint()
         while self.filter_back.Position == -1:
             time.sleep(0.1)
         self.filter_back.Position = 2
