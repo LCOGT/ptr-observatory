@@ -331,7 +331,7 @@ def calibrate (hdu, lng_path, frame_type='light', quick=False):
                 screen_flat_S2 = sfHdu[0].data.astype('float32')
                 quick_flat_S2 = True
                 sfHdu.close()
-                if loud: print(lng_path + 'ff__2S2.fits', 'Loaded')
+                if loud: print(lng_path + 'ff_2_S2.fits', 'Loaded')
             except:
                 quick_flat_S2 = False
                 if loud: print('WARN: No S2 Flat/Lum Loaded.')
@@ -436,9 +436,7 @@ def calibrate (hdu, lng_path, frame_type='light', quick=False):
         if frame_type[-4:]  == 'flat':   #  Note frame type ends 'flat, e.g arc_flat, screen_flat, sky_flat
             break       #  Do not calibrate a flat.
         do_flat = False
-        ########TEMPORARY
-        break
-        ########TEMPORARY
+
         if binning == 2:
             if img_filter in ['w', 'W']:
                 do_flat = True

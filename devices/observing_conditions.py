@@ -91,12 +91,18 @@ class ObservingConditions:
             self.boltwood_oktoimage.Connected = True
             print("observing_conditions: Boltwood connected = True")
             if config['observing_conditions']['observing_conditions1']['has_unihedron']:
-                driver = config['observing_conditions']['observing_conditions1']['uni_driver']
-                port = config['observing_conditions']['observing_conditions1']['unihedron_port']
-                self.unihedron = win32com.client.Dispatch(driver)
-                self.unihedron.Connected = True
-                print("observing_conditions: Unihedron connected = True, on COM" + str(port))
-                # NB NB if no unihedron is installed the status code needs to not report it.
+                self.unihedron_connected = False
+                try:
+                    driver = config['observing_conditions']['observing_conditions1']['uni_driver']
+                    port = config['observing_conditions']['observing_conditions1']['unihedron_port']
+                    self.unihedron = win32com.client.Dispatch(driver)
+                    self.unihedron.Connected = True
+                    self.unihedron_connected = True
+                    print("observing_conditions: Unihedron connected = True, on COM" + str(port))
+                except:
+                    print("Unihedron on Port 10 is disconnected.  Observing will proceed.")
+                    self.unihedron_connected = False
+                          # NB NB if no unihedron is installed the status code needs to not report it.
 
 
     def get_status(self):
@@ -224,7 +230,7 @@ class ObservingConditions:
                     self.prior_status_2 = status2
                 
             #  Note we are still is saf specific site code.
-            if self.unihedron.Connected:
+            if self.unihedron_connected:
                 uni_measure = self.unihedron.SkyQuality   #  Provenance of 20.01 is dubious 20200504 WER
                 if uni_measure == 0:
                     uni_measure = round((mag - 20.01),2)   #  Fixes Unihedron when sky is too bright
@@ -251,7 +257,8 @@ class ObservingConditions:
                     wl.close()
                     self.sample_time = time.time()
                 except:
-                    print("Wx log did not write.")
+                    pass
+                    #print("Wx log did not write.")
             self.status = status
             
         #  Note we are now in WMD specific code.
@@ -482,7 +489,10 @@ class ObservingConditions:
             quick.append(float(abs(self.boltwood.WindSpeed)))
             quick.append(float(784.0))   # 20200329 a SWAG!
             quick.append(float(illum))     # Add Solar, Lunar elev and phase
-            uni_measure = self.unihedron.SkyQuality
+            if self.unihedron_connected:
+                uni_measure = self.unihedron.SkyQuality
+            else:
+                uni_measure  = 0
             if uni_measure == 0:
                 uni_measure = round((mag - 20.01),2)   #  Fixes Unihedron when sky is too bright
                 quick.append(float(uni_measure))

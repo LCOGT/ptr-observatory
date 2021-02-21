@@ -362,7 +362,7 @@ class Observatory:
         # This stopping mechanism allows for threads to close cleanly.
         loud = False        
         if g_dev['cam_retry_doit']:
-            breakpoint()   #THis should be obsolete.
+            #breakpoint()   #THis should be obsolete.
             del g_dev['cam']
             device = Camera(g_dev['cam_retry_driver'], g_dev['cam_retry_name'], g_dev['cam_retry_config'])
             print("Deleted and re-created:  ,", device)
@@ -596,7 +596,7 @@ class Observatory:
                     try:
                         img = hdu.data.copy().astype('float')
                         bkg = sep.Background(img)
-                        breakpoint()
+                        #breakpoint()
                         #bkg_rms = bkg.rms()
                         img = img - bkg
                         sources = sep.extract(img, 4.5, err=bkg.globalrms, minarea=9)#, filter_kernel=kern)
