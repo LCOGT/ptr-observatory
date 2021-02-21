@@ -630,107 +630,23 @@ class Sequencer:
                  
         """
         self.sequencer_hold = True
-
-        if req is None:     #  NB Chunking factor is 9
-            req = {'numOfBias': 36, 'bin3': False, 'numOfDark2': 18, 'bin4': \
-                   False, 'bin1': True, 'darkTime': '360', 'hotMap': True, \
-                   'bin2': True, 'numOfDark': 18, 'dark2Time': '180', \
-                   'coldMap': True}
-            opt = {'area': 150,}
-        bias_list = []
-        num_bias = min(90, req['numOfBias'])
-        for i in range(num_bias):
-            if req['bin1']:
-                bias_list.append([1, 0])
-            if req['bin2']:
-                bias_list.append([2, 0])
-        print('Bias_list:  ', bias_list)
-        total_num_biases = len(bias_list)
-        print("Total # of bias frames, all binnings =  ", total_num_biases, \
-              " Time req'd:  ", total_num_biases*4, ' sec.' )
-        
-        dark_list = []
-        num_dark = min(45, req['numOfDark'])   ## Implied this is 1:! binning darks.
-        dark_time = float(req['darkTime'])
-        for i in range(num_dark):
-             if req['bin1']:
-                 dark_list.append([1, dark_time])   #NB Hardwired bin
-             if req['bin2']:
-                 dark_list.append([2, dark_time])
-        total_num_dark = len(dark_list)
-        print("Total # of dark1 frames, all binnings =  ", total_num_dark )
-        
-        num_dark = min(45, req['numOfDark2'])   ## Implied this is 1:! binning darks.
-        dark2_time = float(req['dark2Time'])
-        for i in range(num_dark):
-             if req['bin1']:
-                 dark_list.append([1, dark2_time])   #NB Hardwired bin
-             if req['bin2']:
-                 dark_list.append([2, dark2_time])
-        total_num_dark = len(dark_list)
-        print("Total # of dark1+2 frames, all binnings =  ", total_num_dark )
-        # binx_dark_list = []
-        # num_binx_dark = min(45, req['numOfDark2'])  ## Implied this is >1x1 binning darks.
-        # binx_dark_time = float(req['dark2Time'])
-        # for i in range(num_binx_dark):
-        #             dark_list = []
-        # num_dark = min(45, req['numOfDark'])   ## Implied this is 1:! binning darks.
-        # dark_time = float(req['darkTime'])
-        # for i in range(num_dark):
-        #      if req['bin1']:
-        #          dark_list.append([1, dark_time])   #NB Hardwired bin
-        #      if req['bin2']:
-        #          dark_list.append([2, dark_time])
-        # total_num_dark = len(dark_list)
-        # print("Total # of dark1 frames, all binnings =  ", total_num_dark )
-        # binx_dark_list.append([2, binx_dark_time])
-        #     binx_dark_list.append([1, binx_dark_time])
-            
-        # total_num_binx_dark = len(binx_dark_list)
-        # print("Total # of binx_dark frames, all binnings =  ", total_num_binx_dark)
-        
-        bias_time = 4.  #NB Pick up from camera config  An avg for QHY600P
-        flush = 2
-        total_time = bias_time*(total_num_biases + flush + total_num_dark )
-        #  NB Note higher bin readout not compensated for.
-        total_time += total_num_dark*dark_time 
-        print('Approx duration of Bias Dark sequence:  ', total_time//60 + 1, ' min.')
-        #Flush twice
-        print('Pre-flush twice.')  #NB Filter is 'dark'
-        bin_str = bin_to_string(2)
-        req = {'time': 0.0, 'script': 'True', 'image_type': 'bias'}
-        opt = {'area': 150, 'count': flush, 'bin': bin_str, \
-               'filter': g_dev['fil'].filter_data[-1][0], 'hint':  'Flush'}
-        # result = g_dev['cam'].expose_command(req, opt, no_AWS=True, \
-        #                                      do_sep=False, quick=False)        
-
-        first_bias = bias_list[0]
-        big_list = bias_list[1:] + dark_list
-        shuffle(big_list)   #  Should distribute things more or less evenly.
-        #breakpoint()
-        big_list.insert(0, first_bias) #  Always start with a bias. 
-        while len(big_list) > 0:
-            use_bin = big_list[0][0]   #  Pick up bin value
-            bin_str = bin_to_string(use_bin)
-            print(bin_str)
-            exp = big_list[0][1]
-            if exp == 0:
-                print("Expose Bias using bin:  ", use_bin)   
-                req = {'time': 0.0,  'script': 'True', 'image_type': 'bias'}
-                opt = {'area': 150, 'count': 1, 'bin': bin_str, \
-                       'filter': g_dev['fil'].filter_data[-1][0]}
-            elif exp > 0:
-                print("Expose Dark using bin, exp:  ", use_bin, exp)
-                req = {'time': exp,  'script': 'True', 'image_type': 'dark'}
-                opt = {'area': 150, 'count': 1, 'bin': bin_str, \
-                       'filter': g_dev['fil'].filter_data[-1][0]} 
+        dark_time = 180
+        while ephem.now() <= (g_dev['events']['End Eve Bias Dark'] - 2*dark_time/86400.):   #Do not overrun the window end
+            print("Expose b_2")   
+            req = {'time': 0.0,  'script': 'True', 'image_type': 'bias'}
+            opt = {'area': "Full", 'count': 3, 'bin':'2 2', \
+                   'filter': 'dark'}
             result = g_dev['cam'].expose_command(req, opt, no_AWS=True, \
-                                        do_sep=False, quick=False)
+                                do_sep=False, quick=False)
             print(result)
-            big_list.pop(0)
-            if len(big_list) < 1:
-                print("B/D List exhausted.", big_list)
-                break
+            # print("Expose d_2 using exposure:  ", dark_time )
+            # req = {'time':dark_time ,  'script': 'True', 'image_type': 'dark'}
+            # opt = {'area': "Full", 'count': 1, 'bin':'2 2', \
+            #        'filter': 'dark'} 
+            # result = g_dev['cam'].expose_command(req, opt, no_AWS=True, \
+            #                     do_sep=False, quick=False)
+            # print(result)
+
         print("Bias/Dark acquisition is finished.")
         self.sequencer_hold = False
         return

@@ -980,7 +980,7 @@ class Camera:
                         square = trimmed
 
                     else:
-                        breakpoint()  #Usually a super saturated image get us here.
+                        pass #breakpoint()  #Usually a super saturated image get us here.
         
                     # if full:
                     #     square = trimmed
