@@ -631,21 +631,21 @@ class Sequencer:
         """
         self.sequencer_hold = True
         dark_time = 180
-        while ephem.now() <= (g_dev['events']['End Eve Bias Dark'] - 2*dark_time/86400.):   #Do not overrun the window end
-            print("Expose b_2")   
-            req = {'time': 0.0,  'script': 'True', 'image_type': 'bias'}
-            opt = {'area': "Full", 'count': 3, 'bin':'2 2', \
-                   'filter': 'dark'}
-            result = g_dev['cam'].expose_command(req, opt, no_AWS=True, \
-                                do_sep=False, quick=False)
-            print(result)
-            # print("Expose d_2 using exposure:  ", dark_time )
-            # req = {'time':dark_time ,  'script': 'True', 'image_type': 'dark'}
-            # opt = {'area': "Full", 'count': 1, 'bin':'2 2', \
-            #        'filter': 'dark'} 
+        while ephem.now() <= (g_dev['events']['End Eve Bias Dark'] + 1 - 2*dark_time/86400.):   #Do not overrun the window end
+            # print("Expose b_2")   
+            # req = {'time': 0.0,  'script': 'True', 'image_type': 'bias'}
+            # opt = {'area': "Full", 'count': 3, 'bin':'2 2', \
+            #        'filter': 'dark'}
             # result = g_dev['cam'].expose_command(req, opt, no_AWS=True, \
             #                     do_sep=False, quick=False)
             # print(result)
+            print("Expose d_2 using exposure:  ", dark_time )
+            req = {'time':dark_time ,  'script': 'True', 'image_type': 'dark'}
+            opt = {'area': "Full", 'count': 1, 'bin':'2 2', \
+                    'filter': 'dark'} 
+            result = g_dev['cam'].expose_command(req, opt, no_AWS=True, \
+                                do_sep=False, quick=False)
+            print(result)
 
         print("Bias/Dark acquisition is finished.")
         self.sequencer_hold = False

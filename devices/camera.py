@@ -923,11 +923,11 @@ class Camera:
                     #  print('incoming shape:  ', self.img.shape)                      
                 self.t5 = time.time()
                 pier_side = g_dev['mnt'].mount.sideOfPier    #0 = Tel Looking West, is flipped.
-                print('setup took:  ', round(self.t2 - self.t0))
-                print('time to first readout try: ', round(self.t4 - self.t2, 2), ' sec,')
-                print('to get safearray: ', round(self.t4p5 - self.t2, 2), ' sec,')
-                print('readout took: ', round(self.t5 - self.t4, 2), ' sec,')
-                print('it all took: ', round(self.t5 - self.t2, 2), ' sec,')
+                # print('setup took:  ', round(self.t2 - self.t0))
+                # print('time to first readout try: ', round(self.t4 - self.t2, 2), ' sec,')
+                # print('to get safearray: ', round(self.t4p5 - self.t2, 2), ' sec,')
+                # print('readout took: ', round(self.t5 - self.t4, 2), ' sec,')
+                # print('it all took: ', round(self.t5 - self.t2, 2), ' sec,')
 
                 #  NB NB  Be very careful this is the exact code used in build_master and calibration  modules.
                 #  NB Note this is QHY600 specific code.  Needs to be supplied in camera config as sliced regions.
@@ -973,14 +973,16 @@ class Camera:
                     if self.img[11, -18] == 0:
                         overscan = int((np.median(self.img[12:, -17:]) + np.median(self.img[0:10, :]))/2) - 1 
                         trimmed = self.img[12:-4, :-17].astype('int32') + pedastal - overscan
-                        square = trimmed 
+                        square = trimmed
+                        print("Shift 1", overscan, square.mean())
                     elif self.img[15, -18] == 0:
                         overscan = int((np.median(self.img[16:, -17:]) + np.median(self.img[0:14, :]))/2) -1 
                         trimmed = self.img[16:, :-17].astype('int32') + pedastal - overscan
                         square = trimmed
+                        print("Shift 2", overscan, square.mean())
 
                     else:
-                        pass #breakpoint()  #Usually a super saturated image get us here.
+                        breakpoint()  #Usually a super saturated image get us here.
         
                     # if full:
                     #     square = trimmed

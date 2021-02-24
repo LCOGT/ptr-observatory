@@ -549,6 +549,7 @@ class Observatory:
                     hdu.data = np.flip(hdu.data)
                     hdu.header['IMGFLIP'] = True
                 wpath = paths['im_path'] + paths['red_name01']
+                print('Reduced Mean:  ',hdu.data.mean())
                 hdu.writeto(wpath, overwrite=True)  # NB overwrite == True is dangerous in production code.
                 reduced_data_size = hdu.data.size
                 wpath = paths['red_path'] + paths['red_name01_lcl']    #This name is convienent for local sorting
