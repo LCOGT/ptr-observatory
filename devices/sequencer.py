@@ -516,7 +516,7 @@ class Sequencer:
                     if color[0] == 'B':  
                         color = 'B'   #Map generic filters to site specific ones.
                     if color[0] == 'G':  
-                        color = 'V'
+                        color = 'V'   # NB NB THis needs a clean up
                     if color[0] == 'R':  
                         color = 'R'
                     if color[0] == 'L':  
@@ -605,8 +605,8 @@ class Sequencer:
                         pane += 1
                     now_date_timeZ = datetime.datetime.now().isoformat().split('.')[0] +'Z'           
                     ended = left_to_do <= 0 or now_date_timeZ >= block['end']\
-                            or g_dev['airmass'] >float( block_specification['project']['project_constraints']['max_airmass']) \
-                            or g_dev['ha'] > float(block_specification['project']['project_constraints']['max_ha'])# Or mount has flipped, too low, too bright. 
+                            or g_dev['airmass'] > float( block_specification['project']['project_constraints']['max_airmass']) \
+                            or abs(g_dev['ha']) > float(block_specification['project']['project_constraints']['max_ha'])# Or mount has flipped, too low, too bright. 
         print("Fini!")
         if block_specification['project']['project_constraints']['close_on_block_completion']:
             g_dev['mnt'].park_command({}, {})
