@@ -395,6 +395,7 @@ class Sequencer:
         self.block_guard = True
         # NB we assume the dome is open and already slaving.
         block = copy.deepcopy(block_specification)
+        #breakpoint()
         # #unpark, open dome etc.
         # #if not end of block
         g_dev['mnt'].unpark_command({}, {})
