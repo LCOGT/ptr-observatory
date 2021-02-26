@@ -373,8 +373,7 @@ def calibrate (hdu, lng_path, frame_type='light', quick=False):
 # #           NB NB NB For the moment we have limited bin 1 and sub-frame calibrations
 # # =============================================================================
 # =============================================================================
-        if frame_type in ['bias', 'dark']:
-            break    #  Do not bias calibrate a bias.       
+      
         start_x = 0
         start_y = 0
         cal_string = ''
@@ -397,7 +396,8 @@ def calibrate (hdu, lng_path, frame_type='light', quick=False):
 # #           NB NB NB For the moment we have limited bin 1 and sub-frame calibrations
 # # =============================================================================
 # =============================================================================
-
+        if frame_type in ['bias', 'dark']:
+            break    #  Do not bias calibrate a bias. 
         if super_bias is not None and binning == 1 :
             img = img - super_bias[start_x:(start_x + img.shape[0]), start_y:(start_y + img.shape[1])]  #hdu.header['NAXIS2, NAXIS1']
             if not quick:
@@ -489,7 +489,7 @@ def calibrate (hdu, lng_path, frame_type='light', quick=False):
                 if loud:  print('QuickFlat result:  ', imageStats(img, loud))
         if apply_hot and binning == 2:
             try:
-                hot_pix = np.where(super_dark_2_long > super_dark_2_long.std())
+                hot_pix = np.where(super_dark_2 > super_dark_2.std()) #20210225 removed _long
                 median8(img, hot_pix)
                 cal_string += ', H'
                 
