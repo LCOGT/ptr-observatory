@@ -437,18 +437,16 @@ def calibrate (hdu, lng_path, frame_type='light', quick=False):
             break       #  Do not calibrate a flat.
         do_flat = True   #20210224@18:13
 
-        if binning == 2:
-            if img_filter in ['w', 'W', 'L', 'PL']:
+        if binning == 2 :
+            if img_filter in ['w', 'W', 'L']:
                 do_flat = True
                 scr_flat = screen_flat_w
-            elif img_filter in ['B', 'PB']:
+            elif img_filter in ['B']:
                 do_flat = True
                 scr_flat = screen_flat_B
-            elif img_filter in ['V', 'PG', 'G', 'PG']:
-                do_flat = True
+            elif img_filter in ['V']:
                 scr_flat = screen_flat_V
-            elif img_filter in ['R', 'RB', 'Rc', 'RC', 'PR']:
-                do_flat = True
+            elif img_filter in ['R', 'RB', 'Rc', 'RC'];
                 scr_flat = screen_flat_R
             elif img_filter in ['gp']:
                 do_flat = True
@@ -471,10 +469,10 @@ def calibrate (hdu, lng_path, frame_type='light', quick=False):
             elif img_filter in ['N2', 'NII', 'N-II']:
                 do_flat = True
                 scr_flat = screen_flat_N2
-            elif img_filter in ['EXO', 'exo']:
+            elif img_filter in ['EXO', 'exo', 'Exo']:
                 do_flat = True
                 scr_flat = screen_flat_EXO
-            elif img_filter in ['air', 'AIR']:
+            elif img_filter in ['air', 'AIR', 'Air']:
                 do_flat = True
                 scr_flat = screen_flat_air
             else:
