@@ -438,16 +438,16 @@ def calibrate (hdu, lng_path, frame_type='light', quick=False):
         do_flat = True   #20210224@18:13
 
         if binning == 2:
-            if img_filter in ['w', 'W']:
+            if img_filter in ['w', 'W', 'L', 'PL']:
                 do_flat = True
                 scr_flat = screen_flat_w
-            elif img_filter in ['B', 'BB']:
+            elif img_filter in ['B', 'PB']:
                 do_flat = True
                 scr_flat = screen_flat_B
-            elif img_filter in ['V', 'VB']:
+            elif img_filter in ['V', 'PG', 'G', 'PG']:
                 do_flat = True
                 scr_flat = screen_flat_V
-            elif img_filter in ['R', 'RB', 'Rc', 'RC']:
+            elif img_filter in ['R', 'RB', 'Rc', 'RC', 'PR']:
                 do_flat = True
                 scr_flat = screen_flat_R
             elif img_filter in ['gp']:
@@ -481,6 +481,7 @@ def calibrate (hdu, lng_path, frame_type='light', quick=False):
                 do_flat = False
         if do_flat and binning == 2: # and not g_dev['seq'].active_script == 'make_superscreenflats':
             try:
+                breakpoint()
                 img = img/scr_flat
                 cal_string +=', SCF'
             except:
