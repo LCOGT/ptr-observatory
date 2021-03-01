@@ -373,8 +373,7 @@ def calibrate (hdu, lng_path, frame_type='light', quick=False):
 # #           NB NB NB For the moment we have limited bin 1 and sub-frame calibrations
 # # =============================================================================
 # =============================================================================
-        if frame_type in ['bias', 'dark']:
-            break    #  Do not bias calibrate a bias.       
+      
         start_x = 0
         start_y = 0
         cal_string = ''
@@ -397,7 +396,8 @@ def calibrate (hdu, lng_path, frame_type='light', quick=False):
 # #           NB NB NB For the moment we have limited bin 1 and sub-frame calibrations
 # # =============================================================================
 # =============================================================================
-
+        if frame_type in ['bias', 'dark']:
+            break    #  Do not bias calibrate a bias. 
         if super_bias is not None and binning == 1 :
             img = img - super_bias[start_x:(start_x + img.shape[0]), start_y:(start_y + img.shape[1])]  #hdu.header['NAXIS2, NAXIS1']
             if not quick:
@@ -419,7 +419,7 @@ def calibrate (hdu, lng_path, frame_type='light', quick=False):
                 if loud: print("WARNING:  Master dark being used over-scaled")
             img =  (img - super_dark[start_x:(start_x + img.shape[0]), start_y:(start_y + img.shape[1]) \
                                 ]*data_exposure_level)
-            if not quick:
+            if not quick:                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         
                 if loud: print('QuickDark_1: ', imageStats(img, loud))
             cal_string += ', D'
         elif super_dark_2 is not None and binning == 2:
@@ -437,18 +437,16 @@ def calibrate (hdu, lng_path, frame_type='light', quick=False):
             break       #  Do not calibrate a flat.
         do_flat = True   #20210224@18:13
 
-        if binning == 2:
-            if img_filter in ['w', 'W']:
+        if binning == 2 :
+            if img_filter in ['w', 'W', 'L']:
                 do_flat = True
                 scr_flat = screen_flat_w
-            elif img_filter in ['B', 'BB']:
+            elif img_filter in ['B']:
                 do_flat = True
                 scr_flat = screen_flat_B
-            elif img_filter in ['V', 'VB']:
-                do_flat = True
+            elif img_filter in ['V']:
                 scr_flat = screen_flat_V
-            elif img_filter in ['R', 'RB', 'Rc', 'RC']:
-                do_flat = True
+            elif img_filter in ['R', 'RB', 'Rc', 'RC'];
                 scr_flat = screen_flat_R
             elif img_filter in ['gp']:
                 do_flat = True
@@ -471,16 +469,17 @@ def calibrate (hdu, lng_path, frame_type='light', quick=False):
             elif img_filter in ['N2', 'NII', 'N-II']:
                 do_flat = True
                 scr_flat = screen_flat_N2
-            elif img_filter in ['EXO', 'exo']:
+            elif img_filter in ['EXO', 'exo', 'Exo']:
                 do_flat = True
                 scr_flat = screen_flat_EXO
-            elif img_filter in ['air', 'AIR']:
+            elif img_filter in ['air', 'AIR', 'Air']:
                 do_flat = True
                 scr_flat = screen_flat_air
             else:
                 do_flat = False
         if do_flat and binning == 2: # and not g_dev['seq'].active_script == 'make_superscreenflats':
             try:
+                breakpoint()
                 img = img/scr_flat
                 cal_string +=', SCF'
             except:
@@ -489,7 +488,7 @@ def calibrate (hdu, lng_path, frame_type='light', quick=False):
                 if loud:  print('QuickFlat result:  ', imageStats(img, loud))
         if apply_hot and binning == 2:
             try:
-                hot_pix = np.where(super_dark_2_long > super_dark_2_long.std())
+                hot_pix = np.where(super_dark_2 > super_dark_2.std()) #20210225 removed _long
                 median8(img, hot_pix)
                 cal_string += ', H'
                 

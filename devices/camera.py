@@ -233,15 +233,10 @@ class Camera:
             self.darkslide_instance = Darkslide()     #  NB eventually default after reboot should be closed.
             self.darkslide_instance.closeDarkslide()   #  Consider turing off IR Obsy light at same time..
             self.darkslide_open = False
-            print("Darkslide closed on startup.")
+            print("Darkslide closed on camera startup.")
         self.last_user_name = "unknown user name"
         self.last_user_id ="unknown user ID"
-        # win32com.client.pythoncom.CoInitialize()
-        # breakpoint()
-        # self.solver = win32com.client.Dispatch("PinPoint")
-        # breakpoint()
-        
- 
+     
 
         #  NB  Shouldset up default filter @ default focus.
 
@@ -521,7 +516,7 @@ class Camera:
             if imtype.lower() == 'test image':
                 self.toss = True
         elif imtype.lower() == 'bias':
-            exposure_time = 0.00001
+            exposure_time = 0.00001    #Can QHY take 0.0??
             imtypeb = False
             frame_type = 'bias'
             no_AWS = False
@@ -818,7 +813,7 @@ class Camera:
                     self.exposure_busy = False
                     self.t10 = time.time()
                     #  self._stop_expose()
-                    print("inner expose took:  ", round(self.t10 - self.t0 , 2), ' returned:  ', result)
+                    print("\nInner expose of a group took:  ", round(self.t10 - self.t0 , 2), ' returned:  ', result)
                     self.retry_camera = 0
                     break
                 except Exception as e:
@@ -828,7 +823,7 @@ class Camera:
                     continue
         #  This is the loop point for the seq count loop
         self.t11 = time.time()
-        print("\nFull expose seq took:  ", round(self.t11 - self.t0 , 2), ' Retries;  ', num_retries, 'Average: ', round((self.t11 - self.t0)/count, 2),  ' Returning:  ', result, '\n\n')
+        print("\nFull expose of a group took:  ", round(self.t11 - self.t0 , 2), ' Retries;  ', num_retries, 'Average: ', round((self.t11 - self.t0)/count, 2),  ' Returning:  ', result, '\n\n')
         try:
             #print(' 0 sec cycle time:  ', round((self.t11 - self.t0)/count - exposure_time , 2) )
             pass
@@ -845,8 +840,8 @@ class Camera:
     def finish_exposure(self, exposure_time, frame_type, counter, \
                         gather_status=True, do_sep=False, no_AWS=False, start_x=None, start_y=None, quick=False, \
                         low=0, high=0, script='False', opt=None):
-        print("Finish exposure Entered:  ", exposure_time, frame_type, counter, \
-              gather_status, do_sep, no_AWS, start_x, start_y, opt['area'])
+        #print("Finish exposure Entered:  ", exposure_time, frame_type, counter, \
+        #      gather_status, do_sep, no_AWS, start_x, start_y, opt['area'])
         self.post_mnt = []
         self.post_rot = []
         self.post_foc = []
@@ -950,7 +945,9 @@ class Camera:
                 #         square = trimmed[795:795 + 3194, :]
                 # else:
                 #     print("Incorrect chip size or bin specified.")
-                #I think the shift has to do with different binnings.   
+                
+                
+                #This image shift code needs to be here but it is troubling.   
                 if ix == 9600:
                     if self.img[22, -34] == 0:
  
@@ -973,26 +970,23 @@ class Camera:
                     if self.img[11, -18] == 0:
                         overscan = int((np.median(self.img[12:, -17:]) + np.median(self.img[0:10, :]))/2) - 1 
                         trimmed = self.img[12:-4, :-17].astype('int32') + pedastal - overscan
-                        square = trimmed
-                        print("Shift 1", overscan, square.mean())
+
+                        #print("Shift 1", overscan, square.mean())
                     elif self.img[15, -18] == 0:
                         overscan = int((np.median(self.img[16:, -17:]) + np.median(self.img[0:14, :]))/2) -1 
                         trimmed = self.img[16:, :-17].astype('int32') + pedastal - overscan
-                        square = trimmed
-                        print("Shift 2", overscan, square.mean())
+
+                        #print("Shift 2", overscan, square.mean())
 
                     else:
-                        breakpoint()  #Usually a super saturated image get us here.
-        
-                    # if full:
-                    #     square = trimmed
-                    # else:
-                    #     square = trimmed[795:795 + 3194, :]
+                        print("Image shift is incorrect, absolutely fatal error.")
+                        breakpoint()
+
                 else:
                     print("Incorrect chip size or bin specified or already-converted:  skipping.")
                     continue
                 
-                square = square.transpose()
+                trimmed =trimmed.transpose()
                 #This may need a re-think:   Maybe kill neg and anything really hot if there are only a few.
                 #smin = np.where(square < 0)    # finds negative pixels  NB <0 where pedastal is 200. Useless!
 
@@ -1000,14 +994,15 @@ class Camera:
                 print('readout, transpose & Trim took:  ', round(self.t77 - self.t4, 1), ' sec,')# marks them as 0
                 #Should we consider correcting the image right here with cached bias, dark and hot pixel
                 #processing so downstream processing is reliable.  Maybe only do this for focus?
-                g_dev['obs'].send_to_user("Camera has read-out image", p_level='INFO')
-                self.img = square.astype('uint16')
+                g_dev['obs'].send_to_user("Camera has read-out image.", p_level='INFO')
+                self.img = trimmed.astype('uint16')
                 ix, iy = self.img.shape
                 test_saturated = np.array(self.img[ix//3:ix*2//3, iy//3:iy*2//3])  # 1/9th the chip area
                 bi_mean = round((test_saturated.mean() + np.median(test_saturated))/2, 0)
                 if frame_type[-4:] == 'flat':
                     if bi_mean >= self.config['camera']['camera1']['settings']['saturate']:
                         print("Flat rejected, too bright:  ", bi_mean)
+                        g_dev['obs'].send_to_user("Flat rejected, too bright.", p_level='INFO')
                         result['error'] = True
                         result['patch'] = bi_mean
                         return result   # signals to flat routine image was rejected, prompt return                      
@@ -1018,21 +1013,10 @@ class Camera:
                 avg_rot = g_dev['rot'].get_average_status(self.pre_rot, self.post_rot)
                 avg_ocn = g_dev['ocn'].get_average_status(self.pre_ocn, self.post_ocn)
                 if frame_type[-5:] in ['focus', 'probe']:
-                    # NB NB 20200908   Patch out dark correction.
-                    # NB at least hit this with a hot pixel map?
-                    # if self.focus_cache is None:
-                    #     focus_img = fits.open(self.lng_path + 'fd_2_12p5.fits')
-                    #     self.focus_cache = focus_img[0].data
-                    # self.img = self.img - self.focus_cache + 100   #maintain a + pedestal for sep
                     self.img = self.img + 100   #maintain a + pedestal for sep  THIS SHOULD not be needed for a raw input file.
-                    # if frame_type[-5:] == 'probee':  #  DISABLE THIS 20201118
-                    #     focus_img = fits.open(self.lng_path + 'focus_sample.fits')
-                    #     self.img = focus_img[0].data.transpose()
                     self.img = self.img.astype("float")
                     #print(self.img.flags)
-                    self.img = self.img.copy(order='C')   #  NB Should we move this up to 
-                                                          #  where we read the array
-                    #Fix hot pixels here.
+                    self.img = self.img.copy(order='C')   #  NB Should we move this up to where we read the array?
                     bkg = sep.Background(self.img)
                     self.img = self.img - bkg
                     sources = sep.extract(self.img, 4.5, err=bkg.globalrms, minarea=15)  # Minarea should deal with hot pixels.
@@ -1040,62 +1024,33 @@ class Camera:
                     print('No. of detections:  ', len(sources))                  
                     ix, iy = self.img.shape
                     r0 = 0
-                    r1 = 0
-                    # X and Y may be transposed, check this out.
                     """
                     ToDo here:  1) do not deal with a source nearer than 5% to an edge.
                     2) do not pick any saturated sources.
                     3) form a histogram and then pick the median winner
                     4) generate data for a report.
                     5) save data and image for engineering runs.
-                    
-                    
+
                     """
-                    border_x = int(ix*0.125)
-                    border_y = int(iy*0.125)
+                    border_x = int(ix*0.05)
+                    border_y = int(iy*0.05)
                     r0 = []
                     for sourcef in sources:
                         if border_x < sourcef['x'] < ix - border_x and \
                             border_y < sourcef['y'] < iy - border_y and \
-                            sourcef['peak']  < 60000 and sourcef['cpeak'] < 60000:
+                            sourcef['peak']  < 55000 and sourcef['cpeak'] < 55000:
                             a0 = sourcef['a']
                             b0 = sourcef['b']
-                            r0.append(round(math.sqrt(a0*a0 + b0*b0), 2))#, round(math.sqrt((ix - sourcef['x'])**2 + (iy - sourcef['y'])**2), 2)))
-                    #r0.sort()
-                    #print('r0:  ', len(r0), r0)
-                    #print('median, mean:  ', np.median(r0), np.mean(r0))
-                    # sourcef = sources[-2]
-                    # a0 = sourcef['a']
-                    # b0 = sourcef['b']
-                    # r0 = math.sqrt(a0*a0 + b0*b0)
-                    # r1 = math.sqrt((ix - sourcef['x'])**2 + (iy - sourcef['y'])**2)
-                    # #kr, kf = sep.kron_radius(self.img, source['x'], source['y'], source['a'], source['b'], source['theta'], 6.0)
-                    # print(sourcef['x'], sourcef['y'], r0, r1)  # , kr, kf)
+                            r0.append(round(math.sqrt(a0*a0 + b0*b0), 2))
                     scale = self.config['camera']['camera1']['settings']['pix_scale']
                     result['FWHM'] = round(np.median(r0)*2*scale, 3)
                     result['mean_focus'] =  avg_foc[1]
-                    # if frame_type[-5:] == 'probe':
-                    #     self.img = self.img.transpose()
+
                     focus_image = True
-                    # if True:
-                    #     r00 = []
-                    #     r11 = []
-                    #     index = 0
-                    #     for in_source in sources:
-                    #         a0 = in_source['a']
-                    #         b0 = in_source['b']
-                    #         r0 = math.sqrt(a0*a0 + b0*b0)
-                    #         r1 = math.sqrt((ix - in_source['x'])**2 + (iy - in_source['y'])**2)
-                    #         r00.append((r0, index))
-                    #         r11.append((r1, index))
-                    #         index += 1
-                    #     r0m = np.median(r00[0])
-                    #     print("Median source:  ". r0m)
-                    #     breakpoint()
                 else:
                     focus_image = False
 
-                    #return result
+                    #return result   #Used if focus not saved in calibs.
                 try:
                     hdu = fits.PrimaryHDU(self.img)
                     self.img = None    #  Does this free up any resource?
@@ -1348,12 +1303,12 @@ class Camera:
                         focus_image = False
                         return result
                     
-                    if  not script in ('True', 'true', 'On', 'on'):   #  not quick and    #Was moved 20201022 for grid
-                        if not quick:
-                            self.enqueue_for_AWS(text_data_size, im_path, text_name)
-                            self.to_reduce((paths, hdu))
-                        hdu.writeto(raw_path + raw_name00, overwrite=True)
-                        g_dev['obs'].send_to_user("Raw image saved locally. ", p_level='INFO')
+                    # if  not script in ('True', 'true', 'On', 'on'):   #  not quick and    #Was moved 20201022 for grid
+                    #     if not quick:
+                    self.enqueue_for_AWS(text_data_size, im_path, text_name)
+                    self.to_reduce((paths, hdu))
+                    hdu.writeto(raw_path + raw_name00, overwrite=True)   #Sve full raw file locally
+                    g_dev['obs'].send_to_user("Raw image saved locally. ", p_level='INFO')
                         
                     if frame_type in ('bias', 'dark', 'screen_flat', 'sky_flat', 'screen flat', 'sky flat'):
                         if not self.hint[0:54] == 'Flush':
@@ -1421,7 +1376,7 @@ class Camera:
 
         # result = {'error': True}
         # return  result
-    def enqueue_for_AWS(self, priority, im_path, name):
+    def enqueue_for_AWS(self, priority, im_path, name): 
         image = (im_path, name)
         g_dev['obs'].aws_queue.put((priority, image), block=False)
 

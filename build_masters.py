@@ -852,6 +852,7 @@ def correct_image(camera_name, archive_path, selector_string, lng_path, out_path
         # if image[-3:] in ['fit', 'fts']:   #Patch a short fits suffix
         #     image = image + ('s')
         fits_filter = img[0].header['FILTER']
+        pane = img[0].header['PANE']
         if image[-5] == 'B' or fits_filter == 'B':
             img[0].data /= super_B
         elif image[-5] == 'V' or fits_filter == 'V':
@@ -869,15 +870,16 @@ def correct_image(camera_name, archive_path, selector_string, lng_path, out_path
         elif image[-6] == 'O: or fits_filter == O3':
             img[0].data /= super_O3
         elif image[-6] == 'S' or fits_filter == 'S2':
-          img[0].data /= super_S2
+            img[0].data /= super_S2
         elif image[-6] == 'N' or fits_filter == 'N2':
-          img[0].data /= super_N2
+            img[0].data /= super_N2
         elif image[-5] in ['W', 'w'] or fits_filter == 'w':
-          img[0].data /= super_w
+
+            img[0].data /= super_w
         elif image[-7] in ['E', 'e'] or fits_filter == 'exo':
-          img[0].data /= super_EXO
+            img[0].data /= super_EXO
         # elif image[-7] in ['A', 'a'] or fits_filter == 'air':
-        #   img[0].data /= super_air
+        #     img[0].data /= super_air
         else:
             breakpoint()
             print("Incorrect filter suffix, no flat applied.")
@@ -892,10 +894,10 @@ def correct_image(camera_name, archive_path, selector_string, lng_path, out_path
         print('Writing:  ', file_name_split[1])
 
         #  img_bk_data = img[0].data
-        new_path = out_path + file_name_split[1]
+        new_path = out_path + file_name_split[1][:-9] + fits_filter + "-" + str(pane) + "-" + file_name_split[1][-9:]
         img.writeto(new_path, overwrite=True)
-        os.makedirs("Q" + out_path[1:-1], exist_ok=True)
-        img.writeto("Q" + out_path[1:-1]+'/' + file_name_split[1], overwrite=True)
+        #os.makedirs("Q" + out_path[1:-1], exist_ok=True)
+        #img.writeto("Q" + out_path[1:-1]+'/' + file_name_split[1], overwrite=True)
         #  img[0].data = img_bk_data.astype('uint16')
         #  img.writeto(out_path[:-1]+'_unsigned_16int/' + file_name_split[1], overwrite=True)
         #img[0].data = (img[0].data*10).astype('int32')
@@ -1383,11 +1385,12 @@ if __name__ == '__main__':
     #archive_path = 'QC:/000ptr_saf/archive/sq01/20201207 HH/trimmed/'
     #out_path = "Q:/000ptr_saf/archive/sq01/20201207 HH/reduced/"
     #correct_image(camera_name, archive_path, '*H*H*.*', lng_path, out_path)
-    archive_path = 'Z:/saf/rosette/'
-    out_path = 'Z:/saf/rosette/analysis/'
+    archive_path = 'C:/000ptr_saf/archive/sq01/20210223/raw/'
+    out_path = 'C:/000ptr_saf/archive/sq01/20210223/new_reduced/'
     lng_path = "C:/000ptr_saf/archive/sq01/lng/"
+    correct_image(camera_name, archive_path, '*EX00*', lng_path, out_path)
     #annotate_image(camera_name, archive_path, '*-00*', lng_path, out_path)
-    sep_image(camera_name, archive_path, '*.f*t*', lng_path, out_path)
+    #sep_image(camera_name, archive_path, '*.f*t*', lng_path, out_path)
 
     # mod_correct_image(camera_name, archive_path, '*EX00*', lng_path, out_path)
     #archive_path = 'Q:/000ptr_saf/archive/sq01/20201203/reduced/'
