@@ -480,7 +480,11 @@ def calibrate (hdu, lng_path, frame_type='light', quick=False):
                 do_flat = False
         if do_flat and binning == 2: # and not g_dev['seq'].active_script == 'make_superscreenflats':
             try:
+<<<<<<< HEAD
               
+=======
+                
+>>>>>>> 6289160a7dd969a07c7dd6e157d34175cd3519da
                 img = img/scr_flat
                 cal_string +=', SCF'
             except:
