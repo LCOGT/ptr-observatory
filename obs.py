@@ -89,7 +89,10 @@ def to_bz2(filename, delete=False):
         comp = bz2.compress(uncomp.read())
         uncomp.close()
         if delete:
-            os.remove(filename)
+            try:
+                os.remove(filename)
+            except:
+                pass
         target = open(filename + '.bz2', 'wb')
         target.write(comp)
         target.close()
@@ -490,12 +493,12 @@ class Observatory:
                 with open(im_path + name, 'rb') as f:
                     files = {'file': (im_path + name, f)}
                     #if name[-3:] == 'jpg':
-                    #print('--> To AWS -->', str(im_path + name))
+                    print('--> To AWS -->', str(im_path + name))
                     requests.post(aws_resp['url'], data=aws_resp['fields'],
                                   files=files)
                 if name[-3:] == 'bz2' or name[-3:] == 'jpg' or \
                         name[-3:] == 'txt':
-                    # os.remove(im_path + name)
+                    #os.remove(im_path + name)
                     pass
                 self.aws_queue.task_done()
                 time.sleep(0.1)
@@ -545,17 +548,19 @@ class Observatory:
                 #Before saving reduced or generating postage, we flip
                 #the images so East is left and North is up based on
                 #The keyword PIERSIDE defines the orientation.
+                #Note the raw image is not flipped/
                 if hdu.header['PIERSIDE'] == "Look West":
                     hdu.data = np.flip(hdu.data)
                     hdu.header['IMGFLIP'] = True
                 wpath = paths['im_path'] + paths['red_name01']
-                hdu.writeto(wpath, overwrite=True)  # NB overwrite == True is dangerous in production code.
+                print('Reduced Mean:  ',hdu.data.mean())
+                hdu.writeto(wpath, overwrite=True)  # NB overwrite == True is dangerous in production code.  This is big fits to AWS
                 reduced_data_size = hdu.data.size
                 wpath = paths['red_path'] + paths['red_name01_lcl']    #This name is convienent for local sorting
-                hdu.writeto(wpath, overwrite=True)
+                hdu.writeto(wpath, overwrite=True) #Bigfit reduced
                 if self.site_name == 'saf':
                     wpath = paths['red_path_aux'] + paths['red_name01_lcl']
-                    hdu.writeto(wpath, overwrite=True)
+                    hdu.writeto(wpath, overwrite=True) #big fits to other computer in Neyle's office
                 #patch to test Midtone Contrast
                 
                 # image = 'Q:/000ptr_saf/archive/sq01/20201212 ans HH/reduced/HH--SigClip.fits'
@@ -588,11 +593,12 @@ class Observatory:
                 #  NB Should this step be part of calibrate?  Second should we form and send a
                 #  CSV file to AWS and possibly overlay key star detections?
                 #  Possibly even astro solve and align a series or dither batch?
+                #  This might want to be yet another thread queue, esp if we want to do Aperture Photometry.
                 no_AWS = False
                 quick = False
                 do_sep = False
                 spot = None
-                if do_sep:
+                if do_sep:    #WE have already ran this code when focusing, but we should not ever get here when doing that.
                     try:
                         img = hdu.data.copy().astype('float')
                         bkg = sep.Background(img)
@@ -687,12 +693,11 @@ class Observatory:
 
                 hdu.data = hdu.data.astype('uint16')
                 iy, ix = hdu.data.shape
-
                 if iy == ix:
                     resized_a = resize(hdu.data, (768,768), preserve_range=True)
                 else:
-                    resized_a = resize(hdu.data, (int(768*iy/ix), 768), preserve_range=True)  #  We should trim chips so ratio is exact.
-                #print(resized_a.shape, resized_a.astype('uint16'))
+                    resized_a = resize(hdu.data, (int(1536*iy/ix), 1536), preserve_range=True)  #  We should trim chips so ratio is exact.
+                print('New small fits size:  ', resized_a.shape)
                 hdu.data = resized_a.astype('uint16')
 
                 i768sq_data_size = hdu.data.size
@@ -739,10 +744,11 @@ class Observatory:
 
                 if not no_AWS:  #IN the no+AWS case should we skip more of the above processing?
                     #g_dev['cam'].enqueue_for_AWS(text_data_size, paths['im_path'], paths['text_name'])
+                  
                     g_dev['cam'].enqueue_for_AWS(jpeg_data_size, paths['im_path'], paths['jpeg_name10'])
                     g_dev['cam'].enqueue_for_AWS(i768sq_data_size, paths['im_path'], paths['i768sq_name10'])
                     #print('File size to AWS:', reduced_data_size)
-                    g_dev['cam'].enqueue_for_AWS(reduced_data_size, paths['im_path'], paths['red_name01'])
+                    #g_dev['cam'].enqueue_for_AWS(reduced_data_size, paths['im_path'], paths['red_name01'])
                     #if not quick:
                 #print('Sent to AWS Queue.')
                 time.sleep(0.5)
