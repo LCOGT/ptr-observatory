@@ -457,7 +457,7 @@ class Observatory:
             # Each mount operates async and has its own command queue to scan.
             # is it better to use just one command queue per site?
             # for mount in self.all_devices['mount'].keys():
-            #     self.scan_thread = threading.Thread(
+            #     self.scan_thre/ad = threading.Thread(
             #         target=self.scan_requests,
             #         args=(mount,)
             #     ).start()
