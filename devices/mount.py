@@ -568,8 +568,9 @@ class Mount:
                 y_field_deg = g_dev['cam'].config['camera']['camera1']['settings']['y_field_deg']
                 field_x = x_field_deg/15.   #  /15 for hours.
                 field_y = y_field_deg
-                self.ra_offset += -offset_x*field_x/2   #NB NB 20201230 Signs needs to be verified.
-                self.dec_offset += offset_y*field_y/2
+                #20210317 Changes singes fron NEyle.
+                self.ra_offset += offset_x*field_x/4   #NB NB 20201230 Signs needs to be verified.
+                self.dec_offset += -offset_y*field_y/4
                 print("Offsets:  ", round(self.ra_offset, 5), round(self.dec_offset, 4))
                 if not self.offset_received:
                     self.ra_prior, self.dec_prior = icrs_ra, icrs_dec #Do not let this change.
