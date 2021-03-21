@@ -1161,6 +1161,8 @@ class Camera:
                     else:
                         hdu.header['PIERSIDE'] = 'Undefined'
                         pier_string = ''
+                    hdu.header['RACORR'] = g_dev['mnt'].ra_corr    #Should these be averaged?
+                    hdu.header['DECCORR'] = g_dev['mnt'].dec_corr
                     hdu.header['IMGFLIP'] = False
                     hdu.header['OTA'] = ""
                     hdu.header['SELECTEL'] = "tel1"

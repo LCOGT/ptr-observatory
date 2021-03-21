@@ -1144,7 +1144,7 @@ class Sequencer:
         self.guard = False
 
 
-    def equatorial_pointing_run(self, reg, opt, spacing=10, vertical=False, grid=False, alt_minimum=25):
+    def equatorial_pointing_run(self, req, opt, spacing=10, vertical=False, grid=False, alt_minimum=25):
         '''
         unpark telescope
         if not open, open dome
@@ -1231,7 +1231,7 @@ IF sweep
         self. sky_guard = False
         return
  
-    def sky_grid_pointing_run(self, reg, opt, spacing=10, vertical=False, grid=False, alt_minimum=25):
+    def sky_grid_pointing_run(self, req, opt, spacing=10, vertical=False, grid=False, alt_minimum=25):
         #camera_name = str(self.config['camera']['camera1']['name'])
         '''
         unpark telescope
@@ -1277,23 +1277,26 @@ A variant on this is cover a grid, cover a + sign shape.
 IF sweep
         '''
         self.sky_guard = True
-        breakpoint()
-        print("Starting sky sweep.")
+        print("Starting sky sweep. ")
         g_dev['mnt'].unpark_command({}, {})
         if g_dev['enc'].is_dome:
             g_dev['enc'].Slaved = True  #Bring the dome into the picture.
         g_dev['obs'].update_status()
-        g_dev['scr'].screen_dark()
+        try:
+            g_dev['scr'].screen_dark()
+        except:
+            pass
         g_dev['obs'].update_status()
         g_dev['mnt'].unpark_command()
         #cam_name = str(self.config['camera']['camera1']['name'])
 
         sid = g_dev['mnt'].mount.SiderealTime
-        if reg['gridType'] == 'medium':  # ~50
+        breakpoint()
+        if req['gridType'] == 'medium':  # ~50
             grid = 4
-        if reg['gridType'] == 'coarse':  # ~30
+        if req['gridType'] == 'coarse':  # ~30
             grid = 7
-        if reg['gridType'] == 'fine':    # ~100
+        if req['gridType'] == 'fine':    # ~100
             grid = 2
         grid_stars = tycho.az_sort_targets(sid, grid=2)  #4 produces about 50 targets.
         length = len(grid_stars)
@@ -1338,7 +1341,7 @@ IF sweep
         self.sky_guard = False
         return       
 
-    def rel_sky_grid_pointing_run(self, reg, opt, spacing=10, vertical=False, grid=False, alt_minimum=25):
+    def rel_sky_grid_pointing_run(self, req, opt, spacing=10, vertical=False, grid=False, alt_minimum=25):
         #camera_name = str(self.config['camera']['camera1']['name'])
         '''
         unpark telescope
@@ -1396,11 +1399,11 @@ IF sweep
         #cam_name = str(self.config['camera']['camera1']['name'])
 
         sid = g_dev['mnt'].mount.SiderealTime
-        if reg['gridType'] == 'medium':  # ~50
+        if req['gridType'] == 'medium':  # ~50
             grid = 4
-        if reg['gridType'] == 'coarse':  # ~30
+        if req['gridType'] == 'coarse':  # ~30
             grid = 7
-        if reg['gridType'] == 'fine':    # ~100
+        if req['gridType'] == 'fine':    # ~100
             grid = 2
         grid_stars = tycho.tpt_grid
         length = len(grid_stars)
@@ -1445,7 +1448,7 @@ IF sweep
         self.sky_guard = False
         return    
        
-    def vertical_pointing_run(self, reg, opt, spacing=10, vertical=False, grid=False, alt_minimum=25):
+    def vertical_pointing_run(self, req, opt, spacing=10, vertical=False, grid=False, alt_minimum=25):
         '''
         unpark telescope
         if not open, open dome
