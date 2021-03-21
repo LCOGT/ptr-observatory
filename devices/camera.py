@@ -1258,7 +1258,7 @@ class Camera:
                         os.makedirs(im_path_r + g_dev['day'] + '/reduced/', exist_ok=True)
                         im_path   = im_path_r + g_dev['day'] + '/to_AWS/'
                         raw_path  = im_path_r + g_dev['day'] + '/raw/'
-                        cal_path  = im_path_r + g_dev['day'] + '/calib/'
+                        cal_path  = im_path_r + '/calib/'
                         red_path  = im_path_r + g_dev['day'] + '/reduced/'
                         
                     except:
@@ -1307,7 +1307,7 @@ class Camera:
                     
                     # if  not script in ('True', 'true', 'On', 'on'):   #  not quick and    #Was moved 20201022 for grid
                     #     if not quick:
-                    self.enqueue_for_AWS(text_data_size, im_path, text_name)
+                    #self.enqueue_for_AWS(text_data_size, im_path, text_name)
                     self.to_reduce((paths, hdu))
                     hdu.writeto(raw_path + raw_name00, overwrite=True)   #Sve full raw file locally
                     g_dev['obs'].send_to_user("Raw image saved locally. ", p_level='INFO')

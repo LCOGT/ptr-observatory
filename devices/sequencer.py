@@ -694,7 +694,7 @@ class Sequencer:
         #  we can speed it up
         #Here we may need to switch off any
         #  Pick up list of filters is sky flat order of lowest to highest transparency.
-        pop_list = self.config['filter_wheel']['filter_wheel1']['settings']['filter_sky_sort']
+        pop_list = self.config['filter_wheel']['filter_wheel1']['settings']['filter_sky_sort'].copy()
         print('filters by low to high transmission:  ', pop_list)
         #length = len(pop_list)
         obs_win_begin, sunset, sunrise, ephemNow = self.astro_events.getSunEvents()
@@ -706,15 +706,14 @@ class Sequencer:
             #g_dev['fil'].set_number_command(current_filter)
             #g_dev['mnt'].slewToSkyFlatAsync()
             bright =50000
-            scale = 1.15   #20201121 adjustment
+            scale = 1.0    #1.15   #20201121 adjustment
             
-            prior_scale = 1
+            prior_scale = 1.0
             #breakpoint()
             while acquired_count < flat_count:
                 #if g_dev['enc'].is_dome:   #Does not apply
                 g_dev['mnt'].slewToSkyFlatAsync()
                 try:
-                    #breakpoint()
                     exp_time = prior_scale*scale*40000/(float(g_dev['fil'].filter_data[current_filter][3])*g_dev['ocn'].meas_sky_lux)
                     if exp_time > 300:
                         exp_time = 300
@@ -1278,6 +1277,7 @@ A variant on this is cover a grid, cover a + sign shape.
 IF sweep
         '''
         self.sky_guard = True
+        breakpoint()
         print("Starting sky sweep.")
         g_dev['mnt'].unpark_command({}, {})
         if g_dev['enc'].is_dome:
@@ -1383,6 +1383,7 @@ IF sweep
 A variant on this is cover a grid, cover a + sign shape.
 IF sweep
         '''
+        breakpoint()
         self.sky_guard = True
         print("Starting sky sweep.")
         g_dev['mnt'].unpark_command({}, {})

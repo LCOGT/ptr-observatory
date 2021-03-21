@@ -149,6 +149,8 @@ class ObservingConditions:
                 status = {}   #This code faults when Rain is reported the Cloudcover does not
                               #return properly
                 status2 = {}
+                self.temperature = self.boltwood.Temperature
+                self.pressure = 784*0.750062   #Mbar to mmHg
                 status = {"temperature_C": round(self.boltwood.Temperature, 2),
                           "pressure_mbar": 784.,
                           "humidity_%": self.boltwood.Humidity,
