@@ -457,7 +457,7 @@ class Observatory:
             # Each mount operates async and has its own command queue to scan.
             # is it better to use just one command queue per site?
             # for mount in self.all_devices['mount'].keys():
-            #     self.scan_thread = threading.Thread(
+            #     self.scan_thre/ad = threading.Thread(
             #         target=self.scan_requests,
             #         args=(mount,)
             #     ).start()
@@ -548,6 +548,7 @@ class Observatory:
                 #Before saving reduced or generating postage, we flip
                 #the images so East is left and North is up based on
                 #The keyword PIERSIDE defines the orientation.
+                #Note the raw image is not flipped/
                 if hdu.header['PIERSIDE'] == "Look West":
                     hdu.data = np.flip(hdu.data)
                     hdu.header['IMGFLIP'] = True

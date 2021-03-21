@@ -42,8 +42,11 @@ from astroquery.simbad import Simbad
 
 #from ptr_config import *
 import ephem
+from config import site_config
 #from ptr_astrometrics import *
-
+siteCoordinates = EarthLocation(lat=site_config['latitude']*u.deg, \
+                                 lon=site_config['longitude']*u.deg,
+                                 height=site_config['elevation']*u.m)
 '''
 Obs List
 [M48, M67, C25, N2619, M81, M82, N2683, M44, M42, M45, M1, C60, C61]
@@ -92,7 +95,7 @@ else:
     MOUNT = 'ASA DM-160'
     INTEGRATOR_SIZE = 3
 
-model = {}    #Note model starts out zero
+model = {}    #Note model starts out zero, need to persist actual model.
 model['IH'] = 0
 model['ID'] = 0
 model['WH'] = 0
@@ -1398,6 +1401,40 @@ def reduceAz(pAz):
     return pAz
 
 
+def reduceHaR(pHa):
+    while pHa <= -PI:
+        pHa += TWOPI
+    while pHa > PI:
+        pHa -= TWOPI
+    return pHa
+
+def reduceRaR(pRa):
+    while pRa < 0:
+        pRa += TWOPI
+    while pRa >=TWOPI:
+        pRa -= TWOPI
+    return pRa
+
+def reduceDecR(pDec):
+    if pDec > PIOVER2:
+        pDec =  PIOVER2
+    if pDec < - PIOVER2:
+        pDec = - PIOVER2
+    return pDec
+
+def reduceAltR(pAlt):
+    if pAlt >  PIOVER2:
+        pAlt =  PIOVER2
+    if pAlt < - PIOVER2:
+        pAlt = - PIOVER2
+    return pAlt
+
+def reduceAzR(pAz):
+    while pAz < 0.0:
+        pAz += TWOPI
+    while pAz >= TWOPI:
+        pAz -= TWOPI
+    return pAz
 
 def raAvg(pFirst,pNext):
     '''Creates a correct average over 0 to 23.999 hour transition'''
@@ -1482,32 +1519,32 @@ def azAvg(pFirst,pNext):
 #    stars.close()
 #    out.close()
 
-def nextSeq(pCamera):
-    global SEQ_Counter
-    camShelf = shelve.open('Q:\\ptr_night_shelf\\' + pCamera)
-    #print('Shelf:  ', camShelf)
-    sKey = 'Sequence'
-    #print(type(sKey), sKey)
-    seq = camShelf[sKey]      #get an 8 character string
-    seqInt = int(seq)
-    seqInt += 1
-    seq = ('0000000000'+str(seqInt))[-8:]
-    #print(pCamera,seq)
-    camShelf['Sequence'] = seq
-    camShelf.close()
-    SEQ_Counter = seq
-    return seq
+# def nextSeq(pCamera):
+#     global SEQ_Counter
+#     camShelf = shelve.open('Q:\\ptr_night_shelf\\' + pCamera)
+#     #print('Shelf:  ', camShelf)
+#     sKey = 'Sequence'
+#     #print(type(sKey), sKey)
+#     seq = camShelf[sKey]      #get an 8 character string
+#     seqInt = int(seq)
+#     seqInt += 1
+#     seq = ('0000000000'+str(seqInt))[-8:]
+#     #print(pCamera,seq)
+#     camShelf['Sequence'] = seq
+#     camShelf.close()
+#     SEQ_Counter = seq
+#     return seq
 
-def makeSeq(pCamera):
-    camShelf = shelve.open('Q:\\ptr_night_shelf\\' + str(pCamera))
-    #seq = camShelf['Sequence']      # a 9 character string
-    seqInt = int(-1)
-    seqInt  += 1
-    seq = ('0000000000'+str(seqInt))[-8:]
-    print('Making new seq: ' , pCamera, seq)
-    camShelf['Sequence'] = seq
-    camShelf.close()
-    return seq
+# def makeSeq(pCamera):
+#     camShelf = shelve.open('Q:\\ptr_night_shelf\\' + str(pCamera))
+#     #seq = camShelf['Sequence']      # a 9 character string
+#     seqInt = int(-1)
+#     seqInt  += 1
+#     seq = ('0000000000'+str(seqInt))[-8:]
+#     print('Making new seq: ' , pCamera, seq)
+#     camShelf['Sequence'] = seq
+#     camShelf.close()
+#     return seq
 
 
 
@@ -1547,7 +1584,7 @@ class Pointing(object):
 
 def get_current_times():
     ut_now = Time(datetime.datetime.now(), scale='utc', location=siteCoordinates)   #From astropy.time
-    sid_now = ut_now.sidereal_time('apparent')
+    sid_now = ut_now.sidereal_time('apparent')  #Should convert this to a value.
     sidTime = sid_now
 # =============================================================================
 #     THIS NEEDS FIXING! Sloppy
@@ -1642,12 +1679,13 @@ def rotate(pX, pY, pTheta):
     return pX * cTheta - pY * sTheta, pX * sTheta + pY * cTheta
 
 def transform_raDec_to_haDec(pRa, pDec, pSidTime):
-    return (reduceHa(pSidTime - pRa), reduceDec(pDec))
+    return (reduceHaR(pSidTime - pRa), reduceDecR(pDec))
 
 def transformHatoRaDec(pHa, pDec, pSidTime):
-    return (reduceRa(pSidTime - pHa), reduceDec(pDec))
+    return (reduceHaR(pSidTime - pHa), reduceDecR(pDec))
 
-def transform_haDec_to_azAlt(pLocal_hour_angle, pDec, lat=siteLatitude):
+def transform_haDec_to_azAlt(pLocal_hour_angle, pDec, dummy):
+    lat = site_config['latitude']
     latr = math.radians(lat)
     sinLat = math.sin(latr)
     cosLat = math.cos(latr)
@@ -1665,7 +1703,8 @@ def transform_haDec_to_azAlt(pLocal_hour_angle, pDec, lat=siteLatitude):
     altitude = reduceAlt(altitude)
     return (azimuth, altitude)#, local_hour_angle)
 
-def transform_azAlt_to_HaDec(pAz, pAlt, lat=siteLatitude):
+def transform_azAlt_to_HaDec(pAz, pAlt, dummy):
+    lat = site_config['latitude']
     latr = math.radians(lat)
     sinLat = math.sin(latr)
     cosLat = math.cos(latr)
@@ -1680,7 +1719,7 @@ def transform_azAlt_to_HaDec(pAz, pAlt, lat=siteLatitude):
     else:
         dec = math.asin(sinAlt*sinLat - cosAlt*cosAz*cosLat)
         ha = math.atan2(sinAz, (cosAz*sinLat + math.tan(alt)*cosLat))
-        return (reduceHa(ha*RTOH), reduceDec(dec*RTOD))
+        return (reduceHaR(ha*RTOH), reduceDecR(dec*RTOD))
 
 def transform_azAlt_to_RaDec(pAz, pAlt, pLatitude, pSidTime):
     ha, dec = transform_azAlt_to_HaDec(pAz, pAlt, pLatitude)
@@ -1692,6 +1731,7 @@ def test_haDec_AltAz_haDec():
     for ha in lHa:
         for dec in lDec:
             print('Starting:  ', ha, dec)
+            site_latitude =  config['latitude']
             lAz, lAlt = transform_haDec_to_azAlt(ha, dec, siteLatitude)
             tHa, tDec = transform_azAlt_to_HaDec(lAz, lAlt, siteLatitude)
             print (ha, tHa, dec, tDec)
@@ -1744,33 +1784,38 @@ def test_refraction():   #passes 20170104   20180909
 
 def appToObsRaHa(appRa, appDec, pSidTime):
     global raRefr, decRefr, refAsec
+    from obs import g_dev
     appHa, appDec = transform_raDec_to_haDec(appRa, appDec, pSidTime)
-    appAz, appAlt = transform_haDec_to_azAlt(appHa, appDec, siteLatitude)
-    obsAlt, refAsec = apply_refraction_inEl(appAlt, siteRefTemp, siteRefPress)
-    obsHa, obsDec = transform_azAlt_to_HaDec(appAz, obsAlt, siteLatitude)
-    raRefr = reduceHa(appHa - obsHa)*HTOS
-    decRefr = -reduceDec(appDec -obsDec)*DTOS
-    return reduceHa(obsHa), reduceDec(obsDec), refAsec
+    appAz, appAlt = transform_haDec_to_azAlt(appHa, appDec, site_config['latitude']*DTOR)
+    obsAlt, refAsec = apply_refraction_inEl(appAlt,  g_dev['ocn'].temperature,  g_dev['ocn'].pressure)
+    obsHa, obsDec = transform_azAlt_to_HaDec(appAz, obsAlt, site_config['latitude'])
+    raRefr = reduceHaR(appHa - obsHa)*HTOS
+    decRefr = -reduceDecR(appDec - obsDec)*DTOS
+    return reduceHaR(obsHa), reduceDecR(obsDec), refAsec
 
 def obsToAppHaRa(obsHa, obsDec, pSidTime):
     global raRefr, decRefr, refAsec
-    obsAz, obsAlt = transform_haDec_to_azAlt(obsHa, obsDec, siteLatitude)
-    appAlt, refr = correct_refraction_inEl(obsAlt, siteRefTemp, siteRefPress)
-    appHa, appDec = transform_azAlt_to_HaDec(obsAz, appAlt, siteLatitude)
+    from obs import g_dev
+    breakpoint()
+    obsAz, obsAlt = transform_haDec_to_azAlt(obsHa, obsDec, site_config['latitude'])
+    appAlt, refr = correct_refraction_inEl(obsAlt, g_dev['ocn'].temperature,  g_dev['ocn'].pressure)
+    appHa, appDec = transform_azAlt_to_HaDec(obsAz, appAlt, site_config['latitude'])
     appRa, appDec = transformHatoRaDec(appHa, appDec, pSidTime)
-    raRefr = reduceHa(-appHa + obsHa)*HTOS
-    decRefr = -reduceDec(-appDec + obsDec)*DTOS
-    return reduceRa(appRa), reduceDec(appDec)
+    raRefr = reduceHaR(-appHa + obsHa)*HTOS
+    decRefr = -reduceDecR(-appDec + obsDec)*DTOS
+    return reduceRaR(appRa), reduceDecR(appDec)
 
-def appToObsRaRa(appRa, appDec, pSidTime):
+def appToObsRaDec(appRa, appDec, pSidTime):
+    breakpoint()
     obsHa, obsDec, refR = appToObsRaHa(appRa, appDec, pSidTime)
     obsRa, obsDec = transformHatoRaDec(obsHa, obsDec, pSidTime)
-    return reduceRa(obsRa), reduceDec(obsDec), refR
+    return reduceRaR(obsRa), reduceDecR(obsDec), refR
 
-def obsToAppRaRa(obsRa, obsDec, pSidTime):
-    obsHa, obsDec = transform_raDec_to_haDec(obsRa, obsDec, pSidTime)
-    appRa, appDec, refr =  obsToAppHaRa(obsHa, obsDec, pSidTime)
-    return reduceRa(appRa), reduceDec(appDec)
+def obsToAppRaDec(obsRa, obsDec, pSidTime):
+    breakpoint()
+    obsHa, obsDec = transform_raDec_to_haDec(obsRa, obsDec, pSidTime.value)
+    appRa, appDec, refr =  obsToAppHaRa(obsHa, obsDec, pSidTime.value)
+    return reduceRaR(appRa), reduceDecR(appDec)
 
 
 def test_app_obs_app():
@@ -1790,6 +1835,7 @@ def test_app_obs_app():
 
 def transform_mount_to_observed(pRoll, pPitch, pPierSide, loud=False):
     #I am amazed this works so well even very near the celestrial pole.
+    #input is Ha in hours and pitch in degrees.
     if not ModelOn:
         return (pRoll, pPitch)
     else:
@@ -1816,7 +1862,7 @@ def transform_mount_to_observed(pRoll, pPitch, pPierSide, loud=False):
 
 
 def transformObsToMount(pRoll, pPitch, pPierSide, loud=False):
-    #This routine is diectly invertible.
+    #This routine is diectly invertible. pRoll in Hours, pPitch in Deg.
     '''
     Long-run probably best way to do this in inherit a model dictionary.
 
@@ -1859,6 +1905,7 @@ def transformObsToMount(pRoll, pPitch, pPierSide, loud=False):
         #Apply IJ and ID to incoming coordinates, and if needed GEM correction.
         rRoll = math.radians(pRoll*15 - ih /3600.)
         rPitch = math.radians(pPitch - idec /3600.)
+        siteLatitude = site_config['latitude']
         if not ALTAZ:
             if pPierSide == 1:
                 rRoll += math.radians(Wh/3600.)
@@ -1866,7 +1913,6 @@ def transformObsToMount(pRoll, pPitch, pPierSide, loud=False):
                 #print("PIERSIDE IS BEING APPLIED:  ", pPierSide, Wh, Wd)
             if loud:
                 print(ih, idec, Wh, Wd, ma, me, ch, np, tf, tx, hces, hcec, dces, dcec)
-
                 # Do these need flipping?  I do not think so.
             ch = -ch/3600.
             np = -np/3600.
@@ -1920,7 +1966,7 @@ def transformObsToMount(pRoll, pPitch, pPierSide, loud=False):
             cPitch = centration(fPitch, -dces, dcec)
 
             if loud: print('f, c Pitch: ', fPitch, cPitch)
-            corrRoll = reduceRa(cRoll/15.)
+            corrRoll = reduceHa(cRoll/15.)
             corrPitch = reduceDec(cPitch)
             if loud: print('Final:   ', fRoll*RTOH, fPitch*RTOD)
             raCorr = reduceHa(corrRoll - pRoll)*15*3600

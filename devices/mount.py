@@ -50,6 +50,11 @@ from astropy import units as u
 from astropy.coordinates import SkyCoord, FK5, ICRS, FK4, Distance, \
                          EarthLocation, AltAz
                          #This should be removed or put in a try
+
+import ptr_utility
+from config import site_config
+import math
+
 # =============================================================================
 # from astropy.utils.iers import conf
 # #conf.auto_max_age = None 
@@ -71,12 +76,37 @@ from astropy.coordinates import SkyCoord, FK5, ICRS, FK4, Distance, \
 #                                 lon=siteLongitude*u.deg,
 #                                 height=siteElevation*u.m)
 #ptr = EarthLocation(lat=siteLatitude*u.deg, lon=siteLongitude*u.deg, height=siteElevation*u.m)
+DEG_SYM = '°'
+PI = math.pi
+TWOPI = math.pi*2
+PIOVER2 = math.pi/2.
+DTOR = math.pi/180.
+RTOD = 180/math.pi
+STOR = math.pi/180./3600.
+RTOS = 3600.*180./math.pi
+RTOH = 12./math.pi
+HTOR = math.pi/12.
+HTOS = 15*3600.
+DTOS = 3600.
+STOD = 1/3600.
+STOH = 1/3600/15.
+SecTOH = 1/3600.
+APPTOSID = 1.00273811906 #USNO Supplement
+MOUNTRATE = 15*APPTOSID  #15.0410717859
+KINGRATE = 15.029
+RefrOn = True
 
+ModelOn = True
+RatesOn = True
 tzOffset = -7
 
 mountOne = "PW_L600"
 mountOneAscom = None
-#The mount is not threaded and uses non-blocking seek. 
+
+siteCoordinates = EarthLocation(lat=site_config['latitude']*u.deg, \
+                                 lon=site_config['longitude']*u.deg,
+                                 height=site_config['elevation']*u.m)
+    #The mount is not threaded and uses non-blocking seek. 
 
 def ra_fix(ra):
     while ra >= 24:
@@ -85,7 +115,7 @@ def ra_fix(ra):
         ra += 24
     return ra
 
-def ra_dec_fix(ra, dec):
+def ra_dec_fix(ra, dec): #Note this is not a mechanical transformation of dec
     if dec > 90:
         dec = 180 - dec
         ra -= 12
@@ -237,6 +267,14 @@ class Mount:
         pier_east = 0    # == 0  self.flip_correction_needed
         if self. mount.EquatorialSystem == 1:
             self.get_current_times()
+            if self.mount.sideOfPier == (1,):
+                pierside = 1
+            else:
+                pierside =0
+            uncorr_mech_ra_h = self.mount.RightAscension
+            uncorr_mech_dec_d =self.mount.Declination
+            uncorr_mech_ha_h, dec_dummy =ptr_utility.transform_raDec_to_haDec(uncorr_mech_ra_h, uncorr_mech_dec_d, self.sid_now.value*HTOR)
+            rollTrial ,pitchTrial = ptr_utility.transform_mount_to_observed(uncorr_mech_ha_h, uncorr_mech_dec_d, pierside, loud=False)
             jnow_ra = self.mount.RightAscension - ra_cal_off    # NB the mnt_refs are subtracted here.
             jnow_dec = self.mount.Declination - dec_cal_off
             if self.mount.sideOfPier == pier_east \
@@ -611,7 +649,8 @@ class Mount:
         if self.mount.CanPark:
             #print("mount cmd: unparking mount")
             self.mount.Unpark()
-        ra_cal_off, dec_cal_off = self.get_mount_ref() 
+        ra_cal_off, dec_cal_off = self.get_mount_ref()
+
         if self.mount.EquatorialSystem == 1:
             self.get_current_times()   #  NB We should find a way to refresh this once a day, esp. for status return.
             icrs_coord = SkyCoord(ra*u.hour, dec*u.degree, frame='icrs')
@@ -621,6 +660,7 @@ class Mount:
             if self.offset_received:
                 ra +=  ra_cal_off + self.ra_offset 
                 dec +=  dec_cal_off + self.dec_offset              
+        pier_east = 1
         if self.flip_correction_needed:
             pier_east = 0
             #pier_west = 1
@@ -634,10 +674,19 @@ class Mount:
                 #DestSide... not implemented in PWI_4
                 pass
         ra, dec = ra_dec_fix(ra, dec)
+        #Here we add in refraction and the PTPOINT compatible mount model
+        ha_obs, dec_obs, refr = ptr_utility.appToObsRaHa(ra*HTOR, dec*DTOR, self.sid_now.value*HTOR)
+        #Here we would convert to model and calculate tracking rate correction.
+        haH, decD = ptr_utility.transformObsToMount(ha_obs*RTOH, dec_obs*RTOD, pier_east, loud=False)       
+        ra_m, dec_m = ptr_utility.transformHatoRaDec(haH*HTOR, decD*DTOR, self.sid_now.value*HTOR)
         self.mount.Tracking = True
-        self.mount.SlewToCoordinatesAsync(ra, dec)
-        self.mount.RightAscensionRate = tracking_rate_ra
-        self.mount.DeclinationRate = tracking_rate_dec
+        self.mount.SlewToCoordinatesAsync(ra_m*RTOH, dec_m*RTOD)
+        ###  figure out velocity
+        ha_obs_a, dec_obs_a, refr_a = ptr_utility.appToObsRaHa(ra*HTOR, dec*DTOR, (self.sid_now.value + 1/12)*HTOR)   #% minute advance
+        haH_a, decD_a = ptr_utility.transformObsToMount(ha_obs_a*RTOH, dec_obs_a*RTOD, pier_east, loud=False)       
+        ra_a, dec_a = ptr_utility.transformHatoRaDec(haH_a*HTOR, decD_a*DTOR, (self.sid_now.value + 1/12)*HTOR)
+        self.mount.RightAscensionRate = (ra_a - ra_m)
+        self.mount.DeclinationRate = (dec_a - dec_m)
         #self.current_icrs_ra = icrs_coord.ra.hour   #NB this assignment is incorrect
         #self.current_icrs_dec = icrs_coord.dec.degree
 

@@ -1385,8 +1385,10 @@ if __name__ == '__main__':
     #archive_path = 'QC:/000ptr_saf/archive/sq01/20201207 HH/trimmed/'
     #out_path = "Q:/000ptr_saf/archive/sq01/20201207 HH/reduced/"
     #correct_image(camera_name, archive_path, '*H*H*.*', lng_path, out_path)
-    archive_path = 'C:/000ptr_saf/archive/sq01/20210223/raw/'
-    out_path = 'C:/000ptr_saf/archive/sq01/20210223/new_reduced/'
+
+    archive_path = 'Z:/saf/Beehive/'
+    out_path = 'Z:/saf/Beehive/analysis/'
+
     lng_path = "C:/000ptr_saf/archive/sq01/lng/"
     correct_image(camera_name, archive_path, '*EX00*', lng_path, out_path)
     #annotate_image(camera_name, archive_path, '*-00*', lng_path, out_path)
