@@ -820,6 +820,7 @@ class Camera:
                     break
                 except Exception as e:
                     print('Exception in camera retry loop:  ', e)
+                    breakpoint()
                     self.retry_camera -= 1
                     num_retries += 1
                     continue

@@ -515,7 +515,7 @@ class Observatory:
         try:
             resp = requests.post(url_log, body)
         except:
-            print("Log did not send.", resp)
+            print("Log did not send, usually not fatal.")
     # Note this is another thread!
     def reduce_image(self):
         '''
