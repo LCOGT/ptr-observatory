@@ -820,6 +820,7 @@ class Camera:
                     break
                 except Exception as e:
                     print('Exception in camera retry loop:  ', e)
+                    breakpoint()
                     self.retry_camera -= 1
                     num_retries += 1
                     continue
@@ -1161,6 +1162,8 @@ class Camera:
                     else:
                         hdu.header['PIERSIDE'] = 'Undefined'
                         pier_string = ''
+                    hdu.header['RACORR'] = g_dev['mnt'].ra_corr    #Should these be averaged?
+                    hdu.header['DECCORR'] = g_dev['mnt'].dec_corr
                     hdu.header['IMGFLIP'] = False
                     hdu.header['OTA'] = ""
                     hdu.header['SELECTEL'] = "tel1"

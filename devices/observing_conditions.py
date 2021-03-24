@@ -466,7 +466,7 @@ class ObservingConditions:
         try:
             requests.post(url, data)
         except:
-            print("Wx post failed.")
+            print("Wx post failed, usually not a fatal error.")
         return status
 
 

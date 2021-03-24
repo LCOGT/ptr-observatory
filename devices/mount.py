@@ -164,6 +164,8 @@ class Mount:
         self.offset_received = None
         self.east_ra_correction = config['mount']['mount1']['east_ra_correction']
         self.east_dec_correction = config['mount']['mount1']['east_dec_correction']
+        self.ra_corr = 0.0
+        self.dec_corr = 0.0
         if abs(self.east_ra_correction) > 0 or abs(self.east_ra_correction) > 0:
             self.flip_correction_needed = True
             print("Flip correction needed.")
@@ -272,11 +274,13 @@ class Mount:
             else:
                 pierside =0
             uncorr_mech_ra_h = self.mount.RightAscension
-            uncorr_mech_dec_d =self.mount.Declination
-            uncorr_mech_ha_h, dec_dummy =ptr_utility.transform_raDec_to_haDec(uncorr_mech_ra_h, uncorr_mech_dec_d, self.sid_now.value*HTOR)
-            rollTrial ,pitchTrial = ptr_utility.transform_mount_to_observed(uncorr_mech_ha_h, uncorr_mech_dec_d, pierside, loud=False)
-            jnow_ra = self.mount.RightAscension - ra_cal_off    # NB the mnt_refs are subtracted here.
-            jnow_dec = self.mount.Declination - dec_cal_off
+            uncorr_mech_dec_d = self.mount.Declination
+            uncorr_mech_ha_h, dec_dummy = ptr_utility.transform_raDec_to_haDec(uncorr_mech_ra_h, uncorr_mech_dec_d, self.sid_now.value*HTOR)
+            roll_obs, pitch_obs= ptr_utility.transform_mount_to_observed(uncorr_mech_ha_h, uncorr_mech_dec_d, pierside, loud=False)
+            app_ra, app_dec = ptr_utility.obsToAppHaRa(roll_obs, pitch_obs, self.sid_now.value*HTOR)
+            jnow_ra = app_ra*RTOH - ra_cal_off    # NB the mnt_refs are subtracted here.
+            jnow_dec = app_dec*RTOD - dec_cal_off
+
             if self.mount.sideOfPier == pier_east \
                 and self.flip_correction_needed:
                 jnow_ra -=  self.east_ra_correction   #Brought in from local calib.py file correction is subtracted.
@@ -658,7 +662,7 @@ class Mount:
             ra = jnow_coord.ra.hour
             dec = jnow_coord.dec.degree
             if self.offset_received:
-                ra +=  ra_cal_off + self.ra_offset 
+                ra +=  ra_cal_off + self.ra_offset          #Offsets are J.now
                 dec +=  dec_cal_off + self.dec_offset              
         pier_east = 1
         if self.flip_correction_needed:
@@ -668,17 +672,20 @@ class Mount:
             try:
                 new_pierside = self.mount.DestinationSideOfPier(ra, dec)  # A tuple gets returned.
                 if new_pierside[0] == pier_east:
-                    ra += self.east_ra_correction  #NB it takes a restart to pick up a new correction.
+                    ra += self.east_ra_correction  #NB it takes a restart to pick up a new correction whihic is also J.now.
                     dec += self.east_dec_correction
             except:
                 #DestSide... not implemented in PWI_4
                 pass
-        ra, dec = ra_dec_fix(ra, dec)
+        ra_h, dec_d = ra_dec_fix(ra, dec)
         #Here we add in refraction and the PTPOINT compatible mount model
-        ha_obs, dec_obs, refr = ptr_utility.appToObsRaHa(ra*HTOR, dec*DTOR, self.sid_now.value*HTOR)
+        ha_obs_r, dec_obs_r, refr_amin = ptr_utility.appToObsRaHa(ra_h*HTOR, dec_d*DTOR, self.sid_now.value*HTOR)
+        ra_obs_r, dec_obs_r = ptr_utility.transformHatoRaDec(ha_obs_r, dec_obs_r, self.sid_now.value*HTOR)
         #Here we would convert to model and calculate tracking rate correction.
-        haH, decD = ptr_utility.transformObsToMount(ha_obs*RTOH, dec_obs*RTOD, pier_east, loud=False)       
+        haH, decD = ptr_utility.transformObsToMount(ha_obs_r*RTOH, dec_obs_r*RTOD, pier_east, loud=False)       
         ra_m, dec_m = ptr_utility.transformHatoRaDec(haH*HTOR, decD*DTOR, self.sid_now.value*HTOR)
+        self.ra_corr = ptr_utility.reduceHaR(ra_m - ra_obs_r)*RTOS     #These are mechanical values, not j.anything
+        self.dec_corr = ptr_utility.reduceDecR(dec_m - dec_obs_r)*RTOS
         self.mount.Tracking = True
         self.mount.SlewToCoordinatesAsync(ra_m*RTOH, dec_m*RTOD)
         ###  figure out velocity

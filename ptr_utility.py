@@ -175,8 +175,8 @@ def zeroModel():
     model['ID'] = 0
     model['WH'] = 0
     model['WD'] = 0
-    model['MA'] = 0
-    model['ME'] = 0
+    model['MA'] = 500
+    model['ME'] = -750
     model['CH'] = 0
     model['NP'] = 0
     model['TF'] = 0
@@ -1682,7 +1682,7 @@ def transform_raDec_to_haDec(pRa, pDec, pSidTime):
     return (reduceHaR(pSidTime - pRa), reduceDecR(pDec))
 
 def transformHatoRaDec(pHa, pDec, pSidTime):
-    return (reduceHaR(pSidTime - pHa), reduceDecR(pDec))
+    return (reduceRaR(pSidTime - pHa), reduceDecR(pDec))
 
 def transform_haDec_to_azAlt(pLocal_hour_angle, pDec, dummy):
     lat = site_config['latitude']
@@ -1796,7 +1796,6 @@ def appToObsRaHa(appRa, appDec, pSidTime):
 def obsToAppHaRa(obsHa, obsDec, pSidTime):
     global raRefr, decRefr, refAsec
     from obs import g_dev
-    breakpoint()
     obsAz, obsAlt = transform_haDec_to_azAlt(obsHa, obsDec, site_config['latitude'])
     appAlt, refr = correct_refraction_inEl(obsAlt, g_dev['ocn'].temperature,  g_dev['ocn'].pressure)
     appHa, appDec = transform_azAlt_to_HaDec(obsAz, appAlt, site_config['latitude'])
@@ -1806,13 +1805,11 @@ def obsToAppHaRa(obsHa, obsDec, pSidTime):
     return reduceRaR(appRa), reduceDecR(appDec)
 
 def appToObsRaDec(appRa, appDec, pSidTime):
-    breakpoint()
     obsHa, obsDec, refR = appToObsRaHa(appRa, appDec, pSidTime)
     obsRa, obsDec = transformHatoRaDec(obsHa, obsDec, pSidTime)
     return reduceRaR(obsRa), reduceDecR(obsDec), refR
 
 def obsToAppRaDec(obsRa, obsDec, pSidTime):
-    breakpoint()
     obsHa, obsDec = transform_raDec_to_haDec(obsRa, obsDec, pSidTime.value)
     appRa, appDec, refr =  obsToAppHaRa(obsHa, obsDec, pSidTime.value)
     return reduceRaR(appRa), reduceDecR(appDec)
