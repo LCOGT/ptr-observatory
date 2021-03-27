@@ -801,7 +801,6 @@ class Camera:
                             self._expose (exposure_time, imtypeb)
                     else:
                         print("Something terribly wrong, driver not recognized.!")
-                        breakpoint()
                         result = {}
                         result['error': True]
                         return result
@@ -820,7 +819,6 @@ class Camera:
                     break
                 except Exception as e:
                     print('Exception in camera retry loop:  ', e)
-                    breakpoint()
                     self.retry_camera -= 1
                     num_retries += 1
                     continue

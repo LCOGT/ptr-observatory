@@ -1797,7 +1797,10 @@ def obsToAppHaRa(obsHa, obsDec, pSidTime):
     global raRefr, decRefr, refAsec
     from obs import g_dev
     obsAz, obsAlt = transform_haDec_to_azAlt(obsHa, obsDec, site_config['latitude'])
-    appAlt, refr = correct_refraction_inEl(obsAlt, g_dev['ocn'].temperature,  g_dev['ocn'].pressure)
+    try:
+        appAlt, refr = correct_refraction_inEl(obsAlt, g_dev['ocn'].temperature,  g_dev['ocn'].pressure)
+    except:
+        breakpoint()
     appHa, appDec = transform_azAlt_to_HaDec(obsAz, appAlt, site_config['latitude'])
     appRa, appDec = transformHatoRaDec(appHa, appDec, pSidTime)
     raRefr = reduceHaR(-appHa + obsHa)*HTOS
