@@ -167,6 +167,7 @@ class Mount:
         self.offset_received = None
         self.east_ra_correction = config['mount']['mount1']['east_ra_correction']
         self.east_dec_correction = config['mount']['mount1']['east_dec_correction']
+        self.refraction = 0.0
         self.ra_corr = 0.0
         self.dec_corr = 0.0
         if abs(self.east_ra_correction) > 0 or abs(self.east_ra_correction) > 0:
@@ -360,6 +361,9 @@ class Mount:
                 'right_ascension': round(icrs_ra, 5),
                 'declination': round(icrs_dec, 4),
                 'sidereal_time': round(self.current_sidereal, 5),  #Should we add HA?
+                'refraction': round(self.refraction, 2),
+                'correction_ra': round(self.ra_corr, 2),
+                'correction_dec': round(self.dec_corr, 2),
                 'tracking_right_ascension_rate': round(self.mount.RightAscensionRate, 9),   #Will use asec/s not s/s as ASCOM does.
                 'tracking_declination_rate': round(self.mount.DeclinationRate, 8),
                 'azimuth': round(self.mount.Azimuth, 3),
@@ -372,7 +376,7 @@ class Mount:
                 'is_parked': (self.mount.AtPark),
                 'is_tracking': str(self.mount.Tracking),
                 'is_slewing': str(self.mount.Slewing),
-                'message': self.mount_message[:32]
+                'message': (str(round(self.refraction, 2)) + self.mount_message)[:32],
             }
         else:
             print('Proper device_name is missing, or tel == None')
@@ -690,7 +694,9 @@ class Mount:
                 pass
         ra_h, dec_d = ra_dec_fix(ra, dec)
         #Here we add in refraction and the PTPOINT compatible mount model
+        
         ha_obs_r, dec_obs_r, refr_amin = ptr_utility.appToObsRaHa(ra_h*HTOR, dec_d*DTOR, self.sid_now.value*HTOR)
+        self.refraction = 60*refr_amin
         ra_obs_r, dec_obs_r = ptr_utility.transformHatoRaDec(ha_obs_r, dec_obs_r, self.sid_now.value*HTOR)
         #Here we would convert to model and calculate tracking rate correction.
         haH, decD = ptr_utility.transformObsToMount(ha_obs_r*RTOH, dec_obs_r*RTOD, pier_east, loud=False)       
@@ -719,7 +725,7 @@ class Mount:
             self.prior_dec_rate = (decD_a - decD)/delta_t
         else:
             self.prior_dec_rate = 0.0
-        print(self.prior_ra_rate, self.prior_dec_rate)
+        print(self.prior_ra_rate, self.prior_dec_rate, 60*refr_amin)
         time.sleep(1)
         self.mount.SlewToCoordinatesAsync(ra_m*RTOH, dec_m*RTOD)
         time.sleep(2)
@@ -733,7 +739,7 @@ class Mount:
             self.prior_dec_rate = (decD_a - decD)/delta_t
         else:
             self.prior_dec_rate = 0.0
-        print(self.prior_ra_rate, self.prior_dec_rate)
+        print(self.prior_ra_rate, self.prior_dec_rate, 60*refr_amin)
         
         #I think to reliable establish rates, set them before the slew.
         #self.mount.Tracking = True
