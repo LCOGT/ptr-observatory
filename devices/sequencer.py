@@ -1318,7 +1318,7 @@ IF sweep
                 print("No near star, skipping.")   #This should not happen.
                 count += 1
                 continue
-            if grid_star[0] < last_az:   #Consider also insisting on a reasonable HA
+            if grid_star[0] < last_az:   #Consider also insisting on a reasonable HA, eg., >= altitude of the Pole.
                count += 1
                continue
             last_az = grid_star[0] + 0.01

@@ -60,7 +60,56 @@ The camera operates in  Phase_1:  Setup Exposure, then Phase 2 Take the exposure
 fill out fits headers and save the exposure.  Phase 2, and maybe  Phase 3, are wrapped in the retry-three-
 times framework. Next is Phase 4 -- local calibrate and analyze, then Phase 5 -- send to AWS.
 
-Note Camera at saf just set to hardware binning.
+
+Hwere is a Maxim Header with the telescope attached. Note the various keywords which 
+need to be there  to use Maxim Pinpoint or Visual Pinpoint efficiently.
+
+SIMPLE  	= T                                                  
+BITPIX  	= -32 /8 unsigned int, 16 & 32 int, -32 & -64 real     
+NAXIS   	= 2 /number of axes                                  
+NAXIS1  	= 4800 /fastest changing axis                           
+NAXIS2  	= 3211 /next to fastest changing axis                   
+BSCALE  	= 1.0000000000000000 /physical = BZERO + BSCALE*array_value           
+BZERO   	= 0.00000000000000000 /physical = BZERO + BSCALE*array_value           
+DATE-OBS	= '2021-03-27T18:38:08' /YYYY-MM-DDThh:mm:ss observation, UT            
+EXPTIME 	= 1.0000000000000000 /Exposure time in seconds                        
+EXPOSURE	= 1.0000000000000000 /Exposure time in seconds                        
+SET-TEMP	= -10.000000000000000 /CCD temperature setpoint in C                   
+CCD-TEMP	= -10.100000000000000 /CCD temperature at start of exposure in C       
+XPIXSZ  	= 7.5199999999999996 /Pixel Width in microns (after binning)          
+YPIXSZ  	= 7.5199999999999996 /Pixel Height in microns (after binning)         
+XBINNING	= 2 /Binning factor in width                         
+YBINNING	= 2 /Binning factor in height                        
+XORGSUBF	= 0 /Subframe X position in binned pixels            
+YORGSUBF	= 0 /Subframe Y position in binned pixels            
+READOUTM	= 'Normal  ' /          Readout mode of image                           
+FILTER  	= 'w       ' /          Filter used when taking image                   
+IMAGETYP	= 'Light Frame' /       Type of image                                   
+FOCALLEN	= 2700.0000000000000 /Focal length of telescope in mm                 
+APTDIA  	= 300.00000000000000 /Aperture diameter of telescope in mm            
+APTAREA 	= 59376.102805137634 /Aperture area of telescope in mm^2              
+EGAIN   	= 1.0000000000000000 /Electronic gain in e-/ADU                       
+SBSTDVER	= 'SBFITSEXT Version 1.0' /Version of SBFITSEXT standard in effect      
+SWCREATE	= 'MaxIm DL Version 6.24 200613 23VP3' /Name of software                
+SWSERIAL	= '23VP3-SPE3X-YT5E3-3MX1C-3FVM0-CM' /Software serial number            
+OBJCTRA 	= '23 55 15' /          Nominal Right Ascension of center of image      
+OBJCTDEC	= '-54 34 51' /         Nominal Declination of center of image          
+OBJCTALT	= ' -0.0003' /          Nominal altitude of center of image             
+OBJCTAZ 	= '180.0056' /          Nominal azimuth of center of image              
+OBJCTHA 	= '  0.0006' /          Nominal hour angle of center of image           
+PIERSIDE	= 'EAST    ' /          Side of pier telescope is on                    
+SITELAT 	= '35 32 16' /          Latitude of the imaging location                
+SITELONG	= '-105 52 13' /        Longitude of the imaging location               
+JD      	= 2459301.2764814813 /Julian Date at start of exposure                
+JD-HELIO	= 2459301.2734088539 /Heliocentric Julian Date at exposure midpoint   
+AIRMASS 	= 31.739008469971399 /Relative optical path length through atmosphere 
+OBJECT  	= '        '                                                            
+TELESCOP	= '        ' /          telescope used to acquire this image            
+INSTRUME	= 'QHYCCD-Cameras-Capture'                                              
+OBSERVER	= '        '                                                            
+NOTES   	= '        '                                                            
+ROWORDER	= 'TOP-DOWN' /          Image write order, BOTTOM-UP or TOP-DOWN        
+FLIPSTAT	= '        '          
 
 
 """
@@ -432,6 +481,7 @@ class Camera:
         #print("Checking if Maxim is still connected!")
         #  self.t7 is last time camera was read out
         #if self.t7 is not None and (time.time() - self.t7 > 30) and self.maxim:
+
         self.t0 = time.time()
         try:
             probe = self.camera.CoolerOn
@@ -797,6 +847,10 @@ class Camera:
                         else:
                             #This is the standard call to Maxim
                             g_dev['obs'].send_to_user("Starting Camera1!", p_level='INFO')
+                            g_dev['ocn'].get_quick_status(self.pre_ocn)
+                            g_dev['foc'].get_quick_status(self.pre_foc)
+                            g_dev['rot'].get_quick_status(self.pre_rot)
+                            g_dev['mnt'].get_quick_status(self.pre_mnt)  #Should do this close to the exposure
                             self.t2 = time.time()
                             self._expose (exposure_time, imtypeb)
                     else:
@@ -1108,9 +1162,9 @@ class Camera:
                     hdu.header['TARG-CHK'] = g_dev['mnt'].current_icrs_ra + g_dev['mnt'].current_icrs_dec
                     hdu.header['CATNAME']  = g_dev['mnt'].object
                     hdu.header['CAT-RA']   = g_dev['mnt'].current_icrs_ra
-                    hdu.header['CAT-DEC']  =g_dev['mnt'].current_icrs_dec
+                    hdu.header['CAT-DEC']  = g_dev['mnt'].current_icrs_dec
                     hdu.header['TARGRAH']  = g_dev['mnt'].current_icrs_ra
-                    hdu.header['TARGDECD'] =g_dev['mnt'].current_icrs_dec
+                    hdu.header['TARGDECD'] = g_dev['mnt'].current_icrs_dec
                     hdu.header['SID-TIME'] = self.pre_mnt[3]
                     hdu.header['OBJCTRA']  = self.pre_mnt[1]
                     hdu.header['OBJCTDEC'] = self.pre_mnt[2]
