@@ -10,7 +10,7 @@ import build_tycho as tycho
 import config
 import shelve
 from pprint import pprint
-from devices.mount import ra_fix, ra_dec_fix
+
 '''
 Autofocus NOTE 20200122
 
@@ -133,6 +133,13 @@ def bin_to_string(use_bin):
         return'5, 5'
     else:
         return '1, 1'
+
+def ra_fix(ra):
+    while ra >= 24:
+        ra -= 24
+    while ra < 0:
+        ra +=24
+    return ra
 
 class Sequencer:
 

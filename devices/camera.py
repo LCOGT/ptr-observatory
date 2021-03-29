@@ -28,6 +28,8 @@ from global_yard import g_dev
 #from processing.calibration import calibrate
 #from devices.sequencer import Sequencer
 from devices.darkslide import Darkslide
+import ptr_utility
+
 
 #string  = \\HOUSE-COMPUTER\saf_archive_2\archive
 
@@ -1160,6 +1162,8 @@ class Camera:
                     hdu.header['TARG-RA']  = g_dev['mnt'].current_icrs_ra
                     hdu.header['TARG-DEC'] = g_dev['mnt'].current_icrs_dec
                     hdu.header['TARG-CHK'] = g_dev['mnt'].current_icrs_ra + g_dev['mnt'].current_icrs_dec
+                    hdu.header['OBJCTRA'] = ptr_utility.hToH_MS(g_dev['mnt'].current_icrs_ra)
+                    hdu.header['OBJCTDEC'] = ptr_utility.dToD_MS(g_dev['mnt'].current_icrs_dec)
                     hdu.header['CATNAME']  = g_dev['mnt'].object
                     hdu.header['CAT-RA']   = g_dev['mnt'].current_icrs_ra
                     hdu.header['CAT-DEC']  = g_dev['mnt'].current_icrs_dec

@@ -109,22 +109,46 @@ siteCoordinates = EarthLocation(lat=site_config['latitude']*u.deg, \
                                  height=site_config['elevation']*u.m)
     #The mount is not threaded and uses non-blocking seek. 
 
-def ra_fix(ra):
-    while ra >= 24:
-        ra -= 24
+def ra_fix_r(ra):
+    while ra >= TWOPI:
+        ra -= TWOPI
     while ra < 0:
-        ra += 24
+        ra += TWOPI
     return ra
 
-def ra_dec_fix(ra, dec): #Note this is not a mechanical transformation of dec
+def ra_dec_fix_r(ra, dec): #Note this is not a mechanical (TPOINT) transformation of dec
+    if dec > PIOVER2:
+        dec = PI - dec
+        ra -= PI
+    if dec < -PIOVER2:
+        dec = -PI - dec
+        ra += PI
+    if ra < 0:
+        ra += TWOPI
+    if ra >= TWOPI:
+        ra -= TWOPI
+    return ra, dec
+
+def ra_dec_fix_h(ra, dec):
     if dec > 90:
         dec = 180 - dec
         ra -= 12
     if dec < -90:
         dec = -180 - dec
         ra += 12
-    ra = ra_fix(ra)
+    if ra >= 24:
+        ra -= 24
+    if ra < 0:
+        ra = 24
     return ra, dec
+
+def ra_fix_h(ra):
+    if ra >= 24:
+        ra -= 24
+    if ra < 0:
+        ra = 24
+    return ra
+
 
 class Mount:
     '''
@@ -255,7 +279,7 @@ class Mount:
         Build up an ICRS coordinate from mount reported coordinates,
         removing offset and pierside calibrations.  From either flip
         the ICRS coordiate returned should be that of the object 
-        commanded, hence removign the offsets that are needed to 
+        commanded, hence removing the offsets that are needed to 
         position the mount on the axis.
 
         Returns
@@ -274,30 +298,28 @@ class Mount:
         if self. mount.EquatorialSystem == 1:
             self.get_current_times()
             if self.mount.sideOfPier == (1,):
-                pierside = 1    #eEst side looking East
+                pierside = 1    #eEst side looking East   #Make this assinmnet a code-wide convention.
             else:
                 pierside = 0   #East looking West
             uncorr_mech_ra_h = self.mount.RightAscension
             uncorr_mech_dec_d = self.mount.Declination
-            uncorr_mech_ha_r, dec_dummy = ptr_utility.transform_raDec_to_haDec(uncorr_mech_ra_h*HTOR, uncorr_mech_dec_d*DTOR, self.sid_now.value*HTOR)
-            roll_obs, pitch_obs= ptr_utility.transform_mount_to_observed(uncorr_mech_ha_r*RTOH, uncorr_mech_dec_d, pierside, loud=False)
-            app_ra, app_dec = ptr_utility.obsToAppHaRa(roll_obs*HTOR, pitch_obs*DTOR, self.sid_now.value*HTOR)
-            jnow_ra = app_ra*RTOH - ra_cal_off    # NB the mnt_refs are subtracted here.  Check units are correct.
-            jnow_dec = app_dec*RTOD - dec_cal_off
-            
+            uncorr_mech_ha_r, uncorr_mech_dec_r = ptr_utility.transform_raDec_to_haDec_r(uncorr_mech_ra_h*HTOR, uncorr_mech_dec_d*DTOR, self.sid_now_r)
+            roll_obs, pitch_obs= ptr_utility.transform_mount_to_observed_r(uncorr_mech_ha_r, uncorr_mech_dec_r, pierside, loud=False)
+            app_ra, app_dec, refr_asec = ptr_utility.obsToAppHaRa(roll_obs, pitch_obs, self.sid_now_r)
+            self.refraction = refr_asec
+            jnow_ra = ptr_utility.reduce_ra_r(app_ra - ra_cal_off*HTOR)    # NB the mnt_refs are subtracted here.  Check units are correct.
+            jnow_dec = ptr_utility.reduce_dec_r( app_dec - dec_cal_off*DTOR)
+
             # NB NB Read status could be used to recalculate and apply more accurate and current roll and pitch rates.
             if self.mount.CanSetRightAscensionRate and self.prior_ra_rate != 0 :
                 self.mount.RightAscensionRate =self.prior_ra_rate
             if self.mount.CanSetDeclinationRate and self.prior_dec_rate != 0:
                 self.mount.DeclinationRate = self.prior_dec_rate
-
-
             if self.mount.sideOfPier == pier_east \
                 and self.flip_correction_needed:
-                jnow_ra -=  self.east_ra_correction   #Brought in from local calib.py file correction is subtracted.
-                                                      #This is meant to handle a flip klunk.
+                jnow_ra -=  self.east_ra_correction   #Brought in from local calib.py file correction is subtracted.  #This is meant to handle a flip klunk.
                 jnow_dec -= self.east_dec_correction
-            jnow_ra, jnow_dec = ra_dec_fix(jnow_ra, jnow_dec)
+            jnow_ra, jnow_dec = ra_dec_fix_r(jnow_ra, jnow_dec)
             jnow_coord = SkyCoord(jnow_ra*u.hour, jnow_dec*u.degree, frame='fk5', \
                       equinox=self.equinox_now)
             icrs_coord = jnow_coord.transform_to(ICRS)
@@ -306,7 +328,7 @@ class Mount:
         else:
             #NB This is an unused and not completely implemented path, or does Planwave PWI-4 use it?
             #breakpoint()   #20201230 WE should not get here.
-            self.current_icrs_ra = ra_fix(self.mount.RightAscension - ra_cal_off)    #May not be applied in positioning
+            self.current_icrs_ra = ra_fix_r(self.mount.RightAscension - ra_cal_off)    #May not be applied in positioning
             self.current_icrs_dec = self.mount.Declination - dec_cal_off
         return self.current_icrs_ra, self.current_icrs_dec
 
@@ -358,8 +380,8 @@ class Mount:
             icrs_ra, icrs_dec = self.get_mount_coordinates()
             status = {
                 'timestamp': round(time.time(), 3),
-                'right_ascension': round(icrs_ra, 5),
-                'declination': round(icrs_dec, 4),
+                'right_ascension': round(icrs_ra*RTOH, 5),
+                'declination': round(icrs_dec*RTOD, 4),
                 'sidereal_time': round(self.current_sidereal, 5),  #Should we add HA?
                 'refraction': round(self.refraction, 2),
                 'correction_ra': round(self.ra_corr, 2),
@@ -547,7 +569,9 @@ class Mount:
 
     def get_current_times(self):
         self.ut_now = Time(datetime.datetime.now(), scale='utc', location=self.site_coordinates)   #From astropy.time
-        self.sid_now = self.ut_now.sidereal_time('apparent')
+        self.sid_now_h = self.ut_now.sidereal_time('apparent').value
+        self.sid_now_r = self.sid_now_h*HTOR
+
         iso_day = datetime.date.today().isocalendar()
         self.day = ((iso_day[1]-1)*7 + (iso_day[2] ))
         self.equinox_now = 'J' +str(round((iso_day[0] + ((iso_day[1]-1)*7 + (iso_day[2] ))/365), 2))
@@ -599,7 +623,8 @@ class Mount:
                 #need to get the ICRS telescope position.
                 
                 #Set up to go to the new position.
-                ra, dec = ra_dec_fix(icrs_ra + self.ra_offset, icrs_dec + self.dec_offset)
+                ra, dec = ptr_utility.ra_dec_fix_h(icrs_ra + self.ra_offset, icrs_dec + self.dec_offset)
+
             elif calibrate:  #Note does not need req or opt
                 #breakpoint()
                 if self.offset_received:
@@ -651,7 +676,7 @@ class Mount:
         tracking_rate_dec = opt.get('tracking_rate_dec', 0)
         delta_ra, delta_dec =self.get_mount_ref()
         #breakpoint()
-        ra, dec = ra_dec_fix(ra + delta_ra, dec + delta_dec)   #Plus compensates for measured offset
+        ra, dec = ra_dec_fix_h(ra + delta_ra, dec + delta_dec)   #Plus compensates for measured offset
         self.go_coord(ra, dec, tracking_rate_ra=tracking_rate_ra, tracking_rate_dec = tracking_rate_dec)
         self.object = opt.get("object", "")
         if self.object == "":
@@ -669,7 +694,6 @@ class Mount:
             #print("mount cmd: unparking mount")
             self.mount.Unpark()
         ra_cal_off, dec_cal_off = self.get_mount_ref() # This is a Shelved basic offset, may be zero if a full model is in place.
-
         if self.mount.EquatorialSystem == 1:
             self.get_current_times()   #  NB We should find a way to refresh this once a day, esp. for status return.
             icrs_coord = SkyCoord(ra*u.hour, dec*u.degree, frame='icrs')
@@ -692,32 +716,32 @@ class Mount:
             except:
                 #DestSide... not implemented in PWI_4
                 pass
-        ra_h, dec_d = ra_dec_fix(ra, dec)
+        ra_h, dec_d = ra_dec_fix_h(ra, dec)
         #Here we add in refraction and the PTPOINT compatible mount model
         
-        ha_obs_r, dec_obs_r, refr_amin = ptr_utility.appToObsRaHa(ra_h*HTOR, dec_d*DTOR, self.sid_now.value*HTOR)
-        self.refraction = 60*refr_amin
-        ra_obs_r, dec_obs_r = ptr_utility.transformHatoRaDec(ha_obs_r, dec_obs_r, self.sid_now.value*HTOR)
+        ha_obs_r, dec_obs_r, refr_asec = ptr_utility.appToObsRaHa(ra_h*HTOR, dec_d*DTOR, self.sid_now_r)
+        self.refraction = refr_asec
+        #ra_obs_r, dec_obs_r = ptr_utility.transformHatoRaDec(ha_obs_r, dec_obs_r, self.sid_now_r)
         #Here we would convert to model and calculate tracking rate correction.
-        haH, decD = ptr_utility.transformObsToMount(ha_obs_r*RTOH, dec_obs_r*RTOD, pier_east, loud=False)       
-        ra_m, dec_m = ptr_utility.transformHatoRaDec(haH*HTOR, decD*DTOR, self.sid_now.value*HTOR)
-        self.ra_corr = ptr_utility.reduceHaR(ra_m - ra_obs_r)*RTOS     #These are mechanical values, not j.anything
-        self.dec_corr = ptr_utility.reduceDecR(dec_m - dec_obs_r)*RTOS
+        haH, decD = ptr_utility.transform_mount_to_observed_r(ha_obs_r, dec_obs_r, pier_east, loud=False)       
+        ra_m, dec_m = ptr_utility.transform_haDec_to_raDec_r(haH, decD, self.sid_now_r)
+        self.ra_corr = ptr_utility.reduce_ha_r(ra_m - ra_h*HTOR)*RTOS     #These are mechanical values, not j.anything
+        self.dec_corr = ptr_utility.reduce_dec_r(dec_m - dec_obs_r)*RTOS
         self.mount.Tracking = True
         self.mount.SlewToCoordinatesAsync(ra_m*RTOH, dec_m*RTOD)
         ###  figure out velocity
         time.sleep(3)
-        ha_obs_a, dec_obs_a, refr_a = ptr_utility.appToObsRaHa(ra*HTOR, dec*DTOR, (self.sid_now.value + APPTOSID/12)*HTOR)   #% minute advance
-        haH_a, decD_a = ptr_utility.transformObsToMount(ha_obs_a*RTOH, dec_obs_a*RTOD, pier_east, loud=False)       
-        ra_a, dec_a = ptr_utility.transformHatoRaDec(haH_a*HTOR, decD_a*DTOR, (self.sid_now.value +APPTOSID/12)*HTOR)
+        ha_obs_a, dec_obs_a, refr_a = ptr_utility.appToObsRaHa(ra*HTOR, dec*DTOR, (self.sid_now_h + APPTOSID/12)*HTOR)   #% minute advance
+        haH_a, decD_a = ptr_utility.transform_mount_to_observed_r(ha_obs_a, dec_obs_a, pier_east, loud=False)       
+        ra_a, dec_a = ptr_utility.transform_haDec_to_raDec_r(haH_a, decD_a, (self.sid_now_h +APPTOSID/12)*HTOR)
         self.prior_seek_ha_h = haH
         self.prior_seek_dec_d = decD
         self.prior_seek_time = time.time()
-        self.prior_sid_time =  self.sid_now.value
-        delta_t = (self.sid_now.value +APPTOSID/12 - self.sid_now.value)   # /seconds of time. APPTOSID compensates 
+        self.prior_sid_time =  self.sid_now_r
+        delta_t = +APPTOSID/12    # /seconds of time. APPTOSID compensates 
         if self.mount.CanSetRightAscensionRate:
-            self.mount.RightAscensionRate =15*APPTOSID - (haH_a - haH)*15/delta_t
-            self.prior_ra_rate = 15*APPTOSID - (haH_a - haH)*15/delta_t
+            self.mount.RightAscensionRate = -15*(1 - (haH_a - haH)*RTOH/delta_t) 
+            self.prior_ra_rate = -15*(1 - (haH_a - haH)*RTOH/delta_t)  
         else:
             self.prior_ra_rate = 0.0
         if self.mount.CanSetDeclinationRate:
@@ -725,13 +749,13 @@ class Mount:
             self.prior_dec_rate = (decD_a - decD)/delta_t
         else:
             self.prior_dec_rate = 0.0
-        print(self.prior_ra_rate, self.prior_dec_rate, 60*refr_amin)
+        print(self.prior_ra_rate, self.prior_dec_rate, refr_asec)
         time.sleep(1)
         self.mount.SlewToCoordinatesAsync(ra_m*RTOH, dec_m*RTOD)
         time.sleep(2)
         if self.mount.CanSetRightAscensionRate:
-            self.mount.RightAscensionRate =15*APPTOSID - (haH_a - haH)*15/delta_t
-            self.prior_ra_rate = 15*APPTOSID - (haH_a - haH)*15/delta_t
+            self.mount.RightAscensionRate = -15*(1 - (haH_a - haH)*RTOH/delta_t)
+            self.prior_ra_rate = -15*(1 - (haH_a - haH)*RTOH/delta_t)
         else:
             self.prior_ra_rate = 0.0
         if self.mount.CanSetDeclinationRate:
@@ -739,8 +763,7 @@ class Mount:
             self.prior_dec_rate = (decD_a - decD)/delta_t
         else:
             self.prior_dec_rate = 0.0
-        print(self.prior_ra_rate, self.prior_dec_rate, 60*refr_amin)
-        
+        print(self.prior_ra_rate, self.prior_dec_rate, refr_asec)
         #I think to reliable establish rates, set them before the slew.
         #self.mount.Tracking = True
         #self.mount.SlewToCoordinatesAsync(ra_m*RTOH, dec_m*RTOD)

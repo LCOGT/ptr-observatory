@@ -43,6 +43,7 @@ from astroquery.simbad import Simbad
 #from ptr_config import *
 import ephem
 from config import site_config
+from global_yard import g_dev
 #from ptr_astrometrics import *
 siteCoordinates = EarthLocation(lat=site_config['latitude']*u.deg, \
                                  lon=site_config['longitude']*u.deg,
@@ -1619,7 +1620,6 @@ def apply_refraction_inEl_r(pAppEl, pSiteRefTemp, pSiteRefPress): #Deg, C. , mmH
         ref -= 0.06*math.sin((14.7*ref +13.)*DTOR) - 0.0134970632606319
         ref *= 283/(273 + pSiteRefTemp)
         ref *= pSiteRefPress/1010.0
-        breakpoint()
         obsEl = pAppEl + ref/60.
         obsEl *= DTOR
         #print('El, ref (amin): ', obsEl, ref)
@@ -1629,7 +1629,6 @@ def apply_refraction_inEl_r(pAppEl, pSiteRefTemp, pSiteRefPress): #Deg, C. , mmH
         ref -= 0.06*math.sin((14.7*ref +13.)*DTOR) - 0.0134970632606319
         ref *= 283/(273 + pSiteRefTemp)
         ref *= pSiteRefPress/1010.0
-        breakpoint()
         obsEl = pAppEl + ref/60.
         obsEl *= DTOR
         #print('El, ref: ', obsEl, ref)
@@ -1652,8 +1651,7 @@ def correct_refraction_inEl_r(pObsEl, pSiteRefTemp, pSiteRefPress): #Deg, C. , m
                 return reduce_dec_r(pObsEl)
                 print('correct_refraction_inEl()  FAILED!')
         #print('Count:  ', count)
-        breakpoint(())
-        return reduce_dec_r(trial), reduce_dec_r(pObsEl - trial)*3600.
+        return reduce_dec_r(trial), reduce_dec_r(pObsEl - trial)*RTOD*3600.
 
 def test_refraction():   #passes 20170104   20180909
     for el in range(90, -1, -1):
@@ -1667,25 +1665,24 @@ def appToObsRaHa(appRa, appDec, pSidTime):
     appHa, appDec = transform_raDec_to_haDec_r(appRa, appDec, pSidTime)
     appAz, appAlt = transform_haDec_to_azAlt_r(appHa, appDec, site_config['latitude']*DTOR)
     obsAlt, refAsec = apply_refraction_inEl_r(appAlt,  g_dev['ocn'].temperature,  g_dev['ocn'].pressure)
-    obsHa, obsDec = transform_azAlt_to_haDec_r(appAz, obsAlt, site_config['latitude'])
+    obsHa, obsDec = transform_azAlt_to_haDec_r(appAz, obsAlt, site_config['latitude']*DTOR)
     raRefr = reduce_ha_r(appHa - obsHa)*HTOS
     decRefr = -reduce_dec_r(appDec - obsDec)*DTOS
     return reduce_ha_r(obsHa), reduce_dec_r(obsDec), refAsec
 
 def obsToAppHaRa(obsHa, obsDec, pSidTime):
-    global raRefr, decRefr, refAsec
-    from obs import g_dev
-    obsAz, obsAlt = transform_haDec_to_azAlt_r(obsHa, obsDec, site_config['latitude'])
+    global raRefr, decRefr
+    obsAz, obsAlt = transform_haDec_to_azAlt_r(obsHa, obsDec, site_config['latitude']*DTOR)
     refr = 0.0
     try:
         appAlt, refr = correct_refraction_inEl_r(obsAlt, g_dev['ocn'].temperature,  g_dev['ocn'].pressure)
     except:
-        breakpoint()
-    appHa, appDec = transform_azAlt_to_haDec_r(obsAz, appAlt, site_config['latitude'])
+        breakpoint()  #THis should not fail.
+        pass
+    appHa, appDec = transform_azAlt_to_haDec_r(obsAz, appAlt, site_config['latitude']*DTOR)
     appRa, appDec = transform_haDec_to_raDec_r(appHa, appDec, pSidTime)
     raRefr = reduce_ha_r(-appHa + obsHa)*HTOS
     decRefr = -reduce_dec_r(-appDec + obsDec)*DTOS
-    breakpoint()
     return reduce_ra_r(appRa), reduce_dec_r(appDec), refr
 
 def appToObsRaDec(appRa, appDec, pSidTime):
@@ -1714,23 +1711,24 @@ def test_app_obs_app():
                 #print((pRa - aRa)*HTOS,( pDec - aDec)*DTOS)
 
 
-def transform_mount_to_observed_hd(pRoll, pPitch, pPierSide, loud=False):
+def transform_mount_to_observed_r(pRoll, pPitch, pPierSide, loud=False):
     #I am amazed this works so well even very near the celestrial pole.
     #input is Ha in hours and pitch in degrees.
     if not ModelOn:
         return (pRoll, pPitch)
     else:
-        cosDec = math.cos(pPitch*DTOR)
+        cosDec = math.cos(pPitch)
         ERRORlimit = 0.001*STOR
         count = 0
         error = 10
         rollTrial = pRoll
         pitchTrial = pPitch
         while abs(error) > ERRORlimit:
-            obsRollTrial, obsPitchTrial = transformObsToMount_hd(rollTrial, \
+            obsRollTrial, obsPitchTrial = transformObsToMount_r(rollTrial, \
                           pitchTrial, pPierSide)
-            errorRoll = reduce_ha_h(obsRollTrial - pRoll)
-            errorPitch = obsPitchTrial - pPitch
+            errorRoll = reduce_ha_r(obsRollTrial - pRoll)
+            errorPitch = reduce_dec_r(obsPitchTrial - pPitch)
+            #THis needs a unit checkout.
             error = math.sqrt(cosDec*(errorRoll*15)**2 + (errorPitch)**2)
             #if loud: print(count, errorRoll, errorPitch, error*DTOS)
             rollTrial -= errorRoll
@@ -1742,7 +1740,7 @@ def transform_mount_to_observed_hd(pRoll, pPitch, pPierSide, loud=False):
         return reduce_ra_r(rollTrial), reduce_dec_r(pitchTrial)
 
 
-def transformObsToMount_hd(pRoll, pPitch, pPierSide, loud=False):
+def transformObsToMount_r(pRoll, pPitch, pPierSide, loud=False):
     #This routine is diectly invertible. pRoll in Hours, pPitch in Deg.
     '''
     Long-run probably best way to do this in inherit a model dictionary.
@@ -1783,6 +1781,9 @@ def transformObsToMount_hd(pRoll, pPitch, pPierSide, loud=False):
         acec = model['ACEC']
         eces = model['ECES']
         ecec = model['ECEC']
+        #R to HD convention
+        pRoll *= RTOH
+        pPitch *= RTOD
         #Apply IJ and ID to incoming coordinates, and if needed GEM correction.
         rRoll = math.radians(pRoll*15 - ih /3600.)
         rPitch = math.radians(pPitch - idec /3600.)
@@ -1854,7 +1855,7 @@ def transformObsToMount_hd(pRoll, pPitch, pPierSide, loud=False):
             decCorr = reduce_dec_d(corrPitch - pPitch)*3600
             #20210328  Note this may not work at Pole.
             if loud: print('Corrections:  ', raCorr, decCorr)
-            return(corrRoll, corrPitch)
+            return(corrRoll*HTOR, corrPitch*DTOR)
         elif ALTAZ:
             if loud:
                 print(ih, idec, ia, ie, an, aw, tf, tx, ca, npae, aces, acec, eces, ecec)
