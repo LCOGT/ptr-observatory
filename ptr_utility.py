@@ -1677,7 +1677,8 @@ def obsToAppHaRa(obsHa, obsDec, pSidTime):
     try:
         appAlt, refr = correct_refraction_inEl_r(obsAlt, g_dev['ocn'].temperature,  g_dev['ocn'].pressure)
     except:
-        breakpoint()  #THis should not fail.
+        #breakpoint()  #THis should not fail.
+        appAlt = 0
         pass
     appHa, appDec = transform_azAlt_to_haDec_r(obsAz, appAlt, site_config['latitude']*DTOR)
     appRa, appDec = transform_haDec_to_raDec_r(appHa, appDec, pSidTime)
