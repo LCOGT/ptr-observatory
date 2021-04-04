@@ -93,7 +93,7 @@ model['IH'] = 0
 model['ID'] = 0
 model['WH'] = 0
 model['WD'] = 0
-model['MA'] = 0
+model['MA'] = -2000
 model['ME'] = 0
 model['CH'] = 0
 model['NP'] = 0
@@ -1718,14 +1718,15 @@ def transform_mount_to_observed_r(pRoll, pPitch, pPierSide, loud=False):
     if not ModelOn:
         return (pRoll, pPitch)
     else:
+
         cosDec = math.cos(pPitch)
-        ERRORlimit = 0.001*STOR
+        ERRORlimit = 0.01*STOR
         count = 0
         error = 10
         rollTrial = pRoll
         pitchTrial = pPitch
         while abs(error) > ERRORlimit:
-            obsRollTrial, obsPitchTrial = transformObsToMount_r(rollTrial, \
+            obsRollTrial, obsPitchTrial = transform_observed_to_mount_r(rollTrial, \
                           pitchTrial, pPierSide)
             errorRoll = reduce_ha_r(obsRollTrial - pRoll)
             errorPitch = reduce_dec_r(obsPitchTrial - pPitch)
@@ -1738,10 +1739,10 @@ def transform_mount_to_observed_r(pRoll, pPitch, pPierSide, loud=False):
             if count > 500:   #count about 12 at-0.5 deg.  3 at 45deg.
                 return pRoll, pPitch
                 if loud: print('correct_mount_to_observedl()  FAILED!')
-        return reduce_ra_r(rollTrial), reduce_dec_r(pitchTrial)
+        return reduce_ha_r(rollTrial), reduce_dec_r(pitchTrial)
 
 
-def transformObsToMount_r(pRoll, pPitch, pPierSide, loud=False):
+def transform_observed_to_mount_r(pRoll, pPitch, pPierSide, loud=False):
     #This routine is diectly invertible. pRoll in Hours, pPitch in Deg.
     '''
     Long-run probably best way to do this in inherit a model dictionary.

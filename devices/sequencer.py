@@ -141,6 +141,19 @@ def ra_fix(ra):
         ra +=24
     return ra
 
+def ra_dec_fix_hd(ra, dec):
+    if dec > 90:
+        dec = 180 - dec
+        ra -= 12
+    if dec < -90:
+        dec = -180 - dec
+        ra += 12
+    if ra >= 24:
+        ra -= 24
+    if ra < 0:
+        ra = 24
+    return ra, dec
+
 class Sequencer:
 
     def __init__(self, driver: str, name: str, config: dict, astro_events):
@@ -200,7 +213,6 @@ class Sequencer:
                 self.vertical_pointing_run(req, opt)
             else:
                 self.sky_grid_pointing_run(req, opt)
-            #
         elif action == "run" and script in ("genBiasDarkMaster", "genBiasDarkMasters"):
             self.bias_dark_script(req, opt)
         elif action == "run" and script == "takeLRGBstack":
@@ -237,13 +249,13 @@ class Sequencer:
         self.sequencer_hold = False
          #events['Eve Bias Dark']
         #if True:
-        if (events['Eve Bias Dark'] <= ephem_now <= events['End Eve Bias Dark']) and False:
-            req = {'numOfBias': 31, 'bin3': True, 'numOfDark2': 3, 'bin4': False, 'bin1': True, \
-                   'darkTime': 360, 'hotMap': True, 'bin2': True, 'numOfDark': 3, 'dark2Time': 120, \
-                   'coldMap': True, 'script': 'genBiasDarkMaster', 'bin5': False}
+
+        if (events['Eve Bias Dark'] <= ephem_now < events['End Eve Bias Dark']) and False:
+            req = {'bin1': False, 'bin2': True, 'bin3': False, 'bin4': False, 'numOfBias': 45, \
+                   'numOfDark': 15, 'darkTime': 180, 'numOfDark2': 3, 'dark2Time': 360, \
+                   'hotMap': True, 'coldMap': True, 'script': 'genBiasDarkMaster', }
             opt = {}
-            print('Skipping Eve Biad/Dark')
-            #self.bias_dark_script(req, opt)
+            self.bias_dark_script(req, opt)
         elif  (events['Eve Sky Flats'] < ephem_now < events['End Eve Sky Flats'])  \
                 and g_dev['enc'].mode == 'Automatic' \
                 and g_dev['ocn'].wx_is_ok \
@@ -432,7 +444,7 @@ class Sequencer:
             dest_ra = float(target['ra']) - \
                 float(block_specification['project']['project_constraints']['ra_offset'])/15.
             dest_dec = float(target['dec']) - float(block_specification['project']['project_constraints']['dec_offset'])
-            dest_ra, dest_dec = ra_dec_fix(dest_ra,dest_dec)
+            dest_ra, dest_dec = ra_dec_fix_hd(dest_ra,dest_dec)
             dest_name =target['name']
             
             ''' 
@@ -599,7 +611,7 @@ class Sequencer:
                         d_dec = displacement[1]*pitch*(y_field_deg)  # = 0.5102414999999999   #Deg
                         new_ra = dest_ra + d_ra
                         new_dec= dest_dec + d_dec
-                        new_ra, new_dec = ra_dec_fix(new_ra, new_dec)
+                        new_ra, new_dec = ra_dec_fix_hd(new_ra, new_dec)
                         print('Seeking to:  ', new_ra, new_dec)
                         g_dev['mnt'].go_coord(new_ra, new_dec)  # This needs full angle checks
                         if not just_focused:
@@ -643,8 +655,9 @@ class Sequencer:
                  
         """
         self.sequencer_hold = True
+        self.current_script = 'Afternoon Bias Dark'
         dark_time = 180
-        while ephem.now() <= (g_dev['events']['End Eve Bias Dark'] + 1 - 2*dark_time/86400.):   #Do not overrun the window end
+        while ephem.now() <= g_dev['events']['End Eve Bias Dark']:   #Do not overrun the window end
             # print("Expose b_2")   
             # req = {'time': 0.0,  'script': 'True', 'image_type': 'bias'}
             # opt = {'area': "Full", 'count': 3, 'bin':'2 2', \
@@ -654,7 +667,7 @@ class Sequencer:
             # print(result)
             print("Expose d_2 using exposure:  ", dark_time )
             req = {'time':dark_time ,  'script': 'True', 'image_type': 'dark'}
-            opt = {'area': "Full", 'count': 1, 'bin':'2 2', \
+            opt = {'area': "Full", 'count':5, 'bin':'2 2', \
                     'filter': 'dark'} 
             result = g_dev['cam'].expose_command(req, opt, no_AWS=True, \
                                 do_sep=False, quick=False)

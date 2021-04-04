@@ -352,6 +352,7 @@ class Observatory:
                     self.events_new = requests.get(url).json()
 
                 return   # Continue   #This creates an infinite loop
+                
             else:
                 print('Sequencer Hold asserted.')    #What we really want here is looking for a Cancel/Stop.
                 continue

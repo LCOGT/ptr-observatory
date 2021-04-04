@@ -1010,13 +1010,14 @@ class Camera:
  
                         overscan = int((np.median(self.img[24:, -33:]) + np.median(self.img[0:21, :]))/2) - 1
                         trimmed = self.img[24:-8, :-34].astype('int32') + pedastal - overscan
-                        square = trimmed
+
                     elif self.img[30, -34] == 0:
                         overscan = int((np.median(self.img[32:, -33:]) + np.median(self.img[0:29, :]))/2) - 1
                         trimmed = self.img[32:, :-34].astype('int32') + pedastal - overscan
-                        square = trimmed
+
                     else:
                         breakpoint()
+                        pass
         
                     # if full:
                     #     square = trimmed
@@ -1038,6 +1039,7 @@ class Camera:
                     else:
                         print("Image shift is incorrect, absolutely fatal error.")
                         breakpoint()
+                        pass
 
                 else:
                     print("Incorrect chip size or bin specified or already-converted:  skipping.")
@@ -1218,7 +1220,7 @@ class Camera:
                     else:
                         hdu.header['PIERSIDE'] = 'Undefined'
                         pier_string = ''
-                    hdu.header['RACORR'] = g_dev['mnt'].ra_corr    #Should these be averaged?
+                    hdu.header['HACORR'] = g_dev['mnt'].ha_corr    #Should these be averaged?
                     hdu.header['DECCORR'] = g_dev['mnt'].dec_corr
                     hdu.header['IMGFLIP'] = False
                     hdu.header['OTA'] = ""
@@ -1349,7 +1351,7 @@ class Camera:
                         os.makedirs(self.alt_path +  g_dev['day'] + '/reduced/', exist_ok=True)
                         red_path_aux = self.alt_path +  g_dev['day'] + '/reduced/'
                         paths['red_path_aux'] = red_path_aux
-                    script = None
+                    #script = None
                     '''
                     self.enqueue_image(text_data_size, im_path, text_name)
                     self.enqueue_image(jpeg_data_size, im_path, jpeg_name)
@@ -1366,7 +1368,7 @@ class Camera:
                     
                     # if  not script in ('True', 'true', 'On', 'on'):   #  not quick and    #Was moved 20201022 for grid
                     #     if not quick:
-                    #self.enqueue_for_AWS(text_data_size, im_path, text_name)
+                    self.enqueue_for_AWS(text_data_size, im_path, text_name)
                     self.to_reduce((paths, hdu))
                     hdu.writeto(raw_path + raw_name00, overwrite=True)   #Sve full raw file locally
                     g_dev['obs'].send_to_user("Raw image saved locally. ", p_level='INFO')
