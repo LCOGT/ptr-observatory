@@ -54,6 +54,7 @@ from astropy.coordinates import SkyCoord, FK5, ICRS, FK4, Distance, \
 import ptr_utility
 from config import site_config
 import math
+from collections import OrderedDict
 
 # =============================================================================
 # from astropy.utils.iers import conf
@@ -313,9 +314,9 @@ class Mount:
             '''
             jnow_ra = ptr_utility.reduce_ra_r(app_ra - ra_cal_off*HTOR)    # NB the mnt_refs are subtracted here.  Check units are correct.
             jnow_dec = ptr_utility.reduce_dec_r( app_dec - dec_cal_off*DTOR)
-            if self.mount.CanSetRightAscensionRate and self.prior_roll_rate != 0 :
+            if self.mount.CanSetRightAscensionRate and self.prior_roll_rate != 0 and not self.mount.AtPark:
                 self.mount.RightAscensionRate =self.prior_roll_rate
-            if self.mount.CanSetDeclinationRate and self.prior_pitch_rate != 0:
+            if self.mount.CanSetDeclinationRate and self.prior_pitch_rate != 0 and not self.mount.AtPark:
                 self.mount.DeclinationRate = self.prior_pitch_rate
                 #print("Rate found:  ", self.prior_roll_rate, self.prior_pitch_rate, self.ha_corr, self.dec_corr)
             if self.mount.sideOfPier == pier_east \

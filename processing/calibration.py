@@ -135,7 +135,6 @@ def calibrate (hdu, lng_path, frame_type='light', quick=False):
 
     #This needs to deal with caching different binnings as well.  And do we skip all this for a quick
     if not quick:
-
         if super_bias is None:
             try:
                 sbHdu = fits.open(lng_path + 'b_1-10.fits')

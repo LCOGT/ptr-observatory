@@ -71,9 +71,9 @@ SecTOH = 1/3600.
 APPTOSID = 1.00273811906 #USNO Supplement
 MOUNTRATE = 15*APPTOSID  #15.0410717859
 KINGRATE = 15.029
-RefrOn = True
+RefrOn = False
 
-ModelOn = True
+ModelOn = False
 RatesOn = True
 
 HORIZON = 9.999   #Lower than actual WMD values.
@@ -93,7 +93,7 @@ model['IH'] = 0
 model['ID'] = 0
 model['WH'] = 0
 model['WD'] = 0
-model['MA'] = -2000
+model['MA'] = 0
 model['ME'] = 0
 model['CH'] = 0
 model['NP'] = 0
