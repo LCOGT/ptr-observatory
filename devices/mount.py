@@ -314,6 +314,7 @@ class Mount:
             jnow_ra = ptr_utility.reduce_ra_r(app_ra - ra_cal_off*HTOR)    # NB the mnt_refs are subtracted here.  Check units are correct.
             jnow_dec = ptr_utility.reduce_dec_r( app_dec - dec_cal_off*DTOR)
             if self.mount.CanSetRightAscensionRate and self.prior_roll_rate != 0 :
+                breakpoint()
                 self.mount.RightAscensionRate =self.prior_roll_rate
             if self.mount.CanSetDeclinationRate and self.prior_pitch_rate != 0:
                 self.mount.DeclinationRate = self.prior_pitch_rate
