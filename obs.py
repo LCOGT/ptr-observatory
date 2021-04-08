@@ -347,7 +347,7 @@ class Observatory:
                 '''
 
                 if self.events_new is None:
-                    url = 'https://api.photonranch.org/api/events?site=saf'
+                    url = 'https://api.photonranch.org/api/events?site=SAF'
 
                     self.events_new = requests.get(url).json()
 
@@ -559,7 +559,7 @@ class Observatory:
                 reduced_data_size = hdu.data.size
                 wpath = paths['red_path'] + paths['red_name01_lcl']    #This name is convienent for local sorting
                 hdu.writeto(wpath, overwrite=True) #Bigfit reduced
-                if self.site_name == 'saf':
+                if self.site_name == 'SAF':
                     wpath = paths['red_path_aux'] + paths['red_name01_lcl']
                     hdu.writeto(wpath, overwrite=True) #big fits to other computer in Neyle's office
                 #patch to test Midtone Contrast
