@@ -1347,7 +1347,7 @@ class Camera:
                              'text_name11': text_name,
                              'frame_type':  frame_type
                              }
-                    if  self.config['site'] == 'saf':
+                    if  self.config['site'] == 'SAF':
                         os.makedirs(self.alt_path +  g_dev['day'] + '/reduced/', exist_ok=True)
                         red_path_aux = self.alt_path +  g_dev['day'] + '/reduced/'
                         paths['red_path_aux'] = red_path_aux

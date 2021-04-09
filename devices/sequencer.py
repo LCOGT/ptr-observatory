@@ -322,6 +322,7 @@ class Sequencer:
                     and (block['start'] <= now_date_timeZ < block['end']) \
                     and not self.is_in_completes(block['event_id']):
                     self.block_guard = True
+
                     completed_block = self.execute_block(block)
                     self.append_completes(completed_block['event_id'])
                     self.block_guard = False
@@ -537,7 +538,7 @@ class Sequencer:
                     #  We should add a frame repeat count
                     imtype = exposure['imtype'] 
                     #defocus = exposure['defocus']
-#                    if g_dev['site'] == 'saf':   #THis should be in config.
+#                    if g_dev['site'] == 'SAF':   #THis should be in config.
                     if color[0] == 'B':  
                         color = 'B'   #Map generic filters to site specific ones.
                     if color[0] == 'G':  
