@@ -74,7 +74,7 @@ class ObservingConditions:
         self.prior_status = None
         self.prior_status_2 = None
         self.wmd_fail_counter = 0
-        if self.site in ['wmd', 'wmd2']:
+        if self.site in ['mrc', 'wmd2']:
             self.redis_server = redis.StrictRedis(host='10.15.0.109', port=6379, db=0,
                                                   decode_responses=True)
             self.observing_conditions_connected = True
@@ -263,8 +263,8 @@ class ObservingConditions:
                     #print("Wx log did not write.")
             self.status = status
             
-        #  Note we are now in WMD specific code.
-        elif self.site == 'wmd' or self.site == 'wmd2':
+        #  Note we are now in mrc specific code.
+        elif self.site == 'mrc' or self.site == 'wmd2':
             
             try:
                 #breakpoint()
@@ -505,7 +505,7 @@ class ObservingConditions:
                 self.meas_sky_lux = linearize_unihedron(uni_measure)
                 quick.append(float(self.meas_sky_lux))     # intended for Unihedron
             return quick
-        elif self.site == 'wmd':
+        elif self.site == 'mrc':
             wx = eval(self.redis_server.get('<ptr-wx-1_state'))
             quick.append(time.time())
             quick.append(float(wx["sky C"]))

@@ -76,7 +76,7 @@ RefrOn = True
 ModelOn = True
 RatesOn = True
 
-HORIZON = 9.999   #Lower than actual WMD values.
+HORIZON = 9.999   #Lower than actual mrc values.
 
 
 ALTAZ = False

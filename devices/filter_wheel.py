@@ -312,7 +312,7 @@ class FilterWheel:
 #             flifil0 is closest to telescope,???
 #             flifil1 is closest to camera.???
 # =============================================================================
-            #g_dev['cam'].camera.Filter = filter_selections[0]   #  Pure Maxim WMD
+            #g_dev['cam'].camera.Filter = filter_selections[0]   #  Pure Maxim mrc
             self.filter.Filter = filter_selections[0]
             time.sleep(0.1)
             if self.dual_filter:

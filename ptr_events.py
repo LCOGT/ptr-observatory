@@ -488,7 +488,7 @@ class Events:
         beginReductions = endMornBiasDark + LONGESTDARK
 
         # try:
-        #     # WMD specific and apparently unused.
+        #     # mrc specific and apparently unused.
         #     obsShelf = shelve.open('Q:\\ptr_night_shelf\\site')
         #     obsShelf['DayDir'] = DAY_Directory
         #     obsShelf['EphemDate'] = dayNow

@@ -35,8 +35,8 @@ class Enclosure:
             print("ASCOM enclosure connected.")
             print(self.enclosure.Description)
         else:
-            print("'wmd2' enclosure linked to 'wmd'. ")
-        if self.site in ['wmd', 'wmd2']:
+            print("'wmd2' enclosure linked to ''. ")
+        if self.site in ['mrc', 'wmd2']:
             self.redis_server = redis.StrictRedis(host='10.15.0.109', port=6379, db=0, decode_responses=True)
         self.is_dome = self.config['enclosure']['enclosure1']['is_dome']
         self.state = 'Closed.  Initialized class property value.'
@@ -54,7 +54,7 @@ class Enclosure:
         #<<<<The next attibute reference fails at SAF, usually spurious Dome Ring Open report.
         #<<< Have seen other instances of failing.
         #core1_redis.set('unihedron1', str(mpsas) + ', ' + str(bright) + ', ' + str(illum), ex=600)
-        if self.site in ['saf', 'wmd']:
+        if self.site in ['saf', 'mrc']:
             try:
                 shutter_status = self.enclosure.ShutterStatus
             except:
@@ -87,7 +87,11 @@ class Enclosure:
                       'dome_slewing': self.enclosure.Slewing,
                       'enclosure_mode': self.mode,
                       'enclosure_message': self.state}
-               self.prior_status = status
+               if self.mode == 'Automatic':
+                   status['SiteAutomatic'] = True
+               else:
+                   status['SiteAutomatic'] = True
+               self.prior_status = status              
            except:
                status = self.prior_status
                print("Prior status used for saf dome azimuth")
@@ -97,18 +101,19 @@ class Enclosure:
                #        'dome_slewing': str(self.enclosure.Slewing),
                #        'enclosure_mode': str(self.mode),
                #        'enclosure_message': str(self.state)}
-        elif self.site == 'wmd':
+        elif self.site == 'mrc':
             status = {'roof_status': stat_string,
                       'shutter_status': stat_string,
                       'enclosure_synch': self.enclosure.Slaved,   #  What should  this mean for a roof? T/F = Open/Closed?
                       'enclosure_mode': self.mode,
-                      'enclosure_message': self.state}
+                      'enclosure_message': self.state,
+                      'SiteAutomatic': False}
             self.redis_server.set('roof_status', str(stat_string), ex=600)
             self.redis_server.set("shutter_status", str(stat_string), ex=600)
             self.redis_server.set('enclosure_synch', str(self.enclosure.Slaved), ex=600)
             self.redis_server.set('enclosure_mode', str(self.mode), ex=600)
             self.redis_server.set('enclosure_message', str(self.state), ex=600)        #print('Enclosure status:  ', status
-        elif self.site == 'wmd2':
+        elif self.site == 'mrc2':
             status = {'roof_status': self.redis_server.get('roof_status'),
                       'shutter_status': self.redis_server.get('shutter_status'),
                       'enclosure_synch': self.redis_server.get('enclosure_synch'),   #  What should  this mean for a roof? T/F = Open/Closed?
