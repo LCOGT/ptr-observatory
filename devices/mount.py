@@ -179,7 +179,7 @@ class Mount:
         self.inst = 'tel1'
         self.tel = tel   #for now this implies the primary telescope on a mounting.
         self.mount_message = "-"
-        if self.site == 'wmd2':
+        if self.site == 'MRC2':
             self.has_paddle = config['mount']['mount2']['has_paddle']
         else:
             self.has_paddle = config['mount']['mount1']['has_paddle']
@@ -209,6 +209,9 @@ class Mount:
         self.dec_offset = 0.0   #NB these should always start off at zero.
         #breakpoint()
         #self.reset_mount_ref()
+        self.site_in_automatic = config['site_in_automatic_default']
+        self.automatic_detail = config['automatic_detail_default']
+ 
         try:
             ra1, dec1 = self.get_mount_ref()
             print("Mount reference:  ", ra1 ,dec1)
@@ -314,7 +317,6 @@ class Mount:
             jnow_ra = ptr_utility.reduce_ra_r(app_ra - ra_cal_off*HTOR)    # NB the mnt_refs are subtracted here.  Check units are correct.
             jnow_dec = ptr_utility.reduce_dec_r( app_dec - dec_cal_off*DTOR)
             if self.mount.CanSetRightAscensionRate and self.prior_roll_rate != 0 :
-                breakpoint()
                 self.mount.RightAscensionRate =self.prior_roll_rate
             if self.mount.CanSetDeclinationRate and self.prior_pitch_rate != 0:
                 self.mount.DeclinationRate = self.prior_pitch_rate
@@ -403,10 +405,12 @@ class Mount:
                 'coordinate_system': str(self.rdsys),
                 'equinox':  self.equinox_now,
                 'pointing_instrument': str(self.inst),  # needs fixing
-                'is_parked': (self.mount.AtPark),
+                'is_parked': str(self.mount.AtPark),     #  Send strings to AWS so JSON does not change case
                 'is_tracking': str(self.mount.Tracking),
                 'is_slewing': str(self.mount.Slewing),
-                'message': self.mount_message[:54],
+                'message': str(self.mount_message[:54]),
+                'site_in_automatic': self.site_in_automatic,
+                'automatic_detail': str(self.automatic_detail) 
             }
         else:
             print('Proper device_name is missing, or tel == None')
@@ -551,8 +555,14 @@ class Mount:
             self.stop_command(req, opt)
         elif action == "home":
             self.home_command(req, opt)
-        elif action == "flat_panel":
-            self.flat_panel_command(req, opt)
+        elif action == "home":
+            self.home_command(req, opt)
+        elif action == "set_site_manual":
+            self.site_in_automatic = False
+            self.automatic_detail = "Site & Enclosure set to Manual"
+        elif action == "set_site_automatic":
+            self.site_in_automatic = True
+            self.automatic_detail = "Site set to Night time Automatic"
         elif action == "tracking":
             self.tracking_command(req, opt)
         elif action in ["pivot", 'zero', 'ra=sid, dec=0']:
