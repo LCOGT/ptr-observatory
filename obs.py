@@ -401,7 +401,7 @@ class Observatory:
         if loud:
             print('Status Sent:  \n', status)   # from Update:  ', status))
         else:
-            print('.')   # We print this to stay informed of process on the console.
+            print('.', status)   # We print this to stay informed of process on the console.
             # breakpoint()
             # self.send_log_to_frontend("WARN cam1 just fell on the floor!")
             # self.send_log_to_frontend("ERROR enc1 dome just collapsed.")
