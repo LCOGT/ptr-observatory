@@ -74,7 +74,7 @@ class ObservingConditions:
         self.prior_status = None
         self.prior_status_2 = None
         self.wmd_fail_counter = 0
-        if self.site in ['MRC', 'MRC2']:
+        if self.site in ['mrc', 'mrc2']:
             self.redis_server = redis.StrictRedis(host='10.15.0.109', port=6379, db=0,
                                                   decode_responses=True)
             self.observing_conditions_connected = True
@@ -119,7 +119,7 @@ class ObservingConditions:
 
         '''
 
-        if self.site == 'SAF':
+        if self.site == 'saf':
             illum, mag = self.astro_events.illuminationNow()
             if illum > 500:
                 illum = int(illum)
@@ -264,7 +264,7 @@ class ObservingConditions:
             self.status = status
             
         #  Note we are now in MRC specific code.
-        elif self.site == 'MRC' or self.site == 'MRC2':
+        elif self.site == 'mrc' or self.site == 'mrc2':
             
             try:
                 #breakpoint()
