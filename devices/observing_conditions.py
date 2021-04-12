@@ -263,7 +263,9 @@ class ObservingConditions:
                     #print("Wx log did not write.")
             self.status = status
             
+
         #  Note we are now in mrc specific code.
+
         elif self.site == 'mrc' or self.site == 'mrc2':
             
             try:

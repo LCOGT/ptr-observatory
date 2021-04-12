@@ -182,6 +182,7 @@ class Observatory:
         # Send the config to aws   # NB NB NB This has faulted.
         self.update_config()
         # Use the configuration to instantiate objects for all devices.
+        breakpoint()
         self.create_devices(config)
         self.loud_status = False
         #g_dev['obs']: self
@@ -785,5 +786,7 @@ if __name__ == "__main__":
     # Start up the observatory
 
     import config
+    
+    breakpoint()
     o = Observatory(config.site_name, config.site_config)
     o.run()

@@ -307,6 +307,7 @@ class Mount:
                 pierside = 0   #East looking West
             uncorr_mech_ra_h = self.mount.RightAscension
             uncorr_mech_dec_d = self.mount.Declination
+
             uncorr_mech_ha_r, uncorr_mech_dec_r = ptr_utility.transform_raDec_to_haDec_r(uncorr_mech_ra_h*HTOR, uncorr_mech_dec_d*DTOR, self.sid_now_r)
             roll_obs, pitch_obs = ptr_utility.transform_mount_to_observed_r(uncorr_mech_ha_r, uncorr_mech_dec_r, pierside, loud=False)
             app_ra, app_dec, refr_asec = ptr_utility.obsToAppHaRa(roll_obs, pitch_obs, self.sid_now_r)
@@ -747,6 +748,7 @@ class Mount:
         self.ha_corr = ptr_utility.reduce_ha_r(ha_mech - ha_obs_r)*RTOS     #These are mechanical values, not j.anything
         self.dec_corr = ptr_utility.reduce_dec_r(dec_mech - dec_obs_r)*RTOS
         self.mount.Tracking = True
+
         self.mount.SlewToCoordinatesAsync(ra_mech*RTOH, dec_mech*RTOD)  #Is this needed?
         ###  figure out velocity
         time.sleep(3)

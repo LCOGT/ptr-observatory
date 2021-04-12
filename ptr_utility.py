@@ -73,8 +73,8 @@ MOUNTRATE = 15*APPTOSID  #15.0410717859
 KINGRATE = 15.029
 RefrOn = True
 
-ModelOn = True
-RatesOn = True
+ModelOn = False
+RatesOn = False
 
 HORIZON = 9.999   #Lower than actual mrc values.
 
