@@ -74,7 +74,7 @@ class ObservingConditions:
         self.prior_status = None
         self.prior_status_2 = None
         self.wmd_fail_counter = 0
-        if self.site in ['MRC', 'MRC2']:
+        if self.site in ['mrc', 'mrc2']:
             self.redis_server = redis.StrictRedis(host='10.15.0.109', port=6379, db=0,
                                                   decode_responses=True)
             self.observing_conditions_connected = True
@@ -119,7 +119,7 @@ class ObservingConditions:
 
         '''
 
-        if self.site == 'SAF':
+        if self.site == 'saf':
             illum, mag = self.astro_events.illuminationNow()
             if illum > 500:
                 illum = int(illum)
@@ -231,7 +231,7 @@ class ObservingConditions:
                     self.prior_status = status
                     self.prior_status_2 = status2
                 
-            #  Note we are still is SAF specific site code.
+            #  Note we are still is saf specific site code.
             if self.unihedron_connected:
                 uni_measure = self.unihedron.SkyQuality   #  Provenance of 20.01 is dubious 20200504 WER
                 if uni_measure == 0:
@@ -263,8 +263,8 @@ class ObservingConditions:
                     #print("Wx log did not write.")
             self.status = status
             
-        #  Note we are now in MRC specific code.
-        elif self.site == 'MRC' or self.site == 'MRC2':
+        #  Note we are now in mrc specific code.
+        elif self.site == 'mrc' or self.site == 'mrc2':
             
             try:
                 #breakpoint()
@@ -301,7 +301,7 @@ class ObservingConditions:
                           "meas_sky_mpsas": float(wx['meas_sky_mpsas']),
                           "calc_sky_mpsas": round((mag - 20.01), 2)
                           }
-                                #Pulled over from SAF
+                                #Pulled over from saf
                 uni_measure = float(wx['meas_sky_mpsas'])   #  Provenance of 20.01 is dubious 20200504 WER
 
                 if uni_measure == 0:
@@ -357,7 +357,7 @@ class ObservingConditions:
                 #           "meas_sky_mpsas": float(wx['meas_sky_mpsas']),
                 #           "calc_sky_mpsas": round((mag - 20.01), 2)
                 #           }
-                # #Pulled over from SAF
+                # #Pulled over from saf
                 # breakpoint()
                 # uni_measure = float(wx['meas_sky_mpsas']) #  Provenance of 20.01 is dubious 20200504 WER
                 # if uni_measure == 0:
@@ -476,7 +476,7 @@ class ObservingConditions:
 
         #  NB NB This routine does NOT update self.wx_ok
 
-        if self.site == 'SAF':
+        if self.site == 'saf':
             # Should incorporate Davis data into this data set, and Unihedron.
             illum, mag = self.astro_events.illuminationNow()
             if illum <= 7500.:
@@ -505,7 +505,7 @@ class ObservingConditions:
                 self.meas_sky_lux = linearize_unihedron(uni_measure)
                 quick.append(float(self.meas_sky_lux))     # intended for Unihedron
             return quick
-        elif self.site == 'MRC':
+        elif self.site == 'mrc':
             wx = eval(self.redis_server.get('<ptr-wx-1_state'))
             quick.append(time.time())
             quick.append(float(wx["sky C"]))

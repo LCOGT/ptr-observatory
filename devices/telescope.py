@@ -34,7 +34,7 @@ class Telescope:
     '''
     Note the telescope axis definitions and model are additive to the host mounting
     alignments.
-    It is current tel = True  for SAF as configured, implies uses the same optical train that was used
+    It is current tel = True  for saf as configured, implies uses the same optical train that was used
     to set up the mounting. 
     '''
 

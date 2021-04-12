@@ -538,7 +538,7 @@ class Sequencer:
                     #  We should add a frame repeat count
                     imtype = exposure['imtype'] 
                     #defocus = exposure['defocus']
-#                    if g_dev['site'] == 'SAF':   #THis should be in config.
+#                    if g_dev['site'] == 'saf':   #THis should be in config.
                     if color[0] == 'B':  
                         color = 'B'   #Map generic filters to site specific ones.
                     if color[0] == 'G':  
