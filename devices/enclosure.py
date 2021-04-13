@@ -296,7 +296,6 @@ class Enclosure:
                     and g_dev['mnt'].site_in_automatic \
                     and g_dev['ocn'].wx_is_ok \
                     and self.enclosure.ShutterStatus == 1: #  Closed
-                breakpoint()
                 if open_cmd:
                     self.state = 'User Opened the ' + shutter_str
                 else:
@@ -305,6 +304,7 @@ class Enclosure:
                 #  A countdown to re-open
                 if self.status_string.lower() in ['closed', 'closing']:
                     self.guarded_open()   #<<<<NB NB NB Only enable when code is fully proven to work.
+                    breakpoint()
                     if self.is_Dome:
                         self.enclosure.Slaved = True
                     else:
