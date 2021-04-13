@@ -449,7 +449,6 @@ class Observatory:
             self.scan_requests('mount1')   #NBNBNB THis has faulted, usually empty input lists.
         except:
             print("self.scan_requests('mount1') threw an exception, probably empty input queues.")
-
         g_dev['seq'].manager()  #  Go see if there is something new to do.
 
     def run(self):   # run is a poor name for this function.
@@ -559,7 +558,6 @@ class Observatory:
                 reduced_data_size = hdu.data.size
                 wpath = paths['red_path'] + paths['red_name01_lcl']    #This name is convienent for local sorting
                 hdu.writeto(wpath, overwrite=True) #Bigfit reduced
-                breakpoint()
                 if self.site_name == 'saf':
                     wpath = paths['red_path_aux'] + paths['red_name01_lcl']
                     hdu.writeto(wpath, overwrite=True) #big fits to other computer in Neyle's office
