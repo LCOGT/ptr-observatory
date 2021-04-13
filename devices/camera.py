@@ -379,7 +379,7 @@ class Camera:
             proto[13] = proto[13][:12] + filter_name   + proto[13][13:]
             proto[10] = proto[10][:12] + str(enabled)  + proto[10][13:]
             proto[1]  = proto[1][:12]  + str(binning)  + proto[1][13:]
-        seq_file = open(self.camera_path +'seq/ptr_wmd.seq', 'w')
+        seq_file = open(self.camera_path +'seq/ptr_mrc.seq', 'w')
         for item in range(len(proto)):
             seq_file.write(proto[item])
         seq_file.close()
@@ -844,7 +844,7 @@ class Camera:
                             for file_path in glob.glob(self.file_mode_path + '*.f*t*'):
                                 os.remove(file_path)
                             self.t2 = time.time()
-                            self.camera.StartSequence(self.camera_path + 'seq/ptr_wmd.seq')
+                            self.camera.StartSequence(self.camera_path + 'seq/ptr_mrc.seq')
                             print("Starting autosave  at:  ", self.t2)
                         else:
                             #This is the standard call to Maxim
@@ -1347,7 +1347,7 @@ class Camera:
                              'text_name11': text_name,
                              'frame_type':  frame_type
                              }
-                    if  self.config['site'] == 'SAF':
+                    if  self.config['site'] == 'saf':
                         os.makedirs(self.alt_path +  g_dev['day'] + '/reduced/', exist_ok=True)
                         red_path_aux = self.alt_path +  g_dev['day'] + '/reduced/'
                         paths['red_path_aux'] = red_path_aux
