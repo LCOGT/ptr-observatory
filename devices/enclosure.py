@@ -367,7 +367,8 @@ class Enclosure:
                             pass
                             #self.enclosure.CloseShutter()   #ASCOM DOME will fault if it is Opening or closing
                     except:
-                        print('Dome close cmd appeared to fault.')
+                        pass
+                        #print('Dome close cmd appeared to fault.')
                     self.dome_opened = False
                     self.dome_homed = True
                     #print("One time close of enclosure issued, normally done during Python code restart.")

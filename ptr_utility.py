@@ -71,10 +71,15 @@ SecTOH = 1/3600.
 APPTOSID = 1.00273811906 #USNO Supplement
 MOUNTRATE = 15*APPTOSID  #15.0410717859
 KINGRATE = 15.029
-RefrOn = True
 
-ModelOn = False
-RatesOn = False
+try:
+    refrOn = site_config['mount']['mount1']['refraction_on'] 
+    ModelOn = site_config['mount']['mount1']['model_on'] 
+    RatesOn =site_config['mount']['mount1']['rates_on'] 
+except:
+    RefrOn = False
+    ModelOn = False
+    RatesOn = False
 
 HORIZON = 9.999   #Lower than actual mrc values.
 
@@ -1655,8 +1660,10 @@ def correct_refraction_inEl_r(pObsEl, pSiteRefTemp, pSiteRefPress): #Deg, C. , m
 
 def test_refraction():   #passes 20170104   20180909
     for el in range(90, -1, -1):
-        refEl, ref = apply_refraction_inEl(el, siteRefTemp, siteRefPress)
-        resultEl, ref2 = correct_refraction_inEl(refEl, siteRefTemp, siteRefPress)
+        siteRefTemp = 0.0
+        siteRefPress = 1010
+        refEl, ref = apply_refraction_inEl_r(el, siteRefTemp, siteRefPress)
+        resultEl, ref2 = correct_refraction_inEl_r(refEl, siteRefTemp, siteRefPress)
         print(el, refEl, resultEl, (el-resultEl)*DTOS, ref, ref2)
 
 def appToObsRaHa(appRa, appDec, pSidTime):
