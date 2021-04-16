@@ -1077,7 +1077,7 @@ class Camera:
                     #print(self.img.flags)
                     self.img = self.img.copy(order='C')   #  NB Should we move this up to where we read the array?
                     bkg = sep.Background(self.img)
-                    self.img = self.img - bkg
+                    self.img -= bkg
                     sources = sep.extract(self.img, 4.5, err=bkg.globalrms, minarea=15)  # Minarea should deal with hot pixels.
                     sources.sort(order = 'cflux')
                     print('No. of detections:  ', len(sources))                  
