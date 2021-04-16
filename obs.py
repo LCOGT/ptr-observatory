@@ -347,11 +347,12 @@ class Observatory:
                 '''
 
                 if self.events_new is None:
-                    url = 'https://api.photonranch.org/api/events?site=saf'
+                    url = 'https://api.photonranch.org/api/events?site=SAF'
 
                     self.events_new = requests.get(url).json()
 
                 return   # Continue   #This creates an infinite loop
+                
             else:
                 print('Sequencer Hold asserted.')    #What we really want here is looking for a Cancel/Stop.
                 continue
@@ -400,7 +401,7 @@ class Observatory:
         if loud:
             print('Status Sent:  \n', status)   # from Update:  ', status))
         else:
-            print('.')   # We print this to stay informed of process on the console.
+            print('.') #, status)   # We print this to stay informed of process on the console.
             # breakpoint()
             # self.send_log_to_frontend("WARN cam1 just fell on the floor!")
             # self.send_log_to_frontend("ERROR enc1 dome just collapsed.")
@@ -448,7 +449,6 @@ class Observatory:
             self.scan_requests('mount1')   #NBNBNB THis has faulted, usually empty input lists.
         except:
             print("self.scan_requests('mount1') threw an exception, probably empty input queues.")
-
         g_dev['seq'].manager()  #  Go see if there is something new to do.
 
     def run(self):   # run is a poor name for this function.
@@ -515,7 +515,7 @@ class Observatory:
         try:
             resp = requests.post(url_log, body)
         except:
-            print("Log did not send.", resp)
+            print("Log did not send, usually not fatal.")
     # Note this is another thread!
     def reduce_image(self):
         '''
@@ -784,5 +784,7 @@ if __name__ == "__main__":
     # Start up the observatory
 
     import config
+    
+
     o = Observatory(config.site_name, config.site_config)
     o.run()

@@ -43,14 +43,11 @@ from astroquery.simbad import Simbad
 #from ptr_config import *
 import ephem
 from config import site_config
+from global_yard import g_dev
 #from ptr_astrometrics import *
 siteCoordinates = EarthLocation(lat=site_config['latitude']*u.deg, \
                                  lon=site_config['longitude']*u.deg,
                                  height=site_config['elevation']*u.m)
-'''
-Obs List
-[M48, M67, C25, N2619, M81, M82, N2683, M44, M42, M45, M1, C60, C61]
-'''
 
 Target = namedtuple('Target',['ra', 'dec', 'name', 'simbad', 'obj', 'mag', \
                                'size', 'pa', 'ly', 'cdist']) \
@@ -74,17 +71,18 @@ SecTOH = 1/3600.
 APPTOSID = 1.00273811906 #USNO Supplement
 MOUNTRATE = 15*APPTOSID  #15.0410717859
 KINGRATE = 15.029
-RefrOn = True
 
-ModelOn = True
-RatesOn = True
+try:
+    refrOn = site_config['mount']['mount1']['refraction_on'] 
+    ModelOn = site_config['mount']['mount1']['model_on'] 
+    RatesOn =site_config['mount']['mount1']['rates_on'] 
+except:
+    RefrOn = False
+    ModelOn = False
+    RatesOn = False
 
-HORIZON = 9.999   #Lower than actual PTR values.
+HORIZON = 9.999   #Lower than actual mrc values.
 
-WESTWESTLIMIT = 5.05
-WESTEASTLIMIT = -3.25
-EASTWESTLIMIT = 3.25
-EASTEASTLIMIT = -5.05
 
 ALTAZ = False
 
@@ -100,7 +98,7 @@ model['IH'] = 0
 model['ID'] = 0
 model['WH'] = 0
 model['WD'] = 0
-model['MA'] = 0
+model['MA'] =0
 model['ME'] = 0
 model['CH'] = 0
 model['NP'] = 0
@@ -175,8 +173,8 @@ def zeroModel():
     model['ID'] = 0
     model['WH'] = 0
     model['WD'] = 0
-    model['MA'] = 500
-    model['ME'] = -750
+    model['MA'] = 0
+    model['ME'] = 0
     model['CH'] = 0
     model['NP'] = 0
     model['TF'] = 0
@@ -667,45 +665,6 @@ def get_target_list(targetListName):
     targetShelf.close()
     return targetList
 
-
-#def plotMap(objects, lon):
-#    #sidTime = Time(localEpoch,  scale='utc', location=(str(siteLongitude), str(siteLatitude))).sidereal_time('apparent').hour
-#    #sidTime = sidTime.sidereal_time('apparent')*15
-#    map = Basemap(projection='aeqd', lat_0=siteLatitude, lon_0=lon*15)
-#    # draw coastlines, country boundaries, fill continents.
-#    #map.drawcoastlines(linewidth=0.25)
-#    #map.drawcountries(linewidth=0.25)
-#    #map.fillcontinents(color='coral',lake_color='aqua')
-#    # draw the edge of the map projection region (the projection limb)
-#    map.drawmapboundary(fill_color='aqua')
-#    # draw lat/lon grid lines every 30 degrees.
-#    map.drawmeridians(np.arange(0,360,15))
-#    map.drawparallels(np.arange(-90,90,15))
-#    # make up some data on a regular lat/lon grid.
-##    nlats = 73; nlons = 145; delta = 2.*np.pi/(nlons-1)
-##    lats = (0.5*np.pi-delta*np.indices((nlats,nlons))[0,:,:])
-##    lons = (delta*np.indices((nlats,nlons))[1,:,:])
-##    wave = 0.75*(np.sin(2.*lats)**8*np.cos(4.*lons))
-##    mean = 0.5*np.cos(2.*lats)*((np.sin(2.*lats))**2 + 2.)
-##    # compute native map projection coordinates of lat/lon grid.
-##    x, y = map(lons*180./np.pi, lats*180./np.pi)
-##    # contour data over the map.
-##    cs = map.contour(x,y,wave+mean,15,linewidths=1.5)
-#    lats = []
-#    lons = []
-#    for item in targetList:
-#        lats.append(item[1])
-#        lons.append(item[0]*15)
-#    x, y = map(lons,lats)
-#    map.scatter(x,y, marker='o', color='k')
-#    plt.show
-#
-#    plt.title('contour lines over filled continent background')
-#    plt.show()
-#
-#
-#
-#    return
 
 def distSortTargets(pRa, pDec, pSidTime):
     '''
@@ -1365,35 +1324,35 @@ def fixTail(p):
     return(p)
 
 #These function do not work for mechanical coordinates.
-def reduceHa(pHa):
+def reduce_ha_h(pHa):
     while pHa <= -12:
         pHa += 24.0
     while pHa > 12:
         pHa -= 24.0
     return pHa
 
-def reduceRa(pRa):
+def reduce_ra_h(pRa):
     while pRa < 0:
         pRa += 24.0
     while pRa >= 24:
         pRa -= 24.0
     return pRa
 
-def reduceDec( pDec):
+def reduce_dec_d( pDec):
     if pDec > 90.0:
         pDec = 90.0
     if pDec < -90.0:
         pDec = -90.0
     return pDec
 
-def reduceAlt(pAlt):
+def reduce_alt_(pAlt):
     if pAlt > 90.0:
         pAlt = 90.0
     if pAlt < -90.0:
         pAlt = -90.0
     return pAlt
 
-def reduceAz(pAz):
+def reduce_az_d(pAz):
     while pAz < 0.0:
         pAz += 360
     while pAz >= 360.0:
@@ -1401,42 +1360,42 @@ def reduceAz(pAz):
     return pAz
 
 
-def reduceHaR(pHa):
+def reduce_ha_r(pHa):
     while pHa <= -PI:
         pHa += TWOPI
     while pHa > PI:
         pHa -= TWOPI
     return pHa
 
-def reduceRaR(pRa):
+def reduce_ra_r(pRa):
     while pRa < 0:
         pRa += TWOPI
     while pRa >=TWOPI:
         pRa -= TWOPI
     return pRa
 
-def reduceDecR(pDec):
+def reduce_dec_r(pDec):
     if pDec > PIOVER2:
         pDec =  PIOVER2
     if pDec < - PIOVER2:
         pDec = - PIOVER2
     return pDec
 
-def reduceAltR(pAlt):
+def reduce_alt_r(pAlt):
     if pAlt >  PIOVER2:
         pAlt =  PIOVER2
     if pAlt < - PIOVER2:
         pAlt = - PIOVER2
     return pAlt
 
-def reduceAzR(pAz):
+def reduce_az_r(pAz):
     while pAz < 0.0:
         pAz += TWOPI
     while pAz >= TWOPI:
         pAz -= TWOPI
     return pAz
 
-def raAvg(pFirst,pNext):
+def ra_avg_h(pFirst,pNext):
     '''Creates a correct average over 0 to 23.999 hour transition'''
 
     #Note to average RAa/Dec pairs requires considering overpole travel.
@@ -1454,7 +1413,7 @@ def raAvg(pFirst,pNext):
         return (pFirst + pNext)/2. #Note there are two possible answers in this situation.
     return
 
-def azAvg(pFirst,pNext):
+def az_avg_deg(pFirst,pNext):
     '''Creates a correct average over 0 to 359.999 hour transition'''
     delta = abs(pFirst - pNext)
     if delta >= 180:
@@ -1470,91 +1429,6 @@ def azAvg(pFirst,pNext):
 
 
 
-#def test_misAlign():
-#    stars = open('TPOINT\\perfct34.dat', 'r')
-#    out = open('TPOINT\\misalign.dat', 'w')
-#    for line in stars:
-#        if len(line) < 53:
-#            out.write(line)
-#            #print(line)
-#            continue
-#        entry = line[:]
-#        entry = entry.split()
-#        #print(entry)
-#        h = float(entry[0]) + (float(entry[1]) + float(entry[2])/60.)/60.
-#        d = float(entry[3][1:]) + (float(entry[4]) + float(entry[5])/60.)/60.
-#        sid = float(entry[12]) + float(entry[13])/60.
-#        if entry[3][0] == '-':
-#            d = -d
-#        ha = reduceHa(sid - h)
-##        if ha < 0: pFlip = True
-#        pFlip = False
-#        iroll, npitch = transformObsToMount(ha, d, False)
-###       print(h, d, ha, iroll, npitch)
-##        #nroll = reduceRa(sid - iroll)
-##        if ha < 0:
-##            #print(h, d, ha, iroll, 180 - npitch)
-##            nroll = 180 - npitch
-##        else:
-##        if ha >= 0:
-#        nroll = reduceRa(sid - iroll)
-##        print(h, d, ha, nroll, npitch)
-##        nroll = iroll
-#        mh, mm, ms = hToH_MStup(nroll)
-#        md, dm, ds = dToD_MStup(npitch)
-#        entry[6] = mh
-#        entry[7] = mm
-#        entry[8] = ms
-#        entry[9] = md
-#        entry[10] = dm
-#        entry[11] = ds
-#        #print('entry', entry)
-#        outStr = ''
-#        for field in range(len(entry)):
-#            outStr += entry[field] +"  "
-#        outStr = outStr[:-2]
-#        #NBNBNB Fix to copy over Sidtime and Aux variables.
-#        out.write(outStr +'\n' )
-#        #print(outStr+ '  00  00 \n')
-#    stars.close()
-#    out.close()
-
-# def nextSeq(pCamera):
-#     global SEQ_Counter
-#     camShelf = shelve.open('Q:\\ptr_night_shelf\\' + pCamera)
-#     #print('Shelf:  ', camShelf)
-#     sKey = 'Sequence'
-#     #print(type(sKey), sKey)
-#     seq = camShelf[sKey]      #get an 8 character string
-#     seqInt = int(seq)
-#     seqInt += 1
-#     seq = ('0000000000'+str(seqInt))[-8:]
-#     #print(pCamera,seq)
-#     camShelf['Sequence'] = seq
-#     camShelf.close()
-#     SEQ_Counter = seq
-#     return seq
-
-# def makeSeq(pCamera):
-#     camShelf = shelve.open('Q:\\ptr_night_shelf\\' + str(pCamera))
-#     #seq = camShelf['Sequence']      # a 9 character string
-#     seqInt = int(-1)
-#     seqInt  += 1
-#     seq = ('0000000000'+str(seqInt))[-8:]
-#     print('Making new seq: ' , pCamera, seq)
-#     camShelf['Sequence'] = seq
-#     camShelf.close()
-#     return seq
-
-
-
-
-
-#vega = SkyCoord.from_name('Vega')
-#vega.transform_to(FK5(equinox=equinox_now))
-
-#vega_altaz=vega.transform_to(AltAz(obstime=ut_now, location=ptr, pressure=press, temperature=temp, relative_humidity = hum))
-#print(vega_altaz.alt.deg, vega_altaz.az.deg)
 
 class Pointing(object):
 
@@ -1594,7 +1468,7 @@ def get_current_times():
     equinox_now = 'J' +str(round((iso_day[0] + ((iso_day[1]-1)*7 + (iso_day[2] ))/365), 2))
     return(ut_now, sid_now, equinox_now, doy)
 
-def calculate_ptr_horizon(pAz,pAlt):
+def calculate_ptr_horizon_d(pAz,pAlt):
     if pAz  <= 30:
         hor = 35.
     elif pAz <= 36.5:
@@ -1651,7 +1525,7 @@ def calculate_ptr_horizon(pAz,pAlt):
         hor =17  #Temporary fix for L500
     return hor
 
-def convertToMechanical(pRa, pDec, pFlip):
+def convert_to_mechanical_h_d(pRa, pDec, pFlip):
     if pFlip == 'East':
         return (pRa, pDec)
     else:
@@ -1663,69 +1537,73 @@ def convertToMechanical(pRa, pDec, pFlip):
             pRa += 24.
         return (pRa, fDec)
 
-def rectSph(pX, pY, pZ):
+def rect_sph_d(pX, pY, pZ):
     rSq = pX*pX + pY*pY + pZ*pZ
     return math.degrees(math.atan2(pY, pX)), math.degrees(math.asin(pZ/rSq))
 
-def sphRect(pRoll, pPitch):
+def sph_rect_d(pRoll, pPitch):
     pRoll = math.radians(pRoll)
     pPitch = math.radians(pPitch)
     cPitch = math.cos(pPitch)
     return math.cos(pRoll)*cPitch, math.sin(pRoll)*cPitch, math.sin(pPitch)
 
-def rotate(pX, pY, pTheta):
+def rotate_r(pX, pY, pTheta):
     cTheta = math.cos(pTheta)
     sTheta = math.sin(pTheta)
     return pX * cTheta - pY * sTheta, pX * sTheta + pY * cTheta
 
-def transform_raDec_to_haDec(pRa, pDec, pSidTime):
-    return (reduceHaR(pSidTime - pRa), reduceDecR(pDec))
+def centration_d (theta, a, b):
+    theta = math.radians(theta)
+    return math.degrees(math.atan2(math.sin(theta) - STOR*b, math.cos(theta) - STOR*a))
 
-def transformHatoRaDec(pHa, pDec, pSidTime):
-    return (reduceRaR(pSidTime - pHa), reduceDecR(pDec))
+def centration_r (theta, a, b):
+    # = math.radians(theta)
+    return (math.atan2(math.sin(theta) - STOR*b, math.cos(theta) - STOR*a))
 
-def transform_haDec_to_azAlt(pLocal_hour_angle, pDec, dummy):
-    lat = site_config['latitude']
-    latr = math.radians(lat)
+def transform_raDec_to_haDec_r(pRa, pDec, pSidTime):
+    return (reduce_ha_r(pSidTime - pRa), reduce_dec_r(pDec))
+
+def transform_haDec_to_raDec_r(pHa, pDec, pSidTime):
+    return (reduce_ra_r(pSidTime - pHa), reduce_dec_r(pDec))
+
+def transform_haDec_to_azAlt_r(pLocal_hour_angle, pDec, latr):
     sinLat = math.sin(latr)
     cosLat = math.cos(latr)
-    decr = math.radians(pDec)
+    decr = pDec
     sinDec = math.sin(decr)
     cosDec = math.cos(decr)
-    mHar = math.radians(15.*pLocal_hour_angle)
+    mHar = pLocal_hour_angle
     sinHa = math.sin(mHar)
     cosHa = math.cos(mHar)
-    altitude = math.degrees(math.asin(sinLat*sinDec + cosLat*cosDec*cosHa))
+    altitude = math.asin(sinLat*sinDec + cosLat*cosDec*cosHa)
     y = sinHa
     x = cosHa*sinLat - math.tan(decr)*cosLat
-    azimuth = math.degrees(math.atan2(y, x)) + 180
-    azimuth = reduceAz(azimuth)
-    altitude = reduceAlt(altitude)
+    azimuth = math.atan2(y, x) + PI
+    azimuth = reduce_az_r(azimuth)
+    altitude = reduce_alt_r(altitude)
     return (azimuth, altitude)#, local_hour_angle)
 
-def transform_azAlt_to_HaDec(pAz, pAlt, dummy):
-    lat = site_config['latitude']
-    latr = math.radians(lat)
+def transform_azAlt_to_haDec_r(pAz, pAlt, latr):
     sinLat = math.sin(latr)
     cosLat = math.cos(latr)
-    alt = math.radians(pAlt)
+    alt = pAlt
     sinAlt = math.sin(alt)
     cosAlt = math.cos(alt)
-    az = math.radians(pAz - 180)
+    az = pAz - PI
     sinAz = math.sin(az)
     cosAz = math.cos(az)
     if abs(abs(alt) - PIOVER2) < 1.0*STOR:
-        return (0.0, reduceDec(lat))     #by convention azimuth points South at local zenith
+        return (0.0, reduce_dec_r(latr))     #by convention azimuth points South at local zenith
     else:
         dec = math.asin(sinAlt*sinLat - cosAlt*cosAz*cosLat)
         ha = math.atan2(sinAz, (cosAz*sinLat + math.tan(alt)*cosLat))
-        return (reduceHaR(ha*RTOH), reduceDecR(dec*RTOD))
+        return (reduce_ha_r(ha), reduce_dec_r(dec))
 
-def transform_azAlt_to_RaDec(pAz, pAlt, pLatitude, pSidTime):
-    ha, dec = transform_azAlt_to_HaDec(pAz, pAlt, pLatitude)
-    return transformHatoRaDec(ha, dec, pSidTime)
+def transform_azAlt_to_raDec_r(pAz, pAlt, pLatitude, pSidTime):
+    ha, dec = transform_azAlt_to_haDec_r(pAz, pAlt, pLatitude)
+    return transform_haDec_to_raDec_r(ha, dec, pSidTime)
 
-def test_haDec_AltAz_haDec():
+def test_haDec_altAz_haDec():
     lHa = [-12, -11.99, -6, -5, -4, -3, -2, -1, 0, 1, 3, 5, 7, 9, 11.999, 12]
     lDec = [-50, -40, -30, -10, 0, 30, siteLatitude, 40, 70, 89.99, 90]
     for ha in lHa:
@@ -1736,28 +1614,32 @@ def test_haDec_AltAz_haDec():
             tHa, tDec = transform_azAlt_to_HaDec(lAz, lAlt, siteLatitude)
             print (ha, tHa, dec, tDec)
 
-def apply_refraction_inEl(pAppEl, pSiteRefTemp, pSiteRefPress): #Deg, C. , mmHg
+def apply_refraction_inEl_r(pAppEl, pSiteRefTemp, pSiteRefPress): #Deg, C. , mmHg
     #From Astronomical Algorithms.  Max error 0.89" at 0 elev.
+    #20210328   This code does not the right thing if star is below the Pole and is refracted above it.
     if not RefrOn:
         return pAppEl, 0.0
     elif pAppEl > 0:
+        pAppEl *= RTOD   #Formular assume elevgvation in degrees
         ref = 1/math.tan(DTOR*(pAppEl + 7.31/(pAppEl + 4.4))) + 0.001351521673756295
         ref -= 0.06*math.sin((14.7*ref +13.)*DTOR) - 0.0134970632606319
         ref *= 283/(273 + pSiteRefTemp)
         ref *= pSiteRefPress/1010.0
         obsEl = pAppEl + ref/60.
+        obsEl *= DTOR
         #print('El, ref (amin): ', obsEl, ref)
-        return reduceDec(obsEl), ref*60.
+        return reduce_alt_r(obsEl), ref*60.
     else:
         ref = 1/math.tan(DTOR*(7.31/(pAppEl + 4.4))) + 0.001351521673756295
         ref -= 0.06*math.sin((14.7*ref +13.)*DTOR) - 0.0134970632606319
         ref *= 283/(273 + pSiteRefTemp)
         ref *= pSiteRefPress/1010.0
         obsEl = pAppEl + ref/60.
+        obsEl *= DTOR
         #print('El, ref: ', obsEl, ref)
-        return reduceDec(obsEl), ref*60.
+        return reduce_alt_r(obsEl), ref*60.
 
-def correct_refraction_inEl(pObsEl, pSiteRefTemp, pSiteRefPress): #Deg, C. , mmHg
+def correct_refraction_inEl_r(pObsEl, pSiteRefTemp, pSiteRefPress): #Deg, C. , mmHg
     if not RefrOn:
         return pObsEl, 0.0
     else:
@@ -1766,53 +1648,60 @@ def correct_refraction_inEl(pObsEl, pSiteRefTemp, pSiteRefPress): #Deg, C. , mmH
         error = 10
         trial= pObsEl
         while abs(error) > ERRORlimit:
-            appTrial, ref = apply_refraction_inEl(trial, pSiteRefTemp, pSiteRefPress)
+            appTrial, ref = apply_refraction_inEl_r(trial, pSiteRefTemp, pSiteRefPress)
             error = appTrial - pObsEl
             trial -= error
             count += 1
             if count > 25:   #count about 12 at-0.5 deg.  3 at 45deg.
-                return reduceDec(pObsEl)
+                return reduce_dec_r(pObsEl)
                 print('correct_refraction_inEl()  FAILED!')
         #print('Count:  ', count)
-        return reduceDec(trial), reduceDec(pObsEl - trial)*3600.
+        return reduce_dec_r(trial), reduce_dec_r(pObsEl - trial)*RTOD*3600.
 
 def test_refraction():   #passes 20170104   20180909
     for el in range(90, -1, -1):
-        refEl, ref = apply_refraction_inEl(el, siteRefTemp, siteRefPress)
-        resultEl, ref2 = correct_refraction_inEl(refEl, siteRefTemp, siteRefPress)
+        siteRefTemp = 0.0
+        siteRefPress = 1010
+        refEl, ref = apply_refraction_inEl_r(el, siteRefTemp, siteRefPress)
+        resultEl, ref2 = correct_refraction_inEl_r(refEl, siteRefTemp, siteRefPress)
         print(el, refEl, resultEl, (el-resultEl)*DTOS, ref, ref2)
 
 def appToObsRaHa(appRa, appDec, pSidTime):
     global raRefr, decRefr, refAsec
     from obs import g_dev
-    appHa, appDec = transform_raDec_to_haDec(appRa, appDec, pSidTime)
-    appAz, appAlt = transform_haDec_to_azAlt(appHa, appDec, site_config['latitude']*DTOR)
-    obsAlt, refAsec = apply_refraction_inEl(appAlt,  g_dev['ocn'].temperature,  g_dev['ocn'].pressure)
-    obsHa, obsDec = transform_azAlt_to_HaDec(appAz, obsAlt, site_config['latitude'])
-    raRefr = reduceHaR(appHa - obsHa)*HTOS
-    decRefr = -reduceDecR(appDec - obsDec)*DTOS
-    return reduceHaR(obsHa), reduceDecR(obsDec), refAsec
+    appHa, appDec = transform_raDec_to_haDec_r(appRa, appDec, pSidTime)
+    appAz, appAlt = transform_haDec_to_azAlt_r(appHa, appDec, site_config['latitude']*DTOR)
+    obsAlt, refAsec = apply_refraction_inEl_r(appAlt,  g_dev['ocn'].temperature,  g_dev['ocn'].pressure)
+    obsHa, obsDec = transform_azAlt_to_haDec_r(appAz, obsAlt, site_config['latitude']*DTOR)
+    raRefr = reduce_ha_r(appHa - obsHa)*HTOS
+    decRefr = -reduce_dec_r(appDec - obsDec)*DTOS
+    return reduce_ha_r(obsHa), reduce_dec_r(obsDec), refAsec
 
 def obsToAppHaRa(obsHa, obsDec, pSidTime):
-    global raRefr, decRefr, refAsec
-    from obs import g_dev
-    obsAz, obsAlt = transform_haDec_to_azAlt(obsHa, obsDec, site_config['latitude'])
-    appAlt, refr = correct_refraction_inEl(obsAlt, g_dev['ocn'].temperature,  g_dev['ocn'].pressure)
-    appHa, appDec = transform_azAlt_to_HaDec(obsAz, appAlt, site_config['latitude'])
-    appRa, appDec = transformHatoRaDec(appHa, appDec, pSidTime)
-    raRefr = reduceHaR(-appHa + obsHa)*HTOS
-    decRefr = -reduceDecR(-appDec + obsDec)*DTOS
-    return reduceRaR(appRa), reduceDecR(appDec)
+    global raRefr, decRefr
+    obsAz, obsAlt = transform_haDec_to_azAlt_r(obsHa, obsDec, site_config['latitude']*DTOR)
+    refr = 0.0
+    try:
+        appAlt, refr = correct_refraction_inEl_r(obsAlt, g_dev['ocn'].temperature,  g_dev['ocn'].pressure)
+    except:
+        #breakpoint()  #THis should not fail.
+        appAlt = 0
+        pass
+    appHa, appDec = transform_azAlt_to_haDec_r(obsAz, appAlt, site_config['latitude']*DTOR)
+    appRa, appDec = transform_haDec_to_raDec_r(appHa, appDec, pSidTime)
+    raRefr = reduce_ha_r(-appHa + obsHa)*HTOS
+    decRefr = -reduce_dec_r(-appDec + obsDec)*DTOS
+    return reduce_ra_r(appRa), reduce_dec_r(appDec), refr
 
 def appToObsRaDec(appRa, appDec, pSidTime):
     obsHa, obsDec, refR = appToObsRaHa(appRa, appDec, pSidTime)
-    obsRa, obsDec = transformHatoRaDec(obsHa, obsDec, pSidTime)
-    return reduceRaR(obsRa), reduceDecR(obsDec), refR
+    obsRa, obsDec = transform_haDec_to_raDec_r(obsHa, obsDec, pSidTime)
+    return reduce_ra_r(obsRa), reduce_dec_r(obsDec), refR
 
 def obsToAppRaDec(obsRa, obsDec, pSidTime):
-    obsHa, obsDec = transform_raDec_to_haDec(obsRa, obsDec, pSidTime.value)
+    obsHa, obsDec = transform_raDec_to_haDec_r(obsRa, obsDec, pSidTime.value)
     appRa, appDec, refr =  obsToAppHaRa(obsHa, obsDec, pSidTime.value)
-    return reduceRaR(appRa), reduceDecR(appDec)
+    return reduce_ra_r(appRa), reduce_dec_r(appDec), refr
 
 
 def test_app_obs_app():
@@ -1830,23 +1719,25 @@ def test_app_obs_app():
                 #print((pRa - aRa)*HTOS,( pDec - aDec)*DTOS)
 
 
-def transform_mount_to_observed(pRoll, pPitch, pPierSide, loud=False):
+def transform_mount_to_observed_r(pRoll, pPitch, pPierSide, loud=False):
     #I am amazed this works so well even very near the celestrial pole.
     #input is Ha in hours and pitch in degrees.
     if not ModelOn:
         return (pRoll, pPitch)
     else:
-        cosDec = math.cos(pPitch*DTOR)
-        ERRORlimit = 0.001*STOR
+
+        cosDec = math.cos(pPitch)
+        ERRORlimit = 0.01*STOR
         count = 0
         error = 10
         rollTrial = pRoll
         pitchTrial = pPitch
         while abs(error) > ERRORlimit:
-            obsRollTrial, obsPitchTrial = transformObsToMount(rollTrial, \
+            obsRollTrial, obsPitchTrial = transform_observed_to_mount_r(rollTrial, \
                           pitchTrial, pPierSide)
-            errorRoll = reduceHa(obsRollTrial - pRoll)
-            errorPitch = obsPitchTrial - pPitch
+            errorRoll = reduce_ha_r(obsRollTrial - pRoll)
+            errorPitch = reduce_dec_r(obsPitchTrial - pPitch)
+            #THis needs a unit checkout.
             error = math.sqrt(cosDec*(errorRoll*15)**2 + (errorPitch)**2)
             #if loud: print(count, errorRoll, errorPitch, error*DTOS)
             rollTrial -= errorRoll
@@ -1855,10 +1746,10 @@ def transform_mount_to_observed(pRoll, pPitch, pPierSide, loud=False):
             if count > 500:   #count about 12 at-0.5 deg.  3 at 45deg.
                 return pRoll, pPitch
                 if loud: print('correct_mount_to_observedl()  FAILED!')
-        return reduceRa(rollTrial), reduceDec(pitchTrial)
+        return reduce_ha_r(rollTrial), reduce_dec_r(pitchTrial)
 
 
-def transformObsToMount(pRoll, pPitch, pPierSide, loud=False):
+def transform_observed_to_mount_r(pRoll, pPitch, pPierSide, loud=False):
     #This routine is diectly invertible. pRoll in Hours, pPitch in Deg.
     '''
     Long-run probably best way to do this in inherit a model dictionary.
@@ -1899,6 +1790,9 @@ def transformObsToMount(pRoll, pPitch, pPierSide, loud=False):
         acec = model['ACEC']
         eces = model['ECES']
         ecec = model['ECEC']
+        #R to HD convention
+        pRoll *= RTOH
+        pPitch *= RTOD
         #Apply IJ and ID to incoming coordinates, and if needed GEM correction.
         rRoll = math.radians(pRoll*15 - ih /3600.)
         rPitch = math.radians(pPitch - idec /3600.)
@@ -1924,20 +1818,20 @@ def transformObsToMount(pRoll, pPitch, pPierSide, loud=False):
                             * math.sin(rPitch) - math.sin(math.radians(np)) \
                             * math.sin(math.radians(ch)))
             if loud:  print('Post CN; roll, pitch:  ', cnRoll*RTOH, cnPitch*RTOD)
-            x, y, z = sphRect(math.degrees(cnRoll), math.degrees(cnPitch))
+            x, y, z = sph_rect_d(math.degrees(cnRoll), math.degrees(cnPitch))
             if loud: print('To spherical:  ', x, y, z, x*x+y*y+z*z)
             #Apply MA error:
             if loud: print('Pre  MA:       ', x, y, z, math.radians(-ma/3600.))
-            y, z = rotate(y, z, math.radians(-ma/3600.))#/math.cos(math.radians(siteLatitude)))
+            y, z = rotate_r(y, z, math.radians(-ma/3600.))#/math.cos(math.radians(siteLatitude)))
             if loud: print('Post MA:       ', x, y, z, x*x+y*y+z*z)
             #Apply ME error:
-            x, z = rotate(x, z, math.radians(-me/3600.))
+            x, z = rotate_r(x, z, math.radians(-me/3600.))
             if loud: print('Post ME:       ', x, y, z, x*x+y*y+z*z)
             #Apply latLtude
-            x, z = rotate(x, z, math.radians(90.0 - siteLatitude))
+            x, z = rotate_r(x, z, math.radians(90.0 - siteLatitude))
             if loud: print('Post-Lat:  ', x, y, z, x*x+y*y+z*z)
             #Apply TF, TX
-            az, el = rectSph(x, y, z)  #math.pi/2. -
+            az, el = rect_sph_d(x, y, z)  #math.pi/2. -
             if loud: print('Az El:  ',  az+180., el)
             #flexure causes mount to sag so a shift in el, apply then
             #move back to other coordinate system
@@ -1952,24 +1846,25 @@ def transformObsToMount(pRoll, pPitch, pPierSide, loud=False):
             #The above is dubious but close for small deflections.
             #Unapply Latitude
 
-            x, y, z = sphRect(az , el)
+            x, y, z = sph_rect_d(az , el)
             if loud: print('Back:  ', x, y, z, x*x+y*y+z*z)
-            x,z = rotate(x, z, -math.radians(90.0 - siteLatitude))
+            x,z = rotate_r(x, z, -math.radians(90.0 - siteLatitude))
             if loud: print('Back-Lat:  ', x, y, z, x*x+y*y+z*z)
-            fRoll, fPitch = rectSph(x, y, z)
+            fRoll, fPitch = rect_sph_d(x, y, z)
             if loud: print('Back-Sph:  ', fRoll*RTOH, fPitch*RTOD)
-            cRoll = centration(fRoll, -hces, hcec)
+            cRoll = centration_d(fRoll, -hces, hcec)
             if loud: print('f,c Roll: ', fRoll, cRoll)
-            cPitch = centration(fPitch, -dces, dcec)
+            cPitch = centration_d(fPitch, -dces, dcec)
 
             if loud: print('f, c Pitch: ', fPitch, cPitch)
-            corrRoll = reduceHa(cRoll/15.)
-            corrPitch = reduceDec(cPitch)
+            corrRoll = reduce_ha_h(cRoll/15.)
+            corrPitch = reduce_dec_d(cPitch)
             if loud: print('Final:   ', fRoll*RTOH, fPitch*RTOD)
-            raCorr = reduceHa(corrRoll - pRoll)*15*3600
-            decCorr = reduceDec(corrPitch - pPitch)*3600
+            raCorr = reduce_ha_h(corrRoll - pRoll)*15*3600
+            decCorr = reduce_dec_d(corrPitch - pPitch)*3600
+            #20210328  Note this may not work at Pole.
             if loud: print('Corrections:  ', raCorr, decCorr)
-            return(corrRoll, corrPitch)
+            return(corrRoll*HTOR, corrPitch*DTOR)
         elif ALTAZ:
             if loud:
                 print(ih, idec, ia, ie, an, aw, tf, tx, ca, npae, aces, acec, eces, ecec)
@@ -1980,7 +1875,8 @@ def transformObsToMount(pRoll, pPitch, pPierSide, loud=False):
             velocites are generated by the mounting, not any Python level code.
             '''
             loud=False
-            az, alt = transform_haDec_to_azAlt(pRoll, pPitch)
+            az, alt = transform_haDec_to_azAlt_r(pRoll, pPitch)
+            #Proably a units problem here.
             rRoll = math.radians(az + ia /3600.)
             rPitch = math.radians(alt - ie /3600.)
             ch = ca/3600.
@@ -1996,21 +1892,21 @@ def transformObsToMount(pRoll, pPitch, pPierSide, loud=False):
                             * math.sin(rPitch) - math.sin(math.radians(np)) \
                             * math.sin(math.radians(ch)))
             if loud:  print('Post CANPAE; roll, pitch:  ', cnRoll*RTOH, cnPitch*RTOD)
-            x, y, z = sphRect(math.degrees(cnRoll), math.degrees(cnPitch))
+            x, y, z = sph_rect_d(math.degrees(cnRoll), math.degrees(cnPitch))
             if loud: print('To spherical:  ', x, y, z, x*x+y*y+z*z)
             #Apply AN error:
             if loud: print('Pre  AW:       ', x, y, z, math.radians(aw/3600.))
-            y, z = rotate(y, z, math.radians(-aw/3600.))#/math.cos(math.radians(siteLatitude)))
+            y, z = rotate_r(y, z, math.radians(-aw/3600.))#/math.cos(math.radians(siteLatitude)))
             if loud: print('Post AW:       ', x, y, z, x*x+y*y+z*z)
             #Apply AW error:
             if loud: print('Pre  AN:       ', x, y, z, math.radians(an/3600.))
-            x, z = rotate(x, z, math.radians(an/3600.))
+            x, z = rotate_r(x, z, math.radians(an/3600.))
             if loud: print('Post AN:       ', x, y, z, x*x+y*y+z*z)
 #            #Apply latLtude
 #            x, z = rotate(x, z, math.radians(90.0 - siteLatitude))
 #            if loud: print('Post-Lat:  ', x, y, z, x*x+y*y+z*z)
             #Apply TF, TX
-            az, el = rectSph(x, y, z)  #math.pi/2. -
+            az, el = rect_sph_d(x, y, z)  #math.pi/2. -
             if loud: print('Az El:  ',  az+180., el)
             #flexure causes mount to sag so a shift in el, apply then
             #move back to other coordinate system
@@ -2025,22 +1921,22 @@ def transformObsToMount(pRoll, pPitch, pPierSide, loud=False):
             #The above is dubious but close for small deflections.
             #Unapply Latitude
 
-            x, y, z = sphRect(az , el)
+            x, y, z = sph_rect_d(az , el)
             if loud: print('Back:  ', x, y, z, x*x+y*y+z*z)
 #            x,z = rotate(x, z, -math.radians(90.0 - siteLatitude))
 #            if loud: print('Back-Lat:  ', x, y, z, x*x+y*y+z*z)
-            fRoll, fPitch = rectSph(x, y, z)
+            fRoll, fPitch = rect_sph_d(x, y, z)
             if loud: print('Back-Sph:  ', fRoll*RTOH, fPitch*RTOD)
-            cRoll = centration(fRoll, aces, acec)
+            cRoll = centration_d(fRoll, aces, acec)
             if loud: print('f,c Roll: ', fRoll, cRoll)
-            cPitch = centration(fPitch, -eces, ecec)
+            cPitch = centration_d(fPitch, -eces, ecec)
             if loud: print('f, c Pitch: ', fPitch, cPitch)
-            corrRoll = reduceAz(cRoll)
-            corrPitch = reduceAlt(cPitch)
+            corrRoll = reduce_az_r(cRoll)
+            corrPitch = reduce_alt_r(cPitch)
             if loud: print('Final Az, ALT:   ', corrRoll, corrPitch)
-            haH, decD = transform_azAlt_to_HaDec(corrRoll, corrPitch)
-            raCorr = reduceHa(haH - pRoll)*15*3600
-            decCorr = reduceDec(decD - pPitch)*3600
+            haH, decD = transform_azAlt_to_haDec_r(corrRoll, corrPitch)
+            raCorr = reduce_ha_h(haH - pRoll)*15*3600
+            decCorr = reduce_dec_d(decD - pPitch)*3600
             if loud: print('Corrections:  ', raCorr, decCorr)
             return(haH, decD)
 
@@ -2234,9 +2130,7 @@ def setVels(pRaVel, pDecVel):
     raVel = pRaVel
     decVel = pDecVel
 
-def centration (theta, a, b):
-    theta = math.radians(theta)
-    return math.degrees(math.atan2(math.sin(theta) - STOR*b, math.cos(theta) - STOR*a))
+
 
 def test_misAlign():
     stars = open('C:\\Users\\obs\\Dropbox\\a_wer\\TPOINT\\perfct_ptr.dat', 'r')
@@ -2278,6 +2172,144 @@ def test_misAlign():
     stars.close()
     out.close()
 
+
+
+
+#20160316 OK
+def transform_mount_to_Icrs(pCoord, pCurrentPierSide, pLST=None, loud=False):
+
+    if pLST is not None:
+        lclSid = pLST
+    else:
+        lclSid =sidTime    #@)@!)#@*  Wild gloable refernce here.
+    if loud: print('Pcoord:  ', pCoord)
+    roll, pitch = transform_raDec_to_haDec_r(pCoord[0], pCoord[1], sidTime)
+    if loud: print('MountToICRS1')
+    obsHa, obsDec = transform_mount_to_observed_hd(roll, pitch, pCurrentPierSide)
+    if loud: print('MountToICRS2')
+    appRa, appDec = obsToAppHaRa(obsHa, obsDec, sidTime)
+    if loud: print('Out:  ', appRa, appDec, jYear)
+    pCoordJnow = SkyCoord(appRa*u.hour, appDec*u.degree, frame='fk5', \
+                          equinox=equinox_now)
+    if loud: print('pCoord:  ', pCoordJnow)
+    t = pCoordJnow.transform_to(ICRS)
+    if loud: print('returning ICRS:  ', t)
+    return (reduce_ra_r(fromHMS(str(t.ra.to_string(u.hour)))),  \
+            reduce_dec_r(fromDMS(str(t.dec.to_string(u.degree)))))
+
+
+def test_icrs_mount_icrs():
+    ra = [11]#10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]
+    dec = [0]#-40, -31, -20, -10, -5, 0, 10, 25, 40, 55, 70, 85, 88]
+    for pRa in ra:
+        for pDec in dec:
+            for lst in [11 ]:#0.0001, 0, 24, 24.9999]:
+                print('Starting:  ', pRa, pDec)
+                Coord = (pRa,pDec)
+                pierSide = 0
+                toMount = transform_icrs_to_mount(Coord, pierSide, pLST=lst)
+                print('ToMount:  ', toMount)
+
+                back = transform_mount_to_Icrs(toMount, pierSide, pLST=lst)
+                ra_err = reduceHa(back[0]-Coord[0])*HTOS
+                dec_err = reduceDec(back[1]- Coord[1])*DTOS
+                if abs(ra_err) > 0.1 or abs(dec_err) > 0.1:
+                    print( pRa, pDec, lst, ra_err, dec_err)
+                #print( pRa, pDec, lst, ra_err, dec_err)
+
+
+# def getwIHwID():
+#     #global IHP, IDP
+#     print('IH, ID:  ', model['IH'] ,  model['ID'] )
+#     return   model['IH'] ,  model['ID']
+
+# def incwIHwID(h, d):
+#     #global IHP, IDP
+#     model['IH']  += h
+#     model['ID']  += d
+#     modelChanged = True
+#     print("I's incremented")
+
+# def resetwIHwID():
+#     #global IHP, IDP
+#     model['IH']  = 0.0
+#     model['ID']  = 0.0
+#     modelChanged = True
+#     print("I's reset")
+# ###Below is incorrect.
+
+
+
+# def geteCHeID():
+#     #global EHP, EDP, CHP
+#     print('EH, ED, CH:  ',  model['EH'] ,  model['ED'] ,  model['CH'] )
+#     return   model['CH'] ,  model['ED']
+
+# def inceCHeID(h, d):
+#     #global EHP, EDP, CHP
+#     model['EH']  -= h/2.
+#     model['ED']  += d
+#     model['CH']  += h
+#     modelChanged = True
+#     print("E's incremented")
+
+# def reseteCHeID():
+#     #global EHP, EDP, CHP
+#     model['EH']  = 0.0
+#     model['ED']  = 0.0
+#     model['CH'] = 0.0
+#     modelChanged = True
+#     print("E's reset")
+    
+    
+#def test_misAlign():
+#    stars = open('TPOINT\\perfct34.dat', 'r')
+#    out = open('TPOINT\\misalign.dat', 'w')
+#    for line in stars:
+#        if len(line) < 53:
+#            out.write(line)
+#            #print(line)
+#            continue
+#        entry = line[:]
+#        entry = entry.split()
+#        #print(entry)
+#        h = float(entry[0]) + (float(entry[1]) + float(entry[2])/60.)/60.
+#        d = float(entry[3][1:]) + (float(entry[4]) + float(entry[5])/60.)/60.
+#        sid = float(entry[12]) + float(entry[13])/60.
+#        if entry[3][0] == '-':
+#            d = -d
+#        ha = reduceHa(sid - h)
+##        if ha < 0: pFlip = True
+#        pFlip = False
+#        iroll, npitch = transformObsToMount(ha, d, False)
+###       print(h, d, ha, iroll, npitch)
+##        #nroll = reduceRa(sid - iroll)
+##        if ha < 0:
+##            #print(h, d, ha, iroll, 180 - npitch)
+##            nroll = 180 - npitch
+##        else:
+##        if ha >= 0:
+#        nroll = reduceRa(sid - iroll)
+##        print(h, d, ha, nroll, npitch)
+##        nroll = iroll
+#        mh, mm, ms = hToH_MStup(nroll)
+#        md, dm, ds = dToD_MStup(npitch)
+#        entry[6] = mh
+#        entry[7] = mm
+#        entry[8] = ms
+#        entry[9] = md
+#        entry[10] = dm
+#        entry[11] = ds
+#        #print('entry', entry)
+#        outStr = ''
+#        for field in range(len(entry)):
+#            outStr += entry[field] +"  "
+#        outStr = outStr[:-2]
+#        #NBNBNB Fix to copy over Sidtime and Aux variables.
+#        out.write(outStr +'\n' )
+#        #print(outStr+ '  00  00 \n')
+#    stars.close()
+#    out.close()
 
 #20160316  Seems OK.
 #def transform_icrs_to_mount(pCoord, pCurrentPierSide, pLST=None, \
@@ -2347,91 +2379,6 @@ def test_misAlign():
 #    if loud:  print('Final: rah,decDeg, asec/s, asec/s', reduceRa(mountRa), reduceDec(mountDec),  float(pRaDot + deltaRoll), float(pDecDot + deltaPitch), '\n')
 #    return reduceRa(mountRa), reduceDec(mountDec),  float(pRaDot + deltaRoll), float(pDecDot + deltaPitch) #NBNBNB investigate AppptoSid conversion
 
-#20160316 OK
-def transform_mount_to_Icrs(pCoord, pCurrentPierSide, pLST=None, loud=False):
-
-    if pLST is not None:
-        lclSid = pLST
-    else:
-        lclSid =sidTime
-    if loud: print('Pcoord:  ', pCoord)
-    roll, pitch = transform_raDec_to_haDec(pCoord[0], pCoord[1], sidTime)
-    if loud: print('MountToICRS1')
-    obsHa, obsDec = transform_mount_to_observed(roll, pitch, pCurrentPierSide)
-    if loud: print('MountToICRS2')
-    appRa, appDec = obsToAppHaRa(obsHa, obsDec, sidTime)
-    if loud: print('Out:  ', appRa, appDec, jYear)
-    pCoordJnow = SkyCoord(appRa*u.hour, appDec*u.degree, frame='fk5', \
-                          equinox=equinox_now)
-    if loud: print('pCoord:  ', pCoordJnow)
-    t = pCoordJnow.transform_to(ICRS)
-    if loud: print('returning ICRS:  ', t)
-    return (reduceRa(fromHMS(str(t.ra.to_string(u.hour)))),  \
-            reduceDec(fromDMS(str(t.dec.to_string(u.degree)))))
-
-
-def test_icrs_mount_icrs():
-    ra = [11]#10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]
-    dec = [0]#-40, -31, -20, -10, -5, 0, 10, 25, 40, 55, 70, 85, 88]
-    for pRa in ra:
-        for pDec in dec:
-            for lst in [11 ]:#0.0001, 0, 24, 24.9999]:
-                print('Starting:  ', pRa, pDec)
-                Coord = (pRa,pDec)
-                pierSide = 0
-                toMount = transform_icrs_to_mount(Coord, pierSide, pLST=lst)
-                print('ToMount:  ', toMount)
-
-                back = transform_mount_to_Icrs(toMount, pierSide, pLST=lst)
-                ra_err = reduceHa(back[0]-Coord[0])*HTOS
-                dec_err = reduceDec(back[1]- Coord[1])*DTOS
-                if abs(ra_err) > 0.1 or abs(dec_err) > 0.1:
-                    print( pRa, pDec, lst, ra_err, dec_err)
-                #print( pRa, pDec, lst, ra_err, dec_err)
-
-
-def getwIHwID():
-    #global IHP, IDP
-    print('IH, ID:  ', model['IH'] ,  model['ID'] )
-    return   model['IH'] ,  model['ID']
-
-def incwIHwID(h, d):
-    #global IHP, IDP
-    model['IH']  += h
-    model['ID']  += d
-    modelChanged = True
-    print("I's incremented")
-
-def resetwIHwID():
-    #global IHP, IDP
-    model['IH']  = 0.0
-    model['ID']  = 0.0
-    modelChanged = True
-    print("I's reset")
-###Below is incorrect.
-
-
-
-def geteCHeID():
-    #global EHP, EDP, CHP
-    print('EH, ED, CH:  ',  model['EH'] ,  model['ED'] ,  model['CH'] )
-    return   model['CH'] ,  model['ED']
-
-def inceCHeID(h, d):
-    #global EHP, EDP, CHP
-    model['EH']  -= h/2.
-    model['ED']  += d
-    model['CH']  += h
-    modelChanged = True
-    print("E's incremented")
-
-def reseteCHeID():
-    #global EHP, EDP, CHP
-    model['EH']  = 0.0
-    model['ED']  = 0.0
-    model['CH'] = 0.0
-    modelChanged = True
-    print("E's reset")
 
 ut_now, sid_now, equinox_now, day_of_year = get_current_times()
 sidTime = round(sid_now.hour , 7)

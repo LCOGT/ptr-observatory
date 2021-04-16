@@ -28,6 +28,8 @@ from global_yard import g_dev
 #from processing.calibration import calibrate
 #from devices.sequencer import Sequencer
 from devices.darkslide import Darkslide
+import ptr_utility
+
 
 #string  = \\HOUSE-COMPUTER\saf_archive_2\archive
 
@@ -60,7 +62,56 @@ The camera operates in  Phase_1:  Setup Exposure, then Phase 2 Take the exposure
 fill out fits headers and save the exposure.  Phase 2, and maybe  Phase 3, are wrapped in the retry-three-
 times framework. Next is Phase 4 -- local calibrate and analyze, then Phase 5 -- send to AWS.
 
-Note Camera at saf just set to hardware binning.
+
+Hwere is a Maxim Header with the telescope attached. Note the various keywords which 
+need to be there  to use Maxim Pinpoint or Visual Pinpoint efficiently.
+
+SIMPLE  	= T                                                  
+BITPIX  	= -32 /8 unsigned int, 16 & 32 int, -32 & -64 real     
+NAXIS   	= 2 /number of axes                                  
+NAXIS1  	= 4800 /fastest changing axis                           
+NAXIS2  	= 3211 /next to fastest changing axis                   
+BSCALE  	= 1.0000000000000000 /physical = BZERO + BSCALE*array_value           
+BZERO   	= 0.00000000000000000 /physical = BZERO + BSCALE*array_value           
+DATE-OBS	= '2021-03-27T18:38:08' /YYYY-MM-DDThh:mm:ss observation, UT            
+EXPTIME 	= 1.0000000000000000 /Exposure time in seconds                        
+EXPOSURE	= 1.0000000000000000 /Exposure time in seconds                        
+SET-TEMP	= -10.000000000000000 /CCD temperature setpoint in C                   
+CCD-TEMP	= -10.100000000000000 /CCD temperature at start of exposure in C       
+XPIXSZ  	= 7.5199999999999996 /Pixel Width in microns (after binning)          
+YPIXSZ  	= 7.5199999999999996 /Pixel Height in microns (after binning)         
+XBINNING	= 2 /Binning factor in width                         
+YBINNING	= 2 /Binning factor in height                        
+XORGSUBF	= 0 /Subframe X position in binned pixels            
+YORGSUBF	= 0 /Subframe Y position in binned pixels            
+READOUTM	= 'Normal  ' /          Readout mode of image                           
+FILTER  	= 'w       ' /          Filter used when taking image                   
+IMAGETYP	= 'Light Frame' /       Type of image                                   
+FOCALLEN	= 2700.0000000000000 /Focal length of telescope in mm                 
+APTDIA  	= 300.00000000000000 /Aperture diameter of telescope in mm            
+APTAREA 	= 59376.102805137634 /Aperture area of telescope in mm^2              
+EGAIN   	= 1.0000000000000000 /Electronic gain in e-/ADU                       
+SBSTDVER	= 'SBFITSEXT Version 1.0' /Version of SBFITSEXT standard in effect      
+SWCREATE	= 'MaxIm DL Version 6.24 200613 23VP3' /Name of software                
+SWSERIAL	= '23VP3-SPE3X-YT5E3-3MX1C-3FVM0-CM' /Software serial number            
+OBJCTRA 	= '23 55 15' /          Nominal Right Ascension of center of image      
+OBJCTDEC	= '-54 34 51' /         Nominal Declination of center of image          
+OBJCTALT	= ' -0.0003' /          Nominal altitude of center of image             
+OBJCTAZ 	= '180.0056' /          Nominal azimuth of center of image              
+OBJCTHA 	= '  0.0006' /          Nominal hour angle of center of image           
+PIERSIDE	= 'EAST    ' /          Side of pier telescope is on                    
+SITELAT 	= '35 32 16' /          Latitude of the imaging location                
+SITELONG	= '-105 52 13' /        Longitude of the imaging location               
+JD      	= 2459301.2764814813 /Julian Date at start of exposure                
+JD-HELIO	= 2459301.2734088539 /Heliocentric Julian Date at exposure midpoint   
+AIRMASS 	= 31.739008469971399 /Relative optical path length through atmosphere 
+OBJECT  	= '        '                                                            
+TELESCOP	= '        ' /          telescope used to acquire this image            
+INSTRUME	= 'QHYCCD-Cameras-Capture'                                              
+OBSERVER	= '        '                                                            
+NOTES   	= '        '                                                            
+ROWORDER	= 'TOP-DOWN' /          Image write order, BOTTOM-UP or TOP-DOWN        
+FLIPSTAT	= '        '          
 
 
 """
@@ -328,7 +379,7 @@ class Camera:
             proto[13] = proto[13][:12] + filter_name   + proto[13][13:]
             proto[10] = proto[10][:12] + str(enabled)  + proto[10][13:]
             proto[1]  = proto[1][:12]  + str(binning)  + proto[1][13:]
-        seq_file = open(self.camera_path +'seq/ptr_wmd.seq', 'w')
+        seq_file = open(self.camera_path +'seq/ptr_mrc.seq', 'w')
         for item in range(len(proto)):
             seq_file.write(proto[item])
         seq_file.close()
@@ -432,6 +483,7 @@ class Camera:
         #print("Checking if Maxim is still connected!")
         #  self.t7 is last time camera was read out
         #if self.t7 is not None and (time.time() - self.t7 > 30) and self.maxim:
+
         self.t0 = time.time()
         try:
             probe = self.camera.CoolerOn
@@ -792,16 +844,19 @@ class Camera:
                             for file_path in glob.glob(self.file_mode_path + '*.f*t*'):
                                 os.remove(file_path)
                             self.t2 = time.time()
-                            self.camera.StartSequence(self.camera_path + 'seq/ptr_wmd.seq')
+                            self.camera.StartSequence(self.camera_path + 'seq/ptr_mrc.seq')
                             print("Starting autosave  at:  ", self.t2)
                         else:
                             #This is the standard call to Maxim
                             g_dev['obs'].send_to_user("Starting Camera1!", p_level='INFO')
+                            g_dev['ocn'].get_quick_status(self.pre_ocn)
+                            g_dev['foc'].get_quick_status(self.pre_foc)
+                            g_dev['rot'].get_quick_status(self.pre_rot)
+                            g_dev['mnt'].get_quick_status(self.pre_mnt)  #Should do this close to the exposure
                             self.t2 = time.time()
                             self._expose (exposure_time, imtypeb)
                     else:
                         print("Something terribly wrong, driver not recognized.!")
-                        breakpoint()
                         result = {}
                         result['error': True]
                         return result
@@ -955,13 +1010,14 @@ class Camera:
  
                         overscan = int((np.median(self.img[24:, -33:]) + np.median(self.img[0:21, :]))/2) - 1
                         trimmed = self.img[24:-8, :-34].astype('int32') + pedastal - overscan
-                        square = trimmed
+
                     elif self.img[30, -34] == 0:
                         overscan = int((np.median(self.img[32:, -33:]) + np.median(self.img[0:29, :]))/2) - 1
                         trimmed = self.img[32:, :-34].astype('int32') + pedastal - overscan
-                        square = trimmed
+
                     else:
                         breakpoint()
+                        pass
         
                     # if full:
                     #     square = trimmed
@@ -983,6 +1039,7 @@ class Camera:
                     else:
                         print("Image shift is incorrect, absolutely fatal error.")
                         breakpoint()
+                        pass
 
                 else:
                     print("Incorrect chip size or bin specified or already-converted:  skipping.")
@@ -1107,11 +1164,13 @@ class Camera:
                     hdu.header['TARG-RA']  = g_dev['mnt'].current_icrs_ra
                     hdu.header['TARG-DEC'] = g_dev['mnt'].current_icrs_dec
                     hdu.header['TARG-CHK'] = g_dev['mnt'].current_icrs_ra + g_dev['mnt'].current_icrs_dec
+                    hdu.header['OBJCTRA'] = ptr_utility.hToH_MS(g_dev['mnt'].current_icrs_ra)
+                    hdu.header['OBJCTDEC'] = ptr_utility.dToD_MS(g_dev['mnt'].current_icrs_dec)
                     hdu.header['CATNAME']  = g_dev['mnt'].object
                     hdu.header['CAT-RA']   = g_dev['mnt'].current_icrs_ra
-                    hdu.header['CAT-DEC']  =g_dev['mnt'].current_icrs_dec
+                    hdu.header['CAT-DEC']  = g_dev['mnt'].current_icrs_dec
                     hdu.header['TARGRAH']  = g_dev['mnt'].current_icrs_ra
-                    hdu.header['TARGDECD'] =g_dev['mnt'].current_icrs_dec
+                    hdu.header['TARGDECD'] = g_dev['mnt'].current_icrs_dec
                     hdu.header['SID-TIME'] = self.pre_mnt[3]
                     hdu.header['OBJCTRA']  = self.pre_mnt[1]
                     hdu.header['OBJCTDEC'] = self.pre_mnt[2]
@@ -1161,7 +1220,7 @@ class Camera:
                     else:
                         hdu.header['PIERSIDE'] = 'Undefined'
                         pier_string = ''
-                    hdu.header['RACORR'] = g_dev['mnt'].ra_corr    #Should these be averaged?
+                    hdu.header['HACORR'] = g_dev['mnt'].ha_corr    #Should these be averaged?
                     hdu.header['DECCORR'] = g_dev['mnt'].dec_corr
                     hdu.header['IMGFLIP'] = False
                     hdu.header['OTA'] = ""
@@ -1292,7 +1351,7 @@ class Camera:
                         os.makedirs(self.alt_path +  g_dev['day'] + '/reduced/', exist_ok=True)
                         red_path_aux = self.alt_path +  g_dev['day'] + '/reduced/'
                         paths['red_path_aux'] = red_path_aux
-                    script = None
+                    #script = None
                     '''
                     self.enqueue_image(text_data_size, im_path, text_name)
                     self.enqueue_image(jpeg_data_size, im_path, jpeg_name)
@@ -1309,7 +1368,7 @@ class Camera:
                     
                     # if  not script in ('True', 'true', 'On', 'on'):   #  not quick and    #Was moved 20201022 for grid
                     #     if not quick:
-                    #self.enqueue_for_AWS(text_data_size, im_path, text_name)
+                    self.enqueue_for_AWS(text_data_size, im_path, text_name)
                     self.to_reduce((paths, hdu))
                     hdu.writeto(raw_path + raw_name00, overwrite=True)   #Sve full raw file locally
                     g_dev['obs'].send_to_user("Raw image saved locally. ", p_level='INFO')

@@ -10,7 +10,7 @@ import build_tycho as tycho
 import config
 import shelve
 from pprint import pprint
-from devices.mount import ra_fix, ra_dec_fix
+
 '''
 Autofocus NOTE 20200122
 
@@ -134,6 +134,26 @@ def bin_to_string(use_bin):
     else:
         return '1, 1'
 
+def ra_fix(ra):
+    while ra >= 24:
+        ra -= 24
+    while ra < 0:
+        ra +=24
+    return ra
+
+def ra_dec_fix_hd(ra, dec):
+    if dec > 90:
+        dec = 180 - dec
+        ra -= 12
+    if dec < -90:
+        dec = -180 - dec
+        ra += 12
+    if ra >= 24:
+        ra -= 24
+    if ra < 0:
+        ra = 24
+    return ra, dec
+
 class Sequencer:
 
     def __init__(self, driver: str, name: str, config: dict, astro_events):
@@ -187,8 +207,12 @@ class Sequencer:
         elif action == "run" and script == 'genSkyFlatMasters':
             self.sky_flat_script(req, opt)
         elif action == "run" and script in ['32TargetPointingRun', 'pointingRun', 'makeModel']:
-            self.sky_grid_pointing_run(req, opt)
-            #self.vertical_pointing_run(req, opt)
+            if req['gridType'] == 'sweep':
+               self.equatorial_pointing_run(req, opt)
+            elif req['gridType'] == 'cross':
+                self.vertical_pointing_run(req, opt)
+            else:
+                self.sky_grid_pointing_run(req, opt)
         elif action == "run" and script in ("genBiasDarkMaster", "genBiasDarkMasters"):
             self.bias_dark_script(req, opt)
         elif action == "run" and script == "takeLRGBstack":
@@ -225,13 +249,13 @@ class Sequencer:
         self.sequencer_hold = False
          #events['Eve Bias Dark']
         #if True:
-        if (events['Eve Bias Dark'] <= ephem_now <= events['End Eve Bias Dark']) and False:
-            req = {'numOfBias': 31, 'bin3': True, 'numOfDark2': 3, 'bin4': False, 'bin1': True, \
-                   'darkTime': 360, 'hotMap': True, 'bin2': True, 'numOfDark': 3, 'dark2Time': 120, \
-                   'coldMap': True, 'script': 'genBiasDarkMaster', 'bin5': False}
+
+        if (events['Eve Bias Dark'] <= ephem_now < events['End Eve Bias Dark']) and False:
+            req = {'bin1': False, 'bin2': True, 'bin3': False, 'bin4': False, 'numOfBias': 45, \
+                   'numOfDark': 15, 'darkTime': 180, 'numOfDark2': 3, 'dark2Time': 360, \
+                   'hotMap': True, 'coldMap': True, 'script': 'genBiasDarkMaster', }
             opt = {}
-            print('Skipping Eve Biad/Dark')
-            #self.bias_dark_script(req, opt)
+            self.bias_dark_script(req, opt)
         elif  (events['Eve Sky Flats'] < ephem_now < events['End Eve Sky Flats'])  \
                 and g_dev['enc'].mode == 'Automatic' \
                 and g_dev['ocn'].wx_is_ok \
@@ -298,6 +322,7 @@ class Sequencer:
                     and (block['start'] <= now_date_timeZ < block['end']) \
                     and not self.is_in_completes(block['event_id']):
                     self.block_guard = True
+
                     completed_block = self.execute_block(block)
                     self.append_completes(completed_block['event_id'])
                     self.block_guard = False
@@ -420,7 +445,7 @@ class Sequencer:
             dest_ra = float(target['ra']) - \
                 float(block_specification['project']['project_constraints']['ra_offset'])/15.
             dest_dec = float(target['dec']) - float(block_specification['project']['project_constraints']['dec_offset'])
-            dest_ra, dest_dec = ra_dec_fix(dest_ra,dest_dec)
+            dest_ra, dest_dec = ra_dec_fix_hd(dest_ra,dest_dec)
             dest_name =target['name']
             
             ''' 
@@ -587,7 +612,7 @@ class Sequencer:
                         d_dec = displacement[1]*pitch*(y_field_deg)  # = 0.5102414999999999   #Deg
                         new_ra = dest_ra + d_ra
                         new_dec= dest_dec + d_dec
-                        new_ra, new_dec = ra_dec_fix(new_ra, new_dec)
+                        new_ra, new_dec = ra_dec_fix_hd(new_ra, new_dec)
                         print('Seeking to:  ', new_ra, new_dec)
                         g_dev['mnt'].go_coord(new_ra, new_dec)  # This needs full angle checks
                         if not just_focused:
@@ -631,8 +656,9 @@ class Sequencer:
                  
         """
         self.sequencer_hold = True
+        self.current_script = 'Afternoon Bias Dark'
         dark_time = 180
-        while ephem.now() <= (g_dev['events']['End Eve Bias Dark'] + 1 - 2*dark_time/86400.):   #Do not overrun the window end
+        while ephem.now() <= g_dev['events']['End Eve Bias Dark']:   #Do not overrun the window end
             # print("Expose b_2")   
             # req = {'time': 0.0,  'script': 'True', 'image_type': 'bias'}
             # opt = {'area': "Full", 'count': 3, 'bin':'2 2', \
@@ -642,7 +668,7 @@ class Sequencer:
             # print(result)
             print("Expose d_2 using exposure:  ", dark_time )
             req = {'time':dark_time ,  'script': 'True', 'image_type': 'dark'}
-            opt = {'area': "Full", 'count': 1, 'bin':'2 2', \
+            opt = {'area': "Full", 'count':5, 'bin':'2 2', \
                     'filter': 'dark'} 
             result = g_dev['cam'].expose_command(req, opt, no_AWS=True, \
                                 do_sep=False, quick=False)
@@ -1193,7 +1219,8 @@ IF sweep
                          -7.5, -17.5, -27.5, -37.5, -47.5, -57.5, -67.5, \
                          2.5,  12.5, 22.5, 32.5, 42.5, 52.5, 62.5, 72.5, \
                          67.5, 57.5, 47.5, 37.5, 27.5, 17.5, 7.5)
-
+        length = len(ha_deg_steps)
+        count = 0
         print("Starting equatorial sweep.")
         g_dev['mnt'].unpark_command()
         #cam_name = str(self.config['camera']['camera1']['name'])
@@ -1214,21 +1241,26 @@ IF sweep
                    }
             opt = {}
             g_dev['mnt'].go_command(req, opt)
+            st = ''
             while g_dev['mnt'].mount.Slewing or g_dev['enc'].enclosure.Slewing:
+                if g_dev['mnt'].mount.Slewing: st += 'm>'
+                if g_dev['enc'].enclosure.Slewing: st += 'd>'
+                print(st)
+                st = ''
                 g_dev['obs'].update_status()
                 time.sleep(0.5)
-
             time.sleep(3)
             g_dev['obs'].update_status()
-            #req = {'time': 5,  'alias': 'sq01', 'image_type': 'quick'}
-            #opt = {'area': 100, 'count': 1, 'bin': '2,2', 'filter': g_dev['fil'].filter_data[0][0], 'hint': 'Equator Run.'}
-            #result = g_dev['cam'].expose_command(req, opt)
+            req = {'time': 10,  'alias': 'sq01', 'image_type': 'quick'}
+            opt = {'area': 150, 'count': 1, 'bin': '2,2', 'filter': g_dev['fil'].filter_data[0][0], 'hint': 'Equator Run'}
+            result = g_dev['cam'].expose_command(req, opt)
             g_dev['obs'].update_status()
-            result = 'simulated'
-            print('Result:  ', result)
+            result = 'simulated result.'
+            count += 1
+            print('\n\nResult:  ', result,   'To go count:  ', length - count,  '\n\n')
         g_dev['mnt'].stop_command()
         print("Equatorial sweep completed. Happy reducing.")
-        self. sky_guard = False
+        self.sky_guard = False
         return
  
     def sky_grid_pointing_run(self, req, opt, spacing=10, vertical=False, grid=False, alt_minimum=25):
@@ -1291,14 +1323,13 @@ IF sweep
         #cam_name = str(self.config['camera']['camera1']['name'])
 
         sid = g_dev['mnt'].mount.SiderealTime
-        breakpoint()
         if req['gridType'] == 'medium':  # ~50
             grid = 4
         if req['gridType'] == 'coarse':  # ~30
             grid = 7
         if req['gridType'] == 'fine':    # ~100
             grid = 2
-        grid_stars = tycho.az_sort_targets(sid, grid=2)  #4 produces about 50 targets.
+        grid_stars = tycho.az_sort_targets(sid, grid)  #4 produces about 50 targets.
         length = len(grid_stars)
         print(length, "Targets chosen for grid.")
         last_az = 0.25
@@ -1306,10 +1337,12 @@ IF sweep
         for grid_star in grid_stars:
             if grid_star is None:
                 print("No near star, skipping.")   #This should not happen.
+                count += 1
                 continue
-            if grid_star[0] < last_az:   #Consider also insisting on a reasonable HA
-                continue
-            last_az = grid_star[0] + 0.001
+            if grid_star[0] < last_az:   #Consider also insisting on a reasonable HA, eg., >= altitude of the Pole.
+               count += 1
+               continue
+            last_az = grid_star[0] + 0.01
             print("Going to near grid star " + str(grid_star) + " (az, (dec, ra)")
             req = {'ra':  grid_star[1][1],
                    'dec': grid_star[1][0]     #Note order is important (dec, ra)
@@ -1413,9 +1446,11 @@ IF sweep
         for grid_star in grid_stars:
             if grid_star is None:
                 print("No near star, skipping.")   #This should not happen.
+                count += 1
                 continue
             if grid_star[0] < last_az:   #Consider also insisting on a reasonable HA
-                continue
+               count += 1
+               continue
             last_az = grid_star[0] + 0.001
             print("Going to near grid star " + str(grid_star) + " (az, (dec, ra)")
             req = {'ra':  grid_star[1][1],
@@ -1495,12 +1530,13 @@ IF sweep
         self.sky_guard = True
         # dec_steps = [-30, -25, -20, -15, -10, -5, 0, 5, 10, 15, 20, 25, 30, \
         #              35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85]
-        dec_steps = [-30, -20, -10, 0, 10, 20, 30, 40, 50, 60, 70, 80, \
-                     75, 65, 55, 45, 35, 25, 15, 5, -5, -15, -25]
+        dec_steps = [-30, -20, -10, 0, 10, 20, 30, 40, 50, 55, 60, 65, 70, 75, 80, 82.5, \
+                     77.5, 72.5, 67.5, 62.5, 57.5, 50, 45, 35, 25, 15, 5, -5, -15, -25]
         # dec_copy = dec_steps[:-1].copy()
         # dec_copy.reverse()
         # dec_steps += dec_copy
-        
+        length = len(dec_steps)*2
+        count = 0
         print("Starting West dec sweep, ha = 0.1")
         g_dev['mnt'].unpark_command()
         #cam_name = str(self.config['camera']['camera1']['name'])
@@ -1519,16 +1555,25 @@ IF sweep
                 req = {'ra':  target_ra,
                        'dec': degree_value} 
                 opt = {}
+                #Should have an Alt limit check here
                 g_dev['mnt'].go_command(req, opt)
+                st = ''
                 while g_dev['mnt'].mount.Slewing or g_dev['enc'].enclosure.Slewing:
+                    if g_dev['mnt'].mount.Slewing: st += 'm>'
+                    if g_dev['enc'].enclosure.Slewing: st += 'd>'
+                    print(st)
+                    st = ''
                     g_dev['obs'].update_status()
                     time.sleep(0.5)
-    
                 time.sleep(3)
                 g_dev['obs'].update_status()
-                #req = {'time': 5,  'alias': 'sq01', 'image_type': 'quick'}
-                #opt = {'area': 100, 'count': 1, 'bin': '2,2', 'filter': g_dev['fil'].filter_data[0][0], 'hint': 'Vertical Run.'}
-                #result = g_dev['cam'].expose_command(req, opt)
+                req = {'time': 10,  'alias': 'sq01', 'image_type': 'quick'}
+                opt = {'area': 150, 'count': 1, 'bin': '2,2', 'filter': g_dev['fil'].filter_data[0][0], 'hint': 'Tycho grid.'}
+                result = g_dev['cam'].expose_command(req, opt)
+                g_dev['obs'].update_status()
+                result = 'simulated result.'
+                count += 1
+                print('\n\nResult:  ', result,   'To go count:  ', length - count,  '\n\n')
                 g_dev['obs'].update_status()
                 result = 'simulated'
                 print('Result:  ', result)

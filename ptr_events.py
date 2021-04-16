@@ -28,11 +28,11 @@ from astropy.time import Time
 from pprint import pprint
 
 # NB Change these to hours not fractions of a day.  Should come from site config not be in code here.
-SCREENFLATDURATION = 90/1440            #1.5 hours
-BIASDARKDURATION = 180/1440             #3 hours
-MORNBIASDARKDURATION = 90/1440          #1.5 min
-LONGESTSCREEN = (75/60)/1440            #1 min
-LONGESTDARK = (385/60)/1440             #6 min
+SCREENFLATDURATION = 0/1440            #1.5 hours
+BIASDARKDURATION = 90/1440             #3 hours
+MORNBIASDARKDURATION = 0/1440          #1.5 min
+LONGESTSCREEN = 0/1440           #1 min
+LONGESTDARK = 6/1440             #6 min
 
 DAY_Directory = None   #NB this is an evil use of Globals by WER.  20200408   WER
 Day_tomorrow = None
@@ -488,7 +488,7 @@ class Events:
         beginReductions = endMornBiasDark + LONGESTDARK
 
         # try:
-        #     # WMD specific and apparently unused.
+        #     # mrc specific and apparently unused.
         #     obsShelf = shelve.open('Q:\\ptr_night_shelf\\site')
         #     obsShelf['DayDir'] = DAY_Directory
         #     obsShelf['EphemDate'] = dayNow
@@ -517,8 +517,8 @@ class Events:
         print("Key events for the evening, presented by the Solar System: \n")
         evnt = [('Eve Bias Dark      ', ephem.Date(beginEveBiasDark)),
                 ('End Eve Bias Dark  ', ephem.Date(endEveBiasDark)),
-                ('Eve Scrn Flats     ', ephem.Date(beginEveScreenFlats)),
-                ('End Eve Scrn Flats ', ephem.Date(endEveScreenFlats)),
+                #('Eve Scrn Flats     ', ephem.Date(beginEveScreenFlats)),
+                #('End Eve Scrn Flats ', ephem.Date(endEveScreenFlats)),
                 ('Ops Window Start   ', ephem.Date(ops_win_begin)),  #Enclosure may open.
                 ('Cool Down, Open    ', ephem.Date(ops_win_begin + 0.5/1440)),
                 ('Eve Sky Flats      ', ephem.Date(eve_skyFlatBegin)),
@@ -534,10 +534,10 @@ class Events:
                 ('Observing Ends     ', ephem.Date(nauticalDawn - 5/1440.)),
                 ('Final Clock & AF   ', ephem.Date(nauticalDawn - 4/1440.)),
                 ('Naut Dawn          ', nauticalDawn),
-                ('Morn Sky Flats     ', morn_skyFlatBegin),
+                #('Morn Sky Flats     ', morn_skyFlatBegin),
                 ('Civil Dawn         ', civilDawn),
-                ('End Morn Sky Flats ', morn_skyFlatEnd),
-                ('Ops Window Closes  ', ephem.Date(morn_skyFlatEnd + 0.5/1440)),   #Enclosure must close
+                #('End Morn Sky Flats ', morn_skyFlatEnd),
+                ('Ops Window Closes  ', ephem.Date(civilDawn + 0.5/1440)),   #Enclosure must close
                 ('Sun Rise           ', sunrise),
                 ('Prior Moon Rise    ', last_moonrise),
                 ('Prior Moon Transit ', last_moontransit),
