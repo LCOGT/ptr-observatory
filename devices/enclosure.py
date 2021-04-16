@@ -296,7 +296,6 @@ class Enclosure:
                     and g_dev['mnt'].site_in_automatic \
                     and g_dev['ocn'].wx_is_ok \
                     and self.enclosure.ShutterStatus == 1: #  Closed
-                breakpoint()
                 if open_cmd:
                     self.state = 'User Opened the ' + shutter_str
                 else:
@@ -305,6 +304,7 @@ class Enclosure:
                 #  A countdown to re-open
                 if self.status_string.lower() in ['closed', 'closing']:
                     self.guarded_open()   #<<<<NB NB NB Only enable when code is fully proven to work.
+                    breakpoint()
                     if self.is_Dome:
                         self.enclosure.Slaved = True
                     else:
@@ -367,7 +367,8 @@ class Enclosure:
                             pass
                             #self.enclosure.CloseShutter()   #ASCOM DOME will fault if it is Opening or closing
                     except:
-                        print('Dome close cmd appeared to fault.')
+                        pass
+                        #print('Dome close cmd appeared to fault.')
                     self.dome_opened = False
                     self.dome_homed = True
                     #print("One time close of enclosure issued, normally done during Python code restart.")
