@@ -336,7 +336,7 @@ site_config = {
                 'has_darkslide':  False,
                 'has_screen': True,
                 'screen_settings':  {
-                    'screen_saturation':  157.0,   #  This reflects WMD setting and needs proper values.
+                    'screen_saturation':  157.0,   #  This reflects mrc/mrc2 setting and needs proper values.
                     'screen_x4':  -4E-12,  #  'y = -4E-12x4 + 3E-08x3 - 9E-05x2 + 0.1285x + 8.683     20190731'
                     'screen_x3':  3E-08,
                     'screen_x2':  -9E-05,
