@@ -180,7 +180,7 @@ class Mount:
         self.tel = tel   #for now this implies the primary telescope on a mounting.
         self.mount_message = "-"
         if self.site == 'MRC2':
-            self.has_paddle = config['mount']['mount2']['has_paddle']   #multiple mounts are obsolete
+            self.has_paddle = config['mount']['mount2']['has_paddle']
         else:
             self.has_paddle = config['mount']['mount1']['has_paddle']
         self.object = "Unspecified"
@@ -317,15 +317,13 @@ class Mount:
             '''
             jnow_ra = ptr_utility.reduce_ra_r(app_ra - ra_cal_off*HTOR)    # NB the mnt_refs are subtracted here.  Check units are correct.
             jnow_dec = ptr_utility.reduce_dec_r( app_dec - dec_cal_off*DTOR)
-            try:
-                if not self.mount.AtPark:   #Applying rates while parked faults.
-                    if self.mount.CanSetRightAscensionRate and self.prior_roll_rate != 0 :
-                        self.mount.RightAscensionRate =self.prior_roll_rate
-                    if self.mount.CanSetDeclinationRate and self.prior_pitch_rate != 0:
-                        self.mount.DeclinationRate = self.prior_pitch_rate
-                        #print("Rate found:  ", self.prior_roll_rate, self.prior_pitch_rate, self.ha_corr, self.dec_corr)
-            except:
-                pass   #NB this needs fixing
+
+            if not self.mount.AtPark:   #Applying rates while parked faults.
+                if self.mount.CanSetRightAscensionRate and self.prior_roll_rate != 0 :
+                    self.mount.RightAscensionRate =self.prior_roll_rate
+                if self.mount.CanSetDeclinationRate and self.prior_pitch_rate != 0:
+                    self.mount.DeclinationRate = self.prior_pitch_rate
+                    #print("Rate found:  ", self.prior_roll_rate, self.prior_pitch_rate, self.ha_corr, self.dec_corr)
             if self.mount.sideOfPier == pier_east \
                 and self.flip_correction_needed:
                 jnow_ra -=  self.east_ra_correction   #Brought in from local calib.py file correction is subtracted.  #This is meant to handle a flip klunk.
