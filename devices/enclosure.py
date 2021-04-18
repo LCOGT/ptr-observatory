@@ -27,7 +27,7 @@ class Enclosure:
         self.site = config['site']
         self.config = config
         g_dev['enc'] = self
-        if self.site != 'wmd2':
+        if self.site != 'mrc2':
             win32com.client.pythoncom.CoInitialize()
             self.enclosure = win32com.client.Dispatch(driver)
             print(self.enclosure)
@@ -108,7 +108,7 @@ class Enclosure:
             self.redis_server.set('enclosure_synch', str(self.enclosure.Slaved), ex=600)
             self.redis_server.set('enclosure_mode', str(self.mode), ex=600)
             self.redis_server.set('enclosure_message', str(self.state), ex=600)        #print('Enclosure status:  ', status
-        elif self.site == 'wmd2':
+        elif self.site == 'mrc2':
             status = {'roof_status': self.redis_server.get('roof_status'),
                       'shutter_status': self.redis_server.get('shutter_status'),
                       'enclosure_synch': self.redis_server.get('enclosure_synch'),   #  What should  this mean for a roof? T/F = Open/Closed?
