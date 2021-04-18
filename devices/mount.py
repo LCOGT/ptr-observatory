@@ -325,7 +325,7 @@ class Mount:
                         self.mount.DeclinationRate = self.prior_pitch_rate
                         #print("Rate found:  ", self.prior_roll_rate, self.prior_pitch_rate, self.ha_corr, self.dec_corr)
             except:
-                 pass   #NB this needs fixing
+                pass   #NB this needs fixing
             if self.mount.sideOfPier == pier_east \
                 and self.flip_correction_needed:
                 jnow_ra -=  self.east_ra_correction   #Brought in from local calib.py file correction is subtracted.  #This is meant to handle a flip klunk.
