@@ -483,7 +483,6 @@ class Camera:
         #print("Checking if Maxim is still connected!")
         #  self.t7 is last time camera was read out
         #if self.t7 is not None and (time.time() - self.t7 > 30) and self.maxim:
-        breakpoint()
         self.t0 = time.time()
         try:
             probe = self.camera.CoolerOn
@@ -748,12 +747,17 @@ class Camera:
                 #case where a timeout is a smart idea.
                 #Wait for external motion to cease before exposing.  Note this precludes satellite tracking.
                 st = "" 
+                if g_dev['enc'].is_dome:
+                    enc_slewing = g_dev['enc'].enclosure.Slewing
+                else:
+                     enc_slewing = False
+
                 while g_dev['foc'].focuser.IsMoving or g_dev['rot'].rotator.IsMoving or \
-                      g_dev['mnt'].mount.Slewing or g_dev['enc'].enclosure.Slewing:   #Filter is moving??
+                      g_dev['mnt'].mount.Slewing or enc_slewing:   #Filter is moving??
                     if g_dev['foc'].focuser.IsMoving: st += 'f>'
                     if g_dev['rot'].rotator.IsMoving: st += 'r>'
                     if g_dev['mnt'].mount.Slewing: st += 'm>'
-                    if g_dev['enc'].enclosure.Slewing: st += 'd>'
+                    if enc_slewing: st += 'd>'
                     print(st)
                     st = ""
                     time.sleep(0.2)
@@ -1016,6 +1020,7 @@ class Camera:
                         trimmed = self.img[32:, :-34].astype('int32') + pedastal - overscan
 
                     else:
+                        print("Image shift is incorrect, absolutely fatal error.")
                         breakpoint()
                         pass
         
@@ -1042,8 +1047,11 @@ class Camera:
                         pass
 
                 else:
-                    print("Incorrect chip size or bin specified or already-converted:  skipping.")
-                    continue
+                    #print("Incorrect chip size or bin specified or already-converted:  skipping.")
+                    trimmed = self.img
+                    overscan = 0
+                    #breakpoint()
+                    #continue
                 
                 trimmed =trimmed.transpose()
                 #This may need a re-think:   Maybe kill neg and anything really hot if there are only a few.
@@ -1119,7 +1127,8 @@ class Camera:
                     hdu.header['EXPOSURE'] = exposure_time   #Ideally this needs to be calculated from actual times
                     hdu.header['FILTER ']  = self.current_filter  # NB this should read from the wheel!
                     hdu.header['FILTEROF'] = self.current_offset
-                    hdu.header['FILTRNUM'] = g_dev['fil'].filter.Filter  #Get a number from the hardware or via Maxim.
+                    #breakpoint()
+                    #hdu.header['FILTRNUM'] = g_dev['fil'].filter.Filter  #Get a number from the hardware or via Maxim.
                     hdu.header['IMAGETYP'] = frame_type   #This report is fixed and it should vary...NEEDS FIXING!
                     if g_dev['scr'] is not None and frame_type == 'screen flat':
                         hdu.header['SCREEN']   = int(g_dev['scr'].bright_setting)
@@ -1243,6 +1252,8 @@ class Camera:
                     hdu.header['SKY-LUX']  = avg_ocn[8]
                     if g_dev['enc'] is not None:
                         hdu.header['ROOF'] = g_dev['enc'].get_status()['shutter_status']   #"Open/Closed"
+                    #NB Should also report Dome Azimuth, windscreen status and altitude is available.
+                    #NB should also report status of Dome lights.
                     hdu.header['DETECTOR'] = self.config['camera']['camera1']['detector']
                     hdu.header['CAMNAME']  = self.config['camera']['camera1']['name']
                     hdu.header['CAMMANUF'] = self.config['camera']['camera1']['manufacturer']

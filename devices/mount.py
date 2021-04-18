@@ -203,7 +203,7 @@ class Mount:
         if not tel:
             print("Mount connected.")
         else:
-            print(" Auxillary Tel/OTA connected.")
+            print("Auxillary Tel/OTA connected.")
         print(self.mount.Description)
         self.ra_offset = 0.0
         self.dec_offset = 0.0   #NB these should always start off at zero.
