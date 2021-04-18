@@ -203,7 +203,7 @@ class Mount:
         if not tel:
             print("Mount connected.")
         else:
-            print(" Auxillary Tel/OTA connected.")
+            print("Auxillary Tel/OTA connected.")
         print(self.mount.Description)
         self.ra_offset = 0.0
         self.dec_offset = 0.0   #NB these should always start off at zero.
@@ -317,7 +317,7 @@ class Mount:
             '''
             jnow_ra = ptr_utility.reduce_ra_r(app_ra - ra_cal_off*HTOR)    # NB the mnt_refs are subtracted here.  Check units are correct.
             jnow_dec = ptr_utility.reduce_dec_r( app_dec - dec_cal_off*DTOR)
-            breakpoint()
+
             if not self.mount.AtPark:   #Applying rates while parked faults.
                 if self.mount.CanSetRightAscensionRate and self.prior_roll_rate != 0 :
                     self.mount.RightAscensionRate =self.prior_roll_rate
