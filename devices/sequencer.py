@@ -440,6 +440,7 @@ class Sequencer:
         '''
         # if bock['project'] is None:
             #user controlled block...
+       
 
         for target in block['project']['project_targets']:   #  NB NB NB Do multi-target projects make sense???
             dest_ra = float(target['ra']) - \

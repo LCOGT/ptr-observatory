@@ -27,7 +27,7 @@ class Enclosure:
         self.site = config['site']
         self.config = config
         g_dev['enc'] = self
-        if self.site != 'wmd2':
+        if self.site != 'mrc2':
             win32com.client.pythoncom.CoInitialize()
             self.enclosure = win32com.client.Dispatch(driver)
             print(self.enclosure)
@@ -304,7 +304,6 @@ class Enclosure:
                 #  A countdown to re-open
                 if self.status_string.lower() in ['closed', 'closing']:
                     self.guarded_open()   #<<<<NB NB NB Only enable when code is fully proven to work.
-                    breakpoint()
                     if self.is_Dome:
                         self.enclosure.Slaved = True
                     else:
