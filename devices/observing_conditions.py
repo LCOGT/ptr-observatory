@@ -69,7 +69,7 @@ class ObservingConditions:
         self.wx_hold_count = 0     #if >=5 inhibits reopening for Wx
         self.wait_time = 0        #A countdown to re-open
         self.wx_close = False     #If made true by Wx code, a 15 minute timeout will begin when Wx turns OK
-        self.wx_test = False    #Purely a debugging aid.
+        self.wx_system_enable = True   #Purely a debugging aid.
         self.wx_test_cycle = 0
         self.prior_status = None
         self.prior_status_2 = None
@@ -123,14 +123,15 @@ class ObservingConditions:
             illum, mag = self.astro_events.illuminationNow()
             if illum > 500:
                 illum = int(illum)
-            # Here we add in-line (To be changed) a preliminary OpenOK calculation:
+            # Here we add in-line  a preliminary OpenOK calculation:
             #  NB all parameters should come from config.
             dew_point_gap = not (self.boltwood.Temperature  - self.boltwood.DewPoint) < 2
             temp_bounds = not (self.boltwood.Temperature < -15) or (self.boltwood.Temperature > 35)
             wind_limit = self.boltwood.WindSpeed < 35/2.235   #Boltwood reports m/s, Clarity may report in MPH
-            sky_amb_limit  = self.boltwood.SkyTemperature < -30
+            sky_amb_limit  = self.boltwood.SkyTemperature < -20
             humidity_limit = 1 < self.boltwood.Humidity < 80
             rain_limit = self.boltwood.RainRate <= 0.001
+
             self.wx_is_ok = dew_point_gap and temp_bounds and wind_limit and sky_amb_limit and \
                             humidity_limit and rain_limit
             #  NB  wx_is_ok does not include ambient light or altitude of the Sun
@@ -139,7 +140,8 @@ class ObservingConditions:
             else:
                 wx_str = "No"   #Ideally we add the dominant reason in priority order.
             #The following may be more restictive since it includes local measured ambient light.
-            #  This signal meant to simulate the Boltwood relay output.
+            #  This signal meant to simulate the Boltwood relay output.  WE repport it but it is not
+            #  actively used.
             if self.boltwood_oktoopen.IsSafe and dew_point_gap and temp_bounds:
                 self.ok_to_open = 'Yes'
             else:
@@ -150,7 +152,7 @@ class ObservingConditions:
                               #return properly
                 status2 = {}
                 self.temperature = self.boltwood.Temperature
-                self.pressure = 784*0.750062   #Mbar to mmHg
+                self.pressure = 784*0.750062   #Mbar to mmHg    Please use mbar going forward.
                 status = {"temperature_C": round(self.boltwood.Temperature, 2),
                           "pressure_mbar": 784.,
                           "humidity_%": self.boltwood.Humidity,
@@ -231,7 +233,7 @@ class ObservingConditions:
                     self.prior_status = status
                     self.prior_status_2 = status2
                 
-            #  Note we are still is saf specific site code.
+            #  Note we are still in saf specific site code.
             if self.unihedron_connected:
                 uni_measure = self.unihedron.SkyQuality   #  Provenance of 20.01 is dubious 20200504 WER
                 if uni_measure == 0:
@@ -285,7 +287,7 @@ class ObservingConditions:
                     illum = int(illum)
                 else:
                     illum = round(illum, 3)
-                self.wx_is_ok = True
+                #self.wx_is_ok = True
                 self.temperature = float(wx["amb_temp C"])
                 self.pressure = 973*0.750062   #Mbar to mmHg  #THIS IS A KLUGE
                 status = {"temperature_C": float(wx["amb_temp C"]),
@@ -372,8 +374,7 @@ class ObservingConditions:
                 #     status["meas_sky_mpsas"] = uni_measure
                 #     #status2["meas_sky_mpsas"] = uni_measure
 
-                        # Only write when around dark, put in CSV format
-            #ops_win_begin, sunset, sunrise, ephem.now
+            # Only write when around dark, put in CSV format, used to calibrate Unihedron.
             sunZ88Op, sunZ88Cl, sunrise, ephemNow = g_dev['obs'].astro_events.getSunEvents()
             two_hours = 2/24    #  Note changed to 2 hours.
             if  (sunZ88Op - two_hours < ephemNow < sunZ88Cl + two_hours) and (time.time() >= \
@@ -404,46 +405,43 @@ class ObservingConditions:
         When we get to this point of the code first time we expect self.wx_is_ok to be true
         '''
         obs_win_begin, sunset, sunrise, ephemNow = self.astro_events.getSunEvents()
-        self.wx_test_trigger = False
-        if self.wx_test:
-            self.wx_test_cycle += 1  #This just counts up.
-            if self.wx_test_cycle % 10:
-                self.wx_test_trigger = True
-            
-            
         
-        if (self.wx_is_ok and not self.wx_test) and not self.wx_hold:     #Normal condition, possibly nothing to do.
+        #OLD CODE USED A PROBE. jUST DO THIS EVERY CYCLE
+
+            
+        #self.wx_is_ok = False     
+        
+        if (self.wx_is_ok and self.wx_system_enable) and not self.wx_hold:     #Normal condition, possibly nothing to do.
             self.wx_hold_last_updated = time.time()
 
-        elif (not self.wx_is_ok or self.wx_test_trigger) and not self.wx_hold:     #Wx bad and no hold yet.
+        elif not self.wx_is_ok and not self.wx_hold:     #Wx bad and no hold yet.
             #Bingo we need to start a cycle
             self.wx_hold = True
-            if self.wx_test:
-                self.wx_hold_until_time = time.time() + 20    #20 seconds
-            else:
-                self.wx_hold_until_time = time.time() + 900    #15 minutes  This could be changed if open_ok.
+            self.wx_hold_until_time = (t := time.time() + 900)    #15 minutes   Make configurable
             self.wx_hold_tally += 1     #  This counts all day and night long.
-            self.wx_hold_last_updated = time.time()
+            self.wx_hold_last_updated = t
             if obs_win_begin <= ephemNow <= sunrise:     #Gate the real holds to be in the Observing window.
                 self.wx_hold_count += 1
                 #We choose to let the enclosure manager handle the close.
                 print("Wx hold asserted, flap#:", self.wx_hold_count, self.wx_hold_tally)
             else:
-                print("Wx Hold -- out of Observing window.")
+                print("Wx Hold -- out of Observing window.", self.wx_hold_count, self.wx_hold_tally)
                 
  
 
-        elif (not self.wx_is_ok or self.wx_test) and self.wx_hold:     #WX is bad and we are on hold.
+        elif not self.wx_is_ok and self.wx_hold:     #WX is bad and we are on hold.
             self.wx_hold_last_updated = time.time()
             #Stay here as long as we need to. 
-            if self.wx_test:
-                print("In a wx_test hold.")
+            if self.wx_system_enable:
+                print("In a wx_hold.")
+                #self.wx_is_ok = True
         else:
             pass
+            print("Should never get here in Wx logic.")
 
-        if (self.wx_is_ok or self.wx_test) and self.wx_hold:     #Wx now good and still on hold.
+        if self.wx_is_ok  and self.wx_hold:     #Wx now good and still on hold.
             if self.wx_hold_count < 3:
-                if time.time() >= self.wx_hold_until_time:
+                if time.time() >= self.wx_hold_until_time and not self.wx_clamp:
                     #Time to release the hold.
                     self.wx_hold = False
                     self.wx_hold_until_time = time.time()
