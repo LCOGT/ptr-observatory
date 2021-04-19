@@ -108,14 +108,22 @@ class Enclosure:
             self.redis_server.set('enclosure_synch', str(self.enclosure.Slaved), ex=600)
             self.redis_server.set('enclosure_mode', str(self.mode), ex=600)
             self.redis_server.set('enclosure_message', str(self.state), ex=600)        #print('Enclosure status:  ', status
-        elif self.site == 'wmd2':
-            status = {'roof_status': self.redis_server.get('roof_status'),
-                      'shutter_status': self.redis_server.get('shutter_status'),
-                      'enclosure_synch': self.redis_server.get('enclosure_synch'),   #  What should  this mean for a roof? T/F = Open/Closed?
-                      'enclosure_mode': self.redis_server.get('enclosure_mode'),
-                      'enclosure_message': self.redis_server.get('enclosure_message')
-                      }
-            stat_string = status['shutter_status']
+        elif self.site == 'mrc2':
+            # status = {'roof_status': stat_string,
+            #           'shutter_status': stat_string,
+            #           'enclosure_synch': self.enclosure.Slaved,   #  What should  this mean for a roof? T/F = Open/Closed?
+            #           'enclosure_mode': self.mode,
+            #           'enclosure_message': self.state}
+            stat_string = self.redis_server.get('roof_status')#, str(stat_string), ex=600)
+            stat_string = self.redis_server.get("shutter_status")#, str(stat_string), ex=600)
+            encl_synched = self.redis_server.get('enclosure_synch')#, str(self.enclosure.Slaved), ex=600)
+            self.mode = self.redis_server.get('enclosure_mode')#, str(self.mode), ex=600)
+            self.state = self.redis_server.get('enclosure_message')#, str(self.state), ex=600)
+            status = {'roof_status': stat_string,
+                      'shutter_status': stat_string,
+                      'enclosure_synch': encl_synched,  #self.enclosure.Slaved,   #  What should  this mean for a roof? T/F = Open/Closed?
+                      'enclosure_mode': self.mode,
+                      'enclosure_message': self.state}
         else:
             status = {'roof_status': 'unknown',
                       'shutter_status': 'unknown',

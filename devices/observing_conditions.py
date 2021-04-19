@@ -267,7 +267,7 @@ class ObservingConditions:
         #  Note we are now in mrc specific code.
 
         elif self.site == 'mrc' or self.site == 'mrc2':
-            
+           
             try:
                 #breakpoint()
                 # pass
@@ -387,7 +387,8 @@ class ObservingConditions:
                 except:
                     print("Wx log did not write.")
         else:
-            print("Big fatal error")
+            breakpoint()
+            print("Big fatal error in observing conditons")
 
         '''
         Now lets compute Wx hold condition.  Class is set up to assume Wx has been good.
@@ -468,7 +469,7 @@ class ObservingConditions:
         try:
             requests.post(url, data)
         except:
-            print("Wx post failed, usually not a fatal error.")
+            print("Wx post failed, usually not a fatal error, probably site not supported")
         return status
 
 
@@ -507,7 +508,7 @@ class ObservingConditions:
                 self.meas_sky_lux = linearize_unihedron(uni_measure)
                 quick.append(float(self.meas_sky_lux))     # intended for Unihedron
             return quick
-        elif self.site == 'mrc':
+        elif self.site in ['mrc', 'mrc2']:
             wx = eval(self.redis_server.get('<ptr-wx-1_state'))
             quick.append(time.time())
             quick.append(float(wx["sky C"]))
@@ -520,7 +521,7 @@ class ObservingConditions:
             quick.append(float(wx['bright hz']))
 
         else:
-            print("Big fatal error")
+            print("Big fatal error in ocn quick status, site not supported.")
 
     def get_average_status(self, pre, post):
         average = []

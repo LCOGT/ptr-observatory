@@ -479,10 +479,6 @@ class Camera:
         not the slower File Path.  THe mode used for focusing or other operations where we do not want to save any
         image data.
         '''
-        #print('Expose Entered.  req:  ', required_params, 'opt:  ', optional_params)
-        #print("Checking if Maxim is still connected!")
-        #  self.t7 is last time camera was read out
-        #if self.t7 is not None and (time.time() - self.t7 > 30) and self.maxim:
 
         self.t0 = time.time()
         try:
