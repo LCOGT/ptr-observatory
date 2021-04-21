@@ -46,7 +46,7 @@ class FilterWheel:
                 time.sleep(0.2)
             self.filter_back.Position = self.filter_data[self.filter_reference][1][0]
             time.sleep(1)
-            print(self.filter_front.Names, self.filter_back.Names, self.filter_selected, self.filter_offset)
+            print(self.filter_selected, self.filter_offset)   #self.filter_front.Names, self.filter_back.Names, 
         elif driver.lower() in ["maxim.ccdcamera", 'maxim', 'maximdl', 'maximdlpro']:
             print('Maxim controlled filter (ONLY) is initializing.')
             win32com.client.pythoncom.CoInitialize()

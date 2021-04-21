@@ -1,10 +1,3 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Tue Apr 20 22:19:25 2021
-
-@author: obs
-"""
-
 import win32com.client
 #import pythoncom
 #import redis
@@ -41,27 +34,38 @@ import ptr_utility
 #string  = \\HOUSE-COMPUTER\saf_archive_2\archive
 
 """
+
 Camera note 20210131.  IF the QHY ASCOM driver is reloaded or updated use ASCOM
 Diagnostics to reesablish the camera binding.
+
 Camera note 20200427.
+
 The goal is refactor this module so we use class attributes more and do not carry them
 as parameters in various calls.  Try to use keywords as 'instructions' for processing steps
 downstream.  When returning from calls use a dictionary to report results.  Support
 synchronous and async reductions.  If the ccd has overscan, incorporate that step into
 the immediate processing with trim
+
 Camera Note 20200510.
+
 Beating on camera waiting for long exposures causes Maxim to disconnect.  So instead we
 will not look for ImageReady until 'exptime + nominal readout delay - 1 second.'
 However every 30 seconds during that wait we will check the camera is connected. if it
 drops out we setup the wait and report a failed exposure.
+
 Next add an exposure retry loop: for now retry three times then fail up the call chain.
+
 Reporting camera status should NOT normally provoke the camera when it is exposing. Instead
 just report the % complete or estimated time to completion.
+
 The camera operates in  Phase_1:  Setup Exposure, then Phase 2 Take the exposure, then Phase 3
 fill out fits headers and save the exposure.  Phase 2, and maybe  Phase 3, are wrapped in the retry-three-
 times framework. Next is Phase 4 -- local calibrate and analyze, then Phase 5 -- send to AWS.
+
+
 Hwere is a Maxim Header with the telescope attached. Note the various keywords which 
 need to be there  to use Maxim Pinpoint or Visual Pinpoint efficiently.
+
 SIMPLE  	= T                                                  
 BITPIX  	= -32 /8 unsigned int, 16 & 32 int, -32 & -64 real     
 NAXIS   	= 2 /number of axes                                  
@@ -108,6 +112,8 @@ OBSERVER	= '        '
 NOTES   	= '        '                                                            
 ROWORDER	= 'TOP-DOWN' /          Image write order, BOTTOM-UP or TOP-DOWN        
 FLIPSTAT	= '        '          
+
+
 """
 
 #These should eventually be in a utility module
@@ -152,8 +158,10 @@ class Camera:
         """
         Added monkey patches to make ASCOM/Maxim differences
         go away from the bulk of the in-line code.
+
         Try to be more consistent about use of filter names rather than
         numbers.
+
         """
 
         self.name = name
@@ -441,6 +449,7 @@ class Camera:
     and or focus is different.  If  filter change is required, do it and look up
     the new filter offet.  Apply that as well.  Possibly this step also includes
     a temperature compensation cycle.
+
     Do we let focus 'float' or do we pin to a reference?  I think the latter.
     ref = actual - offset(filter): ref + offset(f) = setpoint.  At end of AF
     cycle the reference is updated logging in the filter used and the temperature.
@@ -450,11 +459,14 @@ class Camera:
     value > 0.6 or so.  Store the primary temp via PWI3 and use the Wx temp
     for ambient.  We need a way to log the truss temp until we can find which
     temp best drives the compensation.
+
     We will assume that the default filter is a wide or lum with a nominal offset
     of 0.000  All other filter offsets are with respect to the default value.
     I.e., an autofocus of the reference filter results in the new focal position
     becoming the reference.
+
     The system boots up and selects the reference filter and reference focus.
+
     '''
     
 
@@ -467,10 +479,7 @@ class Camera:
         not the slower File Path.  THe mode used for focusing or other operations where we do not want to save any
         image data.
         '''
-        #print('Expose Entered.  req:  ', required_params, 'opt:  ', optional_params)
-        #print("Checking if Maxim is still connected!")
-        #  self.t7 is last time camera was read out
-        #if self.t7 is not None and (time.time() - self.t7 > 30) and self.maxim:
+
         self.t0 = time.time()
         try:
             probe = self.camera.CoolerOn
@@ -735,17 +744,12 @@ class Camera:
                 #case where a timeout is a smart idea.
                 #Wait for external motion to cease before exposing.  Note this precludes satellite tracking.
                 st = "" 
-                if g_dev['enc'].is_dome:
-                    enc_slewing = g_dev['enc'].enclosure.Slewing
-                else:
-                     enc_slewing = False
-
                 while g_dev['foc'].focuser.IsMoving or g_dev['rot'].rotator.IsMoving or \
-                      g_dev['mnt'].mount.Slewing or enc_slewing:   #Filter is moving??
+                      g_dev['mnt'].mount.Slewing or g_dev['enc'].enclosure.Slewing:   #Filter is moving??
                     if g_dev['foc'].focuser.IsMoving: st += 'f>'
                     if g_dev['rot'].rotator.IsMoving: st += 'r>'
                     if g_dev['mnt'].mount.Slewing: st += 'm>'
-                    if enc_slewing: st += 'd>'
+                    if g_dev['enc'].enclosure.Slewing: st += 'd>'
                     print(st)
                     st = ""
                     time.sleep(0.2)
@@ -1008,7 +1012,6 @@ class Camera:
                         trimmed = self.img[32:, :-34].astype('int32') + pedastal - overscan
 
                     else:
-                        print("Image shift is incorrect, absolutely fatal error.")
                         breakpoint()
                         pass
         
@@ -1035,11 +1038,8 @@ class Camera:
                         pass
 
                 else:
-                    #print("Incorrect chip size or bin specified or already-converted:  skipping.")
-                    trimmed = self.img
-                    overscan = 0
-                    #breakpoint()
-                    #continue
+                    print("Incorrect chip size or bin specified or already-converted:  skipping.")
+                    continue
                 
                 trimmed =trimmed.transpose()
                 #This may need a re-think:   Maybe kill neg and anything really hot if there are only a few.
@@ -1085,6 +1085,7 @@ class Camera:
                     3) form a histogram and then pick the median winner
                     4) generate data for a report.
                     5) save data and image for engineering runs.
+
                     """
                     border_x = int(ix*0.05)
                     border_y = int(iy*0.05)
@@ -1114,8 +1115,7 @@ class Camera:
                     hdu.header['EXPOSURE'] = exposure_time   #Ideally this needs to be calculated from actual times
                     hdu.header['FILTER ']  = self.current_filter  # NB this should read from the wheel!
                     hdu.header['FILTEROF'] = self.current_offset
-                    #breakpoint()
-                    #hdu.header['FILTRNUM'] = g_dev['fil'].filter.Filter  #Get a number from the hardware or via Maxim.
+                    hdu.header['FILTRNUM'] = g_dev['fil'].filter.Filter  #Get a number from the hardware or via Maxim.
                     hdu.header['IMAGETYP'] = frame_type   #This report is fixed and it should vary...NEEDS FIXING!
                     if g_dev['scr'] is not None and frame_type == 'screen flat':
                         hdu.header['SCREEN']   = int(g_dev['scr'].bright_setting)
@@ -1239,8 +1239,6 @@ class Camera:
                     hdu.header['SKY-LUX']  = avg_ocn[8]
                     if g_dev['enc'] is not None:
                         hdu.header['ROOF'] = g_dev['enc'].get_status()['shutter_status']   #"Open/Closed"
-                    #NB Should also report Dome Azimuth, windscreen status and altitude is available.
-                    #NB should also report status of Dome lights.
                     hdu.header['DETECTOR'] = self.config['camera']['camera1']['detector']
                     hdu.header['CAMNAME']  = self.config['camera']['camera1']['name']
                     hdu.header['CAMMANUF'] = self.config['camera']['camera1']['manufacturer']
@@ -1444,3 +1442,5 @@ class Camera:
     def to_reduce(self, to_red):
         #print('Passed to to_reduce:  ', to_red[0], to_red[1].data.shape, to_red[1].header['FILTER'])
         g_dev['obs'].reduce_queue.put(to_red, block=False)
+
+
