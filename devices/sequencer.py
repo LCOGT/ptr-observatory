@@ -703,7 +703,7 @@ class Sequencer:
         self.sky_guard = True
         print('Eve Sky Flat sequence Starting, Enclosure PRESUMED Open. Telescope will un-park.')
         camera_name = str(self.config['camera']['camera1']['name'])
-        flat_count = 9
+        flat_count = 1#9
         exp_time = .003
         #  NB Sometime, try 2:2 binning and interpolate a 1:1 flat.  This might run a lot faster.
         if flat_count < 1: flat_count = 1
@@ -711,7 +711,7 @@ class Sequencer:
         g_dev['mnt'].slewToSkyFlatAsync()
         if g_dev['enc'].is_dome and not g_dev['enc'].mode == 'Automatic':
             g_dev['enc'].Slaved = True  #Bring the dome into the picture.
-            print('\n\n SLAVED THE DOME HOPEFULLY!!!!\n\n')
+            print('\n SERVOED THE DOME HOPEFULLY!\n')
         g_dev['obs'].update_status()
         try:
             g_dev['scr'].screen_dark()
@@ -764,7 +764,7 @@ class Sequencer:
                         scale = 0.33
                 except:
                     scale = 1.0
-                print("Patch/Bright:  ", bright)  #  Others are 'NE', 'NW', 'SE', 'SW'.
+                print("\nPatch/Bright:  ", bright, '\n')  #  Others are 'NE', 'NW', 'SE', 'SW'.
                 #  THE following code looks like a debug patch gone rogue.
                 if bright > 45000 and (ephemNow < g_dev['events']['End Eve Sky Flats']
                                   or True):    #NB should gate with end of skyflat window as well.
