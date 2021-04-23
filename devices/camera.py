@@ -1031,7 +1031,8 @@ class Camera:
 
                     else:
                         print("Image shift is incorrect, absolutely fatal error.")
-                        breakpoint()
+                        
+                        
                         pass
 
                 else:
