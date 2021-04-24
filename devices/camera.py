@@ -734,9 +734,12 @@ class Camera:
                 #Check here for filter, guider, still moving  THIS IS A CLASSIC
                 #case where a timeout is a smart idea.
                 #Wait for external motion to cease before exposing.  Note this precludes satellite tracking.
-                st = "" 
+                st = ""
                 if g_dev['enc'].is_dome:
-                    enc_slewing = g_dev['enc'].enclosure.Slewing
+                    try:
+                        enc_slewing = g_dev['enc'].enclosure.Slewing
+                    except:
+                        print("enclosure SLEWING threw an exception.")
                 else:
                      enc_slewing = False
 
@@ -744,13 +747,27 @@ class Camera:
                       g_dev['mnt'].mount.Slewing or enc_slewing:   #Filter is moving??
                     if g_dev['foc'].focuser.IsMoving: st += 'f>'
                     if g_dev['rot'].rotator.IsMoving: st += 'r>'
-                    if g_dev['mnt'].mount.Slewing: st += 'm>'
-                    if enc_slewing: st += 'd>'
+                    if g_dev['mnt'].mount.Slewing:
+                        st += 'm>  ' + str(round(time.time() - g_dev['mnt'].move_time, 1))
+                    if enc_slewing: 
+                        st += 'd>' + str(round(time.time() - g_dev['mnt'].move_time, 1))                  
                     print(st)
+                    if (time.time() - g_dev['mnt'].move_time, 1) >= 80:
+                       print("|n\n DOME OR MOUNT HAS TIMED OUT!|n|n")
+                       breakpoint()
                     st = ""
                     time.sleep(0.2)
                     if seq > 0:
                         g_dev['obs'].update_status()
+                    #Refresh the probe of the dome status
+                    if g_dev['enc'].is_dome:
+                        try:
+                            enc_slewing = g_dev['enc'].enclosure.Slewing
+                        except:
+                            print("enclosure SLEWING threw an exception.")
+                    else:
+                         enc_slewing = False
+
             except:
                 print("Motion check faulted.")
             if seq > 0:
@@ -840,6 +857,7 @@ class Camera:
                             print("Starting autosave  at:  ", self.t2)
                         else:
                             #This is the standard call to Maxim
+
                             g_dev['obs'].send_to_user("Starting Camera1!", p_level='INFO')
                             g_dev['ocn'].get_quick_status(self.pre_ocn)
                             g_dev['foc'].get_quick_status(self.pre_foc)

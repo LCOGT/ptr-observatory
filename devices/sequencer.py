@@ -287,7 +287,7 @@ class Sequencer:
                         #print('Scheduled so removing:  ', project['project_name'])
                         #projects.remove(project)
                         
-            #The residual in projects can be treaded as background.
+            #The residual in projects can be treated as background.
             #print('Background:  ', len(projects), '\n\n', projects)
             
  

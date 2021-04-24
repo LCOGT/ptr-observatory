@@ -211,7 +211,7 @@ class Mount:
         #self.reset_mount_ref()
         self.site_in_automatic = config['site_in_automatic_default']
         self.automatic_detail = config['automatic_detail_default']
- 
+        self.move_time = 0
         try:
             ra1, dec1 = self.get_mount_ref()
             print("Mount reference:  ", ra1 ,dec1)
@@ -413,7 +413,8 @@ class Mount:
                 'is_slewing': str(self.mount.Slewing),
                 'message': str(self.mount_message[:54]),
                 'site_in_automatic': self.site_in_automatic,
-                'automatic_detail': str(self.automatic_detail) 
+                'automatic_detail': str(self.automatic_detail),
+                'move_time': self.move_time
             }
         else:
             print('Proper device_name is missing, or tel == None')
@@ -542,7 +543,8 @@ class Mount:
             'instrument': str(self.inst),
             'is_parked': park_avg,
             'is_tracking': track_avg,
-            'is_slewing': slew_avg
+            'is_slewing': slew_avg,
+            'move_time': self.move_time
 
         }
         return status  #json.dumps(status)
@@ -699,6 +701,7 @@ class Mount:
         delta_ra, delta_dec =self.get_mount_ref()
         #breakpoint()
         ra, dec = ra_dec_fix_h(ra + delta_ra, dec + delta_dec)   #Plus compensates for measured offset
+        self.move_time = time.time()
         self.go_coord(ra, dec, tracking_rate_ra=tracking_rate_ra, tracking_rate_dec = tracking_rate_dec)
         self.object = opt.get("object", "")
         if self.object == "":
@@ -750,7 +753,7 @@ class Mount:
         self.ha_corr = ptr_utility.reduce_ha_r(ha_mech - ha_obs_r)*RTOS     #These are mechanical values, not j.anything
         self.dec_corr = ptr_utility.reduce_dec_r(dec_mech - dec_obs_r)*RTOS
         self.mount.Tracking = True
-
+        self.move_time = time.time()
         self.mount.SlewToCoordinatesAsync(ra_mech*RTOH, dec_mech*RTOD)  #Is this needed?
         ###  figure out velocity
         time.sleep(3)
@@ -798,6 +801,7 @@ class Mount:
         az, alt = self.astro_events.flat_spot_now()
         self.unpark_command()
         self.mount.Tracking = False
+        self.move_time = time.time()
         self.mount.SlewToAltAzAsync(az, alt)
 
 
@@ -816,9 +820,11 @@ class Mount:
             #home_alt = self.settings["home_altitude"]
             #home_az = self.settings["home_azimuth"]
             #self.mount.SlewToAltAzAsync(home_alt, home_az)
+            self.move_time = time.time()
             self.mount.FindHome()
         else:
             print("Mount is not capable of finding home. Slewing to zenith.")
+            self.move_time = time.time()
             self.mount.SlewToAltAzAsync(88., 0.)
 
     def flat_panel_command(self, req, opt):
@@ -836,6 +842,7 @@ class Mount:
         print(self.mount.CanPark)
         if self.mount.CanPark:
             print("mount cmd: parking mount")
+            self.move_time = time.time()
             self.mount.Park()
 
     def unpark_command(self, req=None, opt=None):
