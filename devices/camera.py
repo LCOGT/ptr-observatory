@@ -1037,15 +1037,15 @@ class Camera:
                 elif ix == 4800:
                     #Shift error needs documenting!
                     if self.img[11, -18] == 0:
-                        overscan = int((np.median(self.img[12:, -17:]) + np.median(self.img[0:10, :]))/2) - 1 
-                        trimmed = self.img[12:-4, :-17].astype('int32') + pedastal - overscan
+                        self.overscan = int((np.median(self.img[12:, -17:]) + np.median(self.img[0:10, :]))/2) - 1 
+                        trimmed = self.img[12:-4, :-17].astype('int32') + pedastal - self.overscan
 
-                        #print("Shift 1", overscan, square.mean())
+                        #print("Shift 1", self.overscan, square.mean())
                     elif self.img[15, -18] == 0:
-                        overscan = int((np.median(self.img[16:, -17:]) + np.median(self.img[0:14, :]))/2) -1 
-                        trimmed = self.img[16:, :-17].astype('int32') + pedastal - overscan
+                        self.overscan = int((np.median(self.img[16:, -17:]) + np.median(self.img[0:14, :]))/2) -1 
+                        trimmed = self.img[16:, :-17].astype('int32') + pedastal - self.overscan
 
-                        #print("Shift 2", overscan, square.mean())
+                        #print("Shift 2", self.overscan, square.mean())
 
                     else:
                         print("Image shift is incorrect, absolutely fatal error.")
@@ -1056,7 +1056,7 @@ class Camera:
                 else:
                     #print("Incorrect chip size or bin specified or already-converted:  skipping.")
                     trimmed = self.img
-                    overscan = 0
+                    self.overscan = 0
                     #breakpoint()
                     #continue
                 
@@ -1155,7 +1155,7 @@ class Camera:
                         hdu.header['YBINING'] = 1
                     hdu.header['PEDASTAL'] = -pedastal
                     hdu.header['ERRORVAL'] = 0
-                    hdu.header['OVERSCAN'] = overscan
+                    hdu.header['OVERSCAN'] = self.overscan
                     hdu.header['PATCH']    = bi_mean - pedastal    #  A crude value for the central exposure
                     hdu.header['IMGAREA' ] = opt['area']
                     hdu.header['CCDSUM']   = self.ccd_sum
@@ -1412,10 +1412,13 @@ class Camera:
                     if not focus_image:
                         result['FWHM'] = None
                     result['half_FD'] = None
-                    result['patch'] = bi_mean
+                    result['patch'] = bi_mean - self.overscan
                     result['calc_sky'] = avg_ocn[7]
                     result['temperature'] = avg_foc[2]
-                    result['gain'] = round(bi_mean/(avg_ocn[7]*exposure_time), 6)
+                    print(result['patch'], avg_ocn[7], exposure_time, 'g: ', \
+                          round(result['patch']/(avg_ocn[7]*exposure_time), 6))
+
+                    result['gain'] = round(result['patch']/(avg_ocn[7]/exposure_time), 6)
                     result['filter'] = self.current_filter
                     result['error'] == False
                     g_dev['obs'].send_to_user("Expose cycle conpleted.", p_level='INFO')

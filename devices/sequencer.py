@@ -707,7 +707,7 @@ class Sequencer:
         exp_time = .003
         #  NB Sometime, try 2:2 binning and interpolate a 1:1 flat.  This might run a lot faster.
         if flat_count < 1: flat_count = 1
-        g_dev['mnt'].unpark_command({}, {})
+        #g_dev['mnt'].unpark_command({}, {})
         g_dev['mnt'].slewToSkyFlatAsync()
         if g_dev['enc'].is_dome and not g_dev['enc'].mode == 'Automatic':
             g_dev['enc'].Slaved = True  #Bring the dome into the picture.
@@ -741,7 +741,7 @@ class Sequencer:
                 #if g_dev['enc'].is_dome:   #Does not apply
                 g_dev['mnt'].slewToSkyFlatAsync()
                 try:
-                    exp_time = prior_scale*scale*40000/(float(g_dev['fil'].filter_data[current_filter][3])*g_dev['ocn'].meas_sky_lux)
+                    exp_time = prior_scale*scale*40000/(float(g_dev['fil'].filter_data[current_filter][3])*g_dev['ocn'].calc_HSI_lux)  #meas_sky_lux)
                     if exp_time > 300:
                         exp_time = 300
                     if exp_time <0.001:

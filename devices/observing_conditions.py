@@ -121,8 +121,9 @@ class ObservingConditions:
 
         if self.site == 'saf':
             illum, mag = self.astro_events.illuminationNow()
-            if illum > 500:
+            if illum > 100:
                 illum = int(illum)
+            self.calc_HSI_lux = illum
             # Here we add in-line  a preliminary OpenOK calculation:
             #  NB all parameters should come from config.
             dew_point_gap = not (self.boltwood.Temperature  - self.boltwood.DewPoint) < 2
