@@ -1258,7 +1258,9 @@ class Camera:
                     hdu.header['SKY-LUX']  = avg_ocn[8]
                     if g_dev['enc'] is not None:
                         hdu.header['ROOF'] = g_dev['enc'].get_status()['shutter_status']   #"Open/Closed"
-                    #NB Should also report Dome Azimuth, windscreen status and altitude is available.
+                    if g_dev['enc'].is_dome:
+                        hdu.header['DOMEAZ'] = g_dev['enc'].get_status()['dome_azimuth']
+                     #NB Should also report Dome Azimuth, windscreen status and altitude is available.
                     #NB should also report status of Dome lights.
                     hdu.header['DETECTOR'] = self.config['camera']['camera1']['detector']
                     hdu.header['CAMNAME']  = self.config['camera']['camera1']['name']
@@ -1415,10 +1417,10 @@ class Camera:
                     result['patch'] = bi_mean - self.overscan
                     result['calc_sky'] = avg_ocn[7]
                     result['temperature'] = avg_foc[2]
-                    print(result['patch'], avg_ocn[7], exposure_time, 'g: ', \
-                          round(result['patch']/(avg_ocn[7]*exposure_time), 6))
+                    print('GAIN: ', result['patch'], avg_ocn[7], exposure_time, 'g: ', \
+                         g := round(result['patch']/avg_ocn[7]/exposure_time, 6))
 
-                    result['gain'] = round(result['patch']/(avg_ocn[7]/exposure_time), 6)
+                    result['gain'] = g
                     result['filter'] = self.current_filter
                     result['error'] == False
                     g_dev['obs'].send_to_user("Expose cycle conpleted.", p_level='INFO')
