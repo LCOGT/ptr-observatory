@@ -738,9 +738,12 @@ class Camera:
                 #Check here for filter, guider, still moving  THIS IS A CLASSIC
                 #case where a timeout is a smart idea.
                 #Wait for external motion to cease before exposing.  Note this precludes satellite tracking.
-                st = "" 
+                st = ""
                 if g_dev['enc'].is_dome:
-                    enc_slewing = g_dev['enc'].enclosure.Slewing
+                    try:
+                        enc_slewing = g_dev['enc'].enclosure.Slewing
+                    except:
+                        print("enclosure SLEWING threw an exception.")
                 else:
                      enc_slewing = False
 
@@ -748,13 +751,27 @@ class Camera:
                       g_dev['mnt'].mount.Slewing or enc_slewing:   #Filter is moving??
                     if g_dev['foc'].focuser.IsMoving: st += 'f>'
                     if g_dev['rot'].rotator.IsMoving: st += 'r>'
-                    if g_dev['mnt'].mount.Slewing: st += 'm>'
-                    if enc_slewing: st += 'd>'
+                    if g_dev['mnt'].mount.Slewing:
+                        st += 'm>  ' + str(round(time.time() - g_dev['mnt'].move_time, 1))
+                    if enc_slewing: 
+                        st += 'd>' + str(round(time.time() - g_dev['mnt'].move_time, 1))                  
                     print(st)
+                    if (time.time() - g_dev['mnt'].move_time, 1) >= 80:
+                       print("|n\n DOME OR MOUNT HAS TIMED OUT!|n|n")
+                       breakpoint()
                     st = ""
                     time.sleep(0.2)
                     if seq > 0:
                         g_dev['obs'].update_status()
+                    #Refresh the probe of the dome status
+                    if g_dev['enc'].is_dome:
+                        try:
+                            enc_slewing = g_dev['enc'].enclosure.Slewing
+                        except:
+                            print("enclosure SLEWING threw an exception.")
+                    else:
+                         enc_slewing = False
+
             except:
                 print("Motion check faulted.")
             if seq > 0:
@@ -844,6 +861,7 @@ class Camera:
                             print("Starting autosave  at:  ", self.t2)
                         else:
                             #This is the standard call to Maxim
+
                             g_dev['obs'].send_to_user("Starting Camera1!", p_level='INFO')
                             g_dev['ocn'].get_quick_status(self.pre_ocn)
                             g_dev['foc'].get_quick_status(self.pre_foc)
@@ -1026,25 +1044,26 @@ class Camera:
                 elif ix == 4800:
                     #Shift error needs documenting!
                     if self.img[11, -18] == 0:
-                        overscan = int((np.median(self.img[12:, -17:]) + np.median(self.img[0:10, :]))/2) - 1 
-                        trimmed = self.img[12:-4, :-17].astype('int32') + pedastal - overscan
+                        self.overscan = int((np.median(self.img[12:, -17:]) + np.median(self.img[0:10, :]))/2) - 1 
+                        trimmed = self.img[12:-4, :-17].astype('int32') + pedastal - self.overscan
 
-                        #print("Shift 1", overscan, square.mean())
+                        #print("Shift 1", self.overscan, square.mean())
                     elif self.img[15, -18] == 0:
-                        overscan = int((np.median(self.img[16:, -17:]) + np.median(self.img[0:14, :]))/2) -1 
-                        trimmed = self.img[16:, :-17].astype('int32') + pedastal - overscan
+                        self.overscan = int((np.median(self.img[16:, -17:]) + np.median(self.img[0:14, :]))/2) -1 
+                        trimmed = self.img[16:, :-17].astype('int32') + pedastal - self.overscan
 
-                        #print("Shift 2", overscan, square.mean())
+                        #print("Shift 2", self.overscan, square.mean())
 
                     else:
                         print("Image shift is incorrect, absolutely fatal error.")
-                        breakpoint()
+                        
+                        
                         pass
 
                 else:
                     #print("Incorrect chip size or bin specified or already-converted:  skipping.")
                     trimmed = self.img
-                    overscan = 0
+                    self.overscan = 0
                     #breakpoint()
                     #continue
                 
@@ -1143,7 +1162,7 @@ class Camera:
                         hdu.header['YBINING'] = 1
                     hdu.header['PEDASTAL'] = -pedastal
                     hdu.header['ERRORVAL'] = 0
-                    hdu.header['OVERSCAN'] = overscan
+                    hdu.header['OVERSCAN'] = self.overscan
                     hdu.header['PATCH']    = bi_mean - pedastal    #  A crude value for the central exposure
                     hdu.header['IMGAREA' ] = opt['area']
                     hdu.header['CCDSUM']   = self.ccd_sum
@@ -1246,7 +1265,9 @@ class Camera:
                     hdu.header['SKY-LUX']  = avg_ocn[8]
                     if g_dev['enc'] is not None:
                         hdu.header['ROOF'] = g_dev['enc'].get_status()['shutter_status']   #"Open/Closed"
-                    #NB Should also report Dome Azimuth, windscreen status and altitude is available.
+                    if g_dev['enc'].is_dome:
+                        hdu.header['DOMEAZ'] = g_dev['enc'].get_status()['dome_azimuth']
+                     #NB Should also report Dome Azimuth, windscreen status and altitude is available.
                     #NB should also report status of Dome lights.
                     hdu.header['DETECTOR'] = self.config['camera']['camera1']['detector']
                     hdu.header['CAMNAME']  = self.config['camera']['camera1']['name']
@@ -1400,10 +1421,13 @@ class Camera:
                     if not focus_image:
                         result['FWHM'] = None
                     result['half_FD'] = None
-                    result['patch'] = bi_mean
+                    result['patch'] = bi_mean - self.overscan
                     result['calc_sky'] = avg_ocn[7]
                     result['temperature'] = avg_foc[2]
-                    result['gain'] = round(bi_mean/(avg_ocn[7]*exposure_time), 6)
+                    print('GAIN: ', result['patch'], avg_ocn[7], exposure_time, 'g: ', \
+                         g := round(result['patch']/avg_ocn[7]/exposure_time, 6))
+
+                    result['gain'] = g
                     result['filter'] = self.current_filter
                     result['error'] == False
                     g_dev['obs'].send_to_user("Expose cycle conpleted.", p_level='INFO')

@@ -200,7 +200,7 @@ class FilterWheel:
     def set_number_command(self, filter_number):
         ''' set the filter position by numeric filter position index '''
         #print("filter cmd: set_number")
-        filter_selections = eval(self.filter_data[int(filter_number)][1])
+        filter_selections = self.filter_data[int(filter_number)][1]   #used to have an eval in front!
         #print('Selections:  ', filter_selections)
         self.filter_number = filter_number
         self.filter_selected = self.filter_data[filter_number][0]
