@@ -178,6 +178,7 @@ class Sequencer:
             self.reset_completes()
 
 
+
     def get_status(self):
         status = {
             "active_script": None,

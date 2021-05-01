@@ -604,7 +604,6 @@ class Camera:
                 area = 150
         except:
             area = 150     #was 100 in ancient times.
-        breakpoint()
         if bin_y == 0 or self.camera_max_x_bin != self.camera_max_y_bin:
             self.bin_x = min(bin_x, self.camera_max_x_bin)
             self.cameraBinY = self.bin_y
