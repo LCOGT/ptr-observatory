@@ -252,6 +252,9 @@ class Observatory:
                     print(f"Unknown device: {name}")
                 # Add the instantiated device to the collection of all devices.
                 self.all_devices[dev_type][name] = device
+                
+                
+                
                 # NB 20200410 This dropped out of the code: self.all_devices[dev_type][name] = [device]
         print("Finished creating devices.")
 
