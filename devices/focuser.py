@@ -295,7 +295,8 @@ class Focuser:
     
     def get_af_log(self):
         cam_shelf = shelve.open(self.site_path + 'ptr_night_shelf/' + self.camera_name, writeback=True)
-        return cam_shelf['af_log']
+        for item in cam_shelf['af_log']:
+            print(str(item))
         
     def get_focal_ref(self):
         cam_shelf = shelve.open(self.site_path + 'ptr_night_shelf/' + self.camera_name)

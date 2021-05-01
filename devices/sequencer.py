@@ -179,6 +179,7 @@ class Sequencer:
             self.reset_completes()
 
 
+
     def get_status(self):
         status = {
             "active_script": None,
@@ -871,7 +872,7 @@ class Sequencer:
         
     
 
-    def auto_focus_script(self, req, opt, throw=400):
+    def auto_focus_script(self, req, opt, throw=600):
         '''
         V curve is a big move focus designed to fit two lines adjacent to the more normal focus curve.
         It finds the approximate focus, particulary for a new instrument. It requires 8 points plus

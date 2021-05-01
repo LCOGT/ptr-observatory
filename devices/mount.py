@@ -318,12 +318,16 @@ class Mount:
             jnow_ra = ptr_utility.reduce_ra_r(app_ra - ra_cal_off*HTOR)    # NB the mnt_refs are subtracted here.  Check units are correct.
             jnow_dec = ptr_utility.reduce_dec_r( app_dec - dec_cal_off*DTOR)
 
-            if not self.mount.AtPark:   #Applying rates while parked faults.
-                if self.mount.CanSetRightAscensionRate and self.prior_roll_rate != 0 :
-                    self.mount.RightAscensionRate =self.prior_roll_rate
-                if self.mount.CanSetDeclinationRate and self.prior_pitch_rate != 0:
-                    self.mount.DeclinationRate = self.prior_pitch_rate
-                    #print("Rate found:  ", self.prior_roll_rate, self.prior_pitch_rate, self.ha_corr, self.dec_corr)
+            try:
+                if not self.mount.AtPark:   #Applying rates while parked faults.
+                    if self.mount.CanSetRightAscensionRate and self.prior_roll_rate != 0 :
+                        self.mount.RightAscensionRate =self.prior_roll_rate
+                    if self.mount.CanSetDeclinationRate and self.prior_pitch_rate != 0:
+                        self.mount.DeclinationRate = self.prior_pitch_rate
+                        #print("Rate found:  ", self.prior_roll_rate, self.prior_pitch_rate, self.ha_corr, self.dec_corr)
+            except:
+                print("mount status rate adjust exception.")
+                
             if self.mount.sideOfPier == pier_east \
                 and self.flip_correction_needed:
                 jnow_ra -=  self.east_ra_correction   #Brought in from local calib.py file correction is subtracted.  #This is meant to handle a flip klunk.
@@ -386,7 +390,7 @@ class Mount:
             }
         elif self.tel == True:
             self.current_sidereal = self.mount.SiderealTime
-            icrs_ra, icrs_dec = self.get_mount_coordinates()
+            icrs_ra, icrs_dec = self.get_mount_coordinates()  #20210430  Looks like thie faulted during a slew.
             if self.prior_roll_rate == 0:
                 pass
             status = {
