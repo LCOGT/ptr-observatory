@@ -203,7 +203,7 @@ class Camera:
             #self.app.TelescopeConnected = True
             #print("Maxim Telescope Connected: ", self.app.TelescopeConnected)
             print('Control is Maxim camera interface, Telescope Not Connected.')
-        print('Maxim is connected:  ', self._connect(True))
+        #print('Maxim is connected:  ', self._connect(True))
         print('Cooler Setpoint:   ', self._setpoint(float(self.config['camera']['camera1']['settings']['temp_setpoint'])))
         print('Cooler started @:  ', self._temperature())
         self.camera.CoolerOn = self.config['camera']['camera1']['settings']['cooler_on']
@@ -235,8 +235,8 @@ class Camera:
         #NB We are reading from the actual camera or setting as the case may be.  For initial setup,
         #   we pull from config for some of the various settings.
         try:
-            self.camera.BinX = int(self.config['camera']['camera1']['settings']['default_bin'][0])
-            self.camera.BinY = int(self.config['camera']['camera1']['settings']['default_bin'][-1])
+            self.camera.BinX = 1 #int(self.config['camera']['camera1']['settings']['default_bin'][0])
+            self.camera.BinY = 1 #int(self.config['camera']['camera1']['settings']['default_bin'][-1])
             #NB we need to be sure AWS picks up this default.config.site_config['camera']['camera1']['settings']['default_bin'])
         except:
             print('Camera only accepts Bins = 1.')
@@ -497,16 +497,19 @@ class Camera:
         self.pane = optional_params.get('pane', None)
         bin_x = optional_params.get('bin', self.config['camera']['camera1'] \
                                                       ['settings']['default_bin'])  #NB this should pick up config default.
-        if bin_x == '4, 4':     # For now this is the highest level of binning supported.
-            bin_x = 2
-        elif bin_x == '3, 3':   # replace with in and various formats or strip spaces.
-            bin_x = 2
-        elif bin_x in [2, '2, 2', '2,2']:
+
+        if bin_x in [4, '4, 4', '4,4', [4, 4]]:     # For now this is the highest level of binning supported.
+            bin_x = 4
+            self.ccd_sum = '4 4'
+        elif bin_x in [3, '3, 3', '3,3', [3, 3]]:   # replace with in and various formats or strip spaces.
+            bin_x = 3
+            self.ccd_sum = '3 3'
+        elif bin_x in [2, '2, 2', '2,2', [2, 2]]:
             bin_x = 2
             self.ccd_sum = '2 2'
         else:
-            bin_x = 2  #  1
-            self.ccd_sum = '2 2'  #  '1 1'
+            bin_x = 1
+            self.ccd_sum = '1 1'
         bin_y = bin_x   #NB This needs fixing someday!
         self.bin = bin_x
         self.camera.BinX = bin_x
@@ -601,6 +604,7 @@ class Camera:
                 area = 150
         except:
             area = 150     #was 100 in ancient times.
+        breakpoint()
         if bin_y == 0 or self.camera_max_x_bin != self.camera_max_y_bin:
             self.bin_x = min(bin_x, self.camera_max_x_bin)
             self.cameraBinY = self.bin_y
@@ -996,6 +1000,9 @@ class Camera:
                 #  NB Note this is QHY600 specific code.  Needs to be supplied in camera config as sliced regions.
                 pedastal = 100
                 ix, iy = self.img.shape
+                
+                
+ 
 
                 # if ix == 9600:
                 #     overscan = int((np.median(self.img[32:, -33:]) + np.median(self.img[0:29, :]))/2) - 1
