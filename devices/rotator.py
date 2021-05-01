@@ -12,8 +12,8 @@ class Rotator:
         self.rotator = win32com.client.Dispatch(driver)
         self.rotator.Connected = True
         self.rotator_message = '-'
-        print(f"rotator connected.")
-        print(self.rotator.Description)
+        print("Rotator connected,  at:  ", round(self.rotator.TargetPosition, 4))
+        #print(self.rotator.Description)
 
     def get_status(self):
         '''
@@ -26,9 +26,10 @@ class Rotator:
         mechanical rotator position angle and the true Equatorial Position
         Angle of the imager, and compensate for any difference.
         '''
+        #NB we had an exception here with Target position.
         status = {
-            "position_angle": str(round(self.rotator.TargetPosition, 4)),
-            "rotator_moving": str(self.rotator.IsMoving).lower(),
+            "position_angle": round(self.rotator.TargetPosition, 4),
+            "rotator_moving": self.rotator.IsMoving,
         }
         #print(self.rotator.TargetPosition)
         return status
@@ -45,9 +46,9 @@ class Rotator:
         average.append(round((pre[0] + post[0])/2, 3))
         average.append(round((pre[1] + post[1])/2, 3))
         if pre[2] or post[2]:
-            average.append('T')
+            average.append(True)
         else:
-            average.append('F')
+            average.append(False)
         return average
 
     def parse_command(self, command):
@@ -72,13 +73,13 @@ class Rotator:
     ###############################
 
     def move_relative_command(self, req: dict, opt: dict):
-        ''' set the focus position by moving relative to current position '''
+        ''' set the rotators position by moving relative to current position '''
         print(f"rotator cmd: move_relative")
         position = float(req['position'])
         self.rotator.Move(position)
 
     def move_absolute_command(self, req: dict, opt: dict):
-        ''' set the focus position by moving to an absolute position '''
+        ''' set the rotator position by moving to an absolute position '''
         print(f"rotator cmd: move_absolute")
         position = float(req['position'])
         self.rotator.MoveAbsolute(position)

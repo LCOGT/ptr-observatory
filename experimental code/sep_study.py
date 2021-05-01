@@ -241,7 +241,9 @@ def get_sources(img, bright_limit=2, display=False):
 
 if __name__ == '__main__':
     print('sep is starting')
-    path = 'C:/Users/wrosing/Desktop/ogg/'
+
+    path = 'D:/archive/archive/sq01/20200524/to_AWS/'
+
     #path = 'C:\\Users\\obs\\Documents\\PlaneWave Instruments\\Images\\Focus\\2019-02-20\\New folder\\'
     fits_file_list = glob.glob(path + '*.f*t*')
 
@@ -249,7 +251,7 @@ if __name__ == '__main__':
     matplotlib.use('Qt5Agg')
     for image in fits_file_list:
         focus = get_sources(image, bright_limit=3, display=False)
-   
+
 
 
 

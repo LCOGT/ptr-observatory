@@ -5,12 +5,12 @@ import serial
 from global_yard import g_dev
 #import config_east as config
 import shelve
-
+import datetime
 import requests
 import json
+from pprint import pprint
 
-#TEMP COEFF ESTIMATED 20190824   fx= round(-164.0673*C_pri +13267.37, 1)  #A very good 1.5C span.  9986@20C. Random Hyst ~ 500 microns! :((( )))
-#-104.769 + 12457.5   2019083
+
 
 '''
 class Probe(object):
@@ -60,50 +60,62 @@ class Focuser:
         self.focuser = win32com.client.Dispatch(driver)
         self.focuser.Connected = True
         self.focuser.TempComp = False
-        self.micron_to_steps = float(config['focuser']['focuser1']['unit_conversion'])
+        self.micron_to_steps= float(config['focuser']['focuser1']['unit_conversion'])   #  Note tis can be a bogus value
         self.steps_to_micron = 1/self.micron_to_steps
         self.focuser_message = '-'
-        print(f"focuser connected.")
-        print(self.focuser.Description, "At:  ", round(self.focuser.Position/self.micron_to_steps, 1))
-        time.sleep(0.2)
-        try:
+        print("Focuser connected,  at:  ", round(self.focuser.Position*self.steps_to_micron, 1))
+        self.reference = None
+        self.last_known_focus = None
+        self.last_temperature = None
+        self.last_source = None
+        try:   #  NB NB NB This mess neads cleaning up.
             try:
-
+                self.last_temperature = self.focuser.Temperature
                 self.reference = self.calculate_compensation( self.focuser.Temperature)   #need to change to config supplied
-                print("Focus reference updated from Compensated value:  ", self.reference)
+                print("Focus position set from temp compensated value:  ", self.reference)
+                self.last_known_focus = self.reference
+                self.last_source = "Focuser__init__  Calculate Comp references Config"
             except:
                 self.reference = float(self.get_focal_ref())   #need to change to config supplied
                 print("Focus reference updated from Night Shelf:  ", self.reference)
+                #Is this of any real value except to persist self.last_known...?
         except:
             self.reference = int(self.config['reference'])
-            print("Focus reference derived from supplied Config dicitionary:  ", self.reference)
+            print("Focus reference derived from supplied config file for 10C:  ", self.reference)
+            #The config reference should be a table of value
         self.focuser.Move(int(float(self.reference)*self.micron_to_steps))
 
+
     def calculate_compensation(self, temp_primary):
-
-        if -5 <= temp_primary <= 45:
-            # NB this math is awkward, should use delta_temp
-
-            trial =round(float(self.config['coef_c'])*temp_primary + float(self.config['coef_0']), 1)
-            trial = max(trial,500)  #These values would change for Gemini to more like 11900 max
+        if -20 <= temp_primary <= 45:
+            trial = round(float(self.config['coef_0'] + float(self.config['coef_c'])*temp_primary), 1)
+            trial = max(trial, 500)  #These values are for an Optec Gemini.
             trial = min(trial, 12150)
-            print('Calculated focus compensated position:  ', trial)
+            # NB NB Numbers should all come fron site config.
+            
+            #print('Calculated focus compensated position:  ', trial)
             return int(trial)
         else:
-            print('Primary out of range -5 to 45C, using reference focus')
+            print('Primary out of range -20C to 45C, using reference focus')
             return float(self.config['reference'])
 
     def get_status(self):
         status = {
-            "focus_position": str(round(self.focuser.Position/self.micron_to_steps, 1)),
-            "focus_moving": str(self.focuser.IsMoving).lower(),
-            "focus_temperature": str(self.focuser.Temperature)
+            "focus_position": round(self.focuser.Position*self.steps_to_micron, 1),
+            "focus_moving": self.focuser.IsMoving,
+            'comp': self.config['coef_c'],
+            'filter_offset': g_dev['fil'].filter_offset
+            #"focus_temperature": self.focuser.Temperature
             }
+        try:
+            status["focus_temperature"] = self.focuser.Temperature
+        except:
+            status['focus_temperature'] = self.reference  #This makes no sense, it is not a temp.
         return status
 
     def get_quick_status(self, quick):
         quick.append(time.time())
-        quick.append(self.focuser.Position/self.micron_to_steps)
+        quick.append(self.focuser.Position*self.steps_to_micron)
         quick.append(self.focuser.Temperature)
         quick.append(self.focuser.IsMoving)
         return quick
@@ -114,9 +126,9 @@ class Focuser:
         average.append(round((pre[1] + post[1])/2, 3))
         average.append(round((pre[2] + post[2])/2, 3))
         if pre[3] or post[3]:
-            average.append('T')
+            average.append(True)
         else:
-            average.append('F')
+            average.append(False)
         return average
 
     def update_job_status(self, cmd_id, status, seconds_remaining=-1):
@@ -170,14 +182,15 @@ class Focuser:
                 print('>')
             self.update_job_status(command['ulid'], 'COMPLETE')
         elif action == "go_to_compensated":
-            reference = self.calculate_compensation( self.focuser.Temperature)
+            reference = self.calculate_compensation(self.focuser.Temperature)
             self.focuser.Move(reference*self.micron_to_steps)
             time.sleep(0.1)
             while self.focuser.IsMoving:
                 time.sleep(0.5)
                 print('>')
         elif action == "save_as_reference":
-            self.set_focal_ref(self.focuser.Position/self.micron_to_steps)  #Need to get the alias properly
+            self.set_focal_ref(self.focuser.Position*self.steps_to_micron)  #Need to get the alias properly
+            # NB NB NB This needs to remove filter offset and save the temperature to be of any value.
         else:
             print(f"Command <{action}> not recognized:", command)
 
@@ -188,14 +201,31 @@ class Focuser:
 
     def get_position(self, counts=False):
         if not counts:
-            return int(self.focuser.Position/self.micron_to_steps)
+            return int(self.focuser.Position*self.steps_to_micron)
+        
+    def adjust_focus(self, loud=False):
+        #Note the adjustment is relative to the last formal focus procedure where
+        #self.last_termperature was used to position the focuser.  Do not use
+        #move_relative()  Functionally dependent of temp, coef_c and filter thickness.
+        try:
+            temp_delta = self.focuser.Temperature - self.last_temperature
+            adjust = 0.0
+            if abs(temp_delta)> 0.1:
+                adjust = round(temp_delta*float(self.config['coef_c']), 1)
+            adjust += g_dev['fil'].filter_offset
+            req = {'position':  str(self.last_known_focus + adjust)}
+            opt = {}
+            if loud: print('Adjusting focus by:  ', adjust, ' microns, to:  ', int(self.last_known_focus + adjust))
+            self.move_absolute_command(req, opt)
+        except:
+            print("Something went wrong in focus-adjust.")
 
     def move_relative_command(self, req: dict, opt: dict):
         ''' set the focus position by moving relative to current position '''
         #The string must start with a + or a - sign, otherwize treated as zero and no action.
 
         position_string = req['position']
-        position = int(self.focuser.Position/self.micron_to_steps)
+        position = int(self.focuser.Position*self.steps_to_micron)
         if position_string[0] != '-':
             relative = int(position_string)
             position += relative
@@ -211,45 +241,68 @@ class Focuser:
             time.sleep(0.1)
             while self.focuser.IsMoving:
                 time.sleep(0.5)
-                print('>f--')
+                print('>f rel')
         else:
-            print('Supplied relativemove is lacking a sign; ignoring.')
+            print('Supplied relative move is lacking a sign; ignoring.')
         #print(f"focuser cmd: move_relative:  ", req, opt)
     def move_absolute_command(self, req: dict, opt: dict):
         ''' set the focus position by moving to an absolute position '''
-        print(f"focuser cmd: move_absolute:  ", req, opt)
-        position = int(req['position'])
+        print("focuser cmd: move_absolute:  ", req, opt)
+        position = int(float(req['position']))
+        current_position =self.focuser.Position*self.steps_to_micron
+        if current_position > position:
+            tag = '>f abs'
+        else:
+            tag = '<f abs'
         self.focuser.Move(int(position*self.micron_to_steps))
-        time.sleep(0.1)
+        print(tag)
+        time.sleep(0.3)
         while self.focuser.IsMoving:
-            time.sleep(0.5)
-            print('>f abs')
+            time.sleep(0.3)
+            print(tag)
         #Here we could spin until the move is completed, simplifying other devices.  Since normally these are short moves,
         #that may make the most sense to keep things seperated.
         '''
-        A new seek *may* cause a mount move, a filter,l rotator, and focus change.  How do we launch all of these in parallel, then
+        A new seek *may* cause a mount move, a filter, rotator, and focus change.  How do we launch all of these in parallel, then
         send status until each completes, then move on to exposing?
 
         '''
     def stop_command(self, req: dict, opt: dict):
         ''' stop focuser movement '''
         print(f"focuser cmd: stop")
+        
     def home_command(self, req: dict, opt: dict):
         ''' set the focuser to the home position'''
         print(f"focuser cmd: home")
+        
     def auto_command(self, req: dict, opt: dict):
         ''' autofocus '''
         print(f"focuser cmd: auto")
 
     def set_focal_ref(self, ref):
-        camShelf = shelve.open(self.site_path + 'ptr_night_shelf/' + self.camera_name)
-        camShelf['Focus Ref'] = ref
-        camShelf.close()
+        cam_shelf = shelve.open(self.site_path + 'ptr_night_shelf/' + self.camera_name)
+        cam_shelf['Focus Ref'] = ref
+        cam_shelf['af_log'] = []
+        cam_shelf.close()
         return
-
+    
+    def af_log(self, ref, fwhm, solved):   #  Note once focus comp is in place this data is lame and
+                                           #  need to be combined with great care.
+        cam_shelf = shelve.open(self.site_path + 'ptr_night_shelf/' + self.camera_name, writeback=True)
+        cam_shelf['af_log'].append((ref, fwhm, solved, self.focuser.Temperature, datetime.datetime.now().isoformat()))
+        cam_shelf.close()
+        return
+    
+    def get_af_log(self):
+        cam_shelf = shelve.open(self.site_path + 'ptr_night_shelf/' + self.camera_name, writeback=True)
+        for item in cam_shelf['af_log']:
+            print(str(item))
+        
     def get_focal_ref(self):
-        camShelf = shelve.open(self.site_path + 'ptr_night_shelf/' + self.camera_name)
-        return camShelf['Focus Ref']
+        cam_shelf = shelve.open(self.site_path + 'ptr_night_shelf/' + self.camera_name)
+        focus_ref = cam_shelf['Focus Ref']
+        cam_shelf.close()
+        return focus_ref
 
 if __name__ == '__main__':
     pass
