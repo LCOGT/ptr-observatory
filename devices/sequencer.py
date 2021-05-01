@@ -940,7 +940,6 @@ class Sequencer:
         print('Autofocus Starting at:  ', foc_pos0, '\n\n')
         #throw = throw  # NB again, from config.  Units are microns  Passed as default paramter
         if not sim:
-            breakpoint()
             result = g_dev['cam'].expose_command(req, opt, no_AWS=True) ## , script = 'auto_focus_script_0')  #  This is where we start.
         else:
             result['FWHM'] = 3

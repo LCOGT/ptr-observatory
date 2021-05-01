@@ -235,8 +235,8 @@ class Camera:
         #NB We are reading from the actual camera or setting as the case may be.  For initial setup,
         #   we pull from config for some of the various settings.
         try:
-            self.camera.BinX = 1 #int(self.config['camera']['camera1']['settings']['default_bin'][0])
-            self.camera.BinY = 1 #int(self.config['camera']['camera1']['settings']['default_bin'][-1])
+            self.camera.BinX = int(self.config['camera']['camera1']['settings']['default_bin'][0])
+            self.camera.BinY = int(self.config['camera']['camera1']['settings']['default_bin'][-1])
             #NB we need to be sure AWS picks up this default.config.site_config['camera']['camera1']['settings']['default_bin'])
         except:
             print('Camera only accepts Bins = 1.')
