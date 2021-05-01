@@ -234,9 +234,10 @@ class Camera:
         self.camera_model = self.config['camera']['camera1']['desc']
         #NB We are reading from the actual camera or setting as the case may be.  For initial setup,
         #   we pull from config for some of the various settings.
+        #NB NB There is a differenc between normal cameras and the QHY when it is set to Bin2.
         try:
-            self.camera.BinX = 1 #int(self.config['camera']['camera1']['settings']['default_bin'][0])
-            self.camera.BinY = 1 #int(self.config['camera']['camera1']['settings']['default_bin'][-1])
+            self.camera.BinX = int(self.config['camera']['camera1']['settings']['default_bin'][0]) # = 1
+            self.camera.BinY = int(self.config['camera']['camera1']['settings']['default_bin'][-1]) # = 1
             #NB we need to be sure AWS picks up this default.config.site_config['camera']['camera1']['settings']['default_bin'])
         except:
             print('Camera only accepts Bins = 1.')
@@ -604,7 +605,7 @@ class Camera:
                 area = 150
         except:
             area = 150     #was 100 in ancient times.
-        breakpoint()
+
         if bin_y == 0 or self.camera_max_x_bin != self.camera_max_y_bin:
             self.bin_x = min(bin_x, self.camera_max_x_bin)
             self.cameraBinY = self.bin_y

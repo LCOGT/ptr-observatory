@@ -167,6 +167,7 @@ class Sequencer:
         self.sequencer_message = '-'
         print("sequencer connected.")
         print(self.description)
+
         self.sky_guard = False
         self.af_guard = False
         self.block_guard = False
@@ -1615,10 +1616,13 @@ IF sweep
 
     
     def reset_completes(self):
-        camera = self.config['camera']['camera1']['name']
-        seq_shelf = shelve.open(g_dev['cam'].site_path + 'ptr_night_shelf/' + str(camera))
-        seq_shelf['completed_blocks'] = []
-        seq_shelf.close()
+        try:
+            camera = self.config['camera']['camera1']['name']
+            seq_shelf = shelve.open(g_dev['cam'].site_path + 'ptr_night_shelf/' + str(camera))
+            seq_shelf['completed_blocks'] = []
+            seq_shelf.close()
+        except:
+            print('Found an empty shelf.  Reset_(block)completes for kf01')
         return 
 
     # import math
