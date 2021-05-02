@@ -269,7 +269,7 @@ class ObservingConditions:
         #  Note we are now in mrc specific code.
 
         elif self.site == 'mrc' or self.site == 'mrc2':
-           
+            breakpoint()
             try:
                 #breakpoint()
                 # pass
@@ -289,7 +289,7 @@ class ObservingConditions:
                     illum = round(illum, 3)
                 #self.wx_is_ok = True
                 self.temperature = float(wx["amb_temp C"])
-                self.pressure = 973*0.750062   #Mbar to mmHg  #THIS IS A KLUGE
+                self.pressure = 973*0.750062   #Mbar to mmHg  #THIS IS A KLUDGE
                 status = {"temperature_C": float(wx["amb_temp C"]),
                           "pressure_mbar": 978.0,
                           "humidity_%": float(wx["humidity %"]),
@@ -306,6 +306,8 @@ class ObservingConditions:
                           "calc_sky_mpsas": round((mag - 20.01), 2)
                           }
                                 #Pulled over from saf
+                                
+                                
                 uni_measure = float(wx['meas_sky_mpsas'])   #  Provenance of 20.01 is dubious 20200504 WER
 
                 if uni_measure == 0:
