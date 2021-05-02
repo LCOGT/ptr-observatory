@@ -167,6 +167,7 @@ class Sequencer:
         self.sequencer_message = '-'
         print("sequencer connected.")
         print(self.description)
+
         self.sky_guard = False
         self.af_guard = False
         self.block_guard = False
@@ -176,6 +177,7 @@ class Sequencer:
             self.is_in_completes(None)
         except:
             self.reset_completes()
+
 
 
     def get_status(self):
@@ -249,8 +251,8 @@ class Sequencer:
         self.sequencer_hold = False
          #events['Eve Bias Dark']
         #if True:
-
-        if (events['Eve Bias Dark'] <= ephem_now < events['End Eve Bias Dark']) and False:
+ 
+        if (events['Eve Bias Dark'] <= ephem_now < events['Ops Window Start']) and False:
             req = {'bin1': False, 'bin2': True, 'bin3': False, 'bin4': False, 'numOfBias': 45, \
                    'numOfDark': 15, 'darkTime': 180, 'numOfDark2': 3, 'dark2Time': 360, \
                    'hotMap': True, 'coldMap': True, 'script': 'genBiasDarkMaster', }
@@ -259,13 +261,13 @@ class Sequencer:
         elif  (events['Eve Sky Flats'] < ephem_now < events['End Eve Sky Flats'])  \
                 and g_dev['enc'].mode == 'Automatic' \
                 and g_dev['ocn'].wx_is_ok \
-                and not g_dev['ocn'].wx_hold and False:
+                and not g_dev['ocn'].wx_hold and True:
             if not self.sky_guard:
                 #Start it up.
                 self.sky_guard = True
                 self.current_script = "Eve Sky Flat script"
-                print('Skipping Eve Sky Flats')
-                #self.sky_flat_script({}, {})   #Null command dictionaries
+                #print('Skipping Eve Sky Flats')
+                self.sky_flat_script({}, {})   #Null command dictionaries
         elif g_dev['obs'].blocks is not None and \
                   g_dev['obs'].projects is not None:     #  THIS DOES NEED TO BE FENCED BY TIME and not repeated.
 
@@ -287,7 +289,7 @@ class Sequencer:
                         #print('Scheduled so removing:  ', project['project_name'])
                         #projects.remove(project)
                         
-            #The residual in projects can be treaded as background.
+            #The residual in projects can be treated as background.
             #print('Background:  ', len(projects), '\n\n', projects)
             
  
@@ -659,21 +661,24 @@ class Sequencer:
         self.sequencer_hold = True
         self.current_script = 'Afternoon Bias Dark'
         dark_time = 180
-        while ephem.now() <= g_dev['events']['End Eve Bias Dark']:   #Do not overrun the window end
-            # print("Expose b_2")   
-            # req = {'time': 0.0,  'script': 'True', 'image_type': 'bias'}
-            # opt = {'area': "Full", 'count': 3, 'bin':'2 2', \
-            #        'filter': 'dark'}
-            # result = g_dev['cam'].expose_command(req, opt, no_AWS=True, \
-            #                     do_sep=False, quick=False)
-            # print(result)
+
+        while g_dev['events']['Eve Bias Dark'] <= ephem.now() <= g_dev['events']['Ops Window Start'] :   #Do not overrun the window end
+            print("Expose b_2")   
+            req = {'time': 0.0,  'script': 'True', 'image_type': 'bias'}
+            opt = {'area': "Full", 'count': 5, 'bin':'2 2', \
+                    'filter': 'dark'}
+            result = g_dev['cam'].expose_command(req, opt, no_AWS=True, \
+                                do_sep=False, quick=False)
+            print(result)
+            g_dev['obs'].update_status()
             print("Expose d_2 using exposure:  ", dark_time )
             req = {'time':dark_time ,  'script': 'True', 'image_type': 'dark'}
-            opt = {'area': "Full", 'count':5, 'bin':'2 2', \
+            opt = {'area': "Full", 'count':1, 'bin':'2 2', \
                     'filter': 'dark'} 
             result = g_dev['cam'].expose_command(req, opt, no_AWS=True, \
                                 do_sep=False, quick=False)
             print(result)
+            g_dev['obs'].update_status()
 
         print("Bias/Dark acquisition is finished.")
         self.sequencer_hold = False
@@ -703,15 +708,15 @@ class Sequencer:
         self.sky_guard = True
         print('Eve Sky Flat sequence Starting, Enclosure PRESUMED Open. Telescope will un-park.')
         camera_name = str(self.config['camera']['camera1']['name'])
-        flat_count = 9
+        flat_count = 13
         exp_time = .003
         #  NB Sometime, try 2:2 binning and interpolate a 1:1 flat.  This might run a lot faster.
         if flat_count < 1: flat_count = 1
         g_dev['mnt'].unpark_command({}, {})
         g_dev['mnt'].slewToSkyFlatAsync()
         if g_dev['enc'].is_dome and not g_dev['enc'].mode == 'Automatic':
-            g_dev['enc'].Slaved = True  #Bring the dome into the picture.
-            print('\n\n SLAVED THE DOME HOPEFULLY!!!!\n\n')
+             g_dev['enc'].Slaved = True  #Bring the dome into the picture.
+             print('\n SERVOED THE DOME HOPEFULLY!\n')
         g_dev['obs'].update_status()
         try:
             g_dev['scr'].screen_dark()
@@ -727,12 +732,13 @@ class Sequencer:
         obs_win_begin, sunset, sunrise, ephemNow = self.astro_events.getSunEvents()
         scale = 1.0
         prior_scale = 1
-        while len(pop_list) > 0 and (ephemNow < g_dev['events']['End Eve Sky Flats']):
+        while len(pop_list) > 0 and (g_dev['events']['Ops Window Start'] < ephemNow < g_dev['events']['End Eve Sky Flats']):
             current_filter = int(pop_list[0])
             acquired_count = 0
-            #g_dev['fil'].set_number_command(current_filter)
-            #g_dev['mnt'].slewToSkyFlatAsync()
-            bright =50000
+            breakpoint()
+            g_dev['fil'].set_number_command(current_filter)
+            g_dev['mnt'].slewToSkyFlatAsync()
+            bright = 35000
             scale = 1.0    #1.15   #20201121 adjustment
             
             prior_scale = 1.0
@@ -740,8 +746,9 @@ class Sequencer:
             while acquired_count < flat_count:
                 #if g_dev['enc'].is_dome:   #Does not apply
                 g_dev['mnt'].slewToSkyFlatAsync()
+                g_dev['obs'].update_status()
                 try:
-                    exp_time = prior_scale*scale*40000/(float(g_dev['fil'].filter_data[current_filter][3])*g_dev['ocn'].meas_sky_lux)
+                    exp_time = prior_scale*scale*35000/(float(g_dev['fil'].filter_data[current_filter][3])*g_dev['ocn'].calc_HSI_lux)  #meas_sky_lux)
                     if exp_time > 300:
                         exp_time = 300
                     if exp_time <0.001:
@@ -754,17 +761,19 @@ class Sequencer:
                 req = {'time': float(exp_time),  'alias': camera_name, 'image_type': 'sky flat', 'script': 'On'}
                 opt = { 'count': 1, 'bin':  '2,2', 'area': 150, 'filter': g_dev['fil'].filter_data[current_filter][0]}
                 print("using:  ", g_dev['fil'].filter_data[current_filter][0])
+                g_dev['obs'].update_status()
                 result = g_dev['cam'].expose_command(req, opt, gather_status=True, no_AWS=True, do_sep = False)
                 bright = result['patch']    #  Patch should be circular and 20% of Chip area. ToDo project
                 try:
-                    scale = 40000/bright
+                    scale = 35000/bright
                     if scale > 3:
                         scale = 3.0
                     if scale < 0.33:
                         scale = 0.33
                 except:
                     scale = 1.0
-                print("Patch/Bright:  ", bright)  #  Others are 'NE', 'NW', 'SE', 'SW'.
+                print("\nPatch/Bright:  ", bright, '\n')  #  Others are 'NE', 'NW', 'SE', 'SW'.
+                g_dev['obs'].update_status()
                 #  THE following code looks like a debug patch gone rogue.
                 if bright > 45000 and (ephemNow < g_dev['events']['End Eve Sky Flats']
                                   or True):    #NB should gate with end of skyflat window as well.
@@ -863,7 +872,7 @@ class Sequencer:
         
     
 
-    def auto_focus_script(self, req, opt, throw=400):
+    def auto_focus_script(self, req, opt, throw=600):
         '''
         V curve is a big move focus designed to fit two lines adjacent to the more normal focus curve.
         It finds the approximate focus, particulary for a new instrument. It requires 8 points plus
@@ -1608,10 +1617,13 @@ IF sweep
 
     
     def reset_completes(self):
-        camera = self.config['camera']['camera1']['name']
-        seq_shelf = shelve.open(g_dev['cam'].site_path + 'ptr_night_shelf/' + str(camera))
-        seq_shelf['completed_blocks'] = []
-        seq_shelf.close()
+        try:
+            camera = self.config['camera']['camera1']['name']
+            seq_shelf = shelve.open(g_dev['cam'].site_path + 'ptr_night_shelf/' + str(camera))
+            seq_shelf['completed_blocks'] = []
+            seq_shelf.close()
+        except:
+            print('Found an empty shelf.  Reset_(block)completes for kf01')
         return 
 
     # import math

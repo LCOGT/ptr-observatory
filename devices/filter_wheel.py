@@ -46,7 +46,7 @@ class FilterWheel:
                 time.sleep(0.2)
             self.filter_back.Position = self.filter_data[self.filter_reference][1][0]
             time.sleep(1)
-            print(self.filter_front.Names, self.filter_back.Names, self.filter_selected, self.filter_offset)
+            print(self.filter_selected, self.filter_offset)   #self.filter_front.Names, self.filter_back.Names, 
         elif driver.lower() in ["maxim.ccdcamera", 'maxim', 'maximdl', 'maximdlpro']:
             print('Maxim controlled filter (ONLY) is initializing.')
             win32com.client.pythoncom.CoInitialize()
@@ -200,7 +200,7 @@ class FilterWheel:
     def set_number_command(self, filter_number):
         ''' set the filter position by numeric filter position index '''
         #print("filter cmd: set_number")
-        filter_selections = eval(self.filter_data[int(filter_number)][1])
+        filter_selections = self.filter_data[int(filter_number)][1]   #used to have an eval in front!
         #print('Selections:  ', filter_selections)
         self.filter_number = filter_number
         self.filter_selected = self.filter_data[filter_number][0]

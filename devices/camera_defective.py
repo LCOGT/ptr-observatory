@@ -1,10 +1,3 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Tue Apr 20 22:19:25 2021
-
-@author: obs
-"""
-
 import win32com.client
 #import pythoncom
 #import redis
@@ -41,27 +34,38 @@ import ptr_utility
 #string  = \\HOUSE-COMPUTER\saf_archive_2\archive
 
 """
+
 Camera note 20210131.  IF the QHY ASCOM driver is reloaded or updated use ASCOM
 Diagnostics to reesablish the camera binding.
+
 Camera note 20200427.
+
 The goal is refactor this module so we use class attributes more and do not carry them
 as parameters in various calls.  Try to use keywords as 'instructions' for processing steps
 downstream.  When returning from calls use a dictionary to report results.  Support
 synchronous and async reductions.  If the ccd has overscan, incorporate that step into
 the immediate processing with trim
+
 Camera Note 20200510.
+
 Beating on camera waiting for long exposures causes Maxim to disconnect.  So instead we
 will not look for ImageReady until 'exptime + nominal readout delay - 1 second.'
 However every 30 seconds during that wait we will check the camera is connected. if it
 drops out we setup the wait and report a failed exposure.
+
 Next add an exposure retry loop: for now retry three times then fail up the call chain.
+
 Reporting camera status should NOT normally provoke the camera when it is exposing. Instead
 just report the % complete or estimated time to completion.
+
 The camera operates in  Phase_1:  Setup Exposure, then Phase 2 Take the exposure, then Phase 3
 fill out fits headers and save the exposure.  Phase 2, and maybe  Phase 3, are wrapped in the retry-three-
 times framework. Next is Phase 4 -- local calibrate and analyze, then Phase 5 -- send to AWS.
+
+
 Hwere is a Maxim Header with the telescope attached. Note the various keywords which 
 need to be there  to use Maxim Pinpoint or Visual Pinpoint efficiently.
+
 SIMPLE  	= T                                                  
 BITPIX  	= -32 /8 unsigned int, 16 & 32 int, -32 & -64 real     
 NAXIS   	= 2 /number of axes                                  
@@ -108,6 +112,8 @@ OBSERVER	= '        '
 NOTES   	= '        '                                                            
 ROWORDER	= 'TOP-DOWN' /          Image write order, BOTTOM-UP or TOP-DOWN        
 FLIPSTAT	= '        '          
+
+
 """
 
 #These should eventually be in a utility module
@@ -152,8 +158,10 @@ class Camera:
         """
         Added monkey patches to make ASCOM/Maxim differences
         go away from the bulk of the in-line code.
+
         Try to be more consistent about use of filter names rather than
         numbers.
+
         """
 
         self.name = name
@@ -203,7 +211,7 @@ class Camera:
             #self.app.TelescopeConnected = True
             #print("Maxim Telescope Connected: ", self.app.TelescopeConnected)
             print('Control is Maxim camera interface, Telescope Not Connected.')
-        #print('Maxim is connected:  ', self._connect(True))
+        print('Maxim is connected:  ', self._connect(True))
         print('Cooler Setpoint:   ', self._setpoint(float(self.config['camera']['camera1']['settings']['temp_setpoint'])))
         print('Cooler started @:  ', self._temperature())
         self.camera.CoolerOn = self.config['camera']['camera1']['settings']['cooler_on']
@@ -234,10 +242,9 @@ class Camera:
         self.camera_model = self.config['camera']['camera1']['desc']
         #NB We are reading from the actual camera or setting as the case may be.  For initial setup,
         #   we pull from config for some of the various settings.
-        #NB NB There is a differenc between normal cameras and the QHY when it is set to Bin2.
         try:
-            self.camera.BinX = int(self.config['camera']['camera1']['settings']['default_bin'][0]) # = 1
-            self.camera.BinY = int(self.config['camera']['camera1']['settings']['default_bin'][-1]) # = 1
+            self.camera.BinX = int(self.config['camera']['camera1']['settings']['default_bin'][0])
+            self.camera.BinY = int(self.config['camera']['camera1']['settings']['default_bin'][-1])
             #NB we need to be sure AWS picks up this default.config.site_config['camera']['camera1']['settings']['default_bin'])
         except:
             print('Camera only accepts Bins = 1.')
@@ -442,6 +449,7 @@ class Camera:
     and or focus is different.  If  filter change is required, do it and look up
     the new filter offet.  Apply that as well.  Possibly this step also includes
     a temperature compensation cycle.
+
     Do we let focus 'float' or do we pin to a reference?  I think the latter.
     ref = actual - offset(filter): ref + offset(f) = setpoint.  At end of AF
     cycle the reference is updated logging in the filter used and the temperature.
@@ -451,11 +459,14 @@ class Camera:
     value > 0.6 or so.  Store the primary temp via PWI3 and use the Wx temp
     for ambient.  We need a way to log the truss temp until we can find which
     temp best drives the compensation.
+
     We will assume that the default filter is a wide or lum with a nominal offset
     of 0.000  All other filter offsets are with respect to the default value.
     I.e., an autofocus of the reference filter results in the new focal position
     becoming the reference.
+
     The system boots up and selects the reference filter and reference focus.
+
     '''
     
 
@@ -468,10 +479,7 @@ class Camera:
         not the slower File Path.  THe mode used for focusing or other operations where we do not want to save any
         image data.
         '''
-        #print('Expose Entered.  req:  ', required_params, 'opt:  ', optional_params)
-        #print("Checking if Maxim is still connected!")
-        #  self.t7 is last time camera was read out
-        #if self.t7 is not None and (time.time() - self.t7 > 30) and self.maxim:
+
         self.t0 = time.time()
         try:
             probe = self.camera.CoolerOn
@@ -498,19 +506,16 @@ class Camera:
         self.pane = optional_params.get('pane', None)
         bin_x = optional_params.get('bin', self.config['camera']['camera1'] \
                                                       ['settings']['default_bin'])  #NB this should pick up config default.
-
-        if bin_x in [4, '4, 4', '4,4', [4, 4]]:     # For now this is the highest level of binning supported.
-            bin_x = 4
-            self.ccd_sum = '4 4'
-        elif bin_x in [3, '3, 3', '3,3', [3, 3]]:   # replace with in and various formats or strip spaces.
-            bin_x = 3
-            self.ccd_sum = '3 3'
-        elif bin_x in [2, '2, 2', '2,2', [2, 2]]:
+        if bin_x == '4, 4':     # For now this is the highest level of binning supported.
+            bin_x = 2
+        elif bin_x == '3, 3':   # replace with in and various formats or strip spaces.
+            bin_x = 2
+        elif bin_x in [2, '2, 2', '2,2']:
             bin_x = 2
             self.ccd_sum = '2 2'
         else:
-            bin_x = 1
-            self.ccd_sum = '1 1'
+            bin_x = 2  #  1
+            self.ccd_sum = '2 2'  #  '1 1'
         bin_y = bin_x   #NB This needs fixing someday!
         self.bin = bin_x
         self.camera.BinX = bin_x
@@ -605,7 +610,6 @@ class Camera:
                 area = 150
         except:
             area = 150     #was 100 in ancient times.
-
         if bin_y == 0 or self.camera_max_x_bin != self.camera_max_y_bin:
             self.bin_x = min(bin_x, self.camera_max_x_bin)
             self.cameraBinY = self.bin_y
@@ -739,40 +743,18 @@ class Camera:
                 #Check here for filter, guider, still moving  THIS IS A CLASSIC
                 #case where a timeout is a smart idea.
                 #Wait for external motion to cease before exposing.  Note this precludes satellite tracking.
-                st = ""
-                if g_dev['enc'].is_dome:
-                    try:
-                        enc_slewing = g_dev['enc'].enclosure.Slewing
-                    except:
-                        print("enclosure SLEWING threw an exception.")
-                else:
-                     enc_slewing = False
-
+                st = "" 
                 while g_dev['foc'].focuser.IsMoving or g_dev['rot'].rotator.IsMoving or \
-                      g_dev['mnt'].mount.Slewing or enc_slewing:   #Filter is moving??
+                      g_dev['mnt'].mount.Slewing or g_dev['enc'].enclosure.Slewing:   #Filter is moving??
                     if g_dev['foc'].focuser.IsMoving: st += 'f>'
                     if g_dev['rot'].rotator.IsMoving: st += 'r>'
-                    if g_dev['mnt'].mount.Slewing:
-                        st += 'm>  ' + str(round(time.time() - g_dev['mnt'].move_time, 1))
-                    if enc_slewing: 
-                        st += 'd>' + str(round(time.time() - g_dev['mnt'].move_time, 1))                  
+                    if g_dev['mnt'].mount.Slewing: st += 'm>'
+                    if g_dev['enc'].enclosure.Slewing: st += 'd>'
                     print(st)
-                    if (time.time() - g_dev['mnt'].move_time, 1) >= 80:
-                       print("|n\n DOME OR MOUNT HAS TIMED OUT!|n|n")
-                       breakpoint()
                     st = ""
                     time.sleep(0.2)
                     if seq > 0:
                         g_dev['obs'].update_status()
-                    #Refresh the probe of the dome status
-                    if g_dev['enc'].is_dome:
-                        try:
-                            enc_slewing = g_dev['enc'].enclosure.Slewing
-                        except:
-                            print("enclosure SLEWING threw an exception.")
-                    else:
-                         enc_slewing = False
-
             except:
                 print("Motion check faulted.")
             if seq > 0:
@@ -862,7 +844,6 @@ class Camera:
                             print("Starting autosave  at:  ", self.t2)
                         else:
                             #This is the standard call to Maxim
-
                             g_dev['obs'].send_to_user("Starting Camera1!", p_level='INFO')
                             g_dev['ocn'].get_quick_status(self.pre_ocn)
                             g_dev['foc'].get_quick_status(self.pre_foc)
@@ -1000,9 +981,6 @@ class Camera:
                 #  NB Note this is QHY600 specific code.  Needs to be supplied in camera config as sliced regions.
                 pedastal = 100
                 ix, iy = self.img.shape
-                
-                
- 
 
                 # if ix == 9600:
                 #     overscan = int((np.median(self.img[32:, -33:]) + np.median(self.img[0:29, :]))/2) - 1
@@ -1034,7 +1012,6 @@ class Camera:
                         trimmed = self.img[32:, :-34].astype('int32') + pedastal - overscan
 
                     else:
-                        print("Image shift is incorrect, absolutely fatal error.")
                         breakpoint()
                         pass
         
@@ -1045,28 +1022,24 @@ class Camera:
                 elif ix == 4800:
                     #Shift error needs documenting!
                     if self.img[11, -18] == 0:
-                        self.overscan = int((np.median(self.img[12:, -17:]) + np.median(self.img[0:10, :]))/2) - 1 
-                        trimmed = self.img[12:-4, :-17].astype('int32') + pedastal - self.overscan
+                        overscan = int((np.median(self.img[12:, -17:]) + np.median(self.img[0:10, :]))/2) - 1 
+                        trimmed = self.img[12:-4, :-17].astype('int32') + pedastal - overscan
 
-                        #print("Shift 1", self.overscan, square.mean())
+                        #print("Shift 1", overscan, square.mean())
                     elif self.img[15, -18] == 0:
-                        self.overscan = int((np.median(self.img[16:, -17:]) + np.median(self.img[0:14, :]))/2) -1 
-                        trimmed = self.img[16:, :-17].astype('int32') + pedastal - self.overscan
+                        overscan = int((np.median(self.img[16:, -17:]) + np.median(self.img[0:14, :]))/2) -1 
+                        trimmed = self.img[16:, :-17].astype('int32') + pedastal - overscan
 
-                        #print("Shift 2", self.overscan, square.mean())
+                        #print("Shift 2", overscan, square.mean())
 
                     else:
                         print("Image shift is incorrect, absolutely fatal error.")
-                        
-                        
+                        breakpoint()
                         pass
 
                 else:
-                    #print("Incorrect chip size or bin specified or already-converted:  skipping.")
-                    trimmed = self.img
-                    self.overscan = 0
-                    #breakpoint()
-                    #continue
+                    print("Incorrect chip size or bin specified or already-converted:  skipping.")
+                    continue
                 
                 trimmed =trimmed.transpose()
                 #This may need a re-think:   Maybe kill neg and anything really hot if there are only a few.
@@ -1112,6 +1085,7 @@ class Camera:
                     3) form a histogram and then pick the median winner
                     4) generate data for a report.
                     5) save data and image for engineering runs.
+
                     """
                     border_x = int(ix*0.05)
                     border_y = int(iy*0.05)
@@ -1141,8 +1115,7 @@ class Camera:
                     hdu.header['EXPOSURE'] = exposure_time   #Ideally this needs to be calculated from actual times
                     hdu.header['FILTER ']  = self.current_filter  # NB this should read from the wheel!
                     hdu.header['FILTEROF'] = self.current_offset
-                    #breakpoint()
-                    #hdu.header['FILTRNUM'] = g_dev['fil'].filter.Filter  #Get a number from the hardware or via Maxim.
+                    hdu.header['FILTRNUM'] = g_dev['fil'].filter.Filter  #Get a number from the hardware or via Maxim.
                     hdu.header['IMAGETYP'] = frame_type   #This report is fixed and it should vary...NEEDS FIXING!
                     if g_dev['scr'] is not None and frame_type == 'screen flat':
                         hdu.header['SCREEN']   = int(g_dev['scr'].bright_setting)
@@ -1163,7 +1136,7 @@ class Camera:
                         hdu.header['YBINING'] = 1
                     hdu.header['PEDASTAL'] = -pedastal
                     hdu.header['ERRORVAL'] = 0
-                    hdu.header['OVERSCAN'] = self.overscan
+                    hdu.header['OVERSCAN'] = overscan
                     hdu.header['PATCH']    = bi_mean - pedastal    #  A crude value for the central exposure
                     hdu.header['IMGAREA' ] = opt['area']
                     hdu.header['CCDSUM']   = self.ccd_sum
@@ -1266,10 +1239,6 @@ class Camera:
                     hdu.header['SKY-LUX']  = avg_ocn[8]
                     if g_dev['enc'] is not None:
                         hdu.header['ROOF'] = g_dev['enc'].get_status()['shutter_status']   #"Open/Closed"
-                    if g_dev['enc'].is_dome:
-                        hdu.header['DOMEAZ'] = g_dev['enc'].get_status()['dome_azimuth']
-                     #NB Should also report Dome Azimuth, windscreen status and altitude is available.
-                    #NB should also report status of Dome lights.
                     hdu.header['DETECTOR'] = self.config['camera']['camera1']['detector']
                     hdu.header['CAMNAME']  = self.config['camera']['camera1']['name']
                     hdu.header['CAMMANUF'] = self.config['camera']['camera1']['manufacturer']
@@ -1422,13 +1391,10 @@ class Camera:
                     if not focus_image:
                         result['FWHM'] = None
                     result['half_FD'] = None
-                    result['patch'] = bi_mean - self.overscan
+                    result['patch'] = bi_mean
                     result['calc_sky'] = avg_ocn[7]
                     result['temperature'] = avg_foc[2]
-                    print('GAIN: ', result['patch'], avg_ocn[7], exposure_time, 'g: ', \
-                         g := round(result['patch']/avg_ocn[7]/exposure_time, 6))
-
-                    result['gain'] = g
+                    result['gain'] = round(bi_mean/(avg_ocn[7]*exposure_time), 6)
                     result['filter'] = self.current_filter
                     result['error'] == False
                     g_dev['obs'].send_to_user("Expose cycle conpleted.", p_level='INFO')
@@ -1476,3 +1442,5 @@ class Camera:
     def to_reduce(self, to_red):
         #print('Passed to to_reduce:  ', to_red[0], to_red[1].data.shape, to_red[1].header['FILTER'])
         g_dev['obs'].reduce_queue.put(to_red, block=False)
+
+

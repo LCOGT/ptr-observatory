@@ -28,6 +28,7 @@ import shelve
 import datetime
 from datetime import timedelta
 import sep
+import matplotlib
 import matplotlib.pyplot as plt
 from matplotlib import rcParams
 from matplotlib.patches import Ellipse
@@ -124,65 +125,32 @@ def median8(img, hotPix, pLoud=False):
         #There may be an OOB condition.
     return img
 
-# =============================================================================
-# hot = ccdproc.CCDData.read('Q:/archive/kq01/lng/md_2_30.fits', unit="adu")
-# hotstd = 5*hot.data.std()
-# hotmean = hot.data.mean()
-# print('Hot mean:  ', hotmean)
-# hotpix = np.where(hot.data >= hotstd)  #Do not pick up cold pixels
-# print(len(hotpix[0]),' pixels found  >= ', hotstd, ' 5*std.')
-# hotest = hot.data[hotpix].max()
-# hotestpix =np.where(hot.data >= hotest)
-# print(hotestpix, hotest)
-# clean = median8(hot.data, hotpix, pLoud=False)
-# =============================================================================
-    #img = file_list[img]
-
-def fit_quadratic(x, y):
-#From Meeus, works fine.
-#Abscissa arguments do not need to be ordered for this to work.
-#NB Single alpha variable names confict with debugger commands.
-    if len(x) == len(y):
-        p = 0
-        q = 0
-        r = 0
-        s = 0
-        t = 0
-        u = 0
-        v = 0
-        for i in range(len(x)):
-            p += x[i]
-            q += x[i]**2
-            r += x[i]**3
-            s += x[i]**4
-            t += y[i]
-            u += x[i]*y[i]
-            v += x[i]**2*y[i]
-        n = len(x)
-        d = n*q*s +2*p*q*r - q*q*q - p*p*s - n*r*r
-        a = (n*q*v + p*r*t + p*q*u - q*q*t - p*p*v - n*r*u)/d
-        b = (n*s*u + p*q*v + q*r*t - q*q*u - p*s*t - n*r*v)/d
-        c = (q*s*t + q*r*u + p*r*v - q*q*v - p*s*u - r*r*t)/d
-        print('Quad;  ', a, b, c)
-        try:
-            return (a, b, c, -b/(2*a))
-        except:
-            return (a, b, c)
-    else:
-        return None
-
 def get_sources(img, bright_limit=2, display=False):
     #print('Incoming image:  ', img)
-    data = ccdproc.CCDData.read(img)#, unit='adu')
+    data = ccdproc.CCDData.read(img, unit='adu', output_verify='ignore')
 #    data.data = data.data[252:2163,277:2400]
 #    #in-place fix hot pixels
 #    data.data = median8(data.data, hotpix)
 #    data.write(img[:-4] + 'hpc.fits', overwrite=True)
     xc = data.meta['naxis1']//2
     yc = data.meta['naxis2']//2
-#    print (xc,yc)
+    img_new = np.zeros((data.meta['naxis1'],data.meta['naxis2']))
+    breakpoint()
+    plt.imshow(img_new)
+    #print (data.meta)
+
+    
+    # try:
+    #     data.meta.pop("cdeltm1")
+    #     data.meta.pop('cdeltm2')
+    # except:
+    #     pass
+    # data.meta.pop("cdelt1")
+    # data.meta.pop('cdelt2')
+    # data.meta['bunit'] = 'adu'
+    # data.write(img[:-1], overwrite=True)
     focus =data.meta['FOCUSPOS']
-    temp = data.meta['FOCUSTEM']
+    temp = data.meta['FOCUSTMP']
 
 
 
@@ -192,10 +160,9 @@ def get_sources(img, bright_limit=2, display=False):
     #s *= 2
 
 
-    # plt.imshow(data3, interpolation='nearest', cmap='gray', vmin=m-s, vmax=m+s,\
-    #            origin='lower')
+    # plt.imshow(data3, interpolation='nearest', cmap='gray', vmin=m-3*s, vmax=m+#*s,\
+    #             origin='lower')
     # plt.colorbar()
-
     bkg = sep.Background(data3)
     mb = np.median(bkg)
     #print('Center pixels:  ', xc, yc, 'Data mean:  ', m, 'Backgrnd mean/std:  ', r2(mb), r2(s))
@@ -209,9 +176,10 @@ def get_sources(img, bright_limit=2, display=False):
 
     kern = np.ones((5,5))
 
-    img_sub = data3# - bkg
+    img_sub = data3 - bkg
     m, s = np.median(img_sub), np.std(img_sub)
     #print('Data mean:  ', r2(m), 'Focus steps:  ', focus)
+
     display = False
     if display:
         #plt.imshow(img_sub, interpolation='nearest', cmap='gray', vmin=m-s, vmax=m+s, origin='lower')
@@ -225,31 +193,31 @@ def get_sources(img, bright_limit=2, display=False):
         plt.imshow(img_sub, interpolation='nearest', cmap='gray', vmin=m-s, vmax=m+s, origin='lower')
         plt.tight_layout()
 
-    objects = sep.extract(img_sub, 4.5, err=bkg.globalrms, minarea=30)#, filter_kernel=kern)
+    objects = sep.extract(img_sub, 1.75, err=bkg.globalrms, minarea=9)#, filter_kernel=kern)
     objects.sort(order = 'cflux')
-    #print('No. of detections:  ', len(objects))
+    print('No. of detections:  ', len(objects))
 
 
-    counter = 1
-    elapsed = 0
-    result = []
-    spots = []
-    for frame in objects:
-        a0 = frame['a']
-        b0 =  frame['b']
-        #print (a0, b0, (a0 - b0)/(a0 + b0)/2)
-#        if (a0 - b0)/(a0 + b0)/2 > 0.1:
-#            continue
-        r0 = 2*round(sqrt(a0**2 +b0**2), 2)
-        #print(r1(frame['x']), r1(frame['y']), r1(frame['cflux']), r2(r0))
-        # if r1(frame['x']) == 1111.0:
-        #     #print(frame)
-        #     pass
-        result.append((r1(frame['x']), r1(frame['y']), r1(frame['cflux']), r2(r0), focus, temp))
-        spots.append(r2(r0))
-        spot = np.array(spots)
-    spot = np.median(spot[-10:])
-    print(spot, focus)
+#     counter = 1
+#     elapsed = 0
+#     result = []
+#     spots = []
+#     for frame in objects:
+#         a0 = frame['a']
+#         b0 =  frame['b']
+#         #print (a0, b0, (a0 - b0)/(a0 + b0)/2)
+# #        if (a0 - b0)/(a0 + b0)/2 > 0.1:
+# #            continue
+#         r0 = 2*round(sqrt(a0**2 +b0**2), 2)
+#         #print(r1(frame['x']), r1(frame['y']), r1(frame['cflux']), r2(r0))
+#         # if r1(frame['x']) == 1111.0:
+#         #     #print(frame)
+#         #     pass
+#         result.append((r1(frame['x']), r1(frame['y']), r1(frame['cflux']), r2(r0), focus, temp))
+#         spots.append(r2(r0))
+#         spot = np.array(spots)
+#     spot = np.median(spot[-10:])
+#     print(spot, focus)
 
 
 
@@ -273,14 +241,17 @@ def get_sources(img, bright_limit=2, display=False):
 
 if __name__ == '__main__':
     print('sep is starting')
+
     path = 'D:/archive/archive/sq01/20200524/to_AWS/'
+
     #path = 'C:\\Users\\obs\\Documents\\PlaneWave Instruments\\Images\\Focus\\2019-02-20\\New folder\\'
-    fits_file_list = glob.glob(path + '*EX01*.f*t*')
+    fits_file_list = glob.glob(path + '*.f*t*')
 
     print('Num files found:  ', len(fits_file_list))
-
-    for image in fits_file_list[2:]:
+    matplotlib.use('Qt5Agg')
+    for image in fits_file_list:
         focus = get_sources(image, bright_limit=3, display=False)
+
 
 
 

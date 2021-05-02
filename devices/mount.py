@@ -211,7 +211,7 @@ class Mount:
         #self.reset_mount_ref()
         self.site_in_automatic = config['site_in_automatic_default']
         self.automatic_detail = config['automatic_detail_default']
- 
+        self.move_time = 0
         try:
             ra1, dec1 = self.get_mount_ref()
             print("Mount reference:  ", ra1 ,dec1)
@@ -318,12 +318,16 @@ class Mount:
             jnow_ra = ptr_utility.reduce_ra_r(app_ra - ra_cal_off*HTOR)    # NB the mnt_refs are subtracted here.  Check units are correct.
             jnow_dec = ptr_utility.reduce_dec_r( app_dec - dec_cal_off*DTOR)
 
-            if not self.mount.AtPark:   #Applying rates while parked faults.
-                if self.mount.CanSetRightAscensionRate and self.prior_roll_rate != 0 :
-                    self.mount.RightAscensionRate =self.prior_roll_rate
-                if self.mount.CanSetDeclinationRate and self.prior_pitch_rate != 0:
-                    self.mount.DeclinationRate = self.prior_pitch_rate
-                    #print("Rate found:  ", self.prior_roll_rate, self.prior_pitch_rate, self.ha_corr, self.dec_corr)
+            try:
+                if not self.mount.AtPark:   #Applying rates while parked faults.
+                    if self.mount.CanSetRightAscensionRate and self.prior_roll_rate != 0 :
+                        self.mount.RightAscensionRate =self.prior_roll_rate
+                    if self.mount.CanSetDeclinationRate and self.prior_pitch_rate != 0:
+                        self.mount.DeclinationRate = self.prior_pitch_rate
+                        #print("Rate found:  ", self.prior_roll_rate, self.prior_pitch_rate, self.ha_corr, self.dec_corr)
+            except:
+                print("mount status rate adjust exception.")
+                
             if self.mount.sideOfPier == pier_east \
                 and self.flip_correction_needed:
                 jnow_ra -=  self.east_ra_correction   #Brought in from local calib.py file correction is subtracted.  #This is meant to handle a flip klunk.
@@ -386,7 +390,7 @@ class Mount:
             }
         elif self.tel == True:
             self.current_sidereal = self.mount.SiderealTime
-            icrs_ra, icrs_dec = self.get_mount_coordinates()
+            icrs_ra, icrs_dec = self.get_mount_coordinates()  #20210430  Looks like thie faulted during a slew.
             if self.prior_roll_rate == 0:
                 pass
             status = {
@@ -413,7 +417,8 @@ class Mount:
                 'is_slewing': str(self.mount.Slewing),
                 'message': str(self.mount_message[:54]),
                 'site_in_automatic': self.site_in_automatic,
-                'automatic_detail': str(self.automatic_detail) 
+                'automatic_detail': str(self.automatic_detail),
+                'move_time': self.move_time
             }
         else:
             print('Proper device_name is missing, or tel == None')
@@ -542,7 +547,8 @@ class Mount:
             'instrument': str(self.inst),
             'is_parked': park_avg,
             'is_tracking': track_avg,
-            'is_slewing': slew_avg
+            'is_slewing': slew_avg,
+            'move_time': self.move_time
 
         }
         return status  #json.dumps(status)
@@ -699,6 +705,7 @@ class Mount:
         delta_ra, delta_dec =self.get_mount_ref()
         #breakpoint()
         ra, dec = ra_dec_fix_h(ra + delta_ra, dec + delta_dec)   #Plus compensates for measured offset
+        self.move_time = time.time()
         self.go_coord(ra, dec, tracking_rate_ra=tracking_rate_ra, tracking_rate_dec = tracking_rate_dec)
         self.object = opt.get("object", "")
         if self.object == "":
@@ -750,7 +757,7 @@ class Mount:
         self.ha_corr = ptr_utility.reduce_ha_r(ha_mech - ha_obs_r)*RTOS     #These are mechanical values, not j.anything
         self.dec_corr = ptr_utility.reduce_dec_r(dec_mech - dec_obs_r)*RTOS
         self.mount.Tracking = True
-
+        self.move_time = time.time()
         self.mount.SlewToCoordinatesAsync(ra_mech*RTOH, dec_mech*RTOD)  #Is this needed?
         ###  figure out velocity
         time.sleep(3)
@@ -798,6 +805,7 @@ class Mount:
         az, alt = self.astro_events.flat_spot_now()
         self.unpark_command()
         self.mount.Tracking = False
+        self.move_time = time.time()
         self.mount.SlewToAltAzAsync(az, alt)
 
 
@@ -816,9 +824,11 @@ class Mount:
             #home_alt = self.settings["home_altitude"]
             #home_az = self.settings["home_azimuth"]
             #self.mount.SlewToAltAzAsync(home_alt, home_az)
+            self.move_time = time.time()
             self.mount.FindHome()
         else:
             print("Mount is not capable of finding home. Slewing to zenith.")
+            self.move_time = time.time()
             self.mount.SlewToAltAzAsync(88., 0.)
 
     def flat_panel_command(self, req, opt):
@@ -836,6 +846,7 @@ class Mount:
         print(self.mount.CanPark)
         if self.mount.CanPark:
             print("mount cmd: parking mount")
+            self.move_time = time.time()
             self.mount.Park()
 
     def unpark_command(self, req=None, opt=None):

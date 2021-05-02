@@ -39,7 +39,7 @@ class Enclosure:
         if self.site in ['mrc', 'mrc2']:
             self.redis_server = redis.StrictRedis(host='10.15.0.109', port=6379, db=0, decode_responses=True)
         self.is_dome = self.config['enclosure']['enclosure1']['is_dome']
-        self.state = 'Closed.  Initialized class property value.'
+        self.state = 'Closed. (Initially on code startup.)'
         self.mode = 'Manual'   #  Auto|User Control|User Close|Disable
         self.enclosure_message = '-'
         self.external_close = False   #If made true by operator,  system will not reopen for the night
@@ -312,7 +312,7 @@ class Enclosure:
                 #  A countdown to re-open
                 if self.status_string.lower() in ['closed', 'closing']:
                     self.guarded_open()   #<<<<NB NB NB Only enable when code is fully proven to work.
-                    if self.is_Dome:
+                    if self.is_dome:
                         self.enclosure.Slaved = True
                     else:
                         pass

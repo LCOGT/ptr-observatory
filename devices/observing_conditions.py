@@ -121,8 +121,9 @@ class ObservingConditions:
 
         if self.site == 'saf':
             illum, mag = self.astro_events.illuminationNow()
-            if illum > 500:
+            if illum > 100:
                 illum = int(illum)
+            self.calc_HSI_lux = illum
             # Here we add in-line  a preliminary OpenOK calculation:
             #  NB all parameters should come from config.
             dew_point_gap = not (self.boltwood.Temperature  - self.boltwood.DewPoint) < 2
@@ -412,14 +413,14 @@ class ObservingConditions:
 
             
         #self.wx_is_ok = False     
-        
+        wx_delay_time = 900
         if (self.wx_is_ok and self.wx_system_enable) and not self.wx_hold:     #Normal condition, possibly nothing to do.
             self.wx_hold_last_updated = time.time()
 
         elif not self.wx_is_ok and not self.wx_hold:     #Wx bad and no hold yet.
             #Bingo we need to start a cycle
             self.wx_hold = True
-            self.wx_hold_until_time = (t := time.time() + 900)    #15 minutes   Make configurable
+            self.wx_hold_until_time = (t := time.time() + wx_delay_time)    #15 minutes   Make configurable
             self.wx_hold_tally += 1     #  This counts all day and night long.
             self.wx_hold_last_updated = t
             if obs_win_begin <= ephemNow <= sunrise:     #Gate the real holds to be in the Observing window.
@@ -433,25 +434,24 @@ class ObservingConditions:
 
         elif not self.wx_is_ok and self.wx_hold:     #WX is bad and we are on hold.
             self.wx_hold_last_updated = time.time()
-            #Stay here as long as we need to. 
+            #Stay here as long as we need to.
+            self.wx_hold_until_time = (t := time.time() + wx_delay_time)
             if self.wx_system_enable:
-                print("In a wx_hold.")
+                #print("In a wx_hold.")
+                pass
                 #self.wx_is_ok = True
-        else:
-            pass
-            print("Should never get here in Wx logic.")
 
-        if self.wx_is_ok  and self.wx_hold:     #Wx now good and still on hold.
+        elif self.wx_is_ok  and self.wx_hold:     #Wx now good and still on hold.
             if self.wx_hold_count < 3:
                 if time.time() >= self.wx_hold_until_time and not self.wx_clamp:
                     #Time to release the hold.
                     self.wx_hold = False
-                    self.wx_hold_until_time = time.time()
+                    self.wx_hold_until_time = time.time() + wx_delay_time  #Keep pushing the recovery out
                     self.wx_hold_last_updated = time.time()
                     print("Wx hold released, flap#, tally#:", self.wx_hold_count, self.wx_hold_tally)
-                    #We choose to let the enclosure manager discover it can re-open.
+                    #We choose to let the enclosure manager diecide it needs to re-open.
             else:
-                #Never release the hold without some special high level intervention.
+                #Never release the THIRD  hold without some special high level intervention.
                 if not self.clamp_latch:
                     print('Sorry, Tobor is clamping enclosure shut for the night.')
                 self.clamp_latch = True
