@@ -270,7 +270,6 @@ class ObservingConditions:
         #  Note we are now in mrc specific code.
 
         elif self.site == 'mrc' or self.site == 'mrc2':
-            breakpoint()
             try:
                 #breakpoint()
                 # pass
