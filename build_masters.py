@@ -1115,7 +1115,7 @@ def prepare_tpoint(camera_name, archive_path, selector_string, lng_path, out_pat
     file_list.sort
     print(file_list)
     print('# of files:  ', len(file_list))
-    out_f = open(archive_path + "tptinput.dat", 'w')
+    out_f = open(out_path + "tptinput.dat", 'w')
     out_f.write('0.3m Ceravolo F9, AP1600, Apache Ridge Observatory\n')
     out_f.write(':NODA\n')
     out_f.write(':EQUAT\n')
@@ -1502,10 +1502,8 @@ if __name__ == '__main__':
     camera_name = 'sq01'  #  config.site_config['camera']['camera1']['name']
     #archive_path = "D:/000ptr_saf/archive/sq01/2020-06-13/"
     #archive_path = "D:/2020-06-19  Ha and O3 screen flats/"
-
-    archive_path = "C:/000ptr_saf/archive/sq01/20210502/reduced/"
-    #
-    out_path = 'C:/ProgramData/Astro-Physics/APCC/Models/'
+    archive_path = "C:/000ptr_saf/archive/sq01/20210504/reduced/"
+    out_path = 'C:/Users/obs/Documents/GitHub/ptr-observatory/processing/TPOINT/'
     lng_path = "C:/000ptr_saf/archive/sq01/lng/"
     #APPM_prepare_TPOINT()
     #de_offset_and_trim(camera_name, archive_path, '*-00*.*', out_path, full=True, norm=False)
