@@ -1339,6 +1339,7 @@ IF sweep
             grid = 7
         if req['gridType'] == 'fine':    # ~100
             grid = 2
+
         grid_stars = tycho.az_sort_targets(sid, grid)  #4 produces about 50 targets.
         length = len(grid_stars)
         print(length, "Targets chosen for grid.")
@@ -1369,7 +1370,7 @@ IF sweep
                 g_dev['obs'].update_status()
                 time.sleep(0.5)
 
-            time.sleep(3)
+            time.sleep(1)  #Give a little extra time for mount to settle.
             g_dev['obs'].update_status()
             req = {'time': 10,  'alias': 'sq01', 'image_type': 'quick'}
             opt = {'area': 150, 'count': 1, 'bin': '2,2', 'filter': g_dev['fil'].filter_data[0][0], 'hint': 'Tycho grid.'}
@@ -1379,7 +1380,7 @@ IF sweep
             count += 1
             print('\n\nResult:  ', result,   'To go count:  ', length - count,  '\n\n')
             
-        g_dev['mnt'].stop_command()
+        g_dev['mnt'].park()
         print("Equatorial sweep completed. Happy reducing.")
         self.sky_guard = False
         return       

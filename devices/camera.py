@@ -774,7 +774,8 @@ class Camera:
                          enc_slewing = False
 
             except:
-                print("Motion check faulted.")
+                pass
+               # print("Motion check faulted.")
             if seq > 0:
                 g_dev['obs'].update_status()   # NB Make sure this routine has a fault guard.
             self.retry_camera = 3

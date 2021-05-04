@@ -131,7 +131,7 @@ def az_sort_targets(pSidTime, grid=4):
         az, alt = transform_haDec_to_azAlt(cat_ha, star[1][0])
         #if cat_sign == sign:
 
-        if  alt < 25 or alt > 84:
+        if  alt < 17.5 or alt > 80:
             continue
         az_sorted_targets.append((az, star[1]))
     az_sorted_targets.sort()

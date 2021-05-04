@@ -3,6 +3,7 @@ import platform
 from subprocess import Popen, PIPE
 import tempfile
 import glob
+from astropy.io import fits
 
 # Point this to the location of the "ps3cli.exe" executable
 PS3CLI_EXE = 'C:/Users/obs/Documents/GitHub/ptr-observatory/planewave/ps3cli/ps3cli.exe'
@@ -88,3 +89,33 @@ def parse_platesolve_output(output_file):
         results[keyword] = float(value)
     
     return results
+
+if __name__ == '__main__':
+
+    file_list = glob.glob('C:/000ptr_saf/archive/sq01/20210502/reduced/*.f*t*')
+    file_list.sort()
+
+    for item in file_list:
+        try:
+            solve= platesolve(item, 0.5478)
+            img = fits.open(item)
+            hdr = img[0].header
+            breakpoint()
+            print(hdr['MNT-RA  '], hdr['MNT-DEC '], solve['ra_j2000_hours'], solve['dec_j2000_degrees'], hdr['MNT-SIDT'])
+        except:
+           print("Item did not solve:  ", item)
+
+    
+# Traceback (most recent call last):
+
+#   File "<ipython-input-9-8939b03f1935>", line 2, in <module>
+#     solve= platesolve(item, 0.5478)
+
+# NameError: name 'platesolve' is not defined
+
+
+# runfile('C:/Users/obs/Documents/GitHub/ptr-observatory/planewave/platesolve.py', wdir='C:/Users/obs/Documents/GitHub/ptr-observatory/planewave')
+
+# for item in file_list:
+#     solve= platesolve(item, 0.5478)
+#     print(solve['ra_j2000_hours'], solve['dec_j2000_degrees'])
