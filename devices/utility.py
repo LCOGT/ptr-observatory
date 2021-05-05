@@ -1826,9 +1826,7 @@ def transformObsToMount(pRoll, pPitch, pPierSide, loud=False):
 
     '''
     global raCorr, decCorr, model
-
-
-
+    breakpoint()
     if not ModelOn:
         return (pRoll, pPitch)
     else:

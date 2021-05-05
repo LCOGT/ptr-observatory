@@ -77,9 +77,9 @@ try:
     ModelOn = site_config['mount']['mount1']['model_on'] 
     RatesOn =site_config['mount']['mount1']['rates_on'] 
 except:
-    RefrOn = False
-    ModelOn = False
-    RatesOn = False
+    RefrOn = True
+    ModelOn = True
+    RatesOn = True
 
 HORIZON = 9.999   #Lower than actual mrc values.
 
@@ -104,7 +104,7 @@ model['CH'] = 0
 model['NP'] = 0
 model['TF'] = 0
 model['TX'] = 0
-model['HCES'] = 0
+model['HCES'] =0
 model['HCEC'] = 0
 model['DCES'] = 0
 model['DCEC'] = 0

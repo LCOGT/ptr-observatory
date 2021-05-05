@@ -1134,7 +1134,7 @@ def prepare_tpoint(camera_name, archive_path, selector_string, lng_path, out_pat
             meas_ra = solve['ra_j2000_hours']
             meas_dec = solve['dec_j2000_degrees']
             sid = hdr['MNT-SIDT']
-            breakpoint()
+
 
         except:
            print("Item did not solve:  ", item)

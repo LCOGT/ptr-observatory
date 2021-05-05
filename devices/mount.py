@@ -100,6 +100,7 @@ RefrOn = True
 ModelOn = True
 RatesOn = True
 tzOffset = -7
+loop_count = 0
 
 mountOne = "PW_L600"
 mountOneAscom = None
@@ -279,6 +280,7 @@ class Mount:
             return
         
     def get_mount_coordinates(self):
+        global loop_count
         '''
         Build up an ICRS coordinate from mount reported coordinates,
         removing offset and pierside calibrations.  From either flip
@@ -300,6 +302,10 @@ class Mount:
             pass
         pier_east = 0    # == 0  self.flip_correction_needed
         if self. mount.EquatorialSystem == 1:
+            loop_count += 1
+            if loop_count == 10:
+                #breakpoint()
+                pass
             self.get_current_times()
             if self.mount.sideOfPier == (1,):
                 pierside = 1    #eEst side looking East   #Make this assinmnet a code-wide convention.
@@ -792,7 +798,7 @@ class Mount:
             self.mount.RightAscensionRate = self.prior_roll_rate 
 
         if self.mount.CanSetDeclinationRate:
-            self.mount.DeclinationRate =self.prior_pitch_rate
+            self.mount.DeclinationRate = self.prior_pitch_rate
 
         print("Rates set:  ", self.prior_roll_rate, self.prior_pitch_rate, refr_adv)
         #I think to reliable establish rates, set them before the slew.
