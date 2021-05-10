@@ -60,6 +60,7 @@ from devices.telescope import Telescope
 from devices.observing_conditions import ObservingConditions
 from devices.rotator import Rotator
 #from devices.switch import Switch    #Nothing implemented yet 20200511
+from devices.selector import Selector
 from devices.screen import Screen
 from devices.sequencer import Sequencer
 from processing.calibration import calibrate
@@ -170,6 +171,7 @@ class Observatory:
             'screen',
             'rotator',
             'focuser',
+            'selector',
             'filter_wheel',
             'camera',
             'sequencer'          
@@ -242,6 +244,8 @@ class Observatory:
                     device = Focuser(driver, name, self.config)
                 # elif dev_type == "screen":
                 #     device = Screen(driver, name)
+                elif dev_type == "selector":
+                    device = Selector(driver, name, self.config)
                 elif dev_type == "camera":
                     device = Camera(driver, name, self.config)
                 elif dev_type == "sequencer":
