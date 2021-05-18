@@ -10,13 +10,15 @@ class Selector:
         self.name = name
         g_dev['sel']= self
         self.config = config['selector']
-        print("SEL:  ", self.config)
+        #print("SEL:  ", self.config)
         win32com.client.pythoncom.CoInitialize()
         self.selector = win32com.client.Dispatch(driver)
         self.selector.Connected = True
         default = int(self.config['selector1']['default'] + 1)
         self.selector.SetSwitchValue(0,default)
-        print("Inst Selector position:  ", int(self.selector.GetSwitchValue(0)))
+        #print("Instrument Selector position:  ", int(self.selector.GetSwitchValue(0)))
+        
+    
 
     def get_status(self):
         try:
@@ -50,8 +52,16 @@ class Selector:
         opt = command['optional_params']
         action = command['action']
 
-        if action == "set_position":
-            self.set_position_command(req, opt)
+        if action == "new_selection":
+            port = req['port']
+            if 0 <= port <= 3:
+                self.selector.SetSwitchValue(0, port+1)
+                print("Port ", port, '; Instrument:  ', port + 1,  'was selected.')
+                print("Active camera was changed to: ", self.config['selector1']['cameras'][port - 1] )
+                print("Active guider was changed to: ", self.config['selector1']['guiders'][port - 1] )
+            else:
+                print("Incorrect port specified for instrument selection, at port:  ", int(self.selector.GetSwitchValue(0)) )
+            #self.set_position_command(req, opt)
         elif action == "set_name":
             self.set_name_command(req, opt)
         elif action == "home":

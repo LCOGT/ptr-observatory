@@ -175,7 +175,7 @@ class Observatory:
             'filter_wheel',
             'camera',
             'sequencer'          
-            ] #  'telescope',
+            ] 
         # Instantiate the helper class for astronomical events
         #Soon the primary event / time values come from AWS>
         self.astro_events = ptr_events.Events(self.config)
@@ -223,6 +223,8 @@ class Observatory:
         for dev_type in self.device_types:
             self.all_devices[dev_type] = {}
             # Get the names of all the devices from each dev_type.
+            # if dev_type == 'camera':
+            #     breakpoint()
             devices_of_type = config.get(dev_type, {})
             device_names = devices_of_type.keys()
             # Instantiate each device object from based on its type
@@ -372,11 +374,11 @@ class Observatory:
 
         # This stopping mechanism allows for threads to close cleanly.
         loud = False        
-        if g_dev['cam_retry_doit']:
-            #breakpoint()   #THis should be obsolete.
-            del g_dev['cam']
-            device = Camera(g_dev['cam_retry_driver'], g_dev['cam_retry_name'], g_dev['cam_retry_config'])
-            print("Deleted and re-created:  ,", device)
+        # if g_dev['cam_retry_doit']:
+        #     #breakpoint()   #THis should be obsolete.
+        #     del g_dev['cam']
+        #     device = Camera(g_dev['cam_retry_driver'], g_dev['cam_retry_name'], g_dev['cam_retry_config'])
+        #     print("Deleted and re-created:  ,", device)
         # Wait a bit between status updates
         while time.time() < self.time_last_status + self.status_interval:
             # time.sleep(self.st)atus_interval  #This was prior code

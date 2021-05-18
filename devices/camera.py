@@ -155,13 +155,21 @@ class Camera:
         Try to be more consistent about use of filter names rather than
         numbers.
         """
-
+        '''
+        
+        Outline: if there is a selector then iterate over it for cameras
+        and ag's to create.  Name instances cam or ag_<tel>_<sel-port>'.
+        Once this is done g_dev['cam'] refers to the selected instance.
+    
+        '''
         self.name = name
-        g_dev['cam_retry_driver'] = driver
-        g_dev['cam_retry_name'] = name
-        g_dev['cam_retry_config'] = config
-        g_dev['cam_retry_doit'] = False
-        g_dev['cam'] = self
+        g_dev[name + '_cam_retry_driver'] = driver
+        g_dev[name + '_cam_retry_name'] = name
+        g_dev[name + '_cam_retry_config'] = config
+        g_dev[name + '_cam_retry_doit'] = False
+        g_dev[name] = self
+        if name == 'camera_1_1':
+            g_dev['cam'] = self
         self.config = config        
         win32com.client.pythoncom.CoInitialize()
         #driver = 'AllSkyPlateSolver.PlateSolver'
@@ -204,16 +212,17 @@ class Camera:
             #print("Maxim Telescope Connected: ", self.app.TelescopeConnected)
             print('Control is Maxim camera interface, Telescope Not Connected.')
         #print('Maxim is connected:  ', self._connect(True))
-        print('Cooler Setpoint:   ', self._setpoint(float(self.config['camera']['camera1']['settings']['temp_setpoint'])))
+        print('Cooler Setpoint:   ', self._setpoint(float(self.config['camera'][self.name]['settings']['temp_setpoint'])))
         print('Cooler started @:  ', self._temperature())
-        self.camera.CoolerOn = self.config['camera']['camera1']['settings']['cooler_on']
-        self.use_file_mode = self.config['camera']['camera1']['use_file_mode']
+        if self.config['camera'][self.name]['settings']['cooler_on']:
+            self.camera.CoolerOn = self.config['camera'][self.name]['settings']['cooler_on']
+        self.use_file_mode = self.config['camera'][name]['use_file_mode']
         self.current_filter = 0    #W in Apache Ridge case. #This should come from config, filter section
         self.exposure_busy = False
         self.cmd_in = None
         self.t7 = None
         self.camera_message = '-'
-        self.alias = self.config['camera']['camera1']['name']
+        self.alias = self.config['camera'][name]['name']
         self.site_path = self.config['site_path']
         self.archive_path = self.site_path +'archive/'
         self.camera_path = self.archive_path  + self.alias+ "/"
@@ -221,30 +230,30 @@ class Camera:
         self.autosave_path = self.camera_path +'autosave/'
         self.lng_path = self.camera_path + "lng/"
         self.seq_path = self.camera_path + "seq/"
-        self.file_mode_path =  self.config['camera']['camera1']['file_mode_path']
+        self.file_mode_path =  self.config['camera'][name]['file_mode_path']
         try:
             for file_path in glob.glob(self.file_mode_path + '*.f*t*'):
                 os.remove(file_path)
         except:
             print ("*.fits files on D: not found, this is normally OK.")
-        if self.config['camera']['camera1']['settings']['is_cmos']  == 'True':
+        if self.config['camera'][self.name]['settings']['is_cmos']  == 'True':
             self.is_cmos = True
         else:
             self.is_cmos = False
-        self.camera_model = self.config['camera']['camera1']['desc']
+        self.camera_model = self.config['camera'][name]['desc']
         #NB We are reading from the actual camera or setting as the case may be.  For initial setup,
         #   we pull from config for some of the various settings.
         #NB NB There is a differenc between normal cameras and the QHY when it is set to Bin2.
         try:
-            self.camera.BinX = int(self.config['camera']['camera1']['settings']['default_bin'][0]) # = 1
-            self.camera.BinY = int(self.config['camera']['camera1']['settings']['default_bin'][-1]) # = 1
-            #NB we need to be sure AWS picks up this default.config.site_config['camera']['camera1']['settings']['default_bin'])
+            self.camera.BinX = int(self.config['camera'][self.name]['settings']['default_bin'][0]) # = 1
+            self.camera.BinY = int(self.config['camera'][self.name]['settings']['default_bin'][-1]) # = 1
+            #NB we need to be sure AWS picks up this default.config.site_config['camera'][self.name]['settings']['default_bin'])
         except:
             print('Camera only accepts Bins = 1.')
             self.camera.BinX = 1
             self.camera.BinY = 1
-        self.overscan_x =  int(self.config['camera']['camera1']['settings']['overscan_x'])
-        self.overscan_y =  int(self.config['camera']['camera1']['settings']['overscan_y'])
+        self.overscan_x =  int(self.config['camera'][self.name]['settings']['overscan_x'])
+        self.overscan_y =  int(self.config['camera'][self.name]['settings']['overscan_y'])
         self.camera_x_size = self.camera.CameraXSize  #unbinned values. QHY returns 2
         self.camera_y_size = self.camera.CameraYSize  #unbinned
         self.camera_max_x_bin = self.camera.MaxBinX
@@ -274,7 +283,7 @@ class Camera:
         self.hint = None
         self.focus_cache = None
         self.darkslide = False
-        if self.config['camera']['camera1']['settings']['has_darkslide']:
+        if self.config['camera'][self.name]['settings']['has_darkslide']:
             self.darkslide = True
             self.darkslide_instance = Darkslide()     #  NB eventually default after reboot should be closed.
             self.darkslide_instance.closeDarkslide()   #  Consider turing off IR Obsy light at same time..
@@ -332,9 +341,13 @@ class Camera:
         return self.camera.CCDTemperature
 
     def _ascom_setpoint(self, p_temp):
-        self.camera.SetCCDTemperature = float(p_temp)
-        return self.camera.SetCCDTemperature
-
+        if self.camera.CanSetCCDTemperature:
+            self.camera.SetCCDTemperature = float(p_temp)
+            return self.camera.SetCCDTemperature
+        else:
+            print ("Camera cannot set cooling temperature.")
+            return p_temp
+            
     def _ascom_expose(self, exposure_time, imtypeb):
             self.camera.StartExposure(exposure_time, imtypeb)
 
@@ -382,7 +395,8 @@ class Camera:
     def get_status(self):
         #status = {"type":"camera"}
         status = {}
-        if self.config['camera']['camera1']['settings']['has_darkslide']:
+        status['active_camera'] = self.name
+        if self.config['camera'][self.name]['settings']['has_darkslide']:
             ds = self.darkslide_instance.slideStatus
             status['darkslide'] = str(ds)
         else:
@@ -395,7 +409,7 @@ class Camera:
             cam_stat = 'Not implemented yet' #
             #print('AutoSave:  ', self.camera.SequenceRunning)
         if self.ascom:
-            cam_stat = 'Not implemented yet' #self.camera.CameraState
+            cam_stat = 'ASCOM camera not implemented yet' #self.camera.CameraState
         status['status'] = cam_stat  #The state could be expanded to be more meaningful.
         return status
 #        if self.maxim:
@@ -473,6 +487,7 @@ class Camera:
         #  self.t7 is last time camera was read out
         #if self.t7 is not None and (time.time() - self.t7 > 30) and self.maxim:
         self.t0 = time.time()
+
         try:
             probe = self.camera.CoolerOn
             if not probe:
@@ -496,7 +511,7 @@ class Camera:
         self.hint = optional_params.get('hint', '')
         self.script = required_params.get('script', 'None')
         self.pane = optional_params.get('pane', None)
-        bin_x = optional_params.get('bin', self.config['camera']['camera1'] \
+        bin_x = optional_params.get('bin', self.config['camera'][self.name] \
                                                       ['settings']['default_bin'])  #NB this should pick up config default.
 
         if bin_x in [4, '4, 4', '4,4', [4, 4]]:     # For now this is the highest level of binning supported.
@@ -515,9 +530,9 @@ class Camera:
         self.bin = bin_x
         self.camera.BinX = bin_x
         self.camera.BinY = bin_y
-        #gain = float(optional_params.get('gain', self.config['camera']['camera1'] \
+        #gain = float(optional_params.get('gain', self.config['camera'][name] \
         #                                              ['settings']['reference_gain'][bin_x - 1]))
-        readout_time = float(self.config['camera']['camera1']['settings']['cycle_time'][bin_x - 1])
+        readout_time = float(self.config['camera'][self.name]['settings']['cycle_time'][bin_x - 1])
         exposure_time = float(required_params.get('time', 0.0001))   #  0.0 may be the best default.  Use QHY min spec?  Config item?
         exposure_time = min(exposure_time, 1440.)
         self.estimated_readtime = (exposure_time + readout_time)   #  3 is the outer retry loop maximum.
@@ -864,7 +879,7 @@ class Camera:
                         else:
                             #This is the standard call to Maxim
 
-                            g_dev['obs'].send_to_user("Starting Camera1!", p_level='INFO')
+                            g_dev['obs'].send_to_user("Starting name!", p_level='INFO')
                             g_dev['ocn'].get_quick_status(self.pre_ocn)
                             g_dev['foc'].get_quick_status(self.pre_foc)
                             g_dev['rot'].get_quick_status(self.pre_rot)
@@ -1083,7 +1098,7 @@ class Camera:
                 test_saturated = np.array(self.img[ix//3:ix*2//3, iy//3:iy*2//3])  # 1/9th the chip area
                 bi_mean = round((test_saturated.mean() + np.median(test_saturated))/2, 0)
                 if frame_type[-4:] == 'flat':
-                    if bi_mean >= self.config['camera']['camera1']['settings']['saturate']:
+                    if bi_mean >= self.config['camera'][self.name]['settings']['saturate']:
                         print("Flat rejected, too bright:  ", bi_mean)
                         g_dev['obs'].send_to_user("Flat rejected, too bright.", p_level='INFO')
                         result['error'] = True
@@ -1124,7 +1139,7 @@ class Camera:
                             a0 = sourcef['a']
                             b0 = sourcef['b']
                             r0.append(round(math.sqrt(a0*a0 + b0*b0), 2))
-                    scale = self.config['camera']['camera1']['settings']['pix_scale']
+                    scale = self.config['camera'][self.name]['settings']['pix_scale']
                     result['FWHM'] = round(np.median(r0)*2*scale, 3)
                     result['mean_focus'] =  avg_foc[1]
 
@@ -1271,9 +1286,9 @@ class Camera:
                         hdu.header['DOMEAZ'] = g_dev['enc'].get_status()['dome_azimuth']
                      #NB Should also report Dome Azimuth, windscreen status and altitude is available.
                     #NB should also report status of Dome lights.
-                    hdu.header['DETECTOR'] = self.config['camera']['camera1']['detector']
-                    hdu.header['CAMNAME']  = self.config['camera']['camera1']['name']
-                    hdu.header['CAMMANUF'] = self.config['camera']['camera1']['manufacturer']
+                    hdu.header['DETECTOR'] = self.config['camera'][self.name]['detector']
+                    hdu.header['CAMNAME']  = self.config['camera'][self.name]['name']
+                    hdu.header['CAMMANUF'] = self.config['camera'][self.name]['manufacturer']
                     hdu.header['GAINUNIT'] = 'e-/ADU'
                     hdu.header['GAIN']     = .584   #20190911   LDR-LDC mode set in ascom
                     hdu.header['RDNOISE']  = 3.5
@@ -1283,7 +1298,7 @@ class Camera:
                     hdu.header['CAMOFFS']  = 10
                     hdu.header['CAMUSBT']  = 60
                     hdu.header['FULLWELL'] = 65535    #THIS should be a config item
-                    hdu.header['SATURATE'] = int(self.config['camera']['camera1']['settings']['saturate'])
+                    hdu.header['SATURATE'] = int(self.config['camera'][self.name]['settings']['saturate'])
                     self.pix_ang = (self.camera.PixelSizeX*self.camera.BinX/(float(self.config['telescope'] \
                                               ['telescope1']['focal_length'])*1000.))
                     hdu.header['PIXSCALE'] = round(math.degrees(math.atan(self.pix_ang))*3600., 4)
@@ -1302,7 +1317,7 @@ class Camera:
                         hdu.header['USERNAME'] = self.last_user_name
                         hdu.header ['USERID']  = self.last_user_id
                         print("User_name or id not found, using prior.")  #Insert last user namd and ID here if they are not supplied.
-                    current_camera_name = self.config['camera']['camera1']['name']
+                    current_camera_name = self.config['camera'][self.name]['name']
                     # NB This needs more deveopment
                     im_type = 'EX'   #or EN for engineering....
                     next_seq = next_sequence(current_camera_name)
