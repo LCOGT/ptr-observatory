@@ -2,7 +2,8 @@
 """
 Created on Tue Apr 20 22:19:25 2021
 
-@author: obs
+@author: obs, wer
+
 """
 
 import win32com.client
