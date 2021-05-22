@@ -188,6 +188,8 @@ site_config = {
             },
 
     },
+    
+    #THIS IS WHERE THE INSTRUMENT SELECTOR BELONGS
 
     #Add CWL, BW and DQE to filter and detector specs.   HA3, HA6 for nm or BW.
     'filter_wheel': {
@@ -246,34 +248,34 @@ site_config = {
     'camera': {
         'camera_1_1': {
             'parent': 'telescope1',
-            'name': 'kf01',      #Important because this points to a server file structure by that name.
-            'desc':  'FLI Microline OnSemi 16803',
-            'driver':  'ASCOM.FLI.Camera',   #"Maxim.CCDCamera",   #'ASCOM.FLI.Kepler.Camera',  #Code must work withall three
+            'name': 'sq02',      #Important because this points to a server file structure by that name.
+            'desc':  'QHY 268M',
+            'driver':  'ASCOM.QHYCCD.Camera',   #"Maxim.CCDCamera",   #'ASCOM.FLI.Kepler.Camera',  #Code must work withall three
             'startup_script':  None,
             'recover_script':  None,
             'shutdown_script':  None,  
-            'detector':  'OnSemi 162803',
-            'manufacturer':  'FLI -- Finger Lakes Instrumentation',
+            'detector':  'Sony IMX571',
+            'manufacturer':  'QHY -- http://QHYCCD.COM',
             'use_file_mode':  False,
-            'file_mode_path':  'D:/000ptr_saf/archive/sq01/autosaves/',
-            'settings': {
-                'temp_setpoint': -35,
+            'file_mode_path':  'D:/000ptr_saf/archive/sq02/autosaves/',
+            'settings': {    #NB Need to add specification for chiller and its control
+                'temp_setpoint': -10,
                 'cooler_on': True,
                 'x_start':  0,
                 'y_start':  0,
-                'x_width':  4096,
-                'y_width':  4096,
-                'x_chip':   4096,
-                'y_chip':   4096,
-                'x_pixel':  9,
-                'y_pixel':  9,
+                'x_width':  6252,
+                'y_width':  4176,
+                'x_chip':   6280,
+                'y_chip':   4210,
+                'x_pixel':  3.76,
+                'y_pixel':  3.76,
                 'overscan_x': 0,
                 'overscan_y': 0,
                 'north_offset': 0.0,
                 'east_offset': 0.0,
                 'rotation': 0.0,
-                'min_exposure': 0.25,  #Need to check this setting out
-                'max_exposure': 360.0,
+                'min_exposure': 0.00003,  #Need to check this setting out
+                'max_exposure': 3600.0,
                 'can_subframe':  True,
                 'min_subframe':  '16:16',
                 'is_cmos':  False,
@@ -284,7 +286,7 @@ site_config = {
                 'reference_dark': [0.0, 0.0, 0.0, 0.0],     #  Might these best be pedastal values?
                 'saturate':  50000,
                 'square_detector': True,
-                'areas_implemented': ["600%", "300%", "220%", "150%", "Full", "Sqr", '71%', '50%',  '35%', '25%', '12%'],
+                'areas_implemented': [ "Full", "Sqr", '71%', '50%',  '35%', '25%', '12%'],
                 'default_area':  "Full",
                 'bin_modes':  [[1, 1], [2, 2], [3, 3], [4, 4]],     #Meaning no binning if list has only one entry
                 'default_bin':  [2, 2],    #Always square and matched to seeing situation by owner
@@ -301,7 +303,6 @@ site_config = {
                     },
                 },
         },
-    },
 
     'sequencer': {
         'sequencer': {
