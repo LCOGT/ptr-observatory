@@ -685,35 +685,3 @@ if __name__ == '__main__':
         print('Dictionaries matched.')
     else:
         print('Dictionaries did not match.')
-
-
-
-            # 'telescope2': {
-            #     'parent': 'mount1',
-            #     'name': 'Aux OTA',
-            #     'desc':  'Astro=Physics AP185 Refractor',
-            #     'driver': None,                     #Essentially this device is informational.  It is mostly about the optics.
-            #     'startup_script':  None,
-            #     'recover_script':  None,
-            #     'shutdown_script':  None,  
-            #     'collecting_area':  '26880',
-            #     'obscuration':  '0.0%',
-            #     'aperture': '585',
-            #     'f-ratio':  '7.5',   #This and focal_lenght can be refined after a solve.
-            #     'focal_length': '1387.5',
-            #     'has_dew_heater':  False,
-            #     'screen_name': 'screen2',
-            #     'focuser_name':  'focuser2',
-            #     'rotator_name':  'rotator2',
-            #     'camera_name':  'camera2',
-            #     'filter_wheel_name':  None,
-            #     'has_fans':  False,
-            #     'has_cover':  True,
-            #     'settings': {
-            #         'fans': [None],
-            #         'offset_collimation': '0.0',    #If the mount model is current, these numbers are usually near 0.0
-            #                                         #for tel1.  Units are arcseconds.
-            #         'offset_declination': '0.0',
-            #         'offset_flexure': '0.0',
-            #         },
-            # },
