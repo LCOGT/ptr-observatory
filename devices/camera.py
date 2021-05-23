@@ -488,7 +488,6 @@ class Camera:
         #  self.t7 is last time camera was read out
         #if self.t7 is not None and (time.time() - self.t7 > 30) and self.maxim:
         self.t0 = time.time()
-
         try:
             probe = self.camera.CoolerOn
             if not probe:
@@ -525,8 +524,8 @@ class Camera:
             bin_x = 2
             self.ccd_sum = '2 2'
         else:
-            bin_x = 1
-            self.ccd_sum = '1 1'
+            bin_x = 2
+            self.ccd_sum = '2 2'
         bin_y = bin_x   #NB This needs fixing someday!
         self.bin = bin_x
         self.camera.BinX = bin_x
@@ -902,7 +901,7 @@ class Camera:
                     self.exposure_busy = False
                     self.t10 = time.time()
                     #  self._stop_expose()
-                    print("\nInner expose of a group took:  ", round(self.t10 - self.t0 , 2), ' returned:  ', result)
+                    #print("\nInner expose of a group took:  ", round(self.t10 - self.t0 , 2), ' returned:  ', result)
                     self.retry_camera = 0
                     break
                 except Exception as e:
@@ -912,7 +911,7 @@ class Camera:
                     continue
         #  This is the loop point for the seq count loop
         self.t11 = time.time()
-        print("\nFull expose of a group took:  ", round(self.t11 - self.t0 , 2), ' Retries;  ', num_retries, 'Average: ', round((self.t11 - self.t0)/count, 2),  ' Returning:  ', result, '\n\n')
+        #print("\nFull expose of a group took:  ", round(self.t11 - self.t0 , 2), ' Retries;  ', num_retries, 'Average: ', round((self.t11 - self.t0)/count, 2),  ' Returning:  ', result, '\n\n')
         try:
             #print(' 0 sec cycle time:  ', round((self.t11 - self.t0)/count - exposure_time , 2) )
             pass
@@ -1152,6 +1151,7 @@ class Camera:
                 try:
                     hdu = fits.PrimaryHDU(self.img)
                     self.img = None    #  Does this free up any resource?
+
                     hdu.header['BUNIT']    = 'adu'
                     hdu.header['DATE-OBS'] = datetime.datetime.isoformat(datetime.datetime.utcfromtimestamp(self.t2))
                     hdu.header['EXPTIME']  = exposure_time   #This is the exposure in seconds specified by the user
@@ -1355,6 +1355,7 @@ class Camera:
 
                     hdu.header['FILEPATH'] = str(im_path_r) +'to_AWS/'
                     hdu.header['FILENAME'] = str(raw_name00)
+
                     try: #  NB relocate this to Expose entry area.  Fill out except.  Might want to check on available space.
                         im_path_r = self.camera_path
                         os.makedirs(im_path_r + g_dev['day'] + '/to_AWS/', exist_ok=True)
@@ -1363,7 +1364,7 @@ class Camera:
                         os.makedirs(im_path_r + g_dev['day'] + '/reduced/', exist_ok=True)
                         im_path   = im_path_r + g_dev['day'] + '/to_AWS/'
                         raw_path  = im_path_r + g_dev['day'] + '/raw/'
-                        cal_path  = im_path_r + '/calib/'
+                        cal_path  = im_path_r +  g_dev['day'] +'/calib/'
                         red_path  = im_path_r + g_dev['day'] + '/reduced/'
                         
                     except:

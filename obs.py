@@ -229,6 +229,7 @@ class Observatory:
             device_names = devices_of_type.keys()
             # Instantiate each device object from based on its type
             for name in device_names:
+
                 driver = devices_of_type[name]["driver"]
                 settings = devices_of_type[name].get("settings", {})
                 # print('looking for dev-types:  ', dev_type)
@@ -313,18 +314,20 @@ class Observatory:
                 # Make sure the list is sorted in the order the jobs were issued
                 # Note: the ulid for a job is a unique lexicographically-sortable id
                 if len(unread_commands) > 0:
-                    print(unread_commands)
+                    #print(unread_commands)
                     unread_commands.sort(key=lambda x: x["ulid"])
                     # Process each job one at a time
                     for cmd in unread_commands:
-                        print(cmd)
+                        print('obs.scan_request: ', cmd)
                         deviceInstance = cmd['deviceInstance']
+                        if deviceInstance == 'camera1':
+                            deviceInstance = 'camera_1_1'
                         deviceType = cmd['deviceType']
                         device = self.all_devices[deviceType][deviceInstance]
                         try:
                             device.parse_command(cmd)
                         except Exception as e:
-                            print(e)
+                            print( 'Exception in obs.scan_requests:  ', e)
                # print('scan_requests finished in:  ', round(time.time() - t1, 3), '  seconds')
                 ## Test Tim's code
                 url_blk = "https://calendar.photonranch.org/dev/siteevents"
@@ -457,7 +460,8 @@ class Observatory:
         try:
             self.scan_requests('mount1')   #NBNBNB THis has faulted, usually empty input lists.
         except:
-            print("self.scan_requests('mount1') threw an exception, probably empty input queues.")
+            pass
+            #print("self.scan_requests('mount1') threw an exception, probably empty input queues.")
         g_dev['seq'].manager()  #  Go see if there is something new to do.
 
     def run(self):   # run is a poor name for this function.
@@ -706,7 +710,7 @@ class Observatory:
                     resized_a = resize(hdu.data, (768,768), preserve_range=True)
                 else:
                     resized_a = resize(hdu.data, (int(1536*iy/ix), 1536), preserve_range=True)  #  We should trim chips so ratio is exact.
-                print('New small fits size:  ', resized_a.shape)
+                #print('New small fits size:  ', resized_a.shape)
                 hdu.data = resized_a.astype('uint16')
 
                 i768sq_data_size = hdu.data.size
