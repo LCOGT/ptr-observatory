@@ -325,8 +325,12 @@ class Enclosure:
                     self.state = 'User Closed the '  + shutter_str
                 else:
                     self.state = 'Automatic Daytime normally Closed the ' + shutter_str
+                if self.is_dome:
+                    enc_at_home = self.enclosure.AtHome
+                else:
+                    enc_at_home = True
                 if self.status_string.lower() in ['open', 'opening'] \
-                    or not self.enclosure.AtHome:
+                    or not enc_at_home:
                     try:
                         if self.is_dome:
                             self.enclosure.Slaved = False
