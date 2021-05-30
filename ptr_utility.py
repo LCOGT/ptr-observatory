@@ -73,13 +73,16 @@ MOUNTRATE = 15*APPTOSID  #15.0410717859
 KINGRATE = 15.029
 
 try:
-    RefrOn = site_config['mount']['mount1']['refraction_on'] 
-    ModelOn = site_config['mount']['mount1']['model_on'] 
-    RatesOn =site_config['mount']['mount1']['rates_on'] 
+    RefrOn = site_config['mount']['mount1']['settings']['refraction_on'] 
+    ModelOn = site_config['mount']['mount1']['settings']['model_on'] 
+    RatesOn = site_config['mount']['mount1']['settings']['rates_on'] 
+
 except:
-    RefrOn = True
-    ModelOn = True
-    RatesOn = True
+    RefrOn = False
+    ModelOn = False
+    RatesOn = False
+    
+    
 
 HORIZON = 9.999   #Lower than actual mrc values.
 
@@ -90,24 +93,43 @@ if ALTAZ:
     MOUNT = 'PW L500'
     INTEGRATOR_SIZE = 3
 else:
-    MOUNT = 'ASA DM-160'
+    MOUNT = 'AP1600GOTO'
     INTEGRATOR_SIZE = 3
 
 model = {}    #Note model starts out zero, need to persist actual model.
-model['IH'] = 0
-model['ID'] = 0
-model['WH'] = 0
-model['WD'] = 0
-model['MA'] =0
-model['ME'] = 0
-model['CH'] = 0
-model['NP'] = 0
-model['TF'] = 0
-model['TX'] = 0
-model['HCES'] =0
-model['HCEC'] = 0
-model['DCES'] = 0
-model['DCEC'] = 0
+wmodel = {}
+  
+#NB Currently this is where the working model is stored.
+model['IH'] = 0. 
+model['ID'] = 0. 
+model['WH'] = 0.
+model['WD'] = 0.
+model['MA'] = 0. 
+model['ME'] = 0.
+model['CH'] = 0. 
+model['NP'] = 0.
+model['TF'] = 0.
+model['TX'] = 0. 
+model['HCES'] = 0
+model['HCEC'] = 0. 
+model['DCES'] = 0.
+model['DCEC'] = 0.
+
+wmodel['IH'] = 0. 
+wmodel['ID'] = 0. 
+wmodel['WH'] = 0.
+wmodel['WD'] = 0.
+wmodel['MA'] = 0. 
+wmodel['ME'] = 0.
+wmodel['CH'] = 0. 
+wmodel['NP'] = 0.
+wmodel['TF'] =  0.
+wmodel['TX'] =  -0. 
+wmodel['HCES'] = 0.
+wmodel['HCEC'] = 0. 
+wmodel['DCES'] = 0.
+wmodel['DCEC'] = 0.
+
 model['IA'] = 0
 model['IE'] = 0
 model['AN'] = 0
@@ -1738,8 +1760,7 @@ def transform_mount_to_observed_r(pRoll, pPitch, pPierSide, loud=False):
             errorRoll = reduce_ha_r(obsRollTrial - pRoll)
             errorPitch = reduce_dec_r(obsPitchTrial - pPitch)
             #THis needs a unit checkout.
-            error = math.sqrt(cosDec*(errorRoll*15)**2 + (errorPitch)**2)
-            #if loud: print(count, errorRoll, errorPitch, error*DTOS)
+            error = math.sqrt(cosDec*(errorRoll)**2 + (errorPitch)**2)  #Removed *15 from errorRoll
             rollTrial -= errorRoll
             pitchTrial -= errorPitch
             count +=1
@@ -1749,8 +1770,8 @@ def transform_mount_to_observed_r(pRoll, pPitch, pPierSide, loud=False):
         return reduce_ha_r(rollTrial), reduce_dec_r(pitchTrial)
 
 
-def transform_observed_to_mount_r(pRoll, pPitch, pPierSide, loud=False):
-    #This routine is diectly invertible. pRoll in Hours, pPitch in Deg.
+def transform_observed_to_mount_r(pRoll, pPitch, pPierSide, loud=False, enable=False):
+    #This routine is diectly invertible. input in radians.
     '''
     Long-run probably best way to do this in inherit a model dictionary.
 
@@ -1762,24 +1783,41 @@ def transform_observed_to_mount_r(pRoll, pPitch, pPierSide, loud=False):
     global raCorr, decCorr, model
 
 
-
+    if enable:
+        breakpoint()
     if not ModelOn:
         return (pRoll, pPitch)
     else:
-        ih = model['IH']
-        idec = model['ID']
-        Wh = model['WH']
-        Wd = model['WD']
-        ma = model['MA']
-        me = model['ME']
-        ch = model['CH']
-        np = model['NP']
-        tf = model['TF']
-        tx = model['TX']
-        hces = model['HCES']
-        hcec = model['HCEC']
-        dces = model['DCES']
-        dcec = model['DCEC']
+        if pPierSide == 1:
+            ih = model['IH']
+            idec = model['ID']
+            Wh = model['WH']
+            Wd = model['WD']
+            ma = model['MA']
+            me = model['ME']
+            ch = model['CH']
+            np = model['NP']
+            tf = model['TF']
+            tx = model['TX']
+            hces = model['HCES']
+            hcec = model['HCEC']
+            dces = model['DCES']
+            dcec = model['DCEC']
+        else:
+            ih = wmodel['IH']
+            idec = wmodel['ID']
+            Wh = wmodel['WH']
+            Wd = wmodel['WD']
+            ma = wmodel['MA']
+            me = wmodel['ME']
+            ch = wmodel['CH']
+            np = wmodel['NP']
+            tf = wmodel['TF']
+            tx = wmodel['TX']
+            hces = wmodel['HCES']
+            hcec = wmodel['HCEC']
+            dces = wmodel['DCES']
+            dcec = wmodel['DCEC']
         ia = model['IA']
         ie = model['IE']
         an = model['AN']
@@ -1798,7 +1836,9 @@ def transform_observed_to_mount_r(pRoll, pPitch, pPierSide, loud=False):
         rPitch = math.radians(pPitch - idec /3600.)
         siteLatitude = site_config['latitude']
         if not ALTAZ:
-            if pPierSide == 1:
+           
+            if pPierSide == 0:
+
                 rRoll += math.radians(Wh/3600.)
                 rPitch -= math.radians(Wd/3600.)  #NB Adjust signs to normal EWNS view
                 #print("PIERSIDE IS BEING APPLIED:  ", pPierSide, Wh, Wd)
@@ -1863,7 +1903,7 @@ def transform_observed_to_mount_r(pRoll, pPitch, pPierSide, loud=False):
             raCorr = reduce_ha_h(corrRoll - pRoll)*15*3600
             decCorr = reduce_dec_d(corrPitch - pPitch)*3600
             #20210328  Note this may not work at Pole.
-            if loud: print('Corrections:  ', raCorr, decCorr)
+            #print('Corrections:  ', raCorr, decCorr)
             return(corrRoll*HTOR, corrPitch*DTOR)
         elif ALTAZ:
             if loud:

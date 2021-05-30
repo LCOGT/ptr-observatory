@@ -15,9 +15,11 @@ from pprint import pprint
 site_name = 'saf'
 
 site_config = {
-    'site': str(site_name),
+    'site': str(site_name.lower()),
     'debug_site_mode': False,
     'owner':  ['google-oauth2|102124071738955888216'],  # Neyle,  Or this can be some aws handle.
+    'owner_alias': ['ANS'],
+    'admin_aliases': ["ANS", "WER", "TB", "DH", "KVH"],
     'defaults': {
         'observing_conditions': 'observing_conditions1',  #  These are used as keys, may go away.
         'enclosure': 'enclosure1',
@@ -26,11 +28,13 @@ site_config = {
         'telescope': 'telescope1',     #How do we handle selector here, if at all?
         'focuser': 'focuser1',
         'rotator': 'rotator1',
+        'selector': None,
         'filter_wheel': 'filter_wheel1',
         'camera': 'camera1',
         'sequencer': 'sequencer1'
         },
-    'name': 'Apache Ridge Observatory',
+    'name': 'Apache Ridge Observatory 0m3f4.9/9',
+    'airport_code':  'SAF', 
     'location': 'Santa Fe, New Mexico,  USA',
     'site_path':  'C:/000ptr_saf/',    #  Path to where all Photon Ranch data and state are to be found
     'aux_archive_path': '//house-computer/saf_archive_2/archive/',  #  Path to auxillary backup disk not on this host.
@@ -47,9 +51,10 @@ site_config = {
     'latitude': 35.55444,     #  Decimal degrees, North is Positive
     'longitude': -105.870278,   #  Decimal degrees, West is negative
     'elevation': 2194,    #  meters above sea level
-    'reference_ambient':  [-4.],  #  Degrees Celsius.  Alternately 12 entries, one for every - mid month.
+    'reference_ambient':  [7],  #  Degrees Celsius.  Alternately 12 entries, one for every - mid month.
     'reference_pressure':  [794.0],    #mbar   A rough guess 20200315
-
+    'site_in_automatic_default':  False,
+    'automatic_detail_default':  'Set manual by default.',
     'observing_conditions' : {
         'observing_conditions1': {
             'parent': 'site',
@@ -104,9 +109,8 @@ site_config = {
             'alignment': 'Equatorial',
             'has_paddle': False,      #paddle refers to something supported by the Python code, not the AP paddle.
             'pointing_tel': 'tel1',     #This can be changed to 'tel2'... by user.  This establishes a default.
-            'east_ra_correction':  -52*0.5751/3600/15,    #incoming unit is pixels, outgoing is min or degrees. 20201230
-            'east_dec_correction': 906*0.5751/3600,  #Altair was Low and right, so too South and too West.
-
+            'east_ra_correction':  0.0, #-52*0.5751/3600/15,    #incoming unit is pixels, outgoing is min or degrees. 20201230
+            'east_dec_correction': 0.0, #356*0.5751/3600,  #Altair was Low and right, so too South and too West.
             'settings': {
 			    'latitude_offset': 0.0,     #Decimal degrees, North is Positive   These *could* be slightly different than site.
 			    'longitude_offset': 0.0,   #Decimal degrees, West is negative  #NB This could be an eval( <<site config data>>))
@@ -220,15 +224,18 @@ site_config = {
             'driver': 'ASCOM.OptecGemini.Focuser',
 			'com_port':  None,
             #F4.9 setup
-            'reference': 4831,    #  Nominal at 10C Primary temperature
-            'ref_temp':  3.,    #  Update when pinning reference
-            'coef_c': -33.55,   #  Nnegative means focus moves out as Primary gets colder
-            'coef_0': 4957,  #  Nominal intercept when Primary is at 0.0 C. 
-            'coef_date':  '20210207',    #This appears to be sensible result 44 points -13 to 3C'reference':  6431,    #  Nominal at 10C Primary temperature
-            # #F9 setup'ref_temp':  10.,    #  Update when pinning reference
-            # 'coef_c': -75.3007,   #  negative means focus moves out as Primary gets colder
-            # 'coef_0': 7144.77,  #  Nominal intercept when Primary is at 0.0 C. 
-            # 'coef_date':  '20210113',    #This appears to be sensible result 44 points -13 to 3C
+            #'reference': 7100,    #  Nominal at 10C Primary temperature
+            # 'reference': 4831,    #  20210313  Nominal at 10C Primary temperature
+            # 'ref_temp':  3.,    #  Update when pinning reference
+            # 'coef_c': -33.55,   #  Nnegative means focus moves out as Primary gets colder
+            # 'coef_0': 4957,  #  Nominal intercept when Primary is at 0.0 C. 
+            # 'coef_date':  '20210207',    #This appears to be sensible result 44 points -13 to 3C'reference':  6431,    #  Nominal at 10C Primary temperature
+            # #F9 setup
+            'reference': 6475,    #   Guess 20120313  Nominal at 10C Primary temperature
+            'ref_temp':  10.,    #  Update when pinning reference
+            'coef_c': -78.337,   #  negative means focus moves out as Primary gets colder
+            'coef_0': 7301,  #  Nominal intercept when Primary is at 0.0 C. 
+            'coef_date':  '20210430',    #This appears to be sensible result 44 points -13 to 3C
             'minimum': 0,     #  NB this area is confusing steps and microns, and need fixing.
             'maximum': 12600,   #12672 actually
             'step_size': 1,
@@ -254,32 +261,48 @@ site_config = {
                 'default_filter': "w",
                 'filter_reference': 0,   #  We choose to use W as the default filter.
                 'filter_data': [['filter', 'filter_index', 'filter_offset', 'sky_gain', 'screen_gain', 'generic'],
-                        ['w',    [0,  0],    0, 249, [0.45,  20], 'L '],   # 0 
-                        ['B',    [1,  0],    0,  70, [2   ,  20], 'B '],   # 1
-                        ['V',    [2,  0],    0,  69, [.77 ,  20], 'V '],   # 2
-                        ['R',    [3,  0],    0,  46, [1.2 ,  20], 'R '],   # 3
-                        ['gp',   [4,  0],    0, 130, [.65 ,  20], 'gp'],   # 4
-                        ['rp',   [5,  0],    0,  45, [1.0 ,  20], 'rp'],   # 5
-                        ['ip',   [6,  0],    0,  12, [10  , 170], 'ip'],   # 6
-                        ['O3',   [7,  0],    0, 2.6, [360 , 170], 'O3'],   # 7
-                        ['HA',   [8,  0],    0, 0.6, [360 , 170], 'HA'],   # 8
-                        ['S2',   [9,  0],    0, 0.7, [360 , 170], 'S2'],   # 9
-                        ['N2',   [10, 0],    0, 0.6, [360 , 170], 'N2'],   # 10
-                        ['exo',  [11, 0],    0, 100, [0.65,  20], 'ex'],   # 11
-                        ['air',  [12, 0], -800, 280, [.32 ,  20], 'ai'],   # 12
-                        ['dark', [13, 0],    0,  .1, [30  , 170], 'dk']],  # 13
-                        #  'dark' filter =   cascade of say N2 and B or O3 and i.
+                        ['w',    [0,  0],    0, 55.9, [0.45,  20], 'L '],   # 0 
+                        ['B',    [1,  0],    0, 22.1, [2   ,  20], 'B '],   # 1
+                        ['V',    [2,  0],    0, 17.4, [.77 ,  20], 'V '],   # 2
+                        ['R',    [3,  0],    0, 11.0, [1.2 ,  20], 'R '],   # 3
+                        ['gp',   [4,  0],    0, 37.4, [.65 ,  20], 'gp'],   # 4
+                        ['rp',   [5,  0],    0, 11.6, [1.0 ,  20], 'rp'],   # 5
+                        ['ip',   [6,  0],    0, 2.99, [10  , 170], 'ip'],   # 6
+                        ['O3',   [7,  0],    0, 0.73, [360 , 170], 'O3'],   # 7
+                        ['HA',   [8,  0],    0, 0.20, [360 , 170], 'HA'],   # 8
+                        ['S2',   [9,  0],    0, 0.21, [360 , 170], 'S2'],   # 9
+                        ['N2',   [10, 0],    0, 0.20, [360 , 170], 'N2'],   # 10
+                        ['exo',  [11, 0],    0, 27.5, [0.65,  20], 'ex'],   # 11
+                        ['air',  [12, 0], -800, 62.3, [.32 ,  20], 'ai'],   # 12
+                        ['dark', [13, 0],    0, 0.10, [30  , 170], 'dk']],  # 13
+                       #  'dark' filter =   cascade of say N2 and B or O3 and i.
+                       #   20120425
+                       #  ['w',    [0,  0],    0, 55.9, [0.45,  20], 'L '],   # 0 
+                       #  ['B',    [1,  0],    0, 22.1, [2   ,  20], 'B '],   # 1
+                       #  ['V',    [2,  0],    0, 17.4, [.77 ,  20], 'V '],   # 2
+                       #  ['R',    [3,  0],    0, 11.0, [1.2 ,  20], 'R '],   # 3
+                       #  ['gp',   [4,  0],    0, 37.4, [.65 ,  20], 'gp'],   # 4
+                       #  ['rp',   [5,  0],    0, 11.6, [1.0 ,  20], 'rp'],   # 5
+                       #  ['ip',   [6,  0],    0, 2.99, [10  , 170], 'ip'],   # 6
+                       #  ['O3',   [7,  0],    0, 0.73, [360 , 170], 'O3'],   # 7
+                       #  ['HA',   [8,  0],    0, 0.20, [360 , 170], 'HA'],   # 8
+                       #  ['S2',   [9,  0],    0, 0.21, [360 , 170], 'S2'],   # 9
+                       #  ['N2',   [10, 0],    0, 0.20, [360 , 170], 'N2'],   # 10
+                       #  ['exo',  [11, 0],    0, 27.5, [0.65,  20], 'ex'],   # 11
+                       #  ['air',  [12, 0], -800, 62.3, [.32 ,  20], 'ai'],   # 12
+                       #  ['dark', [13, 0],    0, 0.10, [30  , 170], 'dk']],  # 13
+                
                         
                 'filter_screen_sort':  [12, 0, 11, 2, 3, 5, 4, 1, 6],   #  don't use narrow yet,  8, 10, 9], useless to try.
                 
-               'filter_sky_sort':  [8, 10, 9, 7, 6, 5, 3, 2, 1, 4, 11, 0, 12]  #  Least to most throughput  8, 10, 9, 7, 6, 5, 3, 2,
+               'filter_sky_sort': [8, 10, 9, 7, 6, 3, 5, 2, 1, 11, 4, 0, 12]  #  Least to most throughput  8, 10, 9, 7, 6, 5, 3, 2,
             },
         },
     },
 
 
     'camera': {
-        'camera1': {
+        'camera_1_1': {
             'parent': 'telescope1',
             'name': 'sq01',      #  Important because this points to a server file structure by that name.
             'desc':  'QHY 600Pro',
@@ -307,7 +330,7 @@ site_config = {
                 'y_active': 3194,
                 'x_pixel':  3.76,
                 'y_pixel':  3.76,
-                'pix_scale':1.0552,   # 0.5751,                   
+                'pix_scale': 0.5751,     #F9              
                 'x_field_deg': round(4784*1.0552/3600, 4),
                 'y_field_deg': round(3194*1.0552/3600, 4),
                 'overscan_x': 24,
@@ -331,12 +354,12 @@ site_config = {
                 'reference_noise': [1.1, 1.1, 1.1, 1.1],    #  All SWAGs right now
                 'reference_dark': [0.0, 0.0, 0.0, 0.0],     #  Might these best be pedastal values?
                 'saturate':  50000,
-                'areas_implemented': ["600%", "500%", "450%", "300%", "220%", "150%", "125%", "+Sq", "Full"],  #,  "-Sq", '71%', '50%',  '35%', '25%', '12%'],
+                'areas_implemented': ["600%", "500%", "450%", "300%", "220%", "150%", "133%", "Full", "Sqr", '71%', '50%',  '35%', '25%', '12%'],
                 'default_area':  "Full",
                 'has_darkslide':  False,
                 'has_screen': True,
                 'screen_settings':  {
-                    'screen_saturation':  157.0,   #  This reflects mrc/mrc2 setting and needs proper values.
+                    'screen_saturation':  157.0,   #  This reflects WMD setting and needs proper values.
                     'screen_x4':  -4E-12,  #  'y = -4E-12x4 + 3E-08x3 - 9E-05x2 + 0.1285x + 8.683     20190731'
                     'screen_x3':  3E-08,
                     'screen_x2':  -9E-05,
