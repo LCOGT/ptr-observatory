@@ -73,7 +73,7 @@ MOUNTRATE = 15*APPTOSID  #15.0410717859
 KINGRATE = 15.029
 
 try:
-    refrOn = site_config['mount']['mount1']['refraction_on'] 
+    RefrOn = site_config['mount']['mount1']['refraction_on'] 
     ModelOn = site_config['mount']['mount1']['model_on'] 
     RatesOn =site_config['mount']['mount1']['rates_on'] 
 except:
