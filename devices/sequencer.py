@@ -10,6 +10,7 @@ import build_tycho as tycho
 import config
 import shelve
 from pprint import pprint
+import ptr_utility
 
 '''
 Autofocus NOTE 20200122
@@ -1224,6 +1225,8 @@ class Sequencer:
 A variant on this is cover a grid, cover a + sign shape.
 IF sweep
         '''
+        ptr_utility.ModelOn = False
+        
         self. sky_guard = True
         ha_deg_steps = (-72.5, -62.5, -52.5, -42.5, -32.5, -22.5, -12.5, -2.5, \
                          -7.5, -17.5, -27.5, -37.5, -47.5, -57.5, -67.5, \
@@ -1261,7 +1264,7 @@ IF sweep
                 time.sleep(0.5)
             time.sleep(3)
             g_dev['obs'].update_status()
-            req = {'time': 10,  'alias': 'sq01', 'image_type': 'quick'}
+            req = {'time': 30,  'alias': 'sq01', 'image_type': 'quick'}
             opt = {'area': 150, 'count': 1, 'bin': '2,2', 'filter': g_dev['fil'].filter_data[0][0], 'hint': 'Equator Run'}
             result = g_dev['cam'].expose_command(req, opt)
             g_dev['obs'].update_status()
@@ -1270,6 +1273,7 @@ IF sweep
             print('\n\nResult:  ', result,   'To go count:  ', length - count,  '\n\n')
         g_dev['mnt'].stop_command()
         print("Equatorial sweep completed. Happy reducing.")
+        ptr_utility.ModelOn = True
         self.sky_guard = False
         return
  
@@ -1319,6 +1323,7 @@ A variant on this is cover a grid, cover a + sign shape.
 IF sweep
         '''
         self.sky_guard = True
+        ptr_utility.ModelOn = False
         print("Starting sky sweep. ")
         g_dev['mnt'].unpark_command({}, {})
         if g_dev['enc'].is_dome:
@@ -1372,7 +1377,7 @@ IF sweep
 
             time.sleep(1)  #Give a little extra time for mount to settle.
             g_dev['obs'].update_status()
-            req = {'time': 10,  'alias': 'sq01', 'image_type': 'quick'}
+            req = {'time': 15,  'alias': 'sq01', 'image_type': 'quick'}
             opt = {'area': 150, 'count': 1, 'bin': '2,2', 'filter': g_dev['fil'].filter_data[0][0], 'hint': 'Tycho grid.'}
             result = g_dev['cam'].expose_command(req, opt)
             g_dev['obs'].update_status()
@@ -1382,6 +1387,7 @@ IF sweep
             
         g_dev['mnt'].park()
         print("Equatorial sweep completed. Happy reducing.")
+        ptr_utility.ModelOn = True
         self.sky_guard = False
         return       
 
@@ -1432,6 +1438,7 @@ IF sweep
         '''
         breakpoint()
         self.sky_guard = True
+        ptr_utility.ModelOn = False
         print("Starting sky sweep.")
         g_dev['mnt'].unpark_command({}, {})
         if g_dev['enc'].is_dome:
@@ -1481,7 +1488,7 @@ IF sweep
 
             time.sleep(3)
             g_dev['obs'].update_status()
-            req = {'time': 10,  'alias': 'sq01', 'image_type': 'quick'}
+            req = {'time': 15,  'alias': 'sq01', 'image_type': 'quick'}
             opt = {'area': 150, 'count': 1, 'bin': '2,2', 'filter': g_dev['fil'].filter_data[0][0], 'hint': 'Tycho grid.'}
             result = g_dev['cam'].expose_command(req, opt)
             g_dev['obs'].update_status()
@@ -1491,6 +1498,7 @@ IF sweep
             
         g_dev['mnt'].stop_command()
         print("Equatorial sweep completed. Happy reducing.")
+        ptr_utility.ModelOn = True
         self.sky_guard = False
         return    
        
@@ -1539,6 +1547,7 @@ A variant on this is cover a grid, cover a + sign shape.
 IF sweep
         '''
         self.sky_guard = True
+        ptr_utility.ModelOn = False
         # dec_steps = [-30, -25, -20, -15, -10, -5, 0, 5, 10, 15, 20, 25, 30, \
         #              35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85]
         dec_steps = [-30, -20, -10, 0, 10, 20, 30, 40, 50, 55, 60, 65, 70, 75, 80, 82.5, \
@@ -1578,7 +1587,7 @@ IF sweep
                     time.sleep(0.5)
                 time.sleep(3)
                 g_dev['obs'].update_status()
-                req = {'time': 10,  'alias': 'sq01', 'image_type': 'quick'}
+                req = {'time': 15,  'alias': 'sq01', 'image_type': 'quick'}
                 opt = {'area': 150, 'count': 1, 'bin': '2,2', 'filter': g_dev['fil'].filter_data[0][0], 'hint': 'Tycho grid.'}
                 result = g_dev['cam'].expose_command(req, opt)
                 g_dev['obs'].update_status()
@@ -1591,6 +1600,7 @@ IF sweep
         g_dev['mnt'].stop_command()
         print("Vertical sweep completed. Happy reducing.")
         self.equitorial_pointing_run({},{})
+        ptr_utility.ModelOn = True
         self.sky_guard = False
         return
 

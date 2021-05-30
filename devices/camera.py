@@ -878,7 +878,10 @@ class Camera:
                             print("Starting autosave  at:  ", self.t2)
                         else:
                             #This is the standard call to Maxim
-
+                            self.pre_mnt = []
+                            self.pre_rot = []
+                            self.pre_foc = []
+                            self.pre_ocn = []
                             g_dev['obs'].send_to_user("Starting name!", p_level='INFO')
                             g_dev['ocn'].get_quick_status(self.pre_ocn)
                             g_dev['foc'].get_quick_status(self.pre_foc)
@@ -941,6 +944,10 @@ class Camera:
             self.completion_time = self.t2 + exposure_time + 1
         result = {'error': False}
         while True:    #This loop really needs a timeout.
+            self.post_mnt = []
+            self.post_rot = []
+            self.post_foc = []
+            self.post_ocn = []
             g_dev['mnt'].get_quick_status(self.post_mnt)   #Need to pick which pass was closest to image completion
             g_dev['rot'].get_quick_status(self.post_rot)
             g_dev['foc'].get_quick_status(self.post_foc)
@@ -1135,12 +1142,12 @@ class Camera:
                     for sourcef in sources:
                         if border_x < sourcef['x'] < ix - border_x and \
                             border_y < sourcef['y'] < iy - border_y and \
-                            sourcef['peak']  < 55000 and sourcef['cpeak'] < 55000:
+                            sourcef['peak']  < 55000 and sourcef['cpeak'] < 55000:  #Consider a lower bound
                             a0 = sourcef['a']
                             b0 = sourcef['b']
                             r0.append(round(math.sqrt(a0*a0 + b0*b0), 2))
                     scale = self.config['camera'][self.name]['settings']['pix_scale']
-                    result['FWHM'] = round(np.median(r0)*2*scale, 3)
+                    result['FWHM'] = round(np.median(r0)*scale, 3)   #@0210524 was 2x larger but a and b are diameters not radii
                     result['mean_focus'] =  avg_foc[1]
 
                     focus_image = True
