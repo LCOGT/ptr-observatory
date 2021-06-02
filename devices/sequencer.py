@@ -10,6 +10,7 @@ import build_tycho as tycho
 import config
 import shelve
 from pprint import pprint
+import ptr_utility
 
 '''
 Autofocus NOTE 20200122
@@ -608,8 +609,8 @@ class Sequencer:
                         pitch = 0.
                         pane = 0
                     for displacement in offset:
-                        x_field_deg = g_dev['cam'].config['camera']['camera1']['settings']['x_field_deg']
-                        y_field_deg = g_dev['cam'].config['camera']['camera1']['settings']['y_field_deg']
+                        x_field_deg = g_dev['cam'].config['camera']['camera_1_1']['settings']['x_field_deg']
+                        y_field_deg = g_dev['cam'].config['camera']['camera_1_1']['settings']['y_field_deg']
                         
                         d_ra = displacement[0]*pitch*(x_field_deg/15.)  # 0.764243 deg = 0.0509496 Hours  These and pixscale should be computed in config.
                         d_dec = displacement[1]*pitch*(y_field_deg)  # = 0.5102414999999999   #Deg
@@ -622,7 +623,7 @@ class Sequencer:
                             g_dev['foc'].adjust_focus()
                         just_focused = False
                         if imtype in ['light'] and count > 0:
-                            req = {'time': exp_time,  'alias':  str(self.config['camera']['camera1']['name']), 'image_type': imtype}   #  NB Should pick up filter and constants from config
+                            req = {'time': exp_time,  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': imtype}   #  NB Should pick up filter and constants from config
                             opt = {'area': 150, 'count': 1, 'bin': binning, 'filter': color, \
                                    'hint': block['project_id'] + "##" + dest_name, 'pane': pane}
                             print('Seq Blk sent to camera:  ', req, opt)
@@ -707,7 +708,7 @@ class Sequencer:
         """
         self.sky_guard = True
         print('Eve Sky Flat sequence Starting, Enclosure PRESUMED Open. Telescope will un-park.')
-        camera_name = str(self.config['camera']['camera1']['name'])
+        camera_name = str(self.config['camera']['camera_1_1']['name'])
         flat_count = 13
         exp_time = .003
         #  NB Sometime, try 2:2 binning and interpolate a 1:1 flat.  This might run a lot faster.
@@ -800,7 +801,7 @@ class Sequencer:
 
         #  NB here we need to check cam at reasonable temp, or dwell until it is.
 
-        camera_name = str(self.config['camera']['camera1']['name'])
+        camera_name = str(self.config['camera']['camera_1_1']['name'])
         dark_count = 1
         exp_time = 15
         if flat_count < 1: flat_count = 1
@@ -929,11 +930,11 @@ class Sequencer:
                                     g_dev['mnt'].current_sidereal)
             print("Going to near focus star " + str(focus_star[0][0]) + "  degrees away.")
             g_dev['mnt'].go_coord(focus_star[0][1][1], focus_star[0][1][0])
-            req = {'time': 12.5,  'alias':  str(self.config['camera']['camera1']['name']), 'image_type': 'auto_focus'}   #  NB Should pick up filter and constats from config
+            req = {'time': 12.5,  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'auto_focus'}   #  NB Should pick up filter and constats from config
             opt = {'area': 150, 'count': 1, 'bin': '2, 2', 'filter': 'w'}
         else:
             pass   #Just take an image where currently pointed.
-            req = {'time': 15,  'alias':  str(self.config['camera']['camera1']['name']), 'image_type': 'auto_focus'}   #  NB Should pick up filter and constats from config
+            req = {'time': 15,  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'auto_focus'}   #  NB Should pick up filter and constats from config
             opt = {'area': 150, 'count': 1, 'bin': '2, 2', 'filter': 'w'}
         foc_pos0 = focus_start
         result = {}
@@ -1071,11 +1072,11 @@ class Sequencer:
                                     g_dev['mnt'].current_sidereal)
             print("Going to near focus star " + str(focus_star[0][0]) + "  degrees away.")
             g_dev['mnt'].go_coord(focus_star[0][1][1], focus_star[0][1][0])
-            req = {'time': 7.5,  'alias':  str(self.config['camera']['camera1']['name']), 'image_type': 'auto_focus'}   #  NB Should pick up filter and constats from config
+            req = {'time': 7.5,  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'auto_focus'}   #  NB Should pick up filter and constats from config
             opt = {'area': 100, 'count': 1, 'filter': 'W'}
         else:
             pass   #Just take time image where currently pointed.
-            req = {'time': 10,  'alias':  str(self.config['camera']['camera1']['name']), 'image_type': 'auto_focus'}   #  NB Should pick up filter and constats from config
+            req = {'time': 10,  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'auto_focus'}   #  NB Should pick up filter and constats from config
             opt = {'area': 100, 'count': 1, 'filter': 'W'}
         foc_pos0 = foc_start
         result = {}
@@ -1224,6 +1225,8 @@ class Sequencer:
 A variant on this is cover a grid, cover a + sign shape.
 IF sweep
         '''
+        ptr_utility.ModelOn = False
+        
         self. sky_guard = True
         ha_deg_steps = (-72.5, -62.5, -52.5, -42.5, -32.5, -22.5, -12.5, -2.5, \
                          -7.5, -17.5, -27.5, -37.5, -47.5, -57.5, -67.5, \
@@ -1233,7 +1236,7 @@ IF sweep
         count = 0
         print("Starting equatorial sweep.")
         g_dev['mnt'].unpark_command()
-        #cam_name = str(self.config['camera']['camera1']['name'])
+        #cam_name = str(self.config['camera']['camera_1_1']['name'])
         for ha_degree_value in ha_deg_steps:
             target_ra = ra_fix(g_dev['mnt'].mount.SiderealTime - ha_degree_value/15.)
             target_dec = 0
@@ -1261,7 +1264,7 @@ IF sweep
                 time.sleep(0.5)
             time.sleep(3)
             g_dev['obs'].update_status()
-            req = {'time': 10,  'alias': 'sq01', 'image_type': 'quick'}
+            req = {'time': 30,  'alias': 'sq01', 'image_type': 'quick'}
             opt = {'area': 150, 'count': 1, 'bin': '2,2', 'filter': g_dev['fil'].filter_data[0][0], 'hint': 'Equator Run'}
             result = g_dev['cam'].expose_command(req, opt)
             g_dev['obs'].update_status()
@@ -1270,11 +1273,12 @@ IF sweep
             print('\n\nResult:  ', result,   'To go count:  ', length - count,  '\n\n')
         g_dev['mnt'].stop_command()
         print("Equatorial sweep completed. Happy reducing.")
+        ptr_utility.ModelOn = True
         self.sky_guard = False
         return
  
     def sky_grid_pointing_run(self, req, opt, spacing=10, vertical=False, grid=False, alt_minimum=25):
-        #camera_name = str(self.config['camera']['camera1']['name'])
+        #camera_name = str(self.config['camera']['camera_1_1']['name'])
         '''
         unpark telescope
         if not open, open dome
@@ -1319,6 +1323,7 @@ A variant on this is cover a grid, cover a + sign shape.
 IF sweep
         '''
         self.sky_guard = True
+        ptr_utility.ModelOn = False
         print("Starting sky sweep. ")
         g_dev['mnt'].unpark_command({}, {})
         if g_dev['enc'].is_dome:
@@ -1330,7 +1335,7 @@ IF sweep
             pass
         g_dev['obs'].update_status()
         g_dev['mnt'].unpark_command()
-        #cam_name = str(self.config['camera']['camera1']['name'])
+        #cam_name = str(self.config['camera']['camera_1_1']['name'])
 
         sid = g_dev['mnt'].mount.SiderealTime
         if req['gridType'] == 'medium':  # ~50
@@ -1372,7 +1377,7 @@ IF sweep
 
             time.sleep(1)  #Give a little extra time for mount to settle.
             g_dev['obs'].update_status()
-            req = {'time': 10,  'alias': 'sq01', 'image_type': 'quick'}
+            req = {'time': 15,  'alias': 'sq01', 'image_type': 'quick'}
             opt = {'area': 150, 'count': 1, 'bin': '2,2', 'filter': g_dev['fil'].filter_data[0][0], 'hint': 'Tycho grid.'}
             result = g_dev['cam'].expose_command(req, opt)
             g_dev['obs'].update_status()
@@ -1382,11 +1387,12 @@ IF sweep
             
         g_dev['mnt'].park()
         print("Equatorial sweep completed. Happy reducing.")
+        ptr_utility.ModelOn = True
         self.sky_guard = False
         return       
 
     def rel_sky_grid_pointing_run(self, req, opt, spacing=10, vertical=False, grid=False, alt_minimum=25):
-        #camera_name = str(self.config['camera']['camera1']['name'])
+        #camera_name = str(self.config['camera']['camera_1_1']['name'])
         '''
         unpark telescope
         if not open, open dome
@@ -1432,6 +1438,7 @@ IF sweep
         '''
         breakpoint()
         self.sky_guard = True
+        ptr_utility.ModelOn = False
         print("Starting sky sweep.")
         g_dev['mnt'].unpark_command({}, {})
         if g_dev['enc'].is_dome:
@@ -1440,7 +1447,7 @@ IF sweep
         g_dev['scr'].screen_dark()
         g_dev['obs'].update_status()
         g_dev['mnt'].unpark_command()
-        #cam_name = str(self.config['camera']['camera1']['name'])
+        #cam_name = str(self.config['camera']['camera_1_1']['name'])
 
         sid = g_dev['mnt'].mount.SiderealTime
         if req['gridType'] == 'medium':  # ~50
@@ -1481,7 +1488,7 @@ IF sweep
 
             time.sleep(3)
             g_dev['obs'].update_status()
-            req = {'time': 10,  'alias': 'sq01', 'image_type': 'quick'}
+            req = {'time': 15,  'alias': 'sq01', 'image_type': 'quick'}
             opt = {'area': 150, 'count': 1, 'bin': '2,2', 'filter': g_dev['fil'].filter_data[0][0], 'hint': 'Tycho grid.'}
             result = g_dev['cam'].expose_command(req, opt)
             g_dev['obs'].update_status()
@@ -1491,6 +1498,7 @@ IF sweep
             
         g_dev['mnt'].stop_command()
         print("Equatorial sweep completed. Happy reducing.")
+        ptr_utility.ModelOn = True
         self.sky_guard = False
         return    
        
@@ -1539,6 +1547,7 @@ A variant on this is cover a grid, cover a + sign shape.
 IF sweep
         '''
         self.sky_guard = True
+        ptr_utility.ModelOn = False
         # dec_steps = [-30, -25, -20, -15, -10, -5, 0, 5, 10, 15, 20, 25, 30, \
         #              35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85]
         dec_steps = [-30, -20, -10, 0, 10, 20, 30, 40, 50, 55, 60, 65, 70, 75, 80, 82.5, \
@@ -1550,7 +1559,7 @@ IF sweep
         count = 0
         print("Starting West dec sweep, ha = 0.1")
         g_dev['mnt'].unpark_command()
-        #cam_name = str(self.config['camera']['camera1']['name'])
+        #cam_name = str(self.config['camera']['camera_1_1']['name'])
         for ha in [0.1, -0.1]:
             for degree_value in dec_steps:
                 target_ra =  ra_fix(g_dev['mnt'].mount.SiderealTime - ha)
@@ -1578,7 +1587,7 @@ IF sweep
                     time.sleep(0.5)
                 time.sleep(3)
                 g_dev['obs'].update_status()
-                req = {'time': 10,  'alias': 'sq01', 'image_type': 'quick'}
+                req = {'time': 15,  'alias': 'sq01', 'image_type': 'quick'}
                 opt = {'area': 150, 'count': 1, 'bin': '2,2', 'filter': g_dev['fil'].filter_data[0][0], 'hint': 'Tycho grid.'}
                 result = g_dev['cam'].expose_command(req, opt)
                 g_dev['obs'].update_status()
@@ -1591,11 +1600,12 @@ IF sweep
         g_dev['mnt'].stop_command()
         print("Vertical sweep completed. Happy reducing.")
         self.equitorial_pointing_run({},{})
+        ptr_utility.ModelOn = True
         self.sky_guard = False
         return
 
     def append_completes(self, block_id):
-        camera = self.config['camera']['camera1']['name']
+        camera = self.config['camera']['camera_1_1']['name']
         seq_shelf = shelve.open(g_dev['cam'].site_path + 'ptr_night_shelf/' + camera)
         print("block_id:  ", block_id)
         lcl_list = seq_shelf['completed_blocks']
@@ -1606,7 +1616,7 @@ IF sweep
         return 
     
     def is_in_completes(self, check_block_id):
-        camera = self.config['camera']['camera1']['name']
+        camera = self.config['camera']['camera_1_1']['name']
         seq_shelf = shelve.open(g_dev['cam'].site_path + 'ptr_night_shelf/' + camera)
         #print('Completes contains:  ', seq_shelf['completed_blocks'])
         if check_block_id in seq_shelf['completed_blocks']:
@@ -1619,7 +1629,7 @@ IF sweep
     
     def reset_completes(self):
         try:
-            camera = self.config['camera']['camera1']['name']
+            camera = self.config['camera']['camera_1_1']['name']
             seq_shelf = shelve.open(g_dev['cam'].site_path + 'ptr_night_shelf/' + str(camera))
             seq_shelf['completed_blocks'] = []
             seq_shelf.close()

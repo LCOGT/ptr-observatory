@@ -35,6 +35,7 @@ import json
 #import importlib
 import numpy as np
 import math
+import shelve
 #import datetime
 from pprint import pprint
 #from pprint import pprint
@@ -49,6 +50,7 @@ import sep
 from astropy.io import fits
 #from PIL import Image
 import ptr_events
+from planewave import platesolve
 
 # import device classes
 from devices.camera import Camera
@@ -148,9 +150,10 @@ def patch_httplib(bsize=400000):
         else:
             self.sock.sendall(p_data)
     httplib2.httplib.HTTPConnection.send = send
-
-
 class Observatory:
+
+
+
     def __init__(self, name, config):
 
         # This is the class through which we can make authenticated api calls.
@@ -160,6 +163,7 @@ class Observatory:
         self.name = name
         self.site_name = name
         self.config = config
+        self.site_path = config['site_path']
         self.last_request = None
         self.stopped = False
         self.site_message = '-'
@@ -175,7 +179,7 @@ class Observatory:
             'filter_wheel',
             'camera',
             'sequencer'          
-            ] #  'telescope',
+            ] 
         # Instantiate the helper class for astronomical events
         #Soon the primary event / time values come from AWS>
         self.astro_events = ptr_events.Events(self.config)
@@ -208,6 +212,8 @@ class Observatory:
         self.blocks = None
         self.projects = None
         self.events_new = None
+        self.reset_last_reference()
+        
         
 
         # Build the site (from-AWS) Queue and start a thread.
@@ -216,6 +222,30 @@ class Observatory:
         # self.site_queue_thread.start()
 
 
+    def set_last_reference(self,  delta_ra, delta_dec, last_time):
+        mnt_shelf = shelve.open(self.site_path + 'ptr_night_shelf/' + 'last')
+        mnt_shelf['ra_cal_offset'] = delta_ra
+        mnt_shelf['dec_cal_offset'] = delta_dec
+        mnt_shelf['time_offset']= last_time
+        mnt_shelf.close()
+        return
+
+    def get_last_reference(self):
+        mnt_shelf = shelve.open(self.site_path + 'ptr_night_shelf/' + 'last')
+        delta_ra = mnt_shelf['ra_cal_offset']
+        delta_dec = mnt_shelf['dec_cal_offset']
+        last_time = mnt_shelf['time_offset']
+        mnt_shelf.close()
+        return delta_ra, delta_dec, last_time
+
+    def reset_last_reference(self):
+        mnt_shelf = shelve.open(self.site_path + 'ptr_night_shelf/' + 'last')
+        mnt_shelf['ra_cal_offset'] = None
+        mnt_shelf['dec_cal_offset'] = None
+        mnt_shelf['time_offset'] = None
+        mnt_shelf.close()
+        return
+
     def create_devices(self, config: dict):
         # This dict will store all created devices, subcategorized by dev_type.
         self.all_devices = {}
@@ -223,10 +253,13 @@ class Observatory:
         for dev_type in self.device_types:
             self.all_devices[dev_type] = {}
             # Get the names of all the devices from each dev_type.
+            # if dev_type == 'camera':
+            #     breakpoint()
             devices_of_type = config.get(dev_type, {})
             device_names = devices_of_type.keys()
             # Instantiate each device object from based on its type
             for name in device_names:
+
                 driver = devices_of_type[name]["driver"]
                 settings = devices_of_type[name].get("settings", {})
                 # print('looking for dev-types:  ', dev_type)
@@ -315,14 +348,16 @@ class Observatory:
                     unread_commands.sort(key=lambda x: x["ulid"])
                     # Process each job one at a time
                     for cmd in unread_commands:
-                        print(cmd)
+                        print('obs.scan_request: ', cmd)
                         deviceInstance = cmd['deviceInstance']
+                        if deviceInstance == 'camera1':
+                            deviceInstance = 'camera_1_1'
                         deviceType = cmd['deviceType']
                         device = self.all_devices[deviceType][deviceInstance]
                         try:
                             device.parse_command(cmd)
                         except Exception as e:
-                            print(e)
+                            print( 'Exception in obs.scan_requests:  ', e)
                # print('scan_requests finished in:  ', round(time.time() - t1, 3), '  seconds')
                 ## Test Tim's code
                 url_blk = "https://calendar.photonranch.org/dev/siteevents"
@@ -372,11 +407,11 @@ class Observatory:
 
         # This stopping mechanism allows for threads to close cleanly.
         loud = False        
-        if g_dev['cam_retry_doit']:
-            #breakpoint()   #THis should be obsolete.
-            del g_dev['cam']
-            device = Camera(g_dev['cam_retry_driver'], g_dev['cam_retry_name'], g_dev['cam_retry_config'])
-            print("Deleted and re-created:  ,", device)
+        # if g_dev['cam_retry_doit']:
+        #     #breakpoint()   #THis should be obsolete.
+        #     del g_dev['cam']
+        #     device = Camera(g_dev['cam_retry_driver'], g_dev['cam_retry_name'], g_dev['cam_retry_config'])
+        #     print("Deleted and re-created:  ,", device)
         # Wait a bit between status updates
         while time.time() < self.time_last_status + self.status_interval:
             # time.sleep(self.st)atus_interval  #This was prior code
@@ -455,7 +490,8 @@ class Observatory:
         try:
             self.scan_requests('mount1')   #NBNBNB THis has faulted, usually empty input lists.
         except:
-            print("self.scan_requests('mount1') threw an exception, probably empty input queues.")
+            pass
+            #print("self.scan_requests('mount1') threw an exception, probably empty input queues.")
         g_dev['seq'].manager()  #  Go see if there is something new to do.
 
     def run(self):   # run is a poor name for this function.
@@ -565,6 +601,41 @@ class Observatory:
                 reduced_data_size = hdu.data.size
                 wpath = paths['red_path'] + paths['red_name01_lcl']    #This name is convienent for local sorting
                 hdu.writeto(wpath, overwrite=True) #Bigfit reduced
+                
+                #Will try here to solve
+                breakpoint()
+                try:
+                    hdu_save = hdu
+                    wpath = 'C:/000ptr_saf/archive/sq01/20210528/reduced/saf-sq01-20210528-00019785-le-w-EX01.fits'
+                    solve = platesolve.platesolve(wpath, 0.5478)
+                    print("PW Solves: " ,solve['ra_j2000_hours'], solve['dec_j2000_degrees'])
+                    img = fits.open(wpath, mode='update', ignore_missing_end=True)
+                    hdr = img[0].header
+                    #  Update the header.
+                    hdr['RA-J2000'] = solve['ra_j2000_hours']
+                    hdr['DECJ2000'] = solve['dec_j2000_degrees']
+                    hdr['MEAS-SCL'] = solve['arcsec_per_pixel']
+                    hdr['MEAS-ROT'] = solve['rot_angle_degs']
+                    img.flush()
+                    img.close
+                    img = fits.open(wpath, ignore_missing_end=True)
+                    hdr = img[0].header
+                    prior_ra_h, prior_dec, prior_time = self.get_last_reference()
+                    time_now = time.time()  #This should be more accurately defined earlier in the header
+                    if prior_time is not None:
+                        print("time base is:  ", time_now - prior_time)
+                        
+                    self.set_last_reference( solve['ra_j2000_hours'], solve['dec_j2000_degrees'], time_now)
+                except:
+                   print(wpath, "  was not solved, marking to skip in future, sorry!")
+                   img = fits.open(wpath, mode='update', ignore_missing_end=True)
+                   hdr = img[0].header
+                   hdr['NO-SOLVE'] = True
+                   img.close()
+                   self.reset_last_reference()
+                  #Return to classic processing
+                hdu = hdu_save
+                
                 if self.site_name == 'saf':
                     wpath = paths['red_path_aux'] + paths['red_name01_lcl']
                     hdu.writeto(wpath, overwrite=True) #big fits to other computer in Neyle's office
@@ -704,7 +775,7 @@ class Observatory:
                     resized_a = resize(hdu.data, (768,768), preserve_range=True)
                 else:
                     resized_a = resize(hdu.data, (int(1536*iy/ix), 1536), preserve_range=True)  #  We should trim chips so ratio is exact.
-                print('New small fits size:  ', resized_a.shape)
+                #print('New small fits size:  ', resized_a.shape)
                 hdu.data = resized_a.astype('uint16')
 
                 i768sq_data_size = hdu.data.size
@@ -773,6 +844,8 @@ class Observatory:
                 self.reduce_queue.task_done()
             else:
                 time.sleep(.5)
+                
+
 
 if __name__ == "__main__":
 

@@ -1113,7 +1113,7 @@ def APPM_prepare_TPOINT():   #   'C:/ProgramData/Astro-Physics/APCC/Models/APPM-
 def prepare_tpoint(camera_name, archive_path, selector_string, lng_path, out_path):
     file_list = glob.glob(archive_path + selector_string)
     file_list.sort
-    print(file_list)
+    #print(file_list)
     print('# of files:  ', len(file_list))
     out_f = open(out_path + "tptinput.dat", 'w')
     out_f.write('0.3m Ceravolo F9, AP1600, Apache Ridge Observatory\n')
@@ -1124,22 +1124,52 @@ def prepare_tpoint(camera_name, archive_path, selector_string, lng_path, out_pat
     count = 0
    
     for item in file_list:
-        try:
-            solve=platesolve. platesolve(item, 0.5478)
-            img = fits.open(item, ignore_missing_end=True)
-            hdr = img[0].header
-            pre_ra = hdr['CAT-RA']
-            pre_dec = hdr['CAT-DEC']
-            flip = hdr['PIERSIDE']
-            meas_ra = solve['ra_j2000_hours']
-            meas_dec = solve['dec_j2000_degrees']
-            sid = hdr['MNT-SIDT']
-
-
+        img = fits.open(item, ignore_missing_end=True)
+        hdr = img[0].header
+        try: 
+            if hdr['NO-SOLVE'] is not None:
+                continue
         except:
-           print("Item did not solve:  ", item)
+            pass            
+        try:
+            if hdr['RA-J2000'] is not None:
+                #Therefore this image has  already been solved
+                pass
+                #Proceed to include image in the file.
+        except:
+            #This image needs solving.
+            try:
+                img.close()
+                solve = platesolve.platesolve(str(item), 0.5478)
+                print("PW Solves: " ,solve['ra_j2000_hours'], solve['dec_j2000_degrees'])
+                img = fits.open(item, mode='update', ignore_missing_end=True)
+                hdr = img[0].header
+                #  Update the header.
+                hdr['RA-J2000'] = solve['ra_j2000_hours']
+                hdr['DECJ2000'] = solve['dec_j2000_degrees']
+                hdr['MEAS-SCL'] = solve['arcsec_per_pixel']
+                hdr['MEAS-ROT'] = solve['rot_angle_degs']
+                img.flush()
+                img.close
+                img = fits.open(item, ignore_missing_end=True)
+                hdr = img[0].header
+            except:
+               print(item, "  was not  solved, marking to skip in future, sorry!")
+               img = fits.open(item, mode='update', ignore_missing_end=True)
+               hdr = img[0].header
+               hdr['NO-SOLVE'] = True
+               img.close()
+               continue
+        pre_ra = hdr['TARG-RA']
+        pre_dec = hdr['TARG-DEC']
+        pier = hdr['PIERSIDE']
+        meas_ra = hdr['RA-J2000']
+        meas_dec = hdr['DECJ2000']
+        sid = hdr['MNT-SIDT']
+
         try:
             if True:
+                
                 ra = pre_ra
                 ra_h = int(ra) 
                 ra_mh = (ra - ra_h)*60
@@ -1170,8 +1200,9 @@ def prepare_tpoint(camera_name, archive_path, selector_string, lng_path, out_pat
                 #print('IN: ', pre_ra, meas_ra, pre_dec, meas_dec, meas_ha, meas_sid)
                 if pier in ['Look West', 'West', 'west', 1, '1']:
                     #Change to Mechanical
+                    #meas_dec += 1000/3600/2.  #(+ asec is dec is low on West side in TPOINT display)
                     meas_dec = 180 - meas_dec
-                    meas_ra -= 12
+                    meas_ra -= 12 #+ +342/15/3600  DO NOT FLIP RA
                     if meas_ra < 0:
                         meas_ra += 24
                 ra = meas_ra
@@ -1199,15 +1230,16 @@ def prepare_tpoint(camera_name, archive_path, selector_string, lng_path, out_pat
                 sid_str = str(sid_h) + " " + str(sid_m)
                 
 
-                if meas_ha <= 0 and dec < 82:
-                    pier = "EAST"
+                if meas_ha < 0: #and dec < 82:
+                    pier = "Look East"
                     print(pre_ra_str + "  " + pre_dec_str + "  " + meas_ra_str + "  " + meas_dec_str + "  " + sid_str + "  " + pier)
                     out_f.write(pre_ra_str + "  " + pre_dec_str + "  " + meas_ra_str + "  " + meas_dec_str + "  " + sid_str + "  " + pier +'\n')
                     count += 1
                 elif meas_ha > 0: #and dec < 82:
-                    pier =  "WEST"
+                    pier =  "Look West"
                     print(pre_ra_str + "  " + pre_dec_str + "  " + meas_ra_str + "  " + meas_dec_str + "  " + sid_str + "  " + pier)
                     out_f.write(pre_ra_str + "  " + pre_dec_str + "  " + meas_ra_str + "  " + meas_dec_str + "  " + sid_str + "  " + pier +'\n')
+                    count += 1
                 else:
                     continue
         except:
@@ -1502,7 +1534,7 @@ if __name__ == '__main__':
     camera_name = 'sq01'  #  config.site_config['camera']['camera1']['name']
     #archive_path = "D:/000ptr_saf/archive/sq01/2020-06-13/"
     #archive_path = "D:/2020-06-19  Ha and O3 screen flats/"
-    archive_path = "C:/000ptr_saf/archive/sq01/20210504/reduced/"
+    archive_path = "C:/000ptr_saf/archive/sq01/20210528/reduced/"
     out_path = 'C:/Users/obs/Documents/GitHub/ptr-observatory/processing/TPOINT/'
     lng_path = "C:/000ptr_saf/archive/sq01/lng/"
     #APPM_prepare_TPOINT()

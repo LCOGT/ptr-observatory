@@ -18,8 +18,7 @@ site_config = {
     'site': str(site_name.lower()),
     'debug_site_mode': False,
     'owner':  ['google-oauth2|102124071738955888216'],  # Neyle,  Or this can be some aws handle.
-    'owner_alias': ['ANS'],
-    'admin_aliases': ["ANS", "WER", "TB", "DH", "KVH"],
+    'owner_alias': 'ANS',
     'defaults': {
         'observing_conditions': 'observing_conditions1',  #  These are used as keys, may go away.
         'enclosure': 'enclosure1',
