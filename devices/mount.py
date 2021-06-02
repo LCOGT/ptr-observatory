@@ -209,7 +209,7 @@ class Mount:
         self.ra_offset = 0.0
         self.dec_offset = 0.0   #NB these should always start off at zero.
         #breakpoint()
-        #self.reset_mount_ref()
+        self.reset_mount_ref()
         self.site_in_automatic = config['site_in_automatic_default']
         self.automatic_detail = config['automatic_detail_default']
         self.move_time = 0
@@ -396,7 +396,7 @@ class Mount:
             }
         elif self.tel == True:
             self.current_sidereal = self.mount.SiderealTime
-            icrs_ra, icrs_dec = self.get_mount_coordinates()  #20210430  Looks like thie faulted during a slew.
+            icrs_ra, icrs_dec = self.get_mount_coordinates()  #20210430  Looks like this faulted during a slew.
             if self.prior_roll_rate == 0:
                 pass
             status = {

@@ -311,7 +311,7 @@ class Observatory:
                 # Make sure the list is sorted in the order the jobs were issued
                 # Note: the ulid for a job is a unique lexicographically-sortable id
                 if len(unread_commands) > 0:
-                    print(unread_commands)
+                    #print(unread_commands)
                     unread_commands.sort(key=lambda x: x["ulid"])
                     # Process each job one at a time
                     for cmd in unread_commands:
