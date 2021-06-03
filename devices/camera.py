@@ -2,7 +2,7 @@
 """
 Created on Tue Apr 20 22:19:25 2021
 
-@author: obs, wer
+@author: obs, wer, dhunt
 
 """
 
@@ -156,13 +156,14 @@ class Camera:
         go away from the bulk of the in-line code.
         Try to be more consistent about use of filter names rather than
         numbers.
+        
         """
         '''
-
+        
         Outline: if there is a selector then iterate over it for cameras
         and ag's to create.  Name instances cam or ag_<tel>_<sel-port>'.
         Once this is done g_dev['cam'] refers to the selected instance.
-
+    
         '''
         self.name = name
         g_dev[name + '_cam_retry_driver'] = driver
@@ -172,7 +173,7 @@ class Camera:
         g_dev[name] = self
         if name == 'camera_1_1':
             g_dev['cam'] = self
-        self.config = config
+        self.config = config        
         win32com.client.pythoncom.CoInitialize()
         #driver = 'AllSkyPlateSolver.PlateSolver'
         self.camera = win32com.client.Dispatch(driver)
@@ -224,6 +225,7 @@ class Camera:
         self.cmd_in = None
         self.t7 = None
         self.camera_message = '-'
+
         self.alias = self.config['camera'][self.name]['name']
         self.site_path = self.config['site_path']
         self.archive_path = self.site_path +'archive/'
@@ -233,6 +235,7 @@ class Camera:
         self.lng_path = self.camera_path + "lng/"
         self.seq_path = self.camera_path + "seq/"
         self.file_mode_path =  self.config['camera'][self.name]['file_mode_path']
+
         try:
             for file_path in glob.glob(self.file_mode_path + '*.f*t*'):
                 os.remove(file_path)
@@ -243,6 +246,7 @@ class Camera:
         else:
             self.is_cmos = False
         self.camera_model = self.config['camera'][self.name]['desc']
+
         #NB We are reading from the actual camera or setting as the case may be.  For initial setup,
         #   we pull from config for some of the various settings.
         #NB NB There is a differenc between normal cameras and the QHY when it is set to Bin2.
@@ -349,7 +353,6 @@ class Camera:
         else:
             print ("Camera cannot set cooling temperature.")
             return p_temp
-
     def _ascom_expose(self, exposure_time, imtypeb):
             self.camera.StartExposure(exposure_time, imtypeb)
 
@@ -1170,7 +1173,6 @@ class Camera:
                 try:
                     hdu = fits.PrimaryHDU(self.img)
                     self.img = None    #  Does this free up any resource?
-
                     # assign the keyword values and comment of the keyword as a tuple to write both to header.
                     hdu.header['BUNIT']    = ('adu', 'Unit of array values')
                     hdu.header['CCDXPIXE'] = (self.camera.PixelSizeX, '[um] Size of unbinned pixel, in X')  # DEH maybe change config units to meters or convert to m?
@@ -1218,8 +1220,14 @@ class Camera:
                     #hdu.header['JD-HELIO'] = 'bogus'       # Heliocentric Julian Date at exposure midpoint
                     hdu.header['OBSTYPE'] = (frame_type, 'Observation type')   #This report is fixed and it should vary...NEEDS FIXING!
                     hdu.header['EXPTIME']  = (exposure_time, '[s] Requested exposure length')   # This is the exposure in seconds specified by the user
-                    #breakpoint()
-                    #hdu.header['EXPOSURE'] = (self.t-self.t2, '[s] Actual exposure length')   # Calculated from actual times
+=======
+                    hdu.header['BUNIT']    = 'adu'
+                    hdu.header['DATE-OBS'] = datetime.datetime.isoformat(datetime.datetime.utcfromtimestamp(self.t2))
+                    hdu.header['EXPTIME']  = exposure_time   #This is the exposure in seconds specified by the user
+                    hdu.header['EXPOSURE'] = exposure_time   #Ideally this needs to be calculated from actual times
+                    hdu.header['FILTER ']  = self.current_filter  # NB this should read from the wheel!
+                    hdu.header['FILTEROF'] = self.current_offset
+                    #hdu.header['EXPOSURE'] = (self.t?-self.t2, '[s] Actual exposure length')   # Calculated from actual times
                     hdu.header['FILTER']  = (self.current_filter, 'Filter type')  # NB this should read from the wheel!
                     hdu.header['FILTEROF'] = (self.current_offset, 'Filer offset')
                     #hdu.header['FILTRNUM'] = g_dev['fil'].filter.Filter  #Get a number from the hardware or via Maxim.
@@ -1350,7 +1358,41 @@ class Camera:
                     #hdu.header['PRESSURE'] = (avg_ocn[6]
                     #hdu.header['CALC-LUX'] = (avg_ocn[7]
                     #hdu.header['SKY-LUX']  = (avg_ocn[8]
-
+                    hdu.header['ROTATOR']  = ""
+                    hdu.header['ROTANGLE'] = avg_rot[1]
+                    hdu.header['ROTMOVNG'] = avg_rot[2]
+                    hdu.header['FOCUS'] = ""
+                    hdu.header['FOCUSPOS'] = avg_foc[1]
+                    hdu.header['FOCUSTMP'] = avg_foc[2]
+                    hdu.header['FOCUSMOV'] = avg_foc[3]
+                    hdu.header['WX'] = ""
+                    hdu.header['SKY-TEMP'] = avg_ocn[1]
+                    hdu.header['AIR-TEMP'] = avg_ocn[2]
+                    hdu.header['HUMIDITY'] = avg_ocn[3]
+                    hdu.header['DEWPOINT'] = avg_ocn[4]
+                    hdu.header['WIND']     = avg_ocn[5]
+                    hdu.header['PRESSURE'] = avg_ocn[6]
+                    hdu.header['CALC-LUX'] = avg_ocn[7]
+                    hdu.header['SKY-LUX']  = avg_ocn[8]
+                    if g_dev['enc'] is not None:
+                        hdu.header['ROOF'] = g_dev['enc'].get_status()['shutter_status']   #"Open/Closed"
+                    if g_dev['enc'].is_dome:
+                        hdu.header['DOMEAZ'] = g_dev['enc'].get_status()['dome_azimuth']
+                     #NB Should also report Dome Azimuth, windscreen status and altitude is available.
+                    #NB should also report status of Dome lights.
+                    hdu.header['DETECTOR'] = self.config['camera'][self.name]['detector']
+                    hdu.header['CAMNAME']  = self.config['camera'][self.name]['name']
+                    hdu.header['CAMMANUF'] = self.config['camera'][self.name]['manufacturer']
+                    hdu.header['GAINUNIT'] = 'e-/ADU'
+                    hdu.header['GAIN']     = .584   #20190911   LDR-LDC mode set in ascom
+                    hdu.header['RDNOISE']  = 3.5
+                    hdu.header['CMOSCAM']  = self.is_cmos
+                    hdu.header['CAMGAIN']  = 0
+                    hdu.header['CAMBITS']  = 16
+                    hdu.header['CAMOFFS']  = 10
+                    hdu.header['CAMUSBT']  = 60
+                    hdu.header['FULLWELL'] = 65535    #THIS should be a config item
+                    hdu.header['SATURATE'] = int(self.config['camera'][self.name]['settings']['saturate'])
                     self.pix_ang = (self.camera.PixelSizeX*self.camera.BinX/(float(self.config['telescope'] \
                                               ['telescope1']['focal_length'])*1000.))
                     hdu.header['PIXSCALE'] = round(math.degrees(math.atan(self.pix_ang))*3600., 4)

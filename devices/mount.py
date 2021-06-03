@@ -298,6 +298,8 @@ class Mount:
 
         '''
         if self.seek_commanded:    #Used for debugging.
+          
+=======
             #breakpoint()
             pass
 
@@ -338,7 +340,7 @@ class Mount:
                         #print("Rate found:  ", self.prior_roll_rate, self.prior_pitch_rate, self.ha_corr, self.dec_corr)
             except:
                 print("mount status rate adjust exception.")
-
+   
             if self.mount.sideOfPier == look_west \
                 and self.flip_correction_needed:
                 jnow_ra_r -=  self.west_ha_correction_r   #Brought in from local calib.py file correction is subtracted.  #This is meant to handle a flip klunk.
@@ -747,7 +749,7 @@ class Mount:
             dec = jnow_coord.dec.degree
             if self.offset_received:
                 ra +=  ra_cal_offset + self.ra_offset          #Offsets are J.now
-                dec +=  dec_cal_offset + self.dec_offset
+                dec +=  dec_cal_offset + self.dec_offset              
         pier_east = 1
         if self.flip_correction_needed:   #self.config.flip_correction_needed woul dbe more readable.
             pier_east = 0
@@ -762,14 +764,12 @@ class Mount:
                 #DestSide... not implemented in PWI_4
                 pass
         ra_app_h, dec_app_d = ra_dec_fix_h(ra, dec)
-        #Here we add in refraction and the TPOINT compatible mount model
-
+        #Here we add in refraction and the TPOINT compatible mount model   
         ha_obs_r, dec_obs_r, refr_asec = ptr_utility.appToObsRaHa(ra_app_h*HTOR, dec_app_d*DTOR, self.sid_now_r)
         self.refraction = refr_asec
         #ra_obs_r, dec_obs_r = ptr_utility.transformHatoRaDec(ha_obs_r, dec_obs_r, self.sid_now_r)
         #Here we would convert to model and calculate tracking rate correction.
-
-        ha_mech, dec_mech = ptr_utility.transform_observed_to_mount_r(ha_obs_r, dec_obs_r, pier_east, loud=False)
+        ha_mech, dec_mech = ptr_utility.transform_observed_to_mount_r(ha_obs_r, dec_obs_r, pier_east, loud=False)       
         ra_mech, dec_mech = ptr_utility.transform_haDec_to_raDec_r(ha_mech, dec_mech, self.sid_now_r)
         self.ha_corr = ptr_utility.reduce_ha_r(ha_mech - ha_obs_r)*RTOS     #These are mechanical values, not j.anything
         self.dec_corr = ptr_utility.reduce_dec_r(dec_mech - dec_obs_r)*RTOS
