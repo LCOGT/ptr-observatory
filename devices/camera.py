@@ -564,59 +564,94 @@ class Camera:
         if not imtype.lower() in ['auto_focus', 'focus', 'autofocus probe']:
             g_dev['foc'].adjust_focus(loud=True)
         sub_frame_fraction = optional_params.get('subframe', None)
+        
         #  The following bit of code is convoluted.  Presumably when we get Autofocus working this will get cleaned up.
-        self.toss = False
-        self.do_sep = False
-        if imtype.lower() in ('light', 'light frame', 'screen flat', 'sky flat', 'experimental', \
-                              'test image', 'auto_focus', 'focus', 'autofocus probe'):
-                                #here we might eventually turn on spectrograph lamps as needed for the imtype.
-            imtypeb = True      #imtypeb will passed to open the shutter.
-            frame_type = imtype.lower()
-            do_sep = True
-            self.do_sep = True
-            if imtype.lower() in ('screen flat', 'sky flat', 'quick'):
-                do_sep = False
-                self.do_sep = False
-            if imtype.lower() == 'test image':
-                self.toss = True
-        elif imtype.lower() == 'bias':
-            exposure_time = 0.00001    #Can QHY take 0.0??
-            imtypeb = False
-            frame_type = 'BIAS'
-            no_AWS = False
-            do_sep = False
-            self.do_sep = False
-            # Consider forcing filter to dark if such a filter exists.
-        elif imtype.lower() == 'dark':
-            imtypeb = False
-            frame_type = 'DARK'
-            no_AWS = False
-            do_sep = False
-            self.do_sep = False
-            # Consider forcing filter to dark if such a filter exists.
-        elif imtype.lower() == 'screen flat':
-            frame_type = 'screen flat'
-        elif imtype.lower() == 'sky flat':
-            frame_type = 'SKY-FLAT'
-            self.do_sep = False
-        elif imtype.lower() == 'quick':
-            quick = True
-            no_AWS = False   # Send only an informational JPEG??
-            do_sep = False
-            imtypeb = True
-            frame_type = 'EXPOSE'
-        elif imtype.lower() == 'lamp flat':
-            no_AWS = False
-            do_sep = False
-            frame_type = 'LAMP-FLAT'
-        elif imtype.lower() in ('NeAr flat', 'ThAr flat', 'arc flat'):
-            no_AWS = False
-            do_sep = False
-            frame_type = 'ARC'
-        else:
-            imtypeb = True
-            do_sep = True
+        # self.toss = False
+        # self.do_sep = False
+        
+        # if imtype.lower() in ('light', 'light frame', 'experimental', 'screen flat', 'sky flat', \
+        #                       'test image', 'auto_focus', 'focus', 'autofocus probe'):
+        #                         #here we might eventually turn on spectrograph lamps as needed for the imtype.
+        #     imtypeb = True      #imtypeb will passed to open the shutter.
+        #     frame_type = imtype.lower()
+        #     do_sep = True
+        #     self.do_sep = True
+        #     if imtype.lower() in ('screen flat', 'sky flat', 'quick'):
+        #         do_sep = False
+        #         self.do_sep = False
+        #     if imtype.lower() == 'test image':
+        #         self.toss = True
+        # elif imtype.lower() == 'bias':
+        #     exposure_time = 0.00001    #Can QHY take 0.0??
+        #     imtypeb = False
+        #     frame_type = 'BIAS'
+        #     no_AWS = False
+        #     do_sep = False
+        #     self.do_sep = False
+        #     # Consider forcing filter to dark if such a filter exists.
+        # elif imtype.lower() == 'dark':
+        #     imtypeb = False
+        #     frame_type = 'DARK'
+        #     no_AWS = False
+        #     do_sep = False
+        #     self.do_sep = False
+        #     # Consider forcing filter to dark if such a filter exists.
+        # elif imtype.lower() == 'screen flat':
+        #     frame_type = 'screen flat'
+        # elif imtype.lower() == 'sky flat':
+        #     frame_type = 'SKYFLAT'
+        #     self.do_sep = False
+        # elif imtype.lower() == 'quick':
+        #     quick = True
+        #     no_AWS = False   # Send only an informational JPEG??
+        #     do_sep = False
+        #     imtypeb = True
+        #     frame_type = 'EXPOSE'
+        # elif imtype.lower() == 'lamp flat':
+        #     no_AWS = False
+        #     do_sep = False
+        #     frame_type = 'LAMPFLAT'
+        # elif imtype.lower() in ('NeAr flat', 'ThAr flat', 'arc flat'):
+        #     no_AWS = False
+        #     do_sep = False
+        #     frame_type = 'ARC'
+        # else:
+        #     imtypeb = True
+        #     do_sep = True
         # NBNB This area still needs work to cleanly define shutter, calibration, sep and AWS actions.
+
+        # ---- DEH changes to frame_type for banzai compliance and clarity ----
+        # send everything except test images to AWS.
+        breakpoint()
+        no_AWS, self.toss = True if imtype.lower() == 'test image' else False, False
+        quick = True if imtype.lower() == 'quick' else False
+        # clearly define which frames do not do_sep, the rest default to do_sep.
+        if imtype.lower() in ('quick', 'bias', 'dark', 'screen flat', 'sky flat', 'near flat', 'thar flat', \
+                                'arc flat', 'lamp flat', 'solar flat'):
+            do_sep = False
+        else:
+            do_sep = True
+        # shutter open/close status, turn on lamps, frames: ARC, BIAS, BPM, DARK, DOUBLE(2 lit fib.),
+        # EXPERIMENTAL(autofocus), EXPOSE(obj), GUIDE, LAMPFLAT, SKYFLAT, STANDARD, TARGET(Obj+ThAr)
+        if imtype.lower() in ('bias', 'dark', 'lamp flat'):
+            if 'bias': exposure_time = self.config['camera'][self.name]['settings']['min_exposure'] 
+            imtypeb = False  # don't open the shutter.
+            lamps = 'turn on led+tungsten lamps here, if lampflat'
+            frame_type = imtype.replace(' ', '')
+        elif imtype.lower() in ('near flat', 'thar flat', 'arc flat'):
+            imtypeb = False
+            lamps = 'turn on ThAr or NeAr lamps here'
+            frame_type = 'arc'
+        elif imtype.lower() in ('sky flat', 'screen flat','solar flat'):
+            imtypeb = True  # open the shutter.
+            lamps = 'screen lamp or none'
+            frame_type = imtype.replace(' ', '')  # note banzai doesn't appear to include screen or solar flat keywords.
+        else:  # 'light', 'experimental', 'autofocus probe', 'quick', 'test image', or any other image type
+            imtypeb = True
+            lamps = None
+            if imtype.lower() in ('experimental', 'autofocus probe', 'auto_focus'):
+                frame_type = 'experimental'
+            else: frame_type = 'expose'
 
         area = optional_params.get('area', 150)
         # if area is None or area in['Full', 'full', 'chip', 'Chip']:   #  Temporary patch to deal with 'chip'
@@ -878,7 +913,7 @@ class Camera:
                                 img_type = 1
                             if frame_type == 'dark':
                                 img_type = 2
-                            if frame_type in ('flat', 'screen flat', 'sky flat'):
+                            if frame_type in ('flat', 'screenflat', 'skyflat'):
                                 img_type = 3
                             #  This is a Maxim-only technique. Does not work with ASCOM Camera driver
                             self.create_simple_autosave(exp_time=exposure_time, img_type=img_type, \
@@ -1216,13 +1251,13 @@ class Camera:
                     hdu.header['MJD-OBS'] = (Time(self.t2, format='unix').mjd, '[UTC days] Modified Julian Date start date/time')
                     hdu.header['JD-START'] = (Time(self.t2 , format='unix').jd, '[UTC days] Julian Date at start of exposure')
                     #hdu.header['JD-HELIO'] = 'bogus'       # Heliocentric Julian Date at exposure midpoint
-                    hdu.header['OBSTYPE'] = (frame_type, 'Observation type')   #This report is fixed and it should vary...NEEDS FIXING!
+                    hdu.header['OBSTYPE'] = (frame_type.upper(), 'Observation type')   #This report is fixed and it should vary...NEEDS FIXING!
                     hdu.header['EXPTIME']  = (exposure_time, '[s] Requested exposure length')   # This is the exposure in seconds specified by the user
                     #hdu.header['EXPOSURE'] = (self.t?-self.t2, '[s] Actual exposure length')   # Calculated from actual times
                     hdu.header['FILTER']  = (self.current_filter, 'Filter type')  # NB this should read from the wheel!
                     hdu.header['FILTEROF'] = (self.current_offset, 'Filer offset')
                     #hdu.header['FILTRNUM'] = g_dev['fil'].filter.Filter  #Get a number from the hardware or via Maxim.
-                    if g_dev['scr'] is not None and frame_type == 'screen flat':
+                    if g_dev['scr'] is not None and frame_type == 'screenflat':
                         hdu.header['SCREEN']   = (int(g_dev['scr'].bright_setting), 'Screen brightness setting')
                     # DEH finish these keywords, for BANZAI. all of these should be a string of format '[x1:x2,y1:y2]'
                     # biassec needs to change, the overscan can be a region larger than 1-pixel-wide column.
@@ -1264,10 +1299,10 @@ class Camera:
                     #hdu.header['TARGDECD'] = g_dev['mnt'].current_icrs_dec
 
                     hdu.header['SID-TIME'] = (self.pre_mnt[3], '[deg] Sidereal time')
-                    hdu.header['OBJCTRA']  = (self.pre_mnt[1], '[deg] Object RA 1')
-                    hdu.header['OBJCTDEC'] = (self.pre_mnt[2], '[deg] Object dec 1')
-                    hdu.header['OBJCTRA2'] = (self.pre_mnt[1], '[deg] Object RA 2')
-                    hdu.header['OBJCDEC2'] = (self.pre_mnt[2], '[deg] Object dec 2')
+                    hdu.header['OBJCTRA']  = (self.pre_mnt[1], '[deg] Object RA')
+                    hdu.header['OBJCTDEC'] = (self.pre_mnt[2], '[deg] Object dec')
+                    #hdu.header['OBJCTRA2'] = (self.pre_mnt[1], '[deg] Object RA 2')
+                    #hdu.header['OBJCDEC2'] = (self.pre_mnt[2], '[deg] Object dec 2')
                     #hdu.header['OBRARATE'] = self.pre_mnt[4]
                     #hdu.header['OBDECRAT'] = self.pre_mnt[5]
 
@@ -1275,7 +1310,7 @@ class Camera:
                     hdu.header['OBSNOTE']  = self.hint[0:54]            #Needs to be truncated.
                     if self.maxim:
                         hdu.header['FLIPSTAT'] = 'None'   # This is a maxim camera setup, not a flip status
-                    hdu.header['SEQCOUNT'] = (int(counter), 'Image sequence counter')
+                    #hdu.header['SEQCOUNT'] = (int(counter), 'Image sequence counter')
                     hdu.header['DITHER']   = (0, '[] Dither')
                     hdu.header['OPERATOR'] = ("WER", 'Site operator')
                     hdu.header['ENCLOSUR'] = (self.config['enclosure']['enclosure1']['name'], 'Enclosure description')   # "Clamshell"   #Need to document shutter status, azimuth, internal light.
@@ -1375,17 +1410,17 @@ class Camera:
                         hdu.header ['USERID']  = self.last_user_id
                         print("User_name or id not found, using prior.")  #Insert last user nameand ID here if they are not supplied.
                     
-                    # NB This needs more deveopment
+                    # NB This needs more development
                     im_type = 'EX'   #or EN for engineering....
                     f_ext = ""
-                    if frame_type in ('bias', 'dark', 'screen_flat', 'sky_flat', 'sky flat', 'screen flat'):
+                    if frame_type in ('bias', 'dark', 'lampflat', 'skyflat', 'screenflat', 'solarflat', 'arc'):
                         f_ext = "-"
                         if opt['area'] == 150:
                             f_ext += 'f'
                         if frame_type[0:4] in ('bias', 'dark'):
                             f_ext += frame_type[0] + "_" + str(self.camera.BinX)
-                        if frame_type in ('screen_flat', 'sky_flat', 'sky flat', 'screen flat'):
-                            f_ext = f_ext + frame_type[:2] + "_" + str(self.camera.BinX) + '_' + str(self.current_filter)
+                        if frame_type in ('lampflat', 'skyflat',' screenflat',  'solarflat', 'arc', 'expose'):
+                            f_ext += frame_type[:2] + "_" + str(self.camera.BinX) + '_' + str(self.current_filter)
                     # if frame_type[-4:] == 'flat':
                     #     f_ext = '-' + str(self.current_filter)    #Append flat string to local image name
                     cal_name = self.config['site'] + '-' + current_camera_name + '-' + g_dev['day'] + '-' + \
@@ -1470,10 +1505,10 @@ class Camera:
                     #     if not quick:
                     self.enqueue_for_AWS(text_data_size, im_path, text_name)
                     #self.to_reduce((paths, hdu))
-                    hdu.writeto(raw_path + raw_name00, overwrite=True)   #Sve full raw file locally
+                    hdu.writeto(raw_path + raw_name00, overwrite=True)   #Save full raw file locally
                     g_dev['obs'].send_to_user("Raw image saved locally. ", p_level='INFO')
 
-                    if frame_type in ('bias', 'dark', 'screen_flat', 'sky_flat', 'screen flat', 'sky flat'):
+                    if frame_type in ('bias', 'dark', 'screenflat', 'skyflat'):
                         if not self.hint[0:54] == 'Flush':
                             hdu.writeto(cal_path + cal_name, overwrite=True)
                         else:

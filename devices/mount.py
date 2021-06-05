@@ -298,8 +298,6 @@ class Mount:
 
         '''
         if self.seek_commanded:    #Used for debugging.
-          
-=======
             #breakpoint()
             pass
 
