@@ -73,9 +73,9 @@ MOUNTRATE = 15*APPTOSID  #15.0410717859
 KINGRATE = 15.029
 
 try:
-    RefrOn = site_config['mount']['mount1']['settings']['refraction_on'] 
+    RefrOn = False #site_config['mount']['mount1']['settings']['refraction_on'] 
     ModelOn = site_config['mount']['mount1']['settings']['model_on'] 
-    RatesOn = site_config['mount']['mount1']['settings']['rates_on'] 
+    RatesOn = False #site_config['mount']['mount1']['settings']['rates_on'] 
 
 except:
     RefrOn = False
@@ -100,18 +100,18 @@ model = {}    #Note model starts out zero, need to persist actual model.
 wmodel = {}
   
 #NB Currently this is where the working model is stored.
-model['IH'] = 0. 
-model['ID'] = 0. 
-model['WH'] = 0.
-model['WD'] = 0.
-model['MA'] = 0. 
-model['ME'] = 0.
-model['CH'] = 0. 
-model['NP'] = 0.
-model['TF'] = 0.
-model['TX'] = 0. 
+model['IH'] = 0#3-178.35 
+model['ID'] = 0#-310.41 
+model['WH'] = 0
+model['WD'] = 0
+model['MA'] = -304.43 
+model['ME'] = -69.92
+model['CH'] =0# -34.95
+model['NP'] =0# -54.48
+model['TF'] =0# 79.78
+model['TX'] =0# -8.44 
 model['HCES'] = 0
-model['HCEC'] = 0. 
+model['HCEC'] =0# -192.59 
 model['DCES'] = 0.
 model['DCEC'] = 0.
 
@@ -1784,11 +1784,12 @@ def transform_observed_to_mount_r(pRoll, pPitch, pPierSide, loud=False, enable=F
 
 
     if enable:
-        breakpoint()
+        pass
+       # breakpoint()
     if not ModelOn:
         return (pRoll, pPitch)
     else:
-        if pPierSide == 1:
+        if True:
             ih = model['IH']
             idec = model['ID']
             Wh = model['WH']
@@ -1861,9 +1862,11 @@ def transform_observed_to_mount_r(pRoll, pPitch, pPierSide, loud=False, enable=F
             x, y, z = sph_rect_d(math.degrees(cnRoll), math.degrees(cnPitch))
             if loud: print('To spherical:  ', x, y, z, x*x+y*y+z*z)
             #Apply MA error:
-            if loud: print('Pre  MA:       ', x, y, z, math.radians(-ma/3600.))
+            #breakpoint()
+            #enable = True
+            #if True and enable: print('Pre  MA:       ', x, y, z, math.radians(-ma/3600.))
             y, z = rotate_r(y, z, math.radians(-ma/3600.))#/math.cos(math.radians(siteLatitude)))
-            if loud: print('Post MA:       ', x, y, z, x*x+y*y+z*z)
+            #if True and enable : print('Post MA:       ', x, y, z, x*x+y*y+z*z)
             #Apply ME error:
             x, z = rotate_r(x, z, math.radians(-me/3600.))
             if loud: print('Post ME:       ', x, y, z, x*x+y*y+z*z)
@@ -1903,7 +1906,8 @@ def transform_observed_to_mount_r(pRoll, pPitch, pPierSide, loud=False, enable=F
             raCorr = reduce_ha_h(corrRoll - pRoll)*15*3600
             decCorr = reduce_dec_d(corrPitch - pPitch)*3600
             #20210328  Note this may not work at Pole.
-            #print('Corrections:  ', raCorr, decCorr)
+            if enable:
+                print('Corrections in asec:  ', raCorr, decCorr)
             return(corrRoll*HTOR, corrPitch*DTOR)
         elif ALTAZ:
             if loud:

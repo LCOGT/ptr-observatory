@@ -1220,7 +1220,6 @@ class Camera:
                     #hdu.header['JD-HELIO'] = 'bogus'       # Heliocentric Julian Date at exposure midpoint
                     hdu.header['OBSTYPE'] = (frame_type, 'Observation type')   #This report is fixed and it should vary...NEEDS FIXING!
                     hdu.header['EXPTIME']  = (exposure_time, '[s] Requested exposure length')   # This is the exposure in seconds specified by the user
-=======
                     hdu.header['BUNIT']    = 'adu'
                     hdu.header['DATE-OBS'] = datetime.datetime.isoformat(datetime.datetime.utcfromtimestamp(self.t2))
                     hdu.header['EXPTIME']  = exposure_time   #This is the exposure in seconds specified by the user

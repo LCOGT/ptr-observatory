@@ -299,7 +299,7 @@ class Mount:
         '''
         if self.seek_commanded:    #Used for debugging.
           
-=======
+
             #breakpoint()
             pass
 
@@ -769,7 +769,7 @@ class Mount:
         self.refraction = refr_asec
         #ra_obs_r, dec_obs_r = ptr_utility.transformHatoRaDec(ha_obs_r, dec_obs_r, self.sid_now_r)
         #Here we would convert to model and calculate tracking rate correction.
-        ha_mech, dec_mech = ptr_utility.transform_observed_to_mount_r(ha_obs_r, dec_obs_r, pier_east, loud=False)       
+        ha_mech, dec_mech = ptr_utility.transform_observed_to_mount_r(ha_obs_r, dec_obs_r, pier_east, loud=False, enable=True)       
         ra_mech, dec_mech = ptr_utility.transform_haDec_to_raDec_r(ha_mech, dec_mech, self.sid_now_r)
         self.ha_corr = ptr_utility.reduce_ha_r(ha_mech - ha_obs_r)*RTOS     #These are mechanical values, not j.anything
         self.dec_corr = ptr_utility.reduce_dec_r(dec_mech - dec_obs_r)*RTOS
