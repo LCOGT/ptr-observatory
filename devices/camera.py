@@ -622,7 +622,7 @@ class Camera:
 
         # ---- DEH changes to frame_type for banzai compliance and clarity ----
         # send everything except test images to AWS.
-        breakpoint()
+       
         no_AWS, self.toss = True if imtype.lower() == 'test image' else False, False
         quick = True if imtype.lower() == 'quick' else False
         # clearly define which frames do not do_sep, the rest default to do_sep.
@@ -634,7 +634,7 @@ class Camera:
         # shutter open/close status, turn on lamps, frames: ARC, BIAS, BPM, DARK, DOUBLE(2 lit fib.),
         # EXPERIMENTAL(autofocus), EXPOSE(obj), GUIDE, LAMPFLAT, SKYFLAT, STANDARD, TARGET(Obj+ThAr)
         if imtype.lower() in ('bias', 'dark', 'lamp flat'):
-            if 'bias': exposure_time = self.config['camera'][self.name]['settings']['min_exposure'] 
+            if imtype.lower() == 'bias': exposure_time = self.config['camera'][self.name]['settings']['min_exposure'] 
             imtypeb = False  # don't open the shutter.
             lamps = 'turn on led+tungsten lamps here, if lampflat'
             frame_type = imtype.replace(' ', '')
