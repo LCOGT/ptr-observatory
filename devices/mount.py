@@ -298,9 +298,6 @@ class Mount:
 
         '''
         if self.seek_commanded:    #Used for debugging.
-          
-
-            #breakpoint()
             pass
 
         ra_cal_offset, dec_cal_offset = self.get_mount_reference()   #Get from shelf.
