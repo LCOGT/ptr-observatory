@@ -272,8 +272,8 @@ class Enclosure:
         if g_dev['events']['Ops Window Start'] <= ephemNow <= g_dev['events']['Sun Rise']:
             #  We are now in the full operational window.   ###Ops Window Start
             if g_dev['events']['Ops Window Start'] <= ephemNow <= g_dev['events']['Sun Set'] \
-                and g_dev['mnt'].site_in_automatic and not wx_hold and False:
-                #  Basically if in above winow and Automatic and Not Wx_hold: if closed, open up.
+                and g_dev['mnt'].site_in_automatic and not wx_hold and True:
+                #  Basically if in above window and Automatic and Not Wx_hold: if closed, open up.
                 #  print('\nSlew to opposite the azimuth of the Sun, open and cool-down. Az =  ', az_opposite_sun)
                 #  NB There is no corresponding warm up phase in the Morning.
                 if self.status_string.lower() in ['closed']:  #, 'closing']:
