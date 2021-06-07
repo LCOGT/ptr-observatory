@@ -71,12 +71,10 @@ SecTOH = 1/3600.
 APPTOSID = 1.00273811906 #USNO Supplement
 MOUNTRATE = 15*APPTOSID  #15.0410717859
 KINGRATE = 15.029
-
 try:
-    RefrOn = site_config['mount']['mount1']['settings']['refraction_on'] 
-    ModelOn = site_config['mount']['mount1']['settings']['model_on'] 
-    RatesOn = site_config['mount']['mount1']['settings']['rates_on'] 
-
+    RefrOn = site_config['mount']['mount1']['refraction_on'] 
+    ModelOn = site_config['mount']['mount1']['model_on'] 
+    RatesOn = site_config['mount']['mount1']['rates_on'] 
 except:
     RefrOn = False
     ModelOn = False
@@ -100,16 +98,16 @@ model = {}    #Note model starts out zero, need to persist actual model.
 wmodel = {}
   
 #NB Currently this is where the working model is stored.
-model['IH'] = 0. 
-model['ID'] = 0. 
+model['IH'] = 193. 
+model['ID'] = -15.45 
 model['WH'] = 0.
 model['WD'] = 0.
-model['MA'] = 0. 
-model['ME'] = 0.
-model['CH'] = 0. 
+model['MA'] = 59. 
+model['ME'] = 24.14
+model['CH'] = -17.66 
 model['NP'] = 0.
 model['TF'] = 0.
-model['TX'] = 0. 
+model['TX'] = 10.7 
 model['HCES'] = 0
 model['HCEC'] = 0. 
 model['DCES'] = 0.
@@ -1788,7 +1786,7 @@ def transform_observed_to_mount_r(pRoll, pPitch, pPierSide, loud=False, enable=F
     if not ModelOn:
         return (pRoll, pPitch)
     else:
-        if pPierSide == 1:
+        if True:
             ih = model['IH']
             idec = model['ID']
             Wh = model['WH']
@@ -1904,7 +1902,7 @@ def transform_observed_to_mount_r(pRoll, pPitch, pPierSide, loud=False, enable=F
             decCorr = reduce_dec_d(corrPitch - pPitch)*3600
             #20210328  Note this may not work at Pole.
             #print('Corrections:  ', raCorr, decCorr)
-            return(corrRoll*HTOR, corrPitch*DTOR)
+            return(-corrRoll*HTOR, corrPitch*DTOR)
         elif ALTAZ:
             if loud:
                 print(ih, idec, ia, ie, an, aw, tf, tx, ca, npae, aces, acec, eces, ecec)

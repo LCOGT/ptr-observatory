@@ -50,7 +50,6 @@ from astropy import units as u
 from astropy.coordinates import SkyCoord, FK5, ICRS, FK4, Distance, \
                          EarthLocation, AltAz
                          #This should be removed or put in a try
-
 import ptr_utility
 from config import site_config
 import math
@@ -326,8 +325,19 @@ class Mount:
             '''
             # NB NB Read status could be used to recalculate and apply more accurate and current roll and pitch rates.
             '''
+            adv_sid_now_r = self.sid_now_r + APPTOSID*15*STOR
+            adv_mech_ha_r, adv_mech_dec_r = ptr_utility.transform_raDec_to_haDec_r(uncorr_mech_ra_h*HTOR, uncorr_mech_dec_d*DTOR, adv_sid_now_r)
+            adv_roll_obs_r, adv_pitch_obs_r = ptr_utility.transform_mount_to_observed_r(adv_mech_ha_r, adv_mech_dec_r, pierside, loud=False)
+            adv_app_ra_r, adv_app_dec_r, adv_refr_asec = ptr_utility.obsToAppHaRa(adv_roll_obs_r, adv_pitch_obs_r, adv_sid_now_r)
+            
+            
             jnow_ra_r = ptr_utility.reduce_ra_r(app_ra_r - ra_cal_offset*HTOR)    # NB the mnt_refs are subtracted here.  Check units are correct.
-            jnow_dec_r = ptr_utility.reduce_dec_r( app_dec_r - dec_cal_offset*DTOR)
+            jnow_dec_r = ptr_utility.reduce_dec_r(app_dec_r - dec_cal_offset*DTOR)
+            delta_ra_r = (adv_app_ra_r - app_ra_r)
+            delta_dec_r = (adv_app_dec_r - app_dec_r)
+            if self.prior_pitch_rate != 0 and self.prior_roll_rate != 0:
+                pass
+                #print("Ratios:  ", -(self.prior_roll_rate/delta_ra_r), self.prior_pitch_rate/delta_dec_r)
 
             try:
                 if not self.mount.AtPark:   #Applying rates while parked faults.
@@ -335,7 +345,7 @@ class Mount:
                         self.mount.RightAscensionRate =self.prior_roll_rate
                     if self.mount.CanSetDeclinationRate and self.prior_pitch_rate != 0:
                         self.mount.DeclinationRate = self.prior_pitch_rate
-                        #print("Rate found:  ", self.prior_roll_rate, self.prior_pitch_rate, self.ha_corr, self.dec_corr)
+                    #print("Rate found:  ", self.prior_roll_rate, self.prior_pitch_rate, self.ha_corr, self.dec_corr)
             except:
                 print("mount status rate adjust exception.")
                 
@@ -732,7 +742,8 @@ class Mount:
         ''' 
         Slew to the given ra/dec coordinates, supplied in ICRS
         Note no dependency on current position.    
-        unpark the telescope mount 
+        unpark the telescope mount,
+        Rates probably should be in terms of JPL tables or the like.  Presumably apparent coordinate rates of date.
         '''  #  NB can we check if unparked and save time?
 
         if self.mount.CanPark:

@@ -750,6 +750,7 @@ class Camera:
             self.pre_foc = []
             self.pre_ocn = []
             #time_out = time.time()
+
             try:
                 #Check here for filter, guider, still moving  THIS IS A CLASSIC
                 #case where a timeout is a smart idea.
@@ -772,7 +773,7 @@ class Camera:
                     if enc_slewing: 
                         st += 'd>' + str(round(time.time() - g_dev['mnt'].move_time, 1))                  
                     print(st)
-                    if (time.time() - g_dev['mnt'].move_time, 1) >= 80:
+                    if round(time.time() - g_dev['mnt'].move_time, 1) >= 80:
                        print("|n\n DOME OR MOUNT HAS TIMED OUT!|n|n")
                        breakpoint()
                     st = ""
