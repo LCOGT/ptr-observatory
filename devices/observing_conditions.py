@@ -79,6 +79,11 @@ class ObservingConditions:
                                                   decode_responses=True)
             self.observing_conditions_connected = True
             print("observing_conditions: Redis connected = True")
+            
+        elif self.site == 'dht':  #DEH: added just for testing purposes with ASCOM simulators.
+            self.observing_conditions_connected = True
+            print("observing_conditions: Simulator drivers connected True")
+            
         else:
             win32com.client.pythoncom.CoInitialize()
             self.boltwood = win32com.client.Dispatch(driver)
@@ -382,7 +387,7 @@ class ObservingConditions:
             if  (sunZ88Op - two_hours < ephemNow < sunZ88Cl + two_hours) and (time.time() >= \
                  self.sample_time + 30.):    #  Two samples a minute.
                 try:
-                    wl = open('Q:/archive/wx_log.txt', 'a')
+                    wl = open('C:/Users/me/Desktop/Work/ptr/wx_log.txt', 'a')
                     # wl.write('wx, ' + str(time.time()) + ', ' + str(illum) + ', ' + str(mag - 20.01) + ', ' \
                     #          + str(self.unihedron.SkyQuality) + ", \n")
                     wl.close()
@@ -390,8 +395,11 @@ class ObservingConditions:
                 except:
                     print("Wx log did not write.")
         else:
-            breakpoint()
-            print("Big fatal error in observing conditons")
+            #DEH temporary to get past the big fatal error.
+            #DEH is this always going to be very site specific or put in a config somewhere?
+            pass
+            #breakpoint()
+            #print("Big fatal error in observing conditons")
 
         '''
         Now lets compute Wx hold condition.  Class is set up to assume Wx has been good.
@@ -457,19 +465,20 @@ class ObservingConditions:
                 self.wx_clamp = True
 
             self.wx_hold_last_updated = time.time()
-            
+         
+        #DEH: commented tihs out as not needed and causes errors for testing.    
         #This should be located right after forming the wx status
-        url = "https://api.photonranch.org/api/weather/write"
-        data = json.dumps({
-            "weatherData": status,
-            "site": self.site,
-            "timestamp_s": int(time.time())
-            })
-        try:
-            requests.post(url, data)
-        except:
-            print("Wx post failed, usually not a fatal error, probably site not supported")
-        return status
+        #url = "https://api.photonranch.org/api/weather/write"
+        #data = json.dumps({
+        #    "weatherData": status,
+        #    "site": self.site,
+        #    "timestamp_s": int(time.time())
+        #    })
+        #try:
+        #    requests.post(url, data)
+        #except:
+        #    print("Wx post failed, usually not a fatal error, probably site not supported")
+        #return status
 
 
     def get_quick_status(self, quick):
@@ -520,8 +529,10 @@ class ObservingConditions:
             quick.append(float(wx['bright hz']))
 
         else:
-            print("Big fatal error in ocn quick status, site not supported.")
-
+            #print("Big fatal error in ocn quick status, site not supported.")
+            quick = {}
+            return quick
+        
     def get_average_status(self, pre, post):
         average = []
         average.append(round((pre[0] + post[0])/2, 3))
