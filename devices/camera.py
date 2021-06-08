@@ -823,7 +823,7 @@ class Camera:
                     print(st)
                     if round(time.time() - g_dev['mnt'].move_time, 1) >= 80:
                        print("|n\n DOME OR MOUNT HAS TIMED OUT!|n|n")
-                       breakpoint()
+                      
                     st = ""
                     time.sleep(0.2)
                     if seq > 0:
@@ -1209,7 +1209,6 @@ class Camera:
                 try:
                     hdu = fits.PrimaryHDU(self.img)
                     self.img = None    #  Does this free up any resource?
-
                     # assign the keyword values and comment of the keyword as a tuple to write both to header.
                     hdu.header['BUNIT']    = ('adu', 'Unit of array values')
                     hdu.header['CCDXPIXE'] = (self.camera.PixelSizeX, '[um] Size of unbinned pixel, in X')  # DEH maybe change config units to meters or convert to m?
@@ -1224,8 +1223,8 @@ class Camera:
                         hdu.header['YBINING'] = (1, 'Pixel binning in y direction')
                     hdu.header['CCDSUM']   = (self.ccd_sum, 'Sum of chip binning')
                     # DEH pulls from config; master config will need to include keyword, or this line will need to change
-                    hdu.header['RDMODE'] = (self.config['camera'][self.name]['settings']['read_mode'], 'Camera read mode')
-                    hdu.header['RDOUTM'] = (self.config['camera'][self.name]['readout_mode'], 'Camera readout mode')
+                    #hdu.header['RDMODE'] = (self.config['camera'][self.name]['settings']['read_mode'], 'Camera read mode')
+                    #hdu.header['RDOUTM'] = (self.config['camera'][self.name]['readout_mode'], 'Camera readout mode')
                     #hdu.header['RDOUTSP'] = (self.config['camera'][self.name]['settings']['readout_speed'], '[FPS] Readout speed')
                     if self.maxim:
                         hdu.header['CCDSTEMP'] = (round(self.camera.TemperatureSetpoint, 3), '[deg C] CCD set temperature')
@@ -1503,6 +1502,7 @@ class Camera:
                         self.enqueue_image(db_data_size, im_path, db_name)
                         self.enqueue_image(raw_data_size, im_path, raw_name01)
                     '''
+
                     if focus_image:
                         #Note we do not reduce focus images, except above in focus processing.
                         cal_name = cal_name[:-9] + 'FO' + cal_name[-7:]  # remove 'EX' add 'FO'   Could add seq to this
