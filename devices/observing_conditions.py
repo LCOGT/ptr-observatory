@@ -194,6 +194,7 @@ class ObservingConditions:
                           }
                 self.prior_status = status
                 self.prior_status_2 = status2
+                return status
             except:
                 #  Note this is trying to deal with a failed Boltwood report.
                 
@@ -235,9 +236,11 @@ class ObservingConditions:
                               }
                     self.prior_status = status
                     self.prior_status_2 = status2
+                    return status
                 except:
                     self.prior_status = status
                     self.prior_status_2 = status2
+                    return status
                 
             #  Note we are still in saf specific site code.
             if self.unihedron_connected:

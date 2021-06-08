@@ -505,7 +505,6 @@ def calibrate (hdu, lng_path, frame_type='light', quick=False):
         break    #If we get this far we are done.
     if cal_string == '':
         cal_string = 'Uncalibrated'
-    breakpoint()
     hdu.header['CALHIST'] = cal_string
     hdu.data = img.astype('float32')  #This is meant to catch an image cast to 'float64'
     fix = np.where(hdu.data < 0)

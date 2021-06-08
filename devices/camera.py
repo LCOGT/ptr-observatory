@@ -1414,7 +1414,7 @@ class Camera:
                     hdu.header['FRAMENUM'] = (int(next_seq), 'Running frame number')
                                         
                     # DEH I need to understand these keywords better before writing header comments.
-                    hdu.header['PEDASTAL'] = -pedastal
+                    hdu.header['PEDASTAL'] = (-pedastal,  'adu, add this for zero based image.')
                     hdu.header['ERRORVAL'] = 0
                     hdu.header['PATCH']    = bi_mean - pedastal    #  A crude value for the central exposure
                     hdu.header['IMGAREA' ] = opt['area']
@@ -1425,11 +1425,10 @@ class Camera:
                     #hdu.header['MOLUID']   = ('None', 'Molecule unique ID')
                     
                     try:
-                        breakpoint()
                         hdu.header['USERNAME'] = self.user_name
                         hdu.header ['USERID']  = self.user_id
                     except:
-                        breakpoint()
+
                         hdu.header['USERNAME'] = self.last_user_name
                         hdu.header ['USERID']  = self.last_user_id
                         print("User_name or id not found, using prior.")  #Insert last user nameand ID here if they are not supplied.
