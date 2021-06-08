@@ -575,7 +575,6 @@ class Observatory:
                 pri_image = self.reduce_queue.get(block=False)
                 #print(pri_image)
                 if pri_image is None:
-                    breakpoint
                     time.sleep(.5)
                     continue
                 # Here we parse the input and calibrate it.

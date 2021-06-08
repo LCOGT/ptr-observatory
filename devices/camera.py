@@ -1223,8 +1223,9 @@ class Camera:
                         hdu.header['YBINING'] = (1, 'Pixel binning in y direction')
                     hdu.header['CCDSUM']   = (self.ccd_sum, 'Sum of chip binning')
                     # DEH pulls from config; master config will need to include keyword, or this line will need to change
+
                     hdu.header['RDMODE'] = (self.config['camera'][self.name]['settings']['read_mode'], 'Camera read mode')
-                    hdu.header['RDOUTM'] = (self.config['camera'][self.name]['readout_mode'], 'Camera readout mode')
+                    hdu.header['RDOUTM'] = (self.config['camera'][self.name]['settings']['readout_mode'], 'Camera readout mode')
                     hdu.header['RDOUTSP'] = (self.config['camera'][self.name]['settings']['readout_speed'], '[FPS] Readout speed')
                     if self.maxim:
                         hdu.header['CCDSTEMP'] = (round(self.camera.TemperatureSetpoint, 3), '[deg C] CCD set temperature')
@@ -1241,8 +1242,10 @@ class Camera:
                     hdu.header['RDNOISE']  = (self.config['camera'][self.name]['settings']['reference_noise'][0], '[e-/pixel] Read noise')
                     hdu.header['CMOSCAM']  = (self.is_cmos, 'Is CMOS camera')
                     hdu.header['FULLWELL'] = (self.config['camera'][self.name]['settings']['fullwell_capacity'], 'Full well capacity')
-                    hdu.header['CAMGAIN']  = (0, 'CMOS Camera System Gain')
-                    hdu.header['CAMOFFS']  = (10, 'CMOS Camera offset')
+                    hdu.header['CMOSGAIN']  = (0, 'CMOS Camera System Gain')
+                    hdu.header['CMOSOFFS']  = (10, 'CMOS Camera offset')
+                    hdu.header['CAMOFFS']  = (10, 'Camera offset')
+                    hdu.header['CAMGAIN']  = (0, 'Camera gain')
                     hdu.header['CAMUSBT']  = (60, 'Camera USB traffic')
                     hdu.header['TIMESYS']  = ('UTC', 'Time system used')
                     hdu.header['DATE'] = (datetime.date.strftime(datetime.datetime.utcfromtimestamp(self.t2),'%Y-%m-%d'), 'Date FITS file was written')
@@ -1265,12 +1268,22 @@ class Camera:
                     #hdu.header['EXPOSURE'] = (self.t?-self.t2, '[s] Actual exposure length')   # Calculated from actual times
                     hdu.header['FILTER']  = (self.current_filter, 'Filter type')  # NB this should read from the wheel!
                     hdu.header['FILTEROF'] = (self.current_offset, 'Filer offset')
-                    #hdu.header['FILTRNUM'] = g_dev['fil'].filter.Filter  #Get a number from the hardware or via Maxim.
+                    hdu.header['FILTRNUM'] = ('PTR_ADON_HA_0023',  'An index into a DB')  #Get a number from the hardware or via Maxim.
                     if g_dev['scr'] is not None and frame_type == 'screenflat':
                         hdu.header['SCREEN']   = (int(g_dev['scr'].bright_setting), 'Screen brightness setting')
-                    # DEH finish these keywords, for BANZAI. all of these should be a string of format '[x1:x2,y1:y2]'
-                    # biassec needs to change, the overscan can be a region larger than 1-pixel-wide column.
-                    # detsec also needs to be changed appropriately. 
+                        
+# =============================================================================
+#                     #WER:  Darren these values are nominal with respect to a raw chip and then delineate which
+#                     #zones of the chip are what.  In our case we are only entering this region with Trimmed
+#                     #Data  The Biassec and Trimsec are essentially zero and detsec = datasec.  This is not 
+#                     #always the case.  This all needs re-thinking if we are going to Run BANSAI at site.
+#                         
+#                     # DEH finish these keywords, for BANZAI. all of these should be a string of format '[x1:x2,y1:y2]'
+#                     # biassec needs to change, the overscan can be a region larger than 1-pixel-wide column.
+#                     # detsec also needs to be changed appropriately.
+#
+# =============================================================================
+                    
                     hdu.header['BIASSEC'] = ('['+str(int(self.overscan_x/self.bin_x))+':'+str(int(self.overscan_x/self.bin_x + 1))+','+ \
                                              str(int(self.overscan_y/self.bin_y))+':'+str(self.camera.NumY)+']', \
                                              '[binned pixel] Section of bias/overscan data')
