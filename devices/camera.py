@@ -1223,9 +1223,9 @@ class Camera:
                         hdu.header['YBINING'] = (1, 'Pixel binning in y direction')
                     hdu.header['CCDSUM']   = (self.ccd_sum, 'Sum of chip binning')
                     # DEH pulls from config; master config will need to include keyword, or this line will need to change
-                    #hdu.header['RDMODE'] = (self.config['camera'][self.name]['settings']['read_mode'], 'Camera read mode')
-                    #hdu.header['RDOUTM'] = (self.config['camera'][self.name]['readout_mode'], 'Camera readout mode')
-                    #hdu.header['RDOUTSP'] = (self.config['camera'][self.name]['settings']['readout_speed'], '[FPS] Readout speed')
+                    hdu.header['RDMODE'] = (self.config['camera'][self.name]['settings']['read_mode'], 'Camera read mode')
+                    hdu.header['RDOUTM'] = (self.config['camera'][self.name]['readout_mode'], 'Camera readout mode')
+                    hdu.header['RDOUTSP'] = (self.config['camera'][self.name]['settings']['readout_speed'], '[FPS] Readout speed')
                     if self.maxim:
                         hdu.header['CCDSTEMP'] = (round(self.camera.TemperatureSetpoint, 3), '[deg C] CCD set temperature')
                         hdu.header['CCDATEMP'] = (round(self.camera.Temperature, 3), '[deg C] CCD actual temperature')
@@ -1241,7 +1241,8 @@ class Camera:
                     hdu.header['RDNOISE']  = (self.config['camera'][self.name]['settings']['reference_noise'][0], '[e-/pixel] Read noise')
                     hdu.header['CMOSCAM']  = (self.is_cmos, 'Is CMOS camera')
                     hdu.header['FULLWELL'] = (self.config['camera'][self.name]['settings']['fullwell_capacity'], 'Full well capacity')
-                    hdu.header['CAMOFFS']  = (10, 'Camera offset')
+                    hdu.header['CAMGAIN']  = (0, 'CMOS Camera System Gain')
+                    hdu.header['CAMOFFS']  = (10, 'CMOS Camera offset')
                     hdu.header['CAMUSBT']  = (60, 'Camera USB traffic')
                     hdu.header['TIMESYS']  = ('UTC', 'Time system used')
                     hdu.header['DATE'] = (datetime.date.strftime(datetime.datetime.utcfromtimestamp(self.t2),'%Y-%m-%d'), 'Date FITS file was written')
@@ -1411,9 +1412,11 @@ class Camera:
                     #hdu.header['MOLUID']   = ('None', 'Molecule unique ID')
                     
                     try:
+                        breakpoint()
                         hdu.header['USERNAME'] = self.user_name
                         hdu.header ['USERID']  = self.user_id
                     except:
+                        breakpoint()
                         hdu.header['USERNAME'] = self.last_user_name
                         hdu.header ['USERID']  = self.last_user_id
                         print("User_name or id not found, using prior.")  #Insert last user nameand ID here if they are not supplied.
@@ -1513,7 +1516,7 @@ class Camera:
                     # if  not script in ('True', 'true', 'On', 'on'):   #  not quick and    #Was moved 20201022 for grid
                     #     if not quick:
                     self.enqueue_for_AWS(text_data_size, im_path, text_name)
-                    #self.to_reduce((paths, hdu))
+                    self.to_reduce((paths, hdu))
                     hdu.writeto(raw_path + raw_name00, overwrite=True)   #Save full raw file locally
                     g_dev['obs'].send_to_user("Raw image saved locally. ", p_level='INFO')
 

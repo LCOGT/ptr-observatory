@@ -571,7 +571,7 @@ class Observatory:
                 # print(self)
                 # print(self.reduce_queue)
                 # print(self.reduce_queue.empty)
-                breakpoint()
+
                 pri_image = self.reduce_queue.get(block=False)
                 #print(pri_image)
                 if pri_image is None:
