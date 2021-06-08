@@ -338,7 +338,7 @@ class ObservingConditions:
                 #     except:
                 #         print("Wx log did not write.")
 
-                #return status
+                return status
             except:
                 pass
                 # time.sleep(1)

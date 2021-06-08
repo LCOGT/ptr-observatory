@@ -678,7 +678,7 @@ class Mount:
                     accum_dec_offset = icrs_dec - self.dec_prior
                     ra_cal_offset += accum_ra_offset #self.ra_offset  #NB WE are adding an already correctly signed offset.The offset is positive to right of screen therefore a smaller numer on the RA line.
                     dec_cal_offset += accum_dec_offset #self.dec_offset
-                    self.set_mount_reference(ra_cal_offset, dec_cal_off)
+                    self.set_mount_reference(ra_cal_offset, dec_cal_offset)
                     self.ra_offset = 0
                     self.dec_offset = 0
                     self.offset_received = False
