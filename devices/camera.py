@@ -489,7 +489,6 @@ class Camera:
         #  self.t7 is last time camera was read out
         #if self.t7 is not None and (time.time() - self.t7 > 30) and self.maxim:
         self.t0 = time.time()
-        
         try:
             probe = self.camera.CoolerOn
             if not probe:
@@ -528,6 +527,7 @@ class Camera:
         else:
             bin_x = 1
             self.ccd_sum = '1 1'
+        bin_x = 2   #forcing it.
         bin_y = bin_x   #NB This needs fixing someday!
         self.bin = bin_x
         self.camera.BinX = bin_x
@@ -1095,16 +1095,15 @@ class Camera:
 
 
                 #This image shift code needs to be here but it is troubling.
-
                 if ix == 9600:
                     if self.img[22, -34] == 0:
 
-                        overscan = int((np.median(self.img[24:, -33:]) + np.median(self.img[0:21, :]))/2) - 1
-                        trimmed = self.img[24:-8, :-34].astype('int32') + pedastal - overscan
+                        self.overscan = int((np.median(self.img[24:, -33:]) + np.median(self.img[0:21, :]))/2) - 1
+                        trimmed = self.img[24:-8, :-34].astype('int32') + pedastal - self.overscan
 
                     elif self.img[30, -34] == 0:
-                        overscan = int((np.median(self.img[32:, -33:]) + np.median(self.img[0:29, :]))/2) - 1
-                        trimmed = self.img[32:, :-34].astype('int32') + pedastal - overscan
+                        self.overscan = int((np.median(self.img[32:, -33:]) + np.median(self.img[0:29, :]))/2) - 1
+                        trimmed = self.img[32:, :-34].astype('int32') + pedastal - self.overscan
 
                     else:
                         print("Image shift is incorrect, absolutely fatal error.")
@@ -1129,6 +1128,7 @@ class Camera:
                         #print("Shift 2", self.overscan, square.mean())
 
                     else:
+                        breakpoint()
                         print("Image shift is incorrect, absolutely fatal error.")
 
 
@@ -1554,6 +1554,7 @@ class Camera:
                     if not focus_image:
                         result['FWHM'] = None
                     result['half_FD'] = None
+                    breakpoint()
                     result['patch'] = bi_mean - self.overscan
                     result['calc_sky'] = 0 #avg_ocn[7]
                     result['temperature'] = 0 #avg_foc[2]

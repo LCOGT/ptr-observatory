@@ -187,7 +187,7 @@ class Mount:
         self.object = "Unspecified"
         self.current_icrs_ra = "Unspecified_Ra"
         self.current_icrs_dec = " Unspecified_Dec"
-        self.delta_t_s = HTOSec/12
+        self.delta_t_s = HTOSec/12   #5 minutes
         self.prior_roll_rate = 0
         self.prior_pitch_rate = 0
         self.offset_received = False
@@ -745,7 +745,7 @@ class Mount:
             ra = jnow_coord.ra.hour
             dec = jnow_coord.dec.degree
             if self.offset_received:
-                ra +=  ra_cal_offset + self.ra_offset          #Offsets are J.now
+                ra +=  ra_cal_offset + self.ra_offset          #Offsets are J.now and used to get target on Browser Crosshairs.
                 dec +=  dec_cal_offset + self.dec_offset              
         pier_east = 1
         if self.flip_correction_needed:   #self.config.flip_correction_needed woul dbe more readable.
@@ -761,6 +761,8 @@ class Mount:
                 #DestSide... not implemented in PWI_4
                 pass
         ra_app_h, dec_app_d = ra_dec_fix_h(ra, dec)
+        
+        #'This is the "Forward" calculation of pointing.
         #Here we add in refraction and the TPOINT compatible mount model   
         ha_obs_r, dec_obs_r, refr_asec = ptr_utility.appToObsRaHa(ra_app_h*HTOR, dec_app_d*DTOR, self.sid_now_r)
         self.refraction = refr_asec
@@ -773,8 +775,8 @@ class Mount:
         self.mount.Tracking = True
         self.move_time = time.time()
         self.mount.SlewToCoordinatesAsync(ra_mech*RTOH, dec_mech*RTOD)  #Is this needed?
-        ###  figure out velocity
-        self.sid_next_r = (self.sid_now_h + self.delta_t_s*SecTOH)*HTOR
+        ###  figure out velocity  Apparent place is unchanged.
+        self.sid_next_r = (self.sid_now_h + self.delta_t_s*SecTOH)*HTOR    #delta_t_s is five minutes
         ha_obs_adv, dec_obs_adv, refr_adv = ptr_utility.appToObsRaHa(ra_app_h*HTOR, dec_app_d*DTOR, self.sid_next_r)   #% minute advance
         ha_mech_adv, dec_mech_adv = ptr_utility.transform_observed_to_mount_r(ha_obs_adv, dec_obs_adv, pier_east, loud=False)
         ra_adv, dec_adv = ptr_utility.transform_haDec_to_raDec_r(ha_mech_adv, dec_mech_adv, self.sid_next_r)
