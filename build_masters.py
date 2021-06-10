@@ -1160,8 +1160,8 @@ def prepare_tpoint(camera_name, archive_path, selector_string, lng_path, out_pat
                hdr['NO-SOLVE'] = True
                img.close()
                continue
-        pre_ra = hdr['TARG-RA']
-        pre_dec = hdr['TARG-DEC']
+        pre_ra = hdr['CAT-RA']
+        pre_dec = hdr['CAT-DEC']
         pier = hdr['PIERSIDE']
         meas_ra = hdr['RA-J2000']
         meas_dec = hdr['DECJ2000']
@@ -1534,7 +1534,7 @@ if __name__ == '__main__':
     camera_name = 'sq01'  #  config.site_config['camera']['camera1']['name']
     #archive_path = "D:/000ptr_saf/archive/sq01/2020-06-13/"
     #archive_path = "D:/2020-06-19  Ha and O3 screen flats/"
-    archive_path = "C:/000ptr_saf/archive/sq01/20210604/reduced/"
+    archive_path = "D:/000ptr_saf/archive/sq01/20210608/reduced/"
     out_path = 'C:/Users/obs/Documents/GitHub/ptr-observatory/processing/TPOINT/'
     lng_path = "C:/000ptr_saf/archive/sq01/lng/"
     #APPM_prepare_TPOINT()

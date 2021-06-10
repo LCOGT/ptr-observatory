@@ -527,7 +527,7 @@ class Camera:
         else:
             bin_x = 1
             self.ccd_sum = '1 1'
-        bin_x = 2   #forcing it.
+
         bin_y = bin_x   #NB This needs fixing someday!
         self.bin = bin_x
         self.camera.BinX = bin_x
@@ -1317,8 +1317,8 @@ class Camera:
                     hdu.header['CATNAME']  = (g_dev['mnt'].object, 'Catalog object name')
                     hdu.header['CAT-RA']   = (g_dev['mnt'].current_icrs_ra, '[deg] Catalog RA of object')
                     hdu.header['CAT-DEC']  = (g_dev['mnt'].current_icrs_dec, '[deg] Catalog Dec of object')
-                    #hdu.header['TARGRAH']  = g_dev['mnt'].current_icrs_ra
-                    #hdu.header['TARGDECD'] = g_dev['mnt'].current_icrs_dec
+                    hdu.header['TARGRA']  = g_dev['mnt'].current_icrs_ra
+                    hdu.header['TARGDEC'] = g_dev['mnt'].current_icrs_dec
 
                     hdu.header['SID-TIME'] = (self.pre_mnt[3], '[deg] Sidereal time')
                     hdu.header['OBJCTRA']  = (self.pre_mnt[1], '[deg] Object RA')
@@ -1554,7 +1554,6 @@ class Camera:
                     if not focus_image:
                         result['FWHM'] = None
                     result['half_FD'] = None
-                    breakpoint()
                     result['patch'] = bi_mean - self.overscan
                     result['calc_sky'] = 0 #avg_ocn[7]
                     result['temperature'] = 0 #avg_foc[2]

@@ -73,9 +73,9 @@ MOUNTRATE = 15*APPTOSID  #15.0410717859
 KINGRATE = 15.029
 
 try:
-    RefrOn = False #site_config['mount']['mount1']['settings']['refraction_on'] 
+    RefrOn = site_config['mount']['mount1']['settings']['refraction_on'] 
     ModelOn = site_config['mount']['mount1']['settings']['model_on'] 
-    RatesOn = False #site_config['mount']['mount1']['settings']['rates_on'] 
+    RatesOn = site_config['mount']['mount1']['settings']['rates_on'] 
 
 except:
     RefrOn = False
@@ -100,18 +100,18 @@ model = {}    #Note model starts out zero, need to persist actual model.
 wmodel = {}
   
 #NB Currently this is where the working model is stored.
-model['IH'] = 0#3-178.35 
-model['ID'] = 0#-310.41 
+model['IH'] = 0 # -146.73
+model['ID'] = 0 # -320.16 
 model['WH'] = 0
 model['WD'] = 0
-model['MA'] = -304.43 
-model['ME'] = -69.92
-model['CH'] =0# -34.95
-model['NP'] =0# -54.48
-model['TF'] =0# 79.78
-model['TX'] =0# -8.44 
+model['MA'] =-300 # -260.21 
+model['ME'] = 0 # -65         #Fixed
+model['CH'] = 0 # -200        #Fixed
+model['NP'] = 0
+model['TF'] = 0 #  130.32
+model['TX'] = 0 # -103.68 
 model['HCES'] = 0
-model['HCEC'] =0# -192.59 
+model['HCEC'] = 0 
 model['DCES'] = 0.
 model['DCEC'] = 0.
 
