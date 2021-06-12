@@ -100,16 +100,16 @@ model = {}    #Note model starts out zero, need to persist actual model.
 wmodel = {}
   
 #NB Currently this is where the working model is stored.
-model['IH'] = 0 # -146.73
-model['ID'] = 0 # -320.16 
+model['IH'] = -117
+model['ID'] = -259
 model['WH'] = 0
 model['WD'] = 0
-model['MA'] =-300 # -260.21 
-model['ME'] = 0 # -65         #Fixed
-model['CH'] = 0 # -200        #Fixed
+model['MA'] =312 
+model['ME'] =-73
+model['CH'] =0
 model['NP'] = 0
-model['TF'] = 0 #  130.32
-model['TX'] = 0 # -103.68 
+model['TF'] = 0
+model['TX'] = 0
 model['HCES'] = 0
 model['HCEC'] = 0 
 model['DCES'] = 0.

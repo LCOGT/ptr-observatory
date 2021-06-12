@@ -321,22 +321,22 @@ class Mount:
             uncorr_mech_ha_r, uncorr_mech_dec_r = ptr_utility.transform_raDec_to_haDec_r(uncorr_mech_ra_h*HTOR, uncorr_mech_dec_d*DTOR, self.sid_now_r)
             roll_obs_r, pitch_obs_r = ptr_utility.transform_mount_to_observed_r(uncorr_mech_ha_r, uncorr_mech_dec_r, pierside, loud=False)
             app_ra_r, app_dec_r, refr_asec = ptr_utility.obsToAppHaRa(roll_obs_r, pitch_obs_r, self.sid_now_r)
-            self.refraction = refr_asec
+            self.refraction_rev = refr_asec
             '''
             # NB NB Read status could be used to recalculate and apply more accurate and current roll and pitch rates.
             '''
             jnow_ra_r = ptr_utility.reduce_ra_r(app_ra_r - ra_cal_offset*HTOR)    # NB the mnt_refs are subtracted here.  Check units are correct.
             jnow_dec_r = ptr_utility.reduce_dec_r( app_dec_r - dec_cal_offset*DTOR)
 
-            try:
-                if not self.mount.AtPark:   #Applying rates while parked faults.
-                    if self.mount.CanSetRightAscensionRate and self.prior_roll_rate != 0 :
-                        self.mount.RightAscensionRate =self.prior_roll_rate
-                    if self.mount.CanSetDeclinationRate and self.prior_pitch_rate != 0:
-                        self.mount.DeclinationRate = self.prior_pitch_rate
-                        #print("Rate found:  ", self.prior_roll_rate, self.prior_pitch_rate, self.ha_corr, self.dec_corr)
-            except:
-                print("mount status rate adjust exception.")
+            # try:
+            #     if not self.mount.AtPark:   #Applying rates while parked faults.
+            #         if self.mount.CanSetRightAscensionRate and self.prior_roll_rate != 0 :
+            #             self.mount.RightAscensionRate =self.prior_roll_rate
+            #         if self.mount.CanSetDeclinationRate and self.prior_pitch_rate != 0:
+            #             self.mount.DeclinationRate = self.prior_pitch_rate
+            #             #print("Rate found:  ", self.prior_roll_rate, self.prior_pitch_rate, self.ha_corr, self.dec_corr)
+            # except:
+            #     print("mount status rate adjust exception.")
    
             if self.mount.sideOfPier == look_west \
                 and self.flip_correction_needed:
@@ -411,7 +411,7 @@ class Mount:
                 'right_ascension': round(icrs_ra, 5),
                 'declination': round(icrs_dec, 4),
                 'sidereal_time': round(self.current_sidereal, 5),  #Should we add HA?
-                'refraction': round(self.refraction, 2),
+                'refraction': round(self.refraction_rev, 2),
                 'correction_ra': round(self.ha_corr, 4),  #If mount model = 0, these are very small numbers.
                 'correction_dec': round(self.dec_corr, 4),
 
@@ -726,6 +726,15 @@ class Mount:
             print("Go to unamed target.")
         else:
             print("Going to:  ", self.object)   #NB Needs cleaning up.
+            
+    def re_seek(self, dither):
+        if dither == 0:
+            self.go_coord(self.last_ra, self.last_dec, self.last_tracking_rate_ra, self.last_tracking_rate_dec)
+        else:
+            breakpoint()
+            
+            
+            
 
     def go_coord(self, ra, dec, tracking_rate_ra=0, tracking_rate_dec=0):  #Note these rates need a system specification
         '''
@@ -733,6 +742,11 @@ class Mount:
         Note no dependency on current position.
         unpark the telescope mount
         '''  #  NB can we check if unparked and save time?
+        self.last_ra = ra
+        self.last_dec = dec
+        self.last_tracking_rate_ra = tracking_rate_ra
+        self.last_tracking_rate_dec = tracking_rate_dec
+        self.last_seek_time = time.time()
 
         if self.mount.CanPark:
             #print("mount cmd: unparking mount")
@@ -765,25 +779,25 @@ class Mount:
 
         
         #'This is the "Forward" calculation of pointing.
-        #Here we add in refraction and the TPOINT compatible mount model   
+        #Here we add in refraction and the TPOINT compatible mount model
+
         self.ha_obs_r, self.dec_obs_r, self.refr_asec = ptr_utility.appToObsRaHa(ra_app_h*HTOR, dec_app_d*DTOR, self.sid_now_r)
         #ra_obs_r, dec_obs_r = ptr_utility.transformHatoRaDec(ha_obs_r, dec_obs_r, self.sid_now_r)
         #Here we would convert to model and calculate tracking rate correction.
         self.ha_mech, self.dec_mech = ptr_utility.transform_observed_to_mount_r(self.ha_obs_r, self.dec_obs_r, pier_east, loud=False, enable=True)       
         self.ra_mech, self.dec_mech = ptr_utility.transform_haDec_to_raDec_r(self.ha_mech, self.dec_mech, self.sid_now_r)
         self.ha_corr = ptr_utility.reduce_ha_r(self.ha_mech -self. ha_obs_r)*RTOS
-        RTOS     #These are mechanical values, not j.anything
         self.dec_corr = ptr_utility.reduce_dec_r(self.dec_mech - self.dec_obs_r)*RTOS
         self.mount.Tracking = True
         self.move_time = time.time()
         self.mount.SlewToCoordinatesAsync(self.ra_mech*RTOH, self.dec_mech*RTOD)  #Is this needed?
         ###  figure out velocity  Apparent place is unchanged.
         self.sid_next_r = (self.sid_now_h + self.delta_t_s*STOH)*HTOR    #delta_t_s is five minutes
-        ha_obs_adv, dec_obs_adv, self.refr_adv = ptr_utility.appToObsRaHa(ra_app_h*HTOR, dec_app_d*DTOR, self.sid_next_r)   #% minute advance
-        ha_mech_adv, dec_mech_adv = ptr_utility.transform_observed_to_mount_r(ha_obs_adv, dec_obs_adv, pier_east, loud=False)
-        ra_adv, dec_adv = ptr_utility.transform_haDec_to_raDec_r(ha_mech_adv, dec_mech_adv, self.sid_next_r)
-        self.adv_ha_corr = ptr_utility.reduce_ha_r(ha_mech_adv - ha_obs_adv)*RTOS     #These are mechanical values, not j.anything
-        self.adv_dec_corr = ptr_utility.reduce_dec_r(dec_mech_adv - dec_obs_adv)*RTOS
+        self.ha_obs_adv, self.dec_obs_adv, self.refr_adv = ptr_utility.appToObsRaHa(ra_app_h*HTOR, dec_app_d*DTOR, self.sid_next_r)   #% minute advance
+        self.ha_mech_adv, self.dec_mech_adv = ptr_utility.transform_observed_to_mount_r(self.ha_obs_adv, self.dec_obs_adv, pier_east, loud=False)
+        self.ra_adv, self.dec_adv = ptr_utility.transform_haDec_to_raDec_r(self.ha_mech_adv, self.dec_mech_adv, self.sid_next_r)
+        self.adv_ha_corr = ptr_utility.reduce_ha_r(self.ha_mech_adv - self.ha_obs_adv)*RTOS     #These are mechanical values, not j.anything
+        self.adv_dec_corr = ptr_utility.reduce_dec_r(self.dec_mech_adv - self.dec_obs_adv)*RTOS
         self.prior_seek_ha_h = self.ha_mech
         self.prior_seek_dec_d = self.dec_mech
         self.prior_seek_time = time.time()
@@ -794,7 +808,7 @@ class Mount:
         RightAscensionRate property are seconds of RA per sidereal second.
         '''
         if self.mount.CanSetRightAscensionRate:
-            self.prior_roll_rate = -((self.ha_mech_adv -self. ha_mech)*RTOS/self.delta_t_s - MOUNTRATE)/APPTOSID/15    #Conversion right 20219329
+            self.prior_roll_rate = -((self.ha_mech_adv - self. ha_mech)*RTOS*MOUNTRATE/self.delta_t_s - MOUNTRATE)/(APPTOSID*15)    #Conversion right 20219329
             self.mount.RightAscensionRate = self.prior_roll_rate
         else:
             self.prior_roll_rate = 0.0

@@ -488,7 +488,16 @@ class Camera:
         #print("Checking if Maxim is still connected!")
         #  self.t7 is last time camera was read out
         #if self.t7 is not None and (time.time() - self.t7 > 30) and self.maxim:
+            
+        
         self.t0 = time.time()
+        #Force a reseek //eventually dither//
+        try:
+            if g_dev['mnt'].last_seek_time < self.t0 - 180:   #NB Consider upping this to 300 to 600 sec.
+                print('re_seeking')
+                g_dev['mnt'].re_seek(0)  #) is a placeholder for a dither value being passed.
+        except:
+            print('Re_seek skipped; usualy becuase no prior seek this session.')
         try:
             probe = self.camera.CoolerOn
             if not probe:
@@ -1364,6 +1373,7 @@ class Camera:
                     hdu.header['ZENITH'] = (avg_mnt['zenith_distance'], '[deg] Zenith')
                     hdu.header['AIRMASS'] = (avg_mnt['airmass'], 'Effective mean airmass')
                     g_dev['airmass'] = float(avg_mnt['airmass'])
+                    hdu.header['REFRACT'] = (round(g_dev['mnt'].refraction_rev, 3),'asec')
                     hdu.header['MNTRDSYS'] = (avg_mnt['coordinate_system'], 'Mount coordinate system')
                     hdu.header['POINTINS'] = (avg_mnt['instrument'], '')
                     hdu.header['MNT-PARK'] = (avg_mnt['is_parked'], 'Mount is parked')
