@@ -100,13 +100,13 @@ model = {}    #Note model starts out zero, need to persist actual model.
 wmodel = {}
   
 #NB Currently this is where the working model is stored.
-model['IH'] = -117
-model['ID'] = -259
+model['IH'] =0
+model['ID'] = 0
 model['WH'] = 0
 model['WD'] = 0
-model['MA'] =312 
-model['ME'] =-73
-model['CH'] =0
+model['MA'] =0
+model['ME'] =0
+model['CH'] =0   #Value not clear after a flip.
 model['NP'] = 0
 model['TF'] = 0
 model['TX'] = 0
@@ -1790,6 +1790,7 @@ def transform_observed_to_mount_r(pRoll, pPitch, pPierSide, loud=False, enable=F
         return (pRoll, pPitch)
     else:
         if True:
+         
             ih = model['IH']
             idec = model['ID']
             Wh = model['WH']

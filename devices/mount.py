@@ -790,6 +790,8 @@ class Mount:
         self.dec_corr = ptr_utility.reduce_dec_r(self.dec_mech - self.dec_obs_r)*RTOS
         self.mount.Tracking = True
         self.move_time = time.time()
+        print('MODEL HA, DEC, Refraction:  (asec)  ', self.ha_corr, self.dec_corr, self.refr_asec)
+
         self.mount.SlewToCoordinatesAsync(self.ra_mech*RTOH, self.dec_mech*RTOD)  #Is this needed?
         ###  figure out velocity  Apparent place is unchanged.
         self.sid_next_r = (self.sid_now_h + self.delta_t_s*STOH)*HTOR    #delta_t_s is five minutes
