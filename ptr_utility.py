@@ -105,7 +105,7 @@ model['ID'] = 0
 model['WH'] = 0
 model['WD'] = 0
 model['MA'] =0
-model['ME'] =0
+model['ME'] =-65
 model['CH'] =0   #Value not clear after a flip.
 model['NP'] = 0
 model['TF'] = 0
@@ -1840,15 +1840,14 @@ def transform_observed_to_mount_r(pRoll, pPitch, pPierSide, loud=False, enable=F
         if not ALTAZ:
            
             if pPierSide == 0:
-
+                ch = -ch/3600.      #Trying this 20210612
+                np = -np/3600.      
                 rRoll += math.radians(Wh/3600.)
                 rPitch -= math.radians(Wd/3600.)  #NB Adjust signs to normal EWNS view
                 #print("PIERSIDE IS BEING APPLIED:  ", pPierSide, Wh, Wd)
             if loud:
                 print(ih, idec, Wh, Wd, ma, me, ch, np, tf, tx, hces, hcec, dces, dcec)
-                # Do these need flipping?  I do not think so.
-            ch = -ch/3600.
-            np = -np/3600.
+
             #This is exact trigonometrically:
             if loud: print('Pre CN; roll, pitch:  ', rRoll*RTOH, rPitch*RTOD)
             cnRoll =  rRoll + math.atan2(math.cos(math.radians(np)) \

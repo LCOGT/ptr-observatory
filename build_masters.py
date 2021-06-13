@@ -1200,9 +1200,9 @@ def prepare_tpoint(camera_name, archive_path, selector_string, lng_path, out_pat
                 #print('IN: ', pre_ra, meas_ra, pre_dec, meas_dec, meas_ha, meas_sid)
                 if pier in ['Look West', 'West', 'west', 1, '1']:
                     #Change to Mechanical
-                    #meas_dec += 1000/3600/2.  #(+ asec is dec is low on West side in TPOINT display)
+                    meas_ra -= 0.001
                     meas_dec = 180 - meas_dec
-                    meas_ra -= 12 #+ +342/15/3600  DO NOT FLIP RA
+                    meas_ra -= 12  #+ +342/15/3600  DO NOT FLIP RA
                     if meas_ra < 0:
                         meas_ra += 24
                 ra = meas_ra
