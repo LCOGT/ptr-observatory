@@ -213,7 +213,7 @@ class Sequencer:
             if req['gridType'] == 'sweep':
                self.equatorial_pointing_run(req, opt)
             elif req['gridType'] == 'cross':
-                self.vertical_pointing_run(req, opt)
+                self.cross_pointing_run(req, opt)
             else:
                 self.sky_grid_pointing_run(req, opt)
         elif action == "run" and script in ("genBiasDarkMaster", "genBiasDarkMasters"):
@@ -923,6 +923,7 @@ class Sequencer:
             print("Motion check faulted.")
 
         #  NBNBNB Need to preserve  and restore on exit, incoming filter setting
+        breakpoint()
         if req2['target'] == 'near_tycho_star':   ## 'bin', 'area'  Other parameters
 
             #  Go to closest Mag 7.5 Tycho * with no flip
@@ -1225,7 +1226,7 @@ class Sequencer:
 A variant on this is cover a grid, cover a + sign shape.
 IF sweep
         '''
-        ptr_utility.ModelOn = False
+       # ptr_utility.ModelOn = False
         
         self. sky_guard = True
         ha_deg_steps = (-72.5, -62.5, -52.5, -42.5, -32.5, -22.5, -12.5, -2.5, \
@@ -1271,12 +1272,110 @@ IF sweep
             result = 'simulated result.'
             count += 1
             print('\n\nResult:  ', result,   'To go count:  ', length - count,  '\n\n')
-        g_dev['mnt'].stop_command()
+        g_dev['mnt'].mount.Tracking = False
         print("Equatorial sweep completed. Happy reducing.")
         ptr_utility.ModelOn = True
         self.sky_guard = False
         return
  
+    def cross_pointing_run(self, req, opt, spacing=30, vertical=False, grid=False, alt_minimum=25):
+        '''
+        unpark telescope
+        if not open, open dome
+        go to zenith & expose (Consider using Nearest mag 7 grid star.)
+        verify reasonable transparency
+            Ultimately, check focus, find a good exposure level
+        go to -72.5 degrees of ha, 0  expose
+        ha += 10; repeat to Ha = 67.5
+        += 5, expose
+        -= 10 until -67.5
+
+        if vertical go ha = -0.25 and step dec 85 -= 10 to -30 then
+        flip and go other way with offset 5 deg.
+
+        For Grid use Patrick Wallace's Mag 7 Tyco star grid it covers
+        sky equal-area, has a bright star as target and wraps around
+        both axes to better sample the encoders. Choose and load the
+        grid coarseness.
+        '''
+        '''
+        Prompt for ACCP model to be turned off
+        if closed:
+           If WxOk: open
+        if parked:
+             unpark
+
+         pick grid star near zenith in west (no flip)
+              expose 10 s
+              solve
+              Is there a bright object in field?
+              adjust exposure if needed.
+        Go to (-72.5deg HA, dec = 0),
+             Expose, calibrate, save file.  Consider
+             if we can real time solve or just gather.
+        step 10 degrees forward untl ha is 77.5
+        at 77.5 adjust target to (72.5, 0) and step
+        backward.  Stop when you get to -77.5.
+        park
+        Launch reduction
+
+A variant on this is cover a grid, cover a + sign shape.
+IF sweep
+        '''
+       # ptr_utility.ModelOn = False
+        
+        self. sky_guard = True
+        points = [(-2.5, 0), (-2.5, -30), (-30, 0), (-60, 0), (2.5, 75), (0.5, 45), \
+                  (0.5, 0), (30, 0), (60, 0)]
+        ha_deg_steps = (-72.5, -62.5, -52.5, -42.5, -32.5, -22.5, -12.5, -2.5, \
+                         -7.5, -17.5, -27.5, -37.5, -47.5, -57.5, -67.5, \
+                         2.5,  12.5, 22.5, 32.5, 42.5, 52.5, 62.5, 72.5, \
+                         67.5, 57.5, 47.5, 37.5, 27.5, 17.5, 7.5)
+        length = len(points)
+        count = 0
+        print("Starting cross, # of points:  ", length)
+        g_dev['mnt'].unpark_command()
+        #cam_name = str(self.config['camera']['camera_1_1']['name'])
+        for point_value in points:
+            target_ra = ra_fix(g_dev['mnt'].mount.SiderealTime - point_value[0]/15.)
+            target_dec = point_value[1]
+            #     #  Go to closest Mag 7.5 Tycho * with no flip
+            # focus_star = tycho.dist_sort_targets(target_ra, target_dec, \
+            #                    g_dev['mnt'].mount.SiderealTime)
+            # if focus_star is None:
+            #     print("No near star, skipping.")   #This should not happen.
+            #     continue
+            #print("Going to near focus star " + str(focus_star[0]) + "  degrees away.")
+            #req = {'ra':  focus_star[1][1],
+            #       'dec': focus_star[1][0]     #Note order in important (dec, ra)
+            req = {'ra':  target_ra,
+                   'dec': target_dec     #Note order in important (dec, ra)
+                   }
+            opt = {}
+            g_dev['mnt'].go_command(req, opt)
+            st = ''
+            while g_dev['mnt'].mount.Slewing or g_dev['enc'].enclosure.Slewing:
+                if g_dev['mnt'].mount.Slewing: st += 'm>'
+                if g_dev['enc'].enclosure.Slewing: st += 'd>'
+                print(st)
+                st = ''
+                g_dev['obs'].update_status()
+                time.sleep(0.5)
+            time.sleep(3)
+            g_dev['obs'].update_status()
+            req = {'time': 10,  'alias': 'sq01', 'image_type': 'quick'}
+            opt = {'area': 150, 'count': 1, 'bin': '2,2', 'filter': g_dev['fil'].filter_data[0][0], 'hint': 'Equator Run'}
+            result = g_dev['cam'].expose_command(req, opt)
+            g_dev['obs'].update_status()
+            result = 'simulated result.'
+            count += 1
+            print('\n\nResult:  ', result,   'To go count:  ', length - count,  '\n\n')
+        g_dev['mnt'].mount.Tracking = False
+        print("Equatorial sweep completed. Happy reducing.")
+        ptr_utility.ModelOn = True
+        self.sky_guard = False
+        return
+    
     def sky_grid_pointing_run(self, req, opt, spacing=10, vertical=False, grid=False, alt_minimum=25):
         #camera_name = str(self.config['camera']['camera_1_1']['name'])
         '''
@@ -1323,7 +1422,7 @@ A variant on this is cover a grid, cover a + sign shape.
 IF sweep
         '''
         self.sky_guard = True
-        ptr_utility.ModelOn = False
+        #ptr_utility.ModelOn = False
         print("Starting sky sweep. ")
         g_dev['mnt'].unpark_command({}, {})
         if g_dev['enc'].is_dome:
@@ -1496,7 +1595,7 @@ IF sweep
             count += 1
             print('\n\nResult:  ', result,   'To go count:  ', length - count,  '\n\n')
             
-        g_dev['mnt'].stop_command()
+        g_dev['mnt'].mount.Tracking = False
         print("Equatorial sweep completed. Happy reducing.")
         ptr_utility.ModelOn = True
         self.sky_guard = False
@@ -1547,7 +1646,7 @@ A variant on this is cover a grid, cover a + sign shape.
 IF sweep
         '''
         self.sky_guard = True
-        ptr_utility.ModelOn = False
+        #ptr_utility.ModelOn = False
         # dec_steps = [-30, -25, -20, -15, -10, -5, 0, 5, 10, 15, 20, 25, 30, \
         #              35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85]
         dec_steps = [-30, -20, -10, 0, 10, 20, 30, 40, 50, 55, 60, 65, 70, 75, 80, 82.5, \
