@@ -1637,12 +1637,13 @@ def test_haDec_altAz_haDec():
             print (ha, tHa, dec, tDec)
 
 def apply_refraction_inEl_r(pAppEl, pSiteRefTemp, pSiteRefPress): #Deg, C. , mmHg
+    global RefrOn
     #From Astronomical Algorithms.  Max error 0.89" at 0 elev.
     #20210328   This code does not the right thing if star is below the Pole and is refracted above it.
     if not RefrOn:
         return pAppEl, 0.0
     elif pAppEl > 0:
-        pAppEl *= RTOD   #Formular assume elevgvation in degrees
+        pAppEl *= RTOD   #Formulas assume elevation in degrees
         ref = 1/math.tan(DTOR*(pAppEl + 7.31/(pAppEl + 4.4))) + 0.001351521673756295
         ref -= 0.06*math.sin((14.7*ref +13.)*DTOR) - 0.0134970632606319
         ref *= 283/(273 + pSiteRefTemp)
@@ -1662,6 +1663,7 @@ def apply_refraction_inEl_r(pAppEl, pSiteRefTemp, pSiteRefPress): #Deg, C. , mmH
         return reduce_alt_r(obsEl), ref*60.
 
 def correct_refraction_inEl_r(pObsEl, pSiteRefTemp, pSiteRefPress): #Deg, C. , mmHg
+    global RefrOn
     if not RefrOn:
         return pObsEl, 0.0
     else:
@@ -1742,6 +1744,7 @@ def test_app_obs_app():
 
 
 def transform_mount_to_observed_r(pRoll, pPitch, pPierSide, loud=False):
+    global ModelOn
     #I am amazed this works so well even very near the celestrial pole.
     #input is Ha in hours and pitch in degrees.
     if not ModelOn:
@@ -1780,7 +1783,7 @@ def transform_observed_to_mount_r(pRoll, pPitch, pPierSide, loud=False, enable=F
     #This implements a basic 7 term TPOINT transformation.
 
     '''
-    global raCorr, decCorr, model
+    global raCorr, decCorr, model, ModelOn
 
 
     if enable:

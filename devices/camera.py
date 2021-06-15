@@ -1178,6 +1178,7 @@ class Camera:
                 avg_rot = g_dev['rot'].get_average_status(self.pre_rot, self.post_rot)
                 #avg_ocn = g_dev['ocn'].get_average_status(self.pre_ocn, self.post_ocn)
                 if frame_type[-5:] in ['focus', 'probe']:
+                    
                     self.img = self.img + 100   #maintain a + pedestal for sep  THIS SHOULD not be needed for a raw input file.
                     self.img = self.img.astype("float")
                     #print(self.img.flags)

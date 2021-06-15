@@ -923,7 +923,7 @@ class Sequencer:
             print("Motion check faulted.")
 
         #  NBNBNB Need to preserve  and restore on exit, incoming filter setting
-        breakpoint()
+
         if req2['target'] == 'near_tycho_star':   ## 'bin', 'area'  Other parameters
 
             #  Go to closest Mag 7.5 Tycho * with no flip

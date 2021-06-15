@@ -297,7 +297,7 @@ class ObservingConditions:
                     illum = round(illum, 3)
                 #self.wx_is_ok = True
                 self.temperature = float(wx["amb_temp C"])
-                self.pressure = 973*0.750062   #Mbar to mmHg  #THIS IS A KLUDGE
+                self.pressure = 978   #Mbar to mmHg  #THIS IS A KLUDGE
                 status = {"temperature_C": float(wx["amb_temp C"]),
                           "pressure_mbar": 978.0,
                           "humidity_%": float(wx["humidity %"]),
