@@ -22,6 +22,7 @@ import glob
 import shelve
 #from pprint import pprint
 from astropy.time import Time
+from astropy import units as u
 
 #from os.path import join, dirname, abspath
 
@@ -256,7 +257,7 @@ class Camera:
             self.camera.BinY = 1
         self.overscan_x =  int(self.config['camera'][self.name]['settings']['overscan_x'])
         self.overscan_y =  int(self.config['camera'][self.name]['settings']['overscan_y'])
-        self.camera_x_size = self.camera.CameraXSize  #unbinned values. QHY returns 2
+        self.camera_x_size = self.camera.CameraXSize #unbinned values. QHY returns 2
         self.camera_y_size = self.camera.CameraYSize  #unbinned
         self.camera_max_x_bin = self.camera.MaxBinX
         self.camera_max_y_bin = self.camera.MaxBinY
