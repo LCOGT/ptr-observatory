@@ -208,7 +208,9 @@ class Mount:
             print("Auxillary Tel/OTA connected.")
         print(self.mount.Description)
         self.ra_offset = 0.0
+        self.mount.RightAscensionRate = 0.0
         self.dec_offset = 0.0   #NB these should always start off at zero.
+        self.mount.DeclinationRate = 0.0
         #breakpoint()
         #self.reset_mount_reference)
         self.site_in_automatic = config['site_in_automatic_default']
@@ -820,7 +822,6 @@ class Mount:
         '''
         if self.mount.CanSetRightAscensionRate:
             self.prior_roll_rate = -((self.ha_mech_adv - self. ha_mech)*RTOS*MOUNTRATE/self.delta_t_s - MOUNTRATE)/(APPTOSID*15)    #Conversion right 20219329
-         
             self.mount.RightAscensionRate = self.prior_roll_rate  #Neg number makes RA decrease
         else:
             self.prior_roll_rate = 0.0
