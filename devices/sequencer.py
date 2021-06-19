@@ -1363,7 +1363,7 @@ IF sweep
                 time.sleep(0.5)
             time.sleep(3)
             g_dev['obs'].update_status()
-            req = {'time': 10,  'alias': 'sq01', 'image_type': 'quick'}
+            req = {'time': 30,  'alias': 'sq01', 'image_type': 'quick'}
             opt = {'area': 150, 'count': 1, 'bin': '2,2', 'filter': g_dev['fil'].filter_data[0][0], 'hint': 'Equator Run'}
             result = g_dev['cam'].expose_command(req, opt)
             g_dev['obs'].update_status()
@@ -1476,7 +1476,7 @@ IF sweep
 
             time.sleep(1)  #Give a little extra time for mount to settle.
             g_dev['obs'].update_status()
-            req = {'time': 15,  'alias': 'sq01', 'image_type': 'quick'}
+            req = {'time': 30,  'alias': 'sq01', 'image_type': 'quick'}
             opt = {'area': 150, 'count': 1, 'bin': '2,2', 'filter': g_dev['fil'].filter_data[0][0], 'hint': 'Tycho grid.'}
             result = g_dev['cam'].expose_command(req, opt)
             g_dev['obs'].update_status()
