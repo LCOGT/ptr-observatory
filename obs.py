@@ -177,7 +177,7 @@ class Observatory:
             'focuser',
             'selector',
             'filter_wheel',
-            'camera',
+            'camera_1_1',
             'sequencer'          
             ] 
         # Instantiate the helper class for astronomical events
@@ -278,6 +278,7 @@ class Observatory:
                 # elif dev_type == "screen":
                 #     device = Screen(driver, name)
                 elif dev_type == "selector":
+                    breakpoint()
                     device = Selector(driver, name, self.config)
                 elif dev_type == "camera":
                     device = Camera(driver, name, self.config)
@@ -349,6 +350,7 @@ class Observatory:
                     # Process each job one at a time
                     for cmd in unread_commands:
                         print('obs.scan_request: ', cmd)
+                        breakpoint()
                         deviceInstance = cmd['deviceInstance']
                         if deviceInstance == 'camera1':
                             deviceInstance = 'camera_1_1'
