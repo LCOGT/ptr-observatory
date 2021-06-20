@@ -174,6 +174,7 @@ class Sequencer:
         self.block_guard = False
         #breakpoint()
         #self.reset_completes()
+        breakpoint()
         try:
             self.is_in_completes(None)
         except:

@@ -170,6 +170,8 @@ class Camera:
         g_dev[name + '_cam_retry_config'] = config
         g_dev[name + '_cam_retry_doit'] = False
         g_dev[name] = self
+        breakpoint()
+        
         if name == 'camera_1_1':
             g_dev['cam'] = self
         self.config = config
