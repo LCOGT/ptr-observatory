@@ -278,7 +278,7 @@ class Observatory:
                 # elif dev_type == "screen":
                 #     device = Screen(driver, name)
                 elif dev_type == "selector":
-                    device = Selector(driver, name, self.config)
+                    device = Selector(driver, name, self.config)  
                 elif dev_type == "camera":
                     device = Camera(driver, name, self.config)
                 elif dev_type == "sequencer":
@@ -343,6 +343,18 @@ class Observatory:
                                                    data=json.dumps(body)).json()
                 # Make sure the list is sorted in the order the jobs were issued
                 # Note: the ulid for a job is a unique lexicographically-sortable id
+                '''
+                Note this areea under havy revision to deal with instrument selector,
+                multiple cameras and autoguiders, These may be operating in parallel
+                and under control of different threads.
+                
+                fIRST LOGIC ADDITION IS IF THERE IS an instrument selector then the
+                incoming command must indicate which instrument is selected. That
+                will then enable selecting the correct camera.  Curiously from the
+                user persepctive the autoguider for a spectrometer may be the correct
+                choice, at least until we can auto align.
+                
+                '''
                 if len(unread_commands) > 0:
                     #print(unread_commands)
                     unread_commands.sort(key=lambda x: x["ulid"])
@@ -350,16 +362,25 @@ class Observatory:
                     for cmd in unread_commands:
                         print('obs.scan_request: ', cmd)
                         deviceInstance = cmd['deviceInstance']
-                        if deviceInstance == 'camera1':
+                        if deviceInstance == 'camera1':   #Fixes old stype single camera code to multi-camera ready code.
                             deviceInstance = 'camera_1_1'
-                        deviceType = cmd['deviceType']
-                        device = self.all_devices[deviceType][deviceInstance]
+                        device_type = cmd['deviceType']
+
+                        try:
+                            ins =  cmd['optional_params']['instrument_selector_position']
+                            if 0 <= ins <=3:
+                                deviceInstance = g_dev['cam'].active_camera
+                        except:
+
+                            pass
+                        device = self.all_devices[device_type][deviceInstance]
                         try:
                             device.parse_command(cmd)
                         except Exception as e:
                             print( 'Exception in obs.scan_requests:  ', e)
                # print('scan_requests finished in:  ', round(time.time() - t1, 3), '  seconds')
                 ## Test Tim's code
+                #Now we look for new blocks to queup and projects to put in the project cache.
                 url_blk = "https://calendar.photonranch.org/dev/siteevents"
                 body = json.dumps({
                     'site':  self.config['site'],

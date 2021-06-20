@@ -83,7 +83,7 @@ class Focuser:
             self.reference = int(self.config['reference'])
             print("Focus reference derived from supplied config file for 10C:  ", self.reference)
             #The config reference should be a table of value
-        self.focuser.Move(int(float(self.reference)*self.micron_to_steps))
+        self.focuser.Move(int(float(self.reference)*self.steps_to_micron))
 
 
     def calculate_compensation(self, temp_primary):

@@ -23,6 +23,7 @@ class Selector:
     def get_status(self):
         try:
             port = int(self.selector.GetSwitchValue(0))
+            print("Selector found at position: ", port)
             desc = self.config['selector1']['instruments'][port - 1]
             camera = self.config['selector1']['cameras'][port - 1]
             guider = self.config['selector1']['guiders'][port - 1]
@@ -34,6 +35,7 @@ class Selector:
                 }
             return status
         except:
+            breakpoint()
             time.sleep(10)
             port = int(self.selector.GetSwitchValue(0))
             desc = self.config['selector1']['instruments'][port - 1]
@@ -45,7 +47,7 @@ class Selector:
                 'camera': camera,
                 'guider': guider
                 }
-            return status
+        return status
         
     def parse_command(self, command):
         req = command['required_params']
@@ -56,9 +58,11 @@ class Selector:
             port = req['port']
             if 0 <= port <= 3:
                 self.selector.SetSwitchValue(0, port+1)
+                g_dev['cam'].active_camera =  self.config['selector1']['cameras'][port] 
+                g_dev['cam'].active_guider = self.config['selector1']['guiders'][port] 
                 print("Port ", port, '; Instrument:  ', port + 1,  'was selected.')
-                print("Active camera was changed to: ", self.config['selector1']['cameras'][port - 1] )
-                print("Active guider was changed to: ", self.config['selector1']['guiders'][port - 1] )
+                print("Active camera was changed to: ", self.config['selector1']['cameras'][port] )
+                print("Active guider was changed to: ", self.config['selector1']['guiders'][port] )
             else:
                 print("Incorrect port specified for instrument selection, at port:  ", int(self.selector.GetSwitchValue(0)) )
             #self.set_position_command(req, opt)
