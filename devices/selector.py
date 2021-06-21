@@ -23,7 +23,7 @@ class Selector:
     def get_status(self):
         try:
             port = int(self.selector.GetSwitchValue(0))
-            print("Selector found at position: ", port)
+            #print("Selector found at position: ", port)
             desc = self.config['selector1']['instruments'][port - 1]
             camera = self.config['selector1']['cameras'][port - 1]
             guider = self.config['selector1']['guiders'][port - 1]

@@ -129,6 +129,17 @@ def next_sequence(pCamera):
     SEQ_Counter = seq
     return seq
 
+def test_sequence(pCamera):
+    global SEQ_Counter
+    camShelf = shelve.open(g_dev['cam'].site_path + 'ptr_night_shelf/' + pCamera)
+    #print('Shelf:  ', camShelf)
+    sKey = 'Sequence'
+    #print(type(sKey), sKey)
+    seq = camShelf[sKey]      #get an 8 character string
+    camShelf.close()
+    SEQ_Counter = seq
+    return seq
+
 def reset_sequence(pCamera):
     camShelf = shelve.open(g_dev['cam'].site_path + 'ptr_night_shelf/' + str(pCamera))
     #seq = camShelf['Sequence']      # a 9 character string
@@ -170,13 +181,12 @@ class Camera:
         g_dev[name + '_cam_retry_config'] = config
         g_dev[name + '_cam_retry_doit'] = False
         g_dev[name] = self
-        breakpoint()
-        
+    
         if name == 'camera_1_1':
             g_dev['cam'] = self
         self.config = config
+        self.alias = config['camera'][self.name]['name']
         win32com.client.pythoncom.CoInitialize()
-        #driver = 'AllSkyPlateSolver.PlateSolver'
         self.camera = win32com.client.Dispatch(driver)
 
         #self.camera = win32com.client.Dispatch('ASCOM.FLI.Kepler.Camera')
@@ -226,7 +236,7 @@ class Camera:
         self.cmd_in = None
         self.t7 = None
         self.camera_message = '-'
-        self.alias = self.config['camera'][self.name]['name']
+        #self.alias = self.config['camera'][self.name]#
         self.site_path = self.config['site_path']
         self.archive_path = self.site_path +'archive/'
         self.camera_path = self.archive_path  + self.alias+ "/"
@@ -295,6 +305,10 @@ class Camera:
             print("Darkslide closed on camera startup.")
         self.last_user_name = "unknown user name"
         self.last_user_id ="unknown user ID"
+        try:
+            seq = test_sequence(self.alias)
+        except:
+            reset_sequence(self.alias)
 
 
         #  NB  Shouldset up default filter @ default focus.
@@ -1247,7 +1261,7 @@ class Camera:
                         hdu.header['CCDATEMP'] = (round(self.camera.CCDTemperature, 3), '[deg C] CCD actual temperature')
                     
                     hdu.header['INSTRUME'] = (self.camera_model, 'Instrument used')
-                    hdu.header['CAMNAME']  = (self.config['camera'][self.name]['name'], 'Name of camera')
+                    hdu.header['CAMNAME']  = (self.alias, 'Name of camera')
                     hdu.header['DETECTOR'] = (self.config['camera'][self.name]['detector'], 'Name of camera detector')
                     hdu.header['CAMMANUF'] = (self.config['camera'][self.name]['manufacturer'], 'Name of camera manufacturer')
                     hdu.header['GAIN']     = (self.config['camera'][self.name]['settings']['reference_gain'][0], '[e-/ADU] Pixel gain')
@@ -1418,14 +1432,11 @@ class Camera:
                     self.pix_ang = (self.camera.PixelSizeX*self.camera.BinX/(float(self.config['telescope'] \
                                               ['telescope1']['focal_length'])*1000.))
                     hdu.header['PIXSCALE'] = (round(math.degrees(math.atan(self.pix_ang))*3600., 4), '[arcsec/pixel] Nominal pixel scale on sky')
-                    hdu.header['REQNUM']   = ('00000001', 'Request number')
-                    
+                    hdu.header['REQNUM']   = ('00000001', 'Request number')                  
                     hdu.header['ISMASTER'] = (False, 'Is master image')
-                    
-                    current_camera_name = self.config['camera'][self.name]['name']
+                    current_camera_name = self.alias
                     next_seq = next_sequence(current_camera_name)
-                    hdu.header['FRAMENUM'] = (int(next_seq), 'Running frame number')
-                                        
+                    hdu.header['FRAMENUM'] = (int(next_seq), 'Running frame number')                                        
                     # DEH I need to understand these keywords better before writing header comments.
                     hdu.header['PEDASTAL'] = (-pedastal,  'adu, add this for zero based image.')
                     hdu.header['ERRORVAL'] = 0
@@ -1435,8 +1446,7 @@ class Camera:
                     hdu.header['YORGSUBF'] = self.camera_start_y
                     #hdu.header['BLKUID']   = ('None', 'Group type')
                     #hdu.header['BLKSDATE'] = ('None', 'Group unique ID
-                    #hdu.header['MOLUID']   = ('None', 'Molecule unique ID')
-                    
+                    #hdu.header['MOLUID']   = ('None', 'Molecule unique ID')               
                     try:
                         hdu.header['USERNAME'] = self.user_name
                         hdu.header ['USERID']  = self.user_id
