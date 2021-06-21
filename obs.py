@@ -281,6 +281,7 @@ class Observatory:
                 elif dev_type == "selector":
                     device = Selector(driver, name, self.config)
                 elif dev_type == "camera":
+                    breakpoint()
                     device = Camera(driver, name, self.config)
                 elif dev_type == "sequencer":
                     device = Sequencer(driver, name, self.config, self.astro_events)

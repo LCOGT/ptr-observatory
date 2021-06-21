@@ -11,16 +11,35 @@ class Selector:
         g_dev['sel']= self
         self.config = config['selector']
         #print("SEL:  ", self.config)
-        win32com.client.pythoncom.CoInitialize()
-        self.selector = win32com.client.Dispatch(driver)
-        self.selector.Connected = True
-        default = int(self.config['selector1']['default'] + 1)
-        self.selector.SetSwitchValue(0,default)
+        if driver != "Null":
+            self.null_selector = False
+            win32com.client.pythoncom.CoInitialize()
+            self.selector = win32com.client.Dispatch(driver)
+            self.selector.Connected = True
+            default = int(self.config['selector1']['default'] + 1)
+            self.selector.SetSwitchValue(0,default)
+            self.port_index = int(self.selector.GetSwitchValue(0))
+        else:
+            self.null_selector = True
+            self.port_index = 0
+            
         #print("Instrument Selector position:  ", int(self.selector.GetSwitchValue(0)))
         
     
 
     def get_status(self):
+        if self.null_selector:
+            desc = self.config['selector1']['instruments'][0]
+            camera = self.config['selector1']['cameras'][0]
+            guider = self.config['selector1']['guiders'][0]
+            status = {
+                'port': self.port_index,
+                'instrument': desc,
+                'camera': camera,
+                'guider': guider
+                }
+            return status
+            
         try:
             port = int(self.selector.GetSwitchValue(0))
             #print("Selector found at position: ", port)

@@ -182,7 +182,7 @@ class Camera:
         g_dev[name + '_cam_retry_doit'] = False
         g_dev[name] = self
     
-        if name == 'camera_1_1':
+        if name == 'camera_1_1':     #NB Why this special case???
             g_dev['cam'] = self
         self.config = config
         self.alias = config['camera'][self.name]['name']
