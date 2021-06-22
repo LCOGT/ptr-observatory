@@ -208,9 +208,10 @@ class Mount:
             print("Auxillary Tel/OTA connected.")
         print(self.mount.Description)
         self.ra_offset = 0.0
-        self.mount.RightAscensionRate = 0.0
         self.dec_offset = 0.0   #NB these should always start off at zero.
-        self.mount.DeclinationRate = 0.0
+        if not self.mount.AtPark:
+            self.mount.RightAscensionRate = 0.0
+            self.mount.DeclinationRate = 0.0
         #breakpoint()
         #self.reset_mount_reference)
         self.site_in_automatic = config['site_in_automatic_default']
