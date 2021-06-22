@@ -256,6 +256,8 @@ class Observatory:
             devices_of_type = config.get(dev_type, {})
             device_names = devices_of_type.keys()
             # Instantiate each device object from based on its type
+            if dev_type == 'camera':
+                pass
             for name in device_names:
                 driver = devices_of_type[name]["driver"]
                 settings = devices_of_type[name].get("settings", {})
@@ -342,10 +344,12 @@ class Observatory:
                     unread_commands.sort(key=lambda x: x["ulid"])
                     # Process each job one at a time
                     for cmd in unread_commands:
+                        port = cmd['optional_params']['instrument_selector_position']
+                        cam_name = self.config['selector']['selector1']['cameras'][port]
+                        cmd['required_params']['device_instance'] = cam_name
+                        cmd['deviceInstance'] = cam_name
+                        deviceInstance = cam_name
                         print('obs.scan_request: ', cmd)
-                        deviceInstance = cmd['deviceInstance']
-                        if deviceInstance == 'camera1':
-                            deviceInstance = 'camera_1_1'
                         deviceType = cmd['deviceType']
                         device = self.all_devices[deviceType][deviceInstance]
                         try:

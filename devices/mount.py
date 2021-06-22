@@ -208,7 +208,9 @@ class Mount:
             print("Auxillary Tel/OTA connected.")
         print(self.mount.Description)
         self.ra_offset = 0.0
+        self.mount.RightAscensionRate = 0.0
         self.dec_offset = 0.0   #NB these should always start off at zero.
+        self.mount.DeclinationRate = 0.0
         #breakpoint()
         #self.reset_mount_reference)
         self.site_in_automatic = config['site_in_automatic_default']
@@ -701,11 +703,20 @@ class Mount:
                     #We could just return but will seek just to be safe
             else:
                 'Here we DO read the req dictiary ra and Dec.'
-                ra = float(req['ra'])
-                dec = float(req['dec'])
-                self.ra_offset = 0  #NB Not adding in self.ra_offset is correct unless a Calibrate occured.
-                self.dec_offset = 0
-                self.offset_received = False
+                try:
+                    ra = float(req['ra'])
+                    dec = float(req['dec'])
+                    self.ra_offset = 0  #NB Not adding in self.ra_offset is correct unless a Calibrate occured.
+                    self.dec_offset = 0
+                    self.offset_received = False
+                    ra_dec = True
+                except:
+                    az = float(req['az'])
+                    alt = float(req['alt'])
+                    self.ra_offset = 0  #NB Not adding in self.ra_offset is correct unless a Calibrate occured.
+                    self.dec_offset = 0
+                    self.offset_received = False
+                    ra_dec = False
         except:
             print("Bad coordinates supplied.")
             self.message = "Bad coordinates supplied, try again."
@@ -811,12 +822,12 @@ class Mount:
         '''
         if self.mount.CanSetRightAscensionRate:
             self.prior_roll_rate = -((self.ha_mech_adv - self. ha_mech)*RTOS*MOUNTRATE/self.delta_t_s - MOUNTRATE)/(APPTOSID*15)    #Conversion right 20219329
-            self.mount.RightAscensionRate = self.prior_roll_rate
+            self.mount.RightAscensionRate = self.prior_roll_rate  #Neg number makes RA decrease
         else:
             self.prior_roll_rate = 0.0
         if self.mount.CanSetDeclinationRate:
            self.prior_pitch_rate = -(self.dec_mech_adv - self.dec_mech)*RTOS/self.delta_t_s    #20210329 OK 1 hour from zenith.  No Appsid correction per ASCOM spec.
-           self.mount.DeclinationRate = self.prior_pitch_rate
+           self.mount.DeclinationRate = self.prior_pitch_rate  #Neg sign makes Dec decrease
            print("rates:  ", self.prior_roll_rate, self.prior_pitch_rate, self.refr_asec)
         else:
             self.prior_pitch_rate = 0.0

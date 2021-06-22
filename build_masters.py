@@ -1119,10 +1119,10 @@ def prepare_tpoint(camera_name, archive_path, selector_string, lng_path, out_pat
     out_f.write('0.3m Ceravolo F9, AP1600, Apache Ridge Observatory\n')
     out_f.write(':NODA\n')
     out_f.write(':EQUAT\n')
-    out_f.write('35 33 15.84\n') #35.554444
+    out_f.write('34 20 42\n')   #35 33 15.84\n') #35.554444
 
     count = 0
-   
+
     for item in file_list:
         img = fits.open(item, ignore_missing_end=True)
         hdr = img[0].header
@@ -1190,7 +1190,6 @@ def prepare_tpoint(camera_name, archive_path, selector_string, lng_path, out_pat
                 else:    
                     pre_dec_str = "-" + str(dec_d) + " " + str(dec_m) + " " + str(dec_s)
                 # if abs(dec) >= 85:
-                #     breakpoint()
                 meas_ha = img[0].header['MNT-HA']  #Unit is hours  Temporarily defective before 20201025
                 meas_sid = img[0].header['MNT-SIDT']
                 meas_az = img[0].header['AZIMUTH']
@@ -1198,9 +1197,11 @@ def prepare_tpoint(camera_name, archive_path, selector_string, lng_path, out_pat
                 pier = img[0].header['PIERSIDE']
                 print(meas_az, meas_alt, pier)
                 #print('IN: ', pre_ra, meas_ra, pre_dec, meas_dec, meas_ha, meas_sid)
+                ch_term = 0
+                if pier == 'Undefined':
+                    pier = 'Look East'
                 if pier in ['Look West', 'West', 'west', 1, '1']:
                     #Change to Mechanical
-                    ch_term = 0
                     meas_ra -= ch_term
                     meas_dec = 180 - meas_dec
                     meas_ra -= 12  #+ +342/15/3600  DO NOT FLIP RA
@@ -1392,7 +1393,7 @@ if __name__ == '__main__':
     camera_name = 'sq01'  #  config.site_config['camera']['camera1']['name']
     #archive_path = "D:/000ptr_saf/archive/sq01/2020-06-13/"
     #archive_path = "D:/2020-06-19  Ha and O3 screen flats/"
-    archive_path = "D:/000ptr_saf/archive/sq01/20210613/reduced/"
+    archive_path = "Q:/archive/sq01/20210615/reduced/"
     out_path = 'C:/Users/obs/Documents/GitHub/ptr-observatory/processing/TPOINT/'
     lng_path = "C:/000ptr_saf/archive/sq01/lng/"
     #APPM_prepare_TPOINT()
