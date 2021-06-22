@@ -344,13 +344,24 @@ class Observatory:
                     unread_commands.sort(key=lambda x: x["ulid"])
                     # Process each job one at a time
                     for cmd in unread_commands:
-                        port = cmd['optional_params']['instrument_selector_position'] - 1
-                        cam_name = self.config['selector']['selector1']['cameras'][port]
-                        cmd['required_params']['device_instance'] = cam_name
-                        cmd['deviceInstance'] = cam_name
-                        deviceInstance = cam_name
-                        print('obs.scan_request: ', cmd)
                         breakpoint()
+                        port = cmd['optional_params']['instrument_selector_position'] - 1
+                        g_dev['mnt'].instrument_port = port
+                        cam_name = self.config['selector']['selector1']['cameras'][port]
+                        if cmd['deviceType'][:6] == 'camera':
+                            cmd['required_params']['device_instance'] = cam_name
+                            cmd['deviceInstance'] = cam_name
+                            deviceInstance = cam_name
+                        else:
+                            try:
+                                try:
+                                    deviceInstance = cmd['deviceInstance']
+                                except:
+                                    deviceInstance = cmd['required_params']['device_instance']
+                            except:
+                                breakpoint()
+                                pass
+                        print('obs.scan_request: ', cmd)
                         deviceType = cmd['deviceType']
                         device = self.all_devices[deviceType][deviceInstance]
                         try:
