@@ -150,9 +150,9 @@ def patch_httplib(bsize=400000):
         else:
             self.sock.sendall(p_data)
     httplib2.httplib.HTTPConnection.send = send
+    
+    
 class Observatory:
-
-
 
     def __init__(self, name, config):
 
@@ -192,8 +192,6 @@ class Observatory:
         self.loud_status = False
         #g_dev['obs']: self
         g_dev['obs'] = self 
-
-
         site_str = config['site']
         g_dev['site']:  site_str
         self.g_dev = g_dev
@@ -290,9 +288,6 @@ class Observatory:
                     print(f"Unknown device: {name}")
                 # Add the instantiated device to the collection of all devices.
                 self.all_devices[dev_type][name] = device
-                
-                
-                
                 # NB 20200410 This dropped out of the code: self.all_devices[dev_type][name] = [device]
         print("Finished creating devices.")
 
