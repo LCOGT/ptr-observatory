@@ -974,7 +974,7 @@ class Sequencer:
         x = [foc_pos2, foc_pos1, foc_pos3]
         y = [spot2, spot1, spot3]
         print('X, Y:  ', x, y, 'Desire center to be smallest.')
-        if spot1 is None or spot2 is None or spot3 is None:
+        if spot1 is None or spot2 is None or spot3 is None:  #New additon to stop crash when no spots
             print("No stars detected. Returning to stating focus.")
             g_dev['foc'].focuser.Move((focus_start)*g_dev['foc'].micron_to_steps)
             self.sequencer_hold = False   #Allow comand checks.
