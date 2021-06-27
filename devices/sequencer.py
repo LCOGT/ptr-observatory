@@ -975,6 +975,13 @@ class Sequencer:
         x = [foc_pos2, foc_pos1, foc_pos3]
         y = [spot2, spot1, spot3]
         print('X, Y:  ', x, y, 'Desire center to be smallest.')
+        if spot1 is None or spot2 is None or spot3 is None:  #New additon to stop crash when no spots
+            print("No stars detected. Returning to stating focus.")
+            g_dev['foc'].focuser.Move((focus_start)*g_dev['foc'].micron_to_steps)
+            self.sequencer_hold = False   #Allow comand checks.
+            self.af_guard = False
+            g_dev['mnt'].mount.SlewToCoordinatesAsync(start_ra, start_dec)
+            return
         if spot1 < spot2 and spot1 < spot3:
             try:
                 #Digits are to help out pdb commands!
@@ -987,6 +994,7 @@ class Sequencer:
                 g_dev['foc'].focuser.Move((focus_start)*g_dev['foc'].micron_to_steps)
                 self.sequencer_hold = False   #Allow comand checks.
                 self.af_guard = False
+                g_dev['mnt'].mount.SlewToCoordinatesAsync(start_ra, start_dec)
                 return            
             if min(x) <= d1 <= max(x):
                 print ('Moving to Solved focus:  ', round(d1, 2), ' calculated:  ',  new_spot)
