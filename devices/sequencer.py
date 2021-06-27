@@ -173,7 +173,8 @@ class Sequencer:
         self.af_guard = False
         self.block_guard = False
         #breakpoint()
-        #self.reset_completes()
+        self.reset_completes()
+        
         try:
             self.is_in_completes(None)
         except:
@@ -325,7 +326,7 @@ class Sequencer:
                     and (block['start'] <= now_date_timeZ < block['end']) \
                     and not self.is_in_completes(block['event_id']):
                     self.block_guard = True
-
+                    
                     completed_block = self.execute_block(block)
                     self.append_completes(completed_block['event_id'])
                     self.block_guard = False

@@ -40,7 +40,7 @@ class Enclosure:
             self.redis_server = redis.StrictRedis(host='10.15.0.109', port=6379, db=0, decode_responses=True)
         self.is_dome = self.config['enclosure']['enclosure1']['is_dome']
         self.state = 'Closed. (Initially on code startup.)'
-        self.mode = 'Manual'   #  Auto|User Control|User Close|Disable
+        self.mode = 'Automatic'   #  Auto|User Control|User Close|Disable
         self.enclosure_message = '-'
         self.external_close = False   #If made true by operator,  system will not reopen for the night
         self.dome_opened = False   #memory of prior issued commands  Restarting code may close dome one time.
@@ -48,6 +48,7 @@ class Enclosure:
         self.cycles = 0
         self.prior_status = None
         self.time_of_next_slew = time.time()
+        self.site_in_automatic = True
         
 
     def get_status(self) -> dict:
@@ -320,7 +321,7 @@ class Enclosure:
                     print("Night time Open issued to the "  + shutter_str, +   ' and is now following Mounting.')
         elif (obs_win_begin >= ephemNow or ephemNow >= sunrise):
             #WE are now outside the observing window, so Sun is up!!!
-            if g_dev['mnt'].site_in_automatic or close_cmd:
+            if g_dev['enc'].site_in_automatic or close_cmd:
                 if close_cmd:
                     self.state = 'User Closed the '  + shutter_str
                 else:
@@ -340,17 +341,17 @@ class Enclosure:
                         print("Daytime Close issued to the " + shutter_str  + "   No longer following Mount.")
                     except:
                         print("Shutter busy right now!")
-            elif not g_dev['mnt'].site_in_automatic and open_cmd:
+            elif not g_dev['enc'].site_in_automatic and open_cmd:
 
                 #first verify scope is parked, otherwise command park and 
                 #report failing.
-                if g_dev['mnt'].mount.AtPark:                
+                if true:  #g_dev['mnt'].mount.AtPark:                
                     if self.status_string.lower() in ['closed', 'closing']:
                         self.guarded_open()
                         self.dome_opened = True
                         self.dome_homed = True
                 else:
-                    g_dev['mnt'].park_command()
+                    #g_dev['mnt'].park_command()
                     #??Add darkslide close here or een tothe park command itself??
                     print("Telescope commanded to park, try again in a minute.")
                     

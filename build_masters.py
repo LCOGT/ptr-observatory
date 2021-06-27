@@ -1195,7 +1195,8 @@ def prepare_tpoint(camera_name, archive_path, selector_string, lng_path, out_pat
                 meas_az = img[0].header['AZIMUTH']
                 meas_alt = img[0].header['ALTITUDE']
                 pier = img[0].header['PIERSIDE']
-                print(meas_az, meas_alt, pier)
+               # print(meas_az, meas_alt, pier)
+                print(sid, meas_ra, meas_dec)# meas_az, meas_alt, pier)
                 #print('IN: ', pre_ra, meas_ra, pre_dec, meas_dec, meas_ha, meas_sid)
                 ch_term = 0
                 if pier == 'Undefined':
@@ -1238,12 +1239,12 @@ def prepare_tpoint(camera_name, archive_path, selector_string, lng_path, out_pat
 
                 if meas_ha < 0: #and dec < 82:
                     pier = "Look East"
-                    print(pre_ra_str + "  " + pre_dec_str + "  " + meas_ra_str + "  " + meas_dec_str + "  " + sid_str + "  " + pier)
+                    #print(pre_ra_str + "  " + pre_dec_str + "  " + meas_ra_str + "  " + meas_dec_str + "  " + sid_str + "  " + pier)
                     out_f.write(pre_ra_str + "  " + pre_dec_str + "  " + meas_ra_str + "  " + meas_dec_str + "  " + sid_str + "  " + pier +'\n')
                     count += 1
                 elif meas_ha > 0: #and dec < 82:
                     pier =  "Look West"
-                    print(pre_ra_str + "  " + pre_dec_str + "  " + meas_ra_str + "  " + meas_dec_str + "  " + sid_str + "  " + pier)
+                   # print(pre_ra_str + "  " + pre_dec_str + "  " + meas_ra_str + "  " + meas_dec_str + "  " + sid_str + "  " + pier)
                     out_f.write(pre_ra_str + "  " + pre_dec_str + "  " + meas_ra_str + "  " + meas_dec_str + "  " + sid_str + "  " + pier +'\n')
                     count += 1
                 else:
@@ -1393,12 +1394,13 @@ if __name__ == '__main__':
     camera_name = 'sq01'  #  config.site_config['camera']['camera1']['name']
     #archive_path = "D:/000ptr_saf/archive/sq01/2020-06-13/"
     #archive_path = "D:/2020-06-19  Ha and O3 screen flats/"
-    archive_path = "Q:/archive/sq01/20210615/reduced/"
+    archive_path = "D:/000ptr_saf/archive/sq01/20210627/reduced/"
+
     out_path = 'C:/Users/obs/Documents/GitHub/ptr-observatory/processing/TPOINT/'
     lng_path = "C:/000ptr_saf/archive/sq01/lng/"
     #APPM_prepare_TPOINT()
     #de_offset_and_trim(camera_name, archive_path, '*-00*.*', out_path, full=True, norm=False)
-    prepare_tpoint(camera_name, archive_path, '*.f*t*', lng_path, out_path)
+    #prepare_tpoint(camera_name, archive_path, '*.f*t*', lng_path, out_path)
     #prepare_tpoint(camera_name, archive_path, '*04-06*.f*t*', lng_path, out_path)
     #organize_calib(camera_name, archive_path, out_path, lng_path, '1', 'fb_1-4.fits')
     #compute_sky_gains(camera_name, archive_path, out_path, lng_path, '1', 'fb_1-4.fits')

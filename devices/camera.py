@@ -504,7 +504,10 @@ class Camera:
         #print("Checking if Maxim is still connected!")
         #  self.t7 is last time camera was read out
         #if self.t7 is not None and (time.time() - self.t7 > 30) and self.maxim:
-            
+        try:
+            self.user_name
+        except:
+            self.user_name = "kilroy_was_here"
         
         self.t0 = time.time()
         #Force a reseek //eventually dither//
@@ -1141,12 +1144,12 @@ class Camera:
                     #     square = trimmed[1590:1590 + 6388, :]
                 elif ix == 4800:
                     #Shift error needs documenting!
-                    if self.img[11, -18] == 0:
+                    if self.img[11, -18] == 0:   #This is the normal incoming imsge
                         self.overscan = int((np.median(self.img[12:, -17:]) + np.median(self.img[0:10, :]))/2) - 1
                         trimmed = self.img[12:-4, :-17].astype('int32') + pedastal - self.overscan
 
                         #print("Shift 1", self.overscan, square.mean())
-                    elif self.img[15, -18] == 0:
+                    elif self.img[15, -18] == 0:     #This rarely occurs.  Neyle's Qhy600
                         self.overscan = int((np.median(self.img[16:, -17:]) + np.median(self.img[0:14, :]))/2) -1
                         trimmed = self.img[16:, :-17].astype('int32') + pedastal - self.overscan
 
@@ -1154,7 +1157,7 @@ class Camera:
 
                     else:
                         breakpoint()
-                        print("Image shift is incorrect, absolutely fatal error.")
+                        print("Image shift is incorrect, absolutely fatal error", self.img[0:20, -18])
 
 
                         pass
@@ -1193,8 +1196,7 @@ class Camera:
                 avg_foc = g_dev['foc'].get_average_status(self.pre_foc, self.post_foc)
                 avg_rot = g_dev['rot'].get_average_status(self.pre_rot, self.post_rot)
                 #avg_ocn = g_dev['ocn'].get_average_status(self.pre_ocn, self.post_ocn)
-                if frame_type[-5:] in ['focus', 'probe']:
-                    
+                if frame_type[-5:] in ['focus', 'probe', "ental"]:
                     self.img = self.img + 100   #maintain a + pedestal for sep  THIS SHOULD not be needed for a raw input file.
                     self.img = self.img.astype("float")
                     #print(self.img.flags)
@@ -1353,8 +1355,10 @@ class Camera:
                     #hdu.header['OBJCDEC2'] = (self.pre_mnt[2], '[deg] Object dec 2')
                     #hdu.header['OBRARATE'] = self.pre_mnt[4]
                     #hdu.header['OBDECRAT'] = self.pre_mnt[5]
-
-                    hdu.header['OBSERVER'] = (self.user_name, 'Observer name')  # userid
+                    try:
+                        hdu.header['OBSERVER'] = (self.user_name, 'Observer name')  # userid
+                    except:
+                        hdu.header['OBSERVER'] = ("kilroy visited", 'Observer name')  # userid
                     hdu.header['OBSNOTE']  = self.hint[0:54]            #Needs to be truncated.
                     if self.maxim:
                         hdu.header['FLIPSTAT'] = 'None'   # This is a maxim camera setup, not a flip status
@@ -1446,7 +1450,7 @@ class Camera:
                     hdu.header['YORGSUBF'] = self.camera_start_y
                     #hdu.header['BLKUID']   = ('None', 'Group type')
                     #hdu.header['BLKSDATE'] = ('None', 'Group unique ID
-                    #hdu.header['MOLUID']   = ('None', 'Molecule unique ID')               
+                    #hdu.header['MOLUID']   = ('None', 'Molecule unique ID')
                     try:
                         hdu.header['USERNAME'] = self.user_name
                         hdu.header ['USERID']  = self.user_id
