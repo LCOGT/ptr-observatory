@@ -18,10 +18,11 @@ from astropy.io import fits
 #from astropy.table import Table
 #from astropy.utils.data import get_pkg_data_filename
 import sep
+from astropy.time import Time
 import glob
 import shelve
 #from pprint import pprint
-from astropy.time import Time
+
 
 #from os.path import join, dirname, abspath
 
@@ -1153,7 +1154,7 @@ class Camera:
                         self.overscan = int((np.median(self.img[16:, -17:]) + np.median(self.img[0:14, :]))/2) -1
                         trimmed = self.img[16:, :-17].astype('int32') + pedastal - self.overscan
 
-                        #print("Shift 2", self.overscan, square.mean())
+                        print("Rare error, Shift 2", self.overscan, square.mean())
 
                     else:
                         breakpoint()

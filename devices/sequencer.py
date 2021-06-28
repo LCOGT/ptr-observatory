@@ -736,7 +736,7 @@ class Sequencer:
         while len(pop_list) > 0 and (g_dev['events']['Ops Window Start'] < ephemNow < g_dev['events']['End Eve Sky Flats']):
             current_filter = int(pop_list[0])
             acquired_count = 0
-            breakpoint()
+
             g_dev['fil'].set_number_command(current_filter)
             g_dev['mnt'].slewToSkyFlatAsync()
             bright = 35000
@@ -789,7 +789,7 @@ class Sequencer:
                         prior_scale = 1
                 continue
         g_dev['mnt'].park_command({}, {})  #  NB this is provisional, Ok when simulating
-        print('\nSky flat complete.\n')
+        print('\nSky flat complete, or too early.\n')
         self.sky_guard = False
 
 
