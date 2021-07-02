@@ -100,17 +100,24 @@ class Focuser:
             return float(self.config['reference'])
 
     def get_status(self):
-        status = {
-            "focus_position": round(self.focuser.Position*self.steps_to_micron, 1),
-            "focus_moving": self.focuser.IsMoving,
-            'comp': self.config['coef_c'],
-            'filter_offset': g_dev['fil'].filter_offset
-            #"focus_temperature": self.focuser.Temperature
-            }
         try:
-            status["focus_temperature"] = self.focuser.Temperature
+            status = {
+                "focus_position": round(self.focuser.Position*self.steps_to_micron, 1),       #THIS occasionally glitches
+                "focus_temperature": self.focuser.Temperature,
+                "focus_moving": self.focuser.IsMoving,
+                'comp': self.config['coef_c'],
+                'filter_offset': g_dev['fil'].filter_offset
+                #"focus_temperature": self.focuser.Temperature
+                }
         except:
-            status['focus_temperature'] = self.reference  #This makes no sense, it is not a temp.
+            status = {
+                "focus_position": round(6000),        #This is a hack fix
+                "focus_temperature":  10.0,
+                "focus_moving": self.focuser.IsMoving,
+                'comp': self.config['coef_c'],
+                'filter_offset': g_dev['fil'].filter_offset
+                #"focus_temperature": self.focuser.Temperature
+                }
         return status
 
     def get_quick_status(self, quick):
