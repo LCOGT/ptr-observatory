@@ -214,7 +214,7 @@ class Mount:
             #self.mount.DeclinationRate = 0.0
             pass
         #breakpoint()
-        #self.reset_mount_reference)
+        #self.reset_mount_reference()
         self.site_in_automatic = config['site_in_automatic_default']
         self.automatic_detail = config['automatic_detail_default']
         self.move_time = 0

@@ -252,6 +252,7 @@ class Enclosure:
 
 
 
+
         #  NB NB First deal with the possible observing window being available or not.
         #  THis routine basically opens and keeps dome opposite the sun. Whether system
         #  takes sky flats or not is determined by the scheduler or calendar.  Mounting
@@ -269,11 +270,11 @@ class Enclosure:
 
         #     pass
                         
-
-        if g_dev['events']['Ops Window Start'] <= ephemNow <= g_dev['events']['Sun Rise']:
+        debugOffset = 0.0 #days
+        if g_dev['events']['Eve Sky Flats'] - debugOffset <= ephemNow <= g_dev['events']['Sun Rise']:
             #  We are now in the full operational window.   ###Ops Window Start
-            if g_dev['events']['Ops Window Start'] <= ephemNow <= g_dev['events']['Sun Set'] \
-                and g_dev['mnt'].site_in_automatic and not wx_hold and False:
+            if g_dev['events']['Ops Window Start'] - debugOffset <= ephemNow <= g_dev['events']['Sun Set'] \
+                and g_dev['mnt'].site_in_automatic and not wx_hold and True:
                 #  Basically if in above window and Automatic and Not Wx_hold: if closed, open up.
                 #  print('\nSlew to opposite the azimuth of the Sun, open and cool-down. Az =  ', az_opposite_sun)
                 #  NB There is no corresponding warm up phase in the Morning.
@@ -345,7 +346,7 @@ class Enclosure:
 
                 #first verify scope is parked, otherwise command park and 
                 #report failing.
-                if true:  #g_dev['mnt'].mount.AtPark:                
+                if True:  #g_dev['mnt'].mount.AtPark:                
                     if self.status_string.lower() in ['closed', 'closing']:
                         self.guarded_open()
                         self.dome_opened = True
