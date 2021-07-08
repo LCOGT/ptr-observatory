@@ -233,9 +233,12 @@ class Enclosure:
         '''
         Now what if code hangs?  To recover from that ideally we need a deadman style timer operating on a
         separate computer.
+        First check out code restarts and roof is NOT CLOSED, what happens
+        during day, etc.
         '''
 
         #  NB NB NB Gather some facts:
+        breakpoint()
         obs_win_begin, sunset, sunrise, ephemNow = self.astro_events.getSunEvents()
         az_opposite_sun = g_dev['evnt'].sun_az_now()
         az_opposite_sun -= 180.
@@ -270,7 +273,7 @@ class Enclosure:
 
         #     pass
                         
-        debugOffset = 0.0 #days
+        debugOffset = 0.5 #days
         if g_dev['events']['Eve Sky Flats'] - debugOffset <= ephemNow <= g_dev['events']['Sun Rise']:
             #  We are now in the full operational window.   ###Ops Window Start
             if g_dev['events']['Ops Window Start'] - debugOffset <= ephemNow <= g_dev['events']['Sun Set'] \
