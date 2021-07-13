@@ -238,7 +238,6 @@ class Enclosure:
         '''
 
         #  NB NB NB Gather some facts:
-        breakpoint()
         obs_win_begin, sunset, sunrise, ephemNow = self.astro_events.getSunEvents()
         az_opposite_sun = g_dev['evnt'].sun_az_now()
         az_opposite_sun -= 180.

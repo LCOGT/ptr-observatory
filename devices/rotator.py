@@ -26,19 +26,35 @@ class Rotator:
         mechanical rotator position angle and the true Equatorial Position
         Angle of the imager, and compensate for any difference.
         '''
-        #NB we had an exception here with Target position.
-        status = {
-            "position_angle": round(self.rotator.TargetPosition, 4),
-            "rotator_moving": self.rotator.IsMoving,
-        }
+        #NB we had an exception here with Target position.  mORE THAN ONE OF THESE! 220210709
+        try:
+            status = {
+                "position_angle": round(self.rotator.TargetPosition, 4),
+                "rotator_moving": self.rotator.IsMoving,
+            }
+        except:
+            try:
+                 status = {
+                    "position_angle": round(self.rotator.TargetPosition, 4),
+                    "rotator_moving": self.rotator.IsMoving,
+                 }                   
+            except:
+                  status = {
+                    "position_angle": round(0.0, 4),
+                    "rotator_moving": False,
+                 }                     
+            
         #print(self.rotator.TargetPosition)
         return status
 
-    def get_quick_status(self, quick):
+    def get_quick_status(self, quick):   #Added the kludge fix 20120709
         quick.append(time.time())
-        quick.append(self.rotator.Position)
-        quick.append(self.rotator.IsMoving)
-
+        try:
+            quick.append(self.rotator.Position)
+            quick.append(self.rotator.IsMoving)
+        except:
+            quick.append(0.0)
+            quick.append(False)            
         return quick
 
     def get_average_status(self, pre, post):
