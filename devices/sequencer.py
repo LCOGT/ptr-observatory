@@ -444,7 +444,8 @@ class Sequencer:
         '''
         # if bock['project'] is None:
             #user controlled block...
-       #NB NB NB  if no project found, need to say so not fault. 20210624
+        #NB NB NB  if no project found, need to say so not fault. 20210624
+
         for target in block['project']['project_targets']:   #  NB NB NB Do multi-target projects make sense???
             dest_ra = float(target['ra']) - \
                 float(block_specification['project']['project_constraints']['ra_offset'])/15.
@@ -477,7 +478,9 @@ class Sequencer:
             print("CAUTION:  rotator may block")
             pa = float(block_specification['project']['project_constraints']['position_angle'])
             if abs(pa) > 0.01:
+
                 g_dev['rot'].rotator.MoveAbsolute(pa)   #Skip rotator move if nominally 0
+
             
             #Compute how many to do.
             left_to_do = 0
@@ -635,10 +638,14 @@ class Sequencer:
                             left_to_do -= 1
                             print("Left to do:  ", left_to_do)
                         pane += 1
-                    now_date_timeZ = datetime.datetime.now().isoformat().split('.')[0] +'Z'           
+                        
+                    now_date_timeZ = datetime.datetime.now().isoformat().split('.')[0] +'Z'
+
                     ended = left_to_do <= 0 or now_date_timeZ >= block['end']\
                             or g_dev['airmass'] > float( block_specification['project']['project_constraints']['max_airmass']) \
-                            or abs(g_dev['ha']) > float(block_specification['project']['project_constraints']['max_ha'])# Or mount has flipped, too low, too bright. 
+                            or abs(g_dev['ha']) > float(block_specification['project']['project_constraints']['max_ha'])
+                            # Or mount has flipped, too low, too bright, entering zenith..
+                    
         print("Fini!")
         if block_specification['project']['project_constraints']['close_on_block_completion']:
             g_dev['mnt'].park_command({}, {})
@@ -875,7 +882,7 @@ class Sequencer:
         
     
 
-    def auto_focus_script(self, req, opt, throw=600):
+    def auto_focus_script(self, req, opt, throw=750):
         '''
         V curve is a big move focus designed to fit two lines adjacent to the more normal focus curve.
         It finds the approximate focus, particulary for a new instrument. It requires 8 points plus
@@ -1042,7 +1049,7 @@ class Sequencer:
         return
 
 
-    def coarse_focus_script(self, req, opt, throw = 600):
+    def coarse_focus_script(self, req, opt, throw = 650):
         '''
         V curve is a big move focus designed to fit two lines adjacent to the more normal focus curve.
         It finds the approximate focus, particulary for a new instrument. It requires 8 points plus
@@ -1084,11 +1091,11 @@ class Sequencer:
                                     g_dev['mnt'].current_sidereal)
             print("Going to near focus star " + str(focus_star[0][0]) + "  degrees away.")
             g_dev['mnt'].go_coord(focus_star[0][1][1], focus_star[0][1][0])
-            req = {'time': 7.5,  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'auto_focus'}   #  NB Should pick up filter and constats from config
+            req = {'time': 12.5,  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'auto_focus'}   #  NB Should pick up filter and constats from config
             opt = {'area': 100, 'count': 1, 'filter': 'W'}
         else:
             pass   #Just take time image where currently pointed.
-            req = {'time': 10,  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'auto_focus'}   #  NB Should pick up filter and constats from config
+            req = {'time': 15,  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'auto_focus'}   #  NB Should pick up filter and constats from config
             opt = {'area': 100, 'count': 1, 'filter': 'W'}
         foc_pos0 = foc_start
         result = {}

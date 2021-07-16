@@ -198,7 +198,6 @@ class Camera:
         if driver[:5].lower() == 'ascom':
             print('ASCOM camera is initializing.')
             #Monkey patch in ASCOM specific methods.
-
             self._connected = self._ascom_connected
             self._connect = self._ascom_connect
             self._setpoint = self._ascom_setpoint
