@@ -475,7 +475,9 @@ class Sequencer:
             '''
             g_dev['mnt'].go_coord(dest_ra, dest_dec)
             print("CAUTION:  rotator may block")
-            g_dev['rot'].rotator.MoveAbsolute(float(block_specification['project']['project_constraints']['position_angle']))
+            pa = float(block_specification['project']['project_constraints']['position_angle'])
+            if abs(pa) > 0.01:
+                g_dev['rot'].rotator.MoveAbsolute(pa)   #Skip rotator move if nominally 0
             
             #Compute how many to do.
             left_to_do = 0
