@@ -279,7 +279,7 @@ class FilterWheel:
         ''' set the filter position by  param string filter position index '''
         'NBNBNB This routine may not be correct'
         #print("filter cmd: set_position")
-        #breakpoint()
+        breakpoint()
         filter_selections = self.filter_data[int(req['filter_num'])][1]
         #print('Selections:  ', filter_selections)
         if self.dual and self.custom:
@@ -318,6 +318,7 @@ class FilterWheel:
     def set_name_command(self, req: dict, opt: dict):
         ''' set the filter position by filter name '''
         #print("filter cmd: set_name", req, opt)
+        #breakpoint()
         try:
             filter_name = req['filter_name']
         except:
@@ -326,20 +327,20 @@ class FilterWheel:
             except:
                 print("filter dictionary is screwed up big time.")
 
-        if filter_name =="W":     #  NB This is a temp patch
-            filter_name = 'w'
-        if filter_name in ["Exo", "EXO", 'exo']:
-            filter_name = 'exo'
-        if filter_name =="Rc":
-            filter_name = 'R'
-        if filter_name =="r":
-            filter_name = 'rp'
-        if filter_name =="g":
-            filter_name = 'gp'
-        if filter_name =="i":
-            filter_name = 'ip'
-        if filter_name =="u":
-            filter_name = 'up'
+        # if filter_name =="W":     #  NB This is a temp patch
+        #     filter_name = 'w'
+        # if filter_name in ["Exo", "EXO", 'exo']:
+        #     filter_name = 'exo'
+        # if filter_name =="Rc":
+        #     filter_name = 'R'
+        # if filter_name =="r":
+        #     filter_name = 'rp'
+        # if filter_name =="g":
+        #     filter_name = 'gp'
+        # if filter_name =="i":
+        #     filter_name = 'ip'
+        # if filter_name =="u":
+        #     filter_name = 'up'
         for match in range(int(self.config['filter_wheel1']['settings']['filter_count'])):
             if filter_name == self.filter_data[match][0]:
                 filt_pointer = match
@@ -360,6 +361,19 @@ class FilterWheel:
             r1_pr = requests.put(self.ip + '/filterwheel/1/position', json=r1)
             if str(r0_pr) == str(r1_pr) == '<Response [200]>':
                 print ("Set up filter configuration;  ", filter_selections)
+                print('Status:  ', r0_pr.text, r1_pr.text)
+            while True:
+                r0_t = int(requests.get(self.ip + '/filterwheel/0/position').text.split('"position":')[1].split('}')[0])
+                r1_t = int(requests.get(self.ip + '/filterwheel/1/position').text.split('"position":')[1].split('}')[0])
+                print(r0_t,r1_t)
+                if r0_t == 808 or r1_t == 808:
+                    time.sleep(1)
+                    continue
+                else:
+                    print('Filters:  ',r0_t,r1_t)
+                    break
+                    
+
             
             
         elif self.dual:
