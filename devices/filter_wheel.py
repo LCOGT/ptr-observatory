@@ -242,8 +242,8 @@ class FilterWheel:
             breakpoint()
             r0 = self.r0
             r1 = self.r1
-            r0['filterwheel']['position'] = filter_selections[1]
-            r1['filterwheel']['position'] = filter_selections[0]
+            r0['filterwheel']['position'] = filter_selections[0]
+            r1['filterwheel']['position'] = filter_selections[1]
             r0_pr = requests.put(self.ip + '/filterwheel/0/position', json=r0)
             r1_pr = requests.put(self.ip + '/filterwheel/1/position', json=r1)
             if str(r0_pr) == str(r1_pr) == '<Response [200]>':
@@ -286,8 +286,8 @@ class FilterWheel:
             breakpoint()
             r0 = self.r0
             r1 = self.r1
-            r0['filterwheel']['position'] = filter_selections[1]
-            r1['filterwheel']['position'] = filter_selections[0]
+            r0['filterwheel']['position'] = filter_selections[0]
+            r1['filterwheel']['position'] = filter_selections[1]
             r0_pr = requests.put(self.ip + '/filterwheel/0/position', json=r0)
             r1_pr = requests.put(self.ip + '/filterwheel/1/position', json=r1)
             if str(r0_pr) == str(r1_pr) == '<Response [200]>':
@@ -354,8 +354,8 @@ class FilterWheel:
         if self.dual and self.custom:
             r0 = self.r0
             r1 = self.r1
-            r0['filterwheel']['position'] = filter_selections[1]
-            r1['filterwheel']['position'] = filter_selections[0]
+            r0['filterwheel']['position'] = filter_selections[0]
+            r1['filterwheel']['position'] = filter_selections[1]
             r0_pr = requests.put(self.ip + '/filterwheel/0/position', json=r0)
             r1_pr = requests.put(self.ip + '/filterwheel/1/position', json=r1)
             if str(r0_pr) == str(r1_pr) == '<Response [200]>':
