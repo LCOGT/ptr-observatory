@@ -44,11 +44,15 @@ import time
 from  datetime import datetime
 import json
 import redis
-from wms_config import *
-from wms_events import *
 
-
+from global_yard import *
+from config_files import mrc_config as config
+import ptr_events
 core1_redis = redis.StrictRedis(host='10.15.0.109', port=6379, db=0)
+
+astro_events = ptr_events.Events(config.site_config)
+astro_events.compute_day_directory()
+astro_events.display_events()
 
 #print("Starting Uni routine while loop.", c1r)
 #t=datetime.now().isoformat()
@@ -104,6 +108,7 @@ core1_redis = redis.StrictRedis(host='10.15.0.109', port=6379, db=0)
 #uni.close() 
 
 def main():
+    global astro_events
     ut = datetime.utcnow()
     jday_index = (ut.hour)*60 + ut.minute
     #getJulianDateTime()
@@ -128,7 +133,7 @@ def main():
                 uni.close()
             except:
                 pass
-            illum, mag =illuminationNow()
+            illum, mag = astro_events.illuminationNow()
             try:
                 mpsas = round(float(l[1][:-2]),2)
                 bright = int(float(l[2][:-2]))
@@ -218,9 +223,7 @@ def main():
                 hum = float(line[8])
                 dew = float(line[9])
                 vl_l_d = int(line[-2])
-                if temp >= 2 and hum <= 85 and sky <-8 and (temp - dew) > 2 and \
-                   vl_l_d < 3 and wind < 12 and bright <= 213250 and (sunZ85Op - 5/1440 <= \
-                   ephem.now() <= sunZ85Cl + 5/1440): 
+                if True:
                     open_possible = True
                     wx['open_possible'] = "Yes"
                 else:
@@ -248,8 +251,8 @@ def main():
                 wx['light'] = light_str
                 wx['bright hz'] = str(bright)
                 wx['illum lux'] = str(illum)
-                tt_open = round((sunZ85Op - ephem.now())*24, 2)
-                tt_close = round((sunZ85Cl - ephem.now())*24,2)
+                tt_open = 0# round((sunZ85Op - ephem.now())*24, 2)
+                tt_close = 0#  round((sunZ85Cl - ephem.now())*24,2)
                 if tt_open >= 0:
                     wx['time to open'] = str(tt_open) 
                 else:
@@ -259,7 +262,7 @@ def main():
                 else:
                     wx['time to close'] = '0.0'
                 print(open_possible, sky, temp, wind, hum, dew, vl_l_d, bright, \
-                      sunZ85Op, ephem.now(), sunZ85Cl)
+                      0.0, ephem.now(), 0.0)
             else:
                 open_possible = False
                 wx['open_possible'] = "No" 
