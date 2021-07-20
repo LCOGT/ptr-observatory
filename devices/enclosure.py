@@ -238,7 +238,6 @@ class Enclosure:
         '''
 
         #  NB NB NB Gather some facts:
-        breakpoint()
         obs_win_begin, sunset, sunrise, ephemNow = self.astro_events.getSunEvents()
         az_opposite_sun = g_dev['evnt'].sun_az_now()
         az_opposite_sun -= 180.
@@ -264,7 +263,7 @@ class Enclosure:
         #  At opposite end of night we will only open for morning skyflats if system
         #  bserverved for some specified time??
         if close_cmd or open_cmd:
-            pass
+            pass   #breakpoint()
 
         # if (ephemNow < g_dev['events']['Ops Window Start'] or ephemNow > g_dev['events']['Ops Window Closes']) \
         #     and g_dev['mnt'].site_in_automatic and False:
@@ -273,10 +272,10 @@ class Enclosure:
 
         #     pass
                         
-        debugOffset = 0.5 #days
-        if g_dev['events']['Eve Sky Flats'] - debugOffset <= ephemNow <= g_dev['events']['Sun Rise']:
+        debugOffset = 0.0 #days
+        if g_dev['events']['Eve Sky Flats'] - debugOffset <= ephemNow <= g_dev['events']['Sun Rise'] + debugOffset:
             #  We are now in the full operational window.   ###Ops Window Start
-            if g_dev['events']['Ops Window Start'] - debugOffset <= ephemNow <= g_dev['events']['Sun Set'] \
+            if g_dev['events']['Ops Window Start'] - debugOffset <= ephemNow <= g_dev['events']['Sun Set'] + debugOffset \
                 and g_dev['mnt'].site_in_automatic and not wx_hold and True:
                 #  Basically if in above window and Automatic and Not Wx_hold: if closed, open up.
                 #  print('\nSlew to opposite the azimuth of the Sun, open and cool-down. Az =  ', az_opposite_sun)
@@ -339,10 +338,10 @@ class Enclosure:
                     try:
                         if self.is_dome:
                             self.enclosure.Slaved = False
-                        self.enclosure.CloseShutter()
+                       # self.enclosure.CloseShutter()
                         self.dome_opened = False
                         self.dome_homed = True
-                        print("Daytime Close issued to the " + shutter_str  + "   No longer following Mount.")
+                       # print("Daytime Close issued to the " + shutter_str  + "   No longer following Mount.")
                     except:
                         print("Shutter busy right now!")
             elif not g_dev['enc'].site_in_automatic and open_cmd:

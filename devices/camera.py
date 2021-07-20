@@ -198,7 +198,6 @@ class Camera:
         if driver[:5].lower() == 'ascom':
             print('ASCOM camera is initializing.')
             #Monkey patch in ASCOM specific methods.
-
             self._connected = self._ascom_connected
             self._connect = self._ascom_connect
             self._setpoint = self._ascom_setpoint
@@ -1197,7 +1196,7 @@ class Camera:
                 avg_mnt = g_dev['mnt'].get_average_status(self.pre_mnt, self.post_mnt)
                 avg_foc = g_dev['foc'].get_average_status(self.pre_foc, self.post_foc)
                 avg_rot = g_dev['rot'].get_average_status(self.pre_rot, self.post_rot)
-                #avg_ocn = g_dev['ocn'].get_average_status(self.pre_ocn, self.post_ocn)
+                avg_ocn = g_dev['ocn'].get_average_status(self.pre_ocn, self.post_ocn)
                 if frame_type[-5:] in ['focus', 'probe', "ental"]:
                     self.img = self.img + 100   #maintain a + pedestal for sep  THIS SHOULD not be needed for a raw input file.
                     self.img = self.img.astype("float")
@@ -1425,15 +1424,15 @@ class Camera:
                     hdu.header['FOCUSTMP'] = (avg_foc[2], '[deg C] Focuser temperature')
                     hdu.header['FOCUSMOV'] = (avg_foc[3], 'Focuser is moving')
                     
-                    # hdu.header['WXSTATE'] = (g_dev['ocn'].wx_is_ok, 'Weather system state')
-                    # hdu.header['SKY-TEMP'] = (avg_ocn[1], '[deg C] Sky temperature')
-                    # hdu.header['AIR-TEMP'] = (avg_ocn[2], '[deg C] External temperature')
-                    # hdu.header['HUMIDITY'] = (avg_ocn[3], '[%] Percentage humidity')
-                    # hdu.header['DEWPOINT'] = (avg_ocn[4], '[deg C] Dew point')
-                    # hdu.header['WINDSPEE'] = (avg_ocn[5], '[km/h] Wind speed')
-                    # hdu.header['PRESSURE'] = (avg_ocn[6], '[mbar] Atmospheric pressure')
-                    # hdu.header['CALC-LUX'] = (avg_ocn[7], '[mag/arcsec^2] Expected sky brightness')
-                    # hdu.header['SKYMAG']  = (avg_ocn[8], '[mag/arcsec^2] Measured sky brightness')
+                    hdu.header['WXSTATE'] = (g_dev['ocn'].wx_is_ok, 'Weather system state')
+                    hdu.header['SKY-TEMP'] = (avg_ocn[1], '[deg C] Sky temperature')
+                    hdu.header['AIR-TEMP'] = (avg_ocn[2], '[deg C] External temperature')
+                    hdu.header['HUMIDITY'] = (avg_ocn[3], '[%] Percentage humidity')
+                    hdu.header['DEWPOINT'] = (avg_ocn[4], '[deg C] Dew point')
+                    hdu.header['WINDSPEE'] = (avg_ocn[5], '[km/h] Wind speed')
+                    hdu.header['PRESSURE'] = (avg_ocn[6], '[mbar] Atmospheric pressure')
+                    hdu.header['CALC-LUX'] = (avg_ocn[7], '[mag/arcsec^2] Expected sky brightness')
+                    hdu.header['SKYMAG']  = (avg_ocn[8], '[mag/arcsec^2] Measured sky brightness')
 
                     self.pix_ang = (self.camera.PixelSizeX*self.camera.BinX/(float(self.config['telescope'] \
                                               ['telescope1']['focal_length'])*1000.))

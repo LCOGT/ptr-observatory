@@ -43,34 +43,56 @@ hot_map = None
 hot_pix = None
 screen_flat_w = None
 screen_flat_air = None
-screen_flat_B= None
-screen_flat_V = None
-screen_flat_R = None
+screen_flat_JB= None
+screen_flat_JV = None
+screen_flat_Rc = None
 screen_flat_EXO = None
+screen_flat_NIR = None
+screen_flat_up = None
 screen_flat_gp = None
 screen_flat_rp = None
 screen_flat_ip = None
+screen_flat_zp = None
+screen_flat_zs = None
+screen_flat_Y = None
 screen_flat_O3 = None
 screen_flat_HA = None
 screen_flat_N2 = None
 screen_flat_S2 = None
+screen_flat_CR = None
+screen_flat_L = None
+screen_flat_PR = None
+screen_flat_PG = None
+screen_flat_PB = None
 screen_flat_EXO = None
 screen_flat_air = None
 sky_flat_w = None
 sky_flat_air = None
-sky_flat_B= None
-sky_flat_V = None
-sky_flat_R = None
+sky_flat_JB= None
+sky_flat_JV = None
+sky_flat_Rc = None
+sky_flat_Ic = None
 sky_flat_EXO = None
+sky_flat_up = None
 sky_flat_gp = None
 sky_flat_rp = None
 sky_flat_ip = None
+sky_flat_zs = None
+sky_flat_zp = None
+sky_flat_Y = None
 sky_flat_O3 = None
 sky_flat_HA = None
 sky_flat_N2 = None
 sky_flat_S2 = None
+sky_flat_CR = None
+sky_flat_L = None
+sky_flat_PR = None
+sky_flat_PG = None
+sky_flat_PB = None
+sky_flat_NIR = None
 sky_flat_EXO = None
 sky_flat_air = None
+sky_flat_dif = None
 dark_exposure_level = 0.0
 dark_2_exposure_level = 0
 dark_long_exposure_level = 0.0
@@ -128,8 +150,9 @@ def simpleColumnFix(img, col):
 def calibrate (hdu, lng_path, frame_type='light', quick=False):
     #These variables are gloal in the sense they persist between calls (memoized so to speak, should use that facility.)
     global super_bias, super_bias_2, super_dark, super_dark_2, hot_map, hot_pix, screen_flat_air, screen_flat_w, \
-        screen_flat_B, screen_flat_V, screen_flat_R, screen_flat_gp, screen_flat_rp, screen_flat_ip, \
-        screen_flat_O3, screen_flat_HA, screen_flat_N2, screen_flat_S2, screen_flat_EXO, screen_flat_air, \
+        screen_flat_JB, screen_flat_JV, screen_flat_Rc, screen_flat_Ic, screen_flat_up, screen_flat_gp, screen_flat_rp, screen_flat_ip, \
+        screen_flat_zs, screen_flat_zp, screen_flat_Y, screen_flat_O3, screen_flat_HA, screen_flat_N2, screen_flat_S2, screen_flat_EXO, \
+        screen_flat_L ,screen_flat_PB, screen_flat_PG, screen_flat_PR, screen_flat_NIR,  screen_flat_CR, screen_flat_dif,  \
         dark_exposure_level, super_dark_2_long, dark_2_exposure_level
     loud = False
 
@@ -235,36 +258,46 @@ def calibrate (hdu, lng_path, frame_type='light', quick=False):
             except:
                 quick_flat_w = False
                 if loud: print('WARN: No W Flat/Lum Loaded.')
-        if screen_flat_B is None:
+        if screen_flat_JB is None:
             try:
-                sfHdu = fits.open(lng_path + 'ff_2_B.fits')
-                screen_flat_B = sfHdu[0].data.astype('float32')
-                quick_flat_B = True
+                sfHdu = fits.open(lng_path + 'ff_2_JB.fits')
+                screen_flat_JB = sfHdu[0].data.astype('float32')
+                quick_flat_JB = True
                 sfHdu.close()
-                if loud: print(lng_path + 'ff_2_B.fits', 'Loaded')
+                if loud: print(lng_path + 'ff_2_JB.fits', 'Loaded')
             except:
-                quick_flat_B = False
+                quick_flat_JB = False
                 if loud: print('WARN: No B Flat/Lum Loaded.')
-        if screen_flat_V is None:
+        if screen_flat_JV is None:
             try:
-                sfHdu = fits.open(lng_path + 'ff_2_V.fits')
-                screen_flat_V = sfHdu[0].data.astype('float32')
-                quick_flat_V = True
+                sfHdu = fits.open(lng_path + 'ff_2_JV.fits')
+                screen_flat_JV = sfHdu[0].data.astype('float32')
+                quick_flat_JV = True
                 sfHdu.close()
-                if loud: print(lng_path + 'ff_2_V.fits', 'Loaded')
+                if loud: print(lng_path + 'ff_2_JV.fits', 'Loaded')
             except:
-                quick_flat_V = False
+                quick_flat_JV = False
                 if loud: print('WARN: No V Flat/Lum Loaded.')
-        if screen_flat_R is None:
+        if screen_flat_Rc is None:
             try:
-                sfHdu = fits.open(lng_path + 'ff_2_R.fits')
-                screen_flat_R = sfHdu[0].data.astype('float32')
-                quick_flat_R = True
+                sfHdu = fits.open(lng_path + 'ff_2_Rc.fits')
+                screen_flat_Rc = sfHdu[0].data.astype('float32')
+                quick_flat_Rc = True
                 sfHdu.close()
-                if loud: print(lng_path + 'ff_2_R.fits', 'Loaded')
+                if loud: print(lng_path + 'ff_2_Rc.fits', 'Loaded')
             except:
-                quick_flat_R = False
-                if loud: print('WARN: No R Flat/Lum Loaded.')
+                quick_flat_Rc = False
+                if loud: print('WARN: No Rc Flat/Lum Loaded.')
+        if screen_flat_up is None:
+            try:
+                sfHdu = fits.open(lng_path + 'ff_2_up.fits')
+                screen_flat_up = sfHdu[0].data.astype('float32')
+                quick_flat_up = True
+                sfHdu.close()
+                if loud: print(lng_path + 'ff_2_up.fits', 'Loaded')
+            except:
+                quick_flat_up = False
+                if loud: print('WARN: No up Flat/Lum Loaded.')
         if screen_flat_gp is None:
             try:
                 sfHdu = fits.open(lng_path + 'ff_2_gp.fits')
@@ -295,6 +328,36 @@ def calibrate (hdu, lng_path, frame_type='light', quick=False):
             except:
                 quick_flat_ip = False
                 if loud: print('WARN: No ip Flat/Lum Loaded.')
+        if screen_flat_zp is None:
+            try:
+                sfHdu = fits.open(lng_path + 'ff_2_zp.fits')
+                screen_flat_zp = sfHdu[0].data.astype('float32')
+                quick_flat_zp = True
+                sfHdu.close()
+                if loud: print(lng_path + 'ff_2_zp.fits', 'Loaded')
+            except:
+                quick_flat_zp = False
+                if loud: print('WARN: No zp Flat/Lum Loaded.')        
+        if screen_flat_zs is None:
+            try:
+                sfHdu = fits.open(lng_path + 'ff_2_zs.fits')
+                screen_flat_zs = sfHdu[0].data.astype('float32')
+                quick_flat_zs = True
+                sfHdu.close()
+                if loud: print(lng_path + 'ff_2_zs.fits', 'Loaded')
+            except:
+                quick_flat_zs = False
+                if loud: print('WARN: No zs Flat/Lum Loaded.')
+        if screen_flat_Y is None:
+            try:
+                sfHdu = fits.open(lng_path + 'ff_2_Y.fits')
+                screen_flat_Y = sfHdu[0].data.astype('float32')
+                quick_flat_Y = True
+                sfHdu.close()
+                if loud: print(lng_path + 'ff_2_Y.fits', 'Loaded')
+            except:
+                quick_flat_Y = False
+                if loud: print('WARN: No Y Flat/Lum Loaded.')
         if screen_flat_HA is None:
             try:
                 sfHdu = fits.open(lng_path + 'ff_2_HA.fits')
@@ -335,6 +398,76 @@ def calibrate (hdu, lng_path, frame_type='light', quick=False):
             except:
                 quick_flat_S2 = False
                 if loud: print('WARN: No S2 Flat/Lum Loaded.')
+        if screen_flat_CR is None:
+            try:
+                sfHdu = fits.open(lng_path + 'ff_2_CR.fits')
+                screen_flat_CR = sfHdu[0].data.astype('float32')
+                quick_flat_CR = True
+                sfHdu.close()
+                if loud: print(lng_path + 'ff_2_CR.fits', 'Loaded')
+            except:
+                quick_flat_CR = False
+                if loud: print('WARN: No CR Flat/Lum Loaded.')
+        if screen_flat_CR is None:
+            try:
+                sfHdu = fits.open(lng_path + 'ff_2_CR.fits')
+                screen_flat_CR = sfHdu[0].data.astype('float32')
+                quick_flat_CR = True
+                sfHdu.close()
+                if loud: print(lng_path + 'ff_2_CR.fits', 'Loaded')
+            except:
+                quick_flat_CR = False
+                if loud: print('WARN: No CR Flat/Lum Loaded.')
+        if screen_flat_L is None:
+            try:
+                sfHdu = fits.open(lng_path + 'ff_2_L.fits')
+                screen_flat_L = sfHdu[0].data.astype('float32')
+                quick_flat_L = True
+                sfHdu.close()
+                if loud: print(lng_path + 'ff_2_L.fits', 'Loaded')
+            except:
+                quick_flat_L = False
+                if loud: print('WARN: No L Flat/Lum Loaded.')
+        if screen_flat_PB is None:
+            try:
+                sfHdu = fits.open(lng_path + 'ff_2_PB.fits')
+                screen_flat_PB = sfHdu[0].data.astype('float32')
+                quick_flat_PB = True
+                sfHdu.close()
+                if loud: print(lng_path + 'ff_2_PB.fits', 'Loaded')
+            except:
+                quick_flat_PB = False
+                if loud: print('WARN: No PB Flat/Lum Loaded.')
+        if screen_flat_PR is None:
+            try:
+                sfHdu = fits.open(lng_path + 'ff_2_PR.fits')
+                screen_flat_PR = sfHdu[0].data.astype('float32')
+                quick_flat_PR = True
+                sfHdu.close()
+                if loud: print(lng_path + 'ff_2_PR.fits', 'Loaded')
+            except:
+                quick_flat_PR = False
+                if loud: print('WARN: No PR Flat/Lum Loaded.')
+        if screen_flat_PV is None:
+            try:
+                sfHdu = fits.open(lng_path + 'ff_2_PV.fits')
+                screen_flat_PV = sfHdu[0].data.astype('float32')
+                quick_flat_PV = True
+                sfHdu.close()
+                if loud: print(lng_path + 'ff_2_PV.fits', 'Loaded')
+            except:
+                quick_flat_PV = False
+                if loud: print('WARN: No PV Flat/Lum Loaded.')
+        if screen_flat_NIR is None:
+            try:
+                sfHdu = fits.open(lng_path + 'ff_2_NIR.fits')
+                screen_flat_NIR = sfHdu[0].data.astype('float32')
+                quick_flat_NIR = True
+                sfHdu.close()
+                if loud: print(lng_path + 'ff_2_NIR.fits', 'Loaded')
+            except:
+                quick_flat_NIR = False
+                if loud: print('WARN: No NIR Flat/Lum Loaded.')
         if screen_flat_EXO is None:
             try:
                 sfHdu = fits.open(lng_path + 'ff_2_exo.fits')
@@ -441,13 +574,13 @@ def calibrate (hdu, lng_path, frame_type='light', quick=False):
             if img_filter in ['w', 'W', 'L']:
                 do_flat = True
                 scr_flat = screen_flat_w
-            elif img_filter in ['B']:
+            elif img_filter in ['JB']:
                 do_flat = True
-                scr_flat = screen_flat_B
+                scr_flat = screen_flat_JB
             elif img_filter in ['V']:
-                scr_flat = screen_flat_V
+                scr_flat = screen_flat_JV
             elif img_filter in ['R', 'RB', 'Rc', 'RC']:
-                scr_flat = screen_flat_R
+                scr_flat = screen_flat_Rc
             elif img_filter in ['gp']:
                 do_flat = True
                 scr_flat = screen_flat_gp

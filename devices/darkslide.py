@@ -15,14 +15,14 @@ class Darkslide(object):
        self.closeDarkslide()
    
    def openDarkslide(self):
-       self._com = serial.Serial('COM15', timeout=0.1)
+       self._com = serial.Serial('COM12', timeout=0.3)  #NB NB THIS should come from config.
        self._com.write(b'@')
        self.slideStatus = 'open'
        self._com.close()
        print("Darkside Opened.")
     
    def closeDarkslide(self):
-       self._com = serial.Serial('COM15', timeout=0.1)
+       self._com = serial.Serial('COM12', timeout=0.3)
        self._com.write(b'A')
        self.slideStatus = 'closed'
        self._com.close()

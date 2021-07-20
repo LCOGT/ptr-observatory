@@ -388,11 +388,11 @@ site_config = {
             'recover_script':  None,
             'shutdown_script':  None, 
             #*********Guesses   7379@10 7457@20  7497 @ 25
-            'reference': 7418,    # Nominal at 15C Primary temperature, in microns not steps. Guess
+            'reference': 6850, #20210710    #7418,    # Nominal at 15C Primary temperature, in microns not steps. Guess
             'ref_temp':  15,      # Update when pinning reference  Larger at lower temperatures.
             'coef_c': 7.895,    # Negative means focus moves out (larger numerically) as Primary gets colder
-            'coef_0': 7299.9,  # Nominal intercept when Primary is at 0.0 C.
-            'coef_date':  '20210114',   #A Guess as to coef_c
+            'coef_0': 6850,  #20210710# Nominal intercept when Primary is at 0.0 C.
+            'coef_date':  '20210710',   #A Guess as to coef_c
             'use_local_temp':  True,
             'minimum': 0,    # NB this needs clarifying, we are mixing steps and microns.
             'maximum': 12700,
@@ -564,9 +564,9 @@ site_config = {
                 'y_active': 3194,
                 'x_pixel':  3.76,
                 'y_pixel':  3.76,
-                'pix_scale': .605,
-                'x_field_deg': round(4784*1.214/3600, 4),   #48 X 32 AMIN  3MIN X 0.5 DEG  
-                'y_field_deg': round(3194*1.214/3600, 4),
+                'pix_scale': 0.6051648849005071,
+                'x_field_deg': round(4784*0.6051648849005071/3600, 4),   #48 X 32 AMIN  3MIN X 0.5 DEG  
+                'y_field_deg': round(3194*0.6051648849005071/3600, 4),
                 'overscan_x': 24,
                 'overscan_y': 34,
                 'north_offset': 0.0,    #  These three are normally 0.0 for the primary telescope
