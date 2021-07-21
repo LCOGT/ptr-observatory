@@ -40,7 +40,7 @@ class Enclosure:
             self.redis_server = redis.StrictRedis(host='10.15.0.109', port=6379, db=0, decode_responses=True)
         self.is_dome = self.config['enclosure']['enclosure1']['is_dome']
         self.state = 'Closed. (Initially on code startup.)'
-        self.mode = 'Automatic'   #  Auto|User Control|User Close|Disable
+        #self.mode = 'Automatic'   #  Auto|User Control|User Close|Disable
         self.enclosure_message = '-'
         self.external_close = False   #If made true by operator,  system will not reopen for the night
         self.dome_opened = False   #memory of prior issued commands  Restarting code may close dome one time.
@@ -48,9 +48,13 @@ class Enclosure:
         self.cycles = 0
         self.prior_status = None
         self.time_of_next_slew = time.time()
-        self.site_in_automatic = True
+        if self.config['site_in_automatic_default'] == 'Manual':
+            self.site_in_automatic = False
+            self.mode = 'Manual' 
+        else:
+            self.site_in_automatic = True
+            self.mode = 'False' 
         
-
     def get_status(self) -> dict:
         #<<<<The next attibute reference fails at saf, usually spurious Dome Ring Open report.
         #<<< Have seen other instances of failing.
@@ -376,14 +380,14 @@ class Enclosure:
                     # return
                     if self.is_dome:
                         self.enclosure.Slaved = False
-                    try:
-                        if self.status_string.lower() in ['open'] \
-                            or not self.enclosure.AtHome:
+                        try:
+                            if self.status_string.lower() in ['open'] \
+                                or not self.enclosure.AtHome:
+                                pass
+                                #self.enclosure.CloseShutter()   #ASCOM DOME will fault if it is Opening or closing
+                        except:
                             pass
-                            #self.enclosure.CloseShutter()   #ASCOM DOME will fault if it is Opening or closing
-                    except:
-                        pass
-                        #print('Dome close cmd appeared to fault.')
+                            #print('Dome close cmd appeared to fault.')
                     self.dome_opened = False
                     self.dome_homed = True
                     #print("One time close of enclosure issued, normally done during Python code restart.")
