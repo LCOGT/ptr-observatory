@@ -35,12 +35,11 @@ class ArcLampBox(object):
         self.no_light_no_mirror = bytes([0x0d, 0x01, 0x42, 0x00, 0xb0])    #Mirror in AGU out of the way
         self.arc_status = 'unknown'
         self.com_port = com_port
-        if com_port is None: 
-            print ("No calibration unit detected.")    
-        else:
+        if com_port is not None: 
             self.set_arc_box('Reset')
+        else:
+            print ("No calibration unit detected.")
             #pass
-
 
     def set_arc_box(self, cmd):
         self._com = serial.Serial(self.com_port, baudrate=2400, bytesize=8, \
