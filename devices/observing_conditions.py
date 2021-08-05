@@ -74,27 +74,31 @@ class ObservingConditions:
         self.prior_status = None
         self.prior_status_2 = None
         self.wmd_fail_counter = 0
-        if self.site in ['mrc', 'mrc2']:
-            self.redis_server = redis.StrictRedis(host='10.15.0.109', port=6379, db=0,
-                                                  decode_responses=True)
-            self.observing_conditions_connected = True
-            print("observing_conditions: Redis connected = True")
-            
-        elif self.site == 'dht':  #DEH: added just for testing purposes with ASCOM simulators.
+        redis_ip = config['observing_conditions']['observing_conditions1']['redis_ip']
+        if redis_ip is not None:           
+            self.redis_server = redis.StrictRedis(host=redis_ip, port=6379, db=0,
+                                              decode_responses=True)
+            self.redis_wx_enabled = True
+        else:
+            self.redis_wx_enabled = False
+        #    self.observing_conditions_connected = True
+        #    print("observing_conditions: Redis connected = True")
+        #    
+        if self.site in ['simulate',  'dht']:  #DEH: added just for testing purposes with ASCOM simulators.
             self.observing_conditions_connected = True
             print("observing_conditions: Simulator drivers connected True")
-            
         else:
             win32com.client.pythoncom.CoInitialize()
-            self.boltwood = win32com.client.Dispatch(driver)
-            self.boltwood.connected = True   # This is not an ASCOM device.
+            self.sky_monitor = win32com.client.Dispatch(driver)
+            self.sky_monitor.connected = True   # This is not an ASCOM device.
             driver_2 = config['observing_conditions']['observing_conditions1']['driver_2']
-            self.boltwood_oktoopen = win32com.client.Dispatch(driver_2)
-            self.boltwood_oktoopen.Connected = True
+            self.sky_monitor_oktoopen = win32com.client.Dispatch(driver_2)
+            self.sky_monitor_oktoopen.Connected = True
             driver_3 = config['observing_conditions']['observing_conditions1']['driver_3']
-            self.boltwood_oktoimage = win32com.client.Dispatch(driver_3)
-            self.boltwood_oktoimage.Connected = True
-            print("observing_conditions: Boltwood connected = True")
+            if driver_3 is not None:
+                self.sky_monitor_oktoimage = win32com.client.Dispatch(driver_3)
+                self.sky_monitor_oktoimage.Connected = True
+            print("observing_conditions: sky_monitors connected = True")
             if config['observing_conditions']['observing_conditions1']['has_unihedron']:
                 self.unihedron_connected = False
                 try:
@@ -131,12 +135,12 @@ class ObservingConditions:
             self.calc_HSI_lux = illum
             # Here we add in-line  a preliminary OpenOK calculation:
             #  NB all parameters should come from config.
-            dew_point_gap = not (self.boltwood.Temperature  - self.boltwood.DewPoint) < 2
-            temp_bounds = not (self.boltwood.Temperature < -15) or (self.boltwood.Temperature > 35)
-            wind_limit = self.boltwood.WindSpeed < 35/2.235   #Boltwood reports m/s, Clarity may report in MPH
-            sky_amb_limit  = self.boltwood.SkyTemperature < -20
-            humidity_limit = 1 < self.boltwood.Humidity < 80
-            rain_limit = self.boltwood.RainRate <= 0.001
+            dew_point_gap = not (self.sky_monitor.Temperature  - self.sky_monitor.DewPoint) < 2
+            temp_bounds = not (self.sky_monitor.Temperature < -15) or (self.sky_monitor.Temperature > 35)
+            wind_limit = self.sky_monitor.WindSpeed < 35/2.235   #sky_monitor reports m/s, Clarity may report in MPH
+            sky_amb_limit  = self.sky_monitor.SkyTemperature < -20
+            humidity_limit = 1 < self.sky_monitor.Humidity < 80
+            rain_limit = self.sky_monitor.RainRate <= 0.001
           
             self.wx_is_ok = dew_point_gap and temp_bounds and wind_limit and sky_amb_limit and \
                             humidity_limit and rain_limit
@@ -146,93 +150,93 @@ class ObservingConditions:
             else:
                 wx_str = "No"   #Ideally we add the dominant reason in priority order.
             #The following may be more restictive since it includes local measured ambient light.
-            #  This signal meant to simulate the Boltwood relay output.  WE repport it but it is not
+            #  This signal meant to simulate the sky_monitor relay output.  WE repport it but it is not
             #  actively used.
-            if self.boltwood_oktoopen.IsSafe and dew_point_gap and temp_bounds:
+            if self.sky_monitor_oktoopen.IsSafe and dew_point_gap and temp_bounds:
                 self.ok_to_open = 'Yes'
             else:
                 self.ok_to_open = "No"
-            try:   #Boltwood cloud cover occasionally faults. 20200805 WER
+            try:   #sky_monitor cloud cover occasionally faults. 20200805 WER
             # Faults continuing but very rare.  20200909
                 status = {}   #This code faults when Rain is reported the Cloudcover does not
                               #return properly
                 status2 = {}
-                self.temperature = self.boltwood.Temperature
+                self.temperature = self.sky_monitor.Temperature
                 self.pressure = 784*0.750062   #Mbar to mmHg    Please use mbar going forward.
-                status = {"temperature_C": round(self.boltwood.Temperature, 2),
+                status = {"temperature_C": round(self.sky_monitor.Temperature, 2),
                           "pressure_mbar": 784.,
-                          "humidity_%": self.boltwood.Humidity,
-                          "dewpoint_C": self.boltwood.DewPoint,
-                          "sky_temp_C": round(self.boltwood.SkyTemperature,2),
-                          "last_sky_update_s":  round(self.boltwood.TimeSinceLastUpdate('SkyTemperature'), 2),
-                          "wind_m/s": abs(round(self.boltwood.WindSpeed, 2)),
-                          'rain_rate': self.boltwood.RainRate,
+                          "humidity_%": self.sky_monitor.Humidity,
+                          "dewpoint_C": self.sky_monitor.DewPoint,
+                          "sky_temp_C": round(self.sky_monitor.SkyTemperature,2),
+                          "last_sky_update_s":  round(self.sky_monitor.TimeSinceLastUpdate('SkyTemperature'), 2),
+                          "wind_m/s": abs(round(self.sky_monitor.WindSpeed, 2)),
+                          'rain_rate': self.sky_monitor.RainRate,
                           'solar_flux_w/m^2': None,
-                          'cloud_cover_%': str(self.boltwood.CloudCover),
+                          'cloud_cover_%': str(self.sky_monitor.CloudCover),
                           "calc_HSI_lux": illum,
                           "calc_sky_mpsas": round((mag - 20.01),2),    #  Provenance of 20.01 is dubious 20200504 WER
-                          "wx_ok": wx_str,  #str(self.boltwood_oktoimage.IsSafe),
+                          "wx_ok": wx_str,  #str(self.sky_monitor_oktoimage.IsSafe),
                           "open_ok": self.ok_to_open
-                          #"image_ok": str(self.boltwood_oktoimage.IsSafe)
+                          #"image_ok": str(self.sky_monitor_oktoimage.IsSafe)
                           }
                 status2 = {}
-                status2 = {"temperature_C": round(self.boltwood.Temperature, 2),
+                status2 = {"temperature_C": round(self.sky_monitor.Temperature, 2),
                           "pressure_mbar": 784.0,
-                          "humidity_%": self.boltwood.Humidity,
-                          "dewpoint_C": self.boltwood.DewPoint,
-                          "sky_temp_C": round(self.boltwood.SkyTemperature,2),
-                          "last_sky_update_s":  round(self.boltwood.TimeSinceLastUpdate('SkyTemperature'), 2),
-                          "wind_m/s": abs(round(self.boltwood.WindSpeed, 2)),
-                          'rain_rate': self.boltwood.RainRate,
+                          "humidity_%": self.sky_monitor.Humidity,
+                          "dewpoint_C": self.sky_monitor.DewPoint,
+                          "sky_temp_C": round(self.sky_monitor.SkyTemperature,2),
+                          "last_sky_update_s":  round(self.sky_monitor.TimeSinceLastUpdate('SkyTemperature'), 2),
+                          "wind_m/s": abs(round(self.sky_monitor.WindSpeed, 2)),
+                          'rain_rate': self.sky_monitor.RainRate,
                           'solar_flux_w/m^2': 'NA',
-                          #'cloud_cover_%': self.boltwood.CloudCover,
+                          #'cloud_cover_%': self.sky_monitor.CloudCover,
                           "calc_HSI_lux": illum,
                           "calc_sky_mpsas": round((mag - 20.01),2),    #  Provenance of 20.01 is dubious 20200504 WER
-                          "wx_ok": wx_str,  #str(self.boltwood_oktoimage.IsSafe),
+                          "wx_ok": wx_str,  #str(self.sky_monitor_oktoimage.IsSafe),
                           "open_ok": self.ok_to_open
-                          #"image_ok": str(self.boltwood_oktoimage.IsSafe)
+                          #"image_ok": str(self.sky_monitor_oktoimage.IsSafe)
                           }
                 self.prior_status = status
                 self.prior_status_2 = status2
                 return status
             except:
-                #  Note this is trying to deal with a failed Boltwood report.
+                #  Note this is trying to deal with a failed sky_monitor report.
                 
                 try:
                     status = {}
                     status2 = {}
-                    status = {"temperature_C": round(self.boltwood.Temperature, 2),
+                    status = {"temperature_C": round(self.sky_monitor.Temperature, 2),
                           "pressure_mbar": 784.,
-                              "humidity_%": self.boltwood.Humidity,
-                              "dewpoint_C": self.boltwood.DewPoint,
-                              "sky_temp_C": round(self.boltwood.SkyTemperature,2),
-                              "last_sky_update_s":  round(self.boltwood.TimeSinceLastUpdate('SkyTemperature'), 2),
-                              "wind_m/s": abs(round(self.boltwood.WindSpeed, 2)),
-                              'rain_rate': self.boltwood.RainRate,
+                              "humidity_%": self.sky_monitor.Humidity,
+                              "dewpoint_C": self.sky_monitor.DewPoint,
+                              "sky_temp_C": round(self.sky_monitor.SkyTemperature,2),
+                              "last_sky_update_s":  round(self.sky_monitor.TimeSinceLastUpdate('SkyTemperature'), 2),
+                              "wind_m/s": abs(round(self.sky_monitor.WindSpeed, 2)),
+                              'rain_rate': self.sky_monitor.RainRate,
                               'solar_flux_w/m^2': None,
-                              'cloud_cover_%': str(self.boltwood.CloudCover),
+                              'cloud_cover_%': str(self.sky_monitor.CloudCover),
                               "calc_HSI_lux": illum,
                               "calc_sky_mpsas": round((mag - 20.01),2),    #  Provenance of 20.01 is dubious 20200504 WER
-                              "wx_ok": wx_str,  #str(self.boltwood_oktoimage.IsSafe),
+                              "wx_ok": wx_str,  #str(self.sky_monitor_oktoimage.IsSafe),
                               "open_ok": self.ok_to_open
-                              #"image_ok": str(self.boltwood_oktoimage.IsSafe)
+                              #"image_ok": str(self.sky_monitor_oktoimage.IsSafe)
                               }
                     status2 = {}
-                    status2 = {"temperature_C": round(self.boltwood.Temperature, 2),
+                    status2 = {"temperature_C": round(self.sky_monitor.Temperature, 2),
                               "pressure_mbar": 784.0,
-                              "humidity_%": self.boltwood.Humidity,
-                              "dewpoint_C": self.boltwood.DewPoint,
-                              "sky_temp_C": round(self.boltwood.SkyTemperature,2),
-                              "last_sky_update_s":  round(self.boltwood.TimeSinceLastUpdate('SkyTemperature'), 2),
-                              "wind_m/s": abs(round(self.boltwood.WindSpeed, 2)),
-                              'rain_rate': self.boltwood.RainRate,
+                              "humidity_%": self.sky_monitor.Humidity,
+                              "dewpoint_C": self.sky_monitor.DewPoint,
+                              "sky_temp_C": round(self.sky_monitor.SkyTemperature,2),
+                              "last_sky_update_s":  round(self.sky_monitor.TimeSinceLastUpdate('SkyTemperature'), 2),
+                              "wind_m/s": abs(round(self.sky_monitor.WindSpeed, 2)),
+                              'rain_rate': self.sky_monitor.RainRate,
                               'solar_flux_w/m^2': 'NA',
-                              #'cloud_cover_%': self.boltwood.CloudCover,
+                              #'cloud_cover_%': self.sky_monitor.CloudCover,
                               "calc_HSI_lux": illum,
                               "calc_sky_mpsas": round((mag - 20.01),2),    #  Provenance of 20.01 is dubious 20200504 WER
-                              "wx_ok": wx_str,  #str(self.boltwood_oktoimage.IsSafe),
+                              "wx_ok": wx_str,  #str(self.sky_monitor_oktoimage.IsSafe),
                               "open_ok": self.ok_to_open
-                              #"image_ok": str(self.boltwood_oktoimage.IsSafe)
+                              #"image_ok": str(self.sky_monitor_oktoimage.IsSafe)
                               }
                     self.prior_status = status
                     self.prior_status_2 = status2
@@ -281,42 +285,42 @@ class ObservingConditions:
             try:
                 #breakpoint()
                 # pass
-                wx = eval(self.redis_server.get('<ptr-wx-1_state'))
-                illum = float(wx["illum lux"])
-                self.last_wx = wx
+                redis_monitor = eval(self.redis_server.get('<ptr-wx-1_state'))
+                illum = float(redis_monitor["illum lux"])
+                self.last_wx = redis_monitor
             except:
-                print('Redis is not returning Wx Data properly.')
-                wx = self.last_wx
+                print('Redis is not returning redis_monitor Data properly.')
+                redis_monitor = self.last_wx
                 
             try:
                 illum, mag = self.astro_events.illuminationNow()
-                illum = float(wx["illum lux"])
+                illum = float(redis_monitor["illum lux"])
                 if illum > 500:
                     illum = int(illum)
                 else:
                     illum = round(illum, 3)
                 #self.wx_is_ok = True
-                self.temperature = float(wx["amb_temp C"])
+                self.temperature = float(redis_monitor["amb_temp C"])
                 self.pressure = 978   #Mbar to mmHg  #THIS IS A KLUDGE
-                status = {"temperature_C": float(wx["amb_temp C"]),
+                status = {"temperature_C": float(redis_monitor["amb_temp C"]),
                           "pressure_mbar": 978.0,
-                          "humidity_%": float(wx["humidity %"]),
-                          "dewpoint_C": float(wx["dewpoint C"]),
+                          "humidity_%": float(redis_monitor["humidity %"]),
+                          "dewpoint_C": float(redis_monitor["dewpoint C"]),
                           "calc_HSI_lux": illum,
-                          "sky_temp_C": float(wx["sky C"]),
-                          "time_to_open_h": float(wx["time to open"]),
-                          "time_to_close_h": float(wx["time to close"]),
-                          "wind_m/s": float(wx["wind m/s"]),
-                          "ambient_light": wx["light"],
-                          "open_ok": wx["open_possible"],
-                          "wx_ok": wx["open_possible"],
-                          "meas_sky_mpsas": float(wx['meas_sky_mpsas']),
+                          "sky_temp_C": float(redis_monitor["sky C"]),
+                          "time_to_open_h": float(redis_monitor["time to open"]),
+                          "time_to_close_h": float(redis_monitor["time to close"]),
+                          "wind_m/s": float(redis_monitor["wind m/s"]),
+                          "ambient_light": redis_monitor["light"],
+                          "open_ok": redis_monitor["open_possible"],
+                          "wx_ok": redis_monitor["open_possible"],
+                          "meas_sky_mpsas": float(redis_monitor['meas_sky_mpsas']),
                           "calc_sky_mpsas": round((mag - 20.01), 2)
                           }
                                 #Pulled over from saf
                                 
                                 
-                uni_measure = float(wx['meas_sky_mpsas'])   #  Provenance of 20.01 is dubious 20200504 WER
+                uni_measure = float(redis_monitor['meas_sky_mpsas'])   #  Provenance of 20.01 is dubious 20200504 WER
 
                 if uni_measure == 0:
                     uni_measure = round((mag - 20.01),2)   #  Fixes Unihedron when sky is too bright
@@ -334,12 +338,12 @@ class ObservingConditions:
                 #      self.sample_time + 30.):    #  Two samples a minute.
                 #     try:
                 #         wl = open('Q:/archive/wx_log.txt', 'a')
-                #         wl.write('wx, ' + str(time.time()) + ', ' + str(illum) + ', ' + str(mag - 20.01) + ', ' \
+                #         wl.write('redis_monitor, ' + str(time.time()) + ', ' + str(illum) + ', ' + str(mag - 20.01) + ', ' \
                 #                  + str(self.unihedron.SkyQuality) + ", \n")
                 #         wl.close()
                 #         self.sample_time = time.time()
                 #     except:
-                #         print("Wx log did not write.")
+                #         print("redis_monitor log did not write.")
 
                 return status
             except:
@@ -391,12 +395,12 @@ class ObservingConditions:
                  self.sample_time + 30.):    #  Two samples a minute.
                 try:
                     wl = open('C:/Users/me/Desktop/Work/ptr/wx_log.txt', 'a')
-                    # wl.write('wx, ' + str(time.time()) + ', ' + str(illum) + ', ' + str(mag - 20.01) + ', ' \
+                    # wl.write('redis_monitor, ' + str(time.time()) + ', ' + str(illum) + ', ' + str(mag - 20.01) + ', ' \
                     #          + str(self.unihedron.SkyQuality) + ", \n")
                     wl.close()
                     self.sample_time = time.time()
                 except:
-                    print("Wx log did not write.")
+                    print("redis_monitor log did not write.")
         else:
             #DEH temporary to get past the big fatal error.
             #DEH is this always going to be very site specific or put in a config somewhere?
@@ -500,11 +504,11 @@ class ObservingConditions:
                 open_poss = False
                 hz = 500000
             quick.append(time.time())
-            quick.append(float(self.boltwood.SkyTemperature))
-            quick.append(float(self.boltwood.Temperature))
-            quick.append(float(self.boltwood.Humidity))
-            quick.append(float(self.boltwood.DewPoint))
-            quick.append(float(abs(self.boltwood.WindSpeed)))
+            quick.append(float(self.sky_monitor.SkyTemperature))
+            quick.append(float(self.sky_monitor.Temperature))
+            quick.append(float(self.sky_monitor.Humidity))
+            quick.append(float(self.sky_monitor.DewPoint))
+            quick.append(float(abs(self.sky_monitor.WindSpeed)))
             quick.append(float(784.0))   # 20200329 a SWAG!
             quick.append(float(illum))     # Add Solar, Lunar elev and phase
             if self.unihedron_connected:

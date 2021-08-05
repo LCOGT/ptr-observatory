@@ -27,19 +27,23 @@ class Enclosure:
         self.site = config['site']
         self.config = config
         g_dev['enc'] = self
-        if self.site != 'mrc2':
-            win32com.client.pythoncom.CoInitialize()
-            self.enclosure = win32com.client.Dispatch(driver)
-            print(self.enclosure)
+        #if self.site != 'mrc2':
+        win32com.client.pythoncom.CoInitialize()
+        self.enclosure = win32com.client.Dispatch(driver)
+        print(self.enclosure)
+        if not self.enclosure.Connected:
             self.enclosure.Connected = True
-            print("ASCOM enclosure connected.")
-            print(self.enclosure.Description)
+        print("ASCOM enclosure connected.")
+        redis_ip = config['enclosure']['enclosure1']['redis_ip']   #Do we really need to dulicat this config entry?
+        if redis_ip is not None:           
+            self.redis_server = redis.StrictRedis(host=redis_ip, port=6379, db=0,
+                                              decode_responses=True)
+            self.redis_wx_enabled = True
+            g_dev['redis_server'] = self.redis_server 
         else:
-            print("'MRC2' enclosure linked to 'mrc'. ")
-        if self.site in ['mrc', 'mrc2']:
-            self.redis_server = redis.StrictRedis(host='10.15.0.109', port=6379, db=0, decode_responses=True)
+            self.redis_wx_enabled = False
         self.is_dome = self.config['enclosure']['enclosure1']['is_dome']
-        self.state = 'Closed. (Initially on code startup.)'
+        self.state = 'Closed'
         #self.mode = 'Automatic'   #  Auto|User Control|User Close|Disable
         self.enclosure_message = '-'
         self.external_close = False   #If made true by operator,  system will not reopen for the night
@@ -81,7 +85,7 @@ class Enclosure:
                  stat_string = "Error"
                  self.shutter_is_closed = False
             else:
-                 stat_string = "Fault"
+                 stat_string = "Software Fault"
                  self.shutter_is_closed = False
 
         if self.site == 'saf':
@@ -102,33 +106,20 @@ class Enclosure:
                #        'dome_slewing': str(self.enclosure.Slewing),
                #        'enclosure_mode': str(self.mode),
                #        'enclosure_message': str(self.state)}
-        elif self.site == 'mrc':
+
+        elif self.site in ['mrc', 'mrc2']:
             status = {'roof_status': stat_string,
                       'shutter_status': stat_string,
                       'enclosure_synch': self.enclosure.Slaved,   #  What should  this mean for a roof? T/F = Open/Closed?
                       'enclosure_mode': self.mode,
                       'enclosure_message': self.state}
             self.redis_server.set('roof_status', str(stat_string), ex=600)
+            self.redis_server.set('shutter_is_closed', self.shutter_is_closed, ex=600)  #Used by autofocus
             self.redis_server.set("shutter_status", str(stat_string), ex=600)
             self.redis_server.set('enclosure_synch', str(self.enclosure.Slaved), ex=600)
             self.redis_server.set('enclosure_mode', str(self.mode), ex=600)
             self.redis_server.set('enclosure_message', str(self.state), ex=600)        #print('Enclosure status:  ', status
-        elif self.site == 'mrc2':
-            # status = {'roof_status': stat_string,
-            #           'shutter_status': stat_string,
-            #           'enclosure_synch': self.enclosure.Slaved,   #  What should  this mean for a roof? T/F = Open/Closed?
-            #           'enclosure_mode': self.mode,
-            #           'enclosure_message': self.state}
-            stat_string = self.redis_server.get('roof_status')#, str(stat_string), ex=600)
-            stat_string = self.redis_server.get("shutter_status")#, str(stat_string), ex=600)
-            encl_synched = self.redis_server.get('enclosure_synch')#, str(self.enclosure.Slaved), ex=600)
-            self.mode = self.redis_server.get('enclosure_mode')#, str(self.mode), ex=600)
-            self.state = self.redis_server.get('enclosure_message')#, str(self.state), ex=600)
-            status = {'roof_status': stat_string,
-                      'shutter_status': stat_string,
-                      'enclosure_synch': encl_synched,  #self.enclosure.Slaved,   #  What should  this mean for a roof? T/F = Open/Closed?
-                      'enclosure_mode': self.mode,
-                      'enclosure_message': self.state}
+
         else:
             status = {'roof_status': 'unknown',
                       'shutter_status': 'unknown',
@@ -139,11 +130,28 @@ class Enclosure:
             stat_string = 'unknown'
         #print('Enclosure status:  ', status
         self.status_string = stat_string
+        if self.site in ['mrc', 'mrc2']:
+            redis_command = self.redis_server.get('enc_cmd')
+            if redis_command == 'open':
+                breakpoint()
+                self.manager(open_cmd=True)
+                self.redis_server.delete('enc_cmd')
+                print("enclosure local cmd: open.")
+                self.dome_open = True
+                self.dome_home = True
+            elif redis_command == 'close':
+                self.manager(close_cmd=True)
+                self.redis_server.delete('enc_cmd')
+                print("enclosure local cmd: close.")
+                self.dome_open = True
+                self.dome_home = True
+            else:  
+                pass
         self.manager()   #There be monsters here. <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
         return status
 
 
-    def parse_command(self, command):
+    def parse_command(self, command):   #This gets commands from AWS, not normally used.
         req = command['required_params']
         opt = command['optional_params']
         action = command['action']
