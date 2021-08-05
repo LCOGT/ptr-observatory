@@ -32,7 +32,6 @@ import os
 #import sys
 #import argparse
 import json
-#import importlib
 import numpy as np
 import math
 import shelve
@@ -65,6 +64,7 @@ from devices.rotator import Rotator
 from devices.selector import Selector
 from devices.screen import Screen
 from devices.sequencer import Sequencer
+from devices.arclamp import ArcLampBox
 from processing.calibration import calibrate
 from global_yard import g_dev
 import bz2
@@ -150,9 +150,9 @@ def patch_httplib(bsize=400000):
         else:
             self.sock.sendall(p_data)
     httplib2.httplib.HTTPConnection.send = send
+    
+    
 class Observatory:
-
-
 
     def __init__(self, name, config):
 
@@ -178,7 +178,8 @@ class Observatory:
             'selector',
             'filter_wheel',
             'camera',
-            'sequencer'          
+            'sequencer'
+            #'lamp_box'
             ] 
         # Instantiate the helper class for astronomical events
         #Soon the primary event / time values come from AWS>
@@ -192,8 +193,6 @@ class Observatory:
         self.loud_status = False
         #g_dev['obs']: self
         g_dev['obs'] = self 
-
-
         site_str = config['site']
         g_dev['site']:  site_str
         self.g_dev = g_dev
@@ -258,8 +257,9 @@ class Observatory:
             devices_of_type = config.get(dev_type, {})
             device_names = devices_of_type.keys()
             # Instantiate each device object from based on its type
+            if dev_type == 'camera':
+                pass
             for name in device_names:
-
                 driver = devices_of_type[name]["driver"]
                 settings = devices_of_type[name].get("settings", {})
                 # print('looking for dev-types:  ', dev_type)
@@ -285,13 +285,12 @@ class Observatory:
                     device = Sequencer(driver, name, self.config, self.astro_events)
                 elif dev_type == "filter_wheel":
                     device = FilterWheel(driver, name, self.config)
+                #elif dev_type == "lamp_box":
+                    #device = ArcLampBox(driver)  # the driver is the COM port.
                 else:
                     print(f"Unknown device: {name}")
                 # Add the instantiated device to the collection of all devices.
                 self.all_devices[dev_type][name] = device
-                
-                
-                
                 # NB 20200410 This dropped out of the code: self.all_devices[dev_type][name] = [device]
         print("Finished creating devices.")
 
@@ -348,10 +347,26 @@ class Observatory:
                     unread_commands.sort(key=lambda x: x["ulid"])
                     # Process each job one at a time
                     for cmd in unread_commands:
+                        if self.config['selector']['selector1']['driver'] != 'Null':
+                            port = cmd['optional_params']['instrument_selector_position'] 
+                            g_dev['mnt'].instrument_port = port
+                            cam_name = self.config['selector']['selector1']['cameras'][port]
+                            if cmd['deviceType'][:6] == 'camera':
+                                cmd['required_params']['device_instance'] = cam_name
+                                cmd['deviceInstance'] = cam_name
+                                deviceInstance = cam_name
+                            else:
+                                try:
+                                    try:
+                                        deviceInstance = cmd['deviceInstance']
+                                    except:
+                                        deviceInstance = cmd['required_params']['device_instance']
+                                except:
+                                    breakpoint()
+                                    pass
+                        else:
+                            deviceInstance = cmd['deviceInstance']
                         print('obs.scan_request: ', cmd)
-                        deviceInstance = cmd['deviceInstance']
-                        if deviceInstance == 'camera1':
-                            deviceInstance = 'camera_1_1'
                         deviceType = cmd['deviceType']
                         device = self.all_devices[deviceType][deviceInstance]
                         try:
@@ -448,12 +463,18 @@ class Observatory:
             # self.send_log_to_frontend("WARN cam1 just fell on the floor!")
             # self.send_log_to_frontend("ERROR enc1 dome just collapsed.")
             #  Consider inhibity unless status rate is low
-        uri_status = f"{self.name}/status/"
+        uri_status = f"https://status.photonranch.org/status/{self.name}/status/"
         # NB None of the strings can be empty.  Otherwise this put faults.
         try:    # 20190926  tHIS STARTED THROWING EXCEPTIONS OCCASIONALLY
             #print("AWS uri:  ", uri)
             #print('Status to be sent:  \n', status, '\n')
-            self.api.authenticated_request("PUT", uri_status, status)   # response = is not  used
+            payload ={
+                "statusType": "deviceStatus",
+                "status":  status
+                }
+            data = json.dumps(payload)
+            response = requests.post(uri_status, data=data)
+            #self.api.authenticated_request("PUT", uri_status, status)   # response = is not  used
             #print("AWS Response:  ",response)
             self.time_last_status = time.time()
         except:
@@ -571,10 +592,10 @@ class Observatory:
                 # print(self)
                 # print(self.reduce_queue)
                 # print(self.reduce_queue.empty)
+
                 pri_image = self.reduce_queue.get(block=False)
                 #print(pri_image)
                 if pri_image is None:
-                    breakpoint
                     time.sleep(.5)
                     continue
                 # Here we parse the input and calibrate it.
