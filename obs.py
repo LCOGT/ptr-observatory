@@ -278,7 +278,8 @@ class Observatory:
                 # elif dev_type == "screen":
                 #     device = Screen(driver, name)
                 elif dev_type == "selector":
-                    device = Selector(driver, name, self.config)
+                    if self.config['selector']['selector1']['name'] is not None:  # DEH temp was stopping my code from running otherwise.
+                        device = Selector(driver, name, self.config)
                 elif dev_type == "camera":
                     device = Camera(driver, name, self.config)
                 elif dev_type == "sequencer":

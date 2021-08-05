@@ -663,7 +663,7 @@ class Camera:
             # Work with the ASCOM driver for the SPOX unit here eventually
             pass
         else:
-            pass
+            expose_lamp_state = None
         
         area = optional_params.get('area', 150)
         # if area is None or area in['Full', 'full', 'chip', 'Chip']:   #  Temporary patch to deal with 'chip'
@@ -1390,7 +1390,7 @@ class Camera:
                     hdu.header['ZENITH'] = (avg_mnt['zenith_distance'], '[deg] Zenith')
                     hdu.header['AIRMASS'] = (avg_mnt['airmass'], 'Effective mean airmass')
                     g_dev['airmass'] = float(avg_mnt['airmass'])
-                    hdu.header['REFRACT'] = (round(g_dev['mnt'].refraction_rev, 3),'asec')
+                    #hdu.header['REFRACT'] = (round(g_dev['mnt'].refraction_rev, 3),'asec')
                     hdu.header['MNTRDSYS'] = (avg_mnt['coordinate_system'], 'Mount coordinate system')
                     hdu.header['POINTINS'] = (avg_mnt['instrument'], '')
                     hdu.header['MNT-PARK'] = (avg_mnt['is_parked'], 'Mount is parked')

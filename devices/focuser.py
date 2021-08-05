@@ -104,7 +104,7 @@ class Focuser:
             "focus_position": round(self.focuser.Position*self.steps_to_micron, 1),
             "focus_moving": self.focuser.IsMoving,
             'comp': self.config['coef_c'],
-            'filter_offset': g_dev['fil'].filter_offset
+            #'filter_offset': g_dev['fil'].filter_offset
             #"focus_temperature": self.focuser.Temperature
             }
         try:
