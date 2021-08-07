@@ -670,12 +670,12 @@ class Sequencer:
         """
         self.sequencer_hold = True
         self.current_script = 'Afternoon Bias Dark'
-        dark_time = 180
+        dark_time = 240
 
-        while g_dev['events']['Eve Bias Dark'] <= ephem.now() <= g_dev['events']['Ops Window Start'] :   #Do not overrun the window end
+        while g_dev['events']['Eve Bias Dark'] -1 <= ephem.now() <= g_dev['events']['Ops Window Start'] :   #Do not overrun the window end
             print("Expose b_2")   
             req = {'time': 0.0,  'script': 'True', 'image_type': 'bias'}
-            opt = {'area': "Full", 'count': 5, 'bin':'2 2', \
+            opt = {'area': "Full", 'count': 13, 'bin':'2 2', \
                     'filter': 'dark'}
             result = g_dev['cam'].expose_command(req, opt, no_AWS=True, \
                                 do_sep=False, quick=False)
