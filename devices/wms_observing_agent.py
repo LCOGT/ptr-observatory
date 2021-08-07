@@ -139,7 +139,7 @@ class ObservingConditions:
             temp_bounds = not (self.sky_monitor.Temperature < -15) or (self.sky_monitor.Temperature > 35)
             wind_limit = self.sky_monitor.WindSpeed < 35/2.235   #sky_monitor reports m/s, Clarity may report in MPH
             sky_amb_limit  = self.sky_monitor.SkyTemperature < -20
-            humidity_limit = 1 < self.sky_monitor.Humidity < 80
+            humidity_limit = 1 < self.sky_monitor.Humidity < 85
             rain_limit = self.sky_monitor.RainRate <= 0.001
           
             self.wx_is_ok = dew_point_gap and temp_bounds and wind_limit and sky_amb_limit and \
@@ -279,7 +279,7 @@ class ObservingConditions:
             self.status = status
             
 
-        #  Note we are now in mrc specific code.
+        #  Note we are now in mrc specific code.  AND WE ARE USINGG THE OLD Weather SOURCE!!
 
         elif self.site == 'mrc' or self.site == 'mrc2':
             try:
@@ -301,9 +301,9 @@ class ObservingConditions:
                     illum = round(illum, 3)
                 #self.wx_is_ok = True
                 self.temperature = float(redis_monitor["amb_temp C"])
-                self.pressure = 978   #Mbar to mmHg  #THIS IS A KLUDGE
+                self.pressure = self.sky_monitor.Pressure,  #978   #Mbar to mmHg  #THIS IS A KLUDGE
                 status = {"temperature_C": float(redis_monitor["amb_temp C"]),
-                          "pressure_mbar": 978.0,
+                          "pressure_mbar": self.pressure,
                           "humidity_%": float(redis_monitor["humidity %"]),
                           "dewpoint_C": float(redis_monitor["dewpoint C"]),
                           "calc_HSI_lux": illum,
@@ -317,9 +317,22 @@ class ObservingConditions:
                           "meas_sky_mpsas": float(redis_monitor['meas_sky_mpsas']),
                           "calc_sky_mpsas": round((mag - 20.01), 2)
                           }
-                                #Pulled over from saf
-                                
-                                
+                dew_point_gap = not (self.sky_monitor.Temperature  - self.sky_monitor.DewPoint) < 2
+                temp_bounds = not (self.sky_monitor.Temperature < -15) or (self.sky_monitor.Temperature > 42)
+                wind_limit = self.sky_monitor.WindSpeed < 35/2.235   #sky_monitor reports m/s, Clarity may report in MPH
+                sky_amb_limit  = self.sky_monitor.SkyTemperature < 0
+                humidity_limit = 1 < self.sky_monitor.Humidity < 85
+                rain_limit = self.sky_monitor.RainRate <= 0.001
+
+          
+                self.wx_is_ok = dew_point_gap and temp_bounds and wind_limit and sky_amb_limit and \
+                                humidity_limit and rain_limit
+                #  NB  wx_is_ok does not include ambient light or altitude of the Sun
+                if self.wx_is_ok:
+                    wx_str = "Yes"
+                else:
+                    wx_str = "No"   #Ideally we add the dominant reason in priority order.                 
+                g_dev['wx_ok']  =  self.wx_is_ok             
                 uni_measure = float(redis_monitor['meas_sky_mpsas'])   #  Provenance of 20.01 is dubious 20200504 WER
 
                 if uni_measure == 0:
@@ -426,7 +439,8 @@ class ObservingConditions:
         #OLD CODE USED A PROBE. jUST DO THIS EVERY CYCLE
 
             
-        #self.wx_is_ok = False     
+        #self.wx_is_ok = False   
+        #We evaluate holds at all times.
         wx_delay_time = 900
         if (self.wx_is_ok and self.wx_system_enable) and not self.wx_hold:     #Normal condition, possibly nothing to do.
             self.wx_hold_last_updated = time.time()
@@ -438,7 +452,7 @@ class ObservingConditions:
             self.wx_hold_tally += 1     #  This counts all day and night long.
             self.wx_hold_last_updated = t
             if obs_win_begin <= ephemNow <= sunrise:     #Gate the real holds to be in the Observing window.
-                self.wx_hold_count += 1
+                self.wx_hold_count += 1  #These are real holds occuring once obs window is entered.
                 #We choose to let the enclosure manager handle the close.
                 print("Wx hold asserted, flap#:", self.wx_hold_count, self.wx_hold_tally)
             else:

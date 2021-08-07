@@ -10,19 +10,20 @@ import serial
 #  NBNB This needs to be integrated with config and camera.
 class Darkslide(object):
     
-   def __init__(self):
+   def __init__(self, com_port):
        self.slideStatus = 'unknown'
+       self.com_port = com_port
        self.closeDarkslide()
    
    def openDarkslide(self):
-       self._com = serial.Serial('COM12', timeout=0.3)  #NB NB THIS should come from config.
+       self._com = serial.Serial(self.com_port, timeout=0.3)
        self._com.write(b'@')
        self.slideStatus = 'open'
        self._com.close()
        print("Darkside Opened.")
     
    def closeDarkslide(self):
-       self._com = serial.Serial('COM12', timeout=0.3)
+       self._com = serial.Serial(self.com_port, timeout=0.3)   #Com 12 for saf, needs fixing.
        self._com.write(b'A')
        self.slideStatus = 'closed'
        self._com.close()

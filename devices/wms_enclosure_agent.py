@@ -52,12 +52,12 @@ class Enclosure:
         self.cycles = 0
         self.prior_status = None
         self.time_of_next_slew = time.time()
-        if self.config['site_in_automatic_default'] == 'Manual':
+        if self.config['site_in_automatic_default'] == "Automatic":
+            self.site_in_automatic = True
+            self.mode = 'Automatic' 
+        else:
             self.site_in_automatic = False
             self.mode = 'Manual' 
-        else:
-            self.site_in_automatic = True
-            self.mode = 'False' 
         
     def get_status(self) -> dict:
         #<<<<The next attibute reference fails at saf, usually spurious Dome Ring Open report.
@@ -131,7 +131,7 @@ class Enclosure:
         #print('Enclosure status:  ', status
         self.status_string = stat_string
         if self.site in ['mrc', 'mrc2']:
-            redis_command = self.redis_server.get('enc_cmd')
+            redis_command = self.redis_server.get('enc_cmd')  #It is presumed there is an expiration date on open command at least.
             if redis_command == 'open':
                 breakpoint()
                 self.manager(open_cmd=True)
@@ -262,6 +262,8 @@ class Enclosure:
         else:
             shutter_str = "Roof."
         wx_hold = g_dev['ocn'].wx_hold
+        wx_is_ok = g_dev['ocn'].wx_is_ok
+
 
 
 
@@ -283,16 +285,17 @@ class Enclosure:
         #     #Get in the dome.  For now we pass.
 
         #     pass
-                        
+        breakpoint()
         debugOffset = 0.0 #days
         if g_dev['events']['Eve Sky Flats'] - debugOffset <= ephemNow <= g_dev['events']['Sun Rise'] + debugOffset:
             #  We are now in the full operational window.   ###Ops Window Start
             if g_dev['events']['Ops Window Start'] - debugOffset <= ephemNow <= g_dev['events']['Sun Set'] + debugOffset \
-                and g_dev['mnt'].site_in_automatic and not wx_hold and True:
+                and self.site_in_automatic and not wx_hold and True:
                 #  Basically if in above window and Automatic and Not Wx_hold: if closed, open up.
                 #  print('\nSlew to opposite the azimuth of the Sun, open and cool-down. Az =  ', az_opposite_sun)
                 #  NB There is no corresponding warm up phase in the Morning.
                 if self.status_string.lower() in ['closed']:  #, 'closing']:
+                    breakpoint()
                     self.guarded_open()
                     self.dome_opened = True
                     self.dome_homed = True
@@ -301,7 +304,7 @@ class Enclosure:
                         try:
                             #breakpoint()
                             self.enclosure.SlewToAzimuth(az_opposite_sun)
-                            print("Now slewing to an azimuth opposite the Sun.")
+                            print("Now slewing Dome to an azimuth opposite the Sun.")
                             self.dome_homed = False
                             self.time_of_next_slew = time.time() + 15
                         except:
@@ -316,7 +319,7 @@ class Enclosure:
         #  takes images or not is determined by the scheduler or calendar.  Azimuth meant
         #  to be determined by that of the telescope.
 
-            if (obs_win_begin < ephemNow < sunrise or open_cmd) \
+            if (obs_win_begin - debugOffset < ephemNow < sunrise + debugOffset or open_cmd) \
                     and g_dev['mnt'].site_in_automatic \
                     and g_dev['ocn'].wx_is_ok \
                     and self.enclosure.ShutterStatus == 1: #  Closed
@@ -336,7 +339,7 @@ class Enclosure:
                     print("Night time Open issued to the "  + shutter_str, +   ' and is now following Mounting.')
         elif (obs_win_begin >= ephemNow or ephemNow >= sunrise):
             #WE are now outside the observing window, so Sun is up!!!
-            if g_dev['enc'].site_in_automatic or close_cmd:
+            if self.site_in_automatic or close_cmd:
                 if close_cmd:
                     self.state = 'User Closed the '  + shutter_str
                 else:
@@ -350,7 +353,8 @@ class Enclosure:
                     try:
                         if self.is_dome:
                             self.enclosure.Slaved = False
-                       # self.enclosure.CloseShutter()
+                        breakpoint()
+                        self.enclosure.CloseShutter()
                         self.dome_opened = False
                         self.dome_homed = True
                        # print("Daytime Close issued to the " + shutter_str  + "   No longer following Mount.")
@@ -389,6 +393,7 @@ class Enclosure:
                     if self.is_dome:
                         self.enclosure.Slaved = False
                         try:
+                            breakpoint()
                             if self.status_string.lower() in ['open'] \
                                 or not self.enclosure.AtHome:
                                 pass

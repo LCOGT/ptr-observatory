@@ -298,9 +298,10 @@ class Camera:
         self.hint = None
         self.focus_cache = None
         self.darkslide = False
-        if self.config['camera'][self.name]['settings']['has_darkslide']:
+        if self.config['camera'][self.name]['settings']['darkslide_com']:
             self.darkslide = True
-            self.darkslide_instance = Darkslide()     #  NB eventually default after reboot should be closed.
+            com_port = self.config['camera'][self.name]['settings']['darkslide_com']
+            self.darkslide_instance = Darkslide(com_port)     #  NB eventually default after reboot should be closed.
             self.darkslide_instance.closeDarkslide()   #  Consider turing off IR Obsy light at same time..
             self.darkslide_open = False
             print("Darkslide closed on camera startup.")
