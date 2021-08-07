@@ -37,10 +37,10 @@ import ptr_events
 #from devices.camera import Camera
 #from devices.filter_wheel import FilterWheel
 #from devices.focuser import Focuser
-from devices.enclosure_agent import Enclosure
+from devices.wms_enclosure_agent import Enclosure
 #from devices.mount import Mount
 #from devices.telescope import Telescope
-from devices.observing_agent import ObservingConditions
+from devices.wms_observing_agent import ObservingConditions
 #from devices.rotator import Rotator
 #from devices.switch import Switch    #Nothing implemented yet 20200511
 #from devices.selector import Selector
@@ -139,8 +139,8 @@ class Observatory:
 
         # This is the class through which we can make authenticated api calls.
         self.api = API_calls()
-        self.command_interval = 2   # seconds between polls for new commands
-        self.status_interval = 3    # NOTE THESE IMPLEMENTED AS A DELTA NOT A RATE.
+        self.command_interval = 2.5   # seconds between polls for new commands
+        self.status_interval = 2.5    # NOTE THESE IMPLEMENTED AS A DELTA NOT A RATE.
         self.name = name
         self.site_name = name
         self.config = config
@@ -203,29 +203,29 @@ class Observatory:
         # self.site_queue_thread.start()
 
 
-    def set_last_reference(self,  delta_ra, delta_dec, last_time):
-        mnt_shelf = shelve.open(self.site_path + 'ptr_night_shelf/' + 'last')
-        mnt_shelf['ra_cal_offset'] = delta_ra
-        mnt_shelf['dec_cal_offset'] = delta_dec
-        mnt_shelf['time_offset']= last_time
-        mnt_shelf.close()
-        return
+    # def set_last_reference(self,  delta_ra, delta_dec, last_time):
+    #     mnt_shelf = shelve.open(self.site_path + 'ptr_night_shelf/' + 'last')
+    #     mnt_shelf['ra_cal_offset'] = delta_ra
+    #     mnt_shelf['dec_cal_offset'] = delta_dec
+    #     mnt_shelf['time_offset']= last_time
+    #     mnt_shelf.close()
+    #     return
 
-    def get_last_reference(self):
-        mnt_shelf = shelve.open(self.site_path + 'ptr_night_shelf/' + 'last')
-        delta_ra = mnt_shelf['ra_cal_offset']
-        delta_dec = mnt_shelf['dec_cal_offset']
-        last_time = mnt_shelf['time_offset']
-        mnt_shelf.close()
-        return delta_ra, delta_dec, last_time
+    # def get_last_reference(self):
+    #     mnt_shelf = shelve.open(self.site_path + 'ptr_night_shelf/' + 'last')
+    #     delta_ra = mnt_shelf['ra_cal_offset']
+    #     delta_dec = mnt_shelf['dec_cal_offset']
+    #     last_time = mnt_shelf['time_offset']
+    #     mnt_shelf.close()
+    #     return delta_ra, delta_dec, last_time
 
-    def reset_last_reference(self):
-        mnt_shelf = shelve.open(self.site_path + 'ptr_night_shelf/' + 'last')
-        mnt_shelf['ra_cal_offset'] = None
-        mnt_shelf['dec_cal_offset'] = None
-        mnt_shelf['time_offset'] = None
-        mnt_shelf.close()
-        return
+    # def reset_last_reference(self):
+    #     mnt_shelf = shelve.open(self.site_path + 'ptr_night_shelf/' + 'last')
+    #     mnt_shelf['ra_cal_offset'] = None
+    #     mnt_shelf['dec_cal_offset'] = None
+    #     mnt_shelf['time_offset'] = None
+    #     mnt_shelf.close()
+    #     return
 
     def create_devices(self, config: dict):
         # This dict will store all created devices, subcategorized by dev_type.
@@ -245,28 +245,28 @@ class Observatory:
                 driver = devices_of_type[name]["driver"]
                 settings = devices_of_type[name].get("settings", {})
                 # print('looking for dev-types:  ', dev_type)
-                if dev_type == "observing_agent":
+                if dev_type == "observing_conditions":
                     device = ObservingConditions(driver, name, self.config, self.astro_events)
-                elif dev_type == 'enclosure_agent':
+                elif dev_type == 'enclosure':
                     device = Enclosure(driver, name, self.config, self.astro_events)
-                elif dev_type == "mount":
-                    device = Mount(driver, name, settings, self.config, self.astro_events, tel=True) #NB this needs to be straightened out.
-                elif dev_type == "telescope":   # order of attaching is sensitive
-                    device = Telescope(driver, name, settings, self.config, tel=True)
-                elif dev_type == "rotator":
-                    device = Rotator(driver, name, self.config)
-                elif dev_type == "focuser":
-                    device = Focuser(driver, name, self.config)
-                # elif dev_type == "screen":
-                #     device = Screen(driver, name)
-                elif dev_type == "selector":
-                    device = Selector(driver, name, self.config)
-                elif dev_type == "camera":
-                    device = Camera(driver, name, self.config)
-                elif dev_type == "sequencer":
-                    device = Sequencer(driver, name, self.config, self.astro_events)
-                elif dev_type == "filter_wheel":
-                    device = FilterWheel(driver, name, self.config)
+                # elif dev_type == "mount":
+                #     device = Mount(driver, name, settings, self.config, self.astro_events, tel=True) #NB this needs to be straightened out.
+                # elif dev_type == "telescope":   # order of attaching is sensitive
+                #     device = Telescope(driver, name, settings, self.config, tel=True)
+                # elif dev_type == "rotator":
+                #     device = Rotator(driver, name, self.config)
+                # elif dev_type == "focuser":
+                #     device = Focuser(driver, name, self.config)
+                # # elif dev_type == "screen":
+                # #     device = Screen(driver, name)
+                # elif dev_type == "selector":
+                #     device = Selector(driver, name, self.config)
+                # elif dev_type == "camera":
+                #     device = Camera(driver, name, self.config)
+                # elif dev_type == "sequencer":
+                #     device = Sequencer(driver, name, self.config, self.astro_events)
+                # elif dev_type == "filter_wheel":
+                #     device = FilterWheel(driver, name, self.config)
                 else:
                     print(f"Unknown device: {name}")
                 # Add the instantiated device to the collection of all devices.
@@ -304,6 +304,10 @@ class Observatory:
         NB at this time we are preserving one command queue
         for all devices at a site.  This may need to change when we
         have parallel mountings or independently controlled cameras.
+        
+        NB NB This does nothing now since we have no commands specifically
+        directed at this agent.  Open and close, if in manual, are directed
+        at the obs based enclosure and passed over via redis.
         '''
 
         # This stopping mechanism allows for threads to close cleanly.
@@ -353,25 +357,25 @@ class Observatory:
                             device.parse_command(cmd)
                         except Exception as e:
                             print( 'Exception in obs.scan_requests:  ', e)
-               # print('scan_requests finished in:  ', round(time.time() - t1, 3), '  seconds')
-                ## Test Tim's code
-                url_blk = "https://calendar.photonranch.org/dev/siteevents"
-                body = json.dumps({
-                    'site':  self.config['site'],
-                    'start':  g_dev['d-a-y'] + 'T12:00:00Z',
-                    'end':    g_dev['next_day'] + 'T19:59:59Z',
-                    'full_project_details:':  False})
-                if True: #self.blocks is None:   #This currently prevents pick up of calendar changes.  OK for the moment.
-                    blocks = requests.post(url_blk, body).json()
-                    if len(blocks) > 0:   #   is not None:
-                        self.blocks = blocks
-                url_proj = "https://projects.photonranch.org/dev/get-all-projects"
-                if True: #self.projects is None:
-                    all_projects = requests.post(url_proj).json()
-                    self.projects = []
-                    if len(all_projects) > 0 and len(blocks)> 0:   #   is not None:
-                        self.projects = all_projects   #.append(all_projects)  #NOTE creating a list with a dict entry as item 0
-                        #self.projects.append(all_projects[1])
+               # # print('scan_requests finished in:  ', round(time.time() - t1, 3), '  seconds')
+               #  ## Test Tim's code
+               #  url_blk = "https://calendar.photonranch.org/dev/siteevents"
+               #  body = json.dumps({
+               #      'site':  self.config['site'],
+               #      'start':  g_dev['d-a-y'] + 'T12:00:00Z',
+               #      'end':    g_dev['next_day'] + 'T19:59:59Z',
+               #      'full_project_details:':  False})
+               #  if True: #self.blocks is None:   #This currently prevents pick up of calendar changes.  OK for the moment.
+               #      blocks = requests.post(url_blk, body).json()
+               #      if len(blocks) > 0:   #   is not None:
+               #          self.blocks = blocks
+               #  url_proj = "https://projects.photonranch.org/dev/get-all-projects"
+               #  if True: #self.projects is None:
+               #      all_projects = requests.post(url_proj).json()
+               #      self.projects = []
+               #      if len(all_projects) > 0 and len(blocks)> 0:   #   is not None:
+               #          self.projects = all_projects   #.append(all_projects)  #NOTE creating a list with a dict entry as item 0
+               #          #self.projects.append(all_projects[1])
                 '''
                 Design Note.  blocks relate to scheduled time at a site so we expect AWS to mediate block 
                 assignments.  Priority of blocks is determined by the owner and a 'equipment match' for
@@ -437,7 +441,7 @@ class Observatory:
         # Include the time that the status was assembled and sent.
         status["timestamp"] = round((time.time() + t1)/2., 3)
         status['send_heartbeat'] = False
-        loud = True
+        loud = False
         if loud:
             print('Status Sent:  \n', status)   # from Update:  ', status))
         else:
@@ -458,7 +462,7 @@ class Observatory:
             data = json.dumps(payload)
             response = requests.post(uri_status, data=data)
             #self.api.authenticated_request("PUT", uri_status, status)   # response = is not  used
-            print("AWS Response:  ",response)
+            #print("AWS Response:  ",response)
             self.time_last_status = time.time()
         except:
             print('self.api.authenticated_request("PUT", uri, status):   Failed!')
