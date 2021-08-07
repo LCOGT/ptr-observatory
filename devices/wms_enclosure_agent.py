@@ -285,7 +285,7 @@ class Enclosure:
         #     #Get in the dome.  For now we pass.
 
         #     pass
-        breakpoint()
+ 
         debugOffset = 0.0 #days
         if g_dev['events']['Eve Sky Flats'] - debugOffset <= ephemNow <= g_dev['events']['Sun Rise'] + debugOffset:
             #  We are now in the full operational window.   ###Ops Window Start
