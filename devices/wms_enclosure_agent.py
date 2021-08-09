@@ -273,6 +273,7 @@ class Enclosure:
         #     #Get in the dome.  For now we pass.
 
         #     pass
+
         debugOffset = 0. #days
         try:
             obs_time = self.redis_server.get('obs_heart_time')
@@ -320,6 +321,7 @@ class Enclosure:
                     try:
                         self.enclosure.SlewToAzimuth(az_opposite_sun)
                         print("Now slewing Dome to an azimuth opposite the Sun:  ", round(az_opposite_sun, 3))
+
                         self.dome_homed = False
                         self.time_of_next_slew = time.time() + 30  # seconds between slews.
                     except:
