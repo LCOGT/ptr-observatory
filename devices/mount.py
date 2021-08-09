@@ -165,6 +165,7 @@ class Mount:
         g_dev['mnt'] = self
         self.site = config['site']
         self.site_path = config['site_path']
+        self.config = config
         self.device_name = name
         self.settings = settings
         win32com.client.pythoncom.CoInitialize()
@@ -180,6 +181,10 @@ class Mount:
         self.inst = 'tel1'
         self.tel = tel   #for now this implies the primary telescope on a mounting.
         self.mount_message = "-"
+        if self.config['has_wx_enc_agent']:
+            self.site_is_proxy = True
+        else:
+            self.site_is_proxy = False
         if self.site == 'MRC2':
             self.has_paddle = config['mount']['mount2']['has_paddle']
         else:
@@ -217,8 +222,8 @@ class Mount:
             pass
         #breakpoint()
         #self.reset_mount_reference()
-        self.site_in_automatic = config['site_in_automatic_default']
-        self.automatic_detail = config['automatic_detail_default']
+        #self.site_in_automatic = config['site_in_automatic_default']
+        #self.automatic_detail = config['automatic_detail_default']
         self.move_time = 0
         try:
             ra1, dec1 = self.get_mount_reference()
@@ -246,7 +251,6 @@ class Mount:
             #self.paddle_thread = threading.Thread(target=self.paddle, args=())
             #self.paddle_thread.start()
         print("exiting mount _init")
-        breakpoint()
  
 
 #    def get_status(self):
@@ -382,6 +386,8 @@ class Mount:
         airmass = round(airmass, 4)
         #Be careful to preserve order
         #print(self.device_name, self.name)
+        if self.site_is_proxy:
+            self.site_is_proxy = True
 
 # =============================================================================
 #       The notion of multiple telescopes has not been implemented yet.
@@ -438,8 +444,8 @@ class Mount:
                 'is_tracking': str(self.mount.Tracking),
                 'is_slewing': str(self.mount.Slewing),
                 'message': str(self.mount_message[:54]),
-                'site_in_automatic': self.site_in_automatic,
-                'automatic_detail': str(self.automatic_detail),
+                #'site_in_automatic': self.site_in_automatic,
+                #'automatic_detail': str(self.automatic_detail),
                 'move_time': self.move_time
             }
         else:

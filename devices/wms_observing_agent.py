@@ -33,7 +33,7 @@ can be modified for debugging or simulation purposes.
 #                                            decode_responses=True)
 
 def linearize_unihedron(uni_value):
-    #  Based on 20080811 data
+    #  Based on 20180811 data   --- Highly suspect.  Need to re-do 20210807
     uni_value = float(uni_value)
     if uni_value < -1.9:
         uni_corr = 2.5**(-5.85 - uni_value)
@@ -54,6 +54,7 @@ class ObservingConditions:
         self.astro_events = astro_events
         g_dev['ocn'] = self
         self.site = config['site']
+        self.config = config
         self.sample_time = 0
         self.ok_to_open = 'No'
         self.observing_condtions_message = '-'
@@ -74,7 +75,7 @@ class ObservingConditions:
         self.prior_status = None
         self.prior_status_2 = None
         self.wmd_fail_counter = 0
-        redis_ip = config['observing_conditions']['observing_conditions1']['redis_ip']
+        redis_ip = config['redis_ip']
         if redis_ip is not None:           
             self.redis_server = redis.StrictRedis(host=redis_ip, port=6379, db=0,
                                               decode_responses=True)
@@ -106,7 +107,7 @@ class ObservingConditions:
                     port = config['observing_conditions']['observing_conditions1']['unihedron_port']
                     self.unihedron = win32com.client.Dispatch(driver)
                     self.unihedron.Connected = True
-                    self.unihedron_connected = True
+                    self.unihedron_connected = True   
                     print("observing_conditions: Unihedron connected = True, on COM" + str(port))
                 except:
                     print("Unihedron on Port 10 is disconnected.  Observing will proceed.")
@@ -189,7 +190,7 @@ class ObservingConditions:
                           "wind_m/s": abs(round(self.sky_monitor.WindSpeed, 2)),
                           'rain_rate': self.sky_monitor.RainRate,
                           'solar_flux_w/m^2': 'NA',
-                          #'cloud_cover_%': self.sky_monitor.CloudCover,
+                          'cloud_cover_%': self.sky_monitor.CloudCover,
                           "calc_HSI_lux": illum,
                           "calc_sky_mpsas": round((mag - 20.01),2),    #  Provenance of 20.01 is dubious 20200504 WER
                           "wx_ok": wx_str,  #str(self.sky_monitor_oktoimage.IsSafe),
@@ -198,10 +199,10 @@ class ObservingConditions:
                           }
                 self.prior_status = status
                 self.prior_status_2 = status2
-                return status
+
+                #return status
             except:
                 #  Note this is trying to deal with a failed sky_monitor report.
-                
                 try:
                     status = {}
                     status2 = {}
@@ -240,11 +241,11 @@ class ObservingConditions:
                               }
                     self.prior_status = status
                     self.prior_status_2 = status2
-                    return status
+                    #return status
                 except:
                     self.prior_status = status
                     self.prior_status_2 = status2
-                    return status
+                    #return status
                 
             #  Note we are still in saf specific site code.
             if self.unihedron_connected:
@@ -277,9 +278,12 @@ class ObservingConditions:
                     pass
                     #print("Wx log did not write.")
             self.status = status
+            self.redis_server.set('wx_redis_status' , status, ex=300)
+            new_stat = self.redis_server.get('wx_redis_status')
+         
             
 
-        #  Note we are now in mrc specific code.  AND WE ARE USINGG THE OLD Weather SOURCE!!
+        #  Note we are now in mrc specific code.  AND WE ARE USING THE OLD Weather SOURCE!!
 
         elif self.site == 'mrc' or self.site == 'mrc2':
             try:
@@ -358,7 +362,7 @@ class ObservingConditions:
                 #     except:
                 #         print("redis_monitor log did not write.")
 
-                return status
+                #return status
             except:
                 pass
                 # time.sleep(1)
@@ -499,7 +503,7 @@ class ObservingConditions:
         #    requests.post(url, data)
         #except:
         #    print("Wx post failed, usually not a fatal error, probably site not supported")
-        #return status
+        return status
 
 
     def get_quick_status(self, quick):

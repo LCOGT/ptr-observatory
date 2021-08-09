@@ -27,14 +27,7 @@ class Enclosure:
         self.site = config['site']
         self.config = config
         g_dev['enc'] = self
-        #if self.site != 'mrc2':
-        win32com.client.pythoncom.CoInitialize()
-        self.enclosure = win32com.client.Dispatch(driver)
-        print(self.enclosure)
-        if not self.enclosure.Connected:
-            self.enclosure.Connected = True
-        print("ASCOM enclosure connected.")
-        redis_ip = config['enclosure']['enclosure1']['redis_ip']   #Do we really need to dulicat this config entry?
+        redis_ip = config['redis_ip']   #Do we really need to duplicate this config entry?
         if redis_ip is not None:           
             self.redis_server = redis.StrictRedis(host=redis_ip, port=6379, db=0,
                                               decode_responses=True)
@@ -42,28 +35,62 @@ class Enclosure:
             g_dev['redis_server'] = self.redis_server 
         else:
             self.redis_wx_enabled = False
-        self.is_dome = self.config['enclosure']['enclosure1']['is_dome']
-        self.state = 'Closed'
-        #self.mode = 'Automatic'   #  Auto|User Control|User Close|Disable
-        self.enclosure_message = '-'
-        self.external_close = False   #If made true by operator,  system will not reopen for the night
-        self.dome_opened = False   #memory of prior issued commands  Restarting code may close dome one time.
-        self.dome_homed = False
-        self.cycles = 0
-        self.prior_status = None
-        self.time_of_next_slew = time.time()
-        if self.config['site_in_automatic_default'] == 'Manual':
-            self.site_in_automatic = False
-            self.mode = 'Manual' 
+        if not self.config['has_wx_enc_agent']:
+            self.site_is_proxy = False
+            win32com.client.pythoncom.CoInitialize()
+            self.enclosure = win32com.client.Dispatch(driver)
+            print(self.enclosure)
+            if not self.enclosure.Connected:
+                self.enclosure.Connected = True
+            print("ASCOM enclosure connected.")
+            redis_ip = config['redis_ip']   #Do we really need to dulicat this config entry?
+            if redis_ip is not None:           
+                self.redis_server = redis.StrictRedis(host=redis_ip, port=6379, db=0,
+                                                  decode_responses=True)
+                self.redis_wx_enabled = True
+                g_dev['redis_server'] = self.redis_server 
+            else:
+                self.redis_wx_enabled = False
+            self.is_dome = self.config['enclosure']['enclosure1']['is_dome']
+            self.state = 'Closed'
+            #self.mode = 'Automatic'   #  Auto|User Control|User Close|Disable
+            self.enclosure_message = '-'
+            self.external_close = False   #If made true by operator,  system will not reopen for the night
+            self.dome_opened = False   #memory of prior issued commands  Restarting code may close dome one time.
+            self.dome_homed = False
+            self.cycles = 0
+            self.prior_status = None
+            self.time_of_next_slew = time.time()
+            if self.config['site_in_automatic_default'] == 'Manual':
+                self.site_in_automatic = False
+                self.mode = 'Manual' 
+                self.automatic_detail = 'Manual'
+            else:
+                self.site_in_automatic = True
+                self.mode = 'Automatic'
+                self.automatic_detail = 'Automatic'
         else:
-            self.site_in_automatic = True
-            self.mode = 'False' 
+            self.site_is_proxy = True
+            if self.config['site_in_automatic_default'] == "Automatic":
+                self.site_in_automatic = True
+                self.mode = 'Automatic' 
+            elif self.config['site_in_automatic_default'] == "Manual":
+                self.site_in_automatic = False
+                self.mode = 'Manual'
+            else:
+                self.site_in_automatic = False
+                self.mode = 'Shutdown'
         
     def get_status(self) -> dict:
         #<<<<The next attibute reference fails at saf, usually spurious Dome Ring Open report.
         #<<< Have seen other instances of failing.
         #core1_redis.set('unihedron1', str(mpsas) + ', ' + str(bright) + ', ' + str(illum), ex=600)
-        if self.site in ['saf', 'mrc']:
+
+        if self.site_is_proxy:
+            stat_string = self.redis_server.get("shutter_status")
+            status = {'shutter_status':  stat_string}
+            return status
+        elif self.site in ['saf', 'mrc', 'mrc2']:
             try:
                 shutter_status = self.enclosure.ShutterStatus
             except:
@@ -130,8 +157,8 @@ class Enclosure:
             stat_string = 'unknown'
         #print('Enclosure status:  ', status
         self.status_string = stat_string
-        if self.site in ['mrc', 'mrc2']:
-            redis_command = self.redis_server.get('enc_cmd')
+        if self.site_is_proxy:
+            redis_command = self.redis_server.set('enc_cmd', True, ex=1200)
             if redis_command == 'open':
                 breakpoint()
                 self.manager(open_cmd=True)
@@ -156,19 +183,29 @@ class Enclosure:
         opt = command['optional_params']
         action = command['action']
         if action == "open":
-            self.open_command(req, opt)
+            if self.site_is_proxy:
+                self.redis_server.set('enc_cmd', 'open', ex=300)
+            else:
+                self.open_command(req, opt)
         elif action == "close":
-            self.close_command(req, opt)
+            if self.site_is_proxy:
+                self.redis_server.set('enc_cmd', 'close', ex=1200)
+            else:
+                self.close_command(req, opt)
         elif action == "setAuto":
             self.mode = 'Automatic'
-            g_dev['mnt'].site_in_automatic = True
-            g_dev['mnt'].automatic_detail =  "Night Automatic"
+            g_dev['enc'].site_in_automatic = True
+            g_dev['enc'].automatic_detail =  "Night Automatic"
             print("Site and Enclosure set to Automatic.")
         elif action == "setManual":
             self.mode = 'Manual'
-            g_dev['mnt'].site_in_automatic = False
-            g_dev['mnt'].automatic_detail =  "Manual Only"
-            print("Site and Enclosure set to Manual.")
+            g_dev['enc'].site_in_automatic = False
+            g_dev['enc'].automatic_detail =  "Manual Only"
+        elif action == "setStayClosed" or action == 'setShutdown':
+            self.mode = 'Shutdown'
+            g_dev['enc'].site_in_automatic = False
+            g_dev['enc'].automatic_detail =  "Site Shutdown"
+            print("Site and Enclosure set to Shutdown.")
         elif action == "slew_alt":
             self.slew_alt_command(req, opt)
         elif action == "slew_az":
