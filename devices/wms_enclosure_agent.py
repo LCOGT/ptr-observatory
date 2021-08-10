@@ -26,7 +26,7 @@ class Enclosure:
         self.astro_events = astro_events
         self.site = config['site']
         self.config = config
-        self.site_is_proxy = self.config['has_wx_enc_agent'] 
+        self.site_is_proxy = self.config['agent_wms_enc_active'] 
         g_dev['enc'] = self
         #if self.site != 'mrc2':
         win32com.client.pythoncom.CoInitialize()
