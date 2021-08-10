@@ -181,7 +181,7 @@ class Mount:
         self.inst = 'tel1'
         self.tel = tel   #for now this implies the primary telescope on a mounting.
         self.mount_message = "-"
-        if self.config['has_wx_enc_agent']:
+        if self.config['agent_wms_enc_active']:
             self.site_is_proxy = True
         else:
             self.site_is_proxy = False

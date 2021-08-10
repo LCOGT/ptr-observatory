@@ -453,7 +453,7 @@ class Observatory:
         status = {}
         # Loop through all types of devices.
         # For each type, we get and save the status of each device.
-        if not self.config['has_wx_enc_agent']:
+        if not self.config['agent_wms_enc_active']:
             device_list = self.device_types
         else:
             device_list = self.short_status_devices   

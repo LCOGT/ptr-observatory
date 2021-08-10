@@ -35,7 +35,7 @@ class Enclosure:
             g_dev['redis_server'] = self.redis_server 
         else:
             self.redis_wx_enabled = False
-        if not self.config['has_wx_enc_agent']:
+        if not self.config['agent_wms_enc_active']:
             self.site_is_proxy = False
             win32com.client.pythoncom.CoInitialize()
             self.enclosure = win32com.client.Dispatch(driver)

@@ -89,7 +89,7 @@ class ObservingConditions:
             self.observing_conditions_connected = True
             self.site_is_proxy = False
             print("observing_conditions: Simulator drivers connected True")
-        elif not self.config['has_wx_enc_agent']:
+        elif not self.config['agent_wms_enc_active']:
             self.site_is_proxy = False
             win32com.client.pythoncom.CoInitialize()
             self.sky_monitor = win32com.client.Dispatch(driver)
@@ -115,7 +115,7 @@ class ObservingConditions:
                     print("Unihedron on Port 10 is disconnected.  Observing will proceed.")
                     self.unihedron_connected = False
                     # NB NB if no unihedron is installed the status code needs to not report it.
-        elif self.config['has_wx_enc_agent']:
+        elif self.config['agent_wms_enc_active']:
             self.site_is_proxy = True
 
     def get_status(self):
