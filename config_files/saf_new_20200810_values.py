@@ -56,7 +56,7 @@ site_config = {
     'elevation': 2194,    #  meters above sea level
     'reference_ambient':  [7],  #  Degrees Celsius.  Alternately 12 entries, one for every - mid month.
     'reference_pressure':  [794.0],    #mbar   A rough guess 20200315
-'site_in_automatic_default': "Automatic",   #  ["Manual", "Shutdown", "Automatic"]
+    'site_in_automatic_default': "Automatic",   #  ["Manual", "Shutdown", "Automatic"]
     'automatic_detail_default': "Enclosure is initially set to Automatic mode.",
     'observing_conditions' : {
         'observing_conditions1': {
