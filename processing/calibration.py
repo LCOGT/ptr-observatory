@@ -71,6 +71,7 @@ screen_flat_dif = None
 #
 sky_flat_w = None
 sky_flat_air = None
+sky_flat_JU= None
 sky_flat_JB= None
 sky_flat_JV = None
 sky_flat_Rc = None
@@ -80,9 +81,9 @@ sky_flat_up = None
 sky_flat_gp = None
 sky_flat_rp = None
 sky_flat_ip = None
-sky_flat_zs = None
 sky_flat_zp = None
-sky_flat_Y = None
+sky_flat_z = None
+sky_flat_y = None
 sky_flat_O3 = None
 sky_flat_HA = None
 sky_flat_N2 = None
@@ -152,10 +153,9 @@ def simpleColumnFix(img, col):
 
 def calibrate (hdu, lng_path, frame_type='light', quick=False):
     #These variables are gloal in the sense they persist between calls (memoized so to speak, should use that facility.)
-    global super_bias, super_bias_2, super_dark, super_dark_2, hot_map, hot_pix, screen_flat_air, screen_flat_w, \
-
+    global super_bias, super_bias_2, super_dark, super_dark_2, hot_map, hot_pix, screen_flat_air, screen_flat_w, screen_flat_JU, \
         screen_flat_JB, screen_flat_JV, screen_flat_Rc, screen_flat_Ic, screen_flat_up, screen_flat_gp, screen_flat_rp, screen_flat_ip, \
-        screen_flat_z, screen_flat_zp, screen_flat_y, screen_flat_O3, screen_flat_HA, screen_flat_N2, screen_flat_S2, screen_flat_EXO, \
+        screen_flat_zp, screen_flat_z, screen_flat_y, screen_flat_O3, screen_flat_HA, screen_flat_N2, screen_flat_S2, screen_flat_EXO, \
         screen_flat_PL ,screen_flat_PB, screen_flat_PG, screen_flat_PR, screen_flat_NIR,  screen_flat_CR, screen_flat_dif,  \
         dark_exposure_level, super_dark_2_long, dark_2_exposure_level
     loud = False
@@ -381,7 +381,7 @@ def calibrate (hdu, lng_path, frame_type='light', quick=False):
                 if loud: print(lng_path + 'ff_2_y.fits', 'Loaded')
             except:
                 quick_flat_y = False
-                if loud: print('WARN: No Y Flat/Lum Loaded.')
+                if loud: print('WARN: No y Flat/Lum Loaded.')
         if screen_flat_HA is None:
             try:
                 sfHdu = fits.open(lng_path + 'ff_2_HA.fits')
@@ -659,10 +659,10 @@ def calibrate (hdu, lng_path, frame_type='light', quick=False):
                 scr_flat = screen_flat_zp
             elif img_filter in ['zs']:
                 do_flat = True
-                scr_flat = screen_flat_zs
+                scr_flat = screen_flat_z
             elif img_filter in ['Y']:
                 do_flat = True
-                scr_flat = screen_flat_Y
+                scr_flat = screen_flat_y
             elif img_filter in ['HA', 'Ha', 'ha']:
                 do_flat = True
                 scr_flat = screen_flat_HA

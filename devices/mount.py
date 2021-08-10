@@ -165,6 +165,7 @@ class Mount:
         g_dev['mnt'] = self
         self.site = config['site']
         self.site_path = config['site_path']
+        self.config = config
         self.device_name = name
         self.settings = settings
         win32com.client.pythoncom.CoInitialize()
@@ -180,6 +181,10 @@ class Mount:
         self.inst = 'tel1'
         self.tel = tel   #for now this implies the primary telescope on a mounting.
         self.mount_message = "-"
+        if self.config['has_wx_enc_agent']:
+            self.site_is_proxy = True
+        else:
+            self.site_is_proxy = False
         if self.site == 'MRC2':
             self.has_paddle = config['mount']['mount2']['has_paddle']
         else:
@@ -198,7 +203,7 @@ class Mount:
         self.dec_corr = 0
         self.seek_commanded = False
         
-        self.mount.Park()
+        #self.mount.Park()
         if abs(self.west_ha_correction_r) > 0 or abs(self.west_dec_correction_r) > 0:
             self.flip_correction_needed = True
             print("Flip correction needed.")
@@ -217,8 +222,8 @@ class Mount:
             pass
         #breakpoint()
         #self.reset_mount_reference()
-        self.site_in_automatic = config['site_in_automatic_default']
-        self.automatic_detail = config['automatic_detail_default']
+        #self.site_in_automatic = config['site_in_automatic_default']
+        #self.automatic_detail = config['automatic_detail_default']
         self.move_time = 0
         try:
             ra1, dec1 = self.get_mount_reference()
@@ -246,7 +251,6 @@ class Mount:
             #self.paddle_thread = threading.Thread(target=self.paddle, args=())
             #self.paddle_thread.start()
         print("exiting mount _init")
-        breakpoint()
  
 
 #    def get_status(self):
@@ -382,6 +386,8 @@ class Mount:
         airmass = round(airmass, 4)
         #Be careful to preserve order
         #print(self.device_name, self.name)
+        if self.site_is_proxy:
+            self.site_is_proxy = True
 
 # =============================================================================
 #       The notion of multiple telescopes has not been implemented yet.
@@ -438,8 +444,8 @@ class Mount:
                 'is_tracking': str(self.mount.Tracking),
                 'is_slewing': str(self.mount.Slewing),
                 'message': str(self.mount_message[:54]),
-                'site_in_automatic': self.site_in_automatic,
-                'automatic_detail': str(self.automatic_detail),
+                #'site_in_automatic': self.site_in_automatic,
+                #'automatic_detail': str(self.automatic_detail),
                 'move_time': self.move_time
             }
         else:
@@ -576,6 +582,7 @@ class Mount:
         return status  #json.dumps(status)
 
     def parse_command(self, command):
+        breakpoint()
         req = command['required_params']
         opt = command['optional_params']
         action = command['action']

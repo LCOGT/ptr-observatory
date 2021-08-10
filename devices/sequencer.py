@@ -421,6 +421,7 @@ class Sequencer:
         '''
         
     def execute_block(self, block_specification):
+        
         self.block_guard = True
         # NB we assume the dome is open and already slaving.
         block = copy.deepcopy(block_specification)
@@ -724,10 +725,10 @@ class Sequencer:
         if flat_count < 1: flat_count = 1
         g_dev['mnt'].unpark_command({}, {})
         g_dev['mnt'].slewToSkyFlatAsync()
-        if g_dev['enc'].is_dome and not g_dev['enc'].mode == 'Automatic':
-             g_dev['enc'].Slaved = True  #Bring the dome into the picture.
-             print('\n SERVOED THE DOME HOPEFULLY!\n')
-        g_dev['obs'].update_status()
+        # if g_dev['enc'].is_dome and not g_dev['enc'].mode == 'Automatic':
+        #      g_dev['enc'].Slaved = True  #Bring the dome into the picture.
+        #     print('\n SERVOED THE DOME HOPEFULLY!\n')
+        #g_dev['obs'].update_status()
         try:
             g_dev['scr'].screen_dark()
         except:
@@ -736,16 +737,19 @@ class Sequencer:
         #  we can speed it up
         #Here we may need to switch off any
         #  Pick up list of filters is sky flat order of lowest to highest transparency.
+        breakpoint()
         pop_list = self.config['filter_wheel']['filter_wheel1']['settings']['filter_sky_sort'].copy()
         print('filters by low to high transmission:  ', pop_list)
         #length = len(pop_list)
         obs_win_begin, sunset, sunrise, ephemNow = self.astro_events.getSunEvents()
         scale = 1.0
         prior_scale = 1
-        while len(pop_list) > 0 and (g_dev['events']['Ops Window Start'] < ephemNow < g_dev['events']['End Eve Sky Flats']):
+        while len(pop_list) > 0: #and (g_dev['events']['Ops Window Start'] < ephemNow < g_dev['events']['End Eve Sky Flats']):
             current_filter = int(pop_list[0])
             acquired_count = 0
-
+            #req = {'filter': current_filter}
+            #opt =  {'filter': current_filter}
+            breakpoint()
             g_dev['fil'].set_number_command(current_filter)
             g_dev['mnt'].slewToSkyFlatAsync()
             bright = 35000
@@ -1502,7 +1506,7 @@ IF sweep
             count += 1
             print('\n\nResult:  ', result,   'To go count:  ', length - count,  '\n\n')
             
-        g_dev['mnt'].park()
+        #g_dev['mnt'].park()
         print("Equatorial sweep completed. Happy reducing.")
         ptr_utility.ModelOn = True
         self.sky_guard = False

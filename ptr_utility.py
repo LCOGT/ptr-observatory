@@ -1692,7 +1692,11 @@ def test_refraction():   #passes 20170104   20180909
 
 def appToObsRaHa(appRa, appDec, pSidTime):
     global raRefr, decRefr, refAsec
-    from obs import g_dev
+    #from obs import g_dev
+    try:
+        g_dev['ocn'].get_proxy_temp_press()
+    except:
+        pass
     appHa, appDec = transform_raDec_to_haDec_r(appRa, appDec, pSidTime)
     appAz, appAlt = transform_haDec_to_azAlt_r(appHa, appDec, site_config['latitude']*DTOR)
     obsAlt, refAsec = apply_refraction_inEl_r(appAlt,  g_dev['ocn'].temperature,  g_dev['ocn'].pressure)
@@ -1703,6 +1707,11 @@ def appToObsRaHa(appRa, appDec, pSidTime):
 
 def obsToAppHaRa(obsHa, obsDec, pSidTime):
     global raRefr, decRefr
+    #from obs import g_dev
+    try:
+        g_dev['ocn'].get_proxy_temp_press()
+    except:
+        pass
     obsAz, obsAlt = transform_haDec_to_azAlt_r(obsHa, obsDec, site_config['latitude']*DTOR)
     refr = 0.0
     try:

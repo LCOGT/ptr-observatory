@@ -54,6 +54,7 @@ class ObservingConditions:
         self.astro_events = astro_events
         g_dev['ocn'] = self
         self.site = config['site']
+        self.config = config
         self.sample_time = 0
         self.ok_to_open = 'No'
         self.observing_condtions_message = '-'
@@ -74,7 +75,7 @@ class ObservingConditions:
         self.prior_status = None
         self.prior_status_2 = None
         self.wmd_fail_counter = 0
-        redis_ip = config['observing_conditions']['observing_conditions1']['redis_ip']
+        redis_ip = config['redis_ip']
         if redis_ip is not None:           
             self.redis_server = redis.StrictRedis(host=redis_ip, port=6379, db=0,
                                               decode_responses=True)
@@ -86,8 +87,10 @@ class ObservingConditions:
         #    
         if self.site in ['simulate',  'dht']:  #DEH: added just for testing purposes with ASCOM simulators.
             self.observing_conditions_connected = True
+            self.site_is_proxy = False
             print("observing_conditions: Simulator drivers connected True")
-        else:
+        elif not self.config['has_wx_enc_agent']:
+            self.site_is_proxy = False
             win32com.client.pythoncom.CoInitialize()
             self.sky_monitor = win32com.client.Dispatch(driver)
             self.sky_monitor.connected = True   # This is not an ASCOM device.
@@ -111,8 +114,9 @@ class ObservingConditions:
                 except:
                     print("Unihedron on Port 10 is disconnected.  Observing will proceed.")
                     self.unihedron_connected = False
-                          # NB NB if no unihedron is installed the status code needs to not report it.
-
+                    # NB NB if no unihedron is installed the status code needs to not report it.
+        elif self.config['has_wx_enc_agent']:
+            self.site_is_proxy = True
 
     def get_status(self):
         '''
@@ -127,8 +131,11 @@ class ObservingConditions:
             DESCRIPTION.
 
         '''
+        if self.site_is_proxy:
 
-        if self.site == 'saf':
+            return 
+
+        elif self.site == 'saf':
             illum, mag = self.astro_events.illuminationNow()
             if illum > 100:
                 illum = int(illum)
@@ -408,93 +415,138 @@ class ObservingConditions:
             #breakpoint()
             #print("Big fatal error in observing conditons")
 
-        '''
-        Now lets compute Wx hold condition.  Class is set up to assume Wx has been good.
-        The very first time though at Noon, self.open_is_ok will always be False but the
-        Weather, which does not include ambient light, can be good.  We will assume that
-        changes in ambient light are dealt with more by the Events module.
 
-        We want the wx_hold signal to go up and down as a guage on the quality of the
-        afternoon.  If there are a lot of cycles, that indicates unsettled conditons even
-        if any particular instant is perfect.  So we set self.wx_hold to false during class
-        __init__().
-
-        When we get to this point of the code first time we expect self.wx_is_ok to be true
-        '''
-        obs_win_begin, sunset, sunrise, ephemNow = self.astro_events.getSunEvents()
-        
-        #OLD CODE USED A PROBE. jUST DO THIS EVERY CYCLE
+        if not self.site_is_proxy:
+            '''
+            Now lets compute Wx hold condition.  Class is set up to assume Wx has been good.
+            The very first time though at Noon, self.open_is_ok will always be False but the
+            Weather, which does not include ambient light, can be good.  We will assume that
+            changes in ambient light are dealt with more by the Events module.
+    
+            We want the wx_hold signal to go up and down as a guage on the quality of the
+            afternoon.  If there are a lot of cycles, that indicates unsettled conditons even
+            if any particular instant is perfect.  So we set self.wx_hold to false during class
+            __init__().
+    
+            When we get to this point of the code first time we expect self.wx_is_ok to be true
+            '''
+            obs_win_begin, sunset, sunrise, ephemNow = self.astro_events.getSunEvents()
+            
+            #OLD CODE USED A PROBE. jUST DO THIS EVERY CYCLE
+    
+                
+            #self.wx_is_ok = False     
+            wx_delay_time = 900
+            if (self.wx_is_ok and self.wx_system_enable) and not self.wx_hold:     #Normal condition, possibly nothing to do.
+                self.wx_hold_last_updated = time.time()
+    
+            elif not self.wx_is_ok and not self.wx_hold:     #Wx bad and no hold yet.
+                #Bingo we need to start a cycle
+                self.wx_hold = True
+                self.wx_hold_until_time = (t := time.time() + wx_delay_time)    #15 minutes   Make configurable
+                self.wx_hold_tally += 1     #  This counts all day and night long.
+                self.wx_hold_last_updated = t
+                if obs_win_begin <= ephemNow <= sunrise:     #Gate the real holds to be in the Observing window.
+                    self.wx_hold_count += 1
+                    #We choose to let the enclosure manager handle the close.
+                    print("Wx hold asserted, flap#:", self.wx_hold_count, self.wx_hold_tally)
+                else:
+                    print("Wx Hold -- out of Observing window.", self.wx_hold_count, self.wx_hold_tally)
+                    
+     
+    
+            elif not self.wx_is_ok and self.wx_hold:     #WX is bad and we are on hold.
+                self.wx_hold_last_updated = time.time()
+                #Stay here as long as we need to.
+                self.wx_hold_until_time = (t := time.time() + wx_delay_time)
+                if self.wx_system_enable:
+                    #print("In a wx_hold.")
+                    pass
+                    #self.wx_is_ok = True
+    
+            elif self.wx_is_ok  and self.wx_hold:     #Wx now good and still on hold.
+                if self.wx_hold_count < 3:
+                    if time.time() >= self.wx_hold_until_time and not self.wx_clamp:
+                        #Time to release the hold.
+                        self.wx_hold = False
+                        self.wx_hold_until_time = time.time() + wx_delay_time  #Keep pushing the recovery out
+                        self.wx_hold_last_updated = time.time()
+                        print("Wx hold released, flap#, tally#:", self.wx_hold_count, self.wx_hold_tally)
+                        #We choose to let the enclosure manager diecide it needs to re-open.
+                else:
+                    #Never release the THIRD  hold without some special high level intervention.
+                    if not self.clamp_latch:
+                        print('Sorry, Tobor is clamping enclosure shut for the night.')
+                    self.clamp_latch = True
+                    self.wx_clamp = True
+    
+                self.wx_hold_last_updated = time.time()
+             
+            #DEH: commented tihs out as not needed and causes errors for testing.    
+            #This should be located right after forming the wx status
+            #url = "https://api.photonranch.org/api/weather/write"
+            #data = json.dumps({
+            #    "weatherData": status,
+            #    "site": self.site,
+            #    "timestamp_s": int(time.time())
+            #    })
+            #try:
+            #    requests.post(url, data)
+            #except:
+            #    print("Wx post failed, usually not a fatal error, probably site not supported")
+            #return status
+            
+    def get_proxy_temp_press(self):
+        if self.site_is_proxy:
+            try:
+                wx = eval(self.redis_server.get('wx_redis_status'))
+                self.temperature = float(wx['temperature_C'])
+                self.pressure = float(wx['pressure_mbar'])
+            except:
+                print('Proxy temp, pressure did not work')
+                self.temperature = 20.0
+                self.pressure = 875.0    #Half of MRC and SAF
 
             
-        #self.wx_is_ok = False     
-        wx_delay_time = 900
-        if (self.wx_is_ok and self.wx_system_enable) and not self.wx_hold:     #Normal condition, possibly nothing to do.
-            self.wx_hold_last_updated = time.time()
-
-        elif not self.wx_is_ok and not self.wx_hold:     #Wx bad and no hold yet.
-            #Bingo we need to start a cycle
-            self.wx_hold = True
-            self.wx_hold_until_time = (t := time.time() + wx_delay_time)    #15 minutes   Make configurable
-            self.wx_hold_tally += 1     #  This counts all day and night long.
-            self.wx_hold_last_updated = t
-            if obs_win_begin <= ephemNow <= sunrise:     #Gate the real holds to be in the Observing window.
-                self.wx_hold_count += 1
-                #We choose to let the enclosure manager handle the close.
-                print("Wx hold asserted, flap#:", self.wx_hold_count, self.wx_hold_tally)
-            else:
-                print("Wx Hold -- out of Observing window.", self.wx_hold_count, self.wx_hold_tally)
-                
- 
-
-        elif not self.wx_is_ok and self.wx_hold:     #WX is bad and we are on hold.
-            self.wx_hold_last_updated = time.time()
-            #Stay here as long as we need to.
-            self.wx_hold_until_time = (t := time.time() + wx_delay_time)
-            if self.wx_system_enable:
-                #print("In a wx_hold.")
-                pass
-                #self.wx_is_ok = True
-
-        elif self.wx_is_ok  and self.wx_hold:     #Wx now good and still on hold.
-            if self.wx_hold_count < 3:
-                if time.time() >= self.wx_hold_until_time and not self.wx_clamp:
-                    #Time to release the hold.
-                    self.wx_hold = False
-                    self.wx_hold_until_time = time.time() + wx_delay_time  #Keep pushing the recovery out
-                    self.wx_hold_last_updated = time.time()
-                    print("Wx hold released, flap#, tally#:", self.wx_hold_count, self.wx_hold_tally)
-                    #We choose to let the enclosure manager diecide it needs to re-open.
-            else:
-                #Never release the THIRD  hold without some special high level intervention.
-                if not self.clamp_latch:
-                    print('Sorry, Tobor is clamping enclosure shut for the night.')
-                self.clamp_latch = True
-                self.wx_clamp = True
-
-            self.wx_hold_last_updated = time.time()
-         
-        #DEH: commented tihs out as not needed and causes errors for testing.    
-        #This should be located right after forming the wx status
-        #url = "https://api.photonranch.org/api/weather/write"
-        #data = json.dumps({
-        #    "weatherData": status,
-        #    "site": self.site,
-        #    "timestamp_s": int(time.time())
-        #    })
-        #try:
-        #    requests.post(url, data)
-        #except:
-        #    print("Wx post failed, usually not a fatal error, probably site not supported")
-        #return status
-
-
     def get_quick_status(self, quick):
         #  This method is used for annotating fits headers.
         # wx = eval(self.redis_server.get('<ptr-wx-1_state'))
 
         #  NB NB This routine does NOT update self.wx_ok
 
-        if self.site == 'saf':
+        if self.site_is_proxy:
+            #Need to get data for camera from redis.
+            illum, mag = self.astro_events.illuminationNow()
+            if illum <= 7500.:
+                open_poss = True
+                hz = 100000
+            else:
+                open_poss = False
+                hz = 500000
+            wx = eval(self.redis_server.get('wx_redis_status'))
+
+            quick.append(time.time())
+            quick.append(float(wx['sky_temp_C']))
+            quick.append(float(wx['temperature_C']))
+            quick.append(float(wx['humidity_%']))
+            quick.append(float(wx['dewpoint_C']))
+            quick.append(float(abs(wx['wind_m/s'])))
+            quick.append(float(wx['pressure_mbar']))   # 20200329 a SWAG!
+            quick.append(float(illum))     # Add Solar, Lunar elev and phase
+            if True:  #self.unihedron_connected:
+                uni_measure = wx['meas_sky_mpsas']
+            else:
+                uni_measure  = 0
+            if uni_measure == 0:
+                uni_measure = round((mag - 20.01),2)   #  Fixes Unihedron when sky is too bright
+                quick.append(float(uni_measure))
+                self.meas_sky_lux = illum
+            else:
+                self.meas_sky_lux = linearize_unihedron(uni_measure)
+                quick.append(float(self.meas_sky_lux))     # intended for Unihedron
+            return quick
+        
+        elif self.site == 'saf':
             # Should incorporate Davis data into this data set, and Unihedron.
             illum, mag = self.astro_events.illuminationNow()
             if illum <= 7500.:
@@ -558,7 +610,8 @@ class ObservingConditions:
         opt = command['optional_params']
         action = command['action']
         if action is not None:
-            self.move_relative_command(req, opt)
+            pass
+            #self.move_relative_command(req, opt)   ???
         else:
             print(f"Command <{action}> not recognized.")
 

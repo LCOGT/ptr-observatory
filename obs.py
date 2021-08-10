@@ -31,6 +31,7 @@ import requests
 import os
 #import sys
 #import argparse
+import redis
 import json
 import numpy as np
 import math
@@ -157,8 +158,8 @@ class Observatory:
 
         # This is the class through which we can make authenticated api calls.
         self.api = API_calls()
-        self.command_interval = 2   # seconds between polls for new commands
-        self.status_interval = 3    # NOTE THESE IMPLEMENTED AS A DELTA NOT A RATE.
+        self.command_interval = 3   # seconds between polls for new commands
+        self.status_interval = 4    # NOTE THESE IMPLEMENTED AS A DELTA NOT A RATE.
         self.name = name
         self.site_name = name
         self.config = config
@@ -166,7 +167,7 @@ class Observatory:
         self.last_request = None
         self.stopped = False
         self.site_message = '-'
-        self.device_types = [
+        self.device_types = [    #All devices need to be created
             'observing_conditions',
             'enclosure',
             'mount',
@@ -178,7 +179,18 @@ class Observatory:
             'filter_wheel',
             'camera',
             'sequencer'          
-            ] 
+            ]
+        self.short_status_devices = [    #Obs-cond and enc do not report status
+            'mount',
+            'telescope',
+            #'screen',
+            'rotator',
+            'focuser',
+            'selector',
+            'filter_wheel',
+            'camera',
+            'sequencer'
+            ]
         # Instantiate the helper class for astronomical events
         #Soon the primary event / time values come from AWS>
         self.astro_events = ptr_events.Events(self.config)
@@ -194,6 +206,13 @@ class Observatory:
         site_str = config['site']
         g_dev['site']:  site_str
         self.g_dev = g_dev
+        redis_ip = config['redis_ip']
+        if redis_ip is not None:           
+            self.redis_server = redis.StrictRedis(host=redis_ip, port=6379, db=0,
+                                              decode_responses=True)
+            self.redis_wx_enabled = True
+        else:
+            self.redis_wx_enabled = False
         self.time_last_status = time.time() - 3
         # Build the to-AWS Queue and start a thread.
         self.aws_queue = queue.PriorityQueue()
@@ -342,6 +361,7 @@ class Observatory:
                     #print(unread_commands)
                     unread_commands.sort(key=lambda x: x["ulid"])
                     # Process each job one at a time
+                    print("# of incomming commands:  ", len(unread_commands))
                     for cmd in unread_commands:
                         if self.config['selector']['selector1']['driver'] != 'Null':
                             port = cmd['optional_params']['instrument_selector_position'] 
@@ -433,7 +453,11 @@ class Observatory:
         status = {}
         # Loop through all types of devices.
         # For each type, we get and save the status of each device.
-        for dev_type in self.device_types:
+        if not self.config['has_wx_enc_agent']:
+            device_list = self.device_types
+        else:
+            device_list = self.short_status_devices   
+        for dev_type in device_list:
 
             # The status that we will send is grouped into lists of
             # devices by dev_type.
@@ -451,8 +475,9 @@ class Observatory:
         # Include the time that the status was assembled and sent.
         status["timestamp"] = round((time.time() + t1)/2., 3)
         status['send_heartbeat'] = False
+        loud = False
         if loud:
-            print('Status Sent:  \n', status)   # from Update:  ', status))
+            print('\n\nStatus Sent:  \n', status)   # from Update:  ', status))
         else:
             print('.') #, status)   # We print this to stay informed of process on the console.
             # breakpoint()
@@ -473,6 +498,7 @@ class Observatory:
             #self.api.authenticated_request("PUT", uri_status, status)   # response = is not  used
             #print("AWS Response:  ",response)
             self.time_last_status = time.time()
+            self.redis_server.set('obs_heart_time', self.time_last_status, ex=120 )
         except:
             print('self.api.authenticated_request("PUT", uri, status):   Failed!')
 
