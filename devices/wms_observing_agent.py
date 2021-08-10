@@ -418,6 +418,8 @@ class ObservingConditions:
                     self.sample_time = time.time()
                 except:
                     print("redis_monitor log did not write.")
+            self.redis_server.set('wx_redis_status' , status, ex=300)
+            new_stat = self.redis_server.get('wx_redis_status')
         else:
             #DEH temporary to get past the big fatal error.
             #DEH is this always going to be very site specific or put in a config somewhere?
