@@ -487,7 +487,7 @@ class ObservingConditions:
 
             self.wx_hold_last_updated = time.time()
          
-        #DEH: commented tihs out as not needed and causes errors for testing.    
+        #DEH: commented this out as not needed and causes errors for testing.    
         #This should be located right after forming the wx status
         #url = "https://api.photonranch.org/api/weather/write"
         #data = json.dumps({
