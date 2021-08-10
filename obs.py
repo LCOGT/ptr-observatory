@@ -183,7 +183,7 @@ class Observatory:
         self.short_status_devices = [    #Obs-cond and enc do not report status
             'mount',
             'telescope',
-            'screen',
+            #'screen',
             'rotator',
             'focuser',
             'selector',
@@ -361,6 +361,7 @@ class Observatory:
                     #print(unread_commands)
                     unread_commands.sort(key=lambda x: x["ulid"])
                     # Process each job one at a time
+                    print("# of incomming commands:  ", len(unread_commands))
                     for cmd in unread_commands:
                         if self.config['selector']['selector1']['driver'] != 'Null':
                             port = cmd['optional_params']['instrument_selector_position'] 
@@ -455,8 +456,7 @@ class Observatory:
         if not self.config['has_wx_enc_agent']:
             device_list = self.device_types
         else:
-            device_list = self.short_status_devices
-            
+            device_list = self.short_status_devices   
         for dev_type in device_list:
 
             # The status that we will send is grouped into lists of

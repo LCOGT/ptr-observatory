@@ -116,7 +116,7 @@ class Enclosure:
             status = {'shutter_status': stat_string,
                       'enclosure_synch': True,
                       'dome_azimuth': 180.0,
-                      'dome_slewing': self.enclosure.Slewing,
+                      'dome_slewing': False,
                       'enclosure_mode': self.mode,
                       'enclosure_message': self.state}
             self.redis_server.set('roof_status', str(stat_string), ex=600)
@@ -250,43 +250,31 @@ class Enclosure:
         else:
             shutter_str = "Roof."
         wx_hold = g_dev['ocn'].wx_hold
-        wx_is_ok = g_dev['ocn'].wx_is_ok
-
-
-
-
-
+        #wx_is_ok = g_dev['ocn'].wx_is_ok
 
         #  NB NB First deal with the possible observing window being available or not.
         #  THis routine basically opens and keeps dome opposite the sun. Whether system
         #  takes sky flats or not is determined by the scheduler or calendar.  Mounting
         #  could be parked.
-        
-        #  At opposite end of night we will only open for morning skyflats if system
-        #  bserverved for some specified time??
-        if close_cmd or open_cmd:
-            pass   #breakpoint()
+       
 
-        # if (ephemNow < g_dev['events']['Ops Window Start'] or ephemNow > g_dev['events']['Ops Window Closes']) \
-        #     and g_dev['mnt'].site_in_automatic and False:
-        #     #We want to force  closure but not bang on the dome agent too hard since the owner may want to
-        #     #Get in the dome.  For now we pass.
-
-        #     pass
-
-        debugOffset = 0. #days
+        debugOffset = 0/24 #hours.
         try:
             obs_time = self.redis_server.get('obs_heart_time')
+            
         except:
-            print("Obs process not producing time heartbeat.")
+            pass
+            #print("Obs process not producing time heartbeat.")
         
-        if (wx_hold or self.mode == 'Shutdown') and self.status_string.lower() in ['open']:
+        #Thisis meant to be quite sweeping
+        if (wx_hold or self.mode == 'Shutdown'):
             if self.is_dome:
                 self.enclosure.Slaved = False
-            self.enclosure.CloseShutter()
+            if self.status_string.lower() in ['open']:
+                self.enclosure.CloseShutter()
             self.dome_opened = False
             self.dome_homed = True
-        elif obs_time is None or (time.time() - float(obs_time)) > 120.:
+        elif obs_time is None or (time.time() - float(obs_time)) > 120.:  #This might want to have a delay to aid debugging
             if self.is_dome:
                 self.enclosure.Slaved = False
             if self.status_string.lower() in ['open']:
@@ -297,7 +285,8 @@ class Enclosure:
             
         #  We are now in the full operational window.   ###Ops Window Start
         elif (g_dev['events']['Ops Window Start'] - debugOffset <= ephemNow <= g_dev['events']['Ops Window Closes'] + debugOffset) \
-                and not (wx_hold or self.mode == 'Shutdown') and (self.site_in_automatic or open_cmd and not self.site_in_automatic):
+                and not (wx_hold or self.mode == 'Shutdown') \
+                and (self.site_in_automatic or open_cmd and not self.site_in_automatic):   #Note Manual Open works in the window.
             #  Basically if in above window and Automatic and Not Wx_hold: if closed, open up.
             #  print('\nSlew to opposite the azimuth of the Sun, open and cool-down. Az =  ', az_opposite_sun)
             #  NB There is no corresponding warm up phase in the Morning.
@@ -331,9 +320,9 @@ class Enclosure:
             
              
 
-        #  This routine basically opens the dome only.  Whether the system
-        #  takes images or not is determined by the scheduler or calendar.  Azimuth meant
-        #  to be determined by that of the telescope.
+            #  This routine basically opens the dome only.  Whether the system
+            #  takes images or not is determined by the scheduler or calendar.  Azimuth meant
+            #  to be determined by that of the telescope.
 
             # if (obs_win_begin - debugOffset < ephemNow < sunrise + debugOffset or open_cmd) \
             #         and g_dev['enc'].site_in_automatic \
@@ -353,9 +342,9 @@ class Enclosure:
             #             pass
                     
             #         print("Night time Open issued to the "  + shutter_str, +   ' and is now following Mounting.')
-        elif (obs_win_begin >= ephemNow or ephemNow >= sunrise):
+        elif (obs_win_begin - debugOffset >= ephemNow or ephemNow >= sunrise + debugOffset):
             #WE are now outside the observing window, so Sun is up!!!
-            if self.site_in_automatic or close_cmd:
+            if self.site_in_automatic or (close_cmd and not self.site_in_automatic):  #If Automatic just close straight away.
                 if close_cmd:
                     self.state = 'User Closed the '  + shutter_str
                 else:
@@ -375,7 +364,7 @@ class Enclosure:
                        # print("Daytime Close issued to the " + shutter_str  + "   No longer following Mount.")
                     except:
                         print("Shutter busy right now!")
-            elif not g_dev['enc'].site_in_automatic and open_cmd:
+            elif (open_cmd and not self.site_in_automatic):  #This is a manual Open
 
                 #first verify scope is parked, otherwise command park and 
                 #report failing.
@@ -387,7 +376,8 @@ class Enclosure:
                 else:
                     #g_dev['mnt'].park_command()
                     #??Add darkslide close here or een tothe park command itself??
-                    print("Telescope commanded to park, try again in a minute.")
+                    #print("Telescope commanded to park, try again in a minute.")
+                    pass
                     
                 
             

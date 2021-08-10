@@ -203,7 +203,7 @@ class Mount:
         self.dec_corr = 0
         self.seek_commanded = False
         
-        self.mount.Park()
+        #self.mount.Park()
         if abs(self.west_ha_correction_r) > 0 or abs(self.west_dec_correction_r) > 0:
             self.flip_correction_needed = True
             print("Flip correction needed.")
@@ -582,6 +582,7 @@ class Mount:
         return status  #json.dumps(status)
 
     def parse_command(self, command):
+        breakpoint()
         req = command['required_params']
         opt = command['optional_params']
         action = command['action']
