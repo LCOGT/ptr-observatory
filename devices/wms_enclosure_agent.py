@@ -130,6 +130,8 @@ class Enclosure:
         
         if self.site_is_proxy:
             redis_command = self.redis_server.get('enc_cmd')  #It is presumed there is an expiration date on open command at least.
+            if redis_command is not None:
+                pass   #breakpoint()
             if redis_command == 'open':
                 self.redis_server.delete('enc_cmd')
                 print("enclosure remote cmd: open.")
@@ -142,19 +144,19 @@ class Enclosure:
                 self.manager(close_cmd=True, open_cmd=False)
                 self.dome_open = False
                 self.dome_home = True
-            elif redis_command == 'automatic':
+            elif redis_command == 'setAuto':
                 self.redis_server.delete('enc_cmd')
                 print("Change to Automatic.")
                 self.site_in_automatic = True
                 self.mode = 'Automatic'
-            elif redis_command == 'manual':
+            elif redis_command == 'setManual':
                 self.redis_server.delete('enc_cmd')
                 print("Change to Manual.")
                 self.site_in_automatic = False
                 self.mode = 'Manual'
-            elif redis_command == 'shutdown':
+            elif redis_command == 'setShutdown':
                 self.redis_server.delete('enc_cmd')
-                print("Change to Shutdow & Close")
+                print("Change to Shutdown & Close")
                 self.manager(close_cmd=True, open_cmd=False)
                 self.site_in_automatic = False
                 self.mode = 'Shutdown'
@@ -266,7 +268,10 @@ class Enclosure:
             pass
             #print("Obs process not producing time heartbeat.")
         
-        #Thisis meant to be quite sweeping
+        #This is meant to be quite sweeping
+        if open_cmd or close_cmd:
+            breakpoint()
+        
         if (wx_hold or self.mode == 'Shutdown'):
             if self.is_dome:
                 self.enclosure.Slaved = False

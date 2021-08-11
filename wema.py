@@ -383,7 +383,6 @@ class Observatory:
         called.  It first SENDS status for all devices to AWS.
 
         """
-
         self.update_status()
         time.sleep(2)
         try:
@@ -433,4 +432,5 @@ if __name__ == "__main__":
     
 
     o = Observatory(config.site_name, config.site_config)
+    
     o.run()

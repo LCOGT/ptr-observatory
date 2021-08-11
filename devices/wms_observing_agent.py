@@ -287,7 +287,6 @@ class ObservingConditions:
 
         elif self.site == 'mrc' or self.site == 'mrc2':
             try:
-                #breakpoint()
                 # pass
                 redis_monitor = eval(self.redis_server.get('<ptr-wx-1_state'))
                 illum = float(redis_monitor["illum lux"])
@@ -307,7 +306,7 @@ class ObservingConditions:
                 self.temperature = float(redis_monitor["amb_temp C"])
                 self.pressure = self.sky_monitor.Pressure,  #978   #Mbar to mmHg  #THIS IS A KLUDGE
                 status = {"temperature_C": float(redis_monitor["amb_temp C"]),
-                          "pressure_mbar": self.pressure,
+                          "pressure_mbar": float(self.pressure[0]),  # Odd this returns as a tuple.
                           "humidity_%": float(redis_monitor["humidity %"]),
                           "dewpoint_C": float(redis_monitor["dewpoint C"]),
                           "calc_HSI_lux": illum,
@@ -316,15 +315,16 @@ class ObservingConditions:
                           "time_to_close_h": float(redis_monitor["time to close"]),
                           "wind_m/s": float(redis_monitor["wind m/s"]),
                           "ambient_light": redis_monitor["light"],
-                          "open_ok": redis_monitor["open_possible"],
-                          "wx_ok": redis_monitor["open_possible"],
+                          "open_ok": redis_monitor["light"],  #redis_monitor["open_possible"],
+                          #"wx_ok": redis_monitor["open_possible"],
                           "meas_sky_mpsas": float(redis_monitor['meas_sky_mpsas']),
                           "calc_sky_mpsas": round((mag - 20.01), 2)
                           }
+
                 dew_point_gap = not (self.sky_monitor.Temperature  - self.sky_monitor.DewPoint) < 2
                 temp_bounds = not (self.sky_monitor.Temperature < -15) or (self.sky_monitor.Temperature > 42)
                 wind_limit = self.sky_monitor.WindSpeed < 35/2.235   #sky_monitor reports m/s, Clarity may report in MPH
-                sky_amb_limit  = self.sky_monitor.SkyTemperature < 0
+                sky_amb_limit  = self.sky_monitor.SkyTemperature < 4   #"""NB THIS NEEDS ATTENTION>
                 humidity_limit = 1 < self.sky_monitor.Humidity < 85
                 rain_limit = self.sky_monitor.RainRate <= 0.001
 
@@ -332,10 +332,15 @@ class ObservingConditions:
                 self.wx_is_ok = dew_point_gap and temp_bounds and wind_limit and sky_amb_limit and \
                                 humidity_limit and rain_limit
                 #  NB  wx_is_ok does not include ambient light or altitude of the Sun
+
                 if self.wx_is_ok:
                     wx_str = "Yes"
+                    status["wx_ok"] = "Yes"
                 else:
-                    wx_str = "No"   #Ideally we add the dominant reason in priority order.                 
+            
+                    wx_str = "No"   #Ideally we add the dominant reason in priority order.
+                    status["wx_ok"] = "No"
+                #breakpoint()
                 g_dev['wx_ok']  =  self.wx_is_ok             
                 uni_measure = float(redis_monitor['meas_sky_mpsas'])   #  Provenance of 20.01 is dubious 20200504 WER
 
@@ -417,7 +422,8 @@ class ObservingConditions:
                     wl.close()
                     self.sample_time = time.time()
                 except:
-                    print("redis_monitor log did not write.")
+                    pass
+                    #print("Unihedron log did not write.")
             self.redis_server.set('wx_redis_status' , status, ex=300)
             new_stat = self.redis_server.get('wx_redis_status')
         else:
@@ -450,9 +456,11 @@ class ObservingConditions:
         wx_delay_time = 900
         if (self.wx_is_ok and self.wx_system_enable) and not self.wx_hold:     #Normal condition, possibly nothing to do.
             self.wx_hold_last_updated = time.time()
+            print('First pass no hold.')
 
         elif not self.wx_is_ok and not self.wx_hold:     #Wx bad and no hold yet.
             #Bingo we need to start a cycle
+           
             self.wx_hold = True
             self.wx_hold_until_time = (t := time.time() + wx_delay_time)    #15 minutes   Make configurable
             self.wx_hold_tally += 1     #  This counts all day and night long.
