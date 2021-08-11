@@ -88,8 +88,16 @@ class Enclosure:
 
         if self.site_is_proxy:
             stat_string = self.redis_server.get("shutter_status")
-            status = {'shutter_status':  stat_string}
-            return status
+            if stat_string is not None:
+                if stat_string == 'Closed':
+                    self.shutter_is_closed = True
+                else:
+                    self.shutter_is_closed = False
+                #print('Proxy shutter status:  ', status)
+                return  #explicitly return None
+            else:
+                self.shutter_is_closed = True
+                return
         elif self.site in ['saf', 'mrc', 'mrc2']:
             try:
                 shutter_status = self.enclosure.ShutterStatus
@@ -193,19 +201,27 @@ class Enclosure:
             else:
                 self.close_command(req, opt)
         elif action == "setAuto":
-            self.mode = 'Automatic'
-            g_dev['enc'].site_in_automatic = True
-            g_dev['enc'].automatic_detail =  "Night Automatic"
-            print("Site and Enclosure set to Automatic.")
+            if self.site_is_proxy:
+                self.redis_server.set('enc_cmd', 'setAuto', ex=300)
+            else:
+                self.mode = 'Automatic'
+                g_dev['enc'].site_in_automatic = True
+                g_dev['enc'].automatic_detail =  "Night Automatic"
+                print("Site and Enclosure set to Automatic.")
         elif action == "setManual":
-            self.mode = 'Manual'
-            g_dev['enc'].site_in_automatic = False
-            g_dev['enc'].automatic_detail =  "Manual Only"
+            if self.site_is_proxy:
+                self.redis_server.set('enc_cmd', 'setManual', ex=300)
+            else:
+                self.mode = 'Manual'
+                g_dev['enc'].site_in_automatic = False
+                g_dev['enc'].automatic_detail =  "Manual Only"
         elif action == "setStayClosed" or action == 'setShutdown':
-            self.mode = 'Shutdown'
-            g_dev['enc'].site_in_automatic = False
-            g_dev['enc'].automatic_detail =  "Site Shutdown"
-            print("Site and Enclosure set to Shutdown.")
+            if self.site_is_proxy:
+                self.redis_server.set('enc_cmd', 'setShutdown', ex=300)
+                self.mode = 'Shutdown'
+                g_dev['enc'].site_in_automatic = False
+                g_dev['enc'].automatic_detail =  "Site Shutdown"
+                print("Site and Enclosure set to Shutdown.")
         elif action == "slew_alt":
             self.slew_alt_command(req, opt)
         elif action == "slew_az":

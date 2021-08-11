@@ -75,6 +75,7 @@ class ObservingConditions:
         self.prior_status = None
         self.prior_status_2 = None
         self.wmd_fail_counter = 0
+       
         redis_ip = config['redis_ip']
         if redis_ip is not None:           
             self.redis_server = redis.StrictRedis(host=redis_ip, port=6379, db=0,
@@ -84,7 +85,8 @@ class ObservingConditions:
             self.redis_wx_enabled = False
         #    self.observing_conditions_connected = True
         #    print("observing_conditions: Redis connected = True")
-        #    
+        #  
+
         if self.site in ['simulate',  'dht']:  #DEH: added just for testing purposes with ASCOM simulators.
             self.observing_conditions_connected = True
             self.site_is_proxy = False

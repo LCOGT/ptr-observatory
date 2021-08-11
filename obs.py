@@ -181,6 +181,7 @@ class Observatory:
             'sequencer'          
             ]
         self.short_status_devices = [    #Obs-cond and enc do not report status
+            'enclosure',
             'mount',
             'telescope',
             #'screen',
@@ -455,8 +456,10 @@ class Observatory:
         # For each type, we get and save the status of each device.
         if not self.config['agent_wms_enc_active']:
             device_list = self.device_types
+            remove_enc = True
         else:
-            device_list = self.short_status_devices   
+            device_list = self.short_status_devices 
+            remove_enc = False
         for dev_type in device_list:
 
             # The status that we will send is grouped into lists of
@@ -471,7 +474,9 @@ class Observatory:
                 # Get the actual device object...
                 device = devices_of_type[device_name]
                 # ...and add it to main status dict.
-                status[dev_type][device_name] = device.get_status()
+                result = device.get_status()
+                if not (remove_enc and (result['enclosure']['enclosure1'] is None)):
+                    status[dev_type][device_name] = result
         # Include the time that the status was assembled and sent.
         status["timestamp"] = round((time.time() + t1)/2., 3)
         status['send_heartbeat'] = False
