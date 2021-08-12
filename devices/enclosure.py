@@ -85,7 +85,6 @@ class Enclosure:
         #<<<<The next attibute reference fails at saf, usually spurious Dome Ring Open report.
         #<<< Have seen other instances of failing.
         #core1_redis.set('unihedron1', str(mpsas) + ', ' + str(bright) + ', ' + str(illum), ex=600)
-
         if self.site_is_proxy:
             stat_string = self.redis_server.get("shutter_status")
             if stat_string is not None:

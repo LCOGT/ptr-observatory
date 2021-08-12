@@ -126,12 +126,11 @@ class Enclosure:
             self.redis_server.set('enclosure_mode', str(self.mode), ex=600)
             self.redis_server.set('enclosure_message', str(self.state), ex=600)        #print('Enclosure status:  ', status
 
-
         
         if self.site_is_proxy:
             redis_command = self.redis_server.get('enc_cmd')  #It is presumed there is an expiration date on open command at least.
             if redis_command is not None:
-                pass   #breakpoint()
+                pass   #
             if redis_command == 'open':
                 self.redis_server.delete('enc_cmd')
                 print("enclosure remote cmd: open.")
@@ -269,8 +268,8 @@ class Enclosure:
             #print("Obs process not producing time heartbeat.")
         
         #This is meant to be quite sweeping
-        if open_cmd or close_cmd:
-            breakpoint()
+        #if open_cmd or close_cmd:
+            
         
         if (wx_hold or self.mode == 'Shutdown'):
             if self.is_dome:
@@ -397,7 +396,7 @@ class Enclosure:
     
         
                 if not self.dome_homed:
-                    # breakpoint()
+                    
                     # self.dome_homed = True
                     # return
                     if self.is_dome:
