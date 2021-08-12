@@ -1296,7 +1296,6 @@ class Camera:
                     hdu.header['EXPOSURE'] = exposure_time   #Ideally this needs to be calculated from actual times
                     hdu.header['FILTER ']  = self.current_filter  # NB this should read from the wheel!
                     hdu.header['FILTEROF'] = self.current_offset
-
                     #hdu.header['EXPOSURE'] = (self.t?-self.t2, '[s] Actual exposure length')   # Calculated from actual times
                     hdu.header['FILTER']  = (self.current_filter, 'Filter type')  # NB this should read from the wheel!
                     hdu.header['FILTEROF'] = (self.current_offset, 'Filer offset')
@@ -1378,8 +1377,10 @@ class Camera:
                     hdu.header['ENCRLIGT'] = ("", 'Enclosure red lights state')
                     hdu.header['ENCWLIGT'] = ("", 'Enclosure white lights state')
                     if g_dev['enc'] is not None:
-                        hdu.header['ENC1STAT'] = (g_dev['enc'].get_status()['shutter_status'], 'Shutter status')   #"Open/Closed" enclosure 1 status
-                    
+                        try:
+                            hdu.header['ENC1STAT'] = g_dev['enc'].get_status()  #['shutter_status'], 'Shutter status')   #"Open/Closed" enclosure 1 status
+                        except:
+                            print('Could not get ENC1STAT keyword. ')
                     #  if gather_status:
                     hdu.header['MNT-SIDT'] = (avg_mnt['sidereal_time'], '[deg] Mount sidereal time')
                     hdu.header['MNT-RA']   = (avg_mnt['right_ascension'], '[deg] Mount RA')
