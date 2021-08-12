@@ -189,7 +189,6 @@ class Camera:
         self.alias = config['camera'][self.name]['name']
         win32com.client.pythoncom.CoInitialize()
         print(driver, name)
-        breakpoint()
         self.camera = win32com.client.Dispatch(driver)
 
         #self.camera = win32com.client.Dispatch('ASCOM.FLI.Kepler.Camera')
@@ -300,7 +299,8 @@ class Camera:
         self.hint = None
         self.focus_cache = None
         self.darkslide = False
-        if self.config['camera'][self.name]['settings']['darkslide_com']:
+        breakpoint
+        if self.config['camera'][self.name]['settings']['has_darkslide']:
             self.darkslide = True
             com_port = self.config['camera'][self.name]['settings']['darkslide_com']
             self.darkslide_instance = Darkslide(com_port)     #  NB eventually default after reboot should be closed.
