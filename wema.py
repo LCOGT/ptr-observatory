@@ -18,7 +18,7 @@ import math
 import shelve
 from pprint import pprint
 from api_calls import API_calls
-import matplotlib.pyplot as plt
+
 import ptr_events
 from devices.wms_enclosure_agent import Enclosure
 from devices.wms_observing_agent import ObservingConditions
@@ -347,7 +347,7 @@ class Observatory:
         # Include the time that the status was assembled and sent.
         status["timestamp"] = round((time.time() + t1)/2., 3)
         status['send_heartbeat'] = False
-        loud = False
+        loud = True
         if loud:
             print('\n\nStatus Sent:  \n', status)   # from Update:  ', status))
         else:
