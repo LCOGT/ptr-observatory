@@ -57,13 +57,19 @@ from astropy.utils.data import get_pkg_data_filename
 from astropy.io.fits import getheader
 from astropy.modeling import models
 from astropy import units as u
-from astropy import nddata
+#from astropy import nddata
+from astropy.time import Time
 
 import ccdproc
 from ccdproc import ImageFileCollection
 from ccdproc import CCDData, Combiner
 
+
+
+#from astropy.table import Table
+#from astropy.utils.data import get_pkg_data_filename
 import sep
+
 
 # from ptr-observatory.global_yard import g_dev
 #import config
@@ -927,8 +933,43 @@ def sep_image(camera_name, archive_path, selector_string, lng_path, out_path):
     sorted_list.sort()
     #print(file_list)
     print('# of files:  ', len(sorted_list))
-    breakpoint()
+
     prior_img = None
+    
+# =============================================================================
+#     self.img = self.img + 100   #maintain a + pedestal for sep  THIS SHOULD not be needed for a raw input file.
+#                     self.img = self.img.astype("float")
+#                     #print(self.img.flags)
+#                     self.img = self.img.copy(order='C')   #  NB Should we move this up to where we read the array?
+#                     bkg = sep.Background(self.img)
+#                     self.img -= bkg
+#                     sources = sep.extract(self.img, 4.5, err=bkg.globalrms, minarea=15)  # Minarea should deal with hot pixels.
+#                     sources.sort(order = 'cflux')
+#                     print('No. of detections:  ', len(sources))
+#                     ix, iy = self.img.shape
+#                     r0 = 0
+#                     """
+#                     ToDo here:  1) do not deal with a source nearer than 5% to an edge.
+#                     2) do not pick any saturated sources.
+#                     3) form a histogram and then pick the median winner
+#                     4) generate data for a report.
+#                     5) save data and image for engineering runs.
+#                     """
+#                     border_x = int(ix*0.05)
+#                     border_y = int(iy*0.05)
+#                     r0 = []
+#                     for sourcef in sources:
+#                         if border_x < sourcef['x'] < ix - border_x and \
+#                             border_y < sourcef['y'] < iy - border_y and \
+#                             sourcef['peak']  < 55000 and sourcef['cpeak'] < 55000:  #Consider a lower bound
+#                             a0 = sourcef['a']
+#                             b0 = sourcef['b']
+#                             r0.append(round(math.sqrt(a0*a0 + b0*b0), 2))
+#                     scale = self.config['camera'][self.name]['settings']['pix_scale']
+#                     result['FWHM'] = round(np.median(r0)*scale, 3)   #@0210524 was 2x larger but a and b are diameters not radii
+#                     result['mean_focus'] =  avg_foc[1]
+# =============================================================================
+                    
     # final_jd = sorted_list[-1][0]
     # initial_jd = sorted_list[0][0]
     # dt_jd = (final_jd - initial_jd)  #seconds
@@ -952,20 +993,48 @@ def sep_image(camera_name, archive_path, selector_string, lng_path, out_path):
             exposure = img[0].header['EXPTIME']
             pfilter = img[0].header['FILTER']
             pier = img[0].header['PIERSIDE']
-            tra = img[0].header['TARG-RA']
-            tdec = img[0].header['TARG-DEC']
-            apart = entry.split('-')
-            if tra> 6.5623 or tra <6.52214 or tdec < 4.5444 or tdec > 5.1396:
-                print ("out of range:  ", apart[3])
-                continue
-            if pier == 'Unknown' or pier == 'Look East':
-                pier = 'No Flip'
-            apart = entry.split('-')
+            #tra = img[0].header['TARG-RA']
+            #tdec = img[0].header['TARG-DEC']
+            # apart = entry.split('-')
+
+            # if pier == 'Unknown' or pier == 'Look East':
+            #     pier = 'No Flip'
+            # apart = entry.split('-')
             # hh = int((img[0].header['DATE-OBS'][11:13]))
             # mm = int((img[0].header['DATE-OBS'][14:16]))
             # ss = float((img[0].header['DATE-OBS'][17:]))
             # jd = ss + 60*mm + 3600*hh
-
+            breakpoint()
+            bkg = sep.Background(img_data)
+            img_data -= bkg
+            sources = sep.extract(img_data, 4.5, err=bkg.globalrms, minarea=15)  # Minarea should deal with hot pixels.
+            sources.sort(order = 'cflux')
+            print('No. of detections:  ', len(sources))
+            ix, iy = img_data.shape
+            r0 = 0
+            """
+            ToDo here:  1) do not deal with a source nearer than 5% to an edge.
+            2) do not pick any saturated sources.
+            3) form a histogram and then pick the median winner
+            4) generate data for a report.
+            5) save data and image for engineering runs.
+            """
+            result = []
+            border_x = int(ix*0.05)
+            border_y = int(iy*0.05)
+            r0 = []
+            for sourcef in sources:
+                if border_x < sourcef['x'] < ix - border_x and \
+                    border_y < sourcef['y'] < iy - border_y and \
+                    sourcef['peak']  < 55000 and sourcef['cpeak'] < 55000:  #Consider a lower bound
+                    a0 = sourcef['a']
+                    b0 = sourcef['b']
+                    r0.append(round(math.sqrt(a0*a0 + b0*b0), 2))
+            scale = 0.571 #self.config['camera'][self.name]['settings']['pix_scale']
+            result['FWHM'] = round(np.median(r0)*scale, 3)   #@0210524 was 2x larger but a and b are diameters not radii
+            result['mean_focus'] =  avg_foc[1]
+            
+            breakpoint()
             bkg = sep.Background(img_data)
             #bkg_rms = bkg.rms()
             img_data -= bkg
@@ -1195,7 +1264,8 @@ def prepare_tpoint(camera_name, archive_path, selector_string, lng_path, out_pat
                 meas_az = img[0].header['AZIMUTH']
                 meas_alt = img[0].header['ALTITUDE']
                 pier = img[0].header['PIERSIDE']
-                print(meas_az, meas_alt, pier)
+               # print(meas_az, meas_alt, pier)
+                print(sid, meas_ra, meas_dec)# meas_az, meas_alt, pier)
                 #print('IN: ', pre_ra, meas_ra, pre_dec, meas_dec, meas_ha, meas_sid)
                 ch_term = 0
                 if pier == 'Undefined':
@@ -1238,12 +1308,12 @@ def prepare_tpoint(camera_name, archive_path, selector_string, lng_path, out_pat
 
                 if meas_ha < 0: #and dec < 82:
                     pier = "Look East"
-                    print(pre_ra_str + "  " + pre_dec_str + "  " + meas_ra_str + "  " + meas_dec_str + "  " + sid_str + "  " + pier)
+                    #print(pre_ra_str + "  " + pre_dec_str + "  " + meas_ra_str + "  " + meas_dec_str + "  " + sid_str + "  " + pier)
                     out_f.write(pre_ra_str + "  " + pre_dec_str + "  " + meas_ra_str + "  " + meas_dec_str + "  " + sid_str + "  " + pier +'\n')
                     count += 1
                 elif meas_ha > 0: #and dec < 82:
                     pier =  "Look West"
-                    print(pre_ra_str + "  " + pre_dec_str + "  " + meas_ra_str + "  " + meas_dec_str + "  " + sid_str + "  " + pier)
+                   # print(pre_ra_str + "  " + pre_dec_str + "  " + meas_ra_str + "  " + meas_dec_str + "  " + sid_str + "  " + pier)
                     out_f.write(pre_ra_str + "  " + pre_dec_str + "  " + meas_ra_str + "  " + meas_dec_str + "  " + sid_str + "  " + pier +'\n')
                     count += 1
                 else:
@@ -1393,12 +1463,13 @@ if __name__ == '__main__':
     camera_name = 'sq01'  #  config.site_config['camera']['camera1']['name']
     #archive_path = "D:/000ptr_saf/archive/sq01/2020-06-13/"
     #archive_path = "D:/2020-06-19  Ha and O3 screen flats/"
-    archive_path = "Q:/archive/sq01/20210615/reduced/"
+    archive_path = "Q:/archive/sq01/20210626/raw/"
+
     out_path = 'C:/Users/obs/Documents/GitHub/ptr-observatory/processing/TPOINT/'
     lng_path = "C:/000ptr_saf/archive/sq01/lng/"
     #APPM_prepare_TPOINT()
     #de_offset_and_trim(camera_name, archive_path, '*-00*.*', out_path, full=True, norm=False)
-    prepare_tpoint(camera_name, archive_path, '*.f*t*', lng_path, out_path)
+    #prepare_tpoint(camera_name, archive_path, '*.f*t*', lng_path, out_path)
     #prepare_tpoint(camera_name, archive_path, '*04-06*.f*t*', lng_path, out_path)
     #organize_calib(camera_name, archive_path, out_path, lng_path, '1', 'fb_1-4.fits')
     #compute_sky_gains(camera_name, archive_path, out_path, lng_path, '1', 'fb_1-4.fits')
@@ -1428,7 +1499,7 @@ if __name__ == '__main__':
     # lng_path = "C:/000ptr_saf/archive/sq01/lng/"
     # correct_image(camera_name, archive_path, '*EX00*', lng_path, out_path)
     #annotate_image(camera_name, archive_path, '*-00*', lng_path, out_path)
-    #sep_image(camera_name, archive_path, '*.f*t*', lng_path, out_path)
+    sep_image(camera_name, archive_path, '*.f*t*', lng_path, out_path)
 
     # mod_correct_image(camera_name, archive_path, '*EX00*', lng_path, out_path)
     #archive_path = 'Q:/000ptr_saf/archive/sq01/20201203/reduced/'

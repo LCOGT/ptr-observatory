@@ -173,7 +173,8 @@ class Sequencer:
         self.af_guard = False
         self.block_guard = False
         #breakpoint()
-        #self.reset_completes()
+        self.reset_completes()
+        
         try:
             self.is_in_completes(None)
         except:
@@ -325,7 +326,7 @@ class Sequencer:
                     and (block['start'] <= now_date_timeZ < block['end']) \
                     and not self.is_in_completes(block['event_id']):
                     self.block_guard = True
-
+                    
                     completed_block = self.execute_block(block)
                     self.append_completes(completed_block['event_id'])
                     self.block_guard = False
@@ -420,6 +421,7 @@ class Sequencer:
         '''
         
     def execute_block(self, block_specification):
+        
         self.block_guard = True
         # NB we assume the dome is open and already slaving.
         block = copy.deepcopy(block_specification)
@@ -443,7 +445,7 @@ class Sequencer:
         '''
         # if bock['project'] is None:
             #user controlled block...
-       
+        #NB NB NB  if no project found, need to say so not fault. 20210624
 
         for target in block['project']['project_targets']:   #  NB NB NB Do multi-target projects make sense???
             dest_ra = float(target['ra']) - \
@@ -475,7 +477,11 @@ class Sequencer:
             '''
             g_dev['mnt'].go_coord(dest_ra, dest_dec)
             print("CAUTION:  rotator may block")
-            g_dev['rot'].rotator.MoveAbsolute(float(block_specification['project']['project_constraints']['position_angle']))
+            pa = float(block_specification['project']['project_constraints']['position_angle'])
+            if abs(pa) > 0.01:
+
+                g_dev['rot'].rotator.MoveAbsolute(pa)   #Skip rotator move if nominally 0
+
             
             #Compute how many to do.
             left_to_do = 0
@@ -633,10 +639,14 @@ class Sequencer:
                             left_to_do -= 1
                             print("Left to do:  ", left_to_do)
                         pane += 1
-                    now_date_timeZ = datetime.datetime.now().isoformat().split('.')[0] +'Z'           
+                        
+                    now_date_timeZ = datetime.datetime.now().isoformat().split('.')[0] +'Z'
+
                     ended = left_to_do <= 0 or now_date_timeZ >= block['end']\
                             or g_dev['airmass'] > float( block_specification['project']['project_constraints']['max_airmass']) \
-                            or abs(g_dev['ha']) > float(block_specification['project']['project_constraints']['max_ha'])# Or mount has flipped, too low, too bright. 
+                            or abs(g_dev['ha']) > float(block_specification['project']['project_constraints']['max_ha'])
+                            # Or mount has flipped, too low, too bright, entering zenith..
+                    
         print("Fini!")
         if block_specification['project']['project_constraints']['close_on_block_completion']:
             g_dev['mnt'].park_command({}, {})
@@ -661,12 +671,12 @@ class Sequencer:
         """
         self.sequencer_hold = True
         self.current_script = 'Afternoon Bias Dark'
-        dark_time = 180
+        dark_time = 240
 
-        while g_dev['events']['Eve Bias Dark'] <= ephem.now() <= g_dev['events']['Ops Window Start'] :   #Do not overrun the window end
+        while g_dev['events']['Eve Bias Dark'] -1 <= ephem.now() <= g_dev['events']['Ops Window Start'] :   #Do not overrun the window end
             print("Expose b_2")   
             req = {'time': 0.0,  'script': 'True', 'image_type': 'bias'}
-            opt = {'area': "Full", 'count': 5, 'bin':'2 2', \
+            opt = {'area': "Full", 'count': 13, 'bin':'2 2', \
                     'filter': 'dark'}
             result = g_dev['cam'].expose_command(req, opt, no_AWS=True, \
                                 do_sep=False, quick=False)
@@ -715,10 +725,10 @@ class Sequencer:
         if flat_count < 1: flat_count = 1
         g_dev['mnt'].unpark_command({}, {})
         g_dev['mnt'].slewToSkyFlatAsync()
-        if g_dev['enc'].is_dome and not g_dev['enc'].mode == 'Automatic':
-             g_dev['enc'].Slaved = True  #Bring the dome into the picture.
-             print('\n SERVOED THE DOME HOPEFULLY!\n')
-        g_dev['obs'].update_status()
+        # if g_dev['enc'].is_dome and not g_dev['enc'].mode == 'Automatic':
+        #      g_dev['enc'].Slaved = True  #Bring the dome into the picture.
+        #     print('\n SERVOED THE DOME HOPEFULLY!\n')
+        #g_dev['obs'].update_status()
         try:
             g_dev['scr'].screen_dark()
         except:
@@ -727,15 +737,18 @@ class Sequencer:
         #  we can speed it up
         #Here we may need to switch off any
         #  Pick up list of filters is sky flat order of lowest to highest transparency.
+        breakpoint()
         pop_list = self.config['filter_wheel']['filter_wheel1']['settings']['filter_sky_sort'].copy()
         print('filters by low to high transmission:  ', pop_list)
         #length = len(pop_list)
         obs_win_begin, sunset, sunrise, ephemNow = self.astro_events.getSunEvents()
         scale = 1.0
         prior_scale = 1
-        while len(pop_list) > 0 and (g_dev['events']['Ops Window Start'] < ephemNow < g_dev['events']['End Eve Sky Flats']):
+        while len(pop_list) > 0: #and (g_dev['events']['Ops Window Start'] < ephemNow < g_dev['events']['End Eve Sky Flats']):
             current_filter = int(pop_list[0])
             acquired_count = 0
+            #req = {'filter': current_filter}
+            #opt =  {'filter': current_filter}
             breakpoint()
             g_dev['fil'].set_number_command(current_filter)
             g_dev['mnt'].slewToSkyFlatAsync()
@@ -789,7 +802,7 @@ class Sequencer:
                         prior_scale = 1
                 continue
         g_dev['mnt'].park_command({}, {})  #  NB this is provisional, Ok when simulating
-        print('\nSky flat complete.\n')
+        print('\nSky flat complete, or too early.\n')
         self.sky_guard = False
 
 
@@ -873,7 +886,7 @@ class Sequencer:
         
     
 
-    def auto_focus_script(self, req, opt, throw=600):
+    def auto_focus_script(self, req, opt, throw=750):
         '''
         V curve is a big move focus designed to fit two lines adjacent to the more normal focus curve.
         It finds the approximate focus, particulary for a new instrument. It requires 8 points plus
@@ -942,6 +955,7 @@ class Sequencer:
         #print("temporary patch in Sim values")
         print('Autofocus Starting at:  ', foc_pos0, '\n\n')
         #throw = throw  # NB again, from config.  Units are microns  Passed as default paramter
+
         if not sim:
             result = g_dev['cam'].expose_command(req, opt, no_AWS=True) ## , script = 'auto_focus_script_0')  #  This is where we start.
         else:
@@ -974,6 +988,13 @@ class Sequencer:
         x = [foc_pos2, foc_pos1, foc_pos3]
         y = [spot2, spot1, spot3]
         print('X, Y:  ', x, y, 'Desire center to be smallest.')
+        if spot1 is None or spot2 is None or spot3 is None:  #New additon to stop crash when no spots
+            print("No stars detected. Returning to stating focus.")
+            g_dev['foc'].focuser.Move((focus_start)*g_dev['foc'].micron_to_steps)
+            self.sequencer_hold = False   #Allow comand checks.
+            self.af_guard = False
+            g_dev['mnt'].mount.SlewToCoordinatesAsync(start_ra, start_dec)
+            return
         if spot1 < spot2 and spot1 < spot3:
             try:
                 #Digits are to help out pdb commands!
@@ -986,6 +1007,7 @@ class Sequencer:
                 g_dev['foc'].focuser.Move((focus_start)*g_dev['foc'].micron_to_steps)
                 self.sequencer_hold = False   #Allow comand checks.
                 self.af_guard = False
+                g_dev['mnt'].mount.SlewToCoordinatesAsync(start_ra, start_dec)
                 return            
             if min(x) <= d1 <= max(x):
                 print ('Moving to Solved focus:  ', round(d1, 2), ' calculated:  ',  new_spot)
@@ -1031,7 +1053,7 @@ class Sequencer:
         return
 
 
-    def coarse_focus_script(self, req, opt, throw = 600):
+    def coarse_focus_script(self, req, opt, throw = 650):
         '''
         V curve is a big move focus designed to fit two lines adjacent to the more normal focus curve.
         It finds the approximate focus, particulary for a new instrument. It requires 8 points plus
@@ -1073,11 +1095,11 @@ class Sequencer:
                                     g_dev['mnt'].current_sidereal)
             print("Going to near focus star " + str(focus_star[0][0]) + "  degrees away.")
             g_dev['mnt'].go_coord(focus_star[0][1][1], focus_star[0][1][0])
-            req = {'time': 7.5,  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'auto_focus'}   #  NB Should pick up filter and constats from config
+            req = {'time': 12.5,  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'auto_focus'}   #  NB Should pick up filter and constats from config
             opt = {'area': 100, 'count': 1, 'filter': 'W'}
         else:
             pass   #Just take time image where currently pointed.
-            req = {'time': 10,  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'auto_focus'}   #  NB Should pick up filter and constats from config
+            req = {'time': 15,  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'auto_focus'}   #  NB Should pick up filter and constats from config
             opt = {'area': 100, 'count': 1, 'filter': 'W'}
         foc_pos0 = foc_start
         result = {}
@@ -1484,7 +1506,7 @@ IF sweep
             count += 1
             print('\n\nResult:  ', result,   'To go count:  ', length - count,  '\n\n')
             
-        g_dev['mnt'].park()
+        #g_dev['mnt'].park()
         print("Equatorial sweep completed. Happy reducing.")
         ptr_utility.ModelOn = True
         self.sky_guard = False

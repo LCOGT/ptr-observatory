@@ -90,8 +90,8 @@ site_config = {
     'elevation': 317.75,    # meters above sea level
     'reference_ambient':  [15.0],  #Degrees Celsius.  Alternately 12 entries, one for every - mid month.
     'reference_pressure':  [977.83],  #mbar Alternately 12 entries, one for every - mid month.
-    'site_in_automatic_default': False,
-    'automatic_detail_default': ":Default set to Manual",
+    'site_in_automatic_default': True,
+    'automatic_detail_default': "Default set to Automatic",
     'observing_conditions': {
         'observing_conditions1': {
             'parent': 'site',
@@ -167,6 +167,7 @@ site_config = {
             'recover_script':  None,
             'shutdown_script':  None,  
             'alignment': 'Alt-Az',
+            'default_zenith_avoid': 7.0,   #degrees floating
             'east_ra_correction': 0.0,
             'east_dec_correction': 0.0,
             'west_ha_correction_r': 0.0,
@@ -176,7 +177,7 @@ site_config = {
             'Selector':{
                 'available': False,         #If True add these lines;
                 # 'positions': 4,
-                # 'inst 1': 'camera1',      #inst_1 is always the default until status reports different
+                # 'inst 1': 'camera_1_1',      #inst_1 is always the default until status reports different
                 # 'inst 2': 'echelle1',     #These are all types od cameras.
                 # 'inst 3': 'camera3',
                 # 'inst 4': 'lowres1',
@@ -272,7 +273,7 @@ site_config = {
             'rotator_name':  'rotator1',
             'has_instrument_selector': False,   #This is a default for a single instrument system
             'selector_positions': 1,            #Note starts with 1
-            'instrument names':  ['camera1'],
+            'instrument names':  ['camera_1_1'],
             'instrument aliases':  ['QHY600Mono'],
             'configuration': {
                  "position1": ["darkslide1", "filter_wheel1", "filter_wheel2", "camera1"]
@@ -387,11 +388,11 @@ site_config = {
             'recover_script':  None,
             'shutdown_script':  None, 
             #*********Guesses   7379@10 7457@20  7497 @ 25
-            'reference': 7418,    # Nominal at 15C Primary temperature, in microns not steps. Guess
+            'reference': 6850, #20210710    #7418,    # Nominal at 15C Primary temperature, in microns not steps. Guess
             'ref_temp':  15,      # Update when pinning reference  Larger at lower temperatures.
             'coef_c': 7.895,    # Negative means focus moves out (larger numerically) as Primary gets colder
-            'coef_0': 7299.9,  # Nominal intercept when Primary is at 0.0 C.
-            'coef_date':  '20210114',   #A Guess as to coef_c
+            'coef_0': 6850,  #20210710# Nominal intercept when Primary is at 0.0 C.
+            'coef_date':  '20210710',   #A Guess as to coef_c
             'use_local_temp':  True,
             'minimum': 0,    # NB this needs clarifying, we are mixing steps and microns.
             'maximum': 12700,
@@ -563,9 +564,9 @@ site_config = {
                 'y_active': 3194,
                 'x_pixel':  3.76,
                 'y_pixel':  3.76,
-                'pix_scale': .605,
-                'x_field_deg': round(4784*1.214/3600, 4),
-                'y_field_deg': round(3194*1.214/3600, 4),
+                'pix_scale': 0.6051648849005071,
+                'x_field_deg': round(4784*0.6051648849005071/3600, 4),   #48 X 32 AMIN  3MIN X 0.5 DEG  
+                'y_field_deg': round(3194*0.6051648849005071/3600, 4),
                 'overscan_x': 24,
                 'overscan_y': 34,
                 'north_offset': 0.0,    #  These three are normally 0.0 for the primary telescope

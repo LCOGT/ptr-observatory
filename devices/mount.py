@@ -165,6 +165,7 @@ class Mount:
         g_dev['mnt'] = self
         self.site = config['site']
         self.site_path = config['site_path']
+        self.config = config
         self.device_name = name
         self.settings = settings
         win32com.client.pythoncom.CoInitialize()
@@ -180,6 +181,10 @@ class Mount:
         self.inst = 'tel1'
         self.tel = tel   #for now this implies the primary telescope on a mounting.
         self.mount_message = "-"
+        if self.config['agent_wms_enc_active']:
+            self.site_is_proxy = True
+        else:
+            self.site_is_proxy = False
         if self.site == 'MRC2':
             self.has_paddle = config['mount']['mount2']['has_paddle']
         else:
@@ -197,6 +202,8 @@ class Mount:
         self.ha_corr = 0
         self.dec_corr = 0
         self.seek_commanded = False
+        
+        #self.mount.Park()
         if abs(self.west_ha_correction_r) > 0 or abs(self.west_dec_correction_r) > 0:
             self.flip_correction_needed = True
             print("Flip correction needed.")
@@ -214,9 +221,9 @@ class Mount:
             #self.mount.DeclinationRate = 0.0
             pass
         #breakpoint()
-        #self.reset_mount_reference)
-        self.site_in_automatic = config['site_in_automatic_default']
-        self.automatic_detail = config['automatic_detail_default']
+        #self.reset_mount_reference()
+        #self.site_in_automatic = config['site_in_automatic_default']
+        #self.automatic_detail = config['automatic_detail_default']
         self.move_time = 0
         try:
             ra1, dec1 = self.get_mount_reference()
@@ -244,6 +251,7 @@ class Mount:
             #self.paddle_thread = threading.Thread(target=self.paddle, args=())
             #self.paddle_thread.start()
         print("exiting mount _init")
+ 
 
 #    def get_status(self):
 #        m = self.mount
@@ -378,6 +386,8 @@ class Mount:
         airmass = round(airmass, 4)
         #Be careful to preserve order
         #print(self.device_name, self.name)
+        if self.site_is_proxy:
+            self.site_is_proxy = True
 
 # =============================================================================
 #       The notion of multiple telescopes has not been implemented yet.
@@ -434,8 +444,8 @@ class Mount:
                 'is_tracking': str(self.mount.Tracking),
                 'is_slewing': str(self.mount.Slewing),
                 'message': str(self.mount_message[:54]),
-                'site_in_automatic': self.site_in_automatic,
-                'automatic_detail': str(self.automatic_detail),
+                #'site_in_automatic': self.site_in_automatic,
+                #'automatic_detail': str(self.automatic_detail),
                 'move_time': self.move_time
             }
         else:
@@ -572,10 +582,10 @@ class Mount:
         return status  #json.dumps(status)
 
     def parse_command(self, command):
+        breakpoint()
         req = command['required_params']
         opt = command['optional_params']
         action = command['action']
-
         self.check_connect()
         if action == "go":
             self.go_command(req, opt)   #  Entered from Target Explorer or Telescope tabs.
@@ -654,11 +664,12 @@ class Mount:
                 #
                 offset_x = float(req['image_x']) - 0.5   #Fraction of field.
                 offset_y = float(req['image_y']) - 0.5
-                x_field_deg = g_dev['cam'].config['camera']['camera1']['settings']['x_field_deg']
-                y_field_deg = g_dev['cam'].config['camera']['camera1']['settings']['y_field_deg']
+                x_field_deg = g_dev['cam'].config['camera']['camera_1_1']['settings']['x_field_deg']
+                y_field_deg = g_dev['cam'].config['camera']['camera_1_1']['settings']['y_field_deg']
                 field_x = x_field_deg/15.   #  /15 for hours.
                 field_y = y_field_deg
                 #20210317 Changed signs fron Neyle.  NEEDS CONFIG File level or support.
+                breakpoint()
                 self.ra_offset += offset_x*field_x/4   #NB NB 20201230 Signs needs to be verified.
                 self.dec_offset += -offset_y*field_y/4
                 print("Offsets:  ", round(self.ra_offset, 5), round(self.dec_offset, 4))

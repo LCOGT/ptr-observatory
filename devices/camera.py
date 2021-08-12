@@ -18,10 +18,11 @@ from astropy.io import fits
 #from astropy.table import Table
 #from astropy.utils.data import get_pkg_data_filename
 import sep
+from astropy.time import Time
 import glob
 import shelve
 #from pprint import pprint
-from astropy.time import Time
+
 
 #from os.path import join, dirname, abspath
 
@@ -299,9 +300,10 @@ class Camera:
         self.hint = None
         self.focus_cache = None
         self.darkslide = False
-        if self.config['camera'][self.name]['settings']['has_darkslide']:
+        if self.config['camera'][self.name]['settings']['darkslide_com']:
             self.darkslide = True
-            self.darkslide_instance = Darkslide()     #  NB eventually default after reboot should be closed.
+            com_port = self.config['camera'][self.name]['settings']['darkslide_com']
+            self.darkslide_instance = Darkslide(com_port)     #  NB eventually default after reboot should be closed.
             self.darkslide_instance.closeDarkslide()   #  Consider turing off IR Obsy light at same time..
             self.darkslide_open = False
             print("Darkslide closed on camera startup.")
@@ -506,7 +508,10 @@ class Camera:
         #print("Checking if Maxim is still connected!")
         #  self.t7 is last time camera was read out
         #if self.t7 is not None and (time.time() - self.t7 > 30) and self.maxim:
-            
+        try:
+            self.user_name
+        except:
+            self.user_name = "kilroy_was_here"
         
         self.t0 = time.time()
         #Force a reseek //eventually dither//
@@ -542,13 +547,13 @@ class Camera:
         bin_x = optional_params.get('bin', self.config['camera'][self.name] \
                                                       ['settings']['default_bin'])  #NB this should pick up config default.
 
-        if bin_x in [4, '4, 4', '4,4', [4, 4]]:     # For now this is the highest level of binning supported.
+        if bin_x in ['4 4', 4, '4, 4', '4,4', [4, 4]]:     # For now this is the highest level of binning supported.
             bin_x = 4
             self.ccd_sum = '4 4'
-        elif bin_x in [3, '3, 3', '3,3', [3, 3]]:   # replace with in and various formats or strip spaces.
+        elif bin_x in ['3 3', 3, '3, 3', '3,3', [3, 3]]:   # replace with in and various formats or strip spaces.
             bin_x = 3
             self.ccd_sum = '3 3'
-        elif bin_x in [2, '2, 2', '2,2', [2, 2]]:
+        elif bin_x in ['2 2', 2, '2, 2', '2,2', [2, 2]]:
             bin_x = 2
             self.ccd_sum = '2 2'
         else:
@@ -1143,20 +1148,20 @@ class Camera:
                     #     square = trimmed[1590:1590 + 6388, :]
                 elif ix == 4800:
                     #Shift error needs documenting!
-                    if self.img[11, -18] == 0:
+                    if self.img[11, -18] == 0:   #This is the normal incoming imsge
                         self.overscan = int((np.median(self.img[12:, -17:]) + np.median(self.img[0:10, :]))/2) - 1
                         trimmed = self.img[12:-4, :-17].astype('int32') + pedastal - self.overscan
 
                         #print("Shift 1", self.overscan, square.mean())
-                    elif self.img[15, -18] == 0:
+                    elif self.img[15, -18] == 0:     #This rarely occurs.  Neyle's Qhy600
                         self.overscan = int((np.median(self.img[16:, -17:]) + np.median(self.img[0:14, :]))/2) -1
                         trimmed = self.img[16:, :-17].astype('int32') + pedastal - self.overscan
 
-                        #print("Shift 2", self.overscan, square.mean())
+                        print("Rare error, Shift 2", self.overscan, square.mean())
 
                     else:
                         breakpoint()
-                        print("Image shift is incorrect, absolutely fatal error.")
+                        print("Image shift is incorrect, absolutely fatal error", self.img[0:20, -18])
 
 
                         pass
@@ -1194,9 +1199,8 @@ class Camera:
                 avg_mnt = g_dev['mnt'].get_average_status(self.pre_mnt, self.post_mnt)
                 avg_foc = g_dev['foc'].get_average_status(self.pre_foc, self.post_foc)
                 avg_rot = g_dev['rot'].get_average_status(self.pre_rot, self.post_rot)
-                #avg_ocn = g_dev['ocn'].get_average_status(self.pre_ocn, self.post_ocn)
-                if frame_type[-5:] in ['focus', 'probe']:
-                    
+                avg_ocn = g_dev['ocn'].get_average_status(self.pre_ocn, self.post_ocn)
+                if frame_type[-5:] in ['focus', 'probe', "ental"]:
                     self.img = self.img + 100   #maintain a + pedestal for sep  THIS SHOULD not be needed for a raw input file.
                     self.img = self.img.astype("float")
                     #print(self.img.flags)
@@ -1355,8 +1359,10 @@ class Camera:
                     #hdu.header['OBJCDEC2'] = (self.pre_mnt[2], '[deg] Object dec 2')
                     #hdu.header['OBRARATE'] = self.pre_mnt[4]
                     #hdu.header['OBDECRAT'] = self.pre_mnt[5]
-
-                    hdu.header['OBSERVER'] = (self.user_name, 'Observer name')  # userid
+                    try:
+                        hdu.header['OBSERVER'] = (self.user_name, 'Observer name')  # userid
+                    except:
+                        hdu.header['OBSERVER'] = ("kilroy visited", 'Observer name')  # userid
                     hdu.header['OBSNOTE']  = self.hint[0:54]            #Needs to be truncated.
                     if self.maxim:
                         hdu.header['FLIPSTAT'] = 'None'   # This is a maxim camera setup, not a flip status
@@ -1421,15 +1427,15 @@ class Camera:
                     hdu.header['FOCUSTMP'] = (avg_foc[2], '[deg C] Focuser temperature')
                     hdu.header['FOCUSMOV'] = (avg_foc[3], 'Focuser is moving')
                     
-                    # hdu.header['WXSTATE'] = (g_dev['ocn'].wx_is_ok, 'Weather system state')
-                    # hdu.header['SKY-TEMP'] = (avg_ocn[1], '[deg C] Sky temperature')
-                    # hdu.header['AIR-TEMP'] = (avg_ocn[2], '[deg C] External temperature')
-                    # hdu.header['HUMIDITY'] = (avg_ocn[3], '[%] Percentage humidity')
-                    # hdu.header['DEWPOINT'] = (avg_ocn[4], '[deg C] Dew point')
-                    # hdu.header['WINDSPEE'] = (avg_ocn[5], '[km/h] Wind speed')
-                    # hdu.header['PRESSURE'] = (avg_ocn[6], '[mbar] Atmospheric pressure')
-                    # hdu.header['CALC-LUX'] = (avg_ocn[7], '[mag/arcsec^2] Expected sky brightness')
-                    # hdu.header['SKYMAG']  = (avg_ocn[8], '[mag/arcsec^2] Measured sky brightness')
+                    hdu.header['WXSTATE'] = (g_dev['ocn'].wx_is_ok, 'Weather system state')
+                    hdu.header['SKY-TEMP'] = (avg_ocn[1], '[deg C] Sky temperature')
+                    hdu.header['AIR-TEMP'] = (avg_ocn[2], '[deg C] External temperature')
+                    hdu.header['HUMIDITY'] = (avg_ocn[3], '[%] Percentage humidity')
+                    hdu.header['DEWPOINT'] = (avg_ocn[4], '[deg C] Dew point')
+                    hdu.header['WINDSPEE'] = (avg_ocn[5], '[km/h] Wind speed')
+                    hdu.header['PRESSURE'] = (avg_ocn[6], '[mbar] Atmospheric pressure')
+                    hdu.header['CALC-LUX'] = (avg_ocn[7], '[mag/arcsec^2] Expected sky brightness')
+                    hdu.header['SKYMAG']  = (avg_ocn[8], '[mag/arcsec^2] Measured sky brightness')
 
                     self.pix_ang = (self.camera.PixelSizeX*self.camera.BinX/(float(self.config['telescope'] \
                                               ['telescope1']['focal_length'])*1000.))
@@ -1448,7 +1454,7 @@ class Camera:
                     hdu.header['YORGSUBF'] = self.camera_start_y
                     #hdu.header['BLKUID']   = ('None', 'Group type')
                     #hdu.header['BLKSDATE'] = ('None', 'Group unique ID
-                    #hdu.header['MOLUID']   = ('None', 'Molecule unique ID')               
+                    #hdu.header['MOLUID']   = ('None', 'Molecule unique ID')
                     try:
                         hdu.header['USERNAME'] = self.user_name
                         hdu.header ['USERID']  = self.user_id
