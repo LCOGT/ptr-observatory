@@ -343,7 +343,7 @@ class ObservingConditions:
                 self.wx_is_ok = dew_point_gap and temp_bounds and wind_limit and sky_amb_limit and \
                                 humidity_limit and rain_limit
                 #  NB  wx_is_ok does not include ambient light or altitude of the Sun
-                breakpoint()
+
                 if self.wx_is_ok:
                     wx_str = "Yes"
                     status["wx_ok"] = "Yes"
