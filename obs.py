@@ -458,10 +458,10 @@ class Observatory:
         # For each type, we get and save the status of each device.
         if not self.config['agent_wms_enc_active']:
             device_list = self.device_types
-            remove_enc = True
+            remove_enc = False
         else:
             device_list = self.short_status_devices 
-            remove_enc = False
+            remove_enc = True
         for dev_type in device_list:
 
             # The status that we will send is grouped into lists of
@@ -477,9 +477,12 @@ class Observatory:
                 device = devices_of_type[device_name]
                 # ...and add it to main status dict.
                 result = device.get_status()
-                if not (remove_enc and (result['enclosure']['enclosure1'] is None)):
+
+                if result is not None:
                     status[dev_type][device_name] = result
         # Include the time that the status was assembled and sent.
+        if remove_enc:
+            status.pop('enclosure', None)
         status["timestamp"] = round((time.time() + t1)/2., 3)
         status['send_heartbeat'] = False
         loud = False

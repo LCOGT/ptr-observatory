@@ -18,7 +18,7 @@ import math
 import shelve
 from pprint import pprint
 from api_calls import API_calls
-import matplotlib.pyplot as plt
+
 import ptr_events
 from devices.wms_enclosure_agent import Enclosure
 from devices.wms_observing_agent import ObservingConditions
@@ -347,7 +347,7 @@ class Observatory:
         # Include the time that the status was assembled and sent.
         status["timestamp"] = round((time.time() + t1)/2., 3)
         status['send_heartbeat'] = False
-        loud = False
+        loud = True
         if loud:
             print('\n\nStatus Sent:  \n', status)   # from Update:  ', status))
         else:
@@ -358,6 +358,7 @@ class Observatory:
             #  Consider inhibity unless status rate is low
         uri_status = f"https://status.photonranch.org/status/{self.name}/status/"
         # NB None of the strings can be empty.  Otherwise this put faults.
+        
         try:    # 20190926  tHIS STARTED THROWING EXCEPTIONS OCCASIONALLY
             #print("AWS uri:  ", uri)
             #print('Status to be sent:  \n', status, '\n')
@@ -367,10 +368,21 @@ class Observatory:
                 }
             data = json.dumps(payload)
             response = requests.post(uri_status, data=data)
+            print("AWS Response:  ", response)
             #self.api.authenticated_request("PUT", uri_status, status)   # response = is not  used
             #print("AWS Response:  ",response)
-            self.time_last_status = time.time()
+
             self.redis_server.set('wema_heart_time', self.time_last_status, ex=120)
+            if self.name in ['mrc', 'mrc1']:           # nb nbTHIS SHOULD BE FROM COFIG.
+                uri_status_2 = "https://status.photonranch.org/status/mrc2/status/"
+                payload ={
+                "statusType": "wxEncStatus",
+                "status":  status
+                }
+            #data = json.dumps(payload)
+            response = requests.post(uri_status_2, data=data)
+            print("AWS Response:  ", response)
+            self.time_last_status = time.time()
         except:
             print('self.api.authenticated_request("PUT", uri, status):   Failed!')
 
