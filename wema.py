@@ -156,8 +156,6 @@ class Observatory:
         for dev_type in self.device_types:
             self.all_devices[dev_type] = {}
             # Get the names of all the devices from each dev_type.
-            # if dev_type == 'camera':
-            #     breakpoint()
             devices_of_type = config.get(dev_type, {})
             device_names = devices_of_type.keys()
             # Instantiate each device object from based on its type
@@ -252,7 +250,7 @@ class Observatory:
         #                             except:
         #                                 deviceInstance = cmd['required_params']['device_instance']
         #                         except:
-        #                             breakpoint()
+        #                             
         #                             pass
         #                 else:
         #                     deviceInstance = cmd['deviceInstance']
@@ -313,7 +311,7 @@ class Observatory:
         # This stopping mechanism allows for threads to close cleanly.
         loud = False        
         # if g_dev['cam_retry_doit']:
-        #     #breakpoint()   #THis should be obsolete.
+        #     #   #THis should be obsolete.
         #     del g_dev['cam']
         #     device = Camera(g_dev['cam_retry_driver'], g_dev['cam_retry_name'], g_dev['cam_retry_config'])
         #     print("Deleted and re-created:  ,", device)
@@ -352,12 +350,13 @@ class Observatory:
             print('\n\nStatus Sent:  \n', status)   # from Update:  ', status))
         else:
             print('.') #, status)   # We print this to stay informed of process on the console.
-            # breakpoint()
+            # breakpoint(
             # self.send_log_to_frontend("WARN cam1 just fell on the floor!")
             # self.send_log_to_frontend("ERROR enc1 dome just collapsed.")
             #  Consider inhibity unless status rate is low
         uri_status = f"https://status.photonranch.org/status/{self.name}/status/"
         # NB None of the strings can be empty.  Otherwise this put faults.
+        
         try:    # 20190926  tHIS STARTED THROWING EXCEPTIONS OCCASIONALLY
             #print("AWS uri:  ", uri)
             #print('Status to be sent:  \n', status, '\n')
@@ -367,10 +366,21 @@ class Observatory:
                 }
             data = json.dumps(payload)
             response = requests.post(uri_status, data=data)
+            #print("AWS Response:  ", response)
             #self.api.authenticated_request("PUT", uri_status, status)   # response = is not  used
             #print("AWS Response:  ",response)
-            self.time_last_status = time.time()
+
             self.redis_server.set('wema_heart_time', self.time_last_status, ex=120)
+            if self.name in ['mrc', 'mrc1']:           # nb nbTHIS SHOULD BE FROM COFIG.
+                uri_status_2 = "https://status.photonranch.org/status/mrc2/status/"
+                payload ={
+                "statusType": "wxEncStatus",
+                "status":  status
+                }
+            #data = json.dumps(payload)
+            response = requests.post(uri_status_2, data=data)
+            #print("AWS Response:  ", response)
+            self.time_last_status = time.time()
         except:
             print('self.api.authenticated_request("PUT", uri, status):   Failed!')
 

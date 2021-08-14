@@ -307,7 +307,7 @@ site_config = {
             "parent": "tel1",
             "alias": "Dual filter wheel",
             'dual_wheel':  True,
-            "desc":  'FLI Centerline Custom Dual 50mm sq.',
+            "desc":  'Dual Apogee custom Dual 50mm sq.',
             "driver": ['ASCOM.Apogee.FilterWheel', 'ASCOM.Apogee2.FilterWheel'],
             'startup_script':  None,
             'recover_script':  None,

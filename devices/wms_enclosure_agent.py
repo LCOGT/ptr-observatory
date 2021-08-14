@@ -268,9 +268,9 @@ class Enclosure:
             #print("Obs process not producing time heartbeat.")
         
         #This is meant to be quite sweeping
-        #if open_cmd or close_cmd:
+        if open_cmd or close_cmd:
             
-        
+            breakpoint()
         if (wx_hold or self.mode == 'Shutdown'):
             if self.is_dome:
                 self.enclosure.Slaved = False
@@ -278,16 +278,17 @@ class Enclosure:
                 self.enclosure.CloseShutter()
             self.dome_opened = False
             self.dome_homed = True
-        elif obs_time is None or (time.time() - float(obs_time)) > 120.:  #This might want to have a delay to aid debugging
-            if self.is_dome:
-                self.enclosure.Slaved = False
-            if self.status_string.lower() in ['open']:
-                self.enclosure.CloseShutter()
-            self.dome_opened = False
-            self.dome_homed = True
+        # elif obs_time is None or (time.time() - float(obs_time)) > 120.:  #This might want to have a delay to aid debugging
+        #     if self.is_dome:
+        #         self.enclosure.Slaved = False
+        #     if self.status_string.lower() in ['open']:
+        #         self.enclosure.CloseShutter()
+        #     self.dome_opened = False
+        #     self.dome_homed = True
             
             
         #  We are now in the full operational window.   ###Ops Window Start
+      
         elif (g_dev['events']['Ops Window Start'] - debugOffset <= ephemNow <= g_dev['events']['Ops Window Closes'] + debugOffset) \
                 and not (wx_hold or self.mode == 'Shutdown') \
                 and (self.site_in_automatic or open_cmd and not self.site_in_automatic):   #Note Manual Open works in the window.
@@ -357,8 +358,8 @@ class Enclosure:
                     enc_at_home = self.enclosure.AtHome
                 else:
                     enc_at_home = True
-                if self.status_string.lower() in ['open', 'opening'] \
-                    or not enc_at_home:
+                if True  \
+                    or not enc_at_home:  #self.status_string.lower() in ['open', 'opening'] \
                     try:
                         if self.is_dome:
                             self.enclosure.Slaved = False

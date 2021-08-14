@@ -166,6 +166,7 @@ class Observatory:
         self.site_path = config['site_path']
         self.last_request = None
         self.stopped = False
+        self.status_count = 0
         self.site_message = '-'
         self.device_types = [    #All devices need to be created
             'observing_conditions',
@@ -387,6 +388,7 @@ class Observatory:
                         deviceType = cmd['deviceType']
                         device = self.all_devices[deviceType][deviceInstance]
                         try:
+                        
                             device.parse_command(cmd)
                         except Exception as e:
                             print( 'Exception in obs.scan_requests:  ', e)
@@ -507,6 +509,7 @@ class Observatory:
             #print("AWS Response:  ",response)
             self.time_last_status = time.time()
             self.redis_server.set('obs_heart_time', self.time_last_status, ex=120 )
+            self.status_count +=1
         except:
             print('self.api.authenticated_request("PUT", uri, status):   Failed!')
 
