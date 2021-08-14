@@ -1287,7 +1287,6 @@ class Camera:
                     #hdu.header['JD-HELIO'] = 'bogus'       # Heliocentric Julian Date at exposure midpoint
                     hdu.header['OBSTYPE'] = (frame_type.upper(), 'Observation type')   #This report is fixed and it should vary...NEEDS FIXING!
                     hdu.header['EXPTIME']  = (exposure_time, '[s] Requested exposure length')   # This is the exposure in seconds specified by the user
-
                     hdu.header['BUNIT']    = 'adu'
                     hdu.header['DATE-OBS'] = datetime.datetime.isoformat(datetime.datetime.utcfromtimestamp(self.t2))
                     hdu.header['EXPTIME']  = exposure_time   #This is the exposure in seconds specified by the user
@@ -1376,7 +1375,8 @@ class Camera:
                     hdu.header['ENCRLIGT'] = ("", 'Enclosure red lights state')
                     hdu.header['ENCWLIGT'] = ("", 'Enclosure white lights state')
                     if g_dev['enc'] is not None:
-                        hdu.header['ENC1STAT'] = (g_dev['enc'].get_status()['shutter_status'], 'Shutter status')   #"Open/Closed" enclosure 1 status
+                        enc_stat = g_dev['enc'].get_status()
+                        hdu.header['ENC1STAT'] = enc_stat  # (g_dev['enc'].get_status()['shutter_status'], 'Shutter status')   #"Open/Closed" enclosure 1 status
                     
                     #  if gather_status:
                     hdu.header['MNT-SIDT'] = (avg_mnt['sidereal_time'], '[deg] Mount sidereal time')
