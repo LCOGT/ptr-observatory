@@ -356,33 +356,33 @@ class Observatory:
             #  Consider inhibity unless status rate is low
         uri_status = f"https://status.photonranch.org/status/{self.name}/status/"
         # NB None of the strings can be empty.  Otherwise this put faults.
-        
-        try:    # 20190926  tHIS STARTED THROWING EXCEPTIONS OCCASIONALLY
-            #print("AWS uri:  ", uri)
-            #print('Status to be sent:  \n', status, '\n')
-            payload ={
-                "statusType": "wxEncStatus",
-                "status":  status
-                }
-            data = json.dumps(payload)
-            response = requests.post(uri_status, data=data)
-            #print("AWS Response:  ", response)
-            #self.api.authenticated_request("PUT", uri_status, status)   # response = is not  used
-            #print("AWS Response:  ",response)
-
-            self.redis_server.set('wema_heart_time', self.time_last_status, ex=120)
-            if self.name in ['mrc', 'mrc1']:           # nb nbTHIS SHOULD BE FROM COFIG.
-                uri_status_2 = "https://status.photonranch.org/status/mrc2/status/"
+        if self.name in ['mrc', 'mrc2']:
+            try:    # 20190926  tHIS STARTED THROWING EXCEPTIONS OCCASIONALLY
+                #print("AWS uri:  ", uri)
+                #print('Status to be sent:  \n', status, '\n')
                 payload ={
-                "statusType": "wxEncStatus",
-                "status":  status
-                }
-            #data = json.dumps(payload)
-            response = requests.post(uri_status_2, data=data)
-            #print("AWS Response:  ", response)
-            self.time_last_status = time.time()
-        except:
-            print('self.api.authenticated_request("PUT", uri, status):   Failed!')
+                    "statusType": "wxEncStatus",
+                    "status":  status
+                    }
+                data = json.dumps(payload)
+                response = requests.post(uri_status, data=data)
+                #print("AWS Response:  ", response)
+                #self.api.authenticated_request("PUT", uri_status, status)   # response = is not  used
+                #print("AWS Response:  ",response)
+    
+                self.redis_server.set('wema_heart_time', self.time_last_status, ex=120)
+                if self.name in ['mrc', 'mrc1']:           # nb nbTHIS SHOULD BE FROM COFIG.
+                    uri_status_2 = "https://status.photonranch.org/status/mrc2/status/"
+                    payload ={
+                    "statusType": "wxEncStatus",
+                    "status":  status
+                    }
+                #data = json.dumps(payload)
+                response = requests.post(uri_status_2, data=data)
+                #print("AWS Response:  ", response)
+                self.time_last_status = time.time()
+            except:
+                print('self.api.authenticated_request("PUT", uri, status):   Failed!')
 
 
     def update(self):
