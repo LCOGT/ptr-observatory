@@ -55,6 +55,7 @@ class Enclosure:
             self.state = 'Closed'
             #self.mode = 'Automatic'   #  Auto|User Control|User Close|Disable
             self.enclosure_message = '-'
+            #self.shutter_is_closed = False   #NB initializing this is important.
             self.external_close = False   #If made true by operator,  system will not reopen for the night
             self.dome_opened = False   #memory of prior issued commands  Restarting code may close dome one time.
             self.dome_homed = False
@@ -93,7 +94,7 @@ class Enclosure:
                 else:
                     self.shutter_is_closed = False
                 #print('Proxy shutter status:  ', status)
-                return  #explicitly return None
+                return  stat_string
             else:
                 self.shutter_is_closed = True
                 return
@@ -189,6 +190,7 @@ class Enclosure:
         req = command['required_params']
         opt = command['optional_params']
         action = command['action']
+
         if action == "open":
             if self.site_is_proxy:
                 self.redis_server.set('enc_cmd', 'open', ex=300)

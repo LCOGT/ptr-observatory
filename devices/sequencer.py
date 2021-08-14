@@ -188,7 +188,8 @@ class Sequencer:
             "sequencer_busy":  False
         }
         if not self.sequencer_hold:   #  NB THis should be wrapped in a timeout.
-            self.manager()      #  There be dragons here!  <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+            if g_dev['obs'].status_count > 3:   #Gove syste time to settle.
+                self.manager()      #  There be dragons here!  <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
         return status
 
 
@@ -248,6 +249,7 @@ class Sequencer:
         #obs_win_begin, sunZ88Op, sunZ88Cl, ephemNow = self.astro_events.getSunEvents()
         ephem_now = ephem.now()
         events = g_dev['events']
+        #g_dev['obs'].update_status()  #NB NEED to be sure we have current enclosure status.
 
         self.current_script = "No current script"
         self.sequencer_hold = False
@@ -516,6 +518,7 @@ class Sequencer:
             initial_focus = True
             while left_to_do > 0 and not ended:
                 if initial_focus:
+                    g_dev['enc'].get_status()
                     if not g_dev['enc'].shutter_is_closed:
                         self.auto_focus_script(req2, opt, throw = 500)
                     else:
@@ -961,6 +964,7 @@ class Sequencer:
         else:
             result['FWHM'] = 3
             result['mean_focus'] = foc_pos0
+
         spot1 = result['FWHM']
         foc_pos1 = result['mean_focus']
         print('Autofocus Moving In.\n\n')

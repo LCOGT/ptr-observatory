@@ -190,6 +190,7 @@ class Mount:
         else:
             self.has_paddle = config['mount']['mount1']['has_paddle']
         self.object = "Unspecified"
+        self.current_sidereal = self.mount.SiderealTime
         self.current_icrs_ra = "Unspecified_Ra"
         self.current_icrs_dec = " Unspecified_Dec"
         self.delta_t_s = HTOSec/12   #5 minutes
@@ -327,6 +328,7 @@ class Mount:
                 pierside = 1    #West side looking East   #Make this assignment a code-wide convention.
             else:
                 pierside = 0   #East looking West
+            self.current_sidereal = self.mount.SiderealTime
             uncorr_mech_ra_h = self.mount.RightAscension
             uncorr_mech_dec_d = self.mount.Declination
 
@@ -582,7 +584,7 @@ class Mount:
         return status  #json.dumps(status)
 
     def parse_command(self, command):
-        breakpoint()
+       
         req = command['required_params']
         opt = command['optional_params']
         action = command['action']
