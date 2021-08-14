@@ -501,7 +501,6 @@ class ObservingConditions:
             if self.wx_hold_count < 3:
                 if (t := time.time()) <= self.wx_hold_until_time:
                     duration = round((self.wx_hold_until_time - t)/60, 2)
-                    breakpoint()
                     self.wx_to_go = duration
                 elif time.time() >= self.wx_hold_until_time and not self.wx_clamp:
                     #Time to release the hold.

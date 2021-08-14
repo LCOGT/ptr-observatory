@@ -347,7 +347,7 @@ class Observatory:
         # Include the time that the status was assembled and sent.
         status["timestamp"] = round((time.time() + t1)/2., 3)
         status['send_heartbeat'] = False
-        loud = True
+        loud = False
         if loud:
             print('\n\nStatus Sent:  \n', status)   # from Update:  ', status))
         else:
