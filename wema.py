@@ -345,11 +345,11 @@ class Observatory:
         # Include the time that the status was assembled and sent.
         status["timestamp"] = round((time.time() + t1)/2., 3)
         status['send_heartbeat'] = False
-        loud = False
+        loud = True
         if loud:
-            print('\n\nStatus Sent:  \n', status)   # from Update:  ', status))
+            print('\n\n > Status Sent:  \n', status)   # from Update:  ', status))
         else:
-            print('.') #, status)   # We print this to stay informed of process on the console.
+            print('>') #, status)   # We print this to stay informed of process on the console.
             # breakpoint(
             # self.send_log_to_frontend("WARN cam1 just fell on the floor!")
             # self.send_log_to_frontend("ERROR enc1 dome just collapsed.")

@@ -269,8 +269,8 @@ class Enclosure:
         
         #This is meant to be quite sweeping
         if open_cmd or close_cmd:
+            pass
             
-            breakpoint()
         if (wx_hold or self.mode == 'Shutdown'):
             if self.is_dome:
                 self.enclosure.Slaved = False
