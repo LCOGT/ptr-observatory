@@ -216,7 +216,7 @@ class Enclosure:
                 self.mode = 'Manual'
                 g_dev['enc'].site_in_automatic = False
                 g_dev['enc'].automatic_detail =  "Manual Only"
-        elif action == "setStayClosed" or action == 'setShutdown':
+        elif action in ["setStayClosed", 'setShutdown', 'shutDown']:
             if self.site_is_proxy:
                 self.redis_server.set('enc_cmd', 'setShutdown', ex=300)
                 self.mode = 'Shutdown'

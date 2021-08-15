@@ -520,15 +520,15 @@ class Sequencer:
                 if initial_focus:
                     g_dev['enc'].get_status()
                     if not g_dev['enc'].shutter_is_closed:
-                        self.auto_focus_script(req2, opt, throw = 500)
+                        self.auto_focus_script(req2, opt, throw = 750)
                     else:
                         print('Shutter closed, skipping AF cycle.0')  #coarse_focus_script can be used here
                     just_focused = True
                     initial_focus = False    #  Make above on-time event per block
-                    timer = time.time() + 1800   #10 min for debugging
+                    timer = time.time() + 3600   #10 min for debugging
                     #at block startup this should mean two AF cycles. Cosider using 5-point for the first.
                     
-                #cycle thrugh exposures decrementing counts    MAY want to double check left-to do but do nut remultiply by 4
+                #cycle through exposures decrementing counts    MAY want to double check left-to do but do nut remultiply by 4
                 for exposure in block['project']['exposures']:
                     if block_specification['project']['project_constraints']['frequent_autofocus'] == True and (time.time() - timer) >= 0:
                         #What purpose does this code serve, it appears to be a debug remnant? WER 20200206
@@ -889,7 +889,7 @@ class Sequencer:
         
     
 
-    def auto_focus_script(self, req, opt, throw=750):
+    def auto_focus_script(self, req, opt, throw=1000):
         '''
         V curve is a big move focus designed to fit two lines adjacent to the more normal focus curve.
         It finds the approximate focus, particulary for a new instrument. It requires 8 points plus
@@ -943,6 +943,7 @@ class Sequencer:
         if req2['target'] == 'near_tycho_star':   ## 'bin', 'area'  Other parameters
 
             #  Go to closest Mag 7.5 Tycho * with no flip
+            
             focus_star = tycho.dist_sort_targets(g_dev['mnt'].current_icrs_ra, g_dev['mnt'].current_icrs_dec, \
                                     g_dev['mnt'].current_sidereal)
             print("Going to near focus star " + str(focus_star[0][0]) + "  degrees away.")

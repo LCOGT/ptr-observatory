@@ -394,9 +394,10 @@ class Observatory:
 
         """
         self.update_status()
-        time.sleep(2)
+        time.sleep(5)
         try:
-            self.scan_requests('mount1')   #NBNBNB THis has faulted, usually empty input lists.
+            pass
+            #self.scan_requests('mount1')   #NBNBNB THis has faulted, usually empty input lists.
         except:
             pass
             #print("self.scan_requests('mount1') threw an exception, probably empty input queues.")

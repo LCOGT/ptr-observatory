@@ -129,7 +129,6 @@ class ObservingConditions:
             DESCRIPTION.
 
         '''
-
         if self.site == 'saf':
             illum, mag = self.astro_events.illuminationNow()
             if illum > 100:
@@ -434,6 +433,7 @@ class ObservingConditions:
                 except:
                     pass
                     #print("Unihedron log did not write.")
+                    # breakpoint()
             self.redis_server.set('wx_redis_status' , status, ex=300)
             new_stat = self.redis_server.get('wx_redis_status')
         else:
