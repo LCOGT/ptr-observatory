@@ -356,7 +356,7 @@ class Observatory:
             #  Consider inhibity unless status rate is low
         uri_status = f"https://status.photonranch.org/status/{self.name}/status/"
         # NB None of the strings can be empty.  Otherwise this put faults.
-        if self.name in ['mrc', 'mrc2']:
+        if self.name in ['mrc', 'mrc2', 'saf']:
             try:    # 20190926  tHIS STARTED THROWING EXCEPTIONS OCCASIONALLY
                 #print("AWS uri:  ", uri)
                 #print('Status to be sent:  \n', status, '\n')
@@ -364,6 +364,7 @@ class Observatory:
                     "statusType": "wxEncStatus",
                     "status":  status
                     }
+
                 data = json.dumps(payload)
                 response = requests.post(uri_status, data=data)
                 #print("AWS Response:  ", response)
@@ -377,9 +378,9 @@ class Observatory:
                     "statusType": "wxEncStatus",
                     "status":  status
                     }
-                #data = json.dumps(payload)
-                response = requests.post(uri_status_2, data=data)
-                #print("AWS Response:  ", response)
+                    #data = json.dumps(payload)
+                    response = requests.post(uri_status_2, data=data)
+                    #print("AWS Response:  ", response)
                 self.time_last_status = time.time()
             except:
                 print('self.api.authenticated_request("PUT", uri, status):   Failed!')

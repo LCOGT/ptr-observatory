@@ -427,7 +427,6 @@ class Sequencer:
         self.block_guard = True
         # NB we assume the dome is open and already slaving.
         block = copy.deepcopy(block_specification)
-        #breakpoint()
         # #unpark, open dome etc.
         # #if not end of block
         g_dev['mnt'].unpark_command({}, {})
@@ -516,6 +515,7 @@ class Sequencer:
             print("Left to do initial value:  ", left_to_do)
             req = {'target': 'near_tycho_star'}
             initial_focus = True
+
             while left_to_do > 0 and not ended:
                 if initial_focus:
                     g_dev['enc'].get_status()
@@ -925,12 +925,14 @@ class Sequencer:
             #case where a timeout is a smart idea.
             #Wait for external motion to cease before exposing.  Note this precludes satellite tracking.
             st = "" 
+            breakpoint()
+            #20210817  g_dev['enc'] does not exist,  so this faults. Cascade problem with user_id...
             while g_dev['foc'].focuser.IsMoving or g_dev['rot'].rotator.IsMoving or \
-                  g_dev['mnt'].mount.Slewing or g_dev['enc'].enclosure.Slewing:   #Filter is moving??
+                  g_dev['mnt'].mount.Slewing or g_dev['enc'].status['dome_slewing']:   #Filter is moving??
                 if g_dev['foc'].focuser.IsMoving: st += 'f>'
                 if g_dev['rot'].rotator.IsMoving: st += 'r>'
                 if g_dev['mnt'].mount.Slewing: st += 'm>'
-                if g_dev['enc'].enclosure.Slewing: st += 'd>'
+                if g_dev['enc'].status['dome_slewing']: st += 'd>'
                 print(st)
                 st = ""
                 time.sleep(0.2)
@@ -1070,7 +1072,7 @@ class Sequencer:
         '''
         print('AF entered with:  ', req, opt)
         self.guard = True
-        sim = g_dev['enc'].shutter_is_closed
+        sim = g_dev['enc'].status['shutter_status'] in ['Closed', 'closed', 'Closing', 'closing']
         print('AF entered with:  ', req, opt, '\n .. and sim =  ', sim)
         #self.sequencer_hold = True  #Blocks command checks.
         start_ra = g_dev['mnt'].mount.RightAscension
@@ -1083,11 +1085,11 @@ class Sequencer:
             #Wait for external motion to cease before exposing.  Note this precludes satellite tracking.
             st = "" 
             while g_dev['foc'].focuser.IsMoving or g_dev['rot'].rotator.IsMoving or \
-                  g_dev['mnt'].mount.Slewing or g_dev['enc'].enclosure.Slewing:   #Filter is moving??
+                  g_dev['mnt'].mount.Slewing or g_dev['enc'].status['dome_slewing']:   #Filter is moving??
                 if g_dev['foc'].focuser.IsMoving: st += 'f>'
                 if g_dev['rot'].rotator.IsMoving: st += 'r>'
                 if g_dev['mnt'].mount.Slewing: st += 'm>'
-                if g_dev['enc'].enclosure.Slewing: st += 'd>'
+                if g_dev['enc'].status['dome_slewing']: st += 'd>'
                 print(st)
                 st = ""
                 time.sleep(0.2)
@@ -1283,9 +1285,9 @@ IF sweep
             opt = {}
             g_dev['mnt'].go_command(req, opt)
             st = ''
-            while g_dev['mnt'].mount.Slewing or g_dev['enc'].enclosure.Slewing:
+            while g_dev['mnt'].mount.Slewing or status['dome_slewing']:
                 if g_dev['mnt'].mount.Slewing: st += 'm>'
-                if g_dev['enc'].enclosure.Slewing: st += 'd>'
+                if g_dev['enc'].status['dome_slewing']: st += 'd>'
                 print(st)
                 st = ''
                 g_dev['obs'].update_status()
@@ -1381,9 +1383,9 @@ IF sweep
             opt = {}
             g_dev['mnt'].go_command(req, opt)
             st = ''
-            while g_dev['mnt'].mount.Slewing or g_dev['enc'].enclosure.Slewing:
+            while g_dev['mnt'].mount.Slewing or g_dev['enc'].status['dome_slewing']:
                 if g_dev['mnt'].mount.Slewing: st += 'm>'
-                if g_dev['enc'].enclosure.Slewing: st += 'd>'
+                if g_dev['enc'].status['dome_slewing']: st += 'd>'
                 print(st)
                 st = ''
                 g_dev['obs'].update_status()
@@ -1493,9 +1495,9 @@ IF sweep
             g_dev['mnt'].go_command(req, opt)
             time.sleep(0.5)
             st = ''
-            while g_dev['mnt'].mount.Slewing or g_dev['enc'].enclosure.Slewing:
+            while g_dev['mnt'].mount.Slewing or g_dev['enc'].status['dome_slewing']:
                 if g_dev['mnt'].mount.Slewing: st += 'm>'
-                if g_dev['enc'].enclosure.Slewing: st += 'd>'
+                if g_dev['enc'].status['dome_slewing']: st += 'd>'
                 print(st)
                 st = ''
                 g_dev['obs'].update_status()
@@ -1604,9 +1606,9 @@ IF sweep
             g_dev['mnt'].go_command(req, opt)
             time.sleep(0.5)
             st = ''
-            while g_dev['mnt'].mount.Slewing or g_dev['enc'].enclosure.Slewing:
+            while g_dev['mnt'].mount.Slewing or g_dev['enc'].status['dome_slewing']:
                 if g_dev['mnt'].mount.Slewing: st += 'm>'
-                if g_dev['enc'].enclosure.Slewing: st += 'd>'
+                if g_dev['enc'].status['dome_slewing']: st += 'd>'
                 print(st)
                 st = ''
                 g_dev['obs'].update_status()
@@ -1704,9 +1706,9 @@ IF sweep
                 #Should have an Alt limit check here
                 g_dev['mnt'].go_command(req, opt)
                 st = ''
-                while g_dev['mnt'].mount.Slewing or g_dev['enc'].enclosure.Slewing:
+                while g_dev['mnt'].mount.Slewing or g_dev['enc'].status['dome_slewing']:
                     if g_dev['mnt'].mount.Slewing: st += 'm>'
-                    if g_dev['enc'].enclosure.Slewing: st += 'd>'
+                    if g_dev['enc'].status['dome_slewing']: st += 'd>'
                     print(st)
                     st = ''
                     g_dev['obs'].update_status()

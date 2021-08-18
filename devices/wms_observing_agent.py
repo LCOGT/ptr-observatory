@@ -77,6 +77,7 @@ class ObservingConditions:
         self.prior_status_2 = None
         self.wmd_fail_counter = 0
         redis_ip = config['redis_ip']
+
         if redis_ip is not None:           
             self.redis_server = redis.StrictRedis(host=redis_ip, port=6379, db=0,
                                               decode_responses=True)

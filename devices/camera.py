@@ -838,7 +838,7 @@ class Camera:
                 st = ""
                 if g_dev['enc'].is_dome:
                     try:
-                        enc_slewing = g_dev['enc'].enclosure.Slewing
+                        enc_slewing = g_dev['enc'].status['dome_slewing']
                     except:
                         print("enclosure SLEWING threw an exception.")
                 else:
@@ -863,7 +863,7 @@ class Camera:
                     #Refresh the probe of the dome status
                     if g_dev['enc'].is_dome:
                         try:
-                            enc_slewing = g_dev['enc'].enclosure.Slewing
+                            enc_slewing = g_dev['enc'].status['dome_slewing']
                         except:
                             print("enclosure SLEWING threw an exception.")
                     else:
@@ -1456,6 +1456,7 @@ class Camera:
                     #hdu.header['BLKUID']   = ('None', 'Group type')
                     #hdu.header['BLKSDATE'] = ('None', 'Group unique ID
                     #hdu.header['MOLUID']   = ('None', 'Molecule unique ID')
+                    breakpoint()
                     try:
                         hdu.header['USERNAME'] = self.user_name
                         hdu.header ['USERID']  = self.user_id

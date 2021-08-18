@@ -126,6 +126,7 @@ class Enclosure:
         if self.site == 'saf':
            try:
                status = {'shutter_status': stat_string,
+                      'roof_status': stat_string,
                       'enclosure_synch': self.enclosure.Slaved,
                       'dome_azimuth': round(self.enclosure.Azimuth, 1),
                       'dome_slewing': self.enclosure.Slewing,
@@ -435,7 +436,7 @@ class Enclosure:
                 #  The dome may come up reporting closed when it is open, but it does report unhomed as
                 #  the condition not AtHome.
     
-        
+                # NB NB NB this needs cleaning up for WEMA mode.
                 if not self.dome_homed:
                     # breakpoint()
                     # self.dome_homed = True

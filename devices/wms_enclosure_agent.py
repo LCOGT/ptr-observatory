@@ -44,6 +44,7 @@ class Enclosure:
         else:
             self.redis_wx_enabled = False
         self.is_dome = self.config['enclosure']['enclosure1']['is_dome']
+        self.status = None
         self.state = 'Closed'
         self.enclosure_message = '-'
         self.external_close = False   #  Not used If made true by operator,  system will not reopen for the night
@@ -114,7 +115,8 @@ class Enclosure:
             self.redis_server.set('enclosure_synch', str(self.enclosure.Slaved), ex=600)
             self.redis_server.set('enclosure_mode', str(self.mode), ex=600)
             self.redis_server.set('enclosure_message', str(self.state), ex=600)
-            self.prior_status = status
+            self.redis_server.set('dome_azimuth', str(round(self.enclosure.Azimuth, 1)))
+            self.redis_server.set('dome_slewing', str(self.enclosure.Slewing), ex=600)
         else:
             status = {'shutter_status': stat_string,
                       'enclosure_synch': True,
@@ -128,7 +130,9 @@ class Enclosure:
             self.redis_server.set('enclosure_synch', True, ex=600)
             self.redis_server.set('enclosure_mode', str(self.mode), ex=600)
             self.redis_server.set('enclosure_message', str(self.state), ex=600)        #print('Enclosure status:  ', status
-
+            self.redis_server.set('dome_azimuth', str(180.0))  
+            self.redis_server.set('dome_slewing', False, ex=600)
+            self.redis_server.set('status', status, ex=600)
         # This code picks up commands forwarded by the observer Enclosure 
         if self.site_is_proxy:
             redis_command = self.redis_server.get('enc_cmd')  #It is presumed there is an expiration date on open command at least.
@@ -164,6 +168,7 @@ class Enclosure:
                 self.mode = 'Shutdown'
             else:  
                 pass
+        self.status = status
         self.manager()   #There be monsters here. <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
         return status
 
@@ -408,6 +413,7 @@ class Enclosure:
                 #  The dome may come up reporting closed when it is open, but it does report unhomed as
                 #  the condition not AtHome.
     
+                # NB NB NB This code makes little sense.
                 if not self.dome_homed:
                     
                     # self.dome_homed = True
