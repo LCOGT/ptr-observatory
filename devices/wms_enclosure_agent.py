@@ -117,6 +117,7 @@ class Enclosure:
             self.redis_server.set('enclosure_message', str(self.state), ex=600)
             self.redis_server.set('dome_azimuth', str(round(self.enclosure.Azimuth, 1)))
             self.redis_server.set('dome_slewing', str(self.enclosure.Slewing), ex=600)
+            self.redis_server.set('status', status, ex=600)
         else:
             status = {'shutter_status': stat_string,
                       'enclosure_synch': True,

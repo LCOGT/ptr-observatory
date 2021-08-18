@@ -88,6 +88,7 @@ class Enclosure:
         #core1_redis.set('unihedron1', str(mpsas) + ', ' + str(bright) + ', ' + str(illum), ex=600)
         if self.site_is_proxy:
             stat_string = self.redis_server.get("shutter_status")
+            self.status = eval(self.redis_server.get("status"))
             if stat_string is not None:
                 if stat_string == 'Closed':
                     self.shutter_is_closed = True
