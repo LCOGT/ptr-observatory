@@ -265,7 +265,7 @@ class Sequencer:
         elif  (events['Eve Sky Flats'] < ephem_now < events['End Eve Sky Flats'])  \
                 and g_dev['enc'].mode == 'Automatic' \
                 and g_dev['ocn'].wx_is_ok \
-                and not g_dev['ocn'].wx_hold and False:
+                and not g_dev['ocn'].wx_hold and True:
             if not self.sky_guard:
                 #Start it up.
                 self.sky_guard = True

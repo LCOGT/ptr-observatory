@@ -1368,8 +1368,9 @@ class Camera:
                     hdu.header['DITHER']   = (0, '[] Dither')
                     hdu.header['OPERATOR'] = ("WER", 'Site operator')
                     hdu.header['ENCLOSUR'] = (self.config['enclosure']['enclosure1']['name'], 'Enclosure description')   # "Clamshell"   #Need to document shutter status, azimuth, internal light.
-                    #if g_dev['enc'].is_dome:
-                    #    hdu.header['DOMEAZ'] = (g_dev['enc'].get_status()['dome_azimuth'], 'Dome azimuth')
+                    #NB NB NB Need to add other dome status reports
+                    if g_dev['enc'].is_dome:
+                        hdu.header['DOMEAZ'] = (g_dev['enc'].status['dome_azimuth'], 'Dome azimuth')
                     #else:
                     #     hdu.header['ENCAZ']    = ("", '[deg] Enclosure azimuth')   #Need to document shutter status, azimuth, internal light.
                     hdu.header['ENCLIGHT'] = ("Off/White/Red/NIR", 'Enclosure lights')
@@ -1377,7 +1378,7 @@ class Camera:
                     hdu.header['ENCWLIGT'] = ("", 'Enclosure white lights state')
                     if g_dev['enc'] is not None:
                         try:
-                            hdu.header['ENC1STAT'] = g_dev['enc'].get_status()  #['shutter_status'], 'Shutter status')   #"Open/Closed" enclosure 1 status
+                            hdu.header['ENC1STAT'] = g_dev['enc'].status['shutter_status']  #['shutter_status'], 'Shutter status')   #"Open/Closed" enclosure 1 status
                         except:
                             print('Could not get ENC1STAT keyword. ')
 

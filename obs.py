@@ -456,6 +456,7 @@ class Observatory:
         status = {}
         # Loop through all types of devices.
         # For each type, we get and save the status of each device.
+
         if not self.config['agent_wms_enc_active']:
             device_list = self.device_types
             remove_enc = False
@@ -601,6 +602,7 @@ class Observatory:
                 time.sleep(0.1)
             else:
                 time.sleep(0.2)
+                
     def send_to_user(self, p_log, p_level='INFO'):
         url_log = "https://logs.photonranch.org/logs/newlog"
         body = json.dumps({
@@ -613,6 +615,8 @@ class Observatory:
             resp = requests.post(url_log, body)
         except:
             print("Log did not send, usually not fatal.")
+            
+            
     # Note this is another thread!
     def reduce_image(self):
         '''

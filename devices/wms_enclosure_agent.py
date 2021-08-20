@@ -104,7 +104,7 @@ class Enclosure:
 
         if self.is_dome:
             status = {'shutter_status': stat_string,
-                      'enclosure_synch': self.enclosure.Slaved,
+                      'enclosure_synchronized': self.enclosure.Slaved,
                       'dome_azimuth': round(self.enclosure.Azimuth, 1),
                       'dome_slewing': self.enclosure.Slewing,
                       'enclosure_mode': self.mode,
@@ -112,7 +112,7 @@ class Enclosure:
             self.redis_server.set('roof_status', str(stat_string), ex=600)
             self.redis_server.set('shutter_is_closed', self.shutter_is_closed, ex=600)  #Used by autofocus
             self.redis_server.set("shutter_status", str(stat_string), ex=600)
-            self.redis_server.set('enclosure_synch', str(self.enclosure.Slaved), ex=600)
+            self.redis_server.set('enclosure_synchronized', str(self.enclosure.Slaved), ex=600)
             self.redis_server.set('enclosure_mode', str(self.mode), ex=600)
             self.redis_server.set('enclosure_message', str(self.state), ex=600)
             self.redis_server.set('dome_azimuth', str(round(self.enclosure.Azimuth, 1)))
@@ -128,7 +128,7 @@ class Enclosure:
             self.redis_server.set('roof_status', str(stat_string), ex=600)
             self.redis_server.set('shutter_is_closed', self.shutter_is_closed, ex=600)  #Used by autofocus
             self.redis_server.set("shutter_status", str(stat_string), ex=600)
-            self.redis_server.set('enclosure_synch', True, ex=600)
+            self.redis_server.set('enclosure_synchronized', True, ex=600)
             self.redis_server.set('enclosure_mode', str(self.mode), ex=600)
             self.redis_server.set('enclosure_message', str(self.state), ex=600)        #print('Enclosure status:  ', status
             self.redis_server.set('dome_azimuth', str(180.0))  
@@ -167,8 +167,25 @@ class Enclosure:
                 self.manager(close_cmd=True, open_cmd=False)
                 self.site_in_automatic = False
                 self.mode = 'Shutdown'
-            else:  
+            elif redis_command == 'goHome':
+                breakpoint()
+                self.redis_server.delete('goHome')
+            elif redis_command == 'enterSynchronise':
+                breakpoint()
+                self.redis_server.delete('enterSynchronise')                
+            elif redis_command == 'stopSynchronize':
+                breakpoint()
+                self.redis_server.delete('stopSynchronize')
+            else:
+                
                 pass
+            redis_value = self.redis_server.get('SlewToAzimuth')
+            if redis_value is not None:
+                self.enclosure.SlewToAzimuth(float(redis_value))
+                self.enclosure.Slaved = False
+                self.redis_server.delete('SlewToAzimuth')
+            
+            
         self.status = status
         self.manager()   #There be monsters here. <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
         return status
@@ -279,7 +296,7 @@ class Enclosure:
         #  The following is a debug aid
         if open_cmd or close_cmd:
             pass
-            
+
         if self.mode == 'Shutdown':
             #  NB in this situation we should always Park telescope, rotators, etc.
             if self.is_dome:
@@ -336,7 +353,7 @@ class Enclosure:
                         print("Now slewing Dome to an azimuth opposite the Sun:  ", round(az_opposite_sun, 3))
 
                         self.dome_homed = False
-                        self.time_of_next_slew = time.time() + 30  # seconds between slews.
+                        self.time_of_next_slew = time.time() + 90  # seconds between slews.
                     except:
                         pass#
                     
@@ -415,22 +432,22 @@ class Enclosure:
                 #  the condition not AtHome.
     
                 # NB NB NB This code makes little sense.
-                if not self.dome_homed:
+                # if not self.dome_homed:
                     
-                    # self.dome_homed = True
-                    # return
-                    if self.is_dome:
-                        self.enclosure.Slaved = False
-                        try:
+                #     # self.dome_homed = True
+                #     # return
+                #     if self.is_dome:
+                #         #self.enclosure.Slaved = False
+                #         try:
                             
-                            if self.status_string.lower() in ['open'] \
-                                or not self.enclosure.AtHome:
-                                pass
-                                #self.enclosure.CloseShutter()   #ASCOM DOME will fault if it is Opening or closing
-                                self.dome_opened = False
-                                self.dome_homed = True
-                        except:
-                            pass
+                #             if self.status_stringin ['open', 'Open'] \
+                #                 or not self.enclosure.AtHome:
+                #                 pass
+                #                 #self.enclosure.CloseShutter()   #ASCOM DOME will fault if it is Opening or closing
+                #                 self.dome_opened = False
+                #                 self.dome_homed = True
+                #         except:
+                pass
                             #print('Dome close cmd appeared to fault.')
                     
                     #print("One time close of enclosure issued, normally done during Python code restart.")

@@ -99,8 +99,8 @@ class Observatory:
 
         # This is the class through which we can make authenticated api calls.
         self.api = API_calls()
-        self.command_interval = 2.5   # seconds between polls for new commands
-        self.status_interval = 2.5    # NOTE THESE IMPLEMENTED AS A DELTA NOT A RATE.
+        self.command_interval = 3   # seconds between polls for new commands
+        self.status_interval = 3    # NOTE THESE IMPLEMENTED AS A DELTA NOT A RATE.
         self.name = name
         self.site_name = name
         self.config = config
@@ -345,7 +345,7 @@ class Observatory:
         # Include the time that the status was assembled and sent.
         status["timestamp"] = round((time.time() + t1)/2., 3)
         status['send_heartbeat'] = False
-        loud = True
+        loud = False
         if loud:
             print('\n\n > Status Sent:  \n', status)   # from Update:  ', status))
         else:
