@@ -480,8 +480,11 @@ class Sequencer:
             print("CAUTION:  rotator may block")
             pa = float(block_specification['project']['project_constraints']['position_angle'])
             if abs(pa) > 0.01:
+                try:
 
-                g_dev['rot'].rotator.MoveAbsolute(pa)   #Skip rotator move if nominally 0
+                    g_dev['rot'].rotator.MoveAbsolute(pa)   #Skip rotator move if nominally 0
+                except:
+                    pass
 
             
             #Compute how many to do.
@@ -675,7 +678,6 @@ class Sequencer:
         self.sequencer_hold = True
         self.current_script = 'Afternoon Bias Dark'
         dark_time = 240
-
         while g_dev['events']['Eve Bias Dark'] -1 <= ephem.now() <= g_dev['events']['Ops Window Start'] :   #Do not overrun the window end
             print("Expose b_2")   
             req = {'time': 0.0,  'script': 'True', 'image_type': 'bias'}
@@ -925,7 +927,7 @@ class Sequencer:
             #case where a timeout is a smart idea.
             #Wait for external motion to cease before exposing.  Note this precludes satellite tracking.
             st = "" 
-            breakpoint()
+
             #20210817  g_dev['enc'] does not exist,  so this faults. Cascade problem with user_id...
             while g_dev['foc'].focuser.IsMoving or g_dev['rot'].rotator.IsMoving or \
                   g_dev['mnt'].mount.Slewing or g_dev['enc'].status['dome_slewing']:   #Filter is moving??
@@ -996,7 +998,7 @@ class Sequencer:
         y = [spot2, spot1, spot3]
         print('X, Y:  ', x, y, 'Desire center to be smallest.')
         if spot1 is None or spot2 is None or spot3 is None:  #New additon to stop crash when no spots
-            print("No stars detected. Returning to stating focus.")
+            print("No stars detected. Returning to stating focus and pointing.")
             g_dev['foc'].focuser.Move((focus_start)*g_dev['foc'].micron_to_steps)
             self.sequencer_hold = False   #Allow comand checks.
             self.af_guard = False
@@ -1044,8 +1046,12 @@ class Sequencer:
             #  NB NB We may want to consider sending the result image patch to AWS
             return
         elif spot2 <= spot1 or spot3 <= spot1:
+            if spot2 <= spot1: 
+                min_focus = foc_pos2
+            if spot3 <= spot1:
+                min_focus = foc_pos3
             print("It appears camera is too far out; try again with coarse_focus_script.")
-            self.coarse_focus_script(req2, opt2, throw=750)
+            self.coarse_focus_script(req2, opt2, throw=600, begin_at=min_focus)
         else:
             print('Spots are really wrong so moving back to starting focus:  ', focus_start)
             g_dev['foc'].focuser.Move((focus_start)*g_dev['foc'].micron_to_steps)
@@ -1060,7 +1066,7 @@ class Sequencer:
         return
 
 
-    def coarse_focus_script(self, req, opt, throw = 650):
+    def coarse_focus_script(self, req, opt, throw=750, begin_at=None):
         '''
         V curve is a big move focus designed to fit two lines adjacent to the more normal focus curve.
         It finds the approximate focus, particulary for a new instrument. It requires 8 points plus
@@ -1077,7 +1083,11 @@ class Sequencer:
         #self.sequencer_hold = True  #Blocks command checks.
         start_ra = g_dev['mnt'].mount.RightAscension
         start_dec = g_dev['mnt'].mount.Declination
-        foc_start = g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron
+        if begin_at is None:  #  ADDED 20120821 WER
+            foc_start = g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron
+        else:
+            foc_start = begin_at  #In this case we start at a place close to a 3 point minimum. 
+            g_dev['foc'].focuser.Move((foc_start)*g_dev['foc'].micron_to_steps)
         print("Saved ra dec focus:  ", start_ra, start_dec, foc_start)
         try:
             #Check here for filter, guider, still moving  THIS IS A CLASSIC

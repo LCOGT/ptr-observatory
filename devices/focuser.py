@@ -86,6 +86,7 @@ class Focuser:
         self.focuser.Move(int(float(self.reference)*self.micron_to_steps))
 
 
+
     def calculate_compensation(self, temp_primary):
         if -20 <= temp_primary <= 45:
             trial = round(float(self.config['coef_0'] + float(self.config['coef_c'])*temp_primary), 1)
@@ -286,7 +287,7 @@ class Focuser:
         ''' autofocus '''
         print(f"focuser cmd: auto")
 
-    def set_focal_ref(self, ref):
+    def set_focal_ref_reset_log(self, ref):
         cam_shelf = shelve.open(self.site_path + 'ptr_night_shelf/' + self.camera_name)
         cam_shelf['Focus Ref'] = ref
         cam_shelf['af_log'] = []

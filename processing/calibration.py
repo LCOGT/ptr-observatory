@@ -159,7 +159,7 @@ def calibrate (hdu, lng_path, frame_type='light', quick=False):
         screen_flat_PL ,screen_flat_PB, screen_flat_PG, screen_flat_PR, screen_flat_NIR,  screen_flat_CR, screen_flat_dif,  \
         dark_exposure_level, super_dark_2_long, dark_2_exposure_level
     loud = False
-    breakpoint()
+
     #This needs to deal with caching different binnings as well.  And do we skip all this for a quick
     if not quick:
         if super_bias is None:
@@ -531,10 +531,10 @@ def calibrate (hdu, lng_path, frame_type='light', quick=False):
                 hot_map = shHdu[0].data
                 hot_pix = np.where(hot_map > 1)
                 apply_hot = True
-                if loud: print(lng_path + 'h_2.fits', 'Loaded')
+                print(lng_path + 'h_2.fits', 'Loaded')
             except:
                 apply_hot = False
-                if loud: print('WARN: No Hot Map Bin 2 Loaded.')
+                print('WARN: No Hot Map Bin 2 Loaded.')
 
     while True:   #Use break to drop through to exit.  i.e., do not calibrate frames we are acquring for calibration.
         
@@ -700,7 +700,7 @@ def calibrate (hdu, lng_path, frame_type='light', quick=False):
                 if loud:  print('QuickFlat result:  ', imageStats(img, loud))
         if apply_hot and binning == 2:
             try:
-                hot_pix = np.where(super_dark_2 > super_dark_2.std()) #20210225 removed _long
+                #hot_pix = np.where(super_dark_2 > super_dark_2.std()) #20210225 removed _long  #REmoved 20210821  
                 median8(img, hot_pix)
                 cal_string += ', H'
                 

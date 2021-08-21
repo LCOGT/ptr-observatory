@@ -588,7 +588,7 @@ class Camera:
             self.current_filter = requested_filter_name
             g_dev['fil'].set_name_command({'filter': requested_filter_name}, {})
         except Exception as e:
-            print(e)
+            print("Camera filter setup:  ", e)
             #breakpoint()
         #  NBNB Changing filter may cause a need to shift focus
         self.current_offset = g_dev['fil'].filter_offset  #TEMP   NBNBNB This needs fixing
@@ -853,7 +853,7 @@ class Camera:
                     if enc_slewing:
                         st += 'd>' + str(round(time.time() - g_dev['mnt'].move_time, 1))
                     print(st)
-                    if round(time.time() - g_dev['mnt'].move_time, 1) >= 80:
+                    if round(time.time() - g_dev['mnt'].move_time, 1) >=120:
                        print("|n\n DOME OR MOUNT HAS TIMED OUT!|n|n")
                       
                     st = ""
@@ -1148,7 +1148,7 @@ class Camera:
                     #     square = trimmed[1590:1590 + 6388, :]
                 elif ix == 4800:
                     #Shift error needs documenting!
-                    if self.img[11, -18] == 0:   #This is the normal incoming imsge
+                    if self.img[11, -18] == 0:   #This is the normal incoming image
                         self.overscan = int((np.median(self.img[12:, -17:]) + np.median(self.img[0:10, :]))/2) - 1
                         trimmed = self.img[12:-4, :-17].astype('int32') + pedastal - self.overscan
 
@@ -1456,8 +1456,7 @@ class Camera:
                     hdu.header['YORGSUBF'] = self.camera_start_y
                     #hdu.header['BLKUID']   = ('None', 'Group type')
                     #hdu.header['BLKSDATE'] = ('None', 'Group unique ID
-                    #hdu.header['MOLUID']   = ('None', 'Molecule unique ID')
-                    breakpoint()
+
                     try:
                         hdu.header['USERNAME'] = self.user_name
                         hdu.header ['USERID']  = self.user_id
