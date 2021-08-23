@@ -14,7 +14,7 @@ The Events time periods apply a collar, if you will, around when automatic dome 
 is possible.  The event phases are found in g_dev['events'].  The basic window is defined
 with respect to Sunset and Sunrise so it varies each day.
 
-NB,  Dome refers to a rotating roof that presumably needs aziumt alignmnet of some form
+NB,  Dome refers to a rotating roof that presumably needs azimuth alignmnet of some form
 Shutter, Roof, Slit, etc., are the same things.
 '''
 
