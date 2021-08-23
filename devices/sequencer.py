@@ -663,7 +663,7 @@ class Sequencer:
             g_dev['mnt'].park_command({}, {})
             # NB NBNeed to write a more robust and generalized clean up.
             try:
-                g_dev['enc'].enclosure.Slaved = False
+                pass#g_dev['enc'].enclosure.Slaved = False   NB with wema no longer exists
             except:
                 pass
             g_dev['enc'].close_command({}, {})

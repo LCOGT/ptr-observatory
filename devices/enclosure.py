@@ -243,8 +243,9 @@ class Enclosure:
     #      Enclosure Commands     #
     ###############################
 
-    # def open_command(self, req: dict, opt: dict):
+    def open_command(self, req: dict, opt: dict):
     #     ''' open the enclosure '''
+          self.redis_server.set('enc_cmd', 'open', ex=1200)
     #     #self.guarded_open()
     #     self.manager(open_cmd=True)
     #     print("enclosure cmd: open.")
@@ -252,8 +253,9 @@ class Enclosure:
     #     self.dome_home = True
     #     pass
 
-    # def close_command(self, req: dict, opt: dict):
+    def close_command(self, req: dict, opt: dict):
     #     ''' close the enclosure '''
+          self.redis_server.set('enc_cmd', 'close', ex=1200)
     #     self.manager(close_cmd=True)
     #     print("enclosure cmd: close.")
     #     self.dome_open = False
