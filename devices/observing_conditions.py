@@ -50,6 +50,7 @@ def linearize_unihedron(uni_value):
 class ObservingConditions:
 
     def __init__(self, driver: str, name: str, config: dict, astro_events):
+
         self.name = name
         self.astro_events = astro_events
         g_dev['ocn'] = self

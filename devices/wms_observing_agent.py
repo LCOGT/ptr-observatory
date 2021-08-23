@@ -77,6 +77,7 @@ class ObservingConditions:
         self.prior_status_2 = None
         self.wmd_fail_counter = 0
         redis_ip = config['redis_ip']
+
         if redis_ip is not None:           
             self.redis_server = redis.StrictRedis(host=redis_ip, port=6379, db=0,
                                               decode_responses=True)
@@ -129,7 +130,6 @@ class ObservingConditions:
             DESCRIPTION.
 
         '''
-
         if self.site == 'saf':
             illum, mag = self.astro_events.illuminationNow()
             if illum > 100:
@@ -335,7 +335,7 @@ class ObservingConditions:
                 dew_point_gap = not (self.sky_monitor.Temperature  - self.sky_monitor.DewPoint) < 2
                 temp_bounds = not (self.sky_monitor.Temperature < -15) or (self.sky_monitor.Temperature > 42)
                 wind_limit = self.sky_monitor.WindSpeed < 35/2.235   #sky_monitor reports m/s, Clarity may report in MPH
-                sky_amb_limit  = self.sky_monitor.SkyTemperature < 4   #"""NB THIS NEEDS ATTENTION>
+                sky_amb_limit  = self.sky_monitor.SkyTemperature < 12   #"""NB THIS NEEDS ATTENTION>
                 humidity_limit = 1 < self.sky_monitor.Humidity < 85
                 rain_limit = self.sky_monitor.RainRate <= 0.001
 
@@ -343,7 +343,6 @@ class ObservingConditions:
                 self.wx_is_ok = dew_point_gap and temp_bounds and wind_limit and sky_amb_limit and \
                                 humidity_limit and rain_limit
                 #  NB  wx_is_ok does not include ambient light or altitude of the Sun
-
                 if self.wx_is_ok:
                     wx_str = "Yes"
                     status["wx_ok"] = "Yes"
@@ -435,6 +434,7 @@ class ObservingConditions:
                 except:
                     pass
                     #print("Unihedron log did not write.")
+                    # breakpoint()
             self.redis_server.set('wx_redis_status' , status, ex=300)
             new_stat = self.redis_server.get('wx_redis_status')
         else:
@@ -468,7 +468,7 @@ class ObservingConditions:
         if (self.wx_is_ok and self.wx_system_enable) and not self.wx_hold:     #Normal condition, possibly nothing to do.
             self.wx_hold_last_updated = time.time()
             self.wx_to_go = 0
-            print('First pass no hold.')
+            #print('First pass no hold.')
 
         elif not self.wx_is_ok and not self.wx_hold:     #Wx bad and no hold yet.
             #Bingo we need to start a cycle
@@ -501,7 +501,6 @@ class ObservingConditions:
             if self.wx_hold_count < 3:
                 if (t := time.time()) <= self.wx_hold_until_time:
                     duration = round((self.wx_hold_until_time - t)/60, 2)
-                    breakpoint()
                     self.wx_to_go = duration
                 elif time.time() >= self.wx_hold_until_time and not self.wx_clamp:
                     #Time to release the hold.

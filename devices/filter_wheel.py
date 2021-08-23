@@ -216,7 +216,7 @@ class FilterWheel:
         req = command['required_params']
         opt = command['optional_params']
         action = command['action']
-
+        breakpoint()
         if action == "set_position":
             self.set_position_command(req, opt)
         elif action == "set_name":

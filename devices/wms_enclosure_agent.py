@@ -44,9 +44,10 @@ class Enclosure:
         else:
             self.redis_wx_enabled = False
         self.is_dome = self.config['enclosure']['enclosure1']['is_dome']
+        self.status = None
         self.state = 'Closed'
         self.enclosure_message = '-'
-        self.external_close = False   #If made true by operator,  system will not reopen for the night
+        self.external_close = False   #  Not used If made true by operator,  system will not reopen for the night
         self.dome_opened = False   #memory of prior issued commands  Restarting code may close dome one time.
         self.dome_homed = False
         self.cycles = 0
@@ -65,13 +66,16 @@ class Enclosure:
     def get_status(self) -> dict:
         #<<<<The next attibute reference fails at saf, usually spurious Dome Ring Open report.
         #<<< Have seen other instances of failing.
-        #core1_redis.set('unihedron1', str(mpsas) + ', ' + str(bright) + ', ' + str(illum), ex=600)
-        
+
         try:
             shutter_status = self.enclosure.ShutterStatus
         except:
             print("self.enclosure.Roof.ShutterStatus -- Faulted. ")
             shutter_status = 5
+        try:
+            self.dome_home = self.enclosure.AtHome()
+        except:
+            pass
         if shutter_status == 0:
             stat_string = "Open"
             self.shutter_is_closed = False
@@ -97,10 +101,10 @@ class Enclosure:
              self.shutter_is_closed = False
              self.redis_server.set('Shutter_is_open', False)
         self.status_string = stat_string
-        
+
         if self.is_dome:
             status = {'shutter_status': stat_string,
-                      'enclosure_synch': self.enclosure.Slaved,
+                      'enclosure_synchronized': self.enclosure.Slaved,
                       'dome_azimuth': round(self.enclosure.Azimuth, 1),
                       'dome_slewing': self.enclosure.Slewing,
                       'enclosure_mode': self.mode,
@@ -108,10 +112,12 @@ class Enclosure:
             self.redis_server.set('roof_status', str(stat_string), ex=600)
             self.redis_server.set('shutter_is_closed', self.shutter_is_closed, ex=600)  #Used by autofocus
             self.redis_server.set("shutter_status", str(stat_string), ex=600)
-            self.redis_server.set('enclosure_synch', str(self.enclosure.Slaved), ex=600)
+            self.redis_server.set('enclosure_synchronized', str(self.enclosure.Slaved), ex=600)
             self.redis_server.set('enclosure_mode', str(self.mode), ex=600)
             self.redis_server.set('enclosure_message', str(self.state), ex=600)
-            self.prior_status = status
+            self.redis_server.set('dome_azimuth', str(round(self.enclosure.Azimuth, 1)))
+            self.redis_server.set('dome_slewing', str(self.enclosure.Slewing), ex=600)
+            self.redis_server.set('status', status, ex=600)
         else:
             status = {'shutter_status': stat_string,
                       'enclosure_synch': True,
@@ -122,11 +128,13 @@ class Enclosure:
             self.redis_server.set('roof_status', str(stat_string), ex=600)
             self.redis_server.set('shutter_is_closed', self.shutter_is_closed, ex=600)  #Used by autofocus
             self.redis_server.set("shutter_status", str(stat_string), ex=600)
-            self.redis_server.set('enclosure_synch', True, ex=600)
+            self.redis_server.set('enclosure_synchronized', True, ex=600)
             self.redis_server.set('enclosure_mode', str(self.mode), ex=600)
             self.redis_server.set('enclosure_message', str(self.state), ex=600)        #print('Enclosure status:  ', status
-
-        
+            self.redis_server.set('dome_azimuth', str(180.0))  
+            self.redis_server.set('dome_slewing', False, ex=600)
+            self.redis_server.set('status', status, ex=600)
+        # This code picks up commands forwarded by the observer Enclosure 
         if self.site_is_proxy:
             redis_command = self.redis_server.get('enc_cmd')  #It is presumed there is an expiration date on open command at least.
             if redis_command is not None:
@@ -159,8 +167,26 @@ class Enclosure:
                 self.manager(close_cmd=True, open_cmd=False)
                 self.site_in_automatic = False
                 self.mode = 'Shutdown'
-            else:  
+            elif redis_command == 'goHome':
+                breakpoint()
+                self.redis_server.delete('goHome')
+            elif redis_command == 'enterSynchronise':
+                breakpoint()
+                self.redis_server.delete('enterSynchronise')                
+            elif redis_command == 'stopSynchronize':
+                breakpoint()
+                self.redis_server.delete('stopSynchronize')
+            else:
+                
                 pass
+            redis_value = self.redis_server.get('SlewToAzimuth')
+            if redis_value is not None:
+                self.enclosure.SlewToAzimuth(float(redis_value))
+                self.enclosure.Slaved = False
+                self.redis_server.delete('SlewToAzimuth')
+            
+            
+        self.status = status
         self.manager()   #There be monsters here. <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
         return status
 
@@ -267,30 +293,41 @@ class Enclosure:
             pass
             #print("Obs process not producing time heartbeat.")
         
-        #This is meant to be quite sweeping
-        #if open_cmd or close_cmd:
-            
-        
-        if (wx_hold or self.mode == 'Shutdown'):
+        #  The following is a debug aid
+        if open_cmd or close_cmd:
+            pass
+
+        if self.mode == 'Shutdown':
+            #  NB in this situation we should always Park telescope, rotators, etc.
             if self.is_dome:
                 self.enclosure.Slaved = False
             if self.status_string.lower() in ['open']:
                 self.enclosure.CloseShutter()
             self.dome_opened = False
             self.dome_homed = True
-        elif obs_time is None or (time.time() - float(obs_time)) > 120.:  #This might want to have a delay to aid debugging
+            self.redis_server.set('park_the_mount', True, ex=600)
+        elif wx_hold:
+            # We leave telescope to track with dome closed.
             if self.is_dome:
                 self.enclosure.Slaved = False
-            if self.status_string.lower() in ['open']:
+            if self.status_string.lower() in ['open', 'opening']:
                 self.enclosure.CloseShutter()
             self.dome_opened = False
             self.dome_homed = True
+        # elif obs_time is None or (time.time() - float(obs_time)) > 120.:  #This might want to have a delay to aid debugging
+        #     if self.is_dome:
+        #         self.enclosure.Slaved = False
+        #     if self.status_string.lower() in ['open']:
+        #         self.enclosure.CloseShutter()
+        #     self.dome_opened = False
+        #     self.dome_homed = True
             
             
         #  We are now in the full operational window.   ###Ops Window Start
+      
         elif (g_dev['events']['Ops Window Start'] - debugOffset <= ephemNow <= g_dev['events']['Ops Window Closes'] + debugOffset) \
                 and not (wx_hold or self.mode == 'Shutdown') \
-                and (self.site_in_automatic or open_cmd and not self.site_in_automatic):   #Note Manual Open works in the window.
+                and (self.site_in_automatic or open_cmd and self.mode in ['Manual']):   #Note Manual Open works in the window.
             #  Basically if in above window and Automatic and Not Wx_hold: if closed, open up.
             #  print('\nSlew to opposite the azimuth of the Sun, open and cool-down. Az =  ', az_opposite_sun)
             #  NB There is no corresponding warm up phase in the Morning.
@@ -316,7 +353,7 @@ class Enclosure:
                         print("Now slewing Dome to an azimuth opposite the Sun:  ", round(az_opposite_sun, 3))
 
                         self.dome_homed = False
-                        self.time_of_next_slew = time.time() + 30  # seconds between slews.
+                        self.time_of_next_slew = time.time() + 90  # seconds between slews.
                     except:
                         pass#
                     
@@ -348,7 +385,7 @@ class Enclosure:
             #         print("Night time Open issued to the "  + shutter_str, +   ' and is now following Mounting.')
         elif (obs_win_begin - debugOffset >= ephemNow or ephemNow >= sunrise + debugOffset):
             #WE are now outside the observing window, so Sun is up!!!
-            if self.site_in_automatic or (close_cmd and not self.site_in_automatic):  #If Automatic just close straight away.
+            if self.site_in_automatic or (close_cmd and self.mode in ['Manual', 'Shutdown']):  #If Automatic just close straight away.
                 if close_cmd:
                     self.state = 'User Closed the '  + shutter_str
                 else:
@@ -357,8 +394,8 @@ class Enclosure:
                     enc_at_home = self.enclosure.AtHome
                 else:
                     enc_at_home = True
-                if self.status_string.lower() in ['open', 'opening'] \
-                    or not enc_at_home:
+                if True  \
+                    or not enc_at_home:  #self.status_string.lower() in ['open', 'opening'] \
                     try:
                         if self.is_dome:
                             self.enclosure.Slaved = False
@@ -368,10 +405,10 @@ class Enclosure:
                        # print("Daytime Close issued to the " + shutter_str  + "   No longer following Mount.")
                     except:
                         print("Shutter busy right now!")
-            elif (open_cmd and not self.site_in_automatic):  #This is a manual Open
+            elif (open_cmd and self.mode in ['Manual']):  #This is a manual Open
 
-                #first verify scope is parked, otherwise command park and 
-                #report failing.
+                #NB NB First  verify scope is parked, otherwise command park and 
+                #report failing.  Maybe only do this during daylight.
                 if True:  #g_dev['mnt'].mount.AtPark:                
                     if self.status_string.lower() in ['closed', 'closing']:
                         self.guarded_open()
@@ -394,24 +431,25 @@ class Enclosure:
                 #  The dome may come up reporting closed when it is open, but it does report unhomed as
                 #  the condition not AtHome.
     
-        
-                if not self.dome_homed:
+                # NB NB NB This code makes little sense.
+                # if not self.dome_homed:
                     
-                    # self.dome_homed = True
-                    # return
-                    if self.is_dome:
-                        self.enclosure.Slaved = False
-                        try:
+                #     # self.dome_homed = True
+                #     # return
+                #     if self.is_dome:
+                #         #self.enclosure.Slaved = False
+                #         try:
                             
-                            if self.status_string.lower() in ['open'] \
-                                or not self.enclosure.AtHome:
-                                pass
-                                #self.enclosure.CloseShutter()   #ASCOM DOME will fault if it is Opening or closing
-                        except:
-                            pass
+                #             if self.status_stringin ['open', 'Open'] \
+                #                 or not self.enclosure.AtHome:
+                #                 pass
+                #                 #self.enclosure.CloseShutter()   #ASCOM DOME will fault if it is Opening or closing
+                #                 self.dome_opened = False
+                #                 self.dome_homed = True
+                #         except:
+                pass
                             #print('Dome close cmd appeared to fault.')
-                    self.dome_opened = False
-                    self.dome_homed = True
+                    
                     #print("One time close of enclosure issued, normally done during Python code restart.")
 
 

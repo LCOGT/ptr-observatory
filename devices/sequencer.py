@@ -264,7 +264,7 @@ class Sequencer:
         elif  (events['Eve Sky Flats'] < ephem_now < events['End Eve Sky Flats'])  \
                 and g_dev['enc'].mode == 'Automatic' \
                 and g_dev['ocn'].wx_is_ok \
-                and not g_dev['ocn'].wx_hold and False:
+                and not g_dev['ocn'].wx_hold and True:
             if not self.sky_guard:
                 #Start it up.
                 self.sky_guard = True
@@ -426,7 +426,6 @@ class Sequencer:
         self.block_guard = True
         # NB we assume the dome is open and already slaving.
         block = copy.deepcopy(block_specification)
-        #breakpoint()
         # #unpark, open dome etc.
         # #if not end of block
         g_dev['mnt'].unpark_command({}, {})
@@ -484,8 +483,11 @@ class Sequencer:
             print("CAUTION:  rotator may block")
             pa = float(block_specification['project']['project_constraints']['position_angle'])
             if abs(pa) > 0.01:
+                try:
 
-                g_dev['rot'].rotator.MoveAbsolute(pa)   #Skip rotator move if nominally 0
+                    g_dev['rot'].rotator.MoveAbsolute(pa)   #Skip rotator move if nominally 0
+                except:
+                    pass
 
             
             #Compute how many to do.
@@ -519,21 +521,22 @@ class Sequencer:
             print("Left to do initial value:  ", left_to_do)
             req = {'target': 'near_tycho_star'}
             initial_focus = True
+
             while left_to_do > 0 and not ended:
                 if initial_focus:
                     g_dev['enc'].get_status()
                     
 
                     if not g_dev['enc'].shutter_is_closed:
-                        self.auto_focus_script(req2, opt, throw = 500)
+                        self.auto_focus_script(req2, opt, throw = 750)
                     else:
                         print('Shutter closed, skipping AF cycle.0')  #coarse_focus_script can be used here
                     just_focused = True
                     initial_focus = False    #  Make above on-time event per block
-                    timer = time.time() + 1800   #10 min for debugging
+                    timer = time.time() + 3600   #10 min for debugging
                     #at block startup this should mean two AF cycles. Cosider using 5-point for the first.
                     
-                #cycle thrugh exposures decrementing counts    MAY want to double check left-to do but do nut remultiply by 4
+                #cycle through exposures decrementing counts    MAY want to double check left-to do but do nut remultiply by 4
                 for exposure in block['project']['exposures']:
                     if block_specification['project']['project_constraints']['frequent_autofocus'] == True and (time.time() - timer) >= 0:
                         #What purpose does this code serve, it appears to be a debug remnant? WER 20200206
@@ -680,7 +683,6 @@ class Sequencer:
         self.sequencer_hold = True
         self.current_script = 'Afternoon Bias Dark'
         dark_time = 240
-
         while g_dev['events']['Eve Bias Dark'] -1 <= ephem.now() <= g_dev['events']['Ops Window Start'] :   #Do not overrun the window end
             print("Expose b_2")   
             req = {'time': 0.0,  'script': 'True', 'image_type': 'bias'}
@@ -894,7 +896,7 @@ class Sequencer:
         
     
 
-    def auto_focus_script(self, req, opt, throw=750):
+    def auto_focus_script(self, req, opt, throw=1000):
         '''
         V curve is a big move focus designed to fit two lines adjacent to the more normal focus curve.
         It finds the approximate focus, particulary for a new instrument. It requires 8 points plus
@@ -930,12 +932,14 @@ class Sequencer:
             #case where a timeout is a smart idea.
             #Wait for external motion to cease before exposing.  Note this precludes satellite tracking.
             st = "" 
+
+            #20210817  g_dev['enc'] does not exist,  so this faults. Cascade problem with user_id...
             while g_dev['foc'].focuser.IsMoving or g_dev['rot'].rotator.IsMoving or \
-                  g_dev['mnt'].mount.Slewing or g_dev['enc'].enclosure.Slewing:   #Filter is moving??
+                  g_dev['mnt'].mount.Slewing or g_dev['enc'].status['dome_slewing']:   #Filter is moving??
                 if g_dev['foc'].focuser.IsMoving: st += 'f>'
                 if g_dev['rot'].rotator.IsMoving: st += 'r>'
                 if g_dev['mnt'].mount.Slewing: st += 'm>'
-                if g_dev['enc'].enclosure.Slewing: st += 'd>'
+                if g_dev['enc'].status['dome_slewing']: st += 'd>'
                 print(st)
                 st = ""
                 time.sleep(0.2)
@@ -948,7 +952,11 @@ class Sequencer:
         if req2['target'] == 'near_tycho_star':   ## 'bin', 'area'  Other parameters
 
             #  Go to closest Mag 7.5 Tycho * with no flip
+<<<<<<< HEAD
             breakpoint()
+=======
+            
+>>>>>>> af815d9c85ee32cabf8ff421afbe7b62fdd28430
             focus_star = tycho.dist_sort_targets(g_dev['mnt'].current_icrs_ra, g_dev['mnt'].current_icrs_dec, \
                                     g_dev['mnt'].current_sidereal)
             print("Going to near focus star " + str(focus_star[0][0]) + "  degrees away.")
@@ -999,7 +1007,7 @@ class Sequencer:
         y = [spot2, spot1, spot3]
         print('X, Y:  ', x, y, 'Desire center to be smallest.')
         if spot1 is None or spot2 is None or spot3 is None:  #New additon to stop crash when no spots
-            print("No stars detected. Returning to stating focus.")
+            print("No stars detected. Returning to stating focus and pointing.")
             g_dev['foc'].focuser.Move((focus_start)*g_dev['foc'].micron_to_steps)
             self.sequencer_hold = False   #Allow comand checks.
             self.af_guard = False
@@ -1047,8 +1055,12 @@ class Sequencer:
             #  NB NB We may want to consider sending the result image patch to AWS
             return
         elif spot2 <= spot1 or spot3 <= spot1:
+            if spot2 <= spot1: 
+                min_focus = foc_pos2
+            if spot3 <= spot1:
+                min_focus = foc_pos3
             print("It appears camera is too far out; try again with coarse_focus_script.")
-            self.coarse_focus_script(req2, opt2, throw=750)
+            self.coarse_focus_script(req2, opt2, throw=600, begin_at=min_focus)
         else:
             print('Spots are really wrong so moving back to starting focus:  ', focus_start)
             g_dev['foc'].focuser.Move((focus_start)*g_dev['foc'].micron_to_steps)
@@ -1063,7 +1075,7 @@ class Sequencer:
         return
 
 
-    def coarse_focus_script(self, req, opt, throw = 650):
+    def coarse_focus_script(self, req, opt, throw=750, begin_at=None):
         '''
         V curve is a big move focus designed to fit two lines adjacent to the more normal focus curve.
         It finds the approximate focus, particulary for a new instrument. It requires 8 points plus
@@ -1075,12 +1087,16 @@ class Sequencer:
         '''
         print('AF entered with:  ', req, opt)
         self.guard = True
-        sim = g_dev['enc'].shutter_is_closed
+        sim = g_dev['enc'].status['shutter_status'] in ['Closed', 'closed', 'Closing', 'closing']
         print('AF entered with:  ', req, opt, '\n .. and sim =  ', sim)
         #self.sequencer_hold = True  #Blocks command checks.
         start_ra = g_dev['mnt'].mount.RightAscension
         start_dec = g_dev['mnt'].mount.Declination
-        foc_start = g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron
+        if begin_at is None:  #  ADDED 20120821 WER
+            foc_start = g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron
+        else:
+            foc_start = begin_at  #In this case we start at a place close to a 3 point minimum. 
+            g_dev['foc'].focuser.Move((foc_start)*g_dev['foc'].micron_to_steps)
         print("Saved ra dec focus:  ", start_ra, start_dec, foc_start)
         try:
             #Check here for filter, guider, still moving  THIS IS A CLASSIC
@@ -1088,11 +1104,11 @@ class Sequencer:
             #Wait for external motion to cease before exposing.  Note this precludes satellite tracking.
             st = "" 
             while g_dev['foc'].focuser.IsMoving or g_dev['rot'].rotator.IsMoving or \
-                  g_dev['mnt'].mount.Slewing or g_dev['enc'].enclosure.Slewing:   #Filter is moving??
+                  g_dev['mnt'].mount.Slewing or g_dev['enc'].status['dome_slewing']:   #Filter is moving??
                 if g_dev['foc'].focuser.IsMoving: st += 'f>'
                 if g_dev['rot'].rotator.IsMoving: st += 'r>'
                 if g_dev['mnt'].mount.Slewing: st += 'm>'
-                if g_dev['enc'].enclosure.Slewing: st += 'd>'
+                if g_dev['enc'].status['dome_slewing']: st += 'd>'
                 print(st)
                 st = ""
                 time.sleep(0.2)
@@ -1106,11 +1122,11 @@ class Sequencer:
             print("Going to near focus star " + str(focus_star[0][0]) + "  degrees away.")
             g_dev['mnt'].go_coord(focus_star[0][1][1], focus_star[0][1][0])
             req = {'time': 12.5,  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'auto_focus'}   #  NB Should pick up filter and constats from config
-            opt = {'area': 100, 'count': 1, 'filter': 'W'}
+            opt = {'area': 100, 'count': 1, 'filter': 'w'}
         else:
             pass   #Just take time image where currently pointed.
             req = {'time': 15,  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'auto_focus'}   #  NB Should pick up filter and constats from config
-            opt = {'area': 100, 'count': 1, 'filter': 'W'}
+            opt = {'area': 100, 'count': 1, 'filter': 'w'}
         foc_pos0 = foc_start
         result = {}
         print('Autofocus Starting at:  ', foc_pos0, '\n\n')
@@ -1288,9 +1304,9 @@ IF sweep
             opt = {}
             g_dev['mnt'].go_command(req, opt)
             st = ''
-            while g_dev['mnt'].mount.Slewing or g_dev['enc'].enclosure.Slewing:
+            while g_dev['mnt'].mount.Slewing or status['dome_slewing']:
                 if g_dev['mnt'].mount.Slewing: st += 'm>'
-                if g_dev['enc'].enclosure.Slewing: st += 'd>'
+                if g_dev['enc'].status['dome_slewing']: st += 'd>'
                 print(st)
                 st = ''
                 g_dev['obs'].update_status()
@@ -1386,9 +1402,9 @@ IF sweep
             opt = {}
             g_dev['mnt'].go_command(req, opt)
             st = ''
-            while g_dev['mnt'].mount.Slewing or g_dev['enc'].enclosure.Slewing:
+            while g_dev['mnt'].mount.Slewing or g_dev['enc'].status['dome_slewing']:
                 if g_dev['mnt'].mount.Slewing: st += 'm>'
-                if g_dev['enc'].enclosure.Slewing: st += 'd>'
+                if g_dev['enc'].status['dome_slewing']: st += 'd>'
                 print(st)
                 st = ''
                 g_dev['obs'].update_status()
@@ -1498,9 +1514,9 @@ IF sweep
             g_dev['mnt'].go_command(req, opt)
             time.sleep(0.5)
             st = ''
-            while g_dev['mnt'].mount.Slewing or g_dev['enc'].enclosure.Slewing:
+            while g_dev['mnt'].mount.Slewing or g_dev['enc'].status['dome_slewing']:
                 if g_dev['mnt'].mount.Slewing: st += 'm>'
-                if g_dev['enc'].enclosure.Slewing: st += 'd>'
+                if g_dev['enc'].status['dome_slewing']: st += 'd>'
                 print(st)
                 st = ''
                 g_dev['obs'].update_status()
@@ -1609,9 +1625,9 @@ IF sweep
             g_dev['mnt'].go_command(req, opt)
             time.sleep(0.5)
             st = ''
-            while g_dev['mnt'].mount.Slewing or g_dev['enc'].enclosure.Slewing:
+            while g_dev['mnt'].mount.Slewing or g_dev['enc'].status['dome_slewing']:
                 if g_dev['mnt'].mount.Slewing: st += 'm>'
-                if g_dev['enc'].enclosure.Slewing: st += 'd>'
+                if g_dev['enc'].status['dome_slewing']: st += 'd>'
                 print(st)
                 st = ''
                 g_dev['obs'].update_status()
@@ -1709,9 +1725,9 @@ IF sweep
                 #Should have an Alt limit check here
                 g_dev['mnt'].go_command(req, opt)
                 st = ''
-                while g_dev['mnt'].mount.Slewing or g_dev['enc'].enclosure.Slewing:
+                while g_dev['mnt'].mount.Slewing or g_dev['enc'].status['dome_slewing']:
                     if g_dev['mnt'].mount.Slewing: st += 'm>'
-                    if g_dev['enc'].enclosure.Slewing: st += 'd>'
+                    if g_dev['enc'].status['dome_slewing']: st += 'd>'
                     print(st)
                     st = ''
                     g_dev['obs'].update_status()
