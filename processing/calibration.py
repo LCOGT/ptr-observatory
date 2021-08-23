@@ -527,6 +527,7 @@ def calibrate (hdu, lng_path, frame_type='light', quick=False):
                 if loud: print('WARN: No dif Flat/Lum Loaded.')
 
         if hot_pix is None:
+            breakpoint
             try:
                 shHdu = fits.open(lng_path + 'h_2.fits')
                 hot_map = shHdu[0].data
