@@ -952,11 +952,7 @@ class Sequencer:
         if req2['target'] == 'near_tycho_star':   ## 'bin', 'area'  Other parameters
 
             #  Go to closest Mag 7.5 Tycho * with no flip
-<<<<<<< HEAD
-            breakpoint()
-=======
-            
->>>>>>> af815d9c85ee32cabf8ff421afbe7b62fdd28430
+
             focus_star = tycho.dist_sort_targets(g_dev['mnt'].current_icrs_ra, g_dev['mnt'].current_icrs_dec, \
                                     g_dev['mnt'].current_sidereal)
             print("Going to near focus star " + str(focus_star[0][0]) + "  degrees away.")
