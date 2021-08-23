@@ -525,16 +525,16 @@ def calibrate (hdu, lng_path, frame_type='light', quick=False):
             except:
                 quick_flat_dif = False
                 if loud: print('WARN: No dif Flat/Lum Loaded.')
-        if hot_pix is None:
-            try:
-                shHdu = fits.open(lng_path + 'h_2.fits')
-                hot_map = shHdu[0].data
-                hot_pix = np.where(hot_map > 1)
-                apply_hot = True
-                if loud: print(lng_path + 'h_2.fits', 'Loaded')
-            except:
-                apply_hot = False
-                if loud: print('WARN: No Hot Map Bin 2 Loaded.')
+        # if hot_pix is None:
+        #     try:
+        #         shHdu = fits.open(lng_path + 'h_2.fits')
+        #         hot_map = shHdu[0].data
+        #         hot_pix = np.where(hot_map > 1)
+        #         apply_hot = True
+        #         if loud: print(lng_path + 'h_2.fits', 'Loaded')
+        #     except:
+        #         apply_hot = False
+        #         if loud: print('WARN: No Hot Map Bin 2 Loaded.')
 
     while True:   #Use break to drop through to exit.  i.e., do not calibrate frames we are acquring for calibration.
         
@@ -698,21 +698,21 @@ def calibrate (hdu, lng_path, frame_type='light', quick=False):
                 if loud: print("Flat field math failed.")
             if not quick: 
                 if loud:  print('QuickFlat result:  ', imageStats(img, loud))
-        if apply_hot and binning == 2:
-            try:
-                hot_pix = np.where(super_dark_2 > super_dark_2.std()) #20210225 removed _long
-                median8(img, hot_pix)
-                cal_string += ', H'
+        # if apply_hot and binning == 2:
+        #     try:
+        #         hot_pix = np.where(super_dark_2 > super_dark_2.std()) #20210225 removed _long
+        #         median8(img, hot_pix)
+        #         cal_string += ', H'
                 
-            except:
-                print("Hot pixel correction failed.")
-            if not quick: 
-                if loud: print('Hot Pixel result:  ', imageStats(img, loud))
-            try:
-                cold_pix = np.where(img <= -img.std())
-                median8(img, cold_pix)
-            except:
-                print("Cold pixel correction failed.")
+        #     except:
+        #         print("Hot pixel correction failed.")
+        #     if not quick: 
+        #         if loud: print('Hot Pixel result:  ', imageStats(img, loud))
+        #     try:
+        #         cold_pix = np.where(img <= -img.std())
+        #         median8(img, cold_pix)
+        #     except:
+        #         print("Cold pixel correction failed.")
 
         break    #If we get this far we are done.
     if cal_string == '':

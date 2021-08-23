@@ -255,7 +255,6 @@ class Sequencer:
         self.sequencer_hold = False
          #events['Eve Bias Dark']
         #if True:
- 
         if (events['Eve Bias Dark'] <= ephem_now < events['Ops Window Start']) and False:
             req = {'bin1': False, 'bin2': True, 'bin3': False, 'bin4': False, 'numOfBias': 45, \
                    'numOfDark': 15, 'darkTime': 180, 'numOfDark2': 3, 'dark2Time': 360, \
@@ -477,6 +476,10 @@ class Sequencer:
             
             
             '''
+            try:
+                g_dev['mnt'].get_mount_coordinates()
+            except:
+                pass
             g_dev['mnt'].go_coord(dest_ra, dest_dec)
             print("CAUTION:  rotator may block")
             pa = float(block_specification['project']['project_constraints']['position_angle'])
@@ -519,6 +522,8 @@ class Sequencer:
             while left_to_do > 0 and not ended:
                 if initial_focus:
                     g_dev['enc'].get_status()
+                    
+
                     if not g_dev['enc'].shutter_is_closed:
                         self.auto_focus_script(req2, opt, throw = 500)
                     else:
@@ -943,6 +948,7 @@ class Sequencer:
         if req2['target'] == 'near_tycho_star':   ## 'bin', 'area'  Other parameters
 
             #  Go to closest Mag 7.5 Tycho * with no flip
+            breakpoint()
             focus_star = tycho.dist_sort_targets(g_dev['mnt'].current_icrs_ra, g_dev['mnt'].current_icrs_dec, \
                                     g_dev['mnt'].current_sidereal)
             print("Going to near focus star " + str(focus_star[0][0]) + "  degrees away.")
