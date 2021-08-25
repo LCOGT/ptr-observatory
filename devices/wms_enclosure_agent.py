@@ -2,6 +2,7 @@ import win32com.client
 from global_yard import g_dev
 import redis
 import time
+from math import *
 
 '''
 Curently this module interfaces to a Dome (az control) or a pop-top roof style enclosure.
@@ -193,6 +194,23 @@ class Enclosure:
 
     def parse_command(self, command):   #There should not be commands from AWS
         return
+    
+    # from math import *
+    # def position_dome(self, dec, hour_angle, elev, az ):
+    #     lat = radians(35)
+    #     h = radians(hour_angle*15)
+    #     d = radians(dec)
+    #     x = 20   #CV EAST,   14.5 AP East 
+    #     y = -5   #CV South    8.5 AP North.
+    #     r = 60
+    #     vert = pi/2 - lat + d
+    #     zp = r*cos(vert)
+    #     xp = x - r*sin(h)
+    #     yp = y + r*sin(vert)
+    #     print (xp, yp, zp, degrees(atan2(yp, xp)))
+        
+        
+        
    
 
     ###############################
