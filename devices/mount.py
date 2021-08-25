@@ -584,7 +584,7 @@ class Mount:
         return status  #json.dumps(status)
 
     def parse_command(self, command):
-       
+
         req = command['required_params']
         opt = command['optional_params']
         action = command['action']
