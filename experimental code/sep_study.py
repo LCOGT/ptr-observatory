@@ -139,7 +139,7 @@ def get_sources(img, bright_limit=2, display=False):
     plt.imshow(img_new)
     #print (data.meta)
 
-    
+
     # try:
     #     data.meta.pop("cdeltm1")
     #     data.meta.pop('cdeltm2')
@@ -258,3 +258,4 @@ if __name__ == '__main__':
 
 
 
+b
