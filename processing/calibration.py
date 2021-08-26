@@ -702,21 +702,23 @@ def calibrate (hdu, lng_path, frame_type='light', quick=False):
             if not quick: 
                 if loud:  print('QuickFlat result:  ', imageStats(img, loud))
 
-        if apply_hot and binning == 2:
-            try:
-                #hot_pix = np.where(super_dark_2 > super_dark_2.std()) #20210225 removed _long  #REmoved 20210821  
-                median8(img, hot_pix)
-                cal_string += ', H'
 
-            except:
-                print("Hot pixel correction failed.")
-            if not quick: 
-                if loud: print('Hot Pixel result:  ', imageStats(img, loud))
-            try:
-                cold_pix = np.where(img <= -img.std())
-                median8(img, cold_pix)
-            except:
-                print("Cold pixel correction failed.")
+        # if apply_hot and binning == 2:
+        #     try:
+        #         #hot_pix = np.where(super_dark_2 > super_dark_2.std()) #20210225 removed _long  #REmoved 20210821  
+        #         median8(img, hot_pix)
+        #         cal_string += ', H'
+
+        #     except:
+        #         print("Hot pixel correction failed.")
+        #     if not quick: 
+        #         if loud: print('Hot Pixel result:  ', imageStats(img, loud))
+        #     try:
+        #         cold_pix = np.where(img <= -img.std())
+        #         median8(img, cold_pix)
+        #     except:
+        #         print("Cold pixel correction failed.")
+
 
         break    #If we get this far we are done.
     if cal_string == '':
