@@ -75,7 +75,7 @@ class Enclosure:
             print("self.enclosure.Roof.ShutterStatus -- Faulted. ")
             shutter_status = 5
         try:
-            self.dome_home = self.enclosure.AtHome()
+            self.dome_home = self.enclosure.AtHome
         except:
             pass
         if shutter_status == 0:
@@ -181,6 +181,7 @@ class Enclosure:
             else:
                 
                 pass
+
             redis_value = self.redis_server.get('SlewToAzimuth')
             if redis_value is not None:
                 self.enclosure.SlewToAzimuth(float(redis_value))
@@ -306,14 +307,14 @@ class Enclosure:
 
         debugOffset = 0/24 #hours.
         try:
-            obs_time = self.redis_server.get('obs_heart_time')
-            
+            obs_time = self.redis_server.get('obs_heart_time')    
         except:
             pass
             #print("Obs process not producing time heartbeat.")
         
         #  The following is a debug aid
         if open_cmd or close_cmd:
+            #breakpoint()
             pass
 
         if self.mode == 'Shutdown':
@@ -328,18 +329,13 @@ class Enclosure:
         elif wx_hold:
             # We leave telescope to track with dome closed.
             if self.is_dome:
-                self.enclosure.Slaved = False
+                #self.enclosure.Slaved = False
+                pass
             if self.status_string.lower() in ['open', 'opening']:
                 self.enclosure.CloseShutter()
             self.dome_opened = False
-            self.dome_homed = True
-        # elif obs_time is None or (time.time() - float(obs_time)) > 120.:  #This might want to have a delay to aid debugging
-        #     if self.is_dome:
-        #         self.enclosure.Slaved = False
-        #     if self.status_string.lower() in ['open']:
-        #         self.enclosure.CloseShutter()
-        #     self.dome_opened = False
-        #     self.dome_homed = True
+            #self.dome_homed = True
+ 
             
             
         #  We are now in the full operational window.   ###Ops Window Start
@@ -367,6 +363,7 @@ class Enclosure:
                 (g_dev['events']['End Astro Dark'] - debugOffset <= ephemNow <= g_dev['events']['Ops Window Closes'] + debugOffset):    #WE found it open.
                 #  NB NB The aperture spec is wrong, there are two; one for eve, one for morning.
                 if self.is_dome and time.time() >= self.time_of_next_slew:
+                    #We slew to anti-solar Az and reissue this command every 90 seconds
                     try:
                         self.enclosure.SlewToAzimuth(az_opposite_sun)
                         print("Now slewing Dome to an azimuth opposite the Sun:  ", round(az_opposite_sun, 3))
@@ -411,19 +408,17 @@ class Enclosure:
                     self.state = 'Automatic Daytime normally Closed the ' + shutter_str
                 if self.is_dome:
                     enc_at_home = self.enclosure.AtHome
+                    self.enclosure.Slaved = False
                 else:
                     enc_at_home = True
-                if True  \
-                    or not enc_at_home:  #self.status_string.lower() in ['open', 'opening'] \
-                    try:
-                        if self.is_dome:
-                            self.enclosure.Slaved = False
+                try:
+                    if self.status_string.lower() in ['open', 'opening']:
                         self.enclosure.CloseShutter()
-                        self.dome_opened = False
-                        self.dome_homed = True
-                       # print("Daytime Close issued to the " + shutter_str  + "   No longer following Mount.")
-                    except:
-                        print("Shutter busy right now!")
+                    self.dome_opened = False
+                    self.dome_homed = True
+                   # print("Daytime Close issued to the " + shutter_str  + "   No longer following Mount.")
+                except:
+                    print("Shutter busy right now!")
             elif (open_cmd and self.mode in ['Manual']):  #This is a manual Open
 
                 #NB NB First  verify scope is parked, otherwise command park and 
