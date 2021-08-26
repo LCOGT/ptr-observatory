@@ -671,7 +671,6 @@ class Mount:
                 field_x = x_field_deg/15.   #  /15 for hours.
                 field_y = y_field_deg
                 #20210317 Changed signs fron Neyle.  NEEDS CONFIG File level or support.
-                breakpoint()
                 self.ra_offset += offset_x*field_x/4   #NB NB 20201230 Signs needs to be verified.
                 self.dec_offset += -offset_y*field_y/4
                 print("Offsets:  ", round(self.ra_offset, 5), round(self.dec_offset, 4))

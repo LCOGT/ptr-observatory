@@ -30,6 +30,7 @@ class Enclosure:
         self.site_is_proxy = self.config['agent_wms_enc_active'] 
         g_dev['enc'] = self
         #if self.site != 'mrc2':
+
         win32com.client.pythoncom.CoInitialize()
         self.enclosure = win32com.client.Dispatch(driver)
         print(self.enclosure)
