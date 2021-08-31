@@ -1460,16 +1460,18 @@ class Camera:
                     # NB This needs more development
                     #im_type = 'EX'   #or EN for engineering....
                    
-                    # DEH added this for compliance with the LCO bad pixel mask maker. BPM maker requires b00, f00, or d00
-                    # in filenames to gather calibration types.
+                    # DEH added this for compliance with the LCO bad pixel mask maker. 
+                    #BPM maker requires b00, f00, d00, a00, or w00 in filenames to gather calibration types.
                     if frame_type == 'bias':
                         im_type = 'b'
                     elif frame_type == 'dark':
                         im_type = 'd'
-                    elif frame_type in ('lampflat', 'skyflat', 'screenflat', 'solarflat'):
+                    elif frame_type in ('skyflat', 'screenflat', 'solarflat'):
                         im_type = 'f'
+                    elif frame_type == 'lampflat':
+                        im_type = 'w'
                     elif frame_type == 'arc':
-                        im_type = 'c'
+                        im_type = 'a'
                     else:
                         im_type = 'e'
                     
