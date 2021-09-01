@@ -533,7 +533,7 @@ class Sequencer:
                         print('Shutter closed, skipping AF cycle.0')  #coarse_focus_script can be used here
                     just_focused = True
                     initial_focus = False    #  Make above on-time event per block
-                    timer = time.time() + 3600   #10 min for debugging
+                    timer = time.time() + 1800   #10 min for debugging
                     #at block startup this should mean two AF cycles. Cosider using 5-point for the first.
                     
                 #cycle through exposures decrementing counts    MAY want to double check left-to do but do nut remultiply by 4

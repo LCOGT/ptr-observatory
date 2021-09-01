@@ -289,6 +289,7 @@ class ObservingConditions:
             self.status = status
             self.redis_server.set('wx_redis_status' , status, ex=300)
             new_stat = self.redis_server.get('wx_redis_status')
+
          
             
 
