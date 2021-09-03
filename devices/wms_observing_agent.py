@@ -258,7 +258,12 @@ class ObservingConditions:
                 
             #  Note we are still in saf specific site code.
             if self.unihedron_connected:
-                uni_measure = self.unihedron.SkyQuality   #  Provenance of 20.01 is dubious 20200504 WER
+                try:
+                    uni_measure = self.unihedron.SkyQuality   #  Provenance of 20.01 is dubious 20200504 WER
+                except:
+                    print("Unihedron did not read.")
+                    uni_measure = 0
+                    
                 if uni_measure == 0:
                     uni_measure = round((mag - 20.01),2)   #  Fixes Unihedron when sky is too bright
                     status["meas_sky_mpsas"] = uni_measure

@@ -10,4 +10,5 @@ Created on Tue Aug 31 19:01:12 2021
 #         Improve Camera status reporting
 #         Implement a very basic log
 #         Start recording the Weather
+#         Add a check that RA and DEC are specified for a block or try to re-look up the coords from the name..
         

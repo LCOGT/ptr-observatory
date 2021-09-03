@@ -34,9 +34,12 @@ class Enclosure:
         win32com.client.pythoncom.CoInitialize()
         self.enclosure = win32com.client.Dispatch(driver)
         print(self.enclosure)
-        if not self.enclosure.Connected:
-            self.enclosure.Connected = True
-        print("ASCOM enclosure connected.")
+        try:
+            if not self.enclosure.Connected:
+                self.enclosure.Connected = True
+            print("ASCOM enclosure connected.")
+        except:
+             print("ASCOM enclosure NOT connected, proabbly the App is not connected to telescope.")
         redis_ip = config['redis_ip']   #Do we really need to dulicate this config entry?
         if redis_ip is not None:           
             self.redis_server = redis.StrictRedis(host=redis_ip, port=6379, db=0,
@@ -105,21 +108,38 @@ class Enclosure:
         self.status_string = stat_string
 
         if self.is_dome:
-            status = {'shutter_status': stat_string,
-                      'enclosure_synchronized': self.enclosure.Slaved,
-                      'dome_azimuth': round(self.enclosure.Azimuth, 1),
-                      'dome_slewing': self.enclosure.Slewing,
-                      'enclosure_mode': self.mode,
-                      'enclosure_message': self.state}
-            self.redis_server.set('roof_status', str(stat_string), ex=600)
-            self.redis_server.set('shutter_is_closed', self.shutter_is_closed, ex=600)  #Used by autofocus
-            self.redis_server.set("shutter_status", str(stat_string), ex=600)
-            self.redis_server.set('enclosure_synchronized', str(self.enclosure.Slaved), ex=600)
-            self.redis_server.set('enclosure_mode', str(self.mode), ex=600)
-            self.redis_server.set('enclosure_message', str(self.state), ex=600)
-            self.redis_server.set('dome_azimuth', str(round(self.enclosure.Azimuth, 1)))
-            self.redis_server.set('dome_slewing', str(self.enclosure.Slewing), ex=600)
-            self.redis_server.set('status', status, ex=600)
+            try:
+                status = {'shutter_status': stat_string,
+                          'enclosure_synchronized': self.enclosure.Slaved,
+                          'dome_azimuth': round(self.enclosure.Azimuth, 1),
+                          'dome_slewing': self.enclosure.Slewing,
+                          'enclosure_mode': self.mode,
+                          'enclosure_message': self.state}
+                self.redis_server.set('roof_status', str(stat_string), ex=600)
+                self.redis_server.set('shutter_is_closed', self.shutter_is_closed, ex=600)  #Used by autofocus
+                self.redis_server.set("shutter_status", str(stat_string), ex=600)
+                self.redis_server.set('enclosure_synchronized', str(self.enclosure.Slaved), ex=600)
+                self.redis_server.set('enclosure_mode', str(self.mode), ex=600)
+                self.redis_server.set('enclosure_message', str(self.state), ex=600)
+                self.redis_server.set('dome_azimuth', str(round(self.enclosure.Azimuth, 1)))
+                self.redis_server.set('dome_slewing', str(self.enclosure.Slewing), ex=600)
+                self.redis_server.set('status', status, ex=600)
+            except:
+                status = {'shutter_status': stat_string,
+                          'enclosure_synchronized': False,
+                          'dome_azimuth': 0.0, #round(self.enclosure.Azimuth, 1),
+                          'dome_slewing': False,
+                          'enclosure_mode': self.mode,
+                          'enclosure_message': self.state}
+                self.redis_server.set('roof_status', str(stat_string), ex=600)
+                self.redis_server.set('shutter_is_closed', self.shutter_is_closed, ex=600)  #Used by autofocus
+                self.redis_server.set("shutter_status", str(stat_string), ex=600)
+                self.redis_server.set('enclosure_synchronized', False, ex=600)
+                self.redis_server.set('enclosure_mode', str(self.mode), ex=600)
+                self.redis_server.set('enclosure_message', str(self.state), ex=600)
+                self.redis_server.set('dome_azimuth', 0.0) #str(round(self.enclosure.Azimuth, 1)))
+                self.redis_server.set('dome_slewing', False, ex=600)
+                self.redis_server.set('status', status, ex=600)
         else:
             status = {'shutter_status': stat_string,
                       'enclosure_synch': True,
