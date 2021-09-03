@@ -8,6 +8,8 @@ etc.
 
 This would be a good place to log the weather data and any enclosure history,
 once this code is stable enough to run as a service.
+
+We need to resolve the 'redis' solution for each site. 20120826
 """
 
 
