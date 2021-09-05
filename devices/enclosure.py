@@ -38,36 +38,7 @@ class Enclosure:
             g_dev['redis_server'] = self.redis_server 
         else:
             self.redis_wx_enabled = False
-        if not self.config['agent_wms_enc_active']:
-            breakpoint()
-            # self.site_is_proxy = False
-            # win32com.client.pythoncom.CoInitialize()
-            # self.enclosure = win32com.client.Dispatch(driver)
-            # print(self.enclosure)
-            # if not self.enclosure.Connected:
-            #     self.enclosure.Connected = True
-            # print("ASCOM enclosure connected.")
-
-            # self.is_dome = self.config['enclosure']['enclosure1']['is_dome']
-            # self.state = 'Closed'
-            # #self.mode = 'Automatic'   #  Auto|User Control|User Close|Disable
-            # self.enclosure_message = '-'
-            # #self.shutter_is_closed = False   #NB initializing this is important.
-            # self.external_close = False   #If made true by operator,  system will not reopen for the night
-            # self.dome_opened = False   #memory of prior issued commands  Restarting code may close dome one time.
-            # self.dome_homed = False
-            # self.cycles = 0
-            # self.prior_status = None
-            # self.time_of_next_slew = time.time()
-            # if self.config['site_in_automatic_default'] == 'Manual':
-            #     self.site_in_automatic = False
-            #     self.mode = 'Manual' 
-            #     self.automatic_detail = 'Manual'
-            # else:
-            #     self.site_in_automatic = True
-            #     self.mode = 'Automatic'
-            #     self.automatic_detail = 'Automatic'
-        else:
+        if self.config['agent_wms_enc_active']:
             self.site_is_proxy = True
             self.is_dome = self.config['enclosure']['enclosure1']['is_dome']
     
@@ -81,15 +52,20 @@ class Enclosure:
             else:
                 self.site_in_automatic = False
                 self.mode = 'Shutdown'
+        else:
+            self.site_is_proxy = False
         
     def get_status(self) -> dict:
         #<<<<The next attibute reference fails at saf, usually spurious Dome Ring Open report.
         #<<< Have seen other instances of failing.
         #core1_redis.set('unihedron1', str(mpsas) + ', ' + str(bright) + ', ' + str(illum), ex=600)
         if self.site_is_proxy:
-            stat_string = self.redis_server.get("shutter_status")
-            
-            self.status = eval(self.redis_server.get("status"))
+            #Usually fault here because WEMA is not running.
+            try:
+                stat_string = self.redis_server.get("shutter_status")
+                self.status = eval(self.redis_server.get("status"))
+            except:
+                print("\nWxEnc Agent WEMA not running. Please start it up.|n")
             if stat_string is not None:
                 if stat_string == 'Closed':
                     self.shutter_is_closed = True
@@ -100,94 +76,6 @@ class Enclosure:
             else:
                 self.shutter_is_closed = True
                 return
-    #     elif self.site in ['saf', 'mrc', 'mrc2']:
-    #         try:
-    #             shutter_status = self.enclosure.ShutterStatus
-    #         except:
-    #             print("self.enclosure.Roof.ShutterStatus -- Faulted. ")
-    #             shutter_status = 5
-    #         if shutter_status == 0:
-    #             stat_string = "Open"
-    #             self.shutter_is_closed = False
-    #         elif shutter_status == 1:
-    #              stat_string = "Closed"
-    #              self.shutter_is_closed = True
-    #         elif shutter_status == 2:
-    #              stat_string = "Opening"
-    #              self.shutter_is_closed = False
-    #         elif shutter_status == 3:
-    #              stat_string = "Closing"
-    #              self.shutter_is_closed = False
-    #         elif shutter_status == 4:
-    #              stat_string = "Error"
-    #              self.shutter_is_closed = False
-    #         else:
-    #              stat_string = "Software Fault"
-    #              self.shutter_is_closed = False
-
-    #     if self.site == 'saf':
-    #        try:
-    #            status = {'shutter_status': stat_string,
-    #                   'roof_status': stat_string,
-    #                   'enclosure_synch': self.enclosure.Slaved,
-    #                   'dome_azimuth': round(self.enclosure.Azimuth, 1),
-    #                   'dome_slewing': self.enclosure.Slewing,
-    #                   'enclosure_mode': self.mode,
-    #                   'enclosure_message': self.state}
-    #            self.prior_status = status
-    #        except:
-    #            status = self.prior_status
-    #            print("Prior status used for saf dome azimuth")
-    #            # status = {'shutter_status': stat_string,
-    #            #        'enclosure_synch': 'unknown',
-    #            #        'dome_azimuth': str(round(self.enclosure.Azimuth, 1)),
-    #            #        'dome_slewing': str(self.enclosure.Slewing),
-    #            #        'enclosure_mode': str(self.mode),
-    #            #        'enclosure_message': str(self.state)}
-
-    #     elif self.site in ['mrc', 'mrc2']:
-    #         status = {'roof_status': stat_string,
-    #                   'shutter_status': stat_string,
-    #                   'enclosure_synch': self.enclosure.Slaved,   #  What should  this mean for a roof? T/F = Open/Closed?
-    #                   'enclosure_mode': self.mode,
-    #                   'enclosure_message': self.state}
-    #         self.redis_server.set('roof_status', str(stat_string), ex=600)
-    #         self.redis_server.set('shutter_is_closed', self.shutter_is_closed, ex=600)  #Used by autofocus
-    #         self.redis_server.set("shutter_status", str(stat_string), ex=600)
-    #         self.redis_server.set('enclosure_synch', str(self.enclosure.Slaved), ex=600)
-    #         self.redis_server.set('enclosure_mode', str(self.mode), ex=600)
-    #         self.redis_server.set('enclosure_message', str(self.state), ex=600)        #print('Enclosure status:  ', status
-
-    #     else:
-    #         status = {'roof_status': 'unknown',
-    #                   'shutter_status': 'unknown',
-    #                   'enclosure_synch': 'unknown',   #  What should  this mean for a roof? T/F = Open/Closed?
-    #                   'enclosure_mode': 'unknown',
-    #                   'enclosure_message': 'unknown'
-    #                   }
-    #         stat_string = 'unknown'
-    #     #print('Enclosure status:  ', status
-    #     self.status_string = stat_string
-    #     if self.site_is_proxy:
-    #         redis_command = self.redis_server.set('enc_cmd', True, ex=1200)
-    #         if redis_command == 'open':
-    #             breakpoint()
-    #             self.manager(open_cmd=True)
-    #             self.redis_server.delete('enc_cmd')
-    #             print("enclosure local cmd: open.")
-    #             self.dome_open = True
-    #             self.dome_home = True
-    #         elif redis_command == 'close':
-    #             self.manager(close_cmd=True)
-    #             self.redis_server.delete('enc_cmd')
-    #             print("enclosure local cmd: close.")
-    #             self.dome_open = True
-    #             self.dome_home = True
-    #         else:  
-    #             pass
-    #     self.manager()   #There be monsters here. <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-    #     return status
-
 
     def parse_command(self, command):   #This gets commands from AWS, not normally used.
         req = command['required_params']

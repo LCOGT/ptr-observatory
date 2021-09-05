@@ -41,6 +41,7 @@ super_dark_2 = None
 super_dark_2_long = None
 hot_map = None
 hot_pix = None
+apply_hot = None
 screen_flat_w = None
 screen_flat_air = None
 screen_flat_JU = None
@@ -152,8 +153,8 @@ def simpleColumnFix(img, col):
 #This is a brute force linear version. This needs to be more sophisticated and camera independent.
 
 def calibrate (hdu, lng_path, frame_type='light', quick=False):
-    #These variables are gloal in the sense they persist between calls (memoized so to speak, should use that facility.)
-    global super_bias, super_bias_2, super_dark, super_dark_2, hot_map, hot_pix, screen_flat_air, screen_flat_w, screen_flat_JU, \
+    #These variables are global in the sense they persist between calls (memoized so to speak, should use that facility.)
+    global super_bias, super_bias_2, super_dark, super_dark_2, hot_map, hot_pix, apply_hot, screen_flat_air, screen_flat_w, screen_flat_JU, \
         screen_flat_JB, screen_flat_JV, screen_flat_Rc, screen_flat_Ic, screen_flat_up, screen_flat_gp, screen_flat_rp, screen_flat_ip, \
         screen_flat_zp, screen_flat_z, screen_flat_y, screen_flat_O3, screen_flat_HA, screen_flat_N2, screen_flat_S2, screen_flat_EXO, \
         screen_flat_PL ,screen_flat_PB, screen_flat_PG, screen_flat_PR, screen_flat_NIR,  screen_flat_CR, screen_flat_dif,  \
@@ -527,7 +528,7 @@ def calibrate (hdu, lng_path, frame_type='light', quick=False):
                 if loud: print('WARN: No dif Flat/Lum Loaded.')
 
         if hot_pix is None:
-            breakpoint
+
             try:
                 shHdu = fits.open(lng_path + 'h_2.fits')
                 hot_map = shHdu[0].data
@@ -702,22 +703,21 @@ def calibrate (hdu, lng_path, frame_type='light', quick=False):
             if not quick: 
                 if loud:  print('QuickFlat result:  ', imageStats(img, loud))
 
+        if apply_hot and binning == 2:
+            try:
+                #hot_pix = np.where(super_dark_2 > super_dark_2.std()) #20210225 removed _long  #REmoved 20210821  
+                median8(img, hot_pix)
+                cal_string += ', H'
 
-        # if apply_hot and binning == 2:
-        #     try:
-        #         #hot_pix = np.where(super_dark_2 > super_dark_2.std()) #20210225 removed _long  #REmoved 20210821  
-        #         median8(img, hot_pix)
-        #         cal_string += ', H'
-
-        #     except:
-        #         print("Hot pixel correction failed.")
-        #     if not quick: 
-        #         if loud: print('Hot Pixel result:  ', imageStats(img, loud))
-        #     try:
-        #         cold_pix = np.where(img <= -img.std())
-        #         median8(img, cold_pix)
-        #     except:
-        #         print("Cold pixel correction failed.")
+            except:
+                print("Hot pixel correction failed.")
+            if not quick: 
+                if loud: print('Hot Pixel result:  ', imageStats(img, loud))
+            try:
+                cold_pix = np.where(img <= -img.std())
+                median8(img, cold_pix)
+            except:
+                print("Cold pixel correction failed.")
 
 
         break    #If we get this far we are done.
