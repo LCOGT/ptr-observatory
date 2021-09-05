@@ -173,13 +173,16 @@ class Observatory:
             'enclosure',
             'mount',
             'telescope',
-            'screen',
+            #'screen',
             'rotator',
             'focuser',
             'selector',
             'filter_wheel',
             'camera',
-            'sequencer'          
+            'sequencer',
+            'camera_1_1',
+            'camera_1_2',
+            'camera_1-4',
             ]
         self.short_status_devices = [    #Obs-cond and enc do not report status
             'enclosure',
@@ -276,8 +279,9 @@ class Observatory:
             devices_of_type = config.get(dev_type, {})
             device_names = devices_of_type.keys()
             # Instantiate each device object from based on its type
-            if dev_type == 'camera':
+            if dev_type == 'camera':   #  NB The selector creates the camera objects?
                 pass
+
             for name in device_names:
                 driver = devices_of_type[name]["driver"]
                 settings = devices_of_type[name].get("settings", {})
@@ -304,6 +308,7 @@ class Observatory:
                     device = Sequencer(driver, name, self.config, self.astro_events)
                 elif dev_type == "filter_wheel":
                     device = FilterWheel(driver, name, self.config)
+                    breakpoint()
                 else:
                     print(f"Unknown device: {name}")
                 # Add the instantiated device to the collection of all devices.
