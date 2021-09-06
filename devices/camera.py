@@ -835,6 +835,7 @@ class Camera:
                 #Check here for filter, guider, still moving  THIS IS A CLASSIC
                 #case where a timeout is a smart idea.
                 #Wait for external motion to cease before exposing.  Note this precludes satellite tracking.
+
                 st = ""
                 if g_dev['enc'].is_dome:
                     try:
@@ -843,11 +844,11 @@ class Camera:
                         print("enclosure SLEWING threw an exception.")
                 else:
                      enc_slewing = False
-
-                while g_dev['foc'].focuser.IsMoving or g_dev['rot'].rotator.IsMoving or \
+                rot = (self.config['site'] != 'saf') and g_dev['rot'].rotator.IsMoving
+                while g_dev['foc'].focuser.IsMoving or rot or \
                       g_dev['mnt'].mount.Slewing or enc_slewing:   #Filter is moving??
                     if g_dev['foc'].focuser.IsMoving: st += 'f>'
-                    if g_dev['rot'].rotator.IsMoving: st += 'r>'
+                    if rot: st += 'r>'
                     if g_dev['mnt'].mount.Slewing:
                         st += 'm>  ' + str(round(time.time() - g_dev['mnt'].move_time, 1))
                     if enc_slewing:

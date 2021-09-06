@@ -441,7 +441,7 @@ class ObservingConditions:
                     pass
                     #print("Unihedron log did not write.")
                     # breakpoint()
-            self.redis_server.set('wx_redis_status' , status, ex=300)
+            self.redis_server.set('wx_redis_status' , status, ex=3600)
             new_stat = self.redis_server.get('wx_redis_status')
         else:
             #DEH temporary to get past the big fatal error.

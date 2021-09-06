@@ -206,7 +206,6 @@ class Observatory:
         # Use the configuration to instantiate objects for all devices.
         self.create_devices(config)
         self.loud_status = False
-        #g_dev['obs']: self
         g_dev['obs'] = self 
         site_str = config['site']
         g_dev['site']:  site_str
@@ -308,7 +307,6 @@ class Observatory:
                     device = Sequencer(driver, name, self.config, self.astro_events)
                 elif dev_type == "filter_wheel":
                     device = FilterWheel(driver, name, self.config)
-                    breakpoint()
                 else:
                     print(f"Unknown device: {name}")
                 # Add the instantiated device to the collection of all devices.

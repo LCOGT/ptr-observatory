@@ -106,6 +106,10 @@ class Enclosure:
              self.shutter_is_closed = False
              self.redis_server.set('Shutter_is_open', False)
         self.status_string = stat_string
+        if shutter_status in [1, 2]:
+            moving = True
+        else:
+            moving = False
 
         if self.is_dome:
             try:
@@ -115,15 +119,19 @@ class Enclosure:
                           'dome_slewing': self.enclosure.Slewing,
                           'enclosure_mode': self.mode,
                           'enclosure_message': self.state}
-                self.redis_server.set('roof_status', str(stat_string), ex=600)
-                self.redis_server.set('shutter_is_closed', self.shutter_is_closed, ex=600)  #Used by autofocus
-                self.redis_server.set("shutter_status", str(stat_string), ex=600)
-                self.redis_server.set('enclosure_synchronized', str(self.enclosure.Slaved), ex=600)
-                self.redis_server.set('enclosure_mode', str(self.mode), ex=600)
-                self.redis_server.set('enclosure_message', str(self.state), ex=600)
+                self.redis_server.set('roof_status', str(stat_string), ex=3600)
+                self.redis_server.set('shutter_is_closed', self.shutter_is_closed, ex=3600)  #Used by autofocus
+                self.redis_server.set("shutter_status", str(stat_string), ex=3600)
+                self.redis_server.set('enclosure_synchronized', str(self.enclosure.Slaved), ex=3600)
+                self.redis_server.set('enclosure_mode', str(self.mode), ex=3600)
+                self.redis_server.set('enclosure_message', str(self.state), ex=3600)
                 self.redis_server.set('dome_azimuth', str(round(self.enclosure.Azimuth, 1)))
-                self.redis_server.set('dome_slewing', str(self.enclosure.Slewing), ex=600)
-                self.redis_server.set('status', status, ex=600)
+                if moving or self.enclosure.Slewing:
+                    in_motion = True
+                else:
+                    in_motion = False
+                self.redis_server.set('dome_slewing', in_motion, ex=3600)
+                self.redis_server.set('status', status, ex=3600)
             except:
                 status = {'shutter_status': stat_string,
                           'enclosure_synchronized': False,
@@ -131,15 +139,19 @@ class Enclosure:
                           'dome_slewing': False,
                           'enclosure_mode': self.mode,
                           'enclosure_message': self.state}
-                self.redis_server.set('roof_status', str(stat_string), ex=600)
-                self.redis_server.set('shutter_is_closed', self.shutter_is_closed, ex=600)  #Used by autofocus
-                self.redis_server.set("shutter_status", str(stat_string), ex=600)
-                self.redis_server.set('enclosure_synchronized', False, ex=600)
-                self.redis_server.set('enclosure_mode', str(self.mode), ex=600)
-                self.redis_server.set('enclosure_message', str(self.state), ex=600)
+                self.redis_server.set('roof_status', str(stat_string), ex=3600)
+                self.redis_server.set('shutter_is_closed', self.shutter_is_closed, ex=3600)  #Used by autofocus
+                self.redis_server.set("shutter_status", str(stat_string), ex=3600)
+                self.redis_server.set('enclosure_synchronized', False, ex=3600)
+                self.redis_server.set('enclosure_mode', str(self.mode), ex=3600)
+                self.redis_server.set('enclosure_message', str(self.state), ex=3600)
                 self.redis_server.set('dome_azimuth', 0.0) #str(round(self.enclosure.Azimuth, 1)))
-                self.redis_server.set('dome_slewing', False, ex=600)
-                self.redis_server.set('status', status, ex=600)
+                if moving or self.enclosure.Slewing:
+                    in_motion = True
+                else:
+                    in_motion = False
+                self.redis_server.set('dome_slewing', in_motion, ex=3600)
+                self.redis_server.set('status', status, ex=3600)
         else:
             status = {'shutter_status': stat_string,
                       'enclosure_synch': True,
@@ -147,15 +159,15 @@ class Enclosure:
                       'dome_slewing': False,
                       'enclosure_mode': self.mode,
                       'enclosure_message': self.state}
-            self.redis_server.set('roof_status', str(stat_string), ex=600)
-            self.redis_server.set('shutter_is_closed', self.shutter_is_closed, ex=600)  #Used by autofocus
-            self.redis_server.set("shutter_status", str(stat_string), ex=600)
-            self.redis_server.set('enclosure_synchronized', True, ex=600)
-            self.redis_server.set('enclosure_mode', str(self.mode), ex=600)
-            self.redis_server.set('enclosure_message', str(self.state), ex=600)        #print('Enclosure status:  ', status
+            self.redis_server.set('roof_status', str(stat_string), ex=3600)
+            self.redis_server.set('shutter_is_closed', self.shutter_is_closed, ex=3600)  #Used by autofocus
+            self.redis_server.set("shutter_status", str(stat_string), ex=3600)
+            self.redis_server.set('enclosure_synchronized', True, ex=3600)
+            self.redis_server.set('enclosure_mode', str(self.mode), ex=3600)
+            self.redis_server.set('enclosure_message', str(self.state), ex=3600)        #print('Enclosure status:  ', status
             self.redis_server.set('dome_azimuth', str(180.0))  
-            self.redis_server.set('dome_slewing', False, ex=600)
-            self.redis_server.set('status', status, ex=600)
+            self.redis_server.set('dome_slewing', False, ex=3600)
+            self.redis_server.set('status', status, ex=3600)
         # This code picks up commands forwarded by the observer Enclosure 
         if self.site_is_proxy:
             redis_command = self.redis_server.get('enc_cmd')  #It is presumed there is an expiration date on open command at least.
@@ -201,7 +213,7 @@ class Enclosure:
             else:
                 
                 pass
-
+            #NB NB NB  Possible race condition here.
             redis_value = self.redis_server.get('SlewToAzimuth')
             if redis_value is not None:
                 self.enclosure.SlewToAzimuth(float(redis_value))
@@ -345,7 +357,7 @@ class Enclosure:
                 self.enclosure.CloseShutter()
             self.dome_opened = False
             self.dome_homed = True
-            self.redis_server.set('park_the_mount', True, ex=600)
+            self.redis_server.set('park_the_mount', True, ex=3600)
         elif wx_hold:
             # We leave telescope to track with dome closed.
             if self.is_dome:
@@ -379,8 +391,8 @@ class Enclosure:
                     self.state = 'Automatic nightime Open ' + shutter_str + '   Wx is OK; in Observing window.'
             #During skyflat time, slew dome opposite sun's azimuth'
             if self.status_string.lower() in ['open'] and \
-                (g_dev['events']['Eve Sky Flats'] - debugOffset <= ephemNow <= g_dev['events']['End Eve Sky Flats'] + debugOffset) or \
-                (g_dev['events']['End Astro Dark'] - debugOffset <= ephemNow <= g_dev['events']['Ops Window Closes'] + debugOffset):    #WE found it open.
+                ((g_dev['events']['Eve Sky Flats'] - debugOffset <= ephemNow <= g_dev['events']['End Eve Sky Flats'] + debugOffset) or \
+                (g_dev['events']['End Astro Dark'] - debugOffset <= ephemNow <= g_dev['events']['Ops Window Closes'] + debugOffset)):    #WE found it open.
                 #  NB NB The aperture spec is wrong, there are two; one for eve, one for morning.
                 if self.is_dome and time.time() >= self.time_of_next_slew:
                     #We slew to anti-solar Az and reissue this command every 90 seconds

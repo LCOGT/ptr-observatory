@@ -255,7 +255,7 @@ class Sequencer:
         self.sequencer_hold = False
          #events['Eve Bias Dark']
         #if True:
-        if (events['Eve Bias Dark'] <= ephem_now < events['Ops Window Start']) and False:
+        if (events['Eve Bias Dark'] <= ephem_now < events['Ops Window Start']) and True:
             req = {'bin1': False, 'bin2': True, 'bin3': False, 'bin4': False, 'numOfBias': 45, \
                    'numOfDark': 15, 'darkTime': 180, 'numOfDark2': 3, 'dark2Time': 360, \
                    'hotMap': True, 'coldMap': True, 'script': 'genBiasDarkMaster', }
@@ -683,10 +683,10 @@ class Sequencer:
         self.sequencer_hold = True
         self.current_script = 'Afternoon Bias Dark'
         dark_time = 240
-        while g_dev['events']['Eve Bias Dark'] -1 <= ephem.now() <= g_dev['events']['Ops Window Start'] :   #Do not overrun the window end
+        while g_dev['events']['Eve Bias Dark'] -1 <= ephem.now() <= g_dev['events']['Ops Window Start'] -3 :   #Do not overrun the window end
             print("Expose b_2")   
             req = {'time': 0.0,  'script': 'True', 'image_type': 'bias'}
-            opt = {'area': "Full", 'count': 13, 'bin':'2 2', \
+            opt = {'area': "Full", 'count': 7, 'bin':'2 2', \
                     'filter': 'dark'}
             result = g_dev['cam'].expose_command(req, opt, no_AWS=True, \
                                 do_sep=False, quick=False)
@@ -701,7 +701,7 @@ class Sequencer:
             print(result)
             g_dev['obs'].update_status()
 
-        print("Bias/Dark acquisition is finished.")
+        print("One pass of Bias/Dark acquisition is finished.")
         self.sequencer_hold = False
         return
 
