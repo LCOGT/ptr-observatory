@@ -11,6 +11,7 @@ import config
 import shelve
 from pprint import pprint
 import ptr_utility
+import redis
 
 '''
 Autofocus NOTE 20200122
@@ -168,7 +169,14 @@ class Sequencer:
         self.sequencer_message = '-'
         print("sequencer connected.")
         print(self.description)
+        redis_ip = config['redis_ip']
 
+        if redis_ip is not None:           
+            self.redis_server = redis.StrictRedis(host=redis_ip, port=6379, db=0,
+                                              decode_responses=True)
+            self.redis_wx_enabled = True
+        else:
+            self.redis_wx_enabled = False
         self.sky_guard = False
         self.af_guard = False
         self.block_guard = False
@@ -523,8 +531,9 @@ class Sequencer:
             initial_focus = True
 
             while left_to_do > 0 and not ended:
+
                 if initial_focus:
-                    g_dev['enc'].get_status()
+                    print("Enc Status:  ", g_dev['enc'].get_status())
                     
 
                     if not g_dev['enc'].shutter_is_closed:
@@ -683,7 +692,8 @@ class Sequencer:
         self.sequencer_hold = True
         self.current_script = 'Afternoon Bias Dark'
         dark_time = 240
-        while g_dev['events']['Eve Bias Dark'] -1 <= ephem.now() <= g_dev['events']['Ops Window Start'] -3 :   #Do not overrun the window end
+        breakpoint()
+        while g_dev['events']['Eve Bias Dark']  <= ephem.now() <= g_dev['events']['Ops Window Start'] :   #Do not overrun the window end
             print("Expose b_2")   
             req = {'time': 0.0,  'script': 'True', 'image_type': 'bias'}
             opt = {'area': "Full", 'count': 7, 'bin':'2 2', \
@@ -729,7 +739,7 @@ class Sequencer:
         self.sky_guard = True
         print('Eve Sky Flat sequence Starting, Enclosure PRESUMED Open. Telescope will un-park.')
         camera_name = str(self.config['camera']['camera_1_1']['name'])
-        flat_count = 13
+        flat_count = 5
         exp_time = .003
         #  NB Sometime, try 2:2 binning and interpolate a 1:1 flat.  This might run a lot faster.
         if flat_count < 1: flat_count = 1
@@ -747,7 +757,6 @@ class Sequencer:
         #  we can speed it up
         #Here we may need to switch off any
         #  Pick up list of filters is sky flat order of lowest to highest transparency.
-        breakpoint()
         pop_list = self.config['filter_wheel']['filter_wheel1']['settings']['filter_sky_sort'].copy()
         print('filters by low to high transmission:  ', pop_list)
         #length = len(pop_list)
@@ -759,7 +768,6 @@ class Sequencer:
             acquired_count = 0
             #req = {'filter': current_filter}
             #opt =  {'filter': current_filter}
-            breakpoint()
             g_dev['fil'].set_number_command(current_filter)
             g_dev['mnt'].slewToSkyFlatAsync()
             bright = 35000
@@ -772,7 +780,8 @@ class Sequencer:
                 g_dev['mnt'].slewToSkyFlatAsync()
                 g_dev['obs'].update_status()
                 try:
-                    exp_time = prior_scale*scale*35000/(float(g_dev['fil'].filter_data[current_filter][3])*g_dev['ocn'].calc_HSI_lux)  #meas_sky_lux)
+                    lux = eval(self.redis_server.get('wx_redis_status'))['calc_HSI_lux']
+                    exp_time = prior_scale*scale*35000/(float(g_dev['fil'].filter_data[current_filter][3])*lux)  #g_dev['ocn'].calc_HSI_lux)  #meas_sky_lux)
                     if exp_time > 300:
                         exp_time = 300
                     if exp_time <0.001:
