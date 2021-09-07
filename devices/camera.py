@@ -666,12 +666,12 @@ class Camera:
                 # If we light the arc fiber fiber while exposing on a target object, this needs to be reworked:
                 # Turn on ThAr bulb without dark mirror for the right frame type, then lit_fibers = 'object&thar&none'.
                 self.lit_fibers = 'object&none&none'  # We can have this use the actual target name instead.
-                self.arc_box_cmd("Object")            
+                self.arc_box_cmd("Object")
             else:
                 self.arc_box_cmd("Object")  # Reset
             time.sleep(1)  # Give the unit a moment to switch properly before moving on to exposing images
             self.expose_lamp_state = self.arc_box.arc_status  # To pass to FITS header for now
-        
+
         elif self.arc_box_type == 'uvex':
             # TODO: Use ASCOM driver for the SPOX unit here.
             pass
@@ -1013,10 +1013,6 @@ class Camera:
                         low=0, high=0, script=False, opt=None):
         print("Finish exposure Entered:  ", exposure_time, frame_type, counter, \
               gather_status, do_sep, no_AWS, start_x, start_y, opt['area'])
-
-
-        # TODO: This can be improved to leave the lamps on if there is a series of exposures requested,
-        # ex. 5 darks or lamp flats in a row, and turn off after all images in the series are completed.
 
         self.post_mnt = []
         self.post_rot = []

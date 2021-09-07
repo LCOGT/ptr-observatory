@@ -64,7 +64,7 @@ from devices.rotator import Rotator
 from devices.selector import Selector
 from devices.screen import Screen
 from devices.sequencer import Sequencer
-from devices.arclamp import ArcLampBox
+#from devices.arclamp import ArcLampBox
 from processing.calibration import calibrate
 from global_yard import g_dev
 import bz2
@@ -150,8 +150,8 @@ def patch_httplib(bsize=400000):
         else:
             self.sock.sendall(p_data)
     httplib2.httplib.HTTPConnection.send = send
-    
-    
+
+
 class Observatory:
 
     def __init__(self, name, config):
@@ -180,7 +180,7 @@ class Observatory:
             'camera',
             'sequencer'
             #'lamp_box'
-            ] 
+            ]
         # Instantiate the helper class for astronomical events
         #Soon the primary event / time values come from AWS>
         self.astro_events = ptr_events.Events(self.config)
@@ -192,7 +192,7 @@ class Observatory:
         self.create_devices(config)
         self.loud_status = False
         #g_dev['obs']: self
-        g_dev['obs'] = self 
+        g_dev['obs'] = self
         site_str = config['site']
         g_dev['site']:  site_str
         self.g_dev = g_dev
@@ -212,8 +212,8 @@ class Observatory:
         self.projects = None
         self.events_new = None
         self.reset_last_reference()
-        
-        
+
+
 
         # Build the site (from-AWS) Queue and start a thread.
         # self.site_queue = queue.SimpleQueue()
@@ -347,7 +347,7 @@ class Observatory:
                     # Process each job one at a time
                     for cmd in unread_commands:
                         if self.config['selector']['selector1']['driver'] != 'Null':
-                            port = cmd['optional_params']['instrument_selector_position'] 
+                            port = cmd['optional_params']['instrument_selector_position']
                             g_dev['mnt'].instrument_port = port
                             cam_name = self.config['selector']['selector1']['cameras'][port]
                             if cmd['deviceType'][:6] == 'camera':
@@ -392,14 +392,14 @@ class Observatory:
                         self.projects = all_projects   #.append(all_projects)  #NOTE creating a list with a dict entry as item 0
                         #self.projects.append(all_projects[1])
                 '''
-                Design Note.  blocks relate to scheduled time at a site so we expect AWS to mediate block 
+                Design Note.  blocks relate to scheduled time at a site so we expect AWS to mediate block
                 assignments.  Priority of blocks is determined by the owner and a 'equipment match' for
                 background projects.
-                
+
                 Projects on the other hand can be a very large pool so how to manage becomes an issue.
                 TO the extent a project is not visible at a site, aws should not present it.  If it is
                 visible and passes the owners priority it should then be presented to the site.
-                
+
                 '''
 
                 if self.events_new is None:
@@ -408,7 +408,7 @@ class Observatory:
                     self.events_new = requests.get(url).json()
 
                 return   # Continue   #This creates an infinite loop
-                
+
             else:
                 print('Sequencer Hold asserted.')    #What we really want here is looking for a Cancel/Stop.
                 continue
@@ -420,7 +420,7 @@ class Observatory:
         '''
 
         # This stopping mechanism allows for threads to close cleanly.
-        loud = False        
+        loud = False
         # if g_dev['cam_retry_doit']:
         #     #breakpoint()   #THis should be obsolete.
         #     del g_dev['cam']
@@ -621,7 +621,7 @@ class Observatory:
                 reduced_data_size = hdu.data.size
                 wpath = paths['red_path'] + paths['red_name01_lcl']    #This name is convienent for local sorting
                 hdu.writeto(wpath, overwrite=True) #Bigfit reduced
-                
+
                 #Will try here to solve
                 try:
                     hdu_save = hdu
@@ -643,7 +643,7 @@ class Observatory:
                     time_now = time.time()  #This should be more accurately defined earlier in the header
                     if prior_time is not None:
                         print("time base is:  ", time_now - prior_time)
-                        
+
                     self.set_last_reference( solve['ra_j2000_hours'], solve['dec_j2000_degrees'], time_now)
                 except:
                    print(wpath, "  was not solved, marking to skip in future, sorry!")
@@ -654,12 +654,12 @@ class Observatory:
                    self.reset_last_reference()
                   #Return to classic processing
                 hdu = hdu_save
-                
+
                 if self.site_name == 'saf':
                     wpath = paths['red_path_aux'] + paths['red_name01_lcl']
                     hdu.writeto(wpath, overwrite=True) #big fits to other computer in Neyle's office
                 #patch to test Midtone Contrast
-                
+
                 # image = 'Q:/000ptr_saf/archive/sq01/20201212 ans HH/reduced/HH--SigClip.fits'
                 # hdu_new = fits.open(image)
                 # hdu =hdu_new[0]
@@ -820,7 +820,7 @@ class Observatory:
                 #img4 = img3*256
                 #img4 = img4.astype('uint8')   #Eliminates a user warning.
                 #imsave(paths['im_path'] + paths['jpeg_name10'], img4)  #NB File extension triggers JPEG conversion.
-                # New contrast scaling code: 
+                # New contrast scaling code:
                 stretched_data_float = Stretch().stretch(hdu.data)
                 stretched_256 = 255*stretched_data_float
                 hot = np.where(stretched_256 > 255)
@@ -833,7 +833,7 @@ class Observatory:
                 cold = np.where(stretched_data_uint8 < 0)
                 stretched_data_uint8[hot] = 255
                 stretched_data_uint8[cold] = 0
-                #print("post-unit8< hot, cold:  ", len(hot[0]), len(cold[0]))                
+                #print("post-unit8< hot, cold:  ", len(hot[0]), len(cold[0]))
                 imsave(paths['im_path'] + paths['jpeg_name10'], stretched_data_uint8)
                 #img4 = stretched_data_uint8  # keep old name for compatibility
 
@@ -841,7 +841,7 @@ class Observatory:
 
                 if not no_AWS:  #IN the no+AWS case should we skip more of the above processing?
                     #g_dev['cam'].enqueue_for_AWS(text_data_size, paths['im_path'], paths['text_name'])
-                  
+
                     g_dev['cam'].enqueue_for_AWS(jpeg_data_size, paths['im_path'], paths['jpeg_name10'])
                     g_dev['cam'].enqueue_for_AWS(i768sq_data_size, paths['im_path'], paths['i768sq_name10'])
                     #print('File size to AWS:', reduced_data_size)
@@ -863,7 +863,7 @@ class Observatory:
                 self.reduce_queue.task_done()
             else:
                 time.sleep(.5)
-                
+
 
 
 if __name__ == "__main__":
@@ -883,7 +883,7 @@ if __name__ == "__main__":
     # Start up the observatory
 
     import config
-    
+
 
     o = Observatory(config.site_name, config.site_config)
     o.run()
