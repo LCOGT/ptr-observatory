@@ -308,22 +308,27 @@ class Camera:
         self.last_user_name = "unknown user name"
         self.last_user_id = "unknown user ID"
 
-        self.arc_box = ArcLampBox(self.config['lamp_box']['lamp_box1']['driver'])
         # DEH added ArcLampBox code usage here.
-        # Check what lamp box we have. The UVEX and eShel have different calibration units.
+        # Check what lamp box we have. The UVEX and eShel have different calibration units. Skips if none available.
         if 'eshel' in (self.config['lamp_box']['lamp_box1']['desc']).lower():
+            self.arc_box = ArcLampBox(self.config['lamp_box']['lamp_box1']['driver'])  # COM Port string
             self.arc_box_type = 'eshel'
             # Possible cmds are: Thorium, Tungsten, Blue, White, Solar, Dark_mirror, Reset, or Object
             self.arc_box_cmd = self.arc_box.set_arc_box
             print("Available lamps: ", self.config['lamp_box']['lamp_box1']['switches'])
         elif 'uvex' in (self.config['lamp_box']['lamp_box1']['desc']).lower():
-            # Deal with the SPOX ASCOM driver here for the UVEX, eventually.
+            # TODO: Deal with the SPOX ASCOM driver here for the UVEX.
+            self.arc_box = None  # Do something with the SPOX ASCOM driver initialization here.
             self.arc_box_type = 'uvex'
             pass
-        else:
-            self.arc_box_type = None  # No recognized calibration unit, can't switch on/off lamps.
-            print("Could not determine calibration unit. No calibration lamps will be used.")
-
+        else:  # No calibration lamp unit.
+            self.arc_box_type = None
+            print("Could not locate or determine calibration unit. No calibration lamps will be used.")
+        self.expose_lamp_state = None
+        self.lit_fibers = 'none&none&none'  # Default fiber string for Banzai-NRES: 1st is target fib, 2nd calibration fib, 3rd always none
+        # TODO: DEH what's the best way to check if there's a lampbox that's plugged in and available at a site?
+        # Currently we are relying on the config file to tell if there is a lampbox at site.
+        # Also: how to check if mirror gets stuck and fix it?
 
         try:
             seq = test_sequence(self.alias)
@@ -590,7 +595,7 @@ class Camera:
         exposure_time = min(exposure_time, 1440.)
         self.estimated_readtime = (exposure_time + readout_time)   #  3 is the outer retry loop maximum.
         #exposure_time = max(0.2, exposure_time)  #Saves the shutter, this needs qualify with imtype.
-        imtype= required_params.get('image_type', 'light')
+        imtype = required_params.get('image_type', 'light')
         if imtype.lower() in ['experimental']:
             g_dev['enc'].wx_test = not g_dev['enc'].wx_test
             return
@@ -650,20 +655,29 @@ class Camera:
         if self.arc_box_type == 'eshel':
             if frame_type == 'dark':
                 self.arc_box_cmd('Dark_mirror')
+                self.lit_fibers = 'none&none&none'
             elif frame_type == 'lampflat':
                 self.arc_box_cmd('White')  # LED + Tungsten switches for lampflats
+                self.lit_fibers = 'none&tung&none'  # Update lit fibers string for fits header
             elif frame_type == 'arc':
                 self.arc_box_cmd('Thorium')
+                self.lit_fibers = 'none&thar&none'
+            elif frame_type == 'expose':
+                # If we light the arc fiber fiber while exposing on a target object, this needs to be reworked:
+                # Turn on ThAr bulb without dark mirror for the right frame type, then lit_fibers = 'object&thar&none'.
+                self.lit_fibers = 'object&none&none'  # We can have this use the actual target name instead.
+                self.arc_box_cmd("Object")            
             else:
-                self.arc_box_cmd("Object")  # No mirror or lamps.
+                self.arc_box_cmd("Object")  # Reset
             time.sleep(1)  # Give the unit a moment to switch properly before moving on to exposing images
-            expose_lamp_state = self.arc_box.arc_status  # To pass to FITS header for now
-
+            self.expose_lamp_state = self.arc_box.arc_status  # To pass to FITS header for now
+        
         elif self.arc_box_type == 'uvex':
-            # Work with the ASCOM driver for the SPOX unit here eventually
+            # TODO: Use ASCOM driver for the SPOX unit here.
             pass
         else:
-            expose_lamp_state = None
+            self.expose_lamp_state = None
+
 
         area = optional_params.get('area', 150)
         # if area is None or area in['Full', 'full', 'chip', 'Chip']:   #  Temporary patch to deal with 'chip'
@@ -962,7 +976,7 @@ class Camera:
                                          count - seq, gather_status, do_sep, no_AWS,
                                          dist_x, dist_y, quick=quick, low=ldr_handle_time, \
                                          high=ldr_handle_high_time, script=self.script, \
-                                         opt=opt, expose_lamp_state=expose_lamp_state)  #  NB all these parameters are crazy!
+                                         opt=opt)  #  NB all these parameters are crazy!
                     self.exposure_busy = False
                     self.t10 = time.time()
                     #  self._stop_expose()
@@ -979,7 +993,7 @@ class Camera:
         if self.arc_box_type == 'eshel':
             self.arc_box_cmd("Reset")  # Turn off the lamps and put mirror into default position now.
         elif self.arc_box_type == 'uvex':
-            pass        
+            pass
         #print("\nFull expose of a group took:  ", round(self.t11 - self.t0 , 2), ' Retries;  ', num_retries, 'Average: ', round((self.t11 - self.t0)/count, 2),  ' Returning:  ', result, '\n\n')
         try:
             #print(' 0 sec cycle time:  ', round((self.t11 - self.t0)/count - exposure_time , 2) )
@@ -996,7 +1010,7 @@ class Camera:
 
     def finish_exposure(self, exposure_time, frame_type, counter, seq, \
                         gather_status=True, do_sep=False, no_AWS=False, start_x=None, start_y=None, quick=False, \
-                        low=0, high=0, script=False, opt=None, expose_lamp_state=None):
+                        low=0, high=0, script=False, opt=None):
         print("Finish exposure Entered:  ", exposure_time, frame_type, counter, \
               gather_status, do_sep, no_AWS, start_x, start_y, opt['area'])
 
@@ -1297,8 +1311,8 @@ class Camera:
 #                     #Data  The Biassec and Trimsec are essentially zero and detsec = datasec.  This is not
 #                     #always the case.  This all needs re-thinking if we are going to Run BANSAI at site.
 #
-#                     # DEH: BANZAI expects the detsec, datasec, biassec, and trimssec keyword, so we likely need
-#                     # to keep these in the header but modify the value when necessary to fit what BANZAI needs to run.
+#                     # DEH: BANZAI expects the detsec, datasec, biassec, and trimssec keywords, so we likely need
+#                     # to keep these in the header but modify the value if necessary to fit what BANZAI needs to run.
 # =============================================================================
 
                     hdu.header['BIASSEC'] = ('['+str(int(self.overscan_x/self.bin_x))+':'+str(int(self.overscan_x/self.bin_x + 1))+','+ \
@@ -1346,8 +1360,9 @@ class Camera:
                     #hdu.header['OBDECRAT'] = self.pre_mnt[5]
                     if self.arc_box_type is not None:
                         hdu.header['LMPBOX'] = (self.config['lamp_box']['lamp_box1']['name'], 'Calibration unit name')
-                        hdu.header['LAMPS'] = (str(self.config['lamp_box']['lamp_box1']['switches']), 'Calibration unit switches')
-                        hdu.header['LMPSTAT'] = (expose_lamp_state, 'Lamp state during exposure')
+                        hdu.header['LAMPS'] = (str(self.config['lamp_box']['lamp_box1']['switches']), 'Available calibration unit switches')
+                        hdu.header['LMPSTAT'] = (self.expose_lamp_state, 'Lamp state during exposure')
+                        hdu.header['OBJECTS'] = (self.lit_fibers, "Fiber object state string")  # For banzai-nres
 
                     try:
                         hdu.header['OBSERVER'] = (self.user_name, 'Observer name')  # userid
@@ -1392,7 +1407,7 @@ class Camera:
                     hdu.header['ZENITH'] = (avg_mnt['zenith_distance'], '[deg] Zenith')
                     hdu.header['AIRMASS'] = (avg_mnt['airmass'], 'Effective mean airmass')
                     g_dev['airmass'] = float(avg_mnt['airmass'])
-                    #hdu.header['REFRACT'] = (round(g_dev['mnt'].refraction_rev, 3),'asec')
+                    hdu.header['REFRACT'] = (round(g_dev['mnt'].refraction_rev, 3),'asec')
                     hdu.header['MNTRDSYS'] = (avg_mnt['coordinate_system'], 'Mount coordinate system')
                     hdu.header['POINTINS'] = (avg_mnt['instrument'], '')
                     hdu.header['MNT-PARK'] = (avg_mnt['is_parked'], 'Mount is parked')
@@ -1422,14 +1437,14 @@ class Camera:
                     hdu.header['FOCUSMOV'] = (avg_foc[3], 'Focuser is moving')
 
                     hdu.header['WXSTATE'] = (g_dev['ocn'].wx_is_ok, 'Weather system state')
-                    # hdu.header['SKY-TEMP'] = (avg_ocn[1], '[deg C] Sky temperature')
-                    # hdu.header['AIR-TEMP'] = (avg_ocn[2], '[deg C] External temperature')
-                    # hdu.header['HUMIDITY'] = (avg_ocn[3], '[%] Percentage humidity')
-                    # hdu.header['DEWPOINT'] = (avg_ocn[4], '[deg C] Dew point')
-                    # hdu.header['WINDSPEE'] = (avg_ocn[5], '[km/h] Wind speed')
-                    # hdu.header['PRESSURE'] = (avg_ocn[6], '[mbar] Atmospheric pressure')
-                    # hdu.header['CALC-LUX'] = (avg_ocn[7], '[mag/arcsec^2] Expected sky brightness')
-                    # hdu.header['SKYMAG']  = (avg_ocn[8], '[mag/arcsec^2] Measured sky brightness')
+                    hdu.header['SKY-TEMP'] = (avg_ocn[1], '[deg C] Sky temperature')
+                    hdu.header['AIR-TEMP'] = (avg_ocn[2], '[deg C] External temperature')
+                    hdu.header['HUMIDITY'] = (avg_ocn[3], '[%] Percentage humidity')
+                    hdu.header['DEWPOINT'] = (avg_ocn[4], '[deg C] Dew point')
+                    hdu.header['WINDSPEE'] = (avg_ocn[5], '[km/h] Wind speed')
+                    hdu.header['PRESSURE'] = (avg_ocn[6], '[mbar] Atmospheric pressure')
+                    hdu.header['CALC-LUX'] = (avg_ocn[7], '[mag/arcsec^2] Expected sky brightness')
+                    hdu.header['SKYMAG']  = (avg_ocn[8], '[mag/arcsec^2] Measured sky brightness')
 
                     self.pix_ang = (self.camera.PixelSizeX*self.camera.BinX/(float(self.config['telescope'] \
                                               ['telescope1']['focal_length'])*1000.))
@@ -1462,8 +1477,7 @@ class Camera:
                     # NB This needs more development
                     #im_type = 'EX'   #or EN for engineering....
 
-                    # DEH added this for compliance with the LCO bad pixel mask maker.
-                    #BPM maker requires b00, f00, d00, a00, or w00 in filenames to gather calibration types.
+                    #DEH requires b00, f00, w00, d00, a00, or e00 in filenames to gather and recognize frame types.
                     if frame_type == 'bias':
                         im_type = 'b'
                     elif frame_type == 'dark':

@@ -286,8 +286,6 @@ class Observatory:
                     device = Sequencer(driver, name, self.config, self.astro_events)
                 elif dev_type == "filter_wheel":
                     device = FilterWheel(driver, name, self.config)
-                #elif dev_type == "lamp_box":
-                    #device = ArcLampBox(driver)  # the driver is the COM port.
                 else:
                     print(f"Unknown device: {name}")
                 # Add the instantiated device to the collection of all devices.
