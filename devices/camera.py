@@ -1139,8 +1139,8 @@ class Camera:
                         trimmed = self.img[32:, :-34].astype('int32') + pedastal - self.overscan
 
                     else:
-                        print("Image shift is incorrect, absolutely fatal error.")
-                        breakpoint()
+                        print("Image shift is incorrect, absolutely fatal error.  Usually massive eoer-exposure")
+                       # breakpoint()
                         pass
 
                     # if full:
@@ -1161,7 +1161,7 @@ class Camera:
                         print("Rare error, Shift 2", self.overscan, square.mean())
 
                     else:
-                        breakpoint()
+                        #breakpoint()
                         print("Image shift is incorrect, absolutely fatal error", self.img[0:20, -18])
 
 

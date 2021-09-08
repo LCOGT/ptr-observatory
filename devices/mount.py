@@ -363,7 +363,7 @@ class Mount:
             self.current_icrs_ra = icrs_coord.ra.hour
             self.current_icrs_dec = icrs_coord.dec.degree
         else:
-            breakpoint()
+            #breakpoint()
             #NB This is an unused and not completely implemented path, or does Planwave PWI-4 use it?
             #breakpoint()   #20201230 WE should not get here.
             self.current_icrs_ra = ra_fix_r(self.mount.RightAscension - ra_cal_offset)    #May not be applied in positioning

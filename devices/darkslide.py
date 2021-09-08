@@ -57,7 +57,7 @@ class ArcLampBox(object):
 
 
     def set_arc_box(self, cmd):
-        breakpoint()
+        #breakpoint()
         self._com = serial.Serial(self.com_port, baudrate=2400, bytesize=8, \
                                   parity='N', stopbits=1, timeout=0.1)
         if cmd == "Thorium":
@@ -89,4 +89,4 @@ class ArcLampBox(object):
 if __name__ == '__main__':
 
     arc_lamp = ArcLampBox('COM11')
-    breakpoint()
+    #breakpoint()

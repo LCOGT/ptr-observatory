@@ -383,7 +383,7 @@ class Observatory:
                                     except:
                                         deviceInstance = cmd['required_params']['device_instance']
                                 except:
-                                    breakpoint()
+                                    #breakpoint()  
                                     pass
                         else:
                             deviceInstance = cmd['deviceInstance']

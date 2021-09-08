@@ -692,7 +692,7 @@ class Sequencer:
         self.sequencer_hold = True
         self.current_script = 'Afternoon Bias Dark'
         dark_time = 240
-        breakpoint()
+       # breakpoint()
         while g_dev['events']['Eve Bias Dark']  <= ephem.now() <= g_dev['events']['Ops Window Start'] :   #Do not overrun the window end
             print("Expose b_2")   
             req = {'time': 0.0,  'script': 'True', 'image_type': 'bias'}
@@ -1588,7 +1588,7 @@ IF sweep
 A variant on this is cover a grid, cover a + sign shape.
 IF sweep
         '''
-        breakpoint()
+        #breakpoint()
         self.sky_guard = True
         ptr_utility.ModelOn = False
         print("Starting sky sweep.")

@@ -202,13 +202,13 @@ class Enclosure:
                 self.site_in_automatic = False
                 self.mode = 'Shutdown'
             elif redis_command == 'goHome':
-                breakpoint()
+                #breakpoint()
                 self.redis_server.delete('goHome')
             elif redis_command == 'enterSynchronise':
-                breakpoint()
+                #breakpoint()
                 self.redis_server.delete('enterSynchronise')                
             elif redis_command == 'stopSynchronize':
-                breakpoint()
+                #breakpoint()
                 self.redis_server.delete('stopSynchronize')
             else:
                 
