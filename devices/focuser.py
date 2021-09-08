@@ -71,6 +71,7 @@ class Focuser:
 
         try:   #  NB NB NB This mess neads cleaning up.
             try:
+
                 self.last_temperature = self.focuser.Temperature
                 self.reference = self.calculate_compensation(self.focuser.Temperature)   #need to change to config supplied
                 print("Focus position set from temp compensated value:  ", self.reference)

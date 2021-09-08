@@ -363,7 +363,7 @@ class Mount:
             self.current_icrs_ra = icrs_coord.ra.hour
             self.current_icrs_dec = icrs_coord.dec.degree
         else:
-            breakpoint()
+            #breakpoint()
             #NB This is an unused and not completely implemented path, or does Planwave PWI-4 use it?
             #breakpoint()   #20201230 WE should not get here.
             self.current_icrs_ra = ra_fix_r(self.mount.RightAscension - ra_cal_offset)    #May not be applied in positioning
@@ -421,6 +421,8 @@ class Mount:
             if self.seek_commanded:
                 #print('In Status:  ', self.prior_roll_rate, self.prior_pitch_rate)
                 #print('From Mnt :  ', self.mount.RightAscensionRate, self.mount.DeclinationRate)
+                icrs_ra, icrs_dec = self.get_mount_coordinates()  #20210430  Looks like this faulted during a slew.
+            if self.prior_roll_rate == 0:
                 pass
             status = {
                 'timestamp': round(time.time(), 3),

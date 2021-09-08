@@ -84,7 +84,7 @@ class Enclosure:
 
         if action == "open":
             if self.site_is_proxy:
-                self.redis_server.set('enc_cmd', 'open', ex=300)
+                self.redis_server.set('enc_cmd', 'open', ex=1200)
             else:
                 self.open_command(req, opt)
         elif action == "close":
@@ -94,7 +94,7 @@ class Enclosure:
                 self.close_command(req, opt)
         elif action == "setAuto":
             if self.site_is_proxy:
-                self.redis_server.set('enc_cmd', 'setAuto', ex=300)
+                self.redis_server.set('enc_cmd', 'setAuto', ex=1200)
             else:
                 self.mode = 'Automatic'
                 g_dev['enc'].site_in_automatic = True
@@ -102,14 +102,14 @@ class Enclosure:
                 print("Site and Enclosure set to Automatic.")
         elif action == "setManual":
             if self.site_is_proxy:
-                self.redis_server.set('enc_cmd', 'setManual', ex=300)
+                self.redis_server.set('enc_cmd', 'setManual', ex=1200)
             else:
                 self.mode = 'Manual'
                 g_dev['enc'].site_in_automatic = False
                 g_dev['enc'].automatic_detail =  "Manual Only"
         elif action in ["setStayClosed", 'setShutdown', 'shutDown']:
             if self.site_is_proxy:
-                self.redis_server.set('enc_cmd', 'setShutdown', ex=300)
+                self.redis_server.set('enc_cmd', 'setShutdown', ex=1200)
                 self.mode = 'Shutdown'
                 g_dev['enc'].site_in_automatic = False
                 g_dev['enc'].automatic_detail =  "Site Shutdown"

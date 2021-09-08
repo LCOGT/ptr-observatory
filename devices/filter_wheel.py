@@ -239,7 +239,7 @@ class FilterWheel:
         self.filter_number = filter_number
         self.filter_selected = self.filter_data[filter_number][0]
         if self.dual and self.custom:
-            breakpoint()
+
             r0 = self.r0
             r1 = self.r1
             r0['filterwheel']['position'] = filter_selections[0]
