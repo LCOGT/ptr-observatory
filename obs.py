@@ -31,6 +31,7 @@ import requests
 import os
 #import sys
 #import argparse
+import redis
 import json
 import numpy as np
 import math
@@ -149,30 +150,46 @@ def patch_httplib(bsize=400000):
                 datablock = p_data.read(sblocks)
         else:
             self.sock.sendall(p_data)
-    httplib2.httplib.HTTPConnection.send = send
-
-
+    httplib2.httplib.HTTPConnection.send = send    
+    
+    
 class Observatory:
 
     def __init__(self, name, config):
 
         # This is the class through which we can make authenticated api calls.
         self.api = API_calls()
-        self.command_interval = 2   # seconds between polls for new commands
-        self.status_interval = 3    # NOTE THESE IMPLEMENTED AS A DELTA NOT A RATE.
+        self.command_interval = 3   # seconds between polls for new commands
+        self.status_interval = 4    # NOTE THESE IMPLEMENTED AS A DELTA NOT A RATE.
         self.name = name
         self.site_name = name
         self.config = config
         self.site_path = config['site_path']
         self.last_request = None
         self.stopped = False
+        self.status_count = 0
         self.site_message = '-'
-        self.device_types = [
+        self.device_types = [    #All devices need to be created
             'observing_conditions',
             'enclosure',
             'mount',
             'telescope',
-            'screen',
+            #'screen',
+            'rotator',
+            'focuser',
+            'selector',
+            'filter_wheel',
+            'camera',
+            'sequencer',
+            'camera_1_1',
+            'camera_1_2',
+            'camera_1-4',
+            ]
+        self.short_status_devices = [    #Obs-cond and enc do not report status
+            'enclosure',
+            'mount',
+            'telescope',
+            #'screen',
             'rotator',
             'focuser',
             'selector',
@@ -191,11 +208,17 @@ class Observatory:
         # Use the configuration to instantiate objects for all devices.
         self.create_devices(config)
         self.loud_status = False
-        #g_dev['obs']: self
-        g_dev['obs'] = self
+        g_dev['obs'] = self 
         site_str = config['site']
         g_dev['site']:  site_str
         self.g_dev = g_dev
+        redis_ip = config['redis_ip']
+        if redis_ip is not None:           
+            self.redis_server = redis.StrictRedis(host=redis_ip, port=6379, db=0,
+                                              decode_responses=True)
+            self.redis_wx_enabled = True
+        else:
+            self.redis_wx_enabled = False
         self.time_last_status = time.time() - 3
         # Build the to-AWS Queue and start a thread.
         self.aws_queue = queue.PriorityQueue()
@@ -257,7 +280,7 @@ class Observatory:
             devices_of_type = config.get(dev_type, {})
             device_names = devices_of_type.keys()
             # Instantiate each device object from based on its type
-            if dev_type == 'camera':
+            if dev_type == 'camera':   #  NB The selector creates the camera objects?
                 pass
             for name in device_names:
                 driver = devices_of_type[name]["driver"]
@@ -345,9 +368,10 @@ class Observatory:
                     #print(unread_commands)
                     unread_commands.sort(key=lambda x: x["ulid"])
                     # Process each job one at a time
+                    print("# of incomming commands:  ", len(unread_commands))
                     for cmd in unread_commands:
                         if self.config['selector']['selector1']['driver'] != 'Null':
-                            port = cmd['optional_params']['instrument_selector_position']
+                            port = cmd['optional_params']['instrument_selector_position'] 
                             g_dev['mnt'].instrument_port = port
                             cam_name = self.config['selector']['selector1']['cameras'][port]
                             if cmd['deviceType'][:6] == 'camera':
@@ -369,6 +393,7 @@ class Observatory:
                         deviceType = cmd['deviceType']
                         device = self.all_devices[deviceType][deviceInstance]
                         try:
+                        
                             device.parse_command(cmd)
                         except Exception as e:
                             print( 'Exception in obs.scan_requests:  ', e)
@@ -436,7 +461,14 @@ class Observatory:
         status = {}
         # Loop through all types of devices.
         # For each type, we get and save the status of each device.
-        for dev_type in self.device_types:
+
+        if not self.config['agent_wms_enc_active']:
+            device_list = self.device_types
+            remove_enc = False
+        else:
+            device_list = self.short_status_devices 
+            remove_enc = True
+        for dev_type in device_list:
 
             # The status that we will send is grouped into lists of
             # devices by dev_type.
@@ -450,12 +482,18 @@ class Observatory:
                 # Get the actual device object...
                 device = devices_of_type[device_name]
                 # ...and add it to main status dict.
-                status[dev_type][device_name] = device.get_status()
+                result = device.get_status()
+
+                if result is not None:
+                    status[dev_type][device_name] = result
         # Include the time that the status was assembled and sent.
+        if remove_enc:
+            status.pop('enclosure', None)
         status["timestamp"] = round((time.time() + t1)/2., 3)
         status['send_heartbeat'] = False
+        loud = False
         if loud:
-            print('Status Sent:  \n', status)   # from Update:  ', status))
+            print('\n\nStatus Sent:  \n', status)   # from Update:  ', status))
         else:
             print('.') #, status)   # We print this to stay informed of process on the console.
             # breakpoint()
@@ -476,6 +514,8 @@ class Observatory:
             #self.api.authenticated_request("PUT", uri_status, status)   # response = is not  used
             #print("AWS Response:  ",response)
             self.time_last_status = time.time()
+            self.redis_server.set('obs_heart_time', self.time_last_status, ex=120 )
+            self.status_count +=1
         except:
             print('self.api.authenticated_request("PUT", uri, status):   Failed!')
 
@@ -567,6 +607,7 @@ class Observatory:
                 time.sleep(0.1)
             else:
                 time.sleep(0.2)
+                
     def send_to_user(self, p_log, p_level='INFO'):
         url_log = "https://logs.photonranch.org/logs/newlog"
         body = json.dumps({
@@ -579,6 +620,8 @@ class Observatory:
             resp = requests.post(url_log, body)
         except:
             print("Log did not send, usually not fatal.")
+            
+            
     # Note this is another thread!
     def reduce_image(self):
         '''

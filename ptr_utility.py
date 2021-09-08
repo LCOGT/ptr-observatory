@@ -73,9 +73,9 @@ MOUNTRATE = 15*APPTOSID  #15.0410717859
 KINGRATE = 15.029
 
 try:
-    RefrOn = False #site_config['mount']['mount1']['settings']['refraction_on'] 
+    RefrOn = site_config['mount']['mount1']['settings']['refraction_on'] 
     ModelOn = site_config['mount']['mount1']['settings']['model_on'] 
-    RatesOn = False #site_config['mount']['mount1']['settings']['rates_on'] 
+    RatesOn = site_config['mount']['mount1']['settings']['rates_on'] 
 
 except:
     RefrOn = False
@@ -100,18 +100,18 @@ model = {}    #Note model starts out zero, need to persist actual model.
 wmodel = {}
   
 #NB Currently this is where the working model is stored.
-model['IH'] = 0#3-178.35 
-model['ID'] = 0#-310.41 
+model['IH'] =0
+model['ID'] = 0
 model['WH'] = 0
 model['WD'] = 0
-model['MA'] = -304.43 
-model['ME'] = -69.92
-model['CH'] =0# -34.95
-model['NP'] =0# -54.48
-model['TF'] =0# 79.78
-model['TX'] =0# -8.44 
+model['MA'] =0
+model['ME'] = 0
+model['CH'] =0   #Value not clear after a flip.
+model['NP'] = 0
+model['TF'] = 0
+model['TX'] = 0
 model['HCES'] = 0
-model['HCEC'] =0# -192.59 
+model['HCEC'] = 0 
 model['DCES'] = 0.
 model['DCEC'] = 0.
 
@@ -1637,12 +1637,13 @@ def test_haDec_altAz_haDec():
             print (ha, tHa, dec, tDec)
 
 def apply_refraction_inEl_r(pAppEl, pSiteRefTemp, pSiteRefPress): #Deg, C. , mmHg
+    global RefrOn
     #From Astronomical Algorithms.  Max error 0.89" at 0 elev.
     #20210328   This code does not the right thing if star is below the Pole and is refracted above it.
     if not RefrOn:
         return pAppEl, 0.0
     elif pAppEl > 0:
-        pAppEl *= RTOD   #Formular assume elevgvation in degrees
+        pAppEl *= RTOD   #Formulas assume elevation in degrees
         ref = 1/math.tan(DTOR*(pAppEl + 7.31/(pAppEl + 4.4))) + 0.001351521673756295
         ref -= 0.06*math.sin((14.7*ref +13.)*DTOR) - 0.0134970632606319
         ref *= 283/(273 + pSiteRefTemp)
@@ -1662,6 +1663,7 @@ def apply_refraction_inEl_r(pAppEl, pSiteRefTemp, pSiteRefPress): #Deg, C. , mmH
         return reduce_alt_r(obsEl), ref*60.
 
 def correct_refraction_inEl_r(pObsEl, pSiteRefTemp, pSiteRefPress): #Deg, C. , mmHg
+    global RefrOn
     if not RefrOn:
         return pObsEl, 0.0
     else:
@@ -1690,7 +1692,11 @@ def test_refraction():   #passes 20170104   20180909
 
 def appToObsRaHa(appRa, appDec, pSidTime):
     global raRefr, decRefr, refAsec
-    from obs import g_dev
+    #from obs import g_dev
+    try:
+        g_dev['ocn'].get_proxy_temp_press()
+    except:
+        pass
     appHa, appDec = transform_raDec_to_haDec_r(appRa, appDec, pSidTime)
     appAz, appAlt = transform_haDec_to_azAlt_r(appHa, appDec, site_config['latitude']*DTOR)
     obsAlt, refAsec = apply_refraction_inEl_r(appAlt,  g_dev['ocn'].temperature,  g_dev['ocn'].pressure)
@@ -1701,6 +1707,11 @@ def appToObsRaHa(appRa, appDec, pSidTime):
 
 def obsToAppHaRa(obsHa, obsDec, pSidTime):
     global raRefr, decRefr
+    #from obs import g_dev
+    try:
+        g_dev['ocn'].get_proxy_temp_press()
+    except:
+        pass
     obsAz, obsAlt = transform_haDec_to_azAlt_r(obsHa, obsDec, site_config['latitude']*DTOR)
     refr = 0.0
     try:
@@ -1742,6 +1753,7 @@ def test_app_obs_app():
 
 
 def transform_mount_to_observed_r(pRoll, pPitch, pPierSide, loud=False):
+    global ModelOn
     #I am amazed this works so well even very near the celestrial pole.
     #input is Ha in hours and pitch in degrees.
     if not ModelOn:
@@ -1780,7 +1792,7 @@ def transform_observed_to_mount_r(pRoll, pPitch, pPierSide, loud=False, enable=F
     #This implements a basic 7 term TPOINT transformation.
 
     '''
-    global raCorr, decCorr, model
+    global raCorr, decCorr, model, ModelOn
 
 
     if enable:
@@ -1790,6 +1802,7 @@ def transform_observed_to_mount_r(pRoll, pPitch, pPierSide, loud=False, enable=F
         return (pRoll, pPitch)
     else:
         if True:
+         
             ih = model['IH']
             idec = model['ID']
             Wh = model['WH']
@@ -1839,15 +1852,14 @@ def transform_observed_to_mount_r(pRoll, pPitch, pPierSide, loud=False, enable=F
         if not ALTAZ:
            
             if pPierSide == 0:
-
+                ch = -ch/3600.      #Trying this 20210612
+                np = -np/3600.      
                 rRoll += math.radians(Wh/3600.)
                 rPitch -= math.radians(Wd/3600.)  #NB Adjust signs to normal EWNS view
                 #print("PIERSIDE IS BEING APPLIED:  ", pPierSide, Wh, Wd)
             if loud:
                 print(ih, idec, Wh, Wd, ma, me, ch, np, tf, tx, hces, hcec, dces, dcec)
-                # Do these need flipping?  I do not think so.
-            ch = -ch/3600.
-            np = -np/3600.
+
             #This is exact trigonometrically:
             if loud: print('Pre CN; roll, pitch:  ', rRoll*RTOH, rPitch*RTOD)
             cnRoll =  rRoll + math.atan2(math.cos(math.radians(np)) \

@@ -2,6 +2,8 @@ import win32com.client
 from global_yard import g_dev
 import time
 import serial
+import requests
+import json
 
 
 class FilterWheel:
@@ -12,14 +14,46 @@ class FilterWheel:
         self.config = config['filter_wheel']
         #print("FW:  ", self.config)
         self.dual_filter = self.config['filter_wheel1']['dual_wheel']
+        self.ip = str(self.config['filter_wheel1']['ip_string'])
         self.filter_data = self.config['filter_wheel1']['settings']['filter_data'][1:]  #  Stips off column heading entry
         self.filter_screen_sort = self.config['filter_wheel1']['settings']['filter_screen_sort']
         self.filter_reference = int(self.config['filter_wheel1']['settings']['filter_reference'])
+   
         #  THIS CODE DOES NOT implement a filter via the Maxim application which is passed in
         #  as a valid instance of class camera.
         self.filter_message = '-'
         print('Please NOTE: Filter wheel may block for many seconds while first connecting & homing.')
-        if type(driver) == list:
+
+        if driver == 'LCO.dual':
+            '''
+            home the wheel and get responses, hat indicates it is connected.
+            set current_0 and _1 to [0, 0]
+            position to default of w/L filter.
+            
+            '''
+            r0 = requests.get(self.ip + '/filterwheel/0/position')
+            r1 = requests.get(self.ip + '/filterwheel/1/position')
+            if str(r0) == str(r1) == '<Response [200]>':
+                print ("LCO Wheel present and connected.")
+
+            r0 = json.loads(r0.text)
+            r1 = json.loads(r1.text)
+            self.r0 = r0
+            self.r1 = r1
+            r0['filterwheel']['position'] = 0
+            r1['filterwheel']['position'] = 7
+            r0_pr = requests.put(self.ip + '/filterwheel/0/position', json=r0)
+            r1_pr = requests.put(self.ip + '/filterwheel/1/position', json=r1)
+            if str(r0_pr) == str(r1_pr) == '<Response [200]>':
+                print ("Set up default filter configuration.")
+            self.maxim = False
+            self.ascom = False
+            self.dual = True
+            self.custom = True
+            self.filter_selected = self.filter_data[self.filter_reference][0]   #This is the default expected after a
+            self.filter_number = self.filter_reference
+            self.filter_offset = self.filter_data[self.filter_reference][2]
+        elif type(driver) == list:
             self.maxim = False
             self.dual = True
             win32com.client.pythoncom.CoInitialize()
@@ -182,7 +216,7 @@ class FilterWheel:
         req = command['required_params']
         opt = command['optional_params']
         action = command['action']
-
+        breakpoint()
         if action == "set_position":
             self.set_position_command(req, opt)
         elif action == "set_name":
@@ -204,7 +238,22 @@ class FilterWheel:
         #print('Selections:  ', filter_selections)
         self.filter_number = filter_number
         self.filter_selected = self.filter_data[filter_number][0]
-        if self.dual:
+        if self.dual and self.custom:
+
+            r0 = self.r0
+            r1 = self.r1
+            r0['filterwheel']['position'] = filter_selections[0]
+            r1['filterwheel']['position'] = filter_selections[1]
+            r0_pr = requests.put(self.ip + '/filterwheel/0/position', json=r0)
+            r1_pr = requests.put(self.ip + '/filterwheel/1/position', json=r1)
+            if str(r0_pr) == str(r1_pr) == '<Response [200]>':
+                print ("Set up filter configuration;  ", filter_selections)
+            
+            
+        elif self.dual and not self.custom:  #Dual FLI
+            breakpoint()
+        
+        
             #NB the order of the filter_selected [1] may be incorrect
             try:
                 while self.filter_front.Position == -1:
@@ -230,10 +279,22 @@ class FilterWheel:
         ''' set the filter position by  param string filter position index '''
         'NBNBNB This routine may not be correct'
         #print("filter cmd: set_position")
-        #breakpoint()
+        breakpoint()
         filter_selections = self.filter_data[int(req['filter_num'])][1]
         #print('Selections:  ', filter_selections)
-        if self.dual:
+        if self.dual and self.custom:
+            breakpoint()
+            r0 = self.r0
+            r1 = self.r1
+            r0['filterwheel']['position'] = filter_selections[0]
+            r1['filterwheel']['position'] = filter_selections[1]
+            r0_pr = requests.put(self.ip + '/filterwheel/0/position', json=r0)
+            r1_pr = requests.put(self.ip + '/filterwheel/1/position', json=r1)
+            if str(r0_pr) == str(r1_pr) == '<Response [200]>':
+                print ("Set up filter configuration;  ", filter_selections)
+            
+            
+        elif self.dual and not self.custom:
             try:
                 while self.filter_front.Position == -1:
                     time.sleep(0.4)
@@ -257,6 +318,7 @@ class FilterWheel:
     def set_name_command(self, req: dict, opt: dict):
         ''' set the filter position by filter name '''
         #print("filter cmd: set_name", req, opt)
+        #breakpoint()
         try:
             filter_name = req['filter_name']
         except:
@@ -265,20 +327,20 @@ class FilterWheel:
             except:
                 print("filter dictionary is screwed up big time.")
 
-        if filter_name =="W":     #  NB This is a temp patch
-            filter_name = 'w'
-        if filter_name in ["Exo", "EXO"]:
-            filter_name = 'exo'
-        if filter_name =="Rc":
-            filter_name = 'R'
-        if filter_name =="r":
-            filter_name = 'rp'
-        if filter_name =="g":
-            filter_name = 'gp'
-        if filter_name =="i":
-            filter_name = 'ip'
-        if filter_name =="u":
-            filter_name = 'up'
+        # if filter_name =="W":     #  NB This is a temp patch
+        #     filter_name = 'w'
+        # if filter_name in ["Exo", "EXO", 'exo']:
+        #     filter_name = 'exo'
+        # if filter_name =="Rc":
+        #     filter_name = 'R'
+        # if filter_name =="r":
+        #     filter_name = 'rp'
+        # if filter_name =="g":
+        #     filter_name = 'gp'
+        # if filter_name =="i":
+        #     filter_name = 'ip'
+        # if filter_name =="u":
+        #     filter_name = 'up'
         for match in range(int(self.config['filter_wheel1']['settings']['filter_count'])):
             if filter_name == self.filter_data[match][0]:
                 filt_pointer = match
@@ -290,22 +352,46 @@ class FilterWheel:
         filter_selections = self.filter_data[filt_pointer][1]
         print('Selections:  ', filter_selections)
         self.filter_offset = float(self.filter_data[filt_pointer][2])
-        if self.dual:
-            try:
-                while self.filter_front.Position == -1:
-                    time.sleep(0.4)
-                self.filter_front.Position = filter_selections[1]
-                time.sleep(0.2)
-            except:
-                pass#breakpoint()
-            try:
-                while self.filter_back.Position == -1:
-                    time.sleep(0.4)
-                self.filter_back.Position = filter_selections[0]
-                time.sleep(0.2)
-            except:
-                pass#breakpoint()
-            self.filter_offset = float(self.filter_data[filt_pointer][2])
+        if self.dual and self.custom:
+            r0 = self.r0
+            r1 = self.r1
+            r0['filterwheel']['position'] = filter_selections[0]
+            r1['filterwheel']['position'] = filter_selections[1]
+            r0_pr = requests.put(self.ip + '/filterwheel/0/position', json=r0)
+            r1_pr = requests.put(self.ip + '/filterwheel/1/position', json=r1)
+            if str(r0_pr) == str(r1_pr) == '<Response [200]>':
+                print ("Set up filter configuration;  ", filter_selections)
+                print('Status:  ', r0_pr.text, r1_pr.text)
+            while True:
+                r0_t = int(requests.get(self.ip + '/filterwheel/0/position').text.split('"position":')[1].split('}')[0])
+                r1_t = int(requests.get(self.ip + '/filterwheel/1/position').text.split('"position":')[1].split('}')[0])
+                print(r0_t,r1_t)
+                if r0_t == 808 or r1_t == 808:
+                    time.sleep(1)
+                    continue
+                else:
+                    print('Filters:  ',r0_t,r1_t)
+                    break
+                    
+
+            
+            
+        elif self.dual:
+             try:
+                 while self.filter_front.Position == -1:
+                     time.sleep(0.4)
+                 self.filter_front.Position = filter_selections[1]
+                 time.sleep(0.2)
+             except:
+                 pass#breakpoint()
+             try:
+                 while self.filter_back.Position == -1:
+                     time.sleep(0.4)
+                 self.filter_back.Position = filter_selections[0]
+                 time.sleep(0.2)
+             except:
+                 pass#breakpoint()
+             self.filter_offset = float(self.filter_data[filt_pointer][2])
         elif self.maxim:
             
 # =============================================================================

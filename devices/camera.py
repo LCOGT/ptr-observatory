@@ -182,14 +182,14 @@ class Camera:
         g_dev[name + '_cam_retry_config'] = config
         g_dev[name + '_cam_retry_doit'] = False
         g_dev[name] = self
-
         if name == 'camera_1_1':     #NB Why this special case???
             g_dev['cam'] = self
         self.config = config
         self.alias = config['camera'][self.name]['name']
         win32com.client.pythoncom.CoInitialize()
-        self.camera = win32com.client.Dispatch(driver)
+        print(driver, name)
 
+        self.camera = win32com.client.Dispatch(driver)
         #self.camera = win32com.client.Dispatch('ASCOM.FLI.Kepler.Camera')
         #Need logic here if camera denies connection.
         print("Connecting to:  ", driver)
@@ -298,7 +298,8 @@ class Camera:
         self.hint = None
         self.focus_cache = None
         self.darkslide = False
-        if self.config['camera'][self.name]['settings']['darkslide_com']:
+        breakpoint
+        if self.config['camera'][self.name]['settings']['has_darkslide']:
             self.darkslide = True
             com_port = self.config['camera'][self.name]['settings']['darkslide_com']
             self.darkslide_instance = Darkslide(com_port)     #  NB eventually default after reboot should be closed.
@@ -529,7 +530,6 @@ class Camera:
         #print("Checking if Maxim is still connected!")
         #  self.t7 is last time camera was read out
         #if self.t7 is not None and (time.time() - self.t7 > 30) and self.maxim:
-
         try:
             self.user_name
         except:
@@ -543,6 +543,7 @@ class Camera:
                 g_dev['mnt'].re_seek(0)  #) is a placeholder for a dither value being passed.
         except:
             print('Re_seek skipped; usually because no prior seek this session.')
+
         try:
             probe = self.camera.CoolerOn
             if not probe:
@@ -569,13 +570,13 @@ class Camera:
         bin_x = optional_params.get('bin', self.config['camera'][self.name] \
                                                       ['settings']['default_bin'])  #NB this should pick up config default.
 
-        if bin_x in [4, '4, 4', '4,4', [4, 4]]:     # For now this is the highest level of binning supported.
+        if bin_x in ['4 4', 4, '4, 4', '4,4', [4, 4]]:     # For now this is the highest level of binning supported.
             bin_x = 4
             self.ccd_sum = '4 4'
-        elif bin_x in [3, '3, 3', '3,3', [3, 3]]:   # replace with in and various formats or strip spaces.
+        elif bin_x in ['3 3', 3, '3, 3', '3,3', [3, 3]]:   # replace with in and various formats or strip spaces.
             bin_x = 3
             self.ccd_sum = '3 3'
-        elif bin_x in [2, '2, 2', '2,2', [2, 2]]:
+        elif bin_x in ['2 2', 2, '2, 2', '2,2', [2, 2]]:
             bin_x = 2
             self.ccd_sum = '2 2'
         else:
@@ -610,7 +611,7 @@ class Camera:
             self.current_filter = requested_filter_name
             g_dev['fil'].set_name_command({'filter': requested_filter_name}, {})
         except Exception as e:
-            print(e)
+            print("Camera filter setup:  ", e)
             #breakpoint()
         #  NBNB Changing filter may cause a need to shift focus
         self.current_offset = g_dev['fil'].filter_offset  #TEMP   NBNBNB This needs fixing
@@ -829,27 +830,28 @@ class Camera:
                 #Check here for filter, guider, still moving  THIS IS A CLASSIC
                 #case where a timeout is a smart idea.
                 #Wait for external motion to cease before exposing.  Note this precludes satellite tracking.
+
                 st = ""
                 if g_dev['enc'].is_dome:
                     try:
-                        enc_slewing = g_dev['enc'].enclosure.Slewing
+                        enc_slewing = g_dev['enc'].status['dome_slewing']
                     except:
                         print("enclosure SLEWING threw an exception.")
                 else:
                      enc_slewing = False
-
-                while g_dev['foc'].focuser.IsMoving or g_dev['rot'].rotator.IsMoving or \
+                rot = (self.config['site'] != 'saf') and g_dev['rot'].rotator.IsMoving
+                while g_dev['foc'].focuser.IsMoving or rot or \
                       g_dev['mnt'].mount.Slewing or enc_slewing:   #Filter is moving??
-                    if g_dev['foc'].focuser.IsMoving: st += 'f>'
-                    if g_dev['rot'].rotator.IsMoving: st += 'r>'
+                    if rot: st += 'r>'
                     if g_dev['mnt'].mount.Slewing:
                         st += 'm>  ' + str(round(time.time() - g_dev['mnt'].move_time, 1))
                     if enc_slewing:
                         st += 'd>' + str(round(time.time() - g_dev['mnt'].move_time, 1))
                     print(st)
-                    if round(time.time() - g_dev['mnt'].move_time, 1) >= 80:
-                       print("|n\n DOME OR MOUNT HAS TIMED OUT!|n|n")
-
+                    if round(time.time() - g_dev['mnt'].move_time, 1) >= 60:
+                       print("|n\n DOME OR MOUNT HAS TIMED OUT!; going ahead Anyway|n|n")
+                       break
+                      
                     st = ""
                     time.sleep(0.2)
                     if seq > 0:
@@ -857,7 +859,7 @@ class Camera:
                     #Refresh the probe of the dome status
                     if g_dev['enc'].is_dome:
                         try:
-                            enc_slewing = g_dev['enc'].enclosure.Slewing
+                            enc_slewing = g_dev['enc'].status['dome_slewing']
                         except:
                             print("enclosure SLEWING threw an exception.")
                     else:
@@ -1148,7 +1150,7 @@ class Camera:
                     #     square = trimmed[1590:1590 + 6388, :]
                 elif ix == 4800:
                     #Shift error needs documenting!
-                    if self.img[11, -18] == 0:   #This is the normal incoming imsge
+                    if self.img[11, -18] == 0:   #This is the normal incoming image
                         self.overscan = int((np.median(self.img[12:, -17:]) + np.median(self.img[0:10, :]))/2) - 1
                         trimmed = self.img[12:-4, :-17].astype('int32') + pedastal - self.overscan
 
@@ -1157,7 +1159,7 @@ class Camera:
                         self.overscan = int((np.median(self.img[16:, -17:]) + np.median(self.img[0:14, :]))/2) -1
                         trimmed = self.img[16:, :-17].astype('int32') + pedastal - self.overscan
 
-                        print("Rare error, Shift 2", self.overscan) #, square.mean())
+                        print("Rare error, Shift 2", self.overscan, square.mean())
 
                     else:
                         breakpoint()
@@ -1199,7 +1201,8 @@ class Camera:
                 avg_mnt = g_dev['mnt'].get_average_status(self.pre_mnt, self.post_mnt)
                 avg_foc = g_dev['foc'].get_average_status(self.pre_foc, self.post_foc)
                 avg_rot = g_dev['rot'].get_average_status(self.pre_rot, self.post_rot)
-                #avg_ocn = g_dev['ocn'].get_average_status(self.pre_ocn, self.post_ocn)
+                avg_ocn = g_dev['ocn'].get_average_status(self.pre_ocn, self.post_ocn)
+
                 if frame_type[-5:] in ['focus', 'probe', "ental"]:
                     self.img = self.img + 100   #maintain a + pedestal for sep  THIS SHOULD not be needed for a raw input file.
                     self.img = self.img.astype("float")
@@ -1254,7 +1257,8 @@ class Camera:
                         hdu.header['XBINING'] = (1, 'Pixel binning in x direction')
                         hdu.header['YBINING'] = (1, 'Pixel binning in y direction')
                     hdu.header['CCDSUM']   = (self.ccd_sum, 'Sum of chip binning')
-
+                    
+                    # DEH pulls from config; master config will need to include keyword, or this line will need to change
                     hdu.header['RDMODE'] = (self.config['camera'][self.name]['settings']['read_mode'], 'Camera read mode')
                     hdu.header['RDOUTM'] = (self.config['camera'][self.name]['settings']['readout_mode'], 'Camera readout mode')
                     hdu.header['RDOUTSP'] = (self.config['camera'][self.name]['settings']['readout_speed'], '[FPS] Readout speed')
@@ -1263,10 +1267,9 @@ class Camera:
                         hdu.header['CCDATEMP'] = (round(self.camera.Temperature, 3), '[deg C] CCD actual temperature')
                     if self.ascom:
                         hdu.header['CCDSTEMP'] = (round(self.camera.SetCCDTemperature, 3), '[deg C] CCD set temperature')
-                        hdu.header['CCDATEMP'] = (round(self.camera.CCDTemperature, 3), '[deg C] CCD actual temperature')
-
-                    hdu.header['INSTRUME'] = (self.alias, 'Instrument used')
-                    hdu.header['CAMNAME']  = (self.camera_model, 'Name of camera')
+                        hdu.header['CCDATEMP'] = (round(self.camera.CCDTemperature, 3), '[deg C] CCD actual temperature')      
+                    hdu.header['INSTRUME'] = (self.camera_model, 'Instrument used')
+                    hdu.header['CAMNAME']  = (self.alias, 'Name of camera')
                     hdu.header['DETECTOR'] = (self.config['camera'][self.name]['detector'], 'Name of camera detector')
                     hdu.header['CAMMANUF'] = (self.config['camera'][self.name]['manufacturer'], 'Name of camera manufacturer')
                     hdu.header['GAIN']     = (self.config['camera'][self.name]['settings']['reference_gain'][0], '[e-/ADU] Pixel gain')
@@ -1288,19 +1291,17 @@ class Camera:
                     #hdu.header['JD-HELIO'] = 'bogus'       # Heliocentric Julian Date at exposure midpoint
                     hdu.header['OBSTYPE'] = (frame_type.upper(), 'Observation type')   #This report is fixed and it should vary...NEEDS FIXING!
                     hdu.header['EXPTIME']  = (exposure_time, '[s] Requested exposure length')   # This is the exposure in seconds specified by the user
-                    hdu.header['EXPOSURE'] = exposure_time   #Ideally this needs to be calculated from actual times
                     hdu.header['BUNIT']    = 'adu'
                     hdu.header['DATE-OBS'] = datetime.datetime.isoformat(datetime.datetime.utcfromtimestamp(self.t2))
                     hdu.header['FILTER ']  = self.current_filter  # NB this should read from the wheel!
                     hdu.header['FILTEROF'] = self.current_offset
-
                     #hdu.header['EXPOSURE'] = (self.t?-self.t2, '[s] Actual exposure length')   # Calculated from actual times
                     hdu.header['FILTER']  = (self.current_filter, 'Filter type')  # NB this should read from the wheel!
                     hdu.header['FILTEROF'] = (self.current_offset, 'Filer offset')
                     hdu.header['FILTRNUM'] = ('PTR_ADON_HA_0023',  'An index into a DB')  #Get a number from the hardware or via Maxim.
                     if g_dev['scr'] is not None and frame_type == 'screenflat':
                         hdu.header['SCREEN']   = (int(g_dev['scr'].bright_setting), 'Screen brightness setting')
-
+                        
 # =============================================================================
 #                     #WER:  Darren these values are nominal with respect to a raw chip and then delineate which
 #                     #zones of the chip are what.  In our case we are only entering this region with Trimmed
@@ -1310,6 +1311,7 @@ class Camera:
 #                     # DEH: BANZAI expects the detsec, datasec, biassec, and trimssec keywords, so we likely need
 #                     # to keep these in the header but modify the value if necessary to fit what BANZAI needs to run.
 # =============================================================================
+
 
                     hdu.header['BIASSEC'] = ('['+str(int(self.overscan_x/self.bin_x))+':'+str(int(self.overscan_x/self.bin_x + 1))+','+ \
                                              str(int(self.overscan_y/self.bin_y))+':'+str(self.camera.NumY)+']', \
@@ -1375,15 +1377,19 @@ class Camera:
                     hdu.header['DITHER']   = (0, '[] Dither')
                     hdu.header['OPERATOR'] = ("WER", 'Site operator')
                     hdu.header['ENCLOSUR'] = (self.config['enclosure']['enclosure1']['name'], 'Enclosure description')   # "Clamshell"   #Need to document shutter status, azimuth, internal light.
-                    #if g_dev['enc'].is_dome:
-                    #    hdu.header['DOMEAZ'] = (g_dev['enc'].get_status()['dome_azimuth'], 'Dome azimuth')
+                    #NB NB NB Need to add other dome status reports
+                    if g_dev['enc'].is_dome:
+                        hdu.header['DOMEAZ'] = (g_dev['enc'].status['dome_azimuth'], 'Dome azimuth')
                     #else:
                     #     hdu.header['ENCAZ']    = ("", '[deg] Enclosure azimuth')   #Need to document shutter status, azimuth, internal light.
                     hdu.header['ENCLIGHT'] = ("Off/White/Red/NIR", 'Enclosure lights')
                     hdu.header['ENCRLIGT'] = ("", 'Enclosure red lights state')
                     hdu.header['ENCWLIGT'] = ("", 'Enclosure white lights state')
                     if g_dev['enc'] is not None:
-                        hdu.header['ENC1STAT'] = (g_dev['enc'].get_status()['shutter_status'], 'Shutter status')   #"Open/Closed" enclosure 1 status
+                        try:
+                            hdu.header['ENC1STAT'] = (g_dev['enc'].status['shutter_status'], 'Enclosure status')  #['shutter_status'], 'Shutter status')   #"Open/Closed" enclosure 1 status
+                        except:
+                            print('Could not get ENC1STAT keyword. ')
 
                     #  if gather_status:
                     hdu.header['MNT-SIDT'] = (avg_mnt['sidereal_time'], '[deg] Mount sidereal time')
@@ -1445,11 +1451,12 @@ class Camera:
                     self.pix_ang = (self.camera.PixelSizeX*self.camera.BinX/(float(self.config['telescope'] \
                                               ['telescope1']['focal_length'])*1000.))
                     hdu.header['PIXSCALE'] = (round(math.degrees(math.atan(self.pix_ang))*3600., 4), '[arcsec/pixel] Nominal pixel scale on sky')
-                    hdu.header['REQNUM']   = ('00000001', 'Request number')
+                    hdu.header['REQNUM']   = ('00000001', 'Request number')                  
                     hdu.header['ISMASTER'] = (False, 'Is master image')
                     current_camera_name = self.alias
                     next_seq = next_sequence(current_camera_name)
-                    hdu.header['FRAMENUM'] = (int(next_seq), 'Running frame number')
+                    hdu.header['FRAMENUM'] = (int(next_seq), 'Running frame number')                                        
+
                     # DEH I need to understand these keywords better before writing header comments.
                     hdu.header['PEDASTAL'] = (-pedastal,  'adu, add this for zero based image.')
                     hdu.header['ERRORVAL'] = 0
@@ -1460,6 +1467,7 @@ class Camera:
                     #hdu.header['BLKUID']   = ('None', 'Group type')
                     #hdu.header['BLKSDATE'] = ('None', 'Group unique ID
                     #hdu.header['MOLUID']   = ('None', 'Molecule unique ID')
+
                     try:
                         hdu.header['USERNAME'] = self.user_name
                         hdu.header ['USERID']  = self.user_id

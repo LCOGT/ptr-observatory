@@ -71,7 +71,7 @@ class Focuser:
         try:   #  NB NB NB This mess neads cleaning up.
             try:
                 self.last_temperature = self.focuser.Temperature
-                self.reference = self.calculate_compensation( self.focuser.Temperature)   #need to change to config supplied
+                self.reference = self.calculate_compensation(self.focuser.Temperature)   #need to change to config supplied
                 print("Focus position set from temp compensated value:  ", self.reference)
                 self.last_known_focus = self.reference
                 self.last_source = "Focuser__init__  Calculate Comp references Config"
@@ -84,6 +84,7 @@ class Focuser:
             print("Focus reference derived from supplied config file for 10C:  ", self.reference)
             #The config reference should be a table of value
         self.focuser.Move(int(float(self.reference)*self.micron_to_steps))
+
 
 
     def calculate_compensation(self, temp_primary):
@@ -100,17 +101,24 @@ class Focuser:
             return float(self.config['reference'])
 
     def get_status(self):
-        status = {
-            "focus_position": round(self.focuser.Position*self.steps_to_micron, 1),
-            "focus_moving": self.focuser.IsMoving,
-            'comp': self.config['coef_c'],
-            #'filter_offset': g_dev['fil'].filter_offset
-            #"focus_temperature": self.focuser.Temperature
-            }
         try:
-            status["focus_temperature"] = self.focuser.Temperature
+            status = {
+                "focus_position": round(self.focuser.Position*self.steps_to_micron, 1),       #THIS occasionally glitches
+                "focus_temperature": self.focuser.Temperature,
+                "focus_moving": self.focuser.IsMoving,
+                'comp': self.config['coef_c'],
+                'filter_offset': g_dev['fil'].filter_offset
+                #"focus_temperature": self.focuser.Temperature
+                }
         except:
-            status['focus_temperature'] = self.reference  #This makes no sense, it is not a temp.
+            status = {
+                "focus_position": round(6000),        #This is a hack fix
+                "focus_temperature":  10.0,
+                "focus_moving": self.focuser.IsMoving,
+                'comp': self.config['coef_c'],
+                'filter_offset': g_dev['fil'].filter_offset
+                #"focus_temperature": self.focuser.Temperature
+                }
         return status
 
     def get_quick_status(self, quick):
@@ -279,7 +287,7 @@ class Focuser:
         ''' autofocus '''
         print(f"focuser cmd: auto")
 
-    def set_focal_ref(self, ref):
+    def set_focal_ref_reset_log(self, ref):
         cam_shelf = shelve.open(self.site_path + 'ptr_night_shelf/' + self.camera_name)
         cam_shelf['Focus Ref'] = ref
         cam_shelf['af_log'] = []
