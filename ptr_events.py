@@ -428,7 +428,7 @@ class Events:
         ptr.horizon = '2'
         sun.compute(ptr)
         #if loud: print('Sun 2: ', sun.ra, sun.dec, sun.az, sun.alt)
-        ops_win_begin = sunset - 60/1440      # Needs to come from site config  NB 1 hour
+        ops_win_begin = sunset - 45/1440      # Needs to come from site config  NB 1 hour
         ptr.horizon = '-1.5'
         sun.compute(ptr)
         #if loud: print('Sun -6: ', sun.ra, sun.dec, sun.az, sun.alt)
@@ -527,18 +527,18 @@ class Events:
                 ('End Eve Sky Flats  ', eve_skyFlatEnd),
                 ('Clock & Auto Focus ', ephem.Date(eve_skyFlatEnd + 1/1440.)),
                 ('Naut Dusk          ', nauticalDusk),
-                ('Observing Begins   ', ephem.Date(nauticalDusk + 5/1440.)),
+                ('Observing Begins   ', ephem.Date(nauticalDusk + 15/1440.)),
                 ('Astro Dark         ', astroDark),
                 ('Middle of Night    ', middleNight),
                 ('End Astro Dark     ', astroEnd),
-                ('Observing Ends     ', ephem.Date(nauticalDawn - 5/1440.)),
-                ('Final Clock & AF   ', ephem.Date(nauticalDawn - 4/1440.)),
+                ('Observing Ends     ', ephem.Date(nauticalDawn - 15/1440.)),
+                ('Final Clock & AF   ', ephem.Date(nauticalDawn - 13/1440.)),
                 ('Naut Dawn          ', nauticalDawn),
-                #('Morn Sky Flats     ', morn_skyFlatBegin),
+                ('Morn Sky Flats     ', civilDawn),
                 ('Civil Dawn         ', civilDawn),
-                #('End Morn Sky Flats ', morn_skyFlatEnd),
-                ('Ops Window Closes  ', ephem.Date(civilDawn + 0.5/1440)),   #Enclosure must close
+                ('End Morn Sky Flats ', ephem.Date(sunrise - 1/1440)),        
                 ('Sun Rise           ', sunrise),
+                ('Ops Window Closes  ', ephem.Date(sunrise + 5/1440)),   #Enclosure must close 5 min after sunrise
                 ('Prior Moon Rise    ', last_moonrise),
                 ('Prior Moon Transit ', last_moontransit),
                 ('Prior Moon Set     ', last_moonset),

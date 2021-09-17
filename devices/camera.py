@@ -834,6 +834,7 @@ class Camera:
                 st = ""
                 if g_dev['enc'].is_dome:
                     try:
+                        g_dev['obs'].update_status()
                         enc_slewing = g_dev['enc'].status['dome_slewing']
                     except:
                         print("enclosure SLEWING threw an exception.")
@@ -848,7 +849,7 @@ class Camera:
                     if enc_slewing:
                         st += 'd>' + str(round(time.time() - g_dev['mnt'].move_time, 1))
                     print(st)
-                    if round(time.time() - g_dev['mnt'].move_time, 1) >= 60:
+                    if round(time.time() - g_dev['mnt'].move_time, 1) >= 120:
                        print("|n\n DOME OR MOUNT HAS TIMED OUT!; going ahead Anyway|n|n")
                        break
                       
@@ -859,6 +860,7 @@ class Camera:
                     #Refresh the probe of the dome status
                     if g_dev['enc'].is_dome:
                         try:
+                            g_dev['obs'].update_status()
                             enc_slewing = g_dev['enc'].status['dome_slewing']
                         except:
                             print("enclosure SLEWING threw an exception.")

@@ -529,6 +529,7 @@ class Sequencer:
             print("Left to do initial value:  ", left_to_do)
             req = {'target': 'near_tycho_star'}
             initial_focus = True
+            af_delay = 30
 
             while left_to_do > 0 and not ended:
 
@@ -542,7 +543,7 @@ class Sequencer:
                         print('Shutter closed, skipping AF cycle.0')  #coarse_focus_script can be used here
                     just_focused = True
                     initial_focus = False    #  Make above on-time event per block
-                    timer = time.time() + 1800   #10 min for debugging
+                    timer = time.time() + af_delay  # 45 minutes
                     #at block startup this should mean two AF cycles. Cosider using 5-point for the first.
                     
                 #cycle through exposures decrementing counts    MAY want to double check left-to do but do nut remultiply by 4
@@ -555,7 +556,7 @@ class Sequencer:
                             print('Shutter closed, skipping AF cycle.0')
                         initial_focus = False
                         just_focused = True
-                        timer = time.time() + 1800   #30 minutes to refocus
+                        timer = time.time() + af_delay  #40 minutes to refocus
                     print("Executing: ", exposure, left_to_do)
                     color = exposure['filter']
                     exp_time =  float(exposure['exposure']) 
@@ -696,7 +697,7 @@ class Sequencer:
         while g_dev['events']['Eve Bias Dark']  <= ephem.now() <= g_dev['events']['Ops Window Start'] :   #Do not overrun the window end
             print("Expose b_2")   
             req = {'time': 0.0,  'script': 'True', 'image_type': 'bias'}
-            opt = {'area': "Full", 'count': 7, 'bin':'2 2', \
+            opt = {'area': "Full", 'count': 11, 'bin':'2 2', \
                     'filter': 'dark'}
             result = g_dev['cam'].expose_command(req, opt, no_AWS=True, \
                                 do_sep=False, quick=False)
@@ -739,8 +740,8 @@ class Sequencer:
         self.sky_guard = True
         print('Eve Sky Flat sequence Starting, Enclosure PRESUMED Open. Telescope will un-park.')
         camera_name = str(self.config['camera']['camera_1_1']['name'])
-        flat_count = 5
-        exp_time = .003
+        flat_count = 7
+        exp_time = .0015
         #  NB Sometime, try 2:2 binning and interpolate a 1:1 flat.  This might run a lot faster.
         if flat_count < 1: flat_count = 1
         g_dev['mnt'].unpark_command({}, {})
@@ -781,7 +782,9 @@ class Sequencer:
                 g_dev['obs'].update_status()
                 try:
                     lux = eval(self.redis_server.get('wx_redis_status'))['calc_HSI_lux']
-                    exp_time = prior_scale*scale*35000/(float(g_dev['fil'].filter_data[current_filter][3])*lux)  #g_dev['ocn'].calc_HSI_lux)  #meas_sky_lux)
+              
+                    exp_time = prior_scale*scale*10000/(float(g_dev['fil'].filter_data[current_filter][3])*lux)  #g_dev['ocn'].calc_HSI_lux)  #meas_sky_lux)
+                    #exp_time*= 4.9/9/2
                     if exp_time > 300:
                         exp_time = 300
                     if exp_time <0.001:
@@ -805,8 +808,11 @@ class Sequencer:
                         scale = 0.33
                 except:
                     scale = 1.0
-                print("\nPatch/Bright:  ", bright, '\n')  #  Others are 'NE', 'NW', 'SE', 'SW'.
+                print("\n'n\\'nPatch/Bright:  ", bright, g_dev['fil'].filter_data[current_filter][0], \
+                      '  Gain: ', round(bright/lux/exp_time, 2), '\n\n\n')
+
                 g_dev['obs'].update_status()
+                #breakpoint()
                 #  THE following code looks like a debug patch gone rogue.
                 if bright > 45000 and (ephemNow < g_dev['events']['End Eve Sky Flats']
                                   or True):    #NB should gate with end of skyflat window as well.

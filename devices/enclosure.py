@@ -63,11 +63,13 @@ class Enclosure:
             #Usually fault here because WEMA is not running.
             try:
                 stat_string = self.redis_server.get("shutter_status")
+                #print(eval(self.redis_server.get("status")))
                 self.status = eval(self.redis_server.get("status"))
             except:
                 print("\nWxEnc Agent WEMA not running. Please start it up.|n")
             if stat_string is not None:
-                if stat_string == 'Closed':
+                
+                if stat_string in ['Closed', 'Closing']:
                     self.shutter_is_closed = True
                 else:
                     self.shutter_is_closed = False

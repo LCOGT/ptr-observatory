@@ -51,6 +51,7 @@ class Enclosure:
         self.is_dome = self.config['enclosure']['enclosure1']['is_dome']
         self.status = None
         self.state = 'Closed'
+        self.last_az = 316   #Set to normal home for the respective dome.
         self.enclosure_message = '-'
         self.external_close = False   #  Not used If made true by operator,  system will not reopen for the night
         self.dome_opened = False   #memory of prior issued commands  Restarting code may close dome one time.
@@ -106,17 +107,31 @@ class Enclosure:
              self.shutter_is_closed = False
              self.redis_server.set('Shutter_is_open', False)
         self.status_string = stat_string
-        if shutter_status in [1, 2]:
+        if shutter_status in [2, 3]:
             moving = True
         else:
             moving = False
+        
 
         if self.is_dome:
+            current_az = self.enclosure.Azimuth
+            slewing = self.enclosure.Slewing
+            gap = current_az - self.last_az
+            while gap >= 360:
+                gap -= 360
+            while gap <= -360:
+                gap += 360
+            if abs(gap) > 1.5:
+                print("Azimuth change detected,  Slew:  ", self.enclosure.Slewing)
+                slewing = True
+            else:
+                slewing = False
+            self.last_az = current_az
             try:
                 status = {'shutter_status': stat_string,
                           'enclosure_synchronized': self.enclosure.Slaved,
                           'dome_azimuth': round(self.enclosure.Azimuth, 1),
-                          'dome_slewing': self.enclosure.Slewing,
+                          'dome_slewing': slewing,
                           'enclosure_mode': self.mode,
                           'enclosure_message': self.state}
                 self.redis_server.set('roof_status', str(stat_string), ex=3600)
@@ -146,7 +161,7 @@ class Enclosure:
                 self.redis_server.set('enclosure_mode', str(self.mode), ex=3600)
                 self.redis_server.set('enclosure_message', str(self.state), ex=3600)
                 self.redis_server.set('dome_azimuth', 0.0) #str(round(self.enclosure.Azimuth, 1)))
-                if moving or self.enclosure.Slewing:
+                if moving or slewing:   #  elf.enclosure.Slewing:
                     in_motion = True
                 else:
                     in_motion = False
@@ -177,12 +192,16 @@ class Enclosure:
                 self.redis_server.delete('enc_cmd')
                 print("enclosure remote cmd: open.")
                 self.manager(open_cmd=True, close_cmd=False)
+                self.enclosure.Slaved = True
+                
                 self.dome_open = True
                 self.dome_home = True
             elif redis_command == 'close':               
                 self.redis_server.delete('enc_cmd')
                 print("enclosure remote cmd: close.")
                 self.manager(close_cmd=True, open_cmd=False)
+                
+                self.enclosure.Slaved = False
                 self.dome_open = False
                 self.dome_home = True
             elif redis_command == 'setAuto':
@@ -370,7 +389,8 @@ class Enclosure:
  
             
             
-        #  We are now in the full operational window.   ###Ops Window Start
+        #  We are now in the full operational window.  
+        #  if in Ops Window open if closed. Not the sun 
       
         elif (g_dev['events']['Ops Window Start'] - debugOffset <= ephemNow <= g_dev['events']['Ops Window Closes'] + debugOffset) \
                 and not (wx_hold or self.mode == 'Shutdown') \
@@ -387,6 +407,7 @@ class Enclosure:
                 self.time_of_next_slew = time.time()
                 if open_cmd:
                     self.state = 'User Opened the ' + shutter_str
+                    self.enclosure.Slaved = True
                 else:
                     self.state = 'Automatic nightime Open ' + shutter_str + '   Wx is OK; in Observing window.'
             #During skyflat time, slew dome opposite sun's azimuth'
