@@ -6,6 +6,7 @@ import requests
 import json
 from global_yard import g_dev
 
+
 '''
 
 This module contains the weather class.  When get_status() is called the weather situation
@@ -153,10 +154,13 @@ class ObservingConditions:
                 wx_str = "Yes"
             else:
                 wx_str = "No"   #Ideally we add the dominant reason in priority order.
+            obs_win_begin, sunset, sunrise, ephemNow = self.astro_events.getSunEvents()
             #The following may be more restictive since it includes local measured ambient light.
             #  This signal meant to simulate the sky_monitor relay output.  WE repport it but it is not
-            #  actively used.
-            if self.sky_monitor_oktoopen.IsSafe and dew_point_gap and temp_bounds:
+            #  actively used.  The Sky monitor criteria are a bit opaque.  This should only assert
+            #  during or close to the Obs Window.
+            if self.sky_monitor_oktoopen.IsSafe and dew_point_gap and temp_bounds and \
+                    ((g_dev['events']['Ops Window Start'] - 15/1440) < ephemNow < (g_dev['events']['Ops Window Start'] + 2/1440)):
                 self.ok_to_open = 'Yes'
             else:
                 self.ok_to_open = "No"
@@ -296,6 +300,7 @@ class ObservingConditions:
             self.status = status
             self.redis_server.set('wx_redis_status' , status, ex=300)
             new_stat = self.redis_server.get('wx_redis_status')
+           
 
          
             
@@ -429,6 +434,13 @@ class ObservingConditions:
                 #     #status2["meas_sky_mpsas"] = uni_measure
 
             # Only write when around dark, put in CSV format, used to calibrate Unihedron.
+            '''
+            NB NB NB
+            This should capture Sunset and sunrise Hz to Lux transition from an hour before Eve flats to an hour after
+            morning flats, and skipping the data part of the night.  WE might want to assemble a data set of
+            say the last two weeks of readings to get a more accurate curve, but this must be taken to geta way to 
+            accurately expose flats.
+            '''
             sunZ88Op, sunZ88Cl, sunrise, ephemNow = g_dev['obs'].astro_events.getSunEvents()
             two_hours = 2/24    #  Note changed to 2 hours.
             if  (sunZ88Op - two_hours < ephemNow < sunZ88Cl + two_hours) and (time.time() >= \
@@ -469,6 +481,11 @@ class ObservingConditions:
         
         #OLD CODE USED A PROBE. jUST DO THIS EVERY CYCLE
 
+# ==============================================================================================#
+#         """                                                                                   #
+#         Note this agent only publishes WeatherHolds, etc.  If does not control the Enclosure. #
+#         """                                                                                   #
+# ==============================================================================================#
             
         #self.wx_is_ok = False   
         #We evaluate holds at all times.

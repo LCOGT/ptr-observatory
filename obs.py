@@ -659,13 +659,13 @@ class Observatory:
                     hdu.data = np.flip(hdu.data)
                     hdu.header['IMGFLIP'] = True
                 wpath = paths['im_path'] + paths['red_name01']
-                print('Reduced Mean:  ',hdu.data.mean())
+                print('Reduced Mean:  ', hdu.data.mean())
                 hdu.writeto(wpath, overwrite=True)  # NB overwrite == True is dangerous in production code.  This is big fits to AWS
                 reduced_data_size = hdu.data.size
                 wpath = paths['red_path'] + paths['red_name01_lcl']    #This name is convienent for local sorting
                 hdu.writeto(wpath, overwrite=True) #Bigfit reduced
 
-                #Will try here to solve
+                #Will try here to solve   NB Should skip non-solvable images like skyflats
                 try:
                     hdu_save = hdu
                     #wpath = 'C:/000ptr_saf/archive/sq01/20210528/reduced/saf-sq01-20210528-00019785-le-w-EX01.fits'
@@ -888,7 +888,7 @@ class Observatory:
                     g_dev['cam'].enqueue_for_AWS(jpeg_data_size, paths['im_path'], paths['jpeg_name10'])
                     g_dev['cam'].enqueue_for_AWS(i768sq_data_size, paths['im_path'], paths['i768sq_name10'])
                     #print('File size to AWS:', reduced_data_size)
-                    #g_dev['cam'].enqueue_for_AWS(reduced_data_size, paths['im_path'], paths['red_name01'])
+                    g_dev['cam'].enqueue_for_AWS(reduced_data_size, paths['im_path'], paths['red_name01'])
                     #if not quick:
                 #print('Sent to AWS Queue.')
                 time.sleep(0.5)
