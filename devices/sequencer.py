@@ -662,11 +662,13 @@ class Sequencer:
                         pane += 1
                         
                     now_date_timeZ = datetime.datetime.now().isoformat().split('.')[0] +'Z'
+                  
 
-                    ended = left_to_do <= 0 or now_date_timeZ >= block['end']\
-                            or g_dev['airmass'] > float( block_specification['project']['project_constraints']['max_airmass']) \
-                            or abs(g_dev['ha']) > float(block_specification['project']['project_constraints']['max_ha'])
-                            # Or mount has flipped, too low, too bright, entering zenith..
+                    ended = left_to_do <= 0 or now_date_timeZ >= block['end']
+                    #                                                    ]\
+                    #         or g_dev['airmass'] > float( block_specification['project']['project_constraints']['max_airmass']) \
+                    #         or abs(g_dev['ha']) > float(block_specification['project']['project_constraints']['max_ha'])
+                    #         # Or mount has flipped, too low, too bright, entering zenith..
                     
         print("Fini!")
         if block_specification['project']['project_constraints']['close_on_block_completion']:
