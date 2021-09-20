@@ -501,10 +501,10 @@ class Sequencer:
             #Compute how many to do.
             left_to_do = 0
             ended = False
-
+            #  NB NB NB Any mosaic larger than +SQ should be specified in degrees and be square
             for exposure in block['project']['exposures']:
                 multiplex = 0
-                if exposure['area'] in ['300', '300%', 300, '220', '220%', 220, '150', '150%', 250, '250', '250%', 150]:
+                if exposure['area'] in ['300', '300%', 300, '220', '220%', 220, '150', '150%', 150, '250', '250%', 250]:
                     if block_specification['project']['project_constraints']['add_center_to_mosaic']:
                         multiplex = 5
                     else:

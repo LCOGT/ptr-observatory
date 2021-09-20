@@ -91,7 +91,7 @@ class ObservingConditions:
         if self.site in ['simulate',  'dht']:  #DEH: added just for testing purposes with ASCOM simulators.
             self.observing_conditions_connected = True
             print("observing_conditions: Simulator drivers connected True")
-        else:
+        elif not driver =='redis':
             win32com.client.pythoncom.CoInitialize()
             self.sky_monitor = win32com.client.Dispatch(driver)
             self.sky_monitor.connected = True   # This is not an ASCOM device.
@@ -116,6 +116,8 @@ class ObservingConditions:
                     print("Unihedron on Port 10 is disconnected.  Observing will proceed.")
                     self.unihedron_connected = False
                           # NB NB if no unihedron is installed the status code needs to not report it.
+        else:
+            print('No OCN driver instantiated, a possible error.')
 
 
     def get_status(self):
