@@ -129,7 +129,7 @@ class ObservingConditions:
             DESCRIPTION.
 
         '''
-        breakpoint()
+        
         if self.site_is_proxy:
 
             return 

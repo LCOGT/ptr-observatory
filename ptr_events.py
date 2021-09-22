@@ -29,10 +29,10 @@ from pprint import pprint
 
 # NB Change these to hours not fractions of a day.  Should come from site config not be in code here.
 SCREENFLATDURATION = 0/1440            #1.5 hours
-BIASDARKDURATION = 90/1440             #3 hours
+BIASDARKDURATION = 120/1440            #2.0 hours
 MORNBIASDARKDURATION = 0/1440          #1.5 min
 LONGESTSCREEN = 0/1440           #1 min
-LONGESTDARK = 6/1440             #6 min
+LONGESTDARK = 5/1440             #6 min
 
 DAY_Directory = None   #NB this is an evil use of Globals by WER.  20200408   WER
 Day_tomorrow = None

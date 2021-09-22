@@ -263,16 +263,15 @@ class Sequencer:
         self.sequencer_hold = False
          #events['Eve Bias Dark']
         #if True:
-        if (events['Eve Bias Dark'] <= ephem_now < events['Ops Window Start']) and True:
+        if (events['Eve Bias Dark'] <= ephem_now < events['Eve Sky Flats']) and True:
             req = {'bin1': False, 'bin2': True, 'bin3': False, 'bin4': False, 'numOfBias': 45, \
                    'numOfDark': 15, 'darkTime': 180, 'numOfDark2': 3, 'dark2Time': 360, \
                    'hotMap': True, 'coldMap': True, 'script': 'genBiasDarkMaster', }
             opt = {}
             self.bias_dark_script(req, opt)
-        elif  (events['Eve Sky Flats'] < ephem_now < events['End Eve Sky Flats'])  \
+        elif  (events['Eve Sky Flats'] <= ephem_now < events['End Eve Sky Flats'])  \
                 and g_dev['enc'].mode == 'Automatic' \
-                and g_dev['ocn'].wx_is_ok \
-                and not g_dev['ocn'].wx_hold and True:
+                and not g_dev['ocn'].wx_hold and True:   #                and g_dev['ocn'].wx_is_ok \
             if not self.sky_guard:
                 #Start it up.
                 self.sky_guard = True
@@ -694,9 +693,11 @@ class Sequencer:
         """
         self.sequencer_hold = True
         self.current_script = 'Afternoon Bias Dark'
-        dark_time = 240
+        dark_time = 300
        # breakpoint()
         while g_dev['events']['Eve Bias Dark']  <= ephem.now() <= g_dev['events']['Ops Window Start'] :   #Do not overrun the window end
+            g_dev['mnt'].unpark_command({}, {}) # Get there early
+            g_dev['mnt'].slewToSkyFlatAsync()
             print("Expose b_2")   
             req = {'time': 0.0,  'script': 'True', 'image_type': 'bias'}
             opt = {'area': "Full", 'count': 11, 'bin':'2 2', \
@@ -773,7 +774,7 @@ class Sequencer:
             #opt =  {'filter': current_filter}
             g_dev['fil'].set_number_command(current_filter)
             g_dev['mnt'].slewToSkyFlatAsync()
-            bright = 35000
+            bright = 37500
             scale = 1.0    #1.15   #20201121 adjustment
             
             prior_scale = 1.0

@@ -114,8 +114,16 @@ class Enclosure:
         
 
         if self.is_dome:
-            current_az = self.enclosure.Azimuth
-            slewing = self.enclosure.Slewing
+            try:
+                #Occasionally this property thrws an exception:
+                current_az = self.enclosure.Azimuth
+                slewing = self.enclosure.Slewing
+                self.last_current_az = current_az
+                self.last_slewing = slewing
+            except:
+                current_az = self.last_current_az
+                slewing = self.last_slewing
+                
             gap = current_az - self.last_az
             while gap >= 360:
                 gap -= 360
@@ -356,7 +364,7 @@ class Enclosure:
         #  could be parked.
        
 
-        debugOffset = 0/24 #hours.
+        debugOffset = 0.1/24 #hours.
         try:
             obs_time = self.redis_server.get('obs_heart_time')    
         except:
@@ -486,35 +494,9 @@ class Enclosure:
                     #??Add darkslide close here or een tothe park command itself??
                     #print("Telescope commanded to park, try again in a minute.")
                     pass
-                    
-                
-            
-            
             else:
-                #  We are outside of the observing window so close the dome, with a one time command to
-                #  deal with the case of software restarts. Do not pound on the dome because it makes
-                #  off-hours entry difficult.
-                #  NB this happens regardless of automatic mode.
-                #  The dome may come up reporting closed when it is open, but it does report unhomed as
-                #  the condition not AtHome.
-    
-                # NB NB NB This code makes little sense.
-                # if not self.dome_homed:
-                    
-                #     # self.dome_homed = True
-                #     # return
-                #     if self.is_dome:
-                #         #self.enclosure.Slaved = False
-                #         try:
-                            
-                #             if self.status_stringin ['open', 'Open'] \
-                #                 or not self.enclosure.AtHome:
-                #                 pass
-                #                 #self.enclosure.CloseShutter()   #ASCOM DOME will fault if it is Opening or closing
-                #                 self.dome_opened = False
-                #                 self.dome_homed = True
-                #         except:
                 pass
+
                             #print('Dome close cmd appeared to fault.')
                     
                     #print("One time close of enclosure issued, normally done during Python code restart.")
