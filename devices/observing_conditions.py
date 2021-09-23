@@ -129,12 +129,9 @@ class ObservingConditions:
             DESCRIPTION.
 
         '''
-        
-        if self.site_is_proxy:
+    
 
-            return 
-
-        elif self.site == 'saf':
+        if not self.site_is_proxy and self.site == 'saf':
             illum, mag = self.astro_events.illuminationNow()
             if illum > 100:
                 illum = int(illum)
@@ -287,7 +284,7 @@ class ObservingConditions:
 
         #  Note we are now in mrc specific code.
 
-        elif self.site in [ 'mrc',  'mrc2']:
+        elif  self.site_is_proxy or self.site in [ 'mrc',  'mrc2']:
             try:
                 #breakpoint()
                 # pass
@@ -324,6 +321,11 @@ class ObservingConditions:
                           "calc_sky_mpsas": round((mag - 20.01), 2)
                           }
                                 #Pulled over from saf
+                if status['wx_ok'] == True:
+                    self.wx_is_ok = True    #   used in sequencer
+                else:
+                    self.wx_is_ok = False
+                    
                                 
                                 
                 uni_measure = float(redis_monitor['meas_sky_mpsas'])   #  Provenance of 20.01 is dubious 20200504 WER

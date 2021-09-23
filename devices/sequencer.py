@@ -270,8 +270,7 @@ class Sequencer:
             opt = {}
             self.bias_dark_script(req, opt)
         elif  (events['Eve Sky Flats'] <= ephem_now < events['End Eve Sky Flats'])  \
-                and g_dev['enc'].mode == 'Automatic' \
-                and not g_dev['ocn'].wx_hold and True:   #                and g_dev['ocn'].wx_is_ok \
+                and g_dev['enc'].mode == 'Automatic' and not g_dev['ocn'].wx_hold and True:   #                and g_dev['ocn'].wx_is_ok \ \
             if not self.sky_guard:
                 #Start it up.
                 self.sky_guard = True
@@ -694,18 +693,23 @@ class Sequencer:
         self.sequencer_hold = True
         self.current_script = 'Afternoon Bias Dark'
         dark_time = 300
-       # breakpoint()
-        while g_dev['events']['Eve Bias Dark']  <= ephem.now() <= g_dev['events']['Ops Window Start'] :   #Do not overrun the window end
+        #breakpoint()
+        while g_dev['events']['Eve Bias Dark']  <= ephem.now() + 6/1440 <= g_dev['events']['Ops Window Start'] :   #Do not overrun the window end
             g_dev['mnt'].unpark_command({}, {}) # Get there early
             g_dev['mnt'].slewToSkyFlatAsync()
-            print("Expose b_2")   
+            print("Expose Biases: b_2")   
             req = {'time': 0.0,  'script': 'True', 'image_type': 'bias'}
-            opt = {'area': "Full", 'count': 11, 'bin':'2 2', \
+            opt = {'area': "Full", 'count': 1, 'bin':'2 2', \
                     'filter': 'dark'}
-            result = g_dev['cam'].expose_command(req, opt, no_AWS=True, \
+            for bias in range(11):
+            
+                result = g_dev['cam'].expose_command(req, opt, no_AWS=True, \
                                 do_sep=False, quick=False)
-            print(result)
-            g_dev['obs'].update_status()
+                print(result)
+                g_dev['obs'].update_status()
+                if ephem.now() + 6/1440 > g_dev['events']['Ops Window Start']:
+                    break
+
             print("Expose d_2 using exposure:  ", dark_time )
             req = {'time':dark_time ,  'script': 'True', 'image_type': 'dark'}
             opt = {'area': "Full", 'count':1, 'bin':'2 2', \
@@ -714,9 +718,11 @@ class Sequencer:
                                 do_sep=False, quick=False)
             print(result)
             g_dev['obs'].update_status()
-
-        print("One pass of Bias/Dark acquisition is finished.")
+            if ephem.now() + 6/1440 > g_dev['events']['Ops Window Start']:
+                    break
+            print("One pass of Bias/Dark acquisition is finished.")
         self.sequencer_hold = False
+        print("Bias/Dark acquisition has completed.")
         return
 
 
