@@ -12,6 +12,7 @@ import shelve
 from pprint import pprint
 import ptr_utility
 import redis
+import math
 
 '''
 Autofocus NOTE 20200122
@@ -435,6 +436,7 @@ class Sequencer:
         # #unpark, open dome etc.
         # #if not end of block
         g_dev['mnt'].unpark_command({}, {})
+        g_dev['mnt'].Tracking = True   # unpark_command({}, {})
         #NB  Servo the Dome??
         timer = time.time() - 1  #This should force an immediate autofocus.
         req2 = {'target': 'near_tycho_star', 'area': 150}
@@ -694,7 +696,8 @@ class Sequencer:
         self.current_script = 'Afternoon Bias Dark'
         dark_time = 300
         #breakpoint()
-        while g_dev['events']['Eve Bias Dark']  <= ephem.now() + 6/1440 <= g_dev['events']['Ops Window Start'] :   #Do not overrun the window end
+        
+        while g_dev['events']['Eve Bias Dark']  <= ephem.now() <= - 6/1440 + g_dev['events']['Ops Window Start'] :   #Do not overrun the window end
             g_dev['mnt'].unpark_command({}, {}) # Get there early
             g_dev['mnt'].slewToSkyFlatAsync()
             print("Expose Biases: b_2")   
@@ -835,8 +838,8 @@ class Sequencer:
                         scale = 1
                         prior_scale = 1
                 continue
-        g_dev['mnt'].park_command({}, {})  #  NB this is provisional, Ok when simulating
-        print('\nSky flat complete, or too early.\n')
+        g_dev['mnt'].tracking = False   #  park_command({}, {})  #  NB this is provisional, Ok when simulating
+        print('\nSky flat complete, or too early. Telescope Tracking is off.\n')
         self.sky_guard = False
 
 
@@ -914,8 +917,8 @@ class Sequencer:
         g_dev['scr'].set_screen_bright(0)
         g_dev['scr'].screen_dark()
         g_dev['obs'].update_status()
-        g_dev['mnt'].park_command({}, {})
-        print('Sky Flat sequence completed, Telescope is parked.')
+        g_dev['mnt'].Tracking = False   #park_command({}, {})
+        print('Sky Flat sequence completed, Telescope tracking is off.')
         self.guard = False
         
     
@@ -992,15 +995,22 @@ class Sequencer:
         #print("temporary patch in Sim values")
         print('Autofocus Starting at:  ', foc_pos0, '\n\n')
         #throw = throw  # NB again, from config.  Units are microns  Passed as default paramter
-
-        if not sim:
-            result = g_dev['cam'].expose_command(req, opt, no_AWS=True) ## , script = 'auto_focus_script_0')  #  This is where we start.
-        else:
-            result['FWHM'] = 3
-            result['mean_focus'] = foc_pos0
-
-        spot1 = result['FWHM']
-        foc_pos1 = result['mean_focus']
+        retry = 0
+        while retry < 3:
+            if not sim:
+                result = g_dev['cam'].expose_command(req, opt, no_AWS=True) ## , script = 'auto_focus_script_0')  #  This is where we start.
+            else:
+                result['FWHM'] = 3
+                result['mean_focus'] = foc_pos0
+    
+            spot1 = result['FWHM']
+            foc_pos1 = result['mean_focus']
+            if math.isnan(spot1):
+                retry += 1
+                print("Retry of central focus star)")
+                continue
+            else:
+                break
         print('Autofocus Moving In.\n\n')
         g_dev['foc'].focuser.Move((foc_pos0 - throw)*g_dev['foc'].micron_to_steps)
         #opt['fwhm_sim'] = 4.
@@ -1027,7 +1037,7 @@ class Sequencer:
         y = [spot2, spot1, spot3]
         print('X, Y:  ', x, y, 'Desire center to be smallest.')
         if spot1 is None or spot2 is None or spot3 is None:  #New additon to stop crash when no spots
-            print("No stars detected. Returning to stating focus and pointing.")
+            print("No stars detected. Returning to starting focus and pointing.")
             g_dev['foc'].focuser.Move((focus_start)*g_dev['foc'].micron_to_steps)
             self.sequencer_hold = False   #Allow comand checks.
             self.af_guard = False
