@@ -166,9 +166,15 @@ class Enclosure:
     #     print("enclosure cmd: sync_alt")
     #     pass
 
-    # def sync_mount_command(self, req: dict, opt: dict):
-    #     print("enclosure cmd: sync_az")
-    #     pass
+    def sync_mount_command(self, req: dict, opt: dict):
+        self.redis_server.set('sync_enc', "sync", ex=1200)
+        print("enclosure cmd: sync_az")
+        pass
+    
+    def unsync_mount_command(self, req: dict, opt: dict):
+        self.redis_server.set('unsync_enc', "unsync", ex=1200)
+        print("enclosure cmd: unsync_az")
+        pass
 
     # def park_command(self, req: dict, opt: dict):
     #     ''' park the enclosure if it's a dome '''

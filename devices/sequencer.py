@@ -270,6 +270,11 @@ class Sequencer:
                    'hotMap': True, 'coldMap': True, 'script': 'genBiasDarkMaster', }
             opt = {}
             self.bias_dark_script(req, opt)
+        elif (g_dev['events']['Ops Window Start'] - 10/1440 <= ephem_now <= g_dev['events']['Ops Window Start']):
+            #Need to position telescope pointing East, and verify Enclosure is closed
+            g_dev['mnt'].unpark_command({}, {}) # Get there early
+            g_dev['mnt'].slewToSkyFlatAsync()   #NB we are pounding on these for 10 min, should fix.
+                   
         elif  (events['Eve Sky Flats'] <= ephem_now < events['End Eve Sky Flats'])  \
                 and g_dev['enc'].mode == 'Automatic' and not g_dev['ocn'].wx_hold and True:   #                and g_dev['ocn'].wx_is_ok \ \
             if not self.sky_guard:
@@ -510,7 +515,7 @@ class Sequencer:
                     else:
                         multiplex = 4
                 if exposure['area'] in ['600', '600%', 600, '450', '450%', 450]:
-                    multiplex = 9
+                    multiplex = 13
                 if exposure['area'] in ['500', '500%', 500]:
                     if block_specification['project']['project_constraints']['add_center_to_mosaic']:
                         multiplex = 7
@@ -608,8 +613,8 @@ class Sequencer:
                         if exposure['area'] in ['125', '125%', 125]:
                             pitch = 0.125
                     elif exposure['area'] in ['600', '600%', 600, '450', '450%', 450]:  # 9 exposures.
-                        offset = [(0., 0.), (-1.5, 0.), (-1.5, 1.), (0., 1.), (1.5, 1.), (1.5, 0.), \
-                                  (1.5, -1.), (0., -1.), (-1.5, -1.)] #Nine mosaic quadrants 36 x 24mm chip
+                        offset = [(0, 0), (0., 0.5), (-1.5, 0.5), (-1.5, 1.5), (0., 1.5), (1.5, 1.5), (1.5, 0.5), \
+                                  (1.5, -0.5), (0., 0.5), (-1.5, -0.5), (-1.5, -1.5), (0., -1.5), (-1.5, 1.5)] #Thirteen mosaic quadrants 36 x 24mm chip
                         if exposure['area'] in ['600', '600%', 600]:
                             pitch = 0.375  
                         if exposure['area'] in ['450', '450%', 450]:
@@ -662,9 +667,11 @@ class Sequencer:
                         pane += 1
                         
                     now_date_timeZ = datetime.datetime.now().isoformat().split('.')[0] +'Z'
-                  
+                    ephem_now = ephem.now()
+                    events = g_dev['events']
 
-                    ended = left_to_do <= 0 or now_date_timeZ >= block['end']
+                    ended = left_to_do <= 0 or now_date_timeZ >= block['end'] \
+                            or ephem_now >= events['End Astro Dark']
                     #                                                    ]\
                     #         or g_dev['airmass'] > float( block_specification['project']['project_constraints']['max_airmass']) \
                     #         or abs(g_dev['ha']) > float(block_specification['project']['project_constraints']['max_ha'])
@@ -698,8 +705,8 @@ class Sequencer:
         #breakpoint()
         
         while g_dev['events']['Eve Bias Dark']  <= ephem.now() <= - 6/1440 + g_dev['events']['Ops Window Start'] :   #Do not overrun the window end
-            g_dev['mnt'].unpark_command({}, {}) # Get there early
-            g_dev['mnt'].slewToSkyFlatAsync()
+            #g_dev['mnt'].unpark_command({}, {}) # Get there early
+            #g_dev['mnt'].slewToSkyFlatAsync()
             print("Expose Biases: b_2")   
             req = {'time': 0.0,  'script': 'True', 'image_type': 'bias'}
             opt = {'area': "Full", 'count': 1, 'bin':'2 2', \
@@ -797,8 +804,8 @@ class Sequencer:
               
                     exp_time = prior_scale*scale*10000/(float(g_dev['fil'].filter_data[current_filter][3])*lux)  #g_dev['ocn'].calc_HSI_lux)  #meas_sky_lux)
                     #exp_time*= 4.9/9/2
-                    if exp_time > 300:
-                        exp_time = 300
+                    if exp_time > 120:
+                        exp_time = 120    #Live with this limit.
                     if exp_time <0.001:
                         exp_time = 0.001
                     exp_time = round(exp_time, 4)
@@ -826,7 +833,7 @@ class Sequencer:
                 g_dev['obs'].update_status()
                 #breakpoint()
                 #  THE following code looks like a debug patch gone rogue.
-                if bright > 45000 and (ephemNow < g_dev['events']['End Eve Sky Flats']
+                if bright > 40000 and (ephemNow < g_dev['events']['End Eve Sky Flats']
                                   or True):    #NB should gate with end of skyflat window as well.
                     for i in range(1):
                         time.sleep(5)  #  #0 seconds of wait time.  Maybe shorten for wide bands?

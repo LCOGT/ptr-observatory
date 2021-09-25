@@ -231,12 +231,14 @@ class Enclosure:
             elif redis_command == 'goHome':
                 #breakpoint()
                 self.redis_server.delete('goHome')
-            elif redis_command == 'enterSynchronise':
-                #breakpoint()
-                self.redis_server.delete('enterSynchronise')                
-            elif redis_command == 'stopSynchronize':
-                #breakpoint()
-                self.redis_server.delete('stopSynchronize')
+            elif redis_command == 'sync_enc':
+               if self.is_dome:
+                   self.enclosure.Slaved = True
+               self.redis_server.delete('sync_enc')                
+            elif redis_command == 'unsync_enc':
+                if self.is_dome:
+                    self.enclosure.Slaved = False
+                self.redis_server.delete('unsync_enc')
             else:
                 
                 pass
@@ -344,6 +346,7 @@ class Enclosure:
 
         #  NB NB NB Gather some facts:
         obs_win_begin, sunset, sunrise, ephemNow = self.astro_events.getSunEvents()
+        ephem_now = ephemNow
         az_opposite_sun = g_dev['evnt'].sun_az_now()
         #print('Sun Az: ', az_opposite_sun)
         az_opposite_sun -= 180.
@@ -398,7 +401,13 @@ class Enclosure:
             
             
         #  We are now in the full operational window.  
-        #  if in Ops Window open if closed. Not the sun 
+        #  if in Ops Window open if closed. Not the su
+        elif (g_dev['events']['Ops Window Start'] - 10/1440 <= ephem_now <= g_dev['events']['Ops Window Start']):
+               #Need to position telescope pointing East, and verify Enclosure is closed
+               if self.status_string.lower() in ['closed']:
+                   self.enclosure.SlewToAzimuth(az_opposite_sun)
+                   #Tel move is handled in Sequencer
+                   
       
         elif (g_dev['events']['Ops Window Start'] - debugOffset <= ephemNow <= g_dev['events']['Ops Window Closes'] + debugOffset) \
                 and not (wx_hold or self.mode == 'Shutdown') \
@@ -410,6 +419,7 @@ class Enclosure:
 
             if self.status_string.lower() in ['closed']:  #, 'closing']:
                 self.guarded_open()
+                self.enclosure.Slaved = True   #Added 20210925
                 self.dome_opened = True
                 self.dome_homed = True
                 self.time_of_next_slew = time.time()
