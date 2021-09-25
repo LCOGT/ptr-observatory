@@ -201,7 +201,10 @@ class Enclosure:
                 print("enclosure remote cmd: close.")
                 self.manager(close_cmd=True, open_cmd=False)
                 
-                self.enclosure.Slaved = False
+                try:
+                    self.enclosure.Slaved = False
+                except:
+                    pass
                 self.dome_open = False
                 self.dome_home = True
             elif redis_command == 'setAuto':
