@@ -289,7 +289,7 @@ class ObservingConditions:
             if  (obs_win_begin - quarter_hour < ephemNow < sunrise + quarter_hour) \
                  and self.unihedron.Connected and (time.time() >= self.sample_time + 30.):    #  Two samples a minute.
                 try:
-                    wl = open('C:/000ptr_saf/archive/wx_log.txt', 'a')   #  NB This is currently site specifc but in code w/o config.
+                    wl = open('D:/000ptr_saf/archive/wx_log.txt', 'a')   #  NB This is currently site specifc but in code w/o config.
                     wl.write('wx, ' + str(time.time()) + ', ' + str(illum) + ', ' + str(mag - 20.01) + ', ' \
                              + str(self.unihedron.SkyQuality) + ", \n")
                     wl.close()

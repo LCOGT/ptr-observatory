@@ -114,8 +114,16 @@ class Enclosure:
         
 
         if self.is_dome:
-            current_az = self.enclosure.Azimuth
-            slewing = self.enclosure.Slewing
+            try:
+                #Occasionally this property thrws an exception:
+                current_az = self.enclosure.Azimuth
+                slewing = self.enclosure.Slewing
+                self.last_current_az = current_az
+                self.last_slewing = slewing
+            except:
+                current_az = self.last_current_az
+                slewing = self.last_slewing
+                
             gap = current_az - self.last_az
             while gap >= 360:
                 gap -= 360
@@ -226,12 +234,14 @@ class Enclosure:
             elif redis_command == 'goHome':
                 #breakpoint()
                 self.redis_server.delete('goHome')
-            elif redis_command == 'enterSynchronise':
-                #breakpoint()
-                self.redis_server.delete('enterSynchronise')                
-            elif redis_command == 'stopSynchronize':
-                #breakpoint()
-                self.redis_server.delete('stopSynchronize')
+            elif redis_command == 'sync_enc':
+               if self.is_dome:
+                   self.enclosure.Slaved = True
+               self.redis_server.delete('sync_enc')                
+            elif redis_command == 'unsync_enc':
+                if self.is_dome:
+                    self.enclosure.Slaved = False
+                self.redis_server.delete('unsync_enc')
             else:
                 
                 pass
@@ -339,6 +349,7 @@ class Enclosure:
 
         #  NB NB NB Gather some facts:
         obs_win_begin, sunset, sunrise, ephemNow = self.astro_events.getSunEvents()
+        ephem_now = ephemNow
         az_opposite_sun = g_dev['evnt'].sun_az_now()
         #print('Sun Az: ', az_opposite_sun)
         az_opposite_sun -= 180.
@@ -359,7 +370,7 @@ class Enclosure:
         #  could be parked.
        
 
-        debugOffset = 0/24 #hours.
+        debugOffset = 0.1/24 #hours.
         try:
             obs_time = self.redis_server.get('obs_heart_time')    
         except:
@@ -393,7 +404,13 @@ class Enclosure:
             
             
         #  We are now in the full operational window.  
-        #  if in Ops Window open if closed. Not the sun 
+        #  if in Ops Window open if closed. Not the su
+        elif (g_dev['events']['Ops Window Start'] - 10/1440 <= ephem_now <= g_dev['events']['Ops Window Start']):
+               #Need to position telescope pointing East, and verify Enclosure is closed
+               if self.status_string.lower() in ['closed']:
+                   self.enclosure.SlewToAzimuth(az_opposite_sun)
+                   #Tel move is handled in Sequencer
+                   
       
         elif (g_dev['events']['Ops Window Start'] - debugOffset <= ephemNow <= g_dev['events']['Ops Window Closes'] + debugOffset) \
                 and not (wx_hold or self.mode == 'Shutdown') \
@@ -405,6 +422,7 @@ class Enclosure:
 
             if self.status_string.lower() in ['closed']:  #, 'closing']:
                 self.guarded_open()
+                self.enclosure.Slaved = True   #Added 20210925
                 self.dome_opened = True
                 self.dome_homed = True
                 self.time_of_next_slew = time.time()
@@ -489,35 +507,9 @@ class Enclosure:
                     #??Add darkslide close here or een tothe park command itself??
                     #print("Telescope commanded to park, try again in a minute.")
                     pass
-                    
-                
-            
-            
             else:
-                #  We are outside of the observing window so close the dome, with a one time command to
-                #  deal with the case of software restarts. Do not pound on the dome because it makes
-                #  off-hours entry difficult.
-                #  NB this happens regardless of automatic mode.
-                #  The dome may come up reporting closed when it is open, but it does report unhomed as
-                #  the condition not AtHome.
-    
-                # NB NB NB This code makes little sense.
-                # if not self.dome_homed:
-                    
-                #     # self.dome_homed = True
-                #     # return
-                #     if self.is_dome:
-                #         #self.enclosure.Slaved = False
-                #         try:
-                            
-                #             if self.status_stringin ['open', 'Open'] \
-                #                 or not self.enclosure.AtHome:
-                #                 pass
-                #                 #self.enclosure.CloseShutter()   #ASCOM DOME will fault if it is Opening or closing
-                #                 self.dome_opened = False
-                #                 self.dome_homed = True
-                #         except:
                 pass
+
                             #print('Dome close cmd appeared to fault.')
                     
                     #print("One time close of enclosure issued, normally done during Python code restart.")

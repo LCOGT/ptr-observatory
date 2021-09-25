@@ -29,10 +29,11 @@ from pprint import pprint
 
 # NB Change these to hours not fractions of a day.  Should come from site config not be in code here.
 SCREENFLATDURATION = 0/1440            #1.5 hours
-BIASDARKDURATION = 90/1440             #3 hours
+BIASDARKDURATION = 90/1440            #2.0 hours
+SKYFLATDURATION = 60/1440
 MORNBIASDARKDURATION = 0/1440          #1.5 min
 LONGESTSCREEN = 0/1440           #1 min
-LONGESTDARK = 6/1440             #6 min
+LONGESTDARK = 5/1440             #6 min
 
 DAY_Directory = None   #NB this is an evil use of Globals by WER.  20200408   WER
 Day_tomorrow = None
@@ -428,11 +429,11 @@ class Events:
         ptr.horizon = '2'
         sun.compute(ptr)
         #if loud: print('Sun 2: ', sun.ra, sun.dec, sun.az, sun.alt)
-        ops_win_begin = sunset - 45/1440      # Needs to come from site config  NB 1 hour
+        ops_win_begin = sunset - 65/1440      # Needs to come from site config  NB 1 hour
         ptr.horizon = '-1.5'
         sun.compute(ptr)
         #if loud: print('Sun -6: ', sun.ra, sun.dec, sun.az, sun.alt)
-        eve_skyFlatBegin = sunset - 30/1440. #ptr.next_setting(sun)
+        eve_skyFlatBegin = sunset - 60/1440. #ptr.next_setting(sun)
         morn_skyFlatEnd = ptr.next_rising(sun)
         ptr.horizon = '-6'
         sun.compute(ptr)
@@ -473,7 +474,7 @@ class Events:
                                                         sunrise, loud=True)
         endEveScreenFlats = ops_win_begin - LONGESTSCREEN
         beginEveScreenFlats = endEveScreenFlats - SCREENFLATDURATION
-        endEveBiasDark = beginEveScreenFlats - LONGESTDARK
+        endEveBiasDark = ops_win_begin - LONGESTDARK
         beginEveBiasDark = endEveBiasDark - BIASDARKDURATION
 
         # Morning times queue off on when flats are no longer

@@ -12,6 +12,7 @@ import shelve
 from pprint import pprint
 import ptr_utility
 import redis
+import math
 
 '''
 Autofocus NOTE 20200122
@@ -263,16 +264,19 @@ class Sequencer:
         self.sequencer_hold = False
          #events['Eve Bias Dark']
         #if True:
-        if (events['Eve Bias Dark'] <= ephem_now < events['Ops Window Start']) and True:
+        if (events['Eve Bias Dark'] <= ephem_now < events['Eve Sky Flats']) and True:
             req = {'bin1': False, 'bin2': True, 'bin3': False, 'bin4': False, 'numOfBias': 45, \
                    'numOfDark': 15, 'darkTime': 180, 'numOfDark2': 3, 'dark2Time': 360, \
                    'hotMap': True, 'coldMap': True, 'script': 'genBiasDarkMaster', }
             opt = {}
             self.bias_dark_script(req, opt)
-        elif  (events['Eve Sky Flats'] < ephem_now < events['End Eve Sky Flats'])  \
-                and g_dev['enc'].mode == 'Automatic' \
-                and g_dev['ocn'].wx_is_ok \
-                and not g_dev['ocn'].wx_hold and True:
+        elif (g_dev['events']['Ops Window Start'] - 10/1440 <= ephem_now <= g_dev['events']['Ops Window Start']):
+            #Need to position telescope pointing East, and verify Enclosure is closed
+            g_dev['mnt'].unpark_command({}, {}) # Get there early
+            g_dev['mnt'].slewToSkyFlatAsync()   #NB we are pounding on these for 10 min, should fix.
+                   
+        elif  (events['Eve Sky Flats'] <= ephem_now < events['End Eve Sky Flats'])  \
+                and g_dev['enc'].mode == 'Automatic' and not g_dev['ocn'].wx_hold and True:   #                and g_dev['ocn'].wx_is_ok \ \
             if not self.sky_guard:
                 #Start it up.
                 self.sky_guard = True
@@ -437,6 +441,7 @@ class Sequencer:
         # #unpark, open dome etc.
         # #if not end of block
         g_dev['mnt'].unpark_command({}, {})
+        g_dev['mnt'].Tracking = True   # unpark_command({}, {})
         #NB  Servo the Dome??
         timer = time.time() - 1  #This should force an immediate autofocus.
         req2 = {'target': 'near_tycho_star', 'area': 150}
@@ -510,7 +515,7 @@ class Sequencer:
                     else:
                         multiplex = 4
                 if exposure['area'] in ['600', '600%', 600, '450', '450%', 450]:
-                    multiplex = 9
+                    multiplex = 13
                 if exposure['area'] in ['500', '500%', 500]:
                     if block_specification['project']['project_constraints']['add_center_to_mosaic']:
                         multiplex = 7
@@ -608,8 +613,8 @@ class Sequencer:
                         if exposure['area'] in ['125', '125%', 125]:
                             pitch = 0.125
                     elif exposure['area'] in ['600', '600%', 600, '450', '450%', 450]:  # 9 exposures.
-                        offset = [(0., 0.), (-1.5, 0.), (-1.5, 1.), (0., 1.), (1.5, 1.), (1.5, 0.), \
-                                  (1.5, -1.), (0., -1.), (-1.5, -1.)] #Nine mosaic quadrants 36 x 24mm chip
+                        offset = [(0, 0), (0., 0.5), (-1.5, 0.5), (-1.5, 1.5), (0., 1.5), (1.5, 1.5), (1.5, 0.5), \
+                                  (1.5, -0.5), (0., 0.5), (-1.5, -0.5), (-1.5, -1.5), (0., -1.5), (-1.5, 1.5)] #Thirteen mosaic quadrants 36 x 24mm chip
                         if exposure['area'] in ['600', '600%', 600]:
                             pitch = 0.375  
                         if exposure['area'] in ['450', '450%', 450]:
@@ -662,11 +667,15 @@ class Sequencer:
                         pane += 1
                         
                     now_date_timeZ = datetime.datetime.now().isoformat().split('.')[0] +'Z'
+                    ephem_now = ephem.now()
+                    events = g_dev['events']
 
-                    ended = left_to_do <= 0 or now_date_timeZ >= block['end']\
-                            or g_dev['airmass'] > float( block_specification['project']['project_constraints']['max_airmass']) \
-                            or abs(g_dev['ha']) > float(block_specification['project']['project_constraints']['max_ha'])
-                            # Or mount has flipped, too low, too bright, entering zenith..
+                    ended = left_to_do <= 0 or now_date_timeZ >= block['end'] \
+                            or ephem_now >= events['End Astro Dark']
+                    #                                                    ]\
+                    #         or g_dev['airmass'] > float( block_specification['project']['project_constraints']['max_airmass']) \
+                    #         or abs(g_dev['ha']) > float(block_specification['project']['project_constraints']['max_ha'])
+                    #         # Or mount has flipped, too low, too bright, entering zenith..
                     
         print("Fini!")
         if block_specification['project']['project_constraints']['close_on_block_completion']:
@@ -692,17 +701,25 @@ class Sequencer:
         """
         self.sequencer_hold = True
         self.current_script = 'Afternoon Bias Dark'
-        dark_time = 240
-       # breakpoint()
-        while g_dev['events']['Eve Bias Dark']  <= ephem.now() <= g_dev['events']['Ops Window Start'] :   #Do not overrun the window end
-            print("Expose b_2")   
+        dark_time = 300
+        #breakpoint()
+        
+        while g_dev['events']['Eve Bias Dark']  <= ephem.now() <= - 6/1440 + g_dev['events']['Ops Window Start'] :   #Do not overrun the window end
+            #g_dev['mnt'].unpark_command({}, {}) # Get there early
+            #g_dev['mnt'].slewToSkyFlatAsync()
+            print("Expose Biases: b_2")   
             req = {'time': 0.0,  'script': 'True', 'image_type': 'bias'}
-            opt = {'area': "Full", 'count': 11, 'bin':'2 2', \
+            opt = {'area': "Full", 'count': 1, 'bin':'2 2', \
                     'filter': 'dark'}
-            result = g_dev['cam'].expose_command(req, opt, no_AWS=True, \
+            for bias in range(11):
+            
+                result = g_dev['cam'].expose_command(req, opt, no_AWS=True, \
                                 do_sep=False, quick=False)
-            print(result)
-            g_dev['obs'].update_status()
+                print(result)
+                g_dev['obs'].update_status()
+                if ephem.now() + 6/1440 > g_dev['events']['Ops Window Start']:
+                    break
+
             print("Expose d_2 using exposure:  ", dark_time )
             req = {'time':dark_time ,  'script': 'True', 'image_type': 'dark'}
             opt = {'area': "Full", 'count':1, 'bin':'2 2', \
@@ -711,9 +728,11 @@ class Sequencer:
                                 do_sep=False, quick=False)
             print(result)
             g_dev['obs'].update_status()
-
-        print("One pass of Bias/Dark acquisition is finished.")
+            if ephem.now() + 6/1440 > g_dev['events']['Ops Window Start']:
+                    break
+            print("One pass of Bias/Dark acquisition is finished.")
         self.sequencer_hold = False
+        print("Bias/Dark acquisition has completed.")
         return
 
 
@@ -771,7 +790,7 @@ class Sequencer:
             #opt =  {'filter': current_filter}
             g_dev['fil'].set_number_command(current_filter)
             g_dev['mnt'].slewToSkyFlatAsync()
-            bright = 35000
+            bright = 37500
             scale = 1.0    #1.15   #20201121 adjustment
             
             prior_scale = 1.0
@@ -785,8 +804,8 @@ class Sequencer:
               
                     exp_time = prior_scale*scale*10000/(float(g_dev['fil'].filter_data[current_filter][3])*lux)  #g_dev['ocn'].calc_HSI_lux)  #meas_sky_lux)
                     #exp_time*= 4.9/9/2
-                    if exp_time > 300:
-                        exp_time = 300
+                    if exp_time > 120:
+                        exp_time = 120    #Live with this limit.
                     if exp_time <0.001:
                         exp_time = 0.001
                     exp_time = round(exp_time, 4)
@@ -814,7 +833,7 @@ class Sequencer:
                 g_dev['obs'].update_status()
                 #breakpoint()
                 #  THE following code looks like a debug patch gone rogue.
-                if bright > 45000 and (ephemNow < g_dev['events']['End Eve Sky Flats']
+                if bright > 40000 and (ephemNow < g_dev['events']['End Eve Sky Flats']
                                   or True):    #NB should gate with end of skyflat window as well.
                     for i in range(1):
                         time.sleep(5)  #  #0 seconds of wait time.  Maybe shorten for wide bands?
@@ -826,8 +845,8 @@ class Sequencer:
                         scale = 1
                         prior_scale = 1
                 continue
-        g_dev['mnt'].park_command({}, {})  #  NB this is provisional, Ok when simulating
-        print('\nSky flat complete, or too early.\n')
+        g_dev['mnt'].tracking = False   #  park_command({}, {})  #  NB this is provisional, Ok when simulating
+        print('\nSky flat complete, or too early. Telescope Tracking is off.\n')
         self.sky_guard = False
 
 
@@ -905,8 +924,8 @@ class Sequencer:
         g_dev['scr'].set_screen_bright(0)
         g_dev['scr'].screen_dark()
         g_dev['obs'].update_status()
-        g_dev['mnt'].park_command({}, {})
-        print('Sky Flat sequence completed, Telescope is parked.')
+        g_dev['mnt'].Tracking = False   #park_command({}, {})
+        print('Sky Flat sequence completed, Telescope tracking is off.')
         self.guard = False
         
     
@@ -983,15 +1002,22 @@ class Sequencer:
         #print("temporary patch in Sim values")
         print('Autofocus Starting at:  ', foc_pos0, '\n\n')
         #throw = throw  # NB again, from config.  Units are microns  Passed as default paramter
-
-        if not sim:
-            result = g_dev['cam'].expose_command(req, opt, no_AWS=True) ## , script = 'auto_focus_script_0')  #  This is where we start.
-        else:
-            result['FWHM'] = 3
-            result['mean_focus'] = foc_pos0
-
-        spot1 = result['FWHM']
-        foc_pos1 = result['mean_focus']
+        retry = 0
+        while retry < 3:
+            if not sim:
+                result = g_dev['cam'].expose_command(req, opt, no_AWS=True) ## , script = 'auto_focus_script_0')  #  This is where we start.
+            else:
+                result['FWHM'] = 3
+                result['mean_focus'] = foc_pos0
+    
+            spot1 = result['FWHM']
+            foc_pos1 = result['mean_focus']
+            if math.isnan(spot1):
+                retry += 1
+                print("Retry of central focus star)")
+                continue
+            else:
+                break
         print('Autofocus Moving In.\n\n')
         g_dev['foc'].focuser.Move((foc_pos0 - throw)*g_dev['foc'].micron_to_steps)
         #opt['fwhm_sim'] = 4.
@@ -1018,7 +1044,7 @@ class Sequencer:
         y = [spot2, spot1, spot3]
         print('X, Y:  ', x, y, 'Desire center to be smallest.')
         if spot1 is None or spot2 is None or spot3 is None:  #New additon to stop crash when no spots
-            print("No stars detected. Returning to stating focus and pointing.")
+            print("No stars detected. Returning to starting focus and pointing.")
             g_dev['foc'].focuser.Move((focus_start)*g_dev['foc'].micron_to_steps)
             self.sequencer_hold = False   #Allow comand checks.
             self.af_guard = False
