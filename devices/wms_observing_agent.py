@@ -308,39 +308,43 @@ class ObservingConditions:
         #  Note we are now in mrc specific code.  AND WE ARE USING THE OLD Weather SOURCE!!
 
         elif self.site == 'mrc' or self.site == 'mrc2':
-            try:
-                # pass
-                redis_monitor = eval(self.redis_server.get('<ptr-wx-1_state'))
-                illum = float(redis_monitor["illum lux"])
-                self.last_wx = redis_monitor
-            except:
-                print('Redis is not returning redis_monitor Data properly.')
-                redis_monitor = self.last_wx
+            # try:
+            #     # pass
+            #     status = {}
+                
+
+            # #     redis_monitor = eval(self.redis_server.get('<ptr-wx-1_state'))
+            # #     illum = float(redis_monitor["illum lux"])
+            # #     self.last_wx = redis_monitor
+            # # except:
+            # #     print('Redis is not returning redis_monitor Data properly.')
+            # #     redis_monitor = self.last_wx
                 
             try:
+                status= {}
                 illum, mag = self.astro_events.illuminationNow()
-                illum = float(redis_monitor["illum lux"])
+                #illum = float(redis_monitor["illum lux"])
                 if illum > 500:
                     illum = int(illum)
                 else:
                     illum = round(illum, 3)
                 #self.wx_is_ok = True
-                self.temperature = float(redis_monitor["amb_temp C"])
+                self.temperature = round(self.sky_monitor.Temperature, 2)
                 self.pressure = self.sky_monitor.Pressure,  #978   #Mbar to mmHg  #THIS IS A KLUDGE
-                status = {"temperature_C": float(redis_monitor["amb_temp C"]),
-                          "pressure_mbar": float(self.pressure[0]),  # Odd this returns as a tuple.
-                          "humidity_%": float(redis_monitor["humidity %"]),
-                          "dewpoint_C": float(redis_monitor["dewpoint C"]),
+                status = {"temperature_C": round(self.sky_monitor.Temperature, 2),
+                          "pressure_mbar": self.sky_monitor.Pressure,
+                          "humidity_%": self.sky_monitor.Humidity,
+                          "dewpoint_C": self.sky_monitor.DewPoint,
+                          "sky_temp_C": round(self.sky_monitor.SkyTemperature,2),
+                          "last_sky_update_s":  round(self.sky_monitor.TimeSinceLastUpdate('SkyTemperature'), 2),
+                          "wind_m/s": abs(round(self.sky_monitor.WindSpeed, 2)),
+                          'rain_rate': self.sky_monitor.RainRate,
+                          'solar_flux_w/m^2': None,
+                          'cloud_cover_%': str(self.sky_monitor.CloudCover),
                           "calc_HSI_lux": illum,
-                          "sky_temp_C": float(redis_monitor["sky C"]),
-                          "time_to_open_h": float(redis_monitor["time to open"]),
-                          "time_to_close_h": float(redis_monitor["time to close"]),
-                          "wind_m/s": float(redis_monitor["wind m/s"]),
-                          "ambient_light": redis_monitor["light"],
-                          "open_ok": redis_monitor["light"],  #redis_monitor["open_possible"],
-                          #"wx_ok": redis_monitor["open_possible"],
-                          "meas_sky_mpsas": float(redis_monitor['meas_sky_mpsas']),
-                          "calc_sky_mpsas": round((mag - 20.01), 2),
+                          "calc_sky_mpsas": round((mag - 20.01),2),    #  Provenance of 20.01 is dubious 20200504 WER
+                          #"wx_ok": wx_str,  #str(self.sky_monitor_oktoimage.IsSafe),
+                          "open_ok": self.ok_to_open,
                           'wx_hold': self.wx_hold,
                           'hold_duration': self.wx_to_go
                           }
@@ -365,10 +369,10 @@ class ObservingConditions:
                     status["wx_ok"] = "No"
                 
                 g_dev['wx_ok']  =  self.wx_is_ok             
-                uni_measure = float(redis_monitor['meas_sky_mpsas'])   #  Provenance of 20.01 is dubious 20200504 WER
+                uni_measure, hz, lux_u = eval(self.redis_server.get('unihedron1'))   #  Provenance of 20.01 is dubious 20200504 WER
 
                 if uni_measure == 0:
-                    uni_measure = round((mag - 20.01),2)   #  Fixes Unihedron when sky is too bright
+                    uni_measure = round((mag - 19.01),2)   #  Fixes Unihedron when sky is too bright
                     status["meas_sky_mpsas"] = uni_measure
                     #status2["meas_sky_mpsas"] = uni_measure
                     self.meas_sky_lux = illum
