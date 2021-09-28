@@ -2,8 +2,8 @@
 import win32com.client
 import redis
 import time
-import requests
-import json
+#import requests
+#import json
 from global_yard import g_dev
 
 
@@ -83,6 +83,7 @@ class ObservingConditions:
             self.redis_server = redis.StrictRedis(host=redis_ip, port=6379, db=0,
                                               decode_responses=True)
             self.redis_wx_enabled = True
+            self.redis_server.set('wx_hold', False, ex=33200)
         else:
             self.redis_wx_enabled = False
         #    self.observing_conditions_connected = True
@@ -154,13 +155,13 @@ class ObservingConditions:
                 wx_str = "Yes"
             else:
                 wx_str = "No"   #Ideally we add the dominant reason in priority order.
-            obs_win_begin, sunset, sunrise, ephemNow = self.astro_events.getSunEvents()
+            obs_win_begin, sunset, sunrise, ephem_now = self.astro_events.getSunEvents()
             #The following may be more restictive since it includes local measured ambient light.
             #  This signal meant to simulate the sky_monitor relay output.  WE repport it but it is not
             #  actively used.  The Sky monitor criteria are a bit opaque.  This should only assert
             #  during or close to the Obs Window.
             if self.sky_monitor_oktoopen.IsSafe and dew_point_gap and temp_bounds and \
-                    ((g_dev['events']['Ops Window Start'] - 15/1440) < ephemNow < (g_dev['events']['Ops Window Start'] + 2/1440)):
+                    ((g_dev['events']['Ops Window Start'] - 15/1440) < ephem_now < (g_dev['events']['Ops Window Start'] + 2/1440)):
                 self.ok_to_open = 'Yes'
             else:
                 self.ok_to_open = "No"
@@ -284,9 +285,9 @@ class ObservingConditions:
                 status2["meas_sky_mpsas"] = round((mag - 20.01),2) #  Provenance of 20.01 is dubious 20200504 WER
 
             # Only write when around dark, put in CSV format.  This is a logfile of the rapid sky brightness transition.
-            obs_win_begin, sunset, sunrise, ephemNow = g_dev['obs'].astro_events.getSunEvents()
+            obs_win_begin, sunset, sunrise, ephem_now = g_dev['obs'].astro_events.getSunEvents()
             quarter_hour = 0.15/24
-            if  (obs_win_begin - quarter_hour < ephemNow < sunrise + quarter_hour) \
+            if  (obs_win_begin - quarter_hour < ephem_now < sunrise + quarter_hour) \
                  and self.unihedron.Connected and (time.time() >= self.sample_time + 30.):    #  Two samples a minute.
                 try:
                     wl = open('D:/000ptr_saf/archive/wx_log.txt', 'a')   #  NB This is currently site specifc but in code w/o config.
@@ -299,11 +300,7 @@ class ObservingConditions:
                     #print("Wx log did not write.")
             self.status = status
             self.redis_server.set('wx_redis_status' , status, ex=1200)
-            new_stat = self.redis_server.get('wx_redis_status')
-           
-
-         
-            
+            self.last_stat = self.redis_server.get('wx_redis_status')
 
         #  Note we are now in mrc specific code.  AND WE ARE USING THE OLD Weather SOURCE!!
 
@@ -381,7 +378,7 @@ class ObservingConditions:
                     status["meas_sky_mpsas"] = uni_measure
                     #status2["meas_sky_mpsas"] = uni_measure
                         # Only write when around dark, put in CSV format
-                # sunZ88Op, sunZ88Cl, ephemNow = g_dev['obs'].astro_events.getSunEvents()
+                # sunZ88Op, sunZ88Cl, ephem_now = g_dev['obs'].astro_events.getSunEvents()
                 # quarter_hour = 0.75/24    #  Note temp changed to 3/4 of an hour.
                 # if  (sunZ88Op - quarter_hour < ephemNow < sunZ88Cl + quarter_hour) and (time.time() >= \
                 #      self.sample_time + 30.):    #  Two samples a minute.
@@ -397,47 +394,7 @@ class ObservingConditions:
                 #return status
             except:
                 pass
-                # time.sleep(1)
-                # self.wmd_fail_counter += 1
-                # # This is meant to be a retry
-                # try:
-                #
-                #     #pass
-                #     wx = eval(self.redis_server.get('<ptr-wx-1_state'))
-                #     illum = float(wx["illum lux"])
-                #     self.last_wx = wx
-                # except:
-                #     print('Redis is not turning Wx Data properly.')
-                #     wx = self.last_wx
-                # status = {"temperature_C": float(wx["amb_temp C"]),
-                #           "pressure_mbar": 978.0,
-                #           "humidity_%": float(wx["humidity %"]),
-                #           "dewpoint_C": float(wx["dewpoint C"]),
-                #           "calc_HSI_lux": illum,
-                #           "sky_temp_C": float(wx["sky C"]),
-                #           "time_to_open_h": float(wx["time to open"]),
-                #           "time_to_close_h": float(wx["time to close"]),
-                #           "wind_m/s": float(wx["wind m/s"]),
-                #           "ambient_light": wx["light"],
-                #           "open_ok": wx["open_possible"],
-                #           "wx_ok": wx["open_possible"],
-                #           "meas_sky_mpsas": float(wx['meas_sky_mpsas']),
-                #           "calc_sky_mpsas": round((mag - 20.01), 2)
-                #           }
-                # #Pulled over from saf
-                #
-                # uni_measure = float(wx['meas_sky_mpsas']) #  Provenance of 20.01 is dubious 20200504 WER
-                # if uni_measure == 0:
-                #     uni_measure = round((mag - 20.01),2)   #  Fixes Unihedron when sky is too bright
-                #     status["meas_sky_mpsas"] = uni_measure
-                #     #status2["meas_sky_mpsas"] = uni_measure
-                #     self.meas_sky_lux = illum
-                # else:
-                #     self.meas_sky_lux = linearize_unihedron(uni_measure)
-                #     status["meas_sky_mpsas"] = uni_measure
-                #     #status2["meas_sky_mpsas"] = uni_measure
 
-            # Only write when around dark, put in CSV format, used to calibrate Unihedron.
             '''
             NB NB NB
             This should capture Sunset and sunrise Hz to Lux transition from an hour before Eve flats to an hour after
@@ -445,9 +402,9 @@ class ObservingConditions:
             say the last two weeks of readings to get a more accurate curve, but this must be taken to geta way to 
             accurately expose flats.
             '''
-            sunZ88Op, sunZ88Cl, sunrise, ephemNow = g_dev['obs'].astro_events.getSunEvents()
+            sunZ88Op, sunZ88Cl, sunrise, ephem_now = g_dev['obs'].astro_events.getSunEvents()
             two_hours = 2/24    #  Note changed to 2 hours.
-            if  (sunZ88Op - two_hours < ephemNow < sunZ88Cl + two_hours) and (time.time() >= \
+            if  (sunZ88Op - two_hours < ephem_now < sunZ88Cl + two_hours) and (time.time() >= \
                  self.sample_time + 30.):    #  Two samples a minute.
                 try:
                     wl = open('C:/Users/me/Desktop/Work/ptr/wx_log.txt', 'a')
@@ -460,7 +417,7 @@ class ObservingConditions:
                     #print("Unihedron log did not write.")
                     # breakpoint()
             self.redis_server.set('wx_redis_status' , status, ex=3600)
-            new_stat = self.redis_server.get('wx_redis_status')
+            self.last_stat = self.redis_server.get('wx_redis_status')
         else:
             #DEH temporary to get past the big fatal error.
             #DEH is this always going to be very site specific or put in a config somewhere?
@@ -481,7 +438,7 @@ class ObservingConditions:
 
         When we get to this point of the code first time we expect self.wx_is_ok to be true
         '''
-        obs_win_begin, sunset, sunrise, ephemNow = self.astro_events.getSunEvents()
+        obs_win_begin, sunset, sunrise, ephem_now = self.astro_events.getSunEvents()
         
         #OLD CODE USED A PROBE. jUST DO THIS EVERY CYCLE
 
@@ -503,11 +460,13 @@ class ObservingConditions:
             #Bingo we need to start a cycle
            
             self.wx_hold = True
+            self.redis_server.set('Wx_hold', True, ex=3600)
             self.wx_hold_until_time = (t := time.time() + wx_delay_time)    #15 minutes   Make configurable
             self.wx_to_go = round(wx_delay_time/60, 2)
             self.wx_hold_tally += 1     #  This counts all day and night long.
             self.wx_hold_last_updated = t
-            if obs_win_begin <= ephemNow <= sunrise:     #Gate the real holds to be in the Observing window.
+            # NB Count holds might start as of skyflat time.
+            if obs_win_begin <= ephem_now <= sunrise:     #Gate the real holds to be in the Observing window.
                 self.wx_hold_count += 1  #These are real holds occuring once obs window is entered.
                 #We choose to let the enclosure manager handle the close.
                 print("Wx hold asserted, flap#:", self.wx_hold_count, self.wx_hold_tally)
@@ -534,6 +493,7 @@ class ObservingConditions:
                 elif time.time() >= self.wx_hold_until_time and not self.wx_clamp:
                     #Time to release the hold.
                     self.wx_hold = False
+                    self.redis_server.set('wx_hold', False, ex=3600)
                     self.wx_hold_until_time = time.time() + wx_delay_time  #Keep pushing the recovery out
                     self.wx_hold_last_updated = time.time()
                     self.wx_to_go = 0.0
@@ -544,6 +504,7 @@ class ObservingConditions:
                 if not self.clamp_latch:
                     print('Sorry, Tobor is clamping enclosure shut for the night.')
                 self.clamp_latch = True
+                self.redis_server.set('wx_hold', True, ex=30000)
                 self.wx_clamp = True
                 self.wx_to_go = 999
 
@@ -573,12 +534,13 @@ class ObservingConditions:
         if self.site == 'saf':
             # Should incorporate Davis data into this data set, and Unihedron.
             illum, mag = self.astro_events.illuminationNow()
-            if illum <= 7500.:
-                open_poss = True
-                hz = 100000
-            else:
-                open_poss = False
-                hz = 500000
+            # if illum <= 7500.:
+            #     open_poss = True
+            #     hz = 100000
+            # else:
+            #     #open_poss = False
+            #     #hz = 500000
+            #     pass
             quick.append(time.time())
             quick.append(float(self.sky_monitor.SkyTemperature))
             quick.append(float(self.sky_monitor.Temperature))
@@ -644,7 +606,7 @@ class ObservingConditions:
 
     def empty_command(self, req: dict, opt: dict):
         ''' does nothing '''
-        print(f"obseving conditions cmd: empty command")
+        print("obseving conditions cmd: empty command")
         pass
 
 
