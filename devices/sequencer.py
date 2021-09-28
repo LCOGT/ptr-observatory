@@ -274,7 +274,7 @@ class Sequencer:
             #Need to position telescope pointing East, and verify Enclosure is closed
             g_dev['mnt'].unpark_command({}, {}) # Get there early
             g_dev['mnt'].slewToSkyFlatAsync()   #NB we are pounding on these for 10 min, should fix.
-                   
+         
         elif  (events['Eve Sky Flats'] <= ephem_now < events['End Eve Sky Flats'])  \
                 and g_dev['enc'].mode == 'Automatic' and not g_dev['ocn'].wx_hold and True:   #                and g_dev['ocn'].wx_is_ok \ \
             if not self.sky_guard:
@@ -493,6 +493,7 @@ class Sequencer:
             except:
                 pass
             g_dev['mnt'].go_coord(dest_ra, dest_dec)
+            self.redis_server.set('sync_enc', True, ex=1200)   #Should be redundant
             print("CAUTION:  rotator may block")
             pa = float(block_specification['project']['project_constraints']['position_angle'])
             if abs(pa) > 0.01:
@@ -613,10 +614,12 @@ class Sequencer:
                         if exposure['area'] in ['125', '125%', 125]:
                             pitch = 0.125
                     elif exposure['area'] in ['600', '600%', 600, '450', '450%', 450]:  # 9 exposures.
-                        offset = [(0, 0), (0., 0.5), (-1.5, 0.5), (-1.5, 1.5), (0., 1.5), (1.5, 1.5), (1.5, 0.5), \
-                                  (1.5, -0.5), (0., 0.5), (-1.5, -0.5), (-1.5, -1.5), (0., -1.5), (-1.5, 1.5)] #Thirteen mosaic quadrants 36 x 24mm chip
+                        offset = [(0, 0), (0, 1), (-1, 1), (-1, 0), (-1, -1), (0, -1), (1, -1 ), (1, 0), \
+                                  (1, 1),  (1 ,2), (0, 2), (-1, 2), (-1, -2), (0, -2), (1, -2)
+                                  ] #Fifteen mosaic quadrants 36 x 24mm chip
                         if exposure['area'] in ['600', '600%', 600]:
-                            pitch = 0.375  
+                            pitch = 0.125
+
                         if exposure['area'] in ['450', '450%', 450]:
                             pitch = 0.1875
                         pane = 0
@@ -644,8 +647,8 @@ class Sequencer:
                         x_field_deg = g_dev['cam'].config['camera']['camera_1_1']['settings']['x_field_deg']
                         y_field_deg = g_dev['cam'].config['camera']['camera_1_1']['settings']['y_field_deg']
                         
-                        d_ra = displacement[0]*pitch*(x_field_deg/15.)  # 0.764243 deg = 0.0509496 Hours  These and pixscale should be computed in config.
-                        d_dec = displacement[1]*pitch*(y_field_deg)  # = 0.5102414999999999   #Deg
+                        d_ra = displacement[0]*( 1 - pitch)*(x_field_deg/15.)  # 0.764243 deg = 0.0509496 Hours  These and pixscale should be computed in config.
+                        d_dec = displacement[1]*(1 - pitch)*(y_field_deg)  # = 0.5102414999999999   #Deg
                         new_ra = dest_ra + d_ra
                         new_dec= dest_dec + d_dec
                         new_ra, new_dec = ra_dec_fix_hd(new_ra, new_dec)
@@ -677,7 +680,7 @@ class Sequencer:
                     #         or abs(g_dev['ha']) > float(block_specification['project']['project_constraints']['max_ha'])
                     #         # Or mount has flipped, too low, too bright, entering zenith..
                     
-        print("Fini!")
+        print("Fini!")   #NB Should we consider turning off mount tracking?
         if block_specification['project']['project_constraints']['close_on_block_completion']:
             g_dev['mnt'].park_command({}, {})
             # NB NBNeed to write a more robust and generalized clean up.
@@ -685,7 +688,9 @@ class Sequencer:
                 pass#g_dev['enc'].enclosure.Slaved = False   NB with wema no longer exists
             except:
                 pass
+            self.redis_server.set('unsync_enc', True, ex=1200)
             g_dev['enc'].close_command({}, {})
+
             print("Auto close attempted at end of block.")
         self.block_guard = False
         return block_specification #used to flush the queue as it completes.
@@ -765,6 +770,7 @@ class Sequencer:
         if flat_count < 1: flat_count = 1
         g_dev['mnt'].unpark_command({}, {})
         g_dev['mnt'].slewToSkyFlatAsync()
+        self.redis_server.set('syn_enc', True, ex=1200)   #Should be redundant.
         # if g_dev['enc'].is_dome and not g_dev['enc'].mode == 'Automatic':
         #      g_dev['enc'].Slaved = True  #Bring the dome into the picture.
         #     print('\n SERVOED THE DOME HOPEFULLY!\n')
@@ -954,6 +960,8 @@ class Sequencer:
         opt2 = copy.deepcopy(opt)
         self.af_guard = True
         sim = g_dev['enc'].shutter_is_closed
+        self.redis_server.set('enc_cmd', 'sync_enc', ex=1200)
+        self.redis_server.set('enc_cmd', 'open', ex=1200)
         print('AF entered with:  ', req, opt, '\n .. and sim =  ', sim)
         #self.sequencer_hold = True  #Blocks command checks.
         #Here we jump in too  fast and need for mount to settle

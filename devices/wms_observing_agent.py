@@ -91,7 +91,7 @@ class ObservingConditions:
         if self.site in ['simulate',  'dht']:  #DEH: added just for testing purposes with ASCOM simulators.
             self.observing_conditions_connected = True
             print("observing_conditions: Simulator drivers connected True")
-        elif not driver =='redis':
+        elif not driver == 'redis':
             win32com.client.pythoncom.CoInitialize()
             self.sky_monitor = win32com.client.Dispatch(driver)
             self.sky_monitor.connected = True   # This is not an ASCOM device.
@@ -298,7 +298,7 @@ class ObservingConditions:
                     pass
                     #print("Wx log did not write.")
             self.status = status
-            self.redis_server.set('wx_redis_status' , status, ex=300)
+            self.redis_server.set('wx_redis_status' , status, ex=1200)
             new_stat = self.redis_server.get('wx_redis_status')
            
 

@@ -29,7 +29,7 @@ can be modified for debugging or simulation purposes.
 
 
 def linearize_unihedron(uni_value):
-    #  Based on 20080811 data
+    #  Based on 20180811 data
     uni_value = float(uni_value)
     if uni_value < -1.9:
         uni_corr = 2.5**(-5.85 - uni_value)
