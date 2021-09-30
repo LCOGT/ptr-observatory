@@ -264,17 +264,32 @@ class Sequencer:
         self.sequencer_hold = False
          #events['Eve Bias Dark']
         #if True:
-        if (events['Eve Bias Dark'] <= ephem_now < events['Eve Sky Flats']) and True:
+        breakpoint()
+        if (events['Eve Bias Dark'] <= ephem_now < events['End Eve Bias Dark']) and \
+            self.config['auto_eve_bias_dark'] and not self.sequencer_hold :
             req = {'bin1': False, 'bin2': True, 'bin3': False, 'bin4': False, 'numOfBias': 45, \
                    'numOfDark': 15, 'darkTime': 180, 'numOfDark2': 3, 'dark2Time': 360, \
                    'hotMap': True, 'coldMap': True, 'script': 'genBiasDarkMaster', }
             opt = {}
             self.bias_dark_script(req, opt)
-        elif (g_dev['events']['Ops Window Start'] - 10/1440 <= ephem_now <= g_dev['events']['Ops Window Start']):
-            #Need to position telescope pointing East, and verify Enclosure is closed
+            self.sequencer_hold = False
+        elif (g_dev['events']['Cool Down, Open']  <= ephem_now < g_dev['events']['Eve Sky Flats']) and \
+            g_dev['enc'].mode == 'Automatic' and not g_dev['ocn'].wx_hold:
+
             g_dev['mnt'].unpark_command({}, {}) # Get there early
             g_dev['mnt'].slewToSkyFlatAsync()   #NB we are pounding on these for 10 min, should fix.
-                   
+            if self.is_dome and time.time() >= self.time_of_next_slew:
+                    #We slew to anti-solar Az and reissue this command every 120 seconds
+                    try:
+                        self.enclosure.SlewToAzimuth(az_opposite_sun)
+                        print("Now slewing Dome to an azimuth opposite the Sun:  ", round(az_opposite_sun, 3))
+                       #Prior to skyflats no dome following.
+
+                        self.dome_homed = False
+                        self.time_of_next_slew = time.time() + 120  # seconds between slews.
+                    except:
+                        pass#
+         
         elif  (events['Eve Sky Flats'] <= ephem_now < events['End Eve Sky Flats'])  \
                 and g_dev['enc'].mode == 'Automatic' and not g_dev['ocn'].wx_hold and True:   #                and g_dev['ocn'].wx_is_ok \ \
             if not self.sky_guard:
@@ -493,6 +508,7 @@ class Sequencer:
             except:
                 pass
             g_dev['mnt'].go_coord(dest_ra, dest_dec)
+            self.redis_server.set('sync_enc', True, ex=1200)   #Should be redundant
             print("CAUTION:  rotator may block")
             pa = float(block_specification['project']['project_constraints']['position_angle'])
             if abs(pa) > 0.01:
@@ -613,10 +629,12 @@ class Sequencer:
                         if exposure['area'] in ['125', '125%', 125]:
                             pitch = 0.125
                     elif exposure['area'] in ['600', '600%', 600, '450', '450%', 450]:  # 9 exposures.
-                        offset = [(0, 0), (0., 0.5), (-1.5, 0.5), (-1.5, 1.5), (0., 1.5), (1.5, 1.5), (1.5, 0.5), \
-                                  (1.5, -0.5), (0., 0.5), (-1.5, -0.5), (-1.5, -1.5), (0., -1.5), (-1.5, 1.5)] #Thirteen mosaic quadrants 36 x 24mm chip
+                        offset = [(0, 0), (0, 1), (-1, 1), (-1, 0), (-1, -1), (0, -1), (1, -1 ), (1, 0), \
+                                  (1, 1),  (1 ,2), (0, 2), (-1, 2), (-1, -2), (0, -2), (1, -2)
+                                  ] #Fifteen mosaic quadrants 36 x 24mm chip
                         if exposure['area'] in ['600', '600%', 600]:
-                            pitch = 0.375  
+                            pitch = 0.125
+
                         if exposure['area'] in ['450', '450%', 450]:
                             pitch = 0.1875
                         pane = 0
@@ -644,8 +662,8 @@ class Sequencer:
                         x_field_deg = g_dev['cam'].config['camera']['camera_1_1']['settings']['x_field_deg']
                         y_field_deg = g_dev['cam'].config['camera']['camera_1_1']['settings']['y_field_deg']
                         
-                        d_ra = displacement[0]*pitch*(x_field_deg/15.)  # 0.764243 deg = 0.0509496 Hours  These and pixscale should be computed in config.
-                        d_dec = displacement[1]*pitch*(y_field_deg)  # = 0.5102414999999999   #Deg
+                        d_ra = displacement[0]*( 1 - pitch)*(x_field_deg/15.)  # 0.764243 deg = 0.0509496 Hours  These and pixscale should be computed in config.
+                        d_dec = displacement[1]*(1 - pitch)*(y_field_deg)  # = 0.5102414999999999   #Deg
                         new_ra = dest_ra + d_ra
                         new_dec= dest_dec + d_dec
                         new_ra, new_dec = ra_dec_fix_hd(new_ra, new_dec)
@@ -677,7 +695,7 @@ class Sequencer:
                     #         or abs(g_dev['ha']) > float(block_specification['project']['project_constraints']['max_ha'])
                     #         # Or mount has flipped, too low, too bright, entering zenith..
                     
-        print("Fini!")
+        print("Fini!")   #NB Should we consider turning off mount tracking?
         if block_specification['project']['project_constraints']['close_on_block_completion']:
             g_dev['mnt'].park_command({}, {})
             # NB NBNeed to write a more robust and generalized clean up.
@@ -685,7 +703,9 @@ class Sequencer:
                 pass#g_dev['enc'].enclosure.Slaved = False   NB with wema no longer exists
             except:
                 pass
+            self.redis_server.set('unsync_enc', True, ex=1200)
             g_dev['enc'].close_command({}, {})
+
             print("Auto close attempted at end of block.")
         self.block_guard = False
         return block_specification #used to flush the queue as it completes.
@@ -704,7 +724,7 @@ class Sequencer:
         dark_time = 300
         #breakpoint()
         
-        while g_dev['events']['Eve Bias Dark']  <= ephem.now() <= - 6/1440 + g_dev['events']['Ops Window Start'] :   #Do not overrun the window end
+        while ephem.now() < g_dev['events']['End Eve Bias Dark'] :   #Do not overrun the window end
             #g_dev['mnt'].unpark_command({}, {}) # Get there early
             #g_dev['mnt'].slewToSkyFlatAsync()
             print("Expose Biases: b_2")   
@@ -717,7 +737,7 @@ class Sequencer:
                                 do_sep=False, quick=False)
                 print(result)
                 g_dev['obs'].update_status()
-                if ephem.now() + 6/1440 > g_dev['events']['Ops Window Start']:
+                if ephem.now()  >= g_dev['events']['End Eve Bias Dark']:
                     break
 
             print("Expose d_2 using exposure:  ", dark_time )
@@ -728,7 +748,7 @@ class Sequencer:
                                 do_sep=False, quick=False)
             print(result)
             g_dev['obs'].update_status()
-            if ephem.now() + 6/1440 > g_dev['events']['Ops Window Start']:
+            if ephem.now() >= g_dev['events']['End Eve Bias Dark']:
                     break
             print("One pass of Bias/Dark acquisition is finished.")
         self.sequencer_hold = False
@@ -765,6 +785,7 @@ class Sequencer:
         if flat_count < 1: flat_count = 1
         g_dev['mnt'].unpark_command({}, {})
         g_dev['mnt'].slewToSkyFlatAsync()
+        self.redis_server.set('syn_enc', True, ex=1200)   #Should be redundant.
         # if g_dev['enc'].is_dome and not g_dev['enc'].mode == 'Automatic':
         #      g_dev['enc'].Slaved = True  #Bring the dome into the picture.
         #     print('\n SERVOED THE DOME HOPEFULLY!\n')
@@ -954,6 +975,8 @@ class Sequencer:
         opt2 = copy.deepcopy(opt)
         self.af_guard = True
         sim = g_dev['enc'].shutter_is_closed
+        self.redis_server.set('enc_cmd', 'sync_enc', ex=1200)
+        self.redis_server.set('enc_cmd', 'open', ex=1200)
         print('AF entered with:  ', req, opt, '\n .. and sim =  ', sim)
         #self.sequencer_hold = True  #Blocks command checks.
         #Here we jump in too  fast and need for mount to settle
