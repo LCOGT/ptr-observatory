@@ -408,7 +408,8 @@ class Enclosure:
         elif (g_dev['events']['Ops Window Start'] - 10/1440 <= ephem_now <= g_dev['events']['Ops Window Start']):
                #Need to position telescope pointing East, and verify Enclosure is closed
                if self.status_string.lower() in ['closed']:
-                   self.enclosure.SlewToAzimuth(az_opposite_sun)
+                   if self.is_dome:
+                       self.enclosure.SlewToAzimuth(az_opposite_sun)
                    #Tel move is handled in Sequencer
                    
       
@@ -422,7 +423,8 @@ class Enclosure:
 
             if self.status_string.lower() in ['closed']:  #, 'closing']:
                 self.guarded_open()
-                self.enclosure.Slaved = True   #Added 20210925
+                if self.is_dome:
+                    self.enclosure.Slaved = True   #Added 20210925
                 self.dome_opened = True
                 self.dome_homed = True
                 self.time_of_next_slew = time.time()
