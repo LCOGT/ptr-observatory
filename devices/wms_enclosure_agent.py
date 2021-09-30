@@ -386,6 +386,7 @@ class Enclosure:
                 self.enclosure.CloseShutter()
             self.dome_opened = False
             self.dome_homed = True
+            self.enclosure_synched = False
             self.redis_server.set('park_the_mount', True, ex=3600)
         elif wx_hold:
             # We leave telescope to track with dome closed.
@@ -395,6 +396,7 @@ class Enclosure:
             if self.status_string.lower() in ['open', 'opening']:
                 self.enclosure.CloseShutter()
             self.dome_opened = False
+            self.dome_homed = True
             #self.dome_homed = True
  
             
@@ -404,45 +406,45 @@ class Enclosure:
                    #Tel move is handled in Sequencer
                    
       
-        elif (g_dev['events']['Ops Window Start'] - 30/1440 <= ephem_now <= g_dev['events']['Ops Window Closes'] + debugOffset) \
-                and not (wx_hold or self.mode == 'Shutdown') \
-                and (self.site_in_automatic or open_cmd and self.mode in ['Manual']):   #Note Manual Open works in the window.
-            #  Basically if in above window and Automatic and Not Wx_hold: if closed, open up.
-            #  print('\nSlew to opposite the azimuth of the Sun, open and cool-down. Az =  ', az_opposite_sun)
-            #  NB There is no corresponding warm up phase in the Morning.
-            #  Wx hold will delay the open until it expires.
+        # elif (g_dev['events']['Ops Window Start'] - 30/1440 <= ephem_now <= g_dev['events']['Ops Window Closes'] + debugOffset) \
+        #         and not (wx_hold or self.mode == 'Shutdown') \
+        #         and (self.site_in_automatic or open_cmd and self.mode in ['Manual']):   #Note Manual Open works in the window.
+        #     #  Basically if in above window and Automatic and Not Wx_hold: if closed, open up.
+        #     #  print('\nSlew to opposite the azimuth of the Sun, open and cool-down. Az =  ', az_opposite_sun)
+        #     #  NB There is no corresponding warm up phase in the Morning.
+        #     #  Wx hold will delay the open until it expires.
 
-            if self.status_string.lower() in ['closed']:  #, 'closing']:
-                self.guarded_open()
-                self.enclosure.Slaved = True   #Added 20210925
-                self.dome_opened = True
-                self.dome_homed = True
-                self.time_of_next_slew = time.time()
-                if open_cmd:
-                    self.state = 'User Opened the ' + shutter_str
-                    #self.enclosure.Slaved = True   #this needs to be set when telescope is unparked
-                else:
-                    self.state = 'Automatic nightime Open ' + shutter_str + '   Wx is OK; in Observing window.'
-                try:
-                    self.enclosure.SlewToAzimuth(az_opposite_sun)
-                except:
-                    pass
-            #During skyflat time, slew dome opposite sun's azimuth'
-            if self.status_string.lower() in ['open'] and \
-                ((g_dev['events']['Eve Sky Flats'] - debugOffset <= ephem_now <= g_dev['events']['End Eve Sky Flats'] + debugOffset) or \
-                (g_dev['events']['End Astro Dark'] - debugOffset <= ephem_now <= g_dev['events']['Ops Window Closes'] + debugOffset)):    #WE found it open.
-                #  NB NB The aperture spec is wrong, there are two; one for eve, one for morning.
-                if self.is_dome and time.time() >= self.time_of_next_slew:
-                    #We slew to anti-solar Az and reissue this command every 120 seconds
-                    try:
-                        self.enclosure.SlewToAzimuth(az_opposite_sun)
-                        print("Now slewing Dome to an azimuth opposite the Sun:  ", round(az_opposite_sun, 3))
-                       #Prior to skyflats no dome following.
+        #     if self.status_string.lower() in ['closed']:  #, 'closing']:
+        #         self.guarded_open()
+        #         self.enclosure.Slaved = True   #Added 20210925
+        #         self.dome_opened = True
+        #         self.dome_homed = True
+        #         self.time_of_next_slew = time.time()
+        #         if open_cmd:
+        #             self.state = 'User Opened the ' + shutter_str
+        #             #self.enclosure.Slaved = True   #this needs to be set when telescope is unparked
+        #         else:
+        #             self.state = 'Automatic nightime Open ' + shutter_str + '   Wx is OK; in Observing window.'
+        #         try:
+        #             self.enclosure.SlewToAzimuth(az_opposite_sun)
+        #         except:
+        #             pass
+        #     #During skyflat time, slew dome opposite sun's azimuth'
+        #     if self.status_string.lower() in ['open'] and \
+        #         ((g_dev['events']['Eve Sky Flats'] - debugOffset <= ephem_now <= g_dev['events']['End Eve Sky Flats'] + debugOffset) or \
+        #         (g_dev['events']['End Astro Dark'] - debugOffset <= ephem_now <= g_dev['events']['Ops Window Closes'] + debugOffset)):    #WE found it open.
+        #         #  NB NB The aperture spec is wrong, there are two; one for eve, one for morning.
+        #         if self.is_dome and time.time() >= self.time_of_next_slew:
+        #             #We slew to anti-solar Az and reissue this command every 120 seconds
+        #             try:
+        #                 self.enclosure.SlewToAzimuth(az_opposite_sun)
+        #                 print("Now slewing Dome to an azimuth opposite the Sun:  ", round(az_opposite_sun, 3))
+        #                #Prior to skyflats no dome following.
 
-                        self.dome_homed = False
-                        self.time_of_next_slew = time.time() + 120  # seconds between slews.
-                    except:
-                        pass#
+        #                 self.dome_homed = False
+        #                 self.time_of_next_slew = time.time() + 120  # seconds between slews.
+        #             except:
+        #                 pass#
                     
             
             
@@ -470,6 +472,7 @@ class Enclosure:
             #             pass
                     
             #         print("Night time Open issued to the "  + shutter_str, +   ' and is now following Mounting.')
+        #THIS should be the ultimate backup to force a close
         elif ephem_now >= sunrise :
             #WE are now outside the observing window, so Sun is up!!!
             if self.site_in_automatic or (close_cmd and self.mode in ['Manual', 'Shutdown']):  #If Automatic just close straight away.

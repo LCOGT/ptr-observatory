@@ -264,16 +264,31 @@ class Sequencer:
         self.sequencer_hold = False
          #events['Eve Bias Dark']
         #if True:
-        if (events['Eve Bias Dark'] <= ephem_now < events['Eve Sky Flats']) and True:
+        breakpoint()
+        if (events['Eve Bias Dark'] <= ephem_now < events['End Eve Bias Dark']) and \
+            self.config['auto_eve_bias_dark'] and not self.sequencer_hold :
             req = {'bin1': False, 'bin2': True, 'bin3': False, 'bin4': False, 'numOfBias': 45, \
                    'numOfDark': 15, 'darkTime': 180, 'numOfDark2': 3, 'dark2Time': 360, \
                    'hotMap': True, 'coldMap': True, 'script': 'genBiasDarkMaster', }
             opt = {}
             self.bias_dark_script(req, opt)
-        elif (g_dev['events']['Ops Window Start'] - 10/1440 <= ephem_now <= g_dev['events']['Ops Window Start']):
-            #Need to position telescope pointing East, and verify Enclosure is closed
+            self.sequencer_hold = False
+        elif (g_dev['events']['Cool Down, Open']  <= ephem_now < g_dev['events']['Eve Sky Flats']) and \
+            g_dev['enc'].mode == 'Automatic' and not g_dev['ocn'].wx_hold:
+
             g_dev['mnt'].unpark_command({}, {}) # Get there early
             g_dev['mnt'].slewToSkyFlatAsync()   #NB we are pounding on these for 10 min, should fix.
+            if self.is_dome and time.time() >= self.time_of_next_slew:
+                    #We slew to anti-solar Az and reissue this command every 120 seconds
+                    try:
+                        self.enclosure.SlewToAzimuth(az_opposite_sun)
+                        print("Now slewing Dome to an azimuth opposite the Sun:  ", round(az_opposite_sun, 3))
+                       #Prior to skyflats no dome following.
+
+                        self.dome_homed = False
+                        self.time_of_next_slew = time.time() + 120  # seconds between slews.
+                    except:
+                        pass#
          
         elif  (events['Eve Sky Flats'] <= ephem_now < events['End Eve Sky Flats'])  \
                 and g_dev['enc'].mode == 'Automatic' and not g_dev['ocn'].wx_hold and True:   #                and g_dev['ocn'].wx_is_ok \ \
@@ -709,7 +724,7 @@ class Sequencer:
         dark_time = 300
         #breakpoint()
         
-        while g_dev['events']['Eve Bias Dark']  <= ephem.now() <= - 6/1440 + g_dev['events']['Ops Window Start'] :   #Do not overrun the window end
+        while ephem.now() < g_dev['events']['End Eve Bias Dark'] :   #Do not overrun the window end
             #g_dev['mnt'].unpark_command({}, {}) # Get there early
             #g_dev['mnt'].slewToSkyFlatAsync()
             print("Expose Biases: b_2")   
@@ -722,7 +737,7 @@ class Sequencer:
                                 do_sep=False, quick=False)
                 print(result)
                 g_dev['obs'].update_status()
-                if ephem.now() + 6/1440 > g_dev['events']['Ops Window Start']:
+                if ephem.now()  >= g_dev['events']['End Eve Bias Dark']:
                     break
 
             print("Expose d_2 using exposure:  ", dark_time )
@@ -733,7 +748,7 @@ class Sequencer:
                                 do_sep=False, quick=False)
             print(result)
             g_dev['obs'].update_status()
-            if ephem.now() + 6/1440 > g_dev['events']['Ops Window Start']:
+            if ephem.now() >= g_dev['events']['End Eve Bias Dark']:
                     break
             print("One pass of Bias/Dark acquisition is finished.")
         self.sequencer_hold = False

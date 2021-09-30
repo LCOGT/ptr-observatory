@@ -537,13 +537,17 @@ class Events:
                 ('Middle of Night    ', middleNight),
                 ('End Astro Dark     ', astroEnd),
                 ('Observing Ends     ', ephem.Date(nautDawn_minus_half )),
-                ('Close and Park     ', ephem.Date(nautDawn_minus_half  + 1/1440.)),
-                ('Ops Window Closes  ', ephem.Date(nautDawn_minus_half  + 2/1440.)),   #Enclosure must close 5 min after sunrise
                 ('Naut Dawn          ', nauticalDawn),
-                ('Morn Bias Dark     ', ephem.Date(nauticalDawn + 1/1440.)),
-                ('End Morn Bias      ', ephem.Date(nauticalDawn + 91/1440.)),
                 ('Civil Dawn         ', civilDawn),
-                ('Civil Dawn         ', civilDawn),
+                ('Morn Sky Flats     ', ephem.Date(civilDawn  + 1/1440.)),
+                ('Morn Sky Flats End ', ephem.Date(civilDawn  + 76/1440.)),
+                ('Close and Park     ', ephem.Date(civilDawn  + 77/1440.)),
+                ('Ops Window Closes  ', ephem.Date(civilDawn  + 79/1440.)),   #Enclosure must close 5 min after sunrise
+
+                ('Morn Bias Dark     ', ephem.Date(civilDawn + 81/1440.)),
+                ('End Morn Bias      ', ephem.Date(civilDawn + 171/1440.)),
+
+
                 #('End Morn Sky Flats ', ephem.Date(sunrise - 1/1440)),        
                 ('Sun Rise           ', sunrise),
                 ('Prior Moon Rise    ', last_moonrise),
