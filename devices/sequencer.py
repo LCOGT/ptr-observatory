@@ -255,7 +255,7 @@ class Sequencer:
         Scripts must not block too long or they must provide for periodic calls to check status.
         '''
         # NB Need a better way to get all the events.
-        #obs_win_begin, sunZ88Op, sunZ88Cl, ephemNow = self.astro_events.getSunEvents()
+        obs_win_begin, sunZ88Op, sunZ88Cl, ephem_ow = self.astro_events.getSunEvents()
         ephem_now = ephem.now()
         events = g_dev['events']
         #g_dev['obs'].update_status()  #NB NEED to be sure we have current enclosure status.
@@ -264,7 +264,6 @@ class Sequencer:
         self.sequencer_hold = False
          #events['Eve Bias Dark']
         #if True:
-        breakpoint()
         if (events['Eve Bias Dark'] <= ephem_now < events['End Eve Bias Dark']) and \
             self.config['auto_eve_bias_dark'] and not self.sequencer_hold :
             req = {'bin1': False, 'bin2': True, 'bin3': False, 'bin4': False, 'numOfBias': 45, \
@@ -275,6 +274,7 @@ class Sequencer:
             self.sequencer_hold = False
         elif (g_dev['events']['Cool Down, Open']  <= ephem_now < g_dev['events']['Eve Sky Flats']) and \
             g_dev['enc'].mode == 'Automatic' and not g_dev['ocn'].wx_hold:
+
             if g_dev['mnt'].AtParK:
                 g_dev['mnt'].unpark_command({}, {}) # Get there early
                 self.time_of_next_slew = time.time() + 120
@@ -291,17 +291,34 @@ class Sequencer:
                         self.time_of_next_slew = time.time() + 120  # seconds between slews.
                     except:
                         pass#
+
+            if True:
+                 g_dev['mnt'].unpark_command({}, {}) # Get there early
+                 g_dev['mnt'].slewToSkyFlatAsync()   #NB we are pounding on these for 10 min, should fix.
+                 self.time_of_next_slew = time.time() + 120
+            if g_dev['enc'].is_dome and time.time() >= self.time_of_next_slew:
+
+                
+                 az, alt = g_dev['events'].flat_spot_now()
+                 self.enclosure.SlewToAzimuth(az)
+                 print("Now slewing Dome to an azimuth opposite the Sun:  ", round(az, 3))
+                 #Prior to skyflats no dome following.
+
+                 self.dome_homed = False
+                 self.time_of_next_slew = time.time() + 120  # seconds between slews.
+
          
         elif  (events['Eve Sky Flats'] <= ephem_now < events['End Eve Sky Flats'])  \
-                and g_dev['enc'].mode == 'Automatic' and not g_dev['ocn'].wx_hold and True:   #                and g_dev['ocn'].wx_is_ok \ \
+                and g_dev['enc'].mode == 'Automatic' and not g_dev['ocn'].wx_hold and \
+                self.config['auto_eve_sky_flat']: 
             if not self.sky_guard:
                 #Start it up.
                 self.sky_guard = True
                 self.current_script = "Eve Sky Flat script"
                 #print('Skipping Eve Sky Flats')
                 self.sky_flat_script({}, {})   #Null command dictionaries
-        elif g_dev['obs'].blocks is not None and \
-                  g_dev['obs'].projects is not None:     #  THIS DOES NEED TO BE FENCED BY TIME and not repeated.
+        elif (events['Observing Begins'] <= ephem_now < events['Observing Ends']) and not g_dev['ocn'].wx_hold and \
+               g_dev['obs'].blocks is not None and g_dev['obs'].projects is not None:
 
             blocks = g_dev['obs'].blocks
             projects = g_dev['obs'].projects
@@ -357,7 +374,7 @@ class Sequencer:
                     and not self.is_in_completes(block['event_id']):
                     self.block_guard = True
                     
-                    completed_block = self.execute_block(block)
+                    completed_block = self.execute_block(block)  #In this we need to ultimately watch for weather holds.
                     self.append_completes(completed_block['event_id'])
                     self.block_guard = False
                     '''

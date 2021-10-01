@@ -316,7 +316,6 @@ class ObservingConditions:
             # # except:
             # #     print('Redis is not returning redis_monitor Data properly.')
             # #     redis_monitor = self.last_wx
-                
             try:
                 status= {}
                 illum, mag = self.astro_events.illuminationNow()
@@ -349,7 +348,7 @@ class ObservingConditions:
                 dew_point_gap = not (self.sky_monitor.Temperature  - self.sky_monitor.DewPoint) < 2
                 temp_bounds = not (self.sky_monitor.Temperature < -15) or (self.sky_monitor.Temperature > 42)
                 wind_limit = self.sky_monitor.WindSpeed < 35/2.235   #sky_monitor reports m/s, Clarity may report in MPH
-                sky_amb_limit  = self.sky_monitor.SkyTemperature < 12   #"""NB THIS NEEDS ATTENTION>
+                sky_amb_limit  = (self.sky_monitor.SkyTemperature - self.sky_monitor.Temperature) < -8   #"""NB THIS NEEDS ATTENTION>
                 humidity_limit = 1 < self.sky_monitor.Humidity < 85
                 rain_limit = self.sky_monitor.RainRate <= 0.001
 
