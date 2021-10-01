@@ -275,13 +275,15 @@ class Sequencer:
             self.sequencer_hold = False
         elif (g_dev['events']['Cool Down, Open']  <= ephem_now < g_dev['events']['Eve Sky Flats']) and \
             g_dev['enc'].mode == 'Automatic' and not g_dev['ocn'].wx_hold:
-
-            g_dev['mnt'].unpark_command({}, {}) # Get there early
-            g_dev['mnt'].slewToSkyFlatAsync()   #NB we are pounding on these for 10 min, should fix.
-            if self.is_dome and time.time() >= self.time_of_next_slew:
+            if g_dev['mnt'].AtParK:
+                g_dev['mnt'].unpark_command({}, {}) # Get there early
+                self.time_of_next_slew = time.time() + 120
+            #flat_spot, flat_alt = g_dev['evnt'].flat_spot_now()
+            #g_dev['mnt'].slewToSkyFlatAsync()   #NB we are pounding on these for 10 min, should fix.
+            if time.time() >= self.time_of_next_slew:
                     #We slew to anti-solar Az and reissue this command every 120 seconds
                     try:
-                        self.enclosure.SlewToAzimuth(az_opposite_sun)
+                        g_dev['mnt'].slewToSkyFlatAsync()
                         print("Now slewing Dome to an azimuth opposite the Sun:  ", round(az_opposite_sun, 3))
                        #Prior to skyflats no dome following.
 

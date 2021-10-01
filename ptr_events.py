@@ -326,7 +326,7 @@ class Events:
 
     def flat_spot_now(self):
         '''
-        Return a tuple with the (alt, az) of the flattest part of the sky.
+        Return a tuple with the (az, alt) of the flattest part of the sky.
         '''
         ra, dec, sun_alt, sun_az, *other = self._sunNow()
         print('Sun:  ', sun_az, sun_alt)
