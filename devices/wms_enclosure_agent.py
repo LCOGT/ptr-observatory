@@ -200,8 +200,10 @@ class Enclosure:
                 self.redis_server.delete('enc_cmd')
                 print("enclosure remote cmd: open.")
                 self.manager(open_cmd=True, close_cmd=False)
-                self.enclosure.Slaved = True
-                
+                try:
+                    self.enclosure.Slaved = True
+                except:
+                    pass
                 self.dome_open = True
                 self.dome_home = True
             elif redis_command == 'close':               
@@ -236,11 +238,17 @@ class Enclosure:
                 self.redis_server.delete('goHome')
             elif redis_command == 'sync_enc':
                if self.is_dome:
-                   self.enclosure.Slaved = True
+                   try:
+                       self.enclosure.Slaved = True
+                   except:
+                       pass
                self.redis_server.delete('sync_enc')                
             elif redis_command == 'unsync_enc':
                 if self.is_dome:
-                    self.enclosure.Slaved = False
+                    try:
+                        self.enclosure.Slaved = False
+                    except:
+                        pass
                 self.redis_server.delete('unsync_enc')
             else:
                 
@@ -248,8 +256,9 @@ class Enclosure:
             #NB NB NB  Possible race condition here.
             redis_value = self.redis_server.get('SlewToAzimuth')
             if redis_value is not None:
-                self.enclosure.SlewToAzimuth(float(redis_value))
-                self.enclosure.Slaved = False
+                if self.is_dome:
+                    self.enclosure.SlewToAzimuth(float(redis_value))
+                    self.enclosure.Slaved = False
                 self.redis_server.delete('SlewToAzimuth')
             
             
@@ -412,7 +421,7 @@ class Enclosure:
                    #Tel move is handled in Sequencer
                    
       
-        elif (g_dev['events']['Ops Window Start'] - debugOffset <= ephemNow <= g_dev['events']['Ops Window Closes'] + debugOffset) \
+        elif (g_dev['events']['Ops Window Start'] - debugOffset <= ephem_now <= g_dev['events']['Ops Window Closes'] + debugOffset) \
                 and not (wx_hold or self.mode == 'Shutdown') \
                 and (self.site_in_automatic or open_cmd and self.mode in ['Manual']):   #Note Manual Open works in the window.
             #  Basically if in above window and Automatic and Not Wx_hold: if closed, open up.
@@ -434,8 +443,8 @@ class Enclosure:
                     self.state = 'Automatic nightime Open ' + shutter_str + '   Wx is OK; in Observing window.'
             #During skyflat time, slew dome opposite sun's azimuth'
             if self.status_string.lower() in ['open'] and \
-                ((g_dev['events']['Eve Sky Flats'] - debugOffset <= ephemNow <= g_dev['events']['End Eve Sky Flats'] + debugOffset) or \
-                (g_dev['events']['End Astro Dark'] - debugOffset <= ephemNow <= g_dev['events']['Ops Window Closes'] + debugOffset)):    #WE found it open.
+                ((g_dev['events']['Eve Sky Flats'] - debugOffset <= ephem_now <= g_dev['events']['End Eve Sky Flats'] + debugOffset) or \
+                (g_dev['events']['End Astro Dark'] - debugOffset <= ephem_now <= g_dev['events']['Ops Window Closes'] + debugOffset)):    #WE found it open.
                 #  NB NB The aperture spec is wrong, there are two; one for eve, one for morning.
                 if self.is_dome and time.time() >= self.time_of_next_slew:
                     #We slew to anti-solar Az and reissue this command every 90 seconds
@@ -501,7 +510,7 @@ class Enclosure:
             #  takes images or not is determined by the scheduler or calendar.  Azimuth meant
             #  to be determined by that of the telescope.
 
-            # if (obs_win_begin - debugOffset < ephemNow < sunrise + debugOffset or open_cmd) \
+            # if (obs_win_begin - debugOffset < ephem_now < sunrise + debugOffset or open_cmd) \
             #         and g_dev['enc'].site_in_automatic \
             #         and g_dev['ocn'].wx_is_ok \
             #         and self.enclosure.ShutterStatus == 1: #  Closed
