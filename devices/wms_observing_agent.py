@@ -79,9 +79,11 @@ class ObservingConditions:
         self.wmd_fail_counter = 0
         redis_ip = config['redis_ip']
 
+
         if redis_ip is not None:           
-            self.redis_server = redis.StrictRedis(host=redis_ip, port=6379, db=0,
-                                              decode_responses=True)
+            # self.redis_server = redis.StrictRedis(host=redis_ip, port=6379, db=0,
+            #                                   decode_responses=True)
+            self.redis_server = g_dev['redis_server']   #ensure we only have one working.
             self.redis_wx_enabled = True
             self.redis_server.set('wx_hold', False, ex=33200)
         else:
@@ -299,8 +301,8 @@ class ObservingConditions:
                     pass
                     #print("Wx log did not write.")
             self.status = status
-            self.redis_server.set('wx_redis_status' , status, ex=1200)
-            self.last_stat = self.redis_server.get('wx_redis_status')
+            self.redis_server.set('ocn_status' , status, ex=1200)
+            self.last_stat = self.redis_server.get('ocn_status')
 
         #  Note we are now in mrc specific code.  AND WE ARE USING THE OLD Weather SOURCE!!
 
@@ -414,9 +416,9 @@ class ObservingConditions:
                 except:
                     pass
                     #print("Unihedron log did not write.")
-                    # breakpoint()
-            self.redis_server.set('wx_redis_status' , status, ex=3600)
-            self.last_stat = self.redis_server.get('wx_redis_status')
+            breakpoint()
+            self.redis_server.set('ocn_status' , status, ex=3600)
+            self.last_stat = eval(self.redis_server.get('ocn_status'))
         else:
             #DEH temporary to get past the big fatal error.
             #DEH is this always going to be very site specific or put in a config somewhere?

@@ -39,13 +39,16 @@ class Enclosure:
                 self.enclosure.Connected = True
             print("ASCOM enclosure connected.")
         except:
-             print("ASCOM enclosure NOT connected, proabbly the App is not connected to telescope.")
+             print("ASCOM enclosure NOT connected, proabably the App is not connected to telescope.")
         redis_ip = config['redis_ip']   #Do we really need to dulicate this config entry?
         if redis_ip is not None:           
-            self.redis_server = redis.StrictRedis(host=redis_ip, port=6379, db=0,
-                                              decode_responses=True)
+            #self.redis_server = redis.StrictRedis(host=redis_ip, port=6379, db=0,
+            #                                   decode_responses=True)
+
+            self.redis_server = g_dev['redis_server']   #ensure we only have one working.
             self.redis_wx_enabled = True
-            g_dev['redis_server'] = self.redis_server 
+
+            #g_dev['redis_server'] = self.redis_server 
         else:
             self.redis_wx_enabled = False
         self.is_dome = self.config['enclosure']['enclosure1']['is_dome']
@@ -153,8 +156,9 @@ class Enclosure:
                     in_motion = True
                 else:
                     in_motion = False
+                status['dome_slewing'] = in_motion
                 self.redis_server.set('dome_slewing', in_motion, ex=3600)
-                self.redis_server.set('status', status, ex=3600)
+                self.redis_server.set('enc_status', status, ex=3600)
             except:
                 status = {'shutter_status': stat_string,
                           'enclosure_synchronized': False,
@@ -173,8 +177,9 @@ class Enclosure:
                     in_motion = True
                 else:
                     in_motion = False
+                status['dome_slewing'] = in_motion
                 self.redis_server.set('dome_slewing', in_motion, ex=3600)
-                self.redis_server.set('status', status, ex=3600)
+                self.redis_server.set('enc_status', status, ex=3600)
         else:
             status = {'shutter_status': stat_string,
                       'enclosure_synch': True,
@@ -190,7 +195,7 @@ class Enclosure:
             self.redis_server.set('enclosure_message', str(self.state), ex=3600)        #print('Enclosure status:  ', status
             self.redis_server.set('dome_azimuth', str(180.0))  
             self.redis_server.set('dome_slewing', False, ex=3600)
-            self.redis_server.set('status', status, ex=3600)
+            self.redis_server.set('enc_redis_status', status, ex=3600)
         # This code picks up commands forwarded by the observer Enclosure 
         if self.site_is_proxy:
             redis_command = self.redis_server.get('enc_cmd')  #It is presumed there is an expiration date on open command at least.
@@ -385,13 +390,12 @@ class Enclosure:
         # except:
         #     pass
         #     #print("Obs process not producing time heartbeat.")
-
         wx_hold = g_dev['ocn'].wx_hold or eval(self.redis_server.get('wx_hold'))  #TWO PATHS to pick up wx-hold.
         if self.mode == 'Shutdown':
             #  NB in this situation we should always Park telescope, rotators, etc.
             if self.is_dome:
                 self.enclosure.Slaved = False
-            if self.status_string.lower() in ['open']:
+            if self.status_string.lower() in ['open', 'opening']:
                 self.enclosure.CloseShutter()
             self.dome_opened = False
             self.dome_homed = True
@@ -409,53 +413,53 @@ class Enclosure:
             #self.dome_homed = True
  
             
-            
+        #This version on code only enforces a Wx hold.   
         #  We are now in the full operational window.  
 
         #  if in Ops Window open if closed. Not the su
-        elif (g_dev['events']['Ops Window Start'] - 10/1440 <= ephem_now <= g_dev['events']['Ops Window Start']):
-               #Need to position telescope pointing East, and verify Enclosure is closed
-               if self.status_string.lower() in ['closed']:
-                   if self.is_dome:
-                       self.enclosure.SlewToAzimuth(az_opposite_sun)
-                   #Tel move is handled in Sequencer
+        # elif (g_dev['events']['Ops Window Start'] - 10/1440 <= ephem_now <= g_dev['events']['Ops Window Start']):
+        #        #Need to position telescope pointing East, and verify Enclosure is closed
+        #        if self.status_string.lower() in ['closed']:
+        #            if self.is_dome:
+        #                self.enclosure.SlewToAzimuth(az_opposite_sun)
+        #            #Tel move is handled in Sequencer
                    
       
-        elif (g_dev['events']['Ops Window Start'] - debugOffset <= ephem_now <= g_dev['events']['Ops Window Closes'] + debugOffset) \
-                and not (wx_hold or self.mode == 'Shutdown') \
-                and (self.site_in_automatic or open_cmd and self.mode in ['Manual']):   #Note Manual Open works in the window.
-            #  Basically if in above window and Automatic and Not Wx_hold: if closed, open up.
-            #  print('\nSlew to opposite the azimuth of the Sun, open and cool-down. Az =  ', az_opposite_sun)
-            #  NB There is no corresponding warm up phase in the Morning.
-            #  Wx hold will delay the open until it expires.
+        # elif (g_dev['events']['Ops Window Start'] - debugOffset <= ephem_now <= g_dev['events']['Ops Window Closes'] + debugOffset) \
+        #         and not (wx_hold or self.mode == 'Shutdown') \
+        #         and (self.site_in_automatic or open_cmd and self.mode in ['Manual']):   #Note Manual Open works in the window.
+        #     #  Basically if in above window and Automatic and Not Wx_hold: if closed, open up.
+        #     #  print('\nSlew to opposite the azimuth of the Sun, open and cool-down. Az =  ', az_opposite_sun)
+        #     #  NB There is no corresponding warm up phase in the Morning.
+        #     #  Wx hold will delay the open until it expires.
 
-            if self.status_string.lower() in ['closed']:  #, 'closing']:
-                self.guarded_open()
-                if self.is_dome:
-                    self.enclosure.Slaved = True   #Added 20210925
-                self.dome_opened = True
-                self.dome_homed = True
-                self.time_of_next_slew = time.time()
-                if open_cmd:
-                    self.state = 'User Opened the ' + shutter_str
-                    self.enclosure.Slaved = True
-                else:
-                    self.state = 'Automatic nightime Open ' + shutter_str + '   Wx is OK; in Observing window.'
-            #During skyflat time, slew dome opposite sun's azimuth'
-            if self.status_string.lower() in ['open'] and \
-                ((g_dev['events']['Eve Sky Flats'] - debugOffset <= ephem_now <= g_dev['events']['End Eve Sky Flats'] + debugOffset) or \
-                (g_dev['events']['End Astro Dark'] - debugOffset <= ephem_now <= g_dev['events']['Ops Window Closes'] + debugOffset)):    #WE found it open.
-                #  NB NB The aperture spec is wrong, there are two; one for eve, one for morning.
-                if self.is_dome and time.time() >= self.time_of_next_slew:
-                    #We slew to anti-solar Az and reissue this command every 90 seconds
-                    try:
-                        self.enclosure.SlewToAzimuth(az_opposite_sun)
-                        print("Now slewing Dome to an azimuth opposite the Sun:  ", round(az_opposite_sun, 3))
+        #     if self.status_string.lower() in ['closed']:  #, 'closing']:
+        #         self.guarded_open()
+        #         if self.is_dome:
+        #             self.enclosure.Slaved = True   #Added 20210925
+        #         self.dome_opened = True
+        #         self.dome_homed = True
+        #         self.time_of_next_slew = time.time()
+        #         if open_cmd:
+        #             self.state = 'User Opened the ' + shutter_str
+        #             self.enclosure.Slaved = True
+        #         else:
+        #             self.state = 'Automatic nightime Open ' + shutter_str + '   Wx is OK; in Observing window.'
+        #     #During skyflat time, slew dome opposite sun's azimuth'
+        #     if self.status_string.lower() in ['open'] and \
+        #         ((g_dev['events']['Eve Sky Flats'] - debugOffset <= ephem_now <= g_dev['events']['End Eve Sky Flats'] + debugOffset) or \
+        #         (g_dev['events']['End Astro Dark'] - debugOffset <= ephem_now <= g_dev['events']['Ops Window Closes'] + debugOffset)):    #WE found it open.
+        #         #  NB NB The aperture spec is wrong, there are two; one for eve, one for morning.
+        #         if self.is_dome and time.time() >= self.time_of_next_slew:
+        #             #We slew to anti-solar Az and reissue this command every 90 seconds
+        #             try:
+        #                 self.enclosure.SlewToAzimuth(az_opposite_sun)
+        #                 print("Now slewing Dome to an azimuth opposite the Sun:  ", round(az_opposite_sun, 3))
 
-                        self.dome_homed = False
-                        self.time_of_next_slew = time.time() + 90  # seconds between slews.
-                    except:
-                        pass#
+        #                 self.dome_homed = False
+        #                 self.time_of_next_slew = time.time() + 90  # seconds between slews.
+        #             except:
+        #                 pass#
 
 
                    #Tel move is handled in Sequencer
@@ -529,7 +533,7 @@ class Enclosure:
                     
             #         print("Night time Open issued to the "  + shutter_str, +   ' and is now following Mounting.')
         #THIS should be the ultimate backup to force a close
-        elif ephem_now >= sunrise :
+        elif ephem_now >= sunrise + 30/1440:
             #WE are now outside the observing window, so Sun is up!!!
             if self.site_in_automatic or (close_cmd and self.mode in ['Manual', 'Shutdown']):  #If Automatic just close straight away.
                 if close_cmd:

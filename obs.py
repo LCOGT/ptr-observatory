@@ -204,6 +204,17 @@ class Observatory:
         self.astro_events.compute_day_directory()
         self.astro_events.display_events()
         # Send the config to aws   # NB NB NB This has faulted.
+        redis_ip = config['redis_ip']
+        if redis_ip is not None:           
+            self.redis_server = redis.StrictRedis(host=redis_ip, port=6379,\
+                                db=0, decode_responses=True)
+            self.redis_wx_enabled = True
+        else:
+            self.redis_wx_enabled = False
+
+        #for key in self.redis_server.keys(): self.redis_server.delete(key)   #Flush old state.  But do not erase WEMA
+        g_dev['redis_server'] = self.redis_server   #Use this instance.
+        g_dev['redis_server']['obs_loaded'] = True
         self.update_config()
         # Use the configuration to instantiate objects for all devices.
         self.create_devices(config)
@@ -211,14 +222,7 @@ class Observatory:
         g_dev['obs'] = self 
         site_str = config['site']
         g_dev['site']:  site_str
-        self.g_dev = g_dev
-        redis_ip = config['redis_ip']
-        if redis_ip is not None:           
-            self.redis_server = redis.StrictRedis(host=redis_ip, port=6379, db=0,
-                                              decode_responses=True)
-            self.redis_wx_enabled = True
-        else:
-            self.redis_wx_enabled = False
+   
         self.time_last_status = time.time() - 3
         # Build the to-AWS Queue and start a thread.
         self.aws_queue = queue.PriorityQueue()
@@ -496,7 +500,6 @@ class Observatory:
             print('\n\nStatus Sent:  \n', status)   # from Update:  ', status))
         else:
             print('.') #, status)   # We print this to stay informed of process on the console.
-            # breakpoint()
             # self.send_log_to_frontend("WARN cam1 just fell on the floor!")
             # self.send_log_to_frontend("ERROR enc1 dome just collapsed.")
             #  Consider inhibity unless status rate is low
@@ -926,7 +929,6 @@ if __name__ == "__main__":
     # Start up the observatory
 
     import config
-
 
     o = Observatory(config.site_name, config.site_config)
     o.run()

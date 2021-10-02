@@ -34,27 +34,17 @@ class Observatory:
         self.site_name = name
         self.config = config
         self.site_path = config['site_path']
+        g_dev['obs'] = self 
+        g_dev['site']=  config['site']
         self.last_request = None
         self.stopped = False
         self.site_message = '-'
         self.device_types = [
             'observing_conditions',
-            'enclosure'     
-            ] 
+            'enclosure'] 
         self.astro_events = ptr_events.Events(self.config)
         self.astro_events.compute_day_directory()
         self.astro_events.display_events()
-        self.update_config()
-        self.create_devices(config)
-        self.loud_status = False
-        g_dev['obs'] = self 
-        site_str = config['site']
-        g_dev['site']:  site_str
-        self.g_dev = g_dev
-        self.time_last_status = time.time() - 3
-        self.blocks = None
-        self.projects = None
-        self.events_new = None
         redis_ip = config['redis_ip']
         if redis_ip is not None:           
             self.redis_server = redis.StrictRedis(host=redis_ip, port=6379,\
@@ -62,7 +52,19 @@ class Observatory:
             self.redis_wx_enabled = True
         else:
             self.redis_wx_enabled = False
+        for key in self.redis_server.keys(): self.redis_server.delete(key)   #Flush old state.
+        g_dev['redis_server'] = self.redis_server   #Use this instance.
+        g_dev['redis_server']['wema_loaded'] = True
+        self.update_config()
+        self.create_devices(config)
+        self.loud_status = False
+        self.blocks = None
+        self.projects = None
+        self.events_new = None
 
+
+        
+        
     def create_devices(self, config: dict):
         self.all_devices = {}
         for dev_type in self.device_types:
@@ -169,7 +171,6 @@ class Observatory:
 if __name__ == "__main__":
 
     import config
-  
     o = Observatory(config.site_name, config.site_config)
     
     o.run()

@@ -202,9 +202,7 @@ class Mount:
         self.refraction = 0
         self.ha_corr = 0
         self.dec_corr = 0
-        self.seek_commanded = False
-        
-        #self.mount.Park()
+        self.seek_commanded = False       
         if abs(self.west_ha_correction_r) > 0 or abs(self.west_dec_correction_r) > 0:
             self.flip_correction_needed = True
             print("Flip correction needed.")
