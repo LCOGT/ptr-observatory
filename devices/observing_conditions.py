@@ -116,12 +116,16 @@ class ObservingConditions:
         elif self.config['agent_wms_enc_active']:
             self.site_is_proxy = True
 
+    # @property
+    # def temperature(self):
+    #     breakpoint()
+    #     redis_monitor = eval(self.redis_server.get('<ptr-wx-1_state'))
+    #     return float(redis_monitor["amb_temp C"])
+    
     def get_status(self):
         '''
         Regularly calling this routine returns weather status dict for AWS, evaluates the Wx 
         reporting and manages temporary closes, known as weather-holds.
-        
-        
 
         Returns
         -------
@@ -130,161 +134,7 @@ class ObservingConditions:
 
         '''
     
-
-        if not self.site_is_proxy and self.site == 'saf':
-            illum, mag = self.astro_events.illuminationNow()
-            if illum > 100:
-                illum = int(illum)
-            self.calc_HSI_lux = illum
-            # Here we add in-line  a preliminary OpenOK calculation:
-            #  NB all parameters should come from config.
-            dew_point_gap = not (self.sky_monitor.Temperature  - self.sky_monitor.DewPoint) < 2
-            temp_bounds = not (self.sky_monitor.Temperature < -15) or (self.sky_monitor.Temperature > 35)
-            wind_limit = self.sky_monitor.WindSpeed < 35/2.235   #sky_monitor reports m/s, Clarity may report in MPH
-            sky_amb_limit  = self.sky_monitor.SkyTemperature < -20
-            humidity_limit = 1 < self.sky_monitor.Humidity < 80
-            rain_limit = self.sky_monitor.RainRate <= 0.001
-          
-            self.wx_is_ok = dew_point_gap and temp_bounds and wind_limit and sky_amb_limit and \
-                            humidity_limit and rain_limit
-            #  NB  wx_is_ok does not include ambient light or altitude of the Sun
-            if self.wx_is_ok:
-                wx_str = "Yes"
-            else:
-                wx_str = "No"   #Ideally we add the dominant reason in priority order.
-            #The following may be more restictive since it includes local measured ambient light.
-            #  This signal meant to simulate the sky_monitor relay output.  WE repport it but it is not
-            #  actively used.
-            if self.sky_monitor_oktoopen.IsSafe and dew_point_gap and temp_bounds:
-                self.ok_to_open = 'Yes'
-            else:
-                self.ok_to_open = "No"
-            try:   #sky_monitor cloud cover occasionally faults. 20200805 WER
-            # Faults continuing but very rare.  20200909
-                status = {}   #This code faults when Rain is reported the Cloudcover does not
-                              #return properly
-                status2 = {}
-                self.temperature = self.sky_monitor.Temperature
-                self.pressure = 784*0.750062   #Mbar to mmHg    Please use mbar going forward.
-                status = {"temperature_C": round(self.sky_monitor.Temperature, 2),
-                          "pressure_mbar": 784.,
-                          "humidity_%": self.sky_monitor.Humidity,
-                          "dewpoint_C": self.sky_monitor.DewPoint,
-                          "sky_temp_C": round(self.sky_monitor.SkyTemperature,2),
-                          "last_sky_update_s":  round(self.sky_monitor.TimeSinceLastUpdate('SkyTemperature'), 2),
-                          "wind_m/s": abs(round(self.sky_monitor.WindSpeed, 2)),
-                          'rain_rate': self.sky_monitor.RainRate,
-                          'solar_flux_w/m^2': None,
-                          'cloud_cover_%': str(self.sky_monitor.CloudCover),
-                          "calc_HSI_lux": illum,
-                          "calc_sky_mpsas": round((mag - 20.01),2),    #  Provenance of 20.01 is dubious 20200504 WER
-                          "wx_ok": wx_str,  #str(self.sky_monitor_oktoimage.IsSafe),
-                          "open_ok": self.ok_to_open
-                          #"image_ok": str(self.sky_monitor_oktoimage.IsSafe)
-                          }
-                status2 = {}
-                status2 = {"temperature_C": round(self.sky_monitor.Temperature, 2),
-                          "pressure_mbar": 784.0,
-                          "humidity_%": self.sky_monitor.Humidity,
-                          "dewpoint_C": self.sky_monitor.DewPoint,
-                          "sky_temp_C": round(self.sky_monitor.SkyTemperature,2),
-                          "last_sky_update_s":  round(self.sky_monitor.TimeSinceLastUpdate('SkyTemperature'), 2),
-                          "wind_m/s": abs(round(self.sky_monitor.WindSpeed, 2)),
-                          'rain_rate': self.sky_monitor.RainRate,
-                          'solar_flux_w/m^2': 'NA',
-                          #'cloud_cover_%': self.sky_monitor.CloudCover,
-                          "calc_HSI_lux": illum,
-                          "calc_sky_mpsas": round((mag - 20.01),2),    #  Provenance of 20.01 is dubious 20200504 WER
-                          "wx_ok": wx_str,  #str(self.sky_monitor_oktoimage.IsSafe),
-                          "open_ok": self.ok_to_open
-                          #"image_ok": str(self.sky_monitor_oktoimage.IsSafe)
-                          }
-                self.prior_status = status
-                self.prior_status_2 = status2
-                return status
-            except:
-                #  Note this is trying to deal with a failed sky_monitor report.
-                
-                try:
-                    status = {}
-                    status2 = {}
-                    status = {"temperature_C": round(self.sky_monitor.Temperature, 2),
-                          "pressure_mbar": 784.,
-                              "humidity_%": self.sky_monitor.Humidity,
-                              "dewpoint_C": self.sky_monitor.DewPoint,
-                              "sky_temp_C": round(self.sky_monitor.SkyTemperature,2),
-                              "last_sky_update_s":  round(self.sky_monitor.TimeSinceLastUpdate('SkyTemperature'), 2),
-                              "wind_m/s": abs(round(self.sky_monitor.WindSpeed, 2)),
-                              'rain_rate': self.sky_monitor.RainRate,
-                              'solar_flux_w/m^2': None,
-                              'cloud_cover_%': str(self.sky_monitor.CloudCover),
-                              "calc_HSI_lux": illum,
-                              "calc_sky_mpsas": round((mag - 20.01),2),    #  Provenance of 20.01 is dubious 20200504 WER
-                              "wx_ok": wx_str,  #str(self.sky_monitor_oktoimage.IsSafe),
-                              "open_ok": self.ok_to_open
-                              #"image_ok": str(self.sky_monitor_oktoimage.IsSafe)
-                              }
-                    status2 = {}
-                    status2 = {"temperature_C": round(self.sky_monitor.Temperature, 2),
-                              "pressure_mbar": 784.0,
-                              "humidity_%": self.sky_monitor.Humidity,
-                              "dewpoint_C": self.sky_monitor.DewPoint,
-                              "sky_temp_C": round(self.sky_monitor.SkyTemperature,2),
-                              "last_sky_update_s":  round(self.sky_monitor.TimeSinceLastUpdate('SkyTemperature'), 2),
-                              "wind_m/s": abs(round(self.sky_monitor.WindSpeed, 2)),
-                              'rain_rate': self.sky_monitor.RainRate,
-                              'solar_flux_w/m^2': 'NA',
-                              #'cloud_cover_%': self.sky_monitor.CloudCover,
-                              "calc_HSI_lux": illum,
-                              "calc_sky_mpsas": round((mag - 20.01),2),    #  Provenance of 20.01 is dubious 20200504 WER
-                              "wx_ok": wx_str,  #str(self.sky_monitor_oktoimage.IsSafe),
-                              "open_ok": self.ok_to_open
-                              #"image_ok": str(self.sky_monitor_oktoimage.IsSafe)
-                              }
-                    self.prior_status = status
-                    self.prior_status_2 = status2
-                    return status
-                except:
-                    self.prior_status = status
-                    self.prior_status_2 = status2
-                    return status
-                
-            #  Note we are still in saf specific site code.
-            if self.unihedron_connected:
-                uni_measure = self.unihedron.SkyQuality   #  Provenance of 20.01 is dubious 20200504 WER
-                if uni_measure == 0:
-                    uni_measure = round((mag - 20.01),2)   #  Fixes Unihedron when sky is too bright
-                    status["meas_sky_mpsas"] = uni_measure
-                    status2["meas_sky_mpsas"] = uni_measure
-                    self.meas_sky_lux = illum
-                else:
-                    self.meas_sky_lux = linearize_unihedron(uni_measure)
-                    status["meas_sky_mpsas"] = uni_measure
-                    status2["meas_sky_mpsas"] = uni_measure
-            else:
-                status["meas_sky_mpsas"] = round((mag - 20.01),2)
-                status2["meas_sky_mpsas"] = round((mag - 20.01),2) #  Provenance of 20.01 is dubious 20200504 WER
-
-            # Only write when around dark, put in CSV format.  This is a logfile of the rapid sky brightness transition.
-            obs_win_begin, sunset, sunrise, ephemNow = g_dev['obs'].astro_events.getSunEvents()
-            quarter_hour = 0.15/24
-            if  (obs_win_begin - quarter_hour < ephemNow < sunrise + quarter_hour) \
-                 and self.unihedron.Connected and (time.time() >= self.sample_time + 30.):    #  Two samples a minute.
-                try:
-                    wl = open('C:/000ptr_saf/archive/wx_log.txt', 'a')   #  NB This is currently site specifc but in code w/o config.
-                    wl.write('wx, ' + str(time.time()) + ', ' + str(illum) + ', ' + str(mag - 20.01) + ', ' \
-                             + str(self.unihedron.SkyQuality) + ", \n")
-                    wl.close()
-                    self.sample_time = time.time()
-                except:
-                    pass
-                    #print("Wx log did not write.")
-            self.status = status
-            
-
-        #  Note we are now in mrc specific code.
-
-        elif  self.site_is_proxy or self.site in [ 'mrc',  'mrc2']:
+        if  self.site_is_proxy :
             try:
                 #breakpoint()
                 # pass
@@ -461,7 +311,7 @@ class ObservingConditions:
     def get_proxy_temp_press(self):
         if self.site_is_proxy:
             try:
-                wx = eval(self.redis_server.get('wx_redis_status'))
+                wx = eval(self.redis_server.get('ocn_status'))
                 self.temperature = float(wx['temperature_C'])
                 self.pressure = float(wx['pressure_mbar'])
             except:
@@ -485,7 +335,7 @@ class ObservingConditions:
             else:
                 open_poss = False
                 hz = 500000
-            wx = eval(self.redis_server.get('wx_redis_status'))
+            wx = eval(self.redis_server.get('ocn_status'))
 
             quick.append(time.time())
             quick.append(float(wx['sky_temp_C']))
