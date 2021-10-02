@@ -270,10 +270,12 @@ class Sequencer:
                    'numOfDark': 15, 'darkTime': 180, 'numOfDark2': 3, 'dark2Time': 360, \
                    'hotMap': True, 'coldMap': True, 'script': 'genBiasDarkMaster', }
             opt = {}
+            breakpoint()
             self.bias_dark_script(req, opt)
             self.sequencer_hold = False
         elif (g_dev['events']['Cool Down, Open']  <= ephem_now < g_dev['events']['Eve Sky Flats']) and \
             g_dev['enc'].mode == 'Automatic' and not g_dev['ocn'].wx_hold:
+            breakpoint()
             if True:
                  g_dev['mnt'].unpark_command({}, {}) # Get there early
                  g_dev['mnt'].slewToSkyFlatAsync()   #NB we are pounding on these for 10 min, should fix.
@@ -292,6 +294,7 @@ class Sequencer:
         elif  (events['Eve Sky Flats'] <= ephem_now < events['End Eve Sky Flats'])  \
                 and g_dev['enc'].mode == 'Automatic' and not g_dev['ocn'].wx_hold and \
                 self.config['auto_eve_sky_flat']: 
+            breakpoint()
             if not self.sky_guard:
                 #Start it up.
                 self.sky_guard = True
