@@ -273,11 +273,12 @@ class Sequencer:
             breakpoint()
             self.bias_dark_script(req, opt)
             self.sequencer_hold = False
-        elif (g_dev['events']['Cool Down, Open']  <= ephem_now < g_dev['events']['Eve Sky Flats']) and \
-            g_dev['enc'].mode == 'Automatic' and not g_dev['ocn'].wx_hold:
+        elif True or( (g_dev['events']['Cool Down, Open']  <= ephem_now < g_dev['events']['Eve Sky Flats']) and \
+            g_dev['enc'].mode == 'Automatic' and not g_dev['ocn'].wx_hold):
             breakpoint()
             if True:
-                 g_dev['mnt'].unpark_command({}, {}) # Get there early
+                 if g_dev['mnt'].mount.AtPark
+                     g_dev['mnt'].unpark_command({}, {}) # Get there early
                  g_dev['mnt'].slewToSkyFlatAsync()   #NB we are pounding on these for 10 min, should fix.
                  self.time_of_next_slew = time.time() + 120
             if g_dev['enc'].is_dome and time.time() >= self.time_of_next_slew:
@@ -289,7 +290,7 @@ class Sequencer:
                  #Prior to skyflats no dome following.
 
                  self.dome_homed = False
-                 self.time_of_next_slew = time.time() + 120  # seconds between slews.
+                 self.time_of_next_slew = time.time() + 180  # seconds between slews.
          
         elif  (events['Eve Sky Flats'] <= ephem_now < events['End Eve Sky Flats'])  \
                 and g_dev['enc'].mode == 'Automatic' and not g_dev['ocn'].wx_hold and \
