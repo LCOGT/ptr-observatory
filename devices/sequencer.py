@@ -272,7 +272,7 @@ class Sequencer:
         self.current_script = "No current script"    #NB this is an unused remnant I think.
         #if True or  
         if ((events['Eve Bias Dark'] <= ephem_now < events['End Eve Bias Dark']) and \
-            self.config['auto_eve_bias_dark']) and not self.sequencer_hold :
+             self.config['auto_eve_bias_dark']) and not self.sequencer_hold :
             req = {'bin1': False, 'bin2': True, 'bin3': False, 'bin4': False, 'numOfBias': 45, \
                    'numOfDark': 15, 'darkTime': 180, 'numOfDark2': 3, 'dark2Time': 360, \
                    'hotMap': True, 'coldMap': True, 'script': 'genBiasDarkMaster', }
@@ -283,15 +283,14 @@ class Sequencer:
             self.sequencer_hold = False
         #elif  True or  
         elif ((g_dev['events']['Cool Down, Open']  <= ephem_now < g_dev['events']['Eve Sky Flats']) and \
-            g_dev['enc'].mode == 'Automatic') and not g_dev['ocn'].wx_hold:  
+               g_dev['enc'].mode == 'Automatic') and not g_dev['ocn'].wx_hold:  
             self.enc_to_skyflat_and_open(enc_status, ocn_status)
         
         #elif True or 
         elif ((events['Eve Sky Flats'] <= ephem_now < events['End Eve Sky Flats'])  \
-                and g_dev['enc'].mode == 'Automatic' and not g_dev['ocn'].wx_hold and \
-                self.config['auto_eve_sky_flat']):
-            self.enc_to_skyflat_and_open(enc_status, ocn_status)   #Just in case a Wx hold stopped opening
-            
+               and g_dev['enc'].mode == 'Automatic' and not g_dev['ocn'].wx_hold and \
+               self.config['auto_eve_sky_flat']):
+            self.enc_to_skyflat_and_open(enc_status, ocn_status)   #Just in case a Wx hold stopped opening      
             if not self.sky_guard:
                 #Start it up.
                 self.sky_guard = True
@@ -299,12 +298,10 @@ class Sequencer:
                 #print('Skipping Eve Sky Flats')
                 self.sky_flat_script({}, {})   #Null command dictionaries
         elif (events['Observing Begins'] <= ephem_now < events['Observing Ends']) and not g_dev['ocn'].wx_hold and \
-               g_dev['obs'].blocks is not None and g_dev['obs'].projects is not None:
-
+              g_dev['obs'].blocks is not None and g_dev['obs'].projects is not None:
             blocks = g_dev['obs'].blocks
             projects = g_dev['obs'].projects
             debug = False
-
             if debug:
                 print("# of Blocks, projects:  ", len(g_dev['obs'].blocks),  len(g_dev['obs'].projects))
             # NB without deepcopy decrementing counts in blocks will be local to the machine an subject
