@@ -247,13 +247,12 @@ class Sequencer:
     def enc_to_skyflat_and_open(self, no_sky=False):
         ocn_status = eval(self.redis_server.get('ocn_status'))
         enc_status = eval(self.redis_server.get('enc_status'))
-        breakpoint()
         if g_dev['mnt'].mount.AtParK:
-                g_dev['mnt'].unpark_command({}, {}) # Get there early
-                time.sleep(3)
-                self.time_of_next_slew = time.time() + 120   #NB 120 is enough time to telescope to get pointed to East
-                if not no_sky:
-                    g_dev['mnt'].slewToSkyFlatAsync()
+            g_dev['mnt'].unpark_command({}, {}) # Get there early
+            time.sleep(3)
+            self.time_of_next_slew = time.time() + 120   #NB 120 is enough time to telescope to get pointed to East
+            if not no_sky:
+                g_dev['mnt'].slewToSkyFlatAsync()
                 #This should run once. Next time this phase is entered in > 120 seconds we 
             #flat_spot, flat_alt = g_dev['evnt'].flat_spot_now()
 
