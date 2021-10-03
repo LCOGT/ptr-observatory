@@ -292,7 +292,7 @@ class Sequencer:
         ocn_status = eval(self.redis_server.get('ocn_status'))
         enc_status = eval(self.redis_server.get('enc_status'))
         events = g_dev['events']
-        g_dev['obs'].update_status()  #NB NEED to be sure we have current enclosure status.
+        #g_dev['obs'].update_status()  #NB NEED to be sure we have current enclosure status.  Blows recursive limit
         self.current_script = "No current script"    #NB this is an unused remnant I think.
         if (events['Eve Bias Dark'] <= ephem_now < events['End Eve Bias Dark']) and \
             self.config['auto_eve_bias_dark'] and not self.sequencer_hold :
@@ -310,7 +310,7 @@ class Sequencer:
             #NB The above pu2t dome closed and telescope at Park, Which is where it should bhave been upon entry.   
             self.bias_dark_script(req, opt)
             self.sequencer_hold = False
-        elif True or ((g_dev['events']['Cool Down, Open']  <= ephem_now < g_dev['events']['Eve Sky Flats']) and \
+        elif  ((g_dev['events']['Cool Down, Open']  <= ephem_now < g_dev['events']['Eve Sky Flats']) and \
             g_dev['enc'].mode == 'Automatic') and not g_dev['ocn'].wx_hold:
 
             

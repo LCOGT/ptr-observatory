@@ -295,6 +295,7 @@ class Observatory:
                 elif dev_type == 'enclosure':
                     device = Enclosure(driver, name, self.config, self.astro_events)
                 elif dev_type == "mount":
+
                     device = Mount(driver, name, settings, self.config, self.astro_events, tel=True) #NB this needs to be straightened out.
                 elif dev_type == "telescope":   # order of attaching is sensitive
                     device = Telescope(driver, name, settings, self.config, tel=True)
