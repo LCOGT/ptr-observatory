@@ -181,7 +181,6 @@ class Sequencer:
         self.sky_guard = False
         self.af_guard = False
         self.block_guard = False
-        self.time_of_next_slew = time.time()
         #breakpoint()
         self.reset_completes()
         
@@ -243,36 +242,7 @@ class Sequencer:
             g_dev['mnt'].go_command(req, opt, calibrate=True)
         else:
             print('Sequencer command:  ', command, ' not recognized.')
-            
-    def enc_to_skyflat_and_open(self):
-        ocn_status = eval(self.redis_server.get('ocn_status'))
-        enc_status = eval(self.redis_server.get('enc_status'))
-        breakpoint()
-        if g_dev['mnt'].mount.AtParK:
-                g_dev['mnt'].unpark_command({}, {}) # Get there early
-                time.sleep(3)
-                self.time_of_next_slew = time.time() + 120   #NB 120 is enough time to telescope to get pointed to East
-                g_dev['mnt'].slewToSkyFlatAsync()
-                #This should run once. Next time this phase is entered in > 120 seconds we 
-            #flat_spot, flat_alt = g_dev['evnt'].flat_spot_now()
 
-        if time.time() >= self.time_of_next_slew:
-                #We slew to anti-solar Az and reissue this command every 120 seconds
-                flat_spot, flat_alt = g_dev['evnt'].flat_spot_now()
-                try:
-                    g_dev['mnt'].slewToSkyFlatAsync()
-                    print("Open and slew Dome to azimuth opposite the Sun:  ", round(flat_spot, 1))
-                    if enc_status['shutter_status'] in ['Closed', 'closed', 'Closing', 'closing'] \
-                        and not True :
-                        g_dev['enc'].open_command({}, {})
-                    time.sleep(3)
-                    g_dev['enc'].sync_mount_command({}, {})
-                   #Prior to skyflats no dome following.
-
-                    self.dome_homed = False
-                    self.time_of_next_slew = time.time() + 180  # seconds between slews.
-                except:
-                    pass#
 
     ###############################
     #       Sequencer Commands and Scripts
@@ -285,41 +255,47 @@ class Sequencer:
         Scripts must not block too long or they must provide for periodic calls to check status.
         '''
         # NB Need a better way to get all the events.
-        obs_win_begin, sunZ88Op, sunZ88Cl, ephem_now = self.astro_events.getSunEvents()
-        #ephem_now = ephem.now()
-
-        ocn_status = eval(self.redis_server.get('ocn_status'))
-        enc_status = eval(self.redis_server.get('enc_status'))
+        obs_win_begin, sunZ88Op, sunZ88Cl, ephem_ow = self.astro_events.getSunEvents()
+        ephem_now = ephem.now()
         events = g_dev['events']
-        g_dev['obs'].update_status()  #NB NEED to be sure we have current enclosure status.
-        self.current_script = "No current script"    #NB this is an unused remnant I think.
+        #g_dev['obs'].update_status()  #NB NEED to be sure we have current enclosure status.
+
+        self.current_script = "No current script"
+        self.sequencer_hold = False
+         #events['Eve Bias Dark']
+        #if True:
         if (events['Eve Bias Dark'] <= ephem_now < events['End Eve Bias Dark']) and \
             self.config['auto_eve_bias_dark'] and not self.sequencer_hold :
             req = {'bin1': False, 'bin2': True, 'bin3': False, 'bin4': False, 'numOfBias': 45, \
                    'numOfDark': 15, 'darkTime': 180, 'numOfDark2': 3, 'dark2Time': 360, \
                    'hotMap': True, 'coldMap': True, 'script': 'genBiasDarkMaster', }
             opt = {}
-            try:
-                if not g_dev['mnt'].mount.AtParK:
-                    g_dev['mnt'].park_command({}, {}) # Get there early
-            except:
-                pass
-            if enc_status['shutter_status'] in ['open', 'opening']:
-                g_dev['enc'].close_command( {}, {})
-            #NB The above pu2t dome closed and telescope at Park, Which is where it should bhave been upon entry.   
+            breakpoint()
             self.bias_dark_script(req, opt)
             self.sequencer_hold = False
-        elif True or ((g_dev['events']['Cool Down, Open']  <= ephem_now < g_dev['events']['Eve Sky Flats']) and \
-            g_dev['enc'].mode == 'Automatic') and not g_dev['ocn'].wx_hold:
+        elif True or( (g_dev['events']['Cool Down, Open']  <= ephem_now < g_dev['events']['Eve Sky Flats']) and \
+            g_dev['enc'].mode == 'Automatic' and not g_dev['ocn'].wx_hold):
             breakpoint()
-            
-            self.enc_to_skyflat_and_open()
-            
+            if True:
+                 if g_dev['mnt'].mount.AtPark
+                     g_dev['mnt'].unpark_command({}, {}) # Get there early
+                 g_dev['mnt'].slewToSkyFlatAsync()   #NB we are pounding on these for 10 min, should fix.
+                 self.time_of_next_slew = time.time() + 120
+            if g_dev['enc'].is_dome and time.time() >= self.time_of_next_slew:
 
+                
+                 az, alt = g_dev['events'].flat_spot_now()
+                 self.enclosure.SlewToAzimuth(az)
+                 print("Now slewing Dome to an azimuth opposite the Sun:  ", round(az, 3))
+                 #Prior to skyflats no dome following.
+
+                 self.dome_homed = False
+                 self.time_of_next_slew = time.time() + 180  # seconds between slews.
+         
         elif  (events['Eve Sky Flats'] <= ephem_now < events['End Eve Sky Flats'])  \
                 and g_dev['enc'].mode == 'Automatic' and not g_dev['ocn'].wx_hold and \
-                self.config['auto_eve_sky_flat']:
-            self.enc_to_skyflat_and_open()   #Just in case a Wx hold stopped opening
+                self.config['auto_eve_sky_flat']: 
+            breakpoint()
             if not self.sky_guard:
                 #Start it up.
                 self.sky_guard = True
