@@ -411,6 +411,16 @@ class Enclosure:
             self.dome_opened = False
             self.dome_homed = True
             #self.dome_homed = True
+        elif open_cmd:
+            self.guarded_open()
+            self.dome_opened = True
+            self.dome_homed = True
+        elif close_cmd:
+            self.enclosure.CloseShutter()
+            self.dome_opened = False
+            self.dome_homed = True
+            
+            
  
             
         #This version on code only enforces a Wx hold.   

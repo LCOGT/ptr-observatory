@@ -37,7 +37,7 @@ import numpy as np
 import math
 import shelve
 #import datetime
-from pprint import pprint
+#from pprint import pprint
 #from pprint import pprint
 from api_calls import API_calls
 #from skimage import data, io, filters
@@ -45,7 +45,7 @@ from skimage.transform import resize
 #from skimage import img_as_float
 #from skimage import exposure
 from skimage.io import imsave
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 import sep
 from astropy.io import fits
 #from PIL import Image
@@ -63,7 +63,7 @@ from devices.observing_conditions import ObservingConditions
 from devices.rotator import Rotator
 #from devices.switch import Switch    #Nothing implemented yet 20200511
 from devices.selector import Selector
-from devices.screen import Screen
+#from devices.screen import Screen
 from devices.sequencer import Sequencer
 #from devices.arclamp import ArcLampBox
 from processing.calibration import calibrate
@@ -514,7 +514,7 @@ class Observatory:
                 "status":  status
                 }
             data = json.dumps(payload)
-            response = requests.post(uri_status, data=data)
+            requests.post(uri_status, data=data)
             #self.api.authenticated_request("PUT", uri_status, status)   # response = is not  used
             #print("AWS Response:  ",response)
             self.time_last_status = time.time()
@@ -621,7 +621,7 @@ class Observatory:
             'timestamp':  time.time()
             })
         try:
-            resp = requests.post(url_log, body)
+            requests.post(url_log, body)
         except:
             print("Log did not send, usually not fatal.")
             
@@ -739,7 +739,7 @@ class Observatory:
                 #  Possibly even astro solve and align a series or dither batch?
                 #  This might want to be yet another thread queue, esp if we want to do Aperture Photometry.
                 no_AWS = False
-                quick = False
+                #quick = False
                 do_sep = False
                 spot = None
                 if do_sep:    #WE have already ran this code when focusing, but we should not ever get here when doing that.

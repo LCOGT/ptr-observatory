@@ -2,14 +2,14 @@
 
 import time
 import datetime
-from random import shuffle
+#from random import shuffle
 import copy
 from global_yard import g_dev
 import ephem
 import build_tycho as tycho
 import config
 import shelve
-from pprint import pprint
+#from pprint import pprint
 import ptr_utility
 import redis
 import math
@@ -54,41 +54,7 @@ and or visit more altitudes and temeperatures.
 
 
 '''
-#  NBNB This is a copy of this routine found in camera.py.  Bad form.
-# def create_simple_sequence(exp_time=0, img_type=0, speed=0, suffix='', repeat=1, \
-#                     readout_mode="RAW Mono", filter_name='W', enabled=1, \
-#                     binning=1, binmode=0, column=1):
-#     exp_time = round(abs(float(exp_time)), 3)
-#     if img_type > 3:
-#         img_type = 0
-#     repeat = abs(int(repeat))
-#     if repeat < 1:
-#         repeat = 1
-#     binning = abs(int(binning))
-#     if binning > 4:
-#         binning = 4
-#     if filter_name == "":
-#         filter_name = 'W'
-#     proto_file = open('D:/archive/archive/sq01/seq/ptr_saf.pro')
-#     proto = proto_file.readlines()
-#     proto_file.close()
-#     print(proto, '\n\n')
 
-#     if column == 1:
-#         proto[62] = proto[62][:9]  + str(exp_time) + proto[62][12:]
-#         proto[63] = proto[63][:9]  + str(img_type) + proto[63][10:]
-#         proto[58] = proto[58][:12] + str(suffix)   + proto[58][12:]
-#         proto[56] = proto[56][:10] + str(speed)    + proto[56][11:]
-#         proto[37] = proto[37][:11] + str(repeat)   + proto[37][12:]
-#         proto[33] = proto[33][:17] + readout_mode  + proto[33][20:]
-#         proto[15] = proto[15][:12] + filter_name   + proto[15][13:]
-#         proto[11] = proto[11][:12] + str(enabled)  + proto[11][13:]
-#         proto[1]  = proto[1][:12]  + str(binning)  + proto[1][13:]
-#     seq_file = open('D:/archive/archive/sq01/seq/ptr_saf.seq', 'w')
-#     for item in range(len(proto)):
-#         seq_file.write(proto[item])
-#     seq_file.close()
-#     print(proto)
 
 def fit_quadratic(x, y):
     #From Meeus, works fine.
@@ -262,8 +228,10 @@ class Sequencer:
                     if not no_sky:
                         g_dev['mnt'].slewToSkyFlatAsync()
                     print("Open and slew Dome to azimuth opposite the Sun:  ", round(flat_spot, 1))
+
                     if enc_status['shutter_status'] in ['Closed', 'closed', 'Closing', 'closing'] \
                         and ocn_status['hold_duration'] <= 0.001:
+                        #breakpoint()
                         g_dev['enc'].open_command({}, {})
                         time.sleep(3)
                     g_dev['enc'].sync_mount_command({}, {})
@@ -281,6 +249,7 @@ class Sequencer:
             pass
         if enc_status['shutter_status'] in ['open', 'opening']:
             g_dev['enc'].close_command( {}, {})
+        print("Park and Close was executed.")
 
     ###############################
     #       Sequencer Commands and Scripts
@@ -301,27 +270,28 @@ class Sequencer:
         events = g_dev['events']
         #g_dev['obs'].update_status()  #NB NEED to be sure we have current enclosure status.  Blows recursive limit
         self.current_script = "No current script"    #NB this is an unused remnant I think.
-        if (events['Eve Bias Dark'] <= ephem_now < events['End Eve Bias Dark']) and \
-            self.config['auto_eve_bias_dark'] and not self.sequencer_hold :
+        #if True or  
+        if ((events['Eve Bias Dark'] <= ephem_now < events['End Eve Bias Dark']) and \
+            self.config['auto_eve_bias_dark']) and not self.sequencer_hold :
             req = {'bin1': False, 'bin2': True, 'bin3': False, 'bin4': False, 'numOfBias': 45, \
                    'numOfDark': 15, 'darkTime': 180, 'numOfDark2': 3, 'dark2Time': 360, \
                    'hotMap': True, 'coldMap': True, 'script': 'genBiasDarkMaster', }
             opt = {}
             self.park_and_close(enc_status)
-            #NB The above pu2t dome closed and telescope at Park, Which is where it should bhave been upon entry.   
+            #NB The above put dome closed and telescope at Park, Which is where it should have been upon entry.   
             self.bias_dark_script(req, opt)
             self.sequencer_hold = False
-        elif  ((g_dev['events']['Cool Down, Open']  <= ephem_now < g_dev['events']['Eve Sky Flats']) and \
-            g_dev['enc'].mode == 'Automatic') and not g_dev['ocn'].wx_hold:
-
-            
+        #elif  True or  
+        elif ((g_dev['events']['Cool Down, Open']  <= ephem_now < g_dev['events']['Eve Sky Flats']) and \
+            g_dev['enc'].mode == 'Automatic') and not g_dev['ocn'].wx_hold:  
             self.enc_to_skyflat_and_open(enc_status, ocn_status)
-            
-
-        elif  (events['Eve Sky Flats'] <= ephem_now < events['End Eve Sky Flats'])  \
+        
+        #elif True or 
+        elif ((events['Eve Sky Flats'] <= ephem_now < events['End Eve Sky Flats'])  \
                 and g_dev['enc'].mode == 'Automatic' and not g_dev['ocn'].wx_hold and \
-                self.config['auto_eve_sky_flat']:
+                self.config['auto_eve_sky_flat']):
             self.enc_to_skyflat_and_open(enc_status, ocn_status)   #Just in case a Wx hold stopped opening
+            
             if not self.sky_guard:
                 #Start it up.
                 self.sky_guard = True
@@ -816,7 +786,7 @@ class Sequencer:
         if flat_count < 1: flat_count = 1
         g_dev['mnt'].unpark_command({}, {})
         g_dev['mnt'].slewToSkyFlatAsync()
-        self.redis_server.set('syn_enc', True, ex=1200)   #Should be redundant.
+        self.redis_server.set('sync_enc', True, ex=1200)   #Should be redundant.
         # if g_dev['enc'].is_dome and not g_dev['enc'].mode == 'Automatic':
         #      g_dev['enc'].Slaved = True  #Bring the dome into the picture.
         #     print('\n SERVOED THE DOME HOPEFULLY!\n')

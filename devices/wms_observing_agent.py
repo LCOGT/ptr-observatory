@@ -1,6 +1,6 @@
 
 import win32com.client
-import redis
+#import redis
 import time
 #import requests
 #import json
