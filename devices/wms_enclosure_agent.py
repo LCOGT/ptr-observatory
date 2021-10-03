@@ -390,7 +390,7 @@ class Enclosure:
         # except:
         #     pass
         #     #print("Obs process not producing time heartbeat.")
-        wx_hold = g_dev['ocn'].wx_hold or eval(self.redis_server.get('wx_hold'))  #TWO PATHS to pick up wx-hold.
+        wx_hold = g_dev['ocn'].wx_hold #or eval(self.redis_server.get('wx_hold'))  #TWO PATHS to pick up wx-hold.
         if self.mode == 'Shutdown':
             #  NB in this situation we should always Park telescope, rotators, etc.
             if self.is_dome:
