@@ -244,9 +244,8 @@ class Sequencer:
         else:
             print('Sequencer command:  ', command, ' not recognized.')
             
-    def enc_to_skyflat_and_open(self, no_sky=False):
-        ocn_status = eval(self.redis_server.get('ocn_status'))
-        enc_status = eval(self.redis_server.get('enc_status'))
+    def enc_to_skyflat_and_open(self ,enc_status, ocn_status, no_sky=False):
+        #ocn_status = eval(self.redis_server.get('ocn_status'))
         if g_dev['mnt'].mount.AtParK:
             g_dev['mnt'].unpark_command({}, {}) # Get there early
             time.sleep(3)
@@ -266,7 +265,7 @@ class Sequencer:
                     if enc_status['shutter_status'] in ['Closed', 'closed', 'Closing', 'closing'] \
                         and ocn_status['hold_duration'] <= 0.001:
                         g_dev['enc'].open_command({}, {})
-                    time.sleep(3)
+                        time.sleep(3)
                     g_dev['enc'].sync_mount_command({}, {})
                    #Prior to skyflats no dome following.
 
@@ -274,6 +273,14 @@ class Sequencer:
                     self.time_of_next_slew = time.time() + 180  # seconds between slews.
                 except:
                     pass#
+    def park_and_close(self, enc_status):
+        try:
+            if not g_dev['mnt'].mount.AtParK:   ###Test comment here
+                g_dev['mnt'].park_command({}, {}) # Get there early
+        except:
+            pass
+        if enc_status['shutter_status'] in ['open', 'opening']:
+            g_dev['enc'].close_command( {}, {})
 
     ###############################
     #       Sequencer Commands and Scripts
@@ -300,13 +307,7 @@ class Sequencer:
                    'numOfDark': 15, 'darkTime': 180, 'numOfDark2': 3, 'dark2Time': 360, \
                    'hotMap': True, 'coldMap': True, 'script': 'genBiasDarkMaster', }
             opt = {}
-            try:
-                if not g_dev['mnt'].mount.AtParK:   ###Test comment here
-                    g_dev['mnt'].park_command({}, {}) # Get there early
-            except:
-                pass
-            if enc_status['shutter_status'] in ['open', 'opening']:
-                g_dev['enc'].close_command( {}, {})
+            self.park_and_close(enc_status)
             #NB The above pu2t dome closed and telescope at Park, Which is where it should bhave been upon entry.   
             self.bias_dark_script(req, opt)
             self.sequencer_hold = False
@@ -314,13 +315,13 @@ class Sequencer:
             g_dev['enc'].mode == 'Automatic') and not g_dev['ocn'].wx_hold:
 
             
-            self.enc_to_skyflat_and_open()
+            self.enc_to_skyflat_and_open(enc_status, ocn_status)
             
 
         elif  (events['Eve Sky Flats'] <= ephem_now < events['End Eve Sky Flats'])  \
                 and g_dev['enc'].mode == 'Automatic' and not g_dev['ocn'].wx_hold and \
                 self.config['auto_eve_sky_flat']:
-            self.enc_to_skyflat_and_open()   #Just in case a Wx hold stopped opening
+            self.enc_to_skyflat_and_open(enc_status, ocn_status)   #Just in case a Wx hold stopped opening
             if not self.sky_guard:
                 #Start it up.
                 self.sky_guard = True
