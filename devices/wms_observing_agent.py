@@ -445,7 +445,7 @@ class ObservingConditions:
 
 # ==============================================================================================#
 #         """                                                                                   #
-#         Note this agent only publishes WeatherHolds, etc.  If does not control the Enclosure. #
+#         Note this agent only publishes Weather Holds, etc.  If does not control the Enclosure. #
 #         """                                                                                   #
 # ==============================================================================================#
             
@@ -461,7 +461,7 @@ class ObservingConditions:
             #Bingo we need to start a cycle
            
             self.wx_hold = True
-            self.redis_server.set('Wx_hold', True, ex=3600)
+            self.redis_server.set('wx_hold', True, ex=3600)
             self.wx_hold_until_time = (t := time.time() + wx_delay_time)    #15 minutes   Make configurable
             self.wx_to_go = round(wx_delay_time/60, 2)
             self.wx_hold_tally += 1     #  This counts all day and night long.

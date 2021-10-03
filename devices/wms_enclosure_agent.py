@@ -1,6 +1,6 @@
 import win32com.client
 from global_yard import g_dev
-import redis
+#import redis
 import time
 #import math
 
@@ -29,8 +29,6 @@ class Enclosure:
         self.config = config
         self.site_is_proxy = self.config['agent_wms_enc_active'] 
         g_dev['enc'] = self
-        #if self.site != 'mrc2':
-
         win32com.client.pythoncom.CoInitialize()
         self.enclosure = win32com.client.Dispatch(driver)
         print(self.enclosure)
@@ -44,10 +42,8 @@ class Enclosure:
         if redis_ip is not None:           
             #self.redis_server = redis.StrictRedis(host=redis_ip, port=6379, db=0,
             #                                   decode_responses=True)
-
             self.redis_server = g_dev['redis_server']   #ensure we only have one working.
             self.redis_wx_enabled = True
-
             #g_dev['redis_server'] = self.redis_server 
         else:
             self.redis_wx_enabled = False
@@ -384,13 +380,17 @@ class Enclosure:
         #  could be parked.
        
 
-        debugOffset = 0.1/24 #hours.
+        #debugOffset = 0.1/24 #hours.
         # try:
         #     obs_time = self.redis_server.get('obs_heart_time')    
         # except:
         #     pass
         #     #print("Obs process not producing time heartbeat.")
-        wx_hold = g_dev['ocn'].wx_hold #or eval(self.redis_server.get('wx_hold'))  #TWO PATHS to pick up wx-hold.
+        try:
+            redis_hold = eval(self.redis_server.get('wx_hold'))
+        except:
+            redis_hold =False
+        wx_hold = g_dev['ocn'].wx_hold or redis_hold  #TWO PATHS to pick up wx-hold.
         if self.mode == 'Shutdown':
             #  NB in this situation we should always Park telescope, rotators, etc.
             if self.is_dome:
