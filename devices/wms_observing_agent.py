@@ -416,7 +416,7 @@ class ObservingConditions:
                 except:
                     pass
                     #print("Unihedron log did not write.")
-            breakpoint()
+
             self.redis_server.set('ocn_status' , status, ex=3600)
             self.last_stat = eval(self.redis_server.get('ocn_status'))
         else:

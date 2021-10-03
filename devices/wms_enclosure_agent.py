@@ -195,7 +195,7 @@ class Enclosure:
             self.redis_server.set('enclosure_message', str(self.state), ex=3600)        #print('Enclosure status:  ', status
             self.redis_server.set('dome_azimuth', str(180.0))  
             self.redis_server.set('dome_slewing', False, ex=3600)
-            self.redis_server.set('enc_redis_status', status, ex=3600)
+            self.redis_server.set('enc_status', status, ex=3600)
         # This code picks up commands forwarded by the observer Enclosure 
         if self.site_is_proxy:
             redis_command = self.redis_server.get('enc_cmd')  #It is presumed there is an expiration date on open command at least.

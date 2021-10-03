@@ -57,6 +57,7 @@ class Observatory:
         g_dev['redis_server']['wema_loaded'] = True
         self.update_config()
         self.create_devices(config)
+        self.time_last_status = time.time()
         self.loud_status = False
         self.blocks = None
         self.projects = None
