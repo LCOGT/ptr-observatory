@@ -819,9 +819,9 @@ class Sequencer:
                 g_dev['mnt'].slewToSkyFlatAsync()
                 g_dev['obs'].update_status()
                 try:
-                    lux = eval(self.redis_server.get('wx_redis_status'))['calc_HSI_lux']
+                    lux = eval(self.redis_server.get('ocn_status'))['calc_HSI_lux']
               
-                    exp_time = prior_scale*scale*10000/(float(g_dev['fil'].filter_data[current_filter][3])*lux)  #g_dev['ocn'].calc_HSI_lux)  #meas_sky_lux)
+                    exp_time = prior_scale*scale*2500/(float(g_dev['fil'].filter_data[current_filter][3])*lux)  #g_dev['ocn'].calc_HSI_lux)  #meas_sky_lux)
                     #exp_time*= 4.9/9/2
                     if exp_time > 120:
                         exp_time = 120    #Live with this limit.

@@ -1161,7 +1161,9 @@ class Camera:
                         self.overscan = int((np.median(self.img[16:, -17:]) + np.median(self.img[0:14, :]))/2) -1
                         trimmed = self.img[16:, :-17].astype('int32') + pedastal - self.overscan
 
-                        print("Rare error, Shift 2", self.overscan, square.mean())
+                        print("Rare error, Shift 2", self.overscan, trimmed.mean())
+                        
+                       #This reports when taking biases at MRC
 
                     else:
                         #breakpoint()
