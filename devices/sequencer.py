@@ -210,7 +210,7 @@ class Sequencer:
         else:
             print('Sequencer command:  ', command, ' not recognized.')
             
-    def enc_to_skyflat_and_open(self ,enc_status, ocn_status, no_sky=False):
+    def enc_to_skyflat_and_open(self, enc_status, ocn_status, no_sky=False):
         #ocn_status = eval(self.redis_server.get('ocn_status'))
         if g_dev['mnt'].mount.AtParK:
             g_dev['mnt'].unpark_command({}, {}) # Get there early
@@ -270,6 +270,7 @@ class Sequencer:
         events = g_dev['events']
         #g_dev['obs'].update_status()  #NB NEED to be sure we have current enclosure status.  Blows recursive limit
         self.current_script = "No current script"    #NB this is an unused remnant I think.
+        eve_skyflat_complete = False
         #if True or  
         if ((events['Eve Bias Dark'] <= ephem_now < events['End Eve Bias Dark']) and \
              self.config['auto_eve_bias_dark']) and not self.sequencer_hold :
@@ -289,14 +290,15 @@ class Sequencer:
         #elif True or 
         elif ((events['Eve Sky Flats'] <= ephem_now < events['End Eve Sky Flats'])  \
                and g_dev['enc'].mode == 'Automatic' and not g_dev['ocn'].wx_hold and \
-               self.config['auto_eve_sky_flat']):
+               self.config['auto_eve_sky_flat'] and not eve_skyflat_complete):
             self.enc_to_skyflat_and_open(enc_status, ocn_status)   #Just in case a Wx hold stopped opening      
             if not self.sky_guard:
                 #Start it up.
                 self.sky_guard = True
                 self.current_script = "Eve Sky Flat script"
                 #print('Skipping Eve Sky Flats')
-                self.sky_flat_script({}, {})   #Null command dictionaries
+                self.sky_flat_script({}, {})
+                eve_skyflat_complete = True#Null command dictionaries
         elif (events['Observing Begins'] <= ephem_now < events['Observing Ends']) and not g_dev['ocn'].wx_hold and \
               g_dev['obs'].blocks is not None and g_dev['obs'].projects is not None:
             blocks = g_dev['obs'].blocks
@@ -448,11 +450,13 @@ class Sequencer:
     def execute_block(self, block_specification):
         
         self.block_guard = True
+        ocn_status = eval(self.redis_server.get('ocn_status'))
+        enc_status = eval(self.redis_server.get('enc_status'))
         # NB we assume the dome is open and already slaving.
         block = copy.deepcopy(block_specification)
         # #unpark, open dome etc.
         # #if not end of block
-        self.enc_to_skyflat_and_open(no_sky=True)   #Just in case a Wx hold stopped opening
+        self.enc_to_skyflat_and_open( enc_status, ocn_status, no_sky=True)   #Just in case a Wx hold stopped opening
         g_dev['mnt'].unpark_command({}, {})
         g_dev['mnt'].Tracking = True   # unpark_command({}, {})
         #NB  Servo the Dome??
@@ -799,10 +803,10 @@ class Sequencer:
         pop_list = self.config['filter_wheel']['filter_wheel1']['settings']['filter_sky_sort'].copy()
         print('filters by low to high transmission:  ', pop_list)
         #length = len(pop_list)
-        obs_win_begin, sunset, sunrise, ephemNow = self.astro_events.getSunEvents()
+        obs_win_begin, sunset, sunrise,ephem_now = self.astro_events.getSunEvents()
         scale = 1.0
         prior_scale = 1
-        while len(pop_list) > 0: #and (g_dev['events']['Ops Window Start'] < ephemNow < g_dev['events']['End Eve Sky Flats']):
+        while len(pop_list) > 0 and (g_dev['events']['Ops Window Start'] < ephem_now < g_dev['events']['End Eve Sky Flats']):
             current_filter = int(pop_list[0])
             acquired_count = 0
             #req = {'filter': current_filter}
@@ -819,9 +823,10 @@ class Sequencer:
                 g_dev['mnt'].slewToSkyFlatAsync()
                 g_dev['obs'].update_status()
                 try:
-                    lux = eval(self.redis_server.get('wx_redis_status'))['calc_HSI_lux']
-              
-                    exp_time = prior_scale*scale*10000/(float(g_dev['fil'].filter_data[current_filter][3])*lux)  #g_dev['ocn'].calc_HSI_lux)  #meas_sky_lux)
+    
+                    lux = eval(self.redis_server.get('ocn_status'))['calc_HSI_lux']
+                    print('Lux:  ', lux)
+                    exp_time = prior_scale*scale*2500/(float(g_dev['fil'].filter_data[current_filter][3])*lux)  #g_dev['ocn'].calc_HSI_lux)  #meas_sky_lux)
                     #exp_time*= 4.9/9/2
                     if exp_time > 120:
                         exp_time = 120    #Live with this limit.
@@ -852,11 +857,9 @@ class Sequencer:
                 g_dev['obs'].update_status()
                 #breakpoint()
                 #  THE following code looks like a debug patch gone rogue.
-                if bright > 40000 and (ephemNow < g_dev['events']['End Eve Sky Flats']
-                                  or True):    #NB should gate with end of skyflat window as well.
-                    for i in range(1):
-                        time.sleep(5)  #  #0 seconds of wait time.  Maybe shorten for wide bands?
-                        g_dev['obs'].update_status()
+                if bright > 40000 and (ephem_now < g_dev['events']['End Eve Sky Flats']):    #NB should gate with end of skyflat window as well.
+                    time.sleep(5)  #  #0 seconds of wait time.  Maybe shorten for wide bands?
+                    g_dev['obs'].update_status()
                 else:
                     acquired_count += 1
                     if acquired_count == flat_count:

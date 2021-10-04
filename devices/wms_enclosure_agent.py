@@ -56,6 +56,7 @@ class Enclosure:
         self.dome_opened = False   #memory of prior issued commands  Restarting code may close dome one time.
         self.dome_homed = False
         self.cycles = 0
+        self.last_current_az = 0
         self.prior_status = None
         self.time_of_next_slew = time.time()
         if self.config['site_in_automatic_default'] == "Automatic":
