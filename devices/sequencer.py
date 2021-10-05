@@ -448,13 +448,14 @@ class Sequencer:
         '''
         
     def execute_block(self, block_specification):
-        
+        ocn_status = eval(self.redis_server.get('ocn_status'))
+        enc_status = eval(self.redis_server.get('enc_status'))
         self.block_guard = True
         # NB we assume the dome is open and already slaving.
         block = copy.deepcopy(block_specification)
         # #unpark, open dome etc.
         # #if not end of block
-        self.enc_to_skyflat_and_open(no_sky=True)   #Just in case a Wx hold stopped opening
+        self.enc_to_skyflat_and_open(enc_status, ocn_status, no_sky=True)   #Just in case a Wx hold stopped opening
         g_dev['mnt'].unpark_command({}, {})
         g_dev['mnt'].Tracking = True   # unpark_command({}, {})
         #NB  Servo the Dome??
