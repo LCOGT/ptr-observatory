@@ -426,7 +426,12 @@ class Enclosure:
             try:
                 self.enclosure.CloseShutter()
             except:
-                print('Dome refused close command.')
+                print('Dome refused close command. Try again in 120 sec')
+                time.sleep(120)
+                try:
+                    self.enclosure.CloseShutter()
+                except:
+                    print('Dome refused close command second time.')
             self.dome_opened = False
             self.dome_homed = True
             
