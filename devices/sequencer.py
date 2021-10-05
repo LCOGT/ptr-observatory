@@ -698,7 +698,7 @@ class Sequencer:
                     
         print("Fini!")   #NB Should we consider turning off mount tracking?
         if block_specification['project']['project_constraints']['close_on_block_completion']:
-            g_dev['mnt'].park_command({}, {})
+            #g_dev['mnt'].park_command({}, {})
             # NB NBNeed to write a more robust and generalized clean up.
             try:
                 pass#g_dev['enc'].enclosure.Slaved = False   NB with wema no longer exists
@@ -706,6 +706,7 @@ class Sequencer:
                 pass
             self.redis_server.set('unsync_enc', True, ex=1200)
             g_dev['enc'].close_command({}, {})
+            g_dev['mnt'].park_command({}, {})
 
             print("Auto close attempted at end of block.")
         self.block_guard = False
