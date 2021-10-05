@@ -268,6 +268,7 @@ class Sequencer:
         ocn_status = eval(self.redis_server.get('ocn_status'))
         enc_status = eval(self.redis_server.get('enc_status'))
         events = g_dev['events']
+        sky_flat_completed = False
         #g_dev['obs'].update_status()  #NB NEED to be sure we have current enclosure status.  Blows recursive limit
         self.current_script = "No current script"    #NB this is an unused remnant I think.
         #if True or  
@@ -289,7 +290,7 @@ class Sequencer:
         #elif True or 
         elif ((events['Eve Sky Flats'] <= ephem_now < events['End Eve Sky Flats'])  \
                and g_dev['enc'].mode == 'Automatic' and not g_dev['ocn'].wx_hold and \
-               self.config['auto_eve_sky_flat']):
+               self.config['auto_eve_sky_flat'] and not sky_flat_completed):
             self.enc_to_skyflat_and_open(enc_status, ocn_status)   #Just in case a Wx hold stopped opening      
             if not self.sky_guard:
                 #Start it up.
@@ -297,6 +298,7 @@ class Sequencer:
                 self.current_script = "Eve Sky Flat script"
                 #print('Skipping Eve Sky Flats')
                 self.sky_flat_script({}, {})   #Null command dictionaries
+                sky_flat_completed = True
         elif (events['Observing Begins'] <= ephem_now < events['Observing Ends']) and not g_dev['ocn'].wx_hold and \
               g_dev['obs'].blocks is not None and g_dev['obs'].projects is not None:
             blocks = g_dev['obs'].blocks
@@ -777,7 +779,7 @@ class Sequencer:
         self.sky_guard = True
         print('Eve Sky Flat sequence Starting, Enclosure PRESUMED Open. Telescope will un-park.')
         camera_name = str(self.config['camera']['camera_1_1']['name'])
-        flat_count = 7
+        flat_count = 1
         exp_time = .0015
         #  NB Sometime, try 2:2 binning and interpolate a 1:1 flat.  This might run a lot faster.
         if flat_count < 1: flat_count = 1
@@ -799,7 +801,7 @@ class Sequencer:
         pop_list = self.config['filter_wheel']['filter_wheel1']['settings']['filter_sky_sort'].copy()
         print('filters by low to high transmission:  ', pop_list)
         #length = len(pop_list)
-        obs_win_begin, sunset, sunrise, ephemNow = self.astro_events.getSunEvents()
+        obs_win_begin, sunset, sunrise, ephem_now = self.astro_events.getSunEvents()
         scale = 1.0
         prior_scale = 1
         while len(pop_list) > 0: #and (g_dev['events']['Ops Window Start'] < ephemNow < g_dev['events']['End Eve Sky Flats']):
@@ -821,7 +823,8 @@ class Sequencer:
                 try:
                     lux = eval(self.redis_server.get('ocn_status'))['calc_HSI_lux']
               
-                    exp_time = prior_scale*scale*2500/(float(g_dev['fil'].filter_data[current_filter][3])*lux)  #g_dev['ocn'].calc_HSI_lux)  #meas_sky_lux)
+                    exp_time = prior_scale*scale*6000/(float(g_dev['fil'].filter_data[current_filter][3])*lux)  #g_dev['ocn'].calc_HSI_lux)  #meas_sky_lux)
+                    print('Ex:  ', exp_time, scale, prior_scale, lux, float(g_dev['fil'].filter_data[current_filter][3]))
                     #exp_time*= 4.9/9/2
                     if exp_time > 120:
                         exp_time = 120    #Live with this limit.
@@ -848,11 +851,10 @@ class Sequencer:
                     scale = 1.0
                 print("\n'n\\'nPatch/Bright:  ", bright, g_dev['fil'].filter_data[current_filter][0], \
                       '  Gain: ', round(bright/lux/exp_time, 2), '\n\n\n')
-
                 g_dev['obs'].update_status()
                 #breakpoint()
                 #  THE following code looks like a debug patch gone rogue.
-                if bright > 40000 and (ephemNow < g_dev['events']['End Eve Sky Flats']
+                if bright > 40000 and (ephem_now < g_dev['events']['End Eve Sky Flats']
                                   or True):    #NB should gate with end of skyflat window as well.
                     for i in range(1):
                         time.sleep(5)  #  #0 seconds of wait time.  Maybe shorten for wide bands?

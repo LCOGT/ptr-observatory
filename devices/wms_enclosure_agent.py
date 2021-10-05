@@ -397,7 +397,10 @@ class Enclosure:
             if self.is_dome:
                 self.enclosure.Slaved = False
             if self.status_string.lower() in ['open', 'opening']:
-                self.enclosure.CloseShutter()
+                try:
+                    self.enclosure.CloseShutter()
+                except:
+                    print('Dome refused close command.')
             self.dome_opened = False
             self.dome_homed = True
             self.enclosure_synched = False
@@ -408,7 +411,10 @@ class Enclosure:
                 #self.enclosure.Slaved = False
                 pass
             if self.status_string.lower() in ['open', 'opening']:
-                self.enclosure.CloseShutter()
+                try:
+                    self.enclosure.CloseShutter()
+                except:
+                    print('Dome refused close command.')
             self.dome_opened = False
             self.dome_homed = True
             #self.dome_homed = True
@@ -417,7 +423,10 @@ class Enclosure:
             self.dome_opened = True
             self.dome_homed = True
         elif close_cmd:
-            self.enclosure.CloseShutter()
+            try:
+                self.enclosure.CloseShutter()
+            except:
+                print('Dome refused close command.')
             self.dome_opened = False
             self.dome_homed = True
             
