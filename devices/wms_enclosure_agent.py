@@ -51,6 +51,7 @@ class Enclosure:
         self.status = None
         self.state = 'Closed'
         self.last_az = 316   #Set to normal home for the respective dome.
+        self.last_slewing = False
         self.enclosure_message = '-'
         self.external_close = False   #  Not used If made true by operator,  system will not reopen for the night
         self.dome_opened = False   #memory of prior issued commands  Restarting code may close dome one time.
