@@ -30,6 +30,7 @@ class Enclosure:
         self.site_is_proxy = self.config['agent_wms_enc_active'] 
         g_dev['enc'] = self
         win32com.client.pythoncom.CoInitialize()
+
         self.enclosure = win32com.client.Dispatch(driver)
         print(self.enclosure)
         try:
@@ -60,6 +61,7 @@ class Enclosure:
         self.last_current_az = 0
         self.prior_status = None
         self.time_of_next_slew = time.time()
+        breakpoint()
         if self.config['site_in_automatic_default'] == "Automatic":
             self.site_in_automatic = True
             self.mode = 'Automatic' 
@@ -395,7 +397,7 @@ class Enclosure:
         wx_hold = g_dev['ocn'].wx_hold or redis_hold  #TWO PATHS to pick up wx-hold.
         if self.mode == 'Shutdown':
             #  NB in this situation we should always Park telescope, rotators, etc.
-            if self.is_dome:
+            if self.is_dome and self.enclosure.CanSlave :
                 self.enclosure.Slaved = False
             if self.status_string.lower() in ['open', 'opening']:
                 try:
@@ -574,7 +576,7 @@ class Enclosure:
                    # print("Daytime Close issued to the " + shutter_str  + "   No longer following Mount.")
                 except:
                     print("Shutter busy right now!")
-                if self.is_dome:
+                if self.is_dome and self.enclosure.CanSlave:
                     #enc_at_home = self.enclosure.AtHome
                     self.enclosure.Slaved = False
                 else:

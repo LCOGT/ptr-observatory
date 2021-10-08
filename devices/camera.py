@@ -186,7 +186,6 @@ class Camera:
             g_dev['cam'] = self
         self.config = config
         self.alias = config['camera'][self.name]['name']
-        breakpoint()
         win32com.client.pythoncom.CoInitialize()
         print(driver, name)
         self.camera = win32com.client.Dispatch(driver)
@@ -1131,6 +1130,7 @@ class Camera:
 
 
                 #This image shift code needs to be here but it is troubling.
+
                 if ix == 9600:
                     if self.img[22, -34] == 0:
 
@@ -1152,7 +1152,8 @@ class Camera:
                     #     square = trimmed[1590:1590 + 6388, :]
                 elif ix == 4800:
                     #Shift error needs documenting!
-                    if self.img[11, -18] == 0:   #This is the normal incoming image
+                    if self.img[11, -22:-18].mean() < (self.img[12, -18] +self.img[10, -18])/2:
+                    #if self.img[11, -18] == 0:   #This is the normal incoming image
                         self.overscan = int((np.median(self.img[12:, -17:]) + np.median(self.img[0:10, :]))/2) - 1
                         trimmed = self.img[12:-4, :-17].astype('int32') + pedastal - self.overscan
 
