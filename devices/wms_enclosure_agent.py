@@ -61,7 +61,7 @@ class Enclosure:
         self.last_current_az = 0
         self.prior_status = None
         self.time_of_next_slew = time.time()
-        breakpoint()
+
         if self.config['site_in_automatic_default'] == "Automatic":
             self.site_in_automatic = True
             self.mode = 'Automatic' 

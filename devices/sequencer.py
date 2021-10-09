@@ -264,9 +264,12 @@ class Sequencer:
         # NB Need a better way to get all the events.
         obs_win_begin, sunZ88Op, sunZ88Cl, ephem_now = self.astro_events.getSunEvents()
         #ephem_now = ephem.now()
-
-        ocn_status = eval(self.redis_server.get('ocn_status'))
-        enc_status = eval(self.redis_server.get('enc_status'))
+        try:
+            ocn_status = eval(self.redis_server.get('ocn_status'))
+            enc_status = eval(self.redis_server.get('enc_status'))
+        except:
+            print("Wema not reporting.")
+            return
         events = g_dev['events']
         sky_flat_completed = False
         #g_dev['obs'].update_status()  #NB NEED to be sure we have current enclosure status.  Blows recursive limit
