@@ -839,19 +839,23 @@ class Camera:
                         print("enclosure SLEWING threw an exception.")
                 else:
                      enc_slewing = False
-                rot = (self.config['site'] != 'saf') and g_dev['rot'].rotator.IsMoving
-                while g_dev['foc'].focuser.IsMoving or rot or \
-                      g_dev['mnt'].mount.Slewing or enc_slewing:   #Filter is moving??
-                    if rot: st += 'r>'
+                #rot = (self.config['site'] != 'saf') and g_dev['rot'].rotator.IsMoving
+                in_time = time.time()
+                while True:
+                    if g_dev['foc'].focuser.IsMoving:
+                        st += 'f>'
                     if g_dev['mnt'].mount.Slewing:
                         st += 'm>  ' + str(round(time.time() - g_dev['mnt'].move_time, 1))
+                    if self.config['site'] != 'saf' and g_dev['rot'].rotator.IsMoving:
+                        st += 'r>'
                     if enc_slewing:
                         st += 'd>' + str(round(time.time() - g_dev['mnt'].move_time, 1))
-                    print(st)
-                    if round(time.time() - g_dev['mnt'].move_time, 1) >= 120:
-                       print("|n\n DOME OR MOUNT HAS TIMED OUT!; going ahead Anyway|n|n")
-                       break
-                      
+                    print(st, 'Elapsed:  ', round(time.time() - in_time, 1))
+                    if st == "":
+                        break   #There is noting to wait upon.
+                    elif round(time.time() - g_dev['mnt'].move_time, 1) >= 180:
+                        print("|n\n DOME OR MOUNT HAS TIMED OUT!; going ahead Anyway|n|n")
+                        break          
                     st = ""
                     time.sleep(0.2)
                     if seq > 0:
@@ -865,6 +869,7 @@ class Camera:
                             print("enclosure SLEWING threw an exception.")
                     else:
                          enc_slewing = False
+                    
 
             except:
                 pass
