@@ -555,7 +555,7 @@ class Sequencer:
             print("Left to do initial value:  ", left_to_do)
             req = {'target': 'near_tycho_star'}
             initial_focus = True
-            af_delay = 30
+            af_delay = 60*60  #This must be a big number!
 
             while left_to_do > 0 and not ended:
 
@@ -588,6 +588,8 @@ class Sequencer:
                     exp_time =  float(exposure['exposure']) 
                     #dither = exposure['dither']
                     if exposure['bin'] in [2, '2,2', '2, 2', '2 2']:
+                        binning = 2
+                    elif exposure['bin'] in [3, '3,3', '3, 3', '3 3']:
                         binning = 2
                     else:
                         binning = 1
@@ -682,7 +684,7 @@ class Sequencer:
                             opt = {'area': 150, 'count': 1, 'bin': binning, 'filter': color, \
                                    'hint': block['project_id'] + "##" + dest_name, 'pane': pane}
                             print('Seq Blk sent to camera:  ', req, opt)
-                            g_dev['cam'].expose_command(req, opt, gather_status=True, no_AWS=False)
+                            g_dev['cam'].expose_command(req, opt, no_AWS=False)
                             count -= 1
                             exposure['count'] = count
                             left_to_do -= 1
@@ -727,7 +729,7 @@ class Sequencer:
         """
         self.sequencer_hold = True
         self.current_script = 'Afternoon Bias Dark'
-        dark_time = 300
+        dark_time = 120   #seed for 3x3 binning
         #breakpoint()
         
         while ephem.now() < g_dev['events']['End Eve Bias Dark'] :   #Do not overrun the window end
@@ -748,7 +750,31 @@ class Sequencer:
 
             print("Expose d_2 using exposure:  ", dark_time )
             req = {'time':dark_time ,  'script': 'True', 'image_type': 'dark'}
-            opt = {'area': "Full", 'count':1, 'bin':'2 2', \
+            opt = {'area': "Full", 'count':1, 'bin': '2 2', \
+                    'filter': 'dark'} 
+            result = g_dev['cam'].expose_command(req, opt, no_AWS=True, \
+                                do_sep=False, quick=False)
+            print(result)
+            g_dev['obs'].update_status()
+            if ephem.now() >= g_dev['events']['End Eve Bias Dark']:
+                    break
+            print("One half  pass of Bias/Dark acquisition is finished.")
+            print("Expose Biases: b_3")   
+            req = {'time': 0.0,  'script': 'True', 'image_type': 'bias'}
+            opt = {'area': "Full", 'count': 1, 'bin':'3 3', \
+                    'filter': 'dark'}
+            for bias in range(11):
+            
+                result = g_dev['cam'].expose_command(req, opt, no_AWS=True, \
+                                do_sep=False, quick=False)
+                print(result)
+                g_dev['obs'].update_status()
+                if ephem.now()  >= g_dev['events']['End Eve Bias Dark']:
+                    break
+
+            print("Expose d_3 using exposure:  ", dark_time )
+            req = {'time':dark_time/2. ,  'script': 'True', 'image_type': 'dark'}
+            opt = {'area': "Full", 'count':1, 'bin':'3 3', \
                     'filter': 'dark'} 
             result = g_dev['cam'].expose_command(req, opt, no_AWS=True, \
                                 do_sep=False, quick=False)
@@ -845,7 +871,7 @@ class Sequencer:
                 opt = { 'count': 1, 'bin':  '2,2', 'area': 150, 'filter': g_dev['fil'].filter_data[current_filter][0]}
                 print("using:  ", g_dev['fil'].filter_data[current_filter][0])
                 g_dev['obs'].update_status()
-                result = g_dev['cam'].expose_command(req, opt, gather_status=True, no_AWS=True, do_sep = False)
+                result = g_dev['cam'].expose_command(req, opt, no_AWS=True, do_sep = False)
                 bright = result['patch']    #  Patch should be circular and 20% of Chip area. ToDo project
                 try:
                     scale = 35000/bright
@@ -901,7 +927,7 @@ class Sequencer:
         # Park Telescope
         req = {'time': exp_time,  'alias': camera_name, 'image_type': 'screen flat'}
         opt = {'area': 100, 'count': dark_count, 'filter': g_dev['fil'].filter_data[12][0], 'hint': 'screen dark'}  #  air has highest throughput
-        result = g_dev['cam'].expose_command(req, opt, gather_status=True, no_AWS=True)
+        result = g_dev['cam'].expose_command(req, opt, no_AWS=True)
         print('First dark 30-sec patch, filter = "air":  ', result['patch'])
         # g_dev['scr'].screen_light_on()
 
@@ -918,7 +944,7 @@ class Sequencer:
             print('Dark Screen; filter, bright:  ', filter_number, 0)
             req = {'time': float(exp_time),  'alias': camera_name, 'image_type': 'screen flat'}
             opt = {'area': 100, 'count': 1, 'filter': g_dev['fil'].filter_data[filter_number][0], 'hint': 'screen pre-filter dark'}
-            result = g_dev['cam'].expose_command(req, opt, gather_status=True, no_AWS=True)
+            result = g_dev['cam'].expose_command(req, opt, no_AWS=True)
             print("Dark Screen flat, starting:  ", result['patch'], g_dev['fil'].filter_data[filter_number][0], '\n\n')
             g_dev['obs'].update_status()
             print('Lighted Screen; filter, bright:  ', filter_number, screen_setting)
@@ -932,7 +958,7 @@ class Sequencer:
             g_dev['obs'].update_status()
             req = {'time': float(exp_time),  'alias': camera_name, 'image_type': 'screen flat'}
             opt = {'area': 100, 'count': flat_count, 'filter': g_dev['fil'].filter_data[filter_number][0], 'hint': 'screen filter light'}
-            result = g_dev['cam'].expose_command(req, opt, gather_status=True, no_AWS=True)
+            result = g_dev['cam'].expose_command(req, opt, no_AWS=True)
             # if no exposure, wait 10 sec
             print("Lighted Screen flat:  ", result['patch'], g_dev['fil'].filter_data[filter_number][0], '\n\n')
             g_dev['obs'].update_status()
@@ -943,7 +969,7 @@ class Sequencer:
             print('Dark Screen; filter, bright:  ', filter_number, 0)
             req = {'time': float(exp_time),  'alias': camera_name, 'image_type': 'screen flat'}
             opt = {'area': 100, 'count': 1, 'filter': g_dev['fil'].filter_data[filter_number][0], 'hint': 'screen post-filter dark'}
-            result = g_dev['cam'].expose_command(req, opt, gather_status=True, no_AWS=True)
+            result = g_dev['cam'].expose_command(req, opt, no_AWS=True)
             print("Dark Screen flat, ending:  ",result['patch'], g_dev['fil'].filter_data[filter_number][0], '\n\n')
 
 
@@ -1380,7 +1406,7 @@ IF sweep
                 time.sleep(0.5)
             time.sleep(3)
             g_dev['obs'].update_status()
-            req = {'time': 10,  'alias': 'sq01', 'image_type': 'quick'}
+            req = {'time': 10,  'alias': 'sq01', 'image_type': 'experimental'}
             opt = {'area': 150, 'count': 1, 'bin': '2,2', 'filter': g_dev['fil'].filter_data[0][0], 'hint': 'Equator Run'}
             result = g_dev['cam'].expose_command(req, opt)
             g_dev['obs'].update_status()
@@ -1478,7 +1504,7 @@ IF sweep
                 time.sleep(0.5)
             time.sleep(3)
             g_dev['obs'].update_status()
-            req = {'time': 30,  'alias': 'sq01', 'image_type': 'quick'}
+            req = {'time': 30,  'alias': 'sq01', 'image_type': 'experimental'}
             opt = {'area': 150, 'count': 1, 'bin': '2,2', 'filter': g_dev['fil'].filter_data[0][0], 'hint': 'Equator Run'}
             result = g_dev['cam'].expose_command(req, opt)
             g_dev['obs'].update_status()
@@ -1591,7 +1617,7 @@ IF sweep
 
             time.sleep(1)  #Give a little extra time for mount to settle.
             g_dev['obs'].update_status()
-            req = {'time': 30,  'alias': 'sq01', 'image_type': 'quick'}
+            req = {'time': 30,  'alias': 'sq01', 'image_type': 'experimental'}
             opt = {'area': 150, 'count': 1, 'bin': '2,2', 'filter': g_dev['fil'].filter_data[0][0], 'hint': 'Tycho grid.'}
             result = g_dev['cam'].expose_command(req, opt)
             g_dev['obs'].update_status()
@@ -1702,7 +1728,7 @@ IF sweep
 
             time.sleep(3)
             g_dev['obs'].update_status()
-            req = {'time': 15,  'alias': 'sq01', 'image_type': 'quick'}
+            req = {'time': 15,  'alias': 'sq01', 'image_type': 'experimental'}
             opt = {'area': 150, 'count': 1, 'bin': '2,2', 'filter': g_dev['fil'].filter_data[0][0], 'hint': 'Tycho grid.'}
             result = g_dev['cam'].expose_command(req, opt)
             g_dev['obs'].update_status()
@@ -1801,7 +1827,7 @@ IF sweep
                     time.sleep(0.5)
                 time.sleep(3)
                 g_dev['obs'].update_status()
-                req = {'time': 15,  'alias': 'sq01', 'image_type': 'quick'}
+                req = {'time': 15,  'alias': 'sq01', 'image_type': 'experimental'}
                 opt = {'area': 150, 'count': 1, 'bin': '2,2', 'filter': g_dev['fil'].filter_data[0][0], 'hint': 'Tycho grid.'}
                 result = g_dev['cam'].expose_command(req, opt)
                 g_dev['obs'].update_status()

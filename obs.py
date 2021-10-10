@@ -648,6 +648,7 @@ class Observatory:
 
                 paths = pri_image[0]
                 hdu = pri_image[1]
+                frame_type = pri_image[2]
 
                 lng_path =  g_dev['cam'].lng_path
                 #NB Important decision here, do we flash calibrate screen and sky flats?  For now, Yes.
@@ -885,7 +886,8 @@ class Observatory:
                 #img4 = stretched_data_uint8  # keep old name for compatibility
 
                 jpeg_data_size = abs(stretched_data_uint8.size - 1024)                # istd = np.std(hdu.data)
-
+                if frame_type in ('bias', 'dark', 'screenflat', 'skyflat'):
+                    no_AWS = True
                 if not no_AWS:  #IN the no+AWS case should we skip more of the above processing?
                     #g_dev['cam'].enqueue_for_AWS(text_data_size, paths['im_path'], paths['text_name'])
 
