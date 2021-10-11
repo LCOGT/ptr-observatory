@@ -616,7 +616,7 @@ class Camera:
         #  NBNB Changing filter may cause a need to shift focus
         self.current_offset = g_dev['fil'].filter_offset  #TEMP   NBNBNB This needs fixing
         # Here we adjust for focus temp and filter offset
-        if not imtype.lower() in ['auto_focus', 'focus', 'autofocus probe']:
+        if not imtype.lower() in ['auto_focus', 'focus', 'autofocus probe', 'bias', 'dark']:
             g_dev['foc'].adjust_focus(loud=True)
         sub_frame_fraction = optional_params.get('subframe', None)
 
@@ -624,9 +624,9 @@ class Camera:
         # ---- DEH changes to previous frame_type code for banzai compliance ----
         # Send everything except test images to AWS.
         no_AWS, self.toss = True if imtype.lower() == 'test image' else False, False
-        quick = True if imtype.lower() == 'quick' else False
+        
         # clearly define which frames do not do_sep, the rest default to do_sep.
-        if imtype.lower() in ('quick', 'bias', 'dark', 'screen flat', 'sky flat', 'near flat', 'thar flat', \
+        if imtype.lower() in ('bias', 'dark', 'screen flat', 'sky flat', 'near flat', 'thar flat', \
                                 'arc flat', 'lamp flat', 'solar flat'):
             do_sep = False
         else:
@@ -645,7 +645,7 @@ class Camera:
         elif imtype.lower() in ('sky flat', 'screen flat','solar flat'):
             imtypeb = True  # open the shutter.
             frame_type = imtype.replace(' ', '')  # note banzai doesn't appear to include screen or solar flat keywords.
-        else:  # 'light', 'experimental', 'autofocus probe', 'quick', 'test image', or any other image type
+        else:  # 'light', 'experimental', 'autofocus probe', 'test image', or any other image type
             imtypeb = True
             if imtype.lower() in ('experimental', 'autofocus probe', 'auto_focus'):
                 frame_type = 'experimental'
@@ -840,19 +840,23 @@ class Camera:
                         print("enclosure SLEWING threw an exception.")
                 else:
                      enc_slewing = False
-                rot = (self.config['site'] != 'saf') and g_dev['rot'].rotator.IsMoving
-                while g_dev['foc'].focuser.IsMoving or rot or \
-                      g_dev['mnt'].mount.Slewing or enc_slewing:   #Filter is moving??
-                    if rot: st += 'r>'
+                #rot = (self.config['site'] != 'saf') and g_dev['rot'].rotator.IsMoving
+                in_time = time.time()
+                while True:
+                    if g_dev['foc'].focuser.IsMoving:
+                        st += 'f>'
                     if g_dev['mnt'].mount.Slewing:
                         st += 'm>  ' + str(round(time.time() - g_dev['mnt'].move_time, 1))
+                    if self.config['site'] != 'saf' and g_dev['rot'].rotator.IsMoving:
+                        st += 'r>'
                     if enc_slewing:
                         st += 'd>' + str(round(time.time() - g_dev['mnt'].move_time, 1))
-                    print(st)
-                    if round(time.time() - g_dev['mnt'].move_time, 1) >= 120:
-                       print("|n\n DOME OR MOUNT HAS TIMED OUT!; going ahead Anyway|n|n")
-                       break
-                      
+                    print(st, 'Elapsed:  ', round(time.time() - in_time, 1))
+                    if st == "":
+                        break   #There is noting to wait upon.
+                    elif round(time.time() - g_dev['mnt'].move_time, 1) >= 180:
+                        print("|n\n DOME OR MOUNT HAS TIMED OUT!; going ahead Anyway|n|n")
+                        break          
                     st = ""
                     time.sleep(0.2)
                     if seq > 0:
@@ -866,6 +870,7 @@ class Camera:
                             print("enclosure SLEWING threw an exception.")
                     else:
                          enc_slewing = False
+                    
 
             except:
                 pass
@@ -977,7 +982,7 @@ class Camera:
                     #We go here to keep this subroutine a reasonable length, Basically still in Phase 2
 
                     result = self.finish_exposure(exposure_time, frame_type, \
-                                         count - seq, gather_status, do_sep, no_AWS,
+                                         count - seq, do_sep, no_AWS,
                                          dist_x, dist_y, quick=quick, low=ldr_handle_time, \
                                          high=ldr_handle_high_time, script=self.script, \
                                          opt=opt)  #  NB all these parameters are crazy!
@@ -1013,10 +1018,10 @@ class Camera:
         self.exposure_halted = True
 
     def finish_exposure(self, exposure_time, frame_type, counter, seq, \
-                        gather_status=True, do_sep=False, no_AWS=False, start_x=None, start_y=None, quick=False, \
+                        do_sep=False, no_AWS=False, start_x=None, start_y=None, quick=False, \
                         low=0, high=0, script=False, opt=None):
         print("Finish exposure Entered:  ", exposure_time, frame_type, counter, \
-              gather_status, do_sep, no_AWS, start_x, start_y, opt['area'])
+              do_sep, no_AWS, start_x, start_y, opt['area'])
 
         self.post_mnt = []
         self.post_rot = []
@@ -1131,7 +1136,7 @@ class Camera:
 
 
                 #This image shift code needs to be here but it is troubling.
-
+                imshift = False
                 if ix == 9600:
                     if self.img[22, -34] == 0:
 
@@ -1140,7 +1145,9 @@ class Camera:
 
                     elif self.img[30, -34] == 0:
                         self.overscan = int((np.median(self.img[32:, -33:]) + np.median(self.img[0:29, :]))/2) - 1
-                        trimmed = self.img[32:, :-34].astype('int32') + pedastal - self.overscan
+                        #trimmed = self.img[32:, :-34].astype('int32') + pedastal - self.overscan
+                        trimmed = self.img[24:-8, :-34].astype('int32') + pedastal - self.overscan
+                        imshift = True
 
                     else:
                         print("Image shift is incorrect, absolutely fatal error.  Usually massive eoer-exposure")
@@ -1159,10 +1166,11 @@ class Camera:
                         trimmed = self.img[12:-4, :-17].astype('int32') + pedastal - self.overscan
 
                         #print("Shift 1", self.overscan, square.mean())
-                    elif self.img[15, -18] == 0:     #This rarely occurs.  Neyle's Qhy600
+                    elif self.img[15, -22:-18].mean() < (self.img[16, -18] + self.img[14, -18])/2:     #This rarely occurs.  Neyle's Qhy600
+                        breakpoint()
                         self.overscan = int((np.median(self.img[16:, -17:]) + np.median(self.img[0:14, :]))/2) -1
                         trimmed = self.img[16:, :-17].astype('int32') + pedastal - self.overscan
-
+                        imshift = True
                         print("Rare error, Shift 2", self.overscan, trimmed.mean())
                         
                        #This reports when taking biases at MRC
@@ -1170,10 +1178,26 @@ class Camera:
                     else:
                         #breakpoint()
                         print("Image shift is incorrect, absolutely fatal error", self.img[0:20, -18])
+                        imshift = True
 
 
                         pass
+                elif ix == 3200:
+                    #Shift error needs documenting!
+                    if self.img[7, -14:-10].mean() < (self.img[8, -14] +self.img[6, -14])/2:
+                        #if self.img[11, -18] == 0:   #This is the normal incoming image
+                            self.overscan = int((np.median(self.img[8:, -9:]) + np.median(self.img[0:6, :]))/2) - 1
+                            trimmed = self.img[9:-3, :-12].astype('int32') + pedastal - self.overscan
+    
+                        #print("Shift 1", self.overscan, square.mean())
+                    # elif self.img[15, -18] == 0:     #This rarely occurs.  Neyle's Qhy600
+                    #     self.overscan = int((np.median(self.img[16:, -17:]) + np.median(self.img[0:14, :]))/2) -1
+                    #     trimmed = self.img[16:, :-17].astype('int32') + pedastal - self.overscan
 
+                    #     print("Rare error, Shift 2", self.overscan, trimmed.mean())
+                    else:
+                        imshift = True
+                        print("Image shift is incorrect, absolutely fatal error", self.img[0:20, -18])
                 else:
                     #print("Incorrect chip size or bin specified or already-converted:  skipping.")
                     trimmed = self.img
@@ -1211,15 +1235,15 @@ class Camera:
 
                 if frame_type[-5:] in ['focus', 'probe', "ental"]:
                     self.img = self.img + 100   #maintain a + pedestal for sep  THIS SHOULD not be needed for a raw input file.
-                    self.img = self.img.astype("float")
+                    self.f_img = self.img.astype("float")  #f_img is a float 64 so do not modify the main img.
                     #print(self.img.flags)
-                    self.img = self.img.copy(order='C')   #  NB Should we move this up to where we read the array?
-                    bkg = sep.Background(self.img)
-                    self.img -= bkg
-                    sources = sep.extract(self.img, 4.5, err=bkg.globalrms, minarea=15)  # Minarea should deal with hot pixels.
+                    self.f_img = self.f_img.copy(order='C')   #  NB Should we move this up to where we read the array?
+                    bkg = sep.Background(self.f_img)
+                    self.f_img -= bkg
+                    sources = sep.extract(self.f_img, 4.5, err=bkg.globalrms, minarea=15)  # Minarea should deal with hot pixels.
                     sources.sort(order = 'cflux')
                     print('No. of detections:  ', len(sources))
-                    ix, iy = self.img.shape
+                    ix, iy = self.f_img.shape
                     r0 = 0
                     """
                     ToDo here:  1) do not deal with a source nearer than 5% to an edge.
@@ -1239,10 +1263,11 @@ class Camera:
                             b0 = sourcef['b']
                             r0.append(round(math.sqrt(a0*a0 + b0*b0), 2))
                     scale = self.config['camera'][self.name]['settings']['pix_scale']
-                    result['FWHM'] = round(np.median(r0)*scale, 3)   #@0210524 was 2x larger but a and b are diameters not radii
+                    result['FWHM'] = round(np.median(r0)*2*scale, 3)   #@0210524 was 2x larger but a and b are diameters not radii 20211010 Changed back
                     result['mean_focus'] =  avg_foc[1]
 
                     focus_image = True
+                    self.f_img = None
                 else:
                     focus_image = False
 
@@ -1268,6 +1293,7 @@ class Camera:
                     hdu.header['RDMODE'] = (self.config['camera'][self.name]['settings']['read_mode'], 'Camera read mode')
                     hdu.header['RDOUTM'] = (self.config['camera'][self.name]['settings']['readout_mode'], 'Camera readout mode')
                     hdu.header['RDOUTSP'] = (self.config['camera'][self.name]['settings']['readout_speed'], '[FPS] Readout speed')
+                    hdu.header['IMGSHIFT'] = imshift
                     if self.maxim:
                         hdu.header['CCDSTEMP'] = (round(self.camera.TemperatureSetpoint, 3), '[deg C] CCD set temperature')
                         hdu.header['CCDATEMP'] = (round(self.camera.Temperature, 3), '[deg C] CCD actual temperature')
@@ -1586,15 +1612,16 @@ class Camera:
 
                     if focus_image:
                         #Note we do not reduce focus images, except above in focus processing.
-                        cal_name = cal_name[:-9] + 'FO' + cal_name[-7:]  # remove 'EX' add 'FO'   Could add seq to this
+                        cal_name = cal_name[:-9] + 'focus' + cal_name[-7:]  # remove 'EX' add 'FO'   Could add seq to this
                         hdu.writeto(cal_path + cal_name, overwrite=True)
                         focus_image = False
                         return result
 
                     # if  not script in ('True', 'true', 'On', 'on'):   #  not quick and    #Was moved 20201022 for grid
                     #     if not quick:
-                    self.enqueue_for_AWS(text_data_size, im_path, text_name)
-                    self.to_reduce((paths, hdu))
+                    if frame_type not in ('bias', 'dark', 'screenflat', 'skyflat'):
+                        self.enqueue_for_AWS(text_data_size, im_path, text_name)
+                    self.to_reduce((paths, hdu, frame_type))
                     hdu.writeto(raw_path + raw_name00, overwrite=True)   #Save full raw file locally
                     g_dev['obs'].send_to_user("Raw image saved locally. ", p_level='INFO')
 
