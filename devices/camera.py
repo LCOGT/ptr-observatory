@@ -188,6 +188,7 @@ class Camera:
         self.alias = config['camera'][self.name]['name']
         win32com.client.pythoncom.CoInitialize()
         print(driver, name)
+        breakpoint()
         self.camera = win32com.client.Dispatch(driver)
         #self.camera = win32com.client.Dispatch('ASCOM.FLI.Kepler.Camera')
         #Need logic here if camera denies connection.
