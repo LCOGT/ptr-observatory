@@ -729,7 +729,7 @@ class Sequencer:
         """
         self.sequencer_hold = True
         self.current_script = 'Afternoon Bias Dark'
-        dark_time = 120   #seed for 3x3 binning
+        dark_time = 180   #seed for 3x3 binning
         #breakpoint()
         
         while ephem.now() < g_dev['events']['End Eve Bias Dark'] :   #Do not overrun the window end
@@ -739,7 +739,7 @@ class Sequencer:
             req = {'time': 0.0,  'script': 'True', 'image_type': 'bias'}
             opt = {'area': "Full", 'count': 1, 'bin':'2 2', \
                     'filter': 'dark'}
-            for bias in range(11):
+            for bias in range(9):
             
                 result = g_dev['cam'].expose_command(req, opt, no_AWS=True, \
                                 do_sep=False, quick=False)
@@ -763,7 +763,7 @@ class Sequencer:
             req = {'time': 0.0,  'script': 'True', 'image_type': 'bias'}
             opt = {'area': "Full", 'count': 1, 'bin':'3 3', \
                     'filter': 'dark'}
-            for bias in range(11):
+            for bias in range(9):
             
                 result = g_dev['cam'].expose_command(req, opt, no_AWS=True, \
                                 do_sep=False, quick=False)
@@ -773,7 +773,7 @@ class Sequencer:
                     break
 
             print("Expose d_3 using exposure:  ", dark_time )
-            req = {'time':dark_time/2. ,  'script': 'True', 'image_type': 'dark'}
+            req = {'time':dark_time*2/3. ,  'script': 'True', 'image_type': 'dark'}
             opt = {'area': "Full", 'count':1, 'bin':'3 3', \
                     'filter': 'dark'} 
             result = g_dev['cam'].expose_command(req, opt, no_AWS=True, \

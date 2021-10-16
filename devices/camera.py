@@ -1167,7 +1167,6 @@ class Camera:
 
                         #print("Shift 1", self.overscan, square.mean())
                     elif self.img[15, -22:-18].mean() < (self.img[16, -18] + self.img[14, -18])/2:     #This rarely occurs.  Neyle's Qhy600
-                        breakpoint()
                         self.overscan = int((np.median(self.img[16:, -17:]) + np.median(self.img[0:14, :]))/2) -1
                         trimmed = self.img[16:, :-17].astype('int32') + pedastal - self.overscan
                         imshift = True

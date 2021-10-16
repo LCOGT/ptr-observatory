@@ -434,16 +434,16 @@ def calibrate (hdu, lng_path, frame_type='light', quick=False):
                 quick_flat_CR = False
                 if loud: print('WARN: No CR Flat/Lum Loaded.')
 
-        if screen_flat_CR is None:
-            try:
-                sfHdu = fits.open(lng_path + 'ff_0_2_CR.fits')
-                screen_flat_CR = sfHdu[0].data.astype('float32')
-                quick_flat_CR = True
-                sfHdu.close()
-                if loud: print(lng_path + 'ff_0_2_CR.fits', 'Loaded')
-            except:
-                quick_flat_CR = False
-                if loud: print('WARN: No CR Flat/Lum Loaded.')
+        # if screen_flat_CR is None:
+        #     try:
+        #         sfHdu = fits.open(lng_path + 'ff_0_2_CR.fits')
+        #         screen_flat_CR = sfHdu[0].data.astype('float32')
+        #         quick_flat_CR = True
+        #         sfHdu.close()
+        #         if loud: print(lng_path + 'ff_0_2_CR.fits', 'Loaded')
+        #     except:
+        #         quick_flat_CR = False
+        #         if loud: print('WARN: No CR Flat/Lum Loaded.')
 
         if screen_flat_PL is None:
             try:
