@@ -255,6 +255,7 @@ class Camera:
         else:
             self.is_cmos = False
         self.camera_model = self.config['camera'][self.name]['desc']
+
         #NB We are reading from the actual camera or setting as the case may be.  For initial setup,
         #   we pull from config for some of the various settings.
         #NB NB There is a differenc between normal cameras and the QHY when it is set to Bin2.
@@ -297,7 +298,7 @@ class Camera:
         self.hint = None
         self.focus_cache = None
         self.darkslide = False
-        breakpoint
+
         if self.config['camera'][self.name]['settings']['has_darkslide']:
             self.darkslide = True
             com_port = self.config['camera'][self.name]['settings']['darkslide_com']
