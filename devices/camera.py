@@ -1159,18 +1159,19 @@ class Camera:
                     #     square = trimmed[1590:1590 + 6388, :]
                 elif ix == 4800:
                     #Shift error needs documenting!
+                    
                     if self.img[11, -22:-18].mean() < (self.img[12, -18] +self.img[10, -18])/2:
                     #if self.img[11, -18] == 0:   #This is the normal incoming image
                         self.overscan = int((np.median(self.img[12:, -17:]) + np.median(self.img[0:10, :]))/2) - 1
                         trimmed = self.img[12:-4, :-17].astype('int32') + pedastal - self.overscan
-
+                        print("Normal no Shift, bin 2", self.overscan, trimmed.mean(), trimmed.shape)
+                        imshift = False
                         #print("Shift 1", self.overscan, square.mean())
                     elif self.img[15, -22:-18].mean() < (self.img[16, -18] + self.img[14, -18])/2:     #This rarely occurs.  Neyle's Qhy600
-                        breakpoint()
                         self.overscan = int((np.median(self.img[16:, -17:]) + np.median(self.img[0:14, :]))/2) -1
                         trimmed = self.img[16:, :-17].astype('int32') + pedastal - self.overscan
                         imshift = True
-                        print("Rare error, Shift 2", self.overscan, trimmed.mean())
+                        print("Rare error, Shift bin 2", self.overscan, trimmed.mean(), trimmed.shape)
                         
                        #This reports when taking biases at MRC
 
@@ -1198,7 +1199,7 @@ class Camera:
                         imshift = True
                         print("Image shift is incorrect, absolutely fatal error", self.img[0:20, -18])
                 else:
-                    #print("Incorrect chip size or bin specified or already-converted:  skipping.")
+                    print("Incorrect chip size or image-shift problem detected.")
                     trimmed = self.img
                     self.overscan = 0
                     #breakpoint()

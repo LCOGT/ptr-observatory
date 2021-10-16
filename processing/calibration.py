@@ -549,6 +549,7 @@ def calibrate (hdu, lng_path, frame_type='light', quick=False):
 # # =============================================================================
 # =============================================================================
       
+
         start_x = 0
         start_y = 0
         cal_string = ''
@@ -732,7 +733,9 @@ def calibrate (hdu, lng_path, frame_type='light', quick=False):
     if loud: print("Max data value is:  ", big_max)
     fix = np.where(hdu.data > 65530)
     hdu.data[fix] = 65530.
+   #print("Pre uint", hdu.data.mean())
     hdu.data = hdu.data.astype('uint16')  #NB NB NB Why this step??
+    #print("Post uint", hdu.data.mean())
     result = {}
     result['error'] = False
     result['mean_focus'] = None

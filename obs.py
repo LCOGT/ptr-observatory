@@ -654,6 +654,7 @@ class Observatory:
                 #NB Important decision here, do we flash calibrate screen and sky flats?  For now, Yes.
 
                 #cal_result =
+                print('Pre Reduction Mean:  ', hdu.data.mean())
                 calibrate(hdu, lng_path, paths['frame_type'], quick=False)
                 #print("Calibrate returned:  ", hdu.data, cal_result)
                 #Before saving reduced or generating postage, we flip
@@ -671,6 +672,9 @@ class Observatory:
                 hdu.writeto(wpath, overwrite=True) #Bigfit reduced
 
                 #Will try here to solve   NB Should skip non-solvable images like skyflats
+                
+                if frame_type in ('bias', 'dark', 'screenflat', 'skyflat'):
+                    no_AWS = True
                 try:
                     hdu_save = hdu
                     #wpath = 'C:/000ptr_saf/archive/sq01/20210528/reduced/saf-sq01-20210528-00019785-le-w-EX01.fits'
@@ -835,60 +839,60 @@ class Observatory:
 # =============================================================================
 
 
-
-                hdu.data = hdu.data.astype('uint16')
-                iy, ix = hdu.data.shape
-                if iy == ix:
-                    resized_a = resize(hdu.data, (768,768), preserve_range=True)
-                else:
-                    resized_a = resize(hdu.data, (int(1536*iy/ix), 1536), preserve_range=True)  #  We should trim chips so ratio is exact.
-                #print('New small fits size:  ', resized_a.shape)
-                hdu.data = resized_a.astype('uint16')
-
-                i768sq_data_size = hdu.data.size
-                # print('ABOUT to print paths.')
-                # print('Sending to:  ', paths['im_path'])
-                # print('Also to:     ', paths['i768sq_name10'])
-
-                hdu.writeto(paths['im_path'] + paths['i768sq_name10'], overwrite=True)
-                hdu.data = resized_a.astype('float')
-                #The following does a very lame contrast scaling.  A beer for best improvement on this code!!!
-                #Looks like Tim wins a beer.
-                # Old contrast scaling code:
-                #istd = np.std(hdu.data)
-                #imean = np.mean(hdu.data)
-                #if (imean + 3*istd) != 0:    #This does divide by zero in some bias images.
-                #    img3 = hdu.data/(imean + 3*istd)
-                #else:
-                #    img3 = hdu.data
-                #fix = np.where(img3 >= 0.999)
-                #fiz = np.where(img3 < 0)
-                #img3[fix] = .999
-                #img3[fiz] = 0
-                #img4 = img3*256
-                #img4 = img4.astype('uint8')   #Eliminates a user warning.
-                #imsave(paths['im_path'] + paths['jpeg_name10'], img4)  #NB File extension triggers JPEG conversion.
-                # New contrast scaling code:
-                stretched_data_float = Stretch().stretch(hdu.data)
-                stretched_256 = 255*stretched_data_float
-                hot = np.where(stretched_256 > 255)
-                cold = np.where(stretched_256 < 0)
-                stretched_256[hot] = 255
-                stretched_256[cold] = 0
-                #print("pre-unit8< hot, cold:  ", len(hot[0]), len(cold[0]))
-                stretched_data_uint8 = stretched_256.astype('uint8')  # Eliminates a user warning
-                hot = np.where(stretched_data_uint8 > 255)
-                cold = np.where(stretched_data_uint8 < 0)
-                stretched_data_uint8[hot] = 255
-                stretched_data_uint8[cold] = 0
-                #print("post-unit8< hot, cold:  ", len(hot[0]), len(cold[0]))
-                imsave(paths['im_path'] + paths['jpeg_name10'], stretched_data_uint8)
-                #img4 = stretched_data_uint8  # keep old name for compatibility
-
-                jpeg_data_size = abs(stretched_data_uint8.size - 1024)                # istd = np.std(hdu.data)
                 if frame_type in ('bias', 'dark', 'screenflat', 'skyflat'):
                     no_AWS = True
+
                 if not no_AWS:  #IN the no+AWS case should we skip more of the above processing?
+                    hdu.data = hdu.data.astype('uint16')
+                    iy, ix = hdu.data.shape
+                    if iy == ix:
+                        resized_a = resize(hdu.data, (768,768), preserve_range=True)
+                    else:
+                        resized_a = resize(hdu.data, (int(1536*iy/ix), 1536), preserve_range=True)  #  We should trim chips so ratio is exact.
+                    #print('New small fits size:  ', resized_a.shape)
+                    hdu.data = resized_a.astype('uint16')
+    
+                    i768sq_data_size = hdu.data.size
+                    # print('ABOUT to print paths.')
+                    # print('Sending to:  ', paths['im_path'])
+                    # print('Also to:     ', paths['i768sq_name10'])
+    
+                    hdu.writeto(paths['im_path'] + paths['i768sq_name10'], overwrite=True)
+                    hdu.data = resized_a.astype('float')
+                    #The following does a very lame contrast scaling.  A beer for best improvement on this code!!!
+                    #Looks like Tim wins a beer.
+                    # Old contrast scaling code:
+                    #istd = np.std(hdu.data)
+                    #imean = np.mean(hdu.data)
+                    #if (imean + 3*istd) != 0:    #This does divide by zero in some bias images.
+                    #    img3 = hdu.data/(imean + 3*istd)
+                    #else:
+                    #    img3 = hdu.data
+                    #fix = np.where(img3 >= 0.999)
+                    #fiz = np.where(img3 < 0)
+                    #img3[fix] = .999
+                    #img3[fiz] = 0
+                    #img4 = img3*256
+                    #img4 = img4.astype('uint8')   #Eliminates a user warning.
+                    #imsave(paths['im_path'] + paths['jpeg_name10'], img4)  #NB File extension triggers JPEG conversion.
+                    # New contrast scaling code:
+                    stretched_data_float = Stretch().stretch(hdu.data)
+                    stretched_256 = 255*stretched_data_float
+                    hot = np.where(stretched_256 > 255)
+                    cold = np.where(stretched_256 < 0)
+                    stretched_256[hot] = 255
+                    stretched_256[cold] = 0
+                    #print("pre-unit8< hot, cold:  ", len(hot[0]), len(cold[0]))
+                    stretched_data_uint8 = stretched_256.astype('uint8')  # Eliminates a user warning
+                    hot = np.where(stretched_data_uint8 > 255)
+                    cold = np.where(stretched_data_uint8 < 0)
+                    stretched_data_uint8[hot] = 255
+                    stretched_data_uint8[cold] = 0
+                    #print("post-unit8< hot, cold:  ", len(hot[0]), len(cold[0]))
+                    imsave(paths['im_path'] + paths['jpeg_name10'], stretched_data_uint8)
+                    #img4 = stretched_data_uint8  # keep old name for compatibility
+    
+                    jpeg_data_size = abs(stretched_data_uint8.size - 1024)                # istd = np.std(hdu.data)
                     #g_dev['cam'].enqueue_for_AWS(text_data_size, paths['im_path'], paths['text_name'])
 
                     g_dev['cam'].enqueue_for_AWS(jpeg_data_size, paths['im_path'], paths['jpeg_name10'])
