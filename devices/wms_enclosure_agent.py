@@ -182,7 +182,7 @@ class Enclosure:
                 self.redis_server.set('enc_status', status, ex=3600)
         else:
             status = {'shutter_status': stat_string,
-                      'enclosure_synch': True,
+                      'enclosure_synchronized': True,
                       'dome_azimuth': 180.0,
                       'dome_slewing': False,
                       'enclosure_mode': self.mode,
