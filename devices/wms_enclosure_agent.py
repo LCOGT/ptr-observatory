@@ -405,7 +405,7 @@ class Enclosure:
                     print('Dome refused close command.')
             self.dome_opened = False
             self.dome_homed = True
-            self.enclosure_synched = False
+            self.enclosure_synchronized = False
             self.redis_server.set('park_the_mount', True, ex=3600)
         elif wx_hold:
             # We leave telescope to track with dome closed.
