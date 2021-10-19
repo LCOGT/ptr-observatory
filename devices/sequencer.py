@@ -205,8 +205,10 @@ class Sequencer:
         elif action == "home":
             #breakpoint()
             self.home_command(req, opt)
+        elif action == 'run' and script == 'findFieldCenter':
+            g_dev['mnt'].go_command(req, opt, calibrate=True, auto_center=True)
         elif action == 'run' and script == 'calibrateAtFieldCenter':
-            g_dev['mnt'].go_command(req, opt, calibrate=True)
+            g_dev['mnt'].go_command(req, opt, calibrate=True, auto_center=False)
         else:
             print('Sequencer command:  ', command, ' not recognized.')
             
@@ -732,7 +734,7 @@ class Sequencer:
         dark_time = 300   #seed for 3x3 binning
         #breakpoint()
         
-        while ephem.now() < g_dev['events']['End Eve Bias Dark'] :   #Do not overrun the window end
+        while ephem.now() < g_dev['events']['End Eve Bias Dark'] - 2/1440:   #Do not overrun the window end
             #g_dev['mnt'].unpark_command({}, {}) # Get there early
             #g_dev['mnt'].slewToSkyFlatAsync()
             print("Expose Biases: b_2")
@@ -780,7 +782,7 @@ class Sequencer:
                                     do_sep=False, quick=False)
                 print('Last dark result:  ', result)
                 g_dev['obs'].update_status()
-                if ephem.now()+ 5/1440 >= g_dev['events']['End Eve Bias Dark']:
+                if ephem.now() + 5/1440 >= g_dev['events']['End Eve Bias Dark']:
                         break
 
         self.sequencer_hold = False
@@ -836,7 +838,7 @@ class Sequencer:
         obs_win_begin, sunset, sunrise, ephem_now = self.astro_events.getSunEvents()
         scale = 1.0
         prior_scale = 1
-        while len(pop_list) > 0: #and (g_dev['events']['Ops Window Start'] < ephemNow < g_dev['events']['End Eve Sky Flats']):
+        while len(pop_list) > 0 and (g_dev['events']['Eve sky Flats'] < ephem_now < g_dev['events']['End Eve Sky Flats'] - 2/1440):
             current_filter = int(pop_list[0])
             acquired_count = 0
             #req = {'filter': current_filter}
@@ -848,12 +850,12 @@ class Sequencer:
             
             prior_scale = 1.0
             #breakpoint()
-            while acquired_count < flat_count:
+            while (acquired_count < flat_count) and (ephem_now < g_dev['events']['End Eve Sky Flats' ]- 3/1440):
                 #if g_dev['enc'].is_dome:   #Does not apply
                 g_dev['mnt'].slewToSkyFlatAsync()
                 g_dev['obs'].update_status()
                 try:
-                    lux = eval(self.redis_server.get('ocn_status'))['calc_HSI_lux']
+                    lux = eval(self.redis_server.get('ocn_status'))['calc_HSI_lux']     #Why Eval, whould have float?
               
                     exp_time = prior_scale*scale*6000/(float(g_dev['fil'].filter_data[current_filter][3])*lux)  #g_dev['ocn'].calc_HSI_lux)  #meas_sky_lux)
                     print('Ex:  ', exp_time, scale, prior_scale, lux, float(g_dev['fil'].filter_data[current_filter][3]))
@@ -871,8 +873,12 @@ class Sequencer:
                 opt = { 'count': 1, 'bin':  '2,2', 'area': 150, 'filter': g_dev['fil'].filter_data[current_filter][0]}
                 print("using:  ", g_dev['fil'].filter_data[current_filter][0])
                 g_dev['obs'].update_status()
-                result = g_dev['cam'].expose_command(req, opt, no_AWS=True, do_sep = False)
-                bright = result['patch']    #  Patch should be circular and 20% of Chip area. ToDo project
+                try:
+                    result = g_dev['cam'].expose_command(req, opt, no_AWS=True, do_sep = False)
+                    bright = result['patch']    #  Patch should be circular and 20% of Chip area. ToDo project
+                except:
+                    print('*****NO result returned*****')
+                    continue
                 try:
                     scale = 35000/bright
                     if scale > 3:
@@ -886,8 +892,7 @@ class Sequencer:
                 g_dev['obs'].update_status()
                 #breakpoint()
                 #  THE following code looks like a debug patch gone rogue.
-                if bright > 40000 and (ephem_now < g_dev['events']['End Eve Sky Flats']
-                                  or True):    #NB should gate with end of skyflat window as well.
+                if bright > 40000 and (ephem_now < g_dev['events']['End Eve Sky Flats'] - 4/1440):    #NB should gate with end of skyflat window as well.
                     for i in range(1):
                         time.sleep(5)  #  #0 seconds of wait time.  Maybe shorten for wide bands?
                         g_dev['obs'].update_status()

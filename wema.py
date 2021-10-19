@@ -132,7 +132,7 @@ class Observatory:
         if loud:
             print('\n\n > Status Sent:  \n', status)
         else:
-            print('>')
+            print('>', )
         uri_status = f"https://status.photonranch.org/status/{self.name}/status/"
         try:    # 20190926  tHIS STARTED THROWING EXCEPTIONS OCCASIONALLY
             payload ={
@@ -140,6 +140,7 @@ class Observatory:
                 "status":  status
                 }
             data = json.dumps(payload)
+            print(data)
             requests.post(uri_status, data=data)
             self.redis_server.set('wema_heart_time', self.time_last_status, ex=120)
             if self.name in ['mrc', 'mrc1']:

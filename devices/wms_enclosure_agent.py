@@ -75,7 +75,6 @@ class Enclosure:
     def get_status(self) -> dict:
         #<<<<The next attibute reference fails at saf, usually spurious Dome Ring Open report.
         #<<< Have seen other instances of failing.
-
         try:
             shutter_status = self.enclosure.ShutterStatus
         except:

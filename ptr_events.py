@@ -520,13 +520,13 @@ class Events:
         print('Moon Ra; Dec   :    ', round(mid_moon_ra, 2), ";  ", round(mid_moon_dec, 1))
         print('Moon phase %   :    ', round(mid_moon_phase, 1), '%\n')
         print("Key events for the evening, presented by the Solar System: \n")
-        evnt = [('Eve Bias Dark      ', ephem.Date(civilDusk -187/1440)),
-                ('End Eve Bias Dark  ', ephem.Date(civilDusk - 97/1440)),
+        evnt = [('Eve Bias Dark      ', ephem.Date(civilDusk -247/1440)),
+                ('End Eve Bias Dark  ', ephem.Date(civilDusk - 127/1440)),
                 #('Eve Scrn Flats     ', ephem.Date(beginEveScreenFlats)),
                 #('End Eve Scrn Flats ', ephem.Date(endEveScreenFlats)),
-                ('Ops Window Start   ', ephem.Date(civilDusk - 91/1440)),  #Enclosure may open.
-                ('Cool Down, Open    ', ephem.Date(civilDusk - 90/1440)),
-                ('Eve Sky Flats      ', ephem.Date(civilDusk -75/1440)),
+                ('Ops Window Start   ', ephem.Date(civilDusk - 121/1440)),  #Enclosure may open.
+                ('Cool Down, Open    ', ephem.Date(civilDusk - 120/1440)),
+                ('Eve Sky Flats      ', ephem.Date(civilDusk -105/1440)),
                 ('Sun Set            ', sunset),
                 ('End Eve Sky Flats  ', ephem.Date(civilDusk - 1/1440)),
                 ('Civil Dusk         ', civilDusk),
