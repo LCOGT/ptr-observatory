@@ -640,14 +640,14 @@ class Mount:
     ###############################
 
     '''
-    Having two similar functions here is consing and error prone.
+    Having two similar functions here is confusing and error prone.
     Go Command responds to commands from AWS.  Go Coords responds to
     internal changes of pointing occasion by the program and passed
     in as ra and dec direc tparameters, not dictionaries.
 
     '''
 
-    def go_command(self, req, opt,  offset=False, calibrate=False):
+    def go_command(self, req, opt,  offset=False, calibrate=False, auto_center=False):
         ''' Slew to the given ra/dec coordinates. '''
         print("mount cmd. slewing mount, req, opt:  ", req, opt)
 
@@ -687,6 +687,39 @@ class Mount:
                 #breakpoint()
                 if self.offset_received:
 
+                    ra_cal_offset, dec_cal_offset = self.get_mount_reference()
+                    print("Stored calibration offsets:  ",round(ra_cal_offset, 5), round(dec_cal_offset, 4))
+                    icrs_ra, icrs_dec = self.get_mount_coordinates()
+                    accum_ra_offset = icrs_ra - self.ra_prior
+                    accum_dec_offset = icrs_dec - self.dec_prior
+                    ra_cal_offset += accum_ra_offset #self.ra_offset  #NB WE are adding an already correctly signed offset.The offset is positive to right of screen therefore a smaller numer on the RA line.
+                    dec_cal_offset += accum_dec_offset #self.dec_offset
+                    self.set_mount_reference(ra_cal_offset, dec_cal_offset)
+                    self.ra_offset = 0
+                    self.dec_offset = 0
+                    self.offset_received = False
+                    icrs_ra, icrs_dec = self.get_mount_coordinates()  #20210116 THis is returning some form of apparent
+                    ra = self.ra_prior #icrs_ra
+                    dec = self.dec_prior #icrs_dec
+                    #We could just return but will seek just to be safe
+                else:
+                    print("No outstanding offset available for calibration, reset existing calibration.")
+                    # NB We currently use this path to clear a calibration.  But should be ad explicit Command instead. 20201230
+                    # breakpoint()
+                    self.reset_mount_reference()
+                    self.ra_offset = 0
+                    self.dec_offset = 0
+                    self.offset_received = False
+                    icrs_ra, icrs_dec = self.get_mount_coordinates()
+                    ra = self.ra_prior #icrs_ra
+                    dec = self.dec_prior #icrs_dec
+
+                    #We could just return but will seek just to be safe
+            elif auto_center:  #Note does not need req or opt
+            #breakpoint()
+                if self.offset_received:
+                    ra, dec, time_of_last = g_dev['obs'].get_last_reference()
+                    breakpoint()
                     ra_cal_offset, dec_cal_offset = self.get_mount_reference()
                     print("Stored calibration offsets:  ",round(ra_cal_offset, 5), round(dec_cal_offset, 4))
                     icrs_ra, icrs_dec = self.get_mount_coordinates()

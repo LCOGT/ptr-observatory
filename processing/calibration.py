@@ -434,16 +434,16 @@ def calibrate (hdu, lng_path, frame_type='light', quick=False):
                 quick_flat_CR = False
                 if loud: print('WARN: No CR Flat/Lum Loaded.')
 
-        if screen_flat_CR is None:
-            try:
-                sfHdu = fits.open(lng_path + 'ff_0_2_CR.fits')
-                screen_flat_CR = sfHdu[0].data.astype('float32')
-                quick_flat_CR = True
-                sfHdu.close()
-                if loud: print(lng_path + 'ff_0_2_CR.fits', 'Loaded')
-            except:
-                quick_flat_CR = False
-                if loud: print('WARN: No CR Flat/Lum Loaded.')
+        # if screen_flat_CR is None:
+        #     try:
+        #         sfHdu = fits.open(lng_path + 'ff_0_2_CR.fits')
+        #         screen_flat_CR = sfHdu[0].data.astype('float32')
+        #         quick_flat_CR = True
+        #         sfHdu.close()
+        #         if loud: print(lng_path + 'ff_0_2_CR.fits', 'Loaded')
+        #     except:
+        #         quick_flat_CR = False
+        #         if loud: print('WARN: No CR Flat/Lum Loaded.')
 
         if screen_flat_PL is None:
             try:
@@ -549,6 +549,7 @@ def calibrate (hdu, lng_path, frame_type='light', quick=False):
 # # =============================================================================
 # =============================================================================
       
+
         start_x = 0
         start_y = 0
         cal_string = ''
@@ -732,7 +733,9 @@ def calibrate (hdu, lng_path, frame_type='light', quick=False):
     if loud: print("Max data value is:  ", big_max)
     fix = np.where(hdu.data > 65530)
     hdu.data[fix] = 65530.
+   #print("Pre uint", hdu.data.mean())
     hdu.data = hdu.data.astype('uint16')  #NB NB NB Why this step??
+    #print("Post uint", hdu.data.mean())
     result = {}
     result['error'] = False
     result['mean_focus'] = None
