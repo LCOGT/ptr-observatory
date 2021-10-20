@@ -838,7 +838,9 @@ class Sequencer:
         obs_win_begin, sunset, sunrise, ephem_now = self.astro_events.getSunEvents()
         scale = 1.0
         prior_scale = 1
-        while len(pop_list) > 0 and (g_dev['events']['Eve sky Flats'] < ephem_now < g_dev['events']['End Eve Sky Flats'] - 2/1440):
+        
+        collecting_area = self.config['telescope']['telescope1']['collecting_area']/32000.
+        while len(pop_list) > 0 and True: # (g_dev['events']['Eve Sky Flats'] < (ephem_now - 2/1440) < g_dev['events']['End Eve Sky Flats']):
             current_filter = int(pop_list[0])
             acquired_count = 0
             #req = {'filter': current_filter}
@@ -850,15 +852,19 @@ class Sequencer:
             
             prior_scale = 1.0
             #breakpoint()
-            while (acquired_count < flat_count) and (ephem_now < g_dev['events']['End Eve Sky Flats' ]- 3/1440):
+            while (acquired_count < flat_count) and (ephem_now +3/1440) < g_dev['events']['End Eve Sky Flats' ]:
                 #if g_dev['enc'].is_dome:   #Does not apply
                 g_dev['mnt'].slewToSkyFlatAsync()
                 g_dev['obs'].update_status()
                 try:
-                    lux = eval(self.redis_server.get('ocn_status'))['calc_HSI_lux']     #Why Eval, whould have float?
-              
-                    exp_time = prior_scale*scale*6000/(float(g_dev['fil'].filter_data[current_filter][3])*lux)  #g_dev['ocn'].calc_HSI_lux)  #meas_sky_lux)
-                    print('Ex:  ', exp_time, scale, prior_scale, lux, float(g_dev['fil'].filter_data[current_filter][3]))
+                    try:
+                        sky_lux = eval(self.redis_server.get('ocn_status'))['calc_HSI_lux']     #Why Eval, whould have float?
+                    except:
+                        print("Redis not running. lux set to 1000.")
+                        lux = 1000
+                    exp_time = prior_scale*scale*12150/(collecting_area*sky_lux*float(g_dev['fil'].filter_data[current_filter][3]))  #g_dev['ocn'].calc_HSI_lux)  #meas_sky_lux)
+                    
+                    print('Ex:  ', exp_time, scale, prior_scale, sky_lux, float(g_dev['fil'].filter_data[current_filter][3]))
                     #exp_time*= 4.9/9/2
                     if exp_time > 120:
                         exp_time = 120    #Live with this limit.
@@ -887,8 +893,8 @@ class Sequencer:
                         scale = 0.33
                 except:
                     scale = 1.0
-                print("\n'n\\'nPatch/Bright:  ", bright, g_dev['fil'].filter_data[current_filter][0], \
-                      '  Gain: ', round(bright/lux/exp_time, 2), '\n\n\n')
+                print('\n\n\n', "Patch/Bright:  ", bright, g_dev['fil'].filter_data[current_filter][0], \
+                      '  Gain: ', round(bright/(3*sky_lux*collecting_area*exp_time), 2), '\n\n\n')
                 g_dev['obs'].update_status()
                 #breakpoint()
                 #  THE following code looks like a debug patch gone rogue.
