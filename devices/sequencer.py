@@ -767,7 +767,7 @@ class Sequencer:
 
             for bias in range(9):
                 req = {'time': 0.0,  'script': 'True', 'image_type': 'bias'}
-                opt = {'area': "Full", 'count': 1, 'bin':'3 3', \
+                opt = {'area': "Full", 'count': 7, 'bin':'3 3', \
                        'filter': 'dark'}
                 result = g_dev['cam'].expose_command(req, opt, no_AWS=True, \
                                 do_sep=False, quick=False)
@@ -775,7 +775,7 @@ class Sequencer:
                 if ephem.now() + 5/1440  >= g_dev['events']['End Eve Bias Dark']:
                     break
                 print("Expose d_3 using exposure:  ", dark_time/2 )
-                req = {'time':dark_time/2. ,  'script': 'True', 'image_type': 'dark'}
+                req = {'time':dark_time*4/9. ,  'script': 'True', 'image_type': 'dark'}
                 opt = {'area': "Full", 'count':1, 'bin':'3 3', \
                         'filter': 'dark'} 
                 result = g_dev['cam'].expose_command(req, opt, no_AWS=True, \
@@ -894,7 +894,7 @@ class Sequencer:
                 except:
                     scale = 1.0
                 print('\n\n\n', "Patch/Bright:  ", bright, g_dev['fil'].filter_data[current_filter][0], \
-                      '  Gain: ', round(bright/(3*sky_lux*collecting_area*exp_time), 2), '\n\n\n')
+                      '  Gain: ', round(bright/(3*sky_lux*collecting_area*exp_time), 3), '\n\n\n')
                 g_dev['obs'].update_status()
                 #breakpoint()
                 #  THE following code looks like a debug patch gone rogue.

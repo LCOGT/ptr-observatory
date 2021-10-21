@@ -1505,11 +1505,11 @@ class Camera:
                         hdu.header['USERNAME'] = self.user_name
                         hdu.header ['USERID']  = self.user_id
                     except:
-
+                       
                         hdu.header['USERNAME'] = self.last_user_name
                         hdu.header ['USERID']  = self.last_user_id
                         print("User_name or id not found, using prior.")  #Insert last user nameand ID here if they are not supplied.
-
+                        breakpoint()
 
                     # NB This needs more development
                     #im_type = 'EX'   #or EN for engineering....
