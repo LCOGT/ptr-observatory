@@ -461,9 +461,14 @@ class Sequencer:
         block = copy.deepcopy(block_specification)
         # #unpark, open dome etc.
         # #if not end of block
-        self.enc_to_skyflat_and_open(enc_status, ocn_status, no_sky=True)   #Just in case a Wx hold stopped opening
+        if not enc_status in ['open', 'Open', 'opening', 'Opening']:
+            self.enc_to_skyflat_and_open(enc_status, ocn_status, no_sky=True)   #Just in case a Wx hold stopped opening
+        else:
+            g_dev['enc'].sync_mount_command({}, {})
         g_dev['mnt'].unpark_command({}, {})
         g_dev['mnt'].Tracking = True   # unpark_command({}, {})
+        g_dev['cam'].user_name = 'tobor'
+        g_dev['cam'].user_id = 'tobor'
         #NB  Servo the Dome??
         timer = time.time() - 1  #This should force an immediate autofocus.
         req2 = {'target': 'near_tycho_star', 'area': 150}
@@ -698,7 +703,7 @@ class Sequencer:
                     events = g_dev['events']
 
                     ended = left_to_do <= 0 or now_date_timeZ >= block['end'] \
-                            or ephem_now >= events['End Astro Dark']
+                            or ephem_now >= events['Observing Ends']
                     #                                                    ]\
                     #         or g_dev['airmass'] > float( block_specification['project']['project_constraints']['max_airmass']) \
                     #         or abs(g_dev['ha']) > float(block_specification['project']['project_constraints']['max_ha'])
@@ -878,13 +883,14 @@ class Sequencer:
                 req = {'time': float(exp_time),  'alias': camera_name, 'image_type': 'sky flat', 'script': 'On'}
                 opt = { 'count': 1, 'bin':  '2,2', 'area': 150, 'filter': g_dev['fil'].filter_data[current_filter][0]}
                 print("using:  ", g_dev['fil'].filter_data[current_filter][0])
-                g_dev['obs'].update_status()
+               
                 try:
                     result = g_dev['cam'].expose_command(req, opt, no_AWS=True, do_sep = False)
                     bright = result['patch']    #  Patch should be circular and 20% of Chip area. ToDo project
                 except:
                     print('*****NO result returned*****')
                     continue
+                g_dev['obs'].update_status()
                 try:
                     scale = 35000/bright
                     if scale > 3:
@@ -895,8 +901,8 @@ class Sequencer:
                     scale = 1.0
                 print('\n\n\n', "Patch/Bright:  ", bright, g_dev['fil'].filter_data[current_filter][0], \
                       '  Gain: ', round(bright/(3*sky_lux*collecting_area*exp_time), 3), '\n\n\n')
-                g_dev['obs'].update_status()
-                #breakpoint()
+
+                obs_win_begin, sunset, sunrise, ephem_now = self.astro_events.getSunEvents()
                 #  THE following code looks like a debug patch gone rogue.
                 if bright > 40000 and (ephem_now < g_dev['events']['End Eve Sky Flats'] - 4/1440):    #NB should gate with end of skyflat window as well.
                     for i in range(1):
@@ -908,6 +914,7 @@ class Sequencer:
                         pop_list.pop(0)
                         scale = 1
                         prior_scale = 1
+                obs_win_begin, sunset, sunrise, ephem_now = self.astro_events.getSunEvents()
                 continue
         g_dev['mnt'].tracking = False   #  park_command({}, {})  #  NB this is provisional, Ok when simulating
         print('\nSky flat complete, or too early. Telescope Tracking is off.\n')

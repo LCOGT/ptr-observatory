@@ -215,6 +215,7 @@ class Observatory:
         #for key in self.redis_server.keys(): self.redis_server.delete(key)   #Flush old state.  But do not erase WEMA
         g_dev['redis_server'] = self.redis_server   #Use this instance.
         g_dev['redis_server']['obs_loaded'] = True
+        g_dev['counter'] = 0  #Used to count user-name errors in Camera object
         self.update_config()
         # Use the configuration to instantiate objects for all devices.
         self.create_devices(config)
