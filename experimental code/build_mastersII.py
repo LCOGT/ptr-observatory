@@ -422,10 +422,10 @@ def create_super_flat(input_images, lng_path, super_name, super_bias_name,
     return
 
 def make_master_bias (alias, path,  lng_path , selector_string, out_file):
-
+    breakpoint()
     file_list = glob.glob(path + selector_string)
     shuffle(file_list)
-    file_list = file_list[:9*3]   #Temporarily limit size of reduction.
+    file_list = file_list[:9*9]   #Temporarily limit size of reduction.
     print('# of files:  ', len(file_list))
     print(file_list)
     if len(file_list) == 0:
@@ -817,14 +817,14 @@ if __name__ == '__main__':
     camera_name = 'sq01'  #  config.site_config['camera']['camera1']['name']
     #archive_path = "D:/000ptr_saf/archive/sq01/2020-06-13/"
     #archive_path = "D:/2020-06-19  Ha and O3 screen flats/"
-    archive_path = "D:/20200804  Bubble again Ha etc/"
-    out_path = "D:/20200804  Bubble again Ha etc/trimmed/"
-    lng_path = "D:/000ptr_saf/archive/sq01/lng/"
-    debias_and_trim(camera_name, archive_path, '*HA*', out_path)
+    archive_path = "F:/000ptr_saf/archive/sq01/calibrations/"
+    out_path = "F:/000ptr_saf/archive/sq01/lng/"
+    lng_path = "F:/000ptr_saf/archive/sq01/lng/"
+    #debias_and_trim(camera_name, archive_path, '*HA*', out_path)
     # mod_debias_and_trim(camera_name, archive_path, '*APPM-2020-07-12*', out_path)
     # prepare_tpoint(camera_name, archive_path, '*APPM*',lng_path, out_path)
     # make_master_bias(camera_name, out_path, lng_path, '*f_3*', 'mb_1b.fits')
-    # make_master_bias(camera_name, out_path, lng_path, '*b_2*', 'mb_2b.fits')
+    make_master_bias(camera_name, archive_path, out_path, '*b_2*.*', 'b_2.fits')
 
     # #make_master_bias(camera_name, archive_path, lng_path, '*b_3*', 'mb_3.fits')
     # #make_master_bias(camera_name, archive_path, lng_path, '*b_4*', 'mb_4.fits')

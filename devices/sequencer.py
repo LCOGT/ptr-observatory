@@ -667,7 +667,7 @@ class Sequencer:
                         step = 1
                         offset = [(0, -1), (0, 1)] #Two mosaic steps 36 x 24mm chip  Square
                         pane = 1
-                        pitch = 0.125
+                        pitch = 0.0875   #Try this out for small overlap and tall field.
                     else:
                         offset = [(0., 0.)] #Zero(no) mosaic offset
                         pitch = 0.
