@@ -536,7 +536,7 @@ class Sequencer:
                     else:
                         multiplex = 4
                 if exposure['area'] in ['600', '600%', 600, '450', '450%', 450]:
-                    multiplex = 13
+                    multiplex = 16
                 if exposure['area'] in ['500', '500%', 500]:
                     if block_specification['project']['project_constraints']['add_center_to_mosaic']:
                         multiplex = 7
@@ -636,9 +636,24 @@ class Sequencer:
                         if exposure['area'] in ['125', '125%', 125]:
                             pitch = 0.125
                     elif exposure['area'] in ['600', '600%', 600, '450', '450%', 450]:  # 9 exposures.
-                        offset = [(0, 0), (0, 1), (-1, 1), (-1, 0), (-1, -1), (0, -1), (1, -1 ), (1, 0), \
-                                  (1, 1),  (1 ,2), (0, 2), (-1, 2), (-1, -2), (0, -2), (1, -2)
-                                  ] #Fifteen mosaic quadrants 36 x 24mm chip
+                        offset = [(0.5, 0.5), 
+                                  (-0.5, 0.5), 
+                                  (-1.5, 0.5), 
+                                  (-1.5, -0.5), 
+                                  (-0.5, -0.5), 
+                                  (0.5, -0.5), 
+                                  (1.5, -0.5 ), 
+                                  (1.5, 0.5),
+                                  (1.5, 1.5),  
+                                  (0.5 , 1.5), 
+                                  (-0.5, 1.5), 
+                                  (-1.5, 1.5), 
+                                  (-1.5, 0.5), 
+                                  (1.5, -0.5), 
+                                  (-1.5, -1.5),
+                                  (-0.5, -1.5), 
+                                  (0.5, -1.5), 
+                                  (1.5, -1.5)] #Fifteen mosaic quadrants 36 x 24mm chip
                         if exposure['area'] in ['600', '600%', 600]:
                             pitch = 0.125
 
@@ -841,6 +856,7 @@ class Sequencer:
             acquired_count = 0
             #req = {'filter': current_filter}
             #opt =  {'filter': current_filter}
+            breakpoint()
             g_dev['fil'].set_number_command(current_filter)
             g_dev['mnt'].slewToSkyFlatAsync()
             bright = 37500
