@@ -145,11 +145,10 @@ class ObservingConditions:
             #  NB all parameters should come from config.
             dew_point_gap = not (self.sky_monitor.Temperature  - self.sky_monitor.DewPoint) < 2
             temp_bounds = not (self.sky_monitor.Temperature < -15) or (self.sky_monitor.Temperature > 35)
-            wind_limit = self.sky_monitor.WindSpeed < 35/2.235   #sky_monitor reports m/s, Clarity may report in MPH
+            wind_limit = self.sky_monitor.WindSpeed < 60/2.235   #sky_monitor reports m/s, Clarity may report in MPH
             sky_amb_limit  = self.sky_monitor.SkyTemperature < -20
             humidity_limit = 1 < self.sky_monitor.Humidity < 85
             rain_limit = self.sky_monitor.RainRate <= 0.001
-          
             self.wx_is_ok = dew_point_gap and temp_bounds and wind_limit and sky_amb_limit and \
                             humidity_limit and rain_limit
             #  NB  wx_is_ok does not include ambient light or altitude of the Sun

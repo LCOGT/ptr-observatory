@@ -205,8 +205,10 @@ class Sequencer:
         elif action == "home":
             #breakpoint()
             self.home_command(req, opt)
+        elif action == 'run' and script == 'findFieldCenter':
+            g_dev['mnt'].go_command(req, opt, calibrate=True, auto_center=True)
         elif action == 'run' and script == 'calibrateAtFieldCenter':
-            g_dev['mnt'].go_command(req, opt, calibrate=True)
+            g_dev['mnt'].go_command(req, opt, calibrate=True, auto_center=False)
         else:
             print('Sequencer command:  ', command, ' not recognized.')
             
@@ -459,9 +461,14 @@ class Sequencer:
         block = copy.deepcopy(block_specification)
         # #unpark, open dome etc.
         # #if not end of block
-        self.enc_to_skyflat_and_open(enc_status, ocn_status, no_sky=True)   #Just in case a Wx hold stopped opening
+        if not enc_status in ['open', 'Open', 'opening', 'Opening']:
+            self.enc_to_skyflat_and_open(enc_status, ocn_status, no_sky=True)   #Just in case a Wx hold stopped opening
+        else:
+            g_dev['enc'].sync_mount_command({}, {})
         g_dev['mnt'].unpark_command({}, {})
         g_dev['mnt'].Tracking = True   # unpark_command({}, {})
+        g_dev['cam'].user_name = 'tobor'
+        g_dev['cam'].user_id = 'tobor'
         #NB  Servo the Dome??
         timer = time.time() - 1  #This should force an immediate autofocus.
         req2 = {'target': 'near_tycho_star', 'area': 150}
@@ -711,7 +718,7 @@ class Sequencer:
                     events = g_dev['events']
 
                     ended = left_to_do <= 0 or now_date_timeZ >= block['end'] \
-                            or ephem_now >= events['End Astro Dark']
+                            or ephem_now >= events['Observing Ends']
                     #                                                    ]\
                     #         or g_dev['airmass'] > float( block_specification['project']['project_constraints']['max_airmass']) \
                     #         or abs(g_dev['ha']) > float(block_specification['project']['project_constraints']['max_ha'])
@@ -747,7 +754,7 @@ class Sequencer:
         dark_time = 300   #seed for 3x3 binning
         #breakpoint()
         
-        while ephem.now() < g_dev['events']['End Eve Bias Dark'] :   #Do not overrun the window end
+        while ephem.now() < g_dev['events']['End Eve Bias Dark'] - 2/1440:   #Do not overrun the window end
             #g_dev['mnt'].unpark_command({}, {}) # Get there early
             #g_dev['mnt'].slewToSkyFlatAsync()
             print("Expose Biases: b_2")
@@ -780,7 +787,7 @@ class Sequencer:
 
             for bias in range(9):
                 req = {'time': 0.0,  'script': 'True', 'image_type': 'bias'}
-                opt = {'area': "Full", 'count': 1, 'bin':'3 3', \
+                opt = {'area': "Full", 'count': 7, 'bin':'3 3', \
                        'filter': 'dark'}
                 result = g_dev['cam'].expose_command(req, opt, no_AWS=True, \
                                 do_sep=False, quick=False)
@@ -788,14 +795,14 @@ class Sequencer:
                 if ephem.now() + 5/1440  >= g_dev['events']['End Eve Bias Dark']:
                     break
                 print("Expose d_3 using exposure:  ", dark_time/2 )
-                req = {'time':dark_time/2. ,  'script': 'True', 'image_type': 'dark'}
+                req = {'time':dark_time*4/9. ,  'script': 'True', 'image_type': 'dark'}
                 opt = {'area': "Full", 'count':1, 'bin':'3 3', \
                         'filter': 'dark'} 
                 result = g_dev['cam'].expose_command(req, opt, no_AWS=True, \
                                     do_sep=False, quick=False)
                 print('Last dark result:  ', result)
                 g_dev['obs'].update_status()
-                if ephem.now()+ 5/1440 >= g_dev['events']['End Eve Bias Dark']:
+                if ephem.now() + 5/1440 >= g_dev['events']['End Eve Bias Dark']:
                         break
 
         self.sequencer_hold = False
@@ -851,7 +858,9 @@ class Sequencer:
         obs_win_begin, sunset, sunrise, ephem_now = self.astro_events.getSunEvents()
         scale = 1.0
         prior_scale = 1
-        while len(pop_list) > 0: #and (g_dev['events']['Ops Window Start'] < ephemNow < g_dev['events']['End Eve Sky Flats']):
+        
+        collecting_area = self.config['telescope']['telescope1']['collecting_area']/32000.
+        while len(pop_list) > 0 and True: # (g_dev['events']['Eve Sky Flats'] < (ephem_now - 2/1440) < g_dev['events']['End Eve Sky Flats']):
             current_filter = int(pop_list[0])
             acquired_count = 0
             #req = {'filter': current_filter}
@@ -864,15 +873,19 @@ class Sequencer:
             
             prior_scale = 1.0
             #breakpoint()
-            while acquired_count < flat_count:
+            while (acquired_count < flat_count) and (ephem_now +3/1440) < g_dev['events']['End Eve Sky Flats' ]:
                 #if g_dev['enc'].is_dome:   #Does not apply
                 g_dev['mnt'].slewToSkyFlatAsync()
                 g_dev['obs'].update_status()
                 try:
-                    lux = eval(self.redis_server.get('ocn_status'))['calc_HSI_lux']
-              
-                    exp_time = prior_scale*scale*6000/(float(g_dev['fil'].filter_data[current_filter][3])*lux)  #g_dev['ocn'].calc_HSI_lux)  #meas_sky_lux)
-                    print('Ex:  ', exp_time, scale, prior_scale, lux, float(g_dev['fil'].filter_data[current_filter][3]))
+                    try:
+                        sky_lux = eval(self.redis_server.get('ocn_status'))['calc_HSI_lux']     #Why Eval, whould have float?
+                    except:
+                        print("Redis not running. lux set to 1000.")
+                        lux = 1000
+                    exp_time = prior_scale*scale*12150/(collecting_area*sky_lux*float(g_dev['fil'].filter_data[current_filter][3]))  #g_dev['ocn'].calc_HSI_lux)  #meas_sky_lux)
+                    
+                    print('Ex:  ', exp_time, scale, prior_scale, sky_lux, float(g_dev['fil'].filter_data[current_filter][3]))
                     #exp_time*= 4.9/9/2
                     if exp_time > 120:
                         exp_time = 120    #Live with this limit.
@@ -886,9 +899,14 @@ class Sequencer:
                 req = {'time': float(exp_time),  'alias': camera_name, 'image_type': 'sky flat', 'script': 'On'}
                 opt = { 'count': 1, 'bin':  '2,2', 'area': 150, 'filter': g_dev['fil'].filter_data[current_filter][0]}
                 print("using:  ", g_dev['fil'].filter_data[current_filter][0])
+               
+                try:
+                    result = g_dev['cam'].expose_command(req, opt, no_AWS=True, do_sep = False)
+                    bright = result['patch']    #  Patch should be circular and 20% of Chip area. ToDo project
+                except:
+                    print('*****NO result returned*****')
+                    continue
                 g_dev['obs'].update_status()
-                result = g_dev['cam'].expose_command(req, opt, no_AWS=True, do_sep = False)
-                bright = result['patch']    #  Patch should be circular and 20% of Chip area. ToDo project
                 try:
                     scale = 35000/bright
                     if scale > 3:
@@ -897,13 +915,12 @@ class Sequencer:
                         scale = 0.33
                 except:
                     scale = 1.0
-                print("\n'n\\'nPatch/Bright:  ", bright, g_dev['fil'].filter_data[current_filter][0], \
-                      '  Gain: ', round(bright/lux/exp_time, 2), '\n\n\n')
-                g_dev['obs'].update_status()
-                #breakpoint()
+                print('\n\n\n', "Patch/Bright:  ", bright, g_dev['fil'].filter_data[current_filter][0], \
+                      '  Gain: ', round(bright/(3*sky_lux*collecting_area*exp_time), 3), '\n\n\n')
+
+                obs_win_begin, sunset, sunrise, ephem_now = self.astro_events.getSunEvents()
                 #  THE following code looks like a debug patch gone rogue.
-                if bright > 40000 and (ephem_now < g_dev['events']['End Eve Sky Flats']
-                                  or True):    #NB should gate with end of skyflat window as well.
+                if bright > 40000 and (ephem_now < g_dev['events']['End Eve Sky Flats'] - 4/1440):    #NB should gate with end of skyflat window as well.
                     for i in range(1):
                         time.sleep(5)  #  #0 seconds of wait time.  Maybe shorten for wide bands?
                         g_dev['obs'].update_status()
@@ -913,6 +930,7 @@ class Sequencer:
                         pop_list.pop(0)
                         scale = 1
                         prior_scale = 1
+                obs_win_begin, sunset, sunrise, ephem_now = self.astro_events.getSunEvents()
                 continue
         g_dev['mnt'].tracking = False   #  park_command({}, {})  #  NB this is provisional, Ok when simulating
         print('\nSky flat complete, or too early. Telescope Tracking is off.\n')

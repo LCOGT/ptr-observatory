@@ -75,7 +75,6 @@ class Enclosure:
     def get_status(self) -> dict:
         #<<<<The next attibute reference fails at saf, usually spurious Dome Ring Open report.
         #<<< Have seen other instances of failing.
-
         try:
             shutter_status = self.enclosure.ShutterStatus
         except:
@@ -182,7 +181,7 @@ class Enclosure:
                 self.redis_server.set('enc_status', status, ex=3600)
         else:
             status = {'shutter_status': stat_string,
-                      'enclosure_synch': True,
+                      'enclosure_synchronized': True,
                       'dome_azimuth': 180.0,
                       'dome_slewing': False,
                       'enclosure_mode': self.mode,
@@ -406,7 +405,7 @@ class Enclosure:
                     print('Dome refused close command.')
             self.dome_opened = False
             self.dome_homed = True
-            self.enclosure_synched = False
+            self.enclosure_synchronized = False
             self.redis_server.set('park_the_mount', True, ex=3600)
         elif wx_hold:
             # We leave telescope to track with dome closed.
