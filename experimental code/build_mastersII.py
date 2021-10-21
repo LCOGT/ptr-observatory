@@ -425,7 +425,7 @@ def make_master_bias (alias, path,  lng_path , selector_string, out_file):
     breakpoint()
     file_list = glob.glob(path + selector_string)
     shuffle(file_list)
-    file_list = file_list[:9*9]   #Temporarily limit size of reduction.
+    file_list = file_list[:11*11]   #Temporarily limit size of reduction.
     print('# of files:  ', len(file_list))
     print(file_list)
     if len(file_list) == 0:
@@ -440,7 +440,7 @@ def make_master_bias (alias, path,  lng_path , selector_string, out_file):
         chunk = len(file_list)
     if chunk > 31: chunk = 31
     print('Chunk size:  ', chunk, len(file_list)//chunk)
-    chunk = 9
+    chunk = 11
     chunked_list = chunkify(file_list, chunk)
     print(chunked_list)
     create_super_bias(chunked_list, lng_path, out_file )
@@ -840,9 +840,9 @@ if __name__ == '__main__':
     # build_hot_map(camera_name, lng_path, "md_1_1080.fits", "hm_1")
     # build_hot_image(camera_name, lng_path, "md_1_1080.fits", "hm_1.fits")
     # archive_path = out_path
-    archive_path = "D:/20200804  Bubble again Ha etc/trimmed/"
-    out_path = "D:/20200804  Bubble again Ha etc/reduced/"
-    correct_image(camera_name, archive_path, '*HA*', lng_path, out_path)
+    #archive_path = "D:/20200804  Bubble again Ha etc/trimmed/"
+    #out_path = "D:/20200804  Bubble again Ha etc/reduced/"
+    #correct_image(camera_name, archive_path, '*HA*', lng_path, out_path)
     # mod_correct_image(camera_name, archive_path, '*EX00*', lng_path, out_path)
     # archive_path = out_path
     # out_path =":D:/20200707 Bubble Neb NGC7635  Ha O3 S2/catalogs/"
