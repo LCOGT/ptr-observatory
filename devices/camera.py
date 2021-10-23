@@ -1512,7 +1512,7 @@ class Camera:
                         hdu.header ['USERID']  = self.last_user_id
                         g_dev['counter'] += 1
                         print("User_name or id not found, using prior:  ", g_dev['counter'])  #Insert last user nameand ID here if they are not supplied.
-                        if g_dev['counter'] > 7:
+                        if g_dev['counter'] > 6:
                             breakpoint()
 
                     # NB This needs more development

@@ -203,6 +203,7 @@ class Observatory:
         self.astro_events = ptr_events.Events(self.config)
         self.astro_events.compute_day_directory()
         self.astro_events.display_events()
+
         # Send the config to aws   # NB NB NB This has faulted.
         redis_ip = config['redis_ip']
         if redis_ip is not None:           

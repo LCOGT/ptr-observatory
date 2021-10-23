@@ -58,6 +58,7 @@ class ObservingConditions:
         self.config = config
         self.sample_time = 0
         self.ok_to_open = 'No'
+
         self.observing_condtions_message = '-'
         self.wx_is_ok = None
         self.wx_hold = False
@@ -136,6 +137,7 @@ class ObservingConditions:
             DESCRIPTION.
 
         '''
+
         if self.site == 'saf':
             illum, mag = self.astro_events.illuminationNow()
             if illum > 100:
@@ -439,7 +441,7 @@ class ObservingConditions:
         When we get to this point of the code first time we expect self.wx_is_ok to be true
         '''
         obs_win_begin, sunset, sunrise, ephem_now = self.astro_events.getSunEvents()
-        
+
         #OLD CODE USED A PROBE. jUST DO THIS EVERY CYCLE
 
 # ==============================================================================================#
