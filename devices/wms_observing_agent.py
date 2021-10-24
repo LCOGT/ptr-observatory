@@ -308,17 +308,6 @@ class ObservingConditions:
         #  Note we are now in mrc specific code.  AND WE ARE USING THE OLD Weather SOURCE!!
 
         elif self.site == 'mrc' or self.site == 'mrc2':
-            # try:
-            #     # pass
-            #     status = {}
-                
-
-            # #     redis_monitor = eval(self.redis_server.get('<ptr-wx-1_state'))
-            # #     illum = float(redis_monitor["illum lux"])
-            # #     self.last_wx = redis_monitor
-            # # except:
-            # #     print('Redis is not returning redis_monitor Data properly.')
-            # #     redis_monitor = self.last_wx
             try:
                 status= {}
                 illum, mag = self.astro_events.illuminationNow()
