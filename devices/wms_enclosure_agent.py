@@ -30,7 +30,6 @@ class Enclosure:
         self.site_is_proxy = self.config['agent_wms_enc_active'] 
         g_dev['enc'] = self
         win32com.client.pythoncom.CoInitialize()
-
         self.enclosure = win32com.client.Dispatch(driver)
         print(self.enclosure)
         try:
@@ -61,6 +60,7 @@ class Enclosure:
         self.last_current_az = 0
         self.prior_status = None
         self.time_of_next_slew = time.time()
+
 
         if self.config['site_in_automatic_default'] == "Automatic":
             self.site_in_automatic = True
@@ -244,6 +244,7 @@ class Enclosure:
                if self.is_dome:
                    try:
                        self.enclosure.Slaved = True
+                       print("Scope Dome following set On")
                    except:
                        pass
                self.redis_server.delete('sync_enc')                
@@ -251,6 +252,7 @@ class Enclosure:
                 if self.is_dome:
                     try:
                         self.enclosure.Slaved = False
+                        print("Scope Dome following turned OFF")
                     except:
                         pass
                 self.redis_server.delete('unsync_enc')
@@ -361,6 +363,7 @@ class Enclosure:
         '''
 
         #  NB NB NB Gather some facts:
+
         obs_win_begin, sunset, sunrise, ephem_now = self.astro_events.getSunEvents()
 
         az_opposite_sun = g_dev['evnt'].sun_az_now()
@@ -405,7 +408,7 @@ class Enclosure:
                     print('Dome refused close command.')
             self.dome_opened = False
             self.dome_homed = True
-            self.enclosure_synched = False
+            self.enclosure_synchronized = False
             self.redis_server.set('park_the_mount', True, ex=3600)
         elif wx_hold:
             # We leave telescope to track with dome closed.

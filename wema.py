@@ -28,6 +28,7 @@ class Observatory:
 
     def __init__(self, name, config):
         self.api = API_calls()
+
         self.command_interval = 3
         self.status_interval = 3
         self.name = name
@@ -79,6 +80,9 @@ class Observatory:
                 #settings = devices_of_type[name].get("settings", {})
 
                 if dev_type == "observing_conditions":
+
+
+
                     device = ObservingConditions(driver, name, self.config,\
                                                  self.astro_events)
                 elif dev_type == 'enclosure':

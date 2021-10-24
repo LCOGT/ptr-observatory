@@ -203,6 +203,7 @@ class Observatory:
         self.astro_events = ptr_events.Events(self.config)
         self.astro_events.compute_day_directory()
         self.astro_events.display_events()
+
         # Send the config to aws   # NB NB NB This has faulted.
         redis_ip = config['redis_ip']
         if redis_ip is not None:           
@@ -215,6 +216,7 @@ class Observatory:
         #for key in self.redis_server.keys(): self.redis_server.delete(key)   #Flush old state.  But do not erase WEMA
         g_dev['redis_server'] = self.redis_server   #Use this instance.
         g_dev['redis_server']['obs_loaded'] = True
+        g_dev['counter'] = 0  #Used to count user-name errors in Camera object
         self.update_config()
         # Use the configuration to instantiate objects for all devices.
         self.create_devices(config)

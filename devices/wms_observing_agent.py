@@ -58,6 +58,7 @@ class ObservingConditions:
         self.config = config
         self.sample_time = 0
         self.ok_to_open = 'No'
+
         self.observing_condtions_message = '-'
         self.wx_is_ok = None
         self.wx_hold = False
@@ -136,6 +137,7 @@ class ObservingConditions:
             DESCRIPTION.
 
         '''
+
         if self.site == 'saf':
             illum, mag = self.astro_events.illuminationNow()
             if illum > 100:
@@ -145,7 +147,7 @@ class ObservingConditions:
             #  NB all parameters should come from config.
             dew_point_gap = not (self.sky_monitor.Temperature  - self.sky_monitor.DewPoint) < 2
             temp_bounds = not (self.sky_monitor.Temperature < -15) or (self.sky_monitor.Temperature > 35)
-            wind_limit = self.sky_monitor.WindSpeed < 35/2.235   #sky_monitor reports m/s, Clarity may report in MPH
+            wind_limit = self.sky_monitor.WindSpeed < 60/2.235   #sky_monitor reports m/s, Clarity may report in MPH
             sky_amb_limit  = self.sky_monitor.SkyTemperature < -20
             humidity_limit = 1 < self.sky_monitor.Humidity < 85
             rain_limit = self.sky_monitor.RainRate <= 0.001
@@ -439,7 +441,7 @@ class ObservingConditions:
         When we get to this point of the code first time we expect self.wx_is_ok to be true
         '''
         obs_win_begin, sunset, sunrise, ephem_now = self.astro_events.getSunEvents()
-        
+
         #OLD CODE USED A PROBE. jUST DO THIS EVERY CYCLE
 
 # ==============================================================================================#

@@ -422,10 +422,10 @@ def create_super_flat(input_images, lng_path, super_name, super_bias_name,
     return
 
 def make_master_bias (alias, path,  lng_path , selector_string, out_file):
-
+    breakpoint()
     file_list = glob.glob(path + selector_string)
     shuffle(file_list)
-    file_list = file_list[:9*3]   #Temporarily limit size of reduction.
+    file_list = file_list[:11*11]   #Temporarily limit size of reduction.
     print('# of files:  ', len(file_list))
     print(file_list)
     if len(file_list) == 0:
@@ -440,7 +440,7 @@ def make_master_bias (alias, path,  lng_path , selector_string, out_file):
         chunk = len(file_list)
     if chunk > 31: chunk = 31
     print('Chunk size:  ', chunk, len(file_list)//chunk)
-    chunk = 9
+    chunk = 11
     chunked_list = chunkify(file_list, chunk)
     print(chunked_list)
     create_super_bias(chunked_list, lng_path, out_file )
@@ -817,14 +817,14 @@ if __name__ == '__main__':
     camera_name = 'sq01'  #  config.site_config['camera']['camera1']['name']
     #archive_path = "D:/000ptr_saf/archive/sq01/2020-06-13/"
     #archive_path = "D:/2020-06-19  Ha and O3 screen flats/"
-    archive_path = "D:/20200804  Bubble again Ha etc/"
-    out_path = "D:/20200804  Bubble again Ha etc/trimmed/"
-    lng_path = "D:/000ptr_saf/archive/sq01/lng/"
-    debias_and_trim(camera_name, archive_path, '*HA*', out_path)
+    archive_path = "F:/000ptr_saf/archive/sq01/calibrations/"
+    out_path = "F:/000ptr_saf/archive/sq01/lng/"
+    lng_path = "F:/000ptr_saf/archive/sq01/lng/"
+    #debias_and_trim(camera_name, archive_path, '*HA*', out_path)
     # mod_debias_and_trim(camera_name, archive_path, '*APPM-2020-07-12*', out_path)
     # prepare_tpoint(camera_name, archive_path, '*APPM*',lng_path, out_path)
     # make_master_bias(camera_name, out_path, lng_path, '*f_3*', 'mb_1b.fits')
-    # make_master_bias(camera_name, out_path, lng_path, '*b_2*', 'mb_2b.fits')
+    make_master_bias(camera_name, archive_path, out_path, '*b_2*.*', 'b_2.fits')
 
     # #make_master_bias(camera_name, archive_path, lng_path, '*b_3*', 'mb_3.fits')
     # #make_master_bias(camera_name, archive_path, lng_path, '*b_4*', 'mb_4.fits')
@@ -840,9 +840,9 @@ if __name__ == '__main__':
     # build_hot_map(camera_name, lng_path, "md_1_1080.fits", "hm_1")
     # build_hot_image(camera_name, lng_path, "md_1_1080.fits", "hm_1.fits")
     # archive_path = out_path
-    archive_path = "D:/20200804  Bubble again Ha etc/trimmed/"
-    out_path = "D:/20200804  Bubble again Ha etc/reduced/"
-    correct_image(camera_name, archive_path, '*HA*', lng_path, out_path)
+    #archive_path = "D:/20200804  Bubble again Ha etc/trimmed/"
+    #out_path = "D:/20200804  Bubble again Ha etc/reduced/"
+    #correct_image(camera_name, archive_path, '*HA*', lng_path, out_path)
     # mod_correct_image(camera_name, archive_path, '*EX00*', lng_path, out_path)
     # archive_path = out_path
     # out_path =":D:/20200707 Bubble Neb NGC7635  Ha O3 S2/catalogs/"

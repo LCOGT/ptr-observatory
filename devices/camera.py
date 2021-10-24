@@ -306,6 +306,8 @@ class Camera:
             self.darkslide_instance.closeDarkslide()   #  Consider turing off IR Obsy light at same time..
             self.darkslide_open = False
             print("Darkslide closed on camera startup.")
+        self.user_name = "unknown user name"
+        self.user_id = "unknown user ID"
         self.last_user_name = "unknown user name"
         self.last_user_id = "unknown user ID"
 
@@ -1502,14 +1504,16 @@ class Camera:
                     #hdu.header['MOLUID']   = ('None', 'Molecule unique ID')
 
                     try:
-                        hdu.header['USERNAME'] = self.user_name
+                        hdu.header['USERNAME'] = self.user_name   #Where is this established in case of a block?
                         hdu.header ['USERID']  = self.user_id
                     except:
-
+                       
                         hdu.header['USERNAME'] = self.last_user_name
                         hdu.header ['USERID']  = self.last_user_id
-                        print("User_name or id not found, using prior.")  #Insert last user nameand ID here if they are not supplied.
-
+                        g_dev['counter'] += 1
+                        print("User_name or id not found, using prior:  ", g_dev['counter'])  #Insert last user nameand ID here if they are not supplied.
+                        if g_dev['counter'] > 6:
+                            breakpoint()
 
                     # NB This needs more development
                     #im_type = 'EX'   #or EN for engineering....
