@@ -140,7 +140,7 @@ class Observatory:
                 "status":  status
                 }
             data = json.dumps(payload)
-            print(data)
+            #print(data)
             requests.post(uri_status, data=data)
             self.redis_server.set('wema_heart_time', self.time_last_status, ex=120)
             if self.name in ['mrc', 'mrc1']:
