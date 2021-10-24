@@ -429,6 +429,12 @@ class ObservingConditions:
 
         When we get to this point of the code first time we expect self.wx_is_ok to be true
         '''
+        try:
+            sim_hold = eval(self.redis_server.get('sim_hold'))
+            self.redis_server.delete('sim_hold')
+        except:
+            sim_hold = False
+            
         obs_win_begin, sunset, sunrise, ephem_now = self.astro_events.getSunEvents()
 
         #OLD CODE USED A PROBE. jUST DO THIS EVERY CYCLE
@@ -442,18 +448,23 @@ class ObservingConditions:
         #self.wx_is_ok = False   
         #We evaluate holds at all times.
         wx_delay_time = 900
-        if (self.wx_is_ok and self.wx_system_enable) and not self.wx_hold:     #Normal condition, possibly nothing to do.
+        sim_delay_time = 120
+        if (self.wx_is_ok and self.wx_system_enable) and not (self.wx_hold or sim_hold):     #Normal condition, possibly nothing to do.
             self.wx_hold_last_updated = time.time()
             self.wx_to_go = 0
             #print('First pass no hold.')
 
-        elif not self.wx_is_ok and not self.wx_hold:     #Wx bad and no hold yet.
+        elif (not self.wx_is_ok or sim_hold) and not self.wx_hold:     #Wx bad and no hold yet.
             #Bingo we need to start a cycle
            
             self.wx_hold = True
             self.redis_server.set('wx_hold', True, ex=3600)
-            self.wx_hold_until_time = (t := time.time() + wx_delay_time)    #15 minutes   Make configurable
-            self.wx_to_go = round(wx_delay_time/60, 2)
+            if sim_hold:
+                self.wx_hold_until_time = (t := time.time() + sim_delay_time)
+                self.wx_to_go = round(sim_delay_time/60, 2)
+            else:
+                self.wx_hold_until_time = (t := time.time() + wx_delay_time)    #15 minutes   Make configurable
+                self.wx_to_go = round(wx_delay_time/60, 2)
             self.wx_hold_tally += 1     #  This counts all day and night long.
             self.wx_hold_last_updated = t
             # NB Count holds might start as of skyflat time.

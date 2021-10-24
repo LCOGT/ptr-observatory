@@ -171,6 +171,7 @@ class Mount:
         win32com.client.pythoncom.CoInitialize()
         self.mount = win32com.client.Dispatch(driver)
         self.mount.Connected = True
+
 #       print('Can Asynch:  ', self.mount.CanSlewAltAzAsync)
 
         #hould put config Lat, lon, etc into mount, or at least check it is correct.

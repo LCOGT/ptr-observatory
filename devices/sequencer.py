@@ -198,7 +198,7 @@ class Sequencer:
                 self.sky_grid_pointing_run(req, opt)
         elif action == "run" and script in ("genBiasDarkMaster", "genBiasDarkMasters"):
             self.bias_dark_script(req, opt)
-        elif action == "run" and script == "takeLRGBstack":
+        elif action == "run" and script == 'takeLRGBStack':
             self.take_lrgb_stack(req, opt)
         elif action == "run" and script == "takeO3HaS2N2Stack":
             self.take_lrgb_stack(req, opt)
@@ -235,11 +235,11 @@ class Sequencer:
                         time.sleep(10)
                     print("Open and slew Dome to azimuth opposite the Sun:  ", round(flat_spot, 1))
 
-                    if enc_status['shutter_status'] in ['Closed', 'closed', 'Closing', 'closing'] \
-                        and ocn_status['hold_duration'] <= 0.1:
-                        #breakpoint()
-                        g_dev['enc'].open_command({}, {})
-                        time.sleep(3)
+                    # if enc_status['shutter_status'] in ['Closed', 'closed'] \
+                    #     and ocn_status['hold_duration'] <= 0.1:
+                    #     #breakpoint()
+                    #     g_dev['enc'].open_command({}, {})
+                    #     time.sleep(3)
                     g_dev['enc'].sync_mount_command({}, {})
                    #Prior to skyflats no dome following.
 
@@ -253,7 +253,7 @@ class Sequencer:
                 g_dev['mnt'].park_command({}, {}) # Get there early
         except:
             pass
-        if enc_status['shutter_status'] in ['open', 'opening']:
+        if enc_status['shutter_status'] in ['open', ]:
             g_dev['enc'].close_command( {}, {})
         print("Park and Close was executed.")
 
@@ -391,6 +391,9 @@ class Sequencer:
             self.current_script = "No current script"
             #print("No active script is scheduled.")
             return
+    def take_lrgb_stack(self, req_None, opt=None):
+
+        self.redis_server.set('sim_hold', True, ex=120)
             
     def clock_the_system(self, other_side=False):
         '''
@@ -466,10 +469,10 @@ class Sequencer:
         block = copy.deepcopy(block_specification)
         # #unpark, open dome etc.
         # #if not end of block
-        if not enc_status in ['open', 'Open', 'opening', 'Opening']:
-            self.enc_to_skyflat_and_open(enc_status, ocn_status, no_sky=True)   #Just in case a Wx hold stopped opening
-        else:
-            g_dev['enc'].sync_mount_command({}, {})
+        # if not enc_status in ['open', 'Open', 'opening', 'Opening']:
+        #     self.enc_to_skyflat_and_open(enc_status, ocn_status, no_sky=True)   #Just in case a Wx hold stopped opening
+        # else:
+        g_dev['enc'].sync_mount_command({}, {})
         g_dev['mnt'].unpark_command({}, {})
         g_dev['mnt'].Tracking = True   # unpark_command({}, {})
         g_dev['cam'].user_name = 'tobor'
@@ -738,7 +741,7 @@ class Sequencer:
             except:
                 pass
             self.redis_server.set('unsync_enc', True, ex=1200)
-            g_dev['enc'].close_command({}, {})
+            #g_dev['enc'].close_command({}, {})
             g_dev['mnt'].park_command({}, {})
 
             print("Auto close attempted at end of block.")
@@ -842,7 +845,8 @@ class Sequencer:
         exp_time = .0015
         #  NB Sometime, try 2:2 binning and interpolate a 1:1 flat.  This might run a lot faster.
         if flat_count < 1: flat_count = 1
-        if g_dev['mnt'].AtPark:
+
+        if g_dev['mnt'].mount.AtPark:
             g_dev['mnt'].unpark_command({}, {})
         g_dev['mnt'].slewToSkyFlatAsync()
         self.redis_server.set('enc_cmd', 'sync_enc', ex=1200)   #Should be redundant.

@@ -401,7 +401,7 @@ class Enclosure:
                     self.enclosure_synchronized = False
                 except:
                     print('Could not decouple dome following.')
-            if self.status_string.lower() in ['open', 'opening']:
+            if self.status_string in ['Open']:
                 try:
                     self.enclosure.CloseShutter()
                 except:
@@ -418,7 +418,7 @@ class Enclosure:
                     self.enclosure_synchronized = False
                 except:
                     print('Could not decouple dome following.')
-            if self.status_string.lower() in ['open', 'opening']:
+            if self.status_string in ['Open']:
                 try:
                     self.enclosure.CloseShutter()
                 except:
@@ -444,15 +444,16 @@ class Enclosure:
                 except:
                     print('Dome refused close command second time.')
             self.dome_opened = False
-            self.dome_homed = True
+            self.dome_homed = True    #g_dev['events']['Cool Down, Open']  <=
         elif ((g_dev['events']['Cool Down, Open']  <= ephem_now < g_dev['events']['Observing Ends']) and \
                g_dev['enc'].mode == 'Automatic') and not (g_dev['ocn'].wx_hold or g_dev['ocn'].clamp_latch):
-            self.guarded_open()
+            if self.status_string in ['Closed']:
+                self.guarded_open()
             self.dome_opened = True
             self.dome_homed = True
             self.redis_server.set('Enc Auto Opened', True, ex= 600)
         #THIS should be the ultimate backup to force a close
-        elif ephem_now >= sunrise + 45/1440:
+        elif ephem_now >=  g_dev['events']['Civil Dawn']:  #sunrise + 45/1440:
             #WE are now outside the observing window, so Sun is up!!!
             if self.site_in_automatic or (close_cmd and self.mode in ['Manual', 'Shutdown']):  #If Automatic just close straight away.
                 if self.is_dome and self.enclosure.CanSlave:
@@ -466,13 +467,14 @@ class Enclosure:
                 else:
                     self.state = 'Automatic Daytime normally Closed the ' + shutter_str
                 try:
-                    if self.status_string.lower() in ['open', 'opening']:
+                    if self.status_string in ['Open']:
                         self.enclosure.CloseShutter()
                     self.dome_opened = False
                     self.dome_homed = True
                    # print("Daytime Close issued to the " + shutter_str  + "   No longer following Mount.")
                 except:
-                    print("Shutter Failed to close 45 min after Sunrise.")
+                    print("Shutter Failed to close at Civil Dawn.")
+                self.mode = 'Manual'
 
 
 
