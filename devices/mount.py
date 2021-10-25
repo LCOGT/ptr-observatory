@@ -78,14 +78,14 @@ import math
 #ptr = EarthLocation(lat=siteLatitude*u.deg, lon=siteLongitude*u.deg, height=siteElevation*u.m)
 DEG_SYM = '°'
 PI = math.pi
-TWOPI = math.pi*2
-PIOVER2 = math.pi/2.
-DTOR = math.pi/180.
-RTOD = 180/math.pi
-STOR = math.pi/180./3600.
-RTOS = 3600.*180./math.pi
-RTOH = 12./math.pi
-HTOR = math.pi/12.
+TWOPI = PI*2
+PIOVER2 = PI/2.
+DTOR = PI/180.
+RTOD = 180/PI
+STOR = PI/180./3600.
+RTOS = 3600.*180./PI
+RTOH = 12./PI
+HTOR = PI/12.
 HTOS = 15*3600.
 DTOS = 3600.
 STOD = 1/3600.
@@ -105,9 +105,9 @@ loop_count = 0
 mountOne = "PW_L600"
 mountOneAscom = None
 
-siteCoordinates = EarthLocation(lat=site_config['latitude']*u.deg, \
-                                 lon=site_config['longitude']*u.deg,
-                                 height=site_config['elevation']*u.m)
+# siteCoordinates = EarthLocation(lat=site_config['latitude']*u.deg, \
+#                                  lon=site_config['longitude']*u.deg,
+#                                  height=site_config['elevation']*u.m)
     #The mount is not threaded and uses non-blocking seek.
 
 def ra_fix_r(ra):

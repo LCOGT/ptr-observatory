@@ -21,6 +21,10 @@ THINGS TO FIX:
     autofocus, and with grid of known stars
     sky flats
     much better weather station approach
+    
+WER 20211025
+
+Simplify!
 
 """
 
@@ -160,7 +164,7 @@ class Observatory:
         # This is the class through which we can make authenticated api calls.
         self.api = API_calls()
         self.command_interval = 3   # seconds between polls for new commands
-        self.status_interval = 4    # NOTE THESE IMPLEMENTED AS A DELTA NOT A RATE.
+        self.status_interval = 4    # NOTE THESE IMPLEMENTED AS A DELTA .
         self.name = name
         self.site_name = name
         self.config = config
@@ -185,8 +189,10 @@ class Observatory:
             'camera_1_2',
             'camera_1-4',
             ]
-        self.short_status_devices = [    #Obs-cond and enc do not report status
-            'enclosure',
+        self.short_status_devices = [   # Obs-cond and enc do not report status
+            'enclosure',    # Can these be eliminateted by always assuming wema 
+                            # instance?  Perhaps only retaing dome azimuth and 
+                            #following control part of the enclsoure model.
             'mount',
             'telescope',
             #'screen',
@@ -213,10 +219,11 @@ class Observatory:
         else:
             self.redis_wx_enabled = False
 
-        #for key in self.redis_server.keys(): self.redis_server.delete(key)   #Flush old state.  But do not erase WEMA
+        #for key in self.redis_server.keys(): self.redis_server.delete(key)   
+        #Flush old state.  But do not erase WEMA -- Use ex=xyz consistently.
         g_dev['redis_server'] = self.redis_server   #Use this instance.
-        g_dev['redis_server']['obs_loaded'] = True
-        g_dev['counter'] = 0  #Used to count user-name errors in Camera object
+        
+        g_dev['counter'] = 0  #Used to count user-name errors in Camera object  ???
         self.update_config()
         # Use the configuration to instantiate objects for all devices.
         self.create_devices(config)
@@ -249,7 +256,8 @@ class Observatory:
         # self.site_queue_thread = threading.Thread(target=self.get_from_AWS, args=())
         # self.site_queue_thread.start()
 
-
+    #NB Why here this is used by the mount object.
+    
     def set_last_reference(self,  delta_ra, delta_dec, last_time):
         mnt_shelf = shelve.open(self.site_path + 'ptr_night_shelf/' + 'last')
         mnt_shelf['ra_cal_offset'] = delta_ra
@@ -336,7 +344,7 @@ class Observatory:
 
     def scan_requests(self, mount):
         '''
-        Outline of change 20200323 WER
+        Outline of change 20200323 WER  ot made as of 20211125  WER
         Get commands from AWS, and post a STOP/Cancel flag
         This function will be a Thread. we will limit the
         polling to once every 2.5 - 3 seconds because AWS does not
@@ -748,35 +756,35 @@ class Observatory:
                 #quick = False
                 do_sep = False
                 spot = None
-                if do_sep:    #WE have already ran this code when focusing, but we should not ever get here when doing that.
-                    try:
-                        img = hdu.data.copy().astype('float')
-                        bkg = sep.Background(img)
-                        #breakpoint()
-                        #bkg_rms = bkg.rms()
-                        img = img - bkg
-                        sources = sep.extract(img, 4.5, err=bkg.globalrms, minarea=9)#, filter_kernel=kern)
-                        sources.sort(order = 'cflux')
-                        #print('No. of detections:  ', len(sources))
-                        sep_result = []
-                        spots = []
-                        for source in sources:
-                            a0 = source['a']
-                            b0 =  source['b']
-                            r0 = 2*round(math.sqrt(a0**2 + b0**2), 2)
-                            sep_result.append((round((source['x']), 2), round((source['y']), 2), round((source['cflux']), 2), \
-                                           round(r0), 3))
-                            spots.append(round((r0), 2))
-                        spot = np.array(spots)
-                        try:
-                            spot = np.median(spot[-9:-2])   #  This grabs seven spots.
-                            #print(sep_result, '\n', 'Spot ,flux, #_sources, avg_focus:  ', spot, source['cflux'], len(sources), avg_foc[1], '\n')
-                            if len(sep_result) < 5:
-                                spot = None
-                        except:
-                            spot = None
-                    except:
-                        spot = None
+                # if do_sep:    #WE have already ran this code when focusing, but we should not ever get here when doing that.
+                #     try:
+                #         img = hdu.data.copy().astype('float')
+                #         bkg = sep.Background(img)
+                #         #breakpoint()
+                #         #bkg_rms = bkg.rms()
+                #         img = img - bkg
+                #         sources = sep.extract(img, 4.5, err=bkg.globalrms, minarea=9)#, filter_kernel=kern)
+                #         sources.sort(order = 'cflux')
+                #         #print('No. of detections:  ', len(sources))
+                #         sep_result = []
+                #         spots = []
+                #         for source in sources:
+                #             a0 = source['a']
+                #             b0 =  source['b']
+                #             r0 = 2*round(math.sqrt(a0**2 + b0**2), 2)
+                #             sep_result.append((round((source['x']), 2), round((source['y']), 2), round((source['cflux']), 2), \
+                #                            round(r0), 3))
+                #             spots.append(round((r0), 2))
+                #         spot = np.array(spots)
+                #         try:
+                #             spot = np.median(spot[-9:-2])   #  This grabs seven spots.
+                #             #print(sep_result, '\n', 'Spot ,flux, #_sources, avg_focus:  ', spot, source['cflux'], len(sources), avg_foc[1], '\n')
+                #             if len(sep_result) < 5:
+                #                 spot = None
+                #         except:
+                #             spot = None
+                #     except:
+                #         spot = None
 
                 reduced_data_size = hdu.data.size
                 #g_dev['obs'].update_status()

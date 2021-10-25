@@ -281,7 +281,7 @@ class Sequencer:
         self.current_script = "No current script"    #NB this is an unused remnant I think.
         #if True or     #Note this runs in Manual Mode as well.
         if self.bias_dark_latch and ((events['Eve Bias Dark'] <= ephem_now < events['End Eve Bias Dark']) and \
-             self.config['auto_eve_bias_dark']):
+             self.config['auto_eve_bias_dark'] and g_dev['enc'].mode == 'Automatic' ):
             self.bias_dark_latch = False
             req = {'bin1': False, 'bin2': True, 'bin3': False, 'bin4': False, 'numOfBias': 45, \
                    'numOfDark': 15, 'darkTime': 180, 'numOfDark2': 3, 'dark2Time': 360, \
@@ -302,6 +302,7 @@ class Sequencer:
                and g_dev['enc'].mode == 'Automatic' and not g_dev['ocn'].wx_hold and \
                self.config['auto_eve_sky_flat']):
             self.sky_flat_latch = False
+            breakpoint()
             #if enc_status['shutter_status'] in ['Closed', 'closed', 'Closing', 'closing']:
             self.enc_to_skyflat_and_open(enc_status, ocn_status)   #Just in case a Wx hold stopped opening      
 
@@ -309,7 +310,7 @@ class Sequencer:
             #print('Skipping Eve Sky Flats')
             self.sky_flat_script({}, {})   #Null command dictionaries
             self.sky_flat_latch = False
-        elif (events['Observing Begins'] <= ephem_now < events['Observing Ends']) and not g_dev['ocn'].wx_hold and \
+        elif g_dev['enc'].mode == 'Automatic' and (events['Observing Begins'] <= ephem_now < events['Observing Ends']) and not g_dev['ocn'].wx_hold and \
               g_dev['obs'].blocks is not None and g_dev['obs'].projects is not None:
             blocks = g_dev['obs'].blocks
             projects = g_dev['obs'].projects
@@ -387,7 +388,7 @@ class Sequencer:
                 
                     
         else:
-            self.current_script = "No current script"
+            self.current_script = "No current script, or site not in Automatic."
             #print("No active script is scheduled.")
             return
     def take_lrgb_stack(self, req_None, opt=None):
@@ -855,10 +856,10 @@ class Sequencer:
         #      g_dev['enc'].Slaved = True  #Bring the dome into the picture.
         #     print('\n SERVOED THE DOME HOPEFULLY!\n')
         #g_dev['obs'].update_status()
-        try:
-            g_dev['scr'].screen_dark()
-        except:
-            pass
+        # try:
+        #     g_dev['scr'].screen_dark()
+        # except:
+        #     pass
         #  We should probe to be sure dome is open, otherwise this is a test when closed and
         #  we can speed it up
         #Here we may need to switch off any
@@ -871,7 +872,8 @@ class Sequencer:
         prior_scale = 1
         
         collecting_area = self.config['telescope']['telescope1']['collecting_area']/32000.
-        while len(pop_list) > 0 and (g_dev['events']['Eve Sky Flats'] < (ephem_now - 2/1440) < g_dev['events']['End Eve Sky Flats']):
+        #  (g_dev['events']['Eve Sky Flats'] < 
+        while len(pop_list) > 0 and (g_dev['events']['Eve Sky Flats'] < ephem_now - 2/1440 < g_dev['events']['End Eve Sky Flats']):
             current_filter = int(pop_list[0])
             acquired_count = 0
             #req = {'filter': current_filter}
@@ -879,7 +881,7 @@ class Sequencer:
 
             g_dev['fil'].set_number_command(current_filter)
             g_dev['mnt'].slewToSkyFlatAsync()
-            bright = 37500
+            bright = 30000
             scale = 1.0    #1.15   #20201121 adjustment
             
             prior_scale = 1.0
@@ -894,7 +896,7 @@ class Sequencer:
                     except:
                         print("Redis not running. lux set to 1000.")
                         sky_lux = 1000
-                    exp_time = prior_scale*scale*12150/(collecting_area*sky_lux*float(g_dev['fil'].filter_data[current_filter][3]))  #g_dev['ocn'].calc_HSI_lux)  #meas_sky_lux)
+                    exp_time = prior_scale*scale*13587/(collecting_area*sky_lux*float(g_dev['fil'].filter_data[current_filter][3]))  #g_dev['ocn'].calc_HSI_lux)  #meas_sky_lux)
                     
                     print('Ex:  ', exp_time, scale, prior_scale, sky_lux, float(g_dev['fil'].filter_data[current_filter][3]))
                     #exp_time*= 4.9/9/2
@@ -919,15 +921,16 @@ class Sequencer:
                     continue
                 g_dev['obs'].update_status()
                 try:
-                    scale = 35000/bright
-                    if scale > 3:
-                        scale = 3.0
+                    scale = 30000/bright
+                    if scale > 5:
+                        scale = 5
                     if scale < 0.33:
                         scale = 0.33
                 except:
                     scale = 1.0
+
                 print('\n\n\n', "Patch/Bright:  ", bright, g_dev['fil'].filter_data[current_filter][0], \
-                      '  Gain: ', round(bright/(3*sky_lux*collecting_area*exp_time), 3), '\n\n\n')
+                      '  Gain: ', round(bright/(2.2*sky_lux*collecting_area*exp_time), 3), '\n\n\n')
 
                 obs_win_begin, sunset, sunrise, ephem_now = self.astro_events.getSunEvents()
                 #  THE following code looks like a debug patch gone rogue.

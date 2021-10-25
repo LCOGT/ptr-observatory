@@ -166,7 +166,7 @@ class Camera:
         """
         Added monkey patches to make ASCOM/Maxim differences
         go away from the bulk of the in-line code.
-        Try to be more consistent about use of filter names rather than
+        Try to be more consistent about use of generic filter names rather than
         numbers.
         """
         '''
@@ -240,7 +240,7 @@ class Camera:
         self.site_path = self.config['site_path']
         self.archive_path = self.site_path +'archive/'
         self.camera_path = self.archive_path  + self.alias+ "/"
-        self.alt_path = '//house-computer/saf_archive_2/archive/sq01/'
+        self.alt_path = '//house-computer/saf_archive_2/archive/sq01/'   #NB This needs cleaning up
         self.autosave_path = self.camera_path +'autosave/'
         self.lng_path = self.camera_path + "lng/"
         self.seq_path = self.camera_path + "seq/"
@@ -400,41 +400,42 @@ class Camera:
     def _ascom_stop_expose(self):
             self.camera.StopExposure()   #ASCOM also has an AbortExposure method.
 
-    def create_simple_autosave(self, exp_time=0, img_type=0, speed=0, suffix='', \
-                               repeat=1, readout_mode="Normal", filter_name='W', \
-                               enabled=1, binning=1, binmode=0, column=1):
-        '''
-        Creates a valid Maxium Autosaave file.
-        '''
-        exp_time = round(abs(float(exp_time)), 3)
-        if img_type > 3:
-            img_type = 0
-        repeat = abs(int(repeat))
-        if repeat < 1:
-            repeat = 1
-        binning = abs(int(binning))
-        if binning > 24:
-            binning = 2
-        if filter_name == "":
-            filter_name = 'w'
-        proto_file = open(self.camera_path +'seq/ptr_proto.seq')
-        proto = proto_file.readlines()
-        proto_file.close()
-        #print(proto, '\n\n')
-        if column == 1:
-            proto[51] = proto[51][:9]  + str(img_type) + proto[51][10:]
-            proto[50] = proto[50][:9]  + str(exp_time) + proto[50][12:]
-            proto[48] = proto[48][:12] + str(suffix)   + proto[48][12:]
-            proto[47] = proto[47][:10] + str(speed)    + proto[47][11:]
-            proto[31] = proto[31][:11] + str(repeat)   + proto[31][12:]
-            proto[29] = proto[29][:17] + readout_mode  + proto[29][23:]
-            proto[13] = proto[13][:12] + filter_name   + proto[13][13:]
-            proto[10] = proto[10][:12] + str(enabled)  + proto[10][13:]
-            proto[1]  = proto[1][:12]  + str(binning)  + proto[1][13:]
-        seq_file = open(self.camera_path +'seq/ptr_mrc.seq', 'w')
-        for item in range(len(proto)):
-            seq_file.write(proto[item])
-        seq_file.close()
+    # #NB  The autsave is obsolete now that we can work Maxim free.
+    # def create_simple_autosave(self, exp_time=0, img_type=0, speed=0, suffix='', \
+    #                            repeat=1, readout_mode="Normal", filter_name='W', \
+    #                            enabled=1, binning=1, binmode=0, column=1):
+    #     '''
+    #     Creates a valid Maxium Autosaave file.
+    #     '''
+    #     exp_time = round(abs(float(exp_time)), 3)
+    #     if img_type > 3:
+    #         img_type = 0
+    #     repeat = abs(int(repeat))
+    #     if repeat < 1:
+    #         repeat = 1
+    #     binning = abs(int(binning))
+    #     if binning > 24:
+    #         binning = 2
+    #     if filter_name == "":
+    #         filter_name = 'w'
+    #     proto_file = open(self.camera_path +'seq/ptr_proto.seq')
+    #     proto = proto_file.readlines()
+    #     proto_file.close()
+    #     #print(proto, '\n\n')
+    #     if column == 1:
+    #         proto[51] = proto[51][:9]  + str(img_type) + proto[51][10:]
+    #         proto[50] = proto[50][:9]  + str(exp_time) + proto[50][12:]
+    #         proto[48] = proto[48][:12] + str(suffix)   + proto[48][12:]
+    #         proto[47] = proto[47][:10] + str(speed)    + proto[47][11:]
+    #         proto[31] = proto[31][:11] + str(repeat)   + proto[31][12:]
+    #         proto[29] = proto[29][:17] + readout_mode  + proto[29][23:]
+    #         proto[13] = proto[13][:12] + filter_name   + proto[13][13:]
+    #         proto[10] = proto[10][:12] + str(enabled)  + proto[10][13:]
+    #         proto[1]  = proto[1][:12]  + str(binning)  + proto[1][13:]
+    #     seq_file = open(self.camera_path +'seq/ptr_mrc.seq', 'w')
+    #     for item in range(len(proto)):
+    #         seq_file.write(proto[item])
+    #     seq_file.close()
        # print(proto)                binning=3, filter_name='air')
 
 
@@ -532,20 +533,20 @@ class Camera:
         #print("Checking if Maxim is still connected!")
         #  self.t7 is last time camera was read out
         #if self.t7 is not None and (time.time() - self.t7 > 30) and self.maxim:
-        try:
-            self.user_name
-        except:
-            self.user_name = "kilroy_was_here"
+        # try:
+        #     self.user_name
+        # except:
+        #     self.user_name = "kilroy_was_here"
 
         self.t0 = time.time()
-        #Force a reseek //eventually dither//
-        try:
-            if g_dev['mnt'].last_seek_time < self.t0 - 180:   #NB Consider upping this to 300 to 600 sec.
-                print('re_seeking')
-                g_dev['mnt'].re_seek(0)  #) is a placeholder for a dither value being passed.
-        except:
-            print('Re_seek skipped; usually because no prior seek this session.')
-
+        #Force a reseek //eventually dither//  NB NB WHY IS THIS HERE?
+        # try:
+        #     if g_dev['mnt'].last_seek_time < self.t0 - 180:   #NB Consider upping this to 300 to 600 sec.
+        #         print('re_seeking')
+        #         g_dev['mnt'].re_seek(0)  #) is a placeholder for a dither value being passed.
+        # except:
+        #     print('Re_seek skipped; usually because no prior seek this session.')
+        #THe following was a notrious MAXIM problem.
         try:
             probe = self.camera.CoolerOn
             if not probe:
@@ -607,13 +608,13 @@ class Camera:
         if count < 1:
             count = 1   #Hence frame does not repeat unless count > 1
 
-        #  Here we set up the filter, and later on possibly rotational composition.
+        #  Here we set up the filter, and later on possibly rotational composition.  WE CAN SPEED THIS UP IF ON THE RIGHT FITLER
         try:    #20200716   FW throwing error (-4)
             requested_filter_name = str(optional_params.get('filter', 'w'))   #Default should come from config.
             self.current_filter = requested_filter_name
             g_dev['fil'].set_name_command({'filter': requested_filter_name}, {})
         except Exception as e:
-            print("Camera filter setup:  ", e)
+            print("Camera filter setup exception:  ", e)
             #breakpoint()
         #  NBNB Changing filter may cause a need to shift focus
         self.current_offset = g_dev['fil'].filter_offset  #TEMP   NBNBNB This needs fixing
@@ -695,7 +696,7 @@ class Camera:
             elif area in ('Full', 'full', '150%', 'Chip', 'chip'):
                 area = 150
         except:
-            area = 150     #was 100 in ancient times.
+            area = 150     #was 100 in ancient times.  NBNB THIS NEEDS TO BE MADE LOGICAL 133% !!!
 
         if bin_y == 0 or self.camera_max_x_bin != self.camera_max_y_bin:
             self.bin_x = min(bin_x, self.camera_max_x_bin)
@@ -816,7 +817,7 @@ class Camera:
         result = {}  #  This is a default return just in case
         num_retries = 0
 
-        for seq in range(count):
+        for seq in range(count):  # NB NB NB NB  This needs a way to interrupt./
             #  SEQ is the outer repeat loop and takes count images; those individual exposures are wrapped in a
             #  retry-3-times framework with an additional timeout included in it.
             if seq > 0:
@@ -884,6 +885,7 @@ class Camera:
 
             while self.retry_camera > 0:
                 #NB Here we enter Phase 2
+
                 try:
                     self.t1 = time.time()
                     self.exposure_busy = True
@@ -982,12 +984,11 @@ class Camera:
                         return result
                     self.t9 = time.time()
                     #We go here to keep this subroutine a reasonable length, Basically still in Phase 2
-
                     result = self.finish_exposure(exposure_time, frame_type, \
                                          count - seq, do_sep, no_AWS,
-                                         dist_x, dist_y, quick=quick, low=ldr_handle_time, \
-                                         high=ldr_handle_high_time, script=self.script, \
-                                         opt=opt)  #  NB all these parameters are crazy!
+                                         dist_x, dist_y, quick=quick, opt=opt) #low=ldr_handle_time, \
+                                         #high=ldr_handle_high_time, script=self.script, \
+                                         #opt=opt)  #  NB all these parameters are crazy!
                     self.exposure_busy = False
                     self.t10 = time.time()
                     #  self._stop_expose()
@@ -1040,10 +1041,12 @@ class Camera:
             self.post_rot = []
             self.post_foc = []
             self.post_ocn = []
+            #t_now = time.time()
             g_dev['mnt'].get_quick_status(self.post_mnt)   #Need to pick which pass was closest to image completion
             g_dev['rot'].get_quick_status(self.post_rot)
             g_dev['foc'].get_quick_status(self.post_foc)
             g_dev['ocn'].get_quick_status(self.post_ocn)
+            #print('Pre status took:  ', time.time() - t_now, 'seconds')
             if time.time() < self.completion_time:   #  NB Testing here if glob too early is delaying readout.
                 time.sleep(.5)
                 continue
@@ -1104,7 +1107,8 @@ class Camera:
                     #self.img = self.img_untransposed    #   .transpose()  Only use this if Maxim has changed orientation.
                     #  print('incoming shape:  ', self.img.shape)
                 self.t5 = time.time()
-                pier_side = g_dev['mnt'].mount.sideOfPier    #0 = Tel Looking West, is flipped.
+                pier_side = g_dev['mnt'].mount.sideOfPier    #0 = Tel Looking West, is flipped.  #NB NB Should get pre-exposure flip state
+                                                                                                 #And process accordingly with a retry
                 # print('setup took:  ', round(self.t2 - self.t0))
                 # print('time to first readout try: ', round(self.t4 - self.t2, 2), ' sec,')
                 # print('to get safearray: ', round(self.t4p5 - self.t2, 2), ' sec,')
@@ -1163,16 +1167,18 @@ class Camera:
                 elif ix == 4800:
                     #Shift error needs documenting!
                     
-                    if self.img[11, -22:-18].mean() < (self.img[12, -18] +self.img[10, -18])/2:
+                    if self.img[11, -22:-18].mean() < (self.img[12, -18] + self.img[10, -18])/2:
                     #if self.img[11, -18] == 0:   #This is the normal incoming image
                         self.overscan = int((np.median(self.img[12:, -17:]) + np.median(self.img[0:10, :]))/2) - 1
                         trimmed = self.img[12:-4, :-17].astype('int32') + pedastal - self.overscan
-                        print("Normal no Shift, bin 2", self.overscan, trimmed.mean(), trimmed.shape)
+                        #print("Normal no Shift, bin 2", self.overscan, trimmed.mean(), trimmed.shape)
                         imshift = False
                         #print("Shift 1", self.overscan, square.mean())
                     elif self.img[15, -22:-18].mean() < (self.img[16, -18] + self.img[14, -18])/2:     #This rarely occurs.  Neyle's Qhy600
-                        self.overscan = int((np.median(self.img[16:, -17:]) + np.median(self.img[0:14, :]))/2) -1
-                        trimmed = self.img[16:, :-17].astype('int32') + pedastal - self.overscan
+                        self.overscan = int((np.median(self.img[12:, -17:]) + np.median(self.img[0:10, :]))/2) - 1
+                        trimmed = self.img[12:-4, :-17].astype('int32') + pedastal - self.overscan  #Keep solve the same
+                        # self.overscan = int((np.median(self.img[16:, -17:]) + np.median(self.img[0:14, :]))/2) -1
+                        # trimmed = self.img[16:, :-17].astype('int32') + pedastal - self.overscan
                         imshift = True
                         print("Rare error, Shift bin 2", self.overscan, trimmed.mean(), trimmed.shape)
                         
@@ -1213,7 +1219,7 @@ class Camera:
                 #smin = np.where(square < 0)    # finds negative pixels  NB <0 where pedastal is 200. Useless!
 
                 self.t77 = time.time()
-                print('readout, transpose & Trim took:  ', round(self.t77 - self.t4, 1), ' sec,')# marks them as 0
+                #print('readout, transpose & Trim took:  ', round(self.t77 - self.t4, 1), ' sec,')# marks them as 0
                 #Should we consider correcting the image right here with cached bias, dark and hot pixel
                 #processing so downstream processing is reliable.  Maybe only do this for focus?
                 g_dev['obs'].send_to_user("Camera has read-out image.", p_level='INFO')
@@ -1236,41 +1242,47 @@ class Camera:
                 avg_rot = g_dev['rot'].get_average_status(self.pre_rot, self.post_rot)
                 avg_ocn = g_dev['ocn'].get_average_status(self.pre_ocn, self.post_ocn)
 
-                if frame_type[-5:] in ['focus', 'probe', "ental"]:
-                    self.img = self.img + 100   #maintain a + pedestal for sep  THIS SHOULD not be needed for a raw input file.
-                    self.f_img = self.img.astype("float")  #f_img is a float 64 so do not modify the main img.
-                    #print(self.img.flags)
-                    self.f_img = self.f_img.copy(order='C')   #  NB Should we move this up to where we read the array?
-                    bkg = sep.Background(self.f_img)
-                    self.f_img -= bkg
-                    sources = sep.extract(self.f_img, 4.5, err=bkg.globalrms, minarea=15)  # Minarea should deal with hot pixels.
-                    sources.sort(order = 'cflux')
-                    print('No. of detections:  ', len(sources))
-                    ix, iy = self.f_img.shape
-                    r0 = 0
-                    """
-                    ToDo here:  1) do not deal with a source nearer than 5% to an edge.
-                    2) do not pick any saturated sources.
-                    3) form a histogram and then pick the median winner
-                    4) generate data for a report.
-                    5) save data and image for engineering runs.
-                    """
-                    border_x = int(ix*0.05)
-                    border_y = int(iy*0.05)
-                    r0 = []
-                    for sourcef in sources:
-                        if border_x < sourcef['x'] < ix - border_x and \
-                            border_y < sourcef['y'] < iy - border_y and \
-                            sourcef['peak']  < 55000 and sourcef['cpeak'] < 55000:  #Consider a lower bound
-                            a0 = sourcef['a']
-                            b0 = sourcef['b']
-                            r0.append(round(math.sqrt(a0*a0 + b0*b0), 2))
-                    scale = self.config['camera'][self.name]['settings']['pix_scale']
-                    result['FWHM'] = round(np.median(r0)*2*scale, 3)   #@0210524 was 2x larger but a and b are diameters not radii 20211010 Changed back
-                    result['mean_focus'] =  avg_foc[1]
-
-                    focus_image = True
-                    self.f_img = None
+                if frame_type in ['focus', 'probe']:
+                    try:
+                        self.img = self.img + 100   #maintain a + pedestal for sep  THIS SHOULD not be needed for a raw input file.
+                        self.f_img = self.img.astype("float")  #f_img is a float 64 so do not modify the main img.
+                        #print(self.img.flags)
+                        self.f_img = self.f_img.copy(order='C')   #  NB Should we move this up to where we read the array?
+                        bkg = sep.Background(self.f_img)
+                        self.f_img -= bkg
+                        sources = sep.extract(self.f_img, 4.5, err=bkg.globalrms, minarea=15)  # Minarea should deal with hot pixels.
+                        sources.sort(order = 'cflux')
+                        print('No. of detections:  ', len(sources))
+                        ix, iy = self.f_img.shape
+                        r0 = 0
+                        """
+                        ToDo here:  1) do not deal with a source nearer than 5% to an edge.
+                        2) do not pick any saturated sources.
+                        3) form a histogram and then pick the median winner
+                        4) generate data for a report.
+                        5) save data and image for engineering runs.
+                        """
+                        border_x = int(ix*0.05)
+                        border_y = int(iy*0.05)
+                        r0 = []
+                        for sourcef in sources:
+                            if border_x < sourcef['x'] < ix - border_x and \
+                                border_y < sourcef['y'] < iy - border_y and \
+                                sourcef['peak']  < 55000 and sourcef['cpeak'] < 55000:  #Consider a lower bound
+                                a0 = sourcef['a']
+                                b0 = sourcef['b']
+                                r0.append(round(math.sqrt(a0*a0 + b0*b0), 2))
+                        scale = self.config['camera'][self.name]['settings']['pix_scale']
+                        result['FWHM'] = round(np.median(r0)*2*scale, 3)   #@0210524 was 2x larger but a and b are diameters not radii 20211010 Changed back
+                        result['mean_focus'] =  avg_foc[1]
+    
+                        focus_image = True
+                        self.f_img = None
+                    except:
+                        result['error'] = True
+                        result['patch'] = bi_mean
+                        focus_image = False
+                        self.f_img = None
                 else:
                     focus_image = False
 
@@ -1400,7 +1412,7 @@ class Camera:
                     try:
                         hdu.header['OBSERVER'] = (self.user_name, 'Observer name')  # userid
                     except:
-                        hdu.header['OBSERVER'] = ("kilroy visited", 'Observer name')  # userid
+                        hdu.header['OBSERVER'] = ("kilroy was here", 'Observer name')  # userid
                     hdu.header['OBSNOTE']  = self.hint[0:54]            #Needs to be truncated.
                     if self.maxim:
                         hdu.header['FLIPSTAT'] = 'None'   # This is a maxim camera setup, not a flip status
@@ -1510,10 +1522,10 @@ class Camera:
                        
                         hdu.header['USERNAME'] = self.last_user_name
                         hdu.header ['USERID']  = self.last_user_id
-                        g_dev['counter'] += 1
-                        print("User_name or id not found, using prior:  ", g_dev['counter'])  #Insert last user nameand ID here if they are not supplied.
-                        if g_dev['counter'] > 6:
-                            breakpoint()
+                        # g_dev['counter'] += 1
+                        # print("User_name or id not found, using prior:  ", g_dev['counter'])  #Insert last user nameand ID here if they are not supplied.
+                        # if g_dev['counter'] > 6:
+                        #     breakpoint()
 
                     # NB This needs more development
                     #im_type = 'EX'   #or EN for engineering....
