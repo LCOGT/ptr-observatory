@@ -269,7 +269,6 @@ class Sequencer:
         '''
         # NB Need a better way to get all the events.
         obs_win_begin, sunZ88Op, sunZ88Cl, ephem_now = self.astro_events.getSunEvents()
-        #ephem_now = ephem.now()
 
         try:
             ocn_status = eval(self.redis_server.get('ocn_status'))
@@ -690,7 +689,7 @@ class Sequencer:
                         step = 1
                         offset = [(0, -1), (0, 1)] #Two mosaic steps 36 x 24mm chip  Square
                         pane = 1
-                        pitch = 0.0875   #Try this out for small overlap and tall field.
+                        pitch = 0.1875   #Try this out for small overlap and tall field.
                     else:
                         offset = [(0., 0.)] #Zero(no) mosaic offset
                         pitch = 0.
