@@ -24,6 +24,30 @@ from devices.wms_enclosure_agent import Enclosure
 from devices.wms_observing_agent import ObservingConditions
 from global_yard import g_dev
 
+
+import os, signal, subprocess
+  
+# def process():
+     
+#     # Ask user for the name of process
+#     name = input("Enter process Name: ")
+#     try:
+         
+#         # iterating through each instance of the process
+#         for line in os.popen("ps ax | grep " + name + " | grep -v grep"):
+#             fields = line.split()
+             
+#             # extracting Process ID from the output
+#             pid = fields[0]
+             
+#             # terminating process
+#             os.kill(int(pid), signal.SIGKILL)
+#         print("Process Successfully terminated")
+         
+#     except:
+#         print("Error Encountered while running script")
+  
+# process()
 class Observatory:
 
     def __init__(self, name, config):
@@ -63,6 +87,11 @@ class Observatory:
         self.blocks = None
         self.projects = None
         self.events_new = None
+        immed_time = time.time()
+        self.obs_time = immed_time
+        self.wema_start_time = immed_time
+        self.redis_server.set('obs_time', immed_time, ex=360)
+        #subprocess.call('obs.py')  This is clearly wrong.
 
 
         
@@ -136,7 +165,22 @@ class Observatory:
         if loud:
             print('\n\n > Status Sent:  \n', status)
         else:
-            print('>', )
+            try:
+                obs_time = float(self.redis_server.get('obs_time'))
+                delta= time.time() - obs_time
+            except:
+                delta= 999.99  #"NB NB NB Temporily flags someing really wrong."
+            if delta > 90:
+                print(">The observer's time is stale > 30 seconds:  ", round(delta, 2))
+            if delta > 360:
+                pid = int(self.redis_server.get("obs_pid"))
+                if pid is not None:
+                    os.kill(int(pid), signal.SIGTERM)
+                    print("The observer process has been killed, restarting now.")
+                else:
+                    print(">Observer has not started, so cannot kill it.")
+            else:
+                print('>')
         uri_status = f"https://status.photonranch.org/status/{self.name}/status/"
         try:    # 20190926  tHIS STARTED THROWING EXCEPTIONS OCCASIONALLY
             payload ={

@@ -22,6 +22,8 @@ import matplotlib.pyplot as plt
 from PIL import Image
 from global_yard import g_dev
 '''
+
+Note no call outs.  Maybe we should check there are no zero values in flats?
 Comments are obsolete as of 20200624  WER
 This is kludge code just to quickly partially calibrate images for the AWS 768^2 postage.
 WE need to re-think how this will work, ie use BONSAI locally or not.
@@ -700,7 +702,7 @@ def calibrate (hdu, lng_path, frame_type='light', quick=False):
                 img = img/scr_flat
                 cal_string +=', SCF'
             except:
-                if loud: print("Flat field math failed.")
+                print("Flat field math failed.")
             if not quick: 
                 if loud:  print('QuickFlat result:  ', imageStats(img, loud))
 
@@ -744,7 +746,7 @@ def calibrate (hdu, lng_path, frame_type='light', quick=False):
     result['half_FD'] = None
     result['patch'] = round((hdu.data.mean() + np.median(hdu.data))/2, 1)
     result['temperature'] = None
-    g_dev['obs'].send_to_user('Calibration complete.', p_level='INFO')
+    #g_dev['obs'].send_to_user('Calibration complete.', p_level='INFO')
     return result
 
 

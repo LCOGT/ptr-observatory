@@ -508,7 +508,7 @@ class ObservingConditions:
                 self.clamp_latch = True
                 self.redis_server.set('wx_hold', True, ex=30000)
                 self.wx_clamp = True
-                self.wx_to_go = 999
+                self.wx_to_go = 86400
 
             self.wx_hold_last_updated = time.time()
          

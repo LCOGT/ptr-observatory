@@ -165,9 +165,10 @@ class Sequencer:
             "active_script": None,
             "sequencer_busy":  False
         }
-        if not self.sequencer_hold:   #  NB THis should be wrapped in a timeout.
-            if g_dev['obs'].status_count > 3:   #Gove syste time to settle.
-                self.manager()      #  There be dragons here!  <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+        #20211026   I think this is causing problems.   WER
+        # if not self.sequencer_hold:   #  NB THis should be wrapped in a timeout.
+        #     if g_dev['obs'].status_count > 3:   #Gove syste time to settle.
+        #         self.manager()      #  There be dragons here!  <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
         return status
 
 
@@ -262,6 +263,9 @@ class Sequencer:
     ###############################
     def manager(self):
         '''
+        This is called by the update loop.   Call from local status probe was removed
+        #on 20211026 WER
+        
         This is where scripts are automagically started.  Be careful what you put in here if it is
         going to open the dome or move the telescope at unexpected times.
 
@@ -269,7 +273,6 @@ class Sequencer:
         '''
         # NB Need a better way to get all the events.
         obs_win_begin, sunZ88Op, sunZ88Cl, ephem_now = self.astro_events.getSunEvents()
-
         try:
             ocn_status = eval(self.redis_server.get('ocn_status'))
             enc_status = eval(self.redis_server.get('enc_status'))
@@ -302,7 +305,6 @@ class Sequencer:
                and g_dev['enc'].mode == 'Automatic' and not g_dev['ocn'].wx_hold and \
                self.config['auto_eve_sky_flat']):
             self.sky_flat_latch = False
-            breakpoint()
             #if enc_status['shutter_status'] in ['Closed', 'closed', 'Closing', 'closing']:
             self.enc_to_skyflat_and_open(enc_status, ocn_status)   #Just in case a Wx hold stopped opening      
 
@@ -364,7 +366,6 @@ class Sequencer:
                     and (block['start'] <= now_date_timeZ < block['end']) \
                     and not self.is_in_completes(block['event_id']):
                     self.block_guard = True
-                    
                     completed_block = self.execute_block(block)  #In this we need to ultimately watch for weather holds.
                     self.append_completes(completed_block['event_id'])
                     self.block_guard = False
@@ -570,7 +571,7 @@ class Sequencer:
             print("Left to do initial value:  ", left_to_do)
             req = {'target': 'near_tycho_star'}
             initial_focus = True
-            af_delay = 60*60  #This must be a big number!
+            af_delay = 45*60  #This must be a big number!
 
             while left_to_do > 0 and not ended:
 
@@ -580,6 +581,7 @@ class Sequencer:
 
                     if not g_dev['enc'].shutter_is_closed:
                         self.auto_focus_script(req2, opt, throw = 750)
+                        pass
                     else:
                         print('Shutter closed, skipping AF cycle.0')  #coarse_focus_script can be used here
                     just_focused = True
@@ -614,23 +616,29 @@ class Sequencer:
                     #defocus = exposure['defocus']
 #                    if g_dev['site'] == 'saf':   #THis should be in config.
                     if color[0] == 'B':  
-                        color = 'B'   #Map generic filters to site specific ones.
+                        color = 'PB'   #Map generic filters to site specific ones.
                     if color[0] == 'G':  
-                        color = 'V'   # NB NB THis needs a clean up
+                        color = 'PG'   # NB NB THis needs a clean up, these mappings should be in config
                     if color[0] == 'R':  
-                        color = 'R'
+                        color = 'PR'
                     if color[0] == 'L':  
-                        color = 'w'
+                        color = 'PL'
                     if color[0] == 'W':  
                         color = 'w'
                     if color[0] == 'g':  
                         color = 'gp'
-                    if color[0] == 'r':  
+                    if color[0] == 'r':    #NB This is redundant for Sloans when small cap.
                         color = 'rp'
-                    if color[0] == 'i':  
+                    if color[0] == 'i':     #NB NB THIS IS WRONG For Johnson and Bessell
                         color = 'ip'
                     if color[0] == 'H':  
                         color = 'HA'
+                    if color[0] == 'O':  
+                        color = 'O3'
+                    if color[0] == 'S':  
+                        color = 'S2'
+                    if color[0] == 'C':  
+                        color = 'CR'
                     if count <= 0:
                          continue
                     #At this point we have 1 to 9 exposures to make in this filter.  Note different areas can be defined. 
@@ -1051,6 +1059,7 @@ class Sequencer:
         '''
         self.sequencer_hold = False   #Allow comand checks.
         self.guard = False
+
         req2 = copy.deepcopy(req)
         opt2 = copy.deepcopy(opt)
         self.af_guard = True
@@ -1112,7 +1121,7 @@ class Sequencer:
             else:
                 result['FWHM'] = 3
                 result['mean_focus'] = foc_pos0
-    
+
             spot1 = result['FWHM']
             foc_pos1 = result['mean_focus']
             if math.isnan(spot1):

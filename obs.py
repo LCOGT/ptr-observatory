@@ -163,8 +163,9 @@ class Observatory:
 
         # This is the class through which we can make authenticated api calls.
         self.api = API_calls()
-        self.command_interval = 3   # seconds between polls for new commands
-        self.status_interval = 4    # NOTE THESE IMPLEMENTED AS A DELTA .
+        self.command_interval = 5   # seconds between polls for new commands
+        self.status_interval = 5    # NOTE THESE IMPLEMENTED AS A DELTA .
+        self.time_last_status = time.time() - 5
         self.name = name
         self.site_name = name
         self.config = config
@@ -248,6 +249,11 @@ class Observatory:
         self.projects = None
         self.events_new = None
         self.reset_last_reference()
+        self.redis_server.set('obs_time', time.time(), ex=360)
+        self.obs_pid = os.getpid()
+        print('PID:  ', self.obs_pid)
+        self.redis_server.set('obs_pid', self.obs_pid)
+        
 
 
 
@@ -333,7 +339,7 @@ class Observatory:
 
     def update_config(self):
         '''
-        Send the config to aws.
+        Send the config to aws.  This generally happens once.
         '''
         uri = f"{self.name}/config/"
         self.config['events'] = g_dev['events']
@@ -366,7 +372,7 @@ class Observatory:
         # This stopping mechanism allows for threads to close cleanly.
         while not self.stopped:
             # Wait a bit before polling for new commands
-            time.sleep(self.command_interval)
+            time.sleep(self.command_interval)  #This causes a bocking event  ~5 sec apart
            #  t1 = time.time()
             if not g_dev['seq'].sequencer_hold:
                 url_job = "https://jobs.photonranch.org/jobs/getnewjobs"
@@ -457,6 +463,8 @@ class Observatory:
         Each device class is responsible for implementing the method
         `get_status` which returns a dictionary.
         '''
+        if self.time_last_status + 5 >= time.time():
+            return
 
         # This stopping mechanism allows for threads to close cleanly.
         loud = False
@@ -531,6 +539,7 @@ class Observatory:
             self.status_count +=1
         except:
             print('self.api.authenticated_request("PUT", uri, status):   Failed!')
+        self.redis_server.set('obs_time', time.time(), ex=360)
 
 
     def update(self):
@@ -565,9 +574,11 @@ class Observatory:
         except:
             pass
             #print("self.scan_requests('mount1') threw an exception, probably empty input queues.")
+        self.redis_server.set('obs_time', time.time(), ex=360)
         g_dev['seq'].manager()  #  Go see if there is something new to do.
 
     def run(self):   # run is a poor name for this function.
+        #this is called and never exits. 20211016  WER added a sleep
         try:
             # self.update_thread = threading.Thread(target=self.update_status).start()
             # Each mount operates async and has its own command queue to scan.
@@ -580,6 +591,7 @@ class Observatory:
             # Keep the main thread alive, otherwise signals are ignored
             while True:
                 self.update()
+                time.sleep(1)
                 # `Ctrl-C` will exit the program.
         except KeyboardInterrupt:
             print("Finishing loops and exiting...")
@@ -642,6 +654,7 @@ class Observatory:
         header will be both standard image parameters and destination filenames
 
         '''
+        #  We should no longer get here! 20121030
         while True:
             if not self.reduce_queue.empty():
                 # print(self)
@@ -654,7 +667,7 @@ class Observatory:
                     time.sleep(.5)
                     continue
                 # Here we parse the input and calibrate it.
-
+                breakpoint()
                 paths = pri_image[0]
                 hdu = pri_image[1]
                 frame_type = pri_image[2]
@@ -664,6 +677,7 @@ class Observatory:
 
                 #cal_result =
                 print('Pre Reduction Mean:  ', hdu.data.mean())
+
                 calibrate(hdu, lng_path, paths['frame_type'], quick=False)
                 #print("Calibrate returned:  ", hdu.data, cal_result)
                 #Before saving reduced or generating postage, we flip
@@ -850,7 +864,6 @@ class Observatory:
 
                 if frame_type in ('bias', 'dark', 'screenflat', 'skyflat'):
                     no_AWS = True
-
                 if not no_AWS:  #IN the no+AWS case should we skip more of the above processing?
                     hdu.data = hdu.data.astype('uint16')
                     iy, ix = hdu.data.shape
@@ -859,56 +872,28 @@ class Observatory:
                     else:
                         resized_a = resize(hdu.data, (int(1536*iy/ix), 1536), preserve_range=True)  #  We should trim chips so ratio is exact.
                     #print('New small fits size:  ', resized_a.shape)
-                    hdu.data = resized_a.astype('uint16')
-    
+                    hdu.data = resized_a.astype('uint16') 
                     i768sq_data_size = hdu.data.size
-                    # print('ABOUT to print paths.')
-                    # print('Sending to:  ', paths['im_path'])
-                    # print('Also to:     ', paths['i768sq_name10'])
-    
                     hdu.writeto(paths['im_path'] + paths['i768sq_name10'], overwrite=True)
                     hdu.data = resized_a.astype('float')
-                    #The following does a very lame contrast scaling.  A beer for best improvement on this code!!!
-                    #Looks like Tim wins a beer.
-                    # Old contrast scaling code:
-                    #istd = np.std(hdu.data)
-                    #imean = np.mean(hdu.data)
-                    #if (imean + 3*istd) != 0:    #This does divide by zero in some bias images.
-                    #    img3 = hdu.data/(imean + 3*istd)
-                    #else:
-                    #    img3 = hdu.data
-                    #fix = np.where(img3 >= 0.999)
-                    #fiz = np.where(img3 < 0)
-                    #img3[fix] = .999
-                    #img3[fiz] = 0
-                    #img4 = img3*256
-                    #img4 = img4.astype('uint8')   #Eliminates a user warning.
-                    #imsave(paths['im_path'] + paths['jpeg_name10'], img4)  #NB File extension triggers JPEG conversion.
-                    # New contrast scaling code:
                     stretched_data_float = Stretch().stretch(hdu.data)
                     stretched_256 = 255*stretched_data_float
-                    hot = np.where(stretched_256 > 255)
+                    hot = np.where(stretched_256 >= 255)
                     cold = np.where(stretched_256 < 0)
                     stretched_256[hot] = 255
                     stretched_256[cold] = 0
                     #print("pre-unit8< hot, cold:  ", len(hot[0]), len(cold[0]))
                     stretched_data_uint8 = stretched_256.astype('uint8')  # Eliminates a user warning
-                    hot = np.where(stretched_data_uint8 > 255)
+                    hot = np.where(stretched_data_uint8 >= 255)
                     cold = np.where(stretched_data_uint8 < 0)
-                    stretched_data_uint8[hot] = 255
+                    stretched_data_uint8[hot] = 254
                     stretched_data_uint8[cold] = 0
                     #print("post-unit8< hot, cold:  ", len(hot[0]), len(cold[0]))
                     imsave(paths['im_path'] + paths['jpeg_name10'], stretched_data_uint8)
-                    #img4 = stretched_data_uint8  # keep old name for compatibility
-    
-                    jpeg_data_size = abs(stretched_data_uint8.size - 1024)                # istd = np.std(hdu.data)
-                    #g_dev['cam'].enqueue_for_AWS(text_data_size, paths['im_path'], paths['text_name'])
-
+                    jpeg_data_size = abs(stretched_data_uint8.size - 1024)
                     g_dev['cam'].enqueue_for_AWS(jpeg_data_size, paths['im_path'], paths['jpeg_name10'])
                     g_dev['cam'].enqueue_for_AWS(i768sq_data_size, paths['im_path'], paths['i768sq_name10'])
-                    #print('File size to AWS:', reduced_data_size)
-                    g_dev['cam'].enqueue_for_AWS(reduced_data_size, paths['im_path'], paths['red_name01'])
-                    #if not quick:
+                    #g_dev['cam'].enqueue_for_AWS(reduced_data_size, paths['im_path'], paths['red_name01'])
                 #print('Sent to AWS Queue.')
                 time.sleep(0.5)
                 self.img = None   #Clean up all big objects.
@@ -921,7 +906,7 @@ class Observatory:
                 # except:
                 #     pass
                 print("\nReduction completed.")
-                g_dev['obs'].send_to_user("An image reduction has completed.", p_level='INFO')
+                #g_dev['obs'].send_to_user("An image reduction has completed.", p_level='INFO')
                 self.reduce_queue.task_done()
             else:
                 time.sleep(.5)

@@ -25,7 +25,10 @@ import shelve
 from devices.arclamp import ArcLampBox
 
 #from os.path import join, dirname, abspath
-
+from skimage.transform import resize
+from skimage.io import imsave
+from planewave import platesolve
+from auto_stretch.stretch import Stretch
 # from skimage import data, io, filters
 # from skimage.transform import resize
 # from skimage import img_as_float
@@ -650,7 +653,7 @@ class Camera:
             frame_type = imtype.replace(' ', '')  # note banzai doesn't appear to include screen or solar flat keywords.
         else:  # 'light', 'experimental', 'autofocus probe', 'test image', or any other image type
             imtypeb = True
-            if imtype.lower() in ('experimental', 'autofocus probe', 'auto_focus'):
+            if imtype.lower() in ['experimental', 'autofocus probe', 'auto_focus']:    #This needs serious fixing Wayne 20211030
                 frame_type = 'experimental'
             else: frame_type = 'expose'
 
@@ -820,8 +823,8 @@ class Camera:
         for seq in range(count):  # NB NB NB NB  This needs a way to interrupt./
             #  SEQ is the outer repeat loop and takes count images; those individual exposures are wrapped in a
             #  retry-3-times framework with an additional timeout included in it.
-            if seq > 0:
-                g_dev['obs'].update_status()
+            # if seq > 0:
+            #     g_dev['obs'].update_status()   
 
             self.pre_mnt = []
             self.pre_rot = []
@@ -878,8 +881,8 @@ class Camera:
             except:
                 pass
                # print("Motion check faulted.")
-            if seq > 0:
-                g_dev['obs'].update_status()   # NB Make sure this routine has a fault guard.
+            # if seq > 0:
+            #     g_dev['obs'].update_status()   # NB Make sure this routine has a fault guard.
             self.retry_camera = 3
             self.retry_camera_start_time = time.time()
 
@@ -1048,7 +1051,8 @@ class Camera:
             g_dev['ocn'].get_quick_status(self.post_ocn)
             #print('Pre status took:  ', time.time() - t_now, 'seconds')
             if time.time() < self.completion_time:   #  NB Testing here if glob too early is delaying readout.
-                time.sleep(.5)
+                time.sleep(.4)
+                g_dev['obs'].redis_server.set('obs_time', time.time(), ex=360)
                 continue
             incoming_image_list = []   #glob.glob(self.file_mode_path + '*.f*t*')
 
@@ -1186,6 +1190,8 @@ class Camera:
 
                     else:
                         #breakpoint()
+                        self.overscan = int((np.median(self.img[12:, -17:]) + np.median(self.img[0:10, :]))/2) - 1
+                        trimmed = self.img[12:-4, :-17].astype('int32') + pedastal - self.overscan
                         print("Image shift is incorrect, absolutely fatal error", self.img[0:20, -18])
                         imshift = True
 
@@ -1195,8 +1201,9 @@ class Camera:
                     #Shift error needs documenting!
                     if self.img[7, -14:-10].mean() < (self.img[8, -14] +self.img[6, -14])/2:
                         #if self.img[11, -18] == 0:   #This is the normal incoming image
-                            self.overscan = int((np.median(self.img[8:, -9:]) + np.median(self.img[0:6, :]))/2) - 1
-                            trimmed = self.img[9:-3, :-12].astype('int32') + pedastal - self.overscan
+                        self.overscan = int((np.median(self.img[8:, -9:]) + np.median(self.img[0:6, :]))/2) - 1
+                        trimmed = self.img[9:-3, :-12].astype('int32') + pedastal - self.overscan
+                        imshift = True
     
                         #print("Shift 1", self.overscan, square.mean())
                     # elif self.img[15, -18] == 0:     #This rarely occurs.  Neyle's Qhy600
@@ -1205,7 +1212,9 @@ class Camera:
 
                     #     print("Rare error, Shift 2", self.overscan, trimmed.mean())
                     else:
-                        imshift = True
+                        self.overscan = int((np.median(self.img[12:, -17:]) + np.median(self.img[0:10, :]))/2) - 1
+                        trimmed = self.img[12:-4, :-17].astype('int32') + pedastal - self.overscan
+                        imshift = False
                         print("Image shift is incorrect, absolutely fatal error", self.img[0:20, -18])
                 else:
                     print("Incorrect chip size or image-shift problem detected.")
@@ -1242,7 +1251,7 @@ class Camera:
                 avg_rot = g_dev['rot'].get_average_status(self.pre_rot, self.post_rot)
                 avg_ocn = g_dev['ocn'].get_average_status(self.pre_ocn, self.post_ocn)
 
-                if frame_type in ['focus', 'probe']:
+                if frame_type in ['focus', 'probe', 'experimental']:
                     try:
                         self.img = self.img + 100   #maintain a + pedestal for sep  THIS SHOULD not be needed for a raw input file.
                         self.f_img = self.img.astype("float")  #f_img is a float 64 so do not modify the main img.
@@ -1634,14 +1643,51 @@ class Camera:
                         focus_image = False
                         return result
 
-                    # if  not script in ('True', 'true', 'On', 'on'):   #  not quick and    #Was moved 20201022 for grid
-                    #     if not quick:
                     if frame_type not in ('bias', 'dark', 'screenflat', 'skyflat'):
                         self.enqueue_for_AWS(text_data_size, im_path, text_name)
-                    self.to_reduce((paths, hdu, frame_type))
                     hdu.writeto(raw_path + raw_name00, overwrite=True)   #Save full raw file locally
                     g_dev['obs'].send_to_user("Raw image saved locally. ", p_level='INFO')
 
+# =============================================================================
+#                     
+#                     # NB NB Now we start immediate new code
+#                     
+# =============================================================================
+                    hdu.data = hdu.data.astype('uint16')
+                    iy, ix = hdu.data.shape
+                    if iy == ix:
+                        resized_a = resize(hdu.data, (768,768), preserve_range=True)
+                    else:
+                        resized_a = resize(hdu.data, (int(1536*iy/ix), 1536), preserve_range=True)  #  We should trim chips so ratio is exact.
+                    #print('New small fits size:  ', resized_a.shape)
+                    hdu.data = resized_a.astype('uint16') 
+                    i768sq_data_size = hdu.data.size
+                    hdu.writeto(paths['im_path'] + paths['i768sq_name10'], overwrite=True)
+                    hdu.data = resized_a.astype('float')
+                    stretched_data_float = Stretch().stretch(hdu.data)
+                    stretched_256 = 255*stretched_data_float
+                    hot = np.where(stretched_256 >= 255)
+                    cold = np.where(stretched_256 < 0)
+                    stretched_256[hot] = 255
+                    stretched_256[cold] = 0
+                    #print("pre-unit8< hot, cold:  ", len(hot[0]), len(cold[0]))
+                    stretched_data_uint8 = stretched_256.astype('uint8')  # Eliminates a user warning
+                    hot = np.where(stretched_data_uint8 >= 255)
+                    cold = np.where(stretched_data_uint8 < 0)
+                    stretched_data_uint8[hot] = 254
+                    stretched_data_uint8[cold] = 0
+                    #print("post-unit8< hot, cold:  ", len(hot[0]), len(cold[0]))
+                    imsave(paths['im_path'] + paths['jpeg_name10'], stretched_data_uint8)
+                    jpeg_data_size = abs(stretched_data_uint8.size - 1024)
+                    self.enqueue_for_AWS(jpeg_data_size, paths['im_path'], paths['jpeg_name10'])
+                    self.enqueue_for_AWS(i768sq_data_size, paths['im_path'], paths['i768sq_name10'])
+                    #We do not do ntext thread
+                    #self.to_reduce((paths, hdu, frame_type))
+                    hdu.writeto(raw_path + raw_name00, overwrite=True)   #Save full raw file locally
+                    g_dev['obs'].send_to_user("Raw image saved locally. ", p_level='INFO')
+# =============================================================================
+##End new code
+# =============================================================================
                     if frame_type in ('bias', 'dark', 'screenflat', 'skyflat'):
                         if not self.hint[0:54] == 'Flush':
                             hdu.writeto(cal_path + cal_name, overwrite=True)
@@ -1654,10 +1700,6 @@ class Camera:
                         result = {'patch': bi_mean,
                                 'calc_sky': 0}  #avg_ocn[7]}
                         return result #  Note we are not calibrating. Just saving the file.
-                    # elif frame_type in ['light']:
-                    #     self.enqueue_for_AWS(reduced_data_size, im_path, red_name01)
-
-                   #print("\n\Finish-Exposure is complete, saved:  " + raw_name00)#, raw_data_size, '\n')
                     g_dev['obs'].update_status()
                     result['mean_focus'] = avg_foc[1]
                     result['mean_rotation'] = avg_rot[1]
@@ -1695,22 +1737,12 @@ class Camera:
                 self.t7 = time.time()
                 remaining = round(self.completion_time - self.t7, 1)
                 print("Exposure time remaining:  " + str(remaining))
+
                 g_dev['obs'].send_to_user("Exposure time remaining:  " + str(remaining), p_level='INFO')
                 if remaining < -30:
                     print("Camera timed out, not connected")
                     result = {'error': True}
                     return result
-
-
-                #it takes about 15 seconds from AWS to get here for a bias.
-        # except Exception as e:
-        #     breakpoint()
-        #     counter += 1
-        #     time.sleep(.01)
-        #     print('Was waiting for exposure end, arriving here is bad news:  ', e)
-
-        # result = {'error': True}
-        # return  result
     def enqueue_for_AWS(self, priority, im_path, name):
         image = (im_path, name)
         g_dev['obs'].aws_queue.put((priority, image), block=False)
