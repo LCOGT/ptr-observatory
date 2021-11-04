@@ -271,6 +271,7 @@ class Sequencer:
 
         Scripts must not block too long or they must provide for periodic calls to check status.
         '''
+        
         # NB Need a better way to get all the events.
         obs_win_begin, sunZ88Op, sunZ88Cl, ephem_now = self.astro_events.getSunEvents()
         try:
