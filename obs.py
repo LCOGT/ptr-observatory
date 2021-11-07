@@ -27,7 +27,7 @@ WER 20211025
 Simplify!
 
 """
-
+import pdb
 import time
 import threading
 import queue
@@ -262,6 +262,9 @@ class Observatory:
         #pid = camShelf['pid_obs']      # a 9 character string
         camShelf.close()
         self.counter = -5
+        print("At end of class __init__()")
+
+        
 
 
         
@@ -307,7 +310,7 @@ class Observatory:
             self.all_devices[dev_type] = {}
             # Get the names of all the devices from each dev_type.
             # if dev_type == 'camera':
-            #     breakpoint()
+            #     
             devices_of_type = config.get(dev_type, {})
             device_names = devices_of_type.keys()
             # Instantiate each device object from based on its type
@@ -417,7 +420,7 @@ class Observatory:
                                     except:
                                         deviceInstance = cmd['required_params']['device_instance']
                                 except:
-                                    #breakpoint()  
+                                    #  
                                     pass
                         else:
                             deviceInstance = cmd['deviceInstance']
@@ -480,7 +483,7 @@ class Observatory:
         # This stopping mechanism allows for threads to close cleanly.
         loud = False
         # if g_dev['cam_retry_doit']:
-        #     #breakpoint()   #THis should be obsolete.
+        #     #   #THis should be obsolete.
         #     del g_dev['cam']
         #     device = Camera(g_dev['cam_retry_driver'], g_dev['cam_retry_name'], g_dev['cam_retry_config'])
         #     print("Deleted and re-created:  ,", device)
@@ -587,7 +590,7 @@ class Observatory:
             #print("self.scan_requests('mount1') threw an exception, probably empty input queues.")
         self.redis_server.set('obs_time', time.time(), ex=900)
         self.counter +=1
-        #if self.counter >0: breakpoint()
+        #if self.counter >0: 
 
         g_dev['seq'].manager()  #  Go see if there is something new to do.
 
@@ -603,9 +606,11 @@ class Observatory:
             #         args=(mount,)
             #     ).start()
             # Keep the main thread alive, otherwise signals are ignored
-            while True:
+            while True:   #this is an infinte Loop.  Maybe set to terminate 2 hours after Sunrise??
                 self.update()
-                time.sleep(1)
+                print("In Update While loop!")
+            
+                time.sleep(3)
                 # `Ctrl-C` will exit the program.
         except KeyboardInterrupt:
             print("Finishing loops and exiting...")
@@ -681,7 +686,7 @@ class Observatory:
                     time.sleep(.5)
                     continue
                 # Here we parse the input and calibrate it.
-                breakpoint()
+                
                 paths = pri_image[0]
                 hdu = pri_image[1]
                 frame_type = pri_image[2]
@@ -788,7 +793,7 @@ class Observatory:
                 #     try:
                 #         img = hdu.data.copy().astype('float')
                 #         bkg = sep.Background(img)
-                #         #breakpoint()
+                #         #
                 #         #bkg_rms = bkg.rms()
                 #         img = img - bkg
                 #         sources = sep.extract(img, 4.5, err=bkg.globalrms, minarea=9)#, filter_kernel=kern)
@@ -927,23 +932,28 @@ class Observatory:
 
 
 
-if __name__ == "__main__":
+#if __name__ == "__main__":
 
-    # # Define a command line argument to specify the config file to use
-    # parser = argparse.ArgumentParser()
-    # parser.add_argument('--config', type=str, default="default")
-    # options = parser.parse_args()
-    # # Import the specified config file
-    # print(options.config)
-    # if options.config == "default":
-    #     config_file_name = "config"
-    # else:
-    #     config_file_name = f"config_files.config_{options.config}"
-    # config = importlib.import_module(config_file_name)
-    # print(f"Starting up {config.site_name}.")
-    # Start up the observatory
-
-    import config
-
-    o = Observatory(config.site_name, config.site_config)
-    o.run()
+# # Define a command line argument to specify the config file to use
+# parser = argparse.ArgumentParser()
+# parser.add_argument('--config', type=str, default="default")
+# options = parser.parse_args()
+# # Import the specified config file
+# print(options.config)
+# if options.config == "default":
+#     config_file_name = "config"
+# else:
+    
+#     config_file_name = f"config_files.config_{options.config}"
+# config = importlib.import_module(config_file_name)
+# print(f"Starting up {config.site_name}.")
+# Start up the observatory
+import config
+# input("starting, will breakpoint next")
+# breakpoint()
+o = Observatory(config.site_name, config.site_config)
+print ('Object "o" created:  ', o)
+#input('Please press Enter to start the Observer.  Clear skies!')
+o.run()
+print("o.run() returned from the call to object 'o'.")
+input("Please press Enter to exit the Observer's shell.  Clear skies!")

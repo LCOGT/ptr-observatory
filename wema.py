@@ -50,6 +50,25 @@ import os, signal, subprocess
 
 # def worker():
 #     import obs
+def terminaate_restart_observer(site_path):
+        camShelf = shelve.open(site_path + 'ptr_night_shelf/' + 'pid_obs')
+        #camShelf['pid_obs'] = self.obs_pid
+        #camShelf['pid_time'] = time.time()
+        pid = camShelf['pid_obs']     # a 9 character string
+        camShelf.close()
+        
+        try:
+            print("Terminating:  ", pid)
+            os.kill(pid, signal.SIGTERM)
+        except:
+            print("No observer process was found, starting a new one.")
+
+        #subprocess.call('C:/Users/obs/Documents/GitHub/ptr-observatory/restart_obs.bat')
+        #The above routine does not return but does start a process.
+        os.system('cmd /c C:\\Users\\obs\\Documents\\GitHub\\ptr-observatory\\restart_obs.bat')
+        #  worked with /k, try /c Which should terminate
+        return
+    
 
 class WxEncAgent:
 
@@ -96,21 +115,10 @@ class WxEncAgent:
         self.redis_server.set('obs_time', immed_time, ex=360)
         #subprocess.call('obs.py')  This is clearly wrong.
         time.sleep(5)
-        print("Starting observer, may have to terminate a stale observer first.")
+        #print("Starting observer, may have to terminate a stale observer first.")
 
-        self.site_path = self.config['site_path']
-        camShelf = shelve.open(self.site_path + 'ptr_night_shelf/' + 'pid_obs')
-        #camShelf['pid_obs'] = self.obs_pid
-        #camShelf['pid_time'] = time.time()
-        pid = camShelf['pid_obs']     # a 9 character string
-        camShelf.close()
-        try:
-            print("Terminating:  ", pid)
-            os.kill(pid, signal.SIGTERM)
-        except:
-            print("No observer process was found, starting a new one.")
-        #subprocess.run('C:/Users/obs/Documents/GitHub/ptr-observatory/restart_obs.bat')
-        #os.system('C:\\Users\\obs\\Documents\\GitHub\\ptr-observatory\\python obs')
+        #site_path = self.config['site_path']
+        terminaate_restart_observer(self.config['site_path'])
         
 
 
@@ -191,9 +199,10 @@ class WxEncAgent:
                 delta= time.time() - obs_time
             except:
                 delta= 999.99  #"NB NB NB Temporily flags someing really wrong."
-            if delta > 90:
-                print(">The observer's time is stale > 90 seconds:  ", round(delta, 2))
+            if delta > 30:
+                print(">The observer's time is stale > 30 seconds:  ", round(delta, 2))
                 #Here is where we terminate the obs.exe and restart it.
+                terminaate_restart_observer(self.config['site_path'])
             # if delta > 30:
             #     breakpoint()
             #     pid = self.redis_server.get("obs_pid")

@@ -617,7 +617,7 @@ class Camera:
             g_dev['fil'].set_name_command({'filter': requested_filter_name}, {})
         except Exception as e:
             print("Camera filter setup exception:  ", e)
-            #breakpoint()
+            ##
         #  NBNB Changing filter may cause a need to shift focus
         self.current_offset = g_dev['fil'].filter_offset  #TEMP   NBNBNB This needs fixing
         # Here we adjust for focus temp and filter offset
@@ -1027,7 +1027,7 @@ class Camera:
                         low=0, high=0, script=False, opt=None):
         print("Finish exposure Entered:  ", exposure_time, frame_type, counter, \
               do_sep, no_AWS, start_x, start_y, opt['area'])
-
+        breakpoint()
         self.post_mnt = []
         self.post_rot = []
         self.post_foc = []
@@ -1160,7 +1160,7 @@ class Camera:
 
                     else:
                         print("Image shift is incorrect, absolutely fatal error.  Usually massive eoer-exposure")
-                       # breakpoint()
+                       # #
                         pass
 
                     # if full:
@@ -1188,7 +1188,7 @@ class Camera:
                        #This reports when taking biases at MRC
 
                     else:
-                        #breakpoint()
+                        ##
                         self.overscan = int((np.median(self.img[12:, -17:]) + np.median(self.img[0:10, :]))/2) - 1
                         trimmed = self.img[12:-4, :-17].astype('int32') + pedastal - self.overscan
                         print("Image shift is incorrect, absolutely fatal error", self.img[0:20, -18])
@@ -1219,7 +1219,7 @@ class Camera:
                     print("Incorrect chip size or image-shift problem detected.")
                     trimmed = self.img
                     self.overscan = 0
-                    #breakpoint()
+                    ##
                     #continue
 
                 trimmed = trimmed.transpose()
@@ -1533,7 +1533,7 @@ class Camera:
                         # g_dev['counter'] += 1
                         # print("User_name or id not found, using prior:  ", g_dev['counter'])  #Insert last user nameand ID here if they are not supplied.
                         # if g_dev['counter'] > 6:
-                        #     breakpoint()
+                        #     #
 
                     # NB This needs more development
                     #im_type = 'EX'   #or EN for engineering....
