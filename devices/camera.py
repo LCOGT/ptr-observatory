@@ -335,7 +335,6 @@ class Camera:
         # TODO: DEH what's the best way to check if there's a lampbox that's plugged in and available at a site?
         # Currently we are relying on the config file to tell if there is a lampbox at site.
         # Also: how to check if mirror gets stuck and fix it?
-
         try:
             seq = test_sequence(self.alias)
         except:
@@ -1683,8 +1682,8 @@ class Camera:
                     self.enqueue_for_AWS(i768sq_data_size, paths['im_path'], paths['i768sq_name10'])
                     #We do not do ntext thread
                     #self.to_reduce((paths, hdu, frame_type))
-                    hdu.writeto(raw_path + raw_name00, overwrite=True)   #Save full raw file locally
-                    g_dev['obs'].send_to_user("Raw image saved locally. ", p_level='INFO')
+                    #hdu.writeto(raw_path + raw_name00, overwrite=True)   #Save full raw file locally
+                    #g_dev['obs'].send_to_user("Raw image saved locally. ", p_level='INFO')
 # =============================================================================
 ##End new code
 # =============================================================================

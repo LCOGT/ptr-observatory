@@ -223,6 +223,7 @@ class Observatory:
         #for key in self.redis_server.keys(): self.redis_server.delete(key)   
         #Flush old state.  But do not erase WEMA -- Use ex=xyz consistently.
         g_dev['redis_server'] = self.redis_server   #Use this instance.
+
         
         g_dev['counter'] = 0  #Used to count user-name errors in Camera object  ???
         self.update_config()
@@ -249,10 +250,20 @@ class Observatory:
         self.projects = None
         self.events_new = None
         self.reset_last_reference()
-        self.redis_server.set('obs_time', time.time(), ex=360)
+        self.redis_server.set('obs_time', time.time(), ex=900)
         self.obs_pid = os.getpid()
         print('PID:  ', self.obs_pid)
         self.redis_server.set('obs_pid', self.obs_pid)
+        self.site_path = self.config['site_path']
+        #Redundant store of obs_pid
+        camShelf = shelve.open(self.site_path + 'ptr_night_shelf/' + 'pid_obs')
+        camShelf['pid_obs'] = self.obs_pid
+        camShelf['pid_time'] = time.time()
+        #pid = camShelf['pid_obs']      # a 9 character string
+        camShelf.close()
+        self.counter = -5
+
+
         
 
 
@@ -574,7 +585,10 @@ class Observatory:
         except:
             pass
             #print("self.scan_requests('mount1') threw an exception, probably empty input queues.")
-        self.redis_server.set('obs_time', time.time(), ex=360)
+        self.redis_server.set('obs_time', time.time(), ex=900)
+        self.counter +=1
+        #if self.counter >0: breakpoint()
+
         g_dev['seq'].manager()  #  Go see if there is something new to do.
 
     def run(self):   # run is a poor name for this function.

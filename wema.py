@@ -17,6 +17,7 @@ import json
 import redis
 import requests
 import time
+import shelve
 
 from api_calls import API_calls
 import ptr_events
@@ -26,29 +27,31 @@ from global_yard import g_dev
 
 
 import os, signal, subprocess
+
   
 # def process():
      
 #     # Ask user for the name of process
 #     name = input("Enter process Name: ")
-#     try:
-         
+#     try:      
 #         # iterating through each instance of the process
 #         for line in os.popen("ps ax | grep " + name + " | grep -v grep"):
-#             fields = line.split()
-             
+#             fields = line.split()          
 #             # extracting Process ID from the output
 #             pid = fields[0]
-             
+#             print(fields)
 #             # terminating process
 #             os.kill(int(pid), signal.SIGKILL)
-#         print("Process Successfully terminated")
-         
+#         print("Process Successfully terminated")    
 #     except:
 #         print("Error Encountered while running script")
   
 # process()
-class Observatory:
+
+# def worker():
+#     import obs
+
+class WxEncAgent:
 
     def __init__(self, name, config):
         self.api = API_calls()
@@ -92,6 +95,24 @@ class Observatory:
         self.wema_start_time = immed_time
         self.redis_server.set('obs_time', immed_time, ex=360)
         #subprocess.call('obs.py')  This is clearly wrong.
+        time.sleep(5)
+        print("Starting observer, may have to terminate a stale observer first.")
+
+        self.site_path = self.config['site_path']
+        camShelf = shelve.open(self.site_path + 'ptr_night_shelf/' + 'pid_obs')
+        #camShelf['pid_obs'] = self.obs_pid
+        #camShelf['pid_time'] = time.time()
+        pid = camShelf['pid_obs']     # a 9 character string
+        camShelf.close()
+        try:
+            print("Terminating:  ", pid)
+            os.kill(pid, signal.SIGTERM)
+        except:
+            print("No observer process was found, starting a new one.")
+        #subprocess.run('C:/Users/obs/Documents/GitHub/ptr-observatory/restart_obs.bat')
+        #os.system('C:\\Users\\obs\\Documents\\GitHub\\ptr-observatory\\python obs')
+        
+
 
 
         
@@ -171,14 +192,20 @@ class Observatory:
             except:
                 delta= 999.99  #"NB NB NB Temporily flags someing really wrong."
             if delta > 90:
-                print(">The observer's time is stale > 30 seconds:  ", round(delta, 2))
-            if delta > 360:
-                pid = int(self.redis_server.get("obs_pid"))
-                if pid is not None:
-                    os.kill(int(pid), signal.SIGTERM)
-                    print("The observer process has been killed, restarting now.")
-                else:
-                    print(">Observer has not started, so cannot kill it.")
+                print(">The observer's time is stale > 90 seconds:  ", round(delta, 2))
+                #Here is where we terminate the obs.exe and restart it.
+            # if delta > 30:
+            #     breakpoint()
+            #     pid = self.redis_server.get("obs_pid")
+            #     if pid is not None:
+  
+            #         os.kill(int(pid), signal.SIGTERM)
+            #         self.redis_server.set("obs_pid", None)
+            #         print("The observer process has been killed, restarting in 5 sseconds.")
+            #         time.sleep(5)
+            #         p = subprocess.run('C:/Users/obs/Documents/GitHub/ptr-observatory/restart_obs.bat')
+            #     else:
+            #         print(">Observer pid is None, so cannot kill it.")
             else:
                 print('>')
         uri_status = f"https://status.photonranch.org/status/{self.name}/status/"
@@ -221,6 +248,7 @@ class Observatory:
 if __name__ == "__main__":
 
     import config
-    o = Observatory(config.site_name, config.site_config)
+
+    wema = WxEncAgent(config.site_name, config.site_config)
     
-    o.run()
+    wema.run()
