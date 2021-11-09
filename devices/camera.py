@@ -38,7 +38,7 @@ from auto_stretch.stretch import Stretch
 
 # from PIL import Image
 from global_yard import g_dev
-#from processing.calibration import calibrate
+from processing.calibration import calibrate
 #from devices.sequencer import Sequencer
 from devices.darkslide import Darkslide
 import ptr_utility
@@ -574,7 +574,10 @@ class Camera:
         self.pane = optional_params.get('pane', None)
         bin_x = optional_params.get('bin', self.config['camera'][self.name] \
                                                       ['settings']['default_bin'])  #NB this should pick up config default.
-
+        try:
+            bin_x = bin_x[:2]
+        except:
+            pass    #This steps off the pix-scale.
         if bin_x in ['4 4', 4, '4, 4', '4,4', [4, 4]]:     # For now this is the highest level of binning supported.
             bin_x = 4
             self.ccd_sum = '4 4'
@@ -1590,11 +1593,13 @@ class Camera:
                         im_path_r = self.camera_path
                         os.makedirs(im_path_r + g_dev['day'] + '/to_AWS/', exist_ok=True)
                         os.makedirs(im_path_r + g_dev['day'] + '/raw/', exist_ok=True)
-                        os.makedirs(im_path_r + g_dev['day'] + '/calib/', exist_ok=True)
+                        os.makedirs(im_path_r + g_dev['day'] + '/raw_calibrations/', exist_ok=True)
                         os.makedirs(im_path_r + g_dev['day'] + '/reduced/', exist_ok=True)
+                        os.makedirs(im_path_r + g_dev['day'] + '/processed/', exist_ok=True)
                         im_path   = im_path_r + g_dev['day'] + '/to_AWS/'
+                        proc_path = im_path_r + g_dev['day'] + '/processed/'
                         raw_path  = im_path_r + g_dev['day'] + '/raw/'
-                        cal_path  = im_path_r +  g_dev['day'] +'/calib/'
+                        cal_path  = im_path_r +  g_dev['day'] +'/raw_calibations/'
                         red_path  = im_path_r + g_dev['day'] + '/reduced/'
 
                     except:
@@ -1644,50 +1649,9 @@ class Camera:
 
                     if frame_type not in ('bias', 'dark', 'screenflat', 'skyflat'):
                         self.enqueue_for_AWS(text_data_size, im_path, text_name)
-                    hdu.writeto(raw_path + raw_name00, overwrite=True)   #Save full raw file locally
-                    g_dev['obs'].send_to_user("Raw image saved locally. ", p_level='INFO')
-
-# =============================================================================
-#                     
-#                     # NB NB Now we start immediate new code
-#                     
-# =============================================================================
-                    # hdu.data = hdu.data.astype('uint16')
-                    # iy, ix = hdu.data.shape
-                    # if iy == ix:
-                    #     resized_a = resize(hdu.data, (768,768), preserve_range=True)
-                    # else:
-                    #     resized_a = resize(hdu.data, (int(1536*iy/ix), 1536), preserve_range=True)  #  We should trim chips so ratio is exact.
-                    # #print('New small fits size:  ', resized_a.shape)
-                    # hdu.data = resized_a.astype('uint16') 
-                    # i768sq_data_size = hdu.data.size
-                    # hdu.writeto(paths['im_path'] + paths['i768sq_name10'], overwrite=True)
-                    # hdu.data = resized_a.astype('float')
-                    # stretched_data_float = Stretch().stretch(hdu.data)
-                    # stretched_256 = 255*stretched_data_float
-                    # hot = np.where(stretched_256 >= 255)
-                    # cold = np.where(stretched_256 < 0)
-                    # stretched_256[hot] = 255
-                    # stretched_256[cold] = 0
-                    # #print("pre-unit8< hot, cold:  ", len(hot[0]), len(cold[0]))
-                    # stretched_data_uint8 = stretched_256.astype('uint8')  # Eliminates a user warning
-                    # hot = np.where(stretched_data_uint8 >= 255)
-                    # cold = np.where(stretched_data_uint8 < 0)
-                    # stretched_data_uint8[hot] = 254
-                    # stretched_data_uint8[cold] = 0
-                    # #print("post-unit8< hot, cold:  ", len(hot[0]), len(cold[0]))
-                    # imsave(paths['im_path'] + paths['jpeg_name10'], stretched_data_uint8)
-                    # jpeg_data_size = abs(stretched_data_uint8.size - 1024)
-                    # self.enqueue_for_AWS(jpeg_data_size, paths['im_path'], paths['jpeg_name10'])
-                    # self.enqueue_for_AWS(i768sq_data_size, paths['im_path'], paths['i768sq_name10'])
-                    #We do not do ntext thread
-                    self.to_reduce((paths, hdu, frame_type))
-                    #hdu.writeto(raw_path + raw_name00, overwrite=True)   #Save full raw file locally
-                    #g_dev['obs'].send_to_user("Raw image saved locally. ", p_level='INFO')
-# =============================================================================
-##End new code
-# =============================================================================
-                    if frame_type in ('bias', 'dark', 'screenflat', 'skyflat'):
+                        hdu.writeto(raw_path + raw_name00, overwrite=True)   #Save full raw file locally
+                        g_dev['obs'].send_to_user("Raw image saved locally. ", p_level='INFO')
+                    else:  #if frame_type in ('bias', 'dark', 'screenflat', 'skyflat'):
                         if not self.hint[0:54] == 'Flush':
                             hdu.writeto(cal_path + cal_name, overwrite=True)
                         else:
@@ -1699,6 +1663,65 @@ class Camera:
                         result = {'patch': bi_mean,
                                 'calc_sky': 0}  #avg_ocn[7]}
                         return result #  Note we are not calibrating. Just saving the file.
+
+# =============================================================================
+#                     
+#                     # NB NB Now we start immediate new code
+#                     
+# =============================================================================
+
+                    lng_path =  g_dev['cam'].lng_path
+                    #NB Important decision here, do we flash calibrate screen and sky flats?  For now, Yes.
+                    print('Pre Reduction Mean:  ', hdu.data.mean())   
+                    calibrate(hdu, lng_path, paths['frame_type'], quick=False)
+                    #print("Calibrate returned:  ", hdu.data, cal_result)
+                    #Before saving reduced or generating postage, we flip
+                    #the images so East is left and North is up based on
+                    #The keyword PIERSIDE defines the orientation.
+                    #Note the raw image is not flipped/
+                    if hdu.header['PIERSIDE'] == "Look West":
+                        hdu.data = np.flip(hdu.data)
+                        hdu.header['IMGFLIP'] = True
+                    wpath = proc_path + paths['red_name01']
+                    print('Reduced Mean:  ', hdu.data.mean())
+                    #This may be a spurious write of a calibrated image.
+                    hdu.writeto(wpath, overwrite=True)  # NB overwrite == True is dangerous in production code.  This is big fits to AWS
+                    #hdu.data = hdu.data.astype('uint16')
+                    iy, ix = hdu.data.shape
+                    if iy == ix:
+                        resized_a = resize(hdu.data, (768,768), preserve_range=True)
+                    else:
+                        resized_a = resize(hdu.data, (int(1536*iy/ix), 1536), preserve_range=True)  #  We should trim chips so ratio is exact.
+                    #print('New small fits size:  ', resized_a.shape)
+                    hdu.data = resized_a.astype('uint16') 
+                    i768sq_data_size = hdu.data.size
+                    hdu.writeto(paths['im_path'] + paths['i768sq_name10'], overwrite=True)
+                    hdu.data = resized_a.astype('float')
+                    stretched_data_float = Stretch().stretch(hdu.data)
+                    stretched_256 = 255*stretched_data_float
+                    hot = np.where(stretched_256 >= 255)
+                    cold = np.where(stretched_256 < 0)
+                    stretched_256[hot] = 255
+                    stretched_256[cold] = 0
+                    #print("pre-unit8< hot, cold:  ", len(hot[0]), len(cold[0]))
+                    stretched_data_uint8 = stretched_256.astype('uint8')  # Eliminates a user warning
+                    hot = np.where(stretched_data_uint8 >= 255)
+                    cold = np.where(stretched_data_uint8 < 0)
+                    stretched_data_uint8[hot] = 254
+                    stretched_data_uint8[cold] = 0
+                    #print("post-unit8< hot, cold:  ", len(hot[0]), len(cold[0]))
+                    imsave(paths['im_path'] + paths['jpeg_name10'], stretched_data_uint8)
+                    jpeg_data_size = abs(stretched_data_uint8.size - 1024)
+                    self.enqueue_for_AWS(jpeg_data_size, paths['im_path'], paths['jpeg_name10'])
+                    self.enqueue_for_AWS(i768sq_data_size, paths['im_path'], paths['i768sq_name10'])
+                    #We do not do ntext thread
+                    #self.to_reduce((paths, hdu, frame_type))
+                    #hdu.writeto(raw_path + raw_name00, overwrite=True)   #Save full raw file locally
+                    #g_dev['obs'].send_to_user("Raw image saved locally. ", p_level='INFO')
+# =============================================================================
+##End new code
+# =============================================================================
+
                     g_dev['obs'].update_status()
                     result['mean_focus'] = avg_foc[1]
                     result['mean_rotation'] = avg_rot[1]
@@ -1746,6 +1769,6 @@ class Camera:
         image = (im_path, name)
         g_dev['obs'].aws_queue.put((priority, image), block=False)
 
-    def to_reduce(self, to_red):
-        #print('Passed to to_reduce:  ', to_red[0], to_red[1].data.shape, to_red[1].header['FILTER'])
-        g_dev['obs'].reduce_queue.put(to_red, block=False)
+    # def to_reduce(self, to_red):
+    #     #print('Passed to to_reduce:  ', to_red[0], to_red[1].data.shape, to_red[1].header['FILTER'])
+    #     g_dev['obs'].reduce_queue.put(to_red, block=False)

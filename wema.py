@@ -50,8 +50,8 @@ import os, signal, subprocess
 
 # def worker():
 #     import obs
-def terminaate_restart_observer(site_path, no_go=False):
-    if no_go is True:
+def terminate_restart_observer(site_path, no_restart=False):
+    if no_restart is True:
         return
     else:
         camShelf = shelve.open(site_path + 'ptr_night_shelf/' + 'pid_obs')
@@ -120,8 +120,7 @@ class WxEncAgent:
         time.sleep(5)
         #print("Starting observer, may have to terminate a stale observer first.")
 
-        #site_path = self.config['site_path']
-        terminaate_restart_observer(self.config['site_path'], no_go=True)
+        terminate_restart_observer(self.config['site_path'], no_restart=True)
         
 
 
@@ -202,23 +201,13 @@ class WxEncAgent:
                 delta= time.time() - obs_time
             except:
                 delta= 999.99  #"NB NB NB Temporily flags someing really wrong."
-            if delta > 60:
-                print(">The observer's time is stale > 60 seconds:  ", round(delta, 2))
+            if delta > 300:
+                print(">The observer's time is stale > 300 seconds:  ", round(delta, 2))
                 #Here is where we terminate the obs.exe and restart it.
+            if delta > 360:
+                #terminate_restart_observer(self.config['site_path'], no_restart=True)
+                pass
 
-                terminaate_restart_observer(self.config['site_path'], no_go=False)
-            # if delta > 30:
-            #     breakpoint()
-            #     pid = self.redis_server.get("obs_pid")
-            #     if pid is not None:
-  
-            #         os.kill(int(pid), signal.SIGTERM)
-            #         self.redis_server.set("obs_pid", None)
-            #         print("The observer process has been killed, restarting in 5 sseconds.")
-            #         time.sleep(5)
-            #         p = subprocess.run('C:/Users/obs/Documents/GitHub/ptr-observatory/restart_obs.bat')
-            #     else:
-            #         print(">Observer pid is None, so cannot kill it.")
             else:
                 print('>')
         uri_status = f"https://status.photonranch.org/status/{self.name}/status/"
