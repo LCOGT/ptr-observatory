@@ -261,8 +261,8 @@ class Observatory:
         camShelf['pid_time'] = time.time()
         #pid = camShelf['pid_obs']      # a 9 character string
         camShelf.close()
-        self.counter = -5
-        print("At end of class __init__()")
+        self.counter = -15
+
 
         
 
@@ -477,7 +477,7 @@ class Observatory:
         Each device class is responsible for implementing the method
         `get_status` which returns a dictionary.
         '''
-        if self.time_last_status + 5 >= time.time():
+        if self.time_last_status + 3 >= time.time():
             return
 
         # This stopping mechanism allows for threads to close cleanly.
@@ -553,7 +553,7 @@ class Observatory:
             self.status_count +=1
         except:
             print('self.api.authenticated_request("PUT", uri, status):   Failed!')
-        self.redis_server.set('obs_time', time.time(), ex=360)
+        self.redis_server.set('obs_time', time.time(), ex=1200)
 
 
     def update(self):
@@ -588,11 +588,14 @@ class Observatory:
         except:
             pass
             #print("self.scan_requests('mount1') threw an exception, probably empty input queues.")
-        self.redis_server.set('obs_time', time.time(), ex=900)
-        self.counter +=1
-        #if self.counter >0: 
+        self.redis_server.set('obs_time', time.time(), ex=1200)
+        # self.counter +=1
+        # print('Counter:  ', self.counter)
+        # if self.counter >0:
+        #     time.sleep(300)
 
         g_dev['seq'].manager()  #  Go see if there is something new to do.
+        return
 
     def run(self):   # run is a poor name for this function.
         #this is called and never exits. 20211016  WER added a sleep
@@ -608,9 +611,8 @@ class Observatory:
             # Keep the main thread alive, otherwise signals are ignored
             while True:   #this is an infinte Loop.  Maybe set to terminate 2 hours after Sunrise??
                 self.update()
-                print("In Update While loop!")
-            
-                time.sleep(3)
+                time.sleep(1)
+
                 # `Ctrl-C` will exit the program.
         except KeyboardInterrupt:
             print("Finishing loops and exiting...")
@@ -715,39 +717,41 @@ class Observatory:
 
                 #Will try here to solve   NB Should skip non-solvable images like skyflats
                 
-                if frame_type in ('bias', 'dark', 'screenflat', 'skyflat'):
+                if frame_type in ('bias', 'dark', 'screenflat', 'skyflat'):    #NEED to add spect
                     no_AWS = True
-                # try:
-                #     hdu_save = hdu
-                #     #wpath = 'C:/000ptr_saf/archive/sq01/20210528/reduced/saf-sq01-20210528-00019785-le-w-EX01.fits'
-                #     solve = platesolve.platesolve(wpath, 0.5478)
-                #     print("PW Solves: " ,solve['ra_j2000_hours'], solve['dec_j2000_degrees'], solve)
-                #     img = fits.open(wpath, mode='update', ignore_missing_end=True)
-                #     hdr = img[0].header
-                #     #  Update the header.
-                #     hdr['RA-J2000'] = solve['ra_j2000_hours']
-                #     hdr['DECJ2000'] = solve['dec_j2000_degrees']
-                #     hdr['MEAS-SCL'] = solve['arcsec_per_pixel']
-                #     hdr['MEAS-ROT'] = solve['rot_angle_degs']
-                #     img.flush()
-                #     img.close
-                #     img = fits.open(wpath, ignore_missing_end=True)
-                #     hdr = img[0].header
-                #     prior_ra_h, prior_dec, prior_time = self.get_last_reference()
-                #     time_now = time.time()  #This should be more accurately defined earlier in the header
-                #     if prior_time is not None:
-                #         print("time base is:  ", time_now - prior_time)
-                #     self.set_last_reference(solve['ra_j2000_hours'], solve['dec_j2000_degrees'], time_now)
+                if frame_type not in ('bias', 'dark', 'screenflat', 'skyflat'):    #NEED to add spect
                     
-                # except:
-                #    print(wpath, "  was not solved, marking to skip in future, sorry!")
-                #    img = fits.open(wpath, mode='update', ignore_missing_end=True)
-                #    hdr = img[0].header
-                #    hdr['NO-SOLVE'] = True
-                #    img.close()
-                #    self.reset_last_reference()
-                #   #Return to classic processing
-                #hdu = hdu_save
+                    try:
+                        hdu_save = hdu
+                        #wpath = 'C:/000ptr_saf/archive/sq01/20210528/reduced/saf-sq01-20210528-00019785-le-w-EX01.fits'
+                        solve = platesolve.platesolve(wpath, 0.5478)
+                        print("PW Solves: " ,solve['ra_j2000_hours'], solve['dec_j2000_degrees'], solve)
+                        img = fits.open(wpath, mode='update', ignore_missing_end=True)
+                        hdr = img[0].header
+                        #  Update the header.  
+                        hdr['RA-J2000'] = solve['ra_j2000_hours']
+                        hdr['DECJ2000'] = solve['dec_j2000_degrees']
+                        hdr['MEAS-SCL'] = solve['arcsec_per_pixel']
+                        hdr['MEAS-ROT'] = solve['rot_angle_degs']
+                        img.flush()
+                        img.close
+                        img = fits.open(wpath, ignore_missing_end=True)
+                        hdr = img[0].header
+                        prior_ra_h, prior_dec, prior_time = self.get_last_reference()
+                        time_now = time.time()  #This should be more accurately defined earlier in the header
+                        if prior_time is not None:
+                            print("time base is:  ", time_now - prior_time)
+                        self.set_last_reference(solve['ra_j2000_hours'], solve['dec_j2000_degrees'], time_now)
+                        
+                    except:
+                        print(wpath, "  was not solved, marking to skip in future, sorry!")
+                        img = fits.open(wpath, mode='update', ignore_missing_end=True)
+                        hdr = img[0].header
+                        hdr['NO-SOLVE'] = True
+                        img.close()
+                        self.reset_last_reference()
+                      #Return to classic processing
+                hdu = hdu_save
 
                 if self.site_name == 'saf':
                     wpath = paths['red_path_aux'] + paths['red_name01_lcl']
@@ -952,7 +956,6 @@ import config
 # input("starting, will breakpoint next")
 # breakpoint()
 o = Observatory(config.site_name, config.site_config)
-print ('Object "o" created:  ', o)
 #input('Please press Enter to start the Observer.  Clear skies!')
 o.run()
 print("o.run() returned from the call to object 'o'.")

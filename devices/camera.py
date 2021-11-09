@@ -587,7 +587,7 @@ class Camera:
         else:
             bin_x = 1
             self.ccd_sum = '1 1'
-
+        bin_x = 2
         bin_y = bin_x   #NB This needs fixing someday!
         self.bin = bin_x
         self.camera.BinX = bin_x
@@ -1027,7 +1027,8 @@ class Camera:
                         low=0, high=0, script=False, opt=None):
         print("Finish exposure Entered:  ", exposure_time, frame_type, counter, \
               do_sep, no_AWS, start_x, start_y, opt['area'])
-        breakpoint()
+        
+            
         self.post_mnt = []
         self.post_rot = []
         self.post_foc = []
@@ -1225,7 +1226,6 @@ class Camera:
                 trimmed = trimmed.transpose()
                 #This may need a re-think:   Maybe kill neg and anything really hot if there are only a few.
                 #smin = np.where(square < 0)    # finds negative pixels  NB <0 where pedastal is 200. Useless!
-
                 self.t77 = time.time()
                 #print('readout, transpose & Trim took:  ', round(self.t77 - self.t4, 1), ' sec,')# marks them as 0
                 #Should we consider correcting the image right here with cached bias, dark and hot pixel
@@ -1652,36 +1652,36 @@ class Camera:
 #                     # NB NB Now we start immediate new code
 #                     
 # =============================================================================
-                    hdu.data = hdu.data.astype('uint16')
-                    iy, ix = hdu.data.shape
-                    if iy == ix:
-                        resized_a = resize(hdu.data, (768,768), preserve_range=True)
-                    else:
-                        resized_a = resize(hdu.data, (int(1536*iy/ix), 1536), preserve_range=True)  #  We should trim chips so ratio is exact.
-                    #print('New small fits size:  ', resized_a.shape)
-                    hdu.data = resized_a.astype('uint16') 
-                    i768sq_data_size = hdu.data.size
-                    hdu.writeto(paths['im_path'] + paths['i768sq_name10'], overwrite=True)
-                    hdu.data = resized_a.astype('float')
-                    stretched_data_float = Stretch().stretch(hdu.data)
-                    stretched_256 = 255*stretched_data_float
-                    hot = np.where(stretched_256 >= 255)
-                    cold = np.where(stretched_256 < 0)
-                    stretched_256[hot] = 255
-                    stretched_256[cold] = 0
-                    #print("pre-unit8< hot, cold:  ", len(hot[0]), len(cold[0]))
-                    stretched_data_uint8 = stretched_256.astype('uint8')  # Eliminates a user warning
-                    hot = np.where(stretched_data_uint8 >= 255)
-                    cold = np.where(stretched_data_uint8 < 0)
-                    stretched_data_uint8[hot] = 254
-                    stretched_data_uint8[cold] = 0
-                    #print("post-unit8< hot, cold:  ", len(hot[0]), len(cold[0]))
-                    imsave(paths['im_path'] + paths['jpeg_name10'], stretched_data_uint8)
-                    jpeg_data_size = abs(stretched_data_uint8.size - 1024)
-                    self.enqueue_for_AWS(jpeg_data_size, paths['im_path'], paths['jpeg_name10'])
-                    self.enqueue_for_AWS(i768sq_data_size, paths['im_path'], paths['i768sq_name10'])
+                    # hdu.data = hdu.data.astype('uint16')
+                    # iy, ix = hdu.data.shape
+                    # if iy == ix:
+                    #     resized_a = resize(hdu.data, (768,768), preserve_range=True)
+                    # else:
+                    #     resized_a = resize(hdu.data, (int(1536*iy/ix), 1536), preserve_range=True)  #  We should trim chips so ratio is exact.
+                    # #print('New small fits size:  ', resized_a.shape)
+                    # hdu.data = resized_a.astype('uint16') 
+                    # i768sq_data_size = hdu.data.size
+                    # hdu.writeto(paths['im_path'] + paths['i768sq_name10'], overwrite=True)
+                    # hdu.data = resized_a.astype('float')
+                    # stretched_data_float = Stretch().stretch(hdu.data)
+                    # stretched_256 = 255*stretched_data_float
+                    # hot = np.where(stretched_256 >= 255)
+                    # cold = np.where(stretched_256 < 0)
+                    # stretched_256[hot] = 255
+                    # stretched_256[cold] = 0
+                    # #print("pre-unit8< hot, cold:  ", len(hot[0]), len(cold[0]))
+                    # stretched_data_uint8 = stretched_256.astype('uint8')  # Eliminates a user warning
+                    # hot = np.where(stretched_data_uint8 >= 255)
+                    # cold = np.where(stretched_data_uint8 < 0)
+                    # stretched_data_uint8[hot] = 254
+                    # stretched_data_uint8[cold] = 0
+                    # #print("post-unit8< hot, cold:  ", len(hot[0]), len(cold[0]))
+                    # imsave(paths['im_path'] + paths['jpeg_name10'], stretched_data_uint8)
+                    # jpeg_data_size = abs(stretched_data_uint8.size - 1024)
+                    # self.enqueue_for_AWS(jpeg_data_size, paths['im_path'], paths['jpeg_name10'])
+                    # self.enqueue_for_AWS(i768sq_data_size, paths['im_path'], paths['i768sq_name10'])
                     #We do not do ntext thread
-                    #self.to_reduce((paths, hdu, frame_type))
+                    self.to_reduce((paths, hdu, frame_type))
                     #hdu.writeto(raw_path + raw_name00, overwrite=True)   #Save full raw file locally
                     #g_dev['obs'].send_to_user("Raw image saved locally. ", p_level='INFO')
 # =============================================================================
