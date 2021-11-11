@@ -1599,7 +1599,7 @@ class Camera:
                         im_path   = im_path_r + g_dev['day'] + '/to_AWS/'
                         proc_path = im_path_r + g_dev['day'] + '/processed/'
                         raw_path  = im_path_r + g_dev['day'] + '/raw/'
-                        cal_path  = im_path_r +  g_dev['day'] +'/raw_calibations/'
+                        cal_path  = im_path_r +  g_dev['day'] +'/raw_calibrations/'
                         red_path  = im_path_r + g_dev['day'] + '/reduced/'
 
                     except:
@@ -1641,6 +1641,7 @@ class Camera:
                     '''
 
                     if focus_image:
+
                         #Note we do not reduce focus images, except above in focus processing.
                         cal_name = cal_name[:-9] + 'focus' + cal_name[-7:]  # remove 'EX' add 'FO'   Could add seq to this
                         hdu.writeto(cal_path + cal_name, overwrite=True)
@@ -1672,7 +1673,8 @@ class Camera:
 
                     lng_path =  g_dev['cam'].lng_path
                     #NB Important decision here, do we flash calibrate screen and sky flats?  For now, Yes.
-                    print('Pre Reduction Mean:  ', hdu.data.mean())   
+                    print('Pre Reduction Mean:  ', hdu.data.mean())
+
                     calibrate(hdu, lng_path, paths['frame_type'], quick=False)
                     #print("Calibrate returned:  ", hdu.data, cal_result)
                     #Before saving reduced or generating postage, we flip

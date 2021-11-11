@@ -88,7 +88,13 @@ from auto_stretch.stretch import Stretch
 # else:
 #     # Handle target environment that doesn't support HTTPS verification
 #     ssl._create_default_https_context = _create_unverified_https_context
-
+def solve (file_name):
+        #Load the filename
+        print("Entering")
+        time. sleep(60)
+        print("Leaving")
+        #be happy.
+        return "Solved:  " + file_name
 
 # move this function to a better location
 def to_bz2(filename, delete=False):
@@ -936,14 +942,48 @@ class Observatory:
 
 
 
-#if __name__ == "__main__":
-
+if __name__ == "__main__":
+    #freeze_support
 # Start up the observatory
-import config
+    import config
+    
+    
+    
+    #from concurrent.futures import ProcessPoolExecutor
+    
+    
+
 # input("starting, will breakpoint next")
 # breakpoint()
-o = Observatory(config.site_name, config.site_config)
-#input('Please press Enter to start the Observer.  Clear skies!')
-o.run()
-print("o.run() returned from the call to object 'o'.")
-input("Please press Enter to exit the Observer's shell.  Clear skies!")
+    o = Observatory(config.site_name, config.site_config)
+# #input('Please press Enter to start the Observer.  Clear skies!')
+
+#     # def solve (file_name):
+#     #     #Load the filename
+#     #     print("Entering")
+#     #     time. sleep(5)
+#     #     print("Leaving")
+#     #     #be happy.
+#     #     return "Solved:  " + file_name
+    
+    
+#     file_name ='Dummy file name'
+#     futures_list = []
+#     breakpoint()
+#     with ProcessPoolExecutor(max_workers=2) as executor:
+#         futures = executor.submit(solve, file_name)
+#         futures_list.append(futures)
+#         print('Futures_list;  ', futures_list)
+    
+    
+#     time.sleep(10)
+#     breakpoint()
+#     for future in futures_list:
+#         try:
+#             result = future.result(timeout=120)
+#             print(result)
+#         except:
+#             print("No result")
+    o.run()
+#print("o.run() returned from the call to object 'o'.")
+#input("Please press Enter to exit the Observer's shell.  Clear skies!")

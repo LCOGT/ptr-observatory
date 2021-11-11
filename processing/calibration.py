@@ -699,8 +699,8 @@ def calibrate (hdu, lng_path, frame_type='light', quick=False):
                 do_flat = False
         if do_flat and binning == 2: # and not g_dev['seq'].active_script == 'make_superscreenflats':
             try:
-
                 img = img/scr_flat
+                breakpoint()
                 cal_string +=', SCF'
             except:
                 print("Flat field math failed.")

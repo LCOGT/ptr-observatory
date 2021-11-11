@@ -771,10 +771,10 @@ class Sequencer:
         dark_time = 300   #seed for 3x3 binning
         #breakpoint()
         
-        while ephem.now() < g_dev['events']['End Eve Bias Dark'] - 2/1440:   #Do not overrun the window end
+        while ephem.now() < g_dev['events']['Morn Bias Dark'] :   #Do not overrun the window end
             #g_dev['mnt'].unpark_command({}, {}) # Get there early
             #g_dev['mnt'].slewToSkyFlatAsync()
-            print("Expose Biases: b_2")
+            print("Expose Biases: b_ 2, 3, 4, 1")
 
             req = {'time': 0.0,  'script': 'True', 'image_type': 'bias'}
             opt = {'area': "Full", 'count': 7, 'bin':'2 2', \
@@ -802,6 +802,7 @@ class Sequencer:
             print("One half  pass of Bias/Dark acquisition is finished.")
             print("Expose Biases: b_3")   
 
+
             for bias in range(9):
                 req = {'time': 0.0,  'script': 'True', 'image_type': 'bias'}
                 opt = {'area': "Full", 'count': 7, 'bin':'3 3', \
@@ -812,7 +813,7 @@ class Sequencer:
                 if ephem.now() + 5/1440  >= g_dev['events']['End Eve Bias Dark']:
                     break
                 print("Expose d_3 using exposure:  ", dark_time/2 )
-                req = {'time':dark_time*4/9. ,  'script': 'True', 'image_type': 'dark'}
+                req = {'time':dark_time,  'script': 'True', 'image_type': 'dark'}
                 opt = {'area': "Full", 'count':1, 'bin':'3 3', \
                         'filter': 'dark'} 
                 result = g_dev['cam'].expose_command(req, opt, no_AWS=True, \
@@ -821,6 +822,51 @@ class Sequencer:
                 g_dev['obs'].update_status()
                 if ephem.now() + 5/1440 >= g_dev['events']['End Eve Bias Dark']:
                         break
+            for bias in range(9):
+                req = {'time': 0.0,  'script': 'True', 'image_type': 'bias'}
+                opt = {'area': "Full", 'count': 7, 'bin':'4 4', \
+                       'filter': 'dark'}
+                result = g_dev['cam'].expose_command(req, opt, no_AWS=True, \
+                                do_sep=False, quick=False)
+                g_dev['obs'].update_status()
+                if ephem.now() + 5/1440  >= g_dev['events']['End Eve Bias Dark']:
+                    break
+
+                print("Expose d_2 using exposure:  ", dark_time )
+                req = {'time':dark_time ,  'script': 'True', 'image_type': 'dark'}
+                opt = {'area': "Full", 'count':1, 'bin': '4 4', \
+                        'filter': 'dark'} 
+                result = g_dev['cam'].expose_command(req, opt, no_AWS=True, \
+                                    do_sep=False, quick=False)
+
+                g_dev['obs'].update_status()
+                if ephem.now() + 5/1440 >= g_dev['events']['End Eve Bias Dark']:
+                        break
+            print("One half  pass of Bias/Dark acquisition is finished.")
+            print("Expose Biases: b_4")   
+
+            for bias in range(9):
+                req = {'time': 0.0,  'script': 'True', 'image_type': 'bias'}
+                opt = {'area': "Full", 'count': 7, 'bin':'1 1', \
+                       'filter': 'dark'}
+                result = g_dev['cam'].expose_command(req, opt, no_AWS=True, \
+                                do_sep=False, quick=False)
+                g_dev['obs'].update_status()
+                if ephem.now() + 5/1440  >= g_dev['events']['End Eve Bias Dark']:
+                    break
+
+                print("Expose d_2 using exposure:  ", dark_time )
+                req = {'time':dark_time ,  'script': 'True', 'image_type': 'dark'}
+                opt = {'area': "Full", 'count':1, 'bin': '1,1', \
+                        'filter': 'dark'} 
+                result = g_dev['cam'].expose_command(req, opt, no_AWS=True, \
+                                    do_sep=False, quick=False)
+
+                g_dev['obs'].update_status()
+                if ephem.now() + 5/1440 >= g_dev['events']['End Eve Bias Dark']:
+                        break
+            print("One half  pass of Bias/Dark acquisition is finished.")
+            print("Expose Biases: b_1")   
 
         self.sequencer_hold = False
         print("Bias/Dark acquisition has completed.")
