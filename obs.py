@@ -1,4 +1,3 @@
-
 """
 WER 20200307
 
@@ -268,14 +267,6 @@ class Observatory:
         #pid = camShelf['pid_obs']      # a 9 character string
         camShelf.close()
         self.counter = -15
-
-
-        
-
-
-        
-
-
 
         # Build the site (from-AWS) Queue and start a thread.
         # self.site_queue = queue.SimpleQueue()

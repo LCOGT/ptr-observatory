@@ -590,7 +590,7 @@ class Camera:
         else:
             bin_x = 1
             self.ccd_sum = '1 1'
-        bin_x = 2
+        #bin_x = 2
         bin_y = bin_x   #NB This needs fixing someday!
         self.bin = bin_x
         self.camera.BinX = bin_x
@@ -1151,21 +1151,22 @@ class Camera:
                 #This image shift code needs to be here but it is troubling.
                 imshift = False
                 if ix == 9600:
-                    if self.img[22, -34] == 0:
 
-                        self.overscan = int((np.median(self.img[24:, -33:]) + np.median(self.img[0:21, :]))/2) - 1
-                        trimmed = self.img[24:-8, :-34].astype('int32') + pedastal - self.overscan
+                    # if self.img[22, -34] == 0:
 
-                    elif self.img[30, -34] == 0:
-                        self.overscan = int((np.median(self.img[32:, -33:]) + np.median(self.img[0:29, :]))/2) - 1
-                        #trimmed = self.img[32:, :-34].astype('int32') + pedastal - self.overscan
-                        trimmed = self.img[24:-8, :-34].astype('int32') + pedastal - self.overscan
-                        imshift = True
+                    self.overscan = int((np.median(self.img[24:, -33:]) + np.median(self.img[0:21, :]))/2) - 1
+                    trimmed = self.img[24:-8, :-34].astype('int32') + pedastal - self.overscan
 
-                    else:
-                        print("Image shift is incorrect, absolutely fatal error.  Usually massive eoer-exposure")
-                       # #
-                        pass
+                    # elif self.img[30, -34] == 0:
+                    #     self.overscan = int((np.median(self.img[32:, -33:]) + np.median(self.img[0:29, :]))/2) - 1
+                    #     #trimmed = self.img[32:, :-34].astype('int32') + pedastal - self.overscan
+                    #     trimmed = self.img[24:-8, :-34].astype('int32') + pedastal - self.overscan
+                    #     imshift = True
+
+                    # else:
+                    #     print("Image shift is incorrect, absolutely fatal error.  Usually massive eoer-exposure")
+                    #    # #
+                    #     pass
 
                     # if full:
                     #     square = trimmed
@@ -1476,13 +1477,13 @@ class Camera:
                     #if self.config['site'] == 'mrc':
                     if pier_side == 0:
                         hdu.header['PIERSIDE'] = 'Look West'
-                        pier_string = 'lw-'
+                        pier_string = '-lw-'
                     elif pier_side == 1:
                         hdu.header['PIERSIDE'] = 'Look East'
-                        pier_string = 'le-'
+                        pier_string = '-le-'
                     else:
                         hdu.header['PIERSIDE'] = 'Undefined'
-                        pier_string = ''
+                        pier_string = '-un-'
                     hdu.header['HACORR'] = (g_dev['mnt'].ha_corr, '[deg] Hour angle correction')    #Should these be averaged?
                     hdu.header['DECCORR'] = (g_dev['mnt'].dec_corr, '[deg] Declination correction')
                     hdu.header['IMGFLIP'] = (False, 'Is flipped')
@@ -1508,7 +1509,8 @@ class Camera:
 
                     self.pix_ang = (self.camera.PixelSizeX*self.camera.BinX/(float(self.config['telescope'] \
                                               ['telescope1']['focal_length'])*1000.))
-                    hdu.header['PIXSCALE'] = (round(math.degrees(math.atan(self.pix_ang))*3600., 4), '[arcsec/pixel] Nominal pixel scale on sky')
+                    self.pix_scale = (round(math.degrees(math.atan(self.pix_ang))*3600., 4), '[arcsec/pixel] Nominal pixel scale on sky')
+                    hdu.header['PIXSCALE'] = self.pix_scale
                     hdu.header['REQNUM']   = ('00000001', 'Request number')                  
                     hdu.header['ISMASTER'] = (False, 'Is master image')
                     current_camera_name = self.alias
@@ -1572,9 +1574,9 @@ class Camera:
                         next_seq  + '-' + im_type + '00.fits'
                     red_name01 = self.config['site'] + '-' + current_camera_name + '-' + g_dev['day'] + '-' + \
                         next_seq  + '-' + im_type + '01.fits'
-                    red_name01_lcl = red_name01[:-9]+ pier_string + self.current_filter +"-" + red_name01[-9:]
+                    red_name01_lcl = red_name01[:-9]+ pier_string + self.current_filter +"-" + red_name01[-8:]
                     if self.pane is not None:
-                        red_name01_lcl = red_name01_lcl[:-9] + pier_string + 'p' + str(abs(self.pane)) + "-" + red_name01_lcl[-9:]
+                        red_name01_lcl = red_name01_lcl[:-9] + pier_string + 'p' + str(abs(self.pane)) + "-" + red_name01_lcl[-8:]
                     #Cal_ and raw_ names are confusing
                     i768sq_name = self.config['site'] + '-' + current_camera_name + '-' + g_dev['day'] + '-' + \
                         next_seq  + '-' + im_type + '10.fits'
@@ -1663,6 +1665,7 @@ class Camera:
                             pass    #  print ("File newest.fits not found, this is probably OK")
                         result = {'patch': bi_mean,
                                 'calc_sky': 0}  #avg_ocn[7]}
+                        print(result)
                         return result #  Note we are not calibrating. Just saving the file.
 
 # =============================================================================
@@ -1681,13 +1684,50 @@ class Camera:
                     #the images so East is left and North is up based on
                     #The keyword PIERSIDE defines the orientation.
                     #Note the raw image is not flipped/
+                    print('Reduced Mean:  ', hdu.data.mean())
                     if hdu.header['PIERSIDE'] == "Look West":
                         hdu.data = np.flip(hdu.data)
                         hdu.header['IMGFLIP'] = True
-                    wpath = proc_path + paths['red_name01']
-                    print('Reduced Mean:  ', hdu.data.mean())
-                    #This may be a spurious write of a calibrated image.
-                    hdu.writeto(wpath, overwrite=True)  # NB overwrite == True is dangerous in production code.  This is big fits to AWS
+                    #Now we solve for astrometrics:
+                    wpath = proc_path + paths['red_name01_lcl']
+                    hdu.writeto(wpath, overwrite=True)
+                    #   NB Should skip non-solvable images like skyflats
+                
+
+                    try:
+                        hdu_save = hdu
+                        #wpath = 'F:/archive/sq002/20211112/processed/saf-sq002-20211112-00002020-e01.fits'
+                        solve = platesolve.platesolve(wpath, self.pix_scale[0])
+                        print("PW Solves: " ,solve['ra_j2000_hours'], solve['dec_j2000_degrees'], solve)
+                        img = fits.open(wpath, mode='update', ignore_missing_end=True)
+                        hdr = img[0].header
+                        #  Update the header.  
+                        hdr['RA'] = (solve['ra_j2000_hours'], 'Solved J2000')
+                        hdr['DEC'] = (solve['dec_j2000_degrees'], 'Solved J2000')
+                        hdr['RA-J2000'] = (solve['ra_j2000_hours'], 'Solved')
+                        hdr['DECJ2000'] = (solve['dec_j2000_degrees'], 'Solved')
+                        hdr['MEAS-SCL'] = (solve['arcsec_per_pixel'], 'Solved')
+                        hdr['MEAS-ROT'] = (solve['rot_angle_degs'], 'Solved')
+                        img.flush()
+                        img.close
+                        img = fits.open(wpath, ignore_missing_end=True)
+                        hdr = img[0].header
+                        prior_ra_h, prior_dec, prior_time = self.get_last_reference()
+                        time_now = time.time()  #This should be more accurately defined earlier in the header
+                        if prior_time is not None:
+                            print("time base is:  ", time_now - prior_time)
+                        g_dev['obs'].set_last_reference(solve['ra_j2000_hours'], solve['dec_j2000_degrees'], time_now)
+                        
+                    except:
+                        print(wpath, "  was not solved, marking to skip in future, sorry!")
+                        img = fits.open(wpath, mode='update', ignore_missing_end=True)
+                        hdr = img[0].header
+                        hdr['NO-SOLVE'] = True
+                        img.close()
+                        g_dev['obs'].reset_last_reference()
+                      #Return to classic processing
+                    hdu = hdu_save
+                    # NB overwrite == True is dangerous in production code.  This is big fits to AWS
                     #hdu.data = hdu.data.astype('uint16')
                     iy, ix = hdu.data.shape
                     if iy == ix:
