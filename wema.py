@@ -76,6 +76,7 @@ def terminate_restart_observer(site_path, no_restart=False):
 class WxEncAgent:
 
     def __init__(self, name, config):
+
         self.api = API_calls()
 
         self.command_interval = 3

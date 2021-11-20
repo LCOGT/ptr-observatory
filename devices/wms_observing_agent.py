@@ -95,6 +95,10 @@ class ObservingConditions:
         if self.site in ['simulate',  'dht']:  #DEH: added just for testing purposes with ASCOM simulators.
             self.observing_conditions_connected = True
             print("observing_conditions: Simulator drivers connected True")
+        elif driver is None:
+
+            pass
+            
         elif not driver == 'redis':
             win32com.client.pythoncom.CoInitialize()
             self.sky_monitor = win32com.client.Dispatch(driver)
@@ -137,8 +141,24 @@ class ObservingConditions:
             DESCRIPTION.
 
         '''
+       
+        if self.site == 'fat':
 
-        if self.site == 'saf':
+            try:
+                wx = open('W:/sroweather.txt')
+                wx_line = wx.readline()
+                wx_fields = wx_line.split()
+
+            except:
+                print('SRO Weather source problem')
+            status = {}
+            return status
+                
+            
+            
+            
+
+        elif self.site == 'saf':
             illum, mag = self.astro_events.illuminationNow()
             if illum > 100:
                 illum = int(illum)

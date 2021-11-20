@@ -29,15 +29,16 @@ class Enclosure:
         self.config = config
         self.site_is_proxy = self.config['agent_wms_enc_active'] 
         g_dev['enc'] = self
-        win32com.client.pythoncom.CoInitialize()
-        self.enclosure = win32com.client.Dispatch(driver)
-        print(self.enclosure)
-        try:
-            if not self.enclosure.Connected:
-                self.enclosure.Connected = True
-            print("ASCOM enclosure connected.")
-        except:
-             print("ASCOM enclosure NOT connected, proabably the App is not connected to telescope.")
+        if driver is not None:
+            win32com.client.pythoncom.CoInitialize()
+            self.enclosure = win32com.client.Dispatch(driver)
+            print(self.enclosure)
+            try:
+                if not self.enclosure.Connected:
+                    self.enclosure.Connected = True
+                print("ASCOM enclosure connected.")
+            except:
+                 print("ASCOM enclosure NOT connected, proabably the App is not connected to telescope.")
         redis_ip = config['redis_ip']   #Do we really need to dulicate this config entry?
         if redis_ip is not None:           
             #self.redis_server = redis.StrictRedis(host=redis_ip, port=6379, db=0,
@@ -75,15 +76,32 @@ class Enclosure:
     def get_status(self) -> dict:
         #<<<<The next attibute reference fails at saf, usually spurious Dome Ring Open report.
         #<<< Have seen other instances of failing.
-        try:
-            shutter_status = self.enclosure.ShutterStatus
-        except:
-            print("self.enclosure.Roof.ShutterStatus -- Faulted. ")
-            shutter_status = 5
-        try:
-            self.dome_home = self.enclosure.AtHome
-        except:
-            pass
+        if self.site == 'fat':
+            enc = open('R:/Roof_Status.txt')
+            enc_text = enc.readline()
+            enc_list = enc_text.split()
+            if enc_list[4] in ['OPEN', 'Open', 'open', 'OPEN\n']:
+                shutter_status = 0
+            elif enc_list[4] in ['OPENING']:
+                shutter_status = 2
+            elif enc_list[4] in ['CLOSED', 'Closed', 'closed', "CLOSED\n"]:
+                shutter_status = 1
+            elif enc_list[4] in ['CLOSING']:
+                shutter_status = 3
+            elif enc_list[4] in ['Error']:
+                shutter_status = 4
+            else:
+                shutter_status = 5
+        else: 
+            try:
+                shutter_status = self.enclosure.ShutterStatus
+            except:
+                print("self.enclosure.Roof.ShutterStatus -- Faulted. ")
+                shutter_status = 5
+            try:
+                self.dome_home = self.enclosure.AtHome
+            except:
+                pass
         if shutter_status == 0:
             stat_string = "Open"
             self.shutter_is_closed = False
