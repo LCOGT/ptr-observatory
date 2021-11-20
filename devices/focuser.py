@@ -58,8 +58,11 @@ class Focuser:
         self.config = config['focuser']['focuser1']
         win32com.client.pythoncom.CoInitialize()
         self.focuser = win32com.client.Dispatch(driver)
+        time.sleep(4)
+
         self.focuser.Connected = True
-        self.focuser.TempComp = False
+
+        #self.focuser.TempComp = False
         self.micron_to_steps= float(config['focuser']['focuser1']['unit_conversion'])   #  Note tis can be a bogus value
         self.steps_to_micron = 1/self.micron_to_steps
         self.focuser_message = '-'
