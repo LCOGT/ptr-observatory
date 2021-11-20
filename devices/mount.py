@@ -225,6 +225,7 @@ class Mount:
         #self.site_in_automatic = config['site_in_automatic_default']
         #self.automatic_detail = config['automatic_detail_default']
         self.move_time = 0
+
         try:
             ra1, dec1 = self.get_mount_reference()
             print("Mount reference:  ", ra1 ,dec1)
@@ -687,7 +688,6 @@ class Mount:
             elif calibrate:  #Note does not need req or opt
                 #breakpoint()
                 if self.offset_received:
-
                     ra_cal_offset, dec_cal_offset = self.get_mount_reference()
                     print("Stored calibration offsets:  ",round(ra_cal_offset, 5), round(dec_cal_offset, 4))
                     icrs_ra, icrs_dec = self.get_mount_coordinates()
@@ -720,7 +720,6 @@ class Mount:
             #breakpoint()
                 if self.offset_received:
                     ra, dec, time_of_last = g_dev['obs'].get_last_reference()
-                    breakpoint()
                     ra_cal_offset, dec_cal_offset = self.get_mount_reference()
                     print("Stored calibration offsets:  ",round(ra_cal_offset, 5), round(dec_cal_offset, 4))
                     icrs_ra, icrs_dec = self.get_mount_coordinates()

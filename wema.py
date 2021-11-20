@@ -102,9 +102,42 @@ class WxEncAgent:
             self.redis_wx_enabled = True
         else:
             self.redis_wx_enabled = False
-        for key in self.redis_server.keys(): self.redis_server.delete(key)   #Flush old state.
+        
         g_dev['redis_server'] = self.redis_server   #Use this instance.
         g_dev['redis_server']['wema_loaded'] = True
+        
+        #Here we clean up any older processes
+        prior_wema = self.redis_server.get("wema_pid")
+        prior_obs = self.redis_server.get("obs_pid")
+
+        if prior_wema is not None:
+            pid = int( prior_wema)
+            try:
+                print("Terminating Wema:  ", pid)
+                os.kill(pid, signal.SIGTERM)
+            except:
+                print("No wema process was found, starting a new one.")
+        if prior_obs is not None:
+            pid = int( prior_obs)
+            try:
+                print("Terminating Obs:  ", pid)
+                os.kill(pid, signal.SIGTERM)
+            except:
+                print("No observer process was found, starting a new one.")
+            
+        
+        
+        for key in self.redis_server.keys(): self.redis_server.delete(key)   #Flush old state.
+        #The set new ones
+        self.wema_pid = os.getpid()
+        print('WEMA_PID:  ', self.wema_pid)
+        self.redis_server.set('wema_pid', self.wema_pid)
+        #Redundant store of wema_pid
+        camShelf = shelve.open(self.site_path + 'ptr_night_shelf/' + 'pid_wema')
+        camShelf['pid_wema'] = self.wema_pid
+        camShelf['pid_time'] = time.time()
+        #pid = camShelf['pid_obs']      # a 9 character string
+        camShelf.close()
         self.update_config()
         self.create_devices(config)
         self.time_last_status = time.time()
@@ -118,10 +151,12 @@ class WxEncAgent:
         self.redis_server.set('obs_time', immed_time, ex=360)
         #subprocess.call('obs.py')  This is clearly wrong.
         time.sleep(5)
+
         #print("Starting observer, may have to terminate a stale observer first.")
 
-        terminate_restart_observer(self.config['site_path'], no_restart=True)
-        
+        #terminate_restart_observer(self.config['site_path'], no_restart=True)
+       
+    
 
 
 

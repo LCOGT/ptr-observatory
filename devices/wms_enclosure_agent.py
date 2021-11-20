@@ -32,10 +32,15 @@ class Enclosure:
         win32com.client.pythoncom.CoInitialize()
         self.enclosure = win32com.client.Dispatch(driver)
         print(self.enclosure)
+        time.sleep(2)
+
+        self.enclosure.Connected = True
+        time.sleep(8)
         try:
             if not self.enclosure.Connected:
-                self.enclosure.Connected = True
-            print("ASCOM enclosure connected.")
+                print("ASCOM enclosure NOT connected, proabably the App is not connected to telescope.")
+            self.enclosure.Connected = True
+            print("ASCOM enclosure connection attempted again..")
         except:
              print("ASCOM enclosure NOT connected, proabably the App is not connected to telescope.")
         redis_ip = config['redis_ip']   #Do we really need to dulicate this config entry?

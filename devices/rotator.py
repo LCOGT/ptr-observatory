@@ -10,6 +10,7 @@ class Rotator:
         g_dev['rot'] = self
         win32com.client.pythoncom.CoInitialize()
         self.rotator = win32com.client.Dispatch(driver)
+        time.sleep(3)
         self.rotator.Connected = True
         self.rotator_message = '-'
         print("Rotator connected,  at:  ", round(self.rotator.TargetPosition, 4))

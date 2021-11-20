@@ -13,6 +13,7 @@ import shelve
 import ptr_utility
 import redis
 import math
+import ephem
 
 '''
 Autofocus NOTE 20200122
@@ -281,6 +282,7 @@ class Sequencer:
             print("Wema not reporting.")
             return
         events = g_dev['events']
+
         #g_dev['obs'].update_status()  #NB NEED to be sure we have current enclosure status.  Blows recursive limit
         self.current_script = "No current script"    #NB this is an unused remnant I think.
         #if True or     #Note this runs in Manual Mode as well.
@@ -483,6 +485,7 @@ class Sequencer:
         timer = time.time() - 1  #This should force an immediate autofocus.
         req2 = {'target': 'near_tycho_star', 'area': 150}
         opt = {}
+        t = 0
         '''
         # to do is Targets*Mosaic*(sum of filters * count)
         
@@ -713,6 +716,12 @@ class Sequencer:
                         new_ra = dest_ra + d_ra
                         new_dec= dest_dec + d_dec
                         new_ra, new_dec = ra_dec_fix_hd(new_ra, new_dec)
+                        # offset = 44514.552766203706
+                        # moon_time = ephem.now() - offset + 78/1440
+                        # moon_ra = 0.787166667*moon_time + 1.0219444 + 0.01 - t*0.00025
+                        # moon_dec = 8.3001964784*math.pow(moon_time, 0.6719299333) - 0.125 + t*0.002
+                        # new_ra = moon_ra
+                        # new_dec = moon_dec
                         print('Seeking to:  ', new_ra, new_dec)
                         g_dev['mnt'].go_coord(new_ra, new_dec)  # This needs full angle checks
                         if not just_focused:
@@ -724,10 +733,17 @@ class Sequencer:
                                    'hint': block['project_id'] + "##" + dest_name, 'pane': pane}
                             print('Seq Blk sent to camera:  ', req, opt)
                             g_dev['cam'].expose_command(req, opt, no_AWS=False)
+                            t +=1
                             count -= 1
                             exposure['count'] = count
                             left_to_do -= 1
                             print("Left to do:  ", left_to_do)
+                            # offset = 44514.552766203706
+                            # moon_time = ephem.now() - offset + 78/1440
+                            # moon_ra = 0.787166667*moon_time + 1.0219444 + 0.01 + t*0.0001
+                            # moon_dec = 8.3001964784*math.pow(moon_time, 0.6719299333) - 0.125 - t*0.01
+                            # new_ra = moon_ra
+                            # new_dec = moon_dec
                         pane += 1
                         
                     now_date_timeZ = datetime.datetime.now().isoformat().split('.')[0] +'Z'
@@ -768,79 +784,79 @@ class Sequencer:
         """
         self.sequencer_hold = True
         self.current_script = 'Afternoon Bias Dark'
-        dark_time = 300   #seed for 3x3 binning
+        #dark_time = 300   #seed for 3x3 binning
         #breakpoint()
         
         while ephem.now() < g_dev['events']['Morn Bias Dark'] :   #Do not overrun the window end
             #g_dev['mnt'].unpark_command({}, {}) # Get there early
             #g_dev['mnt'].slewToSkyFlatAsync()
-            print("Expose Biases: b_ 2, 3, 4, 1")
+            print("Expose Biases: b_ 2, 3, 1")
+            dark_time = 300
+            req = {'time': 0.0,  'script': 'True', 'image_type': 'bias'}
+            opt = {'area': "Full", 'count': 7, 'bin':'2 2', \
+                    'filter': 'dark'}
+            for bias in range(9):
+                req = {'time': 0.0,  'script': 'True', 'image_type': 'bias'}
+                opt = {'area': "Full", 'count': 9, 'bin':'2 2', \
+                        'filter': 'dark'}
+                result = g_dev['cam'].expose_command(req, opt, no_AWS=True, \
+                                do_sep=False, quick=False)
+                g_dev['obs'].update_status()
 
-            # req = {'time': 0.0,  'script': 'True', 'image_type': 'bias'}
-            # opt = {'area': "Full", 'count': 7, 'bin':'2 2', \
-            #         'filter': 'dark'}
-            # for bias in range(9):
-            #     req = {'time': 0.0,  'script': 'True', 'image_type': 'bias'}
-            #     opt = {'area': "Full", 'count': 9, 'bin':'2 2', \
-            #             'filter': 'dark'}
-            #     result = g_dev['cam'].expose_command(req, opt, no_AWS=True, \
-            #                     do_sep=False, quick=False)
-            #     g_dev['obs'].update_status()
 
+                print("Expose d_2 using exposure:  ", dark_time )
+                req = {'time':dark_time ,  'script': 'True', 'image_type': 'dark'}
+                opt = {'area': "Full", 'count':1, 'bin': '2 2', \
+                        'filter': 'dark'} 
+                result = g_dev['cam'].expose_command(req, opt, no_AWS=True, \
+                                    do_sep=False, quick=False)
 
-            #     print("Expose d_2 using exposure:  ", dark_time )
-            #     req = {'time':dark_time ,  'script': 'True', 'image_type': 'dark'}
-            #     opt = {'area': "Full", 'count':1, 'bin': '2 2', \
-            #             'filter': 'dark'} 
-            #     result = g_dev['cam'].expose_command(req, opt, no_AWS=True, \
-            #                         do_sep=False, quick=False)
-
-            #     g_dev['obs'].update_status()
+                g_dev['obs'].update_status()
 
            
-            # print("Expose Biases: b_3")   
-            # dark_time = 240
-            # for bias in range(9):
-            #     req = {'time': 0.0,  'script': 'True', 'image_type': 'bias'}
-            #     opt = {'area': "Full", 'count': 9, 'bin':'3 3', \
-            #            'filter': 'dark'}
-            #     result = g_dev['cam'].expose_command(req, opt, no_AWS=True, \
-            #                     do_sep=False, quick=False)
-            #     g_dev['obs'].update_status()
+                print("Expose Biases: b_3")   
+                dark_time = 240
+                #for bias in range(9):
+                req = {'time': 0.0,  'script': 'True', 'image_type': 'bias'}
+                opt = {'area': "Full", 'count': 9, 'bin':'3 3', \
+                        'filter': 'dark'}
+                result = g_dev['cam'].expose_command(req, opt, no_AWS=True, \
+                                do_sep=False, quick=False)
+                g_dev['obs'].update_status()
 
-            #     print("Expose d_3 using exposure:  ", dark_time )
-            #     req = {'time':dark_time,  'script': 'True', 'image_type': 'dark'}
-            #     opt = {'area': "Full", 'count':1, 'bin':'3 3', \
-            #             'filter': 'dark'} 
-            #     result = g_dev['cam'].expose_command(req, opt, no_AWS=True, \
-            #                         do_sep=False, quick=False)
-            #     print('Last dark result:  ', result)
-            #     g_dev['obs'].update_status()
-            
-            # print("Expose Biases: b_4") 
-            # dark_time = 180
-            # for bias in range(9):
-            #     req = {'time': 0.0,  'script': 'True', 'image_type': 'bias'}
-            #     opt = {'area': "Full", 'count': 7, 'bin':'4 4', \
-            #            'filter': 'dark'}
-            #     result = g_dev['cam'].expose_command(req, opt, no_AWS=True, \
-            #                     do_sep=False, quick=False)
-            #     g_dev['obs'].update_status()
+                print("Expose d_3 using exposure:  ", dark_time )
+                req = {'time':dark_time,  'script': 'True', 'image_type': 'dark'}
+                opt = {'area': "Full", 'count':1, 'bin':'3 3', \
+                        'filter': 'dark'} 
+                result = g_dev['cam'].expose_command(req, opt, no_AWS=True, \
+                                    do_sep=False, quick=False)
+                print('Last dark result:  ', result)
+                g_dev['obs'].update_status()
+                
+                # print("Expose Biases: b_4") 
+                # dark_time = 120
+                # for bias in range(9):
+                #     req = {'time': 0.0,  'script': 'True', 'image_type': 'bias'}
+                #     opt = {'area': "Full", 'count': 7, 'bin':'4 4', \
+                #             'filter': 'dark'}
+                #     result = g_dev['cam'].expose_command(req, opt, no_AWS=True, \
+                #                     do_sep=False, quick=False)
+                #     g_dev['obs'].update_status()
+    
+    
+                #     print("Expose d_4 using exposure:  ", dark_time )
+                #     req = {'time':dark_time ,  'script': 'True', 'image_type': 'dark'}
+                #     opt = {'area': "Full", 'count':1, 'bin': '4 4', \
+                #             'filter': 'dark'} 
+                #     result = g_dev['cam'].expose_command(req, opt, no_AWS=True, \
+                #                         do_sep=False, quick=False)
+    
+                #     g_dev['obs'].update_status()
 
 
-            #     print("Expose d_4 using exposure:  ", dark_time )
-            #     req = {'time':dark_time ,  'script': 'True', 'image_type': 'dark'}
-            #     opt = {'area': "Full", 'count':1, 'bin': '4 4', \
-            #             'filter': 'dark'} 
-            #     result = g_dev['cam'].expose_command(req, opt, no_AWS=True, \
-            #                         do_sep=False, quick=False)
-
-            #     g_dev['obs'].update_status()
-
-
-            print("Expose Biases: b_1")   
-            dark_time = 300
-            for bias in range(9):
+                print("Expose Biases: b_1")   
+                dark_time = 300
+                #for bias in range(9):
                 req = {'time': 0.0,  'script': 'True', 'image_type': 'bias'}
                 opt = {'area': "Full", 'count': 7, 'bin':'1 1', \
                        'filter': 'dark'}
@@ -889,7 +905,7 @@ class Sequencer:
         self.sky_guard = True
         print('Eve Sky Flat sequence Starting, Enclosure PRESUMED Open. Telescope will un-park.')
         camera_name = str(self.config['camera']['camera_1_1']['name'])
-        flat_count = 13
+        flat_count = 7
         exp_time = .0015
         #  NB Sometime, try 2:2 binning and interpolate a 1:1 flat.  This might run a lot faster.
         if flat_count < 1: flat_count = 1
@@ -921,7 +937,7 @@ class Sequencer:
         
         collecting_area = self.config['telescope']['telescope1']['collecting_area']/32000.
         #  (g_dev['events']['Eve Sky Flats'] < 
-        while len(pop_list) > 0: #and (g_dev['events']['Eve Sky Flats'] < ephem_now - 2/1440 < g_dev['events']['End Eve Sky Flats']):
+        while len(pop_list) > 0 and (g_dev['events']['Eve Sky Flats'] < ephem_now - 2/1440 < g_dev['events']['End Eve Sky Flats']):
 
             current_filter = int(pop_list[0])
             acquired_count = 0
@@ -930,7 +946,7 @@ class Sequencer:
 
             g_dev['fil'].set_number_command(current_filter)
             g_dev['mnt'].slewToSkyFlatAsync()
-            bright = 30000
+            bright = 25000
             scale = 1.0    #1.15   #20201121 adjustment
             
             prior_scale = 1.0
@@ -970,7 +986,7 @@ class Sequencer:
                     continue
                 g_dev['obs'].update_status()
                 try:
-                    scale = 30000/bright
+                    scale = 25000/bright
                     if scale > 5:
                         scale = 5
                     if scale < 0.33:
@@ -983,7 +999,7 @@ class Sequencer:
 
                 obs_win_begin, sunset, sunrise, ephem_now = self.astro_events.getSunEvents()
                 #  THE following code looks like a debug patch gone rogue.
-                if bright > 40000 and (ephem_now < g_dev['events']['End Eve Sky Flats'] - 4/1440):    #NB should gate with end of skyflat window as well.
+                if bright > 30000 and (ephem_now < g_dev['events']['End Eve Sky Flats'] - 4/1440):    #NB should gate with end of skyflat window as well.
                     for i in range(1):
                         time.sleep(5)  #  #0 seconds of wait time.  Maybe shorten for wide bands?
                         g_dev['obs'].update_status()
@@ -1080,7 +1096,7 @@ class Sequencer:
         
     
 
-    def auto_focus_script(self, req, opt, throw=1000):
+    def auto_focus_script(self, req, opt, throw=600):
         '''
         V curve is a big move focus designed to fit two lines adjacent to the more normal focus curve.
         It finds the approximate focus, particulary for a new instrument. It requires 8 points plus

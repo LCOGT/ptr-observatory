@@ -1,4 +1,4 @@
-"""
+""                                                                                      """
 WER 20200307
 
 IMPORTANT TODOs:
@@ -257,7 +257,7 @@ class Observatory:
         self.reset_last_reference()
         self.redis_server.set('obs_time', time.time(), ex=900)
         self.obs_pid = os.getpid()
-        print('PID:  ', self.obs_pid)
+        print('OBS_PID:  ', self.obs_pid)
         self.redis_server.set('obs_pid', self.obs_pid)
         self.site_path = self.config['site_path']
         #Redundant store of obs_pid
