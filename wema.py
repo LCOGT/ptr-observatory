@@ -17,6 +17,7 @@ import json
 import redis
 import requests
 import time
+import shelve
 
 from api_calls import API_calls
 import ptr_events
@@ -24,7 +25,55 @@ from devices.wms_enclosure_agent import Enclosure
 from devices.wms_observing_agent import ObservingConditions
 from global_yard import g_dev
 
-class Observatory:
+
+import os, signal, subprocess
+
+  
+# def process():
+     
+#     # Ask user for the name of process
+#     name = input("Enter process Name: ")
+#     try:      
+#         # iterating through each instance of the process
+#         for line in os.popen("ps ax | grep " + name + " | grep -v grep"):
+#             fields = line.split()          
+#             # extracting Process ID from the output
+#             pid = fields[0]
+#             print(fields)
+#             # terminating process
+#             os.kill(int(pid), signal.SIGKILL)
+#         print("Process Successfully terminated")    
+#     except:
+#         print("Error Encountered while running script")
+  
+# process()
+
+# def worker():
+#     import obs
+def terminate_restart_observer(site_path, no_restart=False):
+    if no_restart is True:
+        return
+    else:
+        camShelf = shelve.open(site_path + 'ptr_night_shelf/' + 'pid_obs')
+        #camShelf['pid_obs'] = self.obs_pid
+        #camShelf['pid_time'] = time.time()
+        pid = camShelf['pid_obs']     # a 9 character string
+        camShelf.close()
+        
+        try:
+            print("Terminating:  ", pid)
+            os.kill(pid, signal.SIGTERM)
+        except:
+            print("No observer process was found, starting a new one.")
+
+        #subprocess.call('C:/Users/obs/Documents/GitHub/ptr-observatory/restart_obs.bat')
+        #The above routine does not return but does start a process.
+        os.system('cmd /c C:\\Users\\obs\\Documents\\GitHub\\ptr-observatory\\restart_obs.bat')
+        #  worked with /k, try /c Which should terminate
+        return
+    
+
+class WxEncAgent:
 
     def __init__(self, name, config):
         self.api = API_calls()
@@ -63,6 +112,17 @@ class Observatory:
         self.blocks = None
         self.projects = None
         self.events_new = None
+        immed_time = time.time()
+        self.obs_time = immed_time
+        self.wema_start_time = immed_time
+        self.redis_server.set('obs_time', immed_time, ex=360)
+        #subprocess.call('obs.py')  This is clearly wrong.
+        time.sleep(5)
+        #print("Starting observer, may have to terminate a stale observer first.")
+
+        terminate_restart_observer(self.config['site_path'], no_restart=True)
+        
+
 
 
         
@@ -136,7 +196,20 @@ class Observatory:
         if loud:
             print('\n\n > Status Sent:  \n', status)
         else:
-            print('>', )
+            try:
+                obs_time = float(self.redis_server.get('obs_time'))
+                delta= time.time() - obs_time
+            except:
+                delta= 999.99  #"NB NB NB Temporily flags someing really wrong."
+            if delta > 300:
+                print(">The observer's time is stale > 300 seconds:  ", round(delta, 2))
+                #Here is where we terminate the obs.exe and restart it.
+            if delta > 360:
+                #terminate_restart_observer(self.config['site_path'], no_restart=True)
+                pass
+
+            else:
+                print('>')
         uri_status = f"https://status.photonranch.org/status/{self.name}/status/"
         try:    # 20190926  tHIS STARTED THROWING EXCEPTIONS OCCASIONALLY
             payload ={
@@ -162,7 +235,7 @@ class Observatory:
     def update(self):
 
         self.update_status()
-        time.sleep(5)
+        time.sleep(3)
 
     def run(self):   # run is a poor name for this function.
         try:
@@ -177,6 +250,7 @@ class Observatory:
 if __name__ == "__main__":
 
     import config
-    o = Observatory(config.site_name, config.site_config)
+
+    wema = WxEncAgent(config.site_name, config.site_config)
     
-    o.run()
+    wema.run()
