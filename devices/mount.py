@@ -331,9 +331,10 @@ class Mount:
             self.current_sidereal = self.mount.SiderealTime
             uncorr_mech_ra_h = self.mount.RightAscension
             uncorr_mech_dec_d = self.mount.Declination
-
+            self.sid_now_r = self.current_sidereal*HTOR
             uncorr_mech_ha_r, uncorr_mech_dec_r = ptr_utility.transform_raDec_to_haDec_r(uncorr_mech_ra_h*HTOR, uncorr_mech_dec_d*DTOR, self.sid_now_r)
             roll_obs_r, pitch_obs_r = ptr_utility.transform_mount_to_observed_r(uncorr_mech_ha_r, uncorr_mech_dec_r, pierside, loud=False)
+
             app_ra_r, app_dec_r, refr_asec = ptr_utility.obsToAppHaRa(roll_obs_r, pitch_obs_r, self.sid_now_r)
             self.refraction_rev = refr_asec
             '''
@@ -1109,6 +1110,8 @@ class Mount:
         mnt_shelf = shelve.open(self.site_path + 'ptr_night_shelf/' + 'mount1')
         mnt_shelf['ra_cal_offset'] = 0.000
         mnt_shelf['dec_cal_offset'] = 0.000
+        mnt_shelf['flip_ra_cal_offset'] = 0.000
+        mnt_shelf['flip_dec_cal_offset'] = 0.000
         return
 
         '''

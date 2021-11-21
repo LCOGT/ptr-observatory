@@ -82,10 +82,12 @@ class Focuser:
                 self.last_source = "Focuser__init__  Calculate Comp references Config"
             except:
                 self.reference = float(self.get_focal_ref())   #need to change to config supplied
+                self.last_known_focus = self.reference
                 print("Focus reference updated from Night Shelf:  ", self.reference)
                 #Is this of any real value except to persist self.last_known...?
         except:
             self.reference = int(self.config['reference'])
+            self.last_known_focus = self.reference
             print("Focus reference derived from supplied config file for 10C:  ", self.reference)
             #The config reference should be a table of value
         self.focuser.Move(int(float(self.reference)*self.micron_to_steps))
@@ -130,7 +132,10 @@ class Focuser:
     def get_quick_status(self, quick):
         quick.append(time.time())
         quick.append(self.focuser.Position*self.steps_to_micron)
-        quick.append(self.focuser.Temperature)
+        try:
+            quick.append(self.focuser.Temperature)
+        except:
+            quick.append(10.0)   
         quick.append(self.focuser.IsMoving)
         return quick
 
@@ -222,7 +227,14 @@ class Focuser:
         #self.last_termperature was used to position the focuser.  Do not use
         #move_relative()  Functionally dependent of temp, coef_c and filter thickness.
         try:
-            temp_delta = self.focuser.Temperature - self.last_temperature
+            if self.site != 'fat':
+                temp_delta = self.focuser.Temperature - self.last_temperature
+            else:
+                try:
+                    temp_delta = g_dev['ocn'].focus_temp - self.last_temperature
+                except:
+                    temp_delta = 0.0
+
             adjust = 0.0
             if abs(temp_delta)> 0.1:
                 adjust = round(temp_delta*float(self.config['coef_c']), 1)

@@ -761,7 +761,6 @@ class Camera:
             self.camera_start_y = 0
             self.area = 150
             print("Default area used. 150%:  ", self.len_x,self.len_y )
-
         #Next apply any subframe setting here.  Be very careful to keep fractional specs and pixel values disinguished.
         if self.area == self.previous_area and sub_frame_fraction is not None and \
                         (sub_frame_fraction != self.previous_image_name):
@@ -923,6 +922,7 @@ class Camera:
 
                     if self.maxim or self.ascom:
                         #print('Link Enable check:  ', self._connected())
+
                         g_dev['ocn'].get_quick_status(self.pre_ocn)
                         g_dev['foc'].get_quick_status(self.pre_foc)
                         g_dev['rot'].get_quick_status(self.pre_rot)
@@ -951,6 +951,7 @@ class Camera:
                             time.sleep(0.1)
                         else:
                             pass
+
                         if self.use_file_mode:
                             if imtypeb:
                                 img_type = 0
@@ -961,9 +962,9 @@ class Camera:
                             if frame_type in ('flat', 'screenflat', 'skyflat'):
                                 img_type = 3
                             #  This is a Maxim-only technique. Does not work with ASCOM Camera driver
-                            self.create_simple_autosave(exp_time=exposure_time, img_type=img_type, \
-                                                   filter_name=self.current_filter, binning=bin_x, \
-                                                   repeat=lcl_repeat)
+                            # self.create_simple_autosave(exp_time=exposure_time, img_type=img_type, \
+                            #                        filter_name=self.current_filter, binning=bin_x, \
+                            #                        repeat=lcl_repeat)
                             for file_path in glob.glob(self.file_mode_path + '*.f*t*'):
                                 os.remove(file_path)
                             self.t2 = time.time()
@@ -981,6 +982,7 @@ class Camera:
                             g_dev['rot'].get_quick_status(self.pre_rot)
                             g_dev['mnt'].get_quick_status(self.pre_mnt)  #Should do this close to the exposure
                             self.t2 = time.time()
+
                             self._expose (exposure_time, imtypeb)
                     else:
                         print("Something terribly wrong, driver not recognized.!")
@@ -1126,11 +1128,7 @@ class Camera:
                 #  NB Note this is QHY600 specific code.  Needs to be supplied in camera config as sliced regions.
                 pedastal = 100
                 ix, iy = self.img.shape
-
-
-
-
-                # if ix == 9600:
+                                # if ix == 9600:
                 #     overscan = int((np.median(self.img[32:, -33:]) + np.median(self.img[0:29, :]))/2) - 1
                 #     trimmed = self.img[32:, :-34].astype('int32') + pedastal - overscan
                 #     if opt['area'] in [150, 'Full', 'full']:
@@ -1220,6 +1218,10 @@ class Camera:
                         trimmed = self.img[12:-4, :-17].astype('int32') + pedastal - self.overscan
                         imshift = False
                         print("Image shift is incorrect, absolutely fatal error", self.img[0:20, -18])
+                elif ix == 4628:
+                    pass  #Do nothing yet to process SBIG16200
+                    trimmed = self.img
+                    imshift = False
                 else:
                     print("Incorrect chip size or image-shift problem detected.")
                     trimmed = self.img

@@ -271,7 +271,7 @@ class WxEncAgent:
     def update(self):
 
         self.update_status()
-        time.sleep(3)
+        time.sleep(15)
 
     def run(self):   # run is a poor name for this function.
         try:

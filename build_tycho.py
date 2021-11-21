@@ -143,7 +143,10 @@ def az_sort_targets(pSidTime, grid=4):
 iso_day = datetime.date.today().isocalendar()
 equinox_years = round((iso_day[0] + ((iso_day[1]-1)*7 + (iso_day[2] ))/365), 2) - 2000
 #C:/Users/obs/Documents/GitHub/ptr-observatory/support_info
-tycho_cat = open("C:/Users/obs/documents/GitHub/ptr-observatory/support_info/tycho_mag_7.dat", 'r')
+try:
+    tycho_cat = open("C:/Users/obs/documents/GitHub/ptr-observatory/support_info/tycho_mag_7.dat", 'r')
+except:
+    tycho_cat = open("C:/Users/wrosi/documents/GitHub/ptr-observatory/support_info/tycho_mag_7.dat", 'r')
 tycho_tuple = []
 count = 0
 for line in tycho_cat:
@@ -162,7 +165,10 @@ tycho_tuple.sort()
 
 #Run and set tpt_tuple to a grid.
 
-tpt_perfect = open("C:/Users/obs/documents/GitHub/ptr-observatory/processing/TPOINT/perfct.dat", 'r')
+try:
+    tpt_perfect = open("C:/Users/obs/documents/GitHub/ptr-observatory/processing/TPOINT/perfct.dat", 'r')
+except:
+    tpt_perfect = open("C:/Users/wrosi/documents/GitHub/ptr-observatory/processing/TPOINT/perfct.dat", 'r')
 tpt_tuple1 = []
 count = 0
 toss = tpt_perfect.readline()

@@ -45,8 +45,9 @@ def linearize_unihedron(uni_value):
     else:
         uni_corr = 6000
     return uni_corr
-        
-    
+ 
+def f_to_c(f):
+    return round(5*(f - 32)/9, 2)
 
 class ObservingConditions:
 
@@ -145,13 +146,93 @@ class ObservingConditions:
         if self.site == 'fat':
 
             try:
-                wx = open('W:/sroweather.txt')
+                wx = open('W:/sroweather.txt', 'r')
                 wx_line = wx.readline()
+                wx.close
+                #print(wx_line)
                 wx_fields = wx_line.split()
-
+                skyTemperature = float( wx_fields[4])
+                temperature = f_to_c(float(wx_fields[5]))
+                windspeed = round(float(wx_fields[7])/2.237, 2)
+                humidity =  float(wx_fields[8])
+                dewpoint = f_to_c(float(wx_fields[9]))
+                timeSinceLastUpdate = wx_fields[13]
+                open_ok = wx_fields[19]
+                #g_dev['o.redis_sever.set("focus_temp", temperature, ex=1200)
+                self.focus_temp = temperature
             except:
-                print('SRO Weather source problem')
-            status = {}
+                time.sleep(5)
+                try:
+                    wx = open('W:/sroweather.txt', 'r')
+                    wx_line = wx.readline()
+                    wx.close
+                    #print(wx_line)
+                    wx_fields = wx_line.split()
+                    skyTemperature = float( wx_fields[4])
+                    temperature = f_to_c(float(wx_fields[5]))
+                    windspeed = round(float(wx_fields[7])/2.237, 2)
+                    humidity =  float(wx_fields[8])
+                    dewpoint = f_to_c(float(wx_fields[9]))
+                    timeSinceLastUpdate = wx_fields[13]
+                    open_ok = wx_fields[19]
+                    #g_dev['o.redis_sever.set("focus_temp", temperature, ex=1200)
+                    self.focus_temp = temperature
+                except:
+                    print('SRO Weather source problem, 2nd try.')
+                    self.focus_temp = 10.
+            try:
+                daily= open('W:/daily.txt', 'r')
+                daily_lines = daily.readlines()
+                daily.close()
+                pressure = round(33.846*float(daily_lines[-3].split()[1]), 2)
+            except:
+                time.sleep(5)
+                try:
+                    daily= open('W:/daily.txt', 'r')
+                    daily_lines = daily.readlines()
+                    daily.close()
+                    pressure = round(33.846*float(daily_lines[-3].split()[1]), 2)
+                except:
+                    print('SRO Daily source problem, 2nd try')
+                    pressure = 866.
+            illum, mag = self.astro_events.illuminationNow()
+            if illum > 100:
+                illum = int(illum)
+            self.calc_HSI_lux = illum
+            dew_point_gap = not (temperature  - dewpoint) < 2
+            temp_bounds = not (temperature < -10) or (temperature > 40)
+            wind_limit = windspeed < 60/2.235   #sky_monitor reports m/s, Clarity may report in MPH
+            sky_amb_limit  = skyTemperature < -20
+            humidity_limit =humidity < 85
+            rain_limit = True #r ainRate <= 0.001
+            self.wx_is_ok = dew_point_gap and temp_bounds and wind_limit and sky_amb_limit and \
+                            humidity_limit and rain_limit
+            #  NB  wx_is_ok does not include ambient light or altitude of the Sun
+            if self.wx_is_ok:
+                wx_str = "Yes"
+            else:
+                wx_str = "No"   #Ideally we add the dominant reason in priority order.
+            status = {"temperature_C": round(temperature, 2),
+                          "pressure_mbar": pressure,
+                          "humidity_%": humidity,
+                          "dewpoint_C": dewpoint,
+                          "sky_temp_C": round(skyTemperature,2),
+                          "last_sky_update_s":  round(10, 2),
+                          "wind_m/s": abs(round(windspeed, 2)),
+                          'rain_rate': 0.0, # rainRate,
+                          'solar_flux_w/m^2': None,
+                          'cloud_cover_%': 0.0, #str(cloudCover),
+                          "calc_HSI_lux": illum,
+                          "calc_sky_mpsas": round((mag - 20.01),2),    #  Provenance of 20.01 is dubious 20200504 WER
+                          "wx_ok": wx_str,  #str(self.sky_monitor_oktoimage.IsSafe),
+                          "open_ok": self.ok_to_open,
+                          'wx_hold': self.wx_hold,
+                          'hold_duration': 0.0,
+                          'meas_sky_mpsas': 22
+                          #"image_ok": str(self.sky_monitor_oktoimage.IsSafe)
+                          }
+            self.redis_server.set('ocn_status' , status, ex=1200)
+            self.last_stat = self.redis_server.get('ocn_status')
             return status
                 
             

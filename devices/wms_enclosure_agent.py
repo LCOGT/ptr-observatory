@@ -77,9 +77,20 @@ class Enclosure:
         #<<<<The next attibute reference fails at saf, usually spurious Dome Ring Open report.
         #<<< Have seen other instances of failing.
         if self.site == 'fat':
-            enc = open('R:/Roof_Status.txt')
-            enc_text = enc.readline()
-            enc_list = enc_text.split()
+            try:
+                enc = open('R:/Roof_Status.txt')
+                enc_text = enc.readline()
+                enc.close
+                enc_list = enc_text.split()
+            except:
+                try:
+                    enc = open('R:/Roof_Status.txt')
+                    enc_text = enc.readline()
+                    enc.close
+                    enc_list = enc_text.split()
+                except:
+                    print("Two reads of roof status file failed")
+                    enc_list = [1, 2, 3, 4, 'Error']
             if enc_list[4] in ['OPEN', 'Open', 'open', 'OPEN\n']:
                 shutter_status = 0
             elif enc_list[4] in ['OPENING']:
@@ -214,7 +225,7 @@ class Enclosure:
             self.redis_server.set('dome_slewing', False, ex=3600)
             self.redis_server.set('enc_status', status, ex=3600)
         # This code picks up commands forwarded by the observer Enclosure 
-        if self.site_is_proxy:
+        if self.site_is_proxy and self.site != 'fat':
             redis_command = self.redis_server.get('enc_cmd')  #It is presumed there is an expiration date on open command at least.
             if redis_command is not None:
                 pass   #
@@ -287,7 +298,8 @@ class Enclosure:
             
             
         self.status = status
-        self.manager()   #There be monsters here. <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+        if self.site != 'fat':   #There is noting for the code to manage @ FAT.
+            self.manager()   #There be monsters here. <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
         return status
 
 

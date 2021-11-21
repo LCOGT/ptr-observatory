@@ -1698,6 +1698,7 @@ def test_haDec_AltAz_haDec():
 
 def apply_refraction_inEl(pAppEl, pSiteRefTemp, pSiteRefPress): #Deg, C. , mmHg
     #From Astronomical Algorithms.  Max error 0.89" at 0 elev.
+    breakpoint()
     if not RefrOn:
         return pAppEl, 0.0
     elif pAppEl > 0:
