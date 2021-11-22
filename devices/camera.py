@@ -615,6 +615,7 @@ class Camera:
 
         #  Here we set up the filter, and later on possibly rotational composition.  WE CAN SPEED THIS UP IF ON THE RIGHT FITLER
         try:    #20200716   FW throwing error (-4)
+            breakpoint()
             requested_filter_name = str(optional_params.get('filter', 'w'))   #Default should come from config.
             self.current_filter = requested_filter_name
             g_dev['fil'].set_name_command({'filter': requested_filter_name}, {})
