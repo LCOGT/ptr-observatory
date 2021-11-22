@@ -146,7 +146,7 @@ equinox_years = round((iso_day[0] + ((iso_day[1]-1)*7 + (iso_day[2] ))/365), 2) 
 try:
     tycho_cat = open("C:/Users/obs/documents/GitHub/ptr-observatory/support_info/tycho_mag_7.dat", 'r')
 except:
-    tycho_cat = open("C:/Users/wrosi/documents/GitHub/ptr-observatory/support_info/tycho_mag_7.dat", 'r')
+    tycho_cat = open("C:/Users/User/Documents/GitHub/ptr-observatory/support_info/tycho_mag_7.dat", 'r')
 tycho_tuple = []
 count = 0
 for line in tycho_cat:
@@ -168,7 +168,7 @@ tycho_tuple.sort()
 try:
     tpt_perfect = open("C:/Users/obs/documents/GitHub/ptr-observatory/processing/TPOINT/perfct.dat", 'r')
 except:
-    tpt_perfect = open("C:/Users/wrosi/documents/GitHub/ptr-observatory/processing/TPOINT/perfct.dat", 'r')
+    tpt_perfect = open("C:/Users/User/documents/GitHub/ptr-observatory/processing/TPOINT/perfct.dat", 'r')
 tpt_tuple1 = []
 count = 0
 toss = tpt_perfect.readline()
