@@ -154,6 +154,9 @@ def reset_sequence(pCamera):
 
 # Default filter needs to be pulled from site camera or filter config
 
+def camera_factory(driver: str, name: str, config: dict):
+    pass
+
 class Camera:
 
     """
@@ -161,8 +164,11 @@ class Camera:
     """
 
     ###filter, focuser, rotator must be set up prior to camera.
+    #Since this is a class definition we need to pre-enter with a list of classes 
+    #to be created by a camera factory.
 
     def __init__(self, driver: str, name: str, config: dict):
+        
         """
         Added monkey patches to make ASCOM/Maxim differences
         go away from the bulk of the in-line code.
@@ -183,7 +189,7 @@ class Camera:
         g_dev[name + '_cam_retry_doit'] = False
         g_dev[name] = self
     
-        if name == 'camera_1_1':     #NB Why this special case???
+        if name == 'camera_1':     #NBDefaults sets up Selected 'cam'
             g_dev['cam'] = self
         self.config = config
         self.alias = config['camera'][self.name]['name']
@@ -299,7 +305,6 @@ class Camera:
         self.hint = None
         self.focus_cache = None
         self.darkslide = False
-        breakpoint
         if self.config['camera'][self.name]['settings']['has_darkslide']:
             self.darkslide = True
             com_port = self.config['camera'][self.name]['settings']['darkslide_com']
@@ -836,6 +841,7 @@ class Camera:
                 #case where a timeout is a smart idea.
                 #Wait for external motion to cease before exposing.  Note this precludes satellite tracking.
                 st = ""
+ 
                 if g_dev['enc'].is_dome:
                     try:
                         enc_slewing = g_dev['enc'].status['dome_slewing']
@@ -1380,7 +1386,7 @@ class Camera:
                         try:
                             hdu.header['ENC1STAT'] = g_dev['enc'].status['shutter_status']  #['shutter_status'], 'Shutter status')   #"Open/Closed" enclosure 1 status
                         except:
-                            print('Could not get ENC1STAT keyword. ')
+                            pass
 
                     #  if gather_status:
                     hdu.header['MNT-SIDT'] = (avg_mnt['sidereal_time'], '[deg] Mount sidereal time')

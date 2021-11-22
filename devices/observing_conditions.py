@@ -394,7 +394,6 @@ class ObservingConditions:
     
                 
             #self.wx_is_ok = False 
-            breakpoint()
             wx_delay_time = 900
             if (self.wx_is_ok and self.wx_system_enable) and not self.wx_hold:     #Normal condition, possibly nothing to do.
                 self.wx_hold_last_updated = time.time()
@@ -458,7 +457,7 @@ class ObservingConditions:
     def get_proxy_temp_press(self):
         if self.site_is_proxy:
             try:
-                wx = eval(self.redis_server.get('wx_redis_status'))
+                wx = eval(self.redis_server.get('ocn_status'))
                 self.temperature = float(wx['temperature_C'])
                 self.pressure = float(wx['pressure_mbar'])
             except:
@@ -482,7 +481,10 @@ class ObservingConditions:
             else:
                 open_poss = False
                 hz = 500000
-            wx = eval(self.redis_server.get('wx_redis_status'))
+            try:
+                wx = eval(self.redis_server.get('wx_redis_status'))
+            except:
+                wx = eval(self.redis_server.get('ocn_status'))   #NB NB NB This needs cleaning up.
 
             quick.append(time.time())
             quick.append(float(wx['sky_temp_C']))

@@ -1748,7 +1748,7 @@ IF sweep
         return
 
     def append_completes(self, block_id):
-        camera = self.config['camera']['camera_1_1']['name']
+        camera = self.config['camera']['camera_1']['name']
         seq_shelf = shelve.open(g_dev['cam'].site_path + 'ptr_night_shelf/' + camera)
         print("block_id:  ", block_id)
         lcl_list = seq_shelf['completed_blocks']
@@ -1759,7 +1759,7 @@ IF sweep
         return 
     
     def is_in_completes(self, check_block_id):
-        camera = self.config['camera']['camera_1_1']['name']
+        camera = self.config['camera']['camera_1']['name']
         seq_shelf = shelve.open(g_dev['cam'].site_path + 'ptr_night_shelf/' + camera)
         #print('Completes contains:  ', seq_shelf['completed_blocks'])
         if check_block_id in seq_shelf['completed_blocks']:
@@ -1772,12 +1772,12 @@ IF sweep
     
     def reset_completes(self):
         try:
-            camera = self.config['camera']['camera_1_1']['name']
+            camera = self.config['camera']['camera_1']['name']
             seq_shelf = shelve.open(g_dev['cam'].site_path + 'ptr_night_shelf/' + str(camera))
             seq_shelf['completed_blocks'] = []
             seq_shelf.close()
         except:
-            print('Found an empty shelf.  Reset_(block)completes for kf01')
+            print('Found an empty shelf.  Reset_(block)completes for:  ', camera)
         return 
 
     # import math

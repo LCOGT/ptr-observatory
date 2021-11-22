@@ -61,9 +61,12 @@ class Enclosure:
         #core1_redis.set('unihedron1', str(mpsas) + ', ' + str(bright) + ', ' + str(illum), ex=600)
         if self.site_is_proxy:
             #Usually fault here because WEMA is not running.
+  
+    
+          
             try:
                 stat_string = self.redis_server.get("shutter_status")
-                self.status = eval(self.redis_server.get("status"))
+                #self.status = eval(self.redis_server.get("status"))
             except:
                 print("\nWxEnc Agent WEMA not running. Please start it up.|n")
             if stat_string is not None:
