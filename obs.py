@@ -1,5 +1,4 @@
-
-"""
+""                                                                                      """
 WER 20200307
 
 IMPORTANT TODOs:
@@ -21,9 +20,13 @@ THINGS TO FIX:
     autofocus, and with grid of known stars
     sky flats
     much better weather station approach
+    
+WER 20211025
+
+Simplify!
 
 """
-
+import pdb
 import time
 import threading
 import queue
@@ -84,7 +87,13 @@ from auto_stretch.stretch import Stretch
 # else:
 #     # Handle target environment that doesn't support HTTPS verification
 #     ssl._create_default_https_context = _create_unverified_https_context
-
+def solve (file_name):
+        #Load the filename
+        print("Entering")
+        time. sleep(60)
+        print("Leaving")
+        #be happy.
+        return "Solved:  " + file_name
 
 # move this function to a better location
 def to_bz2(filename, delete=False):
@@ -159,8 +168,9 @@ class Observatory:
 
         # This is the class through which we can make authenticated api calls.
         self.api = API_calls()
-        self.command_interval = 3   # seconds between polls for new commands
-        self.status_interval = 4    # NOTE THESE IMPLEMENTED AS A DELTA NOT A RATE.
+        self.command_interval = 5   # seconds between polls for new commands
+        self.status_interval = 5    # NOTE THESE IMPLEMENTED AS A DELTA .
+        self.time_last_status = time.time() - 5
         self.name = name
         self.site_name = name
         self.config = config
@@ -185,8 +195,10 @@ class Observatory:
             'camera_1_2',
             'camera_1-4',
             ]
-        self.short_status_devices = [    #Obs-cond and enc do not report status
-            'enclosure',
+        self.short_status_devices = [   # Obs-cond and enc do not report status
+            'enclosure',    # Can these be eliminateted by always assuming wema 
+                            # instance?  Perhaps only retaing dome azimuth and 
+                            #following control part of the enclsoure model.
             'mount',
             'telescope',
             #'screen',
@@ -213,10 +225,12 @@ class Observatory:
         else:
             self.redis_wx_enabled = False
 
-        #for key in self.redis_server.keys(): self.redis_server.delete(key)   #Flush old state.  But do not erase WEMA
+        #for key in self.redis_server.keys(): self.redis_server.delete(key)   
+        #Flush old state.  But do not erase WEMA -- Use ex=xyz consistently.
         g_dev['redis_server'] = self.redis_server   #Use this instance.
-        g_dev['redis_server']['obs_loaded'] = True
-        g_dev['counter'] = 0  #Used to count user-name errors in Camera object
+
+        
+        g_dev['counter'] = 0  #Used to count user-name errors in Camera object  ???
         self.update_config()
         # Use the configuration to instantiate objects for all devices.
         self.create_devices(config)
@@ -234,22 +248,33 @@ class Observatory:
         # =============================================================================
         # Here we set up the reduction Queue and Thread:
         # =============================================================================
-        self.reduce_queue = queue.Queue(maxsize=50)
-        self.reduce_queue_thread = threading.Thread(target=self.reduce_image, args=())
-        self.reduce_queue_thread.start()
+        # self.reduce_queue = queue.Queue(maxsize=50)
+        # self.reduce_queue_thread = threading.Thread(target=self.reduce_image, args=())
+        # self.reduce_queue_thread.start()
         self.blocks = None
         self.projects = None
         self.events_new = None
         self.reset_last_reference()
-
-
+        self.redis_server.set('obs_time', time.time(), ex=900)
+        self.obs_pid = os.getpid()
+        print('OBS_PID:  ', self.obs_pid)
+        self.redis_server.set('obs_pid', self.obs_pid)
+        self.site_path = self.config['site_path']
+        #Redundant store of obs_pid
+        camShelf = shelve.open(self.site_path + 'ptr_night_shelf/' + 'pid_obs')
+        camShelf['pid_obs'] = self.obs_pid
+        camShelf['pid_time'] = time.time()
+        #pid = camShelf['pid_obs']      # a 9 character string
+        camShelf.close()
+        self.counter = -15
 
         # Build the site (from-AWS) Queue and start a thread.
         # self.site_queue = queue.SimpleQueue()
         # self.site_queue_thread = threading.Thread(target=self.get_from_AWS, args=())
         # self.site_queue_thread.start()
 
-
+    #NB Why here this is used by the mount object.
+    
     def set_last_reference(self,  delta_ra, delta_dec, last_time):
         mnt_shelf = shelve.open(self.site_path + 'ptr_night_shelf/' + 'last')
         mnt_shelf['ra_cal_offset'] = delta_ra
@@ -282,7 +307,7 @@ class Observatory:
             self.all_devices[dev_type] = {}
             # Get the names of all the devices from each dev_type.
             # if dev_type == 'camera':
-            #     breakpoint()
+            #     
             devices_of_type = config.get(dev_type, {})
             device_names = devices_of_type.keys()
             # Instantiate each device object from based on its type
@@ -325,7 +350,7 @@ class Observatory:
 
     def update_config(self):
         '''
-        Send the config to aws.
+        Send the config to aws.  This generally happens once.
         '''
         uri = f"{self.name}/config/"
         self.config['events'] = g_dev['events']
@@ -336,7 +361,7 @@ class Observatory:
 
     def scan_requests(self, mount):
         '''
-        Outline of change 20200323 WER
+        Outline of change 20200323 WER  ot made as of 20211125  WER
         Get commands from AWS, and post a STOP/Cancel flag
         This function will be a Thread. we will limit the
         polling to once every 2.5 - 3 seconds because AWS does not
@@ -358,7 +383,7 @@ class Observatory:
         # This stopping mechanism allows for threads to close cleanly.
         while not self.stopped:
             # Wait a bit before polling for new commands
-            time.sleep(self.command_interval)
+            time.sleep(self.command_interval)  #This causes a bocking event  ~5 sec apart
            #  t1 = time.time()
             if not g_dev['seq'].sequencer_hold:
                 url_job = "https://jobs.photonranch.org/jobs/getnewjobs"
@@ -392,7 +417,7 @@ class Observatory:
                                     except:
                                         deviceInstance = cmd['required_params']['device_instance']
                                 except:
-                                    #breakpoint()  
+                                    #  
                                     pass
                         else:
                             deviceInstance = cmd['deviceInstance']
@@ -449,11 +474,13 @@ class Observatory:
         Each device class is responsible for implementing the method
         `get_status` which returns a dictionary.
         '''
+        if self.time_last_status + 3 >= time.time():
+            return
 
         # This stopping mechanism allows for threads to close cleanly.
         loud = False
         # if g_dev['cam_retry_doit']:
-        #     #breakpoint()   #THis should be obsolete.
+        #     #   #THis should be obsolete.
         #     del g_dev['cam']
         #     device = Camera(g_dev['cam_retry_driver'], g_dev['cam_retry_name'], g_dev['cam_retry_config'])
         #     print("Deleted and re-created:  ,", device)
@@ -523,6 +550,7 @@ class Observatory:
             self.status_count +=1
         except:
             print('self.api.authenticated_request("PUT", uri, status):   Failed!')
+        self.redis_server.set('obs_time', time.time(), ex=1200)
 
 
     def update(self):
@@ -557,9 +585,17 @@ class Observatory:
         except:
             pass
             #print("self.scan_requests('mount1') threw an exception, probably empty input queues.")
+        self.redis_server.set('obs_time', time.time(), ex=1200)
+        # self.counter +=1
+        # print('Counter:  ', self.counter)
+        # if self.counter >0:
+        #     time.sleep(300)
+
         g_dev['seq'].manager()  #  Go see if there is something new to do.
+        return
 
     def run(self):   # run is a poor name for this function.
+        #this is called and never exits. 20211016  WER added a sleep
         try:
             # self.update_thread = threading.Thread(target=self.update_status).start()
             # Each mount operates async and has its own command queue to scan.
@@ -570,8 +606,10 @@ class Observatory:
             #         args=(mount,)
             #     ).start()
             # Keep the main thread alive, otherwise signals are ignored
-            while True:
+            while True:   #this is an infinte Loop.  Maybe set to terminate 2 hours after Sunrise??
                 self.update()
+                time.sleep(1)
+
                 # `Ctrl-C` will exit the program.
         except KeyboardInterrupt:
             print("Finishing loops and exiting...")
@@ -627,316 +665,316 @@ class Observatory:
             print("Log did not send, usually not fatal.")
             
             
-    # Note this is another thread!
-    def reduce_image(self):
-        '''
-        The incoming object is typically a large fits HDU. Found in its
-        header will be both standard image parameters and destination filenames
+#     # Note this is another thread!   Was is more accurate, now unsued 20121109
+#     def reduce_image(self):
+#         '''
+#         The incoming object is typically a large fits HDU. Found in its
+#         header will be both standard image parameters and destination filenames
 
-        '''
-        while True:
-            if not self.reduce_queue.empty():
-                # print(self)
-                # print(self.reduce_queue)
-                # print(self.reduce_queue.empty)
+#         '''
+#         #  We should no longer get here! 20121030
+#         while True:
+#             if not self.reduce_queue.empty():
+#                 # print(self)
+#                 # print(self.reduce_queue)
+#                 # print(self.reduce_queue.empty)
 
-                pri_image = self.reduce_queue.get(block=False)
-                #print(pri_image)
-                if pri_image is None:
-                    time.sleep(.5)
-                    continue
-                # Here we parse the input and calibrate it.
-
-                paths = pri_image[0]
-                hdu = pri_image[1]
-                frame_type = pri_image[2]
-
-                lng_path =  g_dev['cam'].lng_path
-                #NB Important decision here, do we flash calibrate screen and sky flats?  For now, Yes.
-
-                #cal_result =
-                print('Pre Reduction Mean:  ', hdu.data.mean())
-                calibrate(hdu, lng_path, paths['frame_type'], quick=False)
-                #print("Calibrate returned:  ", hdu.data, cal_result)
-                #Before saving reduced or generating postage, we flip
-                #the images so East is left and North is up based on
-                #The keyword PIERSIDE defines the orientation.
-                #Note the raw image is not flipped/
-                if hdu.header['PIERSIDE'] == "Look West":
-                    hdu.data = np.flip(hdu.data)
-                    hdu.header['IMGFLIP'] = True
-                wpath = paths['im_path'] + paths['red_name01']
-                print('Reduced Mean:  ', hdu.data.mean())
-                hdu.writeto(wpath, overwrite=True)  # NB overwrite == True is dangerous in production code.  This is big fits to AWS
-                reduced_data_size = hdu.data.size
-                wpath = paths['red_path'] + paths['red_name01_lcl']    #This name is convienent for local sorting
-                hdu.writeto(wpath, overwrite=True) #Bigfit reduced
-
-                #Will try here to solve   NB Should skip non-solvable images like skyflats
+#                 pri_image = self.reduce_queue.get(block=False)
+#                 #print(pri_image)
+#                 if pri_image is None:
+#                     time.sleep(.5)
+#                     continue
+#                 # Here we parse the input and calibrate it.
                 
-                if frame_type in ('bias', 'dark', 'screenflat', 'skyflat'):
-                    no_AWS = True
-                # try:
-                #     hdu_save = hdu
-                #     #wpath = 'C:/000ptr_saf/archive/sq01/20210528/reduced/saf-sq01-20210528-00019785-le-w-EX01.fits'
-                #     solve = platesolve.platesolve(wpath, 0.5478)
-                #     print("PW Solves: " ,solve['ra_j2000_hours'], solve['dec_j2000_degrees'], solve)
-                #     img = fits.open(wpath, mode='update', ignore_missing_end=True)
-                #     hdr = img[0].header
-                #     #  Update the header.
-                #     hdr['RA-J2000'] = solve['ra_j2000_hours']
-                #     hdr['DECJ2000'] = solve['dec_j2000_degrees']
-                #     hdr['MEAS-SCL'] = solve['arcsec_per_pixel']
-                #     hdr['MEAS-ROT'] = solve['rot_angle_degs']
-                #     img.flush()
-                #     img.close
-                #     img = fits.open(wpath, ignore_missing_end=True)
-                #     hdr = img[0].header
-                #     prior_ra_h, prior_dec, prior_time = self.get_last_reference()
-                #     time_now = time.time()  #This should be more accurately defined earlier in the header
-                #     if prior_time is not None:
-                #         print("time base is:  ", time_now - prior_time)
-                #     self.set_last_reference(solve['ra_j2000_hours'], solve['dec_j2000_degrees'], time_now)
+#                 paths = pri_image[0]
+#                 hdu = pri_image[1]
+#                 frame_type = pri_image[2]
+
+#                 lng_path =  g_dev['cam'].lng_path
+#                 #NB Important decision here, do we flash calibrate screen and sky flats?  For now, Yes.
+
+#                 #cal_result =
+#                 print('Pre Reduction Mean:  ', hdu.data.mean())
+
+#                 calibrate(hdu, lng_path, paths['frame_type'], quick=False)
+#                 #print("Calibrate returned:  ", hdu.data, cal_result)
+#                 #Before saving reduced or generating postage, we flip
+#                 #the images so East is left and North is up based on
+#                 #The keyword PIERSIDE defines the orientation.
+#                 #Note the raw image is not flipped/
+#                 if hdu.header['PIERSIDE'] == "Look West":
+#                     hdu.data = np.flip(hdu.data)
+#                     hdu.header['IMGFLIP'] = True
+#                 wpath = paths['im_path'] + paths['red_name01']
+#                 print('Reduced Mean:  ', hdu.data.mean())
+#                 hdu.writeto(wpath, overwrite=True)  # NB overwrite == True is dangerous in production code.  This is big fits to AWS
+#                 reduced_data_size = hdu.data.size
+#                 wpath = paths['red_path'] + paths['red_name01_lcl']    #This name is convienent for local sorting
+#                 hdu.writeto(wpath, overwrite=True) #Bigfit reduced
+
+#                 #Will try here to solve   NB Should skip non-solvable images like skyflats
+                
+#                 if frame_type in ('bias', 'dark', 'screenflat', 'skyflat'):    #NEED to add spect
+#                     no_AWS = True
+#                 if frame_type not in ('bias', 'dark', 'screenflat', 'skyflat'):    #NEED to add spect
                     
-                # except:
-                #    print(wpath, "  was not solved, marking to skip in future, sorry!")
-                #    img = fits.open(wpath, mode='update', ignore_missing_end=True)
-                #    hdr = img[0].header
-                #    hdr['NO-SOLVE'] = True
-                #    img.close()
-                #    self.reset_last_reference()
-                #   #Return to classic processing
-                #hdu = hdu_save
+#                     try:
+#                         hdu_save = hdu
+#                         #wpath = 'C:/000ptr_saf/archive/sq01/20210528/reduced/saf-sq01-20210528-00019785-le-w-EX01.fits'
+#                         solve = platesolve.platesolve(wpath, 0.5478)
+#                         print("PW Solves: " ,solve['ra_j2000_hours'], solve['dec_j2000_degrees'], solve)
+#                         img = fits.open(wpath, mode='update', ignore_missing_end=True)
+#                         hdr = img[0].header
+#                         #  Update the header.  
+#                         hdr['RA-J2000'] = solve['ra_j2000_hours']
+#                         hdr['DECJ2000'] = solve['dec_j2000_degrees']
+#                         hdr['MEAS-SCL'] = solve['arcsec_per_pixel']
+#                         hdr['MEAS-ROT'] = solve['rot_angle_degs']
+#                         img.flush()
+#                         img.close
+#                         img = fits.open(wpath, ignore_missing_end=True)
+#                         hdr = img[0].header
+#                         prior_ra_h, prior_dec, prior_time = self.get_last_reference()
+#                         time_now = time.time()  #This should be more accurately defined earlier in the header
+#                         if prior_time is not None:
+#                             print("time base is:  ", time_now - prior_time)
+#                         self.set_last_reference(solve['ra_j2000_hours'], solve['dec_j2000_degrees'], time_now)
+                        
+#                     except:
+#                         print(wpath, "  was not solved, marking to skip in future, sorry!")
+#                         img = fits.open(wpath, mode='update', ignore_missing_end=True)
+#                         hdr = img[0].header
+#                         hdr['NO-SOLVE'] = True
+#                         img.close()
+#                         self.reset_last_reference()
+#                       #Return to classic processing
+#                 hdu = hdu_save
 
-                if self.site_name == 'saf':
-                    wpath = paths['red_path_aux'] + paths['red_name01_lcl']
-                    hdu.writeto(wpath, overwrite=True) #big fits to other computer in Neyle's office
-                #patch to test Midtone Contrast
+#                 if self.site_name == 'saf':
+#                     wpath = paths['red_path_aux'] + paths['red_name01_lcl']
+#                     hdu.writeto(wpath, overwrite=True) #big fits to other computer in Neyle's office
+#                 #patch to test Midtone Contrast
 
-                # image = 'Q:/000ptr_saf/archive/sq01/20201212 ans HH/reduced/HH--SigClip.fits'
-                # hdu_new = fits.open(image)
-                # hdu =hdu_new[0]
-
-
-
-
-                '''
-                Here we need to consider just what local reductions and calibrations really make sense to
-                process in-line vs doing them in another process.  For all practical purposes everything
-                below can be done in a different process, the exception perhaps has to do with autofocus
-                processing.
-
-
-                '''
-                # Note we may be using different files if calibrate is null.
-                # NB  We should only write this if calibrate actually succeeded to return a result ??
-
-                #  if frame_type == 'sky flat':
-                #      hdu.header['SKYSENSE'] = int(g_dev['scr'].bright_setting)
-                #
-                # if not quick:
-                #     hdu1.writeto(im_path + raw_name01, overwrite=True)
-                # raw_data_size = hdu1[0].data.size
+#                 # image = 'Q:/000ptr_saf/archive/sq01/20201212 ans HH/reduced/HH--SigClip.fits'
+#                 # hdu_new = fits.open(image)
+#                 # hdu =hdu_new[0]
 
 
 
-                #  NB Should this step be part of calibrate?  Second should we form and send a
-                #  CSV file to AWS and possibly overlay key star detections?
-                #  Possibly even astro solve and align a series or dither batch?
-                #  This might want to be yet another thread queue, esp if we want to do Aperture Photometry.
-                no_AWS = False
-                #quick = False
-                do_sep = False
-                spot = None
-                if do_sep:    #WE have already ran this code when focusing, but we should not ever get here when doing that.
-                    try:
-                        img = hdu.data.copy().astype('float')
-                        bkg = sep.Background(img)
-                        #breakpoint()
-                        #bkg_rms = bkg.rms()
-                        img = img - bkg
-                        sources = sep.extract(img, 4.5, err=bkg.globalrms, minarea=9)#, filter_kernel=kern)
-                        sources.sort(order = 'cflux')
-                        #print('No. of detections:  ', len(sources))
-                        sep_result = []
-                        spots = []
-                        for source in sources:
-                            a0 = source['a']
-                            b0 =  source['b']
-                            r0 = 2*round(math.sqrt(a0**2 + b0**2), 2)
-                            sep_result.append((round((source['x']), 2), round((source['y']), 2), round((source['cflux']), 2), \
-                                           round(r0), 3))
-                            spots.append(round((r0), 2))
-                        spot = np.array(spots)
-                        try:
-                            spot = np.median(spot[-9:-2])   #  This grabs seven spots.
-                            #print(sep_result, '\n', 'Spot ,flux, #_sources, avg_focus:  ', spot, source['cflux'], len(sources), avg_foc[1], '\n')
-                            if len(sep_result) < 5:
-                                spot = None
-                        except:
-                            spot = None
-                    except:
-                        spot = None
 
-                reduced_data_size = hdu.data.size
-                #g_dev['obs'].update_status()
-                #Here we need to process images which upon input, may not be square.  The way we will do that
-                #is find which dimension is largest.  We then pad the opposite dimension with 1/2 of the difference,
-                #and add vertical or horizontal lines filled with img(min)-2 but >=0.  The immediate last or first line
-                #of fill adjacent to the image is set to 80% of img(max) so any subsequent subframing selections by the
-                #user is informed. If the incoming image dimensions are odd, they will be decreased by one.  In essence
-                #we wre embedding a non-rectanglular image in a "square" and scaling it to 768^2.  We will impose a
-                #minimum subframe reporting of 32 x 32
+#                 '''
+#                 Here we need to consider just what local reductions and calibrations really make sense to
+#                 process in-line vs doing them in another process.  For all practical purposes everything
+#                 below can be done in a different process, the exception perhaps has to do with autofocus
+#                 processing.
 
-                # in_shape = hdu.data.shape
-                # in_shape = [in_shape[0], in_shape[1]]   #Have to convert to a list, cannot manipulate a tuple,
-                # if in_shape[0]%2 == 1:
-                #     in_shape[0] -= 1
-                # if in_shape[0] < 32:
-                #     in_shape[0] = 32
-                # if in_shape[1]%2 == 1:
-                #     in_shape[1] -= 1
-                # if in_shape[1] < 32:
-                #     in_shape[1] = 32
-                #Ok, we have an even array and a minimum 32x32 array.
 
-                # =============================================================================
-                # x = 2      From Numpy: a way to quickly embed an array in a larger one
-                # y = 3
-                # wall[x:x+block.shape[0], y:y+block.shape[1]] = block
-                # =============================================================================
+#                 '''
+#                 # Note we may be using different files if calibrate is null.
+#                 # NB  We should only write this if calibrate actually succeeded to return a result ??
 
-# =============================================================================
-#                 if in_shape[0] < in_shape[1]:
-#                     diff = int(abs(in_shape[1] - in_shape[0])/2)
-#                     in_max = int(hdu.data.mean()*0.8)
-#                     in_min = int(hdu.data.min() - 2)
-#                     if in_min < 0:
-#                         in_min = 0
-#                     new_img = np. zeros((in_shape[1], in_shape[1]))    #new square array
-#                     new_img[0:diff - 1, :] = in_min
-#                     new_img[diff-1, :] = in_max
-#                     new_img[diff:(diff + in_shape[0]), :] = hdu.data
-#                     new_img[(diff + in_shape[0]), :] = in_max
-#                     new_img[(diff + in_shape[0] + 1):(2*diff + in_shape[0]), :] = in_min
-#                     hdu.data = new_img
-#                 elif in_shape[0] > in_shape[1]:
-#                     #Same scheme as above, but expands second axis.
-#                     diff = int((in_shape[0] - in_shape[1])/2)
-#                     in_max = int(hdu.data.mean()*0.8)
-#                     in_min = int(hdu.data.min() - 2)
-#                     if in_min < 0:
-#                         in_min = 0
-#                     new_img = np. zeros((in_shape[0], in_shape[0]))    #new square array
-#                     new_img[:, 0:diff - 1] = in_min
-#                     new_img[:, diff-1] = in_max
-#                     new_img[:, diff:(diff + in_shape[1])] = hdu.data
-#                     new_img[:, (diff + in_shape[1])] = in_max
-#                     new_img[:, (diff + in_shape[1] + 1):(2*diff + in_shape[1])] = in_min
-#                     hdu.data = new_img
-#                 else:
-#                     #nothing to do, the array is already square
+#                 #  if frame_type == 'sky flat':
+#                 #      hdu.header['SKYSENSE'] = int(g_dev['scr'].bright_setting)
+#                 #
+#                 # if not quick:
+#                 #     hdu1.writeto(im_path + raw_name01, overwrite=True)
+#                 # raw_data_size = hdu1[0].data.size
+
+
+
+#                 #  NB Should this step be part of calibrate?  Second should we form and send a
+#                 #  CSV file to AWS and possibly overlay key star detections?
+#                 #  Possibly even astro solve and align a series or dither batch?
+#                 #  This might want to be yet another thread queue, esp if we want to do Aperture Photometry.
+#                 no_AWS = False
+#                 #quick = False
+#                 do_sep = False
+#                 spot = None
+#                 # if do_sep:    #WE have already ran this code when focusing, but we should not ever get here when doing that.
+#                 #     try:
+#                 #         img = hdu.data.copy().astype('float')
+#                 #         bkg = sep.Background(img)
+#                 #         #
+#                 #         #bkg_rms = bkg.rms()
+#                 #         img = img - bkg
+#                 #         sources = sep.extract(img, 4.5, err=bkg.globalrms, minarea=9)#, filter_kernel=kern)
+#                 #         sources.sort(order = 'cflux')
+#                 #         #print('No. of detections:  ', len(sources))
+#                 #         sep_result = []
+#                 #         spots = []
+#                 #         for source in sources:
+#                 #             a0 = source['a']
+#                 #             b0 =  source['b']
+#                 #             r0 = 2*round(math.sqrt(a0**2 + b0**2), 2)
+#                 #             sep_result.append((round((source['x']), 2), round((source['y']), 2), round((source['cflux']), 2), \
+#                 #                            round(r0), 3))
+#                 #             spots.append(round((r0), 2))
+#                 #         spot = np.array(spots)
+#                 #         try:
+#                 #             spot = np.median(spot[-9:-2])   #  This grabs seven spots.
+#                 #             #print(sep_result, '\n', 'Spot ,flux, #_sources, avg_focus:  ', spot, source['cflux'], len(sources), avg_foc[1], '\n')
+#                 #             if len(sep_result) < 5:
+#                 #                 spot = None
+#                 #         except:
+#                 #             spot = None
+#                 #     except:
+#                 #         spot = None
+
+#                 reduced_data_size = hdu.data.size
+#                 #g_dev['obs'].update_status()
+#                 #Here we need to process images which upon input, may not be square.  The way we will do that
+#                 #is find which dimension is largest.  We then pad the opposite dimension with 1/2 of the difference,
+#                 #and add vertical or horizontal lines filled with img(min)-2 but >=0.  The immediate last or first line
+#                 #of fill adjacent to the image is set to 80% of img(max) so any subsequent subframing selections by the
+#                 #user is informed. If the incoming image dimensions are odd, they will be decreased by one.  In essence
+#                 #we wre embedding a non-rectanglular image in a "square" and scaling it to 768^2.  We will impose a
+#                 #minimum subframe reporting of 32 x 32
+
+#                 # in_shape = hdu.data.shape
+#                 # in_shape = [in_shape[0], in_shape[1]]   #Have to convert to a list, cannot manipulate a tuple,
+#                 # if in_shape[0]%2 == 1:
+#                 #     in_shape[0] -= 1
+#                 # if in_shape[0] < 32:
+#                 #     in_shape[0] = 32
+#                 # if in_shape[1]%2 == 1:
+#                 #     in_shape[1] -= 1
+#                 # if in_shape[1] < 32:
+#                 #     in_shape[1] = 32
+#                 #Ok, we have an even array and a minimum 32x32 array.
+
+#                 # =============================================================================
+#                 # x = 2      From Numpy: a way to quickly embed an array in a larger one
+#                 # y = 3
+#                 # wall[x:x+block.shape[0], y:y+block.shape[1]] = block
+#                 # =============================================================================
+
+# # =============================================================================
+# #                 if in_shape[0] < in_shape[1]:
+# #                     diff = int(abs(in_shape[1] - in_shape[0])/2)
+# #                     in_max = int(hdu.data.mean()*0.8)
+# #                     in_min = int(hdu.data.min() - 2)
+# #                     if in_min < 0:
+# #                         in_min = 0
+# #                     new_img = np. zeros((in_shape[1], in_shape[1]))    #new square array
+# #                     new_img[0:diff - 1, :] = in_min
+# #                     new_img[diff-1, :] = in_max
+# #                     new_img[diff:(diff + in_shape[0]), :] = hdu.data
+# #                     new_img[(diff + in_shape[0]), :] = in_max
+# #                     new_img[(diff + in_shape[0] + 1):(2*diff + in_shape[0]), :] = in_min
+# #                     hdu.data = new_img
+# #                 elif in_shape[0] > in_shape[1]:
+# #                     #Same scheme as above, but expands second axis.
+# #                     diff = int((in_shape[0] - in_shape[1])/2)
+# #                     in_max = int(hdu.data.mean()*0.8)
+# #                     in_min = int(hdu.data.min() - 2)
+# #                     if in_min < 0:
+# #                         in_min = 0
+# #                     new_img = np. zeros((in_shape[0], in_shape[0]))    #new square array
+# #                     new_img[:, 0:diff - 1] = in_min
+# #                     new_img[:, diff-1] = in_max
+# #                     new_img[:, diff:(diff + in_shape[1])] = hdu.data
+# #                     new_img[:, (diff + in_shape[1])] = in_max
+# #                     new_img[:, (diff + in_shape[1] + 1):(2*diff + in_shape[1])] = in_min
+# #                     hdu.data = new_img
+# #                 else:
+# #                     #nothing to do, the array is already square
+# #                     pass
+# # =============================================================================
+
+
+#                 if frame_type in ('bias', 'dark', 'screenflat', 'skyflat'):
+#                     no_AWS = True
+#                 if not no_AWS:  #IN the no+AWS case should we skip more of the above processing?
+#                     hdu.data = hdu.data.astype('uint16')
+#                     iy, ix = hdu.data.shape
+#                     if iy == ix:
+#                         resized_a = resize(hdu.data, (768,768), preserve_range=True)
+#                     else:
+#                         resized_a = resize(hdu.data, (int(1536*iy/ix), 1536), preserve_range=True)  #  We should trim chips so ratio is exact.
+#                     #print('New small fits size:  ', resized_a.shape)
+#                     hdu.data = resized_a.astype('uint16') 
+#                     i768sq_data_size = hdu.data.size
+#                     hdu.writeto(paths['im_path'] + paths['i768sq_name10'], overwrite=True)
+#                     hdu.data = resized_a.astype('float')
+#                     stretched_data_float = Stretch().stretch(hdu.data)
+#                     stretched_256 = 255*stretched_data_float
+#                     hot = np.where(stretched_256 >= 255)
+#                     cold = np.where(stretched_256 < 0)
+#                     stretched_256[hot] = 255
+#                     stretched_256[cold] = 0
+#                     #print("pre-unit8< hot, cold:  ", len(hot[0]), len(cold[0]))
+#                     stretched_data_uint8 = stretched_256.astype('uint8')  # Eliminates a user warning
+#                     hot = np.where(stretched_data_uint8 >= 255)
+#                     cold = np.where(stretched_data_uint8 < 0)
+#                     stretched_data_uint8[hot] = 254
+#                     stretched_data_uint8[cold] = 0
+#                     #print("post-unit8< hot, cold:  ", len(hot[0]), len(cold[0]))
+#                     imsave(paths['im_path'] + paths['jpeg_name10'], stretched_data_uint8)
+#                     jpeg_data_size = abs(stretched_data_uint8.size - 1024)
+#                     g_dev['cam'].enqueue_for_AWS(jpeg_data_size, paths['im_path'], paths['jpeg_name10'])
+#                     g_dev['cam'].enqueue_for_AWS(i768sq_data_size, paths['im_path'], paths['i768sq_name10'])
+#                     #g_dev['cam'].enqueue_for_AWS(reduced_data_size, paths['im_path'], paths['red_name01'])
+#                 #print('Sent to AWS Queue.')
+#                 time.sleep(0.5)
+#                 self.img = None   #Clean up all big objects.
+#                 try:
+#                     hdu = None
+#                 except:
 #                     pass
-# =============================================================================
-
-
-                if frame_type in ('bias', 'dark', 'screenflat', 'skyflat'):
-                    no_AWS = True
-
-                if not no_AWS:  #IN the no+AWS case should we skip more of the above processing?
-                    hdu.data = hdu.data.astype('uint16')
-                    iy, ix = hdu.data.shape
-                    if iy == ix:
-                        resized_a = resize(hdu.data, (768,768), preserve_range=True)
-                    else:
-                        resized_a = resize(hdu.data, (int(1536*iy/ix), 1536), preserve_range=True)  #  We should trim chips so ratio is exact.
-                    #print('New small fits size:  ', resized_a.shape)
-                    hdu.data = resized_a.astype('uint16')
-    
-                    i768sq_data_size = hdu.data.size
-                    # print('ABOUT to print paths.')
-                    # print('Sending to:  ', paths['im_path'])
-                    # print('Also to:     ', paths['i768sq_name10'])
-    
-                    hdu.writeto(paths['im_path'] + paths['i768sq_name10'], overwrite=True)
-                    hdu.data = resized_a.astype('float')
-                    #The following does a very lame contrast scaling.  A beer for best improvement on this code!!!
-                    #Looks like Tim wins a beer.
-                    # Old contrast scaling code:
-                    #istd = np.std(hdu.data)
-                    #imean = np.mean(hdu.data)
-                    #if (imean + 3*istd) != 0:    #This does divide by zero in some bias images.
-                    #    img3 = hdu.data/(imean + 3*istd)
-                    #else:
-                    #    img3 = hdu.data
-                    #fix = np.where(img3 >= 0.999)
-                    #fiz = np.where(img3 < 0)
-                    #img3[fix] = .999
-                    #img3[fiz] = 0
-                    #img4 = img3*256
-                    #img4 = img4.astype('uint8')   #Eliminates a user warning.
-                    #imsave(paths['im_path'] + paths['jpeg_name10'], img4)  #NB File extension triggers JPEG conversion.
-                    # New contrast scaling code:
-                    stretched_data_float = Stretch().stretch(hdu.data)
-                    stretched_256 = 255*stretched_data_float
-                    hot = np.where(stretched_256 > 255)
-                    cold = np.where(stretched_256 < 0)
-                    stretched_256[hot] = 255
-                    stretched_256[cold] = 0
-                    #print("pre-unit8< hot, cold:  ", len(hot[0]), len(cold[0]))
-                    stretched_data_uint8 = stretched_256.astype('uint8')  # Eliminates a user warning
-                    hot = np.where(stretched_data_uint8 > 255)
-                    cold = np.where(stretched_data_uint8 < 0)
-                    stretched_data_uint8[hot] = 255
-                    stretched_data_uint8[cold] = 0
-                    #print("post-unit8< hot, cold:  ", len(hot[0]), len(cold[0]))
-                    imsave(paths['im_path'] + paths['jpeg_name10'], stretched_data_uint8)
-                    #img4 = stretched_data_uint8  # keep old name for compatibility
-    
-                    jpeg_data_size = abs(stretched_data_uint8.size - 1024)                # istd = np.std(hdu.data)
-                    #g_dev['cam'].enqueue_for_AWS(text_data_size, paths['im_path'], paths['text_name'])
-
-                    g_dev['cam'].enqueue_for_AWS(jpeg_data_size, paths['im_path'], paths['jpeg_name10'])
-                    g_dev['cam'].enqueue_for_AWS(i768sq_data_size, paths['im_path'], paths['i768sq_name10'])
-                    #print('File size to AWS:', reduced_data_size)
-                    g_dev['cam'].enqueue_for_AWS(reduced_data_size, paths['im_path'], paths['red_name01'])
-                    #if not quick:
-                #print('Sent to AWS Queue.')
-                time.sleep(0.5)
-                self.img = None   #Clean up all big objects.
-                try:
-                    hdu = None
-                except:
-                    pass
-                # try:
-                #     hdu1 = None
-                # except:
-                #     pass
-                print("\nReduction completed.")
-                g_dev['obs'].send_to_user("An image reduction has completed.", p_level='INFO')
-                self.reduce_queue.task_done()
-            else:
-                time.sleep(.5)
+#                 # try:
+#                 #     hdu1 = None
+#                 # except:
+#                 #     pass
+#                 print("\nReduction completed.")
+#                 #g_dev['obs'].send_to_user("An image reduction has completed.", p_level='INFO')
+#                 self.reduce_queue.task_done()
+#             else:
+#                 time.sleep(.5)
 
 
 
 if __name__ == "__main__":
-
-    # # Define a command line argument to specify the config file to use
-    # parser = argparse.ArgumentParser()
-    # parser.add_argument('--config', type=str, default="default")
-    # options = parser.parse_args()
-    # # Import the specified config file
-    # print(options.config)
-    # if options.config == "default":
-    #     config_file_name = "config"
-    # else:
-    #     config_file_name = f"config_files.config_{options.config}"
-    # config = importlib.import_module(config_file_name)
-    # print(f"Starting up {config.site_name}.")
-    # Start up the observatory
-
+    #freeze_support
+# Start up the observatory
     import config
+    
+    
+    
+    #from concurrent.futures import ProcessPoolExecutor
+    
+    
 
+# input("starting, will breakpoint next")
+# breakpoint()
     o = Observatory(config.site_name, config.site_config)
+# #input('Please press Enter to start the Observer.  Clear skies!')
+
+#     # def solve (file_name):
+#     #     #Load the filename
+#     #     print("Entering")
+#     #     time. sleep(5)
+#     #     print("Leaving")
+#     #     #be happy.
+#     #     return "Solved:  " + file_name
+    
+    
+#     file_name ='Dummy file name'
+#     futures_list = []
+#     breakpoint()
+#     with ProcessPoolExecutor(max_workers=2) as executor:
+#         futures = executor.submit(solve, file_name)
+#         futures_list.append(futures)
+#         print('Futures_list;  ', futures_list)
+    
+    
+#     time.sleep(10)
+#     breakpoint()
+#     for future in futures_list:
+#         try:
+#             result = future.result(timeout=120)
+#             print(result)
+#         except:
+#             print("No result")
     o.run()
+#print("o.run() returned from the call to object 'o'.")
+#input("Please press Enter to exit the Observer's shell.  Clear skies!")

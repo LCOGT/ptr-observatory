@@ -78,14 +78,14 @@ import math
 #ptr = EarthLocation(lat=siteLatitude*u.deg, lon=siteLongitude*u.deg, height=siteElevation*u.m)
 DEG_SYM = '°'
 PI = math.pi
-TWOPI = math.pi*2
-PIOVER2 = math.pi/2.
-DTOR = math.pi/180.
-RTOD = 180/math.pi
-STOR = math.pi/180./3600.
-RTOS = 3600.*180./math.pi
-RTOH = 12./math.pi
-HTOR = math.pi/12.
+TWOPI = PI*2
+PIOVER2 = PI/2.
+DTOR = PI/180.
+RTOD = 180/PI
+STOR = PI/180./3600.
+RTOS = 3600.*180./PI
+RTOH = 12./PI
+HTOR = PI/12.
 HTOS = 15*3600.
 DTOS = 3600.
 STOD = 1/3600.
@@ -105,9 +105,9 @@ loop_count = 0
 mountOne = "PW_L600"
 mountOneAscom = None
 
-siteCoordinates = EarthLocation(lat=site_config['latitude']*u.deg, \
-                                 lon=site_config['longitude']*u.deg,
-                                 height=site_config['elevation']*u.m)
+# siteCoordinates = EarthLocation(lat=site_config['latitude']*u.deg, \
+#                                  lon=site_config['longitude']*u.deg,
+#                                  height=site_config['elevation']*u.m)
     #The mount is not threaded and uses non-blocking seek.
 
 def ra_fix_r(ra):
@@ -225,6 +225,7 @@ class Mount:
         #self.site_in_automatic = config['site_in_automatic_default']
         #self.automatic_detail = config['automatic_detail_default']
         self.move_time = 0
+
         try:
             ra1, dec1 = self.get_mount_reference()
             print("Mount reference:  ", ra1 ,dec1)
@@ -330,9 +331,10 @@ class Mount:
             self.current_sidereal = self.mount.SiderealTime
             uncorr_mech_ra_h = self.mount.RightAscension
             uncorr_mech_dec_d = self.mount.Declination
-
+            self.sid_now_r = self.current_sidereal*HTOR
             uncorr_mech_ha_r, uncorr_mech_dec_r = ptr_utility.transform_raDec_to_haDec_r(uncorr_mech_ra_h*HTOR, uncorr_mech_dec_d*DTOR, self.sid_now_r)
             roll_obs_r, pitch_obs_r = ptr_utility.transform_mount_to_observed_r(uncorr_mech_ha_r, uncorr_mech_dec_r, pierside, loud=False)
+
             app_ra_r, app_dec_r, refr_asec = ptr_utility.obsToAppHaRa(roll_obs_r, pitch_obs_r, self.sid_now_r)
             self.refraction_rev = refr_asec
             '''
@@ -687,7 +689,6 @@ class Mount:
             elif calibrate:  #Note does not need req or opt
                 #breakpoint()
                 if self.offset_received:
-
                     ra_cal_offset, dec_cal_offset = self.get_mount_reference()
                     print("Stored calibration offsets:  ",round(ra_cal_offset, 5), round(dec_cal_offset, 4))
                     icrs_ra, icrs_dec = self.get_mount_coordinates()
@@ -720,7 +721,6 @@ class Mount:
             #breakpoint()
                 if self.offset_received:
                     ra, dec, time_of_last = g_dev['obs'].get_last_reference()
-                    breakpoint()
                     ra_cal_offset, dec_cal_offset = self.get_mount_reference()
                     print("Stored calibration offsets:  ",round(ra_cal_offset, 5), round(dec_cal_offset, 4))
                     icrs_ra, icrs_dec = self.get_mount_coordinates()
@@ -850,6 +850,7 @@ class Mount:
         self.mount.Tracking = True
         self.move_time = time.time()
         print('MODEL HA, DEC, Refraction:  (asec)  ', self.ha_corr, self.dec_corr, self.refr_asec)
+
 
         self.mount.SlewToCoordinatesAsync(self.ra_mech*RTOH, self.dec_mech*RTOD)  #Is this needed?
         ###  figure out velocity  Apparent place is unchanged.
@@ -1109,6 +1110,8 @@ class Mount:
         mnt_shelf = shelve.open(self.site_path + 'ptr_night_shelf/' + 'mount1')
         mnt_shelf['ra_cal_offset'] = 0.000
         mnt_shelf['dec_cal_offset'] = 0.000
+        mnt_shelf['flip_ra_cal_offset'] = 0.000
+        mnt_shelf['flip_dec_cal_offset'] = 0.000
         return
 
         '''

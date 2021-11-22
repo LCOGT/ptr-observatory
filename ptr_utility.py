@@ -1583,6 +1583,7 @@ def centration_r (theta, a, b):
     return (math.atan2(math.sin(theta) - STOR*b, math.cos(theta) - STOR*a))
 
 def transform_raDec_to_haDec_r(pRa, pDec, pSidTime):
+
     return (reduce_ha_r(pSidTime - pRa), reduce_dec_r(pDec))
 
 def transform_haDec_to_raDec_r(pHa, pDec, pSidTime):

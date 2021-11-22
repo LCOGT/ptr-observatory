@@ -29,15 +29,16 @@ class Enclosure:
         self.config = config
         self.site_is_proxy = self.config['agent_wms_enc_active'] 
         g_dev['enc'] = self
-        win32com.client.pythoncom.CoInitialize()
-        self.enclosure = win32com.client.Dispatch(driver)
-        print(self.enclosure)
-        try:
-            if not self.enclosure.Connected:
-                self.enclosure.Connected = True
-            print("ASCOM enclosure connected.")
-        except:
-             print("ASCOM enclosure NOT connected, proabably the App is not connected to telescope.")
+        if driver is not None:
+            win32com.client.pythoncom.CoInitialize()
+            self.enclosure = win32com.client.Dispatch(driver)
+            print(self.enclosure)
+            try:
+                if not self.enclosure.Connected:
+                    self.enclosure.Connected = True
+                print("ASCOM enclosure connected.")
+            except:
+                 print("ASCOM enclosure NOT connected, proabably the App is not connected to telescope.")
         redis_ip = config['redis_ip']   #Do we really need to dulicate this config entry?
         if redis_ip is not None:           
             #self.redis_server = redis.StrictRedis(host=redis_ip, port=6379, db=0,
@@ -75,15 +76,43 @@ class Enclosure:
     def get_status(self) -> dict:
         #<<<<The next attibute reference fails at saf, usually spurious Dome Ring Open report.
         #<<< Have seen other instances of failing.
-        try:
-            shutter_status = self.enclosure.ShutterStatus
-        except:
-            print("self.enclosure.Roof.ShutterStatus -- Faulted. ")
-            shutter_status = 5
-        try:
-            self.dome_home = self.enclosure.AtHome
-        except:
-            pass
+        if self.site == 'fat':
+            try:
+                enc = open('R:/Roof_Status.txt')
+                enc_text = enc.readline()
+                enc.close
+                enc_list = enc_text.split()
+            except:
+                try:
+                    enc = open('R:/Roof_Status.txt')
+                    enc_text = enc.readline()
+                    enc.close
+                    enc_list = enc_text.split()
+                except:
+                    print("Two reads of roof status file failed")
+                    enc_list = [1, 2, 3, 4, 'Error']
+            if enc_list[4] in ['OPEN', 'Open', 'open', 'OPEN\n']:
+                shutter_status = 0
+            elif enc_list[4] in ['OPENING']:
+                shutter_status = 2
+            elif enc_list[4] in ['CLOSED', 'Closed', 'closed', "CLOSED\n"]:
+                shutter_status = 1
+            elif enc_list[4] in ['CLOSING']:
+                shutter_status = 3
+            elif enc_list[4] in ['Error']:
+                shutter_status = 4
+            else:
+                shutter_status = 5
+        else: 
+            try:
+                shutter_status = self.enclosure.ShutterStatus
+            except:
+                print("self.enclosure.Roof.ShutterStatus -- Faulted. ")
+                shutter_status = 5
+            try:
+                self.dome_home = self.enclosure.AtHome
+            except:
+                pass
         if shutter_status == 0:
             stat_string = "Open"
             self.shutter_is_closed = False
@@ -196,7 +225,7 @@ class Enclosure:
             self.redis_server.set('dome_slewing', False, ex=3600)
             self.redis_server.set('enc_status', status, ex=3600)
         # This code picks up commands forwarded by the observer Enclosure 
-        if self.site_is_proxy:
+        if self.site_is_proxy and self.site != 'fat':
             redis_command = self.redis_server.get('enc_cmd')  #It is presumed there is an expiration date on open command at least.
             if redis_command is not None:
                 pass   #
@@ -269,7 +298,8 @@ class Enclosure:
             
             
         self.status = status
-        self.manager()   #There be monsters here. <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+        if self.site != 'fat':   #There is noting for the code to manage @ FAT.
+            self.manager()   #There be monsters here. <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
         return status
 
 
