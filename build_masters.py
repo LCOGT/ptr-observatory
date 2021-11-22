@@ -60,9 +60,9 @@ from astropy import units as u
 #from astropy import nddata
 from astropy.time import Time
 
-import ccdproc
-from ccdproc import ImageFileCollection
-from ccdproc import CCDData, Combiner
+# import ccdproc
+# from ccdproc import ImageFileCollection
+# from ccdproc import CCDData, Combiner
 
 
 
@@ -791,14 +791,14 @@ def correct_image(camera_name, archive_path, selector_string, lng_path, out_path
     sbHdu = fits.open(lng_path + 'b_2.fits')
     super_bias = sbHdu[0].data.astype('float32')
     pedastal = sbHdu[0].header['PEDASTAL']
-    super_bias += pedastal
-    
+    #super_bias += pedastal
+
     sdHdu = fits.open(lng_path + 'd_2.fits')
     super_dark = sdHdu[0].data.astype('float32')
    # pedastal = sbHdu[0].header['PEDASTAL']
     #super_dark += pedastal
-    super_dark_exp = sdHdu[0].header['EXPOSURE']
-    hot_pix = np.where(super_dark > super_dark.std())
+    super_dark_exp = sdHdu[0].header['EXPTIME']
+    hot_pix = np.where(super_dark > 3*super_dark.std())
     
 
     # sdHdu = fits.open(lng_path + 'd_2_480-10.fits')
@@ -806,39 +806,43 @@ def correct_image(camera_name, archive_path, selector_string, lng_path, out_path
     # #pedastal = sbHdu[0].header['PEDASTAL']
     # #super_dark += pedastal
     # super_dark_exp_480 = sdHdu[0].header['EXPOSURE']
-    
-    sBHdu = fits.open(lng_path + 'ff_2_B.fits')
+    sGHdu = fits.open(lng_path + 'ff_0_2_PG.fits')
+    super_G = sGHdu[0].data.astype('float32')
+    sBHdu = fits.open(lng_path + 'ff_0_2_PB.fits')
     super_B = sBHdu[0].data.astype('float32')
-    sVHdu = fits.open(lng_path + 'ff_2_V.fits')
-    super_V = sVHdu[0].data.astype('float32')
-    sRHdu = fits.open(lng_path + 'ff_2_R.fits')
+    sLHdu = fits.open(lng_path + 'ff_0_2_PL.fits')
+    super_L = sLHdu[0].data.astype('float32')
+    sRHdu = fits.open(lng_path + 'ff_0_2_PR.fits')
     super_R = sRHdu[0].data.astype('float32')
-    srHdu = fits.open(lng_path + 'ff_2_rp.fits')
+    suHdu = fits.open(lng_path + 'ff_0_2_up.fits')
+    super_up = suHdu[0].data.astype('float32')
+    srHdu = fits.open(lng_path + 'ff_0_2_rp.fits')
     super_rp = srHdu[0].data.astype('float32')
-    sgHdu = fits.open(lng_path + 'ff_2_gp.fits')
+    sgHdu = fits.open(lng_path + 'ff_0_2_gp.fits')
     super_gp = sgHdu[0].data.astype('float32')
-    siHdu = fits.open(lng_path + 'ff_2_ip.fits')
+    siHdu = fits.open(lng_path + 'ff_0_2_ip.fits')
     super_ip = siHdu[0].data.astype('float32')
-    sHHdu = fits.open(lng_path + 'ff_2_HA.fits')
+    sHHdu = fits.open(lng_path + 'ff_0_2_HA.fits')
     super_HA = sHHdu[0].data.astype('float32')
-    sOHdu = fits.open(lng_path + 'ff_2_O3.fits')
+    sOHdu = fits.open(lng_path + 'ff_0_2_O3.fits')
     super_O3 = sOHdu[0].data.astype('float32')
-    sSHdu = fits.open(lng_path + 'ff_2_S2.fits')
+    sSHdu = fits.open(lng_path + 'ff_0_2_S2.fits')
     super_S2 = sSHdu[0].data.astype('float32')
-    sNHdu = fits.open(lng_path + 'ff_2_N2.fits')
+    sNHdu = fits.open(lng_path + 'ff_0_2_N2.fits')
     super_N2 = sNHdu[0].data.astype('float32')
-    swHdu = fits.open(lng_path + 'ff_2_w.fits')
+    swHdu = fits.open(lng_path + 'ff_0_2_w.fits')
     super_w = swHdu[0].data.astype('float32')
-    swHdu = fits.open(lng_path + 'ff_2_exo.fits')
-    super_EXO = swHdu[0].data.astype('float32')
+    #swHdu = fits.open(lng_path + 'ff_0_2_exo.fits')
+    #super_EXO = swHdu[0].data.astype('float32')
     #swHdu = fits.open(lng_path + 'ff_2air.fits')
     #super_air = swHdu[0].data.astype('float32')
     shHdu = fits.open(lng_path + 'h_2.fits')
     hot_map = shHdu[0].data
     hot_pix = np.where(hot_map > 1)  #
-    four_std = 2*super_dark.std()   #making this more adaptive 
-    hot_pix = np.where(super_dark > four_std)
+    # four_std = 2*super_dark.std()   #making this more adaptive 
+    # hot_pix = np.where(super_dark > four_std)
     for image in file_list:
+        breakpoint()
         img = fits.open(image)
         img[0].data = img[0].data.astype('float32')
  
@@ -860,12 +864,16 @@ def correct_image(camera_name, archive_path, selector_string, lng_path, out_path
         #     image = image + ('s')
         fits_filter = img[0].header['FILTER']
         pane = img[0].header['PANE']
-        if image[-5] == 'B' or fits_filter == 'B':
+        if image[-5] == 'B' or fits_filter == 'PB':
             img[0].data /= super_B
-        elif image[-5] == 'V' or fits_filter == 'V':
-            img[0].data /= super_V
-        elif image[-5] == 'R' or fits_filter == 'R':
+        elif image[-5] == 'G' or fits_filter == 'PG':
+            img[0].data /= super_G
+        elif image[-5] == 'R' or fits_filter == 'PR':
             img[0].data /= super_R
+        elif image[-5] == 'L' or fits_filter == 'PL':
+            img[0].data /= super_L
+        elif image[-6] == 'u' or fits_filter == 'up':
+            img[0].data /= super_up
         elif image[-6] == 'g' or fits_filter == 'gp':
             img[0].data /= super_gp
         elif image[-6] == 'r' or fits_filter == 'rp':
@@ -883,8 +891,8 @@ def correct_image(camera_name, archive_path, selector_string, lng_path, out_path
         elif image[-5] in ['W', 'w'] or fits_filter == 'w':
 
             img[0].data /= super_w
-        elif image[-7] in ['E', 'e'] or fits_filter == 'exo':
-            img[0].data /= super_EXO
+        # elif image[-7] in ['E', 'e'] or fits_filter == 'exo':
+        #     img[0].data /= super_exo
         # elif image[-7] in ['A', 'a'] or fits_filter == 'air':
         #     img[0].data /= super_air
         else:
@@ -1463,10 +1471,11 @@ if __name__ == '__main__':
     camera_name = 'sq01'  #  config.site_config['camera']['camera1']['name']
     #archive_path = "D:/000ptr_saf/archive/sq01/2020-06-13/"
     #archive_path = "D:/2020-06-19  Ha and O3 screen flats/"
-    archive_path = "Q:/archive/sq01/20210626/raw/"
+    archive_path = "F:/000ptr_saf/archive/sq01/20211030/raw/"
 
-    out_path = 'C:/Users/obs/Documents/GitHub/ptr-observatory/processing/TPOINT/'
-    lng_path = "C:/000ptr_saf/archive/sq01/lng/"
+    out_path = "F:/000ptr_saf/archive/sq01/20211030/reduced/"
+
+    lng_path = "F:/000ptr_saf/archive/sq01/lng/"
     #APPM_prepare_TPOINT()
     #de_offset_and_trim(camera_name, archive_path, '*-00*.*', out_path, full=True, norm=False)
     #prepare_tpoint(camera_name, archive_path, '*.f*t*', lng_path, out_path)
@@ -1497,9 +1506,9 @@ if __name__ == '__main__':
     # out_path = 'Z:/saf/Beehive/analysis/'
 
     # lng_path = "C:/000ptr_saf/archive/sq01/lng/"
-    # correct_image(camera_name, archive_path, '*EX00*', lng_path, out_path)
+    correct_image(camera_name, archive_path, '*-e00*', lng_path, out_path)
     #annotate_image(camera_name, archive_path, '*-00*', lng_path, out_path)
-    sep_image(camera_name, archive_path, '*.f*t*', lng_path, out_path)
+    #sep_image(camera_name, archive_path, '*.f*t*', lng_path, out_path)
 
     # mod_correct_image(camera_name, archive_path, '*EX00*', lng_path, out_path)
     #archive_path = 'Q:/000ptr_saf/archive/sq01/20201203/reduced/'

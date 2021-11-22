@@ -17,6 +17,7 @@ import json
 import redis
 import requests
 import time
+import shelve
 
 from api_calls import API_calls
 import ptr_events
@@ -24,37 +25,77 @@ from devices.wms_enclosure_agent import Enclosure
 from devices.wms_observing_agent import ObservingConditions
 from global_yard import g_dev
 
-class Observatory:
+
+import os, signal, subprocess
+
+  
+# def process():
+     
+#     # Ask user for the name of process
+#     name = input("Enter process Name: ")
+#     try:      
+#         # iterating through each instance of the process
+#         for line in os.popen("ps ax | grep " + name + " | grep -v grep"):
+#             fields = line.split()          
+#             # extracting Process ID from the output
+#             pid = fields[0]
+#             print(fields)
+#             # terminating process
+#             os.kill(int(pid), signal.SIGKILL)
+#         print("Process Successfully terminated")    
+#     except:
+#         print("Error Encountered while running script")
+  
+# process()
+
+# def worker():
+#     import obs
+def terminate_restart_observer(site_path, no_restart=False):
+    if no_restart is True:
+        return
+    else:
+        camShelf = shelve.open(site_path + 'ptr_night_shelf/' + 'pid_obs')
+        #camShelf['pid_obs'] = self.obs_pid
+        #camShelf['pid_time'] = time.time()
+        pid = camShelf['pid_obs']     # a 9 character string
+        camShelf.close()
+        
+        try:
+            print("Terminating:  ", pid)
+            os.kill(pid, signal.SIGTERM)
+        except:
+            print("No observer process was found, starting a new one.")
+
+        #subprocess.call('C:/Users/obs/Documents/GitHub/ptr-observatory/restart_obs.bat')
+        #The above routine does not return but does start a process.
+        os.system('cmd /c C:\\Users\\obs\\Documents\\GitHub\\ptr-observatory\\restart_obs.bat')
+        #  worked with /k, try /c Which should terminate
+        return
+    
+
+class WxEncAgent:
 
     def __init__(self, name, config):
+
         self.api = API_calls()
+
         self.command_interval = 3
         self.status_interval = 3
         self.name = name
         self.site_name = name
         self.config = config
         self.site_path = config['site_path']
+        g_dev['obs'] = self 
+        g_dev['site']=  config['site']
         self.last_request = None
         self.stopped = False
         self.site_message = '-'
         self.device_types = [
             'observing_conditions',
-            'enclosure'     
-            ] 
+            'enclosure'] 
         self.astro_events = ptr_events.Events(self.config)
         self.astro_events.compute_day_directory()
         self.astro_events.display_events()
-        self.update_config()
-        self.create_devices(config)
-        self.loud_status = False
-        g_dev['obs'] = self 
-        site_str = config['site']
-        g_dev['site']:  site_str
-        self.g_dev = g_dev
-        self.time_last_status = time.time() - 3
-        self.blocks = None
-        self.projects = None
-        self.events_new = None
         redis_ip = config['redis_ip']
         if redis_ip is not None:           
             self.redis_server = redis.StrictRedis(host=redis_ip, port=6379,\
@@ -62,7 +103,67 @@ class Observatory:
             self.redis_wx_enabled = True
         else:
             self.redis_wx_enabled = False
+        
+        g_dev['redis_server'] = self.redis_server   #Use this instance.
+        g_dev['redis_server']['wema_loaded'] = True
+        
+        #Here we clean up any older processes
+        prior_wema = self.redis_server.get("wema_pid")
+        prior_obs = self.redis_server.get("obs_pid")
 
+        if prior_wema is not None:
+            pid = int( prior_wema)
+            try:
+                print("Terminating Wema:  ", pid)
+                os.kill(pid, signal.SIGTERM)
+            except:
+                print("No wema process was found, starting a new one.")
+        if prior_obs is not None:
+            pid = int( prior_obs)
+            try:
+                print("Terminating Obs:  ", pid)
+                os.kill(pid, signal.SIGTERM)
+            except:
+                print("No observer process was found, starting a new one.")
+            
+        
+        
+        for key in self.redis_server.keys(): self.redis_server.delete(key)   #Flush old state.
+        #The set new ones
+        self.wema_pid = os.getpid()
+        print('WEMA_PID:  ', self.wema_pid)
+        self.redis_server.set('wema_pid', self.wema_pid)
+        #Redundant store of wema_pid
+
+        camShelf = shelve.open(self.site_path + 'ptr_night_shelf/' + 'pid_wema')
+        camShelf['pid_wema'] = self.wema_pid
+        camShelf['pid_time'] = time.time()
+        #pid = camShelf['pid_obs']      # a 9 character string
+        camShelf.close()
+        self.update_config()
+        self.create_devices(config)
+        self.time_last_status = time.time()
+        self.loud_status = False
+        self.blocks = None
+        self.projects = None
+        self.events_new = None
+        immed_time = time.time()
+        self.obs_time = immed_time
+        self.wema_start_time = immed_time
+        self.redis_server.set('obs_time', immed_time, ex=360)
+        #subprocess.call('obs.py')  This is clearly wrong.
+        time.sleep(5)
+
+        #print("Starting observer, may have to terminate a stale observer first.")
+
+        #terminate_restart_observer(self.config['site_path'], no_restart=True)
+       
+    
+
+
+
+        
+        
     def create_devices(self, config: dict):
         self.all_devices = {}
         for dev_type in self.device_types:
@@ -76,6 +177,9 @@ class Observatory:
                 #settings = devices_of_type[name].get("settings", {})
 
                 if dev_type == "observing_conditions":
+
+
+
                     device = ObservingConditions(driver, name, self.config,\
                                                  self.astro_events)
                 elif dev_type == 'enclosure':
@@ -129,7 +233,20 @@ class Observatory:
         if loud:
             print('\n\n > Status Sent:  \n', status)
         else:
-            print('>')
+            try:
+                obs_time = float(self.redis_server.get('obs_time'))
+                delta= time.time() - obs_time
+            except:
+                delta= 999.99  #"NB NB NB Temporily flags someing really wrong."
+            if delta > 300:
+                print(">The observer's time is stale > 300 seconds:  ", round(delta, 2))
+                #Here is where we terminate the obs.exe and restart it.
+            if delta > 360:
+                #terminate_restart_observer(self.config['site_path'], no_restart=True)
+                pass
+
+            else:
+                print('>')
         uri_status = f"https://status.photonranch.org/status/{self.name}/status/"
         try:    # 20190926  tHIS STARTED THROWING EXCEPTIONS OCCASIONALLY
             payload ={
@@ -137,6 +254,7 @@ class Observatory:
                 "status":  status
                 }
             data = json.dumps(payload)
+            #print(data)
             requests.post(uri_status, data=data)
             self.redis_server.set('wema_heart_time', self.time_last_status, ex=120)
             if self.name in ['mrc', 'mrc1']:
@@ -154,7 +272,7 @@ class Observatory:
     def update(self):
 
         self.update_status()
-        time.sleep(5)
+        time.sleep(15)
 
     def run(self):   # run is a poor name for this function.
         try:
@@ -169,7 +287,7 @@ class Observatory:
 if __name__ == "__main__":
 
     import config
-  
-    o = Observatory(config.site_name, config.site_config)
+
+    wema = WxEncAgent(config.site_name, config.site_config)
     
-    o.run()
+    wema.run()

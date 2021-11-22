@@ -1,0 +1,89 @@
+ %% PLEASE DO NOT MODIFY OR DELETE THIS FILE! %% 
+ %% This file contains information about the installation of an application. %% 
+ %% It will be used to automatically remove all application components from your computer if you choose to do so. %% 
+
+
+NOTE: Beginning of the bootstrapper section
+
+CONFIG: Title: "TIDigital DomeWorks"
+
+NOTE: End of the bootstrapper section
+
+NOTE: Now spawning the main Setup program 'Setup1.exe'....
+
+ACTION: CreateDir: "C:\Program Files (x86)\TIDigital DomeWorks"
+
+ACTION: CreateDir: "C:\ProgramData\Microsoft\Windows\Start Menu\Programs\Technical Innovations"
+
+ACTION: PrivateFile: "C:\Program Files (x86)\TIDigital DomeWorks\ddw5ins.doc"
+(File was not found or was an older version -- new file copied)
+
+ACTION: PrivateFile: "C:\Program Files (x86)\TIDigital DomeWorks\NGC6543A.BMP"
+(File was not found or was an older version -- new file copied)
+
+ACTION: PrivateFile: "C:\Program Files (x86)\TIDigital DomeWorks\ICON2.ICO"
+(File was not found or was an older version -- new file copied)
+
+ACTION: PrivateFile: "C:\Program Files (x86)\TIDigital DomeWorks\ICON1.ICO"
+(File was not found or was an older version -- new file copied)
+
+ACTION: SharedFile: "C:\WINDOWS\system32\COMCT232.OCX"
+(File was not found or was an older version -- new file copied)
+
+ACTION: SharedFile: "C:\WINDOWS\system32\COMDLG32.OCX"
+(File currently on disk was already up to date)
+
+ACTION: SharedFile: "C:\WINDOWS\system32\MSCOMM32.OCX"
+(File currently on disk was already up to date)
+
+ACTION: SharedFile: "C:\WINDOWS\system32\comctl32.ocx"
+(File was not found or was an older version -- new file copied)
+
+ACTION: SharedFile: "C:\WINDOWS\system32\mswinsck.ocx"
+(File currently on disk was already up to date)
+
+ACTION: SharedFile: "C:\WINDOWS\system32\Helper.dll"
+(File was not found or was an older version -- new file copied)
+
+ACTION: SharedFile: "C:\WINDOWS\system32\MSSTDFMT.DLL"
+(File was not found or was an older version -- new file copied)
+
+ACTION: SharedFile: "C:\WINDOWS\system32\msbind.dll"
+(File was not found or was an older version -- new file copied)
+
+ACTION: SharedFile: "C:\WINDOWS\system32\msado20.tlb"
+(File was not found or was an older version -- new file copied)
+
+ACTION: PrivateFile: "C:\Program Files (x86)\TIDigital DomeWorks\weatherlink.dll"
+(File was not found or was an older version -- new file copied)
+
+ACTION: PrivateFile: "C:\Program Files (x86)\TIDigital DomeWorks\VantagePro.dll"
+(File was not found or was an older version -- new file copied)
+
+ACTION: PrivateFile: "C:\Program Files (x86)\TIDigital DomeWorks\ddwcp.exe"
+(File was not found or was an older version -- new file copied)
+
+ACTION: DllSelfRegister: "C:\WINDOWS\system32\COMCT232.OCX"
+
+ACTION: DllSelfRegister: "C:\WINDOWS\system32\COMDLG32.OCX"
+
+ACTION: DllSelfRegister: "C:\WINDOWS\system32\MSCOMM32.OCX"
+
+ACTION: DllSelfRegister: "C:\WINDOWS\system32\comctl32.ocx"
+
+ACTION: DllSelfRegister: "C:\WINDOWS\system32\mswinsck.ocx"
+
+ACTION: DllSelfRegister: "C:\WINDOWS\system32\Helper.dll"
+
+ACTION: DllSelfRegister: "C:\WINDOWS\system32\MSSTDFMT.DLL"
+
+ACTION: DllSelfRegister: "C:\WINDOWS\system32\msbind.dll"
+
+ACTION: ExeSelfRegister: "C:\Program Files (x86)\TIDigital DomeWorks\ddwcp.exe"
+
+ACTION: ShellLink: "Technical Innovations", "Digital Dome Works"
+
+ACTION: RegKey: "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion", "App Paths\ddwcp.exe"
+
+ACTION: RegValue: "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\ddwcp.exe", ""
+
