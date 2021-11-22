@@ -615,6 +615,7 @@ class Camera:
 
         #  Here we set up the filter, and later on possibly rotational composition.  WE CAN SPEED THIS UP IF ON THE RIGHT FITLER
         try:    #20200716   FW throwing error (-4)
+ 
             requested_filter_name = str(optional_params.get('filter', 'w'))   #Default should come from config.
             self.current_filter = requested_filter_name
             g_dev['fil'].set_name_command({'filter': requested_filter_name}, {})
@@ -761,6 +762,7 @@ class Camera:
             self.camera_start_y = 0
             self.area = 150
             print("Default area used. 150%:  ", self.len_x,self.len_y )
+
         #Next apply any subframe setting here.  Be very careful to keep fractional specs and pixel values disinguished.
         if self.area == self.previous_area and sub_frame_fraction is not None and \
                         (sub_frame_fraction != self.previous_image_name):
@@ -1302,6 +1304,7 @@ class Camera:
 
                     #return result   #Used if focus not saved in calibs.
                 try:
+                    
                     hdu = fits.PrimaryHDU(self.img)
                     self.img = None    #  Does this free up any resource?
                     # assign the keyword values and comment of the keyword as a tuple to write both to header.
