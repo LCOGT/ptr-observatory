@@ -761,6 +761,7 @@ class Camera:
             self.camera_start_y = 0
             self.area = 150
             print("Default area used. 150%:  ", self.len_x,self.len_y )
+
         #Next apply any subframe setting here.  Be very careful to keep fractional specs and pixel values disinguished.
         if self.area == self.previous_area and sub_frame_fraction is not None and \
                         (sub_frame_fraction != self.previous_image_name):
@@ -1302,6 +1303,7 @@ class Camera:
 
                     #return result   #Used if focus not saved in calibs.
                 try:
+                    
                     hdu = fits.PrimaryHDU(self.img)
                     self.img = None    #  Does this free up any resource?
                     # assign the keyword values and comment of the keyword as a tuple to write both to header.

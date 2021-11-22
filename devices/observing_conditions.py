@@ -346,6 +346,7 @@ class ObservingConditions:
             quick.append(float(wx['pressure_mbar']))   # 20200329 a SWAG!
             quick.append(float(illum))     # Add Solar, Lunar elev and phase
             if True:  #self.unihedron_connected:
+
                 uni_measure = wx['meas_sky_mpsas']
             else:
                 uni_measure  = 0

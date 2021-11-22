@@ -459,7 +459,6 @@ class ObservingConditions:
                 
                 g_dev['wx_ok']  =  self.wx_is_ok             
                 uni_measure, hz, lux_u = eval(self.redis_server.get('unihedron1'))   #  Provenance of 20.01 is dubious 20200504 WER
-
                 if uni_measure == 0:
                     uni_measure = round((mag - 19.01),2)   #  Fixes Unihedron when sky is too bright
                     status["meas_sky_mpsas"] = uni_measure
