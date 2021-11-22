@@ -457,17 +457,19 @@ class ObservingConditions:
                     wx_str = "No"   #Ideally we add the dominant reason in priority order.
                     status["wx_ok"] = "No"
                 
-                g_dev['wx_ok']  =  self.wx_is_ok             
-                uni_measure, hz, lux_u = eval(self.redis_server.get('unihedron1'))   #  Provenance of 20.01 is dubious 20200504 WER
+                g_dev['wx_ok']  =  self.wx_is_ok
+                # breakpoint()
+                # uni_measure, hz, lux_u = eval(self.redis_server.get('unihedron1'))   #  Provenance of 20.01 is dubious 20200504 WER
 
-                if uni_measure == 0:
-                    uni_measure = round((mag - 19.01),2)   #  Fixes Unihedron when sky is too bright
-                    status["meas_sky_mpsas"] = uni_measure
-                    #status2["meas_sky_mpsas"] = uni_measure
-                    self.meas_sky_lux = illum
-                else:
-                    self.meas_sky_lux = linearize_unihedron(uni_measure)
-                    status["meas_sky_mpsas"] = uni_measure
+                # if uni_measure == 0:
+                #     uni_measure = round((mag - 19.01),2)   #  Fixes Unihedron when sky is too bright
+                #     status["meas_sky_mpsas"] = 22.0#uni_measure
+                #     #status2["meas_sky_mpsas"] = uni_measure
+                #     self.meas_sky_lux = illum
+                # else:
+                #     self.meas_sky_lux = linearize_unihedron(uni_measure)
+                # NB NB NB THIS needs fixing
+                status["meas_sky_mpsas"] = 22.0# uni_measure
                     #status2["meas_sky_mpsas"] = uni_measure
                         # Only write when around dark, put in CSV format
                 # sunZ88Op, sunZ88Cl, ephem_now = g_dev['obs'].astro_events.getSunEvents()
