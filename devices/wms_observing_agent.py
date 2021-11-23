@@ -163,6 +163,8 @@ class ObservingConditions:
             except:
                 time.sleep(5)
                 try:
+                    #\\192.168.1.57\SRO10-Roof  r:
+                    #SRO-Weather (\\192.168.1.57) w:
                     wx = open('W:/sroweather.txt', 'r')
                     wx_line = wx.readline()
                     wx.close
