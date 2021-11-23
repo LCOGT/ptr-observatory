@@ -7,6 +7,7 @@ import serial
 class Selector:
 
     def __init__(self, driver: str, name: str, config: dict):
+        
         self.name = name
         g_dev['sel']= self
         self.config = config['selector']
