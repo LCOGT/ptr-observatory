@@ -513,7 +513,8 @@ class ObservingConditions:
                     pass
                     #print("Unihedron log did not write.")
 
-            self.redis_server.set('ocn_status' , status, ex=3600)
+            self.redis_server.set('ocn_status' , status, ex=3600)   #NB NB NB Please clean this redundancy up
+            self.redis_server.set('wx_redis_status' , status, ex=3600)
             self.last_stat = eval(self.redis_server.get('ocn_status'))
         else:
             #DEH temporary to get past the big fatal error.
