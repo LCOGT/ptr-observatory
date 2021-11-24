@@ -61,15 +61,16 @@ class Enclosure:
         #core1_redis.set('unihedron1', str(mpsas) + ', ' + str(bright) + ', ' + str(illum), ex=600)
         if self.site_is_proxy:
             #Usually fault here because WEMA is not running.
+  
+    
+          
             try:
                 stat_string = self.redis_server.get("shutter_status")
-                #print(eval(self.redis_server.get("status")))
-                self.status = eval(self.redis_server.get("enc_status"))
+                #self.status = eval(self.redis_server.get("status"))
             except:
-                print("\nWxEnc Agent WEMA not running. Please start it up.\n")
+                print("\nWxEnc Agent WEMA not running. Please start it up.|n")
             if stat_string is not None:
-                
-                if stat_string in ['Closed', 'Closing']:
+                if stat_string == 'Closed':
                     self.shutter_is_closed = True
                 else:
                     self.shutter_is_closed = False
@@ -86,7 +87,7 @@ class Enclosure:
 
         if action == "open":
             if self.site_is_proxy:
-                self.redis_server.set('enc_cmd', 'open', ex=1200)
+                self.redis_server.set('enc_cmd', 'open', ex=300)
             else:
                 self.open_command(req, opt)
         elif action == "close":
@@ -96,7 +97,7 @@ class Enclosure:
                 self.close_command(req, opt)
         elif action == "setAuto":
             if self.site_is_proxy:
-                self.redis_server.set('enc_cmd', 'setAuto', ex=1200)
+                self.redis_server.set('enc_cmd', 'setAuto', ex=300)
             else:
                 self.mode = 'Automatic'
                 g_dev['enc'].site_in_automatic = True
@@ -104,14 +105,14 @@ class Enclosure:
                 print("Site and Enclosure set to Automatic.")
         elif action == "setManual":
             if self.site_is_proxy:
-                self.redis_server.set('enc_cmd', 'setManual', ex=1200)
+                self.redis_server.set('enc_cmd', 'setManual', ex=300)
             else:
                 self.mode = 'Manual'
                 g_dev['enc'].site_in_automatic = False
                 g_dev['enc'].automatic_detail =  "Manual Only"
         elif action in ["setStayClosed", 'setShutdown', 'shutDown']:
             if self.site_is_proxy:
-                self.redis_server.set('enc_cmd', 'setShutdown', ex=1200)
+                self.redis_server.set('enc_cmd', 'setShutdown', ex=300)
                 self.mode = 'Shutdown'
                 g_dev['enc'].site_in_automatic = False
                 g_dev['enc'].automatic_detail =  "Site Shutdown"
@@ -136,7 +137,7 @@ class Enclosure:
 
     def open_command(self, req: dict, opt: dict):
     #     ''' open the enclosure '''
-        self.redis_server.set('enc_cmd', 'open', ex=1200)
+          self.redis_server.set('enc_cmd', 'open', ex=1200)
     #     #self.guarded_open()
     #     self.manager(open_cmd=True)
     #     print("enclosure cmd: open.")
@@ -146,7 +147,7 @@ class Enclosure:
 
     def close_command(self, req: dict, opt: dict):
     #     ''' close the enclosure '''
-        self.redis_server.set('enc_cmd', 'close', ex=1200)
+          self.redis_server.set('enc_cmd', 'close', ex=1200)
     #     self.manager(close_cmd=True)
     #     print("enclosure cmd: close.")
     #     self.dome_open = False
@@ -166,15 +167,9 @@ class Enclosure:
     #     print("enclosure cmd: sync_alt")
     #     pass
 
-    def sync_mount_command(self, req: dict, opt: dict):
-        self.redis_server.set('sync_enc', "sync", ex=1200)
-        print("enclosure cmd: sync_az")
-        pass
-    
-    def unsync_mount_command(self, req: dict, opt: dict):
-        self.redis_server.set('unsync_enc', "unsync", ex=1200)
-        print("enclosure cmd: unsync_az")
-        pass
+    # def sync_mount_command(self, req: dict, opt: dict):
+    #     print("enclosure cmd: sync_az")
+    #     pass
 
     # def park_command(self, req: dict, opt: dict):
     #     ''' park the enclosure if it's a dome '''
