@@ -39,6 +39,7 @@ from global_yard import g_dev
 #from devices.sequencer import Sequencer
 from devices.darkslide import Darkslide
 import ptr_utility
+from planewave import platesolve
 
 
 #string  = \\HOUSE-COMPUTER\saf_archive_2\archive
@@ -501,7 +502,7 @@ class Camera:
 
 
     def expose_command(self, required_params, optional_params,  \
-                       gather_status = True, do_sep=True, no_AWS=False, quick=False):
+                       gather_status = True, do_sep=True, no_AWS=False, quick=False, solve_it=False):
         '''
         This is Phase 1:  Setup the camera.
         Apply settings and start an exposure.
@@ -987,7 +988,7 @@ class Camera:
                                          gather_status, do_sep, no_AWS, dist_x, dist_y, \
                                          quick=quick, low=ldr_handle_time, \
                                          high=ldr_handle_high_time, \
-                                         script=self.script, opt=opt)  #  NB all these parameters are crazy!
+                                         script=self.script, opt=opt, solve_it=solve_it)  #  NB all these parameters are crazy!
                     self.exposure_busy = False
                     self.t10 = time.time()
                     #  self._stop_expose()
@@ -1017,7 +1018,7 @@ class Camera:
 
     def finish_exposure(self, exposure_time, frame_type, counter, seq, \
                         gather_status=True, do_sep=False, no_AWS=False, start_x=None, start_y=None, quick=False, \
-                        low=0, high=0, script='False', opt=None):
+                        low=0, high=0, script='False', opt=None, solve_it=False):
         print("Finish exposure Entered:  ", exposure_time, frame_type, counter, \
               gather_status, do_sep, no_AWS, start_x, start_y, opt['area'])
         self.post_mnt = []
@@ -1557,12 +1558,35 @@ class Camera:
                         self.enqueue_image(raw_data_size, im_path, raw_name01)
                     '''
 
-                    if focus_image:
+                    if focus_image and not solve_it:
                         #Note we do not reduce focus images, except above in focus processing.
                         cal_name = cal_name[:-9] + 'FO' + cal_name[-7:]  # remove 'EX' add 'FO'   Could add seq to this
                         hdu.writeto(cal_path + cal_name, overwrite=True)
                         focus_image = False
                         return result
+                    if focus_image and solve_it:
+                        cal_name = cal_name[:-9] + 'FO' + cal_name[-7:]  # remove 'EX' add 'FO'   Could add seq to this
+                        hdu.writeto(cal_path + cal_name, overwrite=True)
+                        focus_image = False
+                        try:
+                            #wpath = 'C:/000ptr_saf/archive/sq01/20210528/reduced/saf-sq01-20210528-00019785-le-w-EX01.fits'
+                            solve = platesolve.platesolve(cal_path + cal_name, hdu.header['PIXSCALE'])
+                            print("PW Solves: " ,solve['ra_j2000_hours'], solve['dec_j2000_degrees'])
+                            TARGRA  = g_dev['mnt'].current_icrs_ra
+                            TARGDEC = g_dev['mnt'].current_icrs_dec
+                            RAJ2000 = solve['ra_j2000_hours']
+                            DECJ2000 = solve['dec_j2000_degrees']
+                            err_ha = TARGRA - RAJ2000
+                            err_dec = TARGDEC - DECJ2000
+                            breakpoint()
+                                
+                            self.set_last_reference( solve['ra_j2000_hours'], solve['dec_j2000_degrees'], time_now)
+                        except:
+                           print(wpath, "  was not solved, marking to skip in future, sorry!")
+                           self.reset_last_reference()
+                          #Return to classic processing
+                       
+                        
 
                     # if  not script in ('True', 'true', 'On', 'on'):   #  not quick and    #Was moved 20201022 for grid
                     #     if not quick:

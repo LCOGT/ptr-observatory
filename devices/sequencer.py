@@ -1243,7 +1243,7 @@ class Sequencer:
                 g_dev['foc'].last_temperature = g_dev['foc'].focuser.Temperature
                 g_dev['foc'].last_source = "auto_focus_script"
                 if not sim:
-                    result = g_dev['cam'].expose_command(req, opt, no_AWS=True)  #   script = 'auto_focus_script_3')  #  This is verifying the new focus.
+                    result = g_dev['cam'].expose_command(req, opt, no_AWS=True, solve_it=True)  #   script = 'auto_focus_script_3')  #  This is verifying the new focus.
                 else:
                     result['FWHM'] = new_spot
                     result['mean_focus'] = d1
