@@ -1164,7 +1164,7 @@ class Camera:
                         self.overscan = int((np.median(self.img[16:, -17:]) + np.median(self.img[0:14, :]))/2) -1
                         trimmed = self.img[16:, :-17].astype('int32') + pedastal - self.overscan
 
-                        print("Rare error, Shift 2", self.overscan, square.mean())
+                        print("Rare error, Shift 2", self.overscan, trimmed.mean())
 
                     else:
                         breakpoint()
@@ -1173,10 +1173,11 @@ class Camera:
 
                         pass
 
-                else:
+                else:   #All this code needs to be driven from Ccamera config.
+                    self.overscan =np.median(self.img[-32:, :])
+                    trimmed = self.img[:4500, :3600] + pedastal- self.overscan
                     #print("Incorrect chip size or bin specified or already-converted:  skipping.")
-                    trimmed = self.img
-                    self.overscan = 0
+
                     #breakpoint()
                     #continue
 
@@ -1560,12 +1561,12 @@ class Camera:
 
                     if focus_image and not solve_it:
                         #Note we do not reduce focus images, except above in focus processing.
-                        cal_name = cal_name[:-9] + 'FO' + cal_name[-7:]  # remove 'EX' add 'FO'   Could add seq to this
+                        cal_name = cal_name[:-9] + 'F012' + cal_name[-7:]  # remove 'EX' add 'FO'   Could add seq to this
                         hdu.writeto(cal_path + cal_name, overwrite=True)
                         focus_image = False
                         return result
                     if focus_image and solve_it:
-                        cal_name = cal_name[:-9] + 'FO' + cal_name[-7:]  # remove 'EX' add 'FO'   Could add seq to this
+                        cal_name = cal_name[:-9] + 'FF' + cal_name[-7:]  # remove 'EX' add 'FO'   Could add seq to this
                         hdu.writeto(cal_path + cal_name, overwrite=True)
                         focus_image = False
                         try:

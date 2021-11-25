@@ -884,7 +884,7 @@ class Mount:
             if self.mount.CanSetDeclinationRate:
                self.prior_pitch_rate = -(self.dec_mech_adv - self.dec_mech)*RTOS/self.delta_t_s    #20210329 OK 1 hour from zenith.  No Appsid correction per ASCOM spec.
                self.mount.DeclinationRate = self.prior_pitch_rate  #Neg sign makes Dec decrease
-               print("rates:  ", self.prior_roll_rate, self.prior_pitch_rate, self.refr_asec)
+               #print("Rates, refr are:  ", self.prior_roll_rate, self.prior_pitch_rate, self.refr_asec)
             else:
                 self.prior_pitch_rate = 0.0
             #print(self.prior_roll_rate, self.prior_pitch_rate, refr_asec)
