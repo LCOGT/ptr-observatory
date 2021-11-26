@@ -790,7 +790,7 @@ class Sequencer:
         while ephem.now() < g_dev['events']['Morn Bias Dark'] :   #Do not overrun the window end
             #g_dev['mnt'].unpark_command({}, {}) # Get there early
             #g_dev['mnt'].slewToSkyFlatAsync()
-            print("Expose Biases: b_ 2, 3, 1")
+            print("Expose Biases: b_ 2, 3, 1, 4")
             dark_time = 300
             req = {'time': 0.0,  'script': 'True', 'image_type': 'bias'}
             opt = {'area': "Full", 'count': 7, 'bin':'2 2', \

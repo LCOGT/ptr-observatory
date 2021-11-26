@@ -91,18 +91,21 @@ class Enclosure:
                 except:
                     print("Two reads of roof status file failed")
                     enc_list = [1, 2, 3, 4, 'Error']
-            if enc_list[4] in ['OPEN', 'Open', 'open', 'OPEN\n']:
-                shutter_status = 0
-            elif enc_list[4] in ['OPENING']:
-                shutter_status = 2
-            elif enc_list[4] in ['CLOSED', 'Closed', 'closed', "CLOSED\n"]:
-                shutter_status = 1
-            elif enc_list[4] in ['CLOSING']:
-                shutter_status = 3
-            elif enc_list[4] in ['Error']:
-                shutter_status = 4
+            if len(enc_list) == 5:
+                if enc_list[4] in ['OPEN', 'Open', 'open', 'OPEN\n']:
+                    shutter_status = 0
+                elif enc_list[4] in ['OPENING']:
+                    shutter_status = 2
+                elif enc_list[4] in ['CLOSED', 'Closed', 'closed', "CLOSED\n"]:
+                    shutter_status = 1
+                elif enc_list[4] in ['CLOSING']:
+                    shutter_status = 3
+                elif enc_list[4] in ['Error']:
+                    shutter_status = 4
+                else:
+                    shutter_status = 5
             else:
-                shutter_status = 5
+                shutter_status = 4
         else: 
             try:
                 shutter_status = self.enclosure.ShutterStatus

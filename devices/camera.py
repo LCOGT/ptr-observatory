@@ -672,7 +672,10 @@ class Camera:
         # shutter open/close status, turn on lamps, frames: ARC, BIAS, BPM, DARK, DOUBLE(2 lit fib.),
         # EXPERIMENTAL(autofocus), EXPOSE(obj), GUIDE, LAMPFLAT, SKYFLAT, STANDARD, TARGET(Obj+ThAr)
         if imtype.lower() in ('bias', 'dark', 'lamp flat'):
-            if imtype.lower() == 'bias': exposure_time = self.config['camera'][self.name]['settings']['min_exposure'] 
+            if imtype.lower() == 'bias': 
+                exposure_time = 0.0
+            # else:
+            #     exposure_time = self.config['camera'][self.name]['settings']['min_exposure'] 
             imtypeb = False  # don't open the shutter.
             lamps = 'turn on led+tungsten lamps here, if lampflat'
             frame_type = imtype.replace(' ', '')
@@ -975,6 +978,10 @@ class Camera:
                             g_dev['foc'].get_quick_status(self.pre_foc)
                             g_dev['rot'].get_quick_status(self.pre_rot)
                             g_dev['mnt'].get_quick_status(self.pre_mnt)  #Should do this close to the exposure
+                            if imtypeb:
+                                imtypeb = 1
+                            else:
+                                imtypeb = 0
                             self.t2 = time.time()
                             self._expose (exposure_time, imtypeb)
                     else:
@@ -1174,11 +1181,11 @@ class Camera:
                         pass
 
                 else:   #All this code needs to be driven from Ccamera config.
-                    self.overscan =np.median(self.img[-32:, :])
-                    trimmed = self.img[:4500, :3600] + pedastal- self.overscan
+                    self.overscan =np.median(self.img[-32:, :]) - pedastal
+                    trimmed = self.img[:4500, :3600].astype('int32') - self.overscan
                     #print("Incorrect chip size or bin specified or already-converted:  skipping.")
 
-                    #breakpoint()
+
                     #continue
 
                 trimmed = trimmed.transpose()
@@ -1190,6 +1197,8 @@ class Camera:
                 #Should we consider correcting the image right here with cached bias, dark and hot pixel
                 #processing so downstream processing is reliable.  Maybe only do this for focus?
                 g_dev['obs'].send_to_user("Camera has read-out image.", p_level='INFO')
+                neg_pix = np.where(trimmed < 0)
+                trimmed[neg_pix] = 0
                 self.img = trimmed.astype('uint16')
                 ix, iy = self.img.shape
                 test_saturated = np.array(self.img[ix//3:ix*2//3, iy//3:iy*2//3])  # 1/9th the chip area
@@ -1566,6 +1575,7 @@ class Camera:
                         focus_image = False
                         return result
                     if focus_image and solve_it:
+                        breakpoint()
                         cal_name = cal_name[:-9] + 'FF' + cal_name[-7:]  # remove 'EX' add 'FO'   Could add seq to this
                         hdu.writeto(cal_path + cal_name, overwrite=True)
                         focus_image = False
