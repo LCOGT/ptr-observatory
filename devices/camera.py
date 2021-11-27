@@ -8,7 +8,7 @@ Created on Tue Apr 20 22:19:25 2021
 
 import win32com.client
 #import pythoncom
-#import redis
+import redis
 import time
 import datetime
 import os
@@ -194,6 +194,13 @@ class Camera:
             g_dev['cam'] = self
         self.config = config
         self.alias = config['camera'][self.name]['name']
+        redis_ip = config['redis_ip']
+        if redis_ip is not None:           
+            self.redis_server = redis.StrictRedis(host=redis_ip, port=6379, db=0,
+                                              decode_responses=True)
+            self.redis_wx_enabled = True
+            g_dev['redis_server'] = self.redis_server 
+
         win32com.client.pythoncom.CoInitialize()
         print(driver, name)
         self.camera = win32com.client.Dispatch(driver)
@@ -1394,7 +1401,7 @@ class Camera:
                     hdu.header['ENCLOSUR'] = (self.config['enclosure']['enclosure1']['name'], 'Enclosure description')   # "Clamshell"   #Need to document shutter status, azimuth, internal light.
                     #NB NB NB Need to add other dome status reports
                     if g_dev['enc'].is_dome:
-                        breakpoint()
+
                         hdu.header['DOMEAZ'] = (g_dev['enc'].status['dome_azimuth'], 'Dome azimuth')
                     #else:
                     #     hdu.header['ENCAZ']    = ("", '[deg] Enclosure azimuth')   #Need to document shutter status, azimuth, internal light.
