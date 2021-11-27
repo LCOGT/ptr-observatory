@@ -499,7 +499,7 @@ class Sequencer:
         # if bock['project'] is None:
             #user controlled block...
         #NB NB NB  if no project found, need to say so not fault. 20210624
-        breakpoint()
+        #breakpoint()
         for target in block['project']['project_targets']:   #  NB NB NB Do multi-target projects make sense???
             dest_ra = float(target['ra']) - \
                 float(block_specification['project']['project_constraints']['ra_offset'])/15.
@@ -1023,10 +1023,7 @@ class Sequencer:
             flat_count = 1    #   A dedugging compromise
 
         #  NB here we need to check cam at reasonable temp, or dwell until it is.
-<<<<<<< Updated upstream
-=======
 
->>>>>>> Stashed changes
         camera_name = str(self.config['camera']['camera_1']['name'])
         dark_count = 1
         exp_time = 15
@@ -1043,7 +1040,7 @@ class Sequencer:
         # Park Telescope
         req = {'time': exp_time,  'alias': camera_name, 'image_type': 'screen flat'}
         opt = {'area': 100, 'count': dark_count, 'filter': 'dark', 'hint': 'screen dark'}  #  air has highest throughput
-        breakpoint()
+ 
         result = g_dev['cam'].expose_command(req, opt, no_AWS=True)
         print('First dark 30-sec patch, filter = "air":  ', result['patch'])
         # g_dev['scr'].screen_light_on()
