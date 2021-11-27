@@ -1179,6 +1179,12 @@ class Camera:
 
 
                         pass
+                elif ix == 4096 and iy == 4096:
+                    trimmed = self.img.astype('int32') - 847
+                    
+                    
+             
+                    
 
                 else:   #All this code needs to be driven from Ccamera config.
                     self.overscan =np.median(self.img[-32:, :]) - pedastal
