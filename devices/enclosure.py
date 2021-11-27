@@ -66,7 +66,7 @@ class Enclosure:
           
             try:
                 stat_string = self.redis_server.get("shutter_status")
-                #self.status = eval(self.redis_server.get("status"))
+                self.status = eval(self.redis_server.get("enc_status"))
             except:
                 print("\nWxEnc Agent WEMA not running. Please start it up.|n")
             if stat_string is not None:
