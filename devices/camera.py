@@ -1144,6 +1144,7 @@ class Camera:
 
 
                 #This image shift code needs to be here but it is troubling.
+                breakpoint()
                 if ix == 9600:
                     if self.img[22, -34] == 0:
 
@@ -1156,7 +1157,7 @@ class Camera:
 
                     else:
                         print("Image shift is incorrect, absolutely fatal error.")
-                        breakpoint()
+                        
                         pass
 
                     # if full:
@@ -1177,7 +1178,6 @@ class Camera:
                         print("Rare error, Shift 2", self.overscan, trimmed.mean())
 
                     else:
-                        breakpoint()
                         print("Image shift is incorrect, absolutely fatal error", self.img[0:20, -18])
 
 
