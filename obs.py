@@ -270,8 +270,8 @@ class Observatory:
                     device = Rotator(driver, name, self.config)
                 elif dev_type == "focuser":
                     device = Focuser(driver, name, self.config)
-                # elif dev_type == "screen":
-                #     device = Screen(driver, name)
+                elif dev_type == "screen":
+                    device = Screen(driver, name, self.config)
                 elif dev_type == "filter_wheel":
                     device = FilterWheel(driver, name, self.config)
                 elif dev_type == "selector":
@@ -280,7 +280,7 @@ class Observatory:
                     device = Camera(driver, name, self.config)
                 elif dev_type == "sequencer":
                     device = Sequencer(driver, name, self.config, self.astro_events)
-                # elif dev_type == "camera_1_1":
+                # elif dev_type == "camera_1":
                 #     device = Camera(driver, name, self.config)
                 # elif dev_type == "camera_1_2":
                 #     device = Camera(driver, name, self.config)

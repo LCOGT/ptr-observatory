@@ -76,6 +76,7 @@ class Enclosure:
     def get_status(self) -> dict:
         #<<<<The next attibute reference fails at saf, usually spurious Dome Ring Open report.
         #<<< Have seen other instances of failing.
+
         if self.site == 'fat':
             try:
                 enc = open('R:/Roof_Status.txt')

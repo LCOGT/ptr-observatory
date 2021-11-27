@@ -315,8 +315,8 @@ class Sequencer:
             #print('Skipping Eve Sky Flats')
             self.sky_flat_script({}, {})   #Null command dictionaries
             self.sky_flat_latch = False
-        elif g_dev['enc'].mode == 'Automatic' and (events['Observing Begins'] <= ephem_now < events['Observing Ends']) and not g_dev['ocn'].wx_hold and \
-              g_dev['obs'].blocks is not None and g_dev['obs'].projects is not None:
+        elif g_dev['enc'].mode == 'Automatic' and (events['Observing Begins'] <= ephem_now < events['Observing Ends']) and \
+                   not g_dev['ocn'].wx_hold and  g_dev['obs'].blocks is not None and g_dev['obs'].projects is not None:
             blocks = g_dev['obs'].blocks
             projects = g_dev['obs'].projects
             debug = False
@@ -499,7 +499,7 @@ class Sequencer:
         # if bock['project'] is None:
             #user controlled block...
         #NB NB NB  if no project found, need to say so not fault. 20210624
-        breakpoint()
+        #breakpoint()
         for target in block['project']['project_targets']:   #  NB NB NB Do multi-target projects make sense???
             dest_ra = float(target['ra']) - \
                 float(block_specification['project']['project_constraints']['ra_offset'])/15.
@@ -708,8 +708,8 @@ class Sequencer:
                         pitch = 0.
                         pane = 0
                     for displacement in offset:
-                        x_field_deg = g_dev['cam'].config['camera']['camera_1_1']['settings']['x_field_deg']
-                        y_field_deg = g_dev['cam'].config['camera']['camera_1_1']['settings']['y_field_deg']
+                        x_field_deg = g_dev['cam'].config['camera']['camera_1']['settings']['x_field_deg']
+                        y_field_deg = g_dev['cam'].config['camera']['camera_1']['settings']['y_field_deg']
                         
                         d_ra = displacement[0]*( 1 - pitch)*(x_field_deg/15.)  # 0.764243 deg = 0.0509496 Hours  These and pixscale should be computed in config.
                         d_dec = displacement[1]*(1 - pitch)*(y_field_deg)  # = 0.5102414999999999   #Deg
@@ -728,7 +728,7 @@ class Sequencer:
                             g_dev['foc'].adjust_focus()
                         just_focused = False
                         if imtype in ['light'] and count > 0:
-                            req = {'time': exp_time,  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': imtype}   #  NB Should pick up filter and constants from config
+                            req = {'time': exp_time,  'alias':  str(self.config['camera']['camera_1']['name']), 'image_type': imtype}   #  NB Should pick up filter and constants from config
                             opt = {'area': 150, 'count': 1, 'bin': binning, 'filter': color, \
                                    'hint': block['project_id'] + "##" + dest_name, 'pane': pane}
                             print('Seq Blk sent to camera:  ', req, opt)
@@ -790,7 +790,7 @@ class Sequencer:
         while ephem.now() < g_dev['events']['Morn Bias Dark'] :   #Do not overrun the window end
             #g_dev['mnt'].unpark_command({}, {}) # Get there early
             #g_dev['mnt'].slewToSkyFlatAsync()
-            print("Expose Biases: b_ 2, 3, 1, 4")
+            print("Expose Biases: b- 2, 1, 3;  300s darks.")
             dark_time = 300
             req = {'time': 0.0,  'script': 'True', 'image_type': 'bias'}
             opt = {'area': "Full", 'count': 7, 'bin':'2 2', \
@@ -812,7 +812,32 @@ class Sequencer:
                                     do_sep=False, quick=False)
 
                 g_dev['obs'].update_status()
+                
+                if ephem.now() >= g_dev['events']['End Eve Bias Dark']:
+                    break
+                
+                print("Expose Biases: b_1")   
+                dark_time = 300
+                #for bias in range(9):
+                req = {'time': 0.0,  'script': 'True', 'image_type': 'bias'}
+                opt = {'area': "Full", 'count': 7, 'bin':'1 1', \
+                       'filter': 'dark'}
+                result = g_dev['cam'].expose_command(req, opt, no_AWS=True, \
+                                do_sep=False, quick=False)
+                g_dev['obs'].update_status()
+ 
 
+                print("Expose d_1 using exposure:  ", dark_time )
+                req = {'time':dark_time ,  'script': 'True', 'image_type': 'dark'}
+                opt = {'area': "Full", 'count':1, 'bin': '1,1', \
+                        'filter': 'dark'} 
+                result = g_dev['cam'].expose_command(req, opt, no_AWS=True, \
+                                    do_sep=False, quick=False)
+
+                g_dev['obs'].update_status()
+
+                if ephem.now() >= g_dev['events']['End Eve Bias Dark']:
+                    break
            
                 print("Expose Biases: b_3")   
                 dark_time = 240
@@ -833,6 +858,8 @@ class Sequencer:
                 print('Last dark result:  ', result)
                 g_dev['obs'].update_status()
                 
+                if ephem.now() >= g_dev['events']['End Eve Bias Dark']:
+                    break
                 # print("Expose Biases: b_4") 
                 # dark_time = 120
                 # for bias in range(9):
@@ -853,26 +880,10 @@ class Sequencer:
     
                 #     g_dev['obs'].update_status()
 
+                if ephem.now() >= g_dev['events']['End Eve Bias Dark']:
+                    break
 
-                print("Expose Biases: b_1")   
-                dark_time = 300
-                #for bias in range(9):
-                req = {'time': 0.0,  'script': 'True', 'image_type': 'bias'}
-                opt = {'area': "Full", 'count': 7, 'bin':'1 1', \
-                       'filter': 'dark'}
-                result = g_dev['cam'].expose_command(req, opt, no_AWS=True, \
-                                do_sep=False, quick=False)
-                g_dev['obs'].update_status()
- 
 
-                print("Expose d_1 using exposure:  ", dark_time )
-                req = {'time':dark_time ,  'script': 'True', 'image_type': 'dark'}
-                opt = {'area': "Full", 'count':1, 'bin': '1,1', \
-                        'filter': 'dark'} 
-                result = g_dev['cam'].expose_command(req, opt, no_AWS=True, \
-                                    do_sep=False, quick=False)
-
-                g_dev['obs'].update_status()
 
             print(" Bias/Dark acquisition is finished.")
  
@@ -904,7 +915,7 @@ class Sequencer:
         """
         self.sky_guard = True
         print('Eve Sky Flat sequence Starting, Enclosure PRESUMED Open. Telescope will un-park.')
-        camera_name = str(self.config['camera']['camera_1_1']['name'])
+        camera_name = str(self.config['camera']['camera_1']['name'])
         flat_count = 7
         exp_time = .0015
         #  NB Sometime, try 2:2 binning and interpolate a 1:1 flat.  This might run a lot faster.
@@ -1024,7 +1035,7 @@ class Sequencer:
 
         #  NB here we need to check cam at reasonable temp, or dwell until it is.
 
-        camera_name = str(self.config['camera']['camera_1_1']['name'])
+        camera_name = str(self.config['camera']['camera_1']['name'])
         dark_count = 1
         exp_time = 15
         if flat_count < 1: flat_count = 1
@@ -1039,7 +1050,8 @@ class Sequencer:
         #Take a 10 s dark screen air flat to record ambient
         # Park Telescope
         req = {'time': exp_time,  'alias': camera_name, 'image_type': 'screen flat'}
-        opt = {'area': 100, 'count': dark_count, 'filter': g_dev['fil'].filter_data[12][0], 'hint': 'screen dark'}  #  air has highest throughput
+        opt = {'area': 100, 'count': dark_count, 'filter': 'dark', 'hint': 'screen dark'}  #  air has highest throughput
+ 
         result = g_dev['cam'].expose_command(req, opt, no_AWS=True)
         print('First dark 30-sec patch, filter = "air":  ', result['patch'])
         # g_dev['scr'].screen_light_on()
@@ -1160,11 +1172,11 @@ class Sequencer:
                                     g_dev['mnt'].current_sidereal)
             print("Going to near focus star " + str(focus_star[0][0]) + "  degrees away.")
             g_dev['mnt'].go_coord(focus_star[0][1][1], focus_star[0][1][0])
-            req = {'time': 12.5,  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'auto_focus'}   #  NB Should pick up filter and constats from config
+            req = {'time': 12.5,  'alias':  str(self.config['camera']['camera_1']['name']), 'image_type': 'auto_focus'}   #  NB Should pick up filter and constats from config
             opt = {'area': 150, 'count': 1, 'bin': '2, 2', 'filter': 'w'}
         else:
             pass   #Just take an image where currently pointed.
-            req = {'time': 15,  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'auto_focus'}   #  NB Should pick up filter and constats from config
+            req = {'time': 15,  'alias':  str(self.config['camera']['camera_1']['name']), 'image_type': 'auto_focus'}   #  NB Should pick up filter and constats from config
             opt = {'area': 150, 'count': 1, 'bin': '2, 2', 'filter': 'w'}
         foc_pos0 = focus_start
         result = {}
@@ -1327,11 +1339,11 @@ class Sequencer:
                                     g_dev['mnt'].current_sidereal)
             print("Going to near focus star " + str(focus_star[0][0]) + "  degrees away.")
             g_dev['mnt'].go_coord(focus_star[0][1][1], focus_star[0][1][0])
-            req = {'time': 12.5,  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'auto_focus'}   #  NB Should pick up filter and constats from config
+            req = {'time': 12.5,  'alias':  str(self.config['camera']['camera_1']['name']), 'image_type': 'auto_focus'}   #  NB Should pick up filter and constats from config
             opt = {'area': 100, 'count': 1, 'filter': 'w'}
         else:
             pass   #Just take time image where currently pointed.
-            req = {'time': 15,  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'auto_focus'}   #  NB Should pick up filter and constats from config
+            req = {'time': 15,  'alias':  str(self.config['camera']['camera_1']['name']), 'image_type': 'auto_focus'}   #  NB Should pick up filter and constats from config
             opt = {'area': 100, 'count': 1, 'filter': 'w'}
         foc_pos0 = foc_start
         result = {}
@@ -1491,7 +1503,7 @@ IF sweep
         count = 0
         print("Starting equatorial sweep.")
         g_dev['mnt'].unpark_command()
-        #cam_name = str(self.config['camera']['camera_1_1']['name'])
+        #cam_name = str(self.config['camera']['camera_1']['name'])
         for ha_degree_value in ha_deg_steps:
             target_ra = ra_fix(g_dev['mnt'].mount.SiderealTime - ha_degree_value/15.)
             target_dec = 0
@@ -1590,7 +1602,7 @@ IF sweep
         count = 0
         print("Starting cross, # of points:  ", length)
         g_dev['mnt'].unpark_command()
-        #cam_name = str(self.config['camera']['camera_1_1']['name'])
+        #cam_name = str(self.config['camera']['camera_1']['name'])
         for point_value in points:
             target_ra = ra_fix(g_dev['mnt'].mount.SiderealTime - point_value[0]/15.)
             target_dec = point_value[1]
@@ -1632,7 +1644,7 @@ IF sweep
         return
     
     def sky_grid_pointing_run(self, req, opt, spacing=10, vertical=False, grid=False, alt_minimum=25):
-        #camera_name = str(self.config['camera']['camera_1_1']['name'])
+        #camera_name = str(self.config['camera']['camera_1']['name'])
         '''
         unpark telescope
         if not open, open dome
@@ -1689,7 +1701,7 @@ IF sweep
             pass
         g_dev['obs'].update_status()
         g_dev['mnt'].unpark_command()
-        #cam_name = str(self.config['camera']['camera_1_1']['name'])
+        #cam_name = str(self.config['camera']['camera_1']['name'])
 
         sid = g_dev['mnt'].mount.SiderealTime
         if req['gridType'] == 'medium':  # ~50
@@ -1746,7 +1758,7 @@ IF sweep
         return       
 
     def rel_sky_grid_pointing_run(self, req, opt, spacing=10, vertical=False, grid=False, alt_minimum=25):
-        #camera_name = str(self.config['camera']['camera_1_1']['name'])
+        #camera_name = str(self.config['camera']['camera_1']['name'])
         '''
         unpark telescope
         if not open, open dome
@@ -1801,7 +1813,7 @@ IF sweep
         g_dev['scr'].screen_dark()
         g_dev['obs'].update_status()
         g_dev['mnt'].unpark_command()
-        #cam_name = str(self.config['camera']['camera_1_1']['name'])
+        #cam_name = str(self.config['camera']['camera_1']['name'])
 
         sid = g_dev['mnt'].mount.SiderealTime
         if req['gridType'] == 'medium':  # ~50
@@ -1913,7 +1925,7 @@ IF sweep
         count = 0
         print("Starting West dec sweep, ha = 0.1")
         g_dev['mnt'].unpark_command()
-        #cam_name = str(self.config['camera']['camera_1_1']['name'])
+        #cam_name = str(self.config['camera']['camera_1']['name'])
         for ha in [0.1, -0.1]:
             for degree_value in dec_steps:
                 target_ra =  ra_fix(g_dev['mnt'].mount.SiderealTime - ha)

@@ -65,6 +65,7 @@ class Enclosure:
     
           
             try:
+
                 stat_string = self.redis_server.get("shutter_status")
                 self.status = eval(self.redis_server.get("enc_status"))
             except:
