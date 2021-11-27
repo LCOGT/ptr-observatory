@@ -1023,8 +1023,7 @@ class Sequencer:
             flat_count = 1    #   A dedugging compromise
 
         #  NB here we need to check cam at reasonable temp, or dwell until it is.
-
-        camera_name = str(self.config['camera']['camera_1_1']['name'])
+        camera_name = str(self.config['camera']['camera_1']['name'])
         dark_count = 1
         exp_time = 15
         if flat_count < 1: flat_count = 1
@@ -1039,7 +1038,8 @@ class Sequencer:
         #Take a 10 s dark screen air flat to record ambient
         # Park Telescope
         req = {'time': exp_time,  'alias': camera_name, 'image_type': 'screen flat'}
-        opt = {'area': 100, 'count': dark_count, 'filter': g_dev['fil'].filter_data[12][0], 'hint': 'screen dark'}  #  air has highest throughput
+        opt = {'area': 100, 'count': dark_count, 'filter': 'dark', 'hint': 'screen dark'}  #  air has highest throughput
+        breakpoint()
         result = g_dev['cam'].expose_command(req, opt, no_AWS=True)
         print('First dark 30-sec patch, filter = "air":  ', result['patch'])
         # g_dev['scr'].screen_light_on()

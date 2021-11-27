@@ -1100,9 +1100,12 @@ class Camera:
                 else:
                     time.sleep(0.1)   #  This delay appears to be necessary. 20200804 WER
                     self.t4p4 = time.time()
-                    self.img_safe = self.camera.ImageArray
+                    ####self.img_safe = self.camera.ImageArray
+                    self.img = np.array(self.camera.ImageArray)
                     self.t4p5 = time.time()#As read, this is a Windows Safe Array of Longs
-                    self.img = np.array(self.img_safe) # _untransposed   incoming is (4800,3211) for QHY600Pro 2:2 Bin
+                    print("\n\nMedian of incoming image:  ", np.median(self.img), '\n\n')
+                    
+                    ###self.img = np.array(self.img_safe) # _untransposed   incoming is (4800,3211) for QHY600Pro 2:2 Bin
                     #print(self.img_untransposed.shape)
                     #self.img = self.img_untransposed    #   .transpose()  Only use this if Maxim has changed orientation.
                     #  print('incoming shape:  ', self.img.shape)
@@ -1200,6 +1203,9 @@ class Camera:
                 neg_pix = np.where(trimmed < 0)
                 trimmed[neg_pix] = 0
                 self.img = trimmed.astype('uint16')
+                
+                print('\n\nMedian of overscan-removed image:  ', np.median(self.img), '\n\n')
+                
                 ix, iy = self.img.shape
                 test_saturated = np.array(self.img[ix//3:ix*2//3, iy//3:iy*2//3])  # 1/9th the chip area
                 bi_mean = round((test_saturated.mean() + np.median(test_saturated))/2, 0)

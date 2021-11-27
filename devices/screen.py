@@ -6,25 +6,31 @@ import subprocess
 from global_yard import g_dev
 
 class Screen(object):
-    def __init__(self, driver: str, name: str):
-        self.name = name    # name[:3] + name[-1]
+    def __init__(self, driver: str, name: str, config):
         g_dev['scr'] = self
-        self.driver = driver
-        self.description = 'Optec Alnitak 24" screen'
-        #self.priorWd = os.getcwd()
-        self.pC =  ' ' +self.driver.split('COM')[1]  #just last 0ne or two digits.
-        print('COM port used for Screen:  ' + self.driver)
-        print("Screen takes a few seconds to process commands.")
-        self.scrn = str ('EastAlnitak')
+        self.config = config['screen']['screen1']
+        self.device_name = name 
+        win32com.client.pythoncom.CoInitialize()
+        self.screen = win32com.client.Dispatch(driver)
+        self.description = self.config['desc']
+        self.screen.Connected=True
+        #self.pC =  ' ' +self.driver.split('COM')[1]  #just last 0ne or two digits.
+        #print('COM port used for Screen:  ' + self.driver)
+        print(" West Screen takes a few seconds to process commands.")
+        self.scrn = str ('WestAlnitak')
         #os.chdir('C:\\Program Files (x86)\\Optec\\Alnitak Astrosystems Controller')
-        subprocess.call('C:\\Program Files (x86)\\Optec\\Alnitak Astrosystems Controller\\AACmd.exe' + self.pC + ' D s')
+        #C:/Program Files (x86)/Optec/Alnitak Astrosystems Controller
+        
+        #subprocess.call('C:/Program Files (x86)/Optec/Alnitak Astrosystems Controller/AACmd.exe' + self.pC + ' D s')
         #subprocess.call('C:\\Program Files (x86)\\Optec\\Alnitak Astrosystems Controller\\AACmd.exe' + self.pC + ' C')
+        self.screen.CalibratorOff()
         self.status = 'Off'
+        #self.screen.Calibrator)n(123))
         self.screen_message = '-'
         self.dark_setting = 'Screen is Off'
         self.bright_setting = 0.0
         self.minimum = 5
-        self.saturate = 170    # NB should pick up from config
+        self.saturate = 255    # NB should pick up from config
         self.screen_dark()
         #os.chdir(self.priorWd)
 
@@ -39,8 +45,8 @@ class Screen(object):
         else:
             pBright = min(abs(pBright), self.saturate)
             scrn_setting = int(pBright)
-        subprocess.call('C:\\Program Files (x86)\\Optec\\Alnitak Astrosystems Controller\\AACmd.exe ' + self.pC + ' B s' + \
-                        str(scrn_setting))
+        # subprocess.call('C:/Program Files (x86)/Optec/Alnitak Astrosystems Controller/AACmd.exe'  + self.pC + \
+        #                 ' b'+ str(scrn_setting) +'s' )        
         self.bright_setting = pBright
         #os.chdir(self.priorWd)
         print("Brightness set to:  ", scrn_setting)
@@ -48,14 +54,24 @@ class Screen(object):
     def screen_light_on(self):
         #self.priorWd = os.getcwd()
         #os.chdir('C:\\Program Files (x86)\\Optec\\Alnitak Astrosystems Controller')
-        subprocess.call('C:\\Program Files (x86)\\Optec\\Alnitak Astrosystems Controller\\AACmd.exe ' + self.pC + ' L s')
+        #subprocess.call('C:/Program Files (x86)/Optec/Alnitak Astrosystems Controller/AACmd.exe'  + self.pC + ' L s')
+        self.screen.CalibratorOn(self.bright_setting)
         self.dark_setting = 'Screen is On'
         #os.chdir(self.priorWd)
 
     def screen_dark(self):
         #self.priorWd = os.getcwd()
         #os.chdir('C:\\Program Files (x86)\\Optec\\Alnitak Astrosystems Controller')
-        subprocess.call('C:\\Program Files (x86)\\Optec\\Alnitak Astrosystems Controller\\AACmd.exe ' + self.pC + ' D s')
+        #subprocess.call('C:/Program Files (x86)/Optec/Alnitak Astrosystems Controller/AACmd.exe'  + self.pC + ' D s')
+        self.screen.CalibratorOff()
+        self.dark_setting = 'Screen is Off'
+        self.bright_setting = 0
+        
+    def screen_light_off(self):
+        #self.priorWd = os.getcwd()
+        #os.chdir('C:\\Program Files (x86)\\Optec\\Alnitak Astrosystems Controller')
+        #subprocess.call('C:/Program Files (x86)/Optec/Alnitak Astrosystems Controller/AACmd.exe'  + self.pC + ' D s')
+        self.screen.CalibratorOff()
         self.dark_setting = 'Screen is Off'
         self.bright_setting = 0
         #os.chdir(self.priorWd)
@@ -88,7 +104,7 @@ class Screen(object):
 
 
     def get_status(self):
-        breakpoint()
+
         status = {
             "bright_setting": round(self.bright_setting, 1),
             "dark_setting": self.dark_setting

@@ -270,8 +270,8 @@ class Observatory:
                     device = Rotator(driver, name, self.config)
                 elif dev_type == "focuser":
                     device = Focuser(driver, name, self.config)
-                # elif dev_type == "screen":
-                #     device = Screen(driver, name)
+                elif dev_type == "screen":
+                    device = Screen(driver, name, self.config)
                 elif dev_type == "filter_wheel":
                     device = FilterWheel(driver, name, self.config)
                 elif dev_type == "selector":
