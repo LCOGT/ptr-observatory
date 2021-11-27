@@ -672,8 +672,8 @@ class Mount:
                 #
                 offset_x = float(req['image_x']) - 0.5   #Fraction of field.
                 offset_y = float(req['image_y']) - 0.5
-                x_field_deg = g_dev['cam'].config['camera']['camera_1_1']['settings']['x_field_deg']
-                y_field_deg = g_dev['cam'].config['camera']['camera_1_1']['settings']['y_field_deg']
+                x_field_deg = g_dev['cam'].config['camera']['camera_1']['settings']['x_field_deg']
+                y_field_deg = g_dev['cam'].config['camera']['camera_1']['settings']['y_field_deg']
                 field_x = x_field_deg/15.   #  /15 for hours.
                 field_y = y_field_deg
                 #20210317 Changed signs fron Neyle.  NEEDS CONFIG File level or support.
