@@ -552,6 +552,7 @@ class Camera:
         self.pane = optional_params.get('pane', None)
         bin_x = optional_params.get('bin', self.config['camera'][self.name] \
                                                       ['settings']['default_bin'])  #NB this should pick up config default.
+
         bin_x = eval(bin_x)[:2]
         if bin_x in ['4 4', 4, '4, 4', '4,4', [4, 4]]:     # For now this is the highest level of binning supported.
             bin_x = 4
@@ -974,7 +975,7 @@ class Camera:
                             self.pre_foc = []
                             self.pre_ocn = []
                             g_dev['obs'].send_to_user("Starting name!", p_level='INFO')
-                            g_dev['ocn'].get_quick_status(self.pre_ocn)
+                            g_dev['ocn'].get_quick_status(self.pre_ocn)   #NB NB WEMA must be running or this may fault.
                             g_dev['foc'].get_quick_status(self.pre_foc)
                             g_dev['rot'].get_quick_status(self.pre_rot)
                             g_dev['mnt'].get_quick_status(self.pre_mnt)  #Should do this close to the exposure
@@ -1145,7 +1146,7 @@ class Camera:
 
 
                 #This image shift code needs to be here but it is troubling.
-
+                #QHY 600Pro and 367
                 if ix == 9600:
                     # if self.img[22, -34] == 0:
 
@@ -1200,11 +1201,17 @@ class Camera:
 
 
                 #FAT
-                else:   #All this code needs to be driven from Ccamera config.
+                elif ix == 4536 and iy == 3636:   #All this code needs to be driven from Ccamera config.
                     self.overscan =np.median(self.img[-32:, :]) - pedastal
                     trimmed = self.img[:4500, :3600].astype('int32') - self.overscan
-                    #print("Incorrect chip size or bin specified or already-converted:  skipping.")
-
+                        
+                elif ix == 2268 and iy == 1818:   #All this code needs to be driven from Ccamera config.
+                    self.overscan =np.median(self.img[-16:, :]) - pedastal
+                    trimmed = self.img[:2250, :1800].astype('int32') - self.overscan
+                       
+                else:
+                    print("UNSUPPORTED BINNING OR CAMERA!!")
+                    return
 
                     #continue
 
