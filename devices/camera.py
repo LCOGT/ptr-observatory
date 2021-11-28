@@ -8,7 +8,7 @@ Created on Tue Apr 20 22:19:25 2021
 
 import win32com.client
 #import pythoncom
-#import redis
+import redis
 import time
 import datetime
 import os
@@ -194,6 +194,13 @@ class Camera:
             g_dev['cam'] = self
         self.config = config
         self.alias = config['camera'][self.name]['name']
+        redis_ip = config['redis_ip']
+        if redis_ip is not None:           
+            self.redis_server = redis.StrictRedis(host=redis_ip, port=6379, db=0,
+                                              decode_responses=True)
+            self.redis_wx_enabled = True
+            g_dev['redis_server'] = self.redis_server 
+
         win32com.client.pythoncom.CoInitialize()
         print(driver, name)
         self.camera = win32com.client.Dispatch(driver)
@@ -553,6 +560,10 @@ class Camera:
         bin_x = optional_params.get('bin', self.config['camera'][self.name] \
                                                       ['settings']['default_bin'])  #NB this should pick up config default.
 
+        try:
+            bin_x = eval(bin_x)[:2]
+        except:
+            pass
         if bin_x in ['4 4', 4, '4, 4', '4,4', [4, 4]]:     # For now this is the highest level of binning supported.
             bin_x = 4
             self.ccd_sum = '4 4'
@@ -581,7 +592,7 @@ class Camera:
         #exposure_time = max(0.2, exposure_time)  #Saves the shutter, this needs qualify with imtype.
         imtype= required_params.get('image_type', 'light')
         if imtype.lower() in ['experimental']:
-            g_dev['enc'].wx_test = not g_dev['enc'].wx_test
+            g_dev['enc'].wx_test = not g_dev['enc'].wx_test   #NB NB NB What is this for?
             return
         count = int(optional_params.get('count', 1))   #  For now Repeats are external to full expose command.
         lcl_repeat = 1
@@ -1101,6 +1112,7 @@ class Camera:
                     time.sleep(0.1)   #  This delay appears to be necessary. 20200804 WER
                     self.t4p4 = time.time()
                     ####self.img_safe = self.camera.ImageArray
+                    #NB NB Do not try to print ImageArray!!!!
                     self.img = np.array(self.camera.ImageArray)
                     self.t4p5 = time.time()#As read, this is a Windows Safe Array of Longs
                     print("\n\nMedian of incoming image:  ", np.median(self.img), '\n\n')
@@ -1144,21 +1156,21 @@ class Camera:
 
 
                 #This image shift code needs to be here but it is troubling.
-                breakpoint()
+
                 if ix == 9600:
-                    if self.img[22, -34] == 0:
+                    # if self.img[22, -34] == 0:
 
-                        self.overscan = int((np.median(self.img[24:, -33:]) + np.median(self.img[0:21, :]))/2) - 1
-                        trimmed = self.img[24:-8, :-34].astype('int32') + pedastal - self.overscan
+                    self.overscan = int((np.median(self.img[24:, -33:]) + np.median(self.img[0:21, :]))/2) - 1
+                    trimmed = self.img[24:-8, :-34].astype('int32') + pedastal - self.overscan
 
-                    elif self.img[30, -34] == 0:
-                        self.overscan = int((np.median(self.img[32:, -33:]) + np.median(self.img[0:29, :]))/2) - 1
-                        trimmed = self.img[32:, :-34].astype('int32') + pedastal - self.overscan
+                    # elif self.img[30, -34] == 0:
+                    #     self.overscan = int((np.median(self.img[32:, -33:]) + np.median(self.img[0:29, :]))/2) - 1
+                    #     trimmed = self.img[32:, :-34].astype('int32') + pedastal - self.overscan
 
-                    else:
-                        print("Image shift is incorrect, absolutely fatal error.")
+                    # else:
+                    #     print("Image shift is incorrect, absolutely fatal error.")
                         
-                        pass
+                    #     pass
 
                     # if full:
                     #     square = trimmed
@@ -1166,22 +1178,23 @@ class Camera:
                     #     square = trimmed[1590:1590 + 6388, :]
                 elif ix == 4800:
                     #Shift error needs documenting!
-                    if self.img[11, -18] == 0:   #This is the normal incoming image
-                        self.overscan = int((np.median(self.img[12:, -17:]) + np.median(self.img[0:10, :]))/2) - 1
-                        trimmed = self.img[12:-4, :-17].astype('int32') + pedastal - self.overscan
+                    #breakpoint()
+                    #if self.img[11, -18] == 0:   #This is the normal incoming image
+                    self.overscan = int((np.median(self.img[12:, -17:]) + np.median(self.img[0:10, :]))/2) - 1
+                    trimmed = self.img[12:-4, :-17].astype('int32') + pedastal - self.overscan
 
                         #print("Shift 1", self.overscan, square.mean())
-                    elif self.img[15, -18] == 0:     #This rarely occurs.  Neyle's Qhy600
-                        self.overscan = int((np.median(self.img[16:, -17:]) + np.median(self.img[0:14, :]))/2) -1
-                        trimmed = self.img[16:, :-17].astype('int32') + pedastal - self.overscan
+                    # elif self.img[15, -18] == 0:     #This rarely occurs.  Neyle's Qhy600
+                    #     self.overscan = int((np.median(self.img[16:, -17:]) + np.median(self.img[0:14, :]))/2) -1
+                    #     trimmed = self.img[16:, :-17].astype('int32') + pedastal - self.overscan
 
-                        print("Rare error, Shift 2", self.overscan, trimmed.mean())
+                    #     print("Rare error, Shift 2", self.overscan, trimmed.mean())
 
-                    else:
-                        print("Image shift is incorrect, absolutely fatal error", self.img[0:20, -18])
+                    # else:
+                    #     print("Image shift is incorrect, absolutely fatal error", self.img[0:20, -18])
 
 
-                        pass
+                        #pass
 
                 else:   #All this code needs to be driven from Ccamera config.
                     self.overscan =np.median(self.img[-32:, :]) - pedastal
@@ -1205,7 +1218,6 @@ class Camera:
                 self.img = trimmed.astype('uint16')
                 
                 print('\n\nMedian of overscan-removed image:  ', np.median(self.img), '\n\n')
-                
                 ix, iy = self.img.shape
                 test_saturated = np.array(self.img[ix//3:ix*2//3, iy//3:iy*2//3])  # 1/9th the chip area
                 bi_mean = round((test_saturated.mean() + np.median(test_saturated))/2, 0)
@@ -1393,6 +1405,7 @@ class Camera:
                     hdu.header['ENCLOSUR'] = (self.config['enclosure']['enclosure1']['name'], 'Enclosure description')   # "Clamshell"   #Need to document shutter status, azimuth, internal light.
                     #NB NB NB Need to add other dome status reports
                     if g_dev['enc'].is_dome:
+
                         hdu.header['DOMEAZ'] = (g_dev['enc'].status['dome_azimuth'], 'Dome azimuth')
                     #else:
                     #     hdu.header['ENCAZ']    = ("", '[deg] Enclosure azimuth')   #Need to document shutter status, azimuth, internal light.
@@ -1573,7 +1586,7 @@ class Camera:
                         self.enqueue_image(db_data_size, im_path, db_name)
                         self.enqueue_image(raw_data_size, im_path, raw_name01)
                     '''
-
+                    
                     if focus_image and not solve_it:
                         #Note we do not reduce focus images, except above in focus processing.
                         cal_name = cal_name[:-9] + 'F012' + cal_name[-7:]  # remove 'EX' add 'FO'   Could add seq to this
@@ -1581,12 +1594,13 @@ class Camera:
                         focus_image = False
                         return result
                     if focus_image and solve_it:
-                        breakpoint()
+
                         cal_name = cal_name[:-9] + 'FF' + cal_name[-7:]  # remove 'EX' add 'FO'   Could add seq to this
                         hdu.writeto(cal_path + cal_name, overwrite=True)
                         focus_image = False
                         try:
                             #wpath = 'C:/000ptr_saf/archive/sq01/20210528/reduced/saf-sq01-20210528-00019785-le-w-EX01.fits'
+                            time_now = time.time()
                             solve = platesolve.platesolve(cal_path + cal_name, hdu.header['PIXSCALE'])
                             print("PW Solves: " ,solve['ra_j2000_hours'], solve['dec_j2000_degrees'])
                             TARGRA  = g_dev['mnt'].current_icrs_ra
@@ -1595,11 +1609,12 @@ class Camera:
                             DECJ2000 = solve['dec_j2000_degrees']
                             err_ha = TARGRA - RAJ2000
                             err_dec = TARGDEC - DECJ2000
-                            breakpoint()
+                            g_dev['mnt'].set_mount_reference(err_ha, err_dec, time_now )
+
                                 
-                            self.set_last_reference( solve['ra_j2000_hours'], solve['dec_j2000_degrees'], time_now)
+                            #self.set_last_reference( solve['ra_j2000_hours'], solve['dec_j2000_degrees'], time_now)
                         except:
-                           print(wpath, "  was not solved, marking to skip in future, sorry!")
+                           print(cal_path + cal_name,  "  was not solved, marking to skip in future, sorry!")
                            self.reset_last_reference()
                           #Return to classic processing
                        

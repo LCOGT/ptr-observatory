@@ -28,10 +28,10 @@ from astropy.time import Time
 #from pprint import pprint
 
 # NB Change these to hours not fractions of a day.  Should come from site config not be in code here.
-EVESCREENFLATDURATION = 0/1440            #1.5 hours
+EVESCREENFLATDURATION = 60/1440            #1.5 hours
 BIASDARKDURATION = 120/1440            #2.0 hours
-EVESKYFLATDURATION = 90/1440
-MORNSKYFLATDURATION = 90/1440
+EVESKYFLATDURATION = 105/1440
+MORNSKYFLATDURATION = 0/1440
 MORNBIASDARKDURATION = 0/1440          #1.5 min
 LONGESTSCREEN = 0/1440           #1 min
 LONGESTFLAT = 2.5/1440
@@ -528,9 +528,9 @@ class Events:
                 ('End Eve Bias Dark  ', ephem.Date(civilDusk - 127/1440)),
                 #('Eve Scrn Flats     ', ephem.Date(beginEveScreenFlats)),
                 #('End Eve Scrn Flats ', ephem.Date(endEveScreenFlats)),
-                ('Ops Window Start   ', ephem.Date(civilDusk - 121/1440)),  #Enclosure may open.
-                ('Cool Down, Open    ', ephem.Date(civilDusk - 120/1440)),
-                ('Eve Sky Flats      ', ephem.Date(civilDusk -105/1440)),
+                ('Ops Window Start   ', ephem.Date(civilDusk - 126/1440)),  #Enclosure may open.
+                ('Cool Down, Open    ', ephem.Date(civilDusk - 125/1440)),
+                ('Eve Sky Flats      ', ephem.Date(civilDusk - 120/1440)),
                 ('Sun Set            ', sunset),
                 ('End Eve Sky Flats  ', ephem.Date(civilDusk - 1/1440)),
                 ('Civil Dusk         ', civilDusk),
