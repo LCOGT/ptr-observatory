@@ -560,6 +560,7 @@ class Camera:
         bin_x = optional_params.get('bin', self.config['camera'][self.name] \
                                                       ['settings']['default_bin'])  #NB this should pick up config default.
 
+        breakpoint()
         try:
             bin_x = eval(bin_x)[:2]
         except:
@@ -1195,8 +1196,21 @@ class Camera:
 
 
                         #pass
+                
+                #mrc2
+                elif ix == 4096 and iy == 4096:   #MRC@
+                    trimmed = self.img.astype('int32') - 913.   #20211128 Cooler = -35C
 
-                else:   #All this code needs to be driven from Ccamera config.
+                elif ix ==2048 and iy == 2048:   #MRC@
+                    trimmed = self.img.astype('int32') - 1046.   #20211128 Cooler = -35C
+                    
+                #Bin 3 not possible for FLI camera
+                    
+                elif ix == 1024 and iy == 1024:   #MRC@
+                    trimmed = self.img.astype('int32') - 1548.   #20211128 Cooler = -35C
+
+                #FAT
+                else:   #All this code needs to be driven from camera config.   $FAT
                     self.overscan =np.median(self.img[-32:, :]) - pedastal
                     trimmed = self.img[:4500, :3600].astype('int32') - self.overscan
                     #print("Incorrect chip size or bin specified or already-converted:  skipping.")
