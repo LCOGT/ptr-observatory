@@ -1184,6 +1184,24 @@ class Camera:
 
 
                         #pass
+<<<<<<< Updated upstream
+=======
+<<<<<<< HEAD
+                
+                #mrc2    Testing comment change, did this push to GitHub?
+                elif ix == 4096 and iy == 4096:   #MRC@
+                    trimmed = self.img.astype('int32') - 913.   #20211128 Cooler = -35C
+
+                elif ix ==2048 and iy == 2048:   #MRC@
+                    trimmed = self.img.astype('int32') - 1046.   #20211128 Cooler = -35C
+                    
+                #Bin 3 not possible for FLI camera
+                    
+                elif ix == 1024 and iy == 1024:   #MRC@
+                    trimmed = self.img.astype('int32') - 1548.   #20211128 Cooler = -35C
+=======
+>>>>>>> 3cb3b2ff3d7cd5114950102c6b5e674c81674ae5
+>>>>>>> Stashed changes
 
                 else:   #All this code needs to be driven from Ccamera config.
                     self.overscan =np.median(self.img[-32:, :]) - pedastal
