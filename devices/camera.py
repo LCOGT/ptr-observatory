@@ -1184,9 +1184,7 @@ class Camera:
 
 
                         #pass
-<<<<<<< Updated upstream
-=======
-<<<<<<< HEAD
+
                 
                 #mrc2    Testing comment change, did this push to GitHub?
                 elif ix == 4096 and iy == 4096:   #MRC@
@@ -1199,10 +1197,9 @@ class Camera:
                     
                 elif ix == 1024 and iy == 1024:   #MRC@
                     trimmed = self.img.astype('int32') - 1548.   #20211128 Cooler = -35C
-=======
->>>>>>> 3cb3b2ff3d7cd5114950102c6b5e674c81674ae5
->>>>>>> Stashed changes
 
+
+                #FAT
                 else:   #All this code needs to be driven from Ccamera config.
                     self.overscan =np.median(self.img[-32:, :]) - pedastal
                     trimmed = self.img[:4500, :3600].astype('int32') - self.overscan
@@ -1601,12 +1598,13 @@ class Camera:
                         focus_image = False
                         return result
                     if focus_image and solve_it:
-                        breakpoint()
+
                         cal_name = cal_name[:-9] + 'FF' + cal_name[-7:]  # remove 'EX' add 'FO'   Could add seq to this
                         hdu.writeto(cal_path + cal_name, overwrite=True)
                         focus_image = False
                         try:
                             #wpath = 'C:/000ptr_saf/archive/sq01/20210528/reduced/saf-sq01-20210528-00019785-le-w-EX01.fits'
+                            time_now = time.time()
                             solve = platesolve.platesolve(cal_path + cal_name, hdu.header['PIXSCALE'])
                             print("PW Solves: " ,solve['ra_j2000_hours'], solve['dec_j2000_degrees'])
                             TARGRA  = g_dev['mnt'].current_icrs_ra
@@ -1615,11 +1613,10 @@ class Camera:
                             DECJ2000 = solve['dec_j2000_degrees']
                             err_ha = TARGRA - RAJ2000
                             err_dec = TARGDEC - DECJ2000
-                            breakpoint()
-                                
-                            self.set_last_reference( solve['ra_j2000_hours'], solve['dec_j2000_degrees'], time_now)
+
+                            self.set_last_reference(err_ha, err_dec, time_now)
                         except:
-                           print(wpath, "  was not solved, marking to skip in future, sorry!")
+                           print(cal_path + cal_name, "  was not solved, marking to skip in future, sorry!")
                            self.reset_last_reference()
                           #Return to classic processing
                        
