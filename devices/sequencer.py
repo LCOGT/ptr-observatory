@@ -476,7 +476,7 @@ class Sequencer:
         # if not enc_status in ['open', 'Open', 'opening', 'Opening']:
         #     self.enc_to_skyflat_and_open(enc_status, ocn_status, no_sky=True)   #Just in case a Wx hold stopped opening
         # else:
-        g_dev['enc'].sync_mount_command({}, {})
+        #g_dev['enc'].sync_mount_command({}, {})
         g_dev['mnt'].unpark_command({}, {})
         g_dev['mnt'].Tracking = True   # unpark_command({}, {})
         g_dev['cam'].user_name = 'tobor'
@@ -608,12 +608,13 @@ class Sequencer:
                     color = exposure['filter']
                     exp_time =  float(exposure['exposure']) 
                     #dither = exposure['dither']
+                    breakpoint()
                     if exposure['bin'] in [2, '2,2', '2, 2', '2 2']:
-                        binning = 2
+                        binning = '2 2'
                     elif exposure['bin'] in [3, '3,3', '3, 3', '3 3']:
-                        binning = 2
+                        binning = '3 3'
                     else:
-                        binning = 1
+                        binning = '1 1'
                     count = int(exposure['count'])
                     #  We should add a frame repeat count
                     imtype = exposure['imtype'] 
