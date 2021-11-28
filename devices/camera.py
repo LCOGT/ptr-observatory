@@ -559,7 +559,11 @@ class Camera:
         self.pane = optional_params.get('pane', None)
         bin_x = optional_params.get('bin', self.config['camera'][self.name] \
                                                       ['settings']['default_bin'])  #NB this should pick up config default.
-        bin_x = eval(bin_x)[:2]
+
+        try:
+            bin_x = eval(bin_x)[:2]
+        except:
+            pass
         if bin_x in ['4 4', 4, '4, 4', '4,4', [4, 4]]:     # For now this is the highest level of binning supported.
             bin_x = 4
             self.ccd_sum = '4 4'
@@ -1582,20 +1586,21 @@ class Camera:
                         self.enqueue_image(db_data_size, im_path, db_name)
                         self.enqueue_image(raw_data_size, im_path, raw_name01)
                     '''
-
+                    
                     if focus_image and not solve_it:
                         #Note we do not reduce focus images, except above in focus processing.
                         cal_name = cal_name[:-9] + 'F012' + cal_name[-7:]  # remove 'EX' add 'FO'   Could add seq to this
                         hdu.writeto(cal_path + cal_name, overwrite=True)
                         focus_image = False
                         return result
-                    if focus_image and solve_it:
-                        breakpoint()
+                    if focus_image and solve_it and False:
+
                         cal_name = cal_name[:-9] + 'FF' + cal_name[-7:]  # remove 'EX' add 'FO'   Could add seq to this
                         hdu.writeto(cal_path + cal_name, overwrite=True)
                         focus_image = False
                         try:
                             #wpath = 'C:/000ptr_saf/archive/sq01/20210528/reduced/saf-sq01-20210528-00019785-le-w-EX01.fits'
+                            breakpoint()
                             solve = platesolve.platesolve(cal_path + cal_name, hdu.header['PIXSCALE'])
                             print("PW Solves: " ,solve['ra_j2000_hours'], solve['dec_j2000_degrees'])
                             TARGRA  = g_dev['mnt'].current_icrs_ra
@@ -1604,11 +1609,12 @@ class Camera:
                             DECJ2000 = solve['dec_j2000_degrees']
                             err_ha = TARGRA - RAJ2000
                             err_dec = TARGDEC - DECJ2000
+                            g_dev['mnt'].set_mount_reference(err_ha, err_dec)
                             breakpoint()
                                 
-                            self.set_last_reference( solve['ra_j2000_hours'], solve['dec_j2000_degrees'], time_now)
+                            #self.set_last_reference( solve['ra_j2000_hours'], solve['dec_j2000_degrees'], time_now)
                         except:
-                           print(wpath, "  was not solved, marking to skip in future, sorry!")
+                           print(cal_path + cal_name,  "  was not solved, marking to skip in future, sorry!")
                            self.reset_last_reference()
                           #Return to classic processing
                        

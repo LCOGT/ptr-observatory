@@ -645,7 +645,7 @@ class Observatory:
                 try:
                     hdu_save = hdu
                     #wpath = 'C:/000ptr_saf/archive/sq01/20210528/reduced/saf-sq01-20210528-00019785-le-w-EX01.fits'
-                    solve = platesolve.platesolve(wpath, 0.5478)
+                    solve = platesolve.platesolve(wpath, 1.0551)     #0.5478)
                     print("PW Solves: " ,solve['ra_j2000_hours'], solve['dec_j2000_degrees'])
                     img = fits.open(wpath, mode='update', ignore_missing_end=True)
                     hdr = img[0].header
