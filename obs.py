@@ -645,6 +645,8 @@ class Observatory:
                 try:
                     hdu_save = hdu
                     #wpath = 'C:/000ptr_saf/archive/sq01/20210528/reduced/saf-sq01-20210528-00019785-le-w-EX01.fits'
+     
+                    time_now = time.time()  #This should be more accurately defined earlier in the header
                     solve = platesolve.platesolve(wpath, 1.0551)     #0.5478)
                     print("PW Solves: " ,solve['ra_j2000_hours'], solve['dec_j2000_degrees'])
                     img = fits.open(wpath, mode='update', ignore_missing_end=True)
@@ -658,20 +660,21 @@ class Observatory:
                     img.close
                     img = fits.open(wpath, ignore_missing_end=True)
                     hdr = img[0].header
-                    prior_ra_h, prior_dec, prior_time = self.get_last_reference()
-                    time_now = time.time()  #This should be more accurately defined earlier in the header
+                    prior_ra_h, prior_dec, prior_time = g_dev['mnt'].get_last_reference()
+                    
                     if prior_time is not None:
                         print("time base is:  ", time_now - prior_time)
                         
-                    self.set_last_reference( solve['ra_j2000_hours'], solve['dec_j2000_degrees'], time_now)
+                    g_dev['mnt'].set_last_reference( solve['ra_j2000_hours'], solve['dec_j2000_degrees'], time_now)
                 except:
                    print(wpath, "  was not solved, marking to skip in future, sorry!")
                    img = fits.open(wpath, mode='update', ignore_missing_end=True)
                    hdr = img[0].header
                    hdr['NO-SOLVE'] = True
                    img.close()
-                   self.reset_last_reference()
-                  #Return to classic processing
+                   #self.reset_last_reference()
+                
+                #Return to classic processing
                 hdu = hdu_save
                 
                 if self.site_name == 'saf':

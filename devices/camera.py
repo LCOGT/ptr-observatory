@@ -1593,14 +1593,14 @@ class Camera:
                         hdu.writeto(cal_path + cal_name, overwrite=True)
                         focus_image = False
                         return result
-                    if focus_image and solve_it and False:
+                    if focus_image and solve_it:
 
                         cal_name = cal_name[:-9] + 'FF' + cal_name[-7:]  # remove 'EX' add 'FO'   Could add seq to this
                         hdu.writeto(cal_path + cal_name, overwrite=True)
                         focus_image = False
                         try:
                             #wpath = 'C:/000ptr_saf/archive/sq01/20210528/reduced/saf-sq01-20210528-00019785-le-w-EX01.fits'
-                            breakpoint()
+                            time_now = time.time()
                             solve = platesolve.platesolve(cal_path + cal_name, hdu.header['PIXSCALE'])
                             print("PW Solves: " ,solve['ra_j2000_hours'], solve['dec_j2000_degrees'])
                             TARGRA  = g_dev['mnt'].current_icrs_ra
@@ -1609,8 +1609,8 @@ class Camera:
                             DECJ2000 = solve['dec_j2000_degrees']
                             err_ha = TARGRA - RAJ2000
                             err_dec = TARGDEC - DECJ2000
-                            g_dev['mnt'].set_mount_reference(err_ha, err_dec)
-                            breakpoint()
+                            g_dev['mnt'].set_mount_reference(err_ha, err_dec, time_now )
+
                                 
                             #self.set_last_reference( solve['ra_j2000_hours'], solve['dec_j2000_degrees'], time_now)
                         except:
