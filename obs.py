@@ -490,7 +490,7 @@ class Observatory:
             #self.api.authenticated_request("PUT", uri_status, status)   # response = is not  used
             #print("AWS Response:  ",response)
             self.time_last_status = time.time()
-            self.redis_server.set('obs_heart_time', self.time_last_status, ex=120 )
+            self.redis_server.set('obs_time', self.time_last_status, ex=120 )
             self.status_count +=1
         except:
             print('self.api.authenticated_request("PUT", uri, status):   Failed!')

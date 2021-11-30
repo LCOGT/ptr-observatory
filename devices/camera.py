@@ -1147,6 +1147,7 @@ class Camera:
 
                 #This image shift code needs to be here but it is troubling.
                 #QHY 600Pro and 367
+
                 if ix == 9600:
                     # if self.img[22, -34] == 0:
 
