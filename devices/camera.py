@@ -553,14 +553,17 @@ class Camera:
         bin_x = optional_params.get('bin', self.config['camera'][self.name] \
                                                       ['settings']['default_bin'])  #NB this should pick up config default.
 
-        bin_x = eval(bin_x)[:2]
+        try:
+            bin_x = eval(bin_x)[:2]   #This is meant to strip off the Pixel size when it comes in from aws.
+        except:
+            print('Bin eval did not work, no harm usually.')
         if bin_x in ['4 4', 4, '4, 4', '4,4', [4, 4]]:     # For now this is the highest level of binning supported.
             bin_x = 4
             self.ccd_sum = '4 4'
         elif bin_x in ['3 3', 3, '3, 3', '3,3', [3, 3]]:   # replace with in and various formats or strip spaces.
             bin_x = 3
             self.ccd_sum = '3 3'
-        elif bin_x in ['2 2', 2, '2, 2', '2,2', [2, 2]]:
+        elif bin_x in ['2 2', 2, '2, 2', '2,2', [2, 2]]:   #The bin spec is too convoluted. This needs a deep clean.
             bin_x = 2
             self.ccd_sum = '2 2'
         else:
@@ -864,8 +867,9 @@ class Camera:
                     if enc_slewing:
                         st += 'd>' + str(round(time.time() - g_dev['mnt'].move_time, 1))
                     print(st)
-                    if round(time.time() - g_dev['mnt'].move_time, 1) >=120:
+                    if round(time.time() - g_dev['mnt'].move_time, 1) >=75:
                        print("|n\n DOME OR MOUNT HAS TIMED OUT!|n|n")
+                       break
                       
                     st = ""
                     time.sleep(0.2)
@@ -1605,7 +1609,7 @@ class Camera:
                         hdu.writeto(cal_path + cal_name, overwrite=True)
                         focus_image = False
                         return result
-                    if focus_image and solve_it:
+                    if focus_image and solve_it and False:
 
                         cal_name = cal_name[:-9] + 'FF' + cal_name[-7:]  # remove 'EX' add 'FO'   Could add seq to this
                         hdu.writeto(cal_path + cal_name, overwrite=True)
@@ -1613,7 +1617,8 @@ class Camera:
                         try:
                             #wpath = 'C:/000ptr_saf/archive/sq01/20210528/reduced/saf-sq01-20210528-00019785-le-w-EX01.fits'
                             time_now = time.time()
-                            solve = platesolve.platesolve(cal_path + cal_name, hdu.header['PIXSCALE'])
+                            breakpoint()
+                            solve = platesolve.platesolve(cal_path + cal_name, 1.06) #hdu.header['PIXSCALE'])
                             print("PW Solves: " ,solve['ra_j2000_hours'], solve['dec_j2000_degrees'])
                             TARGRA  = g_dev['mnt'].current_icrs_ra
                             TARGDEC = g_dev['mnt'].current_icrs_dec
@@ -1621,12 +1626,14 @@ class Camera:
                             DECJ2000 = solve['dec_j2000_degrees']
                             err_ha = TARGRA - RAJ2000
                             err_dec = TARGDEC - DECJ2000
-
-                            self.set_last_reference(err_ha, err_dec, time_now)
+                            print("err ra, dec:  ", err_ha, err_dec)
+                            g_dev['mnt'].set_last_reference(err_ha, err_dec, time_now)
+                            return result
                         except:
-                           print(cal_path + cal_name, "  was not solved, marking to skip in future, sorry!")
-                           self.reset_last_reference()
-                          #Return to classic processing
+                            print(cal_path + cal_name, "  was not solved, marking to skip in future, sorry!")
+                            #g_dev['mnt'].reset_last_reference()
+                            return result
+                           #Return to classic processing
                        
                         
 
