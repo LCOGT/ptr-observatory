@@ -1147,6 +1147,7 @@ class Camera:
 
                 #This image shift code needs to be here but it is troubling.
                 #QHY 600Pro and 367
+
                 if ix == 9600:
                     # if self.img[22, -34] == 0:
 
@@ -1199,19 +1200,22 @@ class Camera:
                 elif ix == 1024 and iy == 1024:   #MRC@
                     trimmed = self.img.astype('int32') - 1548.   #20211128 Cooler = -35C
 
-
+                #NBNB for cameras without proper overscan maybe we save the bias frame value vs chip
+                #temp so we can do a better thermal compensation.  THis would generally mean taking
+                #occasional biases.
+                
                 #FAT
-                elif ix == 4536 and iy == 3636:   #All this code needs to be driven from Ccamera config.
-                    self.overscan =np.median(self.img[-32:, :]) - pedastal
-                    trimmed = self.img[:4500, :3600].astype('int32') - self.overscan
+                elif ix == 4500 and iy == 3600:   #All this code needs to be driven from camera config.
+                    self.overscan =np.median(self.img) - pedastal
+                    trimmed = self.img.astype('int32') - 867.
                         
-                elif ix == 2268 and iy == 1818:   #All this code needs to be driven from Ccamera config.
-                    self.overscan =np.median(self.img[-16:, :]) - pedastal
-                    trimmed = self.img[:2250, :1800].astype('int32') - self.overscan
+                elif ix == 2250 and iy == 1800:   #All this code needs to be driven from camera config.
+                    self.overscan =np.median(self.img) - pedastal
+                    trimmed = self.img.astype('int32') - 614.
                        
                 else:
-                    print("UNSUPPORTED BINNING OR CAMERA!!")
-                    return
+                    print("UNSUPPORTED BINNING OR CAMERA!!", ix, iy)
+                    trimmed = self.img
 
                     #continue
 

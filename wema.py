@@ -235,6 +235,7 @@ class WxEncAgent:
         else:
             try:
                 obs_time = float(self.redis_server.get('obs_time'))
+                #print("Obs time received:  ", obs_time)
                 delta= time.time() - obs_time
             except:
                 delta= 999.99  #"NB NB NB Temporily flags someing really wrong."
