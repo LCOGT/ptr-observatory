@@ -1099,6 +1099,14 @@ class Mount:
 #         self._paddle.close()
 #         return
 
+    def  adjust_mount_reference(self, err_ha, err_dec):
+        #old_ha, old_dec = self.get_mount_reference()
+        mnt_shelf = shelve.open(self.site_path + 'ptr_night_shelf/' + 'mount1')
+        mnt_shelf['ra_cal_offset'] += err_ha
+        mnt_shelf['dec_cal_offset'] += err_dec    # NB NB THese need to be modulo corrected, mayby limited
+        mnt_shelf.close()
+        return
+            
     def set_mount_reference(self, delta_ra, delta_dec):
         mnt_shelf = shelve.open(self.site_path + 'ptr_night_shelf/' + 'mount1')
         mnt_shelf['ra_cal_offset'] = delta_ra

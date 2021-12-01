@@ -186,6 +186,7 @@ class Observatory:
         site_str = config['site']
         g_dev['site']:  site_str
         self.g_dev = g_dev
+ 
         redis_ip = config['redis_ip']
         if redis_ip is not None:           
             self.redis_server = redis.StrictRedis(host=redis_ip, port=6379, db=0,
@@ -195,6 +196,7 @@ class Observatory:
             self.redis_wx_enabled = False
         self.time_last_status = time.time() - 3
         # Build the to-AWS Queue and start a thread.
+  
         self.aws_queue = queue.PriorityQueue()
         self.aws_queue_thread = threading.Thread(target=self.send_to_AWS, args=())
         self.aws_queue_thread.start()
@@ -292,6 +294,7 @@ class Observatory:
                 self.all_devices[dev_type][name] = device
                 # NB 20200410 This dropped out of the code: self.all_devices[dev_type][name] = [device]
         print("Finished creating devices.")
+
 
     def update_config(self):
         '''
@@ -645,7 +648,6 @@ class Observatory:
                 try:
                     hdu_save = hdu
                     #wpath = 'C:/000ptr_saf/archive/sq01/20210528/reduced/saf-sq01-20210528-00019785-le-w-EX01.fits'
-     
                     time_now = time.time()  #This should be more accurately defined earlier in the header
                     solve = platesolve.platesolve(wpath, 1.0551)     #0.5478)
                     print("PW Solves: " ,solve['ra_j2000_hours'], solve['dec_j2000_degrees'])
@@ -656,16 +658,24 @@ class Observatory:
                     hdr['DECJ2000'] = solve['dec_j2000_degrees']
                     hdr['MEAS-SCL'] = solve['arcsec_per_pixel']
                     hdr['MEAS-ROT'] = solve['rot_angle_degs']
+                    TARGRA  = g_dev['mnt'].current_icrs_ra
+                    TARGDEC = g_dev['mnt'].current_icrs_dec
+                    RAJ2000 = solve['ra_j2000_hours']
+                    DECJ2000 = solve['dec_j2000_degrees']
+                    err_ha = TARGRA - RAJ2000
+                    err_dec = TARGDEC - DECJ2000
+                    print("err ra, dec:  ", err_ha, err_dec)
+                    g_dev['mnt'].adjust_mount_reference(err_ha, err_dec)
                     img.flush()
                     img.close
                     img = fits.open(wpath, ignore_missing_end=True)
                     hdr = img[0].header
-                    prior_ra_h, prior_dec, prior_time = g_dev['mnt'].get_last_reference()
+                    # prior_ra_h, prior_dec, prior_time = g_dev['mnt'].get_last_reference()
                     
-                    if prior_time is not None:
-                        print("time base is:  ", time_now - prior_time)
+                    # if prior_time is not None:
+                    #     print("time base is:  ", time_now - prior_time)
                         
-                    g_dev['mnt'].set_last_reference( solve['ra_j2000_hours'], solve['dec_j2000_degrees'], time_now)
+                    # g_dev['mnt'].set_last_reference( solve['ra_j2000_hours'], solve['dec_j2000_degrees'], time_now)
                 except:
                    print(wpath, "  was not solved, marking to skip in future, sorry!")
                    img = fits.open(wpath, mode='update', ignore_missing_end=True)

@@ -2,6 +2,7 @@ import win32com.client
 from global_yard import g_dev
 import redis
 import time
+import shelve
 
 '''
 Curently this module interfaces to a Dome (az control) or a pop-top roof style enclosure.
@@ -21,6 +22,8 @@ Shutter, Roof, Slit, etc., are the same things.
 # =============================================================================
 # This module has been modified into wema only code
 # =============================================================================
+def f_to_c(f):
+    return round(5*(f - 32)/9, 2)
 
 class Enclosure:
 
@@ -59,7 +62,49 @@ class Enclosure:
         #<<<<The next attibute reference fails at saf, usually spurious Dome Ring Open report.
         #<<< Have seen other instances of failing.
         #core1_redis.set('unihedron1', str(mpsas) + ', ' + str(bright) + ', ' + str(illum), ex=600)
-        if self.site_is_proxy:
+        if self.site == 'saf':
+            try:
+                wx = open(self.config['wema_path'] + 'boltwood.txt', 'r')
+                wx_line = wx.readline()
+                wx.close
+                #print(wx_line)
+                wx_fields = wx_line.split()
+                skyTemperature = float( wx_fields[4])
+                temperature = f_to_c(float(wx_fields[5]))
+                windspeed = round(float(wx_fields[7])/2.237, 2)
+                humidity =  float(wx_fields[8])
+                dewpoint = f_to_c(float(wx_fields[9]))
+                timeSinceLastUpdate = wx_fields[13]
+                open_ok = wx_fields[19]
+                #g_dev['o.redis_sever.set("focus_temp", temperature, ex=1200)
+                self.focus_temp = temperature
+                return
+            except:
+                time.sleep(5)
+                try:
+                    wx = open(self.config['wema_path'] + 'boltwood.txt', 'r')
+                    wx_line = wx.readline()
+                    wx.close
+                    #print(wx_line)
+                    wx_fields = wx_line.split()
+                    skyTemperature = float( wx_fields[4])
+                    temperature = f_to_c(float(wx_fields[5]))
+                    windspeed = round(float(wx_fields[7])/2.237, 2)
+                    humidity =  float(wx_fields[8])
+                    dewpoint = f_to_c(float(wx_fields[9]))
+                    timeSinceLastUpdate = wx_fields[13]
+                    open_ok = wx_fields[19]
+                    #g_dev['o.redis_sever.set("focus_temp", temperature, ex=1200)
+                    self.focus_temp = temperature
+                    return
+                except:
+                    print('Wema Weather source problem, 2nd try.')
+                    self.focus_temp = 10.
+                    return
+            
+            
+            
+        elif self.site_is_proxy:
             #Usually fault here because WEMA is not running.
   
     

@@ -579,12 +579,13 @@ class Sequencer:
 
             while left_to_do > 0 and not ended:
 
-                if initial_focus:
+                #just_focused = True      ###DEBUG
+                if initial_focus: # and False:
                     print("Enc Status:  ", g_dev['enc'].get_status())
                     
 
                     if not g_dev['enc'].shutter_is_closed:
-                        self.auto_focus_script(req2, opt, throw = 750)
+                        self.auto_focus_script(req2, opt, throw = 600)
                         pass
                     else:
                         print('Shutter closed, skipping AF cycle.0')  #coarse_focus_script can be used here
@@ -598,7 +599,7 @@ class Sequencer:
                     if block_specification['project']['project_constraints']['frequent_autofocus'] == True and (time.time() - timer) >= 0:
                         #What purpose does this code serve, it appears to be a debug remnant? WER 20200206
                         if not g_dev['enc'].shutter_is_closed:
-                            self.auto_focus_script(req2, opt, throw = 500)
+                            self.auto_focus_script(req2, opt, throw = 500)   # Should need less throw.
                         else:
                             print('Shutter closed, skipping AF cycle.0')
                         initial_focus = False
@@ -608,7 +609,7 @@ class Sequencer:
                     color = exposure['filter']
                     exp_time =  float(exposure['exposure']) 
                     #dither = exposure['dither']
-                    breakpoint()
+ 
                     if exposure['bin'] in [2, '2,2', '2, 2', '2 2']:
                         binning = '2 2'
                     elif exposure['bin'] in [3, '3,3', '3, 3', '3 3']:
@@ -621,7 +622,7 @@ class Sequencer:
                     #defocus = exposure['defocus']
 #                    if g_dev['site'] == 'saf':   #THis should be in config.
                     if color[0] == 'B':  
-                        color = 'PB'   #Map generic filters to site specific ones.
+                        color = 'PB'   #Map generic filters to site specific ones.   NB this does no tbelong here, it should be central with Cameras setup.
                     if color[0] == 'G':  
                         color = 'PG'   # NB NB THis needs a clean up, these mappings should be in config
                     if color[0] == 'R':  
@@ -709,6 +710,7 @@ class Sequencer:
                         pitch = 0.
                         pane = 0
                     for displacement in offset:
+                        
                         x_field_deg = g_dev['cam'].config['camera']['camera_1']['settings']['x_field_deg']
                         y_field_deg = g_dev['cam'].config['camera']['camera_1']['settings']['y_field_deg']
                         
@@ -1134,8 +1136,11 @@ class Sequencer:
         opt2 = copy.deepcopy(opt)
         self.af_guard = True
         sim = g_dev['enc'].shutter_is_closed
-        self.redis_server.set('enc_cmd', 'sync_enc', ex=1200)
-        self.redis_server.set('enc_cmd', 'open', ex=1200)
+        try:
+            self.redis_server.set('enc_cmd', 'sync_enc', ex=1200)
+            self.redis_server.set('enc_cmd', 'open', ex=1200)
+        except:
+            pass
         print('AF entered with:  ', req, opt, '\n .. and sim =  ', sim)
         #self.sequencer_hold = True  #Blocks command checks.
         #Here we jump in too  fast and need for mount to settle
@@ -1272,6 +1277,7 @@ class Sequencer:
             self.sequencer_hold = False   #Allow comand checks.
             self.af_guard = False
             #  NB NB We may want to consider sending the result image patch to AWS
+            # NB NB NB I think we may have spot numbers wrong by 1 count and coarse focs not set up correctly.
             return
         elif spot2 <= spot1 or spot3 <= spot1:
             if spot2 <= spot1: 
