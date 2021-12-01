@@ -51,7 +51,7 @@ import os, signal, subprocess
 # def worker():
 #     import obs
 def terminate_restart_observer(site_path, no_restart=False):
-    if no_restart is True:
+    if no_restart is False or  True:
         return
     else:
         camShelf = shelve.open(site_path + 'ptr_night_shelf/' + 'pid_obs')
@@ -151,6 +151,8 @@ class WxEncAgent:
         self.obs_time = immed_time
         self.wema_start_time = immed_time
         self.redis_server.set('obs_time', immed_time, ex=360)
+        breakpoint()
+
         #subprocess.call('obs.py')  This is clearly wrong.
         #time.sleep(5)
 
@@ -235,6 +237,7 @@ class WxEncAgent:
         else:
             try:
                 obs_time = float(self.redis_server.get('obs_time'))
+                #print("Obs time received:  ", obs_time)
                 delta= time.time() - obs_time
             except:
                 delta= 999.99  #"NB NB NB Temporily flags someing really wrong."
