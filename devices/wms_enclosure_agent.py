@@ -2,6 +2,7 @@ import win32com.client
 from global_yard import g_dev
 #import redis
 import time
+import json
 #import math
 
 '''
@@ -76,7 +77,6 @@ class Enclosure:
     def get_status(self) -> dict:
         #<<<<The next attibute reference fails at saf, usually spurious Dome Ring Open report.
         #<<< Have seen other instances of failing.
-
         if self.site == 'fat':
             try:
                 enc = open('R:/Roof_Status.txt')
@@ -191,6 +191,22 @@ class Enclosure:
                 status['dome_slewing'] = in_motion
                 self.redis_server.set('dome_slewing', in_motion, ex=3600)
                 self.redis_server.set('enc_status', status, ex=3600)
+                try:
+                    enclosure = open(self.config['wema_path']+'enclosure.txt', 'w')
+                    enclosure.write(json.dumps(status))
+                    enclosure.close()
+                except:
+                    time.sleep(3)
+                    try:
+                        enclosure = open(self.config['wema_path']+'enclosure.txt', 'w')
+                        enclosure.write(json.dumps(status))
+                        enclosure.close()
+                    except:
+                        time.sleep(3)
+                        enclosure = open(self.config['wema_path']+'enclosure.txt', 'w')
+                        enclosure.write(json.dumps(status))
+                        enclosure.close()
+                        print("3rd try to write enclosure status.")
             except:
                 status = {'shutter_status': stat_string,
                           'enclosure_synchronized': False,
@@ -212,6 +228,9 @@ class Enclosure:
                 status['dome_slewing'] = in_motion
                 self.redis_server.set('dome_slewing', in_motion, ex=3600)
                 self.redis_server.set('enc_status', status, ex=3600)
+
+                
+                
         else:
             status = {'shutter_status': stat_string,
                       'enclosure_synchronized': True,

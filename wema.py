@@ -151,7 +151,7 @@ class WxEncAgent:
         self.obs_time = immed_time
         self.wema_start_time = immed_time
         self.redis_server.set('obs_time', immed_time, ex=360)
-        breakpoint()
+
 
         #subprocess.call('obs.py')  This is clearly wrong.
         #time.sleep(5)

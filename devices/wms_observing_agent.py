@@ -241,6 +241,7 @@ class ObservingConditions:
             
 
         elif self.site == 'saf':
+            
             illum, mag = self.astro_events.illuminationNow()
             if illum > 100:
                 illum = int(illum)
