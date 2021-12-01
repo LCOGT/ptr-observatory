@@ -152,7 +152,7 @@ class WxEncAgent:
         self.wema_start_time = immed_time
         self.redis_server.set('obs_time', immed_time, ex=360)
         #subprocess.call('obs.py')  This is clearly wrong.
-        time.sleep(5)
+        #time.sleep(5)
 
         #print("Starting observer, may have to terminate a stale observer first.")
 

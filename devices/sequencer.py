@@ -794,7 +794,7 @@ class Sequencer:
             print("Expose Biases: b- 2, 1, 3;  300s darks.")
             dark_time = 300
             req = {'time': 0.0,  'script': 'True', 'image_type': 'bias'}
-            opt = {'area': "Full", 'count': 7, 'bin':'2 2', \
+            opt = {'area': "Full", 'count': 9, 'bin':'2 2', \
                     'filter': 'dark'}
             for bias in range(9):
                 req = {'time': 0.0,  'script': 'True', 'image_type': 'bias'}
@@ -821,7 +821,7 @@ class Sequencer:
                 dark_time = 300
                 #for bias in range(9):
                 req = {'time': 0.0,  'script': 'True', 'image_type': 'bias'}
-                opt = {'area': "Full", 'count': 7, 'bin':'1 1', \
+                opt = {'area': "Full", 'count': 9, 'bin': '1 1', \
                        'filter': 'dark'}
                 result = g_dev['cam'].expose_command(req, opt, no_AWS=True, \
                                 do_sep=False, quick=False)
