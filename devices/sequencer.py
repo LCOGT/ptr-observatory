@@ -597,15 +597,15 @@ class Sequencer:
                     
                 #cycle through exposures decrementing counts    MAY want to double check left-to do but do nut remultiply by 4
                 for exposure in block['project']['exposures']:
-                    if block_specification['project']['project_constraints']['frequent_autofocus'] == True and (time.time() - timer) >= 0:
-                        #What purpose does this code serve, it appears to be a debug remnant? WER 20200206
-                        if not g_dev['enc'].shutter_is_closed:
-                            self.auto_focus_script(req2, opt, throw = 500)   # Should need less throw.
-                        else:
-                            print('Shutter closed, skipping AF cycle.0')
-                        initial_focus = False
-                        just_focused = True
-                        timer = time.time() + af_delay  #40 minutes to refocus
+                    # if block_specification['project']['project_constraints']['frequent_autofocus'] == True and (time.time() - timer) >= 0:
+                    #     #What purpose does this code serve, it appears to be a debug remnant? WER 20200206
+                    #     if not g_dev['enc'].shutter_is_closed:
+                    #         self.auto_focus_script(req2, opt, throw = 500)   # Should need less throw.
+                    #     else:
+                    #         print('Shutter closed, skipping AF cycle.0')
+                    initial_focus = False
+                    just_focused = True
+                    timer = time.time() + af_delay  #40 minutes to refocus
                     print("Executing: ", exposure, left_to_do)
                     color = exposure['filter']
                     exp_time =  float(exposure['exposure']) 
@@ -769,7 +769,7 @@ class Sequencer:
                 pass#g_dev['enc'].enclosure.Slaved = False   NB with wema no longer exists
             except:
                 pass
-            self.redis_server.set('unsync_enc', True, ex=1200)
+            #self.redis_server.set('unsync_enc', True, ex=1200)
             #g_dev['enc'].close_command({}, {})
             g_dev['mnt'].park_command({}, {})
 
