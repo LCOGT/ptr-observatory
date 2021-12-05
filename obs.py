@@ -468,6 +468,7 @@ class Observatory:
         # Include the time that the status was assembled and sent.
         if remove_enc:
             status.pop('enclosure', None)
+            status.pop('observing_conditions', None)
         status["timestamp"] = round((time.time() + t1)/2., 3)
         status['send_heartbeat'] = False
         loud = False

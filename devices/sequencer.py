@@ -60,7 +60,7 @@ and or visit more altitudes and temeperatures.
 def fit_quadratic(x, y):
     #From Meeus, works fine.
     #Abscissa arguments do not need to be ordered for this to work.
-    #NB Single alpha variable names confict with debugger commands.
+    #NB Single alpha variable names confict with debugger commands, so bad practce.
     if len(x) == len(y):
         p = 0
         q = 0
@@ -255,9 +255,9 @@ class Sequencer:
                 g_dev['mnt'].park_command({}, {}) # Get there early
         except:
             pass
-        if enc_status['shutter_status'] in ['open', ]:
-            g_dev['enc'].close_command( {}, {})
-        print("Park and Close was executed.")
+        # if enc_status['shutter_status'] in ['open', ]:
+        #     g_dev['enc'].close_command( {}, {})
+        print("Park and Close was NOT NOT NOT executed.")
 
     ###############################
     #       Sequencer Commands and Scripts
@@ -279,8 +279,9 @@ class Sequencer:
             ocn_status = eval(self.redis_server.get('ocn_status'))
             enc_status = eval(self.redis_server.get('enc_status'))
         except:
-            print("Wema not reporting.")
-            return
+            ocn_status = g_dev['ocn'].status
+            enc_status = g_dev['enc'].status
+
         events = g_dev['events']
 
         #g_dev['obs'].update_status()  #NB NEED to be sure we have current enclosure status.  Blows recursive limit
@@ -466,8 +467,8 @@ class Sequencer:
         '''
         
     def execute_block(self, block_specification):
-        ocn_status = eval(self.redis_server.get('ocn_status'))
-        enc_status = eval(self.redis_server.get('enc_status'))
+        #ocn_status = eval(self.redis_server.get('ocn_status'))
+        #enc_status = eval(self.redis_server.get('enc_status'))
         self.block_guard = True
         # NB we assume the dome is open and already slaving.
         block = copy.deepcopy(block_specification)
@@ -584,11 +585,11 @@ class Sequencer:
                     print("Enc Status:  ", g_dev['enc'].get_status())
                     
 
-                    if not g_dev['enc'].shutter_is_closed:
-                        self.auto_focus_script(req2, opt, throw = 600)
-                        pass
-                    else:
-                        print('Shutter closed, skipping AF cycle.0')  #coarse_focus_script can be used here
+                    # if not g_dev['enc'].shutter_is_closed:
+                    self.auto_focus_script(req2, opt, throw = 600)
+                    #     pass
+                    # else:
+                    #     print('Shutter closed, skipping AF cycle.0')  #coarse_focus_script can be used here
                     just_focused = True
                     initial_focus = False    #  Make above on-time event per block
                     timer = time.time() + af_delay  # 45 minutes
@@ -596,15 +597,15 @@ class Sequencer:
                     
                 #cycle through exposures decrementing counts    MAY want to double check left-to do but do nut remultiply by 4
                 for exposure in block['project']['exposures']:
-                    if block_specification['project']['project_constraints']['frequent_autofocus'] == True and (time.time() - timer) >= 0:
-                        #What purpose does this code serve, it appears to be a debug remnant? WER 20200206
-                        if not g_dev['enc'].shutter_is_closed:
-                            self.auto_focus_script(req2, opt, throw = 500)   # Should need less throw.
-                        else:
-                            print('Shutter closed, skipping AF cycle.0')
-                        initial_focus = False
-                        just_focused = True
-                        timer = time.time() + af_delay  #40 minutes to refocus
+                    # if block_specification['project']['project_constraints']['frequent_autofocus'] == True and (time.time() - timer) >= 0:
+                    #     #What purpose does this code serve, it appears to be a debug remnant? WER 20200206
+                    #     if not g_dev['enc'].shutter_is_closed:
+                    #         self.auto_focus_script(req2, opt, throw = 500)   # Should need less throw.
+                    #     else:
+                    #         print('Shutter closed, skipping AF cycle.0')
+                    initial_focus = False
+                    just_focused = True
+                    timer = time.time() + af_delay  #40 minutes to refocus
                     print("Executing: ", exposure, left_to_do)
                     color = exposure['filter']
                     exp_time =  float(exposure['exposure']) 
@@ -768,7 +769,7 @@ class Sequencer:
                 pass#g_dev['enc'].enclosure.Slaved = False   NB with wema no longer exists
             except:
                 pass
-            self.redis_server.set('unsync_enc', True, ex=1200)
+            #self.redis_server.set('unsync_enc', True, ex=1200)
             #g_dev['enc'].close_command({}, {})
             g_dev['mnt'].park_command({}, {})
 
@@ -918,16 +919,18 @@ class Sequencer:
         """
         self.sky_guard = True
         print('Eve Sky Flat sequence Starting, Enclosure PRESUMED Open. Telescope will un-park.')
+        breakpoint()
         camera_name = str(self.config['camera']['camera_1']['name'])
         flat_count = 7
         exp_time = .0015
         #  NB Sometime, try 2:2 binning and interpolate a 1:1 flat.  This might run a lot faster.
         if flat_count < 1: flat_count = 1
+        sim = g_dev['enc'].status['shutter_status'] in ['Closed', 'closed', 'Closing', 'closing']
+        if sim: breakpoint()
+        # if g_dev['mnt'].mount.AtPark:
+        #     g_dev['mnt'].unpark_command({}, {})
+        # g_dev['mnt'].slewToSkyFlatAsync()
 
-        if g_dev['mnt'].mount.AtPark:
-            g_dev['mnt'].unpark_command({}, {})
-        g_dev['mnt'].slewToSkyFlatAsync()
-        self.redis_server.set('enc_cmd', 'sync_enc', ex=1200)   #Should be redundant.
         
         #NB NB we need to re-open is WX hold ends.
         # if g_dev['enc'].is_dome and not g_dev['enc'].mode == 'Automatic':
@@ -951,7 +954,7 @@ class Sequencer:
         
         collecting_area = self.config['telescope']['telescope1']['collecting_area']/32000.
         #  (g_dev['events']['Eve Sky Flats'] < 
-        while len(pop_list) > 0 and (g_dev['events']['Eve Sky Flats'] < ephem_now - 2/1440 < g_dev['events']['End Eve Sky Flats']):
+        while len(pop_list) > 0 and (g_dev['events']['Eve Sky Flats'] < ephem_now < g_dev['events']['End Eve Sky Flats']):
 
             current_filter = int(pop_list[0])
             acquired_count = 0
@@ -959,7 +962,7 @@ class Sequencer:
             #opt =  {'filter': current_filter}
 
             g_dev['fil'].set_number_command(current_filter)
-            g_dev['mnt'].slewToSkyFlatAsync()
+            #g_dev['mnt'].slewToSkyFlatAsync()
             bright = 25000
             scale = 1.0    #1.15   #20201121 adjustment
             
@@ -1013,7 +1016,9 @@ class Sequencer:
 
                 obs_win_begin, sunset, sunrise, ephem_now = self.astro_events.getSunEvents()
                 #  THE following code looks like a debug patch gone rogue.
-                if bright > 30000 and (ephem_now < g_dev['events']['End Eve Sky Flats'] - 4/1440):    #NB should gate with end of skyflat window as well.
+                if ephem_now < g_dev['events']['End Eve Sky Flats']:
+                    break
+                if bright > 30000 and (ephem_now < g_dev['events']['End Eve Sky Flats']):    #NB should gate with end of skyflat window as well.
                     for i in range(1):
                         time.sleep(5)  #  #0 seconds of wait time.  Maybe shorten for wide bands?
                         g_dev['obs'].update_status()
@@ -1135,13 +1140,15 @@ class Sequencer:
         req2 = copy.deepcopy(req)
         opt2 = copy.deepcopy(opt)
         self.af_guard = True
-        sim = g_dev['enc'].shutter_is_closed
-        try:
-            self.redis_server.set('enc_cmd', 'sync_enc', ex=1200)
-            self.redis_server.set('enc_cmd', 'open', ex=1200)
-        except:
-            pass
-        print('AF entered with:  ', req, opt, '\n .. and sim =  ', sim)
+
+        sim = g_dev['enc'].status['shutter_status'] in ['Closed', 'Closing', 'closed', 'closing']
+        
+        # try:
+        #     self.redis_server.set('enc_cmd', 'sync_enc', ex=1200)
+        #     self.redis_server.set('enc_cmd', 'open', ex=1200)
+        # except:
+        #     pass
+        #print('AF entered with:  ', req, opt, '\n .. and sim =  ', sim)
         #self.sequencer_hold = True  #Blocks command checks.
         #Here we jump in too  fast and need for mount to settle
         start_ra = g_dev['mnt'].mount.RightAscension   #Read these to go back.
@@ -1216,9 +1223,9 @@ class Sequencer:
         spot2 = result['FWHM']
         foc_pos2 = result['mean_focus']
         print('Autofocus Overtaveling Out.\n\n')
-        g_dev['foc'].focuser.Move((foc_pos0 - 3*throw)*g_dev['foc'].micron_to_steps)   #It is important to overshoot to overcome any backlash
+        g_dev['foc'].focuser.Move((foc_pos0 +2*throw)*g_dev['foc'].micron_to_steps)   #It is important to overshoot to overcome any backlash
         print('Autofocus Moving back in half-way.\n\n')
-        g_dev['foc'].focuser.Move((foc_pos0 + throw)*g_dev['foc'].micron_to_steps)
+        g_dev['foc'].focuser.Move((foc_pos0 + throw)*g_dev['foc'].micron_to_steps)  #NB NB NB THIS IS WRONG!
         #opt['fwhm_sim'] = 5
         if not sim:
             result = g_dev['cam'].expose_command(req, opt, no_AWS=True) ## , script = 'auto_focus_script_2')  #  This is moving out one throw.
@@ -1229,6 +1236,7 @@ class Sequencer:
         foc_pos3 = result['mean_focus']
         x = [foc_pos2, foc_pos1, foc_pos3]
         y = [spot2, spot1, spot3]
+
         print('X, Y:  ', x, y, 'Desire center to be smallest.')
         if spot1 is None or spot2 is None or spot3 is None:  #New additon to stop crash when no spots
             print("No stars detected. Returning to starting focus and pointing.")
@@ -1261,7 +1269,7 @@ class Sequencer:
                 g_dev['foc'].last_temperature = g_dev['foc'].focuser.Temperature
                 g_dev['foc'].last_source = "auto_focus_script"
                 if not sim:
-                    result = g_dev['cam'].expose_command(req, opt, no_AWS=True, solve_it=True)  #   script = 'auto_focus_script_3')  #  This is verifying the new focus.
+                    result = g_dev['cam'].expose_command(req, opt, no_AWS=True, solve_it=False)  #   script = 'auto_focus_script_3')  #  This is verifying the new focus.
                 else:
                     result['FWHM'] = new_spot
                     result['mean_focus'] = d1
