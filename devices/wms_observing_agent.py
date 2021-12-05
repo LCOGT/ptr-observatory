@@ -3,7 +3,7 @@ import win32com.client
 #import redis
 import time
 #import requests
-#import json
+import json
 from global_yard import g_dev
 
 
@@ -632,6 +632,23 @@ class ObservingConditions:
         #    requests.post(url, data)
         #except:
         #    print("Wx post failed, usually not a fatal error, probably site not supported")
+
+        try:
+            weather = open(self.config['wema_path']+'weather.txt', 'w')
+            weather.write(json.dumps(status))
+            weather.close()
+        except:
+            time.sleep(3)
+            try:
+                weather = open(self.config['wema_path']+'weather.txt', 'w')
+                weather.write(json.dumps(status))
+                weather.close()
+            except:
+                time.sleep(3)
+                weather = open(self.config['wema_path']+'weather.txt', 'w')
+                weather.write(json.dumps(status))
+                weather.close()
+                print("3rd try to write weather status.")
         return status
 
 

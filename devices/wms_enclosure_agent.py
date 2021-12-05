@@ -3,7 +3,8 @@ from global_yard import g_dev
 #import redis
 import time
 import json
-#import math
+import math
+import os
 
 '''
 Curently this module interfaces to a Dome (az control) or a pop-top roof style enclosure.
@@ -20,7 +21,41 @@ NB,  Dome refers to a rotating roof that presumably needs aziumt alignmnet of so
 Shutter, Roof, Slit, etc., are the same things.
 '''
 
+#cv 19.5 East, 5.5 South AP 8.5 North, 14.5  redcat 30' e but on axis
+DEG_SYM = '°'
+PI = math.pi
+TWOPI = PI*2
+PIOVER2 = PI/2.
+DTOR = PI/180.
+RTOD = 180/PI
+STOR = PI/180./3600.
+RTOS = 3600.*180./PI
+RTOH = 12./PI
+HTOR = PI/12.
+HTOS = 15*3600.
+DTOS = 3600.
+STOD = 1/3600.
+STOH = 1/3600/15.
+SecTOH = 1/3600.
+HTOSec = 3600
+APPTOSID = 1.00273811906 #USNO Supplement
+MOUNTRATE = 15*APPTOSID  #15.0410717859
+KINGRATE = 15.029
+def dome_adjust (alt, az, ha):
 
+    s = -1
+    if az <= 90 or az >=270:
+        s = 1
+    x = s*(90*math.cos(alt*DTOR) - 5.5*math.sin(alt*DTOR))
+    y = -19.5*math.cos(ha*DTOR) + 90*math.sin(ha*DTOR)
+    theta = (math.atan2(y,x)*RTOD + 180)
+
+    theta += az
+    if theta < 0:
+        theta += 360
+    if theta >= 360 :
+        theta -= 360
+    return theta
 class Enclosure:
 
     def __init__(self, driver: str, name: str, config: dict, astro_events):
@@ -54,6 +89,7 @@ class Enclosure:
         self.state = 'Closed'
         self.last_az = 316   #Set to normal home for the respective dome.
         self.last_slewing = False
+        self.slew_latch = False
         self.enclosure_message = '-'
         self.external_close = False   #  Not used If made true by operator,  system will not reopen for the night
         self.dome_opened = False   #memory of prior issued commands  Restarting code may close dome one time.
@@ -62,6 +98,7 @@ class Enclosure:
         self.last_current_az = 0
         self.prior_status = None
         self.time_of_next_slew = time.time()
+        self.following = False
 
 
         if self.config['site_in_automatic_default'] == "Automatic":
@@ -77,6 +114,7 @@ class Enclosure:
     def get_status(self) -> dict:
         #<<<<The next attibute reference fails at saf, usually spurious Dome Ring Open report.
         #<<< Have seen other instances of failing.
+        
         if self.site == 'fat':
             try:
                 enc = open('R:/Roof_Status.txt')
@@ -117,6 +155,7 @@ class Enclosure:
                 self.dome_home = self.enclosure.AtHome
             except:
                 pass
+        
         if shutter_status == 0:
             stat_string = "Open"
             self.shutter_is_closed = False
@@ -149,6 +188,7 @@ class Enclosure:
         
 
         if self.is_dome:
+
             try:
                 #Occasionally this property thrws an exception:
                 current_az = self.enclosure.Azimuth
@@ -172,25 +212,26 @@ class Enclosure:
             self.last_az = current_az
             try:
                 status = {'shutter_status': stat_string,
-                          'enclosure_synchronized': self.enclosure.Slaved,
+                          'enclosure_synchronized': self.following,
                           'dome_azimuth': round(self.enclosure.Azimuth, 1),
                           'dome_slewing': slewing,
                           'enclosure_mode': self.mode,
                           'enclosure_message': self.state}
-                self.redis_server.set('roof_status', str(stat_string), ex=3600)
-                self.redis_server.set('shutter_is_closed', self.shutter_is_closed, ex=3600)  #Used by autofocus
-                self.redis_server.set("shutter_status", str(stat_string), ex=3600)
-                self.redis_server.set('enclosure_synchronized', str(self.enclosure.Slaved), ex=3600)
-                self.redis_server.set('enclosure_mode', str(self.mode), ex=3600)
-                self.redis_server.set('enclosure_message', str(self.state), ex=3600)
-                self.redis_server.set('dome_azimuth', str(round(self.enclosure.Azimuth, 1)))
+                # self.redis_server.set('roof_status', str(stat_string), ex=3600)
+                # self.redis_server.set('shutter_is_closed', self.shutter_is_closed, ex=3600)  #Used by autofocus
+                # self.redis_server.set("shutter_status", str(stat_string), ex=3600)
+                # self.redis_server.set('enclosure_synchronized', str(self.following), ex=3600)
+                # self.redis_server.set('enclosure_mode', str(self.mode), ex=3600)
+                # self.redis_server.set('enclosure_message', str(self.state), ex=3600)
+                # self.redis_server.set('dome_azimuth', str(round(self.enclosure.Azimuth, 1)))
                 if moving or self.enclosure.Slewing:
                     in_motion = True
                 else:
                     in_motion = False
                 status['dome_slewing'] = in_motion
-                self.redis_server.set('dome_slewing', in_motion, ex=3600)
-                self.redis_server.set('enc_status', status, ex=3600)
+                # self.redis_server.set('dome_slewing', in_motion, ex=3600)
+                # self.redis_server.set('enc_status', status, ex=3600)
+                self.status = status
                 try:
                     enclosure = open(self.config['wema_path']+'enclosure.txt', 'w')
                     enclosure.write(json.dumps(status))
@@ -207,7 +248,8 @@ class Enclosure:
                         enclosure.write(json.dumps(status))
                         enclosure.close()
                         print("3rd try to write enclosure status.")
-            except:
+            except:  #Not a dome, presumably a roll top roof or clamshell
+ #Should not get here at SAF
                 status = {'shutter_status': stat_string,
                           'enclosure_synchronized': False,
                           'dome_azimuth': 0.0, #round(self.enclosure.Azimuth, 1),
@@ -232,6 +274,7 @@ class Enclosure:
                 
                 
         else:
+            breakpoint()  #SHould not get here at SAF
             status = {'shutter_status': stat_string,
                       'enclosure_synchronized': True,
                       'dome_azimuth': 180.0,
@@ -249,26 +292,85 @@ class Enclosure:
             self.redis_server.set('enc_status', status, ex=3600)
         # This code picks up commands forwarded by the observer Enclosure 
         if self.site_is_proxy and self.site != 'fat':
-            redis_command = self.redis_server.get('enc_cmd')  #It is presumed there is an expiration date on open command at least.
-            if redis_command is not None:
-                pass   #
+            if self.site == 'saf':
+                try:
+                    enc_cmd = open(self.config['wema_path'] + 'enc_cmd.txt', 'r')
+                    status = json.loads(enc_cmd.readline())
+                    enc_cmd.close()
+                    os.remove(self.config['wema_path'] + 'enc_cmd.txt')
+                    redis_command = status
+                except:
+                    try:
+                        time.sleep(1)
+                        enc_cmd = open(self.config['wema_path'] + 'enc_cmd.txt', 'r')
+                        status = json.loads(enc_cmd.readline())
+                        enc_cmd.close()
+                        os.remove(self.config['wema_path'] + 'enc_cmd.txt')
+                        redis_command = status
+                    except:
+                        try:
+                            time.sleep(1)
+                            enc_cmd = open(self.config['wema_path'] + 'enc_cmd.txt', 'r')
+                            status = json.loads(enc_cmd.readline())
+                            enc_cmd.close()
+                            os.remove(self.config['wema_path'] + 'enc_cmd.txt')
+                            redis_command = status
+                        except:
+                            #print("Finding enc_cmd failed after 3 tries, no harm done.")
+                            redis_command = ['none']         
+                try:
+                    mnt_cmd = open(self.config['wema_path'] + 'mnt_cmd.txt', 'r')
+                    mount_command  = json.loads(mnt_cmd.readline())
+
+                    mnt_cmd.close()
+                    os.remove(self.config['wema_path'] + 'mnt_cmd.txt')
+
+                except:
+                    try:
+                        time.sleep(1)
+                        mnt_cmd = open(self.config['wema_path'] + 'mnt_cmd.txt', 'r')
+                        mount_command  = json.loads(mnt_cmd.readline())
+
+                        mnt_cmd.close()
+                        os.remove(self.config['wema_path'] + 'mnt_cmd.txt')
+
+                    except:
+                        try:
+                            time.sleep(1)
+                            mnt_cmd = open(self.config['wema_path'] + 'mnt_cmd.txt', 'r')
+                            mount_command  = json.loads(mnt_cmd.readline())
+
+                            mnt_cmd.close()
+                            os.remove(self.config['wema_path'] + 'mnt_cmd.txt')
+
+                        except:
+                            #print("Finding mnt_cmd failed after 3 tries, no harm done.")
+                            mount_command = ['none']
+                            
+                    
+            #redis_command = self.redis_server.get('enc_cmd')  #It is presumed there is an expiration date on open command at least.
+            #NB NB NB Need to prevent executing stale commands.
+            if redis_command != ['none']:
+                print(redis_command)
+            redis_command = redis_command[0]
             if redis_command == 'open':
                 self.redis_server.delete('enc_cmd')
                 print("enclosure remote cmd: open.")
                 self.manager(open_cmd=True, close_cmd=False)
                 try:
-                    self.enclosure.Slaved = True
+                    self.following = True
                 except:
                     pass
                 self.dome_open = True
                 self.dome_home = True
-            elif redis_command == 'close':               
+            elif redis_command == 'close':
+
                 self.redis_server.delete('enc_cmd')
                 print("enclosure remote cmd: close.")
                 self.manager(close_cmd=True, open_cmd=False)
-                
+
                 try:
-                    self.enclosure.Slaved = False
+                    self.following = False
                 except:
                     pass
                 self.dome_open = False
@@ -295,7 +397,7 @@ class Enclosure:
             elif redis_command == 'sync_enc':
                if self.is_dome:
                    try:
-                       self.enclosure.Slaved = True
+                       self.following = True
                        print("Scope Dome following set On")
                    except:
                        pass
@@ -303,7 +405,7 @@ class Enclosure:
             elif redis_command == 'unsync_enc':
                 if self.is_dome:
                     try:
-                        self.enclosure.Slaved = False
+                        self.following = False
                         print("Scope Dome following turned OFF")
                     except:
                         pass
@@ -312,16 +414,45 @@ class Enclosure:
                 
                 pass
             #NB NB NB  Possible race condition here.
-            redis_value = self.redis_server.get('SlewToAzimuth')
-            if redis_value is not None:
-                if self.is_dome:
-                    self.enclosure.SlewToAzimuth(float(redis_value))
-                    self.enclosure.Slaved = False
-                self.redis_server.delete('SlewToAzimuth')
+            # redis_value = self.redis_server.get('SlewToAzimuth')
+        if mount_command is not None and mount_command != '' and mount_command != ['none']:
+            try:
+                print(self.status,'\n\n', mount_command)
+
+                adj1 = dome_adjust(mount_command['altitude'], mount_command['azimuth'], \
+                                  mount_command['hour_angle'])
+                adjt = dome_adjust(mount_command['altitude'], mount_command['target_az'], \
+                                  mount_command['hour_angle'])
+               
+                    
+                    
+            except:
+                adj = 0
+                pass
+            if self.is_dome and self.status is not None:   #First time around, stauts is None.
+                if mount_command['is_slewing'] and not self.slew_latch:   # NB NB NB THIS should have a timeout
+                    self.enclosure.SlewToAzimuth(float(adjt))
+                    self.slew_latch = True   #Isuing multiple Slews causes jerky Dome motion.
+                elif self.slew_latch and not mount_command['is_slewing']:
+                    self.slew_latch = False   #  Return to Dpme following.
+                    self.enclosure.SlewToAzimuth(float(adj1))
+                elif (not self.slew_latch) and (self.status['enclosure_synchronized'] or \
+                                                self.mode == "Automatic"):
+                    #This is normal dome following.
+                    try:
+                        if shutter_status not in [2,3]:    #THis should end annoying report.
+                            self.enclosure.SlewToAzimuth(float(adj1))
+                    except:
+                        print("Dome refused slew, probably closing or opening, usually a harmless situation.")
+                    
+                    
+                
+                 
             
             
-        self.status = status
-        if self.site != 'fat':   #There is noting for the code to manage @ FAT.
+        #self.status = status
+        
+        if self.site != 'fat':   #There is noting for the local code to manage @ FAT , but Dome at SAF.
             self.manager()   #There be monsters here. <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
         return status
 
@@ -440,6 +571,7 @@ class Enclosure:
        
 
        #The following Redis hold makes little sense
+
         try:
             redis_hold = eval(self.redis_server.get('wx_hold'))
         except:
@@ -450,7 +582,7 @@ class Enclosure:
             #  NB This code is weak
             if self.is_dome and self.enclosure.CanSlave :
                 try:
-                    self.enclosure.Slaved = False
+                    self.following = False
                     self.enclosure_synchronized = False
                 except:
                     print('Could not decouple dome following.')
@@ -467,9 +599,11 @@ class Enclosure:
             # We leave telescope to track with dome closed.
             if self.is_dome and self.enclosure.CanSlave :
                 try:
-                    self.enclosure.Slaved = False
+                    self.following = False
                     self.enclosure_synchronized = False
                 except:
+                    self.following = False
+                    self.enclosure_synchronized = False
                     print('Could not decouple dome following.')
             if self.status_string in ['Open']:
                 try:
@@ -505,14 +639,18 @@ class Enclosure:
             self.dome_opened = True
             self.dome_homed = True
             self.redis_server.set('Enc Auto Opened', True, ex= 600)
+            if self.status_string in ['Open'] and ephem_now < g_dev['events']['End Eve Sky Flats']:
+                self.enclosure.SlewToAzimuth(az_opposite_sun)
+                time.sleep(15)
         #THIS should be the ultimate backup to force a close
         elif ephem_now >=  g_dev['events']['Civil Dawn']:  #sunrise + 45/1440:
             #WE are now outside the observing window, so Sun is up!!!
             if self.site_in_automatic or (close_cmd and self.mode in ['Manual', 'Shutdown']):  #If Automatic just close straight away.
                 if self.is_dome and self.enclosure.CanSlave:
                     #enc_at_home = self.enclosure.AtHome
-                    self.enclosure.Slaved = False
+                    self.following = False
                 else:
+                    self.following = False
                     #enc_at_home = True
                     pass
                 if close_cmd:

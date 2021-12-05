@@ -79,8 +79,8 @@ class WxEncAgent:
 
         self.api = API_calls()
 
-        self.command_interval = 3
-        self.status_interval = 3
+        self.command_interval = 2
+        self.status_interval = 2
         self.name = name
         self.site_name = name
         self.config = config
@@ -90,6 +90,7 @@ class WxEncAgent:
         self.last_request = None
         self.stopped = False
         self.site_message = '-'
+        self.site_mode = config['site_in_automatic_default']
         self.device_types = [
             'observing_conditions',
             'enclosure'] 
@@ -107,24 +108,24 @@ class WxEncAgent:
         g_dev['redis_server'] = self.redis_server   #Use this instance.
         g_dev['redis_server']['wema_loaded'] = True
         
-        #Here we clean up any older processes
-        prior_wema = self.redis_server.get("wema_pid")
-        prior_obs = self.redis_server.get("obs_pid")
+        # #Here we clean up any older processes
+        # prior_wema = self.redis_server.get("wema_pid")
+        # prior_obs = self.redis_server.get("obs_pid")
 
-        if prior_wema is not None:
-            pid = int( prior_wema)
-            try:
-                print("Terminating Wema:  ", pid)
-                os.kill(pid, signal.SIGTERM)
-            except:
-                print("No wema process was found, starting a new one.")
-        if prior_obs is not None:
-            pid = int( prior_obs)
-            try:
-                print("Terminating Obs:  ", pid)
-                os.kill(pid, signal.SIGTERM)
-            except:
-                print("No observer process was found, starting a new one.")
+        # if prior_wema is not None:
+        #     pid = int( prior_wema)
+        #     try:
+        #         print("Terminating Wema:  ", pid)
+        #         os.kill(pid, signal.SIGTERM)
+        #     except:
+        #         print("No wema process was found, starting a new one.")
+        # if prior_obs is not None:
+        #     pid = int( prior_obs)
+        #     try:
+        #         print("Terminating Obs:  ", pid)
+        #         os.kill(pid, signal.SIGTERM)
+        #     except:
+        #         print("No observer process was found, starting a new one.")
             
         
         
@@ -241,10 +242,10 @@ class WxEncAgent:
                 delta= time.time() - obs_time
             except:
                 delta= 999.99  #"NB NB NB Temporily flags someing really wrong."
-            if delta > 300:
+            if delta > 1800:
                 print(">The observer's time is stale > 300 seconds:  ", round(delta, 2))
                 #Here is where we terminate the obs.exe and restart it.
-            if delta > 360:
+            if delta > 3600:
                 #terminate_restart_observer(self.config['site_path'], no_restart=True)
                 pass
 
@@ -275,7 +276,7 @@ class WxEncAgent:
     def update(self):
 
         self.update_status()
-        time.sleep(15)
+        time.sleep(1)
 
     def run(self):   # run is a poor name for this function.
         try:
