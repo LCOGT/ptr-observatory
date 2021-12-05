@@ -14,6 +14,8 @@ class Darkslide(object):
         self.slideStatus = 'unknown'
         self.com_port = com_port
         self.closeDarkslide()
+
+        
    
     def openDarkslide(self):
         self._com = serial.Serial(self.com_port, timeout=0.3)

@@ -149,6 +149,20 @@ def ra_fix_h(ra):
     if ra < 0:
         ra = 24
     return ra
+#cv 19.5 East, 5.5 South AP 8.5 North, 14.5  redcat 30' e but on axis
+
+# def dome_adjust (alt, az, ha):  This is done at thedome
+
+#     s = -1
+#     if az <= 90 or az >=270:
+#         s = 1
+#     x = s*(90*math.cos(alt*DTOR) - 5.5*math.sin(alt*DTOR))
+#     y = -19.5*math.cos(ha*DTOR) + 90*math.sin(ha*DTOR)
+#     theta = math.atan2(y,x)
+#     if theta < 0:
+#         theta = 360 - theta
+        
+#     return theta
 
 
 class Mount:
@@ -179,6 +193,7 @@ class Mount:
         self.site_coordinates = EarthLocation(lat=float(config['latitude'])*u.deg, \
                                 lon=float(config['longitude'])*u.deg,
                                 height=float(config['elevation'])*u.m)
+        self.latitude_r = config['latitude']*DTOR
         self.rdsys = 'J.now'
         self.inst = 'tel1'
         self.tel = tel   #for now this implies the primary telescope on a mounting.
@@ -202,6 +217,7 @@ class Mount:
         self.west_ha_correction_r = config['mount']['mount1']['west_ha_correction_r']
         self.west_dec_correction_r = config['mount']['mount1']['west_dec_correction_r']
         self.refraction = 0
+        self.target_az = 0   #Degrees Azimuth
         self.ha_corr = 0
         self.dec_corr = 0
         self.seek_commanded = False       
@@ -226,14 +242,14 @@ class Mount:
         #self.site_in_automatic = config['site_in_automatic_default']
         #self.automatic_detail = config['automatic_detail_default']
         self.move_time = 0
-
         try:
             ra1, dec1 = self.get_mount_reference()
             print("Mount reference:  ", ra1 ,dec1)
         except:
             print("No mount ref found.")
             pass
-
+        print("Reset Mount Reference.")
+        self.reset_mount_reference()
         #NB THe paddle needs a re-think and needs to be cast into its own thread. 20200310 WER
         if self.has_paddle:
             self._paddle = serial.Serial('COM28', timeout=0.1)
@@ -334,7 +350,9 @@ class Mount:
             uncorr_mech_ra_h = self.mount.RightAscension
             uncorr_mech_dec_d = self.mount.Declination
             self.sid_now_r = self.current_sidereal*HTOR
+
             uncorr_mech_ha_r, uncorr_mech_dec_r = ptr_utility.transform_raDec_to_haDec_r(uncorr_mech_ra_h*HTOR, uncorr_mech_dec_d*DTOR, self.sid_now_r)
+            self.hour_angle = uncorr_mech_ha_r*RTOH
             roll_obs_r, pitch_obs_r = ptr_utility.transform_mount_to_observed_r(uncorr_mech_ha_r, uncorr_mech_dec_r, pierside, loud=False)
 
             app_ra_r, app_dec_r, refr_asec = ptr_utility.obsToAppHaRa(roll_obs_r, pitch_obs_r, self.sid_now_r)
@@ -427,6 +445,12 @@ class Mount:
                 icrs_ra, icrs_dec = self.get_mount_coordinates()  #20210430  Looks like this faulted during a slew.
             if self.prior_roll_rate == 0:
                 pass
+            ha = icrs_ra - self.current_sidereal
+            if ha < 12:
+                ha  += 24
+            if ha > 12:
+                ha -= 24
+                
             status = {
                 'timestamp': round(time.time(), 3),
                 'right_ascension': round(icrs_ra, 5),
@@ -435,26 +459,51 @@ class Mount:
                 'refraction': round(self.refraction_rev, 2),
                 'correction_ra': round(self.ha_corr, 4),  #If mount model = 0, these are very small numbers.
                 'correction_dec': round(self.dec_corr, 4),
-
+                'hour_angle': round(ha, 4),
                 'demand_right_ascension_rate': round(self.prior_roll_rate, 9),
                 'mount_right_ascension_rate': round(self.mount.RightAscensionRate, 9),   #Will use sec-RA/sid-sec
                 'demand_declination_rate': round(self.prior_pitch_rate, 8),
                 'mount_declination_rate': round(self.mount.DeclinationRate, 8),
                 'azimuth': round(self.mount.Azimuth, 3),
+                'target_az': round(self.target_az, 3),
                 'altitude': round(alt, 3),
                 'zenith_distance': round(zen, 3),
                 'airmass': round(airmass,4),
                 'coordinate_system': str(self.rdsys),
                 'equinox':  self.equinox_now,
                 'pointing_instrument': str(self.inst),  # needs fixing
-                'is_parked': str(self.mount.AtPark),     #  Send strings to AWS so JSON does not change case
-                'is_tracking': str(self.mount.Tracking),
-                'is_slewing': str(self.mount.Slewing),
+                'is_parked': self.mount.AtPark,     #  Send strings to AWS so JSON does not change case  Wrong. 20211202 'False' evaluates to True
+                'is_tracking': self.mount.Tracking,
+                'is_slewing': self.mount.Slewing,
                 'message': str(self.mount_message[:54]),
                 #'site_in_automatic': self.site_in_automatic,
                 #'automatic_detail': str(self.automatic_detail),
                 'move_time': self.move_time
             }
+            
+            try:
+                mount = open(self.config['wema_path']+'mnt_cmd.txt', 'w')
+                mount.write(json.dumps(status))
+                mount.close()
+            except:
+                try:
+                    time.sleep(3)
+                    # mount = open(self.config['wema_path']+'mnt_cmd.txt', 'r')
+                    # mount.write(json.loads(status))
+                    mount = open(self.config['wema_path']+'mnt_cmd.txt', 'w')
+                    mount.write(json.dumps(status))
+                    mount.close()
+                except:
+                    try:
+                        time.sleep(3)
+                        mount = open(self.config['wema_path']+'mnt_cmd.txt', 'w')
+                        mount.write(json.dumps(status))
+                        mount.close()
+                    except:
+                        mount = open(self.config['wema_path']+'mnt_cmd.txt', 'w')
+                        mount.write(json.dumps(status))
+                        mount.close()
+                        print("3rd try to append to enc-cmd  list.")
         else:
             print('Proper device_name is missing, or tel == None')
             status = {'defective':  'status'}
@@ -595,11 +644,10 @@ class Mount:
         action = command['action']
         self.check_connect()
         if action == "go":
+
             self.go_command(req, opt)   #  Entered from Target Explorer or Telescope tabs.
         elif action == "stop":
             self.stop_command(req, opt)
-        elif action == "home":
-            self.home_command(req, opt)
         elif action == "home":
             self.home_command(req, opt)
         elif action == "set_site_manual":
@@ -820,6 +868,7 @@ class Mount:
             jnow_coord = icrs_coord.transform_to(FK5(equinox=self.equinox_now))
             ra = jnow_coord.ra.hour
             dec = jnow_coord.dec.degree
+            breakpoint
             if self.offset_received:
                 ra +=  ra_cal_offset + self.ra_offset          #Offsets are J.now and used to get target on Browser Crosshairs.
                 dec +=  dec_cal_offset + self.dec_offset              
@@ -853,7 +902,9 @@ class Mount:
         self.dec_corr = ptr_utility.reduce_dec_r(self.dec_mech - self.dec_obs_r)*RTOS
         self.mount.Tracking = True
         self.move_time = time.time()
-        print('MODEL HA, DEC, Refraction:  (asec)  ', self.ha_corr, self.dec_corr, self.refr_asec)
+        az, alt = ptr_utility.transform_haDec_to_azAlt_r(self.ha_mech, self.dec_mech, self.latitude_r)
+        print('MODEL HA, DEC, AZ, Refraction:  (asec)  ', self.ha_corr, self.dec_corr, az*RTOD, self.refr_asec)
+        self.target_az = az*RTOD
 
 
         if self.site == 'fat':
@@ -1102,8 +1153,12 @@ class Mount:
     def  adjust_mount_reference(self, err_ha, err_dec):
         #old_ha, old_dec = self.get_mount_reference()
         mnt_shelf = shelve.open(self.site_path + 'ptr_night_shelf/' + 'mount1')
-        mnt_shelf['ra_cal_offset'] += err_ha
-        mnt_shelf['dec_cal_offset'] += err_dec    # NB NB THese need to be modulo corrected, mayby limited
+        init_ra = mnt_shelf['ra_cal_offset']
+        init_dec = mnt_shelf['dec_cal_offset']     # NB NB THese need to be modulo corrected, mayby limited
+        print("initial:  ", init_ra, init_dec)
+        mnt_shelf['ra_cal_offset'] = init_ra + err_ha
+        mnt_shelf['dec_cal_offset'] = init_dec + err_dec
+        print("final:  ", mnt_shelf['ra_cal_offset'], mnt_shelf['dec_cal_offset'])
         mnt_shelf.close()
         return
             

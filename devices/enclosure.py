@@ -3,6 +3,7 @@ from global_yard import g_dev
 import redis
 import time
 import shelve
+import json
 
 '''
 Curently this module interfaces to a Dome (az control) or a pop-top roof style enclosure.
@@ -57,52 +58,43 @@ class Enclosure:
                 self.mode = 'Shutdown'
         else:
             self.site_is_proxy = False
+        self.status = None
+        self.prior_status = None
         
     def get_status(self) -> dict:
         #<<<<The next attibute reference fails at saf, usually spurious Dome Ring Open report.
         #<<< Have seen other instances of failing.
         #core1_redis.set('unihedron1', str(mpsas) + ', ' + str(bright) + ', ' + str(illum), ex=600)
         if self.site == 'saf':
+
             try:
-                wx = open(self.config['wema_path'] + 'boltwood.txt', 'r')
-                wx_line = wx.readline()
-                wx.close
-                #print(wx_line)
-                wx_fields = wx_line.split()
-                skyTemperature = float( wx_fields[4])
-                temperature = f_to_c(float(wx_fields[5]))
-                windspeed = round(float(wx_fields[7])/2.237, 2)
-                humidity =  float(wx_fields[8])
-                dewpoint = f_to_c(float(wx_fields[9]))
-                timeSinceLastUpdate = wx_fields[13]
-                open_ok = wx_fields[19]
-                #g_dev['o.redis_sever.set("focus_temp", temperature, ex=1200)
-                self.focus_temp = temperature
-                return
+                enclosure = open(self.config['wema_path'] + 'enclosure.txt', 'r')
+                status = json.loads(enclosure.readline())
+                enclosure.close()
+                self.status = status
+                self.prior_status = status
+                return status
             except:
-                time.sleep(5)
                 try:
-                    wx = open(self.config['wema_path'] + 'boltwood.txt', 'r')
-                    wx_line = wx.readline()
-                    wx.close
-                    #print(wx_line)
-                    wx_fields = wx_line.split()
-                    skyTemperature = float( wx_fields[4])
-                    temperature = f_to_c(float(wx_fields[5]))
-                    windspeed = round(float(wx_fields[7])/2.237, 2)
-                    humidity =  float(wx_fields[8])
-                    dewpoint = f_to_c(float(wx_fields[9]))
-                    timeSinceLastUpdate = wx_fields[13]
-                    open_ok = wx_fields[19]
-                    #g_dev['o.redis_sever.set("focus_temp", temperature, ex=1200)
-                    self.focus_temp = temperature
-                    return
+                    time.sleep(3)
+                    enclosure = open(self.config['wema_path'] + 'enclosure.txt', 'r')
+                    enclosure.close()
+                    status = json.loads(enclosure.readline())
+                    self.status = status
+                    self.prior_status = status
+                    return status
                 except:
-                    print('Wema Weather source problem, 2nd try.')
-                    self.focus_temp = 10.
-                    return
-            
-            
+                    try:
+                        time.sleep(3)
+                        enclosure = open(self.config['wema_path'] + 'enclosure.txt', 'r')
+                        status = json.loads(enclosure.readline())
+                        enclosure.close()
+                        self.status = status
+                        self.prior_status = status
+                        return status
+                    except:
+                        print("Prior enc status returned fter 3 fails.")
+                        return prior_status
             
         elif self.site_is_proxy:
             #Usually fault here because WEMA is not running.
@@ -130,20 +122,24 @@ class Enclosure:
         req = command['required_params']
         opt = command['optional_params']
         action = command['action']
+        cmd_list = []
 
         if action == "open":
             if self.site_is_proxy:
-                self.redis_server.set('enc_cmd', 'open', ex=300)
+                #self.redis_server.set('enc_cmd', 'open', ex=300)
+                cmd_list.append('open')
             else:
                 self.open_command(req, opt)
         elif action == "close":
             if self.site_is_proxy:
-                self.redis_server.set('enc_cmd', 'close', ex=1200)
+                #self.redis_server.set('enc_cmd', 'close', ex=1200)
+                cmd_list.append('close')
             else:
                 self.close_command(req, opt)
         elif action == "setAuto":
             if self.site_is_proxy:
-                self.redis_server.set('enc_cmd', 'setAuto', ex=300)
+                #self.redis_server.set('enc_cmd', 'setAuto', ex=300)
+                cmd_list.append('setAuto')
             else:
                 self.mode = 'Automatic'
                 g_dev['enc'].site_in_automatic = True
@@ -151,14 +147,16 @@ class Enclosure:
                 print("Site and Enclosure set to Automatic.")
         elif action == "setManual":
             if self.site_is_proxy:
-                self.redis_server.set('enc_cmd', 'setManual', ex=300)
+                #self.redis_server.set('enc_cmd', 'setManual', ex=300)
+                cmd_list.append('setManual')
             else:
                 self.mode = 'Manual'
                 g_dev['enc'].site_in_automatic = False
                 g_dev['enc'].automatic_detail =  "Manual Only"
         elif action in ["setStayClosed", 'setShutdown', 'shutDown']:
             if self.site_is_proxy:
-                self.redis_server.set('enc_cmd', 'setShutdown', ex=300)
+                #self.redis_server.set('enc_cmd', 'setShutdown', ex=300)
+                cmd_list.append('setShutdown')
                 self.mode = 'Shutdown'
                 g_dev['enc'].site_in_automatic = False
                 g_dev['enc'].automatic_detail =  "Site Shutdown"
@@ -176,52 +174,77 @@ class Enclosure:
         else:
             print("Command <{action}> not recognized.")
 
+        if len(cmd_list) > 0:
+            try:
+                enclosure = open(self.config['wema_path']+'enc_cmd.txt', 'w')
+                enclosure.write(json.dumps(cmd_list))
+                enclosure.close()
+            except:
+                try:
+                    time.sleep(3)
+                    # enclosure = open(self.config['wema_path']+'enc_cmd.txt', 'r')
+                    # enclosure.write(json.loads(status))
+                    enclosure = open(self.config['wema_path']+'enc_cmd.txt', 'w')
+                    enclosure.write(json.dumps(cmd_list))
+                    enclosure.close()
+                except:
+                    try:
+                        time.sleep(3)
+                        enclosure = open(self.config['wema_path']+'enc_cmd.txt', 'w')
+                        enclosure.write(json.dumps(cmd_list))
+                        enclosure.close()
+                    except:
+                        enclosure = open(self.config['wema_path']+'enc_cmd.txt', 'w')
+                        enclosure.write(json.dumps(cmd_list))
+                        enclosure.close()
+                        print("3rd try to append to enc-cmd  list.")
+
 
     ###############################
     #      Enclosure Commands     #
     ###############################
 
-    def open_command(self, req: dict, opt: dict):
-    #     ''' open the enclosure '''
-          self.redis_server.set('enc_cmd', 'open', ex=1200)
-    #     #self.guarded_open()
-    #     self.manager(open_cmd=True)
-    #     print("enclosure cmd: open.")
-    #     self.dome_open = True
-    #     self.dome_home = True
-    #     pass
+    # def open_command(self, req: dict, opt: dict):
+    # #     ''' open the enclosure '''
+    #       self.redis_server.set('enc_cmd', 'open', ex=1200)
+    # #     #self.guarded_open()
+    # #     self.manager(open_cmd=True)
+    # #     print("enclosure cmd: open.")
+    # #     self.dome_open = True
+    # #     self.dome_home = True
+    # #     pass
 
-    def close_command(self, req: dict, opt: dict):
-    #     ''' close the enclosure '''
-          self.redis_server.set('enc_cmd', 'close', ex=1200)
-    #     self.manager(close_cmd=True)
-    #     print("enclosure cmd: close.")
-    #     self.dome_open = False
-    #     self.dome_home = True
-    #     pass
+    # def close_command(self, req: dict, opt: dict):
+    # #     ''' close the enclosure '''
+    #       self.redis_server.set('enc_cmd', 'close', ex=1200)
+    # #     self.manager(close_cmd=True)
+    # #     print("enclosure cmd: close.")
+    # #     self.dome_open = False
+    # #     self.dome_home = True
+    # #     pass
 
-    # def slew_alt_command(self, req: dict, opt: dict):
-    #     print("enclosure cmd: slew_alt")
-    #     pass
+    # # def slew_alt_command(self, req: dict, opt: dict):
+    # #     print("enclosure cmd: slew_alt")
+    # #     pass
 
-    # def slew_az_command(self, req: dict, opt: dict):
-    #     print("enclosure cmd: slew_az")
-    #     self.dome_home = False    #As a general rule
-    #     pass
+    # # def slew_az_command(self, req: dict, opt: dict):
+    # #     print("enclosure cmd: slew_az")
+    # #     self.dome_home = False    #As a general rule
+    # #     pass
 
-    # def sync_az_command(self, req: dict, opt: dict):
-    #     print("enclosure cmd: sync_alt")
-    #     pass
+    # # def sync_az_command(self, req: dict, opt: dict):
+    # #     print("enclosure cmd: sync_alt")
+    # #     pass
 
-    # def sync_mount_command(self, req: dict, opt: dict):
-    #     print("enclosure cmd: sync_az")
-    #     pass
+    # # def sync_mount_command(self, req: dict, opt: dict):
+    # #     print("enclosure cmd: sync_az")
+    # #     pass
 
-    # def park_command(self, req: dict, opt: dict):
-    #     ''' park the enclosure if it's a dome '''
-    #     print("enclosure cmd: park")
-    #     self.dome_home = True
-    #     pass
+    # # def park_command(self, req: dict, opt: dict):
+    # #     ''' park the enclosure if it's a dome '''
+    # #     print("enclosure cmd: park")
+    # #     self.dome_home = True
+    # #     pass
 
 
 
