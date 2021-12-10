@@ -1202,7 +1202,7 @@ class Sequencer:
                 result = g_dev['cam'].expose_command(req, opt, no_AWS=True) ## , script = 'auto_focus_script_0')  #  This is where we start.
             else:
                 result['FWHM'] = 3
-                result['mean_focus'] = foc_pos0
+                result['mean_focus'] = foc_pos0  #NB NB NB this should read the focuser not the command focus.
 
             spot1 = result['FWHM']
             foc_pos1 = result['mean_focus']
@@ -1223,7 +1223,7 @@ class Sequencer:
         spot2 = result['FWHM']
         foc_pos2 = result['mean_focus']
         print('Autofocus Overtaveling Out.\n\n')
-        g_dev['foc'].focuser.Move((foc_pos0 +2*throw)*g_dev['foc'].micron_to_steps)   #It is important to overshoot to overcome any backlash
+        g_dev['foc'].focuser.Move((foc_pos0 + throw)*g_dev['foc'].micron_to_steps)   #It is important to overshoot to overcome any backlash
         print('Autofocus Moving back in half-way.\n\n')
         g_dev['foc'].focuser.Move((foc_pos0 + throw)*g_dev['foc'].micron_to_steps)  #NB NB NB THIS IS WRONG!
         #opt['fwhm_sim'] = 5
@@ -1236,7 +1236,6 @@ class Sequencer:
         foc_pos3 = result['mean_focus']
         x = [foc_pos2, foc_pos1, foc_pos3]
         y = [spot2, spot1, spot3]
-
         print('X, Y:  ', x, y, 'Desire center to be smallest.')
         if spot1 is None or spot2 is None or spot3 is None:  #New additon to stop crash when no spots
             print("No stars detected. Returning to starting focus and pointing.")

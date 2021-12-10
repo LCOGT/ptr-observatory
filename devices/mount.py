@@ -827,7 +827,6 @@ class Mount:
         tracking_rate_ra = opt.get('tracking_rate_ra', 0)
         tracking_rate_dec = opt.get('tracking_rate_dec', 0)
         delta_ra, delta_dec =self.get_mount_reference()
-        #breakpoint()
         ra, dec = ra_dec_fix_h(ra + delta_ra, dec + delta_dec)   #Plus compensates for measured offset
         self.move_time = time.time()
         self.go_coord(ra, dec, tracking_rate_ra=tracking_rate_ra, tracking_rate_dec = tracking_rate_dec)
