@@ -94,6 +94,8 @@ class Focuser:
 
 
 
+
+
     def calculate_compensation(self, temp_primary):
         if -20 <= temp_primary <= 45:
             trial = round(float(self.config['coef_0'] + float(self.config['coef_c'])*temp_primary), 1)
@@ -315,7 +317,11 @@ class Focuser:
     def af_log(self, ref, fwhm, solved):   #  Note once focus comp is in place this data is lame and
                                            #  need to be combined with great care.
         cam_shelf = shelve.open(self.site_path + 'ptr_night_shelf/' + self.camera_name, writeback=True)
-        cam_shelf['af_log'].append((ref, fwhm, solved, self.focuser.Temperature, datetime.datetime.now().isoformat()))
+        try:
+            f_temp = self.focuser.Temperature
+        except:
+            f_temp = 7.1234
+        cam_shelf['af_log'].append((ref, fwhm, solved, f_temp, datetime.datetime.now().isoformat()))
         cam_shelf.close()
         return
     

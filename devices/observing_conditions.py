@@ -454,10 +454,13 @@ class ObservingConditions:
             else:
                 open_poss = False
                 hz = 500000
-            try:
-                wx = g_dev['ocn'].status
-            except:
-                wx = eval(self.redis_server.get('ocn_status'))   #NB NB NB This needs cleaning up.
+            if self.config['site'] in ['fat']:
+                wx = eval(self.redis_server.get('ocn_status')) 
+            else:
+                try:
+                    wx = g_dev['ocn'].status
+                except:
+                    wx = eval(self.redis_server.get('ocn_status'))   #NB NB NB This needs cleaning up.
 
             quick.append(time.time())
             quick.append(float(wx['sky_temp_C']))

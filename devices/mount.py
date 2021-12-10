@@ -481,29 +481,30 @@ class Mount:
                 'move_time': self.move_time
             }
             
-            try:
-                mount = open(self.config['wema_path']+'mnt_cmd.txt', 'w')
-                mount.write(json.dumps(status))
-                mount.close()
-            except:
+            if self.config['site'] in ['saf']:
                 try:
-                    time.sleep(3)
-                    # mount = open(self.config['wema_path']+'mnt_cmd.txt', 'r')
-                    # mount.write(json.loads(status))
                     mount = open(self.config['wema_path']+'mnt_cmd.txt', 'w')
                     mount.write(json.dumps(status))
                     mount.close()
                 except:
                     try:
                         time.sleep(3)
+                        # mount = open(self.config['wema_path']+'mnt_cmd.txt', 'r')
+                        # mount.write(json.loads(status))
                         mount = open(self.config['wema_path']+'mnt_cmd.txt', 'w')
                         mount.write(json.dumps(status))
                         mount.close()
                     except:
-                        mount = open(self.config['wema_path']+'mnt_cmd.txt', 'w')
-                        mount.write(json.dumps(status))
-                        mount.close()
-                        print("3rd try to append to enc-cmd  list.")
+                        try:
+                            time.sleep(3)
+                            mount = open(self.config['wema_path']+'mnt_cmd.txt', 'w')
+                            mount.write(json.dumps(status))
+                            mount.close()
+                        except:
+                            mount = open(self.config['wema_path']+'mnt_cmd.txt', 'w')
+                            mount.write(json.dumps(status))
+                            mount.close()
+                            print("3rd try to append to enc-cmd  list.")
         else:
             print('Proper device_name is missing, or tel == None')
             status = {'defective':  'status'}
