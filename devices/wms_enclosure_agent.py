@@ -274,7 +274,6 @@ class Enclosure:
                 
                 
         else:
-            breakpoint()  #SHould not get here at SAF
             status = {'shutter_status': stat_string,
                       'enclosure_synchronized': True,
                       'dome_azimuth': 180.0,
@@ -415,7 +414,7 @@ class Enclosure:
                 pass
             #NB NB NB  Possible race condition here.
             # redis_value = self.redis_server.get('SlewToAzimuth')
-        if mount_command is not None and mount_command != '' and mount_command != ['none']:
+        if self.config['site'] in ['saf'] and mount_command is not None and mount_command != '' and mount_command != ['none']:
             try:
                 print(self.status,'\n\n', mount_command)
 

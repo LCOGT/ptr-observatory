@@ -831,7 +831,6 @@ class Camera:
         #  NB Important: None of above code talks to the camera!
         result = {}  #  This is a default return just in case
         num_retries = 0
-        
         for seq in range(count):
             #  SEQ is the outer repeat loop and takes count images; those individual exposures are wrapped in a
             #  retry-3-times framework with an additional timeout included in it.

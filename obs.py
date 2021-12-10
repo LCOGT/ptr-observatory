@@ -379,6 +379,7 @@ class Observatory:
                             print( 'Exception in obs.scan_requests:  ', e)
                # print('scan_requests finished in:  ', round(time.time() - t1, 3), '  seconds')
                 ## Test Tim's code
+                #breakpoint()
                 url_blk = "https://calendar.photonranch.org/dev/siteevents"
                 body = json.dumps({
                     'site':  self.config['site'],

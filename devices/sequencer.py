@@ -316,8 +316,10 @@ class Sequencer:
             #print('Skipping Eve Sky Flats')
             self.sky_flat_script({}, {})   #Null command dictionaries
             self.sky_flat_latch = False
-        elif g_dev['enc'].mode == 'Automatic' and (events['Observing Begins'] <= ephem_now < events['Observing Ends']) and \
-                   not g_dev['ocn'].wx_hold and  g_dev['obs'].blocks is not None and g_dev['obs'].projects is not None:
+        elif g_dev['enc'].mode == 'Automatic' and (events['Observing Begins'] <= ephem_now \
+                                   < events['Observing Ends']) and not g_dev['ocn'].wx_hold \
+                                   and  g_dev['obs'].blocks is not None and g_dev['obs'].projects \
+                                   is not None:
             blocks = g_dev['obs'].blocks
             projects = g_dev['obs'].projects
             debug = False
@@ -1134,6 +1136,8 @@ class Sequencer:
                         result['patch'] = cal_result
                         result['temperature'] = avg_foc[2]  This is probably tube not reported by Gemini.
         '''
+        if self.config['site'] in ['fat']:
+            throw = 225
         self.sequencer_hold = False   #Allow comand checks.
         self.guard = False
 
@@ -1265,7 +1269,10 @@ class Sequencer:
                 
                 g_dev['foc'].focuser.Move(pos)
                 g_dev['foc'].last_known_focus = d1
-                g_dev['foc'].last_temperature = g_dev['foc'].focuser.Temperature
+                try:
+                    g_dev['foc'].last_temperature = g_dev['foc'].focuser.Temperature
+                except:
+                    g_dev['foc'].last_temperature = 7.5
                 g_dev['foc'].last_source = "auto_focus_script"
                 if not sim:
                     result = g_dev['cam'].expose_command(req, opt, no_AWS=True, solve_it=False)  #   script = 'auto_focus_script_3')  #  This is verifying the new focus.
@@ -1440,7 +1447,7 @@ class Sequencer:
             pos = int(d1*g_dev['foc'].micron_to_steps)
             g_dev['foc'].focuser.Move(pos)
             g_dev['foc'].last_known_focus = d1
-            g_dev['foc'].last_temperature = g_dev['foc'].focuser.Temperature
+            g_dev['foc'].last_temperature = 6.654321 #g_dev['foc'].focuser.Temperature
             g_dev['foc'].last_source = "coarse_focus_script"
             if not sim:
                 result = g_dev['cam'].expose_command(req, opt)
