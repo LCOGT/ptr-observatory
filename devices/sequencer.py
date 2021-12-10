@@ -1251,7 +1251,6 @@ class Sequencer:
             return
         if spot1 < spot2 and spot1 < spot3:
             try:
-                breakpoint()
                 #Digits are to help out pdb commands!
                 a1, b1, c1, d1 = fit_quadratic(x, y)
                 new_spot = round(a1*d1*d1 + b1*d1 + c1, 2)

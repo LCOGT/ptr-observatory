@@ -863,6 +863,18 @@ class Mount:
             #print("mount cmd: unparking mount")
             self.mount.Unpark()
         ra_cal_offset, dec_cal_offset = self.get_mount_reference() # This is a Shelved basic offset, may be zero if a full model is in place.
+        try:
+            ra_cal_offset, dec_cal_offset = self.get_mount_reference() # This is a Shelved basic offset, may be zero if a full model is in place.
+        except:
+            try:
+                ra_cal_offset, dec_cal_offset = self.get_mount_reference() 
+            except:
+                try:
+                    a_cal_offset, dec_cal_offset = self.get_mount_reference() 
+                    ra_cal_offset, dec_cal_offset = self.get_mount_reference() 
+                except:
+                    ra_cal_offset = 0
+                    dec_cal_offset = 0
         if self.mount.EquatorialSystem == 1:
             self.get_current_times()   #  NB We should find a way to refresh this once a day, esp. for status return.
             icrs_coord = SkyCoord(ra*u.hour, dec*u.degree, frame='icrs')
