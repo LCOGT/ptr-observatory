@@ -1138,6 +1138,8 @@ class Sequencer:
         '''
         if self.config['site'] in ['fat']:
             throw = 225
+        if self.config['site'] in ['saf']:
+            throw = 400
         self.sequencer_hold = False   #Allow comand checks.
         self.guard = False
 
@@ -1206,8 +1208,7 @@ class Sequencer:
                 result = g_dev['cam'].expose_command(req, opt, no_AWS=True) ## , script = 'auto_focus_script_0')  #  This is where we start.
             else:
                 result['FWHM'] = 3
-                result['mean_focus'] = foc_pos0  #NB NB NB this should read the focuser not the command focus.
-
+                result['mean_focus'] = g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron
             spot1 = result['FWHM']
             foc_pos1 = result['mean_focus']
             if math.isnan(spot1):
@@ -1223,7 +1224,7 @@ class Sequencer:
             result = g_dev['cam'].expose_command(req, opt, no_AWS=True) ## , script = 'auto_focus_script_1')  #  This is moving in one throw.
         else:
             result['FWHM'] = 4
-            result['mean_focus'] = foc_pos0 - throw
+            result['mean_focus'] = g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron
         spot2 = result['FWHM']
         foc_pos2 = result['mean_focus']
         print('Autofocus Overtaveling Out.\n\n')
@@ -1235,7 +1236,7 @@ class Sequencer:
             result = g_dev['cam'].expose_command(req, opt, no_AWS=True) ## , script = 'auto_focus_script_2')  #  This is moving out one throw.
         else:
             result['FWHM'] = 4.5
-            result['mean_focus'] = foc_pos0 + throw
+            result['mean_focus'] = g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron
         spot3 = result['FWHM']
         foc_pos3 = result['mean_focus']
         x = [foc_pos2, foc_pos1, foc_pos3]
@@ -1275,10 +1276,10 @@ class Sequencer:
                     g_dev['foc'].last_temperature = 7.5
                 g_dev['foc'].last_source = "auto_focus_script"
                 if not sim:
-                    result = g_dev['cam'].expose_command(req, opt, no_AWS=True, solve_it=False)  #   script = 'auto_focus_script_3')  #  This is verifying the new focus.
+                    result = g_dev['cam'].expose_command(req, opt, no_AWS=True, solve_it=True)  #   script = 'auto_focus_script_3')  #  This is verifying the new focus.
                 else:
                     result['FWHM'] = new_spot
-                    result['mean_focus'] = d1
+                    result['mean_focus'] = g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron
                 spot4 = result['FWHM']
                 foc_pos4 = result['mean_focus']
                 print('\n\n\nFound best focus at:  ', foc_pos4,' measured is:  ',  round(spot4, 2), '\n\n\n')
@@ -1294,9 +1295,9 @@ class Sequencer:
             # NB NB NB I think we may have spot numbers wrong by 1 count and coarse focs not set up correctly.
             return
         elif spot2 <= spot1 or spot3 <= spot1:
-            if spot2 <= spot1: 
+            if spot2 <= spot3: 
                 min_focus = foc_pos2
-            if spot3 <= spot1:
+            if spot3 <= spot2:
                 min_focus = foc_pos3
             print("It appears camera is too far out; try again with coarse_focus_script.")
             self.coarse_focus_script(req2, opt2, throw=600, begin_at=min_focus)
@@ -1374,7 +1375,7 @@ class Sequencer:
             result = g_dev['cam'].expose_command(req, opt, no_AWS=True)
         else:
             result['FWHM'] = 4
-            result['mean_focus'] = foc_pos0
+            result['mean_focus'] = g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron
         spot1 = result['FWHM']
         foc_pos1 = result['mean_focus']  
         # if not sim:
@@ -1393,7 +1394,7 @@ class Sequencer:
             result = g_dev['cam'].expose_command(req, opt, no_AWS=True)
         else:
             result['FWHM'] = 5
-            result['mean_focus'] = foc_pos0 - throw
+            result['mean_focus'] = g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron
         spot2 = result['FWHM']
         foc_pos2 = result['mean_focus']
         print('Autofocus Moving In, second time.\n\n')
@@ -1403,7 +1404,7 @@ class Sequencer:
             result = g_dev['cam'].expose_command(req, opt, no_AWS=True)
         else:
             result['FWHM'] = 6
-            result['mean_focus'] = foc_pos0 - 2*throw
+            result['mean_focus'] = g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron
         spot3 = result['FWHM']
         foc_pos3 = result['mean_focus']
         #Need to check we are not going out too far!
@@ -1416,7 +1417,7 @@ class Sequencer:
             result = g_dev['cam'].expose_command(req, opt, no_AWS=True)
         else:
             result['FWHM'] = 6.5
-            result['mean_focus'] = foc_pos0 + 2*throw
+            result['mean_focus'] = g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron
         spot4 = result['FWHM']
         foc_pos4 = result['mean_focus']
         g_dev['foc'].focuser.Move((foc_pos0 + throw)*g_dev['foc'].micron_to_steps)
@@ -1425,7 +1426,7 @@ class Sequencer:
             result = g_dev['cam'].expose_command(req, opt, no_AWS=True)
         else:
             result['FWHM'] = 5.75
-            result['mean_focus'] = foc_pos0 + throw
+            result['mean_focus'] = g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron
         spot5 = result['FWHM']
         foc_pos5 = result['mean_focus']
         x = [foc_pos3, foc_pos2, foc_pos1, foc_pos5, foc_pos4]
@@ -1450,7 +1451,7 @@ class Sequencer:
             g_dev['foc'].last_temperature = 6.654321 #g_dev['foc'].focuser.Temperature
             g_dev['foc'].last_source = "coarse_focus_script"
             if not sim:
-                result = g_dev['cam'].expose_command(req, opt)
+                result = g_dev['cam'].expose_command(req, opt, solve_it=True)
             else:
                 result['FWHM'] = new_spot
                 result['mean_focus'] = d1

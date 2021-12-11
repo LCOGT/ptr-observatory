@@ -667,7 +667,7 @@ class Observatory:
                     err_ha = TARGRA - RAJ2000
                     err_dec = TARGDEC - DECJ2000
                     print("err ra, dec:  ", err_ha, err_dec)
-                    g_dev['mnt'].adjust_mount_reference(err_ha, err_dec)
+                    #g_dev['mnt'].adjust_mount_reference(err_ha, err_dec)
                     img.flush()
                     img.close
                     img = fits.open(wpath, ignore_missing_end=True)

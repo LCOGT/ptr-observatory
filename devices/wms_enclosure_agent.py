@@ -205,6 +205,7 @@ class Enclosure:
             while gap <= -360:
                 gap += 360
             if abs(gap) > 1.5:
+                breakpoint()
                 print("Azimuth change detected,  Slew:  ", self.enclosure.Slewing)
                 slewing = True
             else:
