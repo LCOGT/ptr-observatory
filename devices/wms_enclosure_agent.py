@@ -114,7 +114,6 @@ class Enclosure:
     def get_status(self) -> dict:
         #<<<<The next attibute reference fails at saf, usually spurious Dome Ring Open report.
         #<<< Have seen other instances of failing.
-        
         if self.site == 'fat':
             try:
                 enc = open('R:/Roof_Status.txt')
@@ -154,7 +153,7 @@ class Enclosure:
             try:
                 self.dome_home = self.enclosure.AtHome
             except:
-                pass
+                self.come_home = True
         
         if shutter_status == 0:
             stat_string = "Open"
@@ -218,13 +217,13 @@ class Enclosure:
                           'dome_slewing': slewing,
                           'enclosure_mode': self.mode,
                           'enclosure_message': self.state}
-                # self.redis_server.set('roof_status', str(stat_string), ex=3600)
-                # self.redis_server.set('shutter_is_closed', self.shutter_is_closed, ex=3600)  #Used by autofocus
-                # self.redis_server.set("shutter_status", str(stat_string), ex=3600)
-                # self.redis_server.set('enclosure_synchronized', str(self.following), ex=3600)
-                # self.redis_server.set('enclosure_mode', str(self.mode), ex=3600)
-                # self.redis_server.set('enclosure_message', str(self.state), ex=3600)
-                # self.redis_server.set('dome_azimuth', str(round(self.enclosure.Azimuth, 1)))
+                self.redis_server.set('roof_status', str(stat_string), ex=3600)
+                self.redis_server.set('shutter_is_closed', self.shutter_is_closed, ex=3600)  #Used by autofocus
+                self.redis_server.set("shutter_status", str(stat_string), ex=3600)
+                self.redis_server.set('enclosure_synchronized', str(self.following), ex=3600)
+                self.redis_server.set('enclosure_mode', str(self.mode), ex=3600)
+                self.redis_server.set('enclosure_message', str(self.state), ex=3600)
+                self.redis_server.set('dome_azimuth', str(round(self.enclosure.Azimuth, 1)))
                 if moving or self.enclosure.Slewing:
                     in_motion = True
                 else:
@@ -233,22 +232,23 @@ class Enclosure:
                 # self.redis_server.set('dome_slewing', in_motion, ex=3600)
                 # self.redis_server.set('enc_status', status, ex=3600)
                 self.status = status
-                try:
-                    enclosure = open(self.config['wema_path']+'enclosure.txt', 'w')
-                    enclosure.write(json.dumps(status))
-                    enclosure.close()
-                except:
-                    time.sleep(3)
+                if self.config['site'] == 'saf':
                     try:
                         enclosure = open(self.config['wema_path']+'enclosure.txt', 'w')
                         enclosure.write(json.dumps(status))
                         enclosure.close()
                     except:
                         time.sleep(3)
-                        enclosure = open(self.config['wema_path']+'enclosure.txt', 'w')
-                        enclosure.write(json.dumps(status))
-                        enclosure.close()
-                        print("3rd try to write enclosure status.")
+                        try:
+                            enclosure = open(self.config['wema_path']+'enclosure.txt', 'w')
+                            enclosure.write(json.dumps(status))
+                            enclosure.close()
+                        except:
+                            time.sleep(3)
+                            enclosure = open(self.config['wema_path']+'enclosure.txt', 'w')
+                            enclosure.write(json.dumps(status))
+                            enclosure.close()
+                            print("3rd try to write enclosure status.")
             except:  #Not a dome, presumably a roll top roof or clamshell
  #Should not get here at SAF
                 status = {'shutter_status': stat_string,
@@ -317,42 +317,47 @@ class Enclosure:
                             redis_command = status
                         except:
                             #print("Finding enc_cmd failed after 3 tries, no harm done.")
-                            redis_command = ['none']         
-                try:
-                    mnt_cmd = open(self.config['wema_path'] + 'mnt_cmd.txt', 'r')
-                    mount_command  = json.loads(mnt_cmd.readline())
-
-                    mnt_cmd.close()
-                    os.remove(self.config['wema_path'] + 'mnt_cmd.txt')
-
-                except:
+                            redis_command = ['none'] 
+                if  True:  #self.config['site'] in ['saf']:
                     try:
-                        time.sleep(1)
                         mnt_cmd = open(self.config['wema_path'] + 'mnt_cmd.txt', 'r')
                         mount_command  = json.loads(mnt_cmd.readline())
-
+    
                         mnt_cmd.close()
                         os.remove(self.config['wema_path'] + 'mnt_cmd.txt')
-
+    
                     except:
                         try:
                             time.sleep(1)
                             mnt_cmd = open(self.config['wema_path'] + 'mnt_cmd.txt', 'r')
                             mount_command  = json.loads(mnt_cmd.readline())
-
+    
                             mnt_cmd.close()
                             os.remove(self.config['wema_path'] + 'mnt_cmd.txt')
-
+    
                         except:
-                            #print("Finding mnt_cmd failed after 3 tries, no harm done.")
-                            mount_command = ['none']
-                            
+                            try:
+                                time.sleep(1)
+                                mnt_cmd = open(self.config['wema_path'] + 'mnt_cmd.txt', 'r')
+                                mount_command  = json.loads(mnt_cmd.readline())
+    
+                                mnt_cmd.close()
+                                os.remove(self.config['wema_path'] + 'mnt_cmd.txt')
+    
+                            except:
+                                #print("Finding mnt_cmd failed after 3 tries, no harm done.")
+                                mount_command = ['none']
+                                
                     
-            #redis_command = self.redis_server.get('enc_cmd')  #It is presumed there is an expiration date on open command at least.
+            redis_command = self.redis_server.get('enc_cmd')  #It is presumed there is an expiration date on open command at least.
             #NB NB NB Need to prevent executing stale commands.
             if redis_command != ['none']:
-                print(redis_command)
-            redis_command = redis_command[0]
+                pass
+                #print(redis_command)
+            try:
+                redis_command = redis_command[0]
+            except:
+                pass
             if redis_command == 'open':
                 self.redis_server.delete('enc_cmd')
                 print("enclosure remote cmd: open.")
