@@ -4,6 +4,7 @@ import redis
 import time
 import shelve
 import json
+import config_file
 
 '''
 Curently this module interfaces to a Dome (az control) or a pop-top roof style enclosure.
@@ -34,91 +35,101 @@ class Enclosure:
         self.site = config['site']
         self.config = config
         g_dev['enc'] = self
-        redis_ip = config['redis_ip']   #Do we really need to duplicate this config entry?
-        if redis_ip is not None:           
-            self.redis_server = redis.StrictRedis(host=redis_ip, port=6379, db=0,
-                                              decode_responses=True)
-            self.redis_wx_enabled = True
-            g_dev['redis_server'] = self.redis_server 
+        if self.config['site_in_automatic_default'] == "Automatic":
+            self.site_in_automatic = True
+            self.mode = 'Automatic' 
+        elif self.config['site_in_automatic_default'] == "Manual":
+            self.site_in_automatic = False
+            self.mode = 'Manual'
         else:
-            self.redis_wx_enabled = False
-        if self.config['agent_wms_enc_active']:
-            self.site_is_proxy = True
-            self.is_dome = self.config['enclosure']['enclosure1']['is_dome']
+            self.site_in_automatic = False
+            self.mode = 'Shutdown'
+        self.is_dome = self.config['enclosure']['enclosure1']['is_dome']
     
-            self.time_of_next_slew = time.time()
-            if self.config['site_in_automatic_default'] == "Automatic":
-                self.site_in_automatic = True
-                self.mode = 'Automatic' 
-            elif self.config['site_in_automatic_default'] == "Manual":
-                self.site_in_automatic = False
-                self.mode = 'Manual'
-            else:
-                self.site_in_automatic = False
-                self.mode = 'Shutdown'
-        else:
+        self.time_of_next_slew = time.time()
+
+        if self.site in ['simulate',  'dht']:  #DEH: added just for testing purposes with ASCOM simulators.
+            #self.observing_conditions_connected = True
             self.site_is_proxy = False
-        self.status = None
-        self.prior_status = None
+            print("observing_conditions: Simulator drivers connected True")
+        elif self.config['agent_wms_enc_active']:
+            self.site_is_proxy = True
+        elif self.config['site_is_specific']:
+            self.site_is_specific = True
+            #  Note OCN has no associated commands.
+            #  Here we monkey patch
+            self.get_status = config_file.get_enc_status
+            # Get current ocn status just as a test.
+            self.status = self.get_status(g_dev)
+            # All test code
+            # quick = []
+            # self.get_quick_status(quick)
+            # print(quick)
+        self.prior_status = self.status
+        self.state = 'Ok'
         
     def get_status(self) -> dict:
         #<<<<The next attibute reference fails at saf, usually spurious Dome Ring Open report.
         #<<< Have seen other instances of failing.
         #core1_redis.set('unihedron1', str(mpsas) + ', ' + str(bright) + ', ' + str(illum), ex=600)
-        if self.site == 'saf':
+        return
+    # if self.site == 'saf':
 
-            try:
-                enclosure = open(self.config['wema_path'] + 'enclosure.txt', 'r')
-                status = json.loads(enclosure.readline())
-                enclosure.close()
-                self.status = status
-                self.prior_status = status
-                return status
-            except:
-                try:
-                    time.sleep(3)
-                    enclosure = open(self.config['wema_path'] + 'enclosure.txt', 'r')
-                    enclosure.close()
-                    status = json.loads(enclosure.readline())
-                    self.status = status
-                    self.prior_status = status
-                    return status
-                except:
-                    try:
-                        time.sleep(3)
-                        enclosure = open(self.config['wema_path'] + 'enclosure.txt', 'r')
-                        status = json.loads(enclosure.readline())
-                        enclosure.close()
-                        self.status = status
-                        self.prior_status = status
-                        return status
-                    except:
-                        print("Prior enc status returned fter 3 fails.")
-                        return prior_status
+        #     try:
+        #         enclosure = open(self.config['wema_path'] + 'enclosure.txt', 'r')
+        #         status = json.loads(enclosure.readline())
+        #         enclosure.close()
+        #         self.status = status
+        #         self.prior_status = status
+        #         return status
+        #     except:
+        #         try:
+        #             time.sleep(3)
+        #             enclosure = open(self.config['wema_path'] + 'enclosure.txt', 'r')
+        #             enclosure.close()
+        #             status = json.loads(enclosure.readline())
+        #             self.status = status
+        #             self.prior_status = status
+        #             return status
+        #         except:
+        #             try:
+        #                 time.sleep(3)
+        #                 enclosure = open(self.config['wema_path'] + 'enclosure.txt', 'r')
+        #                 status = json.loads(enclosure.readline())
+        #                 enclosure.close()
+        #                 self.status = status
+        #                 self.prior_status = status
+        #                 return status
+        #             except:
+        #                 print("Prior enc status returned fter 3 fails.")
+        #                 return self.prior_status
             
-        elif self.site_is_proxy:
-            #Usually fault here because WEMA is not running.
+        # elif self.site_is_proxy:
+        #     #Usually fault here because WEMA is not running.
   
     
           
-            try:
+        #     try:
 
-                stat_string = self.redis_server.get("shutter_status")
-                self.status = eval(self.redis_server.get("enc_status"))
-            except:
-                print("\nWxEnc Agent WEMA not running. Please start it up.|n")
-            if stat_string is not None:
-                if stat_string == 'Closed':
-                    self.shutter_is_closed = True
-                else:
-                    self.shutter_is_closed = False
-                #print('Proxy shutter status:  ', status)
-                return  stat_string
-            else:
-                self.shutter_is_closed = True
-                return
+        #         stat_string = self.redis_server.get("shutter_status")
+        #         self.status = eval(self.redis_server.get("enc_status"))
+        #     except:
+        #         print("\nWxEnc Agent WEMA not running. Please start it up.|n")
+        #     if stat_string is not None:
+        #         if stat_string == 'Closed':
+        #             self.shutter_is_closed = True
+        #         else:
+        #             self.shutter_is_closed = False
+        #         #print('Proxy shutter status:  ', status)
+        #         return  stat_string
+        #     else:
+        #         self.shutter_is_closed = True
+        #         return
 
-    def parse_command(self, command):   #This gets commands from AWS, not normally used.
+    def parse_command(self, command):
+        if self.config['enc_is_specific']:
+            return  #There is noting to do!
+        #This gets commands from AWS, not normally used.
         req = command['required_params']
         opt = command['optional_params']
         action = command['action']
