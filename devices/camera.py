@@ -1611,7 +1611,7 @@ class Camera:
                         hdu.writeto(cal_path + cal_name, overwrite=True)
                         focus_image = False
                         return result
-                    if focus_image and solve_it and False:
+                    if focus_image and solve_it :
 
                         cal_name = cal_name[:-9] + 'FF' + cal_name[-7:]  # remove 'EX' add 'FO'   Could add seq to this
                         hdu.writeto(cal_path + cal_name, overwrite=True)
