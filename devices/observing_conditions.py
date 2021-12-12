@@ -80,7 +80,8 @@ class ObservingConditions:
         self.wmd_fail_counter = 0
         self.temperature = self.config['reference_ambient'][0] #  Index needs 
         self.pressure = self.config['reference_pressure'][0]   #  to be months.
-        self.unihedron_connected = False   #NB NB NB THis needs improving
+        self.unihedron_connected = True  #NB NB NB THis needs improving, driving from config
+
         if self.site in ['simulate',  'dht']:  #DEH: added just for testing purposes with ASCOM simulators.
             self.observing_conditions_connected = True
             self.site_is_proxy = False
@@ -127,7 +128,7 @@ class ObservingConditions:
                     self.unihedron_connected = False
                     # NB NB if no unihedron is installed the status code needs to not report it.
 
-        self.status = None
+        self.status = None   # This **may** need to have a first status if site_specific is True.
 
     def get_status(self):   # This is purely generic code for a generic site.
                             # It may be overwritten with a monkey patch found 

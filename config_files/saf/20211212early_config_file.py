@@ -20,15 +20,9 @@ site_config = {
     'owner':  ['google-oauth2|102124071738955888216', 'google-oauth2|112401903840371673242'],  # Neyle,  Or this can be some aws handle.
     'owner_alias': ['ANS'],
     'admin_aliases': ["ANS", "WER", "TB", "DH", "KVH", 'KC'],
-    'agent_wms_enc_active':  True,    # True if an agent is used at a site.  
-                                       # Fat is intended to be simple since 
-                                       # there is so little to control.
-    'site_is_specific':  False,  # Indicates some special code for the site. 
-                                 # Intention it is found in this file.
-    'site_IPC_mechanism':  'shares',   # ['None', shares', 'shelves', 'redis']  Pick One
-    'site_share_path':  '//SAF-WEMA/wema_transfer/',   #  Presumably also where shelves are found
-    'redis_ip': None,   # None if no redis path present, localhost if redis iself-contained
-    'wema_path':  'site_share_path',   #We should obsolete this NB NB NB
+    'agent_wms_enc_active':  True,    #True if the agent is used at a site.
+    'redis_ip': '127.0.0.1',   #None if no redis path present, localhost if redis is self-contained
+    'wema_path':  '//SAF-AUX/wema_transfer/',
     'defaults': {
         'observing_conditions': 'observing_conditions1',  #  These are used as keys, may go away.
         'enclosure': 'enclosure1',
@@ -81,9 +75,8 @@ site_config = {
                     ''',    #  i.e, a multi-line text block supplied and formatted by the owner.
     'TZ_database_name':  'America/Denver',
     'mpc_code':  'ZZ24',    #  This is made up for now.
-    'time_offset':  -7.0,   #  These two keys may be obsolete give the new TZ stuff #NB This should be derived from the above
+    'time_offset':  -7.0,   #  These two keys may be obsolete give the new TZ stuff 
     'timezone': 'MST',      #  This was meant to be coloquial Time zone abbreviation, alternate for "TX_data..."
-    'obs_computers_UTC':  True,  # Necessary for some ACP installations.
     'latitude': 35.554298,     #  Decimal degrees, North is Positive
     'longitude': -105.870197,   #  Decimal degrees, West is negative
     'elevation': 2194,    #  meters above sea level
@@ -102,7 +95,6 @@ site_config = {
     'observing_conditions' : {
         'observing_conditions1': {
             'parent': 'site',
-            'ocn_is_specific':  False, 
             'name': 'Boltwood',
             'driver': 'ASCOM.Boltwood.ObservingConditions',
             'driver_2':  'ASCOM.Boltwood.OkToOpen.SafetyMonitor',
@@ -119,8 +111,6 @@ site_config = {
         'enclosure1': {
             'parent': 'site',
             'name': 'HomeDome',
-            'enc_is_specific':  False, 
-            'name': 'Boltwood',
             'hostIP':  '10.0.0.140',
             'driver': 'ASCOMDome.Dome',  #'ASCOM.DigitalDomeWorks.Dome',  #  ASCOMDome.Dome',  #  ASCOM.DeviceHub.Dome',  #  ASCOM.DigitalDomeWorks.Dome',  #"  ASCOMDome.Dome',
             'has_lights':  False,

@@ -47,7 +47,7 @@ class Enclosure:
         self.is_dome = self.config['enclosure']['enclosure1']['is_dome']
     
         self.time_of_next_slew = time.time()
-
+        breakpoint()
         if self.site in ['simulate',  'dht']:  #DEH: added just for testing purposes with ASCOM simulators.
             #self.observing_conditions_connected = True
             self.site_is_proxy = False
@@ -65,15 +65,16 @@ class Enclosure:
             # quick = []
             # self.get_quick_status(quick)
             # print(quick)
-        self.prior_status = self.status
-        self.state = 'Ok'
+        #self.prior_status = self.status
+        self.status = None   #  May need a status seed if site specific.
+        #self.state = 'Ok'
         
     def get_status(self) -> dict:
         #<<<<The next attibute reference fails at saf, usually spurious Dome Ring Open report.
         #<<< Have seen other instances of failing.
         #core1_redis.set('unihedron1', str(mpsas) + ', ' + str(bright) + ', ' + str(illum), ex=600)
         return
-    # if self.site == 'saf':
+     if self.site == 'saf':
 
         #     try:
         #         enclosure = open(self.config['wema_path'] + 'enclosure.txt', 'r')

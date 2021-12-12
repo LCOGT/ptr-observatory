@@ -674,6 +674,7 @@ class Observatory:
                     err_ha = TARGRA - RAJ2000
                     err_dec = TARGDEC - DECJ2000
                     print("err ra, dec:  ", err_ha, err_dec)
+                    #Turn this off for now and center in autofocus. Race condition.
                     #g_dev['mnt'].adjust_mount_reference(err_ha, err_dec)
                     img.flush()
                     img.close
