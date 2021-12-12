@@ -52,7 +52,7 @@ from astropy.coordinates import SkyCoord, FK5, ICRS, FK4, Distance, \
                          #This should be removed or put in a try
 
 import ptr_utility
-from config import site_config
+from config_file import site_config
 import math
 
 # =============================================================================

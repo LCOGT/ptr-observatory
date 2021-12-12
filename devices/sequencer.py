@@ -7,7 +7,7 @@ import copy
 from global_yard import g_dev
 import ephem
 import build_tycho as tycho
-import config
+import config_file
 import shelve
 #from pprint import pprint
 import ptr_utility
