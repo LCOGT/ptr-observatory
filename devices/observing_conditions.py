@@ -5,6 +5,9 @@ import time
 import requests
 import json
 from global_yard import g_dev
+import config_file
+import ptr_events
+
 
 '''
 
@@ -28,7 +31,7 @@ can be modified for debugging or simulation purposes.
 '''
 
 
-def linearize_unihedron(uni_value):
+def linearize_unihedron(uni_value):  # Need to be coefficients in config.
     #  Based on 20180811 data
     uni_value = float(uni_value)
     if uni_value < -1.9:
@@ -75,25 +78,30 @@ class ObservingConditions:
         self.prior_status = None
         self.prior_status_2 = None
         self.wmd_fail_counter = 0
-        self.temperature = self.config['reference_ambient'][0]
-        self.pressure = self.config['reference_pressure'][0]
-       
-        redis_ip = config['redis_ip']
-        if redis_ip is not None:           
-            self.redis_server = redis.StrictRedis(host=redis_ip, port=6379, db=0,
-                                              decode_responses=True)
-            self.redis_wx_enabled = True
-        else:
-            self.redis_wx_enabled = False
-        #    self.observing_conditions_connected = True
-        #    print("observing_conditions: Redis connected = True")
-        #  
+        self.temperature = self.config['reference_ambient'][0] #  Index needs 
+        self.pressure = self.config['reference_pressure'][0]   #  to be months.
+        self.unihedron_connected = True  #NB NB NB THis needs improving, driving from config
 
         if self.site in ['simulate',  'dht']:  #DEH: added just for testing purposes with ASCOM simulators.
             self.observing_conditions_connected = True
             self.site_is_proxy = False
             print("observing_conditions: Simulator drivers connected True")
-        elif not self.config['agent_wms_enc_active']:
+        elif self.config['agent_wms_enc_active']:
+            self.site_is_proxy = True
+        elif self.config['site_is_specific']:
+            self.site_is_specific = True
+            #  Note OCN has no associated commands.
+            #  Here we monkey patch
+            self.get_status = config_file.get_ocn_status
+            # Get current ocn status just as a test.
+            self.status = self.get_status(g_dev)
+            # breakpoint()  # All test code
+            # quick = []
+            # self.get_quick_status(quick)
+            # print(quick)
+
+        else:
+            self.site_is_generic = True
             self.site_is_proxy = False
             win32com.client.pythoncom.CoInitialize()
             self.sky_monitor = win32com.client.Dispatch(driver)
@@ -119,11 +127,12 @@ class ObservingConditions:
                     print("Unihedron on Port 10 is disconnected.  Observing will proceed.")
                     self.unihedron_connected = False
                     # NB NB if no unihedron is installed the status code needs to not report it.
-        elif self.config['agent_wms_enc_active']:
-            self.site_is_proxy = True
-        self.status = None
 
-    def get_status(self):
+        self.status = None   # This **may** need to have a first status if site_specific is True.
+
+    def get_status(self):   # This is purely generic code for a generic site.
+                            # It may be overwritten with a monkey patch found 
+                            # in the appropriate config_file.py
         '''
         Regularly calling this routine returns weather status dict for AWS, evaluates the Wx 
         reporting and manages temporary closes, known as weather-holds.
@@ -136,6 +145,7 @@ class ObservingConditions:
             DESCRIPTION.
 
         '''
+        breakpoint()
         if self.site == 'saf':
             try:
                 weather = open(self.config['wema_path'] + 'weather.txt', 'r')
@@ -443,91 +453,81 @@ class ObservingConditions:
     def get_quick_status(self, quick):
         #  This method is used for annotating fits headers.
         # wx = eval(self.redis_server.get('<ptr-wx-1_state'))
-
         #  NB NB This routine does NOT update self.wx_ok
-        if self.site_is_proxy:
+        #Above is cruft
+        self.status = self.status = self.get_status(g_dev)  # Get current stat.
+        #if self.site_is_proxy:
             #Need to get data for camera from redis.
-            illum, mag = self.astro_events.illuminationNow()
-            if illum <= 7500.:
-                open_poss = True
-                hz = 100000
-            else:
-                open_poss = False
-                hz = 500000
-            if self.config['site'] in ['fat']:
-                wx = eval(self.redis_server.get('ocn_status')) 
-            else:
-                try:
-                    wx = g_dev['ocn'].status
-                except:
-                    wx = eval(self.redis_server.get('ocn_status'))   #NB NB NB This needs cleaning up.
+        illum, mag = g_dev['evnt'].illuminationNow()
+        # if self.config['site'] in ['fat']:
+        #     wx = eval(self.redis_server.get('ocn_status')) 
+        # else:
+        #     try:
+        #         wx = g_dev['ocn'].status
+        #     except:
+        #         wx = eval(self.redis_server.get('ocn_status'))   #NB NB NB This needs cleaning up.
 
-            quick.append(time.time())
-            quick.append(float(wx['sky_temp_C']))
-            quick.append(float(wx['temperature_C']))
-            quick.append(float(wx['humidity_%']))
-            quick.append(float(wx['dewpoint_C']))
-            quick.append(float(abs(wx['wind_m/s'])))
-            quick.append(float(wx['pressure_mbar']))   # 20200329 a SWAG!
-            quick.append(float(illum))     # Add Solar, Lunar elev and phase
-            if True:  #self.unihedron_connected:
-                uni_measure = wx['meas_sky_mpsas']   #NB NB note we are about to average logarithums.
-            else:
-                uni_measure  = 0
-            if uni_measure == 0:
-                uni_measure = round((mag - 20.01),2)   #  Fixes Unihedron when sky is too bright
-                quick.append(float(uni_measure))
-                self.meas_sky_lux = illum
-            else:
-                self.meas_sky_lux = linearize_unihedron(uni_measure)
-                quick.append(float(self.meas_sky_lux))     # intended for Unihedron
-            return quick
-        
-        elif self.site == 'saf':
-            # Should incorporate Davis data into this data set, and Unihedron.
-            illum, mag = self.astro_events.illuminationNow()
-            if illum <= 7500.:
-                open_poss = True
-                hz = 100000
-            else:
-                open_poss = False
-                hz = 500000
-            quick.append(time.time())
-            quick.append(float(self.sky_monitor.SkyTemperature))
-            quick.append(float(self.sky_monitor.Temperature))
-            quick.append(float(self.sky_monitor.Humidity))
-            quick.append(float(self.sky_monitor.DewPoint))
-            quick.append(float(abs(self.sky_monitor.WindSpeed)))
-            quick.append(float(784.0))   # 20200329 a SWAG!
-            quick.append(float(illum))     # Add Solar, Lunar elev and phase
-            if self.unihedron_connected:
-                uni_measure = self.unihedron.SkyQuality
-            else:
-                uni_measure  = 0
-            if uni_measure == 0:
-                uni_measure = round((mag - 20.01),2)   #  Fixes Unihedron when sky is too bright
-                quick.append(float(uni_measure))
-                self.meas_sky_lux = illum
-            else:
-                self.meas_sky_lux = linearize_unihedron(uni_measure)
-                quick.append(float(self.meas_sky_lux))     # intended for Unihedron
-            return quick
-        elif self.site in ['mrc', 'mrc2']:
-            wx = eval(self.redis_server.get('<ptr-wx-1_state'))
-            quick.append(time.time())
-            quick.append(float(wx["sky C"]))
-            quick.append(float(wx["amb_temp C"]))
-            quick.append(float(wx["humidity %"]))
-            quick.append(float(wx["dewpoint C"]))
-            quick.append(float(wx["wind m/s"]))
-            quick.append(float(973))   # 20200329 a SWAG!
-            quick.append(float(wx['illum lux']))     # Add Solar, etc.
-            quick.append(float(wx['bright hz']))
-
+        quick.append(time.time())
+        quick.append(float(self.status['sky_temp_C']))
+        quick.append(float(self.status['temperature_C']))
+        quick.append(float(self.status['humidity_%']))
+        quick.append(float(self.status['dewpoint_C']))
+        quick.append(float(abs(self.status['wind_m/s'])))
+        quick.append(float(self.status['pressure_mbar']))   # 20200329 a SWAG!
+        quick.append(float(illum))     # Add Solar, Lunar elev and phase
+        if self.unihedron_connected:
+            uni_measure = wx['meas_sky_mpsas']   #NB NB note we are about to average logarithums.
         else:
-            #print("Big fatal error in ocn quick status, site not supported.")
-            quick = {}
-            return quick
+            uni_measure  = 0
+        if uni_measure == 0:
+            uni_measure = round((mag - 20.01),2)   #  Fixes Unihedron when sky is too bright
+            quick.append(float(uni_measure))
+            self.meas_sky_lux = illum
+        else:
+            self.meas_sky_lux = linearize_unihedron(uni_measure)
+            quick.append(float(self.meas_sky_lux))     # intended for Unihedron
+        return quick
+        
+        # elif self.site == 'saf':  # This is the generic implementation of ocn-stat.
+        #     # Should incorporate Davis data into this data set, and Unihedron.
+        #     illum, mag = self.astro_events.illuminationNow()
+
+        #     quick.append(time.time())
+        #     quick.append(float(self.sky_monitor.SkyTemperature))
+        #     quick.append(float(self.sky_monitor.Temperature))
+        #     quick.append(float(self.sky_monitor.Humidity))
+        #     quick.append(float(self.sky_monitor.DewPoint))
+        #     quick.append(float(abs(self.sky_monitor.WindSpeed)))
+        #     quick.append(float(784.0))   # 20200329 a SWAG!
+        #     quick.append(float(illum))     # Add Solar, Lunar elev and phase
+        #     if self.unihedron_connected:
+        #         uni_measure = self.unihedron.SkyQuality
+        #     else:
+        #         uni_measure  = 0
+        #     if uni_measure == 0:
+        #         uni_measure = round((mag - 20.01),2)   #  Fixes Unihedron when sky is too bright
+        #         quick.append(float(uni_measure))
+        #         self.meas_sky_lux = illum
+        #     else:
+        #         self.meas_sky_lux = linearize_unihedron(uni_measure)
+        #         quick.append(float(self.meas_sky_lux))     # intended for Unihedron
+        #     return quick
+        # elif self.site in ['mrc', 'mrc2']:
+        #     wx = eval(self.redis_server.get('<ptr-wx-1_state'))
+        #     quick.append(time.time())
+        #     quick.append(float(wx["sky C"]))
+        #     quick.append(float(wx["amb_temp C"]))
+        #     quick.append(float(wx["humidity %"]))
+        #     quick.append(float(wx["dewpoint C"]))
+        #     quick.append(float(wx["wind m/s"]))
+        #     quick.append(float(973))   # 20200329 a SWAG!
+        #     quick.append(float(wx['illum lux']))     # Add Solar, etc.
+        #     quick.append(float(wx['bright hz']))
+
+        # else:
+        #     #print("Big fatal error in ocn quick status, site not supported.")
+        #     quick = {}
+        #     return quick
         
     def get_average_status(self, pre, post):
         average = []

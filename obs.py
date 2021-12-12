@@ -1,26 +1,21 @@
 
 """
-WER 20200307
 
 IMPORTANT TODOs:
+    
+    
+WER 20211211
 
-- Figure out how to fix jams with Maxium. Debug interrupts can cause
-  it to disconnect.
+IMPORTANT TODOs:
+    
+    
+Simplify.  No site specific if statements in main code if possible.
+Sort out when rotator is not installed and focus temp when no probe
+is in the Gemini.
 
-- Design the program to terminate cleanly with Ctrl-C.
+Abstract away Redis, Memurai, and local shares for IPC.
 
-THINGS TO FIX:
-    20200316
 
-    fully test flash calibration
-    generate local masters
-    create and send sources file created by sep
-    verify operation with FLI16200 camera
-
-    screen flats
-    autofocus, and with grid of known stars
-    sky flats
-    much better weather station approach
 
 """
 
@@ -29,30 +24,33 @@ import threading
 import queue
 import requests
 import os
-#import sys
-#import argparse
-import redis
+import redis  #  Client, can work with Memurai
 import json
 import numpy as np
 import math
 import shelve
 #import datetime
+#import sys
+#import argparse
 from pprint import pprint
-#from pprint import pprint
 from api_calls import API_calls
-#from skimage import data, io, filters
 from skimage.transform import resize
+#from skimage import data, io, filters
 #from skimage import img_as_float
 #from skimage import exposure
+#from PIL import Image
 from skimage.io import imsave
 import matplotlib.pyplot as plt
 import sep
 from astropy.io import fits
-#from PIL import Image
-import ptr_events
 from planewave import platesolve
+import bz2
+import httplib2
+from auto_stretch.stretch import Stretch
 
-# import device classes
+import ptr_events
+import config_file
+# import device classes:
 from devices.camera import Camera
 from devices.filter_wheel import FilterWheel
 from devices.focuser import Focuser
@@ -66,10 +64,9 @@ from devices.selector import Selector
 from devices.screen import Screen
 from devices.sequencer import Sequencer
 from processing.calibration import calibrate
-from global_yard import g_dev
-import bz2
-import httplib2
-from auto_stretch.stretch import Stretch
+from global_yard import g_dev  # g-dev is a place where it is easy to 
+                               # monkey-patch whole devices.
+
 #import ssl
 
 #  THIS code flushes the SSL Certificate cache which sometimes fouls up updating
@@ -176,6 +173,16 @@ class Observatory:
         self.astro_events = ptr_events.Events(self.config)
         self.astro_events.compute_day_directory()
         self.astro_events.display_events()
+        
+        redis_ip = config['redis_ip']
+        if redis_ip is not None:           
+            self.redis_server = redis.StrictRedis(host=redis_ip, port=6379, db=0,
+                                              decode_responses=True)
+            self.redis_wx_enabled = True
+            g_dev['ipc'] = self.redis_server  #I think IPC needs to be a class.
+        else:
+            self.redis_wx_enabled = False
+            g_dev['ipc'] = None    #a  placeholder.
         # Send the config to aws   # NB NB NB This has faulted.
         self.update_config()
         # Use the configuration to instantiate objects for all devices.
@@ -187,13 +194,7 @@ class Observatory:
         g_dev['site']:  site_str
         self.g_dev = g_dev
  
-        redis_ip = config['redis_ip']
-        if redis_ip is not None:           
-            self.redis_server = redis.StrictRedis(host=redis_ip, port=6379, db=0,
-                                              decode_responses=True)
-            self.redis_wx_enabled = True
-        else:
-            self.redis_wx_enabled = False
+
         self.time_last_status = time.time() - 3
         # Build the to-AWS Queue and start a thread.
   
@@ -462,10 +463,14 @@ class Observatory:
                 # Get the actual device object...
                 device = devices_of_type[device_name]
                 # ...and add it to main status dict.
-                result = device.get_status()
-
+                if device_name in ['observing_conditions1', 'enclosure1']:
+                    result = device.get_status(g_dev)
+                
+                else:
+                    result = device.get_status()
                 if result is not None:
                     status[dev_type][device_name] = result
+                    #print(device_name, result, '\n')
         # Include the time that the status was assembled and sent.
         if remove_enc:
             status.pop('enclosure', None)
@@ -490,12 +495,14 @@ class Observatory:
                 "statusType": "deviceStatus",
                 "status":  status
                 }
+            #print("Payload:  ", payload)
             data = json.dumps(payload)
             response = requests.post(uri_status, data=data)
             #self.api.authenticated_request("PUT", uri_status, status)   # response = is not  used
             #print("AWS Response:  ",response)
+            # NB should qualify acceptance and type '.' at that point.
             self.time_last_status = time.time()
-            self.redis_server.set('obs_time', self.time_last_status, ex=120 )
+            #self.redis_server.set('obs_time', self.time_last_status, ex=120 )
             self.status_count +=1
         except:
             print('self.api.authenticated_request("PUT", uri, status):   Failed!')
@@ -667,7 +674,8 @@ class Observatory:
                     err_ha = TARGRA - RAJ2000
                     err_dec = TARGDEC - DECJ2000
                     print("err ra, dec:  ", err_ha, err_dec)
-                    g_dev['mnt'].adjust_mount_reference(err_ha, err_dec)
+                    #Turn this off for now and center in autofocus. Race condition.
+                    #g_dev['mnt'].adjust_mount_reference(err_ha, err_dec)
                     img.flush()
                     img.close
                     img = fits.open(wpath, ignore_missing_end=True)
@@ -916,8 +924,8 @@ if __name__ == "__main__":
     # print(f"Starting up {config.site_name}.")
     # Start up the observatory
 
-    import config
+    import config_file
     
 
-    o = Observatory(config.site_name, config.site_config)
+    o = Observatory(config_file.site_name, config_file.site_config)
     o.run()
