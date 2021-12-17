@@ -537,7 +537,7 @@ class Enclosure:
                 self.redis_server.set('Shutter_is_open', True)
                 return True
             except:
-                print("Attempt to open shutter failed at quarded_open command")
+                print("Attempt to open shutter failed at quarded_open command.")
                 self.redis_server.set('Shutter_is_open', False)
                 return False
         return False
