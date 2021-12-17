@@ -28,7 +28,7 @@ site_config = {
     'site_IPC_mechanism':  'shares',   # ['None', shares', 'shelves', 'redis']  Pick One
     'site_share_path':  '//SAF-WEMA/wema_transfer/',   #  Presumably also where shelves are found
     'redis_ip': None,   # None if no redis path present, localhost if redis iself-contained
-    'wema_path':  'site_share_path',   #We should obsolete this NB NB NB
+    'wema_path':  'site_share_path',   #We should obsolete this double naming NB NB NB
     'defaults': {
         'observing_conditions': 'observing_conditions1',  #  These are used as keys, may go away.
         'enclosure': 'enclosure1',
