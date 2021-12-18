@@ -28,7 +28,7 @@ def get_default_catalog_location():
 
 
 def platesolve(image_file, arcsec_per_pixel):
-    breakpoint()
+
     stdout_destination = None  # Replace with PIPE if we want to capture the output rather than displaying on the console
 
     output_file_path = os.path.join(tempfile.gettempdir(), "ps3cli_results.txt")
