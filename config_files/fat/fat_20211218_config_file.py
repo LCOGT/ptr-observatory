@@ -531,6 +531,7 @@ def get_ocn_status(g_dev):
                 open_ok = wx_fields[19]
                 #g_dev['o.redis_sever.set("focus_temp", temperature, ex=1200)
                 #self.focus_temp = temperature
+                self.las_goodt_wx_fields = wx_fields
             except:
                 print('SRO Weather source problem, 2nd try.')
                 time.sleep(5)
@@ -551,24 +552,58 @@ def get_ocn_status(g_dev):
                     #g_dev['o.redis_sever.set("focus_temp", temperature, ex=1200)
                     #self.focus_temp = temperature
                 except:
-                    print('SRO Weather source problem, 3nd try.')
-                    breakpoint()
+                    try:
 
+                        wx = open('W:/sroweather.txt', 'r')
+                        wx_line = wx.readline()
+                        wx.close
+                        #print(wx_line)
+                        wx_fields = wx_line.split()
+                        skyTemperature = f_to_c(float( wx_fields[4]))
+                        temperature = f_to_c(float(wx_fields[5]))
+                        windspeed = round(float(wx_fields[7])/2.237, 2)
+                        humidity =  float(wx_fields[8])
+                        dewpoint = f_to_c(float(wx_fields[9]))
+                        #timeSinceLastUpdate = wx_fields[13]
+                        open_ok = wx_fields[19]
+                        #g_dev['o.redis_sever.set("focus_temp", temperature, ex=1200)
+                        #self.focus_temp = temperature
+                    except:
+                        print('SRO Weather source problem, 3nd try.')
+                        wx_fields = last_good_wx_fields
+                        wx_fields = wx_line.split()
+                        skyTemperature = f_to_c(float( wx_fields[4]))
+                        temperature = f_to_c(float(wx_fields[5]))
+                        windspeed = round(float(wx_fields[7])/2.237, 2)
+                        humidity =  float(wx_fields[8])
+                        dewpoint = f_to_c(float(wx_fields[9]))
+                        #timeSinceLastUpdate = wx_fields[13]
+                        open_ok = wx_fields[19]
+        self.last_weather = 
         try:
             daily= open('W:/daily.txt', 'r')
             daily_lines = daily.readlines()
             daily.close()
             pressure = round(33.846*float(daily_lines[-3].split()[1]), 2)
+            self.last_good_daily_lines = daily_lines
         except:
             time.sleep(5)
             try:
                 daily= open('W:/daily.txt', 'r')
                 daily_lines = daily.readlines()
                 daily.close()
+                self.last_good_daily_lines = daily_lines
                 pressure = round(33.846*float(daily_lines[-3].split()[1]), 2)
             except:
-                print('SRO Daily source problem, 2nd try')
-                pressure = 866.
+                try:
+                    daily= open('W:/daily.txt', 'r')
+                    daily_lines = daily.readlines()
+                    daily.close()
+                    pressure = round(33.846*float(daily_lines[-3].split()[1]), 2)
+                except:
+                    print('SRO Daily source problem, 3nd try')
+                    pressure = round(33.846*float(self.last_good_daily_lines[-3].split()[1]), 2)
+
         illum, mag = g_dev['evnt'].illuminationNow()
 
         if illum > 100:
