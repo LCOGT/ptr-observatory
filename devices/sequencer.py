@@ -283,7 +283,6 @@ class Sequencer:
             enc_status = g_dev['enc'].status
 
         events = g_dev['events']
-
         #g_dev['obs'].update_status()  #NB NEED to be sure we have current enclosure status.  Blows recursive limit
         self.current_script = "No current script"    #NB this is an unused remnant I think.
         #if True or     #Note this runs in Manual Mode as well.
@@ -343,7 +342,7 @@ class Sequencer:
  
             house = []
             for project in projects:
-                if project['user_id'] in config.site_config['owner']:  # and not expired, etc.
+                if project['user_id'] in config_file.site_config['owner']:  # and not expired, etc.
                      house.append(project)
             '''
             evaluate supplied projects for observable and mark as same. Discard
@@ -536,7 +535,7 @@ class Sequencer:
             except:
                 pass
             g_dev['mnt'].go_coord(dest_ra, dest_dec)
-            self.redis_server.set('sync_enc', True, ex=1200)   #Should be redundant
+           #self.redis_server.set('sync_enc', True, ex=1200)   #Should be redundant
             print("CAUTION:  rotator may block")
             pa = float(block_specification['project']['project_constraints']['position_angle'])
             if abs(pa) > 0.01:
@@ -584,7 +583,7 @@ class Sequencer:
 
                 #just_focused = True      ###DEBUG
                 if initial_focus: # and False:
-                    print("Enc Status:  ", g_dev['enc'].get_status())
+                    #print("Enc Status:  ", g_dev['enc'].get_status())
                     
 
                     # if not g_dev['enc'].shutter_is_closed:
@@ -1146,8 +1145,7 @@ class Sequencer:
         req2 = copy.deepcopy(req)
         opt2 = copy.deepcopy(opt)
         self.af_guard = True
-
-        sim = g_dev['enc'].status['shutter_status'] in ['Closed', 'Closing', 'closed', 'closing']
+        sim = False  # g_dev['enc'].status['shutter_status'] in ['Closed', 'Closing', 'closed', 'closing']
         
         # try:
         #     self.redis_server.set('enc_cmd', 'sync_enc', ex=1200)
@@ -1228,7 +1226,7 @@ class Sequencer:
         spot2 = result['FWHM']
         foc_pos2 = result['mean_focus']
         print('Autofocus Overtaveling Out.\n\n')
-        g_dev['foc'].focuser.Move((foc_pos0 + throw)*g_dev['foc'].micron_to_steps)   #It is important to overshoot to overcome any backlash
+        g_dev['foc'].focuser.Move((foc_pos0 + 2*throw)*g_dev['foc'].micron_to_steps)   #It is important to overshoot to overcome any backlash
         print('Autofocus Moving back in half-way.\n\n')
         g_dev['foc'].focuser.Move((foc_pos0 + throw)*g_dev['foc'].micron_to_steps)  #NB NB NB THIS IS WRONG!
         #opt['fwhm_sim'] = 5
@@ -1327,7 +1325,7 @@ class Sequencer:
         '''
         print('AF entered with:  ', req, opt)
         self.guard = True
-        sim = g_dev['enc'].status['shutter_status'] in ['Closed', 'closed', 'Closing', 'closing']
+        sim = False #g_dev['enc'].status['shutter_status'] in ['Closed', 'closed', 'Closing', 'closing']
         print('AF entered with:  ', req, opt, '\n .. and sim =  ', sim)
         #self.sequencer_hold = True  #Blocks command checks.
         start_ra = g_dev['mnt'].mount.RightAscension

@@ -455,7 +455,7 @@ class ObservingConditions:
         # wx = eval(self.redis_server.get('<ptr-wx-1_state'))
         #  NB NB This routine does NOT update self.wx_ok
         #Above is cruft
-        self.status = self.status = self.get_status(g_dev)  # Get current stat.
+        self.status = self.get_status(g_dev)  # Get current stat.
         #if self.site_is_proxy:
             #Need to get data for camera from redis.
         illum, mag = g_dev['evnt'].illuminationNow()
@@ -476,7 +476,7 @@ class ObservingConditions:
         quick.append(float(self.status['pressure_mbar']))   # 20200329 a SWAG!
         quick.append(float(illum))     # Add Solar, Lunar elev and phase
         if self.unihedron_connected:
-            uni_measure = wx['meas_sky_mpsas']   #NB NB note we are about to average logarithums.
+            uni_measure = 0#wx['meas_sky_mpsas']   #NB NB note we are about to average logarithums.
         else:
             uni_measure  = 0
         if uni_measure == 0:
