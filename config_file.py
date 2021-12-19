@@ -513,6 +513,7 @@ def get_ocn_status(g_dev):
             open_ok = wx_fields[19]
             #g_dev['o.redis_sever.set("focus_temp", temperature, ex=1200)
             #self.focus_temp = temperature
+            g_dev['las_good_wx_fields'] = wx_fields
         except:
             time.sleep(5)
             try:
@@ -531,7 +532,7 @@ def get_ocn_status(g_dev):
                 open_ok = wx_fields[19]
                 #g_dev['o.redis_sever.set("focus_temp", temperature, ex=1200)
                 #self.focus_temp = temperature
-                self.las_goodt_wx_fields = wx_fields
+                #g_dev['las_good_wx_fields'] = wx_fields
             except:
                 print('SRO Weather source problem, 2nd try.')
                 time.sleep(5)
@@ -551,6 +552,7 @@ def get_ocn_status(g_dev):
                     open_ok = wx_fields[19]
                     #g_dev['o.redis_sever.set("focus_temp", temperature, ex=1200)
                     #self.focus_temp = temperature
+
                 except:
                     try:
 
@@ -570,7 +572,7 @@ def get_ocn_status(g_dev):
                         #self.focus_temp = temperature
                     except:
                         print('SRO Weather source problem, 3nd try.')
-                        wx_fields = last_good_wx_fields
+                        wx_fields = g_dev['last_good_wx_fields']
                         wx_fields = wx_line.split()
                         skyTemperature = f_to_c(float( wx_fields[4]))
                         temperature = f_to_c(float(wx_fields[5]))
@@ -579,7 +581,7 @@ def get_ocn_status(g_dev):
                         dewpoint = f_to_c(float(wx_fields[9]))
                         #timeSinceLastUpdate = wx_fields[13]
                         open_ok = wx_fields[19]
-        self.last_weather = 
+        #self.last_weather =   NB found this fragment
         try:
             daily= open('W:/daily.txt', 'r')
             daily_lines = daily.readlines()
