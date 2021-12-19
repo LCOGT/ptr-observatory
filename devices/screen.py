@@ -16,8 +16,8 @@ class Screen(object):
         self.screen.Connected=True
         #self.pC =  ' ' +self.driver.split('COM')[1]  #just last 0ne or two digits.
         #print('COM port used for Screen:  ' + self.driver)
-        print(" West Screen takes a few seconds to process commands.")
-        self.scrn = str ('WestAlnitak')
+        print("Screens may take a few seconds to process commands.")
+        self.scrn = str ('Alnitak')
         #os.chdir('C:\\Program Files (x86)\\Optec\\Alnitak Astrosystems Controller')
         #C:/Program Files (x86)/Optec/Alnitak Astrosystems Controller
         

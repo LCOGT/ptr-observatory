@@ -518,7 +518,6 @@ class Camera:
             self.user_name
         except:
             self.user_name = "kilroy_was_here"
-        
         self.t0 = time.time()
         #Force a reseek //eventually dither//
         try:
@@ -1619,7 +1618,6 @@ class Camera:
                         try:
                             #wpath = 'C:/000ptr_saf/archive/sq01/20210528/reduced/saf-sq01-20210528-00019785-le-w-EX01.fits'
                             time_now = time.time()
-                            breakpoint()
                             solve = platesolve.platesolve(cal_path + cal_name, 1.06) #hdu.header['PIXSCALE'])
                             print("PW Solves: " ,solve['ra_j2000_hours'], solve['dec_j2000_degrees'])
                             TARGRA  = g_dev['mnt'].current_icrs_ra
