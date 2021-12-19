@@ -68,13 +68,8 @@ class Enclosure:
             self.get_status = config_file.get_ocn_status
             # Get current ocn status just as a test.
             self.status = self.get_status(g_dev)
-        else:
-            self.site_is_generic = True
-            # breakpoint()  # All test code
-            # quick = []
-            # self.get_quick_status(quick)
-            # print(quick)
-        if self.is_wema: # or self.site_is_generic:   
+
+        elif self.is_wema: # or self.site_is_generic:   
             #  This is meant to be a generic Observing_condition code
             #  instance that can be accessed by a simple site or by the WEMA,
             #  assuming the transducers are connected to the WEMA.
@@ -88,6 +83,12 @@ class Enclosure:
                 print("ASCOM enclosure connected.")
             except:
                  print("ASCOM enclosure NOT connected, proabably the App is not connected to telescope.")
+        else:
+            self.site_is_generic = True
+            # breakpoint()  # All test code
+            # quick = []
+            # self.get_quick_status(quick)
+            # print(quick)
         #self.prior_status = self.status
         self.status = None   #  May need a status seed if site specific.
         #self.state = 'Ok'

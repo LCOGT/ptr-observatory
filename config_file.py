@@ -27,13 +27,12 @@ site_config = {
                                                         # some aws handle.
     'owner_alias': ['WER'],
     'admin_aliases': [ "WER", "TB", "DH", "KVH", 'KC', "ANS", 'EC'],
-    'agent_wms_enc_active':  False,    # True if an agent is used at a site.  
-                                       # Fat is intended to be simple since 
-                                       # there is so little to control.
-    'redis_ip': None,   # None if no redis path present, localhost if redis is 
-                        # self-contained
-    'site_is_specific':  True,  # Indicates some special code for the site. 
-                                 # Intention it is found in this file.
+    'wema_is_active':  False,    #True if the split computers used at a site.
+                                      #MRC is the model redis site
+    'wema_hostname':  ['FAT-0m30'],  #  Prefer the shorter version
+    'redis_ip': None,  #'127.0.0.1', None if no redis path present, 
+                                #localhost if redis is self-contained
+    'site_is_specific':  True,  # Indicates some special code for the site.
     
     'defaults': {
         'observing_conditions': 'observing_conditions1',  #  These are used as keys, may go away.
@@ -379,7 +378,7 @@ site_config = {
     },
     
     'camera': {
-        'camera_1': {
+        'camera_1_1': {
             'parent': 'telescope1',
             'name': 'kb001',      #  Important because this points to a server file structure by that name.
             'desc':  'SBIG16200',
@@ -587,15 +586,15 @@ def get_ocn_status(g_dev):
             daily_lines = daily.readlines()
             daily.close()
             pressure = round(33.846*float(daily_lines[-3].split()[1]), 2)
-            self.last_good_daily_lines = daily_lines
+            #self.last_good_daily_lines = daily_lines
         except:
             time.sleep(5)
             try:
                 daily= open('W:/daily.txt', 'r')
                 daily_lines = daily.readlines()
                 daily.close()
-                self.last_good_daily_lines = daily_lines
-                pressure = round(33.846*float(daily_lines[-3].split()[1]), 2)
+                #self.last_good_daily_lines = daily_lines
+               # pressure = round(33.846*float(daily_lines[-3].split()[1]), 2)
             except:
                 try:
                     daily= open('W:/daily.txt', 'r')
@@ -604,7 +603,7 @@ def get_ocn_status(g_dev):
                     pressure = round(33.846*float(daily_lines[-3].split()[1]), 2)
                 except:
                     print('SRO Daily source problem, 3nd try')
-                    pressure = round(33.846*float(self.last_good_daily_lines[-3].split()[1]), 2)
+                   # pressure = round(33.846*float(self.last_good_daily_lines[-3].split()[1]), 2)
 
         illum, mag = g_dev['evnt'].illuminationNow()
 
