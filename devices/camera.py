@@ -190,7 +190,7 @@ class Camera:
         g_dev[name + '_cam_retry_doit'] = False
         g_dev[name] = self
     
-        if name == 'camera_1':     #NBDefaults sets up Selected 'cam'
+        if name == 'camera_1_1':     #NBDefaults sets up Selected 'cam'
             g_dev['cam'] = self
         self.config = config
         self.alias = config['camera'][self.name]['name']

@@ -53,7 +53,7 @@ class Focuser:
         self.site = config['site']
         self.name = name
         self.site_path = config['site_path']
-        self.camera_name = config['camera']['camera_1']['name']
+        self.camera_name = config['camera']['camera_1_1']['name']
         g_dev['foc'] = self
         self.config = config['focuser']['focuser1']
         win32com.client.pythoncom.CoInitialize()

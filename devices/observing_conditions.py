@@ -89,6 +89,7 @@ class ObservingConditions:
         self.pressure = self.config['reference_pressure'][0]   #  to be months.
         self.unihedron_connected = True  #NB NB NB THis needs improving, driving from config
         self.hostname = socket.gethostname()
+        self.site_is_specific = False
         if self.hostname in self.config['wema_hostname']:
             self.is_wema = True
         else:
@@ -112,10 +113,11 @@ class ObservingConditions:
             # quick = []
             # self.get_quick_status(quick)
             # print(quick)
-        else:
+        elif (self.is_wema or self.site_is_specific):
             #  This is meant to be a generic Observing_condition code
             #  instance that can be accessed by a simple site or by the WEMA,
             #  assuming the transducers are connected to the WEMA.
+            breakpoint()
             self.site_is_generic = True
             win32com.client.pythoncom.CoInitialize()
             self.sky_monitor = win32com.client.Dispatch(driver)

@@ -74,7 +74,7 @@ class Enclosure:
             # quick = []
             # self.get_quick_status(quick)
             # print(quick)
-        if self.is_wema or self.site_is_generic:   
+        if self.is_wema: # or self.site_is_generic:   
             #  This is meant to be a generic Observing_condition code
             #  instance that can be accessed by a simple site or by the WEMA,
             #  assuming the transducers are connected to the WEMA.
