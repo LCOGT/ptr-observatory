@@ -63,7 +63,7 @@ class Enclosure:
         self.astro_events = astro_events
         self.site = config['site']
         self.config = config
-        self.site_is_proxy = self.config['agent_wms_enc_active'] 
+        self.site_is_proxy = self.config['wema_is_active'] 
         g_dev['enc'] = self
         if driver is not None:
             win32com.client.pythoncom.CoInitialize()
@@ -79,7 +79,7 @@ class Enclosure:
         if redis_ip is not None:           
             #self.redis_server = redis.StrictRedis(host=redis_ip, port=6379, db=0,
             #                                   decode_responses=True)
-            self.redis_server = g_dev['redis_server']   #ensure we only have one working.
+            self.redis_server = g_dev['redis']   #ensure we only have one working.
             self.redis_wx_enabled = True
             #g_dev['redis_server'] = self.redis_server 
         else:
@@ -99,6 +99,7 @@ class Enclosure:
         self.prior_status = None
         self.time_of_next_slew = time.time()
         self.following = False
+
 
 
         if self.config['site_in_automatic_default'] == "Automatic":
@@ -644,7 +645,7 @@ class Enclosure:
             self.dome_opened = True
             self.dome_homed = True
             self.redis_server.set('Enc Auto Opened', True, ex= 600)
-            if self.status_string in ['Open'] and ephem_now < g_dev['events']['End Eve Sky Flats']:
+            if self.status_string in ['Open'] and ephem_now < g_dev['events']['End Eve Sky Flats'] and self.is_dome:
                 self.enclosure.SlewToAzimuth(az_opposite_sun)
                 time.sleep(15)
         #THIS should be the ultimate backup to force a close
