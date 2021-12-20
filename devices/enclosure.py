@@ -65,7 +65,7 @@ class Enclosure:
             self.site_is_specific = True
             #  Note OCN has no associated commands.
             #  Here we monkey patch
-            self.get_status = config_file.get_ocn_status
+            self.get_status = config_file.get_enc_status
             # Get current ocn status just as a test.
             self.status = self.get_status(g_dev)
 
@@ -90,13 +90,14 @@ class Enclosure:
             # self.get_quick_status(quick)
             # print(quick)
         #self.prior_status = self.status
-        self.status = None   #  May need a status seed if site specific.
+        #self.status = None   #  May need a status seed if site specific.
         #self.state = 'Ok'
         
-    def get_status(self) -> dict:
+    def get_status(self) -> dict: 
         #<<<<The next attibute reference fails at saf, usually spurious Dome Ring Open report.
         #<<< Have seen other instances of failing.
         #core1_redis.set('unihedron1', str(mpsas) + ', ' + str(bright) + ', ' + str(illum), ex=600)
+        breakpoint()  # NB NB we should not get here at fat.  This needs proper conditioning.
         try:
             shutter_status = self.enclosure.ShutterStatus
         except:

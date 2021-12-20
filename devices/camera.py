@@ -1029,7 +1029,7 @@ class Camera:
     def finish_exposure(self, exposure_time, frame_type, counter, seq, \
                         gather_status=True, do_sep=False, no_AWS=False, start_x=None, start_y=None, quick=False, \
                         low=0, high=0, script='False', opt=None, solve_it=False):
-        print("Finish exposure Entered:  ", exposure_time, frame_type, counter, \
+        print("Finish exposure Entered:  ", exposure_time, frame_type, 'to go: ', counter, \
               gather_status, do_sep, no_AWS, start_x, start_y, opt['area'])
         self.post_mnt = []
         self.post_rot = []

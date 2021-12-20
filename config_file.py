@@ -6,6 +6,8 @@ Updated 20200902 WER
 
 @author: wrosing
 '''
+
+#2345678901234567890123456789012345678901234567890123456789012345678901234567890
 import json
 import time
 import ptr_events
@@ -44,7 +46,7 @@ site_config = {
         'rotator': 'rotator1',
         'selector': None,
         'filter_wheel': 'filter_wheel1',
-        'camera': 'camera_1',
+        'camera': 'camera_1_1',
         'sequencer': 'sequencer1'
         },
     'device_types': [
@@ -99,10 +101,10 @@ site_config = {
     'automatic_detail_default': "Enclosure is initially set to Automatic mode.",
     'auto_eve_bias_dark': False,
     'auto_eve_sky_flat': False,
+    'eve_sky_flat_sunset_offset': +5.0,  #  Minutes  neg means before, + after.
     'auto_morn_sky_flat': False,
     'auto_morn_bias_dark': False,
     're-calibrate_on_solve': True, 
-    
 
     'observing_conditions' : {
         'observing_conditions1': {
@@ -284,11 +286,11 @@ site_config = {
             'driver': 'ASCOM.OptecGemini.Focuser',
 			'com_port':  'COM9',
             #F4.9 setup
-            'reference': 7667,    #  20210313  Nominal at 10C Primary temperature
-            'ref_temp':  6.33,    #  Update when pinning reference
+            'reference': 7728,    #  20210313  Nominal at 10C Primary temperature
+            'ref_temp':  5.06,    #  Update when pinning reference
             'coef_c': 0,   #  Negative means focus moves out as Primary gets colder
-            'coef_0': 7667,  #  Nominal intercept when Primary is at 0.0 C. 
-            'coef_date':  '2021208',    #This appears to be sensible result 44 points -13 to 3C'reference':  6431,    #  Nominal at 10C Primary temperature
+            'coef_0': 7728,  #  Nominal intercept when Primary is at 0.0 C. 
+            'coef_date':  '2021220',    #This appears to be sensible result 44 points -13 to 3C'reference':  6431,    #  Nominal at 10C Primary temperature
             # #F9 setup
             # 'reference': 4375,    #   Guess 20210904  Nominal at 10C Primary temperature
             # 'ref_temp':  27.,    #  Update when pinning reference
@@ -311,20 +313,20 @@ site_config = {
             'parent': 'telescope1',
             'name': 'None',
             'desc':  'Null Changer',
-            'driver': 'Null',
+            'driver': None,
             'com_port': None,
             'startup_script':  None,
             'recover_script':  None,
             'shutdown_script':  None,
             'ports': 1,
             'instruments':  ['Main_camera'], #, 'eShel_spect', 'planet_camera', 'UVEX_spect'],
-            'cameras':  ['camera_1'], # , 'camera_1_2', None, 'camera_1_4'],
+            'cameras':  ['camera_1_1'], # , 'camera_1_2', None, 'camera_1_4'],
             'guiders':  [None], # , 'guider_1_2', None, 'guide_1_4'],
             'default': 0
             },
 
     },
-    
+
     'filter_wheel': {
         "filter_wheel1": {
             "parent": "telescope1",
@@ -657,6 +659,7 @@ def get_enc_status(g_dev):
             enc_text = enc.readline()
             enc.close
             enc_list = enc_text.split()
+
         except:
             try:
                 enc = open('R:/Roof_Status.txt')
