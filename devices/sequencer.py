@@ -1298,7 +1298,7 @@ class Sequencer:
             if spot3 <= spot2:
                 min_focus = foc_pos3
             print("It appears camera is too far out; try again with coarse_focus_script.")
-            self.coarse_focus_script(req2, opt2, throw=600, begin_at=min_focus)
+            self.coarse_focus_script(req2, opt2, throw=throw + 75, begin_at=min_focus)
 
             return
         else:
@@ -1315,7 +1315,7 @@ class Sequencer:
         return
 
 
-    def coarse_focus_script(self, req, opt, throw=750, begin_at=None):
+    def coarse_focus_script(self, req, opt, throw=700, begin_at=None):
         '''
         V curve is a big move focus designed to fit two lines adjacent to the more normal focus curve.
         It finds the approximate focus, particulary for a new instrument. It requires 8 points plus
