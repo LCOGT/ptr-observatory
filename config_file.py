@@ -27,14 +27,15 @@ site_config = {
                                                         # some aws handle.
     'owner_alias': ['WER'],
     'admin_aliases': [ "WER", "TB", "DH", "KVH", 'KC', "ANS", 'EC'],
-    'agent_wms_enc_active':  False,    # True if an agent is used at a site.  
-                                       # Fat is intended to be simple since 
-                                       # there is so little to control.
-    'redis_ip': None,   # None if no redis path present, localhost if redis is 
-                        # self-contained
-    'site_is_specific':  True,  # Indicates some special code for the site. 
-                                 # Intention it is found in this file.
-    
+        'owner_alias': ['WER'],
+    'admin_aliases': ["ANS", "WER", "TB", "DH", "KVH", "KC"],
+    'wema_is_active':  True,    #True if the split computers used at a site.
+                                      #MRC is the model redis site
+    'wema_hostname':  ['MRC-WMS-ENC', 'MRC'],  #  Prefer the shorter version
+    'redis_ip': '10.15.0.109',  #'127.0.0.1', None if no redis path present, 
+                                #localhost if redis is self-contained
+    'site_is_specific':  False,  # Indicates some special code for the site.
+
     'defaults': {
         'observing_conditions': 'observing_conditions1',  #  These are used as keys, may go away.
         'enclosure': 'enclosure1',
@@ -513,7 +514,7 @@ def get_ocn_status(g_dev):
             open_ok = wx_fields[19]
             #g_dev['o.redis_sever.set("focus_temp", temperature, ex=1200)
             #self.focus_temp = temperature
-            g_dev['las_good_wx_fields'] = wx_fields
+            g_dev['last_good_wx_fields'] = wx_fields
         except:
             time.sleep(5)
             try:
@@ -532,7 +533,7 @@ def get_ocn_status(g_dev):
                 open_ok = wx_fields[19]
                 #g_dev['o.redis_sever.set("focus_temp", temperature, ex=1200)
                 #self.focus_temp = temperature
-                #g_dev['las_good_wx_fields'] = wx_fields
+                #g_dev['last_good_wx_fields'] = wx_fields
             except:
                 print('SRO Weather source problem, 2nd try.')
                 time.sleep(5)
