@@ -376,28 +376,30 @@ class Observatory:
                     # Process each job one at a time
                     print("# of incomming commands:  ", len(unread_commands))
                     for cmd in unread_commands:
-                        if self.config['selector']['selector1']['driver'] != 'Null':
+                        if self.config['selector']['selector1']['driver'] is None:
                             port = cmd['optional_params']['instrument_selector_position'] 
                             g_dev['mnt'].instrument_port = port
                             cam_name = self.config['selector']['selector1']['cameras'][port]
                             if cmd['deviceType'][:6] == 'camera':
-                                cmd['required_params']['device_instance'] = cam_name
+                                #  Note camelCase is teh format of command keys
+                                cmd['required_params']['deviceInstance'] = cam_name
                                 cmd['deviceInstance'] = cam_name
-                                deviceInstance = cam_name
+                                device_instance = cam_name
                             else:
                                 try:
                                     try:
-                                        deviceInstance = cmd['deviceInstance']
+                                        device_instance = cmd['deviceInstance']
                                     except:
-                                        deviceInstance = cmd['required_params']['device_instance']
+                                        device_instance = cmd['required_params']['deviceInstance']
                                 except:
                                     breakpoint()
                                     pass
                         else:
-                            deviceInstance = cmd['deviceInstance']
+                            device_instance = cmd['deviceInstance']
                         print('obs.scan_request: ', cmd)
-                        deviceType = cmd['deviceType']
-                        device = self.all_devices[deviceType][deviceInstance]
+
+                        device_type = cmd['deviceType']
+                        device = self.all_devices[device_type][device_instance]
                         try:
                         
                             device.parse_command(cmd)

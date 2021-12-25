@@ -742,12 +742,16 @@ def calibrate (hdu, lng_path, frame_type='light', quick=False):
     hdu.data[fix] = 0
     big_max = hdu.data.max()
     if loud: print("Max data value is:  ", big_max)
-    fix = np.where(hdu.data > 65530)
-    hdu.data[fix] = 65530.
+    high_clamp = np.where(hdu.data > 65530)
+    hdu.data[high_clamp] = 65530.
    #print("Pre uint", hdu.data.mean())
     hdu.data = hdu.data.astype('uint16')  #NB NB NB Why this step??
+    #   NB NB NB these procedures are dubious unless just intended for the flash
+    #   images.
     #print("Post uint", hdu.data.mean())
     result = {}
+    
+    #  NB NB Note adding meaninless data to keywords having nothing to do with calibration.
     result['error'] = False
     result['mean_focus'] = None
     result['mean_rotation'] = None
