@@ -67,7 +67,7 @@ class ObservingConditions:
         self.sample_time = 0
         self.ok_to_open = 'No'
         self.observing_condtions_message = '-'
-        self.wx_is_ok = None
+        self.wx_is_ok = False
         self.wx_hold = False
         self.wx_to_go = 0.0
         self.wx_hold_last_updated = time.time()   #This is meant for a stale check on the Wx hold report
@@ -117,7 +117,6 @@ class ObservingConditions:
             #  This is meant to be a generic Observing_condition code
             #  instance that can be accessed by a simple site or by the WEMA,
             #  assuming the transducers are connected to the WEMA.
-            breakpoint()
             self.site_is_generic = True
             win32com.client.pythoncom.CoInitialize()
             self.sky_monitor = win32com.client.Dispatch(driver)
@@ -202,9 +201,12 @@ class ObservingConditions:
                 illum = round(illum, 3)
             #self.wx_is_ok = True
             self.temperature = round(self.sky_monitor.Temperature, 2)
-            self.pressure = self.sky_monitor.Pressure,  #978   #Mbar to mmHg  #THIS IS A KLUDGE
+            try:  #  NB NB Boltwood vs. SkyAlert difference.  What about FAT?
+                self.pressure = self.sky_monitor.Pressure,  #978   #Mbar to mmHg  #THIS IS A KLUDGE
+            except:
+                self.pressure = self.config['reference_pressure']
             status = {"temperature_C": round(self.sky_monitor.Temperature, 2),
-                      "pressure_mbar": self.sky_monitor.Pressure,
+                      "pressure_mbar": self.pressure,
                       "humidity_%": self.sky_monitor.Humidity,
                       "dewpoint_C": self.sky_monitor.DewPoint,
                       "sky_temp_C": round(self.sky_monitor.SkyTemperature,2),
@@ -276,7 +278,7 @@ class ObservingConditions:
                 g_dev['redis'].set('<ptr-wx_state', status)  #THis needs to become generalized IPC
             return status
 
-        if not self.is_wema:
+        if not self.is_wema and self.site in ['mrc', 'mrc2']:   #THis code relates to MRC old weather 
             try:
                 #breakpoint()
                 # pass

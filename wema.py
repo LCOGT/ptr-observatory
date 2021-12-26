@@ -105,22 +105,7 @@ class WxEncAgent:
         self.astro_events = ptr_events.Events(self.config)
         self.astro_events.compute_day_directory()
         self.astro_events.display_events()
-<<<<<<< HEAD
-        redis_ip = config['redis_ip']
-        if redis_ip is not None:           
-            self.redis_server = redis.StrictRedis(host=redis_ip, port=6379,\
-                                db=0, decode_responses=True)
-            self.redis_wx_enabled = True 
-            g_dev['redis_server'] = self.redis_server   #Use this instance.
-            g_dev['redis_server']['wema_loaded'] = True
-            # NB NB THis seems overly aggressive, but may be OK
-            for key in self.redis_server.keys(): 
-                self.redis_server.delete(key)
-        else:
-            self.redis_wx_enabled = False
-        
-       
-=======
+
         self.wema_pid = os.getpid()
         print('WEMA_PID:  ', self.wema_pid)
         if config['redis_ip'] is not None:           
@@ -134,7 +119,7 @@ class WxEncAgent:
             self.redis_wx_enabled = False
             g_dev['redis'] = None
         ##  g_dev['redis_server']['wema_loaded'] = True
->>>>>>> d0792a66385b3ebdef90a57d1fca628057899e16
+
         
         # #Here we clean up any older processes
         # prior_wema = self.redis_server.get("wema_pid")
@@ -158,12 +143,11 @@ class WxEncAgent:
         
         
 
-<<<<<<< HEAD
+
         self.wema_pid = os.getpid()
         print('WEMA_PID:  ', self.wema_pid)
         #self.redis_server.set('wema_pid', self.wema_pid)
-=======
->>>>>>> d0792a66385b3ebdef90a57d1fca628057899e16
+
         #Redundant store of wema_pid
 
         camShelf = shelve.open(self.site_path + 'ptr_night_shelf/' + 'pid_wema')

@@ -29,7 +29,7 @@ site_config = {
     'owner':  ['google-oauth2|102124071738955888216', 'google-oauth2|112401903840371673242'],  # Neyle,  Or this can be some aws handle.
     'owner_alias': ['ANS'],
     'admin_aliases': ["ANS", "WER", "TB", "DH", "KVH", 'KC'],
-    'agent_wms_enc_active':  True,    # True if an agent is used at a site.  
+    'wema_is_active':  True,    # True if an agent is used at a site.  
                                        # Fat is intended to be simple since 
                                        # there is so little to control.
     'site_is_specific':  False,  # Indicates some special code for the site. 
@@ -38,7 +38,7 @@ site_config = {
     'site_share_path':  '//saf-wema/wema_transfer/',   #  Presumably also where shelves are found
     'redis_ip': None,   # None if no redis path present, localhost if redis iself-contained
     'wema_path':  '//saf-wema/wema_transfer/',   #We should obsolete this NB NB NB
-
+    'wema_hostname':  'SAF-WEMA',
     'defaults': {
         'observing_conditions': 'observing_conditions1',  #  These are used as keys, may go away.
         'enclosure': 'enclosure1',
@@ -89,80 +89,42 @@ site_config = {
     'site_path':  'C:/ptr/',  #  Path to where some Photon Ranch data is stored.
     'aux_archive_path': '//house-computer/saf_archive_2/archive/',  #  Path to auxillary backup disk not on this host.
 
-            'observing_conditions',
-            'enclosure',
-            'mount',
-            'telescope',
-            'screen',
-            'rotator',
-            'focuser',
-            'selector',
-            'filter_wheel',
-            'camera',
-            'sequencer',
-
-            ],
-    # This is used of there is a wema
-    'short_status_devices':  [
-            'enclosure',
-            'mount',
-            'telescope',
-            'screen',
-            'rotator',
-            'focuser',
-            'selector',
-            'filter_wheel',
-            'camera',
-            'sequencer',
-            ],
-    'name': 'PTR at Sierra Remote Observatory 0m305f3.8',
-    'airport_code':  'FAT', 
-    'location': 'Near Shaver Lake C,  USA',
-    'site_path':  'F:/',    #  Path to where all Photon Ranch data and state are to be found
-    'aux_archive_path':  None, # '//house-computer/saf_archive_2/archive/',  #  Path to auxillary backup disk not on this host.
->>>>>>> d0792a66385b3ebdef90a57d1fca628057899e16
     'observatory_url': 'https://starz-r-us.sky/clearskies2',   #  This is meant to be optional
     'description':  '''
                     Now is the time for all good persons
                     to get out and vote early and often lest
                     we lose charge of our democracy.
                     ''',    #  i.e, a multi-line text block supplied and formatted by the owner.
-    'TZ_database_name':  'America/Los_Angeles',
-    'mpc_code':  'ZZ23',    #  This is made up for now.
-    'time_offset':  -8.0,   #  These two keys may be obsolete give the new TZ stuff 
-    'timezone': 'PST',      #  This was meant to be coloquial Time zone abbreviation, alternate for "TX_data..."
-    'latitude': 37.0701111,     #  Decimal degrees, North is Positive
-    'longitude': -119.412417,   #  Decimal degrees, West is negative
-    'elevation': 1405,    #  meters above sea level
+    'TZ_database_name':  'America/Denver',
+    'mpc_code':  'ZZ24',    #  This is made up for now.
+    'time_offset':  -7.0,   #  These two keys may be obsolete give the new TZ stuff 
+    'timezone': 'MST',      #  This was meant to be coloquial Time zone abbreviation, alternate for "TX_data..."
+    'latitude': 35.554298,     #  Decimal degrees, North is Positive
+    'longitude': -105.870197,   #  Decimal degrees, West is negative
+    'elevation': 2194,    #  meters above sea level
     'reference_ambient':  [10],  #  Degrees Celsius.  Alternately 12 entries, one for every - mid month.
-    'reference_pressure':  [867.254],    #mbar   A rough guess 20200315
+    'reference_pressure':  [794.0],    #mbar   A rough guess 20200315
     
     'site_in_automatic_default': "Automatic",   #  ["Manual", "Shutdown", "Automatic"]
     'automatic_detail_default': "Enclosure is initially set to Automatic mode.",
     'auto_eve_bias_dark': False,
     'auto_eve_sky_flat': False,
-    'eve_sky_flat_sunset_offset': +5.0,  #  Minutes  neg means before, + after.
+    'eve_sky_flat_sunset_offset': +0.0,  #  Minutes  neg means before, + after.
     'auto_morn_sky_flat': False,
     'auto_morn_bias_dark': False,
-<<<<<<< HEAD
-    'calibrate_on_solve': True, 
-    
-=======
-    're-calibrate_on_solve': True, 
->>>>>>> d0792a66385b3ebdef90a57d1fca628057899e16
 
-    'observing_conditions' : {
+    'calibrate_on_solve': True,  # nb nb nb pICK ONE
+    're-calibrate_on_solve': True, 
+
+    'observing_conditions' : {     #for SAF
         'observing_conditions1': {
             'parent': 'site',
-            'ocn_is_specific':  True,  # Indicates some special site code. 
-            # Intention it is found in this file.
-            'name': 'SRO File',
-            'driver': 'Windows.Share',  # Could be redis, ASCOM, ...
-            'share_path_name': 'c:/blah/wx.txt',
-            'driver_2':  None,   #' ASCOM.Boltwood.OkToOpen.SafetyMonitor',
-            'driver_3':  None,    # 'ASCOM.Boltwood.OkToImage.SafetyMonitor'
-            'ocn_has_unihedron':  False,
-            'have_local_unihedron': False,     #  Need to add these to setups.
+            'name': 'Boltwood',
+            'driver': 'ASCOM.Boltwood.ObservingConditions',
+            'driver_2':  'ASCOM.Boltwood.OkToOpen.SafetyMonitor',
+            'driver_3':  'ASCOM.Boltwood.OkToImage.SafetyMonitor',
+            'redis_ip': '127.0.0.1',   #None if no redis path present
+            'has_unihedron':  True,
             'uni_driver': 'ASCOM.SQM.serial.ObservingConditions',
             'unihedron_port':  10    #  False, None or numeric of COM port.
         },
@@ -172,18 +134,13 @@ site_config = {
     'enclosure': {
         'enclosure1': {
             'parent': 'site',
-<<<<<<< HEAD
+
             'name': 'HomeDome',
             'enc_is_specific':  False, 
             'name': 'Boltwood',
             'hostIP':  '10.0.0.140',
             'driver': 'ASCOM.DigitalDomeWorks.Dome',  #  ASCOMDome.Dome',  #  ASCOM.DeviceHub.Dome',  #  ASCOM.DigitalDomeWorks.Dome',  #"  ASCOMDome.Dome',
-=======
-            'enc_is_specific':  True,  # Indicates some special site code. 
-            'name': 'SRO File',
-            'hostIP':  'NONE',
-            'driver': None,  #'ASCOM.DigitalDomeWorks.Dome',  #  ASCOMDome.Dome',  #  ASCOM.DeviceHub.Dome',  #  ASCOM.DigitalDomeWorks.Dome',  #"  ASCOMDome.Dome',
->>>>>>> d0792a66385b3ebdef90a57d1fca628057899e16
+
             'has_lights':  False,
             'controlled_by': 'mount1',
 			'is_dome': False,
