@@ -47,7 +47,6 @@ class Enclosure:
         self.is_dome = self.config['enclosure']['enclosure1']['is_dome']
     
         self.time_of_next_slew = time.time()
-        breakpoint()
         if self.site in ['simulate',  'dht']:  #DEH: added just for testing purposes with ASCOM simulators.
             #self.observing_conditions_connected = True
             self.site_is_proxy = False
@@ -73,40 +72,43 @@ class Enclosure:
         #<<<<The next attibute reference fails at saf, usually spurious Dome Ring Open report.
         #<<< Have seen other instances of failing.
         #core1_redis.set('unihedron1', str(mpsas) + ', ' + str(bright) + ', ' + str(illum), ex=600)
-        return
-     if self.site == 'saf':
 
-        #     try:
-        #         enclosure = open(self.config['wema_path'] + 'enclosure.txt', 'r')
-        #         status = json.loads(enclosure.readline())
-        #         enclosure.close()
-        #         self.status = status
-        #         self.prior_status = status
-        #         return status
-        #     except:
-        #         try:
-        #             time.sleep(3)
-        #             enclosure = open(self.config['wema_path'] + 'enclosure.txt', 'r')
-        #             enclosure.close()
-        #             status = json.loads(enclosure.readline())
-        #             self.status = status
-        #             self.prior_status = status
-        #             return status
-        #         except:
-        #             try:
-        #                 time.sleep(3)
-        #                 enclosure = open(self.config['wema_path'] + 'enclosure.txt', 'r')
-        #                 status = json.loads(enclosure.readline())
-        #                 enclosure.close()
-        #                 self.status = status
-        #                 self.prior_status = status
-        #                 return status
-        #             except:
-        #                 print("Prior enc status returned fter 3 fails.")
-        #                 return self.prior_status
+        if self.config['agent_wms_enc_active'] and self.config['site_IPC_mechanism'] == 'share':
+            breakpoint()
+            try:
+                enclosure = open(self.config['site_share_path'] + 'enclosure.txt', 'r')
+                status = json.loads(enclosure.readline())
+                enclosure.close()
+                self.status = status
+                self.prior_status = status
+                return status
+            except:
+                try:
+                    time.sleep(3)
+                    enclosure = open(self.config['site_share_path'] + 'enclosure.txt', 'r')
+                    enclosure.close()
+                    status = json.loads(enclosure.readline())
+                    self.status = status
+                    self.prior_status = status
+                    return status
+                except:
+                    try:
+                        time.sleep(3)
+                        enclosure = open(self.config['site_share_path'] + 'enclosure.txt', 'r')
+                        status = json.loads(enclosure.readline())
+                        enclosure.close()
+                        self.status = status
+                        self.prior_status = status
+                        return status
+                    except:
+                        print("Prior enc status returned fter 3 fails.")
+                        return self.prior_status
             
-        # elif self.site_is_proxy:
-        #     #Usually fault here because WEMA is not running.
+        elif self.site_is_proxy:
+            breakpoint()
+        else:
+            breakpoint()
+            #Usually fault here because WEMA is not running.
   
     
           

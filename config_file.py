@@ -23,11 +23,12 @@ site_config = {
     'agent_wms_enc_active':  True,    # True if an agent is used at a site.  
                                        # Fat is intended to be simple since 
                                        # there is so little to control.
+    'redis_ip': None,   # None if no redis path present, localhost if redis iself-contained
     'site_is_specific':  False,  # Indicates some special code for the site. 
                                  # Intention it is found in this file.
     'site_IPC_mechanism':  'shares',   # ['None', shares', 'shelves', 'redis']  Pick One
     'site_share_path':  '//SAF-WEMA/wema_transfer/',   #  Presumably also where shelves are found
-    'redis_ip': None,   # None if no redis path present, localhost if redis iself-contained
+
     'wema_path':  'site_share_path',   #We should obsolete this double naming NB NB NB
     'defaults': {
         'observing_conditions': 'observing_conditions1',  #  These are used as keys, may go away.
