@@ -4,6 +4,7 @@ import redis
 import time
 import shelve
 import json
+import socket
 import config_file
 
 '''
@@ -47,12 +48,19 @@ class Enclosure:
         self.is_dome = self.config['enclosure']['enclosure1']['is_dome']
     
         self.time_of_next_slew = time.time()
+        self.hostname = socket.gethostname()
+        if self.hostname in self.config['wema_hostname']:
+            self.is_wema = True
+        else:
+            self.is_wema = False
+        if self.config['wema_is_active']:
+            self.site_has_proxy = True  #NB Site is proxy needs a new name.
+        else:
+            self.site_has_proxy = False   
         if self.site in ['simulate',  'dht']:  #DEH: added just for testing purposes with ASCOM simulators.
-            #self.observing_conditions_connected = True
-            self.site_is_proxy = False
+            self.observing_conditions_connected = True
+            self.site_is_proxy = False   
             print("observing_conditions: Simulator drivers connected True")
-        elif self.config['agent_wms_enc_active']:
-            self.site_is_proxy = True
         elif self.config['site_is_specific']:
             self.site_is_specific = True
             #  Note OCN has no associated commands.
@@ -60,62 +68,172 @@ class Enclosure:
             self.get_status = config_file.get_enc_status
             # Get current ocn status just as a test.
             self.status = self.get_status(g_dev)
-            # All test code
+
+        elif self.is_wema: # or self.site_is_generic:   
+            #  This is meant to be a generic Observing_condition code
+            #  instance that can be accessed by a simple site or by the WEMA,
+            #  assuming the transducers are connected to the WEMA.
+            
+            win32com.client.pythoncom.CoInitialize()
+            self.enclosure = win32com.client.Dispatch(driver)
+            print(self.enclosure)
+            try:
+                if not self.enclosure.Connected:
+                    self.enclosure.Connected = True
+                print("ASCOM enclosure connected.")
+            except:
+                 print("ASCOM enclosure NOT connected, proabably the App is not connected to telescope.")
+        else:
+            self.site_is_generic = True
+            # breakpoint()  # All test code
             # quick = []
             # self.get_quick_status(quick)
             # print(quick)
         #self.prior_status = self.status
-        self.status = None   #  May need a status seed if site specific.
+        #self.status = None   #  May need a status seed if site specific.
         #self.state = 'Ok'
         
-    def get_status(self) -> dict:
+    def get_status(self) -> dict: 
         #<<<<The next attibute reference fails at saf, usually spurious Dome Ring Open report.
         #<<< Have seen other instances of failing.
         #core1_redis.set('unihedron1', str(mpsas) + ', ' + str(bright) + ', ' + str(illum), ex=600)
-
-        if self.config['agent_wms_enc_active'] and self.config['site_IPC_mechanism'] == 'share':
-            breakpoint()
-            try:
-                enclosure = open(self.config['site_share_path'] + 'enclosure.txt', 'r')
-                status = json.loads(enclosure.readline())
-                enclosure.close()
-                self.status = status
-                self.prior_status = status
-                return status
-            except:
-                try:
-                    time.sleep(3)
-                    enclosure = open(self.config['site_share_path'] + 'enclosure.txt', 'r')
-                    enclosure.close()
-                    status = json.loads(enclosure.readline())
-                    self.status = status
-                    self.prior_status = status
-                    return status
-                except:
-                    try:
-                        time.sleep(3)
-                        enclosure = open(self.config['site_share_path'] + 'enclosure.txt', 'r')
-                        status = json.loads(enclosure.readline())
-                        enclosure.close()
-                        self.status = status
-                        self.prior_status = status
-                        return status
-                    except:
-                        print("Prior enc status returned fter 3 fails.")
-                        return self.prior_status
-            
-        elif self.site_is_proxy:
-            breakpoint()
+        breakpoint()  # NB NB we should not get here at fat.  This needs proper conditioning.
+        try:
+            shutter_status = self.enclosure.ShutterStatus
+        except:
+            print("self.enclosure.Roof.ShutterStatus -- Faulted. ")
+            shutter_status = 5
+        try:
+            self.dome_home = self.enclosure.AtHome
+        except:
+            self.come_home = True
+        
+        if shutter_status == 0:
+            stat_string = "Open"
+            self.shutter_is_closed = False
+            g_dev['redis'].set('Shutter_is_open', True)
+        elif shutter_status == 1:
+             stat_string = "Closed"
+             self.shutter_is_closed = True
+             g_dev['redis'].set('Shutter_is_open', False)
+        elif shutter_status == 2:
+             stat_string = "Opening"
+             self.shutter_is_closed = False
+             g_dev['redis'].set('Shutter_is_open', False)
+        elif shutter_status == 3:
+             stat_string = "Closing"
+             self.shutter_is_closed = False
+             g_dev['redis'].set('Shutter_is_open', False)
+        elif shutter_status == 4:
+             stat_string = "Error"
+             self.shutter_is_closed = False
+             g_dev['redis'].set('Shutter_is_open', False)
         else:
-            breakpoint()
-            #Usually fault here because WEMA is not running.
+             stat_string = "Software Fault"
+             self.shutter_is_closed = False
+             g_dev['redis'].set('Shutter_is_open', False)
+        self.status_string = stat_string
+        if shutter_status in [2, 3]:
+            moving = True
+        else:
+            moving = False
+        if moving:
+            in_motion = True
+        else:
+            in_motion = False
+        status = {'shutter_status': stat_string}
+        status['dome_slewing'] = in_motion
+        status['enclosure_mode'] = str(self.mode)
+        status['dome_azimuth'] = 0.0
+        g_dev['redis'].set('enc_status', status, ex=3600)  #This is occasionally used by mouning.
+
+        if not self.is_dome:
+            return status
+        else:
+            try:
+                #Occasionally this property thrws an exception:
+                current_az = self.enclosure.Azimuth
+                slewing = self.enclosure.Slewing
+                self.last_current_az = current_az
+                self.last_slewing = slewing
+            except:
+                current_az = self.last_current_az
+                slewing = self.last_slewing
+                
+            gap = current_az - self.last_az
+            while gap >= 360:
+                gap -= 360
+            while gap <= -360:
+                gap += 360
+            if abs(gap) > 1.5:
+                print("Azimuth change detected,  Slew:  ", self.enclosure.Slewing)
+                slewing = True
+            else:
+                slewing = False
+            self.last_az = current_az
+
+            status = {'shutter_status': stat_string,
+                      'enclosure_synchronized': self.following,
+                      'dome_azimuth': round(self.enclosure.Azimuth, 1),
+                      'dome_slewing': slewing,
+                      'enclosure_mode': self.mode,
+                      'enclosure_message': self.state}
+            g_dev['redis'].set('roof_status', str(stat_string), ex=3600)
+            g_dev['redis'].set('shutter_is_closed', self.shutter_is_closed, ex=3600)  #Used by autofocus
+            g_dev['redis'].set("shutter_status", str(stat_string), ex=3600)
+            g_dev['redis'].set('enclosure_synchronized', str(self.following), ex=3600)
+            g_dev['redis'].set('enclosure_mode', str(self.mode), ex=3600)
+            g_dev['redis'].set('enclosure_message', str(self.state), ex=3600)
+            g_dev['redis'].set('dome_azimuth', str(round(self.enclosure.Azimuth, 1)))
+            if moving or self.enclosure.Slewing:
+                in_motion = True
+            else:
+                in_motion = False
+            status['dome_slewing'] = in_motion
+            # g_dev['redis'].set('dome_slewing', in_motion, ex=3600)
+            # g_dev['redis'].set('enc_status', status, ex=3600)
+        return status
+
+        #if self.site == 'saf':
+
+        #     try:
+        #         enclosure = open(self.config['wema_path'] + 'enclosure.txt', 'r')
+        #         status = json.loads(enclosure.readline())
+        #         enclosure.close()
+        #         self.status = status
+        #         self.prior_status = status
+        #         return status
+        #     except:
+        #         try:
+        #             time.sleep(3)
+        #             enclosure = open(self.config['wema_path'] + 'enclosure.txt', 'r')
+        #             enclosure.close()
+        #             status = json.loads(enclosure.readline())
+        #             self.status = status
+        #             self.prior_status = status
+        #             return status
+        #         except:
+        #             try:
+        #                 time.sleep(3)
+        #                 enclosure = open(self.config['wema_path'] + 'enclosure.txt', 'r')
+        #                 status = json.loads(enclosure.readline())
+        #                 enclosure.close()
+        #                 self.status = status
+        #                 self.prior_status = status
+        #                 return status
+        #             except:
+        #                 print("Prior enc status returned fter 3 fails.")
+        #                 return self.prior_status
+            
+        # elif self.site_is_proxy:
+        #     #Usually fault here because WEMA is not running.
   
     
           
         #     try:
 
-        #         stat_string = self.redis_server.get("shutter_status")
-        #         self.status = eval(self.redis_server.get("enc_status"))
+        #         stat_string = g_dev['redis'].get("shutter_status")
+        #         self.status = eval(g_dev['redis'].get("enc_status"))
         #     except:
         #         print("\nWxEnc Agent WEMA not running. Please start it up.|n")
         #     if stat_string is not None:
@@ -129,89 +247,89 @@ class Enclosure:
         #         self.shutter_is_closed = True
         #         return
 
-    def parse_command(self, command):
-        if self.config['enc_is_specific']:
-            return  #There is noting to do!
-        #This gets commands from AWS, not normally used.
-        req = command['required_params']
-        opt = command['optional_params']
-        action = command['action']
-        cmd_list = []
+    # def parse_command(self, command):
+    #     if self.config['enc_is_specific']:
+    #         return  #There is noting to do!
+    #     #This gets commands from AWS, not normally used.
+    #     req = command['required_params']
+    #     opt = command['optional_params']
+    #     action = command['action']
+    #     cmd_list = []
 
-        if action == "open":
-            if self.site_is_proxy:
-                #self.redis_server.set('enc_cmd', 'open', ex=300)
-                cmd_list.append('open')
-            else:
-                self.open_command(req, opt)
-        elif action == "close":
-            if self.site_is_proxy:
-                #self.redis_server.set('enc_cmd', 'close', ex=1200)
-                cmd_list.append('close')
-            else:
-                self.close_command(req, opt)
-        elif action == "setAuto":
-            if self.site_is_proxy:
-                #self.redis_server.set('enc_cmd', 'setAuto', ex=300)
-                cmd_list.append('setAuto')
-            else:
-                self.mode = 'Automatic'
-                g_dev['enc'].site_in_automatic = True
-                g_dev['enc'].automatic_detail =  "Night Automatic"
-                print("Site and Enclosure set to Automatic.")
-        elif action == "setManual":
-            if self.site_is_proxy:
-                #self.redis_server.set('enc_cmd', 'setManual', ex=300)
-                cmd_list.append('setManual')
-            else:
-                self.mode = 'Manual'
-                g_dev['enc'].site_in_automatic = False
-                g_dev['enc'].automatic_detail =  "Manual Only"
-        elif action in ["setStayClosed", 'setShutdown', 'shutDown']:
-            if self.site_is_proxy:
-                #self.redis_server.set('enc_cmd', 'setShutdown', ex=300)
-                cmd_list.append('setShutdown')
-                self.mode = 'Shutdown'
-                g_dev['enc'].site_in_automatic = False
-                g_dev['enc'].automatic_detail =  "Site Shutdown"
-                print("Site and Enclosure set to Shutdown.")
-        # elif action == "slew_alt":
-        #     self.slew_alt_command(req, opt)
-        # elif action == "slew_az":
-        #     self.slew_az_command(req, opt)
-        # elif action == "sync_az":
-        #     self.sync_az_command(req, opt)
-        # elif action == "sync_mount":
-        #     self.sync_mount_command(req, opt)
-        # elif action == "park":
-        #     self.park_command(req, opt)
-        else:
-            print("Command <{action}> not recognized.")
+    #     if action == "open":
+    #         if self.site_is_proxy:
+    #             #g_dev['redis'].set('enc_cmd', 'open', ex=300)
+    #             cmd_list.append('open')
+    #         else:
+    #             self.open_command(req, opt)
+    #     elif action == "close":
+    #         if self.site_is_proxy:
+    #             #g_dev['redis'].set('enc_cmd', 'close', ex=1200)
+    #             cmd_list.append('close')
+    #         else:
+    #             self.close_command(req, opt)
+    #     elif action == "setAuto":
+    #         if self.site_is_proxy:
+    #             #g_dev['redis'].set('enc_cmd', 'setAuto', ex=300)
+    #             cmd_list.append('setAuto')
+    #         else:
+    #             self.mode = 'Automatic'
+    #             g_dev['enc'].site_in_automatic = True
+    #             g_dev['enc'].automatic_detail =  "Night Automatic"
+    #             print("Site and Enclosure set to Automatic.")
+    #     elif action == "setManual":
+    #         if self.site_is_proxy:
+    #             #g_dev['redis'].set('enc_cmd', 'setManual', ex=300)
+    #             cmd_list.append('setManual')
+    #         else:
+    #             self.mode = 'Manual'
+    #             g_dev['enc'].site_in_automatic = False
+    #             g_dev['enc'].automatic_detail =  "Manual Only"
+    #     elif action in ["setStayClosed", 'setShutdown', 'shutDown']:
+    #         if self.site_is_proxy:
+    #             #g_dev['redis'].set('enc_cmd', 'setShutdown', ex=300)
+    #             cmd_list.append('setShutdown')
+    #             self.mode = 'Shutdown'
+    #             g_dev['enc'].site_in_automatic = False
+    #             g_dev['enc'].automatic_detail =  "Site Shutdown"
+    #             print("Site and Enclosure set to Shutdown.")
+    #     # elif action == "slew_alt":
+    #     #     self.slew_alt_command(req, opt)
+    #     # elif action == "slew_az":
+    #     #     self.slew_az_command(req, opt)
+    #     # elif action == "sync_az":
+    #     #     self.sync_az_command(req, opt)
+    #     # elif action == "sync_mount":
+    #     #     self.sync_mount_command(req, opt)
+    #     # elif action == "park":
+    #     #     self.park_command(req, opt)
+    #     else:
+    #         print("Command <{action}> not recognized.")
 
-        if len(cmd_list) > 0:
-            try:
-                enclosure = open(self.config['wema_path']+'enc_cmd.txt', 'w')
-                enclosure.write(json.dumps(cmd_list))
-                enclosure.close()
-            except:
-                try:
-                    time.sleep(3)
-                    # enclosure = open(self.config['wema_path']+'enc_cmd.txt', 'r')
-                    # enclosure.write(json.loads(status))
-                    enclosure = open(self.config['wema_path']+'enc_cmd.txt', 'w')
-                    enclosure.write(json.dumps(cmd_list))
-                    enclosure.close()
-                except:
-                    try:
-                        time.sleep(3)
-                        enclosure = open(self.config['wema_path']+'enc_cmd.txt', 'w')
-                        enclosure.write(json.dumps(cmd_list))
-                        enclosure.close()
-                    except:
-                        enclosure = open(self.config['wema_path']+'enc_cmd.txt', 'w')
-                        enclosure.write(json.dumps(cmd_list))
-                        enclosure.close()
-                        print("3rd try to append to enc-cmd  list.")
+    #     if len(cmd_list) > 0:
+    #         try:
+    #             enclosure = open(self.config['wema_path']+'enc_cmd.txt', 'w')
+    #             enclosure.write(json.dumps(cmd_list))
+    #             enclosure.close()
+    #         except:
+    #             try:
+    #                 time.sleep(3)
+    #                 # enclosure = open(self.config['wema_path']+'enc_cmd.txt', 'r')
+    #                 # enclosure.write(json.loads(status))
+    #                 enclosure = open(self.config['wema_path']+'enc_cmd.txt', 'w')
+    #                 enclosure.write(json.dumps(cmd_list))
+    #                 enclosure.close()
+    #             except:
+    #                 try:
+    #                     time.sleep(3)
+    #                     enclosure = open(self.config['wema_path']+'enc_cmd.txt', 'w')
+    #                     enclosure.write(json.dumps(cmd_list))
+    #                     enclosure.close()
+    #                 except:
+    #                     enclosure = open(self.config['wema_path']+'enc_cmd.txt', 'w')
+    #                     enclosure.write(json.dumps(cmd_list))
+    #                     enclosure.close()
+    #                     print("3rd try to append to enc-cmd  list.")
 
 
     ###############################
@@ -220,7 +338,7 @@ class Enclosure:
 
     # def open_command(self, req: dict, opt: dict):
     # #     ''' open the enclosure '''
-    #       self.redis_server.set('enc_cmd', 'open', ex=1200)
+    #       g_dev['redis'].set('enc_cmd', 'open', ex=1200)
     # #     #self.guarded_open()
     # #     self.manager(open_cmd=True)
     # #     print("enclosure cmd: open.")
@@ -230,7 +348,7 @@ class Enclosure:
 
     # def close_command(self, req: dict, opt: dict):
     # #     ''' close the enclosure '''
-    #       self.redis_server.set('enc_cmd', 'close', ex=1200)
+    #       g_dev['redis'].set('enc_cmd', 'close', ex=1200)
     # #     self.manager(close_cmd=True)
     # #     print("enclosure cmd: close.")
     # #     self.dome_open = False
@@ -262,7 +380,7 @@ class Enclosure:
 
 
 
-if __name__ =='__main__':
-    print('Enclosure class started locally')
-    enc = Enclosure('ASCOM.SkyRoof.Dome', 'enclosure1')
+# if __name__ =='__main__':
+#     print('Enclosure class started locally')
+#     enc = Enclosure('ASCOM.SkyRoof.Dome', 'enclosure1')
 

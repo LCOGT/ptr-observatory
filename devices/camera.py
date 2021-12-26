@@ -190,7 +190,7 @@ class Camera:
         g_dev[name + '_cam_retry_doit'] = False
         g_dev[name] = self
     
-        if name == 'camera_1':     #NBDefaults sets up Selected 'cam'
+        if name == 'camera_1_1':     #NBDefaults sets up Selected 'cam'
             g_dev['cam'] = self
         self.config = config
         self.alias = config['camera'][self.name]['name']
@@ -518,7 +518,6 @@ class Camera:
             self.user_name
         except:
             self.user_name = "kilroy_was_here"
-        
         self.t0 = time.time()
         #Force a reseek //eventually dither//
         try:
@@ -1030,7 +1029,7 @@ class Camera:
     def finish_exposure(self, exposure_time, frame_type, counter, seq, \
                         gather_status=True, do_sep=False, no_AWS=False, start_x=None, start_y=None, quick=False, \
                         low=0, high=0, script='False', opt=None, solve_it=False):
-        print("Finish exposure Entered:  ", exposure_time, frame_type, counter, \
+        print("Finish exposure Entered:  ", exposure_time, frame_type, 'to go: ', counter, \
               gather_status, do_sep, no_AWS, start_x, start_y, opt['area'])
         self.post_mnt = []
         self.post_rot = []
@@ -1107,9 +1106,10 @@ class Camera:
                     ####self.img_safe = self.camera.ImageArray
                     #NB NB Do not try to print ImageArray!!!!
                     self.img = np.array(self.camera.ImageArray)
+                    self.img = self.img.astype('int32')
                     self.t4p5 = time.time()#As read, this is a Windows Safe Array of Longs
                     print("\n\nMedian of incoming image:  ", np.median(self.img), '\n\n')
-                    
+
                     ###self.img = np.array(self.img_safe) # _untransposed   incoming is (4800,3211) for QHY600Pro 2:2 Bin
                     #print(self.img_untransposed.shape)
                     #self.img = self.img_untransposed    #   .transpose()  Only use this if Maxim has changed orientation.
@@ -1150,7 +1150,6 @@ class Camera:
 
                 #This image shift code needs to be here but it is troubling.
                 #QHY 600Pro and 367
-
                 if ix == 9600:
                     # if self.img[22, -34] == 0:
 
@@ -1208,17 +1207,42 @@ class Camera:
                 #occasional biases.
                 
                 #FAT
-                elif ix == 4500 and iy == 3600:   #All this code needs to be driven from camera config.
-                    self.overscan =np.median(self.img) - pedastal
-                    trimmed = self.img.astype('int32') - 867.
+                # elif ix == 4500 and iy == 3600:   #All this code needs to be driven from camera config.
+                #     self.overscan =np.median(self.img) - pedastal
+                #     trimmed = self.img.astype('int32') - 867.
                         
-                elif ix == 2250 and iy == 1800:   #All this code needs to be driven from camera config.
-                    self.overscan =np.median(self.img) - pedastal
-                    trimmed = self.img.astype('int32') - 614.
-                       
+                # elif ix == 2250 and iy == 1800:   #All this code needs to be driven from camera config.
+                #     self.overscan =np.median(self.img) - pedastal
+                #     trimmed = self.img.astype('int32') - 614.
+                #     #FAT
+                elif ix == 4556 and iy == 3656:   #All this code needs to be driven from camera config.
+                    #breakpoint()
+                    minus_overscan = self.img - (np.median(self.img[4520:4556, :3600]) + np.median(self.img[:4500, 3620:3643]))/2.0
+                    print("1_1 Offset:  ", -np.median(minus_overscan[:4500, :3600]))
+                    minus_overscan += pedastal + 50
+                    trimmed = minus_overscan[:4500, :3600].astype('int32')
+                elif ix == 2278 and iy == 1828:   #All this code needs to be driven from camera config.
+                    #breakpoint()
+                    minus_overscan = self.img - (np.median(self.img[2260:2278, :1800]) + np.median(self.img[2250, 1810:1821]))/2.0
+                    minus_overscan += pedastal + 140
+                    trimmed = minus_overscan[:2250, :1800].astype('int32')
+                elif ix == 1518 and iy == 1218: 
+                    #breakpoint()
+                    minus_overscan = self.img - (np.median(self.img[1506:1518, :1200]) + np.median(self.img[:1500, 1206:1214]))/2.0
+                    minus_overscan += pedastal + 211 
+                    trimmed = minus_overscan[:1500, :1200].astype('int32')
+                    
+                elif ix == 1139 and iy == 914: 
+
+                    minus_overscan = self.img - (np.median(self.img[1130:1139, :900]) + np.median(self.img[:1125, 905:910]))/2.0
+                    print("4_4 Offset:  ", -np.median(minus_overscan[:1125, :900]))
+                    minus_overscan += pedastal + 403
+                    trimmed = minus_overscan[:1125, :900].astype('int32') 
                 else:
                     print("UNSUPPORTED BINNING OR CAMERA!!", ix, iy)
                     trimmed = self.img
+                    
+
 
                     #continue
 
@@ -1232,12 +1256,14 @@ class Camera:
                 #processing so downstream processing is reliable.  Maybe only do this for focus?
                 g_dev['obs'].send_to_user("Camera has read-out image.", p_level='INFO')
                 neg_pix = np.where(trimmed < 0)
+                print("negative pixel length:  ", len(neg_pix[0]))
+
                 trimmed[neg_pix] = 0
                 self.img = trimmed.astype('uint16')
                 
-                print('\n\nMedian of overscan-removed image:  ', np.median(self.img), '\n\n')
+                print('\n\nMedian of overscan-removed image, minus pedastal:  ', np.median(self.img) - pedastal, '\n\n')
                 ix, iy = self.img.shape
-                test_saturated = np.array(self.img[ix//3:ix*2//3, iy//3:iy*2//3])  # 1/9th the chip area
+                test_saturated = np.array(self.img[ix//3:ix*2//3, iy//3:iy*2//3])  # 1/9th the chip area, but central.
                 bi_mean = round((test_saturated.mean() + np.median(test_saturated))/2, 0)
                 if frame_type[-4:] == 'flat':
                     if bi_mean >= self.config['camera'][self.name]['settings']['saturate']:
@@ -1619,7 +1645,6 @@ class Camera:
                         try:
                             #wpath = 'C:/000ptr_saf/archive/sq01/20210528/reduced/saf-sq01-20210528-00019785-le-w-EX01.fits'
                             time_now = time.time()
-                            breakpoint()
                             solve = platesolve.platesolve(cal_path + cal_name, 1.06) #hdu.header['PIXSCALE'])
                             print("PW Solves: " ,solve['ra_j2000_hours'], solve['dec_j2000_degrees'])
                             TARGRA  = g_dev['mnt'].current_icrs_ra

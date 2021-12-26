@@ -18,11 +18,12 @@ import redis
 import requests
 import time
 import shelve
-
+import socket
 from api_calls import API_calls
 import ptr_events
-from devices.wms_enclosure_agent import Enclosure
-from devices.wms_observing_agent import ObservingConditions
+from devices.observing_conditions import ObservingConditions
+from devices.enclosure import Enclosure
+
 from global_yard import g_dev
 
 
@@ -72,6 +73,8 @@ def terminate_restart_observer(site_path, no_restart=False):
         #  worked with /k, try /c Which should terminate
         return
     
+#  NB NB For now a different class, so max code is eliminated, but ideally
+#  this should be a strict subset of the observer's code NB NB note we can eventually fold this back into obs.
 
 class WxEncAgent:
 
@@ -84,9 +87,14 @@ class WxEncAgent:
         self.name = name
         self.site_name = name
         self.config = config
+        self.hostname = socket.gethostname()
+        if self.hostname in self.config['wema_hostname']:
+            self.is_wema = True
+        else:
+            self.is_wema = False
         self.site_path = config['site_path']
         g_dev['obs'] = self 
-        g_dev['site']=  config['site']
+        g_dev['site'] =  config['site']
         self.last_request = None
         self.stopped = False
         self.site_message = '-'
@@ -97,16 +105,19 @@ class WxEncAgent:
         self.astro_events = ptr_events.Events(self.config)
         self.astro_events.compute_day_directory()
         self.astro_events.display_events()
-        redis_ip = config['redis_ip']
-        if redis_ip is not None:           
-            self.redis_server = redis.StrictRedis(host=redis_ip, port=6379,\
-                                db=0, decode_responses=True)
+        self.wema_pid = os.getpid()
+        print('WEMA_PID:  ', self.wema_pid)
+        if config['redis_ip'] is not None:           
+            self.redis_server = redis.StrictRedis(host=config['redis_ip'], port=6379, db=0, decode_responses=True)
             self.redis_wx_enabled = True
+            g_dev['redis'] = self.redis_server  #Enable wide easy access to this object.
+            for key in self.redis_server.keys():
+                self.redis_server.delete(key)   #Flush old state.
+            self.redis_server.set('wema_pid', self.wema_pid)
         else:
             self.redis_wx_enabled = False
-        
-        g_dev['redis_server'] = self.redis_server   #Use this instance.
-        g_dev['redis_server']['wema_loaded'] = True
+            g_dev['redis'] = None
+        ##  g_dev['redis_server']['wema_loaded'] = True
         
         # #Here we clean up any older processes
         # prior_wema = self.redis_server.get("wema_pid")
@@ -129,11 +140,7 @@ class WxEncAgent:
             
         
         
-        for key in self.redis_server.keys(): self.redis_server.delete(key)   #Flush old state.
-        #The set new ones
-        self.wema_pid = os.getpid()
-        print('WEMA_PID:  ', self.wema_pid)
-        self.redis_server.set('wema_pid', self.wema_pid)
+
         #Redundant store of wema_pid
 
         camShelf = shelve.open(self.site_path + 'ptr_night_shelf/' + 'pid_wema')
@@ -207,15 +214,19 @@ class WxEncAgent:
     def scan_requests(self, mount):
         return
         '''
+        
+        For a wema this can be used to capture commands to the wema once the
+        AWS side knows how to redirect from any mount/telescope to the common
+        Wema.
         This should be changed to look into the site command que to pick up
         any commands directed at the Wx station, or if the agent is going to 
         always exist lets develop a seperate command queue for it.
         '''
 
     def update_status(self):
-        ''' Collect status from all devices and send an update to aws.
-        Each device class is responsible for implementing the method
-        `get_status` which returns a dictionary.
+        ''' Collect status from weather and enclosure devices and send an 
+        update to aws,  Each device class is responsible for implementing the 
+        method 'get_status()' which returns a dictionary.
         '''
         loud = False        
         while time.time() < self.time_last_status + self.status_interval:
@@ -290,8 +301,8 @@ class WxEncAgent:
 
 if __name__ == "__main__":
 
-    import config
+    import config_file
 
-    wema = WxEncAgent(config.site_name, config.site_config)
+    wema = WxEncAgent(config_file.site_name, config_file.site_config)
     
     wema.run()

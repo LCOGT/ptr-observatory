@@ -283,7 +283,6 @@ class Sequencer:
             enc_status = g_dev['enc'].status
 
         events = g_dev['events']
-
         #g_dev['obs'].update_status()  #NB NEED to be sure we have current enclosure status.  Blows recursive limit
         self.current_script = "No current script"    #NB this is an unused remnant I think.
         #if True or     #Note this runs in Manual Mode as well.
@@ -343,7 +342,7 @@ class Sequencer:
  
             house = []
             for project in projects:
-                if project['user_id'] in config.site_config['owner']:  # and not expired, etc.
+                if project['user_id'] in config_file.site_config['owner']:  # and not expired, etc.
                      house.append(project)
             '''
             evaluate supplied projects for observable and mark as same. Discard
@@ -536,7 +535,7 @@ class Sequencer:
             except:
                 pass
             g_dev['mnt'].go_coord(dest_ra, dest_dec)
-            self.redis_server.set('sync_enc', True, ex=1200)   #Should be redundant
+           #self.redis_server.set('sync_enc', True, ex=1200)   #Should be redundant
             print("CAUTION:  rotator may block")
             pa = float(block_specification['project']['project_constraints']['position_angle'])
             if abs(pa) > 0.01:
@@ -584,7 +583,7 @@ class Sequencer:
 
                 #just_focused = True      ###DEBUG
                 if initial_focus: # and False:
-                    print("Enc Status:  ", g_dev['enc'].get_status())
+                    #print("Enc Status:  ", g_dev['enc'].get_status())
                     
 
                     # if not g_dev['enc'].shutter_is_closed:
@@ -714,8 +713,8 @@ class Sequencer:
                         pane = 0
                     for displacement in offset:
                         
-                        x_field_deg = g_dev['cam'].config['camera']['camera_1']['settings']['x_field_deg']
-                        y_field_deg = g_dev['cam'].config['camera']['camera_1']['settings']['y_field_deg']
+                        x_field_deg = g_dev['cam'].config['camera']['camera_1_1']['settings']['x_field_deg']
+                        y_field_deg = g_dev['cam'].config['camera']['camera_1_1']['settings']['y_field_deg']
                         
                         d_ra = displacement[0]*( 1 - pitch)*(x_field_deg/15.)  # 0.764243 deg = 0.0509496 Hours  These and pixscale should be computed in config.
                         d_dec = displacement[1]*(1 - pitch)*(y_field_deg)  # = 0.5102414999999999   #Deg
@@ -734,7 +733,7 @@ class Sequencer:
                             g_dev['foc'].adjust_focus()
                         just_focused = False
                         if imtype in ['light'] and count > 0:
-                            req = {'time': exp_time,  'alias':  str(self.config['camera']['camera_1']['name']), 'image_type': imtype}   #  NB Should pick up filter and constants from config
+                            req = {'time': exp_time,  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': imtype}   #  NB Should pick up filter and constants from config
                             opt = {'area': 150, 'count': 1, 'bin': binning, 'filter': color, \
                                    'hint': block['project_id'] + "##" + dest_name, 'pane': pane}
                             print('Seq Blk sent to camera:  ', req, opt)
@@ -921,13 +920,13 @@ class Sequencer:
         """
         self.sky_guard = True
         print('Eve Sky Flat sequence Starting, Enclosure PRESUMED Open. Telescope will un-park.')
-        breakpoint()
-        camera_name = str(self.config['camera']['camera_1']['name'])
+        #breakpoint()
+        camera_name = str(self.config['camera']['camera_1_1']['name'])
         flat_count = 7
         exp_time = .0015
         #  NB Sometime, try 2:2 binning and interpolate a 1:1 flat.  This might run a lot faster.
         if flat_count < 1: flat_count = 1
-        sim = g_dev['enc'].status['shutter_status'] in ['Closed', 'closed', 'Closing', 'closing']
+        sim = False# g_dev['enc'].status['shutter_status'] in ['Closed', 'closed', 'Closing', 'closing']
         if sim: breakpoint()
         # if g_dev['mnt'].mount.AtPark:
         #     g_dev['mnt'].unpark_command({}, {})
@@ -1045,7 +1044,7 @@ class Sequencer:
 
         #  NB here we need to check cam at reasonable temp, or dwell until it is.
 
-        camera_name = str(self.config['camera']['camera_1']['name'])
+        camera_name = str(self.config['camera']['camera_1_1']['name'])
         dark_count = 1
         exp_time = 15
         if flat_count < 1: flat_count = 1
@@ -1146,8 +1145,7 @@ class Sequencer:
         req2 = copy.deepcopy(req)
         opt2 = copy.deepcopy(opt)
         self.af_guard = True
-
-        sim = g_dev['enc'].status['shutter_status'] in ['Closed', 'Closing', 'closed', 'closing']
+        sim = False  # g_dev['enc'].status['shutter_status'] in ['Closed', 'Closing', 'closed', 'closing']
         
         # try:
         #     self.redis_server.set('enc_cmd', 'sync_enc', ex=1200)
@@ -1191,11 +1189,11 @@ class Sequencer:
                                     g_dev['mnt'].current_sidereal)
             print("Going to near focus star " + str(focus_star[0][0]) + "  degrees away.")
             g_dev['mnt'].go_coord(focus_star[0][1][1], focus_star[0][1][0])
-            req = {'time': 12.5,  'alias':  str(self.config['camera']['camera_1']['name']), 'image_type': 'auto_focus'}   #  NB Should pick up filter and constats from config
+            req = {'time': 12.5,  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'auto_focus'}   #  NB Should pick up filter and constats from config
             opt = {'area': 150, 'count': 1, 'bin': '2, 2', 'filter': 'w'}
         else:
             pass   #Just take an image where currently pointed.
-            req = {'time': 15,  'alias':  str(self.config['camera']['camera_1']['name']), 'image_type': 'auto_focus'}   #  NB Should pick up filter and constats from config
+            req = {'time': 15,  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'auto_focus'}   #  NB Should pick up filter and constats from config
             opt = {'area': 150, 'count': 1, 'bin': '2, 2', 'filter': 'w'}
         foc_pos0 = focus_start
         result = {}
@@ -1228,7 +1226,7 @@ class Sequencer:
         spot2 = result['FWHM']
         foc_pos2 = result['mean_focus']
         print('Autofocus Overtaveling Out.\n\n')
-        g_dev['foc'].focuser.Move((foc_pos0 + throw)*g_dev['foc'].micron_to_steps)   #It is important to overshoot to overcome any backlash
+        g_dev['foc'].focuser.Move((foc_pos0 + 2*throw)*g_dev['foc'].micron_to_steps)   #It is important to overshoot to overcome any backlash
         print('Autofocus Moving back in half-way.\n\n')
         g_dev['foc'].focuser.Move((foc_pos0 + throw)*g_dev['foc'].micron_to_steps)  #NB NB NB THIS IS WRONG!
         #opt['fwhm_sim'] = 5
@@ -1300,7 +1298,9 @@ class Sequencer:
             if spot3 <= spot2:
                 min_focus = foc_pos3
             print("It appears camera is too far out; try again with coarse_focus_script.")
-            self.coarse_focus_script(req2, opt2, throw=600, begin_at=min_focus)
+            self.coarse_focus_script(req2, opt2, throw=throw + 75, begin_at=min_focus)
+
+            return
         else:
             print('Spots are really wrong so moving back to starting focus:  ', focus_start)
             g_dev['foc'].focuser.Move((focus_start)*g_dev['foc'].micron_to_steps)
@@ -1315,7 +1315,7 @@ class Sequencer:
         return
 
 
-    def coarse_focus_script(self, req, opt, throw=750, begin_at=None):
+    def coarse_focus_script(self, req, opt, throw=700, begin_at=None):
         '''
         V curve is a big move focus designed to fit two lines adjacent to the more normal focus curve.
         It finds the approximate focus, particulary for a new instrument. It requires 8 points plus
@@ -1327,7 +1327,7 @@ class Sequencer:
         '''
         print('AF entered with:  ', req, opt)
         self.guard = True
-        sim = g_dev['enc'].status['shutter_status'] in ['Closed', 'closed', 'Closing', 'closing']
+        sim = False #g_dev['enc'].status['shutter_status'] in ['Closed', 'closed', 'Closing', 'closing']
         print('AF entered with:  ', req, opt, '\n .. and sim =  ', sim)
         #self.sequencer_hold = True  #Blocks command checks.
         start_ra = g_dev['mnt'].mount.RightAscension
@@ -1361,11 +1361,11 @@ class Sequencer:
                                     g_dev['mnt'].current_sidereal)
             print("Going to near focus star " + str(focus_star[0][0]) + "  degrees away.")
             g_dev['mnt'].go_coord(focus_star[0][1][1], focus_star[0][1][0])
-            req = {'time': 12.5,  'alias':  str(self.config['camera']['camera_1']['name']), 'image_type': 'auto_focus'}   #  NB Should pick up filter and constats from config
+            req = {'time': 12.5,  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'auto_focus'}   #  NB Should pick up filter and constats from config
             opt = {'area': 100, 'count': 1, 'filter': 'w'}
         else:
             pass   #Just take time image where currently pointed.
-            req = {'time': 15,  'alias':  str(self.config['camera']['camera_1']['name']), 'image_type': 'auto_focus'}   #  NB Should pick up filter and constats from config
+            req = {'time': 15,  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'auto_focus'}   #  NB Should pick up filter and constats from config
             opt = {'area': 100, 'count': 1, 'filter': 'w'}
         foc_pos0 = foc_start
         result = {}
@@ -1454,7 +1454,7 @@ class Sequencer:
                 result = g_dev['cam'].expose_command(req, opt, solve_it=True)
             else:
                 result['FWHM'] = new_spot
-                result['mean_focus'] = d1
+                result['mean_focus'] = g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron
             spot6 = result['FWHM']
             foc_pos4 = result['mean_focus']
             print('\n\n\nFound best focus at:  ', foc_pos4,' measured is:  ',  round(spot6, 2), '\n\n\n')
@@ -1468,6 +1468,7 @@ class Sequencer:
         #  NB here we coudld re-solve with the overlay spot just to verify solution is sane.
         self.sequencer_hold = False   #Allow comand checks.
         self.guard = False
+        return result
 
 
     def equatorial_pointing_run(self, req, opt, spacing=10, vertical=False, grid=False, alt_minimum=25):
@@ -1525,7 +1526,7 @@ IF sweep
         count = 0
         print("Starting equatorial sweep.")
         g_dev['mnt'].unpark_command()
-        #cam_name = str(self.config['camera']['camera_1']['name'])
+        #cam_name = str(self.config['camera']['camera_1_1']['name'])
         for ha_degree_value in ha_deg_steps:
             target_ra = ra_fix(g_dev['mnt'].mount.SiderealTime - ha_degree_value/15.)
             target_dec = 0
@@ -1624,7 +1625,7 @@ IF sweep
         count = 0
         print("Starting cross, # of points:  ", length)
         g_dev['mnt'].unpark_command()
-        #cam_name = str(self.config['camera']['camera_1']['name'])
+        #cam_name = str(self.config['camera']['camera_1_1']['name'])
         for point_value in points:
             target_ra = ra_fix(g_dev['mnt'].mount.SiderealTime - point_value[0]/15.)
             target_dec = point_value[1]
@@ -1666,7 +1667,7 @@ IF sweep
         return
     
     def sky_grid_pointing_run(self, req, opt, spacing=10, vertical=False, grid=False, alt_minimum=25):
-        #camera_name = str(self.config['camera']['camera_1']['name'])
+        #camera_name = str(self.config['camera']['camera_1_1']['name'])
         '''
         unpark telescope
         if not open, open dome
@@ -1723,7 +1724,7 @@ IF sweep
             pass
         g_dev['obs'].update_status()
         g_dev['mnt'].unpark_command()
-        #cam_name = str(self.config['camera']['camera_1']['name'])
+        #cam_name = str(self.config['camera']['camera_1_1']['name'])
 
         sid = g_dev['mnt'].mount.SiderealTime
         if req['gridType'] == 'medium':  # ~50
@@ -1780,7 +1781,7 @@ IF sweep
         return       
 
     def rel_sky_grid_pointing_run(self, req, opt, spacing=10, vertical=False, grid=False, alt_minimum=25):
-        #camera_name = str(self.config['camera']['camera_1']['name'])
+        #camera_name = str(self.config['camera']['camera_1_1']['name'])
         '''
         unpark telescope
         if not open, open dome
@@ -1835,7 +1836,7 @@ IF sweep
         g_dev['scr'].screen_dark()
         g_dev['obs'].update_status()
         g_dev['mnt'].unpark_command()
-        #cam_name = str(self.config['camera']['camera_1']['name'])
+        #cam_name = str(self.config['camera']['camera_1_1']['name'])
 
         sid = g_dev['mnt'].mount.SiderealTime
         if req['gridType'] == 'medium':  # ~50
@@ -1947,7 +1948,7 @@ IF sweep
         count = 0
         print("Starting West dec sweep, ha = 0.1")
         g_dev['mnt'].unpark_command()
-        #cam_name = str(self.config['camera']['camera_1']['name'])
+        #cam_name = str(self.config['camera']['camera_1_1']['name'])
         for ha in [0.1, -0.1]:
             for degree_value in dec_steps:
                 target_ra =  ra_fix(g_dev['mnt'].mount.SiderealTime - ha)
@@ -1993,7 +1994,7 @@ IF sweep
         return
 
     def append_completes(self, block_id):
-        camera = self.config['camera']['camera_1']['name']
+        camera = self.config['camera']['camera_1_1']['name']
         seq_shelf = shelve.open(g_dev['cam'].site_path + 'ptr_night_shelf/' + camera)
         print("block_id:  ", block_id)
         lcl_list = seq_shelf['completed_blocks']
@@ -2004,7 +2005,7 @@ IF sweep
         return 
     
     def is_in_completes(self, check_block_id):
-        camera = self.config['camera']['camera_1']['name']
+        camera = self.config['camera']['camera_1_1']['name']
         seq_shelf = shelve.open(g_dev['cam'].site_path + 'ptr_night_shelf/' + camera)
         #print('Completes contains:  ', seq_shelf['completed_blocks'])
         if check_block_id in seq_shelf['completed_blocks']:
@@ -2017,7 +2018,7 @@ IF sweep
     
     def reset_completes(self):
         try:
-            camera = self.config['camera']['camera_1']['name']
+            camera = self.config['camera']['camera_1_1']['name']
             seq_shelf = shelve.open(g_dev['cam'].site_path + 'ptr_night_shelf/' + str(camera))
             seq_shelf['completed_blocks'] = []
             seq_shelf.close()
