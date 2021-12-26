@@ -73,7 +73,7 @@ class Enclosure:
             #  This is meant to be a generic Observing_condition code
             #  instance that can be accessed by a simple site or by the WEMA,
             #  assuming the transducers are connected to the WEMA.
-            
+            self.site_is_generic = True
             win32com.client.pythoncom.CoInitialize()
             self.enclosure = win32com.client.Dispatch(driver)
             print(self.enclosure)
@@ -83,8 +83,7 @@ class Enclosure:
                 print("ASCOM enclosure connected.")
             except:
                  print("ASCOM enclosure NOT connected, proabably the App is not connected to telescope.")
-        else:
-            self.site_is_generic = True
+
             # breakpoint()  # All test code
             # quick = []
             # self.get_quick_status(quick)
@@ -97,101 +96,146 @@ class Enclosure:
         #<<<<The next attibute reference fails at saf, usually spurious Dome Ring Open report.
         #<<< Have seen other instances of failing.
         #core1_redis.set('unihedron1', str(mpsas) + ', ' + str(bright) + ', ' + str(illum), ex=600)
-        breakpoint()  # NB NB we should not get here at fat.  This needs proper conditioning.
-        try:
-            shutter_status = self.enclosure.ShutterStatus
-        except:
-            print("self.enclosure.Roof.ShutterStatus -- Faulted. ")
-            shutter_status = 5
-        try:
-            self.dome_home = self.enclosure.AtHome
-        except:
-            self.come_home = True
-        
-        if shutter_status == 0:
-            stat_string = "Open"
-            self.shutter_is_closed = False
-            g_dev['redis'].set('Shutter_is_open', True)
-        elif shutter_status == 1:
-             stat_string = "Closed"
-             self.shutter_is_closed = True
-             g_dev['redis'].set('Shutter_is_open', False)
-        elif shutter_status == 2:
-             stat_string = "Opening"
-             self.shutter_is_closed = False
-             g_dev['redis'].set('Shutter_is_open', False)
-        elif shutter_status == 3:
-             stat_string = "Closing"
-             self.shutter_is_closed = False
-             g_dev['redis'].set('Shutter_is_open', False)
-        elif shutter_status == 4:
-             stat_string = "Error"
-             self.shutter_is_closed = False
-             g_dev['redis'].set('Shutter_is_open', False)
-        else:
-             stat_string = "Software Fault"
-             self.shutter_is_closed = False
-             g_dev['redis'].set('Shutter_is_open', False)
-        self.status_string = stat_string
-        if shutter_status in [2, 3]:
-            moving = True
-        else:
-            moving = False
-        if moving:
-            in_motion = True
-        else:
-            in_motion = False
-        status = {'shutter_status': stat_string}
-        status['dome_slewing'] = in_motion
-        status['enclosure_mode'] = str(self.mode)
-        status['dome_azimuth'] = 0.0
-        g_dev['redis'].set('enc_status', status, ex=3600)  #This is occasionally used by mouning.
-
-        if not self.is_dome:
-            return status
-        else:
-            try:
-                #Occasionally this property thrws an exception:
-                current_az = self.enclosure.Azimuth
-                slewing = self.enclosure.Slewing
-                self.last_current_az = current_az
-                self.last_slewing = slewing
-            except:
-                current_az = self.last_current_az
-                slewing = self.last_slewing
-                
-            gap = current_az - self.last_az
-            while gap >= 360:
-                gap -= 360
-            while gap <= -360:
-                gap += 360
-            if abs(gap) > 1.5:
-                print("Azimuth change detected,  Slew:  ", self.enclosure.Slewing)
-                slewing = True
+        # NB NB we should not get here at fat.  This needs proper conditioning.
+        if not self.is_wema and self.site_has_proxy:
+            if self.config['site_IPC_mechanism'] == 'shares':
+                try:
+                    enclosure = open(self.config['wema_path'] + 'enclosure.txt', 'r')
+                    status = json.loads(enclosure.readline())
+                    enclosure.close()
+                    self.status = status
+                    self.prior_status = status
+                    return status
+                except:
+                    try:
+                        time.sleep(3)
+                        enclosure = open(self.config['wema_path'] + 'enclosure.txt', 'r')
+                        status = json.loads(enclosure.readline())
+                        enclosure.close()
+                        self.status = status
+                        self.prior_status = status
+                        return status
+                    except:
+                        try:
+                            time.sleep(3)
+                            enclosure = open(self.config['wema_path'] + 'enclosure.txt', 'r')
+                            status = json.loads(enclosure.readline())
+                            enclosure.close()
+                            self.status = status
+                            self.prior_status = status
+                            return status
+                        except:
+                            print("Using prior enclosure status after 4 failures.")
+                            return self.prior_status()
+            elif self.config['site_IPC_mechanism'] == 'redis':
+                 return g_dev['redis'].set('enc_status', status)
             else:
-                slewing = False
-            self.last_az = current_az
+                breakpoint()
 
-            status = {'shutter_status': stat_string,
-                      'enclosure_synchronized': self.following,
-                      'dome_azimuth': round(self.enclosure.Azimuth, 1),
-                      'dome_slewing': slewing,
-                      'enclosure_mode': self.mode,
-                      'enclosure_message': self.state}
-            g_dev['redis'].set('roof_status', str(stat_string), ex=3600)
-            g_dev['redis'].set('shutter_is_closed', self.shutter_is_closed, ex=3600)  #Used by autofocus
-            g_dev['redis'].set("shutter_status", str(stat_string), ex=3600)
-            g_dev['redis'].set('enclosure_synchronized', str(self.following), ex=3600)
-            g_dev['redis'].set('enclosure_mode', str(self.mode), ex=3600)
-            g_dev['redis'].set('enclosure_message', str(self.state), ex=3600)
-            g_dev['redis'].set('dome_azimuth', str(round(self.enclosure.Azimuth, 1)))
-            if moving or self.enclosure.Slewing:
+        if self.site_is_generic or self.is_wema:#  NB Should be AND?
+            try:
+                shutter_status = self.enclosure.ShutterStatus
+            except:
+                print("self.enclosure.Roof.ShutterStatus -- Faulted. ")
+                shutter_status = 5
+            try:
+                self.dome_home = self.enclosure.AtHome
+            except:
+                self.come_home = True
+            
+            if shutter_status == 0:
+                stat_string = "Open"
+                self.shutter_is_closed = False
+                #g_dev['redis'].set('Shutter_is_open', True)
+            elif shutter_status == 1:
+                 stat_string = "Closed"
+                 self.shutter_is_closed = True
+                 #g_dev['redis'].set('Shutter_is_open', False)
+            elif shutter_status == 2:
+                 stat_string = "Opening"
+                 self.shutter_is_closed = False
+                 #g_dev['redis'].set('Shutter_is_open', False)
+            elif shutter_status == 3:
+                 stat_string = "Closing"
+                 self.shutter_is_closed = False
+                 #g_dev['redis'].set('Shutter_is_open', False)
+            elif shutter_status == 4:
+                 stat_string = "Error"
+                 self.shutter_is_closed = False
+                 #g_dev['redis'].set('Shutter_is_open', False)
+            else:
+                 stat_string = "Software Fault"
+                 self.shutter_is_closed = False
+                 #g_dev['redis'].set('Shutter_is_open', False)
+            self.status_string = stat_string
+            if shutter_status in [2, 3]:
+                moving = True
                 in_motion = True
             else:
+                moving = False
                 in_motion = False
+
+            status = {'shutter_status': stat_string}
             status['dome_slewing'] = in_motion
-            # g_dev['redis'].set('dome_slewing', in_motion, ex=3600)
-            # g_dev['redis'].set('enc_status', status, ex=3600)
+            status['enclosure_mode'] = str(self.mode)
+            status['dome_azimuth'] = 0.0
+            #g_dev['redis'].set('enc_status', status, ex=3600)  #This is occasionally used by mouning.
+    
+            if self.is_dome:
+                try:
+                    #Occasionally this property thr0ws an exception:  (W HomeDome)
+                    current_az = self.enclosure.Azimuth
+                    slewing = self.enclosure.Slewing
+                    self.last_current_az = current_az
+                    self.last_slewing = slewing
+                except:
+                    current_az = self.last_current_az
+                    slewing = self.last_slewing
+                    
+                gap = current_az - self.last_az
+                while gap >= 360:
+                    gap -= 360
+                while gap <= -360:
+                    gap += 360
+                if abs(gap) > 1.5:
+                    print("Azimuth change detected,  Slew:  ", self.enclosure.Slewing)
+                    slewing = True
+                else:
+                    slewing = False
+                self.last_az = current_az
+                status = {'shutter_status': stat_string,
+                          'enclosure_synchronized': self.following,
+                          'dome_azimuth': round(self.enclosure.Azimuth, 1),
+                          'dome_slewing': slewing,
+                          'enclosure_mode': self.mode,
+                          'enclosure_message': self.state}
+                # if moving or self.enclosure.Slewing:
+                #     in_motion = True
+                # else:
+                #     in_motion = False
+                # status['dome_slewing'] = in_motion
+                # # g_dev['redis'].set('dome_slewing', in_motion, ex=3600)
+                # # g_dev['redis'].set('enc_status', status, ex=3600)
+        if self.config['site_IPC_mechanism'] == 'shares':
+            try:
+                enclosure = open(self.config['site_share_path']+'enclosure.txt', 'w')
+                enclosure.write(json.dumps(status))
+                enclosure.close()
+            except:
+                time.sleep(3)
+                try:
+                    enclosure = open(self.config['site_share_path']+'enclosure.txt', 'w')
+                    enclosure.write(json.dumps(status))
+                    enclosure.close()
+                except:
+                    time.sleep(3)
+                    enclosure = open(self.config['site_share_path']+'enclosure.txt', 'w')
+                    enclosure.write(json.dumps(status))
+                    enclosure.close()
+                    print("3rd try to write enclosure status.")
+        elif self.config['site_IPC_mechanism'] == 'redis':
+            g_dev['redis'].set('<enc_status', status)  #THis needs to become generalized IPC   
+        #  Should we computer enclosure logic here?
         return status
 
         #if self.site == 'saf':

@@ -16,7 +16,7 @@ import ptr_events
 #  NB NB  Json is not bi-directional with tuples (), use lists [], nested if tuples as needed, instead.
 #  NB NB  My convention is if a value is naturally a float I add a decimal point even to 0.
 g_dev = None
-site_name = 'fat'
+site_name = 'saf'
 
                     #\\192.168.1.57\SRO10-Roof  r:
                     #SRO-Weather (\\192.168.1.57) w:
@@ -53,12 +53,11 @@ site_config = {
         'sequencer': 'sequencer1'
         },
     'device_types': [
-
         'observing_conditions',
         'enclosure',
         'mount',
         'telescope',
-        #'screen',
+        # 'screen',
         'rotator',
         'focuser',
         'selector',
@@ -68,14 +67,14 @@ site_config = {
         ],
      'wema_types': [
         'observing_conditions',
-        'enclosure',      
+        'enclosure',    
         ],
      'short_status_devices':  [
-        #'observing_conditions',
-        #'enclosure',
+        # 'observing_conditions',
+        # 'enclosure',
         'mount',
         'telescope',
-        #'screen',
+        # 'screen',
         'rotator',
         'focuser',
         'selector',
@@ -84,10 +83,10 @@ site_config = {
         'sequencer',
         ],
     'name': 'Apache Ridge Observatory 0m3f4.9/9',
-    'airport_code':  'SAF', 
+    'airport_code':  'SAF',
     'location': 'Santa Fe, New Mexico,  USA',
-    'site_path':  'C:/ptr/',  #  Path to where some Photon Ranch data is stored.
-    'aux_archive_path': '//house-computer/saf_archive_2/archive/',  #  Path to auxillary backup disk not on this host.
+    'site_path':  'C:/ptr/',  # Path to where some Photon Ranch data is stored.
+    'aux_archive_path': '//house-computer/saf_archive_2/archive/',  # Path to auxillary backup disk not on this host.
 
     'observatory_url': 'https://starz-r-us.sky/clearskies2',   #  This is meant to be optional
     'description':  '''
@@ -108,7 +107,7 @@ site_config = {
     'site_in_automatic_default': "Automatic",   #  ["Manual", "Shutdown", "Automatic"]
     'automatic_detail_default': "Enclosure is initially set to Automatic mode.",
     'auto_eve_bias_dark': False,
-    'auto_eve_sky_flat': False,
+    'auto_eve_sky_flat': True,
     'eve_sky_flat_sunset_offset': +0.0,  #  Minutes  neg means before, + after.
     'auto_morn_sky_flat': False,
     'auto_morn_bias_dark': False,

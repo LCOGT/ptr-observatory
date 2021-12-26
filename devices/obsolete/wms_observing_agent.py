@@ -5,6 +5,7 @@ import time
 #import requests
 import json
 from global_yard import g_dev
+import config_file
 
 
 '''
@@ -79,15 +80,30 @@ class ObservingConditions:
         self.prior_status = None
         self.prior_status_2 = None
         self.wmd_fail_counter = 0
-    
+        if self.hostname in self.config['wema_hostname']:
+            self.is_wema = True
+        else:
+            self.is_wema = False
+        if self.config['wema_is_active']:
+            self.site_has_proxy = True  #NB Site is proxy needs a new name.
+        else:
+            self.site_has_proxy = False   
         if self.site in ['simulate',  'dht']:  #DEH: added just for testing purposes with ASCOM simulators.
             self.observing_conditions_connected = True
+            self.site_is_proxy = False   
             print("observing_conditions: Simulator drivers connected True")
-        elif driver is None:
-
-            pass
-            
-        elif not driver == 'redis':
+        elif self.config['site_is_specific']:
+            self.site_is_specific = True
+            #  Note OCN has no associated commands.
+            #  Here we monkey patch
+            self.get_status = config_file.get_ocn_status
+            # Get current ocn status just as a test.
+            self.status = self.get_status(g_dev)
+            # breakpoint()  # All test code
+            # quick = []
+            # self.get_quick_status(quick)
+            # print(quick)
+        elif (self.is_wema or self.site_is_specific):
             win32com.client.pythoncom.CoInitialize()
             self.sky_monitor = win32com.client.Dispatch(driver)
             self.sky_monitor.connected = True   # This is not an ASCOM device.
