@@ -1,7 +1,7 @@
 import win32com.client
 from global_yard import g_dev
 import time
-import serial
+#import serial
 
 
 class Selector:
@@ -12,7 +12,7 @@ class Selector:
         g_dev['sel']= self
         self.config = config['selector']
         #print("SEL:  ", self.config)
-        if driver != "Null":
+        if driver is not None:
             self.null_selector = False
             win32com.client.pythoncom.CoInitialize()
             self.selector = win32com.client.Dispatch(driver)

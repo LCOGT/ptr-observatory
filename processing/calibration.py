@@ -166,7 +166,7 @@ def calibrate (hdu, lng_path, frame_type='light', quick=False):
     if not quick:
         if super_bias is None:
             try:
-                sbHdu = fits.open(lng_path + 'b_1-10.fits')
+                sbHdu = fits.open(lng_path + 'b_1.fits')
                 super_bias = sbHdu[0].data#.astype('float32')
                 pedastal = sbHdu[0].header['PEDASTAL']
                 super_bias = super_bias + pedastal
@@ -175,7 +175,7 @@ def calibrate (hdu, lng_path, frame_type='light', quick=False):
                 #super_bias[fix] = int(super_bias.mean())
                 sbHdu.close()
                 quick_bias = True
-                if loud: print(lng_path + 'b_1-10.fits', 'Loaded')
+                if loud: print(lng_path + 'b_1.fits', 'Loaded')
             except:
                 quick_bias = False
                 #print('WARN: No Bias_1 Loaded.')
@@ -209,7 +209,7 @@ def calibrate (hdu, lng_path, frame_type='light', quick=False):
         #         print('WARN: No dark_1_90 Loaded.')
         if super_dark is None:
             try:
-                sdHdu = fits.open(lng_path + 'd_1_180-10.fits')
+                sdHdu = fits.open(lng_path + 'd_1.fits')
                 dark_exposure_level = sdHdu[0].header['EXPTIME']
                 super_dark = sdHdu[0].data/dark_exposure_level  #Convert to adu/sec
                 super_dark = super_dark.astype('float32')
@@ -218,7 +218,7 @@ def calibrate (hdu, lng_path, frame_type='light', quick=False):
                 #fix = np.where(super_dark_360 < 0)
                 #super_dark_360[fix] = 0
                 quick_dark= True
-                if loud: print(lng_path + 'd_1_180-10.fits', 'Loaded')
+                if loud: print(lng_path + 'd_1.fits', 'Loaded')
             except:
                quick_dark = False
                if loud: print('WARN: No dark_1 Loaded.')
@@ -742,12 +742,16 @@ def calibrate (hdu, lng_path, frame_type='light', quick=False):
     hdu.data[fix] = 0
     big_max = hdu.data.max()
     if loud: print("Max data value is:  ", big_max)
-    fix = np.where(hdu.data > 65530)
-    hdu.data[fix] = 65530.
+    high_clamp = np.where(hdu.data > 65530)
+    hdu.data[high_clamp] = 65530.
    #print("Pre uint", hdu.data.mean())
     hdu.data = hdu.data.astype('uint16')  #NB NB NB Why this step??
+    #   NB NB NB these procedures are dubious unless just intended for the flash
+    #   images.
     #print("Post uint", hdu.data.mean())
     result = {}
+    
+    #  NB NB Note adding meaninless data to keywords having nothing to do with calibration.
     result['error'] = False
     result['mean_focus'] = None
     result['mean_rotation'] = None

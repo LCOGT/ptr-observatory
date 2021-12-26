@@ -25,20 +25,17 @@ site_name = 'fat'
 site_config = {
     'site': str(site_name.lower()),
     'debug_site_mode': False,
-
-    'owner':  ['google-oauth2|102124071738955888216', 'google-oauth2|112401903840371673242'],  # Neyle,  Or this can be some aws handle.
-    'owner_alias': ['ANS'],
-    'admin_aliases': ["ANS", "WER", "TB", "DH", "KVH", 'KC'],
-    'agent_wms_enc_active':  True,    # True if an agent is used at a site.  
-                                       # Fat is intended to be simple since 
-                                       # there is so little to control.
-    'site_is_specific':  False,  # Indicates some special code for the site. 
-                                 # Intention it is found in this file.
-    'site_IPC_mechanism':  'shares',   # ['None', shares', 'shelves', 'redis']  Pick One
-    'site_share_path':  '//saf-wema/wema_transfer/',   #  Presumably also where shelves are found
-    'redis_ip': None,   # None if no redis path present, localhost if redis iself-contained
-    'wema_path':  '//saf-wema/wema_transfer/',   #We should obsolete this NB NB NB
-
+    'owner':  ['google-oauth2|112401903840371673242'],  # WER,  Or this can be 
+                                                        # some aws handle.
+    'owner_alias': ['WER'],
+    'admin_aliases': [ "WER", "TB", "DH", "KVH", 'KC', "ANS", 'EC'],
+    'wema_is_active':  False,    #True if the split computers used at a site.
+                                      #MRC is the model redis site
+    'wema_hostname':  ['FAT-0m30'],  #  Prefer the shorter version
+    'redis_ip': None,  #'127.0.0.1', None if no redis path present, 
+                                #localhost if redis is self-contained
+    'site_is_specific':  True,  # Indicates some special code for the site.
+    
     'defaults': {
         'observing_conditions': 'observing_conditions1',  #  These are used as keys, may go away.
         'enclosure': 'enclosure1',
@@ -53,42 +50,6 @@ site_config = {
         'sequencer': 'sequencer1'
         },
     'device_types': [
-
-        'observing_conditions',
-        'enclosure',
-        'mount',
-        'telescope',
-        #'screen',
-        'rotator',
-        'focuser',
-        'selector',
-        'filter_wheel',
-        'camera',
-        'sequencer',
-        ],
-     'wema_types': [
-        'observing_conditions',
-        'enclosure',      
-        ],
-     'short_status_devices':  [
-        #'observing_conditions',
-        #'enclosure',
-        'mount',
-        'telescope',
-        #'screen',
-        'rotator',
-        'focuser',
-        'selector',
-        'filter_wheel',
-        'camera',
-        'sequencer',
-        ],
-    'name': 'Apache Ridge Observatory 0m3f4.9/9',
-    'airport_code':  'SAF', 
-    'location': 'Santa Fe, New Mexico,  USA',
-    'site_path':  'C:/ptr/',  #  Path to where some Photon Ranch data is stored.
-    'aux_archive_path': '//house-computer/saf_archive_2/archive/',  #  Path to auxillary backup disk not on this host.
-
             'observing_conditions',
             'enclosure',
             'mount',
@@ -120,7 +81,6 @@ site_config = {
     'location': 'Near Shaver Lake C,  USA',
     'site_path':  'F:/',    #  Path to where all Photon Ranch data and state are to be found
     'aux_archive_path':  None, # '//house-computer/saf_archive_2/archive/',  #  Path to auxillary backup disk not on this host.
->>>>>>> d0792a66385b3ebdef90a57d1fca628057899e16
     'observatory_url': 'https://starz-r-us.sky/clearskies2',   #  This is meant to be optional
     'description':  '''
                     Now is the time for all good persons
@@ -144,12 +104,7 @@ site_config = {
     'eve_sky_flat_sunset_offset': +5.0,  #  Minutes  neg means before, + after.
     'auto_morn_sky_flat': False,
     'auto_morn_bias_dark': False,
-<<<<<<< HEAD
-    'calibrate_on_solve': True, 
-    
-=======
     're-calibrate_on_solve': True, 
->>>>>>> d0792a66385b3ebdef90a57d1fca628057899e16
 
     'observing_conditions' : {
         'observing_conditions1': {
@@ -172,18 +127,10 @@ site_config = {
     'enclosure': {
         'enclosure1': {
             'parent': 'site',
-<<<<<<< HEAD
-            'name': 'HomeDome',
-            'enc_is_specific':  False, 
-            'name': 'Boltwood',
-            'hostIP':  '10.0.0.140',
-            'driver': 'ASCOM.DigitalDomeWorks.Dome',  #  ASCOMDome.Dome',  #  ASCOM.DeviceHub.Dome',  #  ASCOM.DigitalDomeWorks.Dome',  #"  ASCOMDome.Dome',
-=======
             'enc_is_specific':  True,  # Indicates some special site code. 
             'name': 'SRO File',
             'hostIP':  'NONE',
             'driver': None,  #'ASCOM.DigitalDomeWorks.Dome',  #  ASCOMDome.Dome',  #  ASCOM.DeviceHub.Dome',  #  ASCOM.DigitalDomeWorks.Dome',  #"  ASCOMDome.Dome',
->>>>>>> d0792a66385b3ebdef90a57d1fca628057899e16
             'has_lights':  False,
             'controlled_by': 'mount1',
 			'is_dome': False,

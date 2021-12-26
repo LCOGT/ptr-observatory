@@ -245,7 +245,7 @@ class ObservingConditions:
         if False and (obs_win_begin - quarter_hour < ephem_now < sunrise + quarter_hour) \
              and self.unihedron.Connected and (time.time() >= self.sample_time + 30.):    #  Two samples a minute.
             try:
-                wl = open('D:/000ptr_saf/archive/wx_log.txt', 'a')   #  NB This is currently site specifc but in code w/o config.
+                wl = open(self.config['site_path'] + 'unihedron_log.txt', 'a')   #  NB This is currently site specifc but in code w/o config.
                 wl.write('wx, ' + str(time.time()) + ', ' + str(illum) + ', ' + str(mag - 20.01) + ', ' \
                          + str(self.unihedron.SkyQuality) + ", \n")
                 wl.close()
@@ -253,6 +253,7 @@ class ObservingConditions:
             except:
                 pass
                 #print("Wx log did not write.")
+            # NB NB NB These files should be aged out.
         self.status = status
 
         if self.config['site_IPC_mechanism'] == 'shares':

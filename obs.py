@@ -47,7 +47,7 @@ from planewave import platesolve
 import bz2
 import httplib2
 from auto_stretch.stretch import Stretch
-
+import socket
 import ptr_events
 import config_file
 # import device classes:
@@ -153,7 +153,7 @@ class Observatory:
 
     def __init__(self, name, config):
 
-        # This is the class through which we can make authenticated api calls.
+        # This is the ayneclass through which we can make authenticated api calls.
         self.api = API_calls()
         self.command_interval = 3   # seconds between polls for new commands
         self.status_interval = 4    # NOTE THESE IMPLEMENTED AS A DELTA NOT A RATE.
@@ -161,11 +161,11 @@ class Observatory:
         self.site_name = name
         self.config = config
         self.site_path = config['site_path']
+        self.site = config['site']
         self.last_request = None
         self.stopped = False
         self.status_count = 0
         self.site_message = '-'
-        # NB NB NB The following needs to be in the site config file, not here.
         self.device_types = config['device_types']
         self.short_status_devices = config['short_status_devices']
         # Instantiate the helper class for astronomical events
@@ -173,16 +173,41 @@ class Observatory:
         self.astro_events = ptr_events.Events(self.config)
         self.astro_events.compute_day_directory()
         self.astro_events.display_events()
+        self.hostname = self.hostname = socket.gethostname()
+        self.site_is_specific = False
+        if self.hostname in self.config['wema_hostname']:
+            self.is_wema = True
+        else:
+            self.is_wema = False
+        if self.config['wema_is_active']:
+            self.site_has_proxy = True  #NB Site is proxy needs a new name.
+        else:
+            self.site_has_proxy = False   
+        if self.site in ['simulate',  'dht']:  #DEH: added just for testing purposes with ASCOM simulators.
+            self.observing_conditions_connected = True
+            self.site_is_proxy = False   
+            print("observing_conditions: Simulator drivers connected True")
+        elif self.config['site_is_specific']:
+            self.site_is_specific = True
+            #  Note OCN has no associated commands.
+            #  Here we monkey patch
+            self.get_status = config_file.get_ocn_status
+            # Get current ocn status just as a test.
+            self.status = self.get_status(g_dev)
+            # breakpoint()  # All test code
+            # quick = []
+            # self.get_quick_status(quick)
+            # print(quick)
         
         redis_ip = config['redis_ip']
         if redis_ip is not None:           
             self.redis_server = redis.StrictRedis(host=redis_ip, port=6379, db=0,
                                               decode_responses=True)
             self.redis_wx_enabled = True
-            g_dev['ipc'] = self.redis_server  #I think IPC needs to be a class.
+            g_dev['redis'] = self.redis_server  #I think IPC needs to be a class.
         else:
             self.redis_wx_enabled = False
-            g_dev['ipc'] = None    #a  placeholder.
+            g_dev['redis'] = None    #a  placeholder.
         # Send the config to aws   # NB NB NB This has faulted.
         self.update_config()
         # Use the configuration to instantiate objects for all devices.
@@ -351,28 +376,30 @@ class Observatory:
                     # Process each job one at a time
                     print("# of incomming commands:  ", len(unread_commands))
                     for cmd in unread_commands:
-                        if self.config['selector']['selector1']['driver'] != 'Null':
+                        if self.config['selector']['selector1']['driver'] is None:
                             port = cmd['optional_params']['instrument_selector_position'] 
                             g_dev['mnt'].instrument_port = port
                             cam_name = self.config['selector']['selector1']['cameras'][port]
                             if cmd['deviceType'][:6] == 'camera':
-                                cmd['required_params']['device_instance'] = cam_name
+                                #  Note camelCase is teh format of command keys
+                                cmd['required_params']['deviceInstance'] = cam_name
                                 cmd['deviceInstance'] = cam_name
-                                deviceInstance = cam_name
+                                device_instance = cam_name
                             else:
                                 try:
                                     try:
-                                        deviceInstance = cmd['deviceInstance']
+                                        device_instance = cmd['deviceInstance']
                                     except:
-                                        deviceInstance = cmd['required_params']['device_instance']
+                                        device_instance = cmd['required_params']['deviceInstance']
                                 except:
                                     breakpoint()
                                     pass
                         else:
-                            deviceInstance = cmd['deviceInstance']
+                            device_instance = cmd['deviceInstance']
                         print('obs.scan_request: ', cmd)
-                        deviceType = cmd['deviceType']
-                        device = self.all_devices[deviceType][deviceInstance]
+
+                        device_type = cmd['deviceType']
+                        device = self.all_devices[device_type][device_instance]
                         try:
                         
                             device.parse_command(cmd)
@@ -442,8 +469,7 @@ class Observatory:
         status = {}
         # Loop through all types of devices.
         # For each type, we get and save the status of each device.
-
-        if not self.config['agent_wms_enc_active']:
+        if not self.config['wema_is_active']:
             device_list = self.device_types
             remove_enc = False
         else:
@@ -463,7 +489,7 @@ class Observatory:
                 # Get the actual device object...
                 device = devices_of_type[device_name]
                 # ...and add it to main status dict.
-                if device_name in ['observing_conditions1', 'enclosure1']:
+                if device_name in ['observing_conditions1', 'enclosure1'] and (self.is_wema or self.site_is_specific):
                     result = device.get_status(g_dev)
                 
                 else:
