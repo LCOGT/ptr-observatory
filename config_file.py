@@ -26,9 +26,9 @@ site_config = {
     'site_is_specific':  False,  # Indicates some special code for the site. 
                                  # Intention it is found in this file.
     'site_IPC_mechanism':  'shares',   # ['None', shares', 'shelves', 'redis']  Pick One
-    'site_share_path':  '//SAF-WEMA/wema_transfer/',   #  Presumably also where shelves are found
+    'site_share_path':  '//saf-wema/wema_transfer/',   #  Presumably also where shelves are found
     'redis_ip': None,   # None if no redis path present, localhost if redis iself-contained
-    'wema_path':  'site_share_path',   #We should obsolete this NB NB NB
+    'wema_path':  '//saf-wema/wema_transfer/',   #We should obsolete this NB NB NB
     'defaults': {
         'observing_conditions': 'observing_conditions1',  #  These are used as keys, may go away.
         'enclosure': 'enclosure1',
@@ -55,9 +55,13 @@ site_config = {
         'camera',
         'sequencer',
         ],
-    'short_status_devices':  [
+     'wema_types': [
         'observing_conditions',
-        'enclosure',
+        'enclosure',      
+        ],
+     'short_status_devices':  [
+        #'observing_conditions',
+        #'enclosure',
         'mount',
         'telescope',
         #'screen',
@@ -71,7 +75,7 @@ site_config = {
     'name': 'Apache Ridge Observatory 0m3f4.9/9',
     'airport_code':  'SAF', 
     'location': 'Santa Fe, New Mexico,  USA',
-    'site_path':  'F:/',    #  Path to where all Photon Ranch data and state are to be found
+    'site_path':  'C:/ptr/',  #  Path to where some Photon Ranch data is stored.
     'aux_archive_path': '//house-computer/saf_archive_2/archive/',  #  Path to auxillary backup disk not on this host.
     'observatory_url': 'https://starz-r-us.sky/clearskies2',   #  This is meant to be optional
     'description':  '''
@@ -96,7 +100,7 @@ site_config = {
     'auto_eve_sky_flat': False,
     'auto_morn_sky_flat': False,
     'auto_morn_bias_dark': False,
-    're-calibrate_on_solve': True, 
+    'calibrate_on_solve': True, 
     
 
     'observing_conditions' : {
@@ -122,7 +126,7 @@ site_config = {
             'enc_is_specific':  False, 
             'name': 'Boltwood',
             'hostIP':  '10.0.0.140',
-            'driver': 'ASCOMDome.Dome',  #'ASCOM.DigitalDomeWorks.Dome',  #  ASCOMDome.Dome',  #  ASCOM.DeviceHub.Dome',  #  ASCOM.DigitalDomeWorks.Dome',  #"  ASCOMDome.Dome',
+            'driver': 'ASCOM.DigitalDomeWorks.Dome',  #  ASCOMDome.Dome',  #  ASCOM.DeviceHub.Dome',  #  ASCOM.DigitalDomeWorks.Dome',  #"  ASCOMDome.Dome',
             'has_lights':  False,
             'controlled_by': 'mount1',
 			'is_dome': True,
