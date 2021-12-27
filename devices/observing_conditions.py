@@ -190,7 +190,7 @@ class ObservingConditions:
                             print("Using prior OCN status after 4 failures.")
                             return self.prior_status()
             elif self.config['site_IPC_mechanism'] == 'redis':
-                 return g_dev['redis'].get('wx_state', status)
+                 return g_dev['redis'].get('wx_state')
             else:
                 breakpoint()
 
