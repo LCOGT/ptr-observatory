@@ -85,7 +85,7 @@ site_config = {
     'name': 'Apache Ridge Observatory 0m3f4.9/9',
     'airport_code':  'SAF',
     'location': 'Santa Fe, New Mexico,  USA',
-    'site_path':  'C:/ptr/',  # Path to where some Photon Ranch data is stored.
+    'site_path':  'F:/',    #  Path to where all Photon Ranch data and state are to be found
     'aux_archive_path': '//house-computer/saf_archive_2/archive/',  # Path to auxillary backup disk not on this host.
 
     'observatory_url': 'https://starz-r-us.sky/clearskies2',   #  This is meant to be optional
@@ -328,7 +328,9 @@ site_config = {
             'shutdown_script':  None,
             'ports': 1,
             'instruments':  ['Main_camera'], #, 'eShel_spect', 'planet_camera', 'UVEX_spect'],
-            'cameras':  ['camera_1'], # , 'camera_1_2', None, 'camera_1_4'],
+
+            'cameras':  ['camera_1_1'], # , 'camera_1_2', None, 'camera_1_4'],
+>
             'guiders':  [None], # , 'guider_1_2', None, 'guide_1_4'],
             'default': 0
             },
