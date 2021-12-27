@@ -6,7 +6,7 @@ import time
 import json
 import socket
 from global_yard import g_dev
-import config_file
+import config
 # import ptr_events
 
 

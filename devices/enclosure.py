@@ -5,7 +5,7 @@ import time
 import shelve
 import json
 import socket
-import config_file
+import config
 
 '''
 Curently this module interfaces to a Dome (az control) or a pop-top roof style enclosure.

@@ -310,8 +310,8 @@ class WxEncAgent:
 
 if __name__ == "__main__":
 
-    import config_file
+    import config
 
-    wema = WxEncAgent(config_file.site_name, config_file.site_config)
+    wema = WxEncAgent(config.site_name, config.site_config)
     
     wema.run()
