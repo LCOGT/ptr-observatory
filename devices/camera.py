@@ -924,6 +924,7 @@ class Camera:
 
                     if self.maxim or self.ascom:
                         #print('Link Enable check:  ', self._connected())
+                        breakpoint()
                         g_dev['ocn'].get_quick_status(self.pre_ocn)
                         g_dev['foc'].get_quick_status(self.pre_foc)
                         g_dev['rot'].get_quick_status(self.pre_rot)

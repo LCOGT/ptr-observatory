@@ -6,8 +6,9 @@ Updates 20200911b   WER
 @author: wrosing
 '''
 import json
-
-
+#                                                                                                  1         1         1
+#        1         2         3         4         5         6         7         8         9         0         1         2
+#23456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456
 '''
 Ports.txt
 Tested 20200925  
@@ -125,8 +126,8 @@ site_config = {
     'latitude': 34.459375,     #Decimal degrees, North is Positive
     'longitude': -119.681172,   #Decimal degrees, West is negative
     'elevation': 317.75,    # meters above sea level
-    'reference_ambient':  [15.0],  #Degrees Celsius.  Alternately 12 entries, one for every - mid month.
-    'reference_pressure':  [977.83],  #mbar Alternately 12 entries, one for every - mid month.
+    'reference_ambient':  15.0,  #Degrees Celsius.  Alternately 12 entries, one for every - mid month.
+    'reference_pressure':  977.83,  #mbar Alternately 12 entries, one for every - mid month.
     'site_in_automatic_default': "Automatic",   #"Manual", "Shutdown"
     'automatic_detail_default': "Enclosure is set to Automatic mode.",
     
@@ -504,7 +505,8 @@ site_config = {
             # "parent": "telescope1",
             # "alias": "CWL2",
             # "desc":  'PTR Custom FLI dual wheel.',
-            # "driver": ['ASCOM.FLI.FilterWheel1', 'ASCOM.FLI.FilterWheel2'],   #  'ASCOM.QHYFWRS232.FilterWheel',  #"Maxim",   #['ASCOM.FLI.FilterWheel1', 'ASCOM.FLI.FilterWheel2'],
+            # "driver": ['ASCOM.FLI.FilterWheel1', 'ASCOM.FLI.FilterWheel2'],   #  'ASCOM.QHYFWRS232.FilterWheel',  #"Maxim",\
+                       #['ASCOM.FLI.FilterWheel1', 'ASCOM.FLI.FilterWheel2'],
             'startup_script':  None,
             'recover_script':  None,
             'shutdown_script':  None,
@@ -577,7 +579,7 @@ site_config = {
 
 
     # A site may have many cameras registered (camera1, camera2, camera3, ...) each with unique aliases -- which are assumed
-    # to be the name an owner has assigned and in principle that name "kb01" is labeled and found on the camera.  Between sites,
+    # to be the name an owner has assigned and in principle the name "kb01" is labeled and found on the camera.  Between sites,
     # there can be overlap of camera names.  LCO convention is letter of cam manuf, letter of chip manuf, then 00, 01, 02, ...
     # However this code will treat the camera name/alias as a string of arbitrary length:  "saf_Neyle's favorite_camera" is
     # perfectly valid as an alias.
@@ -641,7 +643,8 @@ site_config = {
                 'readout_mode': 'Normal',
                 'readout_speed':  0.4,
                 'square_detector': False,
-                'areas_implemented': ["600%", "450%", "300%", "250%", "150%", "133%", "Full", "Sqr", '71%', '50%',  '35%', '25%', '12%'],
+                'areas_implemented': ["600%", "450%", "300%", "250%", "150%", "133%", "Full", "Sqr", '71%', '50%',  '35%', \
+                                      '25%', '12%'],
                 'default_area':  "Full",
                 'bin_modes':  [[2, 2], [1,1]],     #Meaning fixed binning if list has only one entry
                 'default_bin':  [2, 2],     #Always square and matched to seeing situation by owner
@@ -663,8 +666,8 @@ site_config = {
         #     'parent': 'telescope1',
         #     'name': 'sq22',      #Important because this points to a server file structure by that name.
         #     'desc':  'QHY 600M Pro',
-        #     'driver':  "ASCOM.QHYCCD.Camera", #"Maxim.CCDCamera",   #'ASCOM.FLI.Kepler.Camera', "ASCOM.QHYCCD.Camera",   #
-        #     'detector':  'Sony IMX455',
+        #     'driver':  "ASCOM.QHYCCD.Camera", #"Maxim.CCDCamera",   #'ASCOM.FLI.Kepler.Camera', "ASCOM.QHYCCD.Camera", \
+                         #     'detector':  'Sony IMX455',
         #     'manufacturer':  'QHY',
         #     'use_file_mode':  False,
         #     'file_mode_path':  'D:/archive/sq22/maxim/',
@@ -707,7 +710,8 @@ site_config = {
         #         'reference_noise': [3.2, 3.2, 3.2, 3.2],    #  NB Guess
         #         'reference_dark': [0.2, 0.0, 0.0, 0.0],    #Guesses?
         #         'saturate':  55000,               
-        #         'areas_implemented': ["600%", "450%", "300%", "250%", "150%", "133%", "Full", "Sqr", '71%', '50%',  '35%', '25%', '12%'],
+        #         'areas_implemented': ["600%", "450%", "300%", "250%", "150%", "133%", "Full", "Sqr", '71%', '50%',  '35%', \
+                                       #'25%', '12%'],
         #         'default_area':  "Full",
         #         'bin_modes':  [[2, 2], [1,1]],     #Meaning fixed binning if list has only one entry
         #         'default_bin':  [2, 2],     #Always square and matched to seeing situation by owner
@@ -766,8 +770,6 @@ site_config = {
 
     #Need to build instrument selector and multi-OTA configurations.
 
-    #AWS does not need this, but my configuration code might make use of it. VALENTINA this device will probably
-    #alwys be custom per installation. In my case Q: points to a 40TB NAS server in the basement. WER
     'server': {
         'server1': {
             'name': 'QNAP',

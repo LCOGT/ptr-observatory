@@ -128,7 +128,10 @@ class Enclosure:
                             print("Using prior enclosure status after 4 failures.")
                             return self.prior_status()
             elif self.config['site_IPC_mechanism'] == 'redis':
-                 return g_dev['redis'].get('enc_status', status)
+                 try:
+                     return eval(g_dev['redis'].get('enc_status'))
+                 except:
+                     return g_dev['redis'].get('enc_status')
             else:
                 breakpoint()
 

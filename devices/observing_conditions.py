@@ -84,8 +84,8 @@ class ObservingConditions:
         self.prior_status = None
         self.prior_status_2 = None
         self.wmd_fail_counter = 0
-        self.temperature = self.config['reference_ambient'][0]  # Index needs
-        self.pressure = self.config['reference_pressure'][0]  # to be months.
+        self.temperature = self.config['reference_ambient']  # Index needs to be months. Initial setting.
+        self.pressure = self.config['reference_pressure']  # Always updated with real measurements.
         self.unihedron_connected = True  # NB NB NB His needs improving, driving from config
         self.hostname = socket.gethostname()
         self.site_is_specific = False
@@ -158,7 +158,6 @@ class ObservingConditions:
             DESCRIPTION.
 
         '''
-
         if not self.is_wema and self.site_has_proxy:
             if self.config['site_IPC_mechanism'] == 'shares':
                 try:
@@ -190,7 +189,10 @@ class ObservingConditions:
                             print("Using prior OCN status after 4 failures.")
                             return self.prior_status()
             elif self.config['site_IPC_mechanism'] == 'redis':
-                 return g_dev['redis'].get('wx_state', status)
+                 try:
+                     return eval(g_dev['redis'].get('wx_state'))
+                 except:
+                     return g_dev['redis'].get('wx_state')
             else:
                 breakpoint()
 
@@ -217,10 +219,12 @@ class ObservingConditions:
                 status["meas_sky_mpsas"] = uni_measure
 
             self.temperature = round(self.sky_monitor.Temperature, 2)
+            month = 0
+            breakpoint()
             try:  #  NB NB Boltwood vs. SkyAlert difference.  What about FAT?
                 self.pressure = self.sky_monitor.Pressure,  #978   #Mbar to mmHg  #THIS IS A KLUDGE
             except:
-                self.pressure = self.config['reference_pressure']
+                self.pressure = self.config['reference_pressure'][month]
             status = {"temperature_C": round(self.temperature, 2),
                       "pressure_mbar": self.pressure,
                       "humidity_%": self.sky_monitor.Humidity,
@@ -527,11 +531,8 @@ class ObservingConditions:
 
             
     def get_quick_status(self, quick):
-        #  This method is used for annotating fits headers.
-        # wx = eval(self.redis_server.get('<ptr-wx-1_state'))
-        #  NB NB This routine does NOT update self.wx_ok
-        #Above is cruft
-        self.status = self.get_status(g_dev)  # Get current stat.
+        breakpoint()
+        self.status = self.get_status()   #g_dev)  # Get current stat.
         #if self.site_is_proxy:
             #Need to get data for camera from redis.
         illum, mag = g_dev['evnt'].illuminationNow()
