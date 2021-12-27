@@ -301,7 +301,7 @@ site_config = {
             'shutdown_script':  None,
             'ports': 1,
             'instruments':  ['Main_camera'], #, 'eShel_spect', 'planet_camera', 'UVEX_spect'],
-            'cameras':  ['camera_1'], # , 'camera_1_2', None, 'camera_1_4'],
+            'cameras':  ['camera_1_!'], # , 'camera_1_2', None, 'camera_1_4'],
             'guiders':  [None], # , 'guider_1_2', None, 'guide_1_4'],
             'default': 0
             },

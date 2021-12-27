@@ -23,6 +23,7 @@ class FilterWheel:
         #  as a valid instance of class camera.
         self.filter_message = '-'
         print('Please NOTE: Filter wheel may block for many seconds while first connecting & homing.')
+        breakpoint()
         if driver == 'LCO.dual':
             '''
             home the wheel and get responses, hat indicates it is connected.
