@@ -190,7 +190,7 @@ class ObservingConditions:
                             print("Using prior OCN status after 4 failures.")
                             return self.prior_status()
             elif self.config['site_IPC_mechanism'] == 'redis':
-                 return g_dev['redis'].set('<wx_state', status)
+                 return g_dev['redis'].get('wx_state', status)
             else:
                 breakpoint()
 
@@ -202,7 +202,6 @@ class ObservingConditions:
                 illum = int(illum)
             else:
                 illum = round(illum, 3)
-                breakpoint()
             if self.unihedron_connected:
                 try:
                     uni_measure = self.unihedron.SkyQuality   #  Provenance of 20.01 is dubious 20200504 WER
@@ -286,7 +285,8 @@ class ObservingConditions:
                             weather.close()
                             print("4th try to write weather status.")
             elif self.config['site_IPC_mechanism'] == 'redis':
-                g_dev['redis'].set('<wx_state', status)  #THis needs to become generalized IP      
+
+                g_dev['redis'].set('wx_state', status)  #THis needs to become generalized IP      
 
             # Only write when around dark, put in CSV format, used to calibrate Unihedron.
             sunZ88Op, sunZ88Cl, sunrise, ephemNow = g_dev['obs'].astro_events.getSunEvents()
