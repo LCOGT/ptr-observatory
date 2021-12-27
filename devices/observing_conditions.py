@@ -84,8 +84,8 @@ class ObservingConditions:
         self.prior_status = None
         self.prior_status_2 = None
         self.wmd_fail_counter = 0
-        self.temperature = self.config['reference_ambient'][0]  # Index needs
-        self.pressure = self.config['reference_pressure'][0]  # to be months.
+        self.temperature = self.config['reference_ambient']  # Index needs
+        self.pressure = self.config['reference_pressure']  # to be months.
         self.unihedron_connected = True  # NB NB NB His needs improving, driving from config
         self.hostname = socket.gethostname()
         self.site_is_specific = False

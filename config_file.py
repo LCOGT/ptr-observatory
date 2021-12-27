@@ -125,8 +125,8 @@ site_config = {
     'latitude': 34.459375,     #Decimal degrees, North is Positive
     'longitude': -119.681172,   #Decimal degrees, West is negative
     'elevation': 317.75,    # meters above sea level
-    'reference_ambient':  [15.0],  #Degrees Celsius.  Alternately 12 entries, one for every - mid month.
-    'reference_pressure':  [977.83],  #mbar Alternately 12 entries, one for every - mid month.
+    'reference_ambient':  5.0,  #Degrees Celsius.  Alternately 12 entries, one for every - mid month.
+    'reference_pressure':  977.83,  #mbar Alternately 12 entries, one for every - mid month.
     'site_in_automatic_default': "Automatic",   #"Manual", "Shutdown"
     'automatic_detail_default': "Enclosure is set to Automatic mode.",
     
