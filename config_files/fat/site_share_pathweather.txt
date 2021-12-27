@@ -1,0 +1,1 @@
+{"temperature_C": 5.0, "pressure_mbar": 784.0, "humidity_%": 21.0, "dewpoint_C": -15.7, "sky_temp_C": -33.5, "last_sky_update_s": 113.21, "wind_m/s": 7.38, "rain_rate": 0.0, "solar_flux_w/m^2": null, "cloud_cover_%": 0.0, "calc_HSI_lux": 0.002, "calc_sky_mpsas": 1.99, "wx_ok": "Yes", "open_ok": "No", "wx_hold": false, "hold_duration": 0.0, "meas_sky_mpsas": -0.52}

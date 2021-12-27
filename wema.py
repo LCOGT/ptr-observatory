@@ -105,6 +105,7 @@ class WxEncAgent:
         self.astro_events = ptr_events.Events(self.config)
         self.astro_events.compute_day_directory()
         self.astro_events.display_events()
+
         self.wema_pid = os.getpid()
         print('WEMA_PID:  ', self.wema_pid)
         if config['redis_ip'] is not None:           
@@ -118,6 +119,7 @@ class WxEncAgent:
             self.redis_wx_enabled = False
             g_dev['redis'] = None
         ##  g_dev['redis_server']['wema_loaded'] = True
+
         
         # #Here we clean up any older processes
         # prior_wema = self.redis_server.get("wema_pid")
@@ -141,6 +143,11 @@ class WxEncAgent:
         
         
 
+
+        self.wema_pid = os.getpid()
+        print('WEMA_PID:  ', self.wema_pid)
+        #self.redis_server.set('wema_pid', self.wema_pid)
+
         #Redundant store of wema_pid
 
         camShelf = shelve.open(self.site_path + 'ptr_night_shelf/' + 'pid_wema')
@@ -158,7 +165,7 @@ class WxEncAgent:
         immed_time = time.time()
         self.obs_time = immed_time
         self.wema_start_time = immed_time
-        self.redis_server.set('obs_time', immed_time, ex=360)
+        #self.redis_server.set('obs_time', immed_time, ex=360)
 
 
         #subprocess.call('obs.py')  This is clearly wrong.
@@ -239,6 +246,8 @@ class WxEncAgent:
             device_names = devices_of_type.keys()
             for device_name in device_names:
                 device = devices_of_type[device_name]
+                #print(device)
+                #breakpoint()
                 status[dev_type][device_name] = device.get_status()
         # Include the time that the status was assembled and sent.
         status["timestamp"] = round((time.time() + t1)/2., 3)
@@ -263,7 +272,7 @@ class WxEncAgent:
             else:
                 print('>')
         uri_status = f"https://status.photonranch.org/status/{self.name}/status/"
-        try:    # 20190926  tHIS STARTED THROWING EXCEPTIONS OCCASIONALLY
+        try:    # 20190926  Throws an exeption when AWS goes AWOL. 
             payload ={
                 "statusType": "wxEncStatus",
                 "status":  status
@@ -271,7 +280,7 @@ class WxEncAgent:
             data = json.dumps(payload)
             #print(data)
             requests.post(uri_status, data=data)
-            self.redis_server.set('wema_heart_time', self.time_last_status, ex=120)
+            #self.redis_server.set('wema_heart_time', self.time_last_status, ex=120)
             if self.name in ['mrc', 'mrc1']:
                 uri_status_2 = "https://status.photonranch.org/status/mrc2/status/"
                 payload ={
