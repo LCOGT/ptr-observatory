@@ -164,14 +164,14 @@ site_config = {
 
 
 
-    'mount': {
+   'mount': {
         'mount1': {
             'parent': 'enclosure1',
             'name': 'safpier',
             'hostIP':  '10.0.0.140',     #Can be a name if local DNS recognizes it.
             'hostname':  'safpier',
-            'desc':  'Planewave L500 AltAz',
-            'driver': 'ASCOM.PWI4.Telescope',
+            'desc':  'AP 1600 GoTo',
+            'driver': 'AstroPhysicsV2.Telescope',
             'alignment': 'Equatorial',
             'default_zenith_avoid': 0.0,   #degrees floating, 0.0 means do not apply this constraint.
             'has_paddle': False,      #paddle refers to something supported by the Python code, not the AP paddle.
@@ -183,12 +183,12 @@ site_config = {
 			    'longitude_offset': 0.0,   #Decimal degrees, West is negative  #NB This could be an eval( <<site config data>>))
 			    'elevation_offset': 0.0,    # meters above sea level
                 'home_park_altitude': 0.0,
-                'home_park_azimuth': 270.,
-                'horizon':  15.,    #  Meant to be a circular horizon. Or set to None if below is filled in.
+                'home_park_azimuth': 180.,
+                'horizon':  20.,    #  Meant to be a circular horizon. Or set to None if below is filled in.
                 'horizon_detail': {  #  Meant to be something to draw on the Skymap with a spline fit.
                      '0.1': 10,
-                     ' 90': 10,
-                     '180': 10,
+                     '90': 11.2,
+                     '180.0': 10,
                      '270': 10,
                      '360': 10
                      },  #  We use a dict because of fragmented azimuth mesurements.
@@ -196,8 +196,8 @@ site_config = {
                 'model_on': True, 
                 'rates_on': True,
                 'model': {
-                    'IH': 0.0,
-                    'ID': 0.0,
+                    'IH': 0.0, #-0.04372704281702999,  #20211203
+                    'ID': 0.0,  #-0.5326099734267764,
                     'WIH': 0.0,
                     'WID': 0.0,
                     'CH': 0.0,
@@ -220,20 +220,20 @@ site_config = {
         'telescope1': {
             'parent': 'mount1',
             'name': 'Main OTA',
-            'desc':  'AP 305mm F3.8 Ricarrdi Honders',
+            'desc':  'Ceravolo 300mm F4.9/F9 convertable',
             'driver': None,                     #  Essentially this device is informational.  It is mostly about the optics.
-            'collecting_area': 55390,
-            'obscuration':  24.2,   #  %
-            'aperture': 305,
-            'focal_length': 1160, #1470,   #2697,   #  Converted to F9, measured 20200905  11.1C
-            'has_dew_heater':  True,
+            'collecting_area': 31886,
+            'obscuration':  0.55,
+            'aperture': 30,
+            'focal_length': 1470, #1470,   #2697,   #  Converted to F9, measured 20200905  11.1C
+            'has_dew_heater':  False,
             'screen_name': 'screen1',
             'focuser_name':  'focuser1',
             'rotator_name':  'rotator1',
             'has_instrument_selector': False,   #This is a default for a single instrument system
             'selector_positions': 1,            #Note starts with 1
             'instrument names':  ['camera1'],
-            'instrument aliases':  ['SBIG16200'],
+            'instrument aliases':  ['QHY600Mono'],
             'configuration': {
                  "position1": ["darkslide1", "filter_wheel1", "camera1"]
                  },
@@ -263,7 +263,7 @@ site_config = {
             'name': 'rotator',
             'desc':  'Opetc Gemini',
             'driver': 'ASCOM.OptecGemini.Rotator',
-			'com_port':  'COM9',
+			'com_port':  'COM10',
             'minimum': -180.,
             'maximum': 360.0,
             'step_size':  0.0001,     #Is this correct?
@@ -277,8 +277,7 @@ site_config = {
             'parent': 'telescope1',
             'name': 'screen',
             'desc':  'Optec Alnitak 16"',
-            'driver': 'ASCOM.OptecAlnitak.CoverCalibrator', 
-            'com_port': 'COM10',  #  This needs to be a 4 or 5 character string as in 'COM8' or 'COM22'
+            'driver': 'COM14',  #  This needs to be a 4 or 5 character string as in 'COM8' or 'COM22'
             'minimum': 5,   #  This is the % of light emitted when Screen is on and nominally at 0% bright.
             'saturate': 255,  #  Out of 0 - 255, this is the last value where the screen is linear with output.
                               #  These values have a minor temperature sensitivity yet to quantify.
@@ -293,13 +292,13 @@ site_config = {
             'name': 'focuser',
             'desc':  'Optec Gemini',
             'driver': 'ASCOM.OptecGemini.Focuser',
-			'com_port':  'COM9',
+			'com_port':  None,
             #F4.9 setup
-            'reference': 7728,    #  20210313  Nominal at 10C Primary temperature
-            'ref_temp':  5.06,    #  Update when pinning reference
-            'coef_c': 0,   #  Negative means focus moves out as Primary gets colder
-            'coef_0': 7728,  #  Nominal intercept when Primary is at 0.0 C. 
-            'coef_date':  '2021220',    #This appears to be sensible result 44 points -13 to 3C'reference':  6431,    #  Nominal at 10C Primary temperature
+            'reference': 5197,    #  20210313  Nominal at 10C Primary temperature
+            'ref_temp':  5.1,    #  Update when pinning reference
+            'coef_c': 0,  #  26.055,   #  Negative means focus moves out as Primary gets colder
+            'coef_0': 5197,  #  Nominal intercept when Primary is at 0.0 C. 
+            'coef_date':  '20211210',    #This appears to be sensible result 44 points -13 to 3C'reference':  6431,    #  Nominal at 10C Primary temperature
             # #F9 setup
             # 'reference': 4375,    #   Guess 20210904  Nominal at 10C Primary temperature
             # 'ref_temp':  27.,    #  Update when pinning reference
@@ -322,51 +321,78 @@ site_config = {
             'parent': 'telescope1',
             'name': 'None',
             'desc':  'Null Changer',
-            'driver': None,
+            'driver': 'Null',
             'com_port': None,
             'startup_script':  None,
             'recover_script':  None,
             'shutdown_script':  None,
             'ports': 1,
             'instruments':  ['Main_camera'], #, 'eShel_spect', 'planet_camera', 'UVEX_spect'],
-            'cameras':  ['camera_1_1'], # , 'camera_1_2', None, 'camera_1_4'],
+            'cameras':  ['camera_1'], # , 'camera_1_2', None, 'camera_1_4'],
             'guiders':  [None], # , 'guider_1_2', None, 'guide_1_4'],
             'default': 0
             },
 
     },
-
+    
     'filter_wheel': {
         "filter_wheel1": {
             "parent": "telescope1",
-            "name": "SBIG 8-position wheel" ,  #"LCO filter wheel FW50_001d",
-            'service_date': '20180101',
-            "driver":   "Maxim.CCDCamera",   #"LCO.dual",  #  'ASCOM.FLI.FilterWheel', 
-            'ip_string': None,
-            "dual_wheel": False,
+            "name": "LCO filter wheel FW50_001d",
+            'service_date': '20110716',
+            "driver": "LCO.dual",  #  'ASCOM.FLI.FilterWheel',   #'MAXIM',
+            'ip_string': 'http://10.0.0.110',
+            "dual_wheel": True,
             'settings': {
-                'filter_count': 8,
+                'filter_count': 38,
                 'home_filter':  0,
-                'default_filter': "PL",
-                'filter_reference': 0,   #  We choose to use W as the default filter.  Gains taken at F9, Ceravolo 300mm
+                'default_filter': "w",
+                'filter_reference': 7,   #  We choose to use W as the default filter.  Gains taken at F9, Ceravolo 300mm
                 'filter_data': [['filter', 'filter_index', 'filter_offset', 'sky_gain', 'screen_gain', 'generic'],
                         
-
-                        ['PL',   [0,  0],    0, 72.7, [1.00 ,  72], 'PL'],    #0.
-                        ['PR',   [1,  1],    0, 11.0, [1.00 , 119], 'PB'],    #1.
-                        ['PG',   [2,  2],    0, 18.6, [1.00 , 113], 'PG'],    #2.
-                        ['PB',   [3,  3],    0, 42.3, [0.80 ,  97], 'PR'],    #3.
-                        ['HA',   [4,  4],    0, .400, [5.00 , 200], 'HA'],    #4.
-                        ['O3',   [5,  5],    0, 1.84, [4.00 , 200], 'O3'],    #5.
-                        ['S2',   [6,  6],    0, .221, [10.0,  200], 'S2'],    #6.
-                        ['air',  [7,  7],    0, 100., [1.00,   70], 'AI'],    #7.
-                        ['dark', [6,  6],    0, .221, [   0,    0], 'DK']],   #8.
-
-
-                'filter_screen_sort':  [7, 0, 3, 2, 1, 5, 4, 6],   #  don't use narrow yet,  8, 10, 9], useless to try.
+                        ['air',  [0,  0], -800, 81.2, [2   ,  20], 'ai'],    # 0.  Gains 20211020 Clear NE sky
+                        ['w',    [7,  0],    0, 72.8, [360 , 170], 'w '],    # 1.
+                        ['up',   [1,  0],    0, 2.97, [2   ,  20], 'up'],    # 2.
+                        ['gp',   [2,  0],    0, 52.5, [.77 ,  20], 'gp'],    # 3.
+                        ['rp',   [3,  0],    0, 14.5, [1.2 ,  20], 'rp'],    # 4.
+                        ['ip',   [4,  0],    0, 3.35, [.65 ,  20], 'ip'],    # 5.
+                        ['z',    [5,  0],    0, .419, [1.0 ,  20], 'zs'],    # 6.
+                        ['zp',   [0,  9],    0, .523, [360 , 170], 'zp'],    # 7.
+                        ['y',    [6,  0],    0, .057, [360 , 170], 'y '],    # 8.
+                        ['EXO',  [8,  0],    0, 34.2, [360 , 170], 'ex'],    # 9.
+                        ['JB',   [9,  0],    0, 32.4, [0.65,  20], 'BB'],    #10.
+                        ['JV',   [10, 0],    0, 23.3, [.32 ,  20], 'BV'],    #11.
+                        ['Rc',   [11, 0],    0, 14.3, [10  , 170], 'BR'],    #12.
+                        ['Ic',   [12, 0],    0, 2.17, [360 , 170], 'BI'],    #13.
+                        ['PL',   [7,  0],    0, 72.7, [360 , 170], 'PL'],    #14.
+                        ['PR',   [0,  8],    0, 11.0, [.32 ,  20], 'PB'],    #15.
+                        ['PG',   [0,  7],    0, 18.6, [30  , 170], 'PG'],    #16.
+                        ['PB',   [0,  6],    0, 42.3, [360 , 170], 'PR'],    #17.
+                        ['NIR',  [0, 10],    0, 3.06, [0.65,  20], 'ni'],    #18.
+                        ['O3',   [0,  2],    0, 1.84, [360 , 170], 'O3'],    #19.
+                        ['HA',   [0,  3],    0, .400, [360 , 170], 'HA'],    #20.
+                        ['N2',   [13, 0],    0, .233, [360 , 170], 'N2'],    #21.
+                        ['S2',   [0,  4],    0, .221, [0.65,  20], 'S2'],    #22.
+                        ['CR',   [0,  5],    0, .425, [360 , 170], 'Rc'],    #23.
+                        ['dark', [5,  6],    0, 0.20, [360 , 170], 'dk'],    #24
+                        ['dif',  [0,  1],    0, 0.21, [360 , 170], 'df'],    #25
+                        ['difw',   [7,  1],  0, 300., [0.65,  20], 'dw'],    #26.
+                        ['difup',  [1,  1],  0, 10.5, [0.65,  20], 'du'],    #27.
+                        ['difgp',  [2,  1],  0, 234,  [0.65,  20], 'dg'],    #28.
+                        ['difrp',  [3,  1],  0, 70.0, [0.65,  20], 'dr'],    #29.
+                        ['difip',  [4,  1],  0, 150., [0.65,  20], 'di'],    #30.
+                        ['difz',   [5,  1],  0, 0.73, [0.65,  20], 'ds'],    #31.
+                        ['dify',   [6,  1],  0, 0.15, [0.65,  20], 'dY'],    #32.
+                        ['difEXO', [8,  1],  0, 161., [0.65,  20], 'dx'],    #33.
+                        ['difJB',  [9,  1],  0, 42.5, [0.65,  20], 'dB'],    #34.
+                        ['difJV',  [10, 1],  0, 33.0, [0.65,  20], 'dV'],    #35.
+                        ['difRc',  [11, 1],  0, 22.2, [0.65,  20], 'dR'],    #36.
+                        ['difIc',  [12, 1],  0, 10. , [0.65,  20], 'dI']],   #37.        38 valid entries, only 36 useable.
+                'filter_screen_sort':  [12, 0, 11, 2, 3, 5, 4, 1, 6],   #  don't use narrow yet,  8, 10, 9], useless to try.
                 
                 
-                'filter_sky_sort': [6, 4, 5, 1, 2, 3, 0, 7]    #No diffuser based filters
+                'filter_sky_sort': [8, 22, 21, 20, 23, 6, 7, 19, 2, 13, 18, 5, 15,\
+                                    12, 4, 11, 16, 10, 9, 17, 3, 14, 1, 0]    #No diffuser based filters
                 #'filter_sky_sort': [7, 19, 2, 13, 18, 5, 15,\
                 #                    12, 4, 11, 16, 10, 9, 17, 3, 14, 1, 0]    #basically no diffuser based filters
                 #[32, 8, 22, 21, 20, 23, 31, 6, 7, 19, 27, 2, 37, 13, 18, 30, 5, 15, 36, 12,\
@@ -389,62 +415,55 @@ site_config = {
     },
     
     'camera': {
-        'camera_1_1': {
+        'camera_1': {
             'parent': 'telescope1',
-            'name': 'kb001',      #  Important because this points to a server file structure by that name.
-            'desc':  'SBIG16200',
+            'name': 'sq002',      #  Important because this points to a server file structure by that name.
+            'desc':  'QHY 600Pro',
             'service_date': '20211111',
-            'driver': "Maxim.CCDCamera",  # "ASCOM.QHYCCD.Camera", ##  'ASCOM.FLI.Kepler.Camera',
-            'detector':  'KAF16200',
-            'manufacturer':  'On Semi',
+            'driver': "ASCOM.QHYCCD.Camera", #"Maxim.CCDCamera",  # "ASCOM.QHYCCD.Camera", ##  'ASCOM.FLI.Kepler.Camera',
+            'detector':  'Sony IMX455',
+            'manufacturer':  'QHY',
             'use_file_mode':  False,
             'file_mode_path':  'G:/000ptr_saf/archive/sq01/autosaves/',
 
             'settings': {
-                'temp_setpoint': -35,
-                'calib_setpoints': [-30, -25, -20, -15, -10 ],  #  Should vary with season? by day-of-year mod len(list)
+                'temp_setpoint': -10,
+                'calib_setpoints': [-10, -7.5, -6.5, -5.5, -4.0 ],  #  Should vary with season? by day-of-year mod len(list)
                 'day_warm': False,
                 'cooler_on': True,
                 'x_start':  0,
                 'y_start':  0,
-                'x_width':  4500,   #  NB Should be set up with overscan, which this camera is!  20200315 WER
-                'y_width':  3600,
-                #Note please add 56 to SBIG Driver Checker 64 Update config for added overscan
-                'x_chip':  4556,   #  NB Should specify the active pixel area.   20200315 WER
-                'y_chip':  3656,
-                'x_trim_offset':  0,   #  NB these four entries are guesses.
-                'y_trim_offset':  0,
-                'pre_bias_available': False,  #if so need to specify as below for post_bias.
-                'post_bias_available': True,  #if so need to specify as below for post_bias.
-                'x_bias_start':  4520,
-                'y_bias_start': 3620,
-                'x_bias_end':  4556,       # Vert band self.img[-38:-18, 0]
-                'y_bias_send': 3643,
-                'corner_everlap': True,
-                'x_bias_line': True,
-                'y_bias_line': True,
-                'x_active': 4500,
-                'y_active': 3600,
-                'x_pixel':  6,
-                'y_pixel':  6,
-                'pix_scale': 1.0668,     #_22*4499,     #  asec/pixel F9   0.5751  , F4.9  1.0481         
-                'x_field_deg': 1.3333,   #   round(4784*1.0481/3600, 4),
-                'y_field_deg': 1.0665,   #  round(3194*1.0481/3600, 4),
+                'x_width':  4800,   #  NB Should be set up with overscan, which this camera is!  20200315 WER
+                'y_width':  3211,
+                'x_chip':  9576,   #  NB Should specify the active pixel area.   20200315 WER
+                'y_chip':  6388,
+                'x_trim_offset':  8,   #  NB these four entries are guesses.
+                'y_trim_offset':  8,
+                'x_bias_start':  9577,
+                'y_bias_start' : 6389,
+                'x_active': 4784,
+                'y_active': 3194,
+                'x_pixel':  3.76,
+                'y_pixel':  3.76,
+                'pix_scale': 1.0551,     #  asec/pixel F9   0.5751  , F4.9  1.0481         
+                'x_field_deg': 1.3928,   #   round(4784*1.0481/3600, 4),
+                'y_field_deg': 0.9299,   #  round(3194*1.0481/3600, 4),
                 'overscan_x': 24,
                 'overscan_y': 3,
                 'north_offset': 0.0,    #  These three are normally 0.0 for the primary telescope
                 'east_offset': 0.0,     #  Not sure why these three are even here.
                 'rotation': 0.0,        #  Probably remove.
-                'min_exposure': 0.2,
-                'max_exposure': 3600,
+                'min_exposure': 0.00001,
+                'max_exposure': 300.0,
                 'can_subframe':  True,
                 'min_subframe':  [128, 128],       
-                'bin_modes':  [[1, 1, 1.07], [2, 2, 2.13], [3, 3, 3.21], [4, 4, 4.27]],   #Meaning no binning choice if list has only one entry, default should be first.
-                'default_bin':  [1, 1, 1.07],    #  Matched to seeing situation by owner
-                'cycle_time':  [30, 20, 15, 12],  # 3x3 requires a 1, 1 reaout then a software bin, so slower.
+                'bin_modes':  [[2, 2, 1.06], [3, 3, 1.58], [4, 4, 2.11], [1, 1, 0.53]],   #Meaning no binning choice if list has only one entry, default should be first.
+                'default_bin':  [2, 2, 1.06],    #  Matched to seeing situation by owner
+                'cycle_time':  [18, 15, 15],  # 3x3 requires a 1, 1 reaout then a software bin, so slower.
                 'rbi_delay':  0.,      #  This being zero says RBI is not available, eg. for SBIG.
-                'is_cmos':  False,
+                'is_cmos':  True,
                 'is_color':  False,
+                'can_set_gain':  True,
                 'bayer_pattern':  None,    #  Need to verify R as in RGGB is pixel x=0, y=0, B is x=1, y = 1
                 'can_set_gain':  True,
                 'reference_gain': [10., 10., 10., 10.],     #  One val for each binning.
@@ -456,13 +475,13 @@ site_config = {
                 'read_mode':  'Normal',
                 'readout_mode':  'Normal',
                 'readout_speed': 0.4,
-                'saturate':  42000,    # e-.  This is a close guess, not measured, but taken from data sheet.
-                'max_linearity': 40000,
-                'fullwell_capacity': 45000,   #e-.   We need to sort out hte units properly NB NB NB
+                'saturate':  50000,
+                'max_linearity': 55000,
+                'fullwell_capacity': 80000.,
                 'areas_implemented': ["600%", "500%", "450%", "300%", "220%", "150%", "133%", "Full", "Sqr", '71%', '50%',  '35%', '25%', '12%'],
                 'default_area':  "Full",
-                'has_darkslide':  False,
-                'darkslide_com':  None,
+                'has_darkslide':  True,
+                'darkslide_com':  'COM17',
                 'has_screen': True,
                 'screen_settings':  {
                     'screen_saturation':  157.0,   #  This reflects WMD setting and needs proper values.
@@ -497,237 +516,7 @@ site_config = {
         },
     },
 }
-    
-def linearize_unihedron(uni_value):
-    #  Based on 20180811 data   --- Highly suspect.  Need to re-do 20210807
-    uni_value = float(uni_value)
-    if uni_value < -1.9:
-        uni_corr = 2.5**(-5.85 - uni_value)
-    elif uni_value < -3.8:
-        uni_corr = 2.5**(-5.15 - uni_value)
-    elif uni_value <= -12:
-        uni_corr = 2.5**(-4.88 - uni_value)
-    else:
-        uni_corr = 6000
-    return uni_corr
- 
-def f_to_c(f):
-    return round(5*(f - 32)/9, 2)
 
-def get_ocn_status(g_dev):
-    if site_config['site'] == 'fat':   #  Belts and suspenders.
-        try:
-            wx = open('W:/sroweather.txt', 'r')
-            wx_line = wx.readline()
-            wx.close
-            #print(wx_line)
-            wx_fields = wx_line.split()
-            skyTemperature = f_to_c(float( wx_fields[4]))
-            temperature = f_to_c(float(wx_fields[5]))
-            windspeed = round(float(wx_fields[7])/2.237, 2)
-            humidity =  float(wx_fields[8])
-            dewpoint = f_to_c(float(wx_fields[9]))
-            #timeSinceLastUpdate = wx_fields[13]
-            open_ok = wx_fields[19]
-            #g_dev['o.redis_sever.set("focus_temp", temperature, ex=1200)
-            #self.focus_temp = temperature
-            g_dev['las_good_wx_fields'] = wx_fields
-        except:
-            time.sleep(5)
-            try:
-
-                wx = open('W:/sroweather.txt', 'r')
-                wx_line = wx.readline()
-                wx.close
-                #print(wx_line)
-                wx_fields = wx_line.split()
-                skyTemperature = f_to_c(float( wx_fields[4]))
-                temperature = f_to_c(float(wx_fields[5]))
-                windspeed = round(float(wx_fields[7])/2.237, 2)
-                humidity =  float(wx_fields[8])
-                dewpoint = f_to_c(float(wx_fields[9]))
-                #timeSinceLastUpdate = wx_fields[13]
-                open_ok = wx_fields[19]
-                #g_dev['o.redis_sever.set("focus_temp", temperature, ex=1200)
-                #self.focus_temp = temperature
-                #g_dev['las_good_wx_fields'] = wx_fields
-            except:
-                print('SRO Weather source problem, 2nd try.')
-                time.sleep(5)
-                try:
-
-                    wx = open('W:/sroweather.txt', 'r')
-                    wx_line = wx.readline()
-                    wx.close
-                    #print(wx_line)
-                    wx_fields = wx_line.split()
-                    skyTemperature = f_to_c(float( wx_fields[4]))
-                    temperature = f_to_c(float(wx_fields[5]))
-                    windspeed = round(float(wx_fields[7])/2.237, 2)
-                    humidity =  float(wx_fields[8])
-                    dewpoint = f_to_c(float(wx_fields[9]))
-                    #timeSinceLastUpdate = wx_fields[13]
-                    open_ok = wx_fields[19]
-                    #g_dev['o.redis_sever.set("focus_temp", temperature, ex=1200)
-                    #self.focus_temp = temperature
-
-                except:
-                    try:
-
-                        wx = open('W:/sroweather.txt', 'r')
-                        wx_line = wx.readline()
-                        wx.close
-                        #print(wx_line)
-                        wx_fields = wx_line.split()
-                        skyTemperature = f_to_c(float( wx_fields[4]))
-                        temperature = f_to_c(float(wx_fields[5]))
-                        windspeed = round(float(wx_fields[7])/2.237, 2)
-                        humidity =  float(wx_fields[8])
-                        dewpoint = f_to_c(float(wx_fields[9]))
-                        #timeSinceLastUpdate = wx_fields[13]
-                        open_ok = wx_fields[19]
-                        #g_dev['o.redis_sever.set("focus_temp", temperature, ex=1200)
-                        #self.focus_temp = temperature
-                    except:
-                        print('SRO Weather source problem, 3nd try.')
-                        wx_fields = g_dev['last_good_wx_fields']
-                        wx_fields = wx_line.split()
-                        skyTemperature = f_to_c(float( wx_fields[4]))
-                        temperature = f_to_c(float(wx_fields[5]))
-                        windspeed = round(float(wx_fields[7])/2.237, 2)
-                        humidity =  float(wx_fields[8])
-                        dewpoint = f_to_c(float(wx_fields[9]))
-                        #timeSinceLastUpdate = wx_fields[13]
-                        open_ok = wx_fields[19]
-        #self.last_weather =   NB found this fragment
-        try:
-            daily= open('W:/daily.txt', 'r')
-            daily_lines = daily.readlines()
-            daily.close()
-            pressure = round(33.846*float(daily_lines[-3].split()[1]), 2)
-            #self.last_good_daily_lines = daily_lines
-        except:
-            time.sleep(5)
-            try:
-                daily= open('W:/daily.txt', 'r')
-                daily_lines = daily.readlines()
-                daily.close()
-                #self.last_good_daily_lines = daily_lines
-               # pressure = round(33.846*float(daily_lines[-3].split()[1]), 2)
-            except:
-                try:
-                    daily= open('W:/daily.txt', 'r')
-                    daily_lines = daily.readlines()
-                    daily.close()
-                    pressure = round(33.846*float(daily_lines[-3].split()[1]), 2)
-                except:
-                    print('SRO Daily source problem, 3nd try')
-                   # pressure = round(33.846*float(self.last_good_daily_lines[-3].split()[1]), 2)
-
-        illum, mag = g_dev['evnt'].illuminationNow()
-
-        if illum > 100:
-            illum = int(illum)
-        calc_HSI_lux = illum
-        # NOte criterian below can now vary with the site config file.
-        dew_point_gap = not (temperature  - dewpoint) < 2
-        temp_bounds = not (temperature < -10) or (temperature > 40)
-        # NB NB NB Thiseeds to go into a config entry.
-        wind_limit = windspeed < 60/2.235   #sky_monitor reports m/s, Clarity may report in MPH
-        sky_amb_limit  = skyTemperature < -20
-        humidity_limit =humidity < 85
-        rain_limit = True #r ainRate <= 0.001
-        wx_is_ok = dew_point_gap and temp_bounds and wind_limit and sky_amb_limit and \
-                        humidity_limit and rain_limit
-        #  NB  wx_is_ok does not include ambient light or altitude of the Sun
-        if wx_is_ok:
-            wx_str = "Yes"
-        else:
-            wx_str = "No"   #Ideally we add the dominant reason in priority order.
-        # Now assemble the status dictionary.
-        status = {"temperature_C": round(temperature, 2),
-                      "pressure_mbar": pressure,
-                      "humidity_%": humidity,
-                      "dewpoint_C": dewpoint,
-                      "sky_temp_C": round(skyTemperature,2),
-                      "last_sky_update_s":  round(10, 2),
-                      "wind_m/s": abs(round(windspeed, 2)),
-                      'rain_rate': 0.0, # rainRate,
-                      'solar_flux_w/m^2': None,
-                      'cloud_cover_%': 0.0, #str(cloudCover),
-                      "calc_HSI_lux": illum,
-                      "calc_sky_mpsas": round((mag - 20.01),2),    #  Provenance of 20.01 is dubious 20200504 WER
-                      "wx_ok": wx_str,  #str(self.sky_monitor_oktoimage.IsSafe),
-                      "open_ok": open_ok,  #T his is the special bit in the 
-                                           # Boltwood for a roof close relay
-                      #'wx_hold': wx_hold, # THis is added by the OCN Manager
-                      'hold_duration': 0.0,
-                      'meas_sky_mpsas': 22   # THis is a plug.  NB NB NB
-                      #"image_ok": str(self.sky_monitor_oktoimage.IsSafe)
-                      }
-        return status
-    else:
-        breakpoint()       #  Debug bad place.
-
-def get_enc_status(g_dev):
-    if site_config['site'] == 'fat':   #  Belts and suspenders.
-        try:
-            enc = open('R:/Roof_Status.txt')
-            enc_text = enc.readline()
-            enc.close
-            enc_list = enc_text.split()
-
-        except:
-            try:
-                enc = open('R:/Roof_Status.txt')
-                enc_text = enc.readline()
-                enc.close
-                enc_list = enc_text.split()
-            except:
-                print("Second read of roof status file failed")
-                try:
-                    enc = open('R:/Roof_Status.txt')
-                    enc_text = enc.readline()
-                    enc.close
-                    enc_list = enc_text.split()
-                except:
-                    print("Third read of roof status file failed")
-                    enc_list = [1, 2, 3, 4, 'Error']
-        if len(enc_list) == 5:
-            if enc_list[4] in ['OPEN', 'Open', 'open', 'OPEN\n']:
-                shutter_status = 0  #Numbering is correct
-                stat_string = "Open"
-            elif enc_list[4] in ['OPENING']:  #SRO Does not report this.
-                shutter_status = 2
-                stat_string = "Open"
-            elif enc_list[4] in ['CLOSED', 'Closed', 'closed', "CLOSED\n"]:
-                shutter_status = 1
-                stat_string = "Closed"
-            elif enc_list[4] in ['CLOSING']:  # SRO Does not report this.
-                shutter_status = 3
-                stat_string = "Closed"
-            elif enc_list[4] in ['Error']:  # SRO Does not report this.
-                shutter_status = 4
-                stat_string = "Fault"  #Do not know if SRO supports this.
-        else:
-            shutter_status = 4
-            stat_string = "Fault"
-        g_dev['enc'].status = shutter_status   # NB SHould use dict!
-        g_dev['enc'].stat_string = stat_string
-        if shutter_status in [2, 3]:
-            g_dev['enc'].moving = True
-        else:
-            g_dev['enc'].moving = False
-        status = {'shutter_status': stat_string,
-                  'enclosure_synchronized': True,
-                  'dome_azimuth': 360,
-                  'dome_slewing': False,
-                  'enclosure_mode': g_dev['enc'].mode,
-                  'enclosure_message':  ''
-                 }
-        return status
-    else:
-        breakpoint()     #  Debug bad place.
 if __name__ == '__main__':
     j_dump = json.dumps(site_config)
     site_unjasoned = json.loads(j_dump)
