@@ -190,7 +190,10 @@ class ObservingConditions:
                             print("Using prior OCN status after 4 failures.")
                             return self.prior_status()
             elif self.config['site_IPC_mechanism'] == 'redis':
-                 return g_dev['redis'].get('wx_state')
+                 try:
+                     return eval(g_dev['redis'].get('wx_state'))
+                 except:
+                     return g_dev['redis'].get('wx_state')
             else:
                 breakpoint()
 
@@ -531,7 +534,7 @@ class ObservingConditions:
         # wx = eval(self.redis_server.get('<ptr-wx-1_state'))
         #  NB NB This routine does NOT update self.wx_ok
         #Above is cruft
-        self.status = self.get_status(g_dev)  # Get current stat.
+        self.status = self.get_status()  # Get current stat.
         #if self.site_is_proxy:
             #Need to get data for camera from redis.
         illum, mag = g_dev['evnt'].illuminationNow()
