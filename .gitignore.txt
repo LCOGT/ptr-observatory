@@ -6,4 +6,4 @@ bash.exe.stackdump
 sandbox/
 images/*.fits
 config.py
-config_file.py
+
