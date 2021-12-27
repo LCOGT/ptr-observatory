@@ -5,5 +5,5 @@ __pycache__/
 bash.exe.stackdump
 sandbox/
 images/*.fits
-new_config.py
+new_config-Copy.py
 
