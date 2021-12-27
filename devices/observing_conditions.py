@@ -224,8 +224,13 @@ class ObservingConditions:
                 self.pressure = self.sky_monitor.Pressure,  #978   #Mbar to mmHg  #THIS IS A KLUDGE
             except:
                 self.pressure = self.config['reference_pressure']
+            # NB NB NB This is a very odd problem which showed up at MRC.
+            try:
+                self.new_pressure = round(float(self.pressure[0]), 2)
+            except:
+                self.new_pressure = round(float(self.pressure), 2)
             status = {"temperature_C": round(self.temperature, 2),
-                      "pressure_mbar": self.pressure,
+                      "pressure_mbar": self.new_pressure,
                       "humidity_%": self.sky_monitor.Humidity,
                       "dewpoint_C": self.sky_monitor.DewPoint,
                       "sky_temp_C": round(self.sky_monitor.SkyTemperature,2),
