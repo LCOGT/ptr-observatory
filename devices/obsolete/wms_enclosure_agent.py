@@ -63,7 +63,7 @@ class Enclosure:
         self.astro_events = astro_events
         self.site = config['site']
         self.config = config
-        self.site_is_proxy = self.config['wema_is_active'] 
+        self.site_is_proxy = self.config['agent_wms_enc_active'] 
         g_dev['enc'] = self
         if driver is not None:
             win32com.client.pythoncom.CoInitialize()
@@ -75,19 +75,15 @@ class Enclosure:
                 print("ASCOM enclosure connected.")
             except:
                  print("ASCOM enclosure NOT connected, proabably the App is not connected to telescope.")
-<<<<<<< HEAD
-
-=======
         redis_ip = config['redis_ip']   #Do we really need to dulicate this config entry?
         if redis_ip is not None:           
             #self.redis_server = redis.StrictRedis(host=redis_ip, port=6379, db=0,
             #                                   decode_responses=True)
-            self.redis_server = g_dev['redis']   #ensure we only have one working.
+            self.redis_server = g_dev['redis_server']   #ensure we only have one working.
             self.redis_wx_enabled = True
             #g_dev['redis_server'] = self.redis_server 
         else:
             self.redis_wx_enabled = False
->>>>>>> d0792a66385b3ebdef90a57d1fca628057899e16
         self.is_dome = self.config['enclosure']['enclosure1']['is_dome']
         self.status = None
         self.state = 'Closed'
@@ -105,7 +101,6 @@ class Enclosure:
         self.following = False
 
 
-
         if self.config['site_in_automatic_default'] == "Automatic":
             self.site_in_automatic = True
             self.mode = 'Automatic' 
@@ -117,58 +112,84 @@ class Enclosure:
             self.mode = 'Shutdown'
         
     def get_status(self) -> dict:
-        #  This is generic enclosure code for Boltwood and Skyroof ..
-        #  <<<<The next attibute reference fails at saf, usually spurious Dome 
-        #  Ring Open report.  Have seen other instances of failing.
-        try:
-            shutter_status = self.enclosure.ShutterStatus
-        except:
-            print("self.enclosure.Roof.ShutterStatus -- Faulted. ")
-            shutter_status = 5
-        try:
-            self.dome_home = self.enclosure.AtHome
-        except:
-            self.dome_home = True  #  Not sure this is the correct default.
+        #<<<<The next attibute reference fails at saf, usually spurious Dome Ring Open report.
+        #<<< Have seen other instances of failing.
+        if self.site == 'fat':
+            try:
+                enc = open('R:/Roof_Status.txt')
+                enc_text = enc.readline()
+                enc.close
+                enc_list = enc_text.split()
+            except:
+                try:
+                    enc = open('R:/Roof_Status.txt')
+                    enc_text = enc.readline()
+                    enc.close
+                    enc_list = enc_text.split()
+                except:
+                    print("Two reads of roof status file failed")
+                    enc_list = [1, 2, 3, 4, 'Error']
+            if len(enc_list) == 5:
+                if enc_list[4] in ['OPEN', 'Open', 'open', 'OPEN\n']:
+                    shutter_status = 0
+                elif enc_list[4] in ['OPENING']:
+                    shutter_status = 2
+                elif enc_list[4] in ['CLOSED', 'Closed', 'closed', "CLOSED\n"]:
+                    shutter_status = 1
+                elif enc_list[4] in ['CLOSING']:
+                    shutter_status = 3
+                elif enc_list[4] in ['Error']:
+                    shutter_status = 4
+                else:
+                    shutter_status = 5
+            else:
+                shutter_status = 4
+        else: 
+            try:
+                shutter_status = self.enclosure.ShutterStatus
+            except:
+                print("self.enclosure.Roof.ShutterStatus -- Faulted. ")
+                shutter_status = 5
+            try:
+                self.dome_home = self.enclosure.AtHome
+            except:
+                self.come_home = True
         
         if shutter_status == 0:
             stat_string = "Open"
             self.shutter_is_closed = False
-            #self.redis_server.set('Shutter_is_open', True)
+            self.redis_server.set('Shutter_is_open', True)
         elif shutter_status == 1:
-            stat_string = "Closed"
-            self.shutter_is_closed = True
-            #self.redis_server.set('Shutter_is_open', False)
+             stat_string = "Closed"
+             self.shutter_is_closed = True
+             self.redis_server.set('Shutter_is_open', False)
         elif shutter_status == 2:
-            stat_string = "Opening"
-            self.shutter_is_closed = False
-            #self.redis_server.set('Shutter_is_open', False)
+             stat_string = "Opening"
+             self.shutter_is_closed = False
+             self.redis_server.set('Shutter_is_open', False)
         elif shutter_status == 3:
-            stat_string = "Closing"
-            self.shutter_is_closed = False
-            #self.redis_server.set('Shutter_is_open', False)
+             stat_string = "Closing"
+             self.shutter_is_closed = False
+             self.redis_server.set('Shutter_is_open', False)
         elif shutter_status == 4:
-            stat_string = "Error"
-            self.shutter_is_closed = False
-            #self.redis_server.set('Shutter_is_open', False)
+             stat_string = "Error"
+             self.shutter_is_closed = False
+             self.redis_server.set('Shutter_is_open', False)
         else:
-            stat_string = "Software Fault"
-            self.shutter_is_closed = False
-            #self.redis_server.set('Shutter_is_open', False)
+             stat_string = "Software Fault"
+             self.shutter_is_closed = False
+             self.redis_server.set('Shutter_is_open', False)
         self.status_string = stat_string
         if shutter_status in [2, 3]:
-            moving = True   #  NB NB Clarify shutter motion and slewing.
+            moving = True
         else:
             moving = False
-        status = {'shutter_status': stat_string,
-                      'enclosure_synchronized': True,  #  Over-write if dome.
-                      'enclosure_home': self.dome_home,
-                      'dome_azimuth': 180.0,
-                      'dome_slewing': False,
-                      'enclosure_mode': self.mode,
-                      'enclosure_message': ''}   #NB is this used?
+        
+
         if self.is_dome:
+
             try:
-                #Occasionally this property throws an exception:
+                #Occasionally this property thrws an exception:
                 current_az = self.enclosure.Azimuth
                 slewing = self.enclosure.Slewing
                 self.last_current_az = current_az
@@ -183,257 +204,261 @@ class Enclosure:
             while gap <= -360:
                 gap += 360
             if abs(gap) > 1.5:
-                print("Azimuth change detected:  ", self.enclosure.Slewing)
-                status['dome_slewing'] = True
+                breakpoint()
+                print("Azimuth change detected,  Slew:  ", self.enclosure.Slewing)
+                slewing = True
             else:
-                status['dome_slewing'] = False
+                slewing = False
             self.last_az = current_az
-            #          'enclosure_synchronized': self.following,
-            status['dome_azimuth'] = round(self.enclosure.Azimuth, 1),
-            ## status['dome_slewing'] =  slewing,  # NB NB  or moving???
-
-                # self.redis_server.set('roof_status', str(stat_string), ex=3600)
-                # self.redis_server.set('shutter_is_closed', self.shutter_is_closed, ex=3600)  #Used by autofocus
-                # self.redis_server.set("shutter_status", str(stat_string), ex=3600)
-                # self.redis_server.set('enclosure_synchronized', str(self.following), ex=3600)
-                # self.redis_server.set('enclosure_mode', str(self.mode), ex=3600)
-                # self.redis_server.set('enclosure_message', str(self.state), ex=3600)
-                # self.redis_server.set('dome_azimuth', str(round(self.enclosure.Azimuth, 1)))
-                # if moving or self.enclosure.Slewing:
-                #     in_motion = True
-                # else:
-                #     in_motion = False
-                # status['dome_slewing'] = in_motion
+            try:
+                status = {'shutter_status': stat_string,
+                          'enclosure_synchronized': self.following,
+                          'dome_azimuth': round(self.enclosure.Azimuth, 1),
+                          'dome_slewing': slewing,
+                          'enclosure_mode': self.mode,
+                          'enclosure_message': self.state}
+                self.redis_server.set('roof_status', str(stat_string), ex=3600)
+                self.redis_server.set('shutter_is_closed', self.shutter_is_closed, ex=3600)  #Used by autofocus
+                self.redis_server.set("shutter_status", str(stat_string), ex=3600)
+                self.redis_server.set('enclosure_synchronized', str(self.following), ex=3600)
+                self.redis_server.set('enclosure_mode', str(self.mode), ex=3600)
+                self.redis_server.set('enclosure_message', str(self.state), ex=3600)
+                self.redis_server.set('dome_azimuth', str(round(self.enclosure.Azimuth, 1)))
+                if moving or self.enclosure.Slewing:
+                    in_motion = True
+                else:
+                    in_motion = False
+                status['dome_slewing'] = in_motion
                 # self.redis_server.set('dome_slewing', in_motion, ex=3600)
                 # self.redis_server.set('enc_status', status, ex=3600)
-        self.status = status
-        if self.config['site_IPC_mechanism'] == 'shares':
-            try:
-                enclosure = open(self.config['site_share_path']+'enclosure.txt', 'w')
-                enclosure.write(json.dumps(status))
-                enclosure.close()
-            except:
-                time.sleep(3)
-                try:
-                    enclosure = open(self.config['site_share_path']+'enclosure.txt', 'w')
-                    enclosure.write(json.dumps(status))
-                    enclosure.close()
-                except:
-                    time.sleep(3)
-                    enclosure = open(self.config['site_share_path']+'enclosure.txt', 'w')
-                    enclosure.write(json.dumps(status))
-                    enclosure.close()
-                    print("3rd try to write enclosure status.")
- #            except:  #Not a dome, presumably a roll top roof or clamshell
- # #Should not get here at SAF
- #                status = {'shutter_status': stat_string,
- #                          'enclosure_synchronized': False,
- #                          'dome_azimuth': 0.0, #round(self.enclosure.Azimuth, 1),
- #                          'dome_slewing': False,
- #                          'enclosure_mode': self.mode,
- #                          'enclosure_message': self.state}
- #                self.redis_server.set('roof_status', str(stat_string), ex=3600)
- #                self.redis_server.set('shutter_is_closed', self.shutter_is_closed, ex=3600)  #Used by autofocus
- #                self.redis_server.set("shutter_status", str(stat_string), ex=3600)
- #                self.redis_server.set('enclosure_synchronized', False, ex=3600)
- #                self.redis_server.set('enclosure_mode', str(self.mode), ex=3600)
- #                self.redis_server.set('enclosure_message', str(self.state), ex=3600)
- #                self.redis_server.set('dome_azimuth', 0.0) #str(round(self.enclosure.Azimuth, 1)))
- #                if moving or slewing:   #  elf.enclosure.Slewing:
- #                    in_motion = True
- #                else:
- #                    in_motion = False
- #                status['dome_slewing'] = in_motion
- #                self.redis_server.set('dome_slewing', in_motion, ex=3600)
- #                self.redis_server.set('enc_status', status, ex=3600)
+                self.status = status
+                if self.config['site'] == 'saf':
+                    try:
+                        enclosure = open(self.config['wema_path']+'enclosure.txt', 'w')
+                        enclosure.write(json.dumps(status))
+                        enclosure.close()
+                    except:
+                        time.sleep(3)
+                        try:
+                            enclosure = open(self.config['wema_path']+'enclosure.txt', 'w')
+                            enclosure.write(json.dumps(status))
+                            enclosure.close()
+                        except:
+                            time.sleep(3)
+                            enclosure = open(self.config['wema_path']+'enclosure.txt', 'w')
+                            enclosure.write(json.dumps(status))
+                            enclosure.close()
+                            print("3rd try to write enclosure status.")
+            except:  #Not a dome, presumably a roll top roof or clamshell
+ #Should not get here at SAF
+                status = {'shutter_status': stat_string,
+                          'enclosure_synchronized': False,
+                          'dome_azimuth': 0.0, #round(self.enclosure.Azimuth, 1),
+                          'dome_slewing': False,
+                          'enclosure_mode': self.mode,
+                          'enclosure_message': self.state}
+                self.redis_server.set('roof_status', str(stat_string), ex=3600)
+                self.redis_server.set('shutter_is_closed', self.shutter_is_closed, ex=3600)  #Used by autofocus
+                self.redis_server.set("shutter_status", str(stat_string), ex=3600)
+                self.redis_server.set('enclosure_synchronized', False, ex=3600)
+                self.redis_server.set('enclosure_mode', str(self.mode), ex=3600)
+                self.redis_server.set('enclosure_message', str(self.state), ex=3600)
+                self.redis_server.set('dome_azimuth', 0.0) #str(round(self.enclosure.Azimuth, 1)))
+                if moving or slewing:   #  elf.enclosure.Slewing:
+                    in_motion = True
+                else:
+                    in_motion = False
+                status['dome_slewing'] = in_motion
+                self.redis_server.set('dome_slewing', in_motion, ex=3600)
+                self.redis_server.set('enc_status', status, ex=3600)
 
                 
                 
-        # else:
-        #     status = {'shutter_status': stat_string,
-        #               'enclosure_synchronized': True,
-        #               'dome_azimuth': 180.0,
-        #               'dome_slewing': False,
-        #               'enclosure_mode': self.mode,
-        #               'enclosure_message': self.state}
-        #     self.redis_server.set('roof_status', str(stat_string), ex=3600)
-        #     self.redis_server.set('shutter_is_closed', self.shutter_is_closed, ex=3600)  #Used by autofocus
-        #     self.redis_server.set("shutter_status", str(stat_string), ex=3600)
-        #     self.redis_server.set('enclosure_synchronized', True, ex=3600)
-        #     self.redis_server.set('enclosure_mode', str(self.mode), ex=3600)
-        #     self.redis_server.set('enclosure_message', str(self.state), ex=3600)        #print('Enclosure status:  ', status
-        #     self.redis_server.set('dome_azimuth', str(180.0))  
-        #     self.redis_server.set('dome_slewing', False, ex=3600)
-        #     self.redis_server.set('enc_status', status, ex=3600)
+        else:
+            status = {'shutter_status': stat_string,
+                      'enclosure_synchronized': True,
+                      'dome_azimuth': 180.0,
+                      'dome_slewing': False,
+                      'enclosure_mode': self.mode,
+                      'enclosure_message': self.state}
+            self.redis_server.set('roof_status', str(stat_string), ex=3600)
+            self.redis_server.set('shutter_is_closed', self.shutter_is_closed, ex=3600)  #Used by autofocus
+            self.redis_server.set("shutter_status", str(stat_string), ex=3600)
+            self.redis_server.set('enclosure_synchronized', True, ex=3600)
+            self.redis_server.set('enclosure_mode', str(self.mode), ex=3600)
+            self.redis_server.set('enclosure_message', str(self.state), ex=3600)        #print('Enclosure status:  ', status
+            self.redis_server.set('dome_azimuth', str(180.0))  
+            self.redis_server.set('dome_slewing', False, ex=3600)
+            self.redis_server.set('enc_status', status, ex=3600)
         # This code picks up commands forwarded by the observer Enclosure 
-        # if self.site_is_proxy and self.site != 'fat':
-        #     if self.site == 'saf':
-                # try:
-                #     enc_cmd = open(self.config['wema_path'] + 'enc_cmd.txt', 'r')
-                #     status = json.loads(enc_cmd.readline())
-                #     enc_cmd.close()
-                #     os.remove(self.config['wema_path'] + 'enc_cmd.txt')
-                #     redis_command = status
-                # except:
-                #     try:
-                #         time.sleep(1)
-                #         enc_cmd = open(self.config['wema_path'] + 'enc_cmd.txt', 'r')
-                #         status = json.loads(enc_cmd.readline())
-                #         enc_cmd.close()
-                #         os.remove(self.config['wema_path'] + 'enc_cmd.txt')
-                #         redis_command = status
-                #     except:
-                #         try:
-                #             time.sleep(1)
-                #             enc_cmd = open(self.config['wema_path'] + 'enc_cmd.txt', 'r')
-                #             status = json.loads(enc_cmd.readline())
-                #             enc_cmd.close()
-                #             os.remove(self.config['wema_path'] + 'enc_cmd.txt')
-                #             redis_command = status
-                #         except:
-                #             #print("Finding enc_cmd failed after 3 tries, no harm done.")
-                #             redis_command = ['none'] 
-                # if  True:  #self.config['site'] in ['saf']:
-                #     try:
-                #         mnt_cmd = open(self.config['wema_path'] + 'mnt_cmd.txt', 'r')
-                #         mount_command  = json.loads(mnt_cmd.readline())
+        if self.site_is_proxy and self.site != 'fat':
+            if self.site == 'saf':
+                try:
+                    enc_cmd = open(self.config['wema_path'] + 'enc_cmd.txt', 'r')
+                    status = json.loads(enc_cmd.readline())
+                    enc_cmd.close()
+                    os.remove(self.config['wema_path'] + 'enc_cmd.txt')
+                    redis_command = status
+                except:
+                    try:
+                        time.sleep(1)
+                        enc_cmd = open(self.config['wema_path'] + 'enc_cmd.txt', 'r')
+                        status = json.loads(enc_cmd.readline())
+                        enc_cmd.close()
+                        os.remove(self.config['wema_path'] + 'enc_cmd.txt')
+                        redis_command = status
+                    except:
+                        try:
+                            time.sleep(1)
+                            enc_cmd = open(self.config['wema_path'] + 'enc_cmd.txt', 'r')
+                            status = json.loads(enc_cmd.readline())
+                            enc_cmd.close()
+                            os.remove(self.config['wema_path'] + 'enc_cmd.txt')
+                            redis_command = status
+                        except:
+                            #print("Finding enc_cmd failed after 3 tries, no harm done.")
+                            redis_command = ['none'] 
+                if  True:  #self.config['site'] in ['saf']:
+                    try:
+                        mnt_cmd = open(self.config['wema_path'] + 'mnt_cmd.txt', 'r')
+                        mount_command  = json.loads(mnt_cmd.readline())
     
-                #         mnt_cmd.close()
-                #         os.remove(self.config['wema_path'] + 'mnt_cmd.txt')
+                        mnt_cmd.close()
+                        os.remove(self.config['wema_path'] + 'mnt_cmd.txt')
     
-                #     except:
-                #         try:
-                #             time.sleep(1)
-                #             mnt_cmd = open(self.config['wema_path'] + 'mnt_cmd.txt', 'r')
-                #             mount_command  = json.loads(mnt_cmd.readline())
+                    except:
+                        try:
+                            time.sleep(1)
+                            mnt_cmd = open(self.config['wema_path'] + 'mnt_cmd.txt', 'r')
+                            mount_command  = json.loads(mnt_cmd.readline())
     
-                #             mnt_cmd.close()
-                #             os.remove(self.config['wema_path'] + 'mnt_cmd.txt')
+                            mnt_cmd.close()
+                            os.remove(self.config['wema_path'] + 'mnt_cmd.txt')
     
-                #         except:
-                #             try:
-                #                 time.sleep(1)
-                #                 mnt_cmd = open(self.config['wema_path'] + 'mnt_cmd.txt', 'r')
-                #                 mount_command  = json.loads(mnt_cmd.readline())
+                        except:
+                            try:
+                                time.sleep(1)
+                                mnt_cmd = open(self.config['wema_path'] + 'mnt_cmd.txt', 'r')
+                                mount_command  = json.loads(mnt_cmd.readline())
     
-                #                 mnt_cmd.close()
-                #                 os.remove(self.config['wema_path'] + 'mnt_cmd.txt')
+                                mnt_cmd.close()
+                                os.remove(self.config['wema_path'] + 'mnt_cmd.txt')
     
-                #             except:
-                #                 #print("Finding mnt_cmd failed after 3 tries, no harm done.")
-                #                 mount_command = ['none']
+                            except:
+                                #print("Finding mnt_cmd failed after 3 tries, no harm done.")
+                                mount_command = ['none']
                                 
                     
-            # redis_command = self.redis_server.get('enc_cmd')  #It is presumed there is an expiration date on open command at least.
-            # #NB NB NB Need to prevent executing stale commands.
-            # if redis_command != ['none']:
-            #     pass
-            #     #print(redis_command)
-            # try:
-            #     redis_command = redis_command[0]
-            # except:
-            #     pass
-            # if redis_command == 'open':
-            #     self.redis_server.delete('enc_cmd')
-            #     print("enclosure remote cmd: open.")
-            #     self.manager(open_cmd=True, close_cmd=False)
-            #     try:
-            #         self.following = True
-            #     except:
-            #         pass
-            #     self.dome_open = True
-            #     self.dome_home = True
-            # elif redis_command == 'close':
+            redis_command = self.redis_server.get('enc_cmd')  #It is presumed there is an expiration date on open command at least.
+            #NB NB NB Need to prevent executing stale commands.
+            if redis_command != ['none']:
+                pass
+                #print(redis_command)
+            try:
+                redis_command = redis_command[0]
+            except:
+                pass
+            if redis_command == 'open':
+                self.redis_server.delete('enc_cmd')
+                print("enclosure remote cmd: open.")
+                self.manager(open_cmd=True, close_cmd=False)
+                try:
+                    self.following = True
+                except:
+                    pass
+                self.dome_open = True
+                self.dome_home = True
+            elif redis_command == 'close':
 
-            #     self.redis_server.delete('enc_cmd')
-            #     print("enclosure remote cmd: close.")
-            #     self.manager(close_cmd=True, open_cmd=False)
+                self.redis_server.delete('enc_cmd')
+                print("enclosure remote cmd: close.")
+                self.manager(close_cmd=True, open_cmd=False)
 
-            #     try:
-            #         self.following = False
-            #     except:
-            #         pass
-            #     self.dome_open = False
-            #     self.dome_home = True
-            # elif redis_command == 'setAuto':
-            #     self.redis_server.delete('enc_cmd')
-            #     print("Change to Automatic.")
-            #     self.site_in_automatic = True
-            #     self.mode = 'Automatic'
-            # elif redis_command == 'setManual':
-            #     self.redis_server.delete('enc_cmd')
-            #     print("Change to Manual.")
-            #     self.site_in_automatic = False
-            #     self.mode = 'Manual'
-            # elif redis_command == 'setShutdown':
-            #     self.redis_server.delete('enc_cmd')
-            #     print("Change to Shutdown & Close")
-            #     self.manager(close_cmd=True, open_cmd=False)
-            #     self.site_in_automatic = False
-            #     self.mode = 'Shutdown'
-            # elif redis_command == 'goHome':
-            #     #breakpoint()
-            #     self.redis_server.delete('goHome')
-            # elif redis_command == 'sync_enc':
-            #    if self.is_dome:
-            #        try:
-            #            self.following = True
-            #            print("Scope Dome following set On")
-            #        except:
-            #            pass
-            #    self.redis_server.delete('sync_enc')                
-            # elif redis_command == 'unsync_enc':
-            #     if self.is_dome:
-            #         try:
-            #             self.following = False
-            #             print("Scope Dome following turned OFF")
-            #         except:
-            #             pass
-            #     self.redis_server.delete('unsync_enc')
-            # else:
+                try:
+                    self.following = False
+                except:
+                    pass
+                self.dome_open = False
+                self.dome_home = True
+            elif redis_command == 'setAuto':
+                self.redis_server.delete('enc_cmd')
+                print("Change to Automatic.")
+                self.site_in_automatic = True
+                self.mode = 'Automatic'
+            elif redis_command == 'setManual':
+                self.redis_server.delete('enc_cmd')
+                print("Change to Manual.")
+                self.site_in_automatic = False
+                self.mode = 'Manual'
+            elif redis_command == 'setShutdown':
+                self.redis_server.delete('enc_cmd')
+                print("Change to Shutdown & Close")
+                self.manager(close_cmd=True, open_cmd=False)
+                self.site_in_automatic = False
+                self.mode = 'Shutdown'
+            elif redis_command == 'goHome':
+                #breakpoint()
+                self.redis_server.delete('goHome')
+            elif redis_command == 'sync_enc':
+               if self.is_dome:
+                   try:
+                       self.following = True
+                       print("Scope Dome following set On")
+                   except:
+                       pass
+               self.redis_server.delete('sync_enc')                
+            elif redis_command == 'unsync_enc':
+                if self.is_dome:
+                    try:
+                        self.following = False
+                        print("Scope Dome following turned OFF")
+                    except:
+                        pass
+                self.redis_server.delete('unsync_enc')
+            else:
                 
-            #     pass
-            # #NB NB NB  Possible race condition here.
-            # # redis_value = self.redis_server.get('SlewToAzimuth')
-        # if self.config['site'] in ['saf'] and mount_command is not None and mount_command != '' and mount_command != ['none']:
-        #     try:
-        #         print(self.status,'\n\n', mount_command)
+                pass
+            #NB NB NB  Possible race condition here.
+            # redis_value = self.redis_server.get('SlewToAzimuth')
+        if self.config['site'] in ['saf'] and mount_command is not None and mount_command != '' and mount_command != ['none']:
+            try:
+                print(self.status,'\n\n', mount_command)
 
-        #         adj1 = dome_adjust(mount_command['altitude'], mount_command['azimuth'], \
-        #                           mount_command['hour_angle'])
-        #         adjt = dome_adjust(mount_command['altitude'], mount_command['target_az'], \
-        #                           mount_command['hour_angle'])
+                adj1 = dome_adjust(mount_command['altitude'], mount_command['azimuth'], \
+                                  mount_command['hour_angle'])
+                adjt = dome_adjust(mount_command['altitude'], mount_command['target_az'], \
+                                  mount_command['hour_angle'])
                
                     
                     
-        #     except:
-        #         adj = 0
-        #         pass
-        #     if self.is_dome and self.status is not None:   #First time around, status is None.
-        #         if mount_command['is_slewing'] and not self.slew_latch:   # NB NB NB THIS should have a timeout
-        #             self.enclosure.SlewToAzimuth(float(adjt))
-        #             self.slew_latch = True   #Isuing multiple Slews causes jerky Dome motion.
-        #         elif self.slew_latch and not mount_command['is_slewing']:
-        #             self.slew_latch = False   #  Return to Dpme following.
-        #             self.enclosure.SlewToAzimuth(float(adj1))
-        #         elif (not self.slew_latch) and (self.status['enclosure_synchronized'] or \
-        #                                         self.mode == "Automatic"):
-        #             #This is normal dome following.
-        #             try:
-        #                 if shutter_status not in [2,3]:    #THis should end annoying report.
-        #                     self.enclosure.SlewToAzimuth(float(adj1))
-        #             except:
-        #                 print("Dome refused slew, probably closing or opening, usually a harmless situation.")
+            except:
+                adj = 0
+                pass
+            if self.is_dome and self.status is not None:   #First time around, stauts is None.
+                if mount_command['is_slewing'] and not self.slew_latch:   # NB NB NB THIS should have a timeout
+                    self.enclosure.SlewToAzimuth(float(adjt))
+                    self.slew_latch = True   #Isuing multiple Slews causes jerky Dome motion.
+                elif self.slew_latch and not mount_command['is_slewing']:
+                    self.slew_latch = False   #  Return to Dpme following.
+                    self.enclosure.SlewToAzimuth(float(adj1))
+                elif (not self.slew_latch) and (self.status['enclosure_synchronized'] or \
+                                                self.mode == "Automatic"):
+                    #This is normal dome following.
+                    try:
+                        if shutter_status not in [2,3]:    #THis should end annoying report.
+                            self.enclosure.SlewToAzimuth(float(adj1))
+                    except:
+                        print("Dome refused slew, probably closing or opening, usually a harmless situation.")
                     
                     
                 
                  
             
             
-        # #self.status = status
+        #self.status = status
         
-        # if self.site != 'fat':   #There is noting for the local code to manage @ FAT , but Dome at SAF.
-        #     self.manager()   #There be monsters here. <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+        if self.site != 'fat':   #There is noting for the local code to manage @ FAT , but Dome at SAF.
+            self.manager()   #There be monsters here. <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
         return status
 
 
@@ -619,7 +644,7 @@ class Enclosure:
             self.dome_opened = True
             self.dome_homed = True
             self.redis_server.set('Enc Auto Opened', True, ex= 600)
-            if self.status_string in ['Open'] and ephem_now < g_dev['events']['End Eve Sky Flats'] and self.is_dome:
+            if self.status_string in ['Open'] and ephem_now < g_dev['events']['End Eve Sky Flats']:
                 self.enclosure.SlewToAzimuth(az_opposite_sun)
                 time.sleep(15)
         #THIS should be the ultimate backup to force a close
