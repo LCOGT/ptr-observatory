@@ -49,7 +49,7 @@ import httplib2
 from auto_stretch.stretch import Stretch
 import socket
 import ptr_events
-import config_file
+import config
 # import device classes:
 from devices.camera import Camera
 from devices.filter_wheel import FilterWheel
@@ -950,8 +950,7 @@ if __name__ == "__main__":
     # print(f"Starting up {config.site_name}.")
     # Start up the observatory
 
-    import config_file
-    
+    import config
 
-    o = Observatory(config_file.site_name, config_file.site_config)
+    o = Observatory(config.site_name, config.site_config)
     o.run()
