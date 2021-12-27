@@ -220,7 +220,6 @@ class ObservingConditions:
                 status["meas_sky_mpsas"] = uni_measure
 
             self.temperature = round(self.sky_monitor.Temperature, 2)
-            breakpoint()
             try:  #  NB NB Boltwood vs. SkyAlert difference.  What about FAT?
                 self.pressure = self.sky_monitor.Pressure,  #978   #Mbar to mmHg  #THIS IS A KLUDGE
             except:
