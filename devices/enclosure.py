@@ -396,13 +396,13 @@ class Enclosure:
     def parse_command(self, command):
         "Note:  This code is typically received by the observer's enclosure module but commands execute at the WEMA's\
                 host computer.  The command is killed upon execution."
-        breakpoint()
+
         if self.config['enclosure']['enclosure1']['enc_is_specific']:
             return  #There is noting to do!
         #This gets commands from AWS, not normally used.
         req = command['required_params']
         opt = command['optional_params']
-        breakpoint()
+
         action = command['action']
         cmd_list = []
         generic = True
