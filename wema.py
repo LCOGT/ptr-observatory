@@ -183,7 +183,7 @@ class WxEncAgent:
         
     def create_devices(self, config: dict):
         self.all_devices = {}
-        for dev_type in self.device_types:
+        for dev_type in self.device_types:  #This has been set up for wema to be ocn and enc.
             self.all_devices[dev_type] = {}
             devices_of_type = config.get(dev_type, {})
             device_names = devices_of_type.keys()

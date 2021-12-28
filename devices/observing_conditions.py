@@ -89,6 +89,9 @@ class ObservingConditions:
         self.unihedron_connected = True  # NB NB NB His needs improving, driving from config
         self.hostname = socket.gethostname()
         self.site_is_specific = False
+        # =============================================================================
+        #         Note site_in_automatic found in the Enclosure object.
+        # =============================================================================
         if self.hostname in self.config['wema_hostname']:
             self.is_wema = True
         else:
@@ -105,7 +108,7 @@ class ObservingConditions:
             self.site_is_specific = True
             #  Note OCN has no associated commands.
             #  Here we monkey patch
-            self.get_status = config_file.get_ocn_status
+            self.get_status = config.get_ocn_status
             # Get current ocn status just as a test.
             self.status = self.get_status(g_dev)
             # breakpoint()  # All test code
