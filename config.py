@@ -127,8 +127,8 @@ site_config = {
     'elevation': 317.75,    # meters above sea level
     'reference_ambient':  5.0,  #Degrees Celsius.  Alternately 12 entries, one for every - mid month.
     'reference_pressure':  977.83,  #mbar Alternately 12 entries, one for every - mid month.
-    'site_in_automatic_default': "Automatic",   #"Manual", "Shutdown"
-    'automatic_detail_default': "Enclosure is set to Automatic mode.",
+    'site_in_automatic_default': "Shutdown",   #"Manual", "Shutdown"
+    'automatic_detail_default': "Initial Configuration = Shutdown.",
     
     'auto_eve_bias_dark': False,
     'auto_eve_sky_flat': False,
