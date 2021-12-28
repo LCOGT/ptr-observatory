@@ -36,21 +36,16 @@ class Enclosure:
         self.astro_events = astro_events
         self.site = config['site']
         self.config = config
-        self.site_path = self.config['site_path']
         g_dev['enc'] = self
-        breakpoint()
-        try:
-            self.mode, message, timestamp = self.get_site_mode()
-        except:
-            self.mode, message, timestamp = self.establish_site_mode()
-        
-        if self.mode == "Automatic":
+        if self.config['site_in_automatic_default'] == "Automatic":
             self.site_in_automatic = True
-        elif self.mode == "Manual":
+            self.mode = 'Automatic' 
+        elif self.config['site_in_automatic_default'] == "Manual":
             self.site_in_automatic = False
-        elif self.mode == 'Shutdown':
+            self.mode = 'Manual'
+        else:
             self.site_in_automatic = False
-
+            self.mode = 'Shutdown'
         self.is_dome = self.config['enclosure']['enclosure1']['is_dome']
     
         self.time_of_next_slew = time.time()
@@ -97,33 +92,6 @@ class Enclosure:
         #self.prior_status = self.status
         #self.status = None   #  May need a status seed if site specific.
         #self.state = 'Ok'
-        
-    def establish_site_mode(self):
-        site_shelf = shelve.open(self.site_path + 'ptr_night_shelf/' + 'mode')
-        site_shelf['mode'] = self.config['site_in_automatic_default']
-        site_shelf['message'] = self.config['automatic_detail_default']
-        site_shelf['timestamp']= time.time()
-        mode = site_shelf['mode']
-        message = site_shelf['message'] 
-        timestamp = site_shelf['timestamp']
-        site_shelf.close()
-        return mode, message, timestamp
-    
-    def set_site_mode(self,  mode, message, timestamp):
-        site_shelf = shelve.open(self.site_path + 'ptr_night_shelf/' + 'mode')
-        site_shelf['mode'] = mode
-        site_shelf['message'] = message
-        site_shelf['timestamp']= timestamp
-        site_shelf.close()
-        return
-    
-    def get_site_mode(self):
-        site_shelf = shelve.open(self.site_path + 'ptr_night_shelf/' + 'mode')
-        mode = site_shelf['mode']
-        message = site_shelf['message'] 
-        timestamp = site_shelf['timestamp']
-        site_shelf.close()
-        return mode, message, timestamp
         
     def get_status(self) -> dict: 
 
