@@ -191,7 +191,7 @@ class Observatory:
             self.site_is_specific = True
             #  Note OCN has no associated commands.
             #  Here we monkey patch
-            self.get_status = config_file.get_ocn_status
+            self.get_status = config.get_ocn_status
             # Get current ocn status just as a test.
             self.status = self.get_status(g_dev)
             # breakpoint()  # All test code
@@ -244,6 +244,7 @@ class Observatory:
         # self.site_queue = queue.SimpleQueue()
         # self.site_queue_thread = threading.Thread(target=self.get_from_AWS, args=())
         # self.site_queue_thread.start()
+
 
 
     def set_last_reference(self,  delta_ra, delta_dec, last_time):
