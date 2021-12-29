@@ -1702,7 +1702,7 @@ class Camera:
                     result['gain'] = 0
                     result['filter'] = self.current_filter
                     result['error'] == False
-                    g_dev['obs'].send_to_user("Expose cycle conpleted.", p_level='INFO')
+                    g_dev['obs'].send_to_user("Expose cycle completed.", p_level='INFO')
 
                     return result
                 except Exception as e:

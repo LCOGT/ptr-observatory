@@ -42,7 +42,7 @@ from astroquery.simbad import Simbad
 
 #from ptr_config import *
 import ephem
-from config_file import site_config
+from config import site_config
 from global_yard import g_dev
 #from ptr_astrometrics import *
 siteCoordinates = EarthLocation(lat=site_config['latitude']*u.deg, \

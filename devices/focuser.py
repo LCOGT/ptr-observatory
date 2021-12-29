@@ -98,7 +98,7 @@ class Focuser:
 
     def calculate_compensation(self, temp_primary):
         if -20 <= temp_primary <= 45:
-            trial = round(float(self.config['coef_0'] + float(self.config['coef_c'])*temp_primary), 1)
+            trial = 7475#round(float(self.config['coef_0'] + float(self.config['coef_c'])*temp_primary), 1)
 
             trial = max(trial, 500)  #These values are for an Optec Gemini.
             trial = min(trial, 12150)
