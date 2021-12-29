@@ -941,7 +941,7 @@ class Mount:
             '''
             if self.mount.CanSetRightAscensionRate:
                 self.prior_roll_rate = -((self.ha_mech_adv - self. ha_mech)*RTOS*MOUNTRATE/self.delta_t_s - MOUNTRATE)/(APPTOSID*15)    #Conversion right 20219329
-                self.mount.RightAscensionRate = self.prior_roll_rate  #Neg number makes RA decrease
+                self.mount.RightAscensionRate = 0.0 # self.prior_roll_rate  #Neg number makes RA decrease
             else:
                 self.prior_roll_rate = 0.0
             if self.mount.CanSetDeclinationRate:
@@ -955,12 +955,12 @@ class Mount:
            # self.mount.SlewToCoordinatesAsync(ra_mech*RTOH, dec_mech*RTOD)
             time.sleep(1)   #fOR SOME REASON REPEATING THIS HELPS!
             if self.mount.CanSetRightAscensionRate:
-                self.mount.RightAscensionRate = self.prior_roll_rate
+                self.mount.RightAscensionRate = 0.0 #self.prior_roll_rate
     
             if self.mount.CanSetDeclinationRate:
                 self.mount.DeclinationRate = self.prior_pitch_rate
     
-            print("Rates set:  ", self.prior_roll_rate, self.prior_pitch_rate,self.refr_adv)
+            print("Rates set:  ", self.prior_roll_rate, self.prior_pitch_rate, self.refr_adv)
         self.seek_commanded = True
         #I think to reliable establish rates, set them before the slew.
         #self.mount.Tracking = True
@@ -1182,10 +1182,14 @@ class Mount:
         return
 
     def get_mount_reference(self):
-        mnt_shelf = shelve.open(self.site_path + 'ptr_night_shelf/' + 'mount1')
-        delta_ra = mnt_shelf['ra_cal_offset']
-        delta_dec = mnt_shelf['dec_cal_offset']
-        mnt_shelf.close()
+        try:
+            mnt_shelf = shelve.open(self.site_path + 'ptr_night_shelf/' + 'mount1')
+            delta_ra = mnt_shelf['ra_cal_offset']
+            delta_dec = mnt_shelf['dec_cal_offset']
+            mnt_shelf.close()
+        except:
+            delta_ra = 0.0
+            delta_dec = 0.0 #  Presumably QNAP can be down while upgrading.
         return delta_ra, delta_dec
 
     def reset_mount_reference(self):

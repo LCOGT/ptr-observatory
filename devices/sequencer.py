@@ -275,6 +275,7 @@ class Sequencer:
         
         # NB Need a better way to get all the events.
         obs_win_begin, sunZ88Op, sunZ88Cl, ephem_now = self.astro_events.getSunEvents()
+
         try:
             ocn_status = eval(self.redis_server.get('wx_state'))
             enc_status = eval(self.redis_server.get('enc_status'))
@@ -314,7 +315,7 @@ class Sequencer:
             #print('Skipping Eve Sky Flats')
             self.sky_flat_script({}, {})   #Null command dictionaries
             self.sky_flat_latch = False
-        elif g_dev['enc'].mode == 'Automatic' and (events['Observing Begins'] <= ephem_now \
+        elif enc_status['enclosure_mode'] == 'Automatic' and (events['Observing Begins'] <= ephem_now \
                                    < events['Observing Ends']) and not g_dev['ocn'].wx_hold \
                                    and  g_dev['obs'].blocks is not None and g_dev['obs'].projects \
                                    is not None:
@@ -341,7 +342,7 @@ class Sequencer:
  
             house = []
             for project in projects:
-                if project['user_id'] in config_file.site_config['owner']:  # and not expired, etc.
+                if project['user_id'] in config.site_config['owner']:  # and not expired, etc.
                      house.append(project)
             '''
             evaluate supplied projects for observable and mark as same. Discard
