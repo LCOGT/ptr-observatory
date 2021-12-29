@@ -235,7 +235,7 @@ class Enclosure:
                     enclosure.close()
                     print("3rd try to write enclosure status.")
         elif self.config['site_IPC_mechanism'] == 'redis':
-            g_dev['redis'].set('<enc_status', status)  #THis needs to become generalized IPC 
+            g_dev['redis'].set('enc_status', status)  #THis needs to become generalized IPC 
             
 # =============================================================================
 #         # return status
@@ -244,6 +244,7 @@ class Enclosure:
         #Here we check if the observer has sent the WEMA any commands.
         if self.is_wema and self.site_has_proxy and self.config['site_IPC_mechanism'] == 'shares':
             breakpoint()
+            _redis = False
             try:
                 enc_cmd = open(self.config['wema_path'] + 'enc_cmd.txt', 'r')
                 status = json.loads(enc_cmd.readline())
@@ -273,6 +274,7 @@ class Enclosure:
         elif self.is_wema and self.site_has_proxy and self.config['site_IPC_mechanism'] == 'redis':
             redis_command = g_dev['redis'].get('enc_cmd')  #It is presumed there is an expiration date on open command at least.
             #NB NB NB Need to prevent executing stale commands.  Note Redis_command is overloaded.
+            _redis = True
         if redis_command is not None:
             pass
 
@@ -282,7 +284,7 @@ class Enclosure:
         # except:
         #     pass
         if redis_command == 'open':
-            g_dev['redis'].delete('enc_cmd')
+            if _redis: g_dev['redis'].delete('enc_cmd')
             print("enclosure remote cmd: open.")
             self.manager(open_cmd=True, close_cmd=False)
             try:
@@ -292,8 +294,7 @@ class Enclosure:
             self.dome_open = True
             self.dome_home = True
         elif redis_command == 'close':
-  
-            g_dev['redis'].delete('enc_cmd')
+            if _redis:  g_dev['redis'].delete('enc_cmd')
             print("enclosure remote cmd: close.")
             self.manager(close_cmd=True, open_cmd=False)
   
@@ -304,36 +305,37 @@ class Enclosure:
             self.dome_open = False
             self.dome_home = True
         elif redis_command == 'setAuto':
-            g_dev['redis'].delete('enc_cmd')
+            if _redis: g_dev['redis'].delete('enc_cmd')
             print("Change to Automatic.")
             self.site_in_automatic = True
             self.mode = 'Automatic'
         elif redis_command == 'setManual':
-            g_dev['redis'].delete('enc_cmd')
+            if _redis: g_dev['redis'].delete('enc_cmd')
             print("Change to Manual.")
             self.site_in_automatic = False
             self.mode = 'Manual'
         elif redis_command == 'setShutdown':
-            g_dev['redis'].delete('enc_cmd')
+            if _redis: g_dev['redis'].delete('enc_cmd')
             print("Change to Shutdown & Close")
             self.manager(close_cmd=True, open_cmd=False)
             self.site_in_automatic = False
             self.mode = 'Shutdown'
         elif self.is_dome and redis_command == 'goHome':
             breakpoint()
-            g_dev['redis'].delete('goHome')
+            if _redis: g_dev['redis'].delete('goHome')
         elif self.is_dome and redis_command == 'sync_enc':
             self.following = True
             print("Scope Dome following set On")
-            g_dev['redis'].delete('sync_enc')                
+            if _redis: g_dev['redis'].delete('sync_enc')                
         elif self.is_dome and redis_command == 'unsync_enc':
             self.following = False
             print("Scope Dome following turned OFF")
             # NB NB NB no command to dome here
-            g_dev['redis'].delete('unsync_enc')
+            if _redis: g_dev['redis'].delete('unsync_enc')
         else:
             
             pass
+       
         status['enclosure_mode']: self.mode
         status['enclosure_message']: self.state
             #NB NB NB  Possible race condition here.
@@ -378,7 +380,7 @@ class Enclosure:
         #self.status = status
         
 
-        #self.manager()   #There be monsters here. <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+        self.manager( _redis=_redis)   #There be monsters here. <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
         return status
     
           
@@ -553,7 +555,7 @@ class Enclosure:
             return False
 
 
-    def manager(self, open_cmd=False, close_cmd=False):     #This is the place where the enclosure is autonomus during operating hours. Delicut Code!!!
+    def manager(self, open_cmd=False, close_cmd=False, _redis=False):     #This is the place where the enclosure is autonomus during operating hours. Delicut Code!!!
         '''
         Now what if code hangs?  To recover from that ideally we need a deadman style timer operating on a
         separate computer.
@@ -564,7 +566,7 @@ class Enclosure:
             return   #Nothing to do.
 
         #  NB NB NB Gather some facts:
-        breakpoint()
+
         ops_window_start, sunset, sunrise, ephem_now = self.astro_events.getSunEvents()
 
         az_opposite_sun = g_dev['evnt'].sun_az_now()
@@ -611,7 +613,7 @@ class Enclosure:
             self.dome_opened = False
             self.dome_homed = True
             self.enclosure_synchronized = False
-            self.redis_server.set('park_the_mount', True, ex=3600)
+            if _redis: g_dev['redis'].set('park_the_mount', True, ex=3600)
         elif wx_hold:   #There is no reason to deny a wx_hold!
             # We leave telescope to track with dome closed.
             if self.is_dome and self.enclosure.CanSlave :
@@ -655,7 +657,7 @@ class Enclosure:
                 self.guarded_open()
             self.dome_opened = True
             self.dome_homed = True
-            self.redis_server.set('Enc Auto Opened', True, ex= 600)
+            if _redis: g_dev['redis'].set('Enc Auto Opened', True, ex= 600)
             if self.status_string in ['Open'] and ephem_now < g_dev['events']['End Eve Sky Flats']:
                 self.enclosure.SlewToAzimuth(az_opposite_sun)
                 time.sleep(15)
@@ -683,6 +685,7 @@ class Enclosure:
                 except:
                     print("Shutter Failed to close at Civil Dawn.")
                 self.mode = 'Manual'
+        return
 
 
 
