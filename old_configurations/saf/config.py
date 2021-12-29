@@ -61,23 +61,23 @@ site_config = {
         'camera',
         'sequencer',
         ],
-     'wema_types': [
-        'observing_conditions',
-        'enclosure',    
-        ],
-     'short_status_devices':  [
-        # 'observing_conditions',
-        # 'enclosure',
-        'mount',
-        'telescope',
-        # 'screen',
-        'rotator',
-        'focuser',
-        'selector',
-        'filter_wheel',
-        'camera',
-        'sequencer',
-        ],
+    'wema_types': [
+       'observing_conditions',
+       'enclosure',    
+       ],
+    'short_status_devices':  [
+       # 'observing_conditions',
+       # 'enclosure',
+       'mount',
+       'telescope',
+       # 'screen',
+       'rotator',
+       'focuser',
+       'selector',
+       'filter_wheel',
+       'camera',
+       'sequencer',
+       ],
     'name': 'Apache Ridge Observatory 0m3f4.9/9',
     'airport_code':  'SAF',
     'location': 'Santa Fe, New Mexico,  USA',
@@ -100,14 +100,13 @@ site_config = {
     'reference_ambient':  [10],  # Degrees Celsius.  Alternately 12 entries, one for every - mid month.
     'reference_pressure':  [794.0],    #mbar   A rough guess 20200315
     
-    'site_in_automatic_default': "Automatic",   # ["Manual", "Shutdown", "Automatic"]
-    'automatic_detail_default': "Enclosure is initially set to Automatic mode.",
+    'site_in_automatic_default': "Shutdown",   # ["Manual", "Shutdown", "Automatic"]
+    'automatic_detail_default': "Enclosure is initially set to Shutdown by SAF config.",
     'auto_eve_bias_dark': False,
-    'auto_eve_sky_flat': True,
+    'auto_eve_sky_flat': False,
     'eve_sky_flat_sunset_offset': +0.0,  # Minutes  neg means before, + after.
     'auto_morn_sky_flat': False,
     'auto_morn_bias_dark': False,
-
     'calibrate_on_solve': True,  # nb nb nb pICK ONE
     're-calibrate_on_solve': True, 
 
@@ -160,7 +159,7 @@ site_config = {
 
 
 
-   'mount': {
+    'mount': {
         'mount1': {
             'parent': 'enclosure1',
             'name': 'safpier',
@@ -182,12 +181,12 @@ site_config = {
                 'home_park_azimuth': 180.,
                 'horizon':  20.,    # Meant to be a circular horizon. Or set to None if below is filled in.
                 'horizon_detail': {  # Meant to be something to draw on the Skymap with a spline fit.
-                     '0.1': 10,
-                     '90': 11.2,
-                     '180.0': 10,
-                     '270': 10,
-                     '360': 10
-                     },  # We use a dict because of fragmented azimuth mesurements.
+                    '0.1': 10,
+                    '90': 11.2,
+                    '180.0': 10,
+                    '270': 10,
+                    '360': 10
+                    },  # We use a dict because of fragmented azimuth mesurements.
                 'refraction_on': True,
                 'model_on': True,
                 'rates_on': True,
@@ -207,10 +206,10 @@ site_config = {
                     'DCES': 0.0,
                     'DCEC': 0.0,
                     }
+                },
             },
-        },
 
-    },
+        },
 
     'telescope': {                            # Note telescope == OTA  Optical Tube Assembly.
         'telescope1': {
@@ -247,9 +246,9 @@ site_config = {
                 'west_flip_ca_offset': 0.0,
                 'west_flip_dec_offset': 0.0
             },
-
-
-
+    
+    
+    
         },
     },
 

@@ -108,6 +108,7 @@ class WxEncAgent:
 
         self.wema_pid = os.getpid()
         print('WEMA_PID:  ', self.wema_pid)
+
         if config['redis_ip'] is not None:           
             self.redis_server = redis.StrictRedis(host=config['redis_ip'], port=6379, db=0, decode_responses=True)
             self.redis_wx_enabled = True
