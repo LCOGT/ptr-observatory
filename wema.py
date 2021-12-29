@@ -90,11 +90,14 @@ class WxEncAgent:
         self.hostname = socket.gethostname()
         if self.hostname in self.config['wema_hostname']:
             self.is_wema = True
+            self.site_path = config['wema_site_path']
         else:
             self.is_wema = False
-        self.site_path = config['site_path']
+            self.site_path = config['site_path']
+
         g_dev['obs'] = self 
         g_dev['site'] =  config['site']
+        g_dev['site_path'] = self.site_path
         self.last_request = None
         self.stopped = False
         self.site_message = '-'
@@ -174,7 +177,7 @@ class WxEncAgent:
 
         #print("Starting observer, may have to terminate a stale observer first.")
 
-        #terminate_restart_observer(self.config['site_path'], no_restart=True)
+        #terminate_restart_observer(g_dev['obs']['site_path'], no_restart=True)
        
     
 
@@ -267,7 +270,7 @@ class WxEncAgent:
                 print(">The observer's time is stale > 300 seconds:  ", round(delta, 2))
                 #Here is where we terminate the obs.exe and restart it.
             if delta > 3600:
-                #terminate_restart_observer(self.config['site_path'], no_restart=True)
+                #terminate_restart_observer(g_dev['obs'}['site_path'], no_restart=True)
                 pass
 
             else:

@@ -243,7 +243,6 @@ class Enclosure:
         
         #Here we check if the observer has sent the WEMA any commands.
         if self.is_wema and self.site_has_proxy and self.config['site_IPC_mechanism'] == 'shares':
-            breakpoint()
             _redis = False
             try:
                 enc_cmd = open(self.config['wema_path'] + 'enc_cmd.txt', 'r')
