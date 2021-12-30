@@ -5,6 +5,8 @@ Created on Fri Feb 07,  11:57:41 2020
 Updated 20200902 WER
 
 @author: wrosing
+
+NB NB NB  If we have one config file then paths need to change depending upon which host does what job.
 '''
 
 #2345678901234567890123456789012345678901234567890123456789012345678901234567890
@@ -25,16 +27,20 @@ site_config = {
     'owner':  ['google-oauth2|102124071738955888216', 'google-oauth2|112401903840371673242'],  # Neyle,  Or this can be some aws handle.
     'owner_alias': ['ANS'],
     'admin_aliases': ["ANS", "WER", "TB", "DH", "KVH", 'KC'],
-    'wema_is_active':  True,    # True if an agent is used at a site.  
-                                       # Fat is intended to be simple since 
-                                       # there is so little to control.
-    'site_is_specific':  False,  # Indicates some special code for the site. 
+    'site_is_generic':  False,   # A simplee single computer ASCOM site.
+    'site_is_specific':  False,  # Indicates some special code for a single site.
                                  # Intention it is found in this file.
-    'site_IPC_mechanism':  'shares',   # ['None', shares', 'shelves', 'redis']  Pick One
-    'site_share_path':  '//saf-wema/wema_transfer/',   # Presumably also where shelves are found
-    'redis_ip': None,   # None if no redis path present, localhost if redis iself-contained
-    'wema_path':  '//saf-wema/wema_transfer/',   #We should obsolete this NB NB NB
+                                 # Fat is intended to be simple since 
+                                 # there is so little to control.
+    'site_path':  'C:/ptr/',     # Generic place ofor this host to stash.
+    'site_IPC_mechanism':  'shares',   # ['None', shares', 'shelves', 'redis']  Pick One     
+    'site_share_path':  '//saf-wema/wema_transfer/',  # Presumably also where shelves are found   
+                                                      # Meant to be used by mnt/tel's.
+    'wema_is_active':  True,     # True if an agent is used at a site. 
+                                 # Wemas are split sites -- at least two CPS's sharing the control.
     'wema_hostname':  'SAF-WEMA',
+    'wema_share_path':  'C:/ptr/wema_transfer/',  # Meant to be where Wema puts status data.
+    'redis_ip': None,   # None if no redis path present, localhost if redis iself-contained
     'defaults': {
         'observing_conditions': 'observing_conditions1',  # These are used as keys, may go away.
         'enclosure': 'enclosure1',
@@ -81,9 +87,6 @@ site_config = {
     'name': 'Apache Ridge Observatory 0m3f4.9/9',
     'airport_code':  'SAF',
     'location': 'Santa Fe, New Mexico,  USA',
-    'site_path':  'F:/',    # Path to where all Photon Ranch data and state are to be found
-    'aux_archive_path': '//house-computer/saf_archive_2/archive/',  # Path to auxillary backup disk not on this host.
-
     'observatory_url': 'https://starz-r-us.sky/clearskies2',   # This is meant to be optional
     'description':  '''
                     Now is the time for all good persons
@@ -97,8 +100,8 @@ site_config = {
     'latitude': 35.554298,     # Decimal degrees, North is Positive
     'longitude': -105.870197,   # Decimal degrees, West is negative
     'elevation': 2194,    # meters above sea level
-    'reference_ambient':  [10],  # Degrees Celsius.  Alternately 12 entries, one for every - mid month.
-    'reference_pressure':  [794.0],    #mbar   A rough guess 20200315
+    'reference_ambient':  10.0,  # Degrees Celsius.  Alternately 12 entries, one for every - mid month.
+    'reference_pressure':  794.0,    #mbar   A rough guess 20200315
     
     'site_in_automatic_default': "Shutdown",   # ["Manual", "Shutdown", "Automatic"]
     'automatic_detail_default': "Enclosure is initially set to Shutdown by SAF config.",
@@ -181,11 +184,11 @@ site_config = {
                 'home_park_azimuth': 180.,
                 'horizon':  20.,    # Meant to be a circular horizon. Or set to None if below is filled in.
                 'horizon_detail': {  # Meant to be something to draw on the Skymap with a spline fit.
-                    '0.1': 10,
-                    '90': 11.2,
-                    '180.0': 10,
+                    '0.0': 10,
+                    '90' : 10,
+                    '180': 10,
                     '270': 10,
-                    '360': 10
+                    '359': 10
                     },  # We use a dict because of fragmented azimuth mesurements.
                 'refraction_on': True,
                 'model_on': True,
@@ -209,16 +212,16 @@ site_config = {
                 },
             },
 
-        },
+        
 
-    'telescope': {                            # Note telescope == OTA  Optical Tube Assembly.
+    'telescope': {                            # OTA = Optical Tube Assembly.
         'telescope1': {
             'parent': 'mount1',
             'name': 'Main OTA',
             'desc':  'Ceravolo 300mm F4.9/F9 convertable',
             'driver': None,                     # Essentially this device is informational.  It is mostly about the optics.
-            'collecting_area': 31886,
-            'obscuration':  0.55,
+            'collecting_area': 38877,
+            'obscuration':  0.55,  # Informatinal, already included in collecting_area.
             'aperture': 30,
             'focal_length': 1470,  # 1470,   #2697,   # Converted to F9, measured 20200905  11.1C
             'has_dew_heater':  False,
@@ -232,7 +235,7 @@ site_config = {
             'configuration': {
                  "position1": ["darkslide1", "filter_wheel1", "camera1"]
                  },
-            'camera_name':  'camera1',
+            'camera_name':  'camera_1_1',
             'filter_wheel_name':  'filter_wheel1',
             'has_fans':  True,
             'has_cover':  False,
@@ -316,7 +319,7 @@ site_config = {
             'parent': 'telescope1',
             'name': 'None',
             'desc':  'Null Changer',
-            'driver': 'Null',
+            'driver': None,
             'com_port': None,
             'startup_script':  None,
             'recover_script':  None,
@@ -412,7 +415,7 @@ site_config = {
     },
     
     'camera': {
-        'camera_1': {
+        'camera_1_1': {
             'parent': 'telescope1',
             'name': 'sq002',      # Important because this points to a server file structure by that name.
             'desc':  'QHY 600Pro',
