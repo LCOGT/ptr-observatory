@@ -103,6 +103,7 @@ class Enclosure:
                     enclosure.close()
                     self.status = status
                     self.prior_status = status
+                    g_dev['enc'].status = status
                     return status
                 except:
                     try:
@@ -112,6 +113,7 @@ class Enclosure:
                         enclosure.close()
                         self.status = status
                         self.prior_status = status
+                        g_dev['enc'].status = status
                         return status
                     except:
                         try:
@@ -121,15 +123,20 @@ class Enclosure:
                             enclosure.close()
                             self.status = status
                             self.prior_status = status
+                            g_dev['enc'].status = status
                             return status
                         except:
                             print("Using prior enclosure status after 4 failures.")
+                            g_dev['enc'].status = self.prior_status
                             return self.prior_status()
             elif self.config['site_IPC_mechanism'] == 'redis':
                 try:
-                    return eval(g_dev['redis'].get('enc_status'))
+                    status = eval(g_dev['redis'].get('enc_status'))
                 except:
-                    return g_dev['redis'].get('enc_status')
+                    status =  g_dev['redis'].get('enc_status')
+                self.status = status
+                self.prior_status = status
+                g_dev['enc'].status = status
             else:
                 breakpoint()
 
@@ -388,6 +395,9 @@ class Enclosure:
         
 
         self.manager( _redis=_redis)   #There be monsters here. <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+        self.status = status
+        self.prior_status = status
+        g_dev['enc'].status = status
         return status
     
           

@@ -169,6 +169,7 @@ class ObservingConditions:
                     weather.close()
                     self.status = status
                     self.prior_status = status
+                    g_dev['ocn'].status = status
                     return status
                 except:
                     try:
@@ -178,6 +179,7 @@ class ObservingConditions:
                         weather.close()
                         self.status = status
                         self.prior_status = status
+                        g_dev['ocn'].status = status
                         return status
                     except:
                         try:
@@ -187,17 +189,24 @@ class ObservingConditions:
                             weather.close()
                             self.status = status
                             self.prior_status = status
+                            g_dev['ocn'].status = status
                             return status
                         except:
                             print("Using prior OCN status after 4 failures.")
+                            g_dev['ocn'].status = prior_status
                             return self.prior_status()
             elif self.config['site_IPC_mechanism'] == 'redis':
                  try:
-                     return eval(g_dev['redis'].get('wx_state'))
+                     status = eval(g_dev['redis'].get('wx_state'))
                  except:
-                     return g_dev['redis'].get('wx_state')
+                     status = g_dev['redis'].get('wx_state')
+                 self.status = status
+                 self.prior_status = status
+                 g_dev['ocn'].status = status
+                 return status
             else:
                 breakpoint()
+                
 
         if self.site_is_generic or self.is_wema:  #These operations are common to a generic single computer or wema site.
             status= {}
@@ -367,6 +376,8 @@ class ObservingConditions:
                     self.wx_clamp = True
     
                 self.wx_hold_last_updated = time.time()
+            self.status = status
+            g_dev['ocn'].status = status
             return status
 
     def get_quick_status(self, quick):
