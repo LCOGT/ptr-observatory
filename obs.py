@@ -152,7 +152,6 @@ def patch_httplib(bsize=400000):
 class Observatory:
 
     def __init__(self, name, config):
-
         # This is the ayneclass through which we can make authenticated api calls.
         self.api = API_calls()
         self.command_interval = 3   # seconds between polls for new commands
@@ -162,6 +161,14 @@ class Observatory:
         self.config = config
         self.site_path = config['site_path']
         self.site = config['site']
+        self.hostname = self.hostname = socket.gethostname()
+        if self.hostname in self.config['wema_hostname']:
+            self.is_wema = True
+        else:
+            self.is_wema = False  #This is a client.
+            self.site_path = config['client_path']
+            g_dev['wema_path'] = None    #Jus to be safe.
+        g_dev['site_path'] = self.site_path
         self.last_request = None
         self.stopped = False
         self.status_count = 0
@@ -173,7 +180,6 @@ class Observatory:
         self.astro_events = ptr_events.Events(self.config)
         self.astro_events.compute_day_directory()
         self.astro_events.display_events()
-        self.hostname = self.hostname = socket.gethostname()
         self.site_is_specific = False
         if self.hostname in self.config['wema_hostname']:
             self.is_wema = True

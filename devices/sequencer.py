@@ -275,7 +275,7 @@ class Sequencer:
         
         # NB Need a better way to get all the events.
         obs_win_begin, sunZ88Op, sunZ88Cl, ephem_now = self.astro_events.getSunEvents()
-
+        breakpoint()
         try:
             ocn_status = eval(self.redis_server.get('wx_state'))
             enc_status = eval(self.redis_server.get('enc_status'))

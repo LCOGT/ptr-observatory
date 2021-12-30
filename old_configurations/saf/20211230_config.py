@@ -33,6 +33,7 @@ site_config = {
                                  # Fat is intended to be simple since 
                                  # there is so little to control.
     'site_path':  'C:/ptr/',     # Generic place ofor this host to stash.
+                                 #NB for the client this is the site archive location, maybe call it that?
     'site_IPC_mechanism':  'shares',   # ['None', shares', 'shelves', 'redis']  Pick One     
     'site_share_path':  '//saf-wema/wema_transfer/',  # Presumably also where shelves are found   
                                                       # Meant to be used by mnt/tel's.

@@ -1193,11 +1193,13 @@ class Mount:
         return delta_ra, delta_dec
 
     def reset_mount_reference(self):
+        breakpoint()
         mnt_shelf = shelve.open(self.site_path + 'ptr_night_shelf/' + 'mount1')
         mnt_shelf['ra_cal_offset'] = 0.000
         mnt_shelf['dec_cal_offset'] = 0.000
         mnt_shelf['flip_ra_cal_offset'] = 0.000
         mnt_shelf['flip_dec_cal_offset'] = 0.000
+        mnt_shelf.close()
         return
 
         '''
