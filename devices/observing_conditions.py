@@ -161,7 +161,6 @@ class ObservingConditions:
             DESCRIPTION.
 
         '''
-
         if not self.is_wema and self.site_has_proxy:
             if self.config['site_IPC_mechanism'] == 'shares':
                 try:
@@ -271,27 +270,27 @@ class ObservingConditions:
             g_dev['wx_ok']  =  self.wx_is_ok
             if self.config['site_IPC_mechanism'] == 'shares':
                 try:
-                    weather = open(self.config['site_share_path']+'weather.txt', 'w')
+                    weather = open(self.config['wema_share_path'] + 'weather.txt', 'w')
                     weather.write(json.dumps(status))
                     weather.close()
                 except:
                     print("1st try to write weather status failed.")
                     time.sleep(3)
                     try:
-                        weather = open(self.config['site_share_path']+'weather.txt', 'w')
+                        weather = open(self.config['wema_share_path'] + 'weather.txt', 'w')
                         weather.write(json.dumps(status))
                         weather.close()
                     except:
                         print("2nd try to write weather status failed.")
                         time.sleep(3)
                         try:
-                            weather = open(self.config['site_share_path']+'weather.txt', 'w')
+                            weather = open(self.config['wem_sharea_path'] +'weather.txt', 'w')
                             weather.write(json.dumps(status))
                             weather.close()
                         except:
                             print("3rd try to write weather status failed.")
                             time.sleep(3)
-                            weather = open(self.config['site_share_path']+'weather.txt', 'w')
+                            weather = open(self.config['wema_share_path'] + 'weather.txt', 'w')
                             weather.write(json.dumps(status))
                             weather.close()
                             print("4th try to write weather status.")

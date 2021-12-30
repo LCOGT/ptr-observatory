@@ -82,6 +82,7 @@ site_config = {
     'airport_code':  'SAF',
     'location': 'Santa Fe, New Mexico,  USA',
     'site_path':  'F:/',    # Path to where all Photon Ranch data and state are to be found
+    'wema_site_path': 'C:/ptr/',
     'aux_archive_path': '//house-computer/saf_archive_2/archive/',  # Path to auxillary backup disk not on this host.
 
     'observatory_url': 'https://starz-r-us.sky/clearskies2',   # This is meant to be optional
@@ -97,8 +98,8 @@ site_config = {
     'latitude': 35.554298,     # Decimal degrees, North is Positive
     'longitude': -105.870197,   # Decimal degrees, West is negative
     'elevation': 2194,    # meters above sea level
-    'reference_ambient':  [10],  # Degrees Celsius.  Alternately 12 entries, one for every - mid month.
-    'reference_pressure':  [794.0],    #mbar   A rough guess 20200315
+    'reference_ambient':  10.0,  # Degrees Celsius.  Alternately 12 entries, one for every - mid month.
+    'reference_pressure':  794.0,    #mbar   A rough guess 20200315
     
     'site_in_automatic_default': "Shutdown",   # ["Manual", "Shutdown", "Automatic"]
     'automatic_detail_default': "Enclosure is initially set to Shutdown by SAF config.",
@@ -209,9 +210,9 @@ site_config = {
                 },
             },
 
-        },
+        
 
-    'telescope': {                            # Note telescope == OTA  Optical Tube Assembly.
+    'telescope': {                            # OTA = Optical Tube Assembly.
         'telescope1': {
             'parent': 'mount1',
             'name': 'Main OTA',

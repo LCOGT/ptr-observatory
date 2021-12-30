@@ -94,9 +94,9 @@ class Enclosure:
         #self.state = 'Ok'
         
     def get_status(self) -> dict: 
-
         if not self.is_wema and self.site_has_proxy:
             if self.config['site_IPC_mechanism'] == 'shares':
+                breakpoint()
                 try:
                     enclosure = open(self.config['wema_path'] + 'enclosure.txt', 'r')
                     status = json.loads(enclosure.readline())
@@ -219,52 +219,60 @@ class Enclosure:
                 # # g_dev['redis'].set('enc_status', status, ex=3600)
         if self.config['site_IPC_mechanism'] == 'shares':
             try:
-                enclosure = open(self.config['site_share_path']+'enclosure.txt', 'w')
+                enclosure = open(self.config['wema_share_path']+'enclosure.txt', 'w')
                 enclosure.write(json.dumps(status))
                 enclosure.close()
             except:
                 time.sleep(3)
                 try:
-                    enclosure = open(self.config['site_share_path']+'enclosure.txt', 'w')
+                    enclosure = open(self.config['wema_share_path']+'enclosure.txt', 'w')
                     enclosure.write(json.dumps(status))
                     enclosure.close()
                 except:
                     time.sleep(3)
-                    enclosure = open(self.config['site_share_path']+'enclosure.txt', 'w')
-                    enclosure.write(json.dumps(status))
-                    enclosure.close()
-                    print("3rd try to write enclosure status.")
+                    try:
+                        enclosure = open(self.config['wem_share_path']+'enclosure.txt', 'w')
+                        enclosure.write(json.dumps(status))
+                        enclosure.close()
+                    except:
+                        time.sleep(3)
+                        enclosure = open(self.config['wema_share_path']+'enclosure.txt', 'w')
+                        enclosure.write(json.dumps(status))
+                        enclosure.close()
+                        print("4th try to write enclosure status.")
+
         elif self.config['site_IPC_mechanism'] == 'redis':
             g_dev['redis'].set('enc_status', status)  #THis needs to become generalized IPC 
             
 # =============================================================================
 #         # return status
 # =============================================================================
-        
+
         #Here we check if the observer has sent the WEMA any commands.
         if self.is_wema and self.site_has_proxy and self.config['site_IPC_mechanism'] == 'shares':
             _redis = False
+            # NB NB THis really needs a context manage so no dangling open files
             try:
-                enc_cmd = open(self.config['wema_path'] + 'enc_cmd.txt', 'r')
+                enc_cmd = open(self.config['wema_share_path'] + 'enc_cmd.txt', 'r')
                 status = json.loads(enc_cmd.readline())
                 enc_cmd.close()
-                os.remove(self.config['wema_path'] + 'enc_cmd.txt')
+                os.remove(self.config['wema_share_path'] + 'enc_cmd.txt')
                 redis_command = status
             except:
                 try:
                     time.sleep(1)
-                    enc_cmd = open(self.config['wema_path'] + 'enc_cmd.txt', 'r')
+                    enc_cmd = open(self.config['wema_share_path'] + 'enc_cmd.txt', 'r')
                     status = json.loads(enc_cmd.readline())
                     enc_cmd.close()
-                    os.remove(self.config['wema_path'] + 'enc_cmd.txt')
+                    os.remove(self.config['wema_share_path'] + 'enc_cmd.txt')
                     redis_command = status
                 except:
                     try:
                         time.sleep(1)
-                        enc_cmd = open(self.config['wema_path'] + 'enc_cmd.txt', 'r')
+                        enc_cmd = open(self.config['wema_share_path'] + 'enc_cmd.txt', 'r')
                         status = json.loads(enc_cmd.readline())
                         enc_cmd.close()
-                        os.remove(self.config['wema_path'] + 'enc_cmd.txt')
+                        os.remove(self.config['wema_share_path'] + 'enc_cmd.txt')
                         redis_command = status
                     except:
                         #print("Finding enc_cmd failed after 3 tries, no harm done.")
@@ -656,10 +664,11 @@ class Enclosure:
                 self.guarded_open()
             self.dome_opened = True
             self.dome_homed = True
-            if _redis: g_dev['redis'].set('Enc Auto Opened', True, ex= 600)
+            #if _redis: g_dev['redis'].set('Enc Auto Opened', True, ex= 600)   # Unused
             if self.status_string in ['Open'] and ephem_now < g_dev['events']['End Eve Sky Flats']:
-                self.enclosure.SlewToAzimuth(az_opposite_sun)
-                time.sleep(15)
+                if self.is_dome:
+                    self.enclosure.SlewToAzimuth(az_opposite_sun)
+                time.sleep(5)
         #THIS should be the ultimate backup to force a close
         elif ephem_now >=  g_dev['events']['Civil Dawn']:  #sunrise + 45/1440:
             #WE are now outside the observing window, so Sun is up!!!

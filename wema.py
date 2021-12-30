@@ -10,6 +10,12 @@ This would be a good place to log the weather data and any enclosure history,
 once this code is stable enough to run as a service.
 
 We need to resolve the 'redis' solution for each site. 20120826
+
+Note this is derived from OBS but is WEMA so we shoudl not need to build
+things from a config file, but rather by implicatin just pick the correct
+data from the config file.  All config files for a cluster of mounts/teleescops
+under one WEMA should start with common data for the WEMA.  Not the wema
+has no knowledge of how many mnt/tels there may be in any given enclosure.
 """
 
 
@@ -30,27 +36,7 @@ from global_yard import g_dev
 import os, signal, subprocess
 
   
-# def process():
-     
-#     # Ask user for the name of process
-#     name = input("Enter process Name: ")
-#     try:      
-#         # iterating through each instance of the process
-#         for line in os.popen("ps ax | grep " + name + " | grep -v grep"):
-#             fields = line.split()          
-#             # extracting Process ID from the output
-#             pid = fields[0]
-#             print(fields)
-#             # terminating process
-#             os.kill(int(pid), signal.SIGKILL)
-#         print("Process Successfully terminated")    
-#     except:
-#         print("Error Encountered while running script")
-  
-# process()
 
-# def worker():
-#     import obs
 def terminate_restart_observer(site_path, no_restart=False):
     if no_restart is False or  True:
         return
@@ -87,24 +73,27 @@ class WxEncAgent:
         self.name = name
         self.site_name = name
         self.config = config
+        g_dev['obs'] = self     # NB NB We need to work through site vs mnt/tel
+                                # and sub-site distinction.distinction.
+        self.site_path = config['site_path']
         self.hostname = socket.gethostname()
         if self.hostname in self.config['wema_hostname']:
             self.is_wema = True
-            self.site_path = config['wema_site_path']
+            self.wema_path = config['wema_share_path']
+            g_dev['wema_path'] = self.wema_path
         else:
             self.is_wema = False
-            self.site_path = config['site_path']
-
-        g_dev['obs'] = self 
-        g_dev['site'] =  config['site']
+            self.wema_path = config['site_path']
+            g_dev['wema_path'] = self.wema_path
+            print('ERROR: WEMA version started on wrong host.')
+        #  The assumption is if a site has a hard coded NAS the site path will 
+        #  point to it as is the case for Q: at MRC and MRC2.
         g_dev['site_path'] = self.site_path
         self.last_request = None
         self.stopped = False
         self.site_message = '-'
         self.site_mode = config['site_in_automatic_default']
-        self.device_types = [
-            'observing_conditions',
-            'enclosure'] 
+        self.device_types = config['wema_types']
         self.astro_events = ptr_events.Events(self.config)
         self.astro_events.compute_day_directory()
         self.astro_events.display_events()
@@ -149,7 +138,7 @@ class WxEncAgent:
 
 
         self.wema_pid = os.getpid()
-        print('WEMA_PID:  ', self.wema_pid)
+        print('Fresh WEMA_PID:  ', self.wema_pid)
         #self.redis_server.set('wema_pid', self.wema_pid)
 
         #Redundant store of wema_pid
@@ -315,7 +304,6 @@ class WxEncAgent:
 if __name__ == "__main__":
 
     import config
-
     wema = WxEncAgent(config.site_name, config.site_config)
     
     wema.run()
