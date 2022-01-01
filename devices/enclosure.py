@@ -57,13 +57,15 @@ class Enclosure:
         if self.config['wema_is_active']:
             self.site_has_proxy = True  #NB Site is proxy needs a new name.
         else:
-            self.site_has_proxy = False   
+            self.site_has_proxy = False  
+        breakpoint()
         if self.site in ['simulate',  'dht']:  #DEH: added just for testing purposes with ASCOM simulators.
             self.observing_conditions_connected = True
             self.site_is_proxy = False   
             print("observing_conditions: Simulator drivers connected True")
         elif self.config['site_is_specific']:
             self.site_is_specific = True
+            self.site_is_generic = False
             #  Note OCN has no associated commands.
             #  Here we monkey patch
             self.get_status = config.get_enc_status
@@ -84,7 +86,8 @@ class Enclosure:
                 print("ASCOM enclosure connected.")
             except:
                  print("ASCOM enclosure NOT connected, proabably the App is not connected to telescope.")
-
+        else:
+            self.site_is_generic = True     #NB NB this seems to be a debug expediancy.
             # breakpoint()  # All test code
             # quick = []
             # self.get_quick_status(quick)

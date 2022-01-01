@@ -203,7 +203,7 @@ class ObservingConditions:
                  self.status = status
                  self.prior_status = status
                  g_dev['ocn'].status = status
-                 breakpoint()
+
                  return status
             else:
                 breakpoint()
