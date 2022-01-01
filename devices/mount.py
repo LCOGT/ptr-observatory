@@ -480,10 +480,10 @@ class Mount:
                 #'automatic_detail': str(self.automatic_detail),
                 'move_time': self.move_time
             }
-            
-            if self.config['site'] in ['saf']:
+            # This write the mount conditin back to the dome, only needed if self.is_dome
+            if g_dev['enc'].is_dome:
                 try:
-                    mount = open(self.config['wema_path']+'mnt_cmd.txt', 'w')
+                    mount = open(g_dev['wema_path']+'mnt_cmd.txt', 'w')
                     mount.write(json.dumps(status))
                     mount.close()
                 except:
@@ -491,17 +491,17 @@ class Mount:
                         time.sleep(3)
                         # mount = open(self.config['wema_path']+'mnt_cmd.txt', 'r')
                         # mount.write(json.loads(status))
-                        mount = open(self.config['wema_path']+'mnt_cmd.txt', 'w')
+                        mount = open(g_dev['wema_path']+'mnt_cmd.txt', 'w')
                         mount.write(json.dumps(status))
                         mount.close()
                     except:
                         try:
                             time.sleep(3)
-                            mount = open(self.config['wema_path']+'mnt_cmd.txt', 'w')
+                            mount = open(g_dev['wema_path']+'mnt_cmd.txt', 'w')
                             mount.write(json.dumps(status))
                             mount.close()
                         except:
-                            mount = open(self.config['wema_path']+'mnt_cmd.txt', 'w')
+                            mount = open(g_dev['wema_path']+'mnt_cmd.txt', 'w')
                             mount.write(json.dumps(status))
                             mount.close()
                             print("3rd try to append to enc-cmd  list.")
@@ -1193,7 +1193,6 @@ class Mount:
         return delta_ra, delta_dec
 
     def reset_mount_reference(self):
-        breakpoint()
         mnt_shelf = shelve.open(self.site_path + 'ptr_night_shelf/' + 'mount1')
         mnt_shelf['ra_cal_offset'] = 0.000
         mnt_shelf['dec_cal_offset'] = 0.000

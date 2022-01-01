@@ -164,7 +164,7 @@ class ObservingConditions:
         if not self.is_wema and self.site_has_proxy:
             if self.config['site_IPC_mechanism'] == 'shares':
                 try:
-                    weather = open(self.config['wema_path'] + 'weather.txt', 'r')
+                    weather = open(g_dev['wema_path'] + 'weather.txt', 'r')
                     status = json.loads(weather.readline())
                     weather.close()
                     self.status = status
@@ -174,7 +174,7 @@ class ObservingConditions:
                 except:
                     try:
                         time.sleep(3)
-                        weather = open(self.config['wema_path'] + 'weather.txt', 'r')
+                        weather = open(g_dev['wema_path'] + 'weather.txt', 'r')
                         status = json.loads(weather.readline())
                         weather.close()
                         self.status = status
@@ -184,7 +184,7 @@ class ObservingConditions:
                     except:
                         try:
                             time.sleep(3)
-                            weather = open(self.config['wema_path'] + 'weather.txt', 'r')
+                            weather = open(g_dev['wema_path'] + 'weather.txt', 'r')
                             status = json.loads(weather.readline())
                             weather.close()
                             self.status = status
@@ -193,7 +193,7 @@ class ObservingConditions:
                             return status
                         except:
                             print("Using prior OCN status after 4 failures.")
-                            g_dev['ocn'].status = prior_status
+                            g_dev['ocn'].status =self.prior_status
                             return self.prior_status()
             elif self.config['site_IPC_mechanism'] == 'redis':
                  try:
@@ -203,6 +203,7 @@ class ObservingConditions:
                  self.status = status
                  self.prior_status = status
                  g_dev['ocn'].status = status
+                 breakpoint()
                  return status
             else:
                 breakpoint()

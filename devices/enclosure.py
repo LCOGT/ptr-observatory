@@ -97,7 +97,7 @@ class Enclosure:
         if not self.is_wema and self.site_has_proxy:
             if self.config['site_IPC_mechanism'] == 'shares':
                 try:
-                    enclosure = open(self.config['wema_path'] + 'enclosure.txt', 'r')
+                    enclosure = open(g_dev['wema_path'] + 'enclosure.txt', 'r')
                     status = json.loads(enclosure.readline())
                     enclosure.close()
                     self.status = status
@@ -107,7 +107,7 @@ class Enclosure:
                 except:
                     try:
                         time.sleep(3)
-                        enclosure = open(self.config['wema_path'] + 'enclosure.txt', 'r')
+                        enclosure = open(g_dev['wema_path'] + 'enclosure.txt', 'r')
                         status = json.loads(enclosure.readline())
                         enclosure.close()
                         self.status = status
@@ -117,7 +117,7 @@ class Enclosure:
                     except:
                         try:
                             time.sleep(3)
-                            enclosure = open(self.config['wema_path'] + 'enclosure.txt', 'r')
+                            enclosure = open(g_dev['wema_path'] + 'enclosure.txt', 'r')
                             status = json.loads(enclosure.readline())
                             enclosure.close()
                             self.status = status
@@ -125,7 +125,7 @@ class Enclosure:
                             g_dev['enc'].status = status
                             return status
                         except:
-                            print("Using prior enclosure status after 4 failures.")
+                            print("Using prior enclosure status after 3 failures.")
                             g_dev['enc'].status = self.prior_status
                             return self.prior_status()
             elif self.config['site_IPC_mechanism'] == 'redis':
@@ -411,24 +411,7 @@ class Enclosure:
         self.prior_status = status
         g_dev['enc'].status = status
         return status
-    
-          
-        #     try:
 
-        #         stat_string = g_dev['redis'].get("shutter_status")
-        #         self.status = eval(g_dev['redis'].get("enc_status"))
-        #     except:
-        #         print("\nWxEnc Agent WEMA not running. Please start it up.|n")
-        #     if stat_string is not None:
-        #         if stat_string == 'Closed':
-        #             self.shutter_is_closed = True
-        #         else:
-        #             self.shutter_is_closed = False
-        #         #print('Proxy shutter status:  ', status)
-        #         return  stat_string
-        #     else:
-        #         self.shutter_is_closed = True
-        #         return
 
     def parse_command(self, command):
         "Note:  This code is typically received by the observer's enclosure module but commands execute at the WEMA's\
