@@ -167,7 +167,8 @@ class Observatory:
         else:
             self.is_wema = False  #This is a client.
             self.site_path = config['client_path']
-            g_dev['wema_path'] = None    #Jus to be safe.
+            g_dev['wema_path']  = config['site_share_path']  # Just to be safe.
+            self.wema_path = g_dev['wema_path'] 
         g_dev['site_path'] = self.site_path
         self.last_request = None
         self.stopped = False
@@ -480,10 +481,9 @@ class Observatory:
             device_list = self.device_types
             remove_enc = False
         else:
-            device_list = self.short_status_devices 
+            device_list = self.device_types  # self.short_status_devices 
             remove_enc = True
         for dev_type in device_list:
-
             # The status that we will send is grouped into lists of
             # devices by dev_type.
             status[dev_type] = {}
@@ -496,9 +496,8 @@ class Observatory:
                 # Get the actual device object...
                 device = devices_of_type[device_name]
                 # ...and add it to main status dict.
-                if device_name in ['observing_conditions1', 'enclosure1'] and (self.is_wema or self.site_is_specific):
+                if device_name in self.config['wema_types'] and (self.is_wema or self.site_is_specific):
                     result = device.get_status(g_dev)
-                
                 else:
                     result = device.get_status()
                 if result is not None:
@@ -573,7 +572,8 @@ class Observatory:
         except:
             pass
             #print("self.scan_requests('mount1') threw an exception, probably empty input queues.")
-        g_dev['seq'].manager()  #  Go see if there is something new to do.
+        if self.status_count > 2:   # Give time for status to form
+            g_dev['seq'].manager()  #  Go see if there is something new to do.
 
     def run(self):   # run is a poor name for this function.
         try:
