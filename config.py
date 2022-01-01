@@ -66,9 +66,9 @@ site_config = {
 #                                  # there is so little to control.
     'site_path':  'Q:/',     # Generic place ofor this host to stash.
 #                                  #NB for the client this is the site archive location, maybe call it that?
-    'client_path': 'Q:/ptr/',
+#     'client_path': 'F:/ptr/',
     'site_IPC_mechanism':  'redis',   # ['None', shares', 'shelves', 'redis']  Pick One     
-    'site_share_path':  'Q:/ptr/',  # Presumably also where shelves are found   
+#     'site_share_path':  'W:/',  # Presumably also where shelves are found   
 #                                                       # Meant to be used by mnt/tel's.
     'wema_is_active':  True,     # True if an agent is used at a site. 
                                   # Wemas are split sites -- at least two CPS's sharing the control.
