@@ -75,6 +75,7 @@ class WxEncAgent:
         self.config = config
         g_dev['obs'] = self     # NB NB We need to work through site vs mnt/tel
                                 # and sub-site distinction.distinction.
+
         self.site_path = config['site_path']
         self.hostname = socket.gethostname()
         if self.hostname in self.config['wema_hostname']:
@@ -142,7 +143,6 @@ class WxEncAgent:
         #self.redis_server.set('wema_pid', self.wema_pid)
 
         #Redundant store of wema_pid
-
         camShelf = shelve.open(self.site_path + 'ptr_night_shelf/' + 'pid_wema')
         camShelf['pid_wema'] = self.wema_pid
         camShelf['pid_time'] = time.time()

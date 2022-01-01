@@ -256,6 +256,7 @@ class Enclosure:
 # =============================================================================
 
         #Here we check if the observer has sent the WEMA any commands.
+        mount_command = None
         if self.is_wema and self.site_has_proxy and self.config['site_IPC_mechanism'] == 'shares':
             _redis = False
             # NB NB THis really needs a context manage so no dangling open files
