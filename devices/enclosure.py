@@ -96,7 +96,6 @@ class Enclosure:
     def get_status(self) -> dict: 
         if not self.is_wema and self.site_has_proxy:
             if self.config['site_IPC_mechanism'] == 'shares':
-                breakpoint()
                 try:
                     enclosure = open(self.config['wema_path'] + 'enclosure.txt', 'r')
                     status = json.loads(enclosure.readline())
@@ -180,24 +179,24 @@ class Enclosure:
                 in_motion = True
             else:
                 in_motion = False
-
+            self.last_az = 316.5    #THis should be a config for Dome_home_azimuth
             status = {'shutter_status': stat_string}
             status['dome_slewing'] = in_motion
             status['enclosure_mode'] = str(self.mode)
-            status['dome_azimuth'] = 0.0
+            status['dome_azimuth'] = round(float(self.last_az),1)
             status['enclosure_mode']: self.mode
             status['enclosure_message']: self.state
             #g_dev['redis'].set('enc_status', status, ex=3600)  #This is occasionally used by mouning.
-    
+           
             if self.is_dome:
                 try:
-                    #Occasionally this property thr0ws an exception:  (W HomeDome)
+                    #Occasionally this property throws an exception:  (W HomeDome)
                     current_az = self.enclosure.Azimuth
                     slewing = self.enclosure.Slewing
                     self.last_current_az = current_az
                     self.last_slewing = slewing
                 except:
-                    current_az = self.last_current_az
+                    current_az = self.last_az
                     slewing = self.last_slewing
                     
                 gap = current_az - self.last_az
@@ -205,11 +204,12 @@ class Enclosure:
                     gap -= 360
                 while gap <= -360:
                     gap += 360
-                if abs(gap) > 1.5:
+                if abs(gap) > 1.0:
                     print("Azimuth change detected,  Slew:  ", self.enclosure.Slewing)
                     slewing = True
                 else:
                     slewing = False
+                breakpoint()
                 self.last_az = current_az
                 status = {'shutter_status': stat_string,
                           'enclosure_synchronized': self.following,
@@ -283,8 +283,34 @@ class Enclosure:
                         redis_command = status
                     except:
                         #print("Finding enc_cmd failed after 3 tries, no harm done.")
-                        redis_command = ['none'] 
-
+                        redis_command = ['none']
+            mnt_command = None
+            try:
+              enc_cmd = open(self.config['wema_share_path'] + 'mnt_cmd.txt', 'r')
+              status = json.loads(enc_cmd.readline())
+              enc_cmd.close()
+              os.remove(self.config['wema_share_path'] + 'mnt_cmd.txt')
+              mnt_command = status
+            except:
+                try:
+                    time.sleep(1)
+                    enc_cmd = open(self.config['wema_share_path'] + 'mnt_cmd.txt', 'r')
+                    status = json.loads(enc_cmd.readline())
+                    enc_cmd.close()
+                    os.remove(self.config['wema_share_path'] + 'mnt_cmd.txt')
+                    mnt_command = status
+                except:
+                    try:
+                        time.sleep(1)
+                        enc_cmd = open(self.config['wema_share_path'] + 'enc_cmd.txt', 'r')
+                        status = json.loads(enc_cmd.readline())
+                        enc_cmd.close()
+                        os.remove(self.config['wema_share_path'] + 'mnt_cmd.txt')
+                        mnt_command = status
+                    except:
+                        #print("Finding enc_cmd failed after 3 tries, no harm done.")
+                        mnt_command = ['none'] 
+           
         elif self.is_wema and self.site_has_proxy and self.config['site_IPC_mechanism'] == 'redis':
             redis_command = g_dev['redis'].get('enc_cmd')  #It is presumed there is an expiration date on open command at least.
             #NB NB NB Need to prevent executing stale commands.  Note Redis_command is overloaded.
@@ -348,53 +374,39 @@ class Enclosure:
             if _redis: g_dev['redis'].delete('unsync_enc')
         else:
             
-            pass
-       
+            pass    
         status['enclosure_mode']: self.mode
         status['enclosure_message']: self.state
-            #NB NB NB  Possible race condition here.
-          # redis_value = g_dev['redis'].get('SlewToAzimuth')
-# =============================================================================
-#         if self.config['site'] in ['saf'] and mount_command is not None and mount_command != '' and mount_command != ['none']:
-#             try:
-#                 print(self.status,'\n\n', mount_command)
-# 
-#                 adj1 = dome_adjust(mount_command['altitude'], mount_command['azimuth'], \
-#                                   mount_command['hour_angle'])
-#                 adjt = dome_adjust(mount_command['altitude'], mount_command['target_az'], \
-#                                   mount_command['hour_angle'])
-#                
-#                     
-#                     
-#             except:
-#                 adj = 0
-#                 pass
-#             if self.is_dome and self.status is not None:   #First time around, stauts is None.
-#                 if mount_command['is_slewing'] and not self.slew_latch:   # NB NB NB THIS should have a timeout
-#                     self.enclosure.SlewToAzimuth(float(adjt))
-#                     self.slew_latch = True   #Isuing multiple Slews causes jerky Dome motion.
-#                 elif self.slew_latch and not mount_command['is_slewing']:
-#                     self.slew_latch = False   #  Return to Dpme following.
-#                     self.enclosure.SlewToAzimuth(float(adj1))
-#                 elif (not self.slew_latch) and (self.status['enclosure_synchronized'] or \
-#                                                 self.mode == "Automatic"):
-#                     #This is normal dome following.
-#                     try:
-#                         if shutter_status not in [2,3]:    #THis should end annoying report.
-#                             self.enclosure.SlewToAzimuth(float(adj1))
-#                     except:
-#                         print("Dome refused slew, probably closing or opening, usually a harmless situation.")
-#                     
-# =============================================================================
-                    
-                
-                 
-            
-            
-        #self.status = status
-        
-
-        self.manager( _redis=_redis)   #There be monsters here. <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+        if mount_command is not None and mount_command != '' and mount_command != ['none']:
+            breakpoint()
+            try:
+                print(self.status,'\n\n', mount_command)
+                # adj1 = dome_adjust(mount_command['altitude'], mount_command['azimuth'], \
+                #                   mount_command['hour_angle'])
+                # adjt = dome_adjust(mount_command['altitude'], mount_command['target_az'], \
+                #                   mount_command['hour_angle'])
+                track_az = mount_command['azimuth']
+                target_az = mount_command['target_az']
+            except:
+                track_az = 0
+                target_az = 0
+                pass
+            if self.is_dome and self.status is not None:   #First time around, stauts is None.
+                if mount_command['is_slewing'] and not self.slew_latch:   # NB NB NB THIS should have a timeout
+                    self.enclosure.SlewToAzimuth(float(target_az))
+                    self.slew_latch = True   #Isuing multiple Slews causes jerky Dome motion.
+                elif self.slew_latch and not mount_command['is_slewing']:
+                    self.slew_latch = False   #  Return to Dpme following.
+                    self.enclosure.SlewToAzimuth(float(track_az))
+                elif (not self.slew_latch) and (self.status['enclosure_synchronized'] or \
+                                                self.mode == "Automatic"):
+                    #This is normal dome following.
+                    try:
+                        if shutter_status not in [2,3]:    #THis should end annoying report.
+                            self.enclosure.SlewToAzimuth(float(adj1))
+                    except:
+                        print("Dome refused slew, probably closing or opening, usually a harmless situation.")
+        self.manager(_redis=_redis)   #There be monsters here. <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
         self.status = status
         self.prior_status = status
         g_dev['enc'].status = status
