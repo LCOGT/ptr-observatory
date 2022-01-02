@@ -76,20 +76,35 @@ class WxEncAgent:
         g_dev['obs'] = self     # NB NB We need to work through site vs mnt/tel
                                 # and sub-site distinction.distinction.
 
-        self.site_path = config['site_path']
-        self.hostname = socket.gethostname()
-        if self.hostname in self.config['wema_hostname']:
-            self.is_wema = True
-            self.wema_path = config['wema_share_path']
-            g_dev['wema_path'] = self.wema_path
+        breakpoint()
+
+        self.site = config['site']
+        if self.config['wema_is_active']:
+            self.hostname = self.hostname = socket.gethostname()
+            if self.hostname in self.config['wema_hostname']:
+                self.is_wema = True
+                g_dev['wema_share_path'] = config['wema_share_path']
+                self.wema_path = g_dev['wema_share_path']
+                self.site_path = self.wema_path
+            else:  
+                #This host is a client
+                self.is_wema = False  #This is a client.
+                self.site_path = config['client_share_path']
+                g_dev['site_path'] = self.site_path
+                g_dev['wema_share_path']  = self.site_path  # Just to be safe.
+                self.wema_path = g_dev['wema_share_path'] 
         else:
-            self.is_wema = False
-            self.wema_path = config['site_path']
-            g_dev['wema_path'] = self.wema_path
-            print('ERROR: WEMA version started on wrong host.')
-        #  The assumption is if a site has a hard coded NAS the site path will 
-        #  point to it as is the case for Q: at MRC and MRC2.
-        g_dev['site_path'] = self.site_path
+            self.is_wema = False  #This is a client.
+            self.site_path = config['client_share_path']
+            g_dev['site_path'] = self.site_path
+            g_dev['wema_share_path']  = self.site_path  # Just to be safe.
+            self.wema_path = g_dev['wema_share_path'] 
+        if self.config['site_is_specific']:
+             self.site_is_specific = True
+        else:
+            self.site_is_specific = False
+            
+
         self.last_request = None
         self.stopped = False
         self.site_message = '-'
