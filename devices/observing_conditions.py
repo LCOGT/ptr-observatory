@@ -146,7 +146,7 @@ class ObservingConditions:
                     self.unihedron_connected = False
                     # NB NB if no unihedron is installed the status code needs to not report it.
         #self.status = None   # This **may** need to have a first status if site_specific is True.
-        self.last_wx = self.status
+        self.last_wx = None
 
     def get_status(self):   # This is purely generic code for a generic site.
                             # It may be overwritten with a monkey patch found 
@@ -163,10 +163,11 @@ class ObservingConditions:
             DESCRIPTION.
 
         '''
+        breakpoint()
         if not self.is_wema and self.site_has_proxy:
             if self.config['site_IPC_mechanism'] == 'shares':
                 try:
-                    weather = open(g_dev['wema_path'] + 'weather.txt', 'r')
+                    weather = open(g_dev['wema_share_path'] + 'weather.txt', 'r')
                     status = json.loads(weather.readline())
                     weather.close()
                     self.status = status
@@ -176,7 +177,7 @@ class ObservingConditions:
                 except:
                     try:
                         time.sleep(3)
-                        weather = open(g_dev['wema_path'] + 'weather.txt', 'r')
+                        weather = open(g_dev['wema_share_path'] + 'weather.txt', 'r')
                         status = json.loads(weather.readline())
                         weather.close()
                         self.status = status
@@ -186,7 +187,7 @@ class ObservingConditions:
                     except:
                         try:
                             time.sleep(3)
-                            weather = open(g_dev['wema_path'] + 'weather.txt', 'r')
+                            weather = open(g_dev['wema_share_path'] + 'weather.txt', 'r')
                             status = json.loads(weather.readline())
                             weather.close()
                             self.status = status
@@ -209,6 +210,8 @@ class ObservingConditions:
                  return status
             else:
                 breakpoint()
+            self.status = status
+            return status
                 
 
         if self.site_is_generic or self.is_wema:  #These operations are common to a generic single computer or wema site.
