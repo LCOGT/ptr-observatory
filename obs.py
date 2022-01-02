@@ -166,14 +166,14 @@ class Observatory:
             if self.hostname in self.config['wema_hostname']:
                 self.is_wema = True
                 g_dev['wema_share_path'] = config['wema_share_path']
-                self.wema_path = g_dev['wema_path']
+                self.wema_path = g_dev['wema_share_path']
             else:  
                 #This host is a client
                 self.is_wema = False  #This is a client.
                 self.site_path = config['client_share_path']
                 g_dev['site_path'] = self.site_path
                 g_dev['wema_share_path']  = self.site_path  # Just to be safe.
-                self.wema_path = g_dev['wema_path'] 
+                self.wema_path = g_dev['wema_share_path'] 
         else:
             self.is_wema = False  #This is a client.
             self.site_path = config['client_share_path']
@@ -500,6 +500,7 @@ class Observatory:
             # `type` devices, with key=name and val=device object itself.
             devices_of_type = self.all_devices.get(dev_type, {})
             device_names = devices_of_type.keys()
+
             for device_name in device_names:
                 # Get the actual device object...
                 device = devices_of_type[device_name]
