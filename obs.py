@@ -184,6 +184,8 @@ class Observatory:
              self.site_is_specific = True
         else:
             self.site_is_specific = False
+            
+        
         self.last_request = None
         self.stopped = False
         self.status_count = 0
