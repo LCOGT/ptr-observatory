@@ -1,7 +1,7 @@
 0# -*- coding: utf-8 -*-
 '''
 Created on Fri Aug  2 11:57:41 2019
-Updates 20200911b   WER
+Updates 20220102 20:32 WER
 
 @author: wrosing
 '''
@@ -10,8 +10,8 @@ import json
 
 '''
 Ports.txt
-Tested 20200925  
-
+Tested 202009
+25  
 COM8    SkyRoof
 COM9    PWI4
 COM10   PWI4
@@ -113,7 +113,7 @@ site_config = {
         'sequencer': 'sequencer1'
         },
     'device_types': [
-        'observing_conditions',
+        'observing_conditions1',
         'enclosure',
         'mount',
         'telescope',
