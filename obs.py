@@ -159,33 +159,34 @@ class Observatory:
         self.name = name
         self.site_name = name
         self.config = config
-       
+
         self.site = config['site']
         if self.config['wema_is_active']:
             self.hostname = self.hostname = socket.gethostname()
             if self.hostname in self.config['wema_hostname']:
                 self.is_wema = True
                 g_dev['wema_share_path'] = config['wema_share_path']
-                self.wema_path = g_dev['wema_path']
+                self.wema_path = g_dev['wema_share_path']
+                self.site_path = self.wema_path
             else:  
                 #This host is a client
                 self.is_wema = False  #This is a client.
                 self.site_path = config['client_share_path']
                 g_dev['site_path'] = self.site_path
                 g_dev['wema_share_path']  = self.site_path  # Just to be safe.
-                self.wema_path = g_dev['wema_path'] 
+                self.wema_path = g_dev['wema_share_path'] 
         else:
             self.is_wema = False  #This is a client.
             self.site_path = config['client_share_path']
             g_dev['site_path'] = self.site_path
             g_dev['wema_share_path']  = self.site_path  # Just to be safe.
-            self.wema_path = g_dev['wema_share_path'] 
+            self.wema_path = g_dev['wema_share_path']
+            
         if self.config['site_is_specific']:
              self.site_is_specific = True
         else:
             self.site_is_specific = False
-            
-        
+
         self.last_request = None
         self.stopped = False
         self.status_count = 0
@@ -487,6 +488,7 @@ class Observatory:
         status = {}
         # Loop through all types of devices.
         # For each type, we get and save the status of each device.
+        breakpoint()
         if not self.config['wema_is_active']:
             device_list = self.device_types
             remove_enc = False
@@ -506,6 +508,7 @@ class Observatory:
                 # Get the actual device object...
                 device = devices_of_type[device_name]
                 # ...and add it to main status dict.
+                breakpoint()
                 if device_name in self.config['wema_types'] and (self.is_wema or self.site_is_specific):
                     result = device.get_status(g_dev)
                     if self.site_is_specific:

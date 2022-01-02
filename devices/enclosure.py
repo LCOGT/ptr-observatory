@@ -87,7 +87,7 @@ class Enclosure:
             except:
                  print("ASCOM enclosure NOT connected, proabably the App is not connected to telescope.")
         else:
-            self.site_is_generic = True     #NB NB this seems to be a debug expediancy.
+            self.site_is_generic = False    #NB NB Changed to False for MRC from FAT where True
             # breakpoint()  # All test code
             # quick = []
             # self.get_quick_status(quick)
@@ -96,7 +96,7 @@ class Enclosure:
         #self.status = None   #  May need a status seed if site specific.
         #self.state = 'Ok'
         
-    def get_status(self) -> dict: 
+    def get_status(self) -> dict:
         if not self.is_wema and self.site_has_proxy:
             if self.config['site_IPC_mechanism'] == 'shares':
                 try:
@@ -141,6 +141,9 @@ class Enclosure:
                 g_dev['enc'].status = status
             else:
                 breakpoint()
+            self.status = status
+            g_dev['enc'].status = status
+            return status
 
         if self.site_is_generic or self.is_wema:#  NB Should be AND?
             try:
@@ -227,7 +230,7 @@ class Enclosure:
                 # status['dome_slewing'] = in_motion
                 # # g_dev['redis'].set('dome_slewing', in_motion, ex=3600)
                 # # g_dev['redis'].set('enc_status', status, ex=3600)
-        if self.config['site_IPC_mechanism'] == 'shares':
+        if self.is_wema and self.config['site_IPC_mechanism'] == 'shares':
             try:
                 enclosure = open(self.config['wema_share_path']+'enclosure.txt', 'w')
                 enclosure.write(json.dumps(status))
@@ -251,7 +254,7 @@ class Enclosure:
                         enclosure.close()
                         print("4th try to write enclosure status.")
 
-        elif self.config['site_IPC_mechanism'] == 'redis':
+        elif self.is_wema and self.config['site_IPC_mechanism'] == 'redis':
             g_dev['redis'].set('enc_status', status)  #THis needs to become generalized IPC 
             
 # =============================================================================
@@ -259,7 +262,8 @@ class Enclosure:
 # =============================================================================
 
         #Here we check if the observer has sent the WEMA any commands.
-        mount_command = None
+        mnt_command = None
+        redis_command = None
         if self.is_wema and self.site_has_proxy and self.config['site_IPC_mechanism'] == 'shares':
             _redis = False
             # NB NB THis really needs a context manage so no dangling open files
