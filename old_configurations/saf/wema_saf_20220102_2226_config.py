@@ -518,9 +518,7 @@ site_config = {
         },
     },
 }
-get_ocn_status = None
-get_enc_status = None
- 
+
 if __name__ == '__main__':
     j_dump = json.dumps(site_config)
     site_unjasoned = json.loads(j_dump)
