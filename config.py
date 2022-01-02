@@ -1,813 +1,450 @@
-0# -*- coding: utf-8 -*-
-'''
-Created on Fri Aug  2 11:57:41 2019
-Updates 20200911b   WER
 
-@author: wrosing
-'''
+import win32com.client
+import redis
+import time
+# import requests
 import json
-
-
-'''
-Ports.txt
-Tested 20200925  
-
-COM8    SkyRoof
-COM9    PWI4
-COM10   PWI4
-COM11   Dew Heater
-COM12   EFA
-COM13   Alnitak Screen
-COM14  	Gemini
-COM15   Darkslide
-COM16   Camera Peg
-        Pwr 1  FLI unPlug
-        Pwr 2
-        Pwr 3
-        Pwr 4   Cam and filters.
-Com17   OTA Peg
-        Pwr 1  Gemini
-        Pwr 2 EFA
-
-Located on CDK 14 OTA:
-
-Pegasus Astro  COM17
-PW EFA PWI3    COM12
-PW DEW Heat    COM11
-GEMINI         COM14
-
-Located on Camera Assembly:
-
-Pegasus Astro   COM16
-Vincent Shutt   COM15   Darkslide
-FlI FW 1     Closest to tel
-FlI FW 2     closest to cam  flifil0
-QHY600         AstroImaging Equipment
+import socket
+from global_yard import g_dev
+import config
+from config import get_ocn_status
+# import ptr_events
 
 
 '''
 
-#NB NB NB json is not bi-directional with tuples (), instead, use lists [], nested if tuples are needed.
+This module contains the weather class.  When get_status() is called the weather situation
+is evaluated and self.wx_is_ok  and self.open_is_ok is evaluated and published along
+with self.status, a dictionary.
 
-site_name = 'mrc'    #NB These must be unique across all of PTR. Pre-pend with airport code if needed: 'sba_wmdo'
-site_config = {
-    'site': str(site_name).lower(),
-    'debug_site_mode': False,
-    #'owner':  ['google-oauth2|102124071738955888216'],  # Neyle
-    'owner':  ['google-oauth2|112401903840371673242'],  # Wayne
-    'owner_alias': ['WER'],
-    'admin_aliases': ["ANS", "WER", "TB", "DH", "KVH", "KC"],
-    
+This module should be expanded to integrate multiple Wx sources, particularly Davis and
+SkyAlert.
 
-     'site_is_generic':  False,   # A simplee single computer ASCOM site.
-     'site_is_specific':  False,  # Indicates some special code for a single site.
-#                                  # Intention it is found in this file.
-#                                  # Fat is intended to be simple since 
-#                                  # there is so little to control.
-    'site_path':  'Q:/',     # Generic place ofor this host to stash.
-#                                  #NB for the client this is the site archive location, maybe call it that?
-#     'client_path': 'F:/ptr/',
-    'site_IPC_mechanism':  'redis',   # ['None', shares', 'shelves', 'redis']  Pick One     
-#     'site_share_path':  'W:/',  # Presumably also where shelves are found   
-#                                                       # Meant to be used by mnt/tel's.
-    'wema_is_active':  True,     # True if an agent is used at a site. 
-                                  # Wemas are split sites -- at least two CPS's sharing the control.
+Weather holds are counted only when they INITIATE within the Observing window. So if a
+hold started just before the window and opening was late that does not count for anti-
+flapping purposes.
 
-    'wema_share_path':  'Q:/ptr/wema_transfer/',  # Meant to be where Wema puts status data.
+This is module sends 'signals' through the Events layer then TO the enclosure by checking
+as sender that an OPEN for example can get through the Events layer. It is Mandatory
+the receiver (the enclosure in this case) also checks the Events layer.  The events layer
+is populated once per observing day with default values.  However the dictionary entries
+can be modified for debugging or simulation purposes.
+
+'''
 
 
-    
-    
-    'wema_hostname': ['MRC-WMS-ENC'],
-
-    'redis_ip': '10.15.0.109',  #'127.0.0.1', None if no redis path present, 
-                                #localhost if redis is self-contained
-
-    'defaults': {
-        'observing_conditions': 'observing_conditions1',
-        'enclosure': 'enclosure1',
-        'mount': 'mount1',
-        'telescope': 'telescope1',
-        'focuser': 'focuser1',
-        'rotator': 'rotator1',
-        'selector':  None,
-        'screen': 'screen1',
-        'filter_wheel': 'filter_wheel1',
-        'camera': 'camera_1_1',
-        'sequencer': 'sequencer1'
-        },
-    'device_types': [
-        'observing_conditions',
-        'enclosure',
-        'mount',
-        'telescope',
-        # 'screen',
-        'rotator',
-        'focuser',
-        'selector',
-        'filter_wheel',
-        'camera',
-        'sequencer',
-        ],
-     'wema_types': [
-        'observing_conditions',
-        'enclosure',    
-        ],
-     'short_status_devices':  [
-        # 'observing_conditions',
-        # 'enclosure',
-        'mount',
-        'telescope',
-        # 'screen',
-        'rotator',
-        'focuser',
-        'selector',
-        'filter_wheel',
-        'camera',
-        'sequencer',
-        ],
-    'name': 'Mountain Ranch Camp Observatory 0m35f7.2',
-    'airport_code': 'SBA',
-    'telescope_description': '0m35 f7.2 Planewave CDK',
-    #'site_path': 'Q:/',     #Really important, this is where state and results are stored. Can be a NAS server.
-    'location': 'Santa Barbara, Californa,  USA',
-    'observatory_url': 'https://starz-r-us.sky/clearskies',
-    'description':  '''
-                    Now is the time for all good persons
-                    to get out and vote early and often lest
-                    we lose charge of our democracy.
-                    ''',    #i.e, a multi-line text block supplied by the owner.  Must be careful about the contents for now.                 
-    'mpc_code':  'ZZ23',    #This is made up for now.
-    'time_offset':  -7,
-    'TZ_database_name':  'America/Los_Angeles',
-    'timezone': 'PDT',      
-    'latitude': 34.459375,     #Decimal degrees, North is Positive
-    'longitude': -119.681172,   #Decimal degrees, West is negative
-    'elevation': 317.75,    # meters above sea level
-    'reference_ambient':  5.0,  #Degrees Celsius.  Alternately 12 entries, one for every - mid month.
-    'reference_pressure':  977.83,  #mbar Alternately 12 entries, one for every - mid month.
-    'site_in_automatic_default': "Automatic",   #"Manual", "Shutdown"
-    'automatic_detail_default': "Enclosure is set to Automatic mode.",
-    
-    'auto_eve_bias_dark': False,
-    'auto_eve_sky_flat': False,
-    'auto_morn_sky_flat': False,
-    'auto_morn_bias_dark':False,
-    're-calibrate_on_solve': True, 
-    
-    'observing_conditions': {
-        'observing_conditions1': {
-            'parent': 'site',
-            'name': 'Weather Station #1',
-            'driver': 'ASCOM.SkyAlert.ObservingConditions',
-            'driver_2': 'ASCOM.SkyAlert.SafetyMonitor',
-            'driver_3': None,
-            'redis_ip': '10.15.0.109',   #None if no redis path present
-            'has_unihedron': False      #Supplied for now via Redis at MRC.
-
-            },
-        },
+def linearize_unihedron(uni_value):  # Need to be coefficients in config.
+    #  Based on 20180811 data
+    uni_value = float(uni_value)
+    if uni_value < -1.9:
+        uni_corr = 2.5**(-5.85 - uni_value)
+    elif uni_value < -3.8:
+        uni_corr = 2.5**(-5.15 - uni_value)
+    elif uni_value <= -12:
+        uni_corr = 2.5**(-4.88 - uni_value)
+    else:
+        uni_corr = 6000
+    return uni_corr
 
 
-    'enclosure': {
-        'enclosure1': {
-            'parent': 'site',
-            'name': 'Megawan',
-            'hostIP':  '10.15.0.65',
-            'driver': 'ASCOM.SkyRoofHub.Dome',    #  Not really a dome for Skyroof.
-            'redis_ip': '10.15.0.109',   #None if no redis path present
-            'startup_script':  None,
-            'recover_script':  None,
-            'shutdown_script':  None,
-            'has_lights':  True,
-            'controlled_by':  ['mnt1', 'mnt2'],
-            'is_dome': False,
-            'settings': {
-                'lights':  ['Auto', 'White', 'Red', 'IR', 'Off'],
-                'roof_shutter':  ['Auto', 'Open', 'Close', 'Lock Closed', 'Unlock'],
-                },
-            'eve_bias_dark_dur':  2.0,   #hours Duration, prior to next.
-            'eve_screen_flat_dur': 1.0,   #hours Duration, prior to next.
-            'operations_begin':  -1.0,   #  - hours from Sunset
-            'eve_cooldown_offset': -.99,   #  - hours beforeSunset
-            'eve_sky_flat_offset':  0.5,   #  - hours beforeSunset 
-            'morn_sky_flat_offset':  0.4,   #  + hours after Sunrise
-            'morning_close_offset':  0.41,   #  + hours after Sunrise
-            'operations_end':  0.42,
-            },
-# =============================================================================
-#     'web_cam': {
-#         'web_cam1 ': {
-#             'parent': 'enclosure1',
-#             'name': 'MegaCam',
-#             'desc':  'AXIS PTZ w control',
-#             'driver': 'http://10.15.0.19',
-#             'fov':  '90.0',
-#             'altitude': '90.0',
-#             'azimuth':  '0.0'      #or '180.0 if Pole is low.
-#             },
-#         #Need to find a way to get this supported and displaying and ultimately logging the 10 micron sky signal.
-# =============================================================================
-# =============================================================================
-#         'web_cam2 ': {               #currently no support for building this object.
-#             'parent': 'enclosure1',
-#             'name': 'FLIR',
-#             'desc':  'FLIR NIR 10 micron Zenith View 90 deg',
-#             'driver': 'http://10.15.0.18',
-#             'fov':  '90.0'
-#             },
-#         },
-# =============================================================================
-    #Need to eventually add skycam here along with seeing monitor.
-    },
+def f_to_c(f):
+    return round(5*(f - 32)/9, 2)
 
 
+class ObservingConditions:
 
-    'mount': {
-        'mount1': {
-            'parent': 'enclosure1',
-            'name': 'eastpier',
-            'hostIP':  '10.15.0.30',
-            'hostname':  'eastpier',
-            'desc':  'Planewave L500 AltAz',
-            'driver': 'ASCOM.PWI4.Telescope',  # Was 'ASCOM.AltAzDS.Telescope' prior to 20210417 WER
-            'startup_script':  None,
-            'recover_script':  None,
-            'shutdown_script':  None,  
-            'alignment': 'Alt-Az',
-            'default_zenith_avoid': 7.0,   #degrees floating
-            'east_ra_correction': 0.0,
-            'east_dec_correction': 0.0,
-            'west_ha_correction_r': 0.0,
-            'west_dec_correction_r': 0.0,
-            'has_paddle': False,
-            'pointing_tel': 'tel1',
-            'Selector':{
-                'available': False,         #If True add these lines;
-                # 'positions': 4,
-                # 'inst 1': 'camera_1_1',      #inst_1 is always the default until status reports different
-                # 'inst 2': 'echelle1',     #These are all types od cameras.
-                # 'inst 3': 'camera3',
-                # 'inst 4': 'lowres1',
-                },
-            'settings': {
-			    'latitude_offset': 0.0,     #Decimal degrees, North is Positive. These *could* be slightly different than site.
-			    'longitude_offset': 0.0,    #Decimal degrees, West is negative  
-			    'elevation_offset': 0.0,    # meters above sea level
-                'home_park_altitude': 0,    #Having these settings is important for PWI4 where it can easily be messed up.
-                'home_park_azimuth': 180,
-                'fixed_screen_azimuth': 167.25,
-                'Fixed_screen _altitude': 0.54,
-                'refraction_on': True,
-                'model_on': True,
-                'rates_on': True,
-                'horizon':  20,
-                'horizon_detail': {
-                     '0': 32,
-                     '30': 35,
-                     '36.5': 39,
-                     '43': 28.6,
-                     '59': 32.7,
-                     '62': 28.6,
-                     '65': 25.2,
-                     '74': 22.6,
-                     '82': 20,
-                     '95.5': 20,
-                     '101.5': 14,
-                     '107.5': 12,
-                     '130': 12,
-                     '150': 20,
-                     '172': 28,
-                     '191': 25,
-                     '213': 20,
-                     '235': 15.3,
-                     '260': 11,
-                     '272': 17,
-                     '294': 16.5,
-                     '298.5': 18.6,
-                     '303': 20.6,
-                     '309': 27,
-                     '315': 32,
-                     '360': 32,
-                     },
-                'model': {
-                    'IH': 0, 
-                    'ID': 0., 
-                    'WH': 0.,
-                    'WD': 0.,
-                    'MA': 0., 
-                    'ME': 0.,
-                    'CH': 0., 
-                    'NP': 0.,
-                    'TF': 0.,
-                    'TX': 0., 
-                    'HCES': 0.,
-                    'HCEC': 0., 
-                    'DCES': 0.,
-                    'DCEC': 0.,
-                    'IA': 0.0,
-                    'IE': 0.0,
-                    'CA': 0.0,
-                    'NPAE': 0.0,
-                    'AN': 0.0,
-                    'AE': 0.0,     #AW?
-                    'ACES': 0.0,
-                    'ACEC': 0.0,
-                    'ECES': 0.0,
-                    'ECEC': 0.0,
-                }
+    def __init__(self, driver: str, name: str, config: dict, astro_events):
+        #  We need a way to specify whihc computer in the wema in the
+        #  the singular config_file or we have two configurations.
+        #  import socket
+        #  print(socket.gethostname())
 
-            },
-        },
+        self.name = name
+        self.astro_events = astro_events
+        g_dev['ocn'] = self
+        self.site = config['site']
+        self.config = config
+        self.sample_time = 0
+        self.ok_to_open = 'No'
+        self.observing_condtions_message = '-'
+        self.wx_is_ok = False
+        self.wx_hold = False
+        self.wx_to_go = 0.0
+        self.wx_hold_last_updated = time.time()   # This is meant for a stale check on the Wx hold report
+        self.wx_hold_tally = 0
+        self.wx_clamp = False
+        self.clamp_latch = False
+        self.wait_time = 0        # A countdown to re-open
+        self.wx_close = False     # If made true by Wx code, a 15 minute timeout will begin when Wx turns OK
+        self.wx_hold_until_time = None
+        self.wx_hold_count = 0     # if >=5 inhibits reopening for Wx
+        self.wait_time = 0        # A countdown to re-open
+        self.wx_close = False     # If made true by Wx code, a 15 minute timeout will begin when Wx turns OK
+        self.wx_system_enable = True   # Purely a debugging aid.
+        self.wx_test_cycle = 0
+        self.prior_status = None
+        self.prior_status_2 = None
+        self.wmd_fail_counter = 0
+        self.temperature = self.config['reference_ambient']  # Index needs
+        self.pressure = self.config['reference_pressure']  # to be months.
+        self.unihedron_connected = True  # NB NB NB His needs improving, driving from config
+        self.hostname = socket.gethostname()
+        self.site_is_specific = False
+        # =============================================================================
+        #         Note site_in_automatic found in the Enclosure object.
+        # =============================================================================
+        if self.hostname in self.config['wema_hostname']:
+            self.is_wema = True
+        else:
+            self.is_wema = False
+        if self.config['wema_is_active']:
+            self.site_has_proxy = True  # NB Site is proxy needs a new name.
+        else:
+            self.site_has_proxy = False
+        if self.site in ['simulate',  'dht']:  # DEH: added just for testing purposes with ASCOM simulators.
+            self.observing_conditions_connected = True
+            self.site_is_proxy = False
+            print("observing_conditions: Simulator drivers connected True")
+        elif self.config['site_is_specific']:
+            self.site_is_specific = True
+            #  Note OCN has no associated commands.
+            #  Here we monkey patch
 
-    },
+            self.get_status = get_ocn_status
+            # Get current ocn status just as a test.
+            self.status = self.get_status(g_dev)
+            # breakpoint()  # All test code
+            # quick = []
+            # self.get_quick_status(quick)
+            # print(quick)
+        elif (self.is_wema or self.site_is_specific):
+            #  This is meant to be a generic Observing_condition code
+            #  instance that can be accessed by a simple site or by the WEMA,
+            #  assuming the transducers are connected to the WEMA.
+            self.site_is_generic = True
+            win32com.client.pythoncom.CoInitialize()
+            self.sky_monitor = win32com.client.Dispatch(driver)
+            self.sky_monitor.connected = True   # This is not an ASCOM device.
+            driver_2 = config['observing_conditions']['observing_conditions1']['driver_2']
+            self.sky_monitor_oktoopen = win32com.client.Dispatch(driver_2)
+            self.sky_monitor_oktoopen.Connected = True
+            driver_3 = config['observing_conditions']['observing_conditions1']['driver_3']
+            if driver_3 is not None:
+                self.sky_monitor_oktoimage = win32com.client.Dispatch(driver_3)
+                self.sky_monitor_oktoimage.Connected = True
+            print("observing_conditions: sky_monitors connected = True")
+            if config['observing_conditions']['observing_conditions1']['has_unihedron']:
+                self.unihedron_connected = True
+                try:
+                    driver = config['observing_conditions']['observing_conditions1']['uni_driver']
+                    port = config['observing_conditions']['observing_conditions1']['unihedron_port']
+                    self.unihedron = win32com.client.Dispatch(driver)
+                    self.unihedron.Connected = True
+                    print("observing_conditions: Unihedron connected = True, on COM" + str(port))
+                except:
+                    print("Unihedron on Port 10 is disconnected.  Observing will proceed.")
+                    self.unihedron_connected = False
+                    # NB NB if no unihedron is installed the status code needs to not report it.
+        #self.status = None   # This **may** need to have a first status if site_specific is True.
+        self.last_wx = self.status
 
-    'telescope': {
-        'telescope1': {
-            'parent': 'mount1',
-            'name': 'Main OTA',
-            'desc':  'Planewave CDK 14 F7.2',
-            'driver': 'None',                     #Essentially this device is informational.  It is mostly about the optics.
-            'startup_script':  None,
-            'recover_script':  None,
-            'shutdown_script':  None,  
-            'collecting_area':  76146.0,
-            'obscuration':  23.5,
-            'aperture': 356,
-            'f-ratio':  7.2,   #This and focal_length can be refined after a solve.
-            'focal_length': 2563,
-            'screen_name': 'screen1',
-            'focuser_name':  'focuser1',
-            'rotator_name':  'rotator1',
-            'has_instrument_selector': False,   #This is a default for a single instrument system
-            'selector_positions': 1,            #Note starts with 1
-            'instrument names':  ['camera_1_1'],
-            'instrument aliases':  ['QHY600Mono'],
-            'configuration': {
-                 "position1": ["darkslide1", "filter_wheel1", "filter_wheel2", "camera1"]
-                 },
-            'camera_name':  'camera_1_1',
-            'filter_wheel_name':  'filter_wheel1',
-            'has_fans':  True,
-            'has_cover': False,
-            'settings': {
-                'fans': ['Auto','High', 'Low', 'Off'],
-                'offset_collimation': 0.0,    #  Units of asec
-                'offset_declination': 0.0,
-                'offset_flexure': 0.0,
-                },
-        },
-
-            # 'telescope2': {
-            #     'parent': 'mount1',
-            #     'name': 'Aux OTA',
-            #     'desc':  'WO Redcat 0m051f4.9',    #'Astro=Physics AP185 Refractor',
-            #     'driver': None,                     #Essentially this device is informational. It is mostly about the optics.
-            #     'startup_script':  None,
-            #     'recover_script':  None,
-            #     'shutdown_script':  None,  
-            #     'collecting_area':  2043,     #  Sq mm.
-            #     'obscuration':  0.0,
-            #     'aperture':51,
-            #     'f-ratio':  5.9,   #This and focal_length can be refined after a solve.
-            #     'focal_length': 250,   #Please replace with measured value
-            #     'has_dew_heater':  False,
-            #     'screen_name': 'screen2',
-            #     'focuser_name':  'focuser2',
-            #     'rotator_name':  'rotator2',
-            #     'camera_name':  'sq022',
-            #     'filter_wheel_name':  'filter2',
-            #     'has_fans':  False,
-            #     'has_cover':  True,
-            #     'settings': {
-            #         'fans': ['Auto','High', 'Low', 'Off'],
-            #         'offset_collimation': 0.0,    #If the mount model is current, these numbers are usually near 0.0
-            #         'offset_declination':0.0,
-            #         'offset_flexure': 0.0,
-            #         },
-            # },
-    },
-
-    'rotator': {
-        'rotator1': {
-            'name': 'rotator',
-            'desc':  'Opetc Gemini',
-            'driver': 'ASCOM.AltAzDS.Rotator',
-            'startup_script':  'None',
-            'recover_script':  'None',
-            'shutdown_script':  'None' , 
-            'minimum': '-180.0',
-            'maximum': '360.0',
-            'step_size':  '0.0001',
-            'backlash':  '0.0',
-            'unit':  'degree'
-            },
-    # 'rotator2': {
-    #       'parent': 'telescope2',
-    #       'name': 'Aux Rotator',
-    #       'desc':  'Opetc Gemini',
-    #       'driver': 'ASCOM.AltAzDS.Rotator',
-    #       'startup_script':  'None',
-    #       'recover_script':  'None',
-    #       'shutdown_script':  'None' , 
-    #       'minimum': '-180.0',
-    #       'maximum': '360.0',
-    #       'step_size':  '0.0001',
-    #       'backlash':  '0.0',
-    #       'unit':  'degree'
-    #       },
-    },
-
-    'screen': {
-        'screen1': {
-            'parent': 'telescope1',
-            'name': 'screen',
-            'desc':  'Optec Alnitak 24"',
-            'driver': 'COM13',  #This needs to be a four or 5 character string as in 'COM8' or 'COM22'
-            'startup_script':  None,
-            'recover_script':  None,
-            'shutdown_script':  None,  
-            'minimum': 5.0,   #This is the % of light emitted when Screen is on and nominally at 0% bright.
-            'saturate': 170,  #Out of 0.0 - 255, this is the last value where the screen is linear with output.
-                                #These values have a minor temperature sensitivity yet to quantify.
-            },
+    def get_status(self):   # This is purely generic code for a generic site.
+                            # It may be overwritten with a monkey patch found 
+                            # in the appropriate config_file.py
+        '''
+        Regularly calling this routine returns weather status dict for AWS, evaluates the Wx 
+        reporting and manages temporary closes, known as weather-holds.
         
-        # 'screen2': {
-        #     'parent': 'telescope1',
-        #     'name': 'screen',
-        #     'desc':  'Optec Flip_Flat"',
-        #     'driver': 'COM19',  #This needs to be a four or 5 character string as in 'COM8' or 'COM22'
-        #     'startup_script':  'None',
-        #     'recover_script':  'None',
-        #     'shutdown_script':  'None',  
-        #     'minimum': '5.0',   #This is the % of light emitted when Screen is on and nominally at 0% bright.
-        #     'saturate': '170',  #Out of 0.0 - 255, this is the last value where the screen is linear with output.
-        #                       #These values have a minor temperature sensitivity yet to quantify.
-        #   },
-    },
-
-    'focuser': {
-        'focuser1': {
-            'parent': 'telescope1',
-            'name': 'focuser',
-            'desc':  'Optec Gemini',
-            'driver': 'ASCOM.OptecGemini.Focuser',
-            'startup_script':  None,
-            'recover_script':  None,
-            'shutdown_script':  None, 
-            #*********Guesses   7379@10 7457@20  7497 @ 25
-            'reference': 6850, #20210710    #7418,    # Nominal at 15C Primary temperature, in microns not steps. Guess
-            'ref_temp':  15,      # Update when pinning reference  Larger at lower temperatures.
-            'coef_c': 7.895,    # Negative means focus moves out (larger numerically) as Primary gets colder
-            'coef_0': 6850,  #20210710# Nominal intercept when Primary is at 0.0 C.
-            'coef_date':  '20210710',   #A Guess as to coef_c
-            'use_local_temp':  True,
-            'minimum': 0,    # NB this needs clarifying, we are mixing steps and microns.
-            'maximum': 12700,
-            'step_size': 1,
-            'backlash':  0,
-            'unit': 'steps',
-            'unit_conversion':  9.09090909091,  # Taken from Gemini at mid-range.
-            'has_dial_indicator': False
-            },
-        # 'focuser2': {
-        #      'parent': 'telescope2',
-        #      'name': 'aux_focuser',
-        #      'desc':  'Optec Gemini',
-        #      'driver': 'ASCOM.OptecGemini.Focuser2',
-        #      'startup_script':  'None',
-        #      'recover_script':  'None',
-        #      'shutdown_script':  'None', 
-        #      'reference':  '6300',    #Nominal at 20C Primary temperature, in microns not steps.
-        #      'ref_temp':   '15',      #Update when pinning reference
-        #      'coef_c': '0',   #negative means focus moves out as Primary gets colder
-        #      'coef_0': '0',  #Nominal intercept when Primary is at 0.0 C.
-        #      'coef_date':  '20200723,
-        #      'minimum': '0',    #NB this needs clarifying, we are mixing steps and microns.
-        #      'maximum': '12700',
-        #      'step_size': '1',
-        #      'backlash':  '0',
-        #      'unit': 'steps',
-        #      'unit_conversion':  '0.090909090909091',
-        #      'has_dial_indicator': 'false'
-        #      },
-       
-    },
-    'selector': {
-        'selector1': {
-            'parent': 'telescope1',
-            'name': 'None',
-            'desc':  'Null Changer',
-            'driver': None,
-            'com_port': None,
-            'startup_script':  None,
-            'recover_script':  None,
-            'shutdown_script':  None,
-            'ports': 1,
-            'instruments':  ['Main_camera'], #, 'eShel_spect', 'planet_camera', 'UVEX_spect'],
-            'cameras':  ['camera_1_1'], # , 'camera_1_2', None, 'camera_1_4'],
-            'guiders':  [None], # , 'guider_1_2', None, 'guide_1_4'],
-            'default': 0
-            },
-
-    },
-    #Add CWL, BW and DQE to filter and detector specs.   HA3, HA6 for nm or BW.
-    'filter_wheel': {
-        "filter_wheel1": {
-            "parent": "telescope1",
-            "alias": "Dual filter wheel",
-            "desc":  'FLI Centerline Custom Dual 50mm sq.',
-            #"driver": "Maxim",   #['ASCOM.FLI.FilterWheel1', 'ASCOM.FLI.FilterWheel2'],   #"Maxim",   #
-            "driver": "Maxim.CCDCamera",  #  'ASCOM.FLI.FilterWheel',   #'MAXIM',
-            "dual_wheel": True,
-            # "parent": "telescope1",
-            # "alias": "CWL2",
-            # "desc":  'PTR Custom FLI dual wheel.',
-            # "driver": ['ASCOM.FLI.FilterWheel1', 'ASCOM.FLI.FilterWheel2'],   #  'ASCOM.QHYFWRS232.FilterWheel',  #"Maxim",   #['ASCOM.FLI.FilterWheel1', 'ASCOM.FLI.FilterWheel2'],
-            'startup_script':  None,
-            'recover_script':  None,
-            'shutdown_script':  None,
-            'ip_string': "",
-            'settings': {
-                'filter_count': 23,
-                'home_filter':  2,
-                'default_filter':  'w',
-                'filter_reference': 2,
-                'filter_data': [['filter', 'filter_index', 'filter_offset', 'sky_gain', 'screen_gain', 'abbreviation'],
-                                ['air',     [0, 0], -1000,  280,  [2, 17], 'ai'], # 0
-                                ['dif',     [4, 0],     0,  260,  [2, 17], 'df'], # 1
-                                ['w',       [2, 0],     0,  249,  [2, 17], 'w '], # 2
-                                ['CR',      [1, 0],     0,  .8,   [2, 17], 'CR'], # 3
-                                ['N2',      [3, 0],     0,  .7,   [2, 17], 'N2'], # 4
-                                ['up',      [0, 5],     0,  .1,   [1, 17], 'up'], # 5
-                                ['gp',      [0, 6],     0,  130,  [2, 17], 'gp'], # 6
-                                ['rp',      [0, 7],     0,  45,   [2, 17], 'rp'], # 7
-                                ['ip',      [0, 8],     0,  12,   [2, 17], 'ip'], # 8
-                                ['z',       [5, 0],     0,  4,    [2, 17], 'z'], # 9
-                                ['PL',      [0, 4],     0,  250,  [2, 17], "PL"], # 10
-                                ['PR',      [0, 3],     0,  45,   [2, 17], 'PR'], # 11
-                                ['PG',      [0, 2],     0,  40,   [2, 17], 'PG'], # 12
-                                ['PB',      [0, 1],     0,  60,   [2, 17], 'PB'], # 13
-                                ['O3',      [7, 0],     0,  2.6,  [2, 17], '03'], # 14
-                                ['HA',      [6, 0],     0,  0.6,  [2, 17], 'HA'], # 15
-                                ['S2',      [8, 0],     0,  0.6,  [2, 17], 'S2'], # 16
-                                ['difup',   [4, 5],     0,  0.01, [2, 17], 'du'], # 17
-                                ['difgp',   [4, 6],     0,  0.01, [2, 17], 'dg'], # 18
-                                ['difrp',   [4, 7],     0,  0.01, [2, 17], 'dr'], # 19
-                                ['difip',   [4, 8],     0,  0.01, [2, 17], 'di'], # 20
-                                ['dark',   [10, 9],     0,  0.01, [2, 17], 'dk']],# 21
-                                #Screen = 100; QHY400 ~ 92% DQE   HDR Mode    Screen = 160 sat  20190825 measured.
-                'filter_screen_sort':  [0, 1, 2, 10, 7, 19, 6, 18, 12, 11, 13, 8, 20, 3, \
-                                        14, 15, 4, 16],   #  9, 21],  # 5, 17], #Most to least throughput, \
-                                #so screen brightens, skipping u and zs which really need sky.
-                'filter_sky_sort':     [15, 3, 14,  8, 13, 11, 12, \
-                                         6,  7, 10, 2, 1, 0]  #Least to most throughput  5, 9, 4, 16, 
-
-            },
-        },
-        # "filter_wheel2": {
-        #     "parent": "telescope1",
-        #     "alias": "CWL2",
-        #     "desc":  'QHYRS232 5 Position COM22',
-        #     "driver": 'ASCOM.QHYFWRS232.FilterWheel',  #"Maxim",   #['ASCOM.FLI.FilterWheel1', 'ASCOM.FLI.FilterWheel2'],
-        #     'startup_script':  'None',
-        #     'recover_script':  'None',
-        #     'shutdown_script':  'None',  
-        #     'settings': {
-        #         'filter_count': '5',
-        #         'filter_reference': '0',
-        #         'filter_data': [['filter', 'filter_index', 'filter_offset', 'sky_gain', 'screen_gain', 'abbreviation'],
-        #                         ['lpr',   '(0,  0)', '0.000', '0.01', ['2', '17'], 'lp'],  # 0
-        #                         ['tri',   '(1,  0)', '0.000', '0.01', ['2', '17'], 'tr'],  # 1
-        #                         ['air',   '(2,  0)', '-0.779', '0.01', ['2', '17'], 'ai'],  #  2
-        #                         ['dark1', '(3,  0)', '0.000', '0.00', ['2', '17'], 'dk'],  # 4
-        #                         ['dark2', '(4,  0)', '-0.779', '0.00', ['2', '17'], 'dk']],  # 5
- 
-        #         'filter_screen_sort':  ['2', '0', '1'],
-        #         'filter_sky_sort':     ['1', '0', '2']  #
-
-        #     },
-        # },
-    },
-
-
-
-
-
-
-    # A site may have many cameras registered (camera1, camera2, camera3, ...) each with unique aliases -- which are assumed
-    # to be the name an owner has assigned and in principle that name "kb01" is labeled and found on the camera.  Between sites,
-    # there can be overlap of camera names.  LCO convention is letter of cam manuf, letter of chip manuf, then 00, 01, 02, ...
-    # However this code will treat the camera name/alias as a string of arbitrary length:  "saf_Neyle's favorite_camera" is
-    # perfectly valid as an alias.
-
-
-    'camera': {
-        #'#available': ['camera_1_1'],
-        #'default': 'camera_1_1',
-        'camera_1_1': {
-            'parent': 'telescope1',
-            'name': 'sq01',      #Important because this points to a server file structure by that name.
-            'desc':  'QHY 600M Pro',
-            'driver':  "ASCOM.QHYCCD.Camera", #"Maxim.CCDCamera",   #'ASCOM.FLI.Kepler.Camera', "ASCOM.QHYCCD.Camera",   #
-            'detector':  'Sony IMX455',
-            'manufacturer':  'QHY',
-            'use_file_mode':  False,
-            'file_mode_path':  'D:/archive/sq01/maxim/',
-            
-            'settings': {
-                'temp_setpoint': -25,
-                'calib_setpoints': [25, -22.5, 20, -17.5 ],  #  Picked by day-of-year mod len(list)
-                'day_warm': False,
-                'cooler_on': True,
-                'x_start':  0,
-                'y_start':  0,
-                'x_width':  4800,   #NB Should be set up with overscan, which this camera is!  20200315 WER
-                'y_width':  3211,
-                'x_chip':  9576,   #NB Should specify the active pixel area.   20200315 WER
-                'y_chip':  6388,
-                'x_trim_offset':  8,   #  NB these four entries are guesses.
-                'y_trim_offset':  8,
-                'x_bias_start':  9577,
-                'y_bias_start' : 6389,
-                'x_active': 4784,
-                'y_active': 3194,
-                'x_pixel':  3.76,
-                'y_pixel':  3.76,
-                'pix_scale': 0.6051648849005071,
-                'x_field_deg': round(4784*0.6051648849005071/3600, 4),   #48 X 32 AMIN  3MIN X 0.5 DEG  
-                'y_field_deg': round(3194*0.6051648849005071/3600, 4),
-                'overscan_x': 24,
-                'overscan_y': 34,
-                'north_offset': 0.0,    #  These three are normally 0.0 for the primary telescope
-                'east_offset': 0.0,
-                'rotation': 0.0,
-                'min_exposure': 0.0001,
-                'max_exposure': 180.,
-                'can_subframe':  True,
-                'min_subframe':  [[128,128], '4, 4'],
-                'cycle_time':  [18, 15, 15],
-                'rbi_delay':  0,      # This being zero says RBI is not available, eg. for SBIG.
-                'is_cmos':  True,
-                'can_set_gain':  True,
-                'reference_gain': [28, 28, 28, 28],     #One val for each binning.
-                'reference_noise': [3.2, 3.2, 3.2, 3.2],    #  NB Guess
-                'reference_dark': [0.2, 0.0, 0.0, 0.0],    #Guesses?
-                'saturate':  55000,
-                'max_linearity':  55000.,
-                'fullwell_capacity': 85000,
-                'read_mode':  'Normal',
-                'readout_mode': 'Normal',
-                'readout_speed':  0.4,
-                'square_detector': False,
-                'areas_implemented': ["600%", "450%", "300%", "250%", "150%", "133%", "Full", "Sqr", '71%', '50%',  '35%', '25%', '12%'],
-                'default_area':  "Full",
-                'bin_modes':  [[2, 2], [1,1]],     #Meaning fixed binning if list has only one entry
-                'default_bin':  [2, 2],     #Always square and matched to seeing situation by owner
-                'has_darkslide':  True,
-                'darkslide_com':  'COM15',
-                'has_screen': True,
-                'screen_settings':  {
-                    'screen_saturation':  157.0,
-                    'screen_x4':  -4E-12,  #  'y = -4E-12x4 + 3E-08x3 - 9E-05x2 + 0.1285x + 8.683     20190731'
-                    'screen_x3':  3E-08,
-                    'screen_x2':  -9E-05,
-                    'screen_x1':  .1258,
-                    'screen_x0':  8.683
-                },
-            },
         
-        },
-        # 'camera_2_1': {
-        #     'parent': 'telescope1',
-        #     'name': 'sq22',      #Important because this points to a server file structure by that name.
-        #     'desc':  'QHY 600M Pro',
-        #     'driver':  "ASCOM.QHYCCD.Camera", #"Maxim.CCDCamera",   #'ASCOM.FLI.Kepler.Camera', "ASCOM.QHYCCD.Camera",   #
-        #     'detector':  'Sony IMX455',
-        #     'manufacturer':  'QHY',
-        #     'use_file_mode':  False,
-        #     'file_mode_path':  'D:/archive/sq22/maxim/',
-        #     'settings': {
-        #         'temp_setpoint': -25,
-        #         'calib_setpoints': [25, -22.5, 20, -17.5 ],  #  Picked by day-of-year mod len(list)
-        #         'day_warm': False,
-        #         'cooler_on': True,
-        #         'x_start':  0,
-        #         'y_start':  0,
-        #         'x_width':  4800,   #NB Should be set up with overscan, which this camera is!  20200315 WER
-        #         'y_width':  3211,
-        #         'x_chip':  9576,   #NB Should specify the active pixel area.   20200315 WER
-        #         'y_chip':  6388,
-        #         'x_trim_offset':  8,   #  NB these four entries are guesses.
-        #         'y_trim_offset':  8,
-        #         'x_bias_start':  9577,
-        #         'y_bias_start' : 6389,
-        #         'x_active': 4784,
-        #         'y_active': 3194,
-        #         'x_pixel':  3.76,
-        #         'y_pixel':  3.76,
-        #         'pix_scale': .605,
-        #         'x_field_deg': round(4784*1.214/3600, 4),
-        #         'y_field_deg': round(3194*1.214/3600, 4),
-        #         'overscan_x': 24,
-        #         'overscan_y': 34,
-        #         'north_offset': 0.0,    #  These three are normally 0.0 for the primary telescope
-        #         'east_offset': 0.0,
-        #         'rotation': 0.0,
-        #         'min_exposure': 0.0001,
-        #         'max_exposure': 180.,
-        #         'can_subframe':  True,
-        #         'min_subframe':  [[128,128], '4, 4'],
-        #         'cycle_time':  [18, 15, 15],
-        #         'rbi_delay':  0,      # This being zero says RBI is not available, eg. for SBIG.
-        #         'is_cmos':  True,
-        #         'can_set_gain':  True,
-        #         'reference_gain': [28, 28, 28, 28],     #One val for each binning.
-        #         'reference_noise': [3.2, 3.2, 3.2, 3.2],    #  NB Guess
-        #         'reference_dark': [0.2, 0.0, 0.0, 0.0],    #Guesses?
-        #         'saturate':  55000,               
-        #         'areas_implemented': ["600%", "450%", "300%", "250%", "150%", "133%", "Full", "Sqr", '71%', '50%',  '35%', '25%', '12%'],
-        #         'default_area':  "Full",
-        #         'bin_modes':  [[2, 2], [1,1]],     #Meaning fixed binning if list has only one entry
-        #         'default_bin':  [2, 2],     #Always square and matched to seeing situation by owner
-        #         'has_darkslide':  False,
-        #         'darkslide_com':  'COM26',
-        #         'has_screen': False,
-        #         'screen_settings':  {
-        #             'screen_saturation':  157.0,
-        #             'screen_x4':  -4E-12,  #  'y = -4E-12x4 + 3E-08x3 - 9E-05x2 + 0.1285x + 8.683     20190731'
-        #             'screen_x3':  3E-08,
-        #             'screen_x2':  -9E-05,
-        #             'screen_x1':  .1258,
-        #             'screen_x0':  8.683
-        #         },
-        #     },
+
+        Returns
+        -------
+        status : TYPE
+            DESCRIPTION.
+
+        '''
+        if not self.is_wema and self.site_has_proxy:
+            if self.config['site_IPC_mechanism'] == 'shares':
+                try:
+                    weather = open(g_dev['wema_path'] + 'weather.txt', 'r')
+                    status = json.loads(weather.readline())
+                    weather.close()
+                    self.status = status
+                    self.prior_status = status
+                    g_dev['ocn'].status = status
+                    return status
+                except:
+                    try:
+                        time.sleep(3)
+                        weather = open(g_dev['wema_path'] + 'weather.txt', 'r')
+                        status = json.loads(weather.readline())
+                        weather.close()
+                        self.status = status
+                        self.prior_status = status
+                        g_dev['ocn'].status = status
+                        return status
+                    except:
+                        try:
+                            time.sleep(3)
+                            weather = open(g_dev['wema_path'] + 'weather.txt', 'r')
+                            status = json.loads(weather.readline())
+                            weather.close()
+                            self.status = status
+                            self.prior_status = status
+                            g_dev['ocn'].status = status
+                            return status
+                        except:
+                            print("Using prior OCN status after 4 failures.")
+                            g_dev['ocn'].status =self.prior_status
+                            return self.prior_status()
+            elif self.config['site_IPC_mechanism'] == 'redis':
+                 try:
+                     status = eval(g_dev['redis'].get('wx_state'))
+                 except:
+                     status = g_dev['redis'].get('wx_state')
+                 self.status = status
+                 self.prior_status = status
+                 g_dev['ocn'].status = status
+
+                 return status
+            else:
+                breakpoint()
+                
+
+        if self.site_is_generic or self.is_wema:  #These operations are common to a generic single computer or wema site.
+            status= {}
+            illum, mag = self.astro_events.illuminationNow()
+            #illum = float(redis_monitor["illum lux"])
+            if illum > 500:
+                illum = int(illum)
+            else:
+                illum = round(illum, 3)
+            if self.unihedron_connected:
+                try:
+                    uni_measure = self.unihedron.SkyQuality   #  Provenance of 20.01 is dubious 20200504 WER
+                except:
+                    print("Unihedron did not read.")
+                    uni_measure = 0
+            if uni_measure == 0:
+                uni_measure = round((mag - 20.01),2)   #  Fixes Unihedron when sky is too bright
+                status["meas_sky_mpsas"] = uni_measure
+                self.meas_sky_lux = illum
+            else:
+                self.meas_sky_lux = linearize_unihedron(uni_measure)
+                status["meas_sky_mpsas"] = uni_measure
+
+            self.temperature = round(self.sky_monitor.Temperature, 2)
+            try:  #  NB NB Boltwood vs. SkyAlert difference.  What about FAT?
+                self.pressure = self.sky_monitor.Pressure,  #978   #Mbar to mmHg  #THIS IS A KLUDGE
+            except:
+                self.pressure = self.config['reference_pressure']
+            # NB NB NB This is a very odd problem which showed up at MRC.
+            try:
+                self.new_pressure = round(float(self.pressure[0]), 2)
+            except:
+                self.new_pressure = round(float(self.pressure), 2)
+            status = {"temperature_C": round(self.temperature, 2),
+                      "pressure_mbar": self.new_pressure,
+                      "humidity_%": self.sky_monitor.Humidity,
+                      "dewpoint_C": self.sky_monitor.DewPoint,
+                      "sky_temp_C": round(self.sky_monitor.SkyTemperature,2),
+                      "last_sky_update_s":  round(self.sky_monitor.TimeSinceLastUpdate('SkyTemperature'), 2),
+                      "wind_m/s": abs(round(self.sky_monitor.WindSpeed, 2)),
+                      'rain_rate': self.sky_monitor.RainRate,
+                      'solar_flux_w/m^2': None,
+                      'cloud_cover_%': str(self.sky_monitor.CloudCover),
+                      "calc_HSI_lux": illum,
+                      "calc_sky_mpsas": round(uni_measure,2),    #  Provenance of 20.01 is dubious 20200504 WER
+                      #"wx_ok": wx_str,  #str(self.sky_monitor_oktoimage.IsSafe),
+                      "open_ok": self.ok_to_open,
+                      'wx_hold': self.wx_hold,
+                      'hold_duration': self.wx_to_go
+                      }
+
+            dew_point_gap = not (self.sky_monitor.Temperature  - self.sky_monitor.DewPoint) < 2
+            temp_bounds = not (self.sky_monitor.Temperature < -15) or (self.sky_monitor.Temperature > 42)
+            wind_limit = self.sky_monitor.WindSpeed < 35/2.235   #sky_monitor reports m/s, Clarity may report in MPH
+            sky_amb_limit  = (self.sky_monitor.SkyTemperature - self.sky_monitor.Temperature) < -8   #"""NB THIS NEEDS ATTENTION>
+            humidity_limit = 1 < self.sky_monitor.Humidity < 85
+            rain_limit = self.sky_monitor.RainRate <= 0.001
+
+      
+            self.wx_is_ok = dew_point_gap and temp_bounds and wind_limit and sky_amb_limit and \
+                            humidity_limit and rain_limit
+            #  NB  wx_is_ok does not include ambient light or altitude of the Sun
+            if self.wx_is_ok:
+                wx_str = "Yes"
+                status["wx_ok"] = "Yes"
+            else:
+                wx_str = "No"   #Ideally we add the dominant reason in priority order.
+                status["wx_ok"] = "No"
         
-        # },
-        
-    },
+            g_dev['wx_ok']  =  self.wx_is_ok
+            if self.config['site_IPC_mechanism'] == 'shares':
+                try:
+                    weather = open(self.config['wema_share_path'] + 'weather.txt', 'w')
+                    weather.write(json.dumps(status))
+                    weather.close()
+                except:
+                    print("1st try to write weather status failed.")
+                    time.sleep(3)
+                    try:
+                        weather = open(self.config['wema_share_path'] + 'weather.txt', 'w')
+                        weather.write(json.dumps(status))
+                        weather.close()
+                    except:
+                        print("2nd try to write weather status failed.")
+                        time.sleep(3)
+                        try:
+                            weather = open(self.config['wem_sharea_path'] +'weather.txt', 'w')
+                            weather.write(json.dumps(status))
+                            weather.close()
+                        except:
+                            print("3rd try to write weather status failed.")
+                            time.sleep(3)
+                            weather = open(self.config['wema_share_path'] + 'weather.txt', 'w')
+                            weather.write(json.dumps(status))
+                            weather.close()
+                            print("4th try to write weather status.")
+            elif self.config['site_IPC_mechanism'] == 'redis':
 
-    'sequencer': {
-        'sequencer1': {
-            'parent': 'site',
-            'name': 'Sequencer',
-            'desc':  'Automation Control',
-            'driver': None,
-            'startup_script':  None,
-            'recover_script':  None,
-            'shutdown_script':  None, 
-        },
-    },
-    #As aboove, need to get this sensibly suported on GUI and in fits headers.
-    'web_cam': {
+                g_dev['redis'].set('wx_state', status)  #THis needs to become generalized IP      
 
-        'web_cam3 ': {
-            'parent': 'mount1',
-            'name': 'FLIR',
-            'desc':  'FLIR NIR 10 micron 15deg, sidecam',
-            'driver': 'http://10.15.0.17',
-            'startup_script':  None,
-            'recover_script':  None,
-            'shutdown_script':  None,  
-            'fov':  15.0,
-            'settings': {
-                'offset_collimation': 0.0,
-                'offset_declination': 0.0,
-                'offset_flexure': 0.0
+            # Only write when around dark, put in CSV format, used to calibrate Unihedron.
+            sunZ88Op, sunZ88Cl, sunrise, ephemNow = g_dev['obs'].astro_events.getSunEvents()
+            two_hours = 2/24    #  Note changed to 2 hours.   NB NB NB The times need changing to bracket skyflats.
+            if  (sunZ88Op - two_hours < ephemNow < sunZ88Cl + two_hours) and (time.time() >= \
+                  self.sample_time + 60):    #  Once a minute.
+                try:
+                    wl = open('C:/ptr/unihedron/wx_log.txt', 'a')
+                    wl.write(str(time.time()) + ', ' + str(illum) + ', ' + str(mag - 20.01) + ', ' \
+                             + str(uni_measure) + ", \n")
+                    wl.close()
+                    print('Unihedron log worked.')
+                    self.sample_time = time.time()
+                except:
+                    self.sample_time = time.time() - 61
+                    #print("redis_monitor log did not write.")
+            '''
+            Now lets compute Wx hold condition.  Class is set up to assume Wx has been good.
+            The very first time though at Noon, self.open_is_ok will always be False but the
+            Weather, which does not include ambient light, can be good.  We will assume that
+            changes in ambient light are dealt with more by the Events module.
+    
+            We want the wx_hold signal to go up and down as a guage on the quality of the
+            afternoon.  If there are a lot of cycles, that indicates unsettled conditons even
+            if any particular instant is perfect.  So we set self.wx_hold to false during class
+            __init__().
+    
+            When we get to this point of the code first time we expect self.wx_is_ok to be true
+            '''
+            obs_win_begin, sunset, sunrise, ephemNow = self.astro_events.getSunEvents()
+            wx_delay_time = 900
+            if (self.wx_is_ok and self.wx_system_enable) and not self.wx_hold:     #Normal condition, possibly nothing to do.
+                self.wx_hold_last_updated = time.time()
+            elif not self.wx_is_ok and not self.wx_hold:     #Wx bad and no hold yet.
+                #Bingo we need to start a cycle
+                self.wx_hold = True
+                self.wx_hold_until_time = (t := time.time() + wx_delay_time)    #15 minutes   Make configurable
+                self.wx_hold_tally += 1     #  This counts all day and night long.
+                self.wx_hold_last_updated = t
+                if obs_win_begin <= ephemNow <= sunrise:     #Gate the real holds to be in the Observing window.
+                    self.wx_hold_count += 1
+                    #We choose to let the enclosure manager handle the close.
+                    print("Wx hold asserted, flap#:", self.wx_hold_count, self.wx_hold_tally)
+                else:
+                    print("Wx Hold -- out of Observing window.", self.wx_hold_count, self.wx_hold_tally)
+            elif not self.wx_is_ok and self.wx_hold:     #WX is bad and we are on hold.
+                self.wx_hold_last_updated = time.time()
+                #Stay here as long as we need to.
+                self.wx_hold_until_time = (t := time.time() + wx_delay_time)
+                if self.wx_system_enable:
+                    #print("In a wx_hold.")
+                    pass
+                    #self.wx_is_ok = True
+            elif self.wx_is_ok  and self.wx_hold:     #Wx now good and still on hold.
+                if self.wx_hold_count < 3:
+                    if time.time() >= self.wx_hold_until_time and not self.wx_clamp:
+                        #Time to release the hold.
+                        self.wx_hold = False
+                        self.wx_hold_until_time = time.time() + wx_delay_time  #Keep pushing the recovery out
+                        self.wx_hold_last_updated = time.time()
+                        print("Wx hold released, flap#, tally#:", self.wx_hold_count, self.wx_hold_tally)
+                        #We choose to let the enclosure manager diecide it needs to re-open.
+                else:
+                    #Never release the THIRD  hold without some special high level intervention.
+                    if not self.clamp_latch:
+                        print('Sorry, Tobor is clamping enclosure shut for the night.')
+                    self.clamp_latch = True
+                    self.wx_clamp = True
+    
+                self.wx_hold_last_updated = time.time()
+            self.status = status
+            g_dev['ocn'].status = status
+            return status
 
-                },
-            },
+    def get_quick_status(self, quick):
 
-    },
+        if self.site_is_specific:
+            self.status = self.get_status(g_dev)  # Get current stat.
+        else:
+            self.status = self.get_status()
+        illum, mag = g_dev['evnt'].illuminationNow()
+          # NB NB NB it is safer to make this a dict rather than a positionally dependant list.
+        quick.append(time.time())
+        quick.append(float(self.status['sky_temp_C']))
+        quick.append(float(self.status['temperature_C']))
+        quick.append(float(self.status['humidity_%']))
+        quick.append(float(self.status['dewpoint_C']))
+        quick.append(float(abs(self.status['wind_m/s'])))
+        quick.append(float(self.status['pressure_mbar']))   # 20200329 a SWAG!
+        quick.append(float(illum))     # Add Solar, Lunar elev and phase
+        if self.unihedron_connected:
+            uni_measure = 0#wx['meas_sky_mpsas']   #NB NB note we are about to average logarithums.
+        else:
+            uni_measure  = 0
+        if uni_measure == 0:
+            uni_measure = round((mag - 20.01),2)   #  Fixes Unihedron when sky is too bright
+            quick.append(float(uni_measure))
+            self.meas_sky_lux = illum
+        else:
+            self.meas_sky_lux = linearize_unihedron(uni_measure)
+            quick.append(float(self.meas_sky_lux))     # intended for Unihedron
+        return quick
+    
+    def get_average_status(self, pre, post):
+        average = []
+        average.append(round((pre[0] + post[0])/2, 3))
+        average.append(round((pre[1] + post[1])/2, 1))
+        average.append(round((pre[2] + post[2])/2, 1))
+        average.append(round((pre[3] + post[3])/2, 1))
+        average.append(round((pre[4] + post[4])/2, 1))
+        average.append(round((pre[5] + post[5])/2, 1))
+        average.append(round((pre[6] + post[6])/2, 2))
+        average.append(round((pre[7] + post[7])/2, 3))
+        average.append(round((pre[8] + post[8])/2, 1))
+        return average
 
+    def parse_command(self, command):
+        #The only possible Wx command is test Wx hold.
+        req = command['required_params']
+        opt = command['optional_params']
+        action = command['action']
+        if action is not None:
+            pass
+            #self.move_relative_command(req, opt)   ???
+        else:
+            print(f"Command <{action}> not recognized.")
 
-    #Need to put switches here for above devices.
+    # ###################################
+    #   Observing Conditions Commands  #
+    # ###################################
 
-    #Need to build instrument selector and multi-OTA configurations.
+    def empty_command(self, req: dict, opt: dict):
+        ''' does nothing '''
+        print(f"obseving conditions cmd: empty command")
+        pass
 
-    #AWS does not need this, but my configuration code might make use of it. VALENTINA this device will probably
-    #alwys be custom per installation. In my case Q: points to a 40TB NAS server in the basement. WER
-    'server': {
-        'server1': {
-            'name': 'QNAP',
-            'win_url': 'archive (\\10.15.0.82) (Q:)',
-            'redis':  '(host=10.15.0.15, port=6379, db=0, decode_responses=True)',
-            'startup_script':  None,
-            'recover_script':  None,
-            'shutdown_script':  None,  
-        },
-    },
-}    #This brace closes the while configuration dictionary. Match found up top at:  site_config = {
 
 if __name__ == '__main__':
-    '''
-    This is a simple test to send and receive via json.
-    '''
-
-    j_dump = json.dumps(site_config)
-    site_unjasoned = json.loads(j_dump)
-    if str(site_config)  == str(site_unjasoned):
-        print('Strings matched.')
-    if site_config == site_unjasoned:
-        print('Dictionaries matched.')
-
+    pass

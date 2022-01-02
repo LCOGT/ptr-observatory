@@ -52,7 +52,7 @@ class Focuser:
     def __init__(self, driver: str, name: str, config: dict):
         self.site = config['site']
         self.name = name
-        self.site_path = config['site_path']
+        self.site_path = config['client_share_path']
         self.camera_name = config['camera']['camera_1_1']['name']
         g_dev['foc'] = self
         self.config = config['focuser']['focuser1']

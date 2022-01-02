@@ -246,7 +246,7 @@ class Camera:
         self.t7 = None
         self.camera_message = '-'
         #self.alias = self.config['camera'][self.name]#
-        self.site_path = self.config['site_path']
+        self.site_path = self.config['client_share_path']
         self.archive_path = self.site_path +'archive/'
         self.camera_path = self.archive_path  + self.alias+ "/"
         self.alt_path = '//house-computer/saf_archive_2/archive/sq01/'
@@ -1150,6 +1150,7 @@ class Camera:
 
                 #This image shift code needs to be here but it is troubling.
                 #QHY 600Pro and 367
+
                 if ix == 9600:
                     # if self.img[22, -34] == 0:
 
@@ -1193,14 +1194,16 @@ class Camera:
                 #mrc2    Testing comment change, did this push to GitHub?
                 elif ix == 4096 and iy == 4096:   #MRC@
                     trimmed = self.img.astype('int32') - 913.   #20211128 Cooler = -35C
+                    self.overscan = 0
 
                 elif ix ==2048 and iy == 2048:   #MRC@
                     trimmed = self.img.astype('int32') - 1046.   #20211128 Cooler = -35C
-                    
+                    self.overscan = 0
                 #Bin 3 not possible for FLI camera
                     
                 elif ix == 1024 and iy == 1024:   #MRC@
                     trimmed = self.img.astype('int32') - 1548.   #20211128 Cooler = -35C
+                    self.overscan = 0
 
                 #NBNB for cameras without proper overscan maybe we save the bias frame value vs chip
                 #temp so we can do a better thermal compensation.  THis would generally mean taking
@@ -1217,23 +1220,26 @@ class Camera:
                 #     #FAT
                 elif ix == 4556 and iy == 3656:   #All this code needs to be driven from camera config.
                     #breakpoint()
+                    self.overscan = (np.median(self.img[4520:4556, :3600]) + np.median(self.img[:4500, 3620:3643]))/2.0
                     minus_overscan = self.img - (np.median(self.img[4520:4556, :3600]) + np.median(self.img[:4500, 3620:3643]))/2.0
                     print("1_1 Offset:  ", -np.median(minus_overscan[:4500, :3600]))
                     minus_overscan += pedastal + 50
                     trimmed = minus_overscan[:4500, :3600].astype('int32')
                 elif ix == 2278 and iy == 1828:   #All this code needs to be driven from camera config.
                     #breakpoint()
+                    self.overscan = (np.median(self.img[2260:2278, :1800]) + np.median(self.img[2250, 1810:1821]))/2.0
                     minus_overscan = self.img - (np.median(self.img[2260:2278, :1800]) + np.median(self.img[2250, 1810:1821]))/2.0
                     minus_overscan += pedastal + 140
                     trimmed = minus_overscan[:2250, :1800].astype('int32')
                 elif ix == 1518 and iy == 1218: 
                     #breakpoint()
+                    self.overscan = (np.median(self.img[1506:1518, :1200]) + np.median(self.img[:1500, 1206:1214]))/2.0
                     minus_overscan = self.img - (np.median(self.img[1506:1518, :1200]) + np.median(self.img[:1500, 1206:1214]))/2.0
                     minus_overscan += pedastal + 211 
                     trimmed = minus_overscan[:1500, :1200].astype('int32')
                     
                 elif ix == 1139 and iy == 914: 
-
+                    self.overscan = (np.median(self.img[1130:1139, :900]) + np.median(self.img[:1125, 905:910]))/2.
                     minus_overscan = self.img - (np.median(self.img[1130:1139, :900]) + np.median(self.img[:1125, 905:910]))/2.0
                     print("4_4 Offset:  ", -np.median(minus_overscan[:1125, :900]))
                     minus_overscan += pedastal + 403

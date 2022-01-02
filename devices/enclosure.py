@@ -7,6 +7,7 @@ import json
 import socket
 import os
 import config
+from config import get_enc_status
 
 '''
 Curently this module interfaces to a Dome (az control) or a pop-top roof style enclosure.
@@ -58,7 +59,6 @@ class Enclosure:
             self.site_has_proxy = True  #NB Site is proxy needs a new name.
         else:
             self.site_has_proxy = False  
-        breakpoint()
         if self.site in ['simulate',  'dht']:  #DEH: added just for testing purposes with ASCOM simulators.
             self.observing_conditions_connected = True
             self.site_is_proxy = False   
@@ -68,7 +68,7 @@ class Enclosure:
             self.site_is_generic = False
             #  Note OCN has no associated commands.
             #  Here we monkey patch
-            self.get_status = config.get_enc_status
+            self.get_status = get_enc_status
             # Get current ocn status just as a test.
             self.status = self.get_status(g_dev)
 

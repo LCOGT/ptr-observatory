@@ -40,7 +40,7 @@ from skimage.transform import resize
 #from skimage import exposure
 #from PIL import Image
 from skimage.io import imsave
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 import sep
 from astropy.io import fits
 from planewave import platesolve
@@ -159,17 +159,31 @@ class Observatory:
         self.name = name
         self.site_name = name
         self.config = config
-        self.site_path = config['site_path']
+       
         self.site = config['site']
-        self.hostname = self.hostname = socket.gethostname()
-        if self.hostname in self.config['wema_hostname']:
-            self.is_wema = True
+        if self.config['wema_is_active']:
+            self.hostname = self.hostname = socket.gethostname()
+            if self.hostname in self.config['wema_hostname']:
+                self.is_wema = True
+                g_dev['wema_share_path'] = config['wema_share_path']
+                self.wema_path = g_dev['wema_path']
+            else:  
+                #This host is a client
+                self.is_wema = False  #This is a client.
+                self.site_path = config['client_share_path']
+                g_dev['site_path'] = self.site_path
+                g_dev['wema_share_path']  = self.site_path  # Just to be safe.
+                self.wema_path = g_dev['wema_path'] 
         else:
             self.is_wema = False  #This is a client.
-            self.site_path = config['client_path']
-            g_dev['wema_path']  = config['site_share_path']  # Just to be safe.
-            self.wema_path = g_dev['wema_path'] 
-        g_dev['site_path'] = self.site_path
+            self.site_path = config['client_share_path']
+            g_dev['site_path'] = self.site_path
+            g_dev['wema_share_path']  = self.site_path  # Just to be safe.
+            self.wema_path = g_dev['wema_share_path'] 
+        if self.config['site_is_specific']:
+             self.site_is_specific = True
+        else:
+            self.site_is_specific = False
         self.last_request = None
         self.stopped = False
         self.status_count = 0
@@ -181,31 +195,25 @@ class Observatory:
         self.astro_events = ptr_events.Events(self.config)
         self.astro_events.compute_day_directory()
         self.astro_events.display_events()
-        self.site_is_specific = False
-        if self.hostname in self.config['wema_hostname']:
-            self.is_wema = True
-        else:
-            self.is_wema = False
-        if self.config['wema_is_active']:
-            self.site_has_proxy = True  #NB Site is proxy needs a new name.
-        else:
-            self.site_has_proxy = False   
+
+  
         if self.site in ['simulate',  'dht']:  #DEH: added just for testing purposes with ASCOM simulators.
             self.observing_conditions_connected = True
             self.site_is_proxy = False   
             print("observing_conditions: Simulator drivers connected True")
-        elif self.config['site_is_specific']:
-            self.site_is_specific = True
-            #  Note OCN has no associated commands.
-            #  Here we monkey patch
-            self.get_status = config.get_ocn_status
-            # Get current ocn status just as a test.
-            self.status = self.get_status(g_dev)
-            # breakpoint()  # All test code
-            # quick = []
-            # self.get_quick_status(quick)
-            # print(quick)
-        
+        # elif self.config['site_is_specific']:
+        #     self.site_is_specific = True
+        #     #  Note OCN has no associated commands.
+        #     #  Here we monkey patch
+            
+        #     self.get_status = config.get_ocn_status
+        #     # Get current ocn status just as a test.
+        #     self.status = self.get_status(g_dev)
+        #     # breakpoint()  # All test code
+        #     # quick = []
+        #     # self.get_quick_status(quick)
+        #     # print(quick)
+        #Define a redis server if needed.
         redis_ip = config['redis_ip']
         if redis_ip is not None:           
             self.redis_server = redis.StrictRedis(host=redis_ip, port=6379, db=0,
@@ -498,10 +506,14 @@ class Observatory:
                 # ...and add it to main status dict.
                 if device_name in self.config['wema_types'] and (self.is_wema or self.site_is_specific):
                     result = device.get_status(g_dev)
+                    if self.site_is_specific:
+                        remove_enc = False
                 else:
                     result = device.get_status()
                 if result is not None:
                     status[dev_type][device_name] = result
+                    # if device_name == 'enclosure1':
+                    #     g_dev['enc'].status = result   #NB NB NB A big HACK!
                     #print(device_name, result, '\n')
         # Include the time that the status was assembled and sent.
         if remove_enc:

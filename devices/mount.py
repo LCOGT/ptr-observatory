@@ -178,7 +178,7 @@ class Mount:
         self.astro_events = astro_events
         g_dev['mnt'] = self
         self.site = config['site']
-        self.site_path = config['site_path']
+        self.site_path = config['client_share_path']
         self.config = config
         self.device_name = name
         self.settings = settings

@@ -310,6 +310,7 @@ class Sequencer:
             #print('Skipping Eve Sky Flats')
             self.sky_flat_script({}, {})   #Null command dictionaries
             self.sky_flat_latch = False
+            
         elif enc_status['enclosure_mode'] == 'Automatic' and (events['Observing Begins'] <= ephem_now \
                                    < events['Observing Ends']) and not g_dev['ocn'].wx_hold \
                                    and  g_dev['obs'].blocks is not None and g_dev['obs'].projects \

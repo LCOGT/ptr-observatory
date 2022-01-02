@@ -7,6 +7,7 @@ import json
 import socket
 from global_yard import g_dev
 import config
+from config import get_ocn_status
 # import ptr_events
 
 
@@ -108,7 +109,8 @@ class ObservingConditions:
             self.site_is_specific = True
             #  Note OCN has no associated commands.
             #  Here we monkey patch
-            self.get_status = config.get_ocn_status
+
+            self.get_status = get_ocn_status
             # Get current ocn status just as a test.
             self.status = self.get_status(g_dev)
             # breakpoint()  # All test code
@@ -143,8 +145,8 @@ class ObservingConditions:
                     print("Unihedron on Port 10 is disconnected.  Observing will proceed.")
                     self.unihedron_connected = False
                     # NB NB if no unihedron is installed the status code needs to not report it.
-        self.status = None   # This **may** need to have a first status if site_specific is True.
-        self.last_wx = None
+        #self.status = None   # This **may** need to have a first status if site_specific is True.
+        self.last_wx = self.status
 
     def get_status(self):   # This is purely generic code for a generic site.
                             # It may be overwritten with a monkey patch found 
@@ -383,7 +385,10 @@ class ObservingConditions:
 
     def get_quick_status(self, quick):
 
-        self.status = self.get_status()  # Get current stat.
+        if self.site_is_specific:
+            self.status = self.get_status(g_dev)  # Get current stat.
+        else:
+            self.status = self.get_status()
         illum, mag = g_dev['evnt'].illuminationNow()
           # NB NB NB it is safer to make this a dict rather than a positionally dependant list.
         quick.append(time.time())
