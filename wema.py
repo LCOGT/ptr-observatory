@@ -76,8 +76,6 @@ class WxEncAgent:
         g_dev['obs'] = self     # NB NB We need to work through site vs mnt/tel
                                 # and sub-site distinction.distinction.
 
-        breakpoint()
-
         self.site = config['site']
         if self.config['wema_is_active']:
             self.hostname = self.hostname = socket.gethostname()

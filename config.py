@@ -1,7 +1,7 @@
 0# -*- coding: utf-8 -*-
 '''
 Created on Fri Aug  2 11:57:41 2019
-Updates 20220102 20:32 WER
+Updates 20220102 20:37 WER
 
 @author: wrosing
 '''
