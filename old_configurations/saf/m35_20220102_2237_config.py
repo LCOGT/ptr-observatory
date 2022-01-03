@@ -142,7 +142,7 @@ site_config = {
 
             'has_lights':  False,
             'controlled_by': 'mount1',
-			'is_dome': False,
+			'is_dome': True,
             'mode': 'Automatic',
             
             'cool_down': 89.0,     # Minutes prior to sunset.
