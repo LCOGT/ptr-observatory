@@ -98,10 +98,11 @@ class Enclosure:
         #self.state = 'Ok'
         
     def get_status(self) -> dict:
+
         if not self.is_wema and self.site_has_proxy:
             if self.config['site_IPC_mechanism'] == 'shares':
                 try:
-                    enclosure = open(g_dev['wema_path'] + 'enclosure.txt', 'r')
+                    enclosure = open(g_dev['wema_share_path'] + 'enclosure.txt', 'r')
                     status = json.loads(enclosure.readline())
                     enclosure.close()
                     self.status = status
@@ -111,7 +112,7 @@ class Enclosure:
                 except:
                     try:
                         time.sleep(3)
-                        enclosure = open(g_dev['wema_path'] + 'enclosure.txt', 'r')
+                        enclosure = open(g_dev['wema_share_path'] + 'enclosure.txt', 'r')
                         status = json.loads(enclosure.readline())
                         enclosure.close()
                         self.status = status
@@ -121,7 +122,7 @@ class Enclosure:
                     except:
                         try:
                             time.sleep(3)
-                            enclosure = open(g_dev['wema_path'] + 'enclosure.txt', 'r')
+                            enclosure = open(g_dev['wema_share_path'] + 'enclosure.txt', 'r')
                             status = json.loads(enclosure.readline())
                             enclosure.close()
                             self.status = status
@@ -238,7 +239,7 @@ class Enclosure:
                 # # g_dev['redis'].set('enc_status', status, ex=3600)
         if self.is_wema and self.config['site_IPC_mechanism'] == 'shares':
             try:
-                enclosure = open(self.config['wema_share_path']+'enclosure.txt', 'w')
+                enclosure = open(self.config['wems_share_path']+'enclosure.txt', 'w')
                 enclosure.write(json.dumps(status))
                 enclosure.close()
             except:
@@ -250,7 +251,7 @@ class Enclosure:
                 except:
                     time.sleep(3)
                     try:
-                        enclosure = open(self.config['wem_share_path']+'enclosure.txt', 'w')
+                        enclosure = open(self.config['wema_share_path']+'enclosure.txt', 'w')
                         enclosure.write(json.dumps(status))
                         enclosure.close()
                     except:
@@ -500,24 +501,24 @@ class Enclosure:
 
         if len(cmd_list) > 0:
             try:
-                enclosure = open(self.config['wema_path']+'enc_cmd.txt', 'w')
+                enclosure = open(self.config['client_share_path']+'enc_cmd.txt', 'w')
                 enclosure.write(json.dumps(cmd_list))
                 enclosure.close()
             except:
                 try:
                     time.sleep(3)
-                    enclosure = open(self.config['wema_path']+'enc_cmd.txt', 'w')
+                    enclosure = open(self.config['client_share_path']+'enc_cmd.txt', 'w')
                     enclosure.write(json.dumps(cmd_list))
                     enclosure.close()
                 except:
                     try:
                         time.sleep(3)
-                        enclosure = open(self.config['wema_path']+'enc_cmd.txt', 'w')
+                        enclosure = open(self.config['client_share_path']+'enc_cmd.txt', 'w')
                         enclosure.write(json.dumps(cmd_list))
                         enclosure.close()
                     except:
                         time.sleep(3)
-                        enclosure = open(self.config['wema_path']+'enc_cmd.txt', 'w')
+                        enclosure = open(self.config['client_share_path']+'enc_cmd.txt', 'w')
                         enclosure.write(json.dumps(cmd_list))
                         enclosure.close()
                         print("4th try to append to enc-cmd  list.")
