@@ -89,13 +89,8 @@ class Enclosure:
                  print("ASCOM enclosure NOT connected, proabably the App is not connected to telescope.")
         else:
             self.site_is_generic = False    #NB NB Changed to False for MRC from FAT where True
-            # breakpoint()  # All test code
-            # quick = []
-            # self.get_quick_status(quick)
-            # print(quick)
-        #self.prior_status = self.status
-        #self.status = None   #  May need a status seed if site specific.
-        #self.state = 'Ok'
+        self.last_current_az = 315.
+        self.last_slewing = False
         
     def get_status(self) -> dict:
         if not self.is_wema and self.site_has_proxy:
@@ -197,6 +192,7 @@ class Enclosure:
             #g_dev['redis'].set('enc_status', status, ex=3600)  #This is occasionally used by mouning.
 
             if self.is_dome:
+
                 try:
                     #Occasionally this property throws an exception:  (W HomeDome)
                     current_az = self.enclosure.Azimuth
@@ -204,16 +200,16 @@ class Enclosure:
                     self.last_current_az = current_az
                     self.last_slewing = slewing
                 except:
-                    current_az = self.last_az
-                    slewing =  True #self.last_slewing  20220103_0212 WER
+                    current_az = self.last_current_az
+                    slewing =  self.last_slewing  #  20220103_0212 WER
                     
-                gap = current_az - self.last_az
+                gap = current_az - self.last_current_az
                 while gap >= 360:
                     gap -= 360
                 while gap <= -360:
                     gap += 360
-                if abs(gap) > 1.0:
-                    print("Azimuth change detected,  Slew:  ", self.enclosure.Slewing)
+                if abs(gap) > 2:
+                    print("Azimuth change > 2 deg detected,  Slew:  ", self.enclosure.Slewing)
                     slewing = True
                 else:
                     slewing = False
@@ -238,7 +234,7 @@ class Enclosure:
                 # # g_dev['redis'].set('enc_status', status, ex=3600)
         if self.is_wema and self.config['site_IPC_mechanism'] == 'shares':
             try:
-                enclosure = open(self.config['wems_share_path']+'enclosure.txt', 'w')
+                enclosure = open(self.config['wema_share_path']+'enclosure.txt', 'w')
                 enclosure.write(json.dumps(status))
                 enclosure.close()
             except:
@@ -273,7 +269,6 @@ class Enclosure:
         if self.is_wema and self.site_has_proxy and self.config['site_IPC_mechanism'] == 'shares':
             _redis = False
             # NB NB THis really needs a context manage so no dangling open files
-
             try:
                 enc_cmd = open(self.config['wema_share_path'] + 'enc_cmd.txt', 'r')
                 enc_status = json.loads(enc_cmd.readline())
@@ -338,6 +333,7 @@ class Enclosure:
             redis_command = redis_command[0]  # it can come in as ['setManual']
         except:
             pass
+        breakpoint()
         if redis_command == 'open':
             if _redis: g_dev['redis'].delete('enc_cmd')
             print("enclosure remote cmd: open.")
@@ -359,24 +355,23 @@ class Enclosure:
                 pass
             self.dome_open = False
             self.dome_home = True
-        elif redis_command == 'setAuto':
+        elif redis_command == 'set_auto':
             if _redis: g_dev['redis'].delete('enc_cmd')
             print("Change to Automatic.")
             self.site_in_automatic = True
             self.mode = 'Automatic'
-        elif redis_command == 'setManual':
+        elif redis_command == 'set_manual':
             if _redis: g_dev['redis'].delete('enc_cmd')
             print("Change to Manual.")
             self.site_in_automatic = False
             self.mode = 'Manual'
-        elif redis_command == 'setShutdown':
+        elif redis_command == 'set_shutdown':
             if _redis: g_dev['redis'].delete('enc_cmd')
             print("Change to Shutdown & Close")
             self.manager(close_cmd=True, open_cmd=False)
             self.site_in_automatic = False
             self.mode = 'Shutdown'
-        elif self.is_dome and redis_command == 'goHome':
-            breakpoint()
+        elif self.is_dome and redis_command == 'go_home':
             if _redis: g_dev['redis'].delete('goHome')
         elif self.is_dome and redis_command == 'sync_enc':
             self.following = True
@@ -399,7 +394,7 @@ class Enclosure:
         if mnt_command is not None and mnt_command != '' and mnt_command != ['none']:
 
             try:
-                print( mnt_command)
+                #print( mnt_command)
                 # adj1 = dome_adjust(mount_command['altitude'], mount_command['azimuth'], \
                 #                   mount_command['hour_angle'])
                 # adjt = dome_adjust(mount_command['altitude'], mount_command['target_az'], \
@@ -420,11 +415,12 @@ class Enclosure:
                 elif (not self.slew_latch) and (self.status['enclosure_synchronized'] or \
                                                 self.mode == "Automatic"):  #self.status['enclosure_synchronized']
                     #This is normal dome following.
+
                     try:
                         if shutter_status not in [2,3]:    #THis should end annoying report.
                             self.enclosure.SlewToAzimuth(float(track_az))
                     except:
-                        print("Dome refused slew, probably closing or opening, usually a harmless situation.")
+                        print("Dome refused slew, probably updating, closing or opening; usually a harmless situation:  ", shutter_status)
         self.manager(_redis=_redis)   #There be monsters here. <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
         self.status = status
         self.prior_status = status
@@ -443,6 +439,7 @@ class Enclosure:
         opt = command['optional_params']
 
         action = command['action']
+        breakpoint()
         cmd_list = []
         generic = True
         _redis = False
