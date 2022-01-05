@@ -6,8 +6,11 @@ Updated 20200902 WER
 
 @author: wrosing
 '''
+
+#2345678901234567890123456789012345678901234567890123456789012345678901234567890
 import json
 import time
+import ptr_events
 #from pprint import pprint
 
 #  NB NB  Json is not bi-directional with tuples (), use lists [], nested if tuples as needed, instead.
@@ -24,61 +27,26 @@ site_config = {
     'debug_site_mode': False,
     'owner':  ['google-oauth2|112401903840371673242'],  # WER,  Or this can be 
                                                         # some aws handle.
-    'owner_alias': ['WER'],
+    'owner_alias': ['WER', 'TELOPS'],
     'admin_aliases': [ "WER", "TB", "DH", "KVH", 'KC', "ANS", 'EC'],
-    'agent_wms_enc_active':  False,    # True if an agent is used at a site.  
-                                       # Fat is intended to be simple since 
-                                       # there is so little to control.
-    'redis_ip': None,   # None if no redis path present, localhost if redis is 
-                        # self-contained
-    'site_is_specific':  True,  # Indicates some special code for the site. 
-                                 # Intention it is found in this file.
     
-    'defaults': {
-        'observing_conditions': 'observing_conditions1',  #  These are used as keys, may go away.
-        'enclosure': 'enclosure1',
-        'screen': 'screen1',
-        'mount': 'mount1',
-        'telescope': 'telescope1',     #How do we handle selector here, if at all?
-        'focuser': 'focuser1',
-        'rotator': 'rotator1',
-        'selector': None,
-        'filter_wheel': 'filter_wheel1',
-        'camera': 'camera_1',
-        'sequencer': 'sequencer1'
-        },
-    'device_types': [
-            'observing_conditions',
-            'enclosure',
-            'mount',
-            'telescope',
-            'screen',
-            'rotator',
-            'focuser',
-            'selector',
-            'filter_wheel',
-            'camera',
-            'sequencer',
+    'client_hostname':  'FAT-0m30',
+    'client_share_path':  'F:/ptr/',  # Generic place for this host to stash.
+    'wema_is_active':  False,    #True if the split computers used at a site.
+    'wema_hostname':  [],  #  Prefer the shorter version
+    'wema_share_path':  None,
+    'redis_ip': None,  #'127.0.0.1', None if no redis path present, 
+    'site_is_generic':  False,   # A simplee single computer ASCOM site.
+    'site_is_specific':  True,  # Indicates some special code for this site, found at end of config.
+    'site_IPC_mechanism':  None,   # ['None', shares', 'shelves', 'redis']  Pick One
+    'aux_archive_path':  None, # '//house-computer/saf_archive_2/archive/',  #  Path to auxillary backup disk.     
 
-            ],
-    # This is used of there is a wema
-    'short_status_devices':  [
-            'enclosure',
-            'mount',
-            'telescope',
-            'screen',
-            'rotator',
-            'focuser',
-            'selector',
-            'filter_wheel',
-            'camera',
-            'sequencer',
-            ],
+    'wema_share_path':  None,  # Meant to be where Wema puts status data.
+
+
     'name': 'PTR at Sierra Remote Observatory 0m305f3.8',
     'airport_code':  'FAT', 
     'location': 'Near Shaver Lake C,  USA',
-    'site_path':  'F:/',    #  Path to where all Photon Ranch data and state are to be found
-    'aux_archive_path':  None, # '//house-computer/saf_archive_2/archive/',  #  Path to auxillary backup disk not on this host.
     'observatory_url': 'https://starz-r-us.sky/clearskies2',   #  This is meant to be optional
     'description':  '''
                     Now is the time for all good persons
@@ -92,18 +60,60 @@ site_config = {
     'latitude': 37.0701111,     #  Decimal degrees, North is Positive
     'longitude': -119.412417,   #  Decimal degrees, West is negative
     'elevation': 1405,    #  meters above sea level
-    'reference_ambient':  [10],  #  Degrees Celsius.  Alternately 12 entries, one for every - mid month.
-    'reference_pressure':  [867.254],    #mbar   A rough guess 20200315
+    'reference_ambient':  10,  #  Degrees Celsius.  Alternately 12 entries, one for every - mid month.
+    'reference_pressure':  867.254,    #mbar   A rough guess 20200315
     
     'site_in_automatic_default': "Automatic",   #  ["Manual", "Shutdown", "Automatic"]
     'automatic_detail_default': "Enclosure is initially set to Automatic mode.",
     'auto_eve_bias_dark': False,
     'auto_eve_sky_flat': False,
+    'eve_sky_flat_sunset_offset': +5.0,  #  Minutes  neg means before, + after.
     'auto_morn_sky_flat': False,
     'auto_morn_bias_dark': False,
     're-calibrate_on_solve': True, 
     
-
+    'defaults': {
+        'observing_conditions': 'observing_conditions1',  #  These are used as keys, may go away.
+        'enclosure': 'enclosure1',
+        'screen': 'screen1',
+        'mount': 'mount1',
+        'telescope': 'telescope1',     #How do we handle selector here, if at all?
+        'focuser': 'focuser1',
+        'rotator': 'rotator1',
+        'selector': None,
+        'filter_wheel': 'filter_wheel1',
+        'camera': 'camera_1_1',
+        'sequencer': 'sequencer1'
+        },
+    'device_types': [
+            'observing_conditions',
+            'enclosure',
+            'mount',
+            'telescope',
+            'screen',
+            'rotator',
+            'focuser',
+            'selector',
+            'filter_wheel',
+            'camera',
+            'sequencer'
+            ],
+    'wema_types': [
+            'observing_conditions1',
+            'enclosure1'
+            ],
+    'short_status_devices':  [
+            'enclosure',
+            'mount',
+            'telescope',
+            'screen',
+            'rotator',
+            'focuser',
+            'selector',
+            'filter_wheel',
+            'camera',
+            'sequencer'
+            ],
     'observing_conditions' : {
         'observing_conditions1': {
             'parent': 'site',
@@ -111,7 +121,7 @@ site_config = {
             # Intention it is found in this file.
             'name': 'SRO File',
             'driver': 'Windows.Share',  # Could be redis, ASCOM, ...
-            'share_path_name': 'c:/blah/wx.txt',
+            'share_path_name': 'F:/ptr/',
             'driver_2':  None,   #' ASCOM.Boltwood.OkToOpen.SafetyMonitor',
             'driver_3':  None,    # 'ASCOM.Boltwood.OkToImage.SafetyMonitor'
             'ocn_has_unihedron':  False,
@@ -125,6 +135,7 @@ site_config = {
     'enclosure': {
         'enclosure1': {
             'parent': 'site',
+            'enc_is_specific':  True,  # Indicates some special site code. 
             'name': 'SRO File',
             'hostIP':  'NONE',
             'driver': None,  #'ASCOM.DigitalDomeWorks.Dome',  #  ASCOMDome.Dome',  #  ASCOM.DeviceHub.Dome',  #  ASCOM.DigitalDomeWorks.Dome',  #"  ASCOMDome.Dome',
@@ -283,11 +294,11 @@ site_config = {
             'driver': 'ASCOM.OptecGemini.Focuser',
 			'com_port':  'COM9',
             #F4.9 setup
-            'reference': 7667,    #  20210313  Nominal at 10C Primary temperature
-            'ref_temp':  6.33,    #  Update when pinning reference
+            'reference': 7728,    #  20210313  Nominal at 10C Primary temperature
+            'ref_temp':  5.06,    #  Update when pinning reference
             'coef_c': 0,   #  Negative means focus moves out as Primary gets colder
-            'coef_0': 7667,  #  Nominal intercept when Primary is at 0.0 C. 
-            'coef_date':  '2021208',    #This appears to be sensible result 44 points -13 to 3C'reference':  6431,    #  Nominal at 10C Primary temperature
+            'coef_0': 7728,  #  Nominal intercept when Primary is at 0.0 C. 
+            'coef_date':  '2021220',    #This appears to be sensible result 44 points -13 to 3C'reference':  6431,    #  Nominal at 10C Primary temperature
             # #F9 setup
             # 'reference': 4375,    #   Guess 20210904  Nominal at 10C Primary temperature
             # 'ref_temp':  27.,    #  Update when pinning reference
@@ -310,20 +321,20 @@ site_config = {
             'parent': 'telescope1',
             'name': 'None',
             'desc':  'Null Changer',
-            'driver': 'Null',
+            'driver': None,
             'com_port': None,
             'startup_script':  None,
             'recover_script':  None,
             'shutdown_script':  None,
             'ports': 1,
             'instruments':  ['Main_camera'], #, 'eShel_spect', 'planet_camera', 'UVEX_spect'],
-            'cameras':  ['camera_1'], # , 'camera_1_2', None, 'camera_1_4'],
+            'cameras':  ['camera_1_1'], # , 'camera_1_2', None, 'camera_1_4'],
             'guiders':  [None], # , 'guider_1_2', None, 'guide_1_4'],
             'default': 0
             },
 
     },
-    
+
     'filter_wheel': {
         "filter_wheel1": {
             "parent": "telescope1",
@@ -377,7 +388,7 @@ site_config = {
     },
     
     'camera': {
-        'camera_1': {
+        'camera_1_1': {
             'parent': 'telescope1',
             'name': 'kb001',      #  Important because this points to a server file structure by that name.
             'desc':  'SBIG16200',
@@ -397,12 +408,20 @@ site_config = {
                 'y_start':  0,
                 'x_width':  4500,   #  NB Should be set up with overscan, which this camera is!  20200315 WER
                 'y_width':  3600,
-                'x_chip':  4500,   #  NB Should specify the active pixel area.   20200315 WER
-                'y_chip':  3600,
+                #Note please add 56 to SBIG Driver Checker 64 Update config for added overscan
+                'x_chip':  4556,   #  NB Should specify the active pixel area.   20200315 WER
+                'y_chip':  3656,
                 'x_trim_offset':  0,   #  NB these four entries are guesses.
                 'y_trim_offset':  0,
-                'x_bias_start':  4501,
-                'y_bias_start' : 3601,
+                'pre_bias_available': False,  #if so need to specify as below for post_bias.
+                'post_bias_available': True,  #if so need to specify as below for post_bias.
+                'x_bias_start':  4520,
+                'y_bias_start': 3620,
+                'x_bias_end':  4556,       # Vert band self.img[-38:-18, 0]
+                'y_bias_send': 3643,
+                'corner_everlap': True,
+                'x_bias_line': True,
+                'y_bias_line': True,
                 'x_active': 4500,
                 'y_active': 3600,
                 'x_pixel':  6,
@@ -419,7 +438,7 @@ site_config = {
                 'max_exposure': 3600,
                 'can_subframe':  True,
                 'min_subframe':  [128, 128],       
-                'bin_modes':  [[1, 1, 1.07], [2, 2, 2.13]], #[3, 3, 3.20], [4, 4, 4.27]],   #Meaning no binning choice if list has only one entry, default should be first.
+                'bin_modes':  [[1, 1, 1.07], [2, 2, 2.13], [3, 3, 3.21], [4, 4, 4.27]],   #Meaning no binning choice if list has only one entry, default should be first.
                 'default_bin':  [1, 1, 1.07],    #  Matched to seeing situation by owner
                 'cycle_time':  [30, 20, 15, 12],  # 3x3 requires a 1, 1 reaout then a software bin, so slower.
                 'rbi_delay':  0.,      #  This being zero says RBI is not available, eg. for SBIG.
@@ -436,9 +455,9 @@ site_config = {
                 'read_mode':  'Normal',
                 'readout_mode':  'Normal',
                 'readout_speed': 0.4,
-                'saturate':  40000,
-                'max_linearity': 27000,
-                'fullwell_capacity': 40000.,
+                'saturate':  42000,    # e-.  This is a close guess, not measured, but taken from data sheet.
+                'max_linearity': 40000,
+                'fullwell_capacity': 45000,   #e-.   We need to sort out hte units properly NB NB NB
                 'areas_implemented': ["600%", "500%", "450%", "300%", "220%", "150%", "133%", "Full", "Sqr", '71%', '50%',  '35%', '25%', '12%'],
                 'default_area':  "Full",
                 'has_darkslide':  False,
@@ -494,24 +513,24 @@ def linearize_unihedron(uni_value):
 def f_to_c(f):
     return round(5*(f - 32)/9, 2)
 
-def get_ocn_status():
-    if site_config['site'] == 'fat':
-        breakpoint()
+def get_ocn_status(g_dev):
+    if site_config['site'] == 'fat':   #  Belts and suspenders.
         try:
             wx = open('W:/sroweather.txt', 'r')
             wx_line = wx.readline()
             wx.close
             #print(wx_line)
             wx_fields = wx_line.split()
-            skyTemperature = float( wx_fields[4])
+            skyTemperature = f_to_c(float( wx_fields[4]))
             temperature = f_to_c(float(wx_fields[5]))
             windspeed = round(float(wx_fields[7])/2.237, 2)
             humidity =  float(wx_fields[8])
             dewpoint = f_to_c(float(wx_fields[9]))
-            timeSinceLastUpdate = wx_fields[13]
+            #timeSinceLastUpdate = wx_fields[13]
             open_ok = wx_fields[19]
             #g_dev['o.redis_sever.set("focus_temp", temperature, ex=1200)
             #self.focus_temp = temperature
+            g_dev['last_good_wx_fields'] = wx_fields
         except:
             time.sleep(5)
             try:
@@ -521,15 +540,16 @@ def get_ocn_status():
                 wx.close
                 #print(wx_line)
                 wx_fields = wx_line.split()
-                skyTemperature = float( wx_fields[4])
+                skyTemperature = f_to_c(float( wx_fields[4]))
                 temperature = f_to_c(float(wx_fields[5]))
                 windspeed = round(float(wx_fields[7])/2.237, 2)
                 humidity =  float(wx_fields[8])
                 dewpoint = f_to_c(float(wx_fields[9]))
-                timeSinceLastUpdate = wx_fields[13]
+                #timeSinceLastUpdate = wx_fields[13]
                 open_ok = wx_fields[19]
                 #g_dev['o.redis_sever.set("focus_temp", temperature, ex=1200)
                 #self.focus_temp = temperature
+                #g_dev['las_good_wx_fields'] = wx_fields
             except:
                 print('SRO Weather source problem, 2nd try.')
                 time.sleep(5)
@@ -540,40 +560,78 @@ def get_ocn_status():
                     wx.close
                     #print(wx_line)
                     wx_fields = wx_line.split()
-                    skyTemperature = float( wx_fields[4])
+                    skyTemperature = f_to_c(float( wx_fields[4]))
                     temperature = f_to_c(float(wx_fields[5]))
                     windspeed = round(float(wx_fields[7])/2.237, 2)
                     humidity =  float(wx_fields[8])
                     dewpoint = f_to_c(float(wx_fields[9]))
-                    timeSinceLastUpdate = wx_fields[13]
+                    #timeSinceLastUpdate = wx_fields[13]
                     open_ok = wx_fields[19]
                     #g_dev['o.redis_sever.set("focus_temp", temperature, ex=1200)
                     #self.focus_temp = temperature
-                except:
-                    print('SRO Weather source problem, 3nd try.')
-                    breakpoint()
 
+                except:
+                    try:
+
+                        wx = open('W:/sroweather.txt', 'r')
+                        wx_line = wx.readline()
+                        wx.close
+                        #print(wx_line)
+                        wx_fields = wx_line.split()
+                        skyTemperature = f_to_c(float( wx_fields[4]))
+                        temperature = f_to_c(float(wx_fields[5]))
+                        windspeed = round(float(wx_fields[7])/2.237, 2)
+                        humidity =  float(wx_fields[8])
+                        dewpoint = f_to_c(float(wx_fields[9]))
+                        #timeSinceLastUpdate = wx_fields[13]
+                        open_ok = wx_fields[19]
+                        #g_dev['o.redis_sever.set("focus_temp", temperature, ex=1200)
+                        #self.focus_temp = temperature
+                    except:
+                        print('SRO Weather source problem, 3nd try.')
+                        wx_fields = g_dev['last_good_wx_fields']
+                        wx_fields = wx_line.split()
+                        skyTemperature = f_to_c(float( wx_fields[4]))
+                        temperature = f_to_c(float(wx_fields[5]))
+                        windspeed = round(float(wx_fields[7])/2.237, 2)
+                        humidity =  float(wx_fields[8])
+                        dewpoint = f_to_c(float(wx_fields[9]))
+                        #timeSinceLastUpdate = wx_fields[13]
+                        open_ok = wx_fields[19]
+        #self.last_weather =   NB found this fragment
         try:
             daily= open('W:/daily.txt', 'r')
             daily_lines = daily.readlines()
             daily.close()
             pressure = round(33.846*float(daily_lines[-3].split()[1]), 2)
+            last_good_daily_lines = daily_lines
         except:
             time.sleep(5)
             try:
                 daily= open('W:/daily.txt', 'r')
                 daily_lines = daily.readlines()
                 daily.close()
-                pressure = round(33.846*float(daily_lines[-3].split()[1]), 2)
+                #self.last_good_daily_lines = daily_lines
+               # pressure = round(33.846*float(daily_lines[-3].split()[1]), 2)
             except:
-                print('SRO Daily source problem, 2nd try')
-                pressure = 866.
-        illum, mag = g_dev['obs'].astro_events.illuminationNow()
+                try:
+                    daily= open('W:/daily.txt', 'r')
+                    daily_lines = daily.readlines()
+                    daily.close()
+                    pressure = round(33.846*float(daily_lines[-3].split()[1]), 2)
+                except:
+                    print('SRO Daily source problem, 3nd try')
+                   # pressure = round(33.846*float(self.last_good_daily_lines[-3].split()[1]), 2)
+
+        illum, mag = g_dev['evnt'].illuminationNow()
+
         if illum > 100:
             illum = int(illum)
         calc_HSI_lux = illum
+        # NOte criterian below can now vary with the site config file.
         dew_point_gap = not (temperature  - dewpoint) < 2
         temp_bounds = not (temperature < -10) or (temperature > 40)
+        # NB NB NB Thiseeds to go into a config entry.
         wind_limit = windspeed < 60/2.235   #sky_monitor reports m/s, Clarity may report in MPH
         sky_amb_limit  = skyTemperature < -20
         humidity_limit =humidity < 85
@@ -585,6 +643,7 @@ def get_ocn_status():
             wx_str = "Yes"
         else:
             wx_str = "No"   #Ideally we add the dominant reason in priority order.
+        # Now assemble the status dictionary.
         status = {"temperature_C": round(temperature, 2),
                       "pressure_mbar": pressure,
                       "humidity_%": humidity,
@@ -598,17 +657,77 @@ def get_ocn_status():
                       "calc_HSI_lux": illum,
                       "calc_sky_mpsas": round((mag - 20.01),2),    #  Provenance of 20.01 is dubious 20200504 WER
                       "wx_ok": wx_str,  #str(self.sky_monitor_oktoimage.IsSafe),
-                      "open_ok": open_ok,
-                      #'wx_hold': wx_hold,
+                      "open_ok": open_ok,  #T his is the special bit in the 
+                                           # Boltwood for a roof close relay
+                      #'wx_hold': wx_hold, # THis is added by the OCN Manager
                       'hold_duration': 0.0,
-                      'meas_sky_mpsas': 22
+                      'meas_sky_mpsas': 22   # THis is a plug.  NB NB NB
                       #"image_ok": str(self.sky_monitor_oktoimage.IsSafe)
                       }
-
         return status
     else:
-        breakpoint()
-    
+        breakpoint()       #  Debug bad place.
+
+def get_enc_status(g_dev):
+    if site_config['site'] == 'fat':   #  Belts and suspenders.
+
+        try:
+            enc = open('R:/Roof_Status.txt')
+            enc_text = enc.readline()
+            enc.close
+            enc_list = enc_text.split()
+
+        except:
+            try:
+                enc = open('R:/Roof_Status.txt')
+                enc_text = enc.readline()
+                enc.close
+                enc_list = enc_text.split()
+            except:
+                print("Second read of roof status file failed")
+                try:
+                    enc = open('R:/Roof_Status.txt')
+                    enc_text = enc.readline()
+                    enc.close
+                    enc_list = enc_text.split()
+                except:
+                    print("Third read of roof status file failed")
+                    enc_list = [1, 2, 3, 4, 'Error']
+        if len(enc_list) == 5:
+            if enc_list[4] in ['OPEN', 'Open', 'open', 'OPEN\n']:
+                shutter_status = 0  #Numbering is correct
+                stat_string = "Open"
+            elif enc_list[4] in ['OPENING']:  #SRO Does not report this.
+                shutter_status = 2
+                stat_string = "Open"
+            elif enc_list[4] in ['CLOSED', 'Closed', 'closed', "CLOSED\n"]:
+                shutter_status = 1
+                stat_string = "Closed"
+            elif enc_list[4] in ['CLOSING']:  # SRO Does not report this.
+                shutter_status = 3
+                stat_string = "Closed"
+            elif enc_list[4] in ['Error']:  # SRO Does not report this.
+                shutter_status = 4
+                stat_string = "Fault"  #Do not know if SRO supports this.
+        else:
+            shutter_status = 4
+            stat_string = "Fault"
+        #g_dev['enc'].status = shutter_status   # NB NB THIS was a nasty bug
+        g_dev['enc'].stat_string = stat_string
+        if shutter_status in [2, 3]:
+            g_dev['enc'].moving = True
+        else:
+            g_dev['enc'].moving = False
+        status = {'shutter_status': stat_string,
+                  'enclosure_synchronized': True,
+                  'dome_azimuth': 360,
+                  'dome_slewing': False,
+                  'enclosure_mode': g_dev['enc'].mode,
+                  'enclosure_message':  ''
+                 }
+        return status
+    else:
+        breakpoint()     #  Debug bad place.
 if __name__ == '__main__':
     j_dump = json.dumps(site_config)
     site_unjasoned = json.loads(j_dump)

@@ -65,6 +65,7 @@ class ObservingConditions:
         #g_dev['redis'].get('wx_state')
         g_dev['ocn'] = self
         self.config = config
+        g_dev['ocn'] = self
         self.sample_time = 0
         self.ok_to_open = 'No'
         self.observing_condtions_message = '-'

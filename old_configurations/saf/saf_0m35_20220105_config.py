@@ -35,8 +35,9 @@ site_config = {
     'site_path':  'C:/ptr/',     # Generic place ofor this host to stash.
                                  #NB for the client this is the site archive location, maybe call it that?
     'client_path': 'F:/ptr/',
+    'archive_path':  'F:/',
     'site_IPC_mechanism':  'shares',   # ['None', shares', 'shelves', 'redis']  Pick One     
-    'site_share_path':  '//saf-wema/wema_transfer/',  # Presumably also where shelves are found   
+    'client_share_path':  '//saf-wema/wema_transfer/',  # Presumably also where shelves are found   
                                                       # Meant to be used by mnt/tel's.
     'wema_is_active':  True,     # True if an agent is used at a site. 
                                  # Wemas are split sites -- at least two CPS's sharing the control.
@@ -71,7 +72,7 @@ site_config = {
         ],
     'wema_types': [
        'observing_conditions1',
-       'enclosure',    
+       'enclosure1',    
        ],
     'short_status_devices':  [
        # 'observing_conditions',
@@ -142,7 +143,7 @@ site_config = {
 
             'has_lights':  False,
             'controlled_by': 'mount1',
-			'is_dome': False,
+			'is_dome':True,
             'mode': 'Automatic',
             
             'cool_down': 89.0,     # Minutes prior to sunset.
@@ -518,7 +519,9 @@ site_config = {
         },
     },
 }
-
+get_ocn_status = None
+get_enc_status = None
+ 
 if __name__ == '__main__':
     j_dump = json.dumps(site_config)
     site_unjasoned = json.loads(j_dump)

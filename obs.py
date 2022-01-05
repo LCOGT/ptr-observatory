@@ -159,7 +159,7 @@ class Observatory:
         self.name = name
         self.site_name = name
         self.config = config
-
+       
         self.site = config['site']
         if self.config['wema_is_active']:
             self.hostname = self.hostname = socket.gethostname()
@@ -167,7 +167,6 @@ class Observatory:
                 self.is_wema = True
                 g_dev['wema_share_path'] = config['wema_share_path']
                 self.wema_path = g_dev['wema_share_path']
-                self.site_path = self.wema_path
             else:  
                 #This host is a client
                 self.is_wema = False  #This is a client.
@@ -180,13 +179,11 @@ class Observatory:
             self.site_path = config['client_share_path']
             g_dev['site_path'] = self.site_path
             g_dev['wema_share_path']  = self.site_path  # Just to be safe.
-            self.wema_path = g_dev['wema_share_path']
-            
+            self.wema_path = g_dev['wema_share_path'] 
         if self.config['site_is_specific']:
              self.site_is_specific = True
         else:
             self.site_is_specific = False
-
         self.last_request = None
         self.stopped = False
         self.status_count = 0
@@ -488,7 +485,7 @@ class Observatory:
         status = {}
         # Loop through all types of devices.
         # For each type, we get and save the status of each device.
-        breakpoint()
+     
         if not self.config['wema_is_active']:
             device_list = self.device_types
             remove_enc = False
@@ -504,11 +501,12 @@ class Observatory:
             # `type` devices, with key=name and val=device object itself.
             devices_of_type = self.all_devices.get(dev_type, {})
             device_names = devices_of_type.keys()
+
             for device_name in device_names:
                 # Get the actual device object...
                 device = devices_of_type[device_name]
                 # ...and add it to main status dict.
-                breakpoint()
+
                 if device_name in self.config['wema_types'] and (self.is_wema or self.site_is_specific):
                     result = device.get_status(g_dev)
                     if self.site_is_specific:
@@ -522,8 +520,12 @@ class Observatory:
                     #print(device_name, result, '\n')
         # Include the time that the status was assembled and sent.
         if remove_enc:
-            status.pop('enclosure', None)
-            status.pop('observing_conditions', None)
+            #breakpoint()
+            #status.pop('enclosure', None)
+            #status.pop('observing_conditions', None)
+            status['observing_conditions'] = None
+            status['enclosure'] = None
+            
         status["timestamp"] = round((time.time() + t1)/2., 3)
         status['send_heartbeat'] = False
         loud = False

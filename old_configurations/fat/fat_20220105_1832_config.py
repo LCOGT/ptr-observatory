@@ -31,13 +31,15 @@ site_config = {
     'admin_aliases': [ "WER", "TB", "DH", "KVH", 'KC', "ANS", 'EC'],
     
     'client_hostname':  'FAT-0m30',
-    'client_share_path':  'F:/ptr/',  # Generic place ofor this host to stash.
-    'wema_is_active':  False,    #True if the split computers used at a site.
-    'wema_hostname':  None,  #  Prefer the shorter version  
+    'client_share_path':  'F:/ptr/',  # Generic place for this host to stash.
+    'archive_path':  'F:/',  # Meant to be where /archive/<camera_id> is located.  Not wired in yet. 20220105
+    'wema_is_active':  False,    #True if split computers used at a site.
+    'wema_hostname':  [],  #  Prefer the shorter version
+    'wema_share_path':  None,
     'redis_ip': None,  #'127.0.0.1', None if no redis path present, 
     'site_is_generic':  False,   # A simplee single computer ASCOM site.
     'site_is_specific':  True,  # Indicates some special code for this site, found at end of config.
-    'site_IPC_mechanism':  'shares',   # ['None', shares', 'shelves', 'redis']  Pick One
+    'site_IPC_mechanism':  None,   # ['None', shares', 'shelves', 'redis']  Pick One
     'aux_archive_path':  None, # '//house-computer/saf_archive_2/archive/',  #  Path to auxillary backup disk.     
 
     'wema_share_path':  None,  # Meant to be where Wema puts status data.
@@ -59,8 +61,8 @@ site_config = {
     'latitude': 37.0701111,     #  Decimal degrees, North is Positive
     'longitude': -119.412417,   #  Decimal degrees, West is negative
     'elevation': 1405,    #  meters above sea level
-    'reference_ambient':  [10],  #  Degrees Celsius.  Alternately 12 entries, one for every - mid month.
-    'reference_pressure':  [867.254],    #mbar   A rough guess 20200315
+    'reference_ambient':  10,  #  Degrees Celsius.  Alternately 12 entries, one for every - mid month.
+    'reference_pressure':  867.254,    #mbar   A rough guess 20200315
     
     'site_in_automatic_default': "Automatic",   #  ["Manual", "Shutdown", "Automatic"]
     'automatic_detail_default': "Enclosure is initially set to Automatic mode.",
@@ -95,10 +97,12 @@ site_config = {
             'selector',
             'filter_wheel',
             'camera',
-            'sequencer',
-
+            'sequencer'
             ],
-    # This is used of there is a wema
+    'wema_types': [
+            'observing_conditions1',
+            'enclosure1'
+            ],
     'short_status_devices':  [
             'enclosure',
             'mount',
@@ -109,7 +113,7 @@ site_config = {
             'selector',
             'filter_wheel',
             'camera',
-            'sequencer',
+            'sequencer'
             ],
     'observing_conditions' : {
         'observing_conditions1': {
@@ -118,7 +122,7 @@ site_config = {
             # Intention it is found in this file.
             'name': 'SRO File',
             'driver': 'Windows.Share',  # Could be redis, ASCOM, ...
-            'share_path_name': 'c:/blah/wx.txt',
+            'share_path_name': 'F:/ptr/',
             'driver_2':  None,   #' ASCOM.Boltwood.OkToOpen.SafetyMonitor',
             'driver_3':  None,    # 'ASCOM.Boltwood.OkToImage.SafetyMonitor'
             'ocn_has_unihedron':  False,
@@ -527,7 +531,7 @@ def get_ocn_status(g_dev):
             open_ok = wx_fields[19]
             #g_dev['o.redis_sever.set("focus_temp", temperature, ex=1200)
             #self.focus_temp = temperature
-            g_dev['las_good_wx_fields'] = wx_fields
+            g_dev['last_good_wx_fields'] = wx_fields
         except:
             time.sleep(5)
             try:
@@ -601,25 +605,29 @@ def get_ocn_status(g_dev):
             daily_lines = daily.readlines()
             daily.close()
             pressure = round(33.846*float(daily_lines[-3].split()[1]), 2)
-            #self.last_good_daily_lines = daily_lines
+            last_good_daily_lines = daily_lines
         except:
             time.sleep(5)
             try:
                 daily= open('W:/daily.txt', 'r')
                 daily_lines = daily.readlines()
                 daily.close()
-                #self.last_good_daily_lines = daily_lines
-               # pressure = round(33.846*float(daily_lines[-3].split()[1]), 2)
+                pressure = round(33.846*float(daily_lines[-3].split()[1]), 2)
+                last_good_daily_lines = daily_lines
             except:
                 try:
                     daily= open('W:/daily.txt', 'r')
                     daily_lines = daily.readlines()
                     daily.close()
                     pressure = round(33.846*float(daily_lines[-3].split()[1]), 2)
+                    last_good_daily_lines = daily_lines
                 except:
                     print('SRO Daily source problem, 3nd try')
                    # pressure = round(33.846*float(self.last_good_daily_lines[-3].split()[1]), 2)
-
+        try:   # 20220105 Experienced a glitch, probably the first try faulted in the code above.
+            pressure = float(pressure)
+        except:
+            pressure = site_config['reference_pressure']
         illum, mag = g_dev['evnt'].illuminationNow()
 
         if illum > 100:
@@ -667,6 +675,7 @@ def get_ocn_status(g_dev):
 
 def get_enc_status(g_dev):
     if site_config['site'] == 'fat':   #  Belts and suspenders.
+
         try:
             enc = open('R:/Roof_Status.txt')
             enc_text = enc.readline()
@@ -708,7 +717,7 @@ def get_enc_status(g_dev):
         else:
             shutter_status = 4
             stat_string = "Fault"
-        g_dev['enc'].status = shutter_status   # NB SHould use dict!
+        #g_dev['enc'].status = shutter_status   # NB NB THIS was a nasty bug
         g_dev['enc'].stat_string = stat_string
         if shutter_status in [2, 3]:
             g_dev['enc'].moving = True

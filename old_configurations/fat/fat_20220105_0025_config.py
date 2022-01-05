@@ -121,7 +121,7 @@ site_config = {
             # Intention it is found in this file.
             'name': 'SRO File',
             'driver': 'Windows.Share',  # Could be redis, ASCOM, ...
-            'share_path_name': 'c:/blah/wx.txt',
+            'share_path_name': 'F:/ptr/',
             'driver_2':  None,   #' ASCOM.Boltwood.OkToOpen.SafetyMonitor',
             'driver_3':  None,    # 'ASCOM.Boltwood.OkToImage.SafetyMonitor'
             'ocn_has_unihedron':  False,

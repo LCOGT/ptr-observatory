@@ -71,7 +71,7 @@ site_config = {
         ],
     'wema_types': [
        'observing_conditions1',
-       'enclosure',    
+       'enclosure1',    
        ],
     'short_status_devices':  [
        # 'observing_conditions',
