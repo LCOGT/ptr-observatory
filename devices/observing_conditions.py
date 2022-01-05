@@ -62,6 +62,8 @@ class ObservingConditions:
         self.name = name
         self.astro_events = astro_events
         self.site = config['site']
+        #g_dev['redis'].get('wx_state')
+        g_dev['ocn'] = self
         self.config = config
         g_dev['ocn'] = self
         self.sample_time = 0
