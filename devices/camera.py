@@ -246,7 +246,7 @@ class Camera:
         self.t7 = None
         self.camera_message = '-'
         #self.alias = self.config['camera'][self.name]#
-        self.site_path = self.config['client_path']
+        self.site_path = self.config['client_share_path']
         self.archive_path = self.site_path +'archive/'
         self.camera_path = self.archive_path  + self.alias+ "/"
         self.alt_path = '//house-computer/saf_archive_2/archive/sq01/'
