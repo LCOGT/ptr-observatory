@@ -483,7 +483,7 @@ class Mount:
             # This write the mount conditin back to the dome, only needed if self.is_dome
             if g_dev['enc'].is_dome:
                 try:
-                    mount = open(g_dev['wema_path']+'mnt_cmd.txt', 'w')
+                    mount = open(g_dev['wema_share_path']+'mnt_cmd.txt', 'w')
                     mount.write(json.dumps(status))
                     mount.close()
                 except:
@@ -491,17 +491,17 @@ class Mount:
                         time.sleep(3)
                         # mount = open(self.config['wema_path']+'mnt_cmd.txt', 'r')
                         # mount.write(json.loads(status))
-                        mount = open(g_dev['wema_path']+'mnt_cmd.txt', 'w')
+                        mount = open(g_dev['wema_share_path']+'mnt_cmd.txt', 'w')
                         mount.write(json.dumps(status))
                         mount.close()
                     except:
                         try:
                             time.sleep(3)
-                            mount = open(g_dev['wema_path']+'mnt_cmd.txt', 'w')
+                            mount = open(g_dev['wema_share_path']+'mnt_cmd.txt', 'w')
                             mount.write(json.dumps(status))
                             mount.close()
                         except:
-                            mount = open(g_dev['wema_path']+'mnt_cmd.txt', 'w')
+                            mount = open(g_dev['wema_share_path']+'mnt_cmd.txt', 'w')
                             mount.write(json.dumps(status))
                             mount.close()
                             print("3rd try to append to enc-cmd  list.")

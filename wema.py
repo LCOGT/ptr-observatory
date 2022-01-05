@@ -253,7 +253,7 @@ class WxEncAgent:
             for device_name in device_names:
                 device = devices_of_type[device_name]
                 #print(device)
-                #breakpoint()
+
                 status[dev_type][device_name] = device.get_status()
         # Include the time that the status was assembled and sent.
         status["timestamp"] = round((time.time() + t1)/2., 3)
