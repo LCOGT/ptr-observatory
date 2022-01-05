@@ -35,6 +35,7 @@ site_config = {
     'site_path':  'C:/ptr/',     # Generic place ofor this host to stash.
                                  #NB for the client this is the site archive location, maybe call it that?
     'client_path': 'F:/ptr/',
+    'archive_path':  'F:/',
     'site_IPC_mechanism':  'shares',   # ['None', shares', 'shelves', 'redis']  Pick One     
     'client_share_path':  '//saf-wema/wema_transfer/',  # Presumably also where shelves are found   
                                                       # Meant to be used by mnt/tel's.
