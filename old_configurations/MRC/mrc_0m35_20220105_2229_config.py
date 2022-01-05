@@ -61,6 +61,7 @@ site_config = {
 #FRom FAT:
     'client_hostname':  'MRC-0m35',
     'client_share_path':  'Q:/ptr/',  # Generic place for this host to stash.
+    'archive_pth':  'Q:/',
     'wema_is_active':  True,          # True if the split computers used at a site.
     'wema_hostname': 'MRC-WMS-ENC',   # Prefer the shorter version
     'wema_share_path':  'Q:/ptr/',  # '/wema_transfer/',
