@@ -232,24 +232,24 @@ class Enclosure:
                 # # g_dev['redis'].set('enc_status', status, ex=3600)
         if self.is_wema and self.config['site_IPC_mechanism'] == 'shares':
             try:
-                enclosure = open(self.config['wema_share_path']+'enclosure.txt', 'w')
+                enclosure = open(self.config['wema_share_path'] + 'enclosure.txt', 'w')
                 enclosure.write(json.dumps(status))
                 enclosure.close()
             except:
                 time.sleep(3)
                 try:
-                    enclosure = open(self.config['wema_share_path']+'enclosure.txt', 'w')
+                    enclosure = open(self.config['wema_share_path'] + 'enclosure.txt', 'w')
                     enclosure.write(json.dumps(status))
                     enclosure.close()
                 except:
                     time.sleep(3)
                     try:
-                        enclosure = open(self.config['wem_share_path']+'enclosure.txt', 'w')
+                        enclosure = open(self.config['wem_share_path'] + 'enclosure.txt', 'w')
                         enclosure.write(json.dumps(status))
                         enclosure.close()
                     except:
                         time.sleep(3)
-                        enclosure = open(self.config['wema_share_path']+'enclosure.txt', 'w')
+                        enclosure = open(self.config['wema_share_path'] + 'enclosure.txt', 'w')
                         enclosure.write(json.dumps(status))
                         enclosure.close()
                         print("4th try to write enclosure status.")
@@ -292,7 +292,7 @@ class Enclosure:
                     except:
                         #print("Finding enc_cmd failed after 3 tries, no harm done.")
                         redis_command = ['none']
-            mnt_command = None
+                        mnt_command = None
             try:
               enc_cmd = open(self.config['wema_share_path'] + 'mnt_cmd.txt', 'r')
               status = json.loads(enc_cmd.readline())
@@ -317,7 +317,7 @@ class Enclosure:
                         mnt_command = status
                     except:
                         #print("Finding enc_cmd failed after 3 tries, no harm done.")
-                        mnt_command = ['none'] 
+                        mnt_command = None
            
         elif self.is_wema and self.site_has_proxy and self.config['site_IPC_mechanism'] == 'redis':
             redis_command = g_dev['redis'].get('enc_cmd')  #It is presumed there is an expiration date on open command at least.
@@ -385,25 +385,25 @@ class Enclosure:
             pass    
         status['enclosure_mode']: self.mode
         status['enclosure_message']: self.state
-        if mount_command is not None and mount_command != '' and mount_command != ['none']:
+        if mnt_command is not None and mnt_command != '' and mnt_command != ['none']:
             breakpoint()
             try:
-                print(self.status,'\n\n', mount_command)
+                print(self.status,'\n\n', mnt_command)
                 # adj1 = dome_adjust(mount_command['altitude'], mount_command['azimuth'], \
                 #                   mount_command['hour_angle'])
                 # adjt = dome_adjust(mount_command['altitude'], mount_command['target_az'], \
                 #                   mount_command['hour_angle'])
-                track_az = mount_command['azimuth']
-                target_az = mount_command['target_az']
+                track_az = mnt_command['azimuth']
+                target_az = mnt_command['target_az']
             except:
                 track_az = 0
                 target_az = 0
                 pass
             if self.is_dome and self.status is not None:   #First time around, stauts is None.
-                if mount_command['is_slewing'] and not self.slew_latch:   # NB NB NB THIS should have a timeout
+                if mnt_command['is_slewing'] and not self.slew_latch:   # NB NB NB THIS should have a timeout
                     self.enclosure.SlewToAzimuth(float(target_az))
                     self.slew_latch = True   #Isuing multiple Slews causes jerky Dome motion.
-                elif self.slew_latch and not mount_command['is_slewing']:
+                elif self.slew_latch and not mnt_command['is_slewing']:
                     self.slew_latch = False   #  Return to Dpme following.
                     self.enclosure.SlewToAzimuth(float(track_az))
                 elif (not self.slew_latch) and (self.status['enclosure_synchronized'] or \
@@ -411,6 +411,8 @@ class Enclosure:
                     #This is normal dome following.
                     try:
                         if shutter_status not in [2,3]:    #THis should end annoying report.
+                            breakpoint()
+                            adj1 = 0
                             self.enclosure.SlewToAzimuth(float(adj1))
                     except:
                         print("Dome refused slew, probably closing or opening, usually a harmless situation.")

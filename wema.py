@@ -77,6 +77,7 @@ class WxEncAgent:
                                 # and sub-site distinction.distinction.
 
         self.site = config['site']
+
         if self.config['wema_is_active']:
             self.hostname = self.hostname = socket.gethostname()
             if self.hostname in self.config['wema_hostname']:

@@ -61,8 +61,9 @@ class ObservingConditions:
 
         self.name = name
         self.astro_events = astro_events
-        g_dev['ocn'] = self
         self.site = config['site']
+        #g_dev['redis'].get('wx_state')
+        g_dev['ocn'] = self
         self.config = config
         self.sample_time = 0
         self.ok_to_open = 'No'
@@ -163,7 +164,6 @@ class ObservingConditions:
             DESCRIPTION.
 
         '''
-        breakpoint()
         if not self.is_wema and self.site_has_proxy:
             if self.config['site_IPC_mechanism'] == 'shares':
                 try:
