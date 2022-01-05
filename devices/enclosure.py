@@ -98,7 +98,6 @@ class Enclosure:
         #self.state = 'Ok'
         
     def get_status(self) -> dict:
-
         if not self.is_wema and self.site_has_proxy:
             if self.config['site_IPC_mechanism'] == 'shares':
                 try:

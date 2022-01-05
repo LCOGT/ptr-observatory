@@ -70,7 +70,7 @@ site_config = {
         'sequencer',
         ],
     'wema_types': [
-       'observing_conditions',
+       'observing_conditions1',
        'enclosure',    
        ],
     'short_status_devices':  [
