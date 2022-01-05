@@ -470,14 +470,14 @@ class Enclosure:
             print("Site and Enclosure set to Automatic.")
         elif action == "setManual":
             if _redis:  g_dev['redis'].set('enc_cmd', 'setManual', ex=300)
-            if shares:  cmd_list.append('setManual')
+            if shares:  cmd_list.append('set_manual')
             if generic:
                 self.mode = 'Manual'
             g_dev['enc'].site_in_automatic = False
             g_dev['enc'].automatic_detail =  "Manual Only"
         elif action in ["setStayClosed", 'setShutdown', 'shutDown']:
             if _redis:  g_dev['redis'].set('enc_cmd', 'setShutdown', ex=300)
-            if shares:  cmd_list.append('setShutdown')
+            if shares:  cmd_list.append('set_shutdown')
             if generic:
                 self.mode = 'Shutdown'
             g_dev['enc'].site_in_automatic = False

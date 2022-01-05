@@ -35,9 +35,9 @@ site_config = {
     'site_path':  'C:/ptr/',     # Generic place ofor this host to stash.
                                  #NB for the client this is the site archive location, maybe call it that?
     'client_path': 'F:/ptr/',
-    'archive_path': 'F:/',       # Where images are kept.
+    'archive_path':  'F:/',
     'site_IPC_mechanism':  'shares',   # ['None', shares', 'shelves', 'redis']  Pick One     
-    'site_share_path':  '//saf-wema/wema_transfer/',  # Presumably also where shelves are found   
+    'client_share_path':  '//saf-wema/wema_transfer/',  # Presumably also where shelves are found   
                                                       # Meant to be used by mnt/tel's.
     'wema_is_active':  True,     # True if an agent is used at a site. 
                                  # Wemas are split sites -- at least two CPS's sharing the control.
@@ -71,8 +71,8 @@ site_config = {
         'sequencer',
         ],
     'wema_types': [
-       'observing_conditions',
-       'enclosure',    
+       'observing_conditions1',
+       'enclosure1',    
        ],
     'short_status_devices':  [
        # 'observing_conditions',
@@ -106,7 +106,7 @@ site_config = {
     'reference_ambient':  10.0,  # Degrees Celsius.  Alternately 12 entries, one for every - mid month.
     'reference_pressure':  794.0,    #mbar   A rough guess 20200315
     
-    'site_in_automatic_default': "Automatic",   # ["Manual", "Shutdown", "Automatic"]
+    'site_in_automatic_default': "Shutdown",   # ["Manual", "Shutdown", "Automatic"]
     'automatic_detail_default': "Enclosure is initially set to Shutdown by SAF config.",
     'auto_eve_bias_dark': False,
     'auto_eve_sky_flat': False,
@@ -143,7 +143,7 @@ site_config = {
 
             'has_lights':  False,
             'controlled_by': 'mount1',
-			'is_dome': True,
+			'is_dome':True,
             'mode': 'Automatic',
             
             'cool_down': 89.0,     # Minutes prior to sunset.
