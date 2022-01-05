@@ -61,9 +61,9 @@ class ObservingConditions:
 
         self.name = name
         self.astro_events = astro_events
-        g_dev['ocn'] = self
         self.site = config['site']
         self.config = config
+        g_dev['ocn'] = self
         self.sample_time = 0
         self.ok_to_open = 'No'
         self.observing_condtions_message = '-'

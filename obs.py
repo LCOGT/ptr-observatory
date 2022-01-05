@@ -488,7 +488,7 @@ class Observatory:
         status = {}
         # Loop through all types of devices.
         # For each type, we get and save the status of each device.
-        breakpoint()
+
         if not self.config['wema_is_active']:
             device_list = self.device_types
             remove_enc = False
@@ -508,7 +508,7 @@ class Observatory:
                 # Get the actual device object...
                 device = devices_of_type[device_name]
                 # ...and add it to main status dict.
-                breakpoint()
+
                 if device_name in self.config['wema_types'] and (self.is_wema or self.site_is_specific):
                     result = device.get_status(g_dev)
                     if self.site_is_specific:

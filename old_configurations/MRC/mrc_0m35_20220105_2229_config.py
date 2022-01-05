@@ -67,7 +67,7 @@ site_config = {
     'redis_ip': '10.15.0.109',  #'127.0.0.1', None if no redis path present, 
     'site_is_generic':  False,   # A simplee single computer ASCOM site.
     'site_is_specific':  False,  # Indicates some special code for this site, found at end of config.
-    'site_IPC_mechanism':  'redis',   # ['None', shares', 'shelves', 'redis']  Pick One
+    'site_IPC_mechanism':  'shares',   # ['None', shares', 'shelves', 'redis']  Pick One
     # 'aux_archive_path':  None, # '//house-computer/saf_archive_2/archive/',  #  Path to auxillary backup disk.     
 
 
