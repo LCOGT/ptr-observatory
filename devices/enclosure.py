@@ -439,7 +439,7 @@ class Enclosure:
         opt = command['optional_params']
 
         action = command['action']
-        breakpoint()
+
         cmd_list = []
         generic = True
         _redis = False
