@@ -274,7 +274,10 @@ class Sequencer:
         '''
         
         # NB Need a better way to get all the events.
+        if g_dev['obs'].status_count < 3:
+            return
         obs_win_begin, sunZ88Op, sunZ88Cl, ephem_now = self.astro_events.getSunEvents()
+        
         ocn_status = g_dev['ocn'].status
         enc_status = g_dev['enc'].status
         events = g_dev['events']
