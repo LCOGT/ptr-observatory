@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 '''
 Created on Fri Feb 07,  11:57:41 2020
-Updated 20200902 WER
+Updated saf_wema_20220106_1705_config WER
 
 @author: wrosing
 
@@ -27,17 +27,17 @@ site_config = {
     'owner':  ['google-oauth2|102124071738955888216', 'google-oauth2|112401903840371673242'],  # Neyle,  Or this can be some aws handle.
     'owner_alias': ['ANS'],
     'admin_aliases': ["ANS", "WER", "TB", "DH", "KVH", 'KC'],
-    'site_is_generic':  False,   # A simplee single computer ASCOM site.
+    'site_is_generic':  False,   # A simple single computer ASCOM site.
     'site_is_specific':  False,  # Indicates some special code for a single site.
                                  # Intention it is found in this file.
                                  # Fat is intended to be simple since 
                                  # there is so little to control.
-    'site_path':  'C:/ptr/',     # Generic place ofor this host to stash.
+    'site_path':  'C:/ptr/',     # Generic place for this host to stash.
                                  #NB for the client this is the site archive location, maybe call it that?
     'client_path': 'F:/ptr/',
-    'archive_path':  'F:/',
+    'archive_path': 'F:/',       # Where images are kept.
     'site_IPC_mechanism':  'shares',   # ['None', shares', 'shelves', 'redis']  Pick One     
-    'client_share_path':  '//saf-wema/wema_transfer/',  # Presumably also where shelves are found   
+    'site_share_path':  '//saf-wema/wema_transfer/',  # Presumably also where shelves are found   
                                                       # Meant to be used by mnt/tel's.
     'wema_is_active':  True,     # True if an agent is used at a site. 
                                  # Wemas are split sites -- at least two CPS's sharing the control.
@@ -71,8 +71,8 @@ site_config = {
         'sequencer',
         ],
     'wema_types': [
-       'observing_conditions1',
-       'enclosure1',    
+       'observing_conditions',
+       'enclosure',    
        ],
     'short_status_devices':  [
        # 'observing_conditions',
@@ -106,7 +106,7 @@ site_config = {
     'reference_ambient':  10.0,  # Degrees Celsius.  Alternately 12 entries, one for every - mid month.
     'reference_pressure':  794.0,    #mbar   A rough guess 20200315
     
-    'site_in_automatic_default': "Shutdown",   # ["Manual", "Shutdown", "Automatic"]
+    'site_in_automatic_default': "Automatic",   # ["Manual", "Shutdown", "Automatic"]
     'automatic_detail_default': "Enclosure is initially set to Shutdown by SAF config.",
     'auto_eve_bias_dark': False,
     'auto_eve_sky_flat': False,
@@ -143,7 +143,7 @@ site_config = {
 
             'has_lights':  False,
             'controlled_by': 'mount1',
-			'is_dome':True,
+			'is_dome': True,
             'mode': 'Automatic',
             
             'cool_down': 89.0,     # Minutes prior to sunset.
@@ -341,8 +341,8 @@ site_config = {
     'filter_wheel': {
         "filter_wheel1": {
             "parent": "telescope1",
-            "name": "LCO filter wheel FW50_001d",
-            'service_date': '20110716',
+            "name": "LCO FW50_001d",
+            'service_date': '20210716',
             "driver": "LCO.dual",  # 'ASCOM.FLI.FilterWheel',   #'MAXIM',
             'ip_string': 'http://10.0.0.110',
             "dual_wheel": True,
