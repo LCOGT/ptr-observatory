@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 '''
 Created on Fri Aug  2 11:57:41 2019
-Updates 20220102 20:37 WER
+Updates 20220107 20:01 WER
 
 @author: wrosing
 '''
@@ -60,11 +60,9 @@ site_config = {
     
 #From FAT:
     'client_hostname':  'MRC-0m35',
-
     'client_share_path':  'Q:/ptr/',  # Generic place for client host to get
                                       # Wema share data
     'archive_path':  'Q:/',
-
     'wema_is_active':  True,          # True if the split computers used at a site.
     'wema_hostname': 'MRC-WMS-ENC',   # Prefer the shorter version
     'wema_share_path':  'Q:/ptr/',  # '/wema_transfer/',
@@ -250,7 +248,10 @@ site_config = {
                 'home_park_altitude': 0,    #Having these settings is important for PWI4 where it can easily be messed up.
                 'home_park_azimuth': 180,
                 'fixed_screen_azimuth': 167.25,
-                'fixed_screen _altitude': 0.54,
+                'Fixed_screen _altitude': 0.54,
+                'refraction_on': True,
+                'model_on': True,
+                'rates_on': True,
                 'horizon':  20,
                 'horizon_detail': {
                      '0': 32,
@@ -280,9 +281,6 @@ site_config = {
                      '315': 32,
                      '360': 32,
                      },
-                'refraction_on': True,
-                'model_on': True,
-                'rates_on': True,
                 'model': {
                     'IH': 0, 
                     'ID': 0., 
@@ -746,6 +744,9 @@ site_config = {
             'name': 'Sequencer',
             'desc':  'Automation Control',
             'driver': None,
+            'startup_script':  None,
+            'recover_script':  None,
+            'shutdown_script':  None, 
         },
     },
     #As aboove, need to get this sensibly suported on GUI and in fits headers.
