@@ -1,4 +1,4 @@
-0# -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 '''
 Created on Fri Aug  2 11:57:41 2019
 Updates 20220102 20:37 WER
@@ -65,7 +65,7 @@ site_config = {
     'archive_path':  'Q:/',
     'wema_is_active':  True,          # True if the split computers used at a site.
     'wema_hostname': 'MRC-WMS-ENC',   # Prefer the shorter version
-    'wema_share_path':  'C:/Users/obs/Documents/Ptr/',  # '/wema_transfer/',
+    'wema_share_path':  'Q:/ptr/',  # '/wema_transfer/',
     'redis_ip': '10.15.0.109',  #'127.0.0.1', None if no redis path present, 
     'site_is_generic':  False,   # A simply  single computer ASCOM site.
     'site_is_specific':  False,  # Indicates some special code for this site, found at end of config.
@@ -166,6 +166,7 @@ site_config = {
             'hostIP':  '10.15.0.65',
             'driver': 'ASCOM.SkyRoofHub.Dome',    #  Not really a dome for Skyroof.
             'redis_ip': '10.15.0.109',   #None if no redis path present
+            'enc_is_specific':  False,
             'startup_script':  None,
             'recover_script':  None,
             'shutdown_script':  None,
@@ -247,10 +248,7 @@ site_config = {
                 'home_park_altitude': 0,    #Having these settings is important for PWI4 where it can easily be messed up.
                 'home_park_azimuth': 180,
                 'fixed_screen_azimuth': 167.25,
-                'Fixed_screen _altitude': 0.54,
-                'refraction_on': True,
-                'model_on': True,
-                'rates_on': True,
+                'fixed_screen _altitude': 0.54,
                 'horizon':  20,
                 'horizon_detail': {
                      '0': 32,
@@ -280,6 +278,9 @@ site_config = {
                      '315': 32,
                      '360': 32,
                      },
+                'refraction_on': True,
+                'model_on': True,
+                'rates_on': True,
                 'model': {
                     'IH': 0, 
                     'ID': 0., 
@@ -743,9 +744,6 @@ site_config = {
             'name': 'Sequencer',
             'desc':  'Automation Control',
             'driver': None,
-            'startup_script':  None,
-            'recover_script':  None,
-            'shutdown_script':  None, 
         },
     },
     #As aboove, need to get this sensibly suported on GUI and in fits headers.

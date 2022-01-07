@@ -333,7 +333,7 @@ class Enclosure:
             redis_command = redis_command[0]  # it can come in as ['setManual']
         except:
             pass
-        breakpoint()
+
         if redis_command == 'open':
             if _redis: g_dev['redis'].delete('enc_cmd')
             print("enclosure remote cmd: open.")
