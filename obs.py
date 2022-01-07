@@ -408,7 +408,7 @@ class Observatory:
                                     except:
                                         device_instance = cmd['required_params']['deviceInstance']
                                 except:
-                                    breakpoint()
+                                    #breakpoint()
                                     pass
                         else:
                             device_instance = cmd['deviceInstance']
@@ -727,7 +727,7 @@ class Observatory:
                     err_dec = TARGDEC - DECJ2000
                     print("err ra, dec:  ", err_ha, err_dec)
                     #Turn this off for now and center in autofocus. Race condition.
-                    #g_dev['mnt'].adjust_mount_reference(err_ha, err_dec)
+                    g_dev['mnt'].adjust_mount_reference(err_ha, err_dec)
                     img.flush()
                     img.close
                     img = fits.open(wpath, ignore_missing_end=True)

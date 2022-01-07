@@ -1295,6 +1295,7 @@ class Camera:
                     sources = sep.extract(self.img, 4.5, err=bkg.globalrms, minarea=15)  # Minarea should deal with hot pixels.
                     sources.sort(order = 'cflux')
                     print('No. of detections:  ', len(sources))
+                    # 20220107 NB Sometimes code goes into black hole here when images are big donuts.
                     ix, iy = self.img.shape
                     r0 = 0
                     """
