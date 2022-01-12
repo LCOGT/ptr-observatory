@@ -1,4 +1,4 @@
-0# -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 '''
 Created on Fri Aug  2 11:57:41 2019
 Updates 20220102 20:37 WER
@@ -58,15 +58,18 @@ site_config = {
     'owner_alias': ['WER'],
     'admin_aliases': ["ANS", "WER", "TB", "DH", "KVH", "KC"],
     
-#FRom FAT:
+#From FAT:
     'client_hostname':  'MRC-0m35',
-    'client_share_path':  'Q:/ptr/',  # Generic place for this host to stash.
-    'archive_pth':  'Q:/',
+
+    'client_share_path':  'Q:/ptr/',  # Generic place for client host to get
+                                      # Wema share data
+    'archive_path':  'Q:/',
+
     'wema_is_active':  True,          # True if the split computers used at a site.
     'wema_hostname': 'MRC-WMS-ENC',   # Prefer the shorter version
     'wema_share_path':  'Q:/ptr/',  # '/wema_transfer/',
     'redis_ip': '10.15.0.109',  #'127.0.0.1', None if no redis path present, 
-    'site_is_generic':  False,   # A simplee single computer ASCOM site.
+    'site_is_generic':  False,   # A simply  single computer ASCOM site.
     'site_is_specific':  False,  # Indicates some special code for this site, found at end of config.
     'site_IPC_mechanism':  'shares',   # ['None', shares', 'shelves', 'redis']  Pick One
     # 'aux_archive_path':  None, # '//house-computer/saf_archive_2/archive/',  #  Path to auxillary backup disk.     
@@ -100,7 +103,7 @@ site_config = {
     'auto_morn_sky_flat': False,
     'auto_morn_bias_dark':False,
     're-calibrate_on_solve': True, 
-    'defaults': {    # This is a vector to the ACTUAL ACTIVE configuration
+    'defaults': {
         'observing_conditions': 'observing_conditions1',
         'enclosure': 'enclosure1',
         'mount': 'mount1',
@@ -165,6 +168,7 @@ site_config = {
             'hostIP':  '10.15.0.65',
             'driver': 'ASCOM.SkyRoofHub.Dome',    #  Not really a dome for Skyroof.
             'redis_ip': '10.15.0.109',   #None if no redis path present
+            'enc_is_specific':  False,
             'startup_script':  None,
             'recover_script':  None,
             'shutdown_script':  None,
@@ -246,10 +250,7 @@ site_config = {
                 'home_park_altitude': 0,    #Having these settings is important for PWI4 where it can easily be messed up.
                 'home_park_azimuth': 180,
                 'fixed_screen_azimuth': 167.25,
-                'Fixed_screen _altitude': 0.54,
-                'refraction_on': True,
-                'model_on': True,
-                'rates_on': True,
+                'fixed_screen _altitude': 0.54,
                 'horizon':  20,
                 'horizon_detail': {
                      '0': 32,
@@ -279,6 +280,9 @@ site_config = {
                      '315': 32,
                      '360': 32,
                      },
+                'refraction_on': True,
+                'model_on': True,
+                'rates_on': True,
                 'model': {
                     'IH': 0, 
                     'ID': 0., 
@@ -596,7 +600,7 @@ site_config = {
         #'default': 'camera_1_1',
         'camera_1_1': {
             'parent': 'telescope1',
-            'name': 'sq01',      #Important because this points to a server file structure by that name.
+            'name': 'sq003',      #Important because this points to a server file structure by that name.
             'desc':  'QHY 600M Pro',
             'driver':  "ASCOM.QHYCCD.Camera", #"Maxim.CCDCamera",   #'ASCOM.FLI.Kepler.Camera', "ASCOM.QHYCCD.Camera",   #
             'detector':  'Sony IMX455',
@@ -651,8 +655,8 @@ site_config = {
                 'square_detector': False,
                 'areas_implemented': ["600%", "450%", "300%", "250%", "150%", "133%", "Full", "Sqr", '71%', '50%',  '35%', '25%', '12%'],
                 'default_area':  "Full",
-                'bin_modes':  [[2, 2], [1,1]],     #Meaning fixed binning if list has only one entry
-                'default_bin':  [2, 2],     #Always square and matched to seeing situation by owner
+                'bin_modes':  [[2, 2, 0.605], [3, 3, 0.908], [4, 4, 1.21], [1, 1, 0.303]],     #Meaning fixed binning if list has only one entry
+                'default_bin':  [2, 2, 0.605],     #Always square and matched to seeing situation by owner
                 'has_darkslide':  True,
                 'darkslide_com':  'COM15',
                 'has_screen': True,
@@ -742,9 +746,6 @@ site_config = {
             'name': 'Sequencer',
             'desc':  'Automation Control',
             'driver': None,
-            'startup_script':  None,
-            'recover_script':  None,
-            'shutdown_script':  None, 
         },
     },
     #As aboove, need to get this sensibly suported on GUI and in fits headers.
