@@ -598,7 +598,7 @@ site_config = {
         #'default': 'camera_1_1',
         'camera_1_1': {
             'parent': 'telescope1',
-            'name': 'sq01',      #Important because this points to a server file structure by that name.
+            'name': 'sq003',      #Important because this points to a server file structure by that name.
             'desc':  'QHY 600M Pro',
             'driver':  "ASCOM.QHYCCD.Camera", #"Maxim.CCDCamera",   #'ASCOM.FLI.Kepler.Camera', "ASCOM.QHYCCD.Camera",   #
             'detector':  'Sony IMX455',
@@ -653,8 +653,8 @@ site_config = {
                 'square_detector': False,
                 'areas_implemented': ["600%", "450%", "300%", "250%", "150%", "133%", "Full", "Sqr", '71%', '50%',  '35%', '25%', '12%'],
                 'default_area':  "Full",
-                'bin_modes':  [[2, 2], [1,1]],     #Meaning fixed binning if list has only one entry
-                'default_bin':  [2, 2],     #Always square and matched to seeing situation by owner
+                'bin_modes':  [[2, 2, 0.605], [3, 3, 0.908], [4, 4, 1.21], [1, 1, 0.303]],     #Meaning fixed binning if list has only one entry
+                'default_bin':  [2, 2, 0.605],     #Always square and matched to seeing situation by owner
                 'has_darkslide':  True,
                 'darkslide_com':  'COM15',
                 'has_screen': True,

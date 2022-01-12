@@ -790,7 +790,7 @@ class Sequencer:
         self.sequencer_hold = True
         self.current_script = 'Afternoon Bias Dark'
         #dark_time = 300   #seed for 3x3 binning
-        #breakpoint()
+        breakpoint()
         
         while ephem.now() < g_dev['events']['Morn Bias Dark'] :   #Do not overrun the window end
             #g_dev['mnt'].unpark_command({}, {}) # Get there early

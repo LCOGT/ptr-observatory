@@ -71,6 +71,7 @@ class Focuser:
         self.last_known_focus = None
         self.last_temperature = None
         self.last_source = None
+
         try:   #  NB NB NB This mess neads cleaning up.
             try:
 

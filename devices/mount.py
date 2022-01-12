@@ -842,7 +842,7 @@ class Mount:
             self.go_coord(self.last_ra, self.last_dec, self.last_tracking_rate_ra, self.last_tracking_rate_dec)
         else:
             #breakpoint()
-            
+            pass
             
             
 

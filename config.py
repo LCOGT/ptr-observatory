@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 '''
 Created on Fri Aug  2 11:57:41 2019
-Updates 20220102 20:37 WER
+Updates 20220107 20:01 WER
 
 @author: wrosing
 '''
@@ -598,13 +598,20 @@ site_config = {
         #'default': 'camera_1_1',
         'camera_1_1': {
             'parent': 'telescope1',
-            'name': 'sq01',      #Important because this points to a server file structure by that name.
+            'name': 'sq003',      #Important because this points to a server file structure by that name.
             'desc':  'QHY 600M Pro',
             'driver':  "ASCOM.QHYCCD.Camera", #"Maxim.CCDCamera",   #'ASCOM.FLI.Kepler.Camera', "ASCOM.QHYCCD.Camera",   #
             'detector':  'Sony IMX455',
             'manufacturer':  'QHY',
             'use_file_mode':  False,
             'file_mode_path':  'D:/archive/sq01/maxim/',
+            'detsize': '[1:9600, 1:6422]',  # Physical chip data size as reutrned from driver
+            'ccdsec': '[1:9600, 1:6422]',
+            'biassec': ['[1:24, 1:6388]', '[1:12 1:3194]', '[1:8, 1:2129]', '[1:6, 1:1597]'],
+            'datasec': ['[25:9600, 1:6388]', '[13:4800, 1:3194]', '[9:3200, 1:2129]', '[7:2400, 1:1597]'],
+            'trimsec': ['[1:9576, 1:6388]', '[1:4788, 1:3194]', '[1:3192, 1:2129]', '[1:2394, 1:1597]'],
+            
+            
             
             'settings': {
                 'temp_setpoint': -25,
@@ -641,20 +648,21 @@ site_config = {
                 'rbi_delay':  0,      # This being zero says RBI is not available, eg. for SBIG.
                 'is_cmos':  True,
                 'can_set_gain':  True,
-                'reference_gain': [28, 28, 28, 28],     #One val for each binning.
-                'reference_noise': [3.2, 3.2, 3.2, 3.2],    #  NB Guess
-                'reference_dark': [0.2, 0.0, 0.0, 0.0],    #Guesses?
-                'saturate':  55000,
-                'max_linearity':  55000.,
-                'fullwell_capacity': 85000,
+                'reference_gain': [1.3, 2.6, 3.9, 5.2],     #One val for each binning.
+                'reference_noise': [6, 6, 6, 6],    #  NB Guess
+                'reference_dark': [.2, .8, 1.8, 3.2],  #  Guess
+                'max_linearity':  60000,   # Guess
+                'saturate':  65300,
+                'fullwell_capacity': [80000, 32000, 720000, 1280000],
                 'read_mode':  'Normal',
                 'readout_mode': 'Normal',
-                'readout_speed':  0.4,
+                'readout_speed':  50,
                 'square_detector': False,
+                'square_pixels': True,
                 'areas_implemented': ["600%", "450%", "300%", "250%", "150%", "133%", "Full", "Sqr", '71%', '50%',  '35%', '25%', '12%'],
                 'default_area':  "Full",
-                'bin_modes':  [[2, 2], [1,1]],     #Meaning fixed binning if list has only one entry
-                'default_bin':  [2, 2],     #Always square and matched to seeing situation by owner
+                'bin_modes':  [[2, 2, 0.605], [3, 3, 0.908], [4, 4, 1.21], [1, 1, 0.303]],     #Meaning fixed binning if list has only one entry
+                'default_bin':  [2, 2, 0.605],     #Always square and matched to seeing situation by owner
                 'has_darkslide':  True,
                 'darkslide_com':  'COM15',
                 'has_screen': True,

@@ -551,7 +551,6 @@ class Camera:
         self.pane = optional_params.get('pane', None)
         bin_x = optional_params.get('bin', self.config['camera'][self.name] \
                                                       ['settings']['default_bin'])  #NB this should pick up config default.
-
         try:
             bin_x = eval(bin_x)[:2]   #This is meant to strip off the Pixel size when it comes in from aws.
         except:
@@ -1093,7 +1092,7 @@ class Camera:
                             new_image.close()
                             continue
                         self.img = new_image[0].data   #  NB We could pick up Maxim header info here
-                        #self.img = np.array(self.img).transpose()
+                        self.img = np.array(self.img).transpose()  #Image from QHY comes in 4 tall, 3 wide.
                         iy, ix = self.img.shape        #FITS open fixes C ordering to Fortran
                         new_image.close()
                         if len(self.img)*len(self.img[0]) != iy*ix:
@@ -1107,8 +1106,9 @@ class Camera:
                     #NB NB Do not try to print ImageArray!!!!
                     self.img = np.array(self.camera.ImageArray)
                     self.img = self.img.astype('int32')
+                    self.img = self.img.transpose()  #QHY images images arrive 4-high, 3-wide in Python.
                     self.t4p5 = time.time()#As read, this is a Windows Safe Array of Longs
-                    print("\n\nMedian of incoming image:  ", np.median(self.img), '\n\n')
+                    #print("\n\nMedian of incoming image:  ", np.median(self.img), '\n\n')
 
                     ###self.img = np.array(self.img_safe) # _untransposed   incoming is (4800,3211) for QHY600Pro 2:2 Bin
                     #print(self.img_untransposed.shape)
@@ -1124,160 +1124,163 @@ class Camera:
 
                 #  NB NB  Be very careful this is the exact code used in build_master and calibration  modules.
                 #  NB Note this is QHY600 specific code.  Needs to be supplied in camera config as sliced regions.
-                pedastal = 100
                 ix, iy = self.img.shape
 
 
+# =============================================================================
+# 
+# 
+#                 # if ix == 9600:
+#                 #     overscan = int((np.median(self.img[32:, -33:]) + np.median(self.img[0:29, :]))/2) - 1
+#                 #     trimmed = self.img[32:, :-34].astype('int32') + pedastal - overscan
+#                 #     if opt['area'] in [150, 'Full', 'full']:
+#                 #         square = trimmed
+#                 #     else:
+#                 #         square = trimmed[1590:1590 + 6388, :]
+#                 # elif ix == 4800:
+#                 #     overscan = int((np.median(self.img[16:, -17:]) + np.median(self.img[0:14, :]))/2) -1
+#                 #     trimmed = self.img[16:, :-17].astype('int32') + pedastal - overscan
+#                 #     if opt['area'] in [150, 'Full', 'full']:
+#                 #         square = trimmed
+#                 #     else:
+#                 #         square = trimmed[795:795 + 3194, :]
+#                 # else:
+#                 #     print("Incorrect chip size or bin specified.")
+# 
+# 
+#                 #This image shift code needs to be here but it is troubling.
+#                 #QHY 600Pro and 367
+# 
+#                 if ix == 9600:
+#                     # if self.img[22, -34] == 0:
+# 
+#                     self.overscan = int((np.median(self.img[24:, -33:]) + np.median(self.img[0:21, :]))/2) - 1
+#                     trimmed = self.img[24:-8, :-34].astype('int32') + pedastal - self.overscan
+# 
+#                     # elif self.img[30, -34] == 0:
+#                     #     self.overscan = int((np.median(self.img[32:, -33:]) + np.median(self.img[0:29, :]))/2) - 1
+#                     #     trimmed = self.img[32:, :-34].astype('int32') + pedastal - self.overscan
+# 
+#                     # else:
+#                     #     print("Image shift is incorrect, absolutely fatal error.")
+#                         
+#                     #     pass
+# 
+#                     # if full:
+#                     #     square = trimmed
+#                     # else:
+#                     #     square = trimmed[1590:1590 + 6388, :]
+#                 elif ix == 4800:
+#                     #Shift error needs documenting!
+#                     #breakpoint()
+#                     #if self.img[11, -18] == 0:   #This is the normal incoming image
+#                     self.overscan = int((np.median(self.img[12:, -17:]) + np.median(self.img[0:10, :]))/2) - 1
+#                     trimmed = self.img[12:-4, :-17].astype('int32') + pedastal - self.overscan
+# 
+#                         #print("Shift 1", self.overscan, square.mean())
+#                     # elif self.img[15, -18] == 0:     #This rarely occurs.  Neyle's Qhy600
+#                     #     self.overscan = int((np.median(self.img[16:, -17:]) + np.median(self.img[0:14, :]))/2) -1
+#                     #     trimmed = self.img[16:, :-17].astype('int32') + pedastal - self.overscan
+# 
+#                     #     print("Rare error, Shift 2", self.overscan, trimmed.mean())
+# 
+#                     # else:
+#                     #     print("Image shift is incorrect, absolutely fatal error", self.img[0:20, -18])
+# 
+# 
+#                         #pass
+# 
+#                 
+#                 #mrc2    Testing comment change, did this push to GitHub?
+#                 elif ix == 4096 and iy == 4096:   #MRC@
+#                     trimmed = self.img.astype('int32') - 913.   #20211128 Cooler = -35C
+#                     self.overscan = 0
+# 
+#                 elif ix ==2048 and iy == 2048:   #MRC@
+#                     trimmed = self.img.astype('int32') - 1046.   #20211128 Cooler = -35C
+#                     self.overscan = 0
+#                 #Bin 3 not possible for FLI camera
+#                     
+#                 elif ix == 1024 and iy == 1024:   #MRC@
+#                     trimmed = self.img.astype('int32') - 1548.   #20211128 Cooler = -35C
+#                     self.overscan = 0
+# 
+#                 #NBNB for cameras without proper overscan maybe we save the bias frame value vs chip
+#                 #temp so we can do a better thermal compensation.  THis would generally mean taking
+#                 #occasional biases.
+#                 
+#                 #FAT
+#                 # elif ix == 4500 and iy == 3600:   #All this code needs to be driven from camera config.
+#                 #     self.overscan =np.median(self.img) - pedastal
+#                 #     trimmed = self.img.astype('int32') - 867.
+#                         
+#                 # elif ix == 2250 and iy == 1800:   #All this code needs to be driven from camera config.
+#                 #     self.overscan =np.median(self.img) - pedastal
+#                 #     trimmed = self.img.astype('int32') - 614.
+#                 #     #FAT
+#                 elif ix == 4556 and iy == 3656:   #All this code needs to be driven from camera config.
+#                     #breakpoint()
+#                     self.overscan = (np.median(self.img[4520:4556, :3600]) + np.median(self.img[:4500, 3620:3643]))/2.0
+#                     minus_overscan = self.img - (np.median(self.img[4520:4556, :3600]) + np.median(self.img[:4500, 3620:3643]))/2.0
+#                     print("1_1 Offset:  ", -np.median(minus_overscan[:4500, :3600]))
+#                     minus_overscan += pedastal + 50
+#                     trimmed = minus_overscan[:4500, :3600].astype('int32')
+#                 elif ix == 2278 and iy == 1828:   #All this code needs to be driven from camera config.
+#                     #breakpoint()
+#                     self.overscan = (np.median(self.img[2260:2278, :1800]) + np.median(self.img[2250, 1810:1821]))/2.0
+#                     minus_overscan = self.img - (np.median(self.img[2260:2278, :1800]) + np.median(self.img[2250, 1810:1821]))/2.0
+#                     minus_overscan += pedastal + 140
+#                     trimmed = minus_overscan[:2250, :1800].astype('int32')
+#                 elif ix == 1518 and iy == 1218: 
+#                     #breakpoint()
+#                     self.overscan = (np.median(self.img[1506:1518, :1200]) + np.median(self.img[:1500, 1206:1214]))/2.0
+#                     minus_overscan = self.img - (np.median(self.img[1506:1518, :1200]) + np.median(self.img[:1500, 1206:1214]))/2.0
+#                     minus_overscan += pedastal + 211 
+#                     trimmed = minus_overscan[:1500, :1200].astype('int32')
+#                     
+#                 elif ix == 1139 and iy == 914: 
+#                     self.overscan = (np.median(self.img[1130:1139, :900]) + np.median(self.img[:1125, 905:910]))/2.
+#                     minus_overscan = self.img - (np.median(self.img[1130:1139, :900]) + np.median(self.img[:1125, 905:910]))/2.0
+#                     print("4_4 Offset:  ", -np.median(minus_overscan[:1125, :900]))
+#                     minus_overscan += pedastal + 403
+#                     trimmed = minus_overscan[:1125, :900].astype('int32') 
+#                 else:
+#                     print("UNSUPPORTED BINNING OR CAMERA!!", ix, iy)
+#               trimmed = trimmed.transpose()
+#               self.img = trimmed.astype('uint16')
+                # print('readout, transpose & Trim took:  ', round(self.t77 - self.t4, 1), ' sec,')# marks them as 0
+                # #Should we consider correcting the image right here with cached bias, dark and hot pixel
+                # #processing so downstream processing is reliable.  Maybe only do this for focus?
+                # g_dev['obs'].send_to_user("Camera has read-out image.", p_level='INFO')
+                # neg_pix = np.where(trimmed < 0)
+                # print("negative pixel length:  ", len(neg_pix[0]))
 
+                # trimmed[neg_pix] = 0
+# =============================================================================
 
-                # if ix == 9600:
-                #     overscan = int((np.median(self.img[32:, -33:]) + np.median(self.img[0:29, :]))/2) - 1
-                #     trimmed = self.img[32:, :-34].astype('int32') + pedastal - overscan
-                #     if opt['area'] in [150, 'Full', 'full']:
-                #         square = trimmed
-                #     else:
-                #         square = trimmed[1590:1590 + 6388, :]
-                # elif ix == 4800:
-                #     overscan = int((np.median(self.img[16:, -17:]) + np.median(self.img[0:14, :]))/2) -1
-                #     trimmed = self.img[16:, :-17].astype('int32') + pedastal - overscan
-                #     if opt['area'] in [150, 'Full', 'full']:
-                #         square = trimmed
-                #     else:
-                #         square = trimmed[795:795 + 3194, :]
-                # else:
-                #     print("Incorrect chip size or bin specified.")
-
-
-                #This image shift code needs to be here but it is troubling.
-                #QHY 600Pro and 367
-
-                if ix == 9600:
-                    # if self.img[22, -34] == 0:
-
-                    self.overscan = int((np.median(self.img[24:, -33:]) + np.median(self.img[0:21, :]))/2) - 1
-                    trimmed = self.img[24:-8, :-34].astype('int32') + pedastal - self.overscan
-
-                    # elif self.img[30, -34] == 0:
-                    #     self.overscan = int((np.median(self.img[32:, -33:]) + np.median(self.img[0:29, :]))/2) - 1
-                    #     trimmed = self.img[32:, :-34].astype('int32') + pedastal - self.overscan
-
-                    # else:
-                    #     print("Image shift is incorrect, absolutely fatal error.")
-                        
-                    #     pass
-
-                    # if full:
-                    #     square = trimmed
-                    # else:
-                    #     square = trimmed[1590:1590 + 6388, :]
-                elif ix == 4800:
-                    #Shift error needs documenting!
-                    #breakpoint()
-                    #if self.img[11, -18] == 0:   #This is the normal incoming image
-                    self.overscan = int((np.median(self.img[12:, -17:]) + np.median(self.img[0:10, :]))/2) - 1
-                    trimmed = self.img[12:-4, :-17].astype('int32') + pedastal - self.overscan
-
-                        #print("Shift 1", self.overscan, square.mean())
-                    # elif self.img[15, -18] == 0:     #This rarely occurs.  Neyle's Qhy600
-                    #     self.overscan = int((np.median(self.img[16:, -17:]) + np.median(self.img[0:14, :]))/2) -1
-                    #     trimmed = self.img[16:, :-17].astype('int32') + pedastal - self.overscan
-
-                    #     print("Rare error, Shift 2", self.overscan, trimmed.mean())
-
-                    # else:
-                    #     print("Image shift is incorrect, absolutely fatal error", self.img[0:20, -18])
-
-
-                        #pass
-
-                
-                #mrc2    Testing comment change, did this push to GitHub?
-                elif ix == 4096 and iy == 4096:   #MRC@
-                    trimmed = self.img.astype('int32') - 913.   #20211128 Cooler = -35C
-                    self.overscan = 0
-
-                elif ix ==2048 and iy == 2048:   #MRC@
-                    trimmed = self.img.astype('int32') - 1046.   #20211128 Cooler = -35C
-                    self.overscan = 0
-                #Bin 3 not possible for FLI camera
-                    
-                elif ix == 1024 and iy == 1024:   #MRC@
-                    trimmed = self.img.astype('int32') - 1548.   #20211128 Cooler = -35C
-                    self.overscan = 0
-
-                #NBNB for cameras without proper overscan maybe we save the bias frame value vs chip
-                #temp so we can do a better thermal compensation.  THis would generally mean taking
-                #occasional biases.
-                
-                #FAT
-                # elif ix == 4500 and iy == 3600:   #All this code needs to be driven from camera config.
-                #     self.overscan =np.median(self.img) - pedastal
-                #     trimmed = self.img.astype('int32') - 867.
-                        
-                # elif ix == 2250 and iy == 1800:   #All this code needs to be driven from camera config.
-                #     self.overscan =np.median(self.img) - pedastal
-                #     trimmed = self.img.astype('int32') - 614.
-                #     #FAT
-                elif ix == 4556 and iy == 3656:   #All this code needs to be driven from camera config.
-                    #breakpoint()
-                    self.overscan = (np.median(self.img[4520:4556, :3600]) + np.median(self.img[:4500, 3620:3643]))/2.0
-                    minus_overscan = self.img - (np.median(self.img[4520:4556, :3600]) + np.median(self.img[:4500, 3620:3643]))/2.0
-                    print("1_1 Offset:  ", -np.median(minus_overscan[:4500, :3600]))
-                    minus_overscan += pedastal + 50
-                    trimmed = minus_overscan[:4500, :3600].astype('int32')
-                elif ix == 2278 and iy == 1828:   #All this code needs to be driven from camera config.
-                    #breakpoint()
-                    self.overscan = (np.median(self.img[2260:2278, :1800]) + np.median(self.img[2250, 1810:1821]))/2.0
-                    minus_overscan = self.img - (np.median(self.img[2260:2278, :1800]) + np.median(self.img[2250, 1810:1821]))/2.0
-                    minus_overscan += pedastal + 140
-                    trimmed = minus_overscan[:2250, :1800].astype('int32')
-                elif ix == 1518 and iy == 1218: 
-                    #breakpoint()
-                    self.overscan = (np.median(self.img[1506:1518, :1200]) + np.median(self.img[:1500, 1206:1214]))/2.0
-                    minus_overscan = self.img - (np.median(self.img[1506:1518, :1200]) + np.median(self.img[:1500, 1206:1214]))/2.0
-                    minus_overscan += pedastal + 211 
-                    trimmed = minus_overscan[:1500, :1200].astype('int32')
-                    
-                elif ix == 1139 and iy == 914: 
-                    self.overscan = (np.median(self.img[1130:1139, :900]) + np.median(self.img[:1125, 905:910]))/2.
-                    minus_overscan = self.img - (np.median(self.img[1130:1139, :900]) + np.median(self.img[:1125, 905:910]))/2.0
-                    print("4_4 Offset:  ", -np.median(minus_overscan[:1125, :900]))
-                    minus_overscan += pedastal + 403
-                    trimmed = minus_overscan[:1125, :900].astype('int32') 
-                else:
-                    print("UNSUPPORTED BINNING OR CAMERA!!", ix, iy)
-                    trimmed = self.img
-                    
-
-
-                    #continue
-
-                trimmed = trimmed.transpose()
+                #trimmed = trimmed.transpose()
                 #This may need a re-think:   Maybe kill neg and anything really hot if there are only a few.
                 #smin = np.where(square < 0)    # finds negative pixels  NB <0 where pedastal is 200. Useless!
 
                 self.t77 = time.time()
-                print('readout, transpose & Trim took:  ', round(self.t77 - self.t4, 1), ' sec,')# marks them as 0
-                #Should we consider correcting the image right here with cached bias, dark and hot pixel
-                #processing so downstream processing is reliable.  Maybe only do this for focus?
-                g_dev['obs'].send_to_user("Camera has read-out image.", p_level='INFO')
-                neg_pix = np.where(trimmed < 0)
-                print("negative pixel length:  ", len(neg_pix[0]))
 
-                trimmed[neg_pix] = 0
-                self.img = trimmed.astype('uint16')
-                
-                print('\n\nMedian of overscan-removed image, minus pedastal:  ', np.median(self.img) - pedastal, '\n\n')
+                #self.img = trimmed.astype('uint16')
+                #breakpoint()
+                #self.img = self.img.transpose()
+                pedastal = 0
+                self.overscan = 0
+                #print('\n\nMedian of overscan-removed image, minus pedastal:  ', np.median(self.img) - pedastal, '\n\n')
                 ix, iy = self.img.shape
-                test_saturated = np.array(self.img[ix//3:ix*2//3, iy//3:iy*2//3])  # 1/9th the chip area, but central.
-                bi_mean = round((test_saturated.mean() + np.median(test_saturated))/2, 0)
+                test_saturated = np.array(self.img[ix//4:ix*3//4, iy//4:iy*3//4])  # 25% of the chip area, but central.
+                patch_median = np.median(test_saturated)
+                #print ('Saturate array size:  ', test_saturated.shape)
                 if frame_type[-4:] == 'flat':
-                    if bi_mean >= self.config['camera'][self.name]['settings']['saturate']:
-                        print("Flat rejected, too bright:  ", bi_mean)
+                    if patch_median >= self.config['camera'][self.name]['settings']['saturate']:
+                        print("Flat rejected, too bright:  ", patch_median)
                         g_dev['obs'].send_to_user("Flat rejected, too bright.", p_level='INFO')
                         result['error'] = True
-                        result['patch'] = bi_mean
-                        return result   # signals to flat routine image was rejected, prompt return
+                        result['patch'] = patch_median
+                        return result   # Promptlysignals to flat routine image was rejected, immediate return
                 g_dev['obs'].update_status()
                 counter = 0
 
@@ -1286,17 +1289,18 @@ class Camera:
                 avg_rot = g_dev['rot'].get_average_status(self.pre_rot, self.post_rot)
                 avg_ocn = g_dev['ocn'].get_average_status(self.pre_ocn, self.post_ocn)
                 if frame_type[-5:] in ['focus', 'probe', "ental"]:
-                    self.img = self.img + 100   #maintain a + pedestal for sep  THIS SHOULD not be needed for a raw input file.
-                    self.img = self.img.astype("float")
+                    #self.img = self.img + 100   #maintain a + pedestal for sep  THIS SHOULD not be needed for a raw input file.
+                    #note we are changing the img. But not used elsewhere.
+                    self.f_img = self.img.astype("float")
                     #print(self.img.flags)
-                    self.img = self.img.copy(order='C')   #  NB Should we move this up to where we read the array?
-                    bkg = sep.Background(self.img)
-                    self.img -= bkg
-                    sources = sep.extract(self.img, 4.5, err=bkg.globalrms, minarea=15)  # Minarea should deal with hot pixels.
+                    self.f_img = self.f_img.copy(order='C')   #  NB Should we move this up to where we read the array?
+                    bkg = sep.Background(self.f_img)
+                    self.f_img -= bkg
+                    sources = sep.extract(self.f_img, 4.5, err=bkg.globalrms, minarea=15)  # Minarea should deal with hot pixels.
                     sources.sort(order = 'cflux')
                     print('No. of detections:  ', len(sources))
                     # 20220107 NB Sometimes code goes into black hole here when images are big donuts.
-                    ix, iy = self.img.shape
+                    ix, iy = self.f_img.shape
                     r0 = 0
                     """
                     ToDo here:  1) do not deal with a source nearer than 5% to an edge.
@@ -1352,19 +1356,19 @@ class Camera:
                         hdu.header['CCDSTEMP'] = (round(self.camera.SetCCDTemperature, 3), '[deg C] CCD set temperature')
                         hdu.header['CCDATEMP'] = (round(self.camera.CCDTemperature, 3), '[deg C] CCD actual temperature')
                     
-                    hdu.header['INSTRUME'] = (self.camera_model, 'Instrument used')
-                    hdu.header['CAMNAME']  = (self.alias, 'Name of camera')
+                    hdu.header['INSTRUME'] = (self.alias, 'Name of camera')
+                    hdu.header['CAMNAME']  = (self.camera_model, 'Instrument used')
                     hdu.header['DETECTOR'] = (self.config['camera'][self.name]['detector'], 'Name of camera detector')
                     hdu.header['CAMMANUF'] = (self.config['camera'][self.name]['manufacturer'], 'Name of camera manufacturer')
-                    hdu.header['GAIN']     = (self.config['camera'][self.name]['settings']['reference_gain'][0], '[e-/ADU] Pixel gain')
-                    hdu.header['RDNOISE']  = (self.config['camera'][self.name]['settings']['reference_noise'][0], '[e-/pixel] Read noise')
+                    hdu.header['GAIN']     = (self.config['camera'][self.name]['settings']['reference_gain'][self.bin - 1], '[e-/ADU] Pixel gain')
+                    hdu.header['RDNOISE']  = (self.config['camera'][self.name]['settings']['reference_noise'][self.bin - 1], '[e-/pixel] Read noise')
                     hdu.header['CMOSCAM']  = (self.is_cmos, 'Is CMOS camera')
-                    hdu.header['FULLWELL'] = (self.config['camera'][self.name]['settings']['fullwell_capacity'], 'Full well capacity')
-                    hdu.header['CMOSGAIN']  = (0, 'CMOS Camera System Gain')
-                    hdu.header['CMOSOFFS']  = (10, 'CMOS Camera offset')
-                    hdu.header['CAMOFFS']  = (10, 'Camera offset')
-                    hdu.header['CAMGAIN']  = (0, 'Camera gain')
-                    hdu.header['CAMUSBT']  = (60, 'Camera USB traffic')
+                    hdu.header['FULLWELL'] = (self.config['camera'][self.name]['settings']['fullwell_capacity'][self.bin - 1], 'Full well capacity')
+                    # hdu.header['CMOSGAIN']  = (0, 'CMOS Camera System Gain')
+                    # hdu.header['CMOSOFFS']  = (10, 'CMOS Camera offset')
+                    # hdu.header['CAMOFFS']  = (10, 'Camera offset')
+                    # hdu.header['CAMGAIN']  = (0, 'Camera gain')
+                    hdu.header['CAMUSBT']  = (50, 'Camera USB traffic')
                     hdu.header['TIMESYS']  = ('UTC', 'Time system used')
                     hdu.header['DATE'] = (datetime.date.strftime(datetime.datetime.utcfromtimestamp(self.t2),'%Y-%m-%d'), 'Date FITS file was written')
                     hdu.header['DATE-OBS'] = (datetime.datetime.isoformat(datetime.datetime.utcfromtimestamp(self.t2)), \
@@ -1379,12 +1383,16 @@ class Camera:
                     hdu.header['DATE-OBS'] = datetime.datetime.isoformat(datetime.datetime.utcfromtimestamp(self.t2))
                     hdu.header['EXPTIME']  = exposure_time   #This is the exposure in seconds specified by the user
                     hdu.header['EXPOSURE'] = exposure_time   #Ideally this needs to be calculated from actual times
-                    hdu.header['FILTER ']  = self.current_filter  # NB this should read from the wheel!
-                    hdu.header['FILTEROF'] = self.current_offset
+                    hdu.header['CONFMODE'] = "full-frame"
                     #hdu.header['EXPOSURE'] = (self.t?-self.t2, '[s] Actual exposure length')   # Calculated from actual times
                     hdu.header['FILTER']  = (self.current_filter, 'Filter type')  # NB this should read from the wheel!
-                    hdu.header['FILTEROF'] = (self.current_offset, 'Filer offset')
-                    hdu.header['FILTRNUM'] = ('PTR_ADON_HA_0023',  'An index into a DB')  #Get a number from the hardware or via Maxim.
+                    hdu.header['FILTROFF'] = (self.current_offset, 'Filer focus offset')
+                    hdu.header['FILTRCWL'] = (550, 'Center Wavelength - nm')
+                    hdu.header['FILTERBW'] = (100, 'Bandwidth - nm')
+                    
+                    
+                    
+                    hdu.header['FILTRNUM'] = ('PTR_ADON_HA_0023',  'An index into a filter DB')  #Get a number from the hardware or via Maxim.
                     if g_dev['scr'] is not None and frame_type == 'screenflat':
                         hdu.header['SCREEN']   = (int(g_dev['scr'].bright_setting), 'Screen brightness setting')
                         
@@ -1399,14 +1407,18 @@ class Camera:
 #                     # detsec also needs to be changed appropriately.
 #
 # =============================================================================
-                    
-                    hdu.header['BIASSEC'] = ('['+str(int(self.overscan_x/self.bin_x))+':'+str(int(self.overscan_x/self.bin_x + 1))+','+ \
-                                             str(int(self.overscan_y/self.bin_y))+':'+str(self.camera.NumY)+']', \
-                                             '[binned pixel] Section of bias/overscan data')
-                    hdu.header['DATASEC'] = ('['+str(self.camera_start_x+1)+':'+str(self.camera.NumX)+','+ \
-                                             str(self.camera_start_y+1)+':'+str(self.camera.NumY)+']', '[binned pixel] Data section')
-                    hdu.header['DETSEC'] = (hdu.header['DATASEC'], '[binned pixel] Section of useful data')
-                    hdu.header['TRIMSEC'] = ('', '[binned pixel] Section of useful data')
+            #  detsize': '[1:9600, 1:6380]',  # Physical chip data size as reutrned from driver
+            # 'ccdsec': '[1:9600, 1:6380]',
+            # 'biassec': ['[1:24, 1:6354]', '[1:12 1:3177]', '[1:8, 1:2118]', '[1:6, 1:1589]'],
+            # 'datasec': ['[25:9600, 1:6354]', '[13:4800, 1:3177]', '[9:3200, 1:2118]', '[7:2400, 1:1589]'],
+            # 'trimsec': ['[1:9576, 1:6354]', '[1:4788, 1:3177]', '[1:3192, 1:2118]', '[1:2394, 1:1589]'],
+                               
+
+                    hdu.header['DETSIZE'] = self.config['camera']['camera_1_1']['detsize']
+                    hdu.header['CCDSEC']  = self.config['camera']['camera_1_1']['ccdsec']
+                    hdu.header['BIASSEC'] = self.config['camera']['camera_1_1']['biassec'][self.bin - 1]                                                                
+                    hdu.header['DATASEC'] = self.config['camera']['camera_1_1']['datasec'][self.bin - 1]
+                    hdu.header['TRIMSEC'] = self.config['camera']['camera_1_1']['trimsec'][self.bin - 1]
                     hdu.header['SATURATE'] = (float(self.config['camera'][self.name]['settings']['saturate']), '[ADU] Saturation level')  # will come from config(?)
                     hdu.header['MAXLIN'] = (float(self.config['camera'][self.name]['settings']['max_linearity']), '[ADU] Non-linearity level')
 
@@ -1537,7 +1549,7 @@ class Camera:
                     # DEH I need to understand these keywords better before writing header comments.
                     hdu.header['PEDASTAL'] = (-pedastal,  'adu, add this for zero based image.')
                     hdu.header['ERRORVAL'] = 0
-                    hdu.header['PATCH']    = bi_mean - pedastal    #  A crude value for the central exposure
+                    hdu.header['PATCH']    = patch_median - pedastal    #  A crude value for the central exposure
                     hdu.header['IMGAREA' ] = opt['area']
                     hdu.header['XORGSUBF'] = self.camera_start_x    #This makes little sense to fix...  NB ALL NEEDS TO COME FROM CONFIG!!
                     hdu.header['YORGSUBF'] = self.camera_start_y
@@ -1554,16 +1566,21 @@ class Camera:
                         print("User_name or id not found, using prior.")  #Insert last user nameand ID here if they are not supplied.
                     
                     # NB This needs more development
-                    im_type = 'EX'   #or EN for engineering....
+                    im_type = 'e'   #or EN for engineering....
                     f_ext = ""
                     if frame_type in ('bias', 'dark', 'lampflat', 'skyflat', 'screenflat', 'solarflat', 'arc'):
                         f_ext = "-"
-                        if opt['area'] == 150:
-                            f_ext += 'f'
+                        # if opt['area'] == 150:   # NB not obvious what this was for.
+                        #     f_ext += 'f'
                         if frame_type[0:4] in ('bias', 'dark'):
                             f_ext += frame_type[0] + "_" + str(self.camera.BinX)
                         if frame_type in ('lampflat', 'skyflat',' screenflat',  'solarflat', 'arc', 'expose'):
                             f_ext += frame_type[:2] + "_" + str(self.camera.BinX) + '_' + str(self.current_filter)
+                    if frame_type[0] == 'b': im_type = 'b'
+                    elif frame_type[0] == 'd': im_type = 'd'
+                    elif frame_type[0] == 'l': im_type = 'l'
+                    elif frame_type[0] == 's': im_type = 'f'
+                    elif frame_type[0] == 'a': im_type = 'a'
                     # if frame_type[-4:] == 'flat':
                     #     f_ext = '-' + str(self.current_filter)    #Append flat string to local image name
                     cal_name = self.config['site'] + '-' + current_camera_name + '-' + g_dev['day'] + '-' + \
@@ -1587,7 +1604,7 @@ class Camera:
                     #lng_path = self.lng_path
 
                     hdu.header['FILEPATH'] = str(im_path_r) +'to_AWS/'
-                    hdu.header['FILENAME'] = str(raw_name00)
+                    hdu.header['ORIGNAME'] = str(raw_name00)
 
                     try: #  NB relocate this to Expose entry area.  Fill out except.  Might want to check on available space.
                         im_path_r = self.camera_path
@@ -1638,16 +1655,15 @@ class Camera:
                         self.enqueue_image(raw_data_size, im_path, raw_name01)
                     '''
 
-                    if focus_image and not solve_it:
+                    if focus_image and not solve_it:   # solve_it comes from the external calling script.
                         #Note we do not reduce focus images, except above in focus processing.
-                        cal_name = cal_name[:-9] + 'F012' + cal_name[-7:]  # remove 'EX' add 'FO'   Could add seq to this
+                        cal_name = cal_name[:-9] + 'F012' + cal_name[-7:]  # remove 'EX' add 'FO'  NB NB should add seq to this
                         hdu.writeto(cal_path + cal_name, overwrite=True)
                         focus_image = False
                         return result
                     if focus_image and solve_it :
 
-                        cal_name = cal_name[:-9] + 'FF' + cal_name[-7:]  # remove 'EX' add 'FO'   Could add seq to this
-                        hdu.writeto(cal_path + cal_name, overwrite=True)
+                        cal_name = cal_name[:-9] + 'FF' + cal_name[-7:]  # remove 'EX' add 'FO'  FF indicates final verify focus
                         focus_image = False
                         try:
                             #wpath = 'C:/000ptr_saf/archive/sq01/20210528/reduced/saf-sq01-20210528-00019785-le-w-EX01.fits'
@@ -1673,12 +1689,17 @@ class Camera:
 
                     # if  not script in ('True', 'true', 'On', 'on'):   #  not quick and    #Was moved 20201022 for grid
                     #     if not quick:
-                    self.enqueue_for_AWS(text_data_size, im_path, text_name)
-                    self.to_reduce((paths, hdu))
-                    hdu.writeto(raw_path + raw_name00, overwrite=True)   #Save full raw file locally
+                    self.enqueue_for_AWS(text_data_size, im_path, text_name)  #THis is a database setup hint for AWS
+
+                    hdu_copy = hdu.copy()
+                    self.to_reduce((paths, hdu_copy))   #THis queues up a reduction of the hdu
+                    try:
+                        hdu.writeto(raw_path + raw_name00, overwrite=True)   #Save full raw file locally
+                    except:
+                        print("Note raw image did not save locally.")
                     g_dev['obs'].send_to_user("Raw image saved locally. ", p_level='INFO')
 
-                    if frame_type in ('bias', 'dark', 'screenflat', 'skyflat'):
+                    if frame_type in ('bias', 'dark', 'screenflat', 'skyflat'):  # NB NB Owner shoudl OK these saves in config
                         if not self.hint[0:54] == 'Flush':
                             hdu.writeto(cal_path + cal_name, overwrite=True)
                         else:
@@ -1687,9 +1708,10 @@ class Camera:
                             os.remove(self.camera_path + 'newest.fits')
                         except:
                             pass    #  print ("File newest.fits not found, this is probably OK")
-                        result = {'patch': bi_mean,
+                        result = {'patch': patch_median,
                                 'calc_sky': 0}  #avg_ocn[7]}
                         return result #  Note we are not calibrating. Just saving the file.
+                    # Basically done for now, calls to calibration frames do not expect a full result.
                     # elif frame_type in ['light']:
                     #     self.enqueue_for_AWS(reduced_data_size, im_path, red_name01)
 
@@ -1699,19 +1721,18 @@ class Camera:
                     result['mean_rotation'] = avg_rot[1]
                     if not focus_image:
                         result['FWHM'] = None
-                    result['half_FD'] = None
-                    result['patch'] = bi_mean - self.overscan
+                        result['half_FD'] = None
+                    result['patch'] = patch_median - self.overscan
                     result['calc_sky'] = 0 #avg_ocn[7]
                     result['temperature'] = 0 #avg_foc[2]
                     # print('GAIN: ', result['patch'], avg_ocn[7], exposure_time, 'g: ', \
                     #      g := round(result['patch']/avg_ocn[7]/exposure_time, 6))
-
                     result['gain'] = 0
                     result['filter'] = self.current_filter
                     result['error'] == False
                     g_dev['obs'].send_to_user("Expose cycle completed.", p_level='INFO')
-
                     return result
+                
                 except Exception as e:
                     print('Header assembly block failed: ', e)
                     try:

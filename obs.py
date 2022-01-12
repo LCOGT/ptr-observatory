@@ -50,6 +50,7 @@ from auto_stretch.stretch import Stretch
 import socket
 import ptr_events
 import config
+from pprint import pprint
 # import device classes:
 from devices.camera import Camera
 from devices.filter_wheel import FilterWheel
@@ -344,7 +345,8 @@ class Observatory:
         '''
         uri = f"{self.name}/config/"
         self.config['events'] = g_dev['events']
-        #print(self.config)
+        # breakpoint()
+        # pprint(self.config)
         response = self.api.authenticated_request("PUT", uri, self.config)
         if response:
             print("Config uploaded successfully.")
