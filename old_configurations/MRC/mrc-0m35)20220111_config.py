@@ -644,7 +644,7 @@ site_config = {
                 'max_exposure': 180.,
                 'can_subframe':  True,
                 'min_subframe':  [[128,128], '4, 4'],
-                'cycle_time':  [18, 15, 15],
+                'cycle_time':  [18, 15, 15, 12],
                 'rbi_delay':  0,      # This being zero says RBI is not available, eg. for SBIG.
                 'is_cmos':  True,
                 'can_set_gain':  True,
@@ -661,7 +661,7 @@ site_config = {
                 'square_pixels': True,
                 'areas_implemented': ["600%", "450%", "300%", "250%", "150%", "133%", "Full", "Sqr", '71%', '50%',  '35%', '25%', '12%'],
                 'default_area':  "Full",
-                'bin_modes':  [[2, 2, 0.605], [3, 3, 0.908], [4, 4, 1.21], [1, 1, 0.303]],     #Meaning fixed binning if list has only one entry
+                'bin_modes':  [[2, 2, 0.605], [1, 1, 0.303], [3, 3, 0.908], [4, 4, 1.21]],     #Meaning fixed binning if list has only one entry
                 'default_bin':  [2, 2, 0.605],     #Always square and matched to seeing situation by owner
                 'has_darkslide':  True,
                 'darkslide_com':  'COM15',

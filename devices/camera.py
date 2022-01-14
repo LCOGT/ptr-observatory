@@ -1331,6 +1331,7 @@ class Camera:
                 try:
                     hdu = fits.PrimaryHDU(self.img)
                     self.img = None    #  Does this free up any resource?
+
                     # assign the keyword values and comment of the keyword as a tuple to write both to header.
                     hdu.header['BUNIT']    = ('adu', 'Unit of array values')
                     hdu.header['CCDXPIXE'] = (self.camera.PixelSizeX, '[um] Size of unbinned pixel, in X')  # DEH maybe change config units to meters or convert to m?
@@ -1689,15 +1690,21 @@ class Camera:
 
                     # if  not script in ('True', 'true', 'On', 'on'):   #  not quick and    #Was moved 20201022 for grid
                     #     if not quick:
-                    self.enqueue_for_AWS(text_data_size, im_path, text_name)  #THis is a database setup hint for AWS
-
-                    hdu_copy = hdu.copy()
-                    self.to_reduce((paths, hdu_copy))   #THis queues up a reduction of the hdu
                     try:
                         hdu.writeto(raw_path + raw_name00, overwrite=True)   #Save full raw file locally
                     except:
                         print("Note raw image did not save locally.")
+
+
+                    self.enqueue_for_AWS(text_data_size, im_path, text_name)  #THis is a database setup hint for AWS
+                    hdu_copy = hdu.copy()
+                    self.to_reduce((paths, hdu_copy))   #THis queues up a reduction of the hdu
+                    # try:
+                    #     hdu.writeto(raw_path + raw_name00, overwrite=True)   #Save full raw file locally
+                    # except:
+                    #     print("Note raw image did not save locally.")
                     g_dev['obs'].send_to_user("Raw image saved locally. ", p_level='INFO')
+                    self.enqueue_for_AWS(1200000, raw_path, raw_name00) 
 
                     if frame_type in ('bias', 'dark', 'screenflat', 'skyflat'):  # NB NB Owner shoudl OK these saves in config
                         if not self.hint[0:54] == 'Flush':

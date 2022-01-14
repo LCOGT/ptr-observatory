@@ -91,6 +91,7 @@ class Enclosure:
             self.site_is_generic = False    #NB NB Changed to False for MRC from FAT where True
         self.last_current_az = 315.
         self.last_slewing = False
+        self.prior_status = {'enclosure_mode': 'Manual'}    #Just to initialze this rarely used variable.
         
     def get_status(self) -> dict:
         if not self.is_wema and self.site_has_proxy:
@@ -126,7 +127,7 @@ class Enclosure:
                         except:
                             print("Using prior enclosure status after 3 failures.")
                             g_dev['enc'].status = self.prior_status
-                            return self.prior_status()
+                            return self.prior_status
             elif self.config['site_IPC_mechanism'] == 'redis':
                 try:
                     status = eval(g_dev['redis'].get('enc_status'))
