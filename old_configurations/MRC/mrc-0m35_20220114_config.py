@@ -1,7 +1,7 @@
-0# -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 '''
 Created on Fri Aug  2 11:57:41 2019
-Updates 20200911b   WER
+Updates 20220107 20:01 WER
 
 @author: wrosing
 '''
@@ -10,8 +10,8 @@ import json
 
 '''
 Ports.txt
-Tested 20200925  
-
+Tested 202009
+25  
 COM8    SkyRoof
 COM9    PWI4
 COM10   PWI4
@@ -57,13 +57,50 @@ site_config = {
     'owner':  ['google-oauth2|112401903840371673242'],  # Wayne
     'owner_alias': ['WER'],
     'admin_aliases': ["ANS", "WER", "TB", "DH", "KVH", "KC"],
-    'wema_hostname': ['MRC-WMS-ENC'],
-    'wema_is_active':  True,    #True if the agent is used at a site.
-                                      #MRC is the model redis site
-    'site_IPC_mechanism':  'redis',
+    
+#From FAT:
+    'client_hostname':  'MRC-0m35',
+    'client_share_path':  'Q:/ptr/',  # Generic place for client host to get
+                                      # Wema share data
+    'archive_path':  'Q:/',
+    'wema_is_active':  True,          # True if the split computers used at a site.
+    'wema_hostname': 'MRC-WMS-ENC',   # Prefer the shorter version
+    'wema_share_path':  'Q:/ptr/',  # '/wema_transfer/',
     'redis_ip': '10.15.0.109',  #'127.0.0.1', None if no redis path present, 
-                                #localhost if redis is self-contained
-    'site_is_specific':  False,  # Indicates some special code for the site.
+    'site_is_generic':  False,   # A simply  single computer ASCOM site.
+    'site_is_specific':  False,  # Indicates some special code for this site, found at end of config.
+    'site_IPC_mechanism':  'shares',   # ['None', shares', 'shelves', 'redis']  Pick One
+    # 'aux_archive_path':  None, # '//house-computer/saf_archive_2/archive/',  #  Path to auxillary backup disk.     
+
+
+    'name': 'Mountain Ranch Camp Observatory 0m35f7.2',
+    'airport_code': 'SBA',
+    'telescope_description': '0m35 f7.2 Planewave CDK',
+    #'site_path': 'Q:/',     #Really important, this is where state and results are stored. Can be a NAS server.
+    'location': 'Santa Barbara, Californa,  USA',
+    'observatory_url': 'https://starz-r-us.sky/clearskies',
+    'description':  '''
+                    Now is the time for all good persons
+                    to get out and vote early and often lest
+                    we lose charge of our democracy.
+                    ''',    #i.e, a multi-line text block supplied by the owner.  Must be careful about the contents for now.                 
+    'mpc_code':  'ZZ23',    #This is made up for now.
+    'time_offset':  -7,
+    'TZ_database_name':  'America/Los_Angeles',
+    'timezone': 'PDT',      
+    'latitude': 34.459375,     #Decimal degrees, North is Positive
+    'longitude': -119.681172,   #Decimal degrees, West is negative
+    'elevation': 317.75,    # meters above sea level
+    'reference_ambient':  5.0,  #Degrees Celsius.  Alternately 12 entries, one for every - mid month.
+    'reference_pressure':  977.83,  #mbar Alternately 12 entries, one for every - mid month.
+    'site_in_automatic_default': "Automatic",   #"Manual", "Shutdown"
+    'automatic_detail_default': "Enclosure is set to Automatic mode.",
+    
+    'auto_eve_bias_dark': False,
+    'auto_eve_sky_flat': False,
+    'auto_morn_sky_flat': False,
+    'auto_morn_bias_dark':False,
+    're-calibrate_on_solve': True, 
     'defaults': {
         'observing_conditions': 'observing_conditions1',
         'enclosure': 'enclosure1',
@@ -107,35 +144,7 @@ site_config = {
         'camera',
         'sequencer',
         ],
-    'name': 'Mountain Ranch Camp Observatory 0m35f7.2',
-    'airport_code': 'SBA',
-    'telescope_description': '0m35 f7.2 Planewave CDK',
-    'site_path': 'Q:/',     #Really important, this is where state and results are stored. Can be a NAS server.
-    'location': 'Santa Barbara, Californa,  USA',
-    'observatory_url': 'https://starz-r-us.sky/clearskies',
-    'description':  '''
-                    Now is the time for all good persons
-                    to get out and vote early and often lest
-                    we lose charge of our democracy.
-                    ''',    #i.e, a multi-line text block supplied by the owner.  Must be careful about the contents for now.                 
-    'mpc_code':  'ZZ23',    #This is made up for now.
-    'time_offset':  -7,
-    'TZ_database_name':  'America/Los_Angeles',
-    'timezone': 'PDT',      
-    'latitude': 34.459375,     #Decimal degrees, North is Positive
-    'longitude': -119.681172,   #Decimal degrees, West is negative
-    'elevation': 317.75,    # meters above sea level
-    'reference_ambient':  5.0,  #Degrees Celsius.  Alternately 12 entries, one for every - mid month.
-    'reference_pressure':  977.83,  #mbar Alternately 12 entries, one for every - mid month.
-    'site_in_automatic_default': "Automatic",   #"Manual", "Shutdown"
-    'automatic_detail_default': "Enclosure is set to Automatic mode.",
-    
-    'auto_eve_bias_dark': False,
-    'auto_eve_sky_flat': False,
-    'auto_morn_sky_flat': False,
-    'auto_morn_bias_dark':False,
-    're-calibrate_on_solve': True, 
-    
+     
     'observing_conditions': {
         'observing_conditions1': {
             'parent': 'site',
@@ -157,6 +166,7 @@ site_config = {
             'hostIP':  '10.15.0.65',
             'driver': 'ASCOM.SkyRoofHub.Dome',    #  Not really a dome for Skyroof.
             'redis_ip': '10.15.0.109',   #None if no redis path present
+            'enc_is_specific':  False,
             'startup_script':  None,
             'recover_script':  None,
             'shutdown_script':  None,
@@ -588,13 +598,20 @@ site_config = {
         #'default': 'camera_1_1',
         'camera_1_1': {
             'parent': 'telescope1',
-            'name': 'sq01',      #Important because this points to a server file structure by that name.
+            'name': 'sq003',      #Important because this points to a server file structure by that name.
             'desc':  'QHY 600M Pro',
             'driver':  "ASCOM.QHYCCD.Camera", #"Maxim.CCDCamera",   #'ASCOM.FLI.Kepler.Camera', "ASCOM.QHYCCD.Camera",   #
             'detector':  'Sony IMX455',
             'manufacturer':  'QHY',
             'use_file_mode':  False,
             'file_mode_path':  'D:/archive/sq01/maxim/',
+            'detsize': '[1:9600, 1:6422]',  # Physical chip data size as reutrned from driver
+            'ccdsec': '[1:9600, 1:6422]',
+            'biassec': ['[1:24, 1:6388]', '[1:12 1:3194]', '[1:8, 1:2129]', '[1:6, 1:1597]'],
+            'datasec': ['[25:9600, 1:6388]', '[13:4800, 1:3194]', '[9:3200, 1:2129]', '[7:2400, 1:1597]'],
+            'trimsec': ['[1:9576, 1:6388]', '[1:4788, 1:3194]', '[1:3192, 1:2129]', '[1:2394, 1:1597]'],
+            
+            
             
             'settings': {
                 'temp_setpoint': -25,
@@ -627,24 +644,25 @@ site_config = {
                 'max_exposure': 180.,
                 'can_subframe':  True,
                 'min_subframe':  [[128,128], '4, 4'],
-                'cycle_time':  [18, 15, 15],
+                'cycle_time':  [18, 15, 15, 12],
                 'rbi_delay':  0,      # This being zero says RBI is not available, eg. for SBIG.
                 'is_cmos':  True,
                 'can_set_gain':  True,
-                'reference_gain': [28, 28, 28, 28],     #One val for each binning.
-                'reference_noise': [3.2, 3.2, 3.2, 3.2],    #  NB Guess
-                'reference_dark': [0.2, 0.0, 0.0, 0.0],    #Guesses?
-                'saturate':  55000,
-                'max_linearity':  55000.,
-                'fullwell_capacity': 85000,
+                'reference_gain': [1.3, 2.6, 3.9, 5.2],     #One val for each binning.
+                'reference_noise': [6, 6, 6, 6],    #  NB Guess
+                'reference_dark': [.2, .8, 1.8, 3.2],  #  Guess
+                'max_linearity':  60000,   # Guess
+                'saturate':  65300,
+                'fullwell_capacity': [80000, 32000, 720000, 1280000],
                 'read_mode':  'Normal',
                 'readout_mode': 'Normal',
-                'readout_speed':  0.4,
+                'readout_speed':  50,
                 'square_detector': False,
+                'square_pixels': True,
                 'areas_implemented': ["600%", "450%", "300%", "250%", "150%", "133%", "Full", "Sqr", '71%', '50%',  '35%', '25%', '12%'],
                 'default_area':  "Full",
-                'bin_modes':  [[2, 2], [1,1]],     #Meaning fixed binning if list has only one entry
-                'default_bin':  [2, 2],     #Always square and matched to seeing situation by owner
+                'bin_modes':  [[2, 2, 0.605], [1, 1, 0.303], [3, 3, 0.908], [4, 4, 1.21]],     #Meaning fixed binning if list has only one entry
+                'default_bin':  [2, 2, 0.605],     #Always square and matched to seeing situation by owner
                 'has_darkslide':  True,
                 'darkslide_com':  'COM15',
                 'has_screen': True,
@@ -780,6 +798,8 @@ site_config = {
     },
 }    #This brace closes the while configuration dictionary. Match found up top at:  site_config = {
 
+get_ocn_status = None
+get_enc_status = None
 if __name__ == '__main__':
     '''
     This is a simple test to send and receive via json.

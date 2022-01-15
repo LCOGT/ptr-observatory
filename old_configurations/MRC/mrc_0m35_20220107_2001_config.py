@@ -52,7 +52,6 @@ QHY600         AstroImaging Equipment
 site_name = 'mrc'    #NB These must be unique across all of PTR. Pre-pend with airport code if needed: 'sba_wmdo'
 site_config = {
     'site': str(site_name).lower(),
-    'site_id': 'mrc',
     'debug_site_mode': False,
     #'owner':  ['google-oauth2|102124071738955888216'],  # Neyle
     'owner':  ['google-oauth2|112401903840371673242'],  # Wayne
@@ -319,12 +318,11 @@ site_config = {
             'parent': 'mount1',
             'name': 'Main OTA',
             'desc':  'Planewave CDK 14 F7.2',
-            'telescop': 'pwcdk-0m35-f7p2-001',
             'driver': 'None',                     #Essentially this device is informational.  It is mostly about the optics.
             'startup_script':  None,
             'recover_script':  None,
             'shutdown_script':  None,  
-            'collecting_area':  43042.0,
+            'collecting_area':  76146.0,
             'obscuration':  23.5,
             'aperture': 356,
             'f-ratio':  7.2,   #This and focal_length can be refined after a solve.
@@ -600,20 +598,13 @@ site_config = {
         #'default': 'camera_1_1',
         'camera_1_1': {
             'parent': 'telescope1',
-            'name': 'sq003',      #Important because this points to a server file structure by that name.
+            'name': 'sq01',      #Important because this points to a server file structure by that name.
             'desc':  'QHY 600M Pro',
             'driver':  "ASCOM.QHYCCD.Camera", #"Maxim.CCDCamera",   #'ASCOM.FLI.Kepler.Camera', "ASCOM.QHYCCD.Camera",   #
             'detector':  'Sony IMX455',
             'manufacturer':  'QHY',
             'use_file_mode':  False,
             'file_mode_path':  'D:/archive/sq01/maxim/',
-            'detsize': '[1:9600, 1:6422]',  # Physical chip data size as reutrned from driver
-            'ccdsec': '[1:9600, 1:6422]',
-            'biassec': ['[1:24, 1:6388]', '[1:12, 1:3194]', '[1:8, 1:2129]', '[1:6, 1:1597]'],
-            'datasec': ['[25:9600, 1:6388]', '[13:4800, 1:3194]', '[9:3200, 1:2129]', '[7:2400, 1:1597]'],
-            'trimsec': ['[1:9576, 1:6388]', '[1:4788, 1:3194]', '[1:3192, 1:2129]', '[1:2394, 1:1597]'],
-            
-            
             
             'settings': {
                 'temp_setpoint': -25,
@@ -646,25 +637,24 @@ site_config = {
                 'max_exposure': 180.,
                 'can_subframe':  True,
                 'min_subframe':  [[128,128], '4, 4'],
-                'cycle_time':  [18, 15, 15, 12],
+                'cycle_time':  [18, 15, 15],
                 'rbi_delay':  0,      # This being zero says RBI is not available, eg. for SBIG.
                 'is_cmos':  True,
                 'can_set_gain':  True,
-                'reference_gain': [1.3, 2.6, 3.9, 5.2],     #One val for each binning.
-                'reference_noise': [6, 6, 6, 6],    #  NB Guess
-                'reference_dark': [.2, .8, 1.8, 3.2],  #  Guess
-                'max_linearity':  60000,   # Guess
-                'saturate':  65300,
-                'fullwell_capacity': [80000, 32000, 720000, 1280000],
+                'reference_gain': [28, 28, 28, 28],     #One val for each binning.
+                'reference_noise': [3.2, 3.2, 3.2, 3.2],    #  NB Guess
+                'reference_dark': [0.2, 0.0, 0.0, 0.0],    #Guesses?
+                'saturate':  55000,
+                'max_linearity':  55000.,
+                'fullwell_capacity': 85000,
                 'read_mode':  'Normal',
                 'readout_mode': 'Normal',
-                'readout_speed':  50,
+                'readout_speed':  0.4,
                 'square_detector': False,
-                'square_pixels': True,
                 'areas_implemented': ["600%", "450%", "300%", "250%", "150%", "133%", "Full", "Sqr", '71%', '50%',  '35%', '25%', '12%'],
                 'default_area':  "Full",
-                'bin_modes':  [[2, 2, 0.605], [1, 1, 0.303], [3, 3, 0.908], [4, 4, 1.21]],     #Meaning fixed binning if list has only one entry
-                'default_bin':  [2, 2, 0.605],     #Always square and matched to seeing situation by owner
+                'bin_modes':  [[2, 2], [1,1]],     #Meaning fixed binning if list has only one entry
+                'default_bin':  [2, 2],     #Always square and matched to seeing situation by owner
                 'has_darkslide':  True,
                 'darkslide_com':  'COM15',
                 'has_screen': True,

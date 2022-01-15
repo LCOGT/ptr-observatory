@@ -841,8 +841,8 @@ class Mount:
         if dither == 0:
             self.go_coord(self.last_ra, self.last_dec, self.last_tracking_rate_ra, self.last_tracking_rate_dec)
         else:
-            breakpoint()
-            
+            #breakpoint()
+            pass
             
             
 
@@ -869,7 +869,7 @@ class Mount:
                 ra_cal_offset, dec_cal_offset = self.get_mount_reference() 
             except:
                 try:
-                    a_cal_offset, dec_cal_offset = self.get_mount_reference() 
+                    ra_cal_offset, dec_cal_offset = self.get_mount_reference() 
                     ra_cal_offset, dec_cal_offset = self.get_mount_reference() 
                 except:
                     ra_cal_offset = 0
@@ -880,7 +880,6 @@ class Mount:
             jnow_coord = icrs_coord.transform_to(FK5(equinox=self.equinox_now))
             ra = jnow_coord.ra.hour
             dec = jnow_coord.dec.degree
-            breakpoint
             if self.offset_received:
                 ra +=  ra_cal_offset + self.ra_offset          #Offsets are J.now and used to get target on Browser Crosshairs.
                 dec +=  dec_cal_offset + self.dec_offset              
