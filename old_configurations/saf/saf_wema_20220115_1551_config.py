@@ -22,6 +22,7 @@ g_dev = None
 site_name = 'saf'
 site_config = {
     'site': str(site_name.lower()),
+    'site_id': 'saf',
     'debug_site_mode': False,
 
     'owner':  ['google-oauth2|102124071738955888216', 'google-oauth2|112401903840371673242'],  # Neyle,  Or this can be some aws handle.
@@ -223,8 +224,9 @@ site_config = {
             'parent': 'mount1',
             'name': 'Main OTA',
             'desc':  'Ceravolo 300mm F4.9/F9 convertable',
+            'telescop': 'cvagr-0m30-f9-f4p9-001',
             'driver': None,                     # Essentially this device is informational.  It is mostly about the optics.
-            'collecting_area': 38877,
+            'collecting_area': 31808,
             'obscuration':  0.55,  # Informatinal, already included in collecting_area.
             'aperture': 30,
             'focal_length': 1470,  # 1470,   #2697,   # Converted to F9, measured 20200905  11.1C
@@ -429,6 +431,11 @@ site_config = {
             'manufacturer':  'QHY',
             'use_file_mode':  False,
             'file_mode_path':  'G:/000ptr_saf/archive/sq01/autosaves/',
+            'detsize': '[1:9600, 1:6422]',  # QHY600Pro Physical chip data size as returned from driver
+            'ccdsec': '[1:9600, 1:6422]',
+            'biassec': ['[1:24, 1:6388]', '[1:12, 1:3194]', '[1:8, 1:2129]', '[1:6, 1:1597]'],
+            'datasec': ['[25:9600, 1:6388]', '[13:4800, 1:3194]', '[9:3200, 1:2129]', '[7:2400, 1:1597]'],
+            'trimsec': ['[1:9576, 1:6388]', '[1:4788, 1:3194]', '[1:3192, 1:2129]', '[1:2394, 1:1597]'],
 
             'settings': {
                 'temp_setpoint': -10,
@@ -461,18 +468,20 @@ site_config = {
                 'max_exposure': 300.0,
                 'can_subframe':  True,
                 'min_subframe':  [128, 128],       
-                'bin_modes':  [[2, 2, 1.06], [3, 3, 1.58], [4, 4, 2.11], [1, 1, 0.53]],   #Meaning no binning choice if list has only one entry, default should be first.
+                'bin_modes':  [[2, 2, 1.06], [1, 1, 0.53], [3, 3, 1.58], [4, 4, 2.11]],   #Meaning no binning choice if list has only one entry, default should be first.
                 'default_bin':  [2, 2, 1.06],    # Matched to seeing situation by owner
-                'cycle_time':  [18, 15, 15],  # 3x3 requires a 1, 1 reaout then a software bin, so slower.
+                'cycle_time':  [18, 15, 15, 12],  # 3x3 requires a 1, 1 reaout then a software bin, so slower.
                 'rbi_delay':  0.,      # This being zero says RBI is not available, eg. for SBIG.
                 'is_cmos':  True,
                 'is_color':  False,
                 'can_set_gain':  True,
                 'bayer_pattern':  None,    # Need to verify R as in RGGB is pixel x=0, y=0, B is x=1, y = 1
-                'can_set_gain':  True,
-                'reference_gain': [10., 10., 10., 10.],     # One val for each binning.
-                'reference_noise': [1.1, 1.1, 1.1, 1.1],    # All SWAGs right now
-                'reference_dark': [0.0, 0.0, 0.0, 0.0],     # Might these best be pedastal values?
+                'reference_gain': [1.3, 2.6, 3.9, 5.2],     #One val for each binning.
+                'reference_noise': [6, 6, 6, 6],    #  NB Guess
+                'reference_dark': [.2, .8, 1.8, 3.2],  #  Guess
+                'max_linearity':  60000,   # Guess
+                'saturate':  65300,
+                'fullwell_capacity': [80000, 320000, 720000, 1280000],
                                     #hdu.header['RDMODE'] = (self.config['camera'][self.name]['settings']['read_mode'], 'Camera read mode')
                     #hdu.header['RDOUTM'] = (self.config['camera'][self.name]['readout_mode'], 'Camera readout mode')
                     #hdu.header['RDOUTSP'] = (self.config['camera'][self.name]['settings']['readout_speed'], '[FPS] Readout speed')
