@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 '''
 Created on Fri Feb 07,  11:57:41 2020
-Updated 20200902 WER
+Updated saf_wema_20220106_1705_config WER
 
 @author: wrosing
 
@@ -27,14 +27,15 @@ site_config = {
     'owner':  ['google-oauth2|102124071738955888216', 'google-oauth2|112401903840371673242'],  # Neyle,  Or this can be some aws handle.
     'owner_alias': ['ANS'],
     'admin_aliases': ["ANS", "WER", "TB", "DH", "KVH", 'KC'],
-    'site_is_generic':  False,   # A simplee single computer ASCOM site.
+    'site_is_generic':  False,   # A simple single computer ASCOM site.
     'site_is_specific':  False,  # Indicates some special code for a single site.
                                  # Intention it is found in this file.
                                  # Fat is intended to be simple since 
                                  # there is so little to control.
-    'site_path':  'C:/ptr/',     # Generic place ofor this host to stash.
+    'site_path':  'C:/ptr/',     # Generic place for this host to stash.
                                  #NB for the client this is the site archive location, maybe call it that?
     'client_path': 'F:/ptr/',
+    'archive_path': 'F:/',       # Where images are kept.
     'site_IPC_mechanism':  'shares',   # ['None', shares', 'shelves', 'redis']  Pick One     
     'site_share_path':  '//saf-wema/wema_transfer/',  # Presumably also where shelves are found   
                                                       # Meant to be used by mnt/tel's.
@@ -43,6 +44,50 @@ site_config = {
     'wema_hostname':  'SAF-WEMA',
     'wema_share_path':  'C:/ptr/wema_transfer/',  # Meant to be where Wema puts status data.
     'redis_ip': None,   # None if no redis path present, localhost if redis iself-contained
+
+    'name': 'Apache Ridge Observatory 0m3f4.9/9',
+    'airport_code':  'SAF',
+    'location': 'Santa Fe, New Mexico,  USA',
+    'observatory_url': 'https://starz-r-us.sky/clearskies2',   # This is meant to be optional
+    'description':  '''
+                    Now is the time for all good persons
+                    to get out and vote early and often lest
+                    we lose charge of our democracy.
+                    ''',    # i.e, a multi-line text block supplied and formatted by the owner.
+    'TZ_database_name':  'America/Denver',
+    'mpc_code':  'ZZ24',    # This is made up for now.
+    'time_offset':  -7.0,   # These two keys may be obsolete give the new TZ stuff 
+    'timezone': 'MST',      # This was meant to be coloquial Time zone abbreviation, alternate for "TX_data..."
+    'latitude': 35.554298,     # Decimal degrees, North is Positive
+    'longitude': -105.870197,   # Decimal degrees, West is negative
+    'elevation': 2194,    # meters above sea level
+    'reference_ambient':  10.0,  # Degrees Celsius.  Alternately 12 entries, one for every - mid month.
+    'reference_pressure':  794.0,    #mbar   A rough guess 20200315
+    
+    'site_in_automatic_default': "Automatic",   # ["Manual", "Shutdown", "Automatic"]
+    'automatic_detail_default': "Enclosure is initially set to Shutdown by SAF config.",
+    'auto_eve_bias_dark': False,
+    'auto_eve_sky_flat': False,
+    'eve_sky_flat_sunset_offset': +0.0,  # Minutes  neg means before, + after.
+    'auto_morn_sky_flat': False,
+    'auto_morn_bias_dark': False,
+    'calibrate_on_solve': True,  # nb nb nb pICK ONE
+    're-calibrate_on_solve': True, 
+
+    'observing_conditions' : {     #for SAF
+        'observing_conditions1': {
+            'parent': 'site',
+            'name': 'Boltwood',
+            'driver': 'ASCOM.Boltwood.ObservingConditions',
+            'driver_2':  'ASCOM.Boltwood.OkToOpen.SafetyMonitor',
+            'driver_3':  'ASCOM.Boltwood.OkToImage.SafetyMonitor',
+            'redis_ip': '127.0.0.1',   #None if no redis path present
+            'has_unihedron':  True,
+            'uni_driver': 'ASCOM.SQM.serial.ObservingConditions',
+            'unihedron_port':  10    # False, None or numeric of COM port.
+        },
+    },
+    
     'defaults': {
         'observing_conditions': 'observing_conditions1',  # These are used as keys, may go away.
         'enclosure': 'enclosure1',
@@ -70,7 +115,7 @@ site_config = {
         'sequencer',
         ],
     'wema_types': [
-       'observing_conditions1',
+       'observing_conditions',
        'enclosure',    
        ],
     'short_status_devices':  [
@@ -86,49 +131,6 @@ site_config = {
        'camera',
        'sequencer',
        ],
-    'name': 'Apache Ridge Observatory 0m3f4.9/9',
-    'airport_code':  'SAF',
-    'location': 'Santa Fe, New Mexico,  USA',
-    'observatory_url': 'https://starz-r-us.sky/clearskies2',   # This is meant to be optional
-    'description':  '''
-                    Now is the time for all good persons
-                    to get out and vote early and often lest
-                    we lose charge of our democracy.
-                    ''',    # i.e, a multi-line text block supplied and formatted by the owner.
-    'TZ_database_name':  'America/Denver',
-    'mpc_code':  'ZZ24',    # This is made up for now.
-    'time_offset':  -7.0,   # These two keys may be obsolete give the new TZ stuff 
-    'timezone': 'MST',      # This was meant to be coloquial Time zone abbreviation, alternate for "TX_data..."
-    'latitude': 35.554298,     # Decimal degrees, North is Positive
-    'longitude': -105.870197,   # Decimal degrees, West is negative
-    'elevation': 2194,    # meters above sea level
-    'reference_ambient':  10.0,  # Degrees Celsius.  Alternately 12 entries, one for every - mid month.
-    'reference_pressure':  794.0,    #mbar   A rough guess 20200315
-    
-    'site_in_automatic_default': "Shutdown",   # ["Manual", "Shutdown", "Automatic"]
-    'automatic_detail_default': "Enclosure is initially set to Shutdown by SAF config.",
-    'auto_eve_bias_dark': False,
-    'auto_eve_sky_flat': False,
-    'eve_sky_flat_sunset_offset': +0.0,  # Minutes  neg means before, + after.
-    'auto_morn_sky_flat': False,
-    'auto_morn_bias_dark': False,
-    'calibrate_on_solve': True,  # nb nb nb pICK ONE
-    're-calibrate_on_solve': True, 
-
-    'observing_conditions' : {     #for SAF
-        'observing_conditions1': {
-            'parent': 'site',
-            'name': 'Boltwood',
-            'driver': 'ASCOM.Boltwood.ObservingConditions',
-            'driver_2':  'ASCOM.Boltwood.OkToOpen.SafetyMonitor',
-            'driver_3':  'ASCOM.Boltwood.OkToImage.SafetyMonitor',
-            'redis_ip': '127.0.0.1',   #None if no redis path present
-            'has_unihedron':  True,
-            'uni_driver': 'ASCOM.SQM.serial.ObservingConditions',
-            'unihedron_port':  10    # False, None or numeric of COM port.
-        },
-    },
-
 
     'enclosure': {
         'enclosure1': {
@@ -142,7 +144,7 @@ site_config = {
 
             'has_lights':  False,
             'controlled_by': 'mount1',
-			'is_dome': False,
+			'is_dome': True,
             'mode': 'Automatic',
             
             'cool_down': 89.0,     # Minutes prior to sunset.
@@ -340,8 +342,8 @@ site_config = {
     'filter_wheel': {
         "filter_wheel1": {
             "parent": "telescope1",
-            "name": "LCO filter wheel FW50_001d",
-            'service_date': '20110716',
+            "name": "LCO FW50_001d",
+            'service_date': '20210716',
             "driver": "LCO.dual",  # 'ASCOM.FLI.FilterWheel',   #'MAXIM',
             'ip_string': 'http://10.0.0.110',
             "dual_wheel": True,
@@ -518,7 +520,9 @@ site_config = {
         },
     },
 }
-
+get_ocn_status = None
+get_enc_status = None
+ 
 if __name__ == '__main__':
     j_dump = json.dumps(site_config)
     site_unjasoned = json.loads(j_dump)

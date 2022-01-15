@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 '''
 Created on Fri Feb 07,  11:57:41 2020
-Updated 20200902 WER
+Updated saf_wema_20220106_1705_config WER
 
 @author: wrosing
 
@@ -22,27 +22,73 @@ g_dev = None
 site_name = 'saf'
 site_config = {
     'site': str(site_name.lower()),
+    'site_id': 'saf',
     'debug_site_mode': False,
 
     'owner':  ['google-oauth2|102124071738955888216', 'google-oauth2|112401903840371673242'],  # Neyle,  Or this can be some aws handle.
     'owner_alias': ['ANS'],
     'admin_aliases': ["ANS", "WER", "TB", "DH", "KVH", 'KC'],
-    'site_is_generic':  False,   # A simplee single computer ASCOM site.
+    'site_is_generic':  False,   # A simple single computer ASCOM site.
     'site_is_specific':  False,  # Indicates some special code for a single site.
                                  # Intention it is found in this file.
                                  # Fat is intended to be simple since 
                                  # there is so little to control.
-    'site_path':  'C:/ptr/',     # Generic place ofor this host to stash.
+    'site_path':  'C:/ptr/',     # Generic place for this host to stash.
                                  #NB for the client this is the site archive location, maybe call it that?
     'client_path': 'F:/ptr/',
+    'archive_path': 'F:/',       # Where images are kept.
     'site_IPC_mechanism':  'shares',   # ['None', shares', 'shelves', 'redis']  Pick One     
-    'site_share_path':  '//saf-wema/wema_transfer/',  # Presumably also where shelves are found   
+    'client_share_path':  '//saf-wema/wema_transfer/',  # Presumably also where shelves are found   
                                                       # Meant to be used by mnt/tel's.
     'wema_is_active':  True,     # True if an agent is used at a site. 
                                  # Wemas are split sites -- at least two CPS's sharing the control.
     'wema_hostname':  'SAF-WEMA',
     'wema_share_path':  'C:/ptr/wema_transfer/',  # Meant to be where Wema puts status data.
     'redis_ip': None,   # None if no redis path present, localhost if redis iself-contained
+
+    'name': 'Apache Ridge Observatory 0m3f4.9/9',
+    'airport_code':  'SAF',
+    'location': 'Santa Fe, New Mexico,  USA',
+    'observatory_url': 'https://starz-r-us.sky/clearskies2',   # This is meant to be optional
+    'description':  '''
+                    Now is the time for all good persons
+                    to get out and vote early and often lest
+                    we lose charge of our democracy.
+                    ''',    # i.e, a multi-line text block supplied and formatted by the owner.
+    'TZ_database_name':  'America/Denver',
+    'mpc_code':  'ZZ24',    # This is made up for now.
+    'time_offset':  -7.0,   # These two keys may be obsolete give the new TZ stuff 
+    'timezone': 'MST',      # This was meant to be coloquial Time zone abbreviation, alternate for "TX_data..."
+    'latitude': 35.554298,     # Decimal degrees, North is Positive
+    'longitude': -105.870197,   # Decimal degrees, West is negative
+    'elevation': 2194,    # meters above sea level
+    'reference_ambient':  10.0,  # Degrees Celsius.  Alternately 12 entries, one for every - mid month.
+    'reference_pressure':  794.0,    #mbar   A rough guess 20200315
+    
+    'site_in_automatic_default': "Automatic",   # ["Manual", "Shutdown", "Automatic"]
+    'automatic_detail_default': "Enclosure is initially set to Shutdown by SAF config.",
+    'auto_eve_bias_dark': False,
+    'auto_eve_sky_flat': False,
+    'eve_sky_flat_sunset_offset': +0.0,  # Minutes  neg means before, + after.
+    'auto_morn_sky_flat': False,
+    'auto_morn_bias_dark': False,
+    'calibrate_on_solve': True,  # nb nb nb pICK ONE
+    're-calibrate_on_solve': True, 
+
+    'observing_conditions' : {     #for SAF
+        'observing_conditions1': {
+            'parent': 'site',
+            'name': 'Boltwood',
+            'driver': 'ASCOM.Boltwood.ObservingConditions',
+            'driver_2':  'ASCOM.Boltwood.OkToOpen.SafetyMonitor',
+            'driver_3':  'ASCOM.Boltwood.OkToImage.SafetyMonitor',
+            'redis_ip': '127.0.0.1',   #None if no redis path present
+            'has_unihedron':  True,
+            'uni_driver': 'ASCOM.SQM.serial.ObservingConditions',
+            'unihedron_port':  10    # False, None or numeric of COM port.
+        },
+    },
+    
     'defaults': {
         'observing_conditions': 'observing_conditions1',  # These are used as keys, may go away.
         'enclosure': 'enclosure1',
@@ -70,8 +116,8 @@ site_config = {
         'sequencer',
         ],
     'wema_types': [
-       'observing_conditions1',
-       'enclosure1',    
+       'observing_conditions',
+       'enclosure',    
        ],
     'short_status_devices':  [
        # 'observing_conditions',
@@ -86,49 +132,6 @@ site_config = {
        'camera',
        'sequencer',
        ],
-    'name': 'Apache Ridge Observatory 0m3f4.9/9',
-    'airport_code':  'SAF',
-    'location': 'Santa Fe, New Mexico,  USA',
-    'observatory_url': 'https://starz-r-us.sky/clearskies2',   # This is meant to be optional
-    'description':  '''
-                    Now is the time for all good persons
-                    to get out and vote early and often lest
-                    we lose charge of our democracy.
-                    ''',    # i.e, a multi-line text block supplied and formatted by the owner.
-    'TZ_database_name':  'America/Denver',
-    'mpc_code':  'ZZ24',    # This is made up for now.
-    'time_offset':  -7.0,   # These two keys may be obsolete give the new TZ stuff 
-    'timezone': 'MST',      # This was meant to be coloquial Time zone abbreviation, alternate for "TX_data..."
-    'latitude': 35.554298,     # Decimal degrees, North is Positive
-    'longitude': -105.870197,   # Decimal degrees, West is negative
-    'elevation': 2194,    # meters above sea level
-    'reference_ambient':  10.0,  # Degrees Celsius.  Alternately 12 entries, one for every - mid month.
-    'reference_pressure':  794.0,    #mbar   A rough guess 20200315
-    
-    'site_in_automatic_default': "Shutdown",   # ["Manual", "Shutdown", "Automatic"]
-    'automatic_detail_default': "Enclosure is initially set to Shutdown by SAF config.",
-    'auto_eve_bias_dark': False,
-    'auto_eve_sky_flat': False,
-    'eve_sky_flat_sunset_offset': +0.0,  # Minutes  neg means before, + after.
-    'auto_morn_sky_flat': False,
-    'auto_morn_bias_dark': False,
-    'calibrate_on_solve': True,  # nb nb nb pICK ONE
-    're-calibrate_on_solve': True, 
-
-    'observing_conditions' : {     #for SAF
-        'observing_conditions1': {
-            'parent': 'site',
-            'name': 'Boltwood',
-            'driver': 'ASCOM.Boltwood.ObservingConditions',
-            'driver_2':  'ASCOM.Boltwood.OkToOpen.SafetyMonitor',
-            'driver_3':  'ASCOM.Boltwood.OkToImage.SafetyMonitor',
-            'redis_ip': '127.0.0.1',   #None if no redis path present
-            'has_unihedron':  True,
-            'uni_driver': 'ASCOM.SQM.serial.ObservingConditions',
-            'unihedron_port':  10    # False, None or numeric of COM port.
-        },
-    },
-
 
     'enclosure': {
         'enclosure1': {
@@ -221,8 +224,9 @@ site_config = {
             'parent': 'mount1',
             'name': 'Main OTA',
             'desc':  'Ceravolo 300mm F4.9/F9 convertable',
+            'telescop': 'cvagr-0m30-f9-f4p9-001',
             'driver': None,                     # Essentially this device is informational.  It is mostly about the optics.
-            'collecting_area': 38877,
+            'collecting_area': 31808,
             'obscuration':  0.55,  # Informatinal, already included in collecting_area.
             'aperture': 30,
             'focal_length': 1470,  # 1470,   #2697,   # Converted to F9, measured 20200905  11.1C
@@ -340,8 +344,8 @@ site_config = {
     'filter_wheel': {
         "filter_wheel1": {
             "parent": "telescope1",
-            "name": "LCO filter wheel FW50_001d",
-            'service_date': '20110716',
+            "name": "LCO FW50_001d",
+            'service_date': '20210716',
             "driver": "LCO.dual",  # 'ASCOM.FLI.FilterWheel',   #'MAXIM',
             'ip_string': 'http://10.0.0.110',
             "dual_wheel": True,
@@ -427,6 +431,11 @@ site_config = {
             'manufacturer':  'QHY',
             'use_file_mode':  False,
             'file_mode_path':  'G:/000ptr_saf/archive/sq01/autosaves/',
+            'detsize': '[1:9600, 1:6422]',  # QHY600Pro Physical chip data size as returned from driver
+            'ccdsec': '[1:9600, 1:6422]',
+            'biassec': ['[1:24, 1:6388]', '[1:12, 1:3194]', '[1:8, 1:2129]', '[1:6, 1:1597]'],
+            'datasec': ['[25:9600, 1:6388]', '[13:4800, 1:3194]', '[9:3200, 1:2129]', '[7:2400, 1:1597]'],
+            'trimsec': ['[1:9576, 1:6388]', '[1:4788, 1:3194]', '[1:3192, 1:2129]', '[1:2394, 1:1597]'],
 
             'settings': {
                 'temp_setpoint': -10,
@@ -459,18 +468,20 @@ site_config = {
                 'max_exposure': 300.0,
                 'can_subframe':  True,
                 'min_subframe':  [128, 128],       
-                'bin_modes':  [[2, 2, 1.06], [3, 3, 1.58], [4, 4, 2.11], [1, 1, 0.53]],   #Meaning no binning choice if list has only one entry, default should be first.
+                'bin_modes':  [[2, 2, 1.06], [1, 1, 0.53], [3, 3, 1.58], [4, 4, 2.11]],   #Meaning no binning choice if list has only one entry, default should be first.
                 'default_bin':  [2, 2, 1.06],    # Matched to seeing situation by owner
-                'cycle_time':  [18, 15, 15],  # 3x3 requires a 1, 1 reaout then a software bin, so slower.
+                'cycle_time':  [18, 15, 15, 12],  # 3x3 requires a 1, 1 reaout then a software bin, so slower.
                 'rbi_delay':  0.,      # This being zero says RBI is not available, eg. for SBIG.
                 'is_cmos':  True,
                 'is_color':  False,
                 'can_set_gain':  True,
                 'bayer_pattern':  None,    # Need to verify R as in RGGB is pixel x=0, y=0, B is x=1, y = 1
-                'can_set_gain':  True,
-                'reference_gain': [10., 10., 10., 10.],     # One val for each binning.
-                'reference_noise': [1.1, 1.1, 1.1, 1.1],    # All SWAGs right now
-                'reference_dark': [0.0, 0.0, 0.0, 0.0],     # Might these best be pedastal values?
+                'reference_gain': [1.3, 2.6, 3.9, 5.2],     #One val for each binning.
+                'reference_noise': [6, 6, 6, 6],    #  NB Guess
+                'reference_dark': [.2, .8, 1.8, 3.2],  #  Guess
+                'max_linearity':  60000,   # Guess
+                'saturate':  65300,
+                'fullwell_capacity': [80000, 320000, 720000, 1280000],
                                     #hdu.header['RDMODE'] = (self.config['camera'][self.name]['settings']['read_mode'], 'Camera read mode')
                     #hdu.header['RDOUTM'] = (self.config['camera'][self.name]['readout_mode'], 'Camera readout mode')
                     #hdu.header['RDOUTSP'] = (self.config['camera'][self.name]['settings']['readout_speed'], '[FPS] Readout speed')
