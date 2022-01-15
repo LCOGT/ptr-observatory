@@ -697,6 +697,7 @@ class Observatory:
                 #the images so East is left and North is up based on
                 #The keyword PIERSIDE defines the orientation.
                 #Note the raw image is not flipped/
+
                 if hdu.header['PIERSIDE'] == "Look West":
                     hdu.data = np.flip(hdu.data)
                     hdu.header['IMGFLIP'] = True
