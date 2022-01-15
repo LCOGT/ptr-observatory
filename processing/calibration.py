@@ -546,7 +546,7 @@ def calibrate (hdu, lng_path, frame_type='light', quick=False):
         iy = hdu.header['naxis2']
         pedastal = 0     # Pedastal will be applied near exit.
         overscan = 0
-        img = hdu.data
+        img = hdu.data.astype('int32')
         
                 # if ix == 9600:
                 #     overscan = int((np.median(img[32:, -33:]) + np.median(img[0:29, :]))/2) - 1

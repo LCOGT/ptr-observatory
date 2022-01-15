@@ -925,7 +925,7 @@ class Sequencer:
         """
         self.sky_guard = True
         print('Eve Sky Flat sequence Starting, Enclosure PRESUMED Open. Telescope will un-park.')
-        #breakpoint()
+        breakpoint()
         camera_name = str(self.config['camera']['camera_1_1']['name'])
         flat_count = 7
         exp_time = .0015

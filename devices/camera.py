@@ -1105,7 +1105,7 @@ class Camera:
                     ####self.img_safe = self.camera.ImageArray
                     #NB NB Do not try to print ImageArray!!!!
                     self.img = np.array(self.camera.ImageArray)
-                    self.img = self.img.astype('int32')
+                    self.img = self.img.astype('uint16')
                     self.img = self.img.transpose()  #QHY images images arrive 4-high, 3-wide in Python.
                     self.t4p5 = time.time()#As read, this is a Windows Safe Array of Longs
                     #print("\n\nMedian of incoming image:  ", np.median(self.img), '\n\n')
@@ -1329,6 +1329,7 @@ class Camera:
 
                     #return result   #Used if focus not saved in calibs.
                 try:
+                    #self.img = self.img.astype('uint16')
                     hdu = fits.PrimaryHDU(self.img)
                     self.img = None    #  Does this free up any resource?
 
@@ -1426,13 +1427,14 @@ class Camera:
                     if self.pane is not None:
                         hdu.header['MOSAIC'] = (True, 'Is mosaic')
                         hdu.header['PANE'] = self.pane
-                    hdu.header['TELESCOP'] = (self.config['telescope']['telescope1']['desc'], 'Name of the telescope')
+                    hdu.header['TELESCOP'] = (self.config['telescope']['telescope1']['telescop'], 'Name of the telescope')
                     hdu.header['FOCAL']    = (round(float(self.config['telescope']['telescope1']['focal_length']), 2), \
                                               '[mm] Telescope focal length')
                     hdu.header['APR-DIA']  = (round(float(self.config['telescope']['telescope1']['aperture']), 2), \
                                               '[mm] Telescope aperture')
                     hdu.header['APR-AREA'] = (round(float(self.config['telescope']['telescope1']['collecting_area']), 1), \
                                               '[mm^2] Telescope collecting area')
+                    hdu.header['SITEID'] = self.config['site_id']
                     hdu.header['LATITUDE']  = (round(float(self.config['latitude']), 6), '[Deg N] Telescope Latitude')
                     hdu.header['LONGITUD'] = (round(float(self.config['longitude']), 6), '[Deg E] Telescope Longitude')
                     hdu.header['HEIGHT'] = (round(float(self.config['elevation']), 2), '[m] Altitude of Telescope above sea level')

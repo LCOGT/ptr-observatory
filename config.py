@@ -52,6 +52,7 @@ QHY600         AstroImaging Equipment
 site_name = 'mrc'    #NB These must be unique across all of PTR. Pre-pend with airport code if needed: 'sba_wmdo'
 site_config = {
     'site': str(site_name).lower(),
+    'site_id': 'mrc',
     'debug_site_mode': False,
     #'owner':  ['google-oauth2|102124071738955888216'],  # Neyle
     'owner':  ['google-oauth2|112401903840371673242'],  # Wayne
@@ -318,11 +319,12 @@ site_config = {
             'parent': 'mount1',
             'name': 'Main OTA',
             'desc':  'Planewave CDK 14 F7.2',
+            'telescop': 'pwcdk-0m35-f7p2-001',
             'driver': 'None',                     #Essentially this device is informational.  It is mostly about the optics.
             'startup_script':  None,
             'recover_script':  None,
             'shutdown_script':  None,  
-            'collecting_area':  76146.0,
+            'collecting_area':  43042.0,
             'obscuration':  23.5,
             'aperture': 356,
             'f-ratio':  7.2,   #This and focal_length can be refined after a solve.
@@ -607,7 +609,7 @@ site_config = {
             'file_mode_path':  'D:/archive/sq01/maxim/',
             'detsize': '[1:9600, 1:6422]',  # Physical chip data size as reutrned from driver
             'ccdsec': '[1:9600, 1:6422]',
-            'biassec': ['[1:24, 1:6388]', '[1:12 1:3194]', '[1:8, 1:2129]', '[1:6, 1:1597]'],
+            'biassec': ['[1:24, 1:6388]', '[1:12, 1:3194]', '[1:8, 1:2129]', '[1:6, 1:1597]'],
             'datasec': ['[25:9600, 1:6388]', '[13:4800, 1:3194]', '[9:3200, 1:2129]', '[7:2400, 1:1597]'],
             'trimsec': ['[1:9576, 1:6388]', '[1:4788, 1:3194]', '[1:3192, 1:2129]', '[1:2394, 1:1597]'],
             
