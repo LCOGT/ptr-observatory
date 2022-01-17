@@ -2,6 +2,7 @@ import win32com.client
 from global_yard import g_dev
 import redis
 import time
+import math
 import shelve
 import json
 import socket
@@ -420,6 +421,7 @@ class Enclosure:
         if mnt_command is not None and mnt_command != '' and mnt_command != ['none']:
 
             try:
+                breakpoint()
                 #print( mnt_command)
                 # adj1 = dome_adjust(mount_command['altitude'], mount_command['azimuth'], \
                 #                   mount_command['hour_angle'])
