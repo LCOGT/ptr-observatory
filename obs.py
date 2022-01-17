@@ -643,8 +643,8 @@ class Observatory:
                                   files=files)
                 if name[-3:] == 'bz2' or name[-3:] == 'jpg' or \
                         name[-3:] == 'txt':
-                    #os.remove(im_path + name)
-                    pass
+                    os.remove(im_path + name)
+
                 self.aws_queue.task_done()
                 time.sleep(0.1)
             else:
@@ -686,6 +686,7 @@ class Observatory:
 
                 paths = pri_image[0]
                 hdu = pri_image[1]
+                backup = pri_image[0].copy()   #NB NB Should this be a deepcopy?
 
                 lng_path =  g_dev['cam'].lng_path
                 #NB Important decision here, do we flash calibrate screen and sky flats?  For now, Yes.
@@ -698,63 +699,63 @@ class Observatory:
                 #The keyword PIERSIDE defines the orientation.
                 #Note the raw image is not flipped/
 
+                # NB NB NB I do not think we should be flipping ALt_Az images.
                 if hdu.header['PIERSIDE'] == "Look West":
                     hdu.data = np.flip(hdu.data)
                     hdu.header['IMGFLIP'] = True
-                wpath = paths['im_path'] + paths['red_name01']
-                print('Reduced Mean:  ',hdu.data.mean())
-                hdu.writeto(wpath, overwrite=True)  # NB overwrite == True is dangerous in production code.  This is big fits to AWS
+                print('Reduced Mean:  ', round(hdu.data.mean() + hdu.header['PEDASTAL'], 2))
+                #wpath = paths['im_path'] + paths['red_name01']
+                #hdu.writeto(wpath, overwrite=True)  # NB overwrite == True is dangerous in production code.  This is big fits to AWS
                 reduced_data_size = hdu.data.size
                 wpath = paths['red_path'] + paths['red_name01_lcl']    #This name is convienent for local sorting
                 hdu.writeto(wpath, overwrite=True) #Bigfit reduced
                 
                 #Will try here to solve
-                try:
-                    hdu_save = hdu
-                    #wpath = 'C:/000ptr_saf/archive/sq01/20210528/reduced/saf-sq01-20210528-00019785-le-w-EX01.fits'
-                    time_now = time.time()  #This should be more accurately defined earlier in the header
-                    solve = platesolve.platesolve(wpath, 1.0551)     #0.5478)
-                    print("PW Solves: " ,solve['ra_j2000_hours'], solve['dec_j2000_degrees'])
-                    img = fits.open(wpath, mode='update', ignore_missing_end=True)
-                    hdr = img[0].header
-                    #  Update the header.
-                    hdr['RA-J2000'] = solve['ra_j2000_hours']
-                    hdr['DECJ2000'] = solve['dec_j2000_degrees']
-                    hdr['MEAS-SCL'] = solve['arcsec_per_pixel']
-                    hdr['MEAS-ROT'] = solve['rot_angle_degs']
-                    TARGRA  = g_dev['mnt'].current_icrs_ra
-                    TARGDEC = g_dev['mnt'].current_icrs_dec
-                    RAJ2000 = solve['ra_j2000_hours']
-                    DECJ2000 = solve['dec_j2000_degrees']
-                    err_ha = TARGRA - RAJ2000
-                    err_dec = TARGDEC - DECJ2000
-                    print("err ra, dec:  ", err_ha, err_dec)
-                    #Turn this off for now and center in autofocus. Race condition.
-                    g_dev['mnt'].adjust_mount_reference(err_ha, err_dec)
-                    img.flush()
-                    img.close
-                    img = fits.open(wpath, ignore_missing_end=True)
-                    hdr = img[0].header
-                    # prior_ra_h, prior_dec, prior_time = g_dev['mnt'].get_last_reference()
-                    
-                    # if prior_time is not None:
-                    #     print("time base is:  ", time_now - prior_time)
+                if not paths['frame_type'] in ['bias', 'dark', 'flat', 'solar', 'lunar', 'skyflat', 'screen', 'spectrum']:
+                    try:
+                        hdu_save = hdu
+                        #wpath = 'C:/000ptr_saf/archive/sq01/20210528/reduced/saf-sq01-20210528-00019785-le-w-EX01.fits'
+                        time_now = time.time()  #This should be more accurately defined earlier in the header
+                        solve = platesolve.platesolve(wpath, 1.0551)     #0.5478)
+                        print("PW Solves: " ,solve['ra_j2000_hours'], solve['dec_j2000_degrees'])
+                        img = fits.open(wpath, mode='update', ignore_missing_end=True)
+                        hdr = img[0].header
+                        #  Update the header.
+                        hdr['RA-J2000'] = solve['ra_j2000_hours']
+                        hdr['DECJ2000'] = solve['dec_j2000_degrees']
+                        hdr['MEAS-SCL'] = solve['arcsec_per_pixel']
+                        hdr['MEAS-ROT'] = solve['rot_angle_degs']
+                        TARGRA  = g_dev['mnt'].current_icrs_ra
+                        TARGDEC = g_dev['mnt'].current_icrs_dec
+                        RAJ2000 = solve['ra_j2000_hours']
+                        DECJ2000 = solve['dec_j2000_degrees']
+                        err_ha = TARGRA - RAJ2000
+                        err_dec = TARGDEC - DECJ2000
+                        print("err ra, dec:  ", err_ha, err_dec)
+                        #Turn this off for now and center in autofocus. Race condition.
+                        g_dev['mnt'].adjust_mount_reference(err_ha, err_dec)
+                        img.flush()
+                        img.close
+                        img = fits.open(wpath, ignore_missing_end=True)
+                        hdr = img[0].header
+                        # prior_ra_h, prior_dec, prior_time = g_dev['mnt'].get_last_reference()
                         
-                    # g_dev['mnt'].set_last_reference( solve['ra_j2000_hours'], solve['dec_j2000_degrees'], time_now)
-                except:
-                   print(wpath, "  was not solved, marking to skip in future, sorry!")
-                   img = fits.open(wpath, mode='update', ignore_missing_end=True)
-                   hdr = img[0].header
-                   hdr['NO-SOLVE'] = True
-                   img.close()
-                   #self.reset_last_reference()
+                        # if prior_time is not None:
+                        #     print("time base is:  ", time_now - prior_time)
+                            
+                        # g_dev['mnt'].set_last_reference( solve['ra_j2000_hours'], solve['dec_j2000_degrees'], time_now)
+                    except:
+                       print(wpath, "  was not solved, marking to skip in future, sorry!")
+                       img = fits.open(wpath, mode='update', ignore_missing_end=True)
+                       hdr = img[0].header
+                       hdr['NO-SOLVE'] = True
+                       img.close()
+                    hdu = hdu_save
+                    #Return to classic processing
                 
-                #Return to classic processing
-                hdu = hdu_save
-                
-                if self.site_name == 'saf':
-                    wpath = paths['red_path_aux'] + paths['red_name01_lcl']
-                    hdu.writeto(wpath, overwrite=True) #big fits to other computer in Neyle's office
+                # if self.site_name == 'saf':
+                #     wpath = paths['red_path_aux'] + paths['red_name01_lcl']
+                #     hdu.writeto(wpath, overwrite=True) #big fits to other computer in Neyle's office
                 #patch to test Midtone Contrast
                 
                 # image = 'Q:/000ptr_saf/archive/sq01/20201212 ans HH/reduced/HH--SigClip.fits'
@@ -938,11 +939,10 @@ class Observatory:
 
                 if not no_AWS:  #IN the no+AWS case should we skip more of the above processing?
                     #g_dev['cam'].enqueue_for_AWS(text_data_size, paths['im_path'], paths['text_name'])
-                  
                     g_dev['cam'].enqueue_for_AWS(jpeg_data_size, paths['im_path'], paths['jpeg_name10'])
                     g_dev['cam'].enqueue_for_AWS(i768sq_data_size, paths['im_path'], paths['i768sq_name10'])
                     #print('File size to AWS:', reduced_data_size)
-                    #g_dev['cam'].enqueue_for_AWS(reduced_data_size, paths['im_path'], paths['red_name01'])
+                    g_dev['cam'].enqueue_for_AWS(13000000, paths['raw_path'], paths['raw_name00'])
                     #if not quick:
                 #print('Sent to AWS Queue.')
                 time.sleep(0.5)

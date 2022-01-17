@@ -8,6 +8,7 @@ import socket
 import os
 import config
 from config import get_enc_status
+import math
 
 '''
 Curently this module interfaces to a Dome (az control) or a pop-top roof style enclosure.
@@ -29,6 +30,30 @@ Shutter, Roof, Slit, etc., are the same things.
 # =============================================================================
 def f_to_c(f):
     return round(5*(f - 32)/9, 2)
+
+def dome_adjust_rah_decd(hah, azd, altd, flip, r, offe, offs ):  #Flip = 'east' implies tel looking East.
+                                            #AP Park five is 'west'. offsets are neg for east and
+                                            #south at Park five.
+    if flip == 'East':
+        y = offe + r*math.sin(math.radians(hah*15.))
+        if azd >270 or azd <= 90:
+            x = offs + r*math.cos(math.radians(altd))
+        else:
+            x = offs - r*math.cos(math.radians(altd))
+                               
+    elif flip == 'West':
+        y = -offe + r*math.sin(hah*15)
+        if azd >270 or azd <= 90:
+            x = -offs + r*math.cos(math.radians(altd))
+        else:
+            x = -offs - r*math.cos(math.radians(altd))
+    naz = -math.degrees(math.atan2(y,x))
+    if naz < 0:
+        naz += 360
+    if naz >= 360: 
+        naz -= 360
+        
+    return round(naz, 2)
 
 class Enclosure:
 

@@ -139,6 +139,7 @@ site_config = {
 
             'name': 'HomeDome',
             'enc_is_specific':  False, 
+            'name': 'Boltwood',
             'hostIP':  '10.0.0.140',
             'driver': 'ASCOM.DigitalDomeWorks.Dome',  # ASCOMDome.Dome',  # ASCOM.DeviceHub.Dome',  # ASCOM.DigitalDomeWorks.Dome',  #"  ASCOMDome.Dome',
 
@@ -146,9 +147,6 @@ site_config = {
             'controlled_by': 'mount1',
 			'is_dome': True,
             'mode': 'Automatic',
-            'enc_radius':  70,  #  inches Ok for now.
-            'common_offset_east': -19.5,  # East is negative.  These will vary per telescope.
-            'common_offset_south': -8,  # South is negative.   So think of these as default.
             
             'cool_down': 89.0,     # Minutes prior to sunset.
             'settings': {
@@ -247,9 +245,6 @@ site_config = {
             'filter_wheel_name':  'filter_wheel1',
             'has_fans':  True,
             'has_cover':  False,
-            'axis_offset_east': -19.5,  # East is negative  THese will vary per telescope.
-            'axis_offset_south': -8,  # South is negative
-
             'settings': {
                 'fans': ['Auto', 'High', 'Low', 'Off'],
                 'offset_collimation': 0.0,    # If the mount model is current, these numbers are usually near 0.0
@@ -443,8 +438,8 @@ site_config = {
             'trimsec': ['[1:9576, 1:6388]', '[1:4788, 1:3194]', '[1:3192, 1:2129]', '[1:2394, 1:1597]'],
 
             'settings': {
-                'temp_setpoint': -12.5,
-                'calib_setpoints': [-12.5, -10, -7.5, -5],  # Should vary with season? by day-of-year mod len(list)
+                'temp_setpoint': -10,
+                'calib_setpoints': [-10, -7.5, -6.5, -5.5, -4.0 ],  # Should vary with season? by day-of-year mod len(list)
                 'day_warm': False,
                 'cooler_on': True,
                 'x_start':  0,
