@@ -2,6 +2,7 @@ import win32com.client
 from global_yard import g_dev
 import redis
 import time
+import math
 import shelve
 import json
 import socket
@@ -29,6 +30,30 @@ Shutter, Roof, Slit, etc., are the same things.
 # =============================================================================
 def f_to_c(f):
     return round(5*(f - 32)/9, 2)
+
+def dome_adjust_rah_decd(hah, azd, altd, flip, r, offe, offs ):  #Flip = 'east' implies tel looking East.
+                                            #AP Park five is 'west'. offsets are neg for east and
+                                            #south at Park five.
+    if flip == 'East':
+        y = offe + r*math.sin(math.radians(hah*15.))
+        if azd >270 or azd <= 90:
+            x = offs + r*math.cos(math.radians(altd))
+        else:
+            x = offs - r*math.cos(math.radians(altd))
+                               
+    elif flip == 'West':
+        y = -offe + r*math.sin(hah*15)
+        if azd >270 or azd <= 90:
+            x = -offs + r*math.cos(math.radians(altd))
+        else:
+            x = -offs - r*math.cos(math.radians(altd))
+    naz = -math.degrees(math.atan2(y,x))
+    if naz < 0:
+        naz += 360
+    if naz >= 360: 
+        naz -= 360
+        
+    return round(naz, 2)
 
 class Enclosure:
 
@@ -395,6 +420,7 @@ class Enclosure:
         if mnt_command is not None and mnt_command != '' and mnt_command != ['none']:
 
             try:
+                breakpoint()
                 #print( mnt_command)
                 # adj1 = dome_adjust(mount_command['altitude'], mount_command['azimuth'], \
                 #                   mount_command['hour_angle'])
