@@ -182,6 +182,7 @@ class Mount:
         self.config = config
         self.device_name = name
         self.settings = settings
+
         win32com.client.pythoncom.CoInitialize()
         self.mount = win32com.client.Dispatch(driver)
         self.mount.Connected = True
@@ -220,7 +221,8 @@ class Mount:
         self.target_az = 0   #Degrees Azimuth
         self.ha_corr = 0
         self.dec_corr = 0
-        self.seek_commanded = False       
+        self.seek_commanded = False 
+        self.last_seek_time = time.time()
         if abs(self.west_ha_correction_r) > 0 or abs(self.west_dec_correction_r) > 0:
             self.flip_correction_needed = True
             print("Flip correction needed.")
