@@ -246,12 +246,10 @@ class Mount:
         self.move_time = 0
         try:
             ra1, dec1 = self.get_mount_reference()
-            print("Mount reference:  ", ra1 ,dec1)
+            print("Mount reference:  ", ra1 ,dec1)   #(-0.05706493750913211, -0.4683533911074083) saf 20220116 WER
         except:
-            print("No mount ref found.")
-            pass
-        print("Reset Mount Reference.")
-        self.reset_mount_reference()
+            print("No mount ref found, resetting to 0,0.")
+            self.reset_mount_reference()
         #NB THe paddle needs a re-think and needs to be cast into its own thread. 20200310 WER
         if self.has_paddle:
             self._paddle = serial.Serial('COM28', timeout=0.1)
@@ -271,34 +269,6 @@ class Mount:
             #self.paddle_thread = threading.Thread(target=self.paddle, args=())
             #self.paddle_thread.start()
         print("exiting mount _init")
-
- 
-
-#    def get_status(self):
-#        m = self.mount
-#        status = {
-#            "name": self.name,
-#            "type":"mount",
-#            "RightAscension": str(m.RightAscension),
-#            "Declination": str(m.Declination),
-#            "RightAscensionRate": str(m.RightAscensionRate),
-#            "DeclinationRate": str(m.DeclinationRate),
-#            "AtHome": str(m.AtHome),
-#            "AtPark": str(m.AtPark),
-#            "Azimuth": str(m.Azimuth),
-#            "GuideRateDeclination":  str(0.0), #str(m.GuideRateDeclination),
-#            "GuideRateRightAscension": str(0.0), #(m.GuideRateRightAscension),
-#            "IsPulseGuiding": str(m.IsPulseGuiding),
-#            "SideOfPier": str(m.SideOfPier),
-#            "Slewing": str(m.Slewing),
-#            "Tracking": str(m.Tracking),
-#            "TrackingRate": str(0.0), #(m.TrackingRate),
-#            # Target ra and dec throws error if they have not been set.
-#            # Maybe we don't even need to include them in the status...
-#            #"TargetDeclination": str(m.TargetDeclination),
-#            #"TargetRightAscension": str(m.TargetRightAscension),
-#        }
-#        return status
 
     def check_connect(self):
         try:
@@ -485,6 +455,7 @@ class Mount:
             # This write the mount conditin back to the dome, only needed if self.is_dome
             if g_dev['enc'].is_dome:
                 try:
+                    breakpoint()
                     mount = open(g_dev['wema_share_path']+'mnt_cmd.txt', 'w')
                     mount.write(json.dumps(status))
                     mount.close()

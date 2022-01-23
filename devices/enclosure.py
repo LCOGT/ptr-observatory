@@ -9,6 +9,7 @@ import socket
 import os
 import config
 from config import get_enc_status
+import math
 
 '''
 Curently this module interfaces to a Dome (az control) or a pop-top roof style enclosure.
