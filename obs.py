@@ -526,7 +526,9 @@ class Observatory:
             #status.pop('enclosure', None)
             #status.pop('observing_conditions', None)
             status['observing_conditions'] = None
-            status['enclosure'] = None
+
+            if g_dev['enc'].dome_on_wema:
+                status['enclosure'] = None
             
         status["timestamp"] = round((time.time() + t1)/2., 3)
         status['send_heartbeat'] = False
@@ -711,7 +713,7 @@ class Observatory:
                 hdu.writeto(wpath, overwrite=True) #Bigfit reduced
                 
                 #Will try here to solve
-                if not paths['frame_type'] in ['bias', 'dark', 'flat', 'solar', 'lunar', 'skyflat', 'screen', 'spectrum']:
+                if not paths['frame_type'] in ['bias', 'dark', 'flat', 'solar', 'lunar', 'skyflat', 'screen', 'spectrum', 'auto_focus']:
                     try:
                         hdu_save = hdu
                         #wpath = 'C:/000ptr_saf/archive/sq01/20210528/reduced/saf-sq01-20210528-00019785-le-w-EX01.fits'
@@ -729,6 +731,7 @@ class Observatory:
                         TARGDEC = g_dev['mnt'].current_icrs_dec
                         RAJ2000 = solve['ra_j2000_hours']
                         DECJ2000 = solve['dec_j2000_degrees']
+                        #breakpoint()
                         err_ha = TARGRA - RAJ2000
                         err_dec = TARGDEC - DECJ2000
                         print("err ra, dec:  ", err_ha, err_dec)

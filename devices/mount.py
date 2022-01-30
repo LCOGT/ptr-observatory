@@ -302,7 +302,7 @@ class Mount:
             pass
 
         ra_cal_offset, dec_cal_offset = self.get_mount_reference()   #Get from shelf.
-        if ra_cal_offset or dec_cal_offset:
+        if abs(ra_cal_offset) > 0 or abs(dec_cal_offset)>0:
             #breakpoint()
             pass
         look_west = 0    # == 0  self.flip_correction_needed
@@ -415,12 +415,11 @@ class Mount:
                 icrs_ra, icrs_dec = self.get_mount_coordinates()  #20210430  Looks like this faulted during a slew.
             if self.prior_roll_rate == 0:
                 pass
-            ha = icrs_ra - self.current_sidereal
-            if ha < 12:
+            ha = self.current_sidereal - icrs_ra
+            if ha < -12:
                 ha  += 24
             if ha > 12:
                 ha -= 24
-                
             status = {
                 'timestamp': round(time.time(), 3),
                 'right_ascension': round(icrs_ra, 5),
@@ -434,6 +433,7 @@ class Mount:
                 'mount_right_ascension_rate': round(self.mount.RightAscensionRate, 9),   #Will use sec-RA/sid-sec
                 'demand_declination_rate': round(self.prior_pitch_rate, 8),
                 'mount_declination_rate': round(self.mount.DeclinationRate, 8),
+                'flip_side': self.mount.SideOfPier,
                 'azimuth': round(self.mount.Azimuth, 3),
                 'target_az': round(self.target_az, 3),
                 'altitude': round(alt, 3),
@@ -451,34 +451,34 @@ class Mount:
                 'move_time': self.move_time
             }
             # This write the mount conditin back to the dome, only needed if self.is_dome
-            if g_dev['enc'].is_dome:
-                try:
-                    breakpoint()
-                    mount = open(g_dev['wema_share_path']+'mnt_cmd.txt', 'w')
-                    mount.write(json.dumps(status))
-                    mount.close()
-                except:
-                    try:
-                        time.sleep(3)
-                        # mount = open(self.config['wema_path']+'mnt_cmd.txt', 'r')
-                        # mount.write(json.loads(status))
-                        mount = open(g_dev['wema_share_path']+'mnt_cmd.txt', 'w')
-                        mount.write(json.dumps(status))
-                        mount.close()
-                    except:
-                        try:
-                            time.sleep(3)
-                            mount = open(g_dev['wema_share_path']+'mnt_cmd.txt', 'w')
-                            mount.write(json.dumps(status))
-                            mount.close()
-                        except:
-                            mount = open(g_dev['wema_share_path']+'mnt_cmd.txt', 'w')
-                            mount.write(json.dumps(status))
-                            mount.close()
-                            print("3rd try to append to enc-cmd  list.")
-        else:
-            print('Proper device_name is missing, or tel == None')
-            status = {'defective':  'status'}
+        #     if g_dev['enc'].is_dome:
+        #         try:
+
+        #             mount = open(g_dev['wema_share_path']+'mnt_cmd.txt', 'w')
+        #             mount.write(json.dumps(status))
+        #             mount.close()
+        #         except:
+        #             try:
+        #                 time.sleep(3)
+        #                 # mount = open(self.config['wema_path']+'mnt_cmd.txt', 'r')
+        #                 # mount.write(json.loads(status))
+        #                 mount = open(g_dev['wema_share_path']+'mnt_cmd.txt', 'w')
+        #                 mount.write(json.dumps(status))
+        #                 mount.close()
+        #             except:
+        #                 try:
+        #                     time.sleep(3)
+        #                     mount = open(g_dev['wema_share_path']+'mnt_cmd.txt', 'w')
+        #                     mount.write(json.dumps(status))
+        #                     mount.close()
+        #                 except:
+        #                     mount = open(g_dev['wema_share_path']+'mnt_cmd.txt', 'w')
+        #                     mount.write(json.dumps(status))
+        #                     mount.close()
+        #                     print("3rd try to append to enc-cmd  list.")
+        # else:
+            # print('Proper device_name is missing, or tel == None')
+            # status = {'defective':  'status'}
 
         return status  #json.dumps(status)
 
@@ -639,7 +639,7 @@ class Mount:
         elif action == "unpark":
             self.unpark_command(req, opt)
         elif action == 'center_on_pixels':
-            print (command)
+            #print (command)
             self.go_command(req, opt, offset=True, calibrate=False)
         elif action == 'calibrateAtFieldCenter':
             print (command)
@@ -677,6 +677,7 @@ class Mount:
         print("mount cmd. slewing mount, req, opt:  ", req, opt)
 
         ''' unpark the telescope mount '''  #  NB can we check if unparked and save time?
+        breakpoint()
        
         if self.mount.CanPark:
             #print("mount cmd: unparking mount")
@@ -692,8 +693,8 @@ class Mount:
                 #
                 offset_x = float(req['image_x']) - 0.5   #Fraction of field.
                 offset_y = float(req['image_y']) - 0.5
-                x_field_deg = g_dev['cam'].config['camera']['camera_1']['settings']['x_field_deg']
-                y_field_deg = g_dev['cam'].config['camera']['camera_1']['settings']['y_field_deg']
+                x_field_deg = g_dev['cam'].config['camera']['camera_1_1']['settings']['x_field_deg']
+                y_field_deg = g_dev['cam'].config['camera']['camera_1_1']['settings']['y_field_deg']
                 field_x = x_field_deg/15.   #  /15 for hours.
                 field_y = y_field_deg
                 #20210317 Changed signs fron Neyle.  NEEDS CONFIG File level or support.
@@ -1172,25 +1173,7 @@ class Mount:
         return
 
         '''
-         class Darkslide(object):
 
-           def __init__(self, pCOM):
-               self.slideStatus = 'unknown'
-
-           def openDarkslide(self):
-               self._com = serial.Serial(pCom, timeout=0.1)
-               self._com.write(b'@')
-               self.slideStatus = 'open'
-               self._com.close()
-
-           def closeDarkslide(self):
-               self._com = serial.Serial(pCom, timeout=0.1)
-               self._com.write(b'A')
-               self.slideStatus = 'closed'
-               self._com.close()
-
-           def darkslideStatus(self):
-               return self.slideStatus
 
 
         class Probe(object):

@@ -310,9 +310,9 @@ class Camera:
             self.darkslide = True
             com_port = self.config['camera'][self.name]['settings']['darkslide_com']
             self.darkslide_instance = Darkslide(com_port)     #  NB eventually default after reboot should be closed.
-            self.darkslide_instance.closeDarkslide()   #  Consider turing off IR Obsy light at same time..
-            self.darkslide_open = False
-            print("Darkslide closed on camera startup.")
+            self.darkslide_instance.openDarkslide()   #  Consider turing off IR Obsy light at same time..
+            self.darkslide_open = True
+            print("Darkslide OPENED on camera startup.")
         self.last_user_name = "unknown user name"
         self.last_user_id ="unknown user ID"
         try:
@@ -846,10 +846,11 @@ class Camera:
                 #case where a timeout is a smart idea.
                 #Wait for external motion to cease before exposing.  Note this precludes satellite tracking.
                 st = ""
- 
+                #breakpoint()
                 if g_dev['enc'].is_dome:
                     try:
                         enc_slewing = g_dev['enc'].status['dome_slewing']
+                        print("Camera says:  enclosure is SLEWING:  ", enc_slewing)
                     except:
                         print("enclosure SLEWING threw an exception.")
                 else:
@@ -860,12 +861,13 @@ class Camera:
                     if g_dev['foc'].focuser.IsMoving: st += 'f>'
                     if g_dev['rot'].rotator.IsMoving: st += 'r>'
                     if g_dev['mnt'].mount.Slewing:
-                        st += 'm>  ' + str(round(time.time() - g_dev['mnt'].move_time, 1))
+                        st += 'm>  ' + str(round(time.time() - g_dev['mnt'].move_time, 1))   #NB NB we should be using the latter of mnt or enc move time
                     if enc_slewing:
                         st += 'd>' + str(round(time.time() - g_dev['mnt'].move_time, 1))
                     print(st)
                     if round(time.time() - g_dev['mnt'].move_time, 1) >=75:
-                       print("|n\n DOME OR MOUNT HAS TIMED OUT!|n|n")
+                       #print("|n\n DOME OR MOUNT HAS TIMED OUT!|n|n")
+                       pass
                        break
                       
                     st = ""
@@ -941,6 +943,7 @@ class Camera:
                                 pass
                         except:
                             pass
+
                         if self.darkslide and imtypeb:
                             self.darkslide_instance.openDarkslide()
                             self.darkslide_open = True
