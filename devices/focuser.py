@@ -97,6 +97,7 @@ class Focuser:
 
 
     def calculate_compensation(self, temp_primary):
+        breakpoint
         if -20 <= temp_primary <= 45:
             trial = 7475#round(float(self.config['coef_0'] + float(self.config['coef_c'])*temp_primary), 1)
 

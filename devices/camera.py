@@ -1130,6 +1130,7 @@ class Camera:
 
 
 
+
                 # if ix == 9600:
                 #     overscan = int((np.median(self.img[32:, -33:]) + np.median(self.img[0:29, :]))/2) - 1
                 #     trimmed = self.img[32:, :-34].astype('int32') + pedastal - overscan
@@ -1193,6 +1194,7 @@ class Camera:
                 
                 #mrc2    Testing comment change, did this push to GitHub?
                 elif ix == 4096 and iy == 4096:   #MRC@
+     
                     trimmed = self.img.astype('int32') - 913.   #20211128 Cooler = -35C
                     self.overscan = 0
 
