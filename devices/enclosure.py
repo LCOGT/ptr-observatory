@@ -625,7 +625,6 @@ class Enclosure:
 
     def guarded_open(self):
             #The guard is obsessively redundant!
-            breakpoint()
             if g_dev['ocn'].status['wx_ok'] in [True, 'Yes'] and not (g_dev['ocn'].wx_hold \
                                               or g_dev['ocn'].clamp_latch):     # NB Is Wx ok really the right criterion???
                 try:

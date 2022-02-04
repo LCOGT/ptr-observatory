@@ -30,6 +30,7 @@ class FilterWheel:
             position to default of w/L filter.
             
             '''
+
             r0 = requests.get(self.ip + '/filterwheel/0/position')
             r1 = requests.get(self.ip + '/filterwheel/1/position')
             if str(r0) == str(r1) == '<Response [200]>':
