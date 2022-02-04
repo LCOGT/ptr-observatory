@@ -28,6 +28,7 @@ site_config = {
     'owner':  ['google-oauth2|102124071738955888216', 'google-oauth2|112401903840371673242'],  # Neyle,  Or this can be some aws handle.
     'owner_alias': ['ANS'],
     'admin_aliases': ["ANS", "WER", "TB", "DH", "KVH", 'KC'],
+    
     'site_is_generic':  False,   # A simple single computer ASCOM site.
     'site_is_specific':  False,  # Indicates some special code for a single site.
                                  # Intention it is found in this file.
@@ -38,12 +39,12 @@ site_config = {
     'client_path': 'F:/ptr/',
     'archive_path': 'F:/',       # Where images are kept.
     'site_IPC_mechanism':  'shares',   # ['None', shares', 'shelves', 'redis']  Pick One     
-    'client_share_path':  '//saf-wema/wema_transfer/',  # Presumably also where shelves are found   
+    'client_read_share_path':  '//saf-wema/wema_transfer/',  # Presumably also where shelves are found   
                                                       # Meant to be used by mnt/tel's.
     'wema_is_active':  True,     # True if an agent is used at a site. 
                                  # Wemas are split sites -- at least two CPS's sharing the control.
     'wema_hostname':  'SAF-WEMA',
-    'wema_share_path':  'C:/ptr/wema_transfer/',  # Meant to be where Wema puts status data.
+    'wema_write_share_path':  'C:/ptr/wema_transfer/',  # Meant to be where Wema puts status data.
     'redis_ip': None,   # None if no redis path present, localhost if redis iself-contained
 
     'name': 'Apache Ridge Observatory 0m3f4.9/9',
@@ -105,19 +106,21 @@ site_config = {
        'observing_conditions',
        #'enclosure',    
        ],
-    'short_status_devices':  [
-       # 'observing_conditions',
-       'enclosure',
-       'mount',
-       'telescope',
-       # 'screen',
-       'rotator',
-       'focuser',
-       'selector',
-       'filter_wheel',
-       'camera',
-       'sequencer',
-       ],
+# =============================================================================
+#     'short_status_devices':  [
+#        # 'observing_conditions',
+#        'enclosure',
+#        'mount',
+#        'telescope',
+#        # 'screen',
+#        'rotator',
+#        'focuser',
+#        'selector',
+#        'filter_wheel',
+#        'camera',
+#        'sequencer',
+#        ],
+# =============================================================================
 
     'observing_conditions' : {     #for SAF
         'observing_conditions1': {

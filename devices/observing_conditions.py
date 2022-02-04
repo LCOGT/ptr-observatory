@@ -165,11 +165,11 @@ class ObservingConditions:
             DESCRIPTION.
 
         '''
-        breakpoint()
+
         if not self.is_wema and self.site_has_proxy:
             if self.config['site_IPC_mechanism'] == 'shares':
                 try:
-                    weather = open(g_dev['wema_share_path'] + 'weather.txt', 'r')
+                    weather = open(g_dev['wema_write_share_path'] + 'weather.txt', 'r')
                     status = json.loads(weather.readline())
                     weather.close()
                     self.status = status
@@ -179,7 +179,7 @@ class ObservingConditions:
                 except:
                     try:
                         time.sleep(3)
-                        weather = open(g_dev['wema_share_path'] + 'weather.txt', 'r')
+                        weather = open(g_dev['wema_write_share_path'] + 'weather.txt', 'r')
                         status = json.loads(weather.readline())
                         weather.close()
                         self.status = status
@@ -189,7 +189,7 @@ class ObservingConditions:
                     except:
                         try:
                             time.sleep(3)
-                            weather = open(g_dev['wema_share_path'] + 'weather.txt', 'r')
+                            weather = open(g_dev['wema_write_share_path'] + 'weather.txt', 'r')
                             status = json.loads(weather.readline())
                             weather.close()
                             self.status = status
@@ -287,14 +287,14 @@ class ObservingConditions:
             g_dev['wx_ok']  =  self.wx_is_ok
             if self.config['site_IPC_mechanism'] == 'shares':
                 try:
-                    weather = open(self.config['wema_share_path'] + 'weather.txt', 'w')
+                    weather = open(self.config['wema_write_share_path'] + 'weather.txt', 'w')
                     weather.write(json.dumps(status))
                     weather.close()
                 except:
                     print("1st try to write weather status failed.")
                     time.sleep(3)
                     try:
-                        weather = open(self.config['wema_share_path'] + 'weather.txt', 'w')
+                        weather = open(self.config['wema_write_share_path'] + 'weather.txt', 'w')
                         weather.write(json.dumps(status))
                         weather.close()
                     except:
@@ -307,7 +307,7 @@ class ObservingConditions:
                         except:
                             print("3rd try to write weather status failed.")
                             time.sleep(3)
-                            weather = open(self.config['wema_share_path'] + 'weather.txt', 'w')
+                            weather = open(self.config['wema_write_share_path'] + 'weather.txt', 'w')
                             weather.write(json.dumps(status))
                             weather.close()
                             print("4th try to write weather status.")

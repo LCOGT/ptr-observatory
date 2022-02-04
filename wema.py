@@ -82,22 +82,22 @@ class WxEncAgent:
             self.hostname = self.hostname = socket.gethostname()
             if self.hostname in self.config['wema_hostname']:
                 self.is_wema = True
-                g_dev['wema_share_path'] = config['wema_share_path']
-                self.wema_path = g_dev['wema_share_path']
+                g_dev['wema_write_share_path'] = config['wema_write_share_path']
+                self.wema_path = g_dev['wema_write_share_path']
                 self.site_path = self.wema_path
             else:  
                 #This host is a client
                 self.is_wema = False  #This is a client.
                 self.site_path = config['client_share_path']
                 g_dev['site_path'] = self.site_path
-                g_dev['wema_share_path']  = self.site_path  # Just to be safe.
-                self.wema_path = g_dev['wema_share_path'] 
+                g_dev['wema_write_share_path']  = self.site_path  # Just to be safe.
+                self.wema_path = g_dev['wema_write_share_path'] 
         else:
             self.is_wema = False  #This is a client.
             self.site_path = config['client_share_path']
             g_dev['site_path'] = self.site_path
-            g_dev['wema_share_path']  = self.site_path  # Just to be safe.
-            self.wema_path = g_dev['wema_share_path'] 
+            g_dev['wema_write_share_path']  = self.site_path  # Just to be safe.
+            self.wema_path = g_dev['wema_write_share_path'] 
         if self.config['site_is_specific']:
              self.site_is_specific = True
         else:
