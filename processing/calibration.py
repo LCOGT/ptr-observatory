@@ -162,7 +162,6 @@ def calibrate (hdu, lng_path, frame_type='light', quick=False):
         screen_flat_PL ,screen_flat_PB, screen_flat_PG, screen_flat_PR, screen_flat_NIR,  screen_flat_CR, screen_flat_dif,  \
         dark_exposure_level, super_dark_2_long, dark_2_exposure_level
     loud = False
-
     if not quick:
         if super_bias is None:
             try:
@@ -542,14 +541,154 @@ def calibrate (hdu, lng_path, frame_type='light', quick=False):
 
 
     while True:   #Use break to drop through to exit.  i.e., do not calibrate frames we are acquring for calibration.
+              
+        ix = hdu.header['naxis1']
+        iy = hdu.header['naxis2']
+        pedastal = 0     # Pedastal will be applied near exit.
+        overscan = 0
+        img = hdu.data.astype('int32')
         
-            
+                # if ix == 9600:
+                #     overscan = int((np.median(img[32:, -33:]) + np.median(img[0:29, :]))/2) - 1
+                #     trimmed = img[32:, :-34].astype('int32') + pedastal - overscan
+                #     if opt['area'] in [150, 'Full', 'full']:
+                #         square = trimmed
+                #     else:
+                #         square = trimmed[1590:1590 + 6388, :]
+                # elif ix == 4800:
+                #     overscan = int((np.median(img[16:, -17:]) + np.median(img[0:14, :]))/2) -1
+                #     trimmed = img[16:, :-17].astype('int32') + pedastal - overscan
+                #     if opt['area'] in [150, 'Full', 'full']:
+                #         square = trimmed
+                #     else:
+                #         square = trimmed[795:795 + 3194, :]
+                # else:
+                #     print("Incorrect chip size or bin specified.")
+
+
+                #This image shift code needs to be here but it is troubling.
+                #QHY 600Pro and 367
+
+        if ix == 9600:
+            # if img[22, -34] == 0:
+
+            int((np.median(img[24:, -33:]) + np.median(img[0:21, :]))/2) - 1
+            overscan = int((np.median(img[24:, -33:]) + np.median(img[0:21, :]))/2) - 1
+            img = img[24:-8, :-34].astype('int32')  - overscan
+
+            # elif img[30, -34] == 0:
+            #     overscan = int((np.median(img[32:, -33:]) + np.median(img[0:29, :]))/2) - 1
+            #     trimmed = img[32:, :-34].astype('int32') + pedastal - overscan
+
+            # else:
+            #     print("Image shift is incorrect, absolutely fatal error.")
+                
+            #     pass
+
+            # if full:
+            #     square = trimmed
+            # else:
+            #     square = trimmed[1590:1590 + 6388, :]
+        elif ix == 4800:
+            #Shift error needs documenting!
+
+            #if img[11, -18] == 0:   #This is the normal incoming image
+            # int((np.median(img[12:, -17:]) + np.median(img[0:10, :]))/2) - 1
+
+            overscan = int((np.median(img[0:10, :-18]) + np.median(img[11:16, :-18]))/2 - 1)  # Chip at -30C.
+
+            img = img[:3194, -4784:]  - overscan
+
+
+                #print("Shift 1", overscan, square.mean())
+            # elif img[15, -18] == 0:     #This rarely occurs.  Neyle's Qhy600
+            #     overscan = int((np.median(img[16:, -17:]) + np.median(img[0:14, :]))/2) -1
+            #     trimmed = img[16:, :-17].astype('int32') + pedastal - overscan
+
+            #     print("Rare error, Shift 2", overscan, trimmed.mean())
+
+            # else:
+            #     print("Image shift is incorrect, absolutely fatal error", img[0:20, -18])
+
+
+                #pass
+# 
+#                 
+#                 #mrc2    Testing comment change, did this push to GitHub?
+#                 elif ix == 4096 and iy == 4096:   #MRC@
+#                     trimmed = self.img.astype('int32') - 913.   #20211128 Cooler = -35C
+#                     self.overscan = 0
+# 
+#                 elif ix ==2048 and iy == 2048:   #MRC@
+#                     trimmed = self.img.astype('int32') - 1046.   #20211128 Cooler = -35C
+#                     self.overscan = 0
+#                 #Bin 3 not possible for FLI camera
+#                     
+#                 elif ix == 1024 and iy == 1024:   #MRC@
+#                     trimmed = self.img.astype('int32') - 1548.   #20211128 Cooler = -35C
+#                     self.overscan = 0
+# 
+#                 #NBNB for cameras without proper overscan maybe we save the bias frame value vs chip
+#                 #temp so we can do a better thermal compensation.  THis would generally mean taking
+#                 #occasional biases.
+#                 
+#                 #FAT
+#                 # elif ix == 4500 and iy == 3600:   #All this code needs to be driven from camera config.
+#                 #     self.overscan =np.median(self.img) - pedastal
+#                 #     trimmed = self.img.astype('int32') - 867.
+#                         
+#                 # elif ix == 2250 and iy == 1800:   #All this code needs to be driven from camera config.
+#                 #     self.overscan =np.median(self.img) - pedastal
+#                 #     trimmed = self.img.astype('int32') - 614.
+#                 #     #FAT
+#                 elif ix == 4556 and iy == 3656:   #All this code needs to be driven from camera config.
+#                     #breakpoint()
+#                     self.overscan = (np.median(self.img[4520:4556, :3600]) + np.median(self.img[:4500, 3620:3643]))/2.0
+#                     minus_overscan = self.img - (np.median(self.img[4520:4556, :3600]) + np.median(self.img[:4500, 3620:3643]))/2.0
+#                     print("1_1 Offset:  ", -np.median(minus_overscan[:4500, :3600]))
+#                     minus_overscan += pedastal + 50
+#                     trimmed = minus_overscan[:4500, :3600].astype('int32')
+#                 elif ix == 2278 and iy == 1828:   #All this code needs to be driven from camera config.
+#                     #breakpoint()
+#                     self.overscan = (np.median(self.img[2260:2278, :1800]) + np.median(self.img[2250, 1810:1821]))/2.0
+#                     minus_overscan = self.img - (np.median(self.img[2260:2278, :1800]) + np.median(self.img[2250, 1810:1821]))/2.0
+#                     minus_overscan += pedastal + 140
+#                     trimmed = minus_overscan[:2250, :1800].astype('int32')
+#                 elif ix == 1518 and iy == 1218: 
+#                     #breakpoint()
+#                     self.overscan = (np.median(self.img[1506:1518, :1200]) + np.median(self.img[:1500, 1206:1214]))/2.0
+#                     minus_overscan = self.img - (np.median(self.img[1506:1518, :1200]) + np.median(self.img[:1500, 1206:1214]))/2.0
+#                     minus_overscan += pedastal + 211 
+#                     trimmed = minus_overscan[:1500, :1200].astype('int32')
+#                     
+#                 elif ix == 1139 and iy == 914: 
+#                     self.overscan = (np.median(self.img[1130:1139, :900]) + np.median(self.img[:1125, 905:910]))/2.
+#                     minus_overscan = self.img - (np.median(self.img[1130:1139, :900]) + np.median(self.img[:1125, 905:910]))/2.0
+#                     print("4_4 Offset:  ", -np.median(minus_overscan[:1125, :900]))
+#                     minus_overscan += pedastal + 403
+#                     trimmed = minus_overscan[:1125, :900].astype('int32') 
+#                 else:
+#                     print("UNSUPPORTED BINNING OR CAMERA!!", ix, iy)
+#               trimmed = trimmed.transpose()
+#               self.img = trimmed.astype('uint16')
+                # print('readout, transpose & Trim took:  ', round(self.t77 - self.t4, 1), ' sec,')# marks them as 0
+                # #Should we consider correcting the image right here with cached bias, dark and hot pixel
+                # #processing so downstream processing is reliable.  Maybe only do this for focus?
+                # g_dev['obs'].send_to_user("Camera has read-out image.", p_level='INFO')
+                # neg_pix = np.where(trimmed < 0)
+                # print("negative pixel length:  ", len(neg_pix[0]))
+
+                # trimmed[neg_pix] = 0
 # =============================================================================
-# # =============================================================================
-# #           NB NB NB For the moment we have limited bin 1 and sub-frame calibrations
-# # =============================================================================
-# =============================================================================
-      
+
+                #trimmed = trimmed.transpose()
+                #This may need a re-think:   Maybe kill neg and anything really hot if there are only a few.
+        ix = hdu.header['naxis1']
+        iy = hdu.header['naxis2']
+        hdu.header['CALCOVER'] = (overscan, 'Overscan applied.')
+        pedastal = 100  # NB NB  ?? = int(max(100, img.std()*5)) = 90 for QHY600
+        hdu.data = img
+
 
         start_x = 0
         start_y = 0
@@ -573,7 +712,6 @@ def calibrate (hdu, lng_path, frame_type='light', quick=False):
 # #           NB NB NB For the moment we have limited bin 1 and sub-frame calibrations
 # # =============================================================================
 # =============================================================================
-
         if frame_type in ['bias']:
             break    #  Do not bias calibrate a bias. 
         if super_bias is not None and binning == 1 :
@@ -701,7 +839,6 @@ def calibrate (hdu, lng_path, frame_type='light', quick=False):
                 
                 print('Entering flat field calculation.')
                 if scr_flat is not None:
-                    print('Dividing by None not a good idea.')
                     try:
                         wrong = np.where(scr_flat <= 0.01)
                         scr_flat[wrong] = 0.01
@@ -714,7 +851,6 @@ def calibrate (hdu, lng_path, frame_type='light', quick=False):
                 print("Flat field math failed.")
             if not quick: 
                 if loud:  print('QuickFlat result:  ', imageStats(img, loud))
-
         if apply_hot and binning == 2:
             try:
                 #hot_pix = np.where(super_dark_2 > super_dark_2.std()) #20210225 removed _long  #REmoved 20210821  
@@ -737,17 +873,18 @@ def calibrate (hdu, lng_path, frame_type='light', quick=False):
         cal_string = 'Uncalibrated'
     hdu.header['CALHIST'] = cal_string
     hdu.data = img.astype('float32')  #This is meant to catch an image cast to 'float64'
-    fix = np.where(hdu.data < 0)
-    if loud: print('# of < 0  pixels:  ', len(fix[0]))  #  Do not change values here.
-    hdu.data[fix] = 0
-    big_max = hdu.data.max()
-    if loud: print("Max data value is:  ", big_max)
-    high_clamp = np.where(hdu.data > 65530)
-    hdu.data[high_clamp] = 65530.
+    pedastal = 100
+    hdu.data += pedastal
+    hdu.header['PEDASTAL'] = (-pedastal,  'Add to get zero ADU based image')
+    fix_neg_pix = np.where(hdu.data < 0)
+    if loud: print('# of < 0  pixels:  ', len(fix_neg_pix[0]))  #  Do not change values here.
+    hdu.data[fix_neg_pix] = 0
+    fix_max_pix = np.where(hdu.data > 65530)
+    if loud: print("Max data value is:  ", fix_max_pix, len(fix_max_pix[0]))
+    hdu.data[fix_max_pix] = 65530.
    #print("Pre uint", hdu.data.mean())
-    hdu.data = hdu.data.astype('uint16')  #NB NB NB Why this step??
-    #   NB NB NB these procedures are dubious unless just intended for the flash
-    #   images.
+    hdu.data = hdu.data.astype('uint16')  #NB NB NB Reduce storage?? Is this needed?
+    #   NB NB NB these procedures are intended for the flash images.
     #print("Post uint", hdu.data.mean())
     result = {}
     
@@ -757,7 +894,7 @@ def calibrate (hdu, lng_path, frame_type='light', quick=False):
     result['mean_rotation'] = None
     result['FWHM'] = None
     result['half_FD'] = None
-    result['patch'] = round((hdu.data.mean() + np.median(hdu.data))/2, 1)
+    result['patch'] = abs(round((hdu.data.mean() + np.median(hdu.data))/2 - pedastal, 1))
     result['temperature'] = None
     #g_dev['obs'].send_to_user('Calibration complete.', p_level='INFO')
     return result

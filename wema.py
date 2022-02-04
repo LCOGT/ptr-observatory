@@ -242,6 +242,7 @@ class WxEncAgent:
         update to aws,  Each device class is responsible for implementing the 
         method 'get_status()' which returns a dictionary.
         '''
+
         loud = False        
         while time.time() < self.time_last_status + self.status_interval:
             return   
@@ -254,7 +255,6 @@ class WxEncAgent:
             for device_name in device_names:
                 device = devices_of_type[device_name]
                 #print(device)
-
                 status[dev_type][device_name] = device.get_status()
         # Include the time that the status was assembled and sent.
         status["timestamp"] = round((time.time() + t1)/2., 3)
