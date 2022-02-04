@@ -119,7 +119,7 @@ class Enclosure:
             except:
                  print("ASCOM enclosure NOT connected, proabably the App is not connected to telescope.")
         else:
-            self.site_is_generic = False    #NB NB Changed to False for MRC from FAT where True
+            self.site_is_generic = False    #NB NB Changed to False for MRC from SRA where True
         self.last_current_az = 315.
         self.last_slewing = False
         self.prior_status = {'enclosure_mode': 'Manual'}    #Just to initialze this rarely used variable.
