@@ -420,7 +420,7 @@ class Enclosure:
         if mnt_command is not None and mnt_command != '' and mnt_command != ['none']:
 
             try:
-                breakpoint()
+
                 #print( mnt_command)
                 # adj1 = dome_adjust(mount_command['altitude'], mount_command['azimuth'], \
                 #                   mount_command['hour_angle'])
@@ -428,6 +428,16 @@ class Enclosure:
                 #                   mount_command['hour_angle'])
                 track_az = mnt_command['azimuth']
                 target_az = mnt_command['target_az']
+                hour_angle = mnt_command['hour_angle']
+                altitude = mnt_command['altitude']
+                flip = mnt_command['flip_side']
+
+                if flip == 1:
+                    flip_side = "East"
+                else:
+                    flip_side = 'West'
+
+                new_az = dome_adjust_rah_decd(hour_angle, track_az, altitude, flip_side, 70, -19.55, -8)
             except:
                 track_az = 0
                 target_az = 0
@@ -445,7 +455,7 @@ class Enclosure:
 
                     try:
                         if shutter_status not in [2,3]:    #THis should end annoying report.
-                            self.enclosure.SlewToAzimuth(float(track_az))
+                            self.enclosure.SlewToAzimuth(float(new_az))
                     except:
                         print("Dome refused slew, probably updating, closing or opening; usually a harmless situation:  ", shutter_status)
         self.manager(_redis=_redis)   #There be monsters here. <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
@@ -598,12 +608,13 @@ class Enclosure:
             if g_dev['ocn'].wx_is_ok and not (g_dev['ocn'].wx_hold \
                                               or g_dev['ocn'].clamp_latch):     # NB Is Wx ok really the right criterion???
                 try:
+
                     self.enclosure.OpenShutter()
                     print("An actual shutter open command has been issued.")
                     #self.redis_server.set('Shutter_is_open', True)
                     return True
                 except:
-                    print("Attempt to open shutter failed at quarded_open command.")
+                    print("Attempt to open shutter failed at guarded_open command.")
                    # self.redis_server.set('Shutter_is_open', False)
                     return False
             return False

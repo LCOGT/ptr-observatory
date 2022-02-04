@@ -247,6 +247,7 @@ class ObservingConditions:
                 self.new_pressure = round(float(self.pressure[0]), 2)
             except:
                 self.new_pressure = round(float(self.pressure), 2)
+
             status = {"temperature_C": round(self.temperature, 2),
                       "pressure_mbar": self.new_pressure,
                       "humidity_%": self.sky_monitor.Humidity,
@@ -262,13 +263,13 @@ class ObservingConditions:
                       #"wx_ok": wx_str,  #str(self.sky_monitor_oktoimage.IsSafe),
                       "open_ok": self.ok_to_open,
                       'wx_hold': self.wx_hold,
-                      'hold_duration': self.wx_to_go
+                      'hold_duration': str(round(self.wx_to_go/60, 1)) + ' min'
                       }
 
             dew_point_gap = not (self.sky_monitor.Temperature  - self.sky_monitor.DewPoint) < 2
             temp_bounds = not (self.sky_monitor.Temperature < -15) or (self.sky_monitor.Temperature > 42)
             wind_limit = self.sky_monitor.WindSpeed < 35/2.235   #sky_monitor reports m/s, Clarity may report in MPH
-            sky_amb_limit  = (self.sky_monitor.SkyTemperature - self.sky_monitor.Temperature) < -8   #"""NB THIS NEEDS ATTENTION>
+            sky_amb_limit  = (self.sky_monitor.SkyTemperature) < -18 # - self.sky_monitor.Temperature) < -8   #"""NB THIS NEEDS ATTENTION>
             humidity_limit = 1 < self.sky_monitor.Humidity < 85
             rain_limit = self.sky_monitor.RainRate <= 0.001
 
@@ -279,10 +280,11 @@ class ObservingConditions:
             if self.wx_is_ok:
                 wx_str = "Yes"
                 status["wx_ok"] = "Yes"
+                status["open_ok"] = "Yes"
             else:
                 wx_str = "No"   #Ideally we add the dominant reason in priority order.
                 status["wx_ok"] = "No"
-        
+                status["open_ok"] = "No"
             g_dev['wx_ok']  =  self.wx_is_ok
             if self.config['site_IPC_mechanism'] == 'shares':
                 try:
@@ -344,6 +346,7 @@ class ObservingConditions:
             '''
             obs_win_begin, sunset, sunrise, ephemNow = self.astro_events.getSunEvents()
             wx_delay_time = 900
+
             if (self.wx_is_ok and self.wx_system_enable) and not self.wx_hold:     #Normal condition, possibly nothing to do.
                 self.wx_hold_last_updated = time.time()
             elif not self.wx_is_ok and not self.wx_hold:     #Wx bad and no hold yet.
@@ -352,6 +355,7 @@ class ObservingConditions:
                 self.wx_hold_until_time = (t := time.time() + wx_delay_time)    #15 minutes   Make configurable
                 self.wx_hold_tally += 1     #  This counts all day and night long.
                 self.wx_hold_last_updated = t
+                self.wx_to_go = wx_delay_time
                 if obs_win_begin <= ephemNow <= sunrise:     #Gate the real holds to be in the Observing window.
                     self.wx_hold_count += 1
                     #We choose to let the enclosure manager handle the close.
@@ -362,6 +366,7 @@ class ObservingConditions:
                 self.wx_hold_last_updated = time.time()
                 #Stay here as long as we need to.
                 self.wx_hold_until_time = (t := time.time() + wx_delay_time)
+                self.wx_to_go = wx_delay_time
                 if self.wx_system_enable:
                     #print("In a wx_hold.")
                     pass
@@ -371,7 +376,10 @@ class ObservingConditions:
                     if time.time() >= self.wx_hold_until_time and not self.wx_clamp:
                         #Time to release the hold.
                         self.wx_hold = False
-                        self.wx_hold_until_time = time.time() + wx_delay_time  #Keep pushing the recovery out
+# =============================================================================
+#                         #
+# =============================================================================
+                        self.wx_hold_until_time = time.time() + wx_delay_time  #Keep pushing the recovery out  NB NB WRONG!
                         self.wx_hold_last_updated = time.time()
                         print("Wx hold released, flap#, tally#:", self.wx_hold_count, self.wx_hold_tally)
                         #We choose to let the enclosure manager diecide it needs to re-open.
@@ -383,6 +391,14 @@ class ObservingConditions:
                     self.wx_clamp = True
     
                 self.wx_hold_last_updated = time.time()
+            if status['wx_hold']  == False:
+                status['wx_hold'] = 'No Hold'
+                status['wx_duration'] = '0.0 min'
+            else:
+                status['wx_hold'] = "Holding"
+                status['open_ok'] = "No"
+                
+
             self.status = status
             g_dev['ocn'].status = status
             return status
