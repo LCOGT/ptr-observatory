@@ -9,6 +9,7 @@ import socket
 import os
 import config
 from config import get_enc_status
+import math
 
 '''
 Curently this module interfaces to a Dome (az control) or a pop-top roof style enclosure.
@@ -82,9 +83,14 @@ class Enclosure:
         else:
             self.is_wema = False
         if self.config['wema_is_active']:
+
             self.site_has_proxy = True  #NB Site is proxy needs a new name.
         else:
-            self.site_has_proxy = False  
+            self.site_has_proxy = False 
+        if self.config['dome_on_wema']:
+            self.dome_on_wema+ True
+        else:
+            self.dome_on_wema = False
         if self.site in ['simulate',  'dht']:  #DEH: added just for testing purposes with ASCOM simulators.
             self.observing_conditions_connected = True
             self.site_is_proxy = False   
@@ -98,7 +104,7 @@ class Enclosure:
             # Get current ocn status just as a test.
             self.status = self.get_status(g_dev)
 
-        elif self.is_wema: # or self.site_is_generic:   
+        elif self.is_wema  or not self.dome_on_wema:   #or self.site_is_generic
             #  This is meant to be a generic Observing_condition code
             #  instance that can be accessed by a simple site or by the WEMA,
             #  assuming the transducers are connected to the WEMA.
@@ -113,13 +119,13 @@ class Enclosure:
             except:
                  print("ASCOM enclosure NOT connected, proabably the App is not connected to telescope.")
         else:
-            self.site_is_generic = False    #NB NB Changed to False for MRC from FAT where True
+            self.site_is_generic = False    #NB NB Changed to False for MRC from SRA where True
         self.last_current_az = 315.
         self.last_slewing = False
         self.prior_status = {'enclosure_mode': 'Manual'}    #Just to initialze this rarely used variable.
         
     def get_status(self) -> dict:
-        if not self.is_wema and self.site_has_proxy:
+        if not self.is_wema and self.site_has_proxy and self.dome_on_wema:
             if self.config['site_IPC_mechanism'] == 'shares':
                 try:
                     enclosure = open(g_dev['wema_share_path'] + 'enclosure.txt', 'r')
@@ -167,7 +173,7 @@ class Enclosure:
             g_dev['enc'].status = status
             return status
 
-        if self.site_is_generic or self.is_wema:#  NB Should be AND?
+        if self.site_is_generic or self.is_wema or not self.dome_on_wema:#  NB Should be AND?
             try:
                 shutter_status = self.enclosure.ShutterStatus
             except:
@@ -218,27 +224,32 @@ class Enclosure:
             #g_dev['redis'].set('enc_status', status, ex=3600)  #This is occasionally used by mouning.
 
             if self.is_dome:
-
+ 
                 try:
                     #Occasionally this property throws an exception:  (W HomeDome)
                     current_az = self.enclosure.Azimuth
                     slewing = self.enclosure.Slewing
+                    # if slewing: 
+                    #     print("Dome says: Dome is slewing")
+                    # else:
+                    #     print("Dome says: Dome not slewing")
                     self.last_current_az = current_az
                     self.last_slewing = slewing
                 except:
                     current_az = self.last_current_az
                     slewing =  self.last_slewing  #  20220103_0212 WER
                     
-                gap = current_az - self.last_current_az
-                while gap >= 360:
-                    gap -= 360
-                while gap <= -360:
-                    gap += 360
-                if abs(gap) > 2:
-                    print("Azimuth change > 2 deg detected,  Slew:  ", self.enclosure.Slewing)
-                    slewing = True
-                else:
-                    slewing = False
+                if self.dome_on_wema:  #if local dome this creates a fals slewing report
+                    gap = current_az - self.last_current_az
+                    while gap >= 360:
+                        gap -= 360
+                    while gap <= -360:
+                        gap += 360
+                    if abs(gap) > 2:
+                        print("Azimuth change > 2 deg detected,  Slew:  ", self.enclosure.Slewing)
+                        slewing = True
+                    else:
+                        slewing = False
 
                 self.last_az = current_az
                 status = {'shutter_status': stat_string,
@@ -258,6 +269,10 @@ class Enclosure:
                 # status['dome_slewing'] = in_motion
                 # # g_dev['redis'].set('dome_slewing', in_motion, ex=3600)
                 # # g_dev['redis'].set('enc_status', status, ex=3600)
+            if not self.dome_on_wema:
+                self.status = status
+                #print("g_dev:  ", g_dev['enc'].status['dome_slewing'])
+                return status
         if self.is_wema and self.config['site_IPC_mechanism'] == 'shares':
             try:
                 enclosure = open(self.config['wema_share_path']+'enclosure.txt', 'w')
@@ -347,7 +362,7 @@ class Enclosure:
                         #print("Finding enc_cmd failed after 3 tries, no harm done.")
                         mnt_command = ['none'] 
            
-        elif self.is_wema and self.site_has_proxy and self.config['site_IPC_mechanism'] == 'redis':
+        elif self. dome_is_wema and self.is_wema and self.site_has_proxy and self.config['site_IPC_mechanism'] == 'redis':
             redis_command = g_dev['redis'].get('enc_cmd')  #It is presumed there is an expiration date on open command at least.
             #NB NB NB Need to prevent executing stale commands.  Note Redis_command is overloaded.
             _redis = True
@@ -420,7 +435,7 @@ class Enclosure:
         if mnt_command is not None and mnt_command != '' and mnt_command != ['none']:
 
             try:
-
+                breakpoint()
                 #print( mnt_command)
                 # adj1 = dome_adjust(mount_command['altitude'], mount_command['azimuth'], \
                 #                   mount_command['hour_angle'])
@@ -428,16 +443,6 @@ class Enclosure:
                 #                   mount_command['hour_angle'])
                 track_az = mnt_command['azimuth']
                 target_az = mnt_command['target_az']
-                hour_angle = mnt_command['hour_angle']
-                altitude = mnt_command['altitude']
-                flip = mnt_command['flip_side']
-
-                if flip == 1:
-                    flip_side = "East"
-                else:
-                    flip_side = 'West'
-
-                new_az = dome_adjust_rah_decd(hour_angle, track_az, altitude, flip_side, 70, -19.55, -8)
             except:
                 track_az = 0
                 target_az = 0
@@ -455,7 +460,7 @@ class Enclosure:
 
                     try:
                         if shutter_status not in [2,3]:    #THis should end annoying report.
-                            self.enclosure.SlewToAzimuth(float(new_az))
+                            self.enclosure.SlewToAzimuth(float(track_az))
                     except:
                         print("Dome refused slew, probably updating, closing or opening; usually a harmless situation:  ", shutter_status)
         self.manager(_redis=_redis)   #There be monsters here. <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
@@ -475,45 +480,58 @@ class Enclosure:
         req = command['required_params']
         opt = command['optional_params']
 
+
         action = command['action']
         cmd_list = []
         generic = True
         _redis = False
         shares = False
-        if self.config['wema_is_active'] and self.config['site_IPC_mechanism']  == 'redis':
+        if self.dome_on_wema and self.config['wema_is_active'] and self.config['site_IPC_mechanism']  == 'redis':
              _redis = True
              shares = False
              generic = False
-        if self.config['wema_is_active'] and self.config['site_IPC_mechanism']  == 'shares':
+        if self.dome_on_wema and  self.config['wema_is_active'] and self.config['site_IPC_mechanism']  == 'shares':
              _redis = False
              shares = True
              generic = False
         if action == "open":
-            if _redis:  g_dev['redis'].set('enc_cmd', 'open', ex=300)
-            if shares:  cmd_list.append('open')
-            if generic:  self.open_command(req, opt)
+            if _redis: 
+                g_dev['redis'].set('enc_cmd', 'open', ex=300)
+            if shares:  
+                cmd_list.append('open')
+            if generic:  
+                self.open_command(req, opt)
         elif action == "close":
-            if _redis:  g_dev['redis'].set('enc_cmd', 'close', ex=300)
-            if shares:  cmd_list.append('close')
-            if generic:  self.close_command(req, opt)
+            if _redis: 
+                g_dev['redis'].set('enc_cmd', 'close', ex=300)
+            if shares:  
+                cmd_list.append('close')
+            if generic:  
+                self.close_command(req, opt)
         elif action == "setAuto":
-            if _redis:  g_dev['redis'].set('enc_cmd', 'setAuto', ex=300)
-            if shares:  cmd_list.append('set_auto')
+            if _redis: 
+                g_dev['redis'].set('enc_cmd', 'setAuto', ex=300)
+            if shares: 
+                cmd_list.append('set_auto')
             if generic:
                 self.mode = 'Automatic'
             g_dev['enc'].site_in_automatic = True
             g_dev['enc'].automatic_detail =  "Night Automatic"
             print("Site and Enclosure set to Automatic.")
         elif action == "setManual":
-            if _redis:  g_dev['redis'].set('enc_cmd', 'setManual', ex=300)
-            if shares:  cmd_list.append('set_manual')
+            if _redis: 
+                g_dev['redis'].set('enc_cmd', 'setManual', ex=300)
+            if shares: 
+                cmd_list.append('set_manual')
             if generic:
                 self.mode = 'Manual'
             g_dev['enc'].site_in_automatic = False
             g_dev['enc'].automatic_detail =  "Manual Only"
         elif action in ["setStayClosed", 'setShutdown', 'shutDown']:
-            if _redis:  g_dev['redis'].set('enc_cmd', 'setShutdown', ex=300)
-            if shares:  cmd_list.append('set_shutdown')
+            if _redis: 
+                g_dev['redis'].set('enc_cmd', 'setShutdown', ex=300)
+            if shares: 
+                cmd_list.append('set_shutdown')
             if generic:
                 self.mode = 'Shutdown'
             g_dev['enc'].site_in_automatic = False
@@ -563,21 +581,21 @@ class Enclosure:
 
     def open_command(self, req: dict, opt: dict):
     #     ''' open the enclosure '''
-          g_dev['redis'].set('enc_cmd', 'open', ex=1200)
-    #     #self.guarded_open()
-    #     self.manager(open_cmd=True)
-    #     print("enclosure cmd: open.")
-    #     self.dome_open = True
-    #     self.dome_home = True
+         #g_dev['redis'].set('enc_cmd', 'open', ex=1200)
+        #self.guarded_open()
+        self.manager(open_cmd=True)
+        print("enclosure cmd: open.")
+        self.dome_open = True
+        self.dome_home = True
     #     pass
 
     def close_command(self, req: dict, opt: dict):
     #     ''' close the enclosure '''
-          g_dev['redis'].set('enc_cmd', 'close', ex=1200)
-    #     self.manager(close_cmd=True)
-    #     print("enclosure cmd: close.")
-    #     self.dome_open = False
-    #     self.dome_home = True
+         #g_dev['redis'].set('enc_cmd', 'close', ex=1200)
+        self.manager(close_cmd=True)
+        print("enclosure cmd: close.")
+        self.dome_open = False
+        self.dome_home = True
     #     pass
 
     # def slew_alt_command(self, req: dict, opt: dict):
@@ -593,9 +611,11 @@ class Enclosure:
     #     print("enclosure cmd: sync_alt")
     #     pass
 
-    # def sync_mount_command(self, req: dict, opt: dict):
-    #     print("enclosure cmd: sync_az")
-    #     pass
+    def sync_mount_command(self, req: dict, opt: dict):
+        print("enclosure cmd: sync_az")
+        self.enclosure.Slaved = True
+        self.following = True
+        self.enclosure_synchronized =True
 
     # def park_command(self, req: dict, opt: dict):
     #     ''' park the enclosure if it's a dome '''
@@ -605,16 +625,18 @@ class Enclosure:
 
     def guarded_open(self):
             #The guard is obsessively redundant!
-            if g_dev['ocn'].wx_is_ok and not (g_dev['ocn'].wx_hold \
+            breakpoint()
+            if g_dev['ocn'].status['wx_ok'] in [True, 'Yes'] and not (g_dev['ocn'].wx_hold \
                                               or g_dev['ocn'].clamp_latch):     # NB Is Wx ok really the right criterion???
                 try:
-
                     self.enclosure.OpenShutter()
                     print("An actual shutter open command has been issued.")
+                    g_dev['obs'].send_to_user("Roof/shutter is opening.", p_level='INFO')
                     #self.redis_server.set('Shutter_is_open', True)
                     return True
                 except:
-                    print("Attempt to open shutter failed at guarded_open command.")
+                    print("Attempt to open roof/shutter failed at quarded_open command.")
+                    g_dev['obs'].send_to_user("Roof/hutter failed to open.", p_level='INFO')
                    # self.redis_server.set('Shutter_is_open', False)
                     return False
             return False
@@ -627,8 +649,9 @@ class Enclosure:
         First check out code restarts and roof is NOT CLOSED, what happens
         during day, etc.
         '''
-        if not self.is_wema:
-            return   #Nothing to do.
+
+        # if not self.is_wema:  #NB NB NB this is clearly not correct.
+        #     return   #Nothing to do.
 
         #  NB NB NB Gather some facts:
 
@@ -661,6 +684,9 @@ class Enclosure:
         # except:
         #     redis_hold =False
         wx_hold = g_dev['ocn'].wx_hold #or redis_hold  #TWO PATHS to pick up wx-hold.
+        if self.mode == "Automatic" and (open_cmd or close_cmd):
+            g_dev['obs'].send_to_user("User enclosure requests not honored in Automatic mode.", p_level='INFO')
+            
         if self.mode == 'Shutdown':
             #  NB in this situation we should always Park telescope, rotators, etc.
             #  NB This code is weak
@@ -679,6 +705,10 @@ class Enclosure:
             self.dome_homed = True
             self.enclosure_synchronized = False
             if _redis: g_dev['redis'].set('park_the_mount', True, ex=3600)
+            if open_cmd:
+                g_dev['obs'].send_to_user("Request Open not allowed in Shutdown mode.", p_level='INFO')
+            if close_cmd:
+                g_dev['obs'].send_to_user("Request Close is ignored in Shutdown mode.", p_level='INFO')
         elif wx_hold:   #There is no reason to deny a wx_hold!
             # We leave telescope to track with dome closed.
             if self.is_dome and self.enclosure.CanSlave :
@@ -693,7 +723,7 @@ class Enclosure:
                 try:
                     self.enclosure.CloseShutter()
                 except:
-                    print('Dome refused close command.')
+                    print('Enclosure refused close command.')
             self.dome_opened = False
             self.dome_homed = True
 
@@ -707,6 +737,7 @@ class Enclosure:
         elif close_cmd and self.mode == 'Manual':
             try:
                 self.enclosure.CloseShutter()
+                g_dev['obs'].send_to_user("Enclosure commanded to close in Manual mode.", p_level='INFO')
             except:
                 print('Dome refused close command. Try again in 120 sec')
                 time.sleep(120)
@@ -714,6 +745,7 @@ class Enclosure:
                     self.enclosure.CloseShutter()
                 except:
                     print('Dome refused close command second time.')
+                    g_dev['obs'].send_to_user("Enclosure failed to close in Manual mode.", p_level='INFO')
             self.dome_opened = False
             self.dome_homed = True    #g_dev['events']['Cool Down, Open']  <=
         elif ((g_dev['events']['Cool Down, Open']  <= ephem_now < g_dev['events']['Observing Ends']) and \
@@ -726,6 +758,7 @@ class Enclosure:
             if self.status_string in ['Open'] and ephem_now < g_dev['events']['End Eve Sky Flats']:
                 if self.is_dome:
                     self.enclosure.SlewToAzimuth(az_opposite_sun)
+                    g_dev['obs'].send_to_user("Dome slewing opposite the Solar azimuth", p_level='INFO')
                 time.sleep(5)
         #THIS should be the ultimate backup to force a close
         elif ephem_now >=  g_dev['events']['Civil Dawn']:  #sunrise + 45/1440:

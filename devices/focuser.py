@@ -52,7 +52,7 @@ class Focuser:
     def __init__(self, driver: str, name: str, config: dict):
         self.site = config['site']
         self.name = name
-        self.site_path = config['client_share_path']
+        self.site_path = config['client_path']
         self.camera_name = config['camera']['camera_1_1']['name']
         g_dev['foc'] = self
         self.config = config['focuser']['focuser1']
@@ -98,6 +98,7 @@ class Focuser:
 
 
     def calculate_compensation(self, temp_primary):
+        breakpoint
         if -20 <= temp_primary <= 45:
             trial = round(float(self.config['coef_0'] + float(self.config['coef_c'])*temp_primary), 1)
 
