@@ -215,6 +215,7 @@ class Mount:
         self.prior_roll_rate = 0
         self.prior_pitch_rate = 0
         self.offset_received = False
+
         self.west_ha_correction_r = config['mount']['mount1']['west_ha_correction_r']
         self.west_dec_correction_r = config['mount']['mount1']['west_dec_correction_r']
         self.refraction = 0
@@ -250,6 +251,7 @@ class Mount:
         except:
             print("No mount ref found, resetting to 0,0.")
             self.reset_mount_reference()
+
         #NB THe paddle needs a re-think and needs to be cast into its own thread. 20200310 WER
         if self.has_paddle:
             self._paddle = serial.Serial('COM28', timeout=0.1)
@@ -679,7 +681,7 @@ class Mount:
         print("mount cmd. slewing mount, req, opt:  ", req, opt)
 
         ''' unpark the telescope mount '''  #  NB can we check if unparked and save time?
-        breakpoint()
+
        
         if self.mount.CanPark:
             #print("mount cmd: unparking mount")
@@ -700,8 +702,8 @@ class Mount:
                 field_x = x_field_deg/15.   #  /15 for hours.
                 field_y = y_field_deg
                 #20210317 Changed signs fron Neyle.  NEEDS CONFIG File level or support.
-                self.ra_offset = offset_x*field_x   # /4   #NB NB 20201230 Signs needs to be verified. 20210904 used to be +=, which did not work.
-                self.dec_offset = -offset_y*field_y # /4    #NB where the 4 come from?                print("Offsets:  ", round(self.ra_offset, 5), round(self.dec_offset, 4))
+                self.ra_offset = offset_x*field_x/4   #NB NB 20201230 Signs needs to be verified. 20210904 used to be +=, which did not work.
+                self.dec_offset = -offset_y*field_y/4    #NB where the 4 come from?                print("Offsets:  ", round(self.ra_offset, 5), round(self.dec_offset, 4))
                 if not self.offset_received:
                     self.ra_prior, self.dec_prior = icrs_ra, icrs_dec #Do not let this change.
                 self.offset_received = True   # NB Above we are accumulating offsets, but should not need to.
@@ -865,6 +867,7 @@ class Mount:
             try:
                 new_pierside = self.mount.DestinationSideOfPier(ra, dec)  # A tuple gets returned.
                 if new_pierside[0] == pier_east:
+                    breakpoint()
                     ra += self.east_ra_correction  #NB it takes a restart to pick up a new correction which is also J.now.
                     dec += self.east_dec_correction
             except:

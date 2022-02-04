@@ -148,8 +148,28 @@ def patch_httplib(bsize=400000):
         else:
             self.sock.sendall(p_data)
     httplib2.httplib.HTTPConnection.send = send
-    
-    
+
+def send_status(obsy, column, status_to_send):
+    uri_status = f"https://status.photonranch.org/status/{obsy}/status/"
+    # NB None of the strings can be empty.  Otherwise this put faults.
+    try:    # 20190926  tHIS STARTED THROWING EXCEPTIONS OCCASIONALLY
+        #print("AWS uri:  ", uri)
+        #print('Status to be sent:  \n', status, '\n')
+        payload ={
+            "statusType": str(column),
+            "status":  status_to_send
+            }
+        #print("Payload:  ", payload)
+        data = json.dumps(payload)
+        response = requests.post(uri_status, data=data)
+        #self.api.authenticated_request("PUT", uri_status, status)   # response = is not  used
+        #print("AWS Response:  ",response)
+        # NB should qualify acceptance and type '.' at that point.
+
+    except:
+        print('self.api.authenticated_request("PUT", uri, status):   Failed!')
+
+
 class Observatory:
 
     def __init__(self, name, config):
@@ -172,8 +192,8 @@ class Observatory:
                 #This host is a client
                 self.is_wema = False  #This is a client.
                 self.site_path = config['client_path']
-                g_dev['site_path'] = self.site_path
-                g_dev['wema_share_path']  = self.site_path  # Just to be safe.
+                g_dev['site_path'] = self.site_path              
+                g_dev['wema_share_path']  = config['client_share_path'] # Just to be safe.
                 self.wema_path = g_dev['wema_share_path'] 
         else:
             self.is_wema = False  #This is a client.
@@ -521,6 +541,16 @@ class Observatory:
                     #     g_dev['enc'].status = result   #NB NB NB A big HACK!
                     #print(device_name, result, '\n')
         # Include the time that the status was assembled and sent.
+
+        status["timestamp"] = round((time.time() + t1)/2., 3)
+        status['send_heartbeat'] = False
+        try:
+            ocn_status = {'observing_conditions': status.pop('observing_conditions')}
+            enc_status = {'enclosure':  status.pop('enclosure')}
+            device_status = status
+        except:
+           pass
+            
         if remove_enc:
             #breakpoint()
             #status.pop('enclosure', None)
@@ -530,8 +560,7 @@ class Observatory:
             if g_dev['enc'].dome_on_wema:
                 status['enclosure'] = None
             
-        status["timestamp"] = round((time.time() + t1)/2., 3)
-        status['send_heartbeat'] = False
+
         loud = False
         if loud:
             print('\n\nStatus Sent:  \n', status)   # from Update:  ', status))
@@ -541,26 +570,22 @@ class Observatory:
             # self.send_log_to_frontend("WARN cam1 just fell on the floor!")
             # self.send_log_to_frontend("ERROR enc1 dome just collapsed.")
             #  Consider inhibity unless status rate is low
-        uri_status = f"https://status.photonranch.org/status/{self.name}/status/"
-        # NB None of the strings can be empty.  Otherwise this put faults.
-        try:    # 20190926  tHIS STARTED THROWING EXCEPTIONS OCCASIONALLY
-            #print("AWS uri:  ", uri)
-            #print('Status to be sent:  \n', status, '\n')
-            payload ={
-                "statusType": "deviceStatus",
-                "status":  status
-                }
-            #print("Payload:  ", payload)
-            data = json.dumps(payload)
-            response = requests.post(uri_status, data=data)
-            #self.api.authenticated_request("PUT", uri_status, status)   # response = is not  used
-            #print("AWS Response:  ",response)
-            # NB should qualify acceptance and type '.' at that point.
-            self.time_last_status = time.time()
+        obsy = self.name
+        if ocn_status is not None:
+            lane = 'weather'
+            #send_status(obsy, lane, ocn_status)
+        if enc_status is not None:
+            lane = 'enclosure'
+            send_status(obsy, lane, enc_status)
+        if  device_status is not None:
+            lane = 'device'
+            final_send  = status
+            send_status(obsy, lane, device_status)
+        self.time_last_status = time.time()
             #self.redis_server.set('obs_time', self.time_last_status, ex=120 )
-            self.status_count +=1
-        except:
-            print('self.api.authenticated_request("PUT", uri, status):   Failed!')
+        self.status_count +=1
+            
+
 
 
     def update(self):

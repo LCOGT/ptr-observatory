@@ -241,7 +241,6 @@ class Sequencer:
                         #breakpoint()
                         g_dev['enc'].open_command({}, {})
                         time.sleep(3)
-                    breakpoint()
                     g_dev['enc'].sync_mount_command({}, {})
                    #Prior to skyflats no dome following.
 
@@ -1288,7 +1287,10 @@ class Sequencer:
                 spot4 = result['FWHM']
                 foc_pos4 = result['mean_focus']
                 print('\n\n\nFound best focus at:  ', foc_pos4,' measured is:  ',  round(spot4, 2), '\n\n\n')
-                g_dev['foc'].af_log(foc_pos4, spot4, new_spot)
+                try:
+                    g_dev['foc'].af_log(foc_pos4, spot4, new_spot)
+                except:
+                    pass
 
                 print("Returning to:  ", start_ra, start_dec)
                 g_dev['mnt'].mount.SlewToCoordinatesAsync(start_ra, start_dec)   #Return to pre-focus pointing.

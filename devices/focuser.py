@@ -127,7 +127,7 @@ class Focuser:
                 "focus_temperature":  10.0,
                 "focus_moving": self.focuser.IsMoving,
                 'comp': self.config['coef_c'],
-                'filter_offset': g_dev['fil'].filter_offset
+                'filter_offset':  "n.a"# g_dev['fil'].filter_offset  #NB NB NB A patch
                 #"focus_temperature": self.focuser.Temperature
                 }
         return status

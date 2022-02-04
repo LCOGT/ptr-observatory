@@ -112,7 +112,7 @@ site_config = {
         'rotator',
         'focuser',
         'selector',
-        #'filter_wheel',
+        'filter_wheel',
         'camera',
         'sequencer',
         ],
@@ -129,7 +129,7 @@ site_config = {
        'rotator',
        'focuser',
        'selector',
-       #'filter_wheel',
+       'filter_wheel',
        'camera',
        'sequencer',
        ],
@@ -202,8 +202,8 @@ site_config = {
                 'model_on': True,
                 'rates_on': True,
                 'model': {
-                    'IH': 0.0,  # -0.04372704281702999,  #20211203
-                    'ID': 0.0,  # -0.5326099734267764,
+                    'IH': 0.00, #-0.04386235467059052 ,  #new 20220201    ###-0.04372704281702999,  #20211203
+                    'ID': 0.00, #-0.2099090362415872,  # -0.5326099734267764,
                     'WIH': 0.0,
                     'WID': 0.0,
                     'CH': 0.0,
