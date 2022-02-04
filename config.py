@@ -6,8 +6,9 @@ Updated 20200902 WER
 
 @author: wrosing
 '''
-
-#2345678901234567890123456789012345678901234567890123456789012345678901234567890
+#                                                                                        1         1         1       1
+#        1         2         3         4         6         7         8         9         0         1         2       2   
+#234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678
 import json
 import time
 import ptr_events
@@ -16,7 +17,7 @@ import ptr_events
 #  NB NB  Json is not bi-directional with tuples (), use lists [], nested if tuples as needed, instead.
 #  NB NB  My convention is if a value is naturally a float I add a decimal point even to 0.
 g_dev = None
-site_name = 'fat'
+site_name = 'sro'
 
                     #\\192.168.1.57\SRO10-Roof  r:
                     #SRO-Weather (\\192.168.1.57) w:
@@ -30,7 +31,7 @@ site_config = {
     'owner_alias': ['WER', 'TELOPS'],
     'admin_aliases': [ "WER", "TB", "DH", "KVH", 'KC', "ANS", 'EC'],
     
-    'client_hostname':  'FAT-0m30',
+    'client_hostname':  'SRO-0m30',
     'client_share_path':  'F:/ptr/',  # Generic place for this host to stash.
     'archive_path':  'F:/',  # Meant to be where /archive/<camera_id> is located.  Not wired in yet. 20220105
     'wema_is_active':  False,    #True if split computers used at a site.
@@ -45,15 +46,20 @@ site_config = {
     'wema_share_path':  None,  # Meant to be where Wema puts status data.
 
 
-    'name': 'PTR at Sierra Remote Observatory 0m305f3.8',
-    'airport_code':  'FAT', 
-    'location': 'Near Shaver Lake C,  USA',
-    'observatory_url': 'https://starz-r-us.sky/clearskies2',   #  This is meant to be optional
-    'description':  '''
-                    Now is the time for all good persons
-                    to get out and vote early and often lest
-                    we lose charge of our democracy.
-                    ''',    #  i.e, a multi-line text block supplied and formatted by the owner.
+    'host_wema_site_name':  'SRO',  #  The umbrella header for obsys in close geographic proximity.
+    'name': 'PTR Sierra Remote Observatory 0m3f38',
+    'airport_code':  'FAT  :  Fresno Air Terminal', 
+    'location': 'Near Shaver Lake CA,  USA',
+    'observatory_url': 'https://www.sierra-remote.com/',   #  This is meant to be optional
+    'observatory_logo': None,   # I expect these will ususally enf up as .png
+    'description':  '''Sierra Remote Observatories​ provide telescope Hosting for Remote Astronomical Imaging,
+                       Data Acquisition, ​Satellite Tracking and Space Based Communications.
+                    ''',    #  i.e, a multi-line text block supplied and eventually mark-up formatted by the owner.
+    'location_day_allsky':  None,  #  Thus ultimately should be a URL, probably a color camera.
+    'location_night_allsky':  None,  #  Thus ultimately should be a URL, usually Mono camera with filters.
+    'location _pole_monitor': None,  #This probably gets us to some sort of image (Polaris in the North)
+    'location_seeing_report': None,  # Probably a path to a jpeg or png graph.
+    
     'TZ_database_name':  'America/Los_Angeles',
     'mpc_code':  'ZZ23',    #  This is made up for now.
     'time_offset':  -8.0,   #  These two keys may be obsolete give the new TZ stuff 
@@ -99,12 +105,16 @@ site_config = {
             'camera',
             'sequencer'
             ],
-    'wema_types': [
+    'wema_types': [                                      # or site_specific types.
             'observing_conditions1',
             'enclosure1'
             ],
-    'short_status_devices':  [
-            'enclosure',
+    'enc_types': [
+            'enclosure'
+            ],
+    'short_status_devices':  [    #THIS shoudl no longer be necessary
+            'observing_conditions',
+            'enclosure', 
             'mount',
             'telescope',
             'screen',
@@ -391,14 +401,14 @@ site_config = {
     'camera': {
         'camera_1_1': {
             'parent': 'telescope1',
-            'name': 'kb001',      #  Important because this points to a server file structure by that name.
+            'name': 'kb001m',      #  Important because this points to a server file structure by that name.
             'desc':  'SBIG16200',
             'service_date': '20211111',
             'driver': "Maxim.CCDCamera",  # "ASCOM.QHYCCD.Camera", ##  'ASCOM.FLI.Kepler.Camera',
             'detector':  'KAF16200',
             'manufacturer':  'On Semi',
             'use_file_mode':  False,
-            'file_mode_path':  'G:/000ptr_saf/archive/sq01/autosaves/',
+            'file_mode_path':  'G:/000ptr_saf/archive/sq01/autosaves/',   #NB Incorrect site, etc. Not used at SRO
 
             'settings': {
                 'temp_setpoint': -35,
@@ -513,9 +523,12 @@ def linearize_unihedron(uni_value):
  
 def f_to_c(f):
     return round(5*(f - 32)/9, 2)
+last_good_wx_fields = 'n.a'
+last_good_daily_lines = 'n.a'
+def get_ocn_status(g_dev=None):
+    global last_good_wx_fields, last_good_daily_lines   # NB NB NB Perhaps memo-ize these instead?
+    if site_config['site'] == 'sro':   #  Belts and suspenders.
 
-def get_ocn_status(g_dev):
-    if site_config['site'] == 'fat':   #  Belts and suspenders.
         try:
             wx = open('W:/sroweather.txt', 'r')
             wx_line = wx.readline()
@@ -531,7 +544,7 @@ def get_ocn_status(g_dev):
             open_ok = wx_fields[19]
             #g_dev['o.redis_sever.set("focus_temp", temperature, ex=1200)
             #self.focus_temp = temperature
-            g_dev['last_good_wx_fields'] = wx_fields
+            last_good_wx_fields = wx_fields
         except:
             time.sleep(5)
             try:
@@ -550,12 +563,11 @@ def get_ocn_status(g_dev):
                 open_ok = wx_fields[19]
                 #g_dev['o.redis_sever.set("focus_temp", temperature, ex=1200)
                 #self.focus_temp = temperature
-                g_dev['las_good_wx_fields'] = wx_fields
+                last_good_wx_fields = wx_fields
             except:
                 print('SRO Weather source problem, 2nd try.')
                 time.sleep(5)
                 try:
-
                     wx = open('W:/sroweather.txt', 'r')
                     wx_line = wx.readline()
                     wx.close
@@ -570,7 +582,7 @@ def get_ocn_status(g_dev):
                     open_ok = wx_fields[19]
                     #g_dev['o.redis_sever.set("focus_temp", temperature, ex=1200)
                     #self.focus_temp = temperature
-                    g_dev['las_good_wx_fields'] = wx_fields
+                    last_good_wx_fields = wx_fields
                 except:
                     try:
 
@@ -588,10 +600,10 @@ def get_ocn_status(g_dev):
                         open_ok = wx_fields[19]
                         #g_dev['o.redis_sever.set("focus_temp", temperature, ex=1200)
                         #self.focus_temp = temperature
-                        g_dev['las_good_wx_fields'] = wx_fields
+                        last_good_wx_fields = wx_fields
                     except:
                         print('SRO Weather source problem, using last known good report.')
-                        wx_fields = g_dev['last_good_wx_fields']
+                        wx_fields = last_good_wx_fields
                         wx_fields = wx_line.split()
                         skyTemperature = f_to_c(float( wx_fields[4]))
                         temperature = f_to_c(float(wx_fields[5]))
@@ -608,7 +620,7 @@ def get_ocn_status(g_dev):
             daily.close()
             pressure = round(33.846*float(daily_lines[-3].split()[1]), 2)
             bright_percent_string = daily_lines[-4].split()[1]  #NB needs to be incorporated
-            g_dev['last_good_daily_lines'] = daily_lines
+            last_good_daily_lines = daily_lines
         except:
             time.sleep(5)
             try:
@@ -616,17 +628,17 @@ def get_ocn_status(g_dev):
                 daily_lines = daily.readlines()
                 daily.close()
                 pressure = round(33.846*float(daily_lines[-3].split()[1]), 2)
-                g_dev['last_good_daily_lines']  = daily_lines
+                last_good_daily_lines = daily_lines
             except:
                 try:
                     daily= open('W:/daily.txt', 'r')
                     daily_lines = daily.readlines()
                     daily.close()
                     pressure = round(33.846*float(daily_lines[-3].split()[1]), 2)
-                    g_dev['last_good_daily_lines'] = daily_lines
+                    last_good_daily_lines = daily_lines
                 except:
                     print('SRO Daily source problem, using last known good pressure.')
-                    daily_lines = g_dev['last_good_daily_lines']
+                    daily_lines = last_good_daily_lines
                     pressure = round(33.846*float(daily_lines[-3].split()[1]), 2)
                    # pressure = round(33.846*float(self.last_good_daily_lines[-3].split()[1]), 2)
         try:   # 20220105 Experienced a glitch, probably the first try faulted in the code above.
@@ -649,10 +661,20 @@ def get_ocn_status(g_dev):
         wx_is_ok = dew_point_gap and temp_bounds and wind_limit and sky_amb_limit and \
                         humidity_limit and rain_limit
         #  NB  wx_is_ok does not include ambient light or altitude of the Sun
-        if wx_is_ok:
-            wx_str = "Yes"
-        else:
-            wx_str = "No"   #Ideally we add the dominant reason in priority order.
+        try:
+            enc_stat =g_dev['enc'].stat_string
+            if enc_stat in ['Open', 'OPEN', 'Open']:
+                wx_str = "Yes"
+                wx_is_ok = True
+            else:
+                wx_str = 'No'
+                wx_is_ok = False
+        except:
+            
+            if wx_is_ok:
+                wx_str = "Yes"
+            else:
+                wx_str = "No"   #Ideally we add the dominant reason in priority order.
         # Now assemble the status dictionary.
         status = {"temperature_C": round(temperature, 2),
                       "pressure_mbar": pressure,
@@ -667,10 +689,10 @@ def get_ocn_status(g_dev):
                       "calc_HSI_lux": illum,
                       "calc_sky_mpsas": round((mag - 20.01),2),    #  Provenance of 20.01 is dubious 20200504 WER
                       "wx_ok": wx_str,  #str(self.sky_monitor_oktoimage.IsSafe),
-                      "open_ok": open_ok,  #T his is the special bit in the 
+                      "open_ok": wx_str,  #T his is the special bit in the 
                                            # Boltwood for a roof close relay
-                      #'wx_hold': wx_hold, # THis is added by the OCN Manager
-                      'hold_duration': 0.0,
+                      'wx_hold': 'n.a.',  # THis is usually added by the OCN Manager
+                      'hold_duration': 'n.a.',
                       'meas_sky_mpsas': 22   # THis is a plug.  NB NB NB
                       #"image_ok": str(self.sky_monitor_oktoimage.IsSafe)
                       }
@@ -678,8 +700,8 @@ def get_ocn_status(g_dev):
     else:
         breakpoint()       #  Debug bad place.
 
-def get_enc_status(g_dev):
-    if site_config['site'] == 'fat':   #  Belts and suspenders.
+def get_enc_status(g_dev=None):
+    if site_config['site'] == 'sro':   #  Belts and suspenders.
 
         try:
             enc = open('R:/Roof_Status.txt')
@@ -728,11 +750,15 @@ def get_enc_status(g_dev):
             g_dev['enc'].moving = True
         else:
             g_dev['enc'].moving = False
-        status = {'shutter_status': stat_string,
+        if g_dev['enc'].mode == 'Automatic':
+            e_mode = "Autonomous!"
+        else:
+            e_mode = g_dev['enc'].mode
+        status = {'shutter_status': stat_string,   # NB NB NB "Roof is open|closed' is more inforative for FAT, but we make boolean decsions on 'Open'
                   'enclosure_synchronized': True,
-                  'dome_azimuth': 360,
-                  'dome_slewing': False,
-                  'enclosure_mode': g_dev['enc'].mode,
+                  'dome_azimuth': 'n.a',
+                  'dome_slewing': 'n.a',
+                  'enclosure_mode': e_mode,
                   'enclosure_message':  ''
                  }
         return status

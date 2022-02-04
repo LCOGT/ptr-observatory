@@ -165,6 +165,7 @@ class ObservingConditions:
             DESCRIPTION.
 
         '''
+        breakpoint()
         if not self.is_wema and self.site_has_proxy:
             if self.config['site_IPC_mechanism'] == 'shares':
                 try:
@@ -238,7 +239,7 @@ class ObservingConditions:
                 status["meas_sky_mpsas"] = uni_measure
 
             self.temperature = round(self.sky_monitor.Temperature, 2)
-            try:  #  NB NB Boltwood vs. SkyAlert difference.  What about FAT?
+            try:  #  NB NB Boltwood vs. SkyAlert difference.  What about SRO?
                 self.pressure = self.sky_monitor.Pressure,  #978   #Mbar to mmHg  #THIS IS A KLUDGE
             except:
                 self.pressure = self.config['reference_pressure']
@@ -281,7 +282,7 @@ class ObservingConditions:
                 status["wx_ok"] = "Yes"
             else:
                 wx_str = "No"   #Ideally we add the dominant reason in priority order.
-                status["wx_ok"] = "No"
+                status["wx_ok"] = "Yes"
         
             g_dev['wx_ok']  =  self.wx_is_ok
             if self.config['site_IPC_mechanism'] == 'shares':

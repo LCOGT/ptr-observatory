@@ -277,7 +277,7 @@ class Sequencer:
         if g_dev['obs'].status_count < 3:
             return
         obs_win_begin, sunZ88Op, sunZ88Cl, ephem_now = self.astro_events.getSunEvents()
-        
+        return
         ocn_status = g_dev['ocn'].status
         enc_status = g_dev['enc'].status
         events = g_dev['events']
@@ -342,8 +342,11 @@ class Sequencer:
  
             house = []
             for project in projects:
-                if project['user_id'] in config.site_config['owner']:  # and not expired, etc.
-                     house.append(project)
+                if block['project_id']  != 'none':
+                    if block['project_id'] == project['project_name'] + '#' + project['created_at']:
+                        block['project'] = project
+                else:
+                    print("Block has no specified project ID, sorry!   ", )
             '''
             evaluate supplied projects for observable and mark as same. Discard
             unobservable projects.  Projects may be "site" projects or 'ptr' (network wide:
@@ -1135,7 +1138,7 @@ class Sequencer:
                         result['patch'] = cal_result
                         result['temperature'] = avg_foc[2]  This is probably tube not reported by Gemini.
         '''
-        if self.config['site'] in ['fat']:
+        if self.config['site'] in ['sro']:
             throw = 225
         if self.config['site'] in ['saf']:
             throw = 400

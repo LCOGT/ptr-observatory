@@ -481,30 +481,33 @@ class Mount:
                 'move_time': self.move_time
             }
             # This write the mount conditin back to the dome, only needed if self.is_dome
-            if g_dev['enc'].is_dome:
-                try:
-                    mount = open(g_dev['wema_share_path']+'mnt_cmd.txt', 'w')
-                    mount.write(json.dumps(status))
-                    mount.close()
-                except:
+            try:
+                if g_dev['enc'].is_dome:
                     try:
-                        time.sleep(3)
-                        # mount = open(self.config['wema_path']+'mnt_cmd.txt', 'r')
-                        # mount.write(json.loads(status))
                         mount = open(g_dev['wema_share_path']+'mnt_cmd.txt', 'w')
                         mount.write(json.dumps(status))
                         mount.close()
                     except:
                         try:
                             time.sleep(3)
+                            # mount = open(self.config['wema_path']+'mnt_cmd.txt', 'r')
+                            # mount.write(json.loads(status))
                             mount = open(g_dev['wema_share_path']+'mnt_cmd.txt', 'w')
                             mount.write(json.dumps(status))
                             mount.close()
                         except:
-                            mount = open(g_dev['wema_share_path']+'mnt_cmd.txt', 'w')
-                            mount.write(json.dumps(status))
-                            mount.close()
-                            print("3rd try to append to enc-cmd  list.")
+                            try:
+                                time.sleep(3)
+                                mount = open(g_dev['wema_share_path']+'mnt_cmd.txt', 'w')
+                                mount.write(json.dumps(status))
+                                mount.close()
+                            except:
+                                mount = open(g_dev['wema_share_path']+'mnt_cmd.txt', 'w')
+                                mount.write(json.dumps(status))
+                                mount.close()
+                                print("3rd try to append to enc-cmd  list.")
+            except:
+                pass
         else:
             print('Proper device_name is missing, or tel == None')
             status = {'defective':  'status'}
@@ -721,8 +724,8 @@ class Mount:
                 #
                 offset_x = float(req['image_x']) - 0.5   #Fraction of field.
                 offset_y = float(req['image_y']) - 0.5
-                x_field_deg = g_dev['cam'].config['camera']['camera_1']['settings']['x_field_deg']
-                y_field_deg = g_dev['cam'].config['camera']['camera_1']['settings']['y_field_deg']
+                x_field_deg = g_dev['cam'].config['camera']['camera_1_1']['settings']['x_field_deg']
+                y_field_deg = g_dev['cam'].config['camera']['camera_1_1']['settings']['y_field_deg']
                 field_x = x_field_deg/15.   #  /15 for hours.
                 field_y = y_field_deg
                 #20210317 Changed signs fron Neyle.  NEEDS CONFIG File level or support.
@@ -903,7 +906,7 @@ class Mount:
         
         #'This is the "Forward" calculation of pointing.
         #Here we add in refraction and the TPOINT compatible mount model
-        self.sid_now_r = self.mount.SiderealTime*HTOR   #NB NB ADDED THIS FOR FAT, WHY IS THIS NEEDED?
+        self.sid_now_r = self.mount.SiderealTime*HTOR   #NB NB ADDED THIS FOR SRO, WHY IS THIS NEEDED?
 
         self.ha_obs_r, self.dec_obs_r, self.refr_asec = ptr_utility.appToObsRaHa(ra_app_h*HTOR, dec_app_d*DTOR, self.sid_now_r)
         #ra_obs_r, dec_obs_r = ptr_utility.transformHatoRaDec(ha_obs_r, dec_obs_r, self.sid_now_r)
@@ -919,7 +922,7 @@ class Mount:
         self.target_az = az*RTOD
 
 
-        if self.site == 'fat':
+        if self.site == 'sro':   #NB NB NB why this bypass?
             self.mount.SlewToCoordinatesAsync(ra_app_h, dec_app_d)
         else:
             self.mount.SlewToCoordinatesAsync(self.ra_mech*RTOH, self.dec_mech*RTOD)  #Is this needed?
