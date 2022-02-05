@@ -242,7 +242,6 @@ class Camera:
             print('Control via Maxim camera interface, Telescope is NOT connected to Maxim.')
         #print('Maxim is connected:  ', self._connect(True))
         setpoint =(float(self.config['camera'][self.name]['settings']['temp_setpoint']))
-
         self._set_setpoint(setpoint)
         print('Cooler started @:  ', self._setpoint())
 
@@ -564,7 +563,7 @@ class Camera:
             pass
               #print('Re_seek skipped; usualy becuase no prior seek this session.')
         try:
-            breakpoint()
+
             probe = self._cooler_on()
             if not probe:
                 self._set_cooler_on() 
