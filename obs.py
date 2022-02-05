@@ -185,7 +185,7 @@ class Observatory:
             self.hostname = self.hostname = socket.gethostname()
             if self.hostname in self.config['wema_hostname']:
                 self.is_wema = True
-                g_dev['wema_share_path'] = config['wema_share_path']
+                g_dev['wema_share_path'] = config['wema_write__share_path']
                 self.wema_path = g_dev['wema_share_path']
             else:  
                 #This host is a client
