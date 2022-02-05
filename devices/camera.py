@@ -208,8 +208,11 @@ class Camera:
             #Monkey patch in ASCOM specific methods.
             self._connected = self._ascom_connected
             self._connect = self._ascom_connect
+            self._set_setpoint = self._ascom_set_setpoint
             self._setpoint = self._ascom_setpoint
             self._temperature = self._ascom_temperature
+            self._cooler_on = self._ascom_cooler_on
+            self._set_cooler_on = self._ascom_set_cooler_on
             self._expose = self._ascom_expose
             self._stop_expose = self._ascom_stop_expose
             self.description = "ASCOM"
@@ -222,8 +225,11 @@ class Camera:
             #Monkey patch in Maxim specific methods.
             self._connected = self._maxim_connected
             self._connect = self._maxim_connect
+            self._set_setpoint = self._maxim_set_setpoint
             self._setpoint = self._maxim_setpoint
             self._temperature = self._maxim_temperature
+            self._cooler_on = self._maxim_cooler_on
+            self._set_cooler_on = self._maxim_set_cooler_on
             self._expose = self._maxim_expose
             self._stop_expose = self._maxim_stop_expose
             self.description = 'MAXIM'
@@ -233,23 +239,27 @@ class Camera:
             self.app = win32com.client.Dispatch("Maxim.Application")
             #self.app.TelescopeConnected = True
             #print("Maxim Telescope Connected: ", self.app.TelescopeConnected)
-            print('Control is Maxim camera interface, Telescope Not Connected.')
+            print('Control via Maxim camera interface, Telescope is NOT connected to Maxim.')
         #print('Maxim is connected:  ', self._connect(True))
-        print('Cooler Setpoint:   ', self._setpoint(float(self.config['camera'][self.name]['settings']['temp_setpoint'])))
-        print('Cooler started @:  ', self._temperature())
-        if self.config['camera'][self.name]['settings']['cooler_on']:
-            self.camera.CoolerOn = self.config['camera'][self.name]['settings']['cooler_on']
-        self.use_file_mode = self.config['camera'][self.name]['use_file_mode']
+        setpoint =(float(self.config['camera'][self.name]['settings']['temp_setpoint']))
+        breakpoint()
+        self._set_setpoint(setpoint)
+        print('Cooler started @:  ', self._setpoint())
+
+        if self.config['camera'][self.name]['settings']['cooler_on']:    #NB NB why this logic, do we mean if not cooler found on, then turn it on and take the delay?
+            self._set_cooler_on()
+        print('Cooler started @:  ', self._temperature())  
+        self.use_file_mode = False  #self.config['camera'][self.name]['use_file_mode']    #NB NB NB this is obsolte, clear nout file mode from code
         self.current_filter = 0    #W in Apache Ridge case. #This should come from config, filter section
         self.exposure_busy = False
         self.cmd_in = None
         self.t7 = None
         self.camera_message = '-'
         #self.alias = self.config['camera'][self.name]#
-        self.site_path = self.config['client_share_path']
+        self.site_path = self.config['client_read_share_path']
         self.archive_path = self.site_path +'archive/'
         self.camera_path = self.archive_path  + self.alias+ "/"
-        self.alt_path = '//house-computer/saf_archive_2/archive/sq01/'
+        self.alt_path = '//house-computer/saf_archive_2/archive/sq01/'    #NB NB this should come from config file, it is site dependent.
         self.autosave_path = self.camera_path +'autosave/'
         self.lng_path = self.camera_path + "lng/"
         self.seq_path = self.camera_path + "seq/"
@@ -337,7 +347,7 @@ class Camera:
         print("This is un-patched cooler _setpoint method")
         return
 
-    #The patches.   Note these are essentially a getter-setter/property constructs.
+    #The patches.   Note these are essentially  getter-setter/property constructs.
     def _maxim_connected(self):
         return self.camera.LinkEnabled
 
@@ -347,9 +357,21 @@ class Camera:
 
     def _maxim_temperature(self):
         return self.camera.Temperature
+    
+    def _maxim_cooler_on(self):
+        return self.camera.CoolerOn   # NB NB NB This would be a good place to put a warming protector
+    
+    def _maxim_set_cooler_on(self):
+        self.camera.CoolerOn = True
+        print("3s wait for cooler to start up.")
+        time.sleep(3)
+        return self.camera.CoolerOn   # NB NB NB This would be a good place to put a warming protector
 
-    def _maxim_setpoint(self, p_temp):
+    def _maxim_set_setpoint(self, p_temp):
         self.camera.TemperatureSetpoint = float(p_temp)
+        return self.camera.TemperatureSetpoint
+    
+    def _maxim_setpoint(self):
         return self.camera.TemperatureSetpoint
 
     def _maxim_expose(self, exposure_time, imtypeb):
@@ -367,15 +389,29 @@ class Camera:
 
     def _ascom_temperature(self):
         return self.camera.CCDTemperature
+    
+    def _ascom_cooler_on(self):
+        return self.camera.CoolerOn   # NB NB NB This would be a good place to put a warming protector
 
-    def _ascom_setpoint(self, p_temp):
+    def _ascom_set_cooler_on(self):
+        self.camera.CoolerOn = True
+        return self.camera.CoolerOn
+    
+    def _ascom_set_setpoint(self, p_temp):
         if self.camera.CanSetCCDTemperature:
             self.camera.SetCCDTemperature = float(p_temp)
             return self.camera.SetCCDTemperature
         else:
             print ("Camera cannot set cooling temperature.")
             return p_temp
-
+        
+    def _ascom_setpoint(self):
+        if self.camera.CanSetCCDTemperature:
+            return self.camera.SetCCDTemperature
+        else:
+            print ("Camera cannot set cooling temperature: Using 10.0C")
+            return 10.0
+        
     def _ascom_expose(self, exposure_time, imtypeb):
             self.camera.StartExposure(exposure_time, imtypeb)
 
@@ -525,16 +561,18 @@ class Camera:
                 print('re_seeking')
                 g_dev['mnt'].re_seek(0)  #) is a placeholder for a dither value being passed.
         except:
-            print('Re_seek skipped; usualy becuase no prior seek this session.')
+            pass
+              #print('Re_seek skipped; usualy becuase no prior seek this session.')
         try:
-            probe = self.camera.CoolerOn
+            breakpoint()
+            probe = self._cooler_on()
             if not probe:
-                self.camera.CoolerOn = True
+                self._set_cooler_on() 
                 print('Found cooler off.')
                 try:
                     self._connect(False)
                     self._connect(True)
-                    self.camera.CoolerOn = True
+                    self._set_cooler_on()
                 except:
                     print('Camera reconnect failed @ expose entry.')
         except Exception as e:
@@ -542,9 +580,9 @@ class Camera:
             try:
                 self._connect(False)
                 self._connect(True)
-                self.camera.CoolerOn = True
+                self._set_cooler_on()
             except:
-                print('Camera reconnect failed @ expose entry.')
+                print('Camera reconnect failed 2nd time @ expose entry.')
         opt = optional_params
         self.hint = optional_params.get('hint', '')
         self.script = required_params.get('script', 'None')
@@ -857,13 +895,13 @@ class Camera:
                      enc_slewing = False
 
                 while g_dev['foc'].focuser.IsMoving or g_dev['rot'].rotator.IsMoving or \
-                      g_dev['mnt'].mount.Slewing or enc_slewing:   #Filter is moving??
+                      g_dev['mnt'].mount.Slewing: #or enc_slewing:   #Filter is moving??
                     if g_dev['foc'].focuser.IsMoving: st += 'f>'
                     if g_dev['rot'].rotator.IsMoving: st += 'r>'
                     if g_dev['mnt'].mount.Slewing:
                         st += 'm>  ' + str(round(time.time() - g_dev['mnt'].move_time, 1))
-                    if enc_slewing:
-                        st += 'd>' + str(round(time.time() - g_dev['mnt'].move_time, 1))
+                    #if enc_slewing:
+                        #st += 'd>' + str(round(time.time() - g_dev['mnt'].move_time, 1))
                     print(st)
                     if round(time.time() - g_dev['mnt'].move_time, 1) >=75:
                        print("|n\n DOME OR MOUNT HAS TIMED OUT!|n|n")
@@ -898,13 +936,13 @@ class Camera:
                     #print('First Entry to inner Camera loop:  ')  #  Do not reference camera, self.camera.StartX, self.camera.StartY, self.camera.NumX, self.camera.NumY, exposure_time)
                     #First lets verify we are connected or try to reconnect.   #Consider uniform ests in a routine, start with reading CoolerOn
                     try:
-                        probe = self.camera.CoolerOn
+                        probe = self._cooler_on()
                         if not probe:
                             print('Found cooler off.')
                             try:
                                 self._connect(False)
                                 self._connect(True)
-                                self.camera.CoolerOn = True
+                                self._set_cooler_on()
                             except:
                                 print('Camera reconnect failed @ expose camera entry.')
 
@@ -915,7 +953,7 @@ class Camera:
                         try:
                             self._connect(False)
                             self._connect(True)
-                            self.camera.CoolerOn = True
+                            self._set_cooler_on()
                         except:
                             print('Camera reconnect failed @ expose camera retry.')
 
@@ -1054,26 +1092,6 @@ class Camera:
                 time.sleep(.5)
                 continue
             incoming_image_list = []   #glob.glob(self.file_mode_path + '*.f*t*')
-
-            # try:
-            #     probe = self.camera.CoolerOn
-            #     if not probe:
-            #         print('Found cooler off.')
-            #         try:
-            #             self._connect(False)
-            #             self._connect(True)
-            #             self.camera.CoolerOn = True
-            #         except:
-            #             print('Camera reconnect failed @ Finish camera entry.')
-            # except Exception as e:
-            #     print("\n\nCamera was not connected @ Finish camera entry:  ", e, '\n\n')
-            #     try:
-            #         self._connect(False)
-            #         self._connect(True)
-            #         self.camera.CoolerOn = True
-            #     except:
-            #         print('Camera reconnect failed @ expose camera retry.')
-            #  At this point we really should be connected!!
             self.t4 = time.time()
             if (not self.use_file_mode and self.camera.ImageReady) or (self.use_file_mode and len(incoming_image_list) >= 1):   #   self.camera.ImageReady:
                 #print("reading out camera, takes ~6 seconds.")
@@ -1347,12 +1365,14 @@ class Camera:
                     hdu.header['RDOUTM'] = (self.config['camera'][self.name]['settings']['readout_mode'], 'Camera readout mode')
                     hdu.header['RDOUTSP'] = (self.config['camera'][self.name]['settings']['readout_speed'], '[FPS] Readout speed')
                     if self.maxim:
+
                         hdu.header['CCDSTEMP'] = (round(self.camera.TemperatureSetpoint, 3), '[deg C] CCD set temperature')
                         hdu.header['CCDATEMP'] = (round(self.camera.Temperature, 3), '[deg C] CCD actual temperature')
+                        
                     if self.ascom:
                         hdu.header['CCDSTEMP'] = (round(self.camera.SetCCDTemperature, 3), '[deg C] CCD set temperature')
                         hdu.header['CCDATEMP'] = (round(self.camera.CCDTemperature, 3), '[deg C] CCD actual temperature')
-                    
+                    hdu.header['COOLERON'] = self._cooler_on()
                     hdu.header['INSTRUME'] = (self.camera_model, 'Instrument used')
                     hdu.header['CAMNAME']  = (self.alias, 'Name of camera')
                     hdu.header['DETECTOR'] = (self.config['camera'][self.name]['detector'], 'Name of camera detector')

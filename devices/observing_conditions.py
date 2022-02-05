@@ -208,11 +208,22 @@ class ObservingConditions:
                  self.status = status
                  self.prior_status = status
                  g_dev['ocn'].status = status
-
+                 try:
+                     self.current_ambient = self.status['temperature_C']
+                 except:
+                     pass
                  return status
             else:
                 breakpoint()
-            self.status = status
+                try:
+                    self.current_ambient = self.status['temperature_C']
+                except:
+                    pass
+                self.status = status
+            try:
+                self.current_ambient = self.status['temperature_C']
+            except:
+                pass
             return status
                 
 
@@ -265,7 +276,7 @@ class ObservingConditions:
                       'wx_hold': self.wx_hold,
                       'hold_duration': self.wx_to_go
                       }
-
+            self.current_ambient = round(self.temperature, 2)
             dew_point_gap = not (self.sky_monitor.Temperature  - self.sky_monitor.DewPoint) < 2
             temp_bounds = not (self.sky_monitor.Temperature < -15) or (self.sky_monitor.Temperature > 42)
             wind_limit = self.sky_monitor.WindSpeed < 35/2.235   #sky_monitor reports m/s, Clarity may report in MPH

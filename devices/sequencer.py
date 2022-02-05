@@ -1138,16 +1138,17 @@ class Sequencer:
                         result['patch'] = cal_result
                         result['temperature'] = avg_foc[2]  This is probably tube not reported by Gemini.
         '''
-        if self.config['site'] in ['sro']:
-            throw = 225
+        if self.config['site'] in ['sro']:   #NB this should be a site config key in the focuser or computed from f-ratio.
+            throw = 250
         if self.config['site'] in ['saf']:
             throw = 400
         self.sequencer_hold = False   #Allow comand checks.
         self.guard = False
+        self.af_guard = True
 
         req2 = copy.deepcopy(req)
         opt2 = copy.deepcopy(opt)
-        self.af_guard = True
+
         sim = False  # g_dev['enc'].status['shutter_status'] in ['Closed', 'Closing', 'closed', 'closing']
         
         # try:
@@ -1170,11 +1171,11 @@ class Sequencer:
 
             #20210817  g_dev['enc'] does not exist,  so this faults. Cascade problem with user_id...
             while g_dev['foc'].focuser.IsMoving or g_dev['rot'].rotator.IsMoving or \
-                  g_dev['mnt'].mount.Slewing or g_dev['enc'].status['dome_slewing']:   #Filter is moving??
+                  g_dev['mnt'].mount.Slewing: #or g_dev['enc'].status['dome_slewing']:   #Filter is moving??
                 if g_dev['foc'].focuser.IsMoving: st += 'f>'
                 if g_dev['rot'].rotator.IsMoving: st += 'r>'
                 if g_dev['mnt'].mount.Slewing: st += 'm>'
-                if g_dev['enc'].status['dome_slewing']: st += 'd>'
+                #if g_dev['enc'].status['dome_slewing']: st += 'd>'
                 print(st)
                 st = ""
                 time.sleep(0.2)
@@ -1193,11 +1194,11 @@ class Sequencer:
             print("Going to near focus star " + str(focus_star[0][0]) + "  degrees away.")
             g_dev['mnt'].go_coord(focus_star[0][1][1], focus_star[0][1][0])
             req = {'time': 12.5,  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'auto_focus'}   #  NB Should pick up filter and constats from config
-            opt = {'area': 150, 'count': 1, 'bin': '2, 2', 'filter': 'w'}
+            opt = {'area': 150, 'count': 1, 'bin': '2, 2', 'filter': 'foc'}
         else:
             pass   #Just take an image where currently pointed.
             req = {'time': 15,  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'auto_focus'}   #  NB Should pick up filter and constats from config
-            opt = {'area': 150, 'count': 1, 'bin': '2, 2', 'filter': 'w'}
+            opt = {'area': 150, 'count': 1, 'bin': '2, 2', 'filter': 'foc'}
         foc_pos0 = focus_start
         result = {}
         #print("temporary patch in Sim values")
@@ -1249,6 +1250,9 @@ class Sequencer:
             self.sequencer_hold = False   #Allow comand checks.
             self.af_guard = False
             g_dev['mnt'].mount.SlewToCoordinatesAsync(start_ra, start_dec)
+            self.sequencer_hold = False   
+            self.guard = False
+            self.af_guard = False
             return
         if spot1 < spot2 and spot1 < spot3:
             try:
@@ -1263,7 +1267,10 @@ class Sequencer:
                 self.sequencer_hold = False   #Allow comand checks.
                 self.af_guard = False
                 g_dev['mnt'].mount.SlewToCoordinatesAsync(start_ra, start_dec)
-                return            
+                self.sequencer_hold = False   
+                self.guard = False
+                self.af_guard = False
+                return           
             if min(x) <= d1 <= max(x):
                 print ('Moving to Solved focus:  ', round(d1, 2), ' calculated:  ',  new_spot)
                 pos = int(d1*g_dev['foc'].micron_to_steps)
@@ -1274,7 +1281,7 @@ class Sequencer:
                 try:
                     g_dev['foc'].last_temperature = g_dev['foc'].focuser.Temperature
                 except:
-                    g_dev['foc'].last_temperature = 7.5
+                    g_dev['foc'].last_temperature = 7.5    #NB NB NB this should be a config file default.
                 g_dev['foc'].last_source = "auto_focus_script"
                 if not sim:
                     result = g_dev['cam'].expose_command(req, opt, no_AWS=True, solve_it=True)  #   script = 'auto_focus_script_3')  #  This is verifying the new focus.
@@ -1290,10 +1297,12 @@ class Sequencer:
             if sim:
                 g_dev['foc'].focuser.Move((focus_start)*g_dev['foc'].micron_to_steps)
             #  NB here we could re-solve with the overlay spot just to verify solution is sane.
-            self.sequencer_hold = False   #Allow comand checks.
-            self.af_guard = False
+
             #  NB NB We may want to consider sending the result image patch to AWS
             # NB NB NB I think we may have spot numbers wrong by 1 count and coarse focs not set up correctly.
+            self.sequencer_hold = False   
+            self.guard = False
+            self.af_guard = False
             return
         elif spot2 <= spot1 or spot3 <= spot1:
             if spot2 <= spot3: 
@@ -1302,7 +1311,9 @@ class Sequencer:
                 min_focus = foc_pos3
             print("It appears camera is too far out; try again with coarse_focus_script.")
             self.coarse_focus_script(req2, opt2, throw=throw + 75, begin_at=min_focus)
-
+            self.sequencer_hold = False   
+            self.guard = False
+            self.af_guard = False
             return
         else:
             print('Spots are really wrong so moving back to starting focus:  ', focus_start)
@@ -1315,6 +1326,9 @@ class Sequencer:
         self.sequencer_hold = False   #Allow comand checks.
         self.af_guard = False
         #  NB NB We may want to consider sending the result image patch to AWS
+        self.sequencer_hold = False   
+        self.guard = False
+        self.af_guard = False
         return
 
 
@@ -1329,7 +1343,9 @@ class Sequencer:
         NBNBNB This code needs to go to known stars to be moe relaible and permit subframes
         '''
         print('AF entered with:  ', req, opt)
-        self.guard = True
+        self.sequencer_hold = False   
+        self.guard = False
+        self.af_guard = True
         sim = False #g_dev['enc'].status['shutter_status'] in ['Closed', 'closed', 'Closing', 'closing']
         print('AF entered with:  ', req, opt, '\n .. and sim =  ', sim)
         #self.sequencer_hold = True  #Blocks command checks.
@@ -1347,11 +1363,11 @@ class Sequencer:
             #Wait for external motion to cease before exposing.  Note this precludes satellite tracking.
             st = "" 
             while g_dev['foc'].focuser.IsMoving or g_dev['rot'].rotator.IsMoving or \
-                  g_dev['mnt'].mount.Slewing or g_dev['enc'].status['dome_slewing']:   #Filter is moving??
+                  g_dev['mnt'].mount.Slewing: #or g_dev['enc'].status['dome_slewing']:   #Filter is moving??
                 if g_dev['foc'].focuser.IsMoving: st += 'f>'
                 if g_dev['rot'].rotator.IsMoving: st += 'r>'
                 if g_dev['mnt'].mount.Slewing: st += 'm>'
-                if g_dev['enc'].status['dome_slewing']: st += 'd>'
+                #if g_dev['enc'].status['dome_slewing']: st += 'd>'
                 print(st)
                 st = ""
                 time.sleep(0.2)
@@ -1365,11 +1381,11 @@ class Sequencer:
             print("Going to near focus star " + str(focus_star[0][0]) + "  degrees away.")
             g_dev['mnt'].go_coord(focus_star[0][1][1], focus_star[0][1][0])
             req = {'time': 12.5,  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'auto_focus'}   #  NB Should pick up filter and constats from config
-            opt = {'area': 100, 'count': 1, 'filter': 'w'}
+            opt = {'area': 100, 'count': 1, 'filter': 'foc'}
         else:
             pass   #Just take time image where currently pointed.
             req = {'time': 15,  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'auto_focus'}   #  NB Should pick up filter and constats from config
-            opt = {'area': 100, 'count': 1, 'filter': 'w'}
+            opt = {'area': 100, 'count': 1, 'filter': 'foc'}
         foc_pos0 = foc_start
         result = {}
         print('Autofocus Starting at:  ', foc_pos0, '\n\n')
@@ -1442,7 +1458,8 @@ class Sequencer:
         except:
             print('Autofocus quadratic equation not converge. Moving back to starting focus:  ', foc_start)
             g_dev['foc'].focuser.Move((foc_start)*g_dev['foc'].micron_to_steps)
-            self.sequencer_hold = False   #Allow comand checks.
+            self.sequencer_hold = False   
+            self.guard = False
             self.af_guard = False
             return 
         if min(x) <= d1 <= max(x):
@@ -1451,7 +1468,10 @@ class Sequencer:
             pos = int(d1*g_dev['foc'].micron_to_steps)
             g_dev['foc'].focuser.Move(pos)
             g_dev['foc'].last_known_focus = d1
-            g_dev['foc'].last_temperature = 6.654321 #g_dev['foc'].focuser.Temperature
+            try:
+                g_dev['foc'].last_temperature = g_dev['foc'].focuser.Temperature
+            except:
+                g_dev['foc'].last_temperature = 10.0    #NB NB THis shoule be a site monthly default.
             g_dev['foc'].last_source = "coarse_focus_script"
             if not sim:
                 result = g_dev['cam'].expose_command(req, opt, solve_it=True)
@@ -1469,8 +1489,9 @@ class Sequencer:
         if sim:
             g_dev['foc'].focuser.Move((foc_start)*g_dev['foc'].micron_to_steps)
         #  NB here we coudld re-solve with the overlay spot just to verify solution is sane.
-        self.sequencer_hold = False   #Allow comand checks.
+        self.sequencer_hold = False   
         self.guard = False
+        self.af_guard = False
         return result
 
 

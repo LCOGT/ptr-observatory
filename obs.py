@@ -136,8 +136,8 @@ def patch_httplib(bsize=400000):
                 self.connect()
             else:
                 raise httplib2.NotConnected()
-        if self.debuglevel > 0:
-            print("send:", repr(p_data))
+        # if self.debuglevel > 0:
+        #     print("send:", repr(p_data))
         if hasattr(p_data, 'read') and not isinstance(p_data, list):
             if self.debuglevel > 0:
                 print("sendIng a read()able")
@@ -672,7 +672,7 @@ class Observatory:
                 "statusType": "weather",
                 "status":  status
                 }
-            print("device Payload:  ", payload)
+            #print("device Payload:  ", payload)
             data = json.dumps(payload)
             response = requests.post(uri_status, data=data)
             #self.api.authenticated_request("PUT", uri_status, status)   # response = is not  used
@@ -749,7 +749,7 @@ class Observatory:
                 "statusType": "enclosure",
                 "status":  status
                 }
-            print("device Payload:  ", payload)
+            #print("device Payload:  ", payload)
             data = json.dumps(payload)
             response = requests.post(uri_status, data=data)
             #self.api.authenticated_request("PUT", uri_status, status)   # response = is not  used

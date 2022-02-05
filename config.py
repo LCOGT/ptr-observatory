@@ -33,12 +33,12 @@ site_config = {
     
     'client_hostname':  'SRO-0m30',
     'client_path':  'F:/ptr/',  # Generic place for this host to stash.
-    'client_share_path':  'F:/ptr/',  # Generic place for this host to stash.
+    'client_read_share_path':  'F:/ptr/',  # Generic place for this host to stash.
     'archive_path':  'F:/',  # Meant to be where /archive/<camera_id> is located.  Not wired in yet. 20220105
     'wema_is_active':  False,    #True if split computers used at a site.
     'wema_hostname':  [],  #  Prefer the shorter version
     'dome_on_wema': False,
-    'wema_share_path':  None,
+    'wema_write_share_path':  None,
     'redis_ip': None,  #'127.0.0.1', None if no redis path present, 
     'site_is_generic':  False,   # A simplee single computer ASCOM site.
     'site_is_specific':  True,  # Indicates some special code for this site, found at end of config.
@@ -307,10 +307,10 @@ site_config = {
             'driver': 'ASCOM.OptecGemini.Focuser',
 			'com_port':  'COM9',
             #F4.9 setup
-            'reference':6938,    #  20210313  Nominal at 10C Primary temperature
+            'reference':7937,    #  20210313  Nominal at 10C Primary temperature
             'ref_temp':  5.06,    #  Update when pinning reference
             'coef_c': 0,   #  Negative means focus moves out as Primary gets colder
-            'coef_0': 6938,  #  Nominal intercept when Primary is at 0.0 C. 
+            'coef_0': 7937,  #  Nominal intercept when Primary is at 0.0 C. 
             'coef_date':  '202120108',    #This appears to be sensible result 44 points -13 to 3C'reference':  6431,    #  Nominal at 10C Primary temperature
             # #F9 setup
             # 'reference': 4375,    #   Guess 20210904  Nominal at 10C Primary temperature
@@ -357,28 +357,29 @@ site_config = {
             'ip_string': None,
             "dual_wheel": False,
             'settings': {
-                'filter_count': 8,
+                'filter_count': 10,   #  !!!! Tis must be correct as to the number of filters!!!!
                 'home_filter':  0,
                 'default_filter': "PL",
                 'filter_reference': 0,   #  We choose to use W as the default filter.  Gains taken at F9, Ceravolo 300mm
-                'filter_data': [['filter', 'filter_index', 'filter_offset', 'sky_gain', 'screen_gain', 'generic'],
+                'filter_data': [['filter', 'filter_index', 'filter_offset', 'sky_gain', 'screen_gain', 'alias'],  #NB NB NB add cwl & bw in nm.
                         
+                        #['w',     [0,  0],     0, 72.7, [1.00 ,  72], 'PL'],    #0.   For sequencer autofocus  consider foc or f filter
+                        ['focus', [0,  0],     0, 72.7, [1.00 ,  72], 'focus'],    #0.   
+                        ['PL',    [0,  0],     0, 72.7, [1.00 ,  72], 'PhLum'],    #1.
+                        ['PR',    [1,  1],     0, 11.0, [1.00 , 119], 'PhBlue'],    #2.
+                        ['PG',    [2,  2],     0, 18.6, [1.00 , 113], 'PhGreen'],    #3.
+                        ['PB',    [3,  3],     0, 42.3, [0.80 ,  97], 'PhRed'],    #4.
+                        ['HA',    [4,  4],     0, .400, [5.00 , 200], 'Halpha'],    #5.
+                        ['O3',    [5,  5],     0, 1.84, [4.00 , 200], 'OIII'],    #6.
+                        ['S2',    [6,  6],     0, .221, [10.0,  200], 'SII'],    #7.
+                        ['air',   [7,  7], -1000, 100., [1.00,   70], 'air'],    #8.
+                        ['dark',  [6,  6],     0, .221, [   0,    0], 'dark']],   #9.
 
-                        ['PL',   [0,  0],    0, 72.7, [1.00 ,  72], 'PL'],    #0.
-                        ['PR',   [1,  1],    0, 11.0, [1.00 , 119], 'PB'],    #1.
-                        ['PG',   [2,  2],    0, 18.6, [1.00 , 113], 'PG'],    #2.
-                        ['PB',   [3,  3],    0, 42.3, [0.80 ,  97], 'PR'],    #3.
-                        ['HA',   [4,  4],    0, .400, [5.00 , 200], 'HA'],    #4.
-                        ['O3',   [5,  5],    0, 1.84, [4.00 , 200], 'O3'],    #5.
-                        ['S2',   [6,  6],    0, .221, [10.0,  200], 'S2'],    #6.
-                        ['air',  [7,  7],    0, 100., [1.00,   70], 'AI'],    #7.
-                        ['dark', [6,  6],    0, .221, [   0,    0], 'DK']],   #8.
 
-
-                'filter_screen_sort':  [7, 0, 3, 2, 1, 5, 4, 6],   #  don't use narrow yet,  8, 10, 9], useless to try.
+                'filter_screen_sort':  [8, 1, 4, 3, 2, 6, 5, 7],   #  don't use narrow yet,  8, 10, 9], useless to try.
                 
                 
-                'filter_sky_sort': [6, 4, 5, 1, 2, 3, 0, 7]    #No diffuser based filters
+                'filter_sky_sort': [7, 5, 6, 2, 3, 1, 1, 8]    #No diffuser based filters
                 #'filter_sky_sort': [7, 19, 2, 13, 18, 5, 15,\
                 #                    12, 4, 11, 16, 10, 9, 17, 3, 14, 1, 0]    #basically no diffuser based filters
                 #[32, 8, 22, 21, 20, 23, 31, 6, 7, 19, 27, 2, 37, 13, 18, 30, 5, 15, 36, 12,\
@@ -403,18 +404,18 @@ site_config = {
     'camera': {
         'camera_1_1': {
             'parent': 'telescope1',
-            'name': 'kb001m',      #  Important because this points to a server file structure by that name.
+            'name': 'ob0001ms',      #  Important because this points to a server file structure by that name.
             'desc':  'SBIG16200',
             'service_date': '20211111',
             'driver': "Maxim.CCDCamera",  # "ASCOM.QHYCCD.Camera", ##  'ASCOM.FLI.Kepler.Camera',
             'detector':  'KAF16200',
-            'manufacturer':  'On Semi',
+            'manufacturer':  'On-Semi',
             'use_file_mode':  False,
-            'file_mode_path':  'G:/000ptr_saf/archive/sq01/autosaves/',   #NB Incorrect site, etc. Not used at SRO
+            'file_mode_path':  'G:/000ptr_saf/archive/sq01/autosaves/',   #NB Incorrect site, etc. Not used at SRO.  Please clean up.
 
             'settings': {
                 'temp_setpoint': -35,
-                'calib_setpoints': [-30, -25, -20, -15, -10 ],  #  Should vary with season? by day-of-year mod len(list)
+                'calib_setpoints': [-30, -25, -20, -15, -10 ],  #  Should vary with season? 
                 'day_warm': False,
                 'cooler_on': True,
                 'x_start':  0,
@@ -459,9 +460,9 @@ site_config = {
                 'is_color':  False,
                 'bayer_pattern':  None,    #  Need to verify R as in RGGB is pixel x=0, y=0, B is x=1, y = 1
                 'can_set_gain':  True,
-                'reference_gain': [10., 10., 10., 10.],     #  One val for each binning.
-                'reference_noise': [1.1, 1.1, 1.1, 1.1],    #  All SWAGs right now
-                'reference_dark': [0.0, 0.0, 0.0, 0.0],     #  Might these best be pedastal values?
+                'reference_gain': [2., 4., 18., 32.],     #  One val for each binning. SWAG!
+                'reference_noise': [10, 10, 10, 10],    #  All SWAGs right now!
+                'reference_dark': [0.0, 0.0, 0.0, 0.0],     #  Might these best be pedastal values?  NO!
                                     #hdu.header['RDMODE'] = (self.config['camera'][self.name]['settings']['read_mode'], 'Camera read mode')
                     #hdu.header['RDOUTM'] = (self.config['camera'][self.name]['readout_mode'], 'Camera readout mode')
                     #hdu.header['RDOUTSP'] = (self.config['camera'][self.name]['settings']['readout_speed'], '[FPS] Readout speed')
@@ -470,9 +471,10 @@ site_config = {
                 'readout_speed': 0.4,
                 'saturate':  42000,    # e-.  This is a close guess, not measured, but taken from data sheet.
                 'max_linearity': 40000,
-                'fullwell_capacity': 45000,   #e-.   We need to sort out hte units properly NB NB NB
+                'fullwell_capacity': 45000,   #e-.   We need to sort out the units properly NB NB NB
                 'areas_implemented': ["600%", "500%", "450%", "300%", "220%", "150%", "133%", "Full", "Sqr", '71%', '50%',  '35%', '25%', '12%'],
                 'default_area':  "Full",
+                'default_rotation': 0.0000,
                 'has_darkslide':  False,
                 'darkslide_com':  None,
                 'has_screen': True,

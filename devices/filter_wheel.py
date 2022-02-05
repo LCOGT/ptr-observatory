@@ -317,7 +317,6 @@ class FilterWheel:
     def set_name_command(self, req: dict, opt: dict):
         ''' set the filter position by filter name '''
         #print("filter cmd: set_name", req, opt)
-        #breakpoint()
         try:
             filter_name = req['filter_name']
         except:
@@ -340,7 +339,7 @@ class FilterWheel:
         #     filter_name = 'ip'
         # if filter_name =="u":
         #     filter_name = 'up'
-        for match in range(int(self.config['filter_wheel1']['settings']['filter_count'])):
+        for match in range(int(self.config['filter_wheel1']['settings']['filter_count'])):  #NB Filter count MUST be correct in Config.
             if filter_name == self.filter_data[match][0]:
                 filt_pointer = match
                 break
