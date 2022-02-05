@@ -32,10 +32,12 @@ site_config = {
     'admin_aliases': [ "WER", "TB", "DH", "KVH", 'KC', "ANS", 'EC'],
     
     'client_hostname':  'SRO-0m30',
+    'client_path':  'F:/ptr/',  # Generic place for this host to stash.
     'client_share_path':  'F:/ptr/',  # Generic place for this host to stash.
     'archive_path':  'F:/',  # Meant to be where /archive/<camera_id> is located.  Not wired in yet. 20220105
     'wema_is_active':  False,    #True if split computers used at a site.
     'wema_hostname':  [],  #  Prefer the shorter version
+    'dome_on_wema': False,
     'wema_share_path':  None,
     'redis_ip': None,  #'127.0.0.1', None if no redis path present, 
     'site_is_generic':  False,   # A simplee single computer ASCOM site.
