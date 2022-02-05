@@ -429,7 +429,7 @@ site_config = {
     'camera': {
         'camera_1_1': {
             'parent': 'telescope1',
-            'name': 'sq0002me',      # Important because this points to a server file structure by that name.
+            'name': 'sq0002',      # Important because this points to a server file structure by that name.
             'desc':  'QHY 600Pro',
             'service_date': '20211111',
             'driver': "ASCOM.QHYCCD.Camera", #"Maxim.CCDCamera",  # "ASCOM.QHYCCD.Camera", ## 'ASCOM.FLI.Kepler.Camera',

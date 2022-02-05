@@ -242,7 +242,7 @@ class Camera:
             print('Control via Maxim camera interface, Telescope is NOT connected to Maxim.')
         #print('Maxim is connected:  ', self._connect(True))
         setpoint =(float(self.config['camera'][self.name]['settings']['temp_setpoint']))
-        breakpoint()
+
         self._set_setpoint(setpoint)
         print('Cooler started @:  ', self._setpoint())
 

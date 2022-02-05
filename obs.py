@@ -181,6 +181,7 @@ class Observatory:
         self.config = config
        
         self.site = config['site']
+        breakpoint()
         if self.config['wema_is_active']:
             self.hostname = self.hostname = socket.gethostname()
             if self.hostname in self.config['wema_hostname']:
@@ -198,7 +199,7 @@ class Observatory:
             self.is_wema = False  #This is a client.
             self.site_path = config['client_path']
             g_dev['site_path'] = self.site_path
-            g_dev['wema_share_path']  = self.site_path  # Just to be safe.
+            g_dev['wema_write_share_path']  = self.site_path  # Just to be safe.
             self.wema_path = g_dev['wema_share_path'] 
         if self.config['site_is_specific']:
              self.site_is_specific = True
@@ -211,8 +212,8 @@ class Observatory:
         self.all_device_types = config['device_types']  #May not be needed
         self.device_types = config['device_types']  #config['short_status_devices']
         self.wema_types = config['wema_types']
-        self.enc_types = config['enc_types']
-        self.short_status_devices = config['short_status_devices']  #May not be needed for no wema obsy
+        self.enc_types = None #config['enc_types']
+        self.short_status_devices = None #config['short_status_devices']  #May not be needed for no wema obsy
         # Instantiate the helper class for astronomical events
         #Soon the primary event / time values come from AWS>
         self.astro_events = ptr_events.Events(self.config)
@@ -689,7 +690,8 @@ class Observatory:
             device_list = self.enc_types
             remove_enc = False
         else:
-            device_list = self.enc_types  # self.short_status_devices 
+            breakpoint()
+            #device_list = self.enc_types  # self.short_status_devices 
             remove_enc = True
         for dev_type in device_list:
             # The status that we will send is grouped into lists of
