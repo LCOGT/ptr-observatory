@@ -1347,6 +1347,7 @@ class Camera:
                 try:
                     hdu = fits.PrimaryHDU(self.img)
                     self.img = None    #  Does this free up any resource?
+
                     # assign the keyword values and comment of the keyword as a tuple to write both to header.
                     hdu.header['BUNIT']    = ('adu', 'Unit of array values')
                     hdu.header['CCDXPIXE'] = (self.camera.PixelSizeX, '[um] Size of unbinned pixel, in X')  # DEH maybe change config units to meters or convert to m?
@@ -1378,10 +1379,10 @@ class Camera:
                     hdu.header['CAMNAME']  = (self.alias, 'Name of camera')
                     hdu.header['DETECTOR'] = (self.config['camera'][self.name]['detector'], 'Name of camera detector')
                     hdu.header['CAMMANUF'] = (self.config['camera'][self.name]['manufacturer'], 'Name of camera manufacturer')
-                    hdu.header['GAIN']     = (self.config['camera'][self.name]['settings']['reference_gain'][0], '[e-/ADU] Pixel gain')
-                    hdu.header['RDNOISE']  = (self.config['camera'][self.name]['settings']['reference_noise'][0], '[e-/pixel] Read noise')
+                    hdu.header['GAIN']     = (self.config['camera'][self.name]['settings']['reference_gain'][self.camera.BinX -1], '[e-/ADU] Pixel gain')
+                    hdu.header['RDNOISE']  = (self.config['camera'][self.name]['settings']['reference_noise'][self.camera.BinX -1], '[e-/pixel] Read noise')
                     hdu.header['CMOSCAM']  = (self.is_cmos, 'Is CMOS camera')
-                    hdu.header['FULLWELL'] = (self.config['camera'][self.name]['settings']['fullwell_capacity'], 'Full well capacity')
+                    hdu.header['FULLWELL'] = (self.config['camera'][self.name]['settings']['fullwell_capacity'][self.camera.BinX -1], 'Full well capacity')
                     hdu.header['CMOSGAIN']  = (0, 'CMOS Camera System Gain')
                     hdu.header['CMOSOFFS']  = (10, 'CMOS Camera offset')
                     hdu.header['CAMOFFS']  = (10, 'Camera offset')

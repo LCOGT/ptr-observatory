@@ -122,7 +122,7 @@ class Focuser:
                 'filter_offset': g_dev['fil'].filter_offset
                 #"focus_temperature": self.focuser.Temperature
                 }
-            breakpoint()
+
         except:
             try:
                 temp = g_dev['ocn'].cuurent_ambient
