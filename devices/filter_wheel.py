@@ -56,6 +56,7 @@ class FilterWheel:
         elif type(driver) == list:
             self.maxim = False
             self.dual = True
+            breakpoint()
             win32com.client.pythoncom.CoInitialize()
             self.filter_front = win32com.client.Dispatch(driver[0])
             self.filter_front.Connected = True
