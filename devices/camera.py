@@ -829,6 +829,7 @@ class Camera:
         #  NB Important: None of above code talks to the camera!
         result = {}  #  This is a default return just in case
         num_retries = 0
+
         for seq in range(count):
             #  SEQ is the outer repeat loop and takes count images; those individual exposures are wrapped in a
             #  retry-3-times framework with an additional timeout included in it.
@@ -846,7 +847,7 @@ class Camera:
                 #case where a timeout is a smart idea.
                 #Wait for external motion to cease before exposing.  Note this precludes satellite tracking.
                 st = ""
- 
+
                 if g_dev['enc'].is_dome:
                     try:
                         enc_slewing = g_dev['enc'].status['dome_slewing']
@@ -856,12 +857,12 @@ class Camera:
                      enc_slewing = False
 
                 while g_dev['foc'].focuser.IsMoving or g_dev['rot'].rotator.IsMoving or \
-                      g_dev['mnt'].mount.Slewing or enc_slewing:   #Filter is moving??
+                      g_dev['mnt'].mount.Slewing: # or enc_slewing:   #Filter is moving?? g_dev['rot'].rotator.IsMoving or \
                     if g_dev['foc'].focuser.IsMoving: st += 'f>'
                     if g_dev['rot'].rotator.IsMoving: st += 'r>'
                     if g_dev['mnt'].mount.Slewing:
                         st += 'm>  ' + str(round(time.time() - g_dev['mnt'].move_time, 1))
-                    if enc_slewing:
+                    if False: #enc_slewing:
                         st += 'd>' + str(round(time.time() - g_dev['mnt'].move_time, 1))
                     print(st)
                     if round(time.time() - g_dev['mnt'].move_time, 1) >=75:

@@ -1172,11 +1172,11 @@ class Sequencer:
 
             #20210817  g_dev['enc'] does not exist,  so this faults. Cascade problem with user_id...
             while g_dev['foc'].focuser.IsMoving or g_dev['rot'].rotator.IsMoving or \
-                  g_dev['mnt'].mount.Slewing or g_dev['enc'].status['dome_slewing']:   #Filter is moving??
+                  g_dev['mnt'].mount.Slewing:  #or g_dev['enc'].status['dome_slewing']:   #Filter is moving??
                 if g_dev['foc'].focuser.IsMoving: st += 'f>'
                 if g_dev['rot'].rotator.IsMoving: st += 'r>'
                 if g_dev['mnt'].mount.Slewing: st += 'm>'
-                if g_dev['enc'].status['dome_slewing']: st += 'd>'
+                #if g_dev['enc'].status['dome_slewing']: st += 'd>'
                 print(st)
                 st = ""
                 time.sleep(0.2)
@@ -1349,11 +1349,11 @@ class Sequencer:
             #Wait for external motion to cease before exposing.  Note this precludes satellite tracking.
             st = "" 
             while g_dev['foc'].focuser.IsMoving or g_dev['rot'].rotator.IsMoving or \
-                  g_dev['mnt'].mount.Slewing or g_dev['enc'].status['dome_slewing']:   #Filter is moving??
+                  g_dev['mnt'].mount.Slewing:  #  or g_dev['enc'].status['dome_slewing']:   #Filter is moving??
                 if g_dev['foc'].focuser.IsMoving: st += 'f>'
                 if g_dev['rot'].rotator.IsMoving: st += 'r>'
                 if g_dev['mnt'].mount.Slewing: st += 'm>'
-                if g_dev['enc'].status['dome_slewing']: st += 'd>'
+                #if g_dev['enc'].status['dome_slewing']: st += 'd>'
                 print(st)
                 st = ""
                 time.sleep(0.2)

@@ -250,6 +250,7 @@ class Mount:
         except:
             print("No mount ref found, resetting to 0,0.")
             self.reset_mount_reference()
+
         #NB THe paddle needs a re-think and needs to be cast into its own thread. 20200310 WER
         if self.has_paddle:
             self._paddle = serial.Serial('COM28', timeout=0.1)
@@ -694,13 +695,14 @@ class Mount:
                 #
                 offset_x = float(req['image_x']) - 0.5   #Fraction of field.
                 offset_y = float(req['image_y']) - 0.5
-                x_field_deg = g_dev['cam'].config['camera']['camera_1']['settings']['x_field_deg']
-                y_field_deg = g_dev['cam'].config['camera']['camera_1']['settings']['y_field_deg']
+                print('offsets:  ', offset_x, offset_y)
+                x_field_deg = g_dev['cam'].config['camera']['camera_1_1']['settings']['x_field_deg']
+                y_field_deg = g_dev['cam'].config['camera']['camera_1_1']['settings']['y_field_deg']
                 field_x = x_field_deg/15.   #  /15 for hours.
                 field_y = y_field_deg
                 #20210317 Changed signs fron Neyle.  NEEDS CONFIG File level or support.
-                self.ra_offset = offset_x*field_x   # /4   #NB NB 20201230 Signs needs to be verified. 20210904 used to be +=, which did not work.
-                self.dec_offset = -offset_y*field_y # /4    #NB where the 4 come from?                print("Offsets:  ", round(self.ra_offset, 5), round(self.dec_offset, 4))
+                self.ra_offset = -offset_x*field_x/4    #NB NB 20201230 Signs needs to be verified. 20210904 used to be +=, which did not work.
+                self.dec_offset = offset_y*field_y/4    #NB where the 4 come from?                print("Offsets:  ", round(self.ra_offset, 5), round(self.dec_offset, 4))
                 if not self.offset_received:
                     self.ra_prior, self.dec_prior = icrs_ra, icrs_dec #Do not let this change.
                 self.offset_received = True   # NB Above we are accumulating offsets, but should not need to.
