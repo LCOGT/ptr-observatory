@@ -43,7 +43,7 @@ site_config = {
     'site_IPC_mechanism':  None,   # ['None', shares', 'shelves', 'redis']  Pick One
     'redis_ip': None,  #'127.0.0.1', None if no redis path present, 
     'site_is_generic':  False,   # A simplee single computer ASCOM site.
-    'site_is_specific':  True,  # Indicates some special code for this site, found at end of config.
+    'site_is_specific':  True,  # Indicates some special wx and enclosure code for this site, found at end of config.
     
         
     'host_wema_site_name':  'SRO',  #  The umbrella header for obsys in close geographic proximity.
