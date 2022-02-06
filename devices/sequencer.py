@@ -322,6 +322,7 @@ class Sequencer:
             blocks = g_dev['obs'].blocks
             projects = g_dev['obs'].projects
             debug = False
+            breakpoint()
             if debug:
                 print("# of Blocks, projects:  ", len(g_dev['obs'].blocks),  len(g_dev['obs'].projects))
             # NB without deepcopy decrementing counts in blocks will be local to the machine an subject

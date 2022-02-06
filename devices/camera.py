@@ -928,6 +928,7 @@ class Camera:
             self.retry_camera_start_time = time.time()
 
             while self.retry_camera > 0:
+
                 #NB Here we enter Phase 2
                 try:
                     self.t1 = time.time()
@@ -1023,6 +1024,7 @@ class Camera:
                             else:
                                 imtypeb = 0
                             self.t2 = time.time()
+
                             self._expose (exposure_time, imtypeb)
                     else:
                         print("Something terribly wrong, driver not recognized.!")

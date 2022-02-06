@@ -356,7 +356,7 @@ site_config = {
             'ip_string': None,
             "dual_wheel": False,
             'settings': {
-                'filter_count': 10,   #  !!!! Tis must be correct as to the number of filters!!!!
+                'filter_count': 11,   #  !!!! Tis must be correct as to the number of filters!!!!
                 'home_filter':  0,
                 'default_filter': "PL",
                 'filter_reference': 0,   #  We choose to use W as the default filter.  Gains taken at F9, Ceravolo 300mm
@@ -373,6 +373,7 @@ site_config = {
                         ['S2',    [6,  6],     0, .221, [10.0,  200], 'SII'],    #7.
                         ['air',   [7,  7], -1000, 100., [1.00,   70], 'air'],    #8.
                         ['dark',  [6,  6],     0, .221, [   0,    0], 'dark']],   #9.
+                        ['LRGB',  [0,  0],     0, .221, [   0,    0], 'LRGB']],   #10.
 
 
                 'filter_screen_sort':  [8, 1, 4, 3, 2, 6, 5, 7],   #  don't use narrow yet,  8, 10, 9], useless to try.

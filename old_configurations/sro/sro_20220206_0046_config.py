@@ -25,7 +25,6 @@ site_name = 'sro'
 
 site_config = {
     'site': str(site_name.lower()),
-    'site_id': 'sro',
     'debug_site_mode': False,
     'owner':  ['google-oauth2|112401903840371673242'],  # WER,  Or this can be 
                                                         # some aws handle.
@@ -34,14 +33,14 @@ site_config = {
     
     'client_hostname':  'SRO-0m30',
     'client_path':  'F:/ptr/',  # Generic place for this host to stash.
+    'client_read_share_path':  'F:/ptr/',  # Generic place for this host to stash.
     'archive_path':  'F:/',  # Meant to be where /archive/<camera_id> is located.  Not wired in yet. 20220105
     'aux_archive_path':  None, # '//house-computer/saf_archive_2/archive/',  #  Path to auxillary backup disk. 
     'wema_is_active':  False,    #True if split computers used at a site.
     'wema_hostname':  [],  #  Prefer the shorter version
     'dome_on_wema': False,
-    'site_IPC_mechanism':  None,   # ['None', shares', 'shelves', 'redis']  Pick One
     'wema_write_share_path':  None,
-    'client_read_share_path':  'F:/ptr/',  # Generic place for this host to stash.
+    'site_IPC_mechanism':  None,   # ['None', shares', 'shelves', 'redis']  Pick One
     'redis_ip': None,  #'127.0.0.1', None if no redis path present, 
     'site_is_generic':  False,   # A simplee single computer ASCOM site.
     'site_is_specific':  True,  # Indicates some special code for this site, found at end of config.
@@ -403,7 +402,7 @@ site_config = {
     'camera': {
         'camera_1_1': {
             'parent': 'telescope1',
-            'name': 'kb001m',      #  Important because this points to a server file structure by that name.
+            'name': 'ob0001ms',      #  Important because this points to a server file structure by that name.
             'desc':  'SBIG16200',
             'service_date': '20211111',
             'driver': "Maxim.CCDCamera",  # "ASCOM.QHYCCD.Camera", ##  'ASCOM.FLI.Kepler.Camera',
