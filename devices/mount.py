@@ -178,11 +178,10 @@ class Mount:
         self.astro_events = astro_events
         g_dev['mnt'] = self
         self.site = config['site']
-        self.site_path = config['client_path']
+        self.site_path = config['client_read_share_path']
         self.config = config
         self.device_name = name
         self.settings = settings
-
         win32com.client.pythoncom.CoInitialize()
         self.mount = win32com.client.Dispatch(driver)
         self.mount.Connected = True
@@ -221,8 +220,7 @@ class Mount:
         self.target_az = 0   #Degrees Azimuth
         self.ha_corr = 0
         self.dec_corr = 0
-        self.seek_commanded = False 
-        self.last_seek_time = time.time()
+        self.seek_commanded = False       
         if abs(self.west_ha_correction_r) > 0 or abs(self.west_dec_correction_r) > 0:
             self.flip_correction_needed = True
             print("Flip correction needed.")
@@ -246,11 +244,12 @@ class Mount:
         self.move_time = 0
         try:
             ra1, dec1 = self.get_mount_reference()
-            print("Mount reference:  ", ra1 ,dec1)   #(-0.05706493750913211, -0.4683533911074083) saf 20220116 WER
+            print("Mount reference:  ", ra1 ,dec1)
         except:
-            print("No mount ref found, resetting to 0,0.")
-            self.reset_mount_reference()
-
+            print("No mount ref found.")
+            pass
+        print("Reset Mount Reference.")
+        self.reset_mount_reference()
         #NB THe paddle needs a re-think and needs to be cast into its own thread. 20200310 WER
         if self.has_paddle:
             self._paddle = serial.Serial('COM28', timeout=0.1)
@@ -270,6 +269,34 @@ class Mount:
             #self.paddle_thread = threading.Thread(target=self.paddle, args=())
             #self.paddle_thread.start()
         print("exiting mount _init")
+
+ 
+
+#    def get_status(self):
+#        m = self.mount
+#        status = {
+#            "name": self.name,
+#            "type":"mount",
+#            "RightAscension": str(m.RightAscension),
+#            "Declination": str(m.Declination),
+#            "RightAscensionRate": str(m.RightAscensionRate),
+#            "DeclinationRate": str(m.DeclinationRate),
+#            "AtHome": str(m.AtHome),
+#            "AtPark": str(m.AtPark),
+#            "Azimuth": str(m.Azimuth),
+#            "GuideRateDeclination":  str(0.0), #str(m.GuideRateDeclination),
+#            "GuideRateRightAscension": str(0.0), #(m.GuideRateRightAscension),
+#            "IsPulseGuiding": str(m.IsPulseGuiding),
+#            "SideOfPier": str(m.SideOfPier),
+#            "Slewing": str(m.Slewing),
+#            "Tracking": str(m.Tracking),
+#            "TrackingRate": str(0.0), #(m.TrackingRate),
+#            # Target ra and dec throws error if they have not been set.
+#            # Maybe we don't even need to include them in the status...
+#            #"TargetDeclination": str(m.TargetDeclination),
+#            #"TargetRightAscension": str(m.TargetRightAscension),
+#        }
+#        return status
 
     def check_connect(self):
         try:
@@ -454,31 +481,33 @@ class Mount:
                 'move_time': self.move_time
             }
             # This write the mount conditin back to the dome, only needed if self.is_dome
-            if g_dev['enc'].is_dome:
-                try:
-                    breakpoint()
-                    mount = open(g_dev['wema_share_path']+'mnt_cmd.txt', 'w')
-                    mount.write(json.dumps(status))
-                    mount.close()
-                except:
+            try:
+                if g_dev['enc'].is_dome:
                     try:
-                        time.sleep(3)
-                        # mount = open(self.config['wema_path']+'mnt_cmd.txt', 'r')
-                        # mount.write(json.loads(status))
                         mount = open(g_dev['wema_share_path']+'mnt_cmd.txt', 'w')
                         mount.write(json.dumps(status))
                         mount.close()
                     except:
                         try:
                             time.sleep(3)
+                            # mount = open(self.config['wema_path']+'mnt_cmd.txt', 'r')
+                            # mount.write(json.loads(status))
                             mount = open(g_dev['wema_share_path']+'mnt_cmd.txt', 'w')
                             mount.write(json.dumps(status))
                             mount.close()
                         except:
-                            mount = open(g_dev['wema_share_path']+'mnt_cmd.txt', 'w')
-                            mount.write(json.dumps(status))
-                            mount.close()
-                            print("3rd try to append to enc-cmd  list.")
+                            try:
+                                time.sleep(3)
+                                mount = open(g_dev['wema_share_path']+'mnt_cmd.txt', 'w')
+                                mount.write(json.dumps(status))
+                                mount.close()
+                            except:
+                                mount = open(g_dev['wema_share_path']+'mnt_cmd.txt', 'w')
+                                mount.write(json.dumps(status))
+                                mount.close()
+                                print("3rd try to append to enc-cmd  list.")
+            except:
+                pass
         else:
             print('Proper device_name is missing, or tel == None')
             status = {'defective':  'status'}
@@ -695,14 +724,13 @@ class Mount:
                 #
                 offset_x = float(req['image_x']) - 0.5   #Fraction of field.
                 offset_y = float(req['image_y']) - 0.5
-                print('offsets:  ', offset_x, offset_y)
                 x_field_deg = g_dev['cam'].config['camera']['camera_1_1']['settings']['x_field_deg']
                 y_field_deg = g_dev['cam'].config['camera']['camera_1_1']['settings']['y_field_deg']
                 field_x = x_field_deg/15.   #  /15 for hours.
                 field_y = y_field_deg
                 #20210317 Changed signs fron Neyle.  NEEDS CONFIG File level or support.
-                self.ra_offset = -offset_x*field_x/4    #NB NB 20201230 Signs needs to be verified. 20210904 used to be +=, which did not work.
-                self.dec_offset = offset_y*field_y/4    #NB where the 4 come from?                print("Offsets:  ", round(self.ra_offset, 5), round(self.dec_offset, 4))
+                self.ra_offset = offset_x*field_x   # /4   #NB NB 20201230 Signs needs to be verified. 20210904 used to be +=, which did not work.
+                self.dec_offset = -offset_y*field_y # /4    #NB where the 4 come from?                print("Offsets:  ", round(self.ra_offset, 5), round(self.dec_offset, 4))
                 if not self.offset_received:
                     self.ra_prior, self.dec_prior = icrs_ra, icrs_dec #Do not let this change.
                 self.offset_received = True   # NB Above we are accumulating offsets, but should not need to.
@@ -816,8 +844,8 @@ class Mount:
         if dither == 0:
             self.go_coord(self.last_ra, self.last_dec, self.last_tracking_rate_ra, self.last_tracking_rate_dec)
         else:
-            #breakpoint()
-            pass
+            breakpoint()
+            
             
             
 
@@ -844,7 +872,7 @@ class Mount:
                 ra_cal_offset, dec_cal_offset = self.get_mount_reference() 
             except:
                 try:
-                    ra_cal_offset, dec_cal_offset = self.get_mount_reference() 
+                    a_cal_offset, dec_cal_offset = self.get_mount_reference() 
                     ra_cal_offset, dec_cal_offset = self.get_mount_reference() 
                 except:
                     ra_cal_offset = 0
@@ -855,6 +883,7 @@ class Mount:
             jnow_coord = icrs_coord.transform_to(FK5(equinox=self.equinox_now))
             ra = jnow_coord.ra.hour
             dec = jnow_coord.dec.degree
+            breakpoint
             if self.offset_received:
                 ra +=  ra_cal_offset + self.ra_offset          #Offsets are J.now and used to get target on Browser Crosshairs.
                 dec +=  dec_cal_offset + self.dec_offset              
@@ -877,7 +906,7 @@ class Mount:
         
         #'This is the "Forward" calculation of pointing.
         #Here we add in refraction and the TPOINT compatible mount model
-        self.sid_now_r = self.mount.SiderealTime*HTOR   #NB NB ADDED THIS FOR FAT, WHY IS THIS NEEDED?
+        self.sid_now_r = self.mount.SiderealTime*HTOR   #NB NB ADDED THIS FOR SRO, WHY IS THIS NEEDED?
 
         self.ha_obs_r, self.dec_obs_r, self.refr_asec = ptr_utility.appToObsRaHa(ra_app_h*HTOR, dec_app_d*DTOR, self.sid_now_r)
         #ra_obs_r, dec_obs_r = ptr_utility.transformHatoRaDec(ha_obs_r, dec_obs_r, self.sid_now_r)
@@ -893,7 +922,7 @@ class Mount:
         self.target_az = az*RTOD
 
 
-        if self.site == 'fat':
+        if self.site == 'sro':   #NB NB NB why this bypass?
             self.mount.SlewToCoordinatesAsync(ra_app_h, dec_app_d)
         else:
             self.mount.SlewToCoordinatesAsync(self.ra_mech*RTOH, self.dec_mech*RTOD)  #Is this needed?
