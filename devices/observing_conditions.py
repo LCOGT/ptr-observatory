@@ -165,7 +165,6 @@ class ObservingConditions:
             DESCRIPTION.
 
         '''
-
         if not self.is_wema and self.site_has_proxy:
             if self.config['site_IPC_mechanism'] == 'shares':
                 try:
@@ -312,7 +311,7 @@ class ObservingConditions:
                         print("2nd try to write weather status failed.")
                         time.sleep(3)
                         try:
-                            weather = open(self.config['wem_sharea_path'] +'weather.txt', 'w')
+                            weather = open(self.config['wema_write_share_path'] +'weather.txt', 'w')
                             weather.write(json.dumps(status))
                             weather.close()
                         except:

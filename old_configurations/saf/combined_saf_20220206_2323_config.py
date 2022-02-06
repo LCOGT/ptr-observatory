@@ -1,8 +1,8 @@
-
 # -*- coding: utf-8 -*-
 '''
+
 Created on Fri Feb 07,  11:57:41 2020
-Updated saf_wema_20220106_1705_config WER
+Updated 20220206T23:16 WER
 
 @author: wrosing
 
@@ -26,36 +26,44 @@ site_config = {
     'debug_site_mode': False,
 
     'owner':  ['google-oauth2|102124071738955888216', 'google-oauth2|112401903840371673242'],  # Neyle,  Or this can be some aws handle.
-    'owner_alias': ['ANS', "WER"],
-    'admin_aliases': ["ANS", "WER", "KVH", "TELOPS", "TB", "DH", 'KC'],
+    'owner_alias': ['ANS', 'WER'],
+    'admin_aliases': ["ANS", "WER", 'KVH', "TELOPS", "TB", "DH", "KVH", 'KC'],
     
-    'client_hostname':  'SRO-0m30',
-    'client_path':  'F:/ptr/',  # Generic place for this host to stash.  Used to be site_path
-    'archive_path':  'F:/ptr/archive/',  # Meant to be where /archive/<camera_id> is located.  Not wired in yet. 20220105
-    'aux_archive_path':  None, # '//house-computer/saf_archive_2/archive/',  #  Path to auxillary backup disk. 
-    'wema_is_active': True,    #True if split computers used at a site.
-    'wema_hostname':  'SAF-WEMA',  #  Prefer the shorter version
-    'dome_on_wema': False,
-    'site_IPC_mechanism':  'shares',   # ['None', shares', 'shelves', 'redis']  Pick One
-    'wema_write_share_path': 'C:/ptr/wema_transfer/',
-    'client_read_share_path':  '//saf-wema/wema_transfer/',  
-    'redis_ip': None,  #'127.0.0.1', None if no redis path present, 
-    'site_is_generic':  False,   # A simplee single computer ASCOM site.
-    'site_is_specific':  False,  # Indicates some special code for this site, found at end of config.
+      # Indicates some special code for a single site.
+                                 # Intention it is found in this file.
+                                 # Fat is intended to be simple since 
+                                 # there is so little to control.
+    'client_hostname':"SAF-WEMA",     # Generic place for this host to stash.
+    'client_path': 'F:/ptr/',
+    'archive_path': 'F:/ptr/',       # Where images are kept.
+    'aux_archive_path':  None,
+    'wema_is_active':  True,     # True if an agent is used at a site.   # Wemas are split sites -- at least two CPS's sharing the control.                          
+    'wema_hostname':  'SAF-WEMA',
+    'wema_path': 'C:/ptr/',
+    'dome_on_wema':  False,
+    'site_IPC_mechanism':  'shares',   # ['None', shares', 'shelves', 'redis']
+    'wema_write_share_path':  'C:/ptr/wema_transfer/',  # Meant to be where Wema puts status data.
+    'client_read_share_path':  '//saf-wema/wema_transfer/',
+    'redis_ip': None,   # None if no redis path present, localhost if redis iself-contained
+    'site_is_generic':  False,   # A simple single computer ASCOM site.
+    'site_is_specific':  False,
     
-        
-    'host_wema_site_name':  'SAF',  #  The umbrella header for obsys in close geographic proximity.
-    
-
+    'host_wema_site_name':  'SAF',
     'name': 'Apache Ridge Observatory 0m3f4.9/9',
     'airport_code':  'SAF',
     'location': 'Santa Fe, New Mexico,  USA',
     'observatory_url': 'https://starz-r-us.sky/clearskies2',   # This is meant to be optional
+    'observatory_logo': None,   # I expect 
     'description':  '''
                     Now is the time for all good persons
                     to get out and vote early and often lest
                     we lose charge of our democracy.
                     ''',    # i.e, a multi-line text block supplied and formatted by the owner.
+    'location_day_allsky':  None,  #  Thus ultimately should be a URL, probably a color camera.
+    'location_night_allsky':  None,  #  Thus ultimately should be a URL, usually Mono camera with filters.
+    'location _pole_monitor': None,  #This probably gets us to some sort of image (Polaris in the North)
+    'location_seeing_report': None,  # Probably a path to 
+    
     'TZ_database_name':  'America/Denver',
     'mpc_code':  'ZZ24',    # This is made up for now.
     'time_offset':  -7.0,   # These two keys may be obsolete give the new TZ stuff 
@@ -73,7 +81,6 @@ site_config = {
     'eve_sky_flat_sunset_offset': +0.0,  # Minutes  neg means before, + after.
     'auto_morn_sky_flat': False,
     'auto_morn_bias_dark': False,
-    'calibrate_on_solve': True,  # nb nb nb pICK ONE
     're-calibrate_on_solve': True, 
 
     'observing_conditions' : {     #for SAF
@@ -356,7 +363,7 @@ site_config = {
             'ip_string': 'http://10.0.0.110',
             "dual_wheel": True,
             'settings': {
-                'filter_count': 38,
+                'filter_count': 39,
                 'home_filter':  0,
                 'default_filter': "w",
                 'filter_reference': 7,   # We choose to use W as the default filter.  Gains taken at F9, Ceravolo 300mm
@@ -399,7 +406,8 @@ site_config = {
                         ['difJB',  [9,  1],  0, 42.5, [0.65,  20], 'dB'],    #34.
                         ['difJV',  [10, 1],  0, 33.0, [0.65,  20], 'dV'],    #35.
                         ['difRc',  [11, 1],  0, 22.2, [0.65,  20], 'dR'],    #36.
-                        ['difIc',  [12, 1],  0, 10. , [0.65,  20], 'dI']],   #37.        38 valid entries, only 36 useable.
+                        ['difIc',  [12, 1],  0, 10. , [0.65,  20], 'dI'],    #37.
+                        ['focus',  [7,  0],  0, 72.8, [360 , 170], 'w ']],   #38. valid entries, only 36 useable.
                 'filter_screen_sort':  [12, 0, 11, 2, 3, 5, 4, 1, 6],   # don't use narrow yet,  8, 10, 9], useless to try.
                 
                 
@@ -429,7 +437,7 @@ site_config = {
     'camera': {
         'camera_1_1': {
             'parent': 'telescope1',
-            'name': 'sq0002',      # Important because this points to a server file structure by that name.
+            'name': 'sq002me',      # Important because this points to a server file structure by that name.
             'desc':  'QHY 600Pro',
             'service_date': '20211111',
             'driver': "ASCOM.QHYCCD.Camera", #"Maxim.CCDCamera",  # "ASCOM.QHYCCD.Camera", ## 'ASCOM.FLI.Kepler.Camera',

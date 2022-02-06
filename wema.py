@@ -68,8 +68,8 @@ class WxEncAgent:
 
         self.api = API_calls()
 
-        self.command_interval = 4   #Not relevent for SAF... No commads to Wx are sent by AWS.
-        self.status_interval = 10
+        self.command_interval = 5   #Not relevent for SAF... No commads to Wx are sent by AWS.
+        self.status_interval = 5
         self.name = name
         self.site_name = name
         self.config = config
