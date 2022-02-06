@@ -255,9 +255,9 @@ class Camera:
         self.t7 = None
         self.camera_message = '-'
         #self.alias = self.config['camera'][self.name]#
-        self.site_path = self.config['client_read_share_path']
-        self.archive_path = self.site_path +'archive/'
-        self.camera_path = self.archive_path  + self.alias+ "/"
+        self.site_path = self.config['client_path']
+        self.archive_path = self.config['archive_path'] +'archive/'
+        self.camera_path = self.archive_path  + self.alias + "/"
         self.alt_path = '//house-computer/saf_archive_2/archive/sq01/'    #NB NB this should come from config file, it is site dependent.
         self.autosave_path = self.camera_path +'autosave/'
         self.lng_path = self.camera_path + "lng/"
@@ -1347,7 +1347,6 @@ class Camera:
                 try:
                     hdu = fits.PrimaryHDU(self.img)
                     self.img = None    #  Does this free up any resource?
-                    breakpoint()
                     # assign the keyword values and comment of the keyword as a tuple to write both to header.
                     hdu.header['BUNIT']    = ('adu', 'Unit of array values')
                     hdu.header['CCDXPIXE'] = (self.camera.PixelSizeX, '[um] Size of unbinned pixel, in X')  # DEH maybe change config units to meters or convert to m?

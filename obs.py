@@ -448,12 +448,11 @@ class Observatory:
                             print( 'Exception in obs.scan_requests:  ', e)
                # print('scan_requests finished in:  ', round(time.time() - t1, 3), '  seconds')
                 ## Test Tim's code
-                #breakpoint()
                 url_blk = "https://calendar.photonranch.org/dev/siteevents"
                 body = json.dumps({
                     'site':  self.config['site'],
-                    'start':  g_dev['d-a-y'] + 'T12:00:00Z',
-                    'end':    g_dev['next_day'] + 'T19:59:59Z',
+                    'start':  g_dev['d-a-y'] + 'T00:00:00Z',
+                    'end':    g_dev['next_day'] + 'T23:59:59Z',
                     'full_project_details:':  False})
                 if True: #self.blocks is None:   #This currently prevents pick up of calendar changes.  OK for the moment.
                     blocks = requests.post(url_blk, body).json()
