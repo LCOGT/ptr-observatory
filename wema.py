@@ -280,6 +280,9 @@ class WxEncAgent:
         # Include the time that the status was assembled and sent.
         status["timestamp"] = round((time.time() + t1)/2., 3)
         status['send_heartbeat'] = False
+        enc_status = None
+        ocn_status = None
+        device_status = None
         try:
             ocn_status = {'observing_conditions': status.pop('observing_conditions')}
             enc_status = {'enclosure':  status.pop('enclosure')}
