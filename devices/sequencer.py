@@ -277,11 +277,11 @@ class Sequencer:
         if g_dev['obs'].status_count < 3:
             return
         obs_win_begin, sunZ88Op, sunZ88Cl, ephem_now = self.astro_events.getSunEvents()
-        return
+
         ocn_status = g_dev['ocn'].status
         enc_status = g_dev['enc'].status
         events = g_dev['events']
-
+        breakpoint()
         #g_dev['obs'].update_status()  #NB NEED to be sure we have current enclosure status.  Blows recursive limit
         self.current_script = "No current script"    #NB this is an unused remnant I think.
         #if True or     #Note this runs in Manual Mode as well.
@@ -848,53 +848,53 @@ class Sequencer:
                 if ephem.now() >= g_dev['events']['End Eve Bias Dark']:
                     break
            
-                # print("Expose Biases: b_3")   
-                # dark_time = 240
-                # #for bias in range(9):
-                # req = {'time': 0.0,  'script': 'True', 'image_type': 'bias'}
-                # opt = {'area': "Full", 'count': 9, 'bin':'3 3', \
-                #         'filter': 'dark'}
-                # result = g_dev['cam'].expose_command(req, opt, no_AWS=True, \
-                #                 do_sep=False, quick=False)
-                # g_dev['obs'].update_status()
+                print("Expose Biases: b_3")   
+                dark_time = 240
+                #for bias in range(9):
+                req = {'time': 0.0,  'script': 'True', 'image_type': 'bias'}
+                opt = {'area': "Full", 'count': 9, 'bin':'3 3', \
+                        'filter': 'dark'}
+                result = g_dev['cam'].expose_command(req, opt, no_AWS=True, \
+                                do_sep=False, quick=False)
+                g_dev['obs'].update_status()
 
-                # print("Expose d_3 using exposure:  ", dark_time )
-                # req = {'time':dark_time,  'script': 'True', 'image_type': 'dark'}
-                # opt = {'area': "Full", 'count':1, 'bin':'3 3', \
-                #         'filter': 'dark'} 
-                # result = g_dev['cam'].expose_command(req, opt, no_AWS=True, \
-                #                     do_sep=False, quick=False)
-                # print('Last dark result:  ', result)
-                # g_dev['obs'].update_status()
+                print("Expose d_3 using exposure:  ", dark_time )
+                req = {'time':dark_time,  'script': 'True', 'image_type': 'dark'}
+                opt = {'area': "Full", 'count':1, 'bin':'3 3', \
+                        'filter': 'dark'} 
+                result = g_dev['cam'].expose_command(req, opt, no_AWS=True, \
+                                    do_sep=False, quick=False)
+                print('Last dark result:  ', result)
+                g_dev['obs'].update_status()
                 
-                # if ephem.now() >= g_dev['events']['End Eve Bias Dark']:
-                #     break
-                # print("Expose Biases: b_4") 
-                # dark_time = 120
-                # for bias in range(9):
-                #     req = {'time': 0.0,  'script': 'True', 'image_type': 'bias'}
-                #     opt = {'area': "Full", 'count': 7, 'bin':'4 4', \
-                #             'filter': 'dark'}
-                #     result = g_dev['cam'].expose_command(req, opt, no_AWS=True, \
-                #                     do_sep=False, quick=False)
-                #     g_dev['obs'].update_status()
+                if ephem.now() >= g_dev['events']['End Eve Bias Dark']:
+                    break
+                print("Expose Biases: b_4") 
+                dark_time = 120
+                for bias in range(9):
+                    req = {'time': 0.0,  'script': 'True', 'image_type': 'bias'}
+                    opt = {'area': "Full", 'count': 7, 'bin':'4 4', \
+                            'filter': 'dark'}
+                    result = g_dev['cam'].expose_command(req, opt, no_AWS=True, \
+                                    do_sep=False, quick=False)
+                    g_dev['obs'].update_status()
     
     
-                #     print("Expose d_4 using exposure:  ", dark_time )
-                #     req = {'time':dark_time ,  'script': 'True', 'image_type': 'dark'}
-                #     opt = {'area': "Full", 'count':1, 'bin': '4 4', \
-                #             'filter': 'dark'} 
-                #     result = g_dev['cam'].expose_command(req, opt, no_AWS=True, \
-                #                         do_sep=False, quick=False)
+                    print("Expose d_4 using exposure:  ", dark_time )
+                    req = {'time':dark_time ,  'script': 'True', 'image_type': 'dark'}
+                    opt = {'area': "Full", 'count':1, 'bin': '4 4', \
+                            'filter': 'dark'} 
+                    result = g_dev['cam'].expose_command(req, opt, no_AWS=True, \
+                                        do_sep=False, quick=False)
     
-                #     g_dev['obs'].update_status()
+                    g_dev['obs'].update_status()
 
                 if ephem.now() >= g_dev['events']['End Eve Bias Dark']:
                     break
 
 
 
-            print(" Bias/Dark acquisition is finished.")
+            print(" Bias/Dark acquisition is finished normally.")
  
 
         self.sequencer_hold = False
@@ -927,11 +927,14 @@ class Sequencer:
         #breakpoint()
         camera_name = str(self.config['camera']['camera_1_1']['name'])
         flat_count = 7
-        exp_time = .0015
+        min_exposure = float(self.config['camera']['camera_1_1']['min_exposure']) 
+        exp_time = min_exposure # added 20220207 WER
         #  NB Sometime, try 2:2 binning and interpolate a 1:1 flat.  This might run a lot faster.
         if flat_count < 1: flat_count = 1
         sim = False# g_dev['enc'].status['shutter_status'] in ['Closed', 'closed', 'Closing', 'closing']
-        if sim: breakpoint()
+        # if sim: 
+        #     pass
+        # 'min_exposure'
         # if g_dev['mnt'].mount.AtPark:
         #     g_dev['mnt'].unpark_command({}, {})
         # g_dev['mnt'].slewToSkyFlatAsync()
