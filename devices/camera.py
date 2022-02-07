@@ -143,6 +143,7 @@ def test_sequence(pCamera):
     return seq
 
 def reset_sequence(pCamera):
+    breakpoint()
     camShelf = shelve.open(g_dev['cam'].site_path + 'ptr_night_shelf/' + str(pCamera))
     #seq = camShelf['Sequence']      # a 9 character string
     seqInt = int(-1)
@@ -1553,6 +1554,7 @@ class Camera:
                     hdu.header['PIXSCALE'] = (round(math.degrees(math.atan(self.pix_ang))*3600., 4), '[arcsec/pixel] Nominal pixel scale on sky')
                     hdu.header['REQNUM']   = ('00000001', 'Request number')                  
                     hdu.header['ISMASTER'] = (False, 'Is master image')
+
                     current_camera_name = self.alias
                     next_seq = next_sequence(current_camera_name)
                     hdu.header['FRAMENUM'] = (int(next_seq), 'Running frame number')                                        
