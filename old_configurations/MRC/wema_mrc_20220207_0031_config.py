@@ -56,8 +56,8 @@ site_config = {
     'debug_site_mode': False,
     #'owner':  ['google-oauth2|102124071738955888216'],  # Neyle
     'owner':  ['google-oauth2|112401903840371673242'],  # Wayne
-    'owner_alias': ['WER'],
-    'admin_aliases': ["ANS", "WER", "TB", "DH", "KVH", "KC"],
+    'owner_alias': ['WER', 'TELOPS'],
+    'admin_aliases': ["ANS", "WER", "TELOPS", "TB", "DH", "KVH", "KC"],
     
 #From FAT:
     'client_hostname':  'MRC-0m35',
@@ -68,10 +68,11 @@ site_config = {
     'wema_hostname': 'MRC-WMS-ENC',   # Prefer the shorter version
     'wema_share_path':  'Q:/ptr/',  # '/wema_transfer/',
     'dome_on_wema':   True,
+    'site_IPC_mechanism':  'shares',   # ['None', shares', 'shelves', 'redis']  Pick One
     'redis_ip': '10.15.0.109',  #'127.0.0.1', None if no redis path present, 
     'site_is_generic':  False,   # A simply  single computer ASCOM site.
     'site_is_specific':  False,  # Indicates some special code for this site, found at end of config.
-    'site_IPC_mechanism':  'shares',   # ['None', shares', 'shelves', 'redis']  Pick One
+    
     # 'aux_archive_path':  None, # '//house-computer/saf_archive_2/archive/',  #  Path to auxillary backup disk.     
 
 

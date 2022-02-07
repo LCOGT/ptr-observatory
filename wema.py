@@ -314,7 +314,19 @@ class WxEncAgent:
             print("Finishing loops and exiting...")
             self.stopped = True
             return
-
+        
+    def send_to_user(self, p_log, p_level='INFO'):
+        url_log = "https://logs.photonranch.org/logs/newlog"
+        body = json.dumps({
+            'site': self.config['site'],
+            'log_message':  str(p_log),
+            'log_level': str(p_level),
+            'timestamp':  time.time()
+            })
+        try:
+            resp = requests.post(url_log, body)
+        except:
+            print("Log did not send, usually not fatal.")
 if __name__ == "__main__":
 
     import config

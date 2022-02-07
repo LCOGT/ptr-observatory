@@ -88,7 +88,7 @@ class Enclosure:
         else:
             self.site_has_proxy = False 
         if self.config['dome_on_wema']:
-            self.dome_on_wema+ True
+            self.dome_on_wema  =True
         else:
             self.dome_on_wema = False
         if self.site in ['simulate',  'dht']:  #DEH: added just for testing purposes with ASCOM simulators.
@@ -625,7 +625,7 @@ class Enclosure:
 
     def guarded_open(self):
             #The guard is obsessively redundant!
-            breakpoint()
+
             if g_dev['ocn'].status['wx_ok'] in [True, 'Yes'] and not (g_dev['ocn'].wx_hold \
                                               or g_dev['ocn'].clamp_latch):     # NB Is Wx ok really the right criterion???
                 try:
