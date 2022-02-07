@@ -30,6 +30,7 @@ class FilterWheel:
             position to default of w/L filter.
             
             '''
+
             r0 = requests.get(self.ip + '/filterwheel/0/position')
             r1 = requests.get(self.ip + '/filterwheel/1/position')
             if str(r0) == str(r1) == '<Response [200]>':
@@ -55,6 +56,7 @@ class FilterWheel:
         elif type(driver) == list:
             self.maxim = False
             self.dual = True
+            breakpoint()
             win32com.client.pythoncom.CoInitialize()
             self.filter_front = win32com.client.Dispatch(driver[0])
             self.filter_front.Connected = True
@@ -316,7 +318,6 @@ class FilterWheel:
     def set_name_command(self, req: dict, opt: dict):
         ''' set the filter position by filter name '''
         #print("filter cmd: set_name", req, opt)
-        #breakpoint()
         try:
             filter_name = req['filter_name']
         except:
@@ -339,7 +340,7 @@ class FilterWheel:
         #     filter_name = 'ip'
         # if filter_name =="u":
         #     filter_name = 'up'
-        for match in range(int(self.config['filter_wheel1']['settings']['filter_count'])):
+        for match in range(int(self.config['filter_wheel1']['settings']['filter_count'])):  #NB Filter count MUST be correct in Config.
             if filter_name == self.filter_data[match][0]:
                 filt_pointer = match
                 break

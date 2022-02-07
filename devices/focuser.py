@@ -98,6 +98,7 @@ class Focuser:
 
 
     def calculate_compensation(self, temp_primary):
+
         if -20 <= temp_primary <= 45:
             trial = round(float(self.config['coef_0'] + float(self.config['coef_c'])*temp_primary), 1)
 
@@ -114,20 +115,25 @@ class Focuser:
     def get_status(self):
         try:
             status = {
-                "focus_position": round(self.focuser.Position*self.steps_to_micron, 1),       #THIS occasionally glitches
+                "focus_position": round(self.focuser.Position*self.steps_to_micron, 1),       #THIS occasionally glitches, usually no temp probe on Gemini
                 "focus_temperature": self.focuser.Temperature,
                 "focus_moving": self.focuser.IsMoving,
                 'comp': self.config['coef_c'],
                 'filter_offset': g_dev['fil'].filter_offset
                 #"focus_temperature": self.focuser.Temperature
                 }
+
         except:
+            try:
+                temp = g_dev['ocn'].cuurent_ambient
+            except:
+                temp = 10.0   #NB NB NB this needs to be a proper monthly config file default.
             status = {
-                "focus_position": round(6000),        #This is a hack fix
-                "focus_temperature":  10.0,
+                "focus_position": round(self.focuser.Position*self.steps_to_micron, 1),       
+                "focus_temperature":  temp,
                 "focus_moving": self.focuser.IsMoving,
                 'comp': self.config['coef_c'],
-                'filter_offset': g_dev['fil'].filter_offset
+                'filter_offset':  "n.a"# g_dev['fil'].filter_offset  #NB NB NB A patch
                 #"focus_temperature": self.focuser.Temperature
                 }
         return status
@@ -229,19 +235,24 @@ class Focuser:
         #Note the adjustment is relative to the last formal focus procedure where
         #self.last_termperature was used to position the focuser.  Do not use
         #move_relative()  Functionally dependent of temp, coef_c and filter thickness.
+
         try:
-            if self.site != 'fat':
+            if self.site != 'sro':
                 temp_delta = self.focuser.Temperature - self.last_temperature
             else:
                 try:
-                    temp_delta = g_dev['ocn'].focus_temp - self.last_temperature
+                    temp_delta = g_dev['ocn'].status['temperature_C'] - self.last_temperature
                 except:
                     temp_delta = 0.0
 
             adjust = 0.0
-            if abs(temp_delta)> 0.1:
+            if abs(temp_delta)> 0.1 and self.last_temperature is not None:
                 adjust = round(temp_delta*float(self.config['coef_c']), 1)
             adjust += g_dev['fil'].filter_offset
+            try:
+                self.last_temperature = g_dev['ocn'].status['temperature_C']  #Save this for next adjustment
+            except:
+                pass
             req = {'position':  str(self.last_known_focus + adjust)}
             opt = {}
             if loud: print('Adjusting focus by:  ', adjust, ' microns, to:  ', int(self.last_known_focus + adjust))

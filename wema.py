@@ -35,8 +35,8 @@ from global_yard import g_dev
 
 import os, signal, subprocess
 
-  
 
+               
 def terminate_restart_observer(site_path, no_restart=False):
     if no_restart is False or  True:
         return
@@ -68,8 +68,8 @@ class WxEncAgent:
 
         self.api = API_calls()
 
-        self.command_interval = 2
-        self.status_interval = 2
+        self.command_interval = 5   #Not relevent for SAF... No commads to Wx are sent by AWS.
+        self.status_interval = 5
         self.name = name
         self.site_name = name
         self.config = config
@@ -82,22 +82,22 @@ class WxEncAgent:
             self.hostname = self.hostname = socket.gethostname()
             if self.hostname in self.config['wema_hostname']:
                 self.is_wema = True
-                g_dev['wema_share_path'] = config['wema_share_path']
-                self.wema_path = g_dev['wema_share_path']
+                g_dev['wema_write_share_path'] = config['wema_write_share_path']
+                self.wema_path = g_dev['wema_write_share_path']
                 self.site_path = self.wema_path
             else:  
                 #This host is a client
                 self.is_wema = False  #This is a client.
                 self.site_path = config['client_share_path']
                 g_dev['site_path'] = self.site_path
-                g_dev['wema_share_path']  = self.site_path  # Just to be safe.
-                self.wema_path = g_dev['wema_share_path'] 
+                g_dev['wema_write_share_path']  = self.site_path  # Just to be safe.
+                self.wema_path = g_dev['wema_write_share_path'] 
         else:
             self.is_wema = False  #This is a client.
             self.site_path = config['client_share_path']
             g_dev['site_path'] = self.site_path
-            g_dev['wema_share_path']  = self.site_path  # Just to be safe.
-            self.wema_path = g_dev['wema_share_path'] 
+            g_dev['wema_write_share_path']  = self.site_path  # Just to be safe.
+            self.wema_path = g_dev['wema_write_share_path'] 
         if self.config['site_is_specific']:
              self.site_is_specific = True
         else:
@@ -248,6 +248,7 @@ class WxEncAgent:
             return   
         t1 = time.time()
         status = {}
+
         for dev_type in self.device_types:
             status[dev_type] = {}
             devices_of_type = self.all_devices.get(dev_type, {})
@@ -278,24 +279,32 @@ class WxEncAgent:
 
             else:
                 print('>')
+        if dev_type == 'observing_conditions':
+            lane = 'weather'
+        elif dev_type == 'enclosure':
+            lane = 'enclosure'
+        else:
+            lane = 'device'
         uri_status = f"https://status.photonranch.org/status/{self.name}/status/"
-        try:    # 20190926  Throws an exeption when AWS goes AWOL. 
+        try:    # 20190926  Throws an exeption when AWS goes AWOL.
+        # NB NB NB the conditionality of this code is incorrect.
             payload ={
-                "statusType": "wxEncStatus",
+                "statusType": str(lane),
                 "status":  status
                 }
             data = json.dumps(payload)
             #print(data)
+
             requests.post(uri_status, data=data)
             #self.redis_server.set('wema_heart_time', self.time_last_status, ex=120)
-            if self.name in ['mrc', 'mrc1']:
-                uri_status_2 = "https://status.photonranch.org/status/mrc2/status/"
-                payload ={
-                "statusType": "wxEncStatus",
-                "status":  status
-                }
-                #data = json.dumps(payload)
-                requests.post(uri_status_2, data=data)
+            # if self.name in ['mrc', 'mrc1']:
+            #     uri_status_2 = "https://status.photonranch.org/status/mrc2/status/"
+            #     payload ={
+            #     "statusType": "wxEncStatus",
+            #     "status":  status
+            #     }
+            #     #data = json.dumps(payload)
+            #     requests.post(uri_status_2, data=data)
             self.time_last_status = time.time()
         except:
             print('self.api.authenticated_request "PUT":  Failed!')

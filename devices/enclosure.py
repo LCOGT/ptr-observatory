@@ -119,7 +119,7 @@ class Enclosure:
             except:
                  print("ASCOM enclosure NOT connected, proabably the App is not connected to telescope.")
         else:
-            self.site_is_generic = False    #NB NB Changed to False for MRC from FAT where True
+            self.site_is_generic = False    #NB NB Changed to False for MRC from SRA where True
         self.last_current_az = 315.
         self.last_slewing = False
         self.prior_status = {'enclosure_mode': 'Manual'}    #Just to initialze this rarely used variable.
@@ -551,24 +551,24 @@ class Enclosure:
 
         if len(cmd_list) > 0:
             try:
-                enclosure = open(self.config['client_share_path']+'enc_cmd.txt', 'w')
+                enclosure = open(self.config['client_path']+'enc_cmd.txt', 'w')
                 enclosure.write(json.dumps(cmd_list))
                 enclosure.close()
             except:
                 try:
                     time.sleep(3)
-                    enclosure = open(self.config['client_share_path']+'enc_cmd.txt', 'w')
+                    enclosure = open(self.config['client_path']+'enc_cmd.txt', 'w')
                     enclosure.write(json.dumps(cmd_list))
                     enclosure.close()
                 except:
                     try:
                         time.sleep(3)
-                        enclosure = open(self.config['client_share_path']+'enc_cmd.txt', 'w')
+                        enclosure = open(self.config['client_path']+'enc_cmd.txt', 'w')
                         enclosure.write(json.dumps(cmd_list))
                         enclosure.close()
                     except:
                         time.sleep(3)
-                        enclosure = open(self.config['client_share_path']+'enc_cmd.txt', 'w')
+                        enclosure = open(self.config['client_path']+'enc_cmd.txt', 'w')
                         enclosure.write(json.dumps(cmd_list))
                         enclosure.close()
                         print("4th try to append to enc-cmd  list.")
