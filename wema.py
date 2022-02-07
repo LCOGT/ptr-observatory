@@ -61,7 +61,27 @@ def terminate_restart_observer(site_path, no_restart=False):
     
 #  NB NB For now a different class, so max code is eliminated, but ideally
 #  this should be a strict subset of the observer's code NB NB note we can eventually fold this back into obs.
+    
+def send_status(obsy, column, status_to_send):
+    uri_status = f"https://status.photonranch.org/status/{obsy}/status/"
+    # NB None of the strings can be empty.  Otherwise this put faults.
+    try:    # 20190926  tHIS STARTED THROWING EXCEPTIONS OCCASIONALLY
+        #print("AWS uri:  ", uri)
+        #print('Status to be sent:  \n', status, '\n')
+        payload ={
+            "statusType": str(column),
+            "status":  status_to_send
+            }
+        #print("Payload:  ", payload)
+        data = json.dumps(payload)
+        response = requests.post(uri_status, data=data)
+        #self.api.authenticated_request("PUT", uri_status, status)   # response = is not  used
+        #print("AWS Response:  ",response)
+        # NB should qualify acceptance and type '.' at that point.
 
+    except:
+        print('self.api.authenticated_request("PUT", uri, status):   Failed!')
+        
 class WxEncAgent:
 
     def __init__(self, name, config):
@@ -260,6 +280,24 @@ class WxEncAgent:
         # Include the time that the status was assembled and sent.
         status["timestamp"] = round((time.time() + t1)/2., 3)
         status['send_heartbeat'] = False
+        try:
+            ocn_status = {'observing_conditions': status.pop('observing_conditions')}
+            enc_status = {'enclosure':  status.pop('enclosure')}
+            device_status = status
+        except:
+            pass
+
+        obsy = self.name
+        if ocn_status is not None:
+            lane = 'weather'
+            send_status(obsy, lane, ocn_status)  #NB NB Do not remove this sed for SAF!
+        if enc_status is not None:
+            lane = 'enclosure'
+            send_status(obsy, lane, enc_status)
+        if  device_status is not None:
+            lane = 'device'
+            final_send  = status
+            send_status(obsy, lane, device_status)
         loud = False
         if loud:
             print('\n\n > Status Sent:  \n', status)
@@ -279,35 +317,9 @@ class WxEncAgent:
 
             else:
                 print('>')
-        if dev_type == 'observing_conditions':
-            lane = 'weather'
-        elif dev_type == 'enclosure':
-            lane = 'enclosure'
-        else:
-            lane = 'device'
-        uri_status = f"https://status.photonranch.org/status/{self.name}/status/"
-        try:    # 20190926  Throws an exeption when AWS goes AWOL.
-        # NB NB NB the conditionality of this code is incorrect.
-            payload ={
-                "statusType": str(lane),
-                "status":  status
-                }
-            data = json.dumps(payload)
-            #print(data)
 
-            requests.post(uri_status, data=data)
-            #self.redis_server.set('wema_heart_time', self.time_last_status, ex=120)
-            # if self.name in ['mrc', 'mrc1']:
-            #     uri_status_2 = "https://status.photonranch.org/status/mrc2/status/"
-            #     payload ={
-            #     "statusType": "wxEncStatus",
-            #     "status":  status
-            #     }
-            #     #data = json.dumps(payload)
-            #     requests.post(uri_status_2, data=data)
-            self.time_last_status = time.time()
-        except:
-            print('self.api.authenticated_request "PUT":  Failed!')
+        # except:
+        #     print('self.api.authenticated_request "PUT":  Failed!')
 
     def update(self):
 
