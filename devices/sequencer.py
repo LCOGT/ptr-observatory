@@ -281,7 +281,6 @@ class Sequencer:
         ocn_status = g_dev['ocn'].status
         enc_status = g_dev['enc'].status
         events = g_dev['events']
-        breakpoint()
         #g_dev['obs'].update_status()  #NB NEED to be sure we have current enclosure status.  Blows recursive limit
         self.current_script = "No current script"    #NB this is an unused remnant I think.
         #if True or     #Note this runs in Manual Mode as well.
@@ -307,6 +306,7 @@ class Sequencer:
                and g_dev['enc'].mode == 'Automatic' and not g_dev['ocn'].wx_hold and \
                self.config['auto_eve_sky_flat']):
             self.sky_flat_latch = False
+
             #if enc_status['shutter_status'] in ['Closed', 'closed', 'Closing', 'closing']:
             self.enc_to_skyflat_and_open(enc_status, ocn_status)   #Just in case a Wx hold stopped opening      
 
@@ -315,14 +315,14 @@ class Sequencer:
             self.sky_flat_script({}, {})   #Null command dictionaries
             self.sky_flat_latch = False
             
-        elif enc_status['enclosure_mode'] == 'Automatic' and (events['Observing Begins'] <= ephem_now \
+        elif enc_status['enclosure_mode'] in ['Autonomous!', 'Automatic'] and (events['Observing Begins'] <= ephem_now \
                                    < events['Observing Ends']) and not g_dev['ocn'].wx_hold \
                                    and  g_dev['obs'].blocks is not None and g_dev['obs'].projects \
                                    is not None:
             blocks = g_dev['obs'].blocks
             projects = g_dev['obs'].projects
             debug = False
-            breakpoint()
+
             if debug:
                 print("# of Blocks, projects:  ", len(g_dev['obs'].blocks),  len(g_dev['obs'].projects))
             # NB without deepcopy decrementing counts in blocks will be local to the machine an subject
@@ -402,6 +402,7 @@ class Sequencer:
             #print("No active script is scheduled.")
             return
     def take_lrgb_stack(self, req_None, opt=None):
+        return
 
         self.redis_server.set('sim_hold', True, ex=120)
             
@@ -1144,7 +1145,7 @@ class Sequencer:
         '''
         if self.config['site'] in ['sro']:   #NB this should be a site config key in the focuser or computed from f-ratio.
             throw = 250
-        if self.config['site'] in ['saf']:
+        if self.config['site'] in ['saf']:  #  NB NB f4.9 this belongs in config, not in the code body!!!!
             throw = 400
         self.sequencer_hold = False   #Allow comand checks.
         self.guard = False
@@ -1207,6 +1208,7 @@ class Sequencer:
         result = {}
         #print("temporary patch in Sim values")
         print('Autofocus Starting at:  ', foc_pos0, '\n\n')
+        g_dev['foc'].focuser.Move((foc_pos0 - 0* throw)*g_dev['foc'].micron_to_steps)   # NB added 20220209 Nasty bug, varies with prior state
         #throw = throw  # NB again, from config.  Units are microns  Passed as default paramter
         retry = 0
         while retry < 3:
@@ -1234,10 +1236,11 @@ class Sequencer:
         spot2 = result['FWHM']
         foc_pos2 = result['mean_focus']
         print('Autofocus Overtaveling Out.\n\n')
-        g_dev['foc'].focuser.Move((foc_pos0 + 2*throw)*g_dev['foc'].micron_to_steps)   #It is important to overshoot to overcome any backlash
+        g_dev['foc'].focuser.Move((foc_pos0 + 2*throw)*g_dev['foc'].micron_to_steps)
+        time.sleep(10)#It is important to overshoot to overcome any backlash  WE need to be sure Exposure waits.
         print('Autofocus Moving back in half-way.\n\n')
         g_dev['foc'].focuser.Move((foc_pos0 + throw)*g_dev['foc'].micron_to_steps)  #NB NB NB THIS IS WRONG!
-        #opt['fwhm_sim'] = 5
+        time.sleep(10)#opt['fwhm_sim'] = 5
         if not sim:
             result = g_dev['cam'].expose_command(req, opt, no_AWS=True) ## , script = 'auto_focus_script_2')  #  This is moving out one throw.
         else:
@@ -1268,6 +1271,7 @@ class Sequencer:
     
                 print('Autofocus quadratic equation not converge. Moving back to starting focus:  ', focus_start)
                 g_dev['foc'].focuser.Move((focus_start)*g_dev['foc'].micron_to_steps)
+                time.sleep(5)
                 self.sequencer_hold = False   #Allow comand checks.
                 self.af_guard = False
                 g_dev['mnt'].mount.SlewToCoordinatesAsync(start_ra, start_dec)
@@ -1281,12 +1285,14 @@ class Sequencer:
                 
                 
                 g_dev['foc'].focuser.Move(pos)
+                time.sleep(5)
                 g_dev['foc'].last_known_focus = d1
                 try:
                     g_dev['foc'].last_temperature = g_dev['foc'].focuser.Temperature
                 except:
                     g_dev['foc'].last_temperature = 7.5    #NB NB NB this should be a config file default.
                 g_dev['foc'].last_source = "auto_focus_script"
+                
                 if not sim:
                     result = g_dev['cam'].expose_command(req, opt, no_AWS=True, solve_it=True)  #   script = 'auto_focus_script_3')  #  This is verifying the new focus.
                 else:
@@ -1393,6 +1399,7 @@ class Sequencer:
         foc_pos0 = foc_start
         result = {}
         print('Autofocus Starting at:  ', foc_pos0, '\n\n')
+        g_dev['foc'].focuser.Move((foc_pos0 - 0*throw)*g_dev['foc'].micron_to_steps)  #Added 20220209! A bit late
         #throw = 100  # NB again, from config.  Units are microns
         if not sim:
             result = g_dev['cam'].expose_command(req, opt, no_AWS=True)
@@ -1410,7 +1417,7 @@ class Sequencer:
         # foc_pos1 = result['mean_focus']
         
         
-        
+        print('Autofocus Moving In -1x, second time.\n\n')
         g_dev['foc'].focuser.Move((foc_pos0 - throw)*g_dev['foc'].micron_to_steps)
         #opt['fwhm_sim'] = 4.
         if not sim:
@@ -1420,7 +1427,7 @@ class Sequencer:
             result['mean_focus'] = g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron
         spot2 = result['FWHM']
         foc_pos2 = result['mean_focus']
-        print('Autofocus Moving In, second time.\n\n')
+        print('Autofocus Moving In -2x, second time.\n\n')
         g_dev['foc'].focuser.Move((foc_pos0 - 2*throw)*g_dev['foc'].micron_to_steps)
         #opt['fwhm_sim'] = 4.
         if not sim:
@@ -1431,9 +1438,9 @@ class Sequencer:
         spot3 = result['FWHM']
         foc_pos3 = result['mean_focus']
         #Need to check we are not going out too far!
-        print('Autofocus Moving out 4X.\n\n')
+        print('Autofocus Moving out +3X.\n\n')
         g_dev['foc'].focuser.Move((foc_pos0 + 3*throw)*g_dev['foc'].micron_to_steps)
-        print('Autofocus back in for backlash\n\n')#It is important to overshoot to overcome any backlash
+        print('Autofocus back in for backlash to +2X\n\n')#It is important to overshoot to overcome any backlash
         g_dev['foc'].focuser.Move((foc_pos0 + 2*throw)*g_dev['foc'].micron_to_steps)
         #opt['fwhm_sim'] = 5
         if not sim:
@@ -1443,6 +1450,7 @@ class Sequencer:
             result['mean_focus'] = g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron
         spot4 = result['FWHM']
         foc_pos4 = result['mean_focus']
+        print('Autofocus back in for backlash to +1X\n\n')
         g_dev['foc'].focuser.Move((foc_pos0 + throw)*g_dev['foc'].micron_to_steps)
         #opt['fwhm_sim'] = 4.
         if not sim:
@@ -1478,13 +1486,17 @@ class Sequencer:
                 g_dev['foc'].last_temperature = 10.0    #NB NB THis shoule be a site monthly default.
             g_dev['foc'].last_source = "coarse_focus_script"
             if not sim:
+                breakpoint()
                 result = g_dev['cam'].expose_command(req, opt, solve_it=True)
             else:
                 result['FWHM'] = new_spot
                 result['mean_focus'] = g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron
-            spot6 = result['FWHM']
-            foc_pos4 = result['mean_focus']
-            print('\n\n\nFound best focus at:  ', foc_pos4,' measured is:  ',  round(spot6, 2), '\n\n\n')
+            try:
+                spot6 = result['FWHM']
+                foc_pos4 = result['mean_focus']
+                print('\n\n\nFound best focus at:  ', foc_pos4,' measured is:  ',  round(spot6, 2), '\n\n\n')
+            except:
+                print('Known bug, Verifcation did not work. Returing to target using solved focus.')
         else:
             print('Coarse_focus did not converge. Moving back to starting focus:  ', foc_pos0)
             g_dev['foc'].focuser.Move((foc_start)*g_dev['foc'].micron_to_steps)
@@ -1492,7 +1504,6 @@ class Sequencer:
         g_dev['mnt'].mount.SlewToCoordinatesAsync(start_ra, start_dec)   #Return to pre-focus pointing.
         if sim:
             g_dev['foc'].focuser.Move((foc_start)*g_dev['foc'].micron_to_steps)
-        #  NB here we coudld re-solve with the overlay spot just to verify solution is sane.
         self.sequencer_hold = False   
         self.guard = False
         self.af_guard = False
