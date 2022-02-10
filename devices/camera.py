@@ -743,9 +743,9 @@ class Camera:
         try:
             if type(area) == str and area[-1] == '%':  #Re-use of variable is crappy coding
                 area = int(area[0:-1])
-            elif area in ('Sqr', 'sqr', '100%'):
+            elif area in ('Sqr', 'sqr', '100%', 100):
                 area = 100
-            elif area in ('Full', 'full', '150%', 'Chip', 'chip'):
+            elif area in ('Full', 'full', '150%', 'Chip', 'chip', 150):
                 area = 150
         except:
             area = 150     #was 100 in ancient times.
@@ -807,7 +807,7 @@ class Camera:
             self.camera_num_y = self.len_y
             self.camera_start_y = 0
             self.area = 150
-            print("Default area used. 150%:  ", self.len_x,self.len_y )
+            print("Default area used = 100%, ie. the full chip:  ", self.len_x,self.len_y )
 
         #Next apply any subframe setting here.  Be very careful to keep fractional specs and pixel values disinguished.
         if self.area == self.previous_area and sub_frame_fraction is not None and \

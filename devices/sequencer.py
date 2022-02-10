@@ -272,16 +272,14 @@ class Sequencer:
 
         Scripts must not block too long or they must provide for periodic calls to check status.
         '''
-        
+
         # NB Need a better way to get all the events.
         if g_dev['obs'].status_count < 3:
             return
         obs_win_begin, sunZ88Op, sunZ88Cl, ephem_now = self.astro_events.getSunEvents()
-
         ocn_status = g_dev['ocn'].status
         enc_status = g_dev['enc'].status
         events = g_dev['events']
-        breakpoint()
         #g_dev['obs'].update_status()  #NB NEED to be sure we have current enclosure status.  Blows recursive limit
         self.current_script = "No current script"    #NB this is an unused remnant I think.
         #if True or     #Note this runs in Manual Mode as well.
@@ -303,10 +301,10 @@ class Sequencer:
             self.enc_to_skyflat_and_open(enc_status, ocn_status)
         
         #elif True or 
-        elif self.sky_flat_latch and ((events['Eve Sky Flats'] <= ephem_now < events['End Eve Sky Flats'])  \
+        elif self.sky_flat_latch and ((events['Eve Sky Flats' ] <= ephem_now < events['End Eve Sky Flats'])  \
                and g_dev['enc'].mode == 'Automatic' and not g_dev['ocn'].wx_hold and \
                self.config['auto_eve_sky_flat']):
-            self.sky_flat_latch = False
+            self.sky_flat_latch = True
             #if enc_status['shutter_status'] in ['Closed', 'closed', 'Closing', 'closing']:
             self.enc_to_skyflat_and_open(enc_status, ocn_status)   #Just in case a Wx hold stopped opening      
 
@@ -322,7 +320,7 @@ class Sequencer:
             blocks = g_dev['obs'].blocks
             projects = g_dev['obs'].projects
             debug = False
-            breakpoint()
+
             if debug:
                 print("# of Blocks, projects:  ", len(g_dev['obs'].blocks),  len(g_dev['obs'].projects))
             # NB without deepcopy decrementing counts in blocks will be local to the machine an subject
@@ -505,7 +503,7 @@ class Sequencer:
         # if bock['project'] is None:
             #user controlled block...
         #NB NB NB  if no project found, need to say so not fault. 20210624
-        #breakpoint()
+
         for target in block['project']['project_targets']:   #  NB NB NB Do multi-target projects make sense???
             dest_ra = float(target['ra']) - \
                 float(block_specification['project']['project_constraints']['ra_offset'])/15.
@@ -670,7 +668,7 @@ class Sequencer:
                             pitch = 0.1875
                         if exposure['area'] in ['125', '125%', 125]:
                             pitch = 0.125
-                    elif exposure['area'] in ['600', '600%', 600, '450', '450%', 450]:  # 9 exposures.
+                    elif exposure['area'] in ['600', '600%', 600, '400', '400%', 400]:  # 9 exposures.
                         offset = [(0.5, 0.5), 
                                   (-0.5, 0.5), 
                                   (-1.5, 0.5), 
@@ -692,7 +690,7 @@ class Sequencer:
                         if exposure['area'] in ['600', '600%', 600]:
                             pitch = 0.125
 
-                        if exposure['area'] in ['450', '450%', 450]:
+                        if exposure['area'] in ['400', '400%', 400]:
                             pitch = 0.1875
                         pane = 0
                     elif exposure['area'] in ['500', '500%',]:  # 6 or 7 exposures.  SQUARE
@@ -924,22 +922,21 @@ class Sequencer:
         """
         self.sky_guard = True
         print('Eve Sky Flat sequence Starting, Enclosure PRESUMED Open. Telescope will un-park.')
-        #breakpoint()
+        #reakpoint()
         camera_name = str(self.config['camera']['camera_1_1']['name'])
-        flat_count = 7
-        min_exposure = float(self.config['camera']['camera_1_1']['min_exposure']) 
+        flat_count = 5
+        min_exposure = float(self.config['camera']['camera_1_1']['settings']['min_exposure']) 
         exp_time = min_exposure # added 20220207 WER
         #  NB Sometime, try 2:2 binning and interpolate a 1:1 flat.  This might run a lot faster.
         if flat_count < 1: flat_count = 1
-        sim = False# g_dev['enc'].status['shutter_status'] in ['Closed', 'closed', 'Closing', 'closing']
+        sim = False  # g_dev['enc'].status['shutter_status'] in ['Closed', 'closed', 'Closing', 'closing']
         # if sim: 
         #     pass
-        # 'min_exposure'
-        # if g_dev['mnt'].mount.AtPark:
-        #     g_dev['mnt'].unpark_command({}, {})
-        # g_dev['mnt'].slewToSkyFlatAsync()
+        if g_dev['mnt'].mount.AtPark:
+            g_dev['mnt'].unpark_command({}, {})
+        g_dev['mnt'].slewToSkyFlatAsync()
 
-        
+
         #NB NB we need to re-open is WX hold ends.
         # if g_dev['enc'].is_dome and not g_dev['enc'].mode == 'Automatic':
         #      g_dev['enc'].Slaved = True  #Bring the dome into the picture.
@@ -962,7 +959,7 @@ class Sequencer:
         
         collecting_area = self.config['telescope']['telescope1']['collecting_area']/32000.
         #  (g_dev['events']['Eve Sky Flats'] < 
-        while len(pop_list) > 0 and (g_dev['events']['Eve Sky Flats'] < ephem_now < g_dev['events']['End Eve Sky Flats']):
+        while len(pop_list) > 0 and (ephem_now < g_dev['events']['End Eve Sky Flats']):  #g_dev['events']['Eve Sky Flats'] < 
 
             current_filter = int(pop_list[0])
             acquired_count = 0
@@ -971,7 +968,9 @@ class Sequencer:
 
             g_dev['fil'].set_number_command(current_filter)
             #g_dev['mnt'].slewToSkyFlatAsync()
-            bright = 25000
+
+            bright_goal = float(self.config['camera']['camera_1_1']['settings']['max_linearity'])*0.55
+            reject_level = float(self.config['camera']['camera_1_1']['settings']['max_linearity'])*0.75
             scale = 1.0    #1.15   #20201121 adjustment
             
             prior_scale = 1.0
@@ -981,17 +980,18 @@ class Sequencer:
                 g_dev['mnt'].slewToSkyFlatAsync()
                 g_dev['obs'].update_status()
                 try:
+
                     try:
-                        sky_lux = eval(self.redis_server.get('ocn_status'))['calc_HSI_lux']     #Why Eval, whould have float?
+                        sky_lux = float(g_dev['ocn'].status ['calc_HSI_lux'] )  #Why Eval, whould have float?
                     except:
                         print("Redis not running. lux set to 1000.")
                         sky_lux = 1000
-                    exp_time = prior_scale*scale*13587/(collecting_area*sky_lux*float(g_dev['fil'].filter_data[current_filter][3]))  #g_dev['ocn'].calc_HSI_lux)  #meas_sky_lux)
-                    
-                    print('Ex:  ', exp_time, scale, prior_scale, sky_lux, float(g_dev['fil'].filter_data[current_filter][3]))
+                    exp_time = round(prior_scale*scale*(60000)/(collecting_area*sky_lux*float(g_dev['fil'].filter_data[current_filter][3])), 2)  #g_dev['ocn'].calc_HSI_lux)  #meas_sky_lux)
+
+                    print('Ex: Scale  Prior Lux  filt_gain: ', exp_time, scale, prior_scale, sky_lux, float(g_dev['fil'].filter_data[current_filter][3]))
                     #exp_time*= 4.9/9/2
-                    if exp_time > 120:
-                        exp_time = 120    #Live with this limit.
+                    if exp_time > 90:
+                        exp_time = 90    #Live with this limit.
                     if exp_time <0.001:
                         exp_time = 0.001
                     exp_time = round(exp_time, 4)
@@ -1000,22 +1000,24 @@ class Sequencer:
                 except:
                     exp_time = 0.3
                 req = {'time': float(exp_time),  'alias': camera_name, 'image_type': 'sky flat', 'script': 'On'}
-                opt = { 'count': 1, 'bin':  '2,2', 'area': 150, 'filter': g_dev['fil'].filter_data[current_filter][0]}
+                opt = { 'count': 1, 'bin':  '2,2', 'area': 'full', 'filter': g_dev['fil'].filter_data[current_filter][0]}
                 print("using:  ", g_dev['fil'].filter_data[current_filter][0])
                
                 try:
                     result = g_dev['cam'].expose_command(req, opt, no_AWS=True, do_sep = False)
+
                     bright = result['patch']    #  Patch should be circular and 20% of Chip area. ToDo project
                 except:
                     print('*****NO result returned*****')
                     continue
                 g_dev['obs'].update_status()
+   
                 try:
-                    scale = 25000/bright
-                    if scale > 5:
-                        scale = 5
-                    if scale < 0.33:
-                        scale = 0.33
+                    scale = bright_goal/bright
+                     if scale > 40:
+                        scale = 40
+                    if scale < 0.025:
+                        scale = 0.025
                 except:
                     scale = 1.0
 
@@ -1024,9 +1026,10 @@ class Sequencer:
 
                 obs_win_begin, sunset, sunrise, ephem_now = self.astro_events.getSunEvents()
                 #  THE following code looks like a debug patch gone rogue.
-                if ephem_now < g_dev['events']['End Eve Sky Flats']:
-                    break
-                if bright > 30000 and (ephem_now < g_dev['events']['End Eve Sky Flats']):    #NB should gate with end of skyflat window as well.
+                pass #if ephem_now < g_dev['events']['End Eve Sky Flats']:
+                pass #    break
+
+                if bright > reject_level and (ephem_now < g_dev['events']['End Eve Sky Flats']):    #NB should gate with end of skyflat window as well.
                     for i in range(1):
                         time.sleep(5)  #  #0 seconds of wait time.  Maybe shorten for wide bands?
                         g_dev['obs'].update_status()
