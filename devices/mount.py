@@ -897,7 +897,7 @@ class Mount:
                 dec +=  dec_cal_offset + self.dec_offset              
         pier_east = 1
         if self.flip_correction_needed:   #self.config.flip_correction_needed woul dbe more readable.
-            breakpoint()
+
             pier_east = 0
             #pier_west = 1
             #pier_unknown = -1
@@ -1179,6 +1179,7 @@ class Mount:
         mnt_shelf = shelve.open(self.site_path + 'ptr_night_shelf/' + 'mount1')
         init_ra = mnt_shelf['ra_cal_offset']
         init_dec = mnt_shelf['dec_cal_offset']     # NB NB THese need to be modulo corrected, mayby limited
+
         print("initial:  ", init_ra, init_dec)
         mnt_shelf['ra_cal_offset'] = init_ra + err_ha
         mnt_shelf['dec_cal_offset'] = init_dec + err_dec
