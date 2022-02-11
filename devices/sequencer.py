@@ -1199,11 +1199,11 @@ class Sequencer:
             print("Going to near focus star " + str(focus_star[0][0]) + "  degrees away.")
             g_dev['mnt'].go_coord(focus_star[0][1][1], focus_star[0][1][0])
             req = {'time': 12.5,  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'auto_focus'}   #  NB Should pick up filter and constats from config
-            opt = {'area': 150, 'count': 1, 'bin': '2, 2', 'filter': 'foc'}
+            opt = {'area': 150, 'count': 1, 'bin': '2, 2', 'filter': 'focus'}
         else:
             pass   #Just take an image where currently pointed.
             req = {'time': 15,  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'auto_focus'}   #  NB Should pick up filter and constats from config
-            opt = {'area': 150, 'count': 1, 'bin': '2, 2', 'filter': 'foc'}
+            opt = {'area': 150, 'count': 1, 'bin': '2, 2', 'filter': 'focus'}
         foc_pos0 = focus_start
         result = {}
         #print("temporary patch in Sim values")
@@ -1226,7 +1226,7 @@ class Sequencer:
             else:
                 break
         print('Autofocus Moving In.\n\n')
-        g_dev['foc'].focuser.Move((foc_pos0 - throw)*g_dev['foc'].micron_to_steps)
+        g_dev['foc'].focuser.Move((foc_pos0 - 1*throw)*g_dev['foc'].micron_to_steps)
         #opt['fwhm_sim'] = 4.
         if not sim:
             result = g_dev['cam'].expose_command(req, opt, no_AWS=True) ## , script = 'auto_focus_script_1')  #  This is moving in one throw.
@@ -1366,7 +1366,7 @@ class Sequencer:
         else:
             foc_start = begin_at  #In this case we start at a place close to a 3 point minimum. 
             g_dev['foc'].focuser.Move((foc_start)*g_dev['foc'].micron_to_steps)
-        print("Saved ra dec focus:  ", start_ra, start_dec, foc_start)
+        print("Saved ra, dec, focus:  ", start_ra, start_dec, foc_start)
         try:
             #Check here for filter, guider, still moving  THIS IS A CLASSIC
             #case where a timeout is a smart idea.
@@ -1391,11 +1391,11 @@ class Sequencer:
             print("Going to near focus star " + str(focus_star[0][0]) + "  degrees away.")
             g_dev['mnt'].go_coord(focus_star[0][1][1], focus_star[0][1][0])
             req = {'time': 12.5,  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'auto_focus'}   #  NB Should pick up filter and constats from config
-            opt = {'area': 100, 'count': 1, 'filter': 'foc'}
+            opt = {'area': 100, 'count': 1, 'filter': 'focus'}
         else:
             pass   #Just take time image where currently pointed.
             req = {'time': 15,  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'auto_focus'}   #  NB Should pick up filter and constats from config
-            opt = {'area': 100, 'count': 1, 'filter': 'foc'}
+            opt = {'area': 100, 'count': 1, 'filter': 'focus'}
         foc_pos0 = foc_start
         result = {}
         print('Autofocus Starting at:  ', foc_pos0, '\n\n')
@@ -1418,7 +1418,7 @@ class Sequencer:
         
         
         print('Autofocus Moving In -1x, second time.\n\n')
-        g_dev['foc'].focuser.Move((foc_pos0 - throw)*g_dev['foc'].micron_to_steps)
+        g_dev['foc'].focuser.Move((foc_pos0 - 1*throw)*g_dev['foc'].micron_to_steps)
         #opt['fwhm_sim'] = 4.
         if not sim:
             result = g_dev['cam'].expose_command(req, opt, no_AWS=True)
