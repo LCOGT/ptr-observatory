@@ -214,8 +214,10 @@ class Mount:
         self.prior_roll_rate = 0
         self.prior_pitch_rate = 0
         self.offset_received = False
-        self.west_ha_correction_r = config['mount']['mount1']['west_ha_correction_r']
-        self.west_dec_correction_r = config['mount']['mount1']['west_dec_correction_r']
+        self.west_ha_correction_r = config['mount']['mount1']['west_ha_correction']   #  NB NB NB these do not exist in config!!!
+        self.west_dec_correction_r = config['mount']['mount1']['west_dec_correction']
+        #self.east_ra_correction = config['mount']['mount1']['east_ha_correction']
+        #self.east_dec_correction = config['mount']['mount1']['east_dec_correction']
         self.refraction = 0
         self.target_az = 0   #Degrees Azimuth
         self.ha_corr = 0
@@ -715,6 +717,12 @@ class Mount:
             if self.mount.AtPark:
                 self.mount.Unpark()
         try:
+            clutch_ra = g_dev['mnt']['mount_1']['east_clutch_ra_correction']
+            clutch_dec = g_dev['mnt']['mount_1']['east_clutch_dec_correction']
+        except:
+            clutch_ra = 0.0
+            clutch_dec = 0.0
+        try:
             icrs_ra, icrs_dec = self.get_mount_coordinates()
             if offset:   #This offset version supplies offsets as a fraction of the Full field.
                 #note it is based on mount coordinates.
@@ -729,8 +737,8 @@ class Mount:
                 field_x = x_field_deg/15.   #  /15 for hours.
                 field_y = y_field_deg
                 #20210317 Changed signs fron Neyle.  NEEDS CONFIG File level or support.
-                self.ra_offset = offset_x*field_x   # /4   #NB NB 20201230 Signs needs to be verified. 20210904 used to be +=, which did not work.
-                self.dec_offset = -offset_y*field_y # /4    #NB where the 4 come from?                print("Offsets:  ", round(self.ra_offset, 5), round(self.dec_offset, 4))
+                self.ra_offset = -offset_x*field_x/4   #NB NB 20201230 Signs needs to be verified. 20210904 used to be +=, which did not work.
+                self.dec_offset = offset_y*field_y/4    #NB where the 4 come from?                print("Offsets:  ", round(self.ra_offset, 5), round(self.dec_offset, 4))
                 if not self.offset_received:
                     self.ra_prior, self.dec_prior = icrs_ra, icrs_dec #Do not let this change.
                 self.offset_received = True   # NB Above we are accumulating offsets, but should not need to.
@@ -872,7 +880,7 @@ class Mount:
                 ra_cal_offset, dec_cal_offset = self.get_mount_reference() 
             except:
                 try:
-                    a_cal_offset, dec_cal_offset = self.get_mount_reference() 
+                    ra_cal_offset, dec_cal_offset = self.get_mount_reference() 
                     ra_cal_offset, dec_cal_offset = self.get_mount_reference() 
                 except:
                     ra_cal_offset = 0
@@ -883,19 +891,20 @@ class Mount:
             jnow_coord = icrs_coord.transform_to(FK5(equinox=self.equinox_now))
             ra = jnow_coord.ra.hour
             dec = jnow_coord.dec.degree
-            breakpoint
+ 
             if self.offset_received:
                 ra +=  ra_cal_offset + self.ra_offset          #Offsets are J.now and used to get target on Browser Crosshairs.
                 dec +=  dec_cal_offset + self.dec_offset              
         pier_east = 1
         if self.flip_correction_needed:   #self.config.flip_correction_needed woul dbe more readable.
+            breakpoint()
             pier_east = 0
             #pier_west = 1
             #pier_unknown = -1
             try:
                 new_pierside = self.mount.DestinationSideOfPier(ra, dec)  # A tuple gets returned.
                 if new_pierside[0] == pier_east:
-                    ra += self.east_ra_correction  #NB it takes a restart to pick up a new correction which is also J.now.
+                    ra += self.east_ha_correction  #NB it takes a restart to pick up a new correction which is also J.now.
                     dec += self.east_dec_correction
             except:
                 #DestSide... not implemented in PWI_4
@@ -1187,12 +1196,12 @@ class Mount:
     def get_mount_reference(self):
         try:
             mnt_shelf = shelve.open(self.site_path + 'ptr_night_shelf/' + 'mount1')
-            delta_ra = mnt_shelf['ra_cal_offset']
-            delta_dec = mnt_shelf['dec_cal_offset']
+            delta_ra = mnt_shelf['ra_cal_offset'] + g_dev['mnt']['mount_1']['east_clutch_ra_correction']
+            delta_dec = mnt_shelf['dec_cal_offset'] +  g_dev['mnt']['mount_1']['east_clutch_dec_correction']
             mnt_shelf.close()
         except:
-            delta_ra = 0.0
-            delta_dec = 0.0 #  Presumably QNAP can be down while upgrading.
+            delta_ra = self.config['mount']['mount1']['east_clutch_ra_correction']
+            delta_dec = self.config['mount']['mount1']['east_clutch_dec_correction']#  Presumably QNAP can be down while upgrading.
         return delta_ra, delta_dec
 
     def reset_mount_reference(self):
