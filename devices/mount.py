@@ -759,7 +759,7 @@ class Mount:
                 self.ra_offset = -offset_x*field_x  #/4   #NB NB 20201230 Signs needs to be verified. 20210904 used to be +=, which did not work.
                 self.dec_offset = offset_y*field_y  #/4    #NB where the 4 come from?                print("Offsets:  ", round(self.ra_offset, 5), round(self.dec_offset, 4))
                 print('Offsets:  ', offset_x, self.ra_offset, offset_y, self.dec_offset)
-                breakpoint()
+                
                 if not self.offset_received:
                     self.ra_prior, self.dec_prior = icrs_ra, icrs_dec #Do not let this change.
                 self.offset_received = True   # NB Above we are accumulating offsets, but should not need to.
@@ -899,22 +899,26 @@ class Mount:
         #Note this initiates a mount move.  WE should Evaluate if the destination is on the flip side and pick up the
         #flip offset.  So a GEM could track into positive HA territory without a problem but the next reseek should
         #result in a flip.  So first figure out if there will be a flip:
-    
+
+       
+        new_pierside =  self.mount.DestinationSideOfPier(ra, dec) #  A tuple gets returned: (pierside, Ra.h and dec.d)  
         try:
-            new_pierside = self.mount.DestinationSideOfPier(ra, dec)  #  A tuple gets returned: (pierside, Ra.h and dec.d)  
-                                                                      #  NB NB Might be good to log is flipping on a re-seek.
-            if new_pierside[0] == 0:
-                breakpoint()
+                                                             #  NB NB Might be good to log is flipping on a re-seek.
+            if len(new_pierside) > 1:
+                if new_pierside[0] == 0:
+                    delta_ra, delta_dec = self.get_mount_reference()
+                    pier_east = 1
+                else:
+                    delta_ra, delta_dec = self.get_flip_reference()
+                    pier_east = 0
+        except:
+            if new_pierside == 0:
                 delta_ra, delta_dec = self.get_mount_reference()
                 pier_east = 1
             else:
-                breakpoint()
                 delta_ra, delta_dec = self.get_flip_reference()
                 pier_east = 0
 
-        except:
-            #DestSide... not implemented in PWI_4
-            delta_ra, delta_dec = self.get_mount_reference()
         #Update incoming ra and dec with mounting offsets.
         ra += delta_ra #NB it takes a restart to pick up a new correction which is also J.now.
         dec += delta_dec
