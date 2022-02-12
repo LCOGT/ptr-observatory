@@ -12,7 +12,7 @@ NB NB NB  If we have one config file then paths need to change depending upon wh
 #2345678901234567890123456789012345678901234567890123456789012345678901234567890
 import json
 import time
-import ptr_events
+#import ptr_events
 #from pprint import pprint
 
 
@@ -189,11 +189,11 @@ site_config = {
             'default_zenith_avoid': 0.0,   # degrees floating, 0.0 means do not apply this constraint.
             'has_paddle': False,       # paddle refers to something supported by the Python code, not the AP paddle.
             'pointing_tel': 'tel1',     # This can be changed to 'tel2'... by user.  This establishes a default.
-            'east_clutch_ra_correction': -0.04708142482866595,
-            'east_clutch_dec_correction': -0.45302431722934067,   #20220208 WER
-            'west_ha_correction':  0.05,  # -52*0.5751/3600/15,    #incoming unit is pixels,
+            'west_clutch_ra_correction': -0.04708142482866595,
+            'west_clutch_dec_correction': -0.45302431722934067,   #20220208 WER
+            'east_ha_correction':  0.05,  # -52*0.5751/3600/15,    #incoming unit is pixels,
                                            #   outgoing is min or degrees. 20201230
-            'west_dec_correction': -0.25,  # 356*0.5751/3600,  #Altair was Low and right, so too South and too West.
+            'east_dec_correction': -0.25,  # 356*0.5751/3600,  #Altair was Low and right, so too South and too West.
                 'latitude_offset': 0.0,     # Decimal degrees, North is Positive   These *could* be slightly different than site.
                 'longitude_offset': 0.0,   # Decimal degrees, West is negative  #NB This could be an eval( <<site config data>>))
                 'elevation_offset': 0.0,  # meters above sea level
@@ -229,7 +229,7 @@ site_config = {
                 },
             },
 
-        
+}       
 
     'telescope': {                            # OTA = Optical Tube Assembly.
         'telescope1': {
