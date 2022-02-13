@@ -189,8 +189,8 @@ site_config = {
             'pointing_tel': 'tel1',     #This can be changed to 'tel2'... by user.  This establishes a default.
             'west_clutch_ra_correction':  0.0, #
             'west_clutch_dec_correction': 0.0, #
-            'east_flip_ra_correction':  0.0, #
-            'east_flip_dec_correction': 0.0,  #
+            'east_clutch_ra_correction':  0.0, #
+            'east_clutch_dec_correction': 0.0,  #
             'settings': {
 			    'latitude_offset': 0.0,     #Decimal degrees, North is Positive   These *could* be slightly different than site.
 			    'longitude_offset': 0.0,   #Decimal degrees, West is negative  #NB This could be an eval( <<site config data>>))

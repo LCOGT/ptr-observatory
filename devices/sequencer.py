@@ -277,11 +277,10 @@ class Sequencer:
         if g_dev['obs'].status_count < 3:
             return
         obs_win_begin, sunZ88Op, sunZ88Cl, ephem_now = self.astro_events.getSunEvents()
-        
+
         ocn_status = g_dev['ocn'].status
         enc_status = g_dev['enc'].status
         events = g_dev['events']
-
         #g_dev['obs'].update_status()  #NB NEED to be sure we have current enclosure status.  Blows recursive limit
         self.current_script = "No current script"    #NB this is an unused remnant I think.
         #if True or     #Note this runs in Manual Mode as well.
@@ -307,6 +306,7 @@ class Sequencer:
                and g_dev['enc'].mode == 'Automatic' and not g_dev['ocn'].wx_hold and \
                self.config['auto_eve_sky_flat']):
             self.sky_flat_latch = False
+
             #if enc_status['shutter_status'] in ['Closed', 'closed', 'Closing', 'closing']:
             self.enc_to_skyflat_and_open(enc_status, ocn_status)   #Just in case a Wx hold stopped opening      
 
@@ -315,13 +315,14 @@ class Sequencer:
             self.sky_flat_script({}, {})   #Null command dictionaries
             self.sky_flat_latch = False
             
-        elif enc_status['enclosure_mode'] == 'Automatic' and (events['Observing Begins'] <= ephem_now \
+        elif enc_status['enclosure_mode'] in ['Autonomous!', 'Automatic'] and (events['Observing Begins'] <= ephem_now \
                                    < events['Observing Ends']) and not g_dev['ocn'].wx_hold \
                                    and  g_dev['obs'].blocks is not None and g_dev['obs'].projects \
                                    is not None:
             blocks = g_dev['obs'].blocks
             projects = g_dev['obs'].projects
             debug = False
+
             if debug:
                 print("# of Blocks, projects:  ", len(g_dev['obs'].blocks),  len(g_dev['obs'].projects))
             # NB without deepcopy decrementing counts in blocks will be local to the machine an subject
@@ -342,8 +343,11 @@ class Sequencer:
  
             house = []
             for project in projects:
-                if project['user_id'] in config.site_config['owner']:  # and not expired, etc.
-                     house.append(project)
+                if block['project_id']  != 'none':
+                    if block['project_id'] == project['project_name'] + '#' + project['created_at']:
+                        block['project'] = project
+                else:
+                    print("Block has no specified project ID, sorry!   ", )
             '''
             evaluate supplied projects for observable and mark as same. Discard
             unobservable projects.  Projects may be "site" projects or 'ptr' (network wide:
@@ -398,6 +402,7 @@ class Sequencer:
             #print("No active script is scheduled.")
             return
     def take_lrgb_stack(self, req_None, opt=None):
+        return
 
         self.redis_server.set('sim_hold', True, ex=120)
             
@@ -844,53 +849,53 @@ class Sequencer:
                 if ephem.now() >= g_dev['events']['End Eve Bias Dark']:
                     break
            
-                # print("Expose Biases: b_3")   
-                # dark_time = 240
-                # #for bias in range(9):
-                # req = {'time': 0.0,  'script': 'True', 'image_type': 'bias'}
-                # opt = {'area': "Full", 'count': 9, 'bin':'3 3', \
-                #         'filter': 'dark'}
-                # result = g_dev['cam'].expose_command(req, opt, no_AWS=True, \
-                #                 do_sep=False, quick=False)
-                # g_dev['obs'].update_status()
+                print("Expose Biases: b_3")   
+                dark_time = 240
+                #for bias in range(9):
+                req = {'time': 0.0,  'script': 'True', 'image_type': 'bias'}
+                opt = {'area': "Full", 'count': 9, 'bin':'3 3', \
+                        'filter': 'dark'}
+                result = g_dev['cam'].expose_command(req, opt, no_AWS=True, \
+                                do_sep=False, quick=False)
+                g_dev['obs'].update_status()
 
-                # print("Expose d_3 using exposure:  ", dark_time )
-                # req = {'time':dark_time,  'script': 'True', 'image_type': 'dark'}
-                # opt = {'area': "Full", 'count':1, 'bin':'3 3', \
-                #         'filter': 'dark'} 
-                # result = g_dev['cam'].expose_command(req, opt, no_AWS=True, \
-                #                     do_sep=False, quick=False)
-                # print('Last dark result:  ', result)
-                # g_dev['obs'].update_status()
+                print("Expose d_3 using exposure:  ", dark_time )
+                req = {'time':dark_time,  'script': 'True', 'image_type': 'dark'}
+                opt = {'area': "Full", 'count':1, 'bin':'3 3', \
+                        'filter': 'dark'} 
+                result = g_dev['cam'].expose_command(req, opt, no_AWS=True, \
+                                    do_sep=False, quick=False)
+                print('Last dark result:  ', result)
+                g_dev['obs'].update_status()
                 
-                # if ephem.now() >= g_dev['events']['End Eve Bias Dark']:
-                #     break
-                # print("Expose Biases: b_4") 
-                # dark_time = 120
-                # for bias in range(9):
-                #     req = {'time': 0.0,  'script': 'True', 'image_type': 'bias'}
-                #     opt = {'area': "Full", 'count': 7, 'bin':'4 4', \
-                #             'filter': 'dark'}
-                #     result = g_dev['cam'].expose_command(req, opt, no_AWS=True, \
-                #                     do_sep=False, quick=False)
-                #     g_dev['obs'].update_status()
+                if ephem.now() >= g_dev['events']['End Eve Bias Dark']:
+                    break
+                print("Expose Biases: b_4") 
+                dark_time = 120
+                for bias in range(9):
+                    req = {'time': 0.0,  'script': 'True', 'image_type': 'bias'}
+                    opt = {'area': "Full", 'count': 7, 'bin':'4 4', \
+                            'filter': 'dark'}
+                    result = g_dev['cam'].expose_command(req, opt, no_AWS=True, \
+                                    do_sep=False, quick=False)
+                    g_dev['obs'].update_status()
     
     
-                #     print("Expose d_4 using exposure:  ", dark_time )
-                #     req = {'time':dark_time ,  'script': 'True', 'image_type': 'dark'}
-                #     opt = {'area': "Full", 'count':1, 'bin': '4 4', \
-                #             'filter': 'dark'} 
-                #     result = g_dev['cam'].expose_command(req, opt, no_AWS=True, \
-                #                         do_sep=False, quick=False)
+                    print("Expose d_4 using exposure:  ", dark_time )
+                    req = {'time':dark_time ,  'script': 'True', 'image_type': 'dark'}
+                    opt = {'area': "Full", 'count':1, 'bin': '4 4', \
+                            'filter': 'dark'} 
+                    result = g_dev['cam'].expose_command(req, opt, no_AWS=True, \
+                                        do_sep=False, quick=False)
     
-                #     g_dev['obs'].update_status()
+                    g_dev['obs'].update_status()
 
                 if ephem.now() >= g_dev['events']['End Eve Bias Dark']:
                     break
 
 
 
-            print(" Bias/Dark acquisition is finished.")
+            print(" Bias/Dark acquisition is finished normally.")
  
 
         self.sequencer_hold = False
@@ -923,11 +928,14 @@ class Sequencer:
         #breakpoint()
         camera_name = str(self.config['camera']['camera_1_1']['name'])
         flat_count = 7
-        exp_time = .0015
+        min_exposure = float(self.config['camera']['camera_1_1']['min_exposure']) 
+        exp_time = min_exposure # added 20220207 WER
         #  NB Sometime, try 2:2 binning and interpolate a 1:1 flat.  This might run a lot faster.
         if flat_count < 1: flat_count = 1
         sim = False# g_dev['enc'].status['shutter_status'] in ['Closed', 'closed', 'Closing', 'closing']
-        if sim: breakpoint()
+        # if sim: 
+        #     pass
+        # 'min_exposure'
         # if g_dev['mnt'].mount.AtPark:
         #     g_dev['mnt'].unpark_command({}, {})
         # g_dev['mnt'].slewToSkyFlatAsync()
@@ -1135,16 +1143,17 @@ class Sequencer:
                         result['patch'] = cal_result
                         result['temperature'] = avg_foc[2]  This is probably tube not reported by Gemini.
         '''
-        if self.config['site'] in ['fat']:
-            throw = 225
-        if self.config['site'] in ['saf']:
+        if self.config['site'] in ['sro']:   #NB this should be a site config key in the focuser or computed from f-ratio.
+            throw = 250
+        if self.config['site'] in ['saf']:  #  NB NB f4.9 this belongs in config, not in the code body!!!!
             throw = 400
         self.sequencer_hold = False   #Allow comand checks.
         self.guard = False
+        self.af_guard = True
 
         req2 = copy.deepcopy(req)
         opt2 = copy.deepcopy(opt)
-        self.af_guard = True
+
         sim = False  # g_dev['enc'].status['shutter_status'] in ['Closed', 'Closing', 'closed', 'closing']
         
         # try:
@@ -1167,11 +1176,11 @@ class Sequencer:
 
             #20210817  g_dev['enc'] does not exist,  so this faults. Cascade problem with user_id...
             while g_dev['foc'].focuser.IsMoving or g_dev['rot'].rotator.IsMoving or \
-                  g_dev['mnt'].mount.Slewing or g_dev['enc'].status['dome_slewing']:   #Filter is moving??
+                  g_dev['mnt'].mount.Slewing: #or g_dev['enc'].status['dome_slewing']:   #Filter is moving??
                 if g_dev['foc'].focuser.IsMoving: st += 'f>'
                 if g_dev['rot'].rotator.IsMoving: st += 'r>'
                 if g_dev['mnt'].mount.Slewing: st += 'm>'
-                if g_dev['enc'].status['dome_slewing']: st += 'd>'
+                #if g_dev['enc'].status['dome_slewing']: st += 'd>'
                 print(st)
                 st = ""
                 time.sleep(0.2)
@@ -1190,15 +1199,16 @@ class Sequencer:
             print("Going to near focus star " + str(focus_star[0][0]) + "  degrees away.")
             g_dev['mnt'].go_coord(focus_star[0][1][1], focus_star[0][1][0])
             req = {'time': 12.5,  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'auto_focus'}   #  NB Should pick up filter and constats from config
-            opt = {'area': 150, 'count': 1, 'bin': '2, 2', 'filter': 'w'}
+            opt = {'area': 150, 'count': 1, 'bin': '2, 2', 'filter': 'focus'}
         else:
             pass   #Just take an image where currently pointed.
             req = {'time': 15,  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'auto_focus'}   #  NB Should pick up filter and constats from config
-            opt = {'area': 150, 'count': 1, 'bin': '2, 2', 'filter': 'w'}
+            opt = {'area': 150, 'count': 1, 'bin': '2, 2', 'filter': 'focus'}
         foc_pos0 = focus_start
         result = {}
         #print("temporary patch in Sim values")
         print('Autofocus Starting at:  ', foc_pos0, '\n\n')
+        g_dev['foc'].focuser.Move((foc_pos0 - 0* throw)*g_dev['foc'].micron_to_steps)   # NB added 20220209 Nasty bug, varies with prior state
         #throw = throw  # NB again, from config.  Units are microns  Passed as default paramter
         retry = 0
         while retry < 3:
@@ -1216,7 +1226,7 @@ class Sequencer:
             else:
                 break
         print('Autofocus Moving In.\n\n')
-        g_dev['foc'].focuser.Move((foc_pos0 - throw)*g_dev['foc'].micron_to_steps)
+        g_dev['foc'].focuser.Move((foc_pos0 - 1*throw)*g_dev['foc'].micron_to_steps)
         #opt['fwhm_sim'] = 4.
         if not sim:
             result = g_dev['cam'].expose_command(req, opt, no_AWS=True) ## , script = 'auto_focus_script_1')  #  This is moving in one throw.
@@ -1226,10 +1236,11 @@ class Sequencer:
         spot2 = result['FWHM']
         foc_pos2 = result['mean_focus']
         print('Autofocus Overtaveling Out.\n\n')
-        g_dev['foc'].focuser.Move((foc_pos0 + 2*throw)*g_dev['foc'].micron_to_steps)   #It is important to overshoot to overcome any backlash
+        g_dev['foc'].focuser.Move((foc_pos0 + 2*throw)*g_dev['foc'].micron_to_steps)
+        time.sleep(10)#It is important to overshoot to overcome any backlash  WE need to be sure Exposure waits.
         print('Autofocus Moving back in half-way.\n\n')
         g_dev['foc'].focuser.Move((foc_pos0 + throw)*g_dev['foc'].micron_to_steps)  #NB NB NB THIS IS WRONG!
-        #opt['fwhm_sim'] = 5
+        time.sleep(10)#opt['fwhm_sim'] = 5
         if not sim:
             result = g_dev['cam'].expose_command(req, opt, no_AWS=True) ## , script = 'auto_focus_script_2')  #  This is moving out one throw.
         else:
@@ -1246,6 +1257,9 @@ class Sequencer:
             self.sequencer_hold = False   #Allow comand checks.
             self.af_guard = False
             g_dev['mnt'].mount.SlewToCoordinatesAsync(start_ra, start_dec)
+            self.sequencer_hold = False   
+            self.guard = False
+            self.af_guard = False
             return
         if spot1 < spot2 and spot1 < spot3:
             try:
@@ -1257,22 +1271,28 @@ class Sequencer:
     
                 print('Autofocus quadratic equation not converge. Moving back to starting focus:  ', focus_start)
                 g_dev['foc'].focuser.Move((focus_start)*g_dev['foc'].micron_to_steps)
+                time.sleep(5)
                 self.sequencer_hold = False   #Allow comand checks.
                 self.af_guard = False
                 g_dev['mnt'].mount.SlewToCoordinatesAsync(start_ra, start_dec)
-                return            
+                self.sequencer_hold = False   
+                self.guard = False
+                self.af_guard = False
+                return           
             if min(x) <= d1 <= max(x):
                 print ('Moving to Solved focus:  ', round(d1, 2), ' calculated:  ',  new_spot)
                 pos = int(d1*g_dev['foc'].micron_to_steps)
                 
                 
                 g_dev['foc'].focuser.Move(pos)
+                time.sleep(5)
                 g_dev['foc'].last_known_focus = d1
                 try:
                     g_dev['foc'].last_temperature = g_dev['foc'].focuser.Temperature
                 except:
-                    g_dev['foc'].last_temperature = 7.5
+                    g_dev['foc'].last_temperature = 7.5    #NB NB NB this should be a config file default.
                 g_dev['foc'].last_source = "auto_focus_script"
+                
                 if not sim:
                     result = g_dev['cam'].expose_command(req, opt, no_AWS=True, solve_it=True)  #   script = 'auto_focus_script_3')  #  This is verifying the new focus.
                 else:
@@ -1287,10 +1307,12 @@ class Sequencer:
             if sim:
                 g_dev['foc'].focuser.Move((focus_start)*g_dev['foc'].micron_to_steps)
             #  NB here we could re-solve with the overlay spot just to verify solution is sane.
-            self.sequencer_hold = False   #Allow comand checks.
-            self.af_guard = False
+
             #  NB NB We may want to consider sending the result image patch to AWS
             # NB NB NB I think we may have spot numbers wrong by 1 count and coarse focs not set up correctly.
+            self.sequencer_hold = False   
+            self.guard = False
+            self.af_guard = False
             return
         elif spot2 <= spot1 or spot3 <= spot1:
             if spot2 <= spot3: 
@@ -1299,7 +1321,9 @@ class Sequencer:
                 min_focus = foc_pos3
             print("It appears camera is too far out; try again with coarse_focus_script.")
             self.coarse_focus_script(req2, opt2, throw=throw + 75, begin_at=min_focus)
-
+            self.sequencer_hold = False   
+            self.guard = False
+            self.af_guard = False
             return
         else:
             print('Spots are really wrong so moving back to starting focus:  ', focus_start)
@@ -1312,6 +1336,9 @@ class Sequencer:
         self.sequencer_hold = False   #Allow comand checks.
         self.af_guard = False
         #  NB NB We may want to consider sending the result image patch to AWS
+        self.sequencer_hold = False   
+        self.guard = False
+        self.af_guard = False
         return
 
 
@@ -1326,7 +1353,9 @@ class Sequencer:
         NBNBNB This code needs to go to known stars to be moe relaible and permit subframes
         '''
         print('AF entered with:  ', req, opt)
-        self.guard = True
+        self.sequencer_hold = False   
+        self.guard = False
+        self.af_guard = True
         sim = False #g_dev['enc'].status['shutter_status'] in ['Closed', 'closed', 'Closing', 'closing']
         print('AF entered with:  ', req, opt, '\n .. and sim =  ', sim)
         #self.sequencer_hold = True  #Blocks command checks.
@@ -1337,18 +1366,18 @@ class Sequencer:
         else:
             foc_start = begin_at  #In this case we start at a place close to a 3 point minimum. 
             g_dev['foc'].focuser.Move((foc_start)*g_dev['foc'].micron_to_steps)
-        print("Saved ra dec focus:  ", start_ra, start_dec, foc_start)
+        print("Saved ra, dec, focus:  ", start_ra, start_dec, foc_start)
         try:
             #Check here for filter, guider, still moving  THIS IS A CLASSIC
             #case where a timeout is a smart idea.
             #Wait for external motion to cease before exposing.  Note this precludes satellite tracking.
             st = "" 
             while g_dev['foc'].focuser.IsMoving or g_dev['rot'].rotator.IsMoving or \
-                  g_dev['mnt'].mount.Slewing or g_dev['enc'].status['dome_slewing']:   #Filter is moving??
+                  g_dev['mnt'].mount.Slewing: #or g_dev['enc'].status['dome_slewing']:   #Filter is moving??
                 if g_dev['foc'].focuser.IsMoving: st += 'f>'
                 if g_dev['rot'].rotator.IsMoving: st += 'r>'
                 if g_dev['mnt'].mount.Slewing: st += 'm>'
-                if g_dev['enc'].status['dome_slewing']: st += 'd>'
+                #if g_dev['enc'].status['dome_slewing']: st += 'd>'
                 print(st)
                 st = ""
                 time.sleep(0.2)
@@ -1362,14 +1391,15 @@ class Sequencer:
             print("Going to near focus star " + str(focus_star[0][0]) + "  degrees away.")
             g_dev['mnt'].go_coord(focus_star[0][1][1], focus_star[0][1][0])
             req = {'time': 12.5,  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'auto_focus'}   #  NB Should pick up filter and constats from config
-            opt = {'area': 100, 'count': 1, 'filter': 'w'}
+            opt = {'area': 100, 'count': 1, 'filter': 'focus'}
         else:
             pass   #Just take time image where currently pointed.
             req = {'time': 15,  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'auto_focus'}   #  NB Should pick up filter and constats from config
-            opt = {'area': 100, 'count': 1, 'filter': 'w'}
+            opt = {'area': 100, 'count': 1, 'filter': 'focus'}
         foc_pos0 = foc_start
         result = {}
         print('Autofocus Starting at:  ', foc_pos0, '\n\n')
+        g_dev['foc'].focuser.Move((foc_pos0 - 0*throw)*g_dev['foc'].micron_to_steps)  #Added 20220209! A bit late
         #throw = 100  # NB again, from config.  Units are microns
         if not sim:
             result = g_dev['cam'].expose_command(req, opt, no_AWS=True)
@@ -1387,8 +1417,8 @@ class Sequencer:
         # foc_pos1 = result['mean_focus']
         
         
-        
-        g_dev['foc'].focuser.Move((foc_pos0 - throw)*g_dev['foc'].micron_to_steps)
+        print('Autofocus Moving In -1x, second time.\n\n')
+        g_dev['foc'].focuser.Move((foc_pos0 - 1*throw)*g_dev['foc'].micron_to_steps)
         #opt['fwhm_sim'] = 4.
         if not sim:
             result = g_dev['cam'].expose_command(req, opt, no_AWS=True)
@@ -1397,7 +1427,7 @@ class Sequencer:
             result['mean_focus'] = g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron
         spot2 = result['FWHM']
         foc_pos2 = result['mean_focus']
-        print('Autofocus Moving In, second time.\n\n')
+        print('Autofocus Moving In -2x, second time.\n\n')
         g_dev['foc'].focuser.Move((foc_pos0 - 2*throw)*g_dev['foc'].micron_to_steps)
         #opt['fwhm_sim'] = 4.
         if not sim:
@@ -1408,9 +1438,9 @@ class Sequencer:
         spot3 = result['FWHM']
         foc_pos3 = result['mean_focus']
         #Need to check we are not going out too far!
-        print('Autofocus Moving out 4X.\n\n')
+        print('Autofocus Moving out +3X.\n\n')
         g_dev['foc'].focuser.Move((foc_pos0 + 3*throw)*g_dev['foc'].micron_to_steps)
-        print('Autofocus back in for backlash\n\n')#It is important to overshoot to overcome any backlash
+        print('Autofocus back in for backlash to +2X\n\n')#It is important to overshoot to overcome any backlash
         g_dev['foc'].focuser.Move((foc_pos0 + 2*throw)*g_dev['foc'].micron_to_steps)
         #opt['fwhm_sim'] = 5
         if not sim:
@@ -1420,6 +1450,7 @@ class Sequencer:
             result['mean_focus'] = g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron
         spot4 = result['FWHM']
         foc_pos4 = result['mean_focus']
+        print('Autofocus back in for backlash to +1X\n\n')
         g_dev['foc'].focuser.Move((foc_pos0 + throw)*g_dev['foc'].micron_to_steps)
         #opt['fwhm_sim'] = 4.
         if not sim:
@@ -1439,7 +1470,8 @@ class Sequencer:
         except:
             print('Autofocus quadratic equation not converge. Moving back to starting focus:  ', foc_start)
             g_dev['foc'].focuser.Move((foc_start)*g_dev['foc'].micron_to_steps)
-            self.sequencer_hold = False   #Allow comand checks.
+            self.sequencer_hold = False   
+            self.guard = False
             self.af_guard = False
             return 
         if min(x) <= d1 <= max(x):
@@ -1448,16 +1480,23 @@ class Sequencer:
             pos = int(d1*g_dev['foc'].micron_to_steps)
             g_dev['foc'].focuser.Move(pos)
             g_dev['foc'].last_known_focus = d1
-            g_dev['foc'].last_temperature = 6.654321 #g_dev['foc'].focuser.Temperature
+            try:
+                g_dev['foc'].last_temperature = g_dev['foc'].focuser.Temperature
+            except:
+                g_dev['foc'].last_temperature = 10.0    #NB NB THis shoule be a site monthly default.
             g_dev['foc'].last_source = "coarse_focus_script"
             if not sim:
+                breakpoint()
                 result = g_dev['cam'].expose_command(req, opt, solve_it=True)
             else:
                 result['FWHM'] = new_spot
                 result['mean_focus'] = g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron
-            spot6 = result['FWHM']
-            foc_pos4 = result['mean_focus']
-            print('\n\n\nFound best focus at:  ', foc_pos4,' measured is:  ',  round(spot6, 2), '\n\n\n')
+            try:
+                spot6 = result['FWHM']
+                foc_pos4 = result['mean_focus']
+                print('\n\n\nFound best focus at:  ', foc_pos4,' measured is:  ',  round(spot6, 2), '\n\n\n')
+            except:
+                print('Known bug, Verifcation did not work. Returing to target using solved focus.')
         else:
             print('Coarse_focus did not converge. Moving back to starting focus:  ', foc_pos0)
             g_dev['foc'].focuser.Move((foc_start)*g_dev['foc'].micron_to_steps)
@@ -1465,9 +1504,9 @@ class Sequencer:
         g_dev['mnt'].mount.SlewToCoordinatesAsync(start_ra, start_dec)   #Return to pre-focus pointing.
         if sim:
             g_dev['foc'].focuser.Move((foc_start)*g_dev['foc'].micron_to_steps)
-        #  NB here we coudld re-solve with the overlay spot just to verify solution is sane.
-        self.sequencer_hold = False   #Allow comand checks.
+        self.sequencer_hold = False   
         self.guard = False
+        self.af_guard = False
         return result
 
 

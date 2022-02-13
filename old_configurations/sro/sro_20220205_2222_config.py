@@ -25,7 +25,6 @@ site_name = 'sro'
 
 site_config = {
     'site': str(site_name.lower()),
-    'site_id': 'sro',
     'debug_site_mode': False,
     'owner':  ['google-oauth2|112401903840371673242'],  # WER,  Or this can be 
                                                         # some aws handle.
@@ -33,18 +32,18 @@ site_config = {
     'admin_aliases': ["ANS", "WER", "KVH", "TELOPS", "TB", "DH", 'KC'],
     
     'client_hostname':  'SRO-0m30',
-    'client_path':  'F:/ptr/',  # Generic place for this host to stash misc stuff
-    'archive_path':  'F:/ptr/',  # Meant to be where /archive/<camera_id> is added by camera. 
+    'client_path':  'F:/ptr/',  # Generic place for this host to stash.
+    'client_read_share_path':  'F:/ptr/',  # Generic place for this host to stash.
+    'archive_path':  'F:/',  # Meant to be where /archive/<camera_id> is located.  Not wired in yet. 20220105
     'aux_archive_path':  None, # '//house-computer/saf_archive_2/archive/',  #  Path to auxillary backup disk. 
     'wema_is_active':  False,    #True if split computers used at a site.
     'wema_hostname':  [],  #  Prefer the shorter version
-    'dome_on_wema': False, #  Implying enclosure controlled by client.
-    'site_IPC_mechanism':  None,   # ['None', 'shares', 'redis']  Pick One
-    'wema_write_share_path':  None,   # This and below provide two different ways to define              
-    'client_read_share_path':  None,  #     a path to a network share.
+    'dome_on_wema': False,
+    'wema_write_share_path':  None,
+    'site_IPC_mechanism':  None,   # ['None', shares', 'shelves', 'redis']  Pick One
     'redis_ip': None,  #'127.0.0.1', None if no redis path present, 
-    'site_is_generic':  False,   # A simple single computer ASCOM site.
-    'site_is_specific':  True,  # Indicates some special code for this site, found at end of config.
+    'site_is_generic':  False,   # A simplee single computer ASCOM site.
+    'site_is_specific':  True,  # Indicates some special wx and enclosure code for this site, found at end of config.
     
         
     'host_wema_site_name':  'SRO',  #  The umbrella header for obsys in close geographic proximity.
@@ -52,7 +51,7 @@ site_config = {
     'airport_code':  'FAT  :  Fresno Air Terminal', 
     'location': 'Near Shaver Lake CA,  USA',
     'observatory_url': 'https://www.sierra-remote.com/',   #  This is meant to be optional
-    'observatory_logo': None,   # I expect these will ususally end up as .png format icons
+    'observatory_logo': None,   # I expect these will ususally enf up as .png
     'description':  '''Sierra Remote Observatories​ provide telescope Hosting for Remote Astronomical Imaging,
                        Data Acquisition, ​Satellite Tracking and Space Based Communications.
                     ''',    #  i.e, a multi-line text block supplied and eventually mark-up formatted by the owner.
@@ -187,10 +186,8 @@ site_config = {
             'default_zenith_avoid': 0.0,   #degrees floating, 0.0 means do not apply this constraint.
             'has_paddle': False,      #paddle refers to something supported by the Python code, not the AP paddle.
             'pointing_tel': 'tel1',     #This can be changed to 'tel2'... by user.  This establishes a default.
-            'west_clutch_ra_correction':  0.0, #
-            'west_clutch_dec_correction': 0.0, #
-            'east_flip_ra_correction':  0.0, #
-            'east_flip_dec_correction': 0.0,  #
+            'west_ha_correction_r':  0.0, #-52*0.5751/3600/15,    #incoming unit is pixels, outgoing is min or degrees. 20201230
+            'west_dec_correction_r': 0.0, #356*0.5751/3600,  #Altair was Low and right, so too South and too West.
             'settings': {
 			    'latitude_offset': 0.0,     #Decimal degrees, North is Positive   These *could* be slightly different than site.
 			    'longitude_offset': 0.0,   #Decimal degrees, West is negative  #NB This could be an eval( <<site config data>>))
@@ -358,7 +355,7 @@ site_config = {
             'ip_string': None,
             "dual_wheel": False,
             'settings': {
-                'filter_count': 11,   #  !!!! Tis must be correct as to the number of filters!!!!
+                'filter_count': 10,   #  !!!! Tis must be correct as to the number of filters!!!!
                 'home_filter':  0,
                 'default_filter': "PL",
                 'filter_reference': 0,   #  We choose to use W as the default filter.  Gains taken at F9, Ceravolo 300mm
@@ -374,8 +371,7 @@ site_config = {
                         ['O3',    [5,  5],     0, 1.84, [4.00 , 200], 'OIII'],    #6.
                         ['S2',    [6,  6],     0, .221, [10.0,  200], 'SII'],    #7.
                         ['air',   [7,  7], -1000, 100., [1.00,   70], 'air'],    #8.
-                        ['dark',  [6,  6],     0, .221, [   0,    0], 'dark'],   #9.
-                        ['LRGB',  [0,  0],     0, .221, [   0,    0], 'LRGB']],   #10.
+                        ['dark',  [6,  6],     0, .221, [   0,    0], 'dark']],   #9.
 
 
                 'filter_screen_sort':  [8, 1, 4, 3, 2, 6, 5, 7],   #  don't use narrow yet,  8, 10, 9], useless to try.
@@ -406,7 +402,7 @@ site_config = {
     'camera': {
         'camera_1_1': {
             'parent': 'telescope1',
-            'name': 'kb001ms',      #  Important because this points to a server file structure by that name.
+            'name': 'ob0001ms',      #  Important because this points to a server file structure by that name.
             'desc':  'SBIG16200',
             'service_date': '20211111',
             'driver': "Maxim.CCDCamera",  # "ASCOM.QHYCCD.Camera", ##  'ASCOM.FLI.Kepler.Camera',
@@ -473,8 +469,8 @@ site_config = {
                 'readout_speed': 0.4,
                 'saturate':  42000,    # e-.  This is a close guess, not measured, but taken from data sheet.
                 'max_linearity': 40000,
-                'fullwell_capacity': [45000, 45000, 45000, 45000],  #e-.   We need to sort out the units properly NB NB NB
-                'areas_implemented': ["Full", "600%", "500%", "450%", "300%", "220%", "150%", "133%", "Full", "Sqr", '71%', '50%',  '35%', '25%', '12%'],
+                'fullwell_capacity': 45000,   #e-.   We need to sort out the units properly NB NB NB
+                'areas_implemented': ["600%", "500%", "450%", "300%", "220%", "150%", "133%", "Full", "Sqr", '71%', '50%',  '35%', '25%', '12%'],
                 'default_area':  "Full",
                 'default_rotation': 0.0000,
                 'has_darkslide':  False,
@@ -534,6 +530,7 @@ last_good_daily_lines = 'n.a'
 def get_ocn_status(g_dev=None):
     global last_good_wx_fields, last_good_daily_lines   # NB NB NB Perhaps memo-ize these instead?
     if site_config['site'] == 'sro':   #  Belts and suspenders.
+
         try:
             wx = open('W:/sroweather.txt', 'r')
             wx_line = wx.readline()
@@ -707,6 +704,7 @@ def get_ocn_status(g_dev=None):
 
 def get_enc_status(g_dev=None):
     if site_config['site'] == 'sro':   #  Belts and suspenders.
+
         try:
             enc = open('R:/Roof_Status.txt')
             enc_text = enc.readline()

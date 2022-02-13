@@ -22,14 +22,14 @@ class Darkslide(object):
         self._com.write(b'@')
         self.slideStatus = 'open'
         self._com.close()
-        print("Darkside Opened.")
+        print("Darkslide Opened.")
     
     def closeDarkslide(self):
         self._com = serial.Serial(self.com_port, timeout=0.3)   #Com 12 for saf, needs fixing.
         self._com.write(b'A')
         self.slideStatus = 'closed'
         self._com.close()
-        print("Darkside Closed.")
+        print("Darkslide Closed.")
        
     def darkslideStatus(self):
         return self.slideStatus

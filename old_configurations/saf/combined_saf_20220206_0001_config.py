@@ -1,8 +1,8 @@
-
 # -*- coding: utf-8 -*-
 '''
+
 Created on Fri Feb 07,  11:57:41 2020
-Updated saf_wema_20220106_1705_config WER
+Updated 20220206T23:16 WER
 
 @author: wrosing
 
@@ -22,38 +22,48 @@ g_dev = None
 site_name = 'saf'
 site_config = {
     'site': str(site_name.lower()),
+    'site_id': 'saf',
     'debug_site_mode': False,
 
     'owner':  ['google-oauth2|102124071738955888216', 'google-oauth2|112401903840371673242'],  # Neyle,  Or this can be some aws handle.
-    'owner_alias': ['ANS'],
-    'admin_aliases': ["ANS", "WER", "TB", "DH", "KVH", 'KC'],
-    'site_is_generic':  False,   # A simple single computer ASCOM site.
-    'site_is_specific':  False,  # Indicates some special code for a single site.
+    'owner_alias': ['ANS', 'WER'],
+    'admin_aliases': ["ANS", "WER", 'KVH', "TELOPS", "TB", "DH", "KVH", 'KC'],
+    
+      # Indicates some special code for a single site.
                                  # Intention it is found in this file.
                                  # Fat is intended to be simple since 
                                  # there is so little to control.
-    'site_path':  'C:/ptr/',     # Generic place for this host to stash.
-                                 #NB for the client this is the site archive location, maybe call it that?
+    'client_hostname':"SAF-WEMA",     # Generic place for this host to stash.
     'client_path': 'F:/ptr/',
-    'archive_path': 'F:/',       # Where images are kept.
-    'site_IPC_mechanism':  'shares',   # ['None', shares', 'shelves', 'redis']  Pick One     
-    'site_share_path':  '//saf-wema/wema_transfer/',  # Presumably also where shelves are found   
-                                                      # Meant to be used by mnt/tel's.
-    'wema_is_active':  True,     # True if an agent is used at a site. 
-                                 # Wemas are split sites -- at least two CPS's sharing the control.
+    'archive_path': 'F:/ptr/',       # Where images are kept.
+    'aux_archive_path':  None,
+    'wema_is_active':  True,     # True if an agent is used at a site.   # Wemas are split sites -- at least two CPS's sharing the control.                          
     'wema_hostname':  'SAF-WEMA',
-    'wema_share_path':  'C:/ptr/wema_transfer/',  # Meant to be where Wema puts status data.
+    'wema_path': 'C:/ptr/',
+    'dome_on_wema':  False,
+    'site_IPC_mechanism':  'shares',   # ['None', shares', 'shelves', 'redis']
+    'wema_write_share_path':  'C:/ptr/wema_transfer/',  # Meant to be where Wema puts status data.
+    'client_read_share_path':  '//saf-wema/wema_transfer/',
     'redis_ip': None,   # None if no redis path present, localhost if redis iself-contained
-
+    'site_is_generic':  False,   # A simple single computer ASCOM site.
+    'site_is_specific':  False,
+    
+    'host_wema_site_name':  'SAF',
     'name': 'Apache Ridge Observatory 0m3f4.9/9',
     'airport_code':  'SAF',
     'location': 'Santa Fe, New Mexico,  USA',
     'observatory_url': 'https://starz-r-us.sky/clearskies2',   # This is meant to be optional
+    'observatory_logo': None,   # I expect 
     'description':  '''
                     Now is the time for all good persons
                     to get out and vote early and often lest
                     we lose charge of our democracy.
                     ''',    # i.e, a multi-line text block supplied and formatted by the owner.
+    'location_day_allsky':  None,  #  Thus ultimately should be a URL, probably a color camera.
+    'location_night_allsky':  None,  #  Thus ultimately should be a URL, usually Mono camera with filters.
+    'location _pole_monitor': None,  #This probably gets us to some sort of image (Polaris in the North)
+    'location_seeing_report': None,  # Probably a path to 
+    
     'TZ_database_name':  'America/Denver',
     'mpc_code':  'ZZ24',    # This is made up for now.
     'time_offset':  -7.0,   # These two keys may be obsolete give the new TZ stuff 
@@ -71,7 +81,6 @@ site_config = {
     'eve_sky_flat_sunset_offset': +0.0,  # Minutes  neg means before, + after.
     'auto_morn_sky_flat': False,
     'auto_morn_bias_dark': False,
-    'calibrate_on_solve': True,  # nb nb nb pICK ONE
     're-calibrate_on_solve': True, 
 
     'observing_conditions' : {     #for SAF
@@ -116,11 +125,11 @@ site_config = {
         ],
     'wema_types': [
        'observing_conditions',
-       'enclosure',    
+       #'enclosure',    
        ],
     'short_status_devices':  [
        # 'observing_conditions',
-       # 'enclosure',
+       'enclosure',
        'mount',
        'telescope',
        # 'screen',
@@ -138,14 +147,16 @@ site_config = {
 
             'name': 'HomeDome',
             'enc_is_specific':  False, 
-            'name': 'Boltwood',
-            'hostIP':  '10.0.0.140',
-            'driver': 'ASCOM.DigitalDomeWorks.Dome',  # ASCOMDome.Dome',  # ASCOM.DeviceHub.Dome',  # ASCOM.DigitalDomeWorks.Dome',  #"  ASCOMDome.Dome',
+            'hostIP':  '10.0.0.10',
+            'driver': 'ASCOMDome.Dome',  # ASCOM.DeviceHub.Dome',  # ASCOM.DigitalDomeWorks.Dome',  #"  ASCOMDome.Dome',
 
             'has_lights':  False,
             'controlled_by': 'mount1',
 			'is_dome': True,
             'mode': 'Automatic',
+            'enc_radius':  70,  #  inches Ok for now.
+            'common_offset_east': -19.5,  # East is negative.  These will vary per telescope.
+            'common_offset_south': -8,  # South is negative.   So think of these as default.
             
             'cool_down': 89.0,     # Minutes prior to sunset.
             'settings': {
@@ -198,8 +209,8 @@ site_config = {
                 'model_on': True,
                 'rates_on': True,
                 'model': {
-                    'IH': 0.0,  # -0.04372704281702999,  #20211203
-                    'ID': 0.0,  # -0.5326099734267764,
+                    'IH': 0.00, #-0.04386235467059052 ,  #new 20220201    ###-0.04372704281702999,  #20211203
+                    'ID': 0.00, #-0.2099090362415872,  # -0.5326099734267764,
                     'WIH': 0.0,
                     'WID': 0.0,
                     'CH': 0.0,
@@ -223,8 +234,9 @@ site_config = {
             'parent': 'mount1',
             'name': 'Main OTA',
             'desc':  'Ceravolo 300mm F4.9/F9 convertable',
+            'telescop': 'cvagr-0m30-f9-f4p9-001',
             'driver': None,                     # Essentially this device is informational.  It is mostly about the optics.
-            'collecting_area': 38877,
+            'collecting_area': 31808,
             'obscuration':  0.55,  # Informatinal, already included in collecting_area.
             'aperture': 30,
             'focal_length': 1470,  # 1470,   #2697,   # Converted to F9, measured 20200905  11.1C
@@ -243,6 +255,9 @@ site_config = {
             'filter_wheel_name':  'filter_wheel1',
             'has_fans':  True,
             'has_cover':  False,
+            'axis_offset_east': -19.5,  # East is negative  THese will vary per telescope.
+            'axis_offset_south': -8,  # South is negative
+
             'settings': {
                 'fans': ['Auto', 'High', 'Low', 'Off'],
                 'offset_collimation': 0.0,    # If the mount model is current, these numbers are usually near 0.0
@@ -348,7 +363,7 @@ site_config = {
             'ip_string': 'http://10.0.0.110',
             "dual_wheel": True,
             'settings': {
-                'filter_count': 38,
+                'filter_count': 39,
                 'home_filter':  0,
                 'default_filter': "w",
                 'filter_reference': 7,   # We choose to use W as the default filter.  Gains taken at F9, Ceravolo 300mm
@@ -391,7 +406,8 @@ site_config = {
                         ['difJB',  [9,  1],  0, 42.5, [0.65,  20], 'dB'],    #34.
                         ['difJV',  [10, 1],  0, 33.0, [0.65,  20], 'dV'],    #35.
                         ['difRc',  [11, 1],  0, 22.2, [0.65,  20], 'dR'],    #36.
-                        ['difIc',  [12, 1],  0, 10. , [0.65,  20], 'dI']],   #37.        38 valid entries, only 36 useable.
+                        ['difIc',  [12, 1],  0, 10. , [0.65,  20], 'dI'],    #37.
+                        ['focus',  [7,  0],  0, 72.8, [360 , 170], 'w ']],   #38. valid entries, only 36 useable.
                 'filter_screen_sort':  [12, 0, 11, 2, 3, 5, 4, 1, 6],   # don't use narrow yet,  8, 10, 9], useless to try.
                 
                 
@@ -421,7 +437,7 @@ site_config = {
     'camera': {
         'camera_1_1': {
             'parent': 'telescope1',
-            'name': 'sq002',      # Important because this points to a server file structure by that name.
+            'name': 'sq002me',      # Important because this points to a server file structure by that name.
             'desc':  'QHY 600Pro',
             'service_date': '20211111',
             'driver': "ASCOM.QHYCCD.Camera", #"Maxim.CCDCamera",  # "ASCOM.QHYCCD.Camera", ## 'ASCOM.FLI.Kepler.Camera',
@@ -429,10 +445,15 @@ site_config = {
             'manufacturer':  'QHY',
             'use_file_mode':  False,
             'file_mode_path':  'G:/000ptr_saf/archive/sq01/autosaves/',
+            'detsize': '[1:9600, 1:6422]',  # QHY600Pro Physical chip data size as returned from driver
+            'ccdsec': '[1:9600, 1:6422]',
+            'biassec': ['[1:24, 1:6388]', '[1:12, 1:3194]', '[1:8, 1:2129]', '[1:6, 1:1597]'],
+            'datasec': ['[25:9600, 1:6388]', '[13:4800, 1:3194]', '[9:3200, 1:2129]', '[7:2400, 1:1597]'],
+            'trimsec': ['[1:9576, 1:6388]', '[1:4788, 1:3194]', '[1:3192, 1:2129]', '[1:2394, 1:1597]'],
 
             'settings': {
-                'temp_setpoint': -10,
-                'calib_setpoints': [-10, -7.5, -6.5, -5.5, -4.0 ],  # Should vary with season? by day-of-year mod len(list)
+                'temp_setpoint': -12.5,
+                'calib_setpoints': [-12.5, -10, -7.5, -5],  # Should vary with season? by day-of-year mod len(list)
                 'day_warm': False,
                 'cooler_on': True,
                 'x_start':  0,
@@ -445,7 +466,7 @@ site_config = {
                 'y_trim_offset':  8,
                 'x_bias_start':  9577,
                 'y_bias_start' : 6389,
-                'x_active': 4784,
+                'x_active': 4784,    #NB NB NB This is going to be confusing, driven by default bin.
                 'y_active': 3194,
                 'x_pixel':  3.76,
                 'y_pixel':  3.76,
@@ -461,27 +482,26 @@ site_config = {
                 'max_exposure': 300.0,
                 'can_subframe':  True,
                 'min_subframe':  [128, 128],       
-                'bin_modes':  [[2, 2, 1.06], [3, 3, 1.58], [4, 4, 2.11], [1, 1, 0.53]],   #Meaning no binning choice if list has only one entry, default should be first.
+                'bin_modes':  [[2, 2, 1.06], [1, 1, 0.53], [3, 3, 1.58], [4, 4, 2.11]],   #Meaning no binning choice if list has only one entry, default should be first.
                 'default_bin':  [2, 2, 1.06],    # Matched to seeing situation by owner
-                'cycle_time':  [18, 15, 15],  # 3x3 requires a 1, 1 reaout then a software bin, so slower.
+                'cycle_time':  [18, 15, 15, 12],  # 3x3 requires a 1, 1 reaout then a software bin, so slower.
                 'rbi_delay':  0.,      # This being zero says RBI is not available, eg. for SBIG.
                 'is_cmos':  True,
                 'is_color':  False,
                 'can_set_gain':  True,
                 'bayer_pattern':  None,    # Need to verify R as in RGGB is pixel x=0, y=0, B is x=1, y = 1
-                'can_set_gain':  True,
-                'reference_gain': [10., 10., 10., 10.],     # One val for each binning.
-                'reference_noise': [1.1, 1.1, 1.1, 1.1],    # All SWAGs right now
-                'reference_dark': [0.0, 0.0, 0.0, 0.0],     # Might these best be pedastal values?
+                'reference_gain': [1.3, 2.6, 3.9, 5.2],     #One val for each binning.
+                'reference_noise': [6, 6, 6, 6],    #  NB Guess
+                'reference_dark': [.2, .8, 1.8, 3.2],  #  Guess
+                'max_linearity':  60000,   # Guess
+                'saturate':  65300,
+                'fullwell_capacity': [80000, 320000, 720000, 1280000],
                                     #hdu.header['RDMODE'] = (self.config['camera'][self.name]['settings']['read_mode'], 'Camera read mode')
                     #hdu.header['RDOUTM'] = (self.config['camera'][self.name]['readout_mode'], 'Camera readout mode')
                     #hdu.header['RDOUTSP'] = (self.config['camera'][self.name]['settings']['readout_speed'], '[FPS] Readout speed')
                 'read_mode':  'Normal',
                 'readout_mode':  'Normal',
-                'readout_speed': 0.4,
-                'saturate':  50000,
-                'max_linearity': 55000,
-                'fullwell_capacity': 80000.,
+                'readout_speed': 0.6,
                 'areas_implemented': ["600%", "500%", "450%", "300%", "220%", "150%", "133%", "Full", "Sqr", '71%', '50%',  '35%', '25%', '12%'],
                 'default_area':  "Full",
                 'has_darkslide':  True,

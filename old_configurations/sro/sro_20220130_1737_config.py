@@ -6,9 +6,8 @@ Updated 20200902 WER
 
 @author: wrosing
 '''
-#                                                                                        1         1         1       1
-#        1         2         3         4         6         7         8         9         0         1         2       2   
-#234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678
+
+#2345678901234567890123456789012345678901234567890123456789012345678901234567890
 import json
 import time
 import ptr_events
@@ -17,7 +16,7 @@ import ptr_events
 #  NB NB  Json is not bi-directional with tuples (), use lists [], nested if tuples as needed, instead.
 #  NB NB  My convention is if a value is naturally a float I add a decimal point even to 0.
 g_dev = None
-site_name = 'sro'
+site_name = 'fat'
 
                     #\\192.168.1.57\SRO10-Roof  r:
                     #SRO-Weather (\\192.168.1.57) w:
@@ -25,42 +24,36 @@ site_name = 'sro'
 
 site_config = {
     'site': str(site_name.lower()),
-    'site_id': 'sro',
     'debug_site_mode': False,
     'owner':  ['google-oauth2|112401903840371673242'],  # WER,  Or this can be 
                                                         # some aws handle.
     'owner_alias': ['WER', 'TELOPS'],
-    'admin_aliases': ["ANS", "WER", "KVH", "TELOPS", "TB", "DH", 'KC'],
+    'admin_aliases': [ "WER", "TB", "DH", "KVH", 'KC', "ANS", 'EC'],
     
-    'client_hostname':  'SRO-0m30',
-    'client_path':  'F:/ptr/',  # Generic place for this host to stash misc stuff
-    'archive_path':  'F:/ptr/',  # Meant to be where /archive/<camera_id> is added by camera. 
-    'aux_archive_path':  None, # '//house-computer/saf_archive_2/archive/',  #  Path to auxillary backup disk. 
+    'client_hostname':  'FAT-0m30',
+    'client_share_path':  'F:/ptr/',  # Generic place for this host to stash.
+    'archive_path':  'F:/',  # Meant to be where /archive/<camera_id> is located.  Not wired in yet. 20220105
     'wema_is_active':  False,    #True if split computers used at a site.
     'wema_hostname':  [],  #  Prefer the shorter version
-    'dome_on_wema': False, #  Implying enclosure controlled by client.
-    'site_IPC_mechanism':  None,   # ['None', 'shares', 'redis']  Pick One
-    'wema_write_share_path':  None,   # This and below provide two different ways to define              
-    'client_read_share_path':  None,  #     a path to a network share.
+    'wema_share_path':  None,
     'redis_ip': None,  #'127.0.0.1', None if no redis path present, 
-    'site_is_generic':  False,   # A simple single computer ASCOM site.
+    'site_is_generic':  False,   # A simplee single computer ASCOM site.
     'site_is_specific':  True,  # Indicates some special code for this site, found at end of config.
-    
-        
-    'host_wema_site_name':  'SRO',  #  The umbrella header for obsys in close geographic proximity.
-    'name': 'PTR Sierra Remote Observatory 0m3f38',
-    'airport_code':  'FAT  :  Fresno Air Terminal', 
-    'location': 'Near Shaver Lake CA,  USA',
-    'observatory_url': 'https://www.sierra-remote.com/',   #  This is meant to be optional
-    'observatory_logo': None,   # I expect these will ususally end up as .png format icons
-    'description':  '''Sierra Remote Observatories​ provide telescope Hosting for Remote Astronomical Imaging,
-                       Data Acquisition, ​Satellite Tracking and Space Based Communications.
-                    ''',    #  i.e, a multi-line text block supplied and eventually mark-up formatted by the owner.
-    'location_day_allsky':  None,  #  Thus ultimately should be a URL, probably a color camera.
-    'location_night_allsky':  None,  #  Thus ultimately should be a URL, usually Mono camera with filters.
-    'location _pole_monitor': None,  #This probably gets us to some sort of image (Polaris in the North)
-    'location_seeing_report': None,  # Probably a path to a jpeg or png graph.
-    
+    'site_IPC_mechanism':  None,   # ['None', shares', 'shelves', 'redis']  Pick One
+    'aux_archive_path':  None, # '//house-computer/saf_archive_2/archive/',  #  Path to auxillary backup disk.     
+
+    'wema_share_path':  None,  # Meant to be where Wema puts status data.
+
+
+    'name': 'PTR at Sierra Remote Observatory 0m305f3.8',
+    'airport_code':  'FAT', 
+    'location': 'Near Shaver Lake C,  USA',
+    'observatory_url': 'https://starz-r-us.sky/clearskies2',   #  This is meant to be optional
+    'description':  '''
+                    Now is the time for all good persons
+                    to get out and vote early and often lest
+                    we lose charge of our democracy.
+                    ''',    #  i.e, a multi-line text block supplied and formatted by the owner.
     'TZ_database_name':  'America/Los_Angeles',
     'mpc_code':  'ZZ23',    #  This is made up for now.
     'time_offset':  -8.0,   #  These two keys may be obsolete give the new TZ stuff 
@@ -106,16 +99,12 @@ site_config = {
             'camera',
             'sequencer'
             ],
-    'wema_types': [                                      # or site_specific types.
+    'wema_types': [
             'observing_conditions1',
             'enclosure1'
             ],
-    'enc_types': [
-            'enclosure'
-            ],
-    'short_status_devices':  [    #THIS shoudl no longer be necessary
-            'observing_conditions',
-            'enclosure', 
+    'short_status_devices':  [
+            'enclosure',
             'mount',
             'telescope',
             'screen',
@@ -187,10 +176,8 @@ site_config = {
             'default_zenith_avoid': 0.0,   #degrees floating, 0.0 means do not apply this constraint.
             'has_paddle': False,      #paddle refers to something supported by the Python code, not the AP paddle.
             'pointing_tel': 'tel1',     #This can be changed to 'tel2'... by user.  This establishes a default.
-            'west_clutch_ra_correction':  0.0, #
-            'west_clutch_dec_correction': 0.0, #
-            'east_flip_ra_correction':  0.0, #
-            'east_flip_dec_correction': 0.0,  #
+            'west_ha_correction_r':  0.0, #-52*0.5751/3600/15,    #incoming unit is pixels, outgoing is min or degrees. 20201230
+            'west_dec_correction_r': 0.0, #356*0.5751/3600,  #Altair was Low and right, so too South and too West.
             'settings': {
 			    'latitude_offset': 0.0,     #Decimal degrees, North is Positive   These *could* be slightly different than site.
 			    'longitude_offset': 0.0,   #Decimal degrees, West is negative  #NB This could be an eval( <<site config data>>))
@@ -308,10 +295,10 @@ site_config = {
             'driver': 'ASCOM.OptecGemini.Focuser',
 			'com_port':  'COM9',
             #F4.9 setup
-            'reference':7937,    #  20210313  Nominal at 10C Primary temperature
+            'reference':6938,    #  20210313  Nominal at 10C Primary temperature
             'ref_temp':  5.06,    #  Update when pinning reference
             'coef_c': 0,   #  Negative means focus moves out as Primary gets colder
-            'coef_0': 7937,  #  Nominal intercept when Primary is at 0.0 C. 
+            'coef_0': 6938,  #  Nominal intercept when Primary is at 0.0 C. 
             'coef_date':  '202120108',    #This appears to be sensible result 44 points -13 to 3C'reference':  6431,    #  Nominal at 10C Primary temperature
             # #F9 setup
             # 'reference': 4375,    #   Guess 20210904  Nominal at 10C Primary temperature
@@ -358,30 +345,28 @@ site_config = {
             'ip_string': None,
             "dual_wheel": False,
             'settings': {
-                'filter_count': 11,   #  !!!! Tis must be correct as to the number of filters!!!!
+                'filter_count': 8,
                 'home_filter':  0,
                 'default_filter': "PL",
                 'filter_reference': 0,   #  We choose to use W as the default filter.  Gains taken at F9, Ceravolo 300mm
-                'filter_data': [['filter', 'filter_index', 'filter_offset', 'sky_gain', 'screen_gain', 'alias'],  #NB NB NB add cwl & bw in nm.
+                'filter_data': [['filter', 'filter_index', 'filter_offset', 'sky_gain', 'screen_gain', 'generic'],
                         
-                        #['w',     [0,  0],     0, 72.7, [1.00 ,  72], 'PL'],    #0.   For sequencer autofocus  consider foc or f filter
-                        ['focus', [0,  0],     0, 72.7, [1.00 ,  72], 'focus'],    #0.   
-                        ['PL',    [0,  0],     0, 72.7, [1.00 ,  72], 'PhLum'],    #1.
-                        ['PR',    [1,  1],     0, 11.0, [1.00 , 119], 'PhBlue'],    #2.
-                        ['PG',    [2,  2],     0, 18.6, [1.00 , 113], 'PhGreen'],    #3.
-                        ['PB',    [3,  3],     0, 42.3, [0.80 ,  97], 'PhRed'],    #4.
-                        ['HA',    [4,  4],     0, .400, [5.00 , 200], 'Halpha'],    #5.
-                        ['O3',    [5,  5],     0, 1.84, [4.00 , 200], 'OIII'],    #6.
-                        ['S2',    [6,  6],     0, .221, [10.0,  200], 'SII'],    #7.
-                        ['air',   [7,  7], -1000, 100., [1.00,   70], 'air'],    #8.
-                        ['dark',  [6,  6],     0, .221, [   0,    0], 'dark'],   #9.
-                        ['LRGB',  [0,  0],     0, .221, [   0,    0], 'LRGB']],   #10.
+
+                        ['PL',   [0,  0],    0, 72.7, [1.00 ,  72], 'PL'],    #0.
+                        ['PR',   [1,  1],    0, 11.0, [1.00 , 119], 'PB'],    #1.
+                        ['PG',   [2,  2],    0, 18.6, [1.00 , 113], 'PG'],    #2.
+                        ['PB',   [3,  3],    0, 42.3, [0.80 ,  97], 'PR'],    #3.
+                        ['HA',   [4,  4],    0, .400, [5.00 , 200], 'HA'],    #4.
+                        ['O3',   [5,  5],    0, 1.84, [4.00 , 200], 'O3'],    #5.
+                        ['S2',   [6,  6],    0, .221, [10.0,  200], 'S2'],    #6.
+                        ['air',  [7,  7],    0, 100., [1.00,   70], 'AI'],    #7.
+                        ['dark', [6,  6],    0, .221, [   0,    0], 'DK']],   #8.
 
 
-                'filter_screen_sort':  [8, 1, 4, 3, 2, 6, 5, 7],   #  don't use narrow yet,  8, 10, 9], useless to try.
+                'filter_screen_sort':  [7, 0, 3, 2, 1, 5, 4, 6],   #  don't use narrow yet,  8, 10, 9], useless to try.
                 
                 
-                'filter_sky_sort': [7, 5, 6, 2, 3, 1, 1, 8]    #No diffuser based filters
+                'filter_sky_sort': [6, 4, 5, 1, 2, 3, 0, 7]    #No diffuser based filters
                 #'filter_sky_sort': [7, 19, 2, 13, 18, 5, 15,\
                 #                    12, 4, 11, 16, 10, 9, 17, 3, 14, 1, 0]    #basically no diffuser based filters
                 #[32, 8, 22, 21, 20, 23, 31, 6, 7, 19, 27, 2, 37, 13, 18, 30, 5, 15, 36, 12,\
@@ -406,18 +391,18 @@ site_config = {
     'camera': {
         'camera_1_1': {
             'parent': 'telescope1',
-            'name': 'kb001ms',      #  Important because this points to a server file structure by that name.
+            'name': 'kb001',      #  Important because this points to a server file structure by that name.
             'desc':  'SBIG16200',
             'service_date': '20211111',
             'driver': "Maxim.CCDCamera",  # "ASCOM.QHYCCD.Camera", ##  'ASCOM.FLI.Kepler.Camera',
             'detector':  'KAF16200',
-            'manufacturer':  'On-Semi',
+            'manufacturer':  'On Semi',
             'use_file_mode':  False,
-            'file_mode_path':  'G:/000ptr_saf/archive/sq01/autosaves/',   #NB Incorrect site, etc. Not used at SRO.  Please clean up.
+            'file_mode_path':  'G:/000ptr_saf/archive/sq01/autosaves/',
 
             'settings': {
                 'temp_setpoint': -35,
-                'calib_setpoints': [-30, -25, -20, -15, -10 ],  #  Should vary with season? 
+                'calib_setpoints': [-30, -25, -20, -15, -10 ],  #  Should vary with season? by day-of-year mod len(list)
                 'day_warm': False,
                 'cooler_on': True,
                 'x_start':  0,
@@ -462,9 +447,9 @@ site_config = {
                 'is_color':  False,
                 'bayer_pattern':  None,    #  Need to verify R as in RGGB is pixel x=0, y=0, B is x=1, y = 1
                 'can_set_gain':  True,
-                'reference_gain': [2., 4., 18., 32.],     #  One val for each binning. SWAG!
-                'reference_noise': [10, 10, 10, 10],    #  All SWAGs right now!
-                'reference_dark': [0.0, 0.0, 0.0, 0.0],     #  Might these best be pedastal values?  NO!
+                'reference_gain': [10., 10., 10., 10.],     #  One val for each binning.
+                'reference_noise': [1.1, 1.1, 1.1, 1.1],    #  All SWAGs right now
+                'reference_dark': [0.0, 0.0, 0.0, 0.0],     #  Might these best be pedastal values?
                                     #hdu.header['RDMODE'] = (self.config['camera'][self.name]['settings']['read_mode'], 'Camera read mode')
                     #hdu.header['RDOUTM'] = (self.config['camera'][self.name]['readout_mode'], 'Camera readout mode')
                     #hdu.header['RDOUTSP'] = (self.config['camera'][self.name]['settings']['readout_speed'], '[FPS] Readout speed')
@@ -473,10 +458,9 @@ site_config = {
                 'readout_speed': 0.4,
                 'saturate':  42000,    # e-.  This is a close guess, not measured, but taken from data sheet.
                 'max_linearity': 40000,
-                'fullwell_capacity': [45000, 45000, 45000, 45000],  #e-.   We need to sort out the units properly NB NB NB
-                'areas_implemented': ["Full", "600%", "500%", "450%", "300%", "220%", "150%", "133%", "Full", "Sqr", '71%', '50%',  '35%', '25%', '12%'],
+                'fullwell_capacity': 45000,   #e-.   We need to sort out hte units properly NB NB NB
+                'areas_implemented': ["600%", "500%", "450%", "300%", "220%", "150%", "133%", "Full", "Sqr", '71%', '50%',  '35%', '25%', '12%'],
                 'default_area':  "Full",
-                'default_rotation': 0.0000,
                 'has_darkslide':  False,
                 'darkslide_com':  None,
                 'has_screen': True,
@@ -529,11 +513,9 @@ def linearize_unihedron(uni_value):
  
 def f_to_c(f):
     return round(5*(f - 32)/9, 2)
-last_good_wx_fields = 'n.a'
-last_good_daily_lines = 'n.a'
-def get_ocn_status(g_dev=None):
-    global last_good_wx_fields, last_good_daily_lines   # NB NB NB Perhaps memo-ize these instead?
-    if site_config['site'] == 'sro':   #  Belts and suspenders.
+
+def get_ocn_status(g_dev):
+    if site_config['site'] == 'fat':   #  Belts and suspenders.
         try:
             wx = open('W:/sroweather.txt', 'r')
             wx_line = wx.readline()
@@ -549,7 +531,7 @@ def get_ocn_status(g_dev=None):
             open_ok = wx_fields[19]
             #g_dev['o.redis_sever.set("focus_temp", temperature, ex=1200)
             #self.focus_temp = temperature
-            last_good_wx_fields = wx_fields
+            g_dev['last_good_wx_fields'] = wx_fields
         except:
             time.sleep(5)
             try:
@@ -568,11 +550,12 @@ def get_ocn_status(g_dev=None):
                 open_ok = wx_fields[19]
                 #g_dev['o.redis_sever.set("focus_temp", temperature, ex=1200)
                 #self.focus_temp = temperature
-                last_good_wx_fields = wx_fields
+                g_dev['las_good_wx_fields'] = wx_fields
             except:
                 print('SRO Weather source problem, 2nd try.')
                 time.sleep(5)
                 try:
+
                     wx = open('W:/sroweather.txt', 'r')
                     wx_line = wx.readline()
                     wx.close
@@ -587,7 +570,7 @@ def get_ocn_status(g_dev=None):
                     open_ok = wx_fields[19]
                     #g_dev['o.redis_sever.set("focus_temp", temperature, ex=1200)
                     #self.focus_temp = temperature
-                    last_good_wx_fields = wx_fields
+                    g_dev['las_good_wx_fields'] = wx_fields
                 except:
                     try:
 
@@ -605,10 +588,10 @@ def get_ocn_status(g_dev=None):
                         open_ok = wx_fields[19]
                         #g_dev['o.redis_sever.set("focus_temp", temperature, ex=1200)
                         #self.focus_temp = temperature
-                        last_good_wx_fields = wx_fields
+                        g_dev['las_good_wx_fields'] = wx_fields
                     except:
                         print('SRO Weather source problem, using last known good report.')
-                        wx_fields = last_good_wx_fields
+                        wx_fields = g_dev['last_good_wx_fields']
                         wx_fields = wx_line.split()
                         skyTemperature = f_to_c(float( wx_fields[4]))
                         temperature = f_to_c(float(wx_fields[5]))
@@ -625,7 +608,7 @@ def get_ocn_status(g_dev=None):
             daily.close()
             pressure = round(33.846*float(daily_lines[-3].split()[1]), 2)
             bright_percent_string = daily_lines[-4].split()[1]  #NB needs to be incorporated
-            last_good_daily_lines = daily_lines
+            g_dev['last_good_daily_lines'] = daily_lines
         except:
             time.sleep(5)
             try:
@@ -633,17 +616,17 @@ def get_ocn_status(g_dev=None):
                 daily_lines = daily.readlines()
                 daily.close()
                 pressure = round(33.846*float(daily_lines[-3].split()[1]), 2)
-                last_good_daily_lines = daily_lines
+                g_dev['last_good_daily_lines']  = daily_lines
             except:
                 try:
                     daily= open('W:/daily.txt', 'r')
                     daily_lines = daily.readlines()
                     daily.close()
                     pressure = round(33.846*float(daily_lines[-3].split()[1]), 2)
-                    last_good_daily_lines = daily_lines
+                    g_dev['last_good_daily_lines'] = daily_lines
                 except:
                     print('SRO Daily source problem, using last known good pressure.')
-                    daily_lines = last_good_daily_lines
+                    daily_lines = g_dev['last_good_daily_lines']
                     pressure = round(33.846*float(daily_lines[-3].split()[1]), 2)
                    # pressure = round(33.846*float(self.last_good_daily_lines[-3].split()[1]), 2)
         try:   # 20220105 Experienced a glitch, probably the first try faulted in the code above.
@@ -666,20 +649,10 @@ def get_ocn_status(g_dev=None):
         wx_is_ok = dew_point_gap and temp_bounds and wind_limit and sky_amb_limit and \
                         humidity_limit and rain_limit
         #  NB  wx_is_ok does not include ambient light or altitude of the Sun
-        try:
-            enc_stat =g_dev['enc'].stat_string
-            if enc_stat in ['Open', 'OPEN', 'Open']:
-                wx_str = "Yes"
-                wx_is_ok = True
-            else:
-                wx_str = 'No'
-                wx_is_ok = False
-        except:
-            
-            if wx_is_ok:
-                wx_str = "Yes"
-            else:
-                wx_str = "No"   #Ideally we add the dominant reason in priority order.
+        if wx_is_ok:
+            wx_str = "Yes"
+        else:
+            wx_str = "No"   #Ideally we add the dominant reason in priority order.
         # Now assemble the status dictionary.
         status = {"temperature_C": round(temperature, 2),
                       "pressure_mbar": pressure,
@@ -694,10 +667,10 @@ def get_ocn_status(g_dev=None):
                       "calc_HSI_lux": illum,
                       "calc_sky_mpsas": round((mag - 20.01),2),    #  Provenance of 20.01 is dubious 20200504 WER
                       "wx_ok": wx_str,  #str(self.sky_monitor_oktoimage.IsSafe),
-                      "open_ok": wx_str,  #T his is the special bit in the 
+                      "open_ok": open_ok,  #T his is the special bit in the 
                                            # Boltwood for a roof close relay
-                      'wx_hold': 'n.a.',  # THis is usually added by the OCN Manager
-                      'hold_duration': 'n.a.',
+                      #'wx_hold': wx_hold, # THis is added by the OCN Manager
+                      'hold_duration': 0.0,
                       'meas_sky_mpsas': 22   # THis is a plug.  NB NB NB
                       #"image_ok": str(self.sky_monitor_oktoimage.IsSafe)
                       }
@@ -705,8 +678,9 @@ def get_ocn_status(g_dev=None):
     else:
         breakpoint()       #  Debug bad place.
 
-def get_enc_status(g_dev=None):
-    if site_config['site'] == 'sro':   #  Belts and suspenders.
+def get_enc_status(g_dev):
+    if site_config['site'] == 'fat':   #  Belts and suspenders.
+
         try:
             enc = open('R:/Roof_Status.txt')
             enc_text = enc.readline()
@@ -754,15 +728,11 @@ def get_enc_status(g_dev=None):
             g_dev['enc'].moving = True
         else:
             g_dev['enc'].moving = False
-        if g_dev['enc'].mode == 'Automatic':
-            e_mode = "Autonomous!"
-        else:
-            e_mode = g_dev['enc'].mode
-        status = {'shutter_status': stat_string,   # NB NB NB "Roof is open|closed' is more inforative for FAT, but we make boolean decsions on 'Open'
+        status = {'shutter_status': stat_string,
                   'enclosure_synchronized': True,
-                  'dome_azimuth': 'n.a',
-                  'dome_slewing': 'n.a',
-                  'enclosure_mode': e_mode,
+                  'dome_azimuth': 360,
+                  'dome_slewing': False,
+                  'enclosure_mode': g_dev['enc'].mode,
                   'enclosure_message':  ''
                  }
         return status

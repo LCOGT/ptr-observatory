@@ -187,10 +187,8 @@ site_config = {
             'default_zenith_avoid': 0.0,   #degrees floating, 0.0 means do not apply this constraint.
             'has_paddle': False,      #paddle refers to something supported by the Python code, not the AP paddle.
             'pointing_tel': 'tel1',     #This can be changed to 'tel2'... by user.  This establishes a default.
-            'west_clutch_ra_correction':  0.0, #
-            'west_clutch_dec_correction': 0.0, #
-            'east_flip_ra_correction':  0.0, #
-            'east_flip_dec_correction': 0.0,  #
+            'west_ha_correction_r':  0.0, #-52*0.5751/3600/15,    #incoming unit is pixels, outgoing is min or degrees. 20201230
+            'west_dec_correction_r': 0.0, #356*0.5751/3600,  #Altair was Low and right, so too South and too West.
             'settings': {
 			    'latitude_offset': 0.0,     #Decimal degrees, North is Positive   These *could* be slightly different than site.
 			    'longitude_offset': 0.0,   #Decimal degrees, West is negative  #NB This could be an eval( <<site config data>>))
@@ -474,7 +472,7 @@ site_config = {
                 'saturate':  42000,    # e-.  This is a close guess, not measured, but taken from data sheet.
                 'max_linearity': 40000,
                 'fullwell_capacity': [45000, 45000, 45000, 45000],  #e-.   We need to sort out the units properly NB NB NB
-                'areas_implemented': ["Full", "600%", "500%", "450%", "300%", "220%", "150%", "133%", "Full", "Sqr", '71%', '50%',  '35%', '25%', '12%'],
+                'areas_implemented': ["600%", "500%", "450%", "300%", "220%", "150%", "133%", "Full", "Sqr", '71%', '50%',  '35%', '25%', '12%'],
                 'default_area':  "Full",
                 'default_rotation': 0.0000,
                 'has_darkslide':  False,
