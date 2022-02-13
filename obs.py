@@ -50,7 +50,6 @@ from auto_stretch.stretch import Stretch
 import socket
 import ptr_events
 import config
-# import device classes:
 from devices.camera import Camera
 from devices.filter_wheel import FilterWheel
 from devices.focuser import Focuser
@@ -201,19 +200,6 @@ class Observatory:
             self.observing_conditions_connected = True
             self.site_is_proxy = False   
             print("observing_conditions: Simulator drivers connected True")
-        # elif self.config['site_is_specific']:
-        #     self.site_is_specific = True
-        #     #  Note OCN has no associated commands.
-        #     #  Here we monkey patch
-            
-        #     self.get_status = config.get_ocn_status
-        #     # Get current ocn status just as a test.
-        #     self.status = self.get_status(g_dev)
-        #     # breakpoint()  # All test code
-        #     # quick = []
-        #     # self.get_quick_status(quick)
-        #     # print(quick)
-        #Define a redis server if needed.
         redis_ip = config['redis_ip']
         if redis_ip is not None:           
             self.redis_server = redis.StrictRedis(host=redis_ip, port=6379, db=0,
@@ -962,18 +948,7 @@ class Observatory:
 
 if __name__ == "__main__":
 
-    # # Define a command line argument to specify the config file to use
-    # parser = argparse.ArgumentParser()
-    # parser.add_argument('--config', type=str, default="default")
-    # options = parser.parse_args()
-    # # Import the specified config file
-    # print(options.config)
-    # if options.config == "default":
-    #     config_file_name = "config"
-    # else:
-    #     config_file_name = f"config_files.config_{options.config}"
-    # config = importlib.import_module(config_file_name)
-    # print(f"Starting up {config.site_name}.")
+
     # Start up the observatory
 
     import config

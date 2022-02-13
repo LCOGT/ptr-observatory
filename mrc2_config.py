@@ -1,3 +1,4 @@
+
 # -*- coding: utf-8 -*-
 '''
 Created on Fri Aug  2 11:57:41 2019
@@ -55,7 +56,7 @@ site_config = {
     'owner':  ['google-oauth2|112401903840371673242'],  # Wayne
     'owner_alias': ['WER'],
     'admin_aliases': ["ANS", "WER", "TB", "DH", "KVH", "KC"],
-    'client_hostname':  'mrc-westpier',
+    'client_hostname':  'MRC-0m35',
     'client_share_path':  'Q:/ptr/',  # Generic place for this host to stash.
     'archive_pth':  'Q:/',
     'wema_is_active':  True,          # True if the split computers used at a site.
@@ -70,13 +71,13 @@ site_config = {
     'location': 'Santa Barbara, California,  USA',
     'airport_code': 'SBA',
     'telescope_description':  '0m61 f6.8 Planewave CDK',
-    #'site_path': 'Q:/',     #Really important, this is where state and results are stored.
+    'site_path': 'Q:/',     #Really important, this is where state and results are stored.
     'observatory_url': 'https://starz-r-us.sky/clearskies',
     'description':  '''
                     Now is the time for all good persons
                     to get out and vote early and often lest
                     we lose charge of our democracy.
-                    ''',    #i.e, a multi-line text block supplied by the owner.  Must be careful about the contents for now.
+                    ''',    #  i.e, a multi-line text block supplied and formatted by the owner.
 
     'mpc_code':  'ZZ23',    #This is made up for now.
     'time_offset':  -7,
@@ -95,7 +96,7 @@ site_config = {
     'auto_morn_bias_dark':False,
     're-calibrate_on_solve': True, 
     
-        'defaults': {   #TIM this may no longer be needed.  
+    'defaults': {   #TIM this may no longer be needed.  
         'observing_conditions': 'observing_conditions1',
         'enclosure': 'enclosure1',
         'mount': 'mount1',
@@ -119,15 +120,15 @@ site_config = {
             'selector',
             'filter_wheel',
             'camera',
-            'sequencer',
-
+            'sequencer'
             ],
      'wema_types': [
             'observing_conditions',
             'enclosure',    
             ],
      'short_status_devices':  [
-            'enclosure',
+            #'observing_conditions',
+            #'enclosure',
             'mount',
             'telescope',
             #'screen',
@@ -136,17 +137,25 @@ site_config = {
             'selector',
             'filter_wheel',
             'camera',
-            'sequencer',
+            'sequencer'
             ],
-    
-    'observing_conditions': {
+     
+    'observing_conditions' : {
         'observing_conditions1': {
             'parent': 'site',
-            'name': 'Weather Station #1',
-            'driver': 'redis'
-
-            },
+            'ocn_is_specific':  True,  # Indicates some special site code. 
+            # Intention it is found in this file.
+            'name': 'SRO File',
+            'driver': 'Windows.Share',  # Could be redis, ASCOM, ...
+            'share_path_name': 'F:/ptr/',
+            'driver_2':  None,   #' ASCOM.Boltwood.OkToOpen.SafetyMonitor',
+            'driver_3':  None,    # 'ASCOM.Boltwood.OkToImage.SafetyMonitor'
+            'ocn_has_unihedron':  False,
+            'have_local_unihedron': False,     #  Need to add these to setups.
+            'uni_driver': 'ASCOM.SQM.serial.ObservingConditions',
+            'unihedron_port':  10    #  False, None or numeric of COM port.
         },
+    },
 
 
     'enclosure': {
@@ -154,8 +163,7 @@ site_config = {
             'parent': 'site',
             'name': 'Megawan',
             'hostIP':  '10.15.0.30',
-            'driver': 'ASCOM.SkyRoofHub.Dome',   # NB this is clearly wrong, use redis on each side.
-            'recover_script':  None,
+            'driver': 'Windows_share',
             'shutdown_script':  None,     
             'has_lights':  True,
             'controlled_by':  ['mount1', 'mount2'],
@@ -172,16 +180,11 @@ site_config = {
             'morn_sky_flat_offset':  0.4,   #  + hours after Sunrise
             'morning_close_offset':  0.41,   #  + hours after Sunrise
             'operations_end':  0.42,
-            },
-
-    #Need to eventually add skycam here along with seeing monitor.
-    },
-
-
+            }
+        },
 
     'mount': {
         'mount1': {
-            'parent': 'enclosure1',
             'name': 'westpier',
             'hostIP':  '10.15.0.40',     #Can be a name if local DNS recognizes it.
             'hostname':  'westpier',
@@ -192,22 +195,29 @@ site_config = {
             'shutdown_script':  None,  
             'alignment': 'Alt-Az',
             'default_zenith_avoid': 7.0,   #degrees floating
-            'has_paddle': False,    #or a string that permits proper configuration.
-            'pointing_tel': 'tel1',     #This can be changed to 'tel2' by user.  This establishes a default.
             'east_ra_correction': 0.0,
             'east_dec_correction': 0.0,
             'west_ha_correction_r': 0.0,
             'west_dec_correction_r': 0.0,
+            'has_paddle': False,    #or a string that permits proper configuration.
+            'pointing_tel': 'tel1',     #This can be changed to 'tel2' by user.  This establishes a default.
+            'Selector':{
+                'available': False,         #If True add these lines;
+                # 'positions': 4,
+                # 'inst 1': 'camera_1_1',      #inst_1 is always the default until status reports different
+                # 'inst 2': 'echelle1',     #These are all types od cameras.
+                # 'inst 3': 'camera3',
+                # 'inst 4': 'lowres1',
+                },
+
             'settings': {
  			    'latitude_offset': 0.025,     #Meters North is Positive   These *could* be slightly different than site.
  			    'longitude_offset': 0-2.5,   #meters West is negative  #NB This could be an eval( <<site config data>>))
  			    'elevation_offset': 0.5,    # meters above sea level
                 'home_park_altitude': 0,   #Having this setting is important for PWI4 where it can easily be messed up.
-                'home_park_azimuth': 1195.0,
-                'refraction_on': True, 
-                'model_on': True, 
-                'rates_on': True,
-                'horizon':  20,
+                'home_park_azimuth': 195.0,
+                'fixed_screen _altitude': 0.54,
+                'horizon':  15.,    #  Meant to be a circular horizon. Or set to None if below is filled in.
                 'horizon_detail': { 
                       '0': 32,
                       '30': 35,
@@ -234,11 +244,42 @@ site_config = {
                       '303': 20.6,
                       '309': 27,
                       '315': 32,
-                      '360': 32,
+                      '360': 32,  #  We use a dict because of fragmented azimuth mesurements.
                       },
-                },
+                'refraction_on': True, 
+                'model_on': True, 
+                'rates_on': True,
+                'model': {
+                    'IH': 0, 
+                    'ID': 0., 
+                    'WH': 0.,
+                    'WD': 0.,
+                    'MA': 0., 
+                    'ME': 0.,
+                    'CH': 0., 
+                    'NP': 0.,
+                    'TF': 0.,
+                    'TX': 0., 
+                    'HCES': 0.,
+                    'HCEC': 0., 
+                    'DCES': 0.,
+                    'DCEC': 0.,
+                    'IA': 0.0,
+                    'IE': 0.0,
+                    'CA': 0.0,
+                    'NPAE': 0.0,
+                    'AN': 0.0,
+                    'AE': 0.0,     #AW?
+                    'ACES': 0.0,
+                    'ACEC': 0.0,
+                    'ECES': 0.0,
+                    'ECEC': 0.0,
+                    }
             },
+        },
+
     },
+
 
     'telescope': {
         'telescope1': {
@@ -279,24 +320,25 @@ site_config = {
             #          'darkslide1',
             },
 
+
     },
 
     'rotator': {
         'rotator1': {
-            'parent': 'telescope1',    #NB Note we are changing to an abbrevation. BAD!
+
+            'parent': 'telescope1',
             'name': 'rotator',
             'desc':  'Opetc Gemini',
             'driver': 'ASCOM.AltAzDS.Rotator',
-            'startup_script':  None,
-            'recover_script':  None,
-            'shutdown_script':  None , 
-            'minimum': -180.0,
+			'com_port':  'COM9',
+            'startup_script':  'None',
+            'recover_script':  'None',
+            'shutdown_script':  'None' , 
+            'minimum': -180.,
             'maximum': 360.0,
-            'step_size':  0.0001,
+            'step_size':  0.0001,     #Is this correct?
             'backlash':  0.0,
-            'unit':  'degree'
-            },
-
+            'unit':  'degree'    #  'steps'
     },
 
     'screen': {
@@ -312,6 +354,7 @@ site_config = {
             'saturate': 170,  #Out of 0.0 - 255, this is the last value where the screen is linear with output.
                                 #These values have a minor temperature sensitivity yet to quantify.
             },
+
     },
 
     'focuser': {
@@ -355,8 +398,21 @@ site_config = {
             'cameras':  ['camera_1_1', 'camera_1_2', None, 'camera_1_4'],
             'guiders':  [None, 'ag_1_2', None, 'ag_1_4'],
             },
-
     },
+
+
+        
+    'lamp_box': {
+        'lamp_box1': {
+            'parent': 'camera_1',  # Parent is camera for the spectrograph
+            'name': 'None',  # "UVEX Calibration Unit", 'None'
+            'desc': 'None', #'eshel',  # "uvex", 'None'
+            'spectrograph': 'None', #'echelle', 'uvex'; 'None'
+            'driver': 'None', # ASCOM.Spox.Switch; 'None'; Note change to correct COM port used for the eShel calibration unit at mrc2
+            'switches': "None"  # A string of switches/lamps the box has for the FITS header. # 'None'; "Off,Mirr,Tung,NeAr" for UVEX
+        },
+    },
+    
 
 
     #Add CWL, BW and DQE to filter and detector specs.   HA3, HA6 for nm or BW.
@@ -479,10 +535,13 @@ site_config = {
                     'screen_x3':  3E-08,
                     'screen_x2':  -9E-05,
                     'screen_x1':  .1258,
-                    'screen_x0':  8.683
+                    'screen_x0':  8.683,
+                    },
                 },
+                
             },
         },
+
 
         # 'camera_2': {
         #     'parent': 'telescope1',
@@ -738,6 +797,7 @@ site_config = {
         #     },
         # },
     },
+
     'sequencer': {
         'sequencer1': {
             'parent': 'site',
@@ -746,9 +806,12 @@ site_config = {
             'driver': None,
             'startup_script':  None,
             'recover_script':  None,
-            'shutdown_script':  None, 
+            'shutdown_script':  None,
+
+            },
         },
-    },
+
+    #  I am not sure AWS needs this, but my configuration code might make use of it.
 
     'server': {
         'server1': {
@@ -760,7 +823,7 @@ site_config = {
             'shutdown_script':  None,  
         },
     },
- }    #This brace closes the while configuration dictionary. Match found up top at:  site_config = {
+}  #This brace closes the while configuration dictionary. Match found up top at:  site_config = {
 
 get_ocn_status = None
 get_enc_status = None
@@ -774,12 +837,9 @@ if __name__ == '__main__':
     site_unjasoned = json.loads(j_dump)
     if str(site_config)  == str(site_unjasoned):
         print('Strings matched.')
-    else:
-        print("Strings did not match.")
     if site_config == site_unjasoned:
         print('Dictionaries matched.')
-    else:
-        print('Dictionaries did not match.')
+
 
 '''
 Ports.txt
@@ -819,3 +879,4 @@ QHY600         AstroImaging Equipment
 
 
 '''
+
