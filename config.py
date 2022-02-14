@@ -11,9 +11,9 @@ Updated 20200902 WER
 #234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678
 import json
 import time
-import ptr_events
-#from pprint import pprint
-
+#import ptr_events
+from pprint import pprint
+pprint('')
 #  NB NB  Json is not bi-directional with tuples (), use lists [], nested if tuples as needed, instead.
 #  NB NB  My convention is if a value is naturally a float I add a decimal point even to 0.
 g_dev = None
@@ -54,7 +54,6 @@ site_config = {
         
     'host_wema_site_name':  'SRO',  #  The umbrella header for obsys in close geographic proximity.
     'name': 'PTR Sierra Remote Observatory 0m3f38',
-    'airport_code':  'FAT  :  Fresno Air Terminal', 
     'location': 'Near Shaver Lake CA,  USA',
     'observatory_url': 'https://www.sierra-remote.com/',   #  This is meant to be optional
     'observatory_logo': None,   # I expect these will ususally end up as .png format icons
@@ -363,7 +362,7 @@ site_config = {
             'ip_string': None,
             "dual_wheel": False,
             'settings': {
-                'filter_count': 11,   #  !!!! Tis must be correct as to the number of filters!!!!
+                'filter_count': 11,   #!! Tis must be correct as to the number of filters!!!!
                 'home_filter':  0,
                 'default_filter': "PL",
                 'filter_reference': 0,   #  We choose to use W as the default filter.  Gains taken at F9, Ceravolo 300mm
@@ -536,6 +535,7 @@ def f_to_c(f):
     return round(5*(f - 32)/9, 2)
 last_good_wx_fields = 'n.a'
 last_good_daily_lines = 'n.a'
+
 def get_ocn_status(g_dev=None):
     global last_good_wx_fields, last_good_daily_lines   # NB NB NB Perhaps memo-ize these instead?
     if site_config['site'] == 'sro':   #  Belts and suspenders.
@@ -551,7 +551,7 @@ def get_ocn_status(g_dev=None):
             humidity =  float(wx_fields[8])
             dewpoint = f_to_c(float(wx_fields[9]))
             #timeSinceLastUpdate = wx_fields[13]
-            open_ok = wx_fields[19]
+            #open_ok = wx_fields[19]
             #g_dev['o.redis_sever.set("focus_temp", temperature, ex=1200)
             #self.focus_temp = temperature
             last_good_wx_fields = wx_fields
@@ -570,7 +570,7 @@ def get_ocn_status(g_dev=None):
                 humidity =  float(wx_fields[8])
                 dewpoint = f_to_c(float(wx_fields[9]))
                 #timeSinceLastUpdate = wx_fields[13]
-                open_ok = wx_fields[19]
+               # open_ok = wx_fields[19]
                 #g_dev['o.redis_sever.set("focus_temp", temperature, ex=1200)
                 #self.focus_temp = temperature
                 last_good_wx_fields = wx_fields
@@ -589,7 +589,7 @@ def get_ocn_status(g_dev=None):
                     humidity =  float(wx_fields[8])
                     dewpoint = f_to_c(float(wx_fields[9]))
                     #timeSinceLastUpdate = wx_fields[13]
-                    open_ok = wx_fields[19]
+                    #open_ok = wx_fields[19]
                     #g_dev['o.redis_sever.set("focus_temp", temperature, ex=1200)
                     #self.focus_temp = temperature
                     last_good_wx_fields = wx_fields
@@ -607,7 +607,7 @@ def get_ocn_status(g_dev=None):
                         humidity =  float(wx_fields[8])
                         dewpoint = f_to_c(float(wx_fields[9]))
                         #timeSinceLastUpdate = wx_fields[13]
-                        open_ok = wx_fields[19]
+                        #open_ok = wx_fields[19]
                         #g_dev['o.redis_sever.set("focus_temp", temperature, ex=1200)
                         #self.focus_temp = temperature
                         last_good_wx_fields = wx_fields
@@ -621,7 +621,7 @@ def get_ocn_status(g_dev=None):
                         humidity =  float(wx_fields[8])
                         dewpoint = f_to_c(float(wx_fields[9]))
                         #timeSinceLastUpdate = wx_fields[13]
-                        open_ok = wx_fields[19]
+                        #open_ok = wx_fields[19]
         #self.last_weather =   NB found this fragment
         try:
             daily= open('W:/daily.txt', 'r')
@@ -629,7 +629,7 @@ def get_ocn_status(g_dev=None):
 
             daily.close()
             pressure = round(33.846*float(daily_lines[-3].split()[1]), 2)
-            bright_percent_string = daily_lines[-4].split()[1]  #NB needs to be incorporated
+            #bright_percent_string = daily_lines[-4].split()[1]  #NB needs to be incorporated
             last_good_daily_lines = daily_lines
         except:
             time.sleep(5)
@@ -659,7 +659,7 @@ def get_ocn_status(g_dev=None):
 
         if illum > 100:
             illum = int(illum)
-        calc_HSI_lux = illum
+        #calc_HSI_lux = illum
         # NOte criterian below can now vary with the site config file.
         dew_point_gap = not (temperature  - dewpoint) < 2
         temp_bounds = not (temperature < -10) or (temperature > 40)
@@ -773,6 +773,7 @@ def get_enc_status(g_dev=None):
         return status
     else:
         breakpoint()     #  Debug bad place.
+
 if __name__ == '__main__':
     j_dump = json.dumps(site_config)
     site_unjasoned = json.loads(j_dump)

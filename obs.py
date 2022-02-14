@@ -50,7 +50,7 @@ from auto_stretch.stretch import Stretch
 import socket
 import ptr_events
 import config
-from pprint import pprint
+
 # import device classes:
 from devices.camera import Camera
 from devices.filter_wheel import FilterWheel
