@@ -55,7 +55,7 @@ class ObservingConditions:
 
     def __init__(self, driver: str, name: str, config: dict, astro_events):
         #  We need a way to specify whihc computer in the wema in the
-        #  the singular config_file or we have two configurations.
+        #  the singular config file or we have two configurations.
         #  import socket
         #  print(socket.gethostname())
 
@@ -111,8 +111,8 @@ class ObservingConditions:
             self.site_is_specific = True
             #  Note OCN has no associated commands.
             #  Here we monkey patch
-
             self.get_status = get_ocn_status
+            self.get_status = config.get_ocn_status
             # Get current ocn status just as a test.
             self.status = self.get_status(g_dev)
             # breakpoint()  # All test code
@@ -152,7 +152,7 @@ class ObservingConditions:
 
     def get_status(self):   # This is purely generic code for a generic site.
                             # It may be overwritten with a monkey patch found 
-                            # in the appropriate config_file.py
+                            # in the appropriate config.py
         '''
         Regularly calling this routine returns weather status dict for AWS, evaluates the Wx 
         reporting and manages temporary closes, known as weather-holds.
