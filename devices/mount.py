@@ -459,9 +459,9 @@ class Mount:
             except:
                 self.pier_side = 0.   # This explicitly defines alt-az (Planewave) as Looking West (tel on East side)
             if self.pier_side == 0:
-                pier_side_str ="Looking West"
+                self.pier_side_str ="Looking West"
             else:
-                pier_side_str = "Looking East"
+                self.pier_side_str = "Looking East"
                 
             status = {
                 'timestamp': round(time.time(), 3),
@@ -476,8 +476,8 @@ class Mount:
                 'mount_right_ascension_rate': round(self.mount.RightAscensionRate, 9),   #Will use sec-RA/sid-sec
                 'demand_declination_rate': round(self.prior_pitch_rate, 8),
                 'mount_declination_rate': round(self.mount.DeclinationRate, 8),
-                'pier_side':self. pier_side,
-                'pier_side_str': pier_side_str,
+                'pier_side':self.pier_side,
+                'pier_side_str': self.pier_side_str,
                 'azimuth': round(self.mount.Azimuth, 3),
                 'target_az': round(self.target_az, 3),
                 'altitude': round(alt, 3),
@@ -756,8 +756,8 @@ class Mount:
                 field_y = y_field_deg
                 #20210317 Changed signs fron Neyle.  NEEDS CONFIG File level or support.
 
-                self.ra_offset = -offset_x*field_x  #/4   #NB NB 20201230 Signs needs to be verified. 20210904 used to be +=, which did not work.
-                self.dec_offset = offset_y*field_y  #/4    #NB where the 4 come from?                print("Offsets:  ", round(self.ra_offset, 5), round(self.dec_offset, 4))
+                self.ra_offset = -offset_x*field_x/2  #/4   #NB NB 20201230 Signs needs to be verified. 20210904 used to be +=, which did not work.
+                self.dec_offset = offset_y*field_y/2 #/4    #NB where the 4 come from?                print("Offsets:  ", round(self.ra_offset, 5), round(self.dec_offset, 4))
                 print('Offsets:  ', offset_x, self.ra_offset, offset_y, self.dec_offset)
                 
                 if not self.offset_received:
@@ -1211,8 +1211,8 @@ class Mount:
     def  adjust_flip_reference(self, err_ha, err_dec):
         #old_ha, old_dec = self.get_mount_reference()
         mnt_shelf = shelve.open(self.site_path + 'ptr_night_shelf/' + 'mount1')
-        init_ra = mnt_shelf['ra_cal_offset']
-        init_dec = mnt_shelf['dec_cal_offset']     # NB NB THese need to be modulo corrected, maybe limited
+        init_ra = mnt_shelf['flip_ra_cal_offset']
+        init_dec = mnt_shelf['flip dec_cal_offset']     # NB NB THese need to be modulo corrected, maybe limited
    
         print("initial:  ", init_ra, init_dec)
         mnt_shelf['flip_ra_cal_offset'] = init_ra + err_ha    #NB NB NB maybe best to reverse signs here??
@@ -1246,8 +1246,8 @@ class Mount:
     def get_flip_reference(self):
         mnt_shelf = shelve.open(self.site_path + 'ptr_night_shelf/' + 'mount1')
         #NB NB NB The ease may best have a sign change asserted.
-        delta_ra = mnt_shelf['flip_ra_cal_offset'] + self.west_clutch_ra_correction + self.east_flip_ra_correction
-        delta_dec = mnt_shelf['flip_dec_cal_offset'] + self.west_clutch_dec_correction + self.east_flip_dec_correction
+        delta_ra = mnt_shelf['flip_ra_cal_offset'] + self.east_flip_ra_correction
+        delta_dec = mnt_shelf['flip_dec_cal_offset'] + self.east_flip_dec_correction
         mnt_shelf.close()
         return delta_ra, delta_dec
     
