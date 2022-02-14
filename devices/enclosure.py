@@ -9,6 +9,7 @@ import socket
 import os
 import config
 from config import get_enc_status
+from pprint import pprint
 
 
 '''
@@ -191,7 +192,7 @@ class Enclosure:
         self.config = config
         g_dev['enc'] = self
         self.slew_latch = False
-        breakpoint()
+
         if self.config['site_in_automatic_default'] == "Automatic":
             self.site_in_automatic = True
             self.mode = 'Automatic' 
@@ -228,7 +229,7 @@ class Enclosure:
             #  Note OCN has no associated commands.
             #  Note monkey patch
             self.get_status = get_enc_status
-            self.get_status = config.get_enc_status
+            #self.get_status = config.get_enc_status   # NB NB Bogus line of code
             # Get current ocn status just as a test.
             self.status = self.get_status(g_dev)
 

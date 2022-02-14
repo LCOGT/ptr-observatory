@@ -6,8 +6,10 @@ import time
 import json
 import socket
 from global_yard import g_dev
-import config
 from config import get_ocn_status
+import config
+
+from pprint import pprint
 # import ptr_events
 
 
@@ -112,7 +114,7 @@ class ObservingConditions:
             #  Note OCN has no associated commands.
             #  Here we monkey patch
             self.get_status = get_ocn_status
-            self.get_status = config.get_ocn_status
+            #self.get_status = config.get_ocn_status  #NB THis line is bogus
             # Get current ocn status just as a test.
             self.status = self.get_status(g_dev)
             # breakpoint()  # All test code

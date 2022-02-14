@@ -21,6 +21,7 @@ from skimage.io import imsave
 import matplotlib.pyplot as plt
 from PIL import Image
 from global_yard import g_dev
+from pprint import pprint
 '''
 
 Note no call outs.  Maybe we should check there are no zero values in flats?

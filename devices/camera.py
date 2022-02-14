@@ -21,7 +21,7 @@ import sep
 from astropy.time import Time
 import glob
 import shelve
-#from pprint import pprint
+from pprint import pprint
 
 
 #from os.path import join, dirname, abspath
