@@ -22,9 +22,13 @@ g_dev = None
 site_name = 'saf'
 site_config = {
     'site': str(site_name.lower()),
-    'site_id': 'saf',
+    'site_id': 'ARO',
+    'site_desc': "Apache Ridge Observatory, Santa Fe, NM, USA. 2194m",
+    'airport_code':  'SAF',
+    'obsy_id': 'SAF1',
+    'obs_desc': "0m3f4.9/9 Ceravolo Astrogaph, AP1600",
     'debug_site_mode': False,
-
+    'debug_obsy_mode': False,
     'owner':  ['google-oauth2|102124071738955888216', 'google-oauth2|112401903840371673242'],  # Neyle,  Or this can be some aws handle.
     'owner_alias': ['ANS', 'WER'],
     'admin_aliases': ["ANS", "WER", 'KVH', "TELOPS", "TB", "DH", "KVH", 'KC'],
@@ -39,8 +43,8 @@ site_config = {
     'aux_archive_path':  None,
     'wema_is_active':  True,     # True if an agent is used at a site.   # Wemas are split sites -- at least two CPS's sharing the control.                          
     'wema_hostname':  'SAF-WEMA',
-    'wema_path': 'C:/ptr/',
-    'dome_on_wema':  False,
+    'wema_path': 'C:/ptr/',      #Local storage on Wems disk.
+    'dome_on_wema':  False,       #NB NB NB CHange this confusing name. 'dome_controlled_by_wema'
     'site_IPC_mechanism':  'shares',   # ['None', shares', 'shelves', 'redis']
     'wema_write_share_path':  'C:/ptr/wema_transfer/',  # Meant to be where Wema puts status data.
     'client_read_share_path':  '//saf-wema/wema_transfer/',
@@ -48,16 +52,16 @@ site_config = {
     'site_is_generic':  False,   # A simple single computer ASCOM site.
     'site_is_specific':  False,
     
-    'host_wema_site_name':  'SAF',
+#   'host_wema_site_name':  'ARO',
     'name': 'Apache Ridge Observatory 0m3f4.9/9',
-    'airport_code':  'SAF',
+
     'location': 'Santa Fe, New Mexico,  USA',
     'observatory_url': 'https://starz-r-us.sky/clearskies2',   # This is meant to be optional
     'observatory_logo': None,   # I expect 
-    'description':  '''
+    'dedication':   '''
                     Now is the time for all good persons
-                    to get out and vote early and often lest
-                    we lose charge of our democracy.
+                    to get out and vote, lest we lose 
+                    charge of our democracy.
                     ''',    # i.e, a multi-line text block supplied and formatted by the owner.
     'location_day_allsky':  None,  #  Thus ultimately should be a URL, probably a color camera.
     'location_night_allsky':  None,  #  Thus ultimately should be a URL, usually Mono camera with filters.
