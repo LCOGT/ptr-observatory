@@ -25,12 +25,8 @@ site_name = 'sro'
 
 site_config = {
     'site': str(site_name.lower()),
-    'site_desc': "PTR @ Sierra Remote Observatory, near Fresno CA, USA. 1405m",
-    'airport_code':  'FAT : Fresno Air Terminal',
-    'obsy_id': 'SRO1',
-    'obs_desc': "0m3f38 AP Riccardi-Honders, PW-L500equ",
+    'site_id': 'sro',
     'debug_site_mode': False,
-    'debug_obsy_mode': False,
     'owner':  ['google-oauth2|112401903840371673242'],  # WER,  Or this can be 
                                                         # some aws handle.
     'owner_alias': ['WER', 'TELOPS'],
@@ -42,7 +38,6 @@ site_config = {
     'aux_archive_path':  None, # '//house-computer/saf_archive_2/archive/',  #  Path to auxillary backup disk. 
     'wema_is_active':  False,    #True if split computers used at a site.
     'wema_hostname':  [],  #  Prefer the shorter version
-    'wema_path':  None,
     'dome_on_wema': False, #  Implying enclosure controlled by client.
     'site_IPC_mechanism':  None,   # ['None', 'shares', 'redis']  Pick One
     'wema_write_share_path':  None,   # This and below provide two different ways to define              
