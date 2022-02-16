@@ -50,7 +50,7 @@ from auto_stretch.stretch import Stretch
 import socket
 import ptr_events
 import config
-from pprint import pprint
+
 # import device classes:
 from devices.camera import Camera
 from devices.filter_wheel import FilterWheel
@@ -929,16 +929,19 @@ class Observatory:
                         hdr['DECJ2000'] = solve['dec_j2000_degrees']
                         hdr['MEAS-SCL'] = solve['arcsec_per_pixel']
                         hdr['MEAS-ROT'] = solve['rot_angle_degs']
-                        TARGRA  = g_dev['mnt'].current_icrs_ra
-                        TARGDEC = g_dev['mnt'].current_icrs_dec
-                        RAJ2000 = solve['ra_j2000_hours']
-                        DECJ2000 = solve['dec_j2000_degrees']
+                        target_ra  = g_dev['mnt'].current_icrs_ra
+                        target_dec = g_dev['mnt'].current_icrs_dec
+                        solved_ra = solve['ra_j2000_hours']
+                        solved_dec = solve['dec_j2000_degrees']
                         #breakpoint()
-                        err_ha = TARGRA - RAJ2000
-                        err_dec = TARGDEC - DECJ2000
+                        err_ha = target_ra - solved_ra
+                        err_dec = target_dec - solved_dec
                         print("err ra, dec:  ", err_ha, err_dec)
-                        #Turn this off for now and center in autofocus. Race condition.
-                        g_dev['mnt'].adjust_mount_reference(err_ha, err_dec)
+                        #NB NB NB Need to add Pierside as a parameter to this cacc 20220214 WER
+                        if g_dev['mnt'].pier_side_str == 'Looking West':
+                            g_dev['mnt'].adjust_mount_reference(err_ha, err_dec)
+                        else:
+                            g_dev['mnt'].adjust_flip_reference(err_ha, err_dec)   #Need to verify signs
                         img.flush()
                         img.close
                         img = fits.open(wpath, ignore_missing_end=True)

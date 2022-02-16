@@ -4,6 +4,7 @@ import time
 import serial
 import requests
 import json
+from pprint import pprint
 
 
 class FilterWheel:
