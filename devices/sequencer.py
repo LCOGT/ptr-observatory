@@ -1486,7 +1486,7 @@ class Sequencer:
                 g_dev['foc'].last_temperature = 10.0    #NB NB THis shoule be a site monthly default.
             g_dev['foc'].last_source = "coarse_focus_script"
             if not sim:
-                breakpoint()
+
                 result = g_dev['cam'].expose_command(req, opt, solve_it=True)
             else:
                 result['FWHM'] = new_spot
