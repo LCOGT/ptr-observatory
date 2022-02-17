@@ -64,18 +64,21 @@ site_config = {
     'client_path':  'Q:/ptr/',  # Generic place for client host to get
                                       # Wema share data
     'archive_path':  'Q:/',
+    'aux_archive_path':  None,
     'wema_is_active':  True,          # True if the split computers used at a site.
     'wema_hostname': 'MRC-WMS-ENC',   # Prefer the shorter version
-    'wema_share_path':  'Q:/ptr/',  # '/wema_transfer/',
+
     'dome_on_wema':   True,
-    'site_IPC_mechanism':  'shares',   # ['None', shares', 'shelves', 'redis']  Pick One
+    'site_IPC_mechanism':  'redis',   # ['None', shares', 'shelves', 'redis']  Pick One
+    'wema_share_path':  'Q:/ptr/',  # '/wema_transfer/',
+    'client_read_share_path':  'Q:/ptr/',
     'redis_ip': '10.15.0.109',  #'127.0.0.1', None if no redis path present, 
     'site_is_generic':  False,   # A simply  single computer ASCOM site.
     'site_is_specific':  False,  # Indicates some special code for this site, found at end of config.
     
     # 'aux_archive_path':  None, # '//house-computer/saf_archive_2/archive/',  #  Path to auxillary backup disk.     
 
-
+    'host_wema_site_name':  'MRO',
     'name': 'Mountain Ranch Camp Observatory 0m35f7.2',
     'airport_code': 'SBA',
     'telescope_description': '0m35 f7.2 Planewave CDK',
@@ -230,8 +233,8 @@ site_config = {
             'shutdown_script':  None,  
             'alignment': 'Alt-Az',
             'default_zenith_avoid': 7.0,   #degrees floating
-            'west_clutch_ra_correction_r': 0.0,
-            'west_clutch_dec_correction_r': 0.0,
+            'west_clutch_ra_correction': 0.0,
+            'west_clutch_dec_correction': 0.0,
             'east_flip_ra_correction': 0.0,
             'east_flip_dec_correction': 0.0,
             'has_paddle': False,
@@ -524,11 +527,12 @@ site_config = {
             'shutdown_script':  None,
             'ip_string': "",
             'settings': {
-                'filter_count': 23,
+                'filter_count': 24,
                 'home_filter':  2,
                 'default_filter':  'w',
-                'filter_reference': 2,
+                'filter_reference': 3,   #This index the list below.
                 'filter_data': [['filter', 'filter_index', 'filter_offset', 'sky_gain', 'screen_gain', 'abbreviation'],
+                                ['focus',   [2, 0],     0,  280,  [2, 17], 'ai'], # 23
                                 ['air',     [0, 0], -1000,  280,  [2, 17], 'ai'], # 0
                                 ['dif',     [4, 0],     0,  260,  [2, 17], 'df'], # 1
                                 ['w',       [2, 0],     0,  249,  [2, 17], 'w '], # 2
@@ -538,7 +542,7 @@ site_config = {
                                 ['gp',      [0, 6],     0,  130,  [2, 17], 'gp'], # 6
                                 ['rp',      [0, 7],     0,  45,   [2, 17], 'rp'], # 7
                                 ['ip',      [0, 8],     0,  12,   [2, 17], 'ip'], # 8
-                                ['z',       [5, 0],     0,  4,    [2, 17], 'z'], # 9
+                                ['z',       [5, 0],     0,  4,    [2, 17], 'z' ], # 9
                                 ['PL',      [0, 4],     0,  250,  [2, 17], "PL"], # 10
                                 ['PR',      [0, 3],     0,  45,   [2, 17], 'PR'], # 11
                                 ['PG',      [0, 2],     0,  40,   [2, 17], 'PG'], # 12
@@ -550,7 +554,8 @@ site_config = {
                                 ['difgp',   [4, 6],     0,  0.01, [2, 17], 'dg'], # 18
                                 ['difrp',   [4, 7],     0,  0.01, [2, 17], 'dr'], # 19
                                 ['difip',   [4, 8],     0,  0.01, [2, 17], 'di'], # 20
-                                ['dark',   [10, 9],     0,  0.01, [2, 17], 'dk']],# 21
+                                ['dark',   [10, 9],     0,  0.01, [2, 17], 'dk'], # 21
+                                ['LRGB',   [10, 9],     0,  0.01, [2, 17], 'dk']],# 22
                                 #Screen = 100; QHY400 ~ 92% DQE   HDR Mode    Screen = 160 sat  20190825 measured.
                 'filter_screen_sort':  [0, 1, 2, 10, 7, 19, 6, 18, 12, 11, 13, 8, 20, 3, \
                                         14, 15, 4, 16],   #  9, 21],  # 5, 17], #Most to least throughput, \

@@ -176,7 +176,8 @@ class Observatory:
         self.api = API_calls()
         self.command_interval = 3   # seconds between polls for new commands
         self.status_interval = 4    # NOTE THESE IMPLEMENTED AS A DELTA NOT A RATE.
-        self.name = name
+
+        self.name = name      # NB NB NB Names needs a once-over.
         self.site_name = name
         self.config = config
        
@@ -916,6 +917,7 @@ class Observatory:
                 if not paths['frame_type'] in ['bias', 'dark', 'flat', 'solar', 'lunar', 'skyflat', 'screen', 'spectrum', 'auto_focus']:
                     try:
                         hdu_save = hdu
+                        breakpoint()
                         #wpath = 'C:/000ptr_saf/archive/sq01/20210528/reduced/saf-sq01-20210528-00019785-le-w-EX01.fits'
                         time_now = time.time()  #This should be more accurately defined earlier in the header
                         solve = platesolve.platesolve(wpath, 1.0551)     #0.5478)
