@@ -25,6 +25,7 @@ site_name = 'sro'
 
 site_config = {
     'site': str(site_name.lower()),
+    'site_id': 'SRO',
     'site_desc': "PTR @ Sierra Remote Observatory, near Fresno CA, USA. 1405m",
     'airport_code':  'FAT : Fresno Air Terminal',
     'obsy_id': 'SRO1',
