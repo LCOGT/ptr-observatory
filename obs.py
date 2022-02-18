@@ -176,7 +176,8 @@ class Observatory:
         self.api = API_calls()
         self.command_interval = 3   # seconds between polls for new commands
         self.status_interval = 4    # NOTE THESE IMPLEMENTED AS A DELTA NOT A RATE.
-        self.name = name
+
+        self.name = name      # NB NB NB Names needs a once-over.
         self.site_name = name
         self.config = config
        

@@ -711,7 +711,7 @@ class Sequencer:
                         step = 1
                         offset = [(0, -1), (0, 1)] #Two mosaic steps 36 x 24mm chip  Square
                         pane = 1
-                        pitch = 0.1875   #Try this out for small overlap and tall field.
+                        pitch = 0.1875*2   #Try this out for small overlap and tall field. 20220218 04:12 WER
                     else:
                         offset = [(0., 0.)] #Zero(no) mosaic offset
                         pitch = 0.
@@ -720,9 +720,9 @@ class Sequencer:
                         
                         x_field_deg = g_dev['cam'].config['camera']['camera_1_1']['settings']['x_field_deg']
                         y_field_deg = g_dev['cam'].config['camera']['camera_1_1']['settings']['y_field_deg']
-                        
-                        d_ra = displacement[0]*( 1 - pitch)*(x_field_deg/15.)  # 0.764243 deg = 0.0509496 Hours  These and pixscale should be computed in config.
-                        d_dec = displacement[1]*(1 - pitch)*(y_field_deg)  # = 0.5102414999999999   #Deg
+
+                        d_ra = displacement[0]*(pitch)*(x_field_deg/15.)  # 0.764243 deg = 0.0509496 Hours  These and pixscale should be computed in config.
+                        d_dec = displacement[1]*( pitch)*(y_field_deg)  # = 0.5102414999999999   #Deg
                         new_ra = dest_ra + d_ra
                         new_dec= dest_dec + d_dec
                         new_ra, new_dec = ra_dec_fix_hd(new_ra, new_dec)
@@ -1492,7 +1492,7 @@ class Sequencer:
                 g_dev['foc'].last_temperature = 10.0    #NB NB THis shoule be a site monthly default.
             g_dev['foc'].last_source = "coarse_focus_script"
             if not sim:
-                breakpoint()
+     
                 result = g_dev['cam'].expose_command(req, opt, solve_it=False)
             else:
                 result['FWHM'] = new_spot
