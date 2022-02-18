@@ -454,10 +454,10 @@ site_config = {
             'recover_script':  None,
             'shutdown_script':  None, 
             #*********Guesses   7379@10 7457@20  7497 @ 25
-            'reference': 6850, #20210710    #7418,    # Nominal at 15C Primary temperature, in microns not steps. Guess
+            'reference': 6500, #20210710    #7418,    # Nominal at 15C Primary temperature, in microns not steps. Guess
             'ref_temp':  15,      # Update when pinning reference  Larger at lower temperatures.
             'coef_c': 7.895,    # Negative means focus moves out (larger numerically) as Primary gets colder
-            'coef_0': 6850,  #20210710# Nominal intercept when Primary is at 0.0 C.
+            'coef_0': 6500,  #20210710# Nominal intercept when Primary is at 0.0 C.
             'coef_date':  '20210710',   #A Guess as to coef_c
             'use_local_temp':  True,
             'minimum': 0,    # NB this needs clarifying, we are mixing steps and microns.
