@@ -247,7 +247,8 @@ class Mount:
         self.move_time = 0
         try:
             ra1, dec1 = self.get_mount_reference()
-            print("Mount reference:  ", ra1 ,dec1)
+            ra2, dec2 = self.get_mount_reference()
+            print("Mount references clutch, flip (Look East):  ", ra1, dec1, ra2, dec2 )
         except:
             print("No mount ref found.")
             pass

@@ -14,6 +14,7 @@ import ptr_utility
 import redis
 import math
 import ephem
+from pprint import pprint
 
 '''
 Autofocus NOTE 20200122
@@ -655,7 +656,7 @@ class Sequencer:
                     if count <= 0:
                          continue
                     #At this point we have 1 to 9 exposures to make in this filter.  Note different areas can be defined. 
-                    if exposure['area'] in ['300', '300%', 300, '220', '220%', 220, '150', '150%', 150, '125', '125%', 125]:  # 4 or 5 expsoures.
+                    if exposure['area'] in ['300', '300%', 300, '220', '220%', 220, '150', '150%', 150, ]:  # 4 or 5 expsoures.
                         if block_specification['project']['project_constraints']['add_center_to_mosaic']:
                             offset = [(0.0, 0.0), (-1.5, 1.), (1.5, 1.), (1.5, -1.), (-1.5, -1.)] #Aimpoint + Four mosaic quadrants 36 x 24mm chip
                             pane = 0
@@ -669,8 +670,7 @@ class Sequencer:
                             pitch = 0.25
                         if exposure['area'] in ['150', '150%', 150]:
                             pitch = 0.1875
-                        if exposure['area'] in ['125', '125%', 125]:
-                            pitch = 0.125
+
                     elif exposure['area'] in ['600', '600%', 600, '450', '450%', 450]:  # 9 exposures.
                         offset = [(0.5, 0.5), 
                                   (-0.5, 0.5), 
@@ -711,7 +711,7 @@ class Sequencer:
                         step = 1
                         offset = [(0, -1), (0, 1)] #Two mosaic steps 36 x 24mm chip  Square
                         pane = 1
-                        pitch = 0.1875   #Try this out for small overlap and tall field.
+                        pitch = 0.1875*2   #Try this out for small overlap and tall field. 20220218 04:12 WER
                     else:
                         offset = [(0., 0.)] #Zero(no) mosaic offset
                         pitch = 0.
@@ -720,9 +720,9 @@ class Sequencer:
                         
                         x_field_deg = g_dev['cam'].config['camera']['camera_1_1']['settings']['x_field_deg']
                         y_field_deg = g_dev['cam'].config['camera']['camera_1_1']['settings']['y_field_deg']
-                        
-                        d_ra = displacement[0]*( 1 - pitch)*(x_field_deg/15.)  # 0.764243 deg = 0.0509496 Hours  These and pixscale should be computed in config.
-                        d_dec = displacement[1]*(1 - pitch)*(y_field_deg)  # = 0.5102414999999999   #Deg
+
+                        d_ra = displacement[0]*(pitch)*(x_field_deg/15.)  # 0.764243 deg = 0.0509496 Hours  These and pixscale should be computed in config.
+                        d_dec = displacement[1]*( pitch)*(y_field_deg)  # = 0.5102414999999999   #Deg
                         new_ra = dest_ra + d_ra
                         new_dec= dest_dec + d_dec
                         new_ra, new_dec = ra_dec_fix_hd(new_ra, new_dec)
@@ -1164,9 +1164,15 @@ class Sequencer:
         #print('AF entered with:  ', req, opt, '\n .. and sim =  ', sim)
         #self.sequencer_hold = True  #Blocks command checks.
         #Here we jump in too  fast and need for mount to settle
-        start_ra = g_dev['mnt'].mount.RightAscension   #Read these to go back.
+# =============================================================================
+# =============================================================================
+# =============================================================================
+        start_ra = g_dev['mnt'].mount.RightAscension   #Read these to go back.  NB NB Need to cleanly pass these on so fcureturns to proper target.
         start_dec = g_dev['mnt'].mount.Declination
         focus_start = g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron
+# =============================================================================
+# =============================================================================
+# =============================================================================
         print("Saved ra, dec, focus:  ", start_ra, start_dec, focus_start)
         try:
             #Check here for filter, guider, still moving  THIS IS A CLASSIC
@@ -1213,7 +1219,7 @@ class Sequencer:
         retry = 0
         while retry < 3:
             if not sim:
-                result = g_dev['cam'].expose_command(req, opt, no_AWS=True) ## , script = 'auto_focus_script_0')  #  This is where we start.
+                result = g_dev['cam'].expose_command(req, opt, no_AWS=True, solve_it=False) ## , script = 'auto_focus_script_0')  #  This is where we start.
             else:
                 result['FWHM'] = 3
                 result['mean_focus'] = g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron
@@ -1229,7 +1235,7 @@ class Sequencer:
         g_dev['foc'].focuser.Move((foc_pos0 - 1*throw)*g_dev['foc'].micron_to_steps)
         #opt['fwhm_sim'] = 4.
         if not sim:
-            result = g_dev['cam'].expose_command(req, opt, no_AWS=True) ## , script = 'auto_focus_script_1')  #  This is moving in one throw.
+            result = g_dev['cam'].expose_command(req, opt, no_AWS=True, solve_it=False) ## , script = 'auto_focus_script_1')  #  This is moving in one throw.
         else:
             result['FWHM'] = 4
             result['mean_focus'] = g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron
@@ -1242,7 +1248,7 @@ class Sequencer:
         g_dev['foc'].focuser.Move((foc_pos0 + throw)*g_dev['foc'].micron_to_steps)  #NB NB NB THIS IS WRONG!
         time.sleep(10)#opt['fwhm_sim'] = 5
         if not sim:
-            result = g_dev['cam'].expose_command(req, opt, no_AWS=True) ## , script = 'auto_focus_script_2')  #  This is moving out one throw.
+            result = g_dev['cam'].expose_command(req, opt, no_AWS=True, solve_it=False) ## , script = 'auto_focus_script_2')  #  This is moving out one throw.
         else:
             result['FWHM'] = 4.5
             result['mean_focus'] = g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron
@@ -1402,7 +1408,7 @@ class Sequencer:
         g_dev['foc'].focuser.Move((foc_pos0 - 0*throw)*g_dev['foc'].micron_to_steps)  #Added 20220209! A bit late
         #throw = 100  # NB again, from config.  Units are microns
         if not sim:
-            result = g_dev['cam'].expose_command(req, opt, no_AWS=True)
+            result = g_dev['cam'].expose_command(req, opt, no_AWS=True, solve_it=False)
         else:
             result['FWHM'] = 4
             result['mean_focus'] = g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron
@@ -1421,7 +1427,7 @@ class Sequencer:
         g_dev['foc'].focuser.Move((foc_pos0 - 1*throw)*g_dev['foc'].micron_to_steps)
         #opt['fwhm_sim'] = 4.
         if not sim:
-            result = g_dev['cam'].expose_command(req, opt, no_AWS=True)
+            result = g_dev['cam'].expose_command(req, opt, no_AWS=True, solve_it=False)
         else:
             result['FWHM'] = 5
             result['mean_focus'] = g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron
@@ -1431,7 +1437,7 @@ class Sequencer:
         g_dev['foc'].focuser.Move((foc_pos0 - 2*throw)*g_dev['foc'].micron_to_steps)
         #opt['fwhm_sim'] = 4.
         if not sim:
-            result = g_dev['cam'].expose_command(req, opt, no_AWS=True)
+            result = g_dev['cam'].expose_command(req, opt, no_AWS=True, solve_it=False)
         else:
             result['FWHM'] = 6
             result['mean_focus'] = g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron
@@ -1444,7 +1450,7 @@ class Sequencer:
         g_dev['foc'].focuser.Move((foc_pos0 + 2*throw)*g_dev['foc'].micron_to_steps)
         #opt['fwhm_sim'] = 5
         if not sim:
-            result = g_dev['cam'].expose_command(req, opt, no_AWS=True)
+            result = g_dev['cam'].expose_command(req, opt, no_AWS=True, solve_it=False)
         else:
             result['FWHM'] = 6.5
             result['mean_focus'] = g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron
@@ -1454,7 +1460,7 @@ class Sequencer:
         g_dev['foc'].focuser.Move((foc_pos0 + throw)*g_dev['foc'].micron_to_steps)
         #opt['fwhm_sim'] = 4.
         if not sim:
-            result = g_dev['cam'].expose_command(req, opt, no_AWS=True)
+            result = g_dev['cam'].expose_command(req, opt, no_AWS=True, solve_it=False)
         else:
             result['FWHM'] = 5.75
             result['mean_focus'] = g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron
@@ -1486,7 +1492,7 @@ class Sequencer:
                 g_dev['foc'].last_temperature = 10.0    #NB NB THis shoule be a site monthly default.
             g_dev['foc'].last_source = "coarse_focus_script"
             if not sim:
-
+     
                 result = g_dev['cam'].expose_command(req, opt, solve_it=False)
             else:
                 result['FWHM'] = new_spot
