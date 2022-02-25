@@ -454,10 +454,10 @@ site_config = {
             'recover_script':  None,
             'shutdown_script':  None, 
             #*********Guesses   7379@10 7457@20  7497 @ 25
-            'reference': 6500, #20210710    #7418,    # Nominal at 15C Primary temperature, in microns not steps. Guess
+            'reference': 6014, #20210710    #7418,    # Nominal at 15C Primary temperature, in microns not steps. Guess
             'ref_temp':  15,      # Update when pinning reference  Larger at lower temperatures.
             'coef_c': 7.895,    # Negative means focus moves out (larger numerically) as Primary gets colder
-            'coef_0': 6500,  #20210710# Nominal intercept when Primary is at 0.0 C.
+            'coef_0': 6014,  #20210710# Nominal intercept when Primary is at 0.0 C.
             'coef_date':  '20210710',   #A Guess as to coef_c
             'use_local_temp':  True,
             'minimum': 0,    # NB this needs clarifying, we are mixing steps and microns.
@@ -515,8 +515,8 @@ site_config = {
             "parent": "telescope1",
             "alias": "Dual filter wheel",
             "desc":  'FLI Centerline Custom Dual 50mm sq.',
-            #"driver": "Maxim",   #['ASCOM.FLI.FilterWheel1', 'ASCOM.FLI.FilterWheel2'],   #"Maxim",   #
-            "driver": "Maxim.CCDCamera",  #  'ASCOM.FLI.FilterWheel',   #'MAXIM',
+            "driver": 'ASCOM.FLI.FilterWheel',  #  ['ASCOM.FLI.FilterWheel1', 'ASCOM.FLI.FilterWheel2'],   #"Maxim",   #
+            #"driver": "Maxim.CCDCamera",  #  'ASCOM.FLI.FilterWheel',   #'MAXIM',
             "dual_wheel": True,
             # "parent": "telescope1",
             # "alias": "CWL2",
@@ -543,10 +543,10 @@ site_config = {
                                 ['rp',      [0, 7],     0,  45,   [2, 17], 'rp'], # 7
                                 ['ip',      [0, 8],     0,  12,   [2, 17], 'ip'], # 8
                                 ['z',       [5, 0],     0,  4,    [2, 17], 'z' ], # 9
-                                ['PL',      [0, 4],     0,  250,  [2, 17], "PL"], # 10
-                                ['PR',      [0, 3],     0,  45,   [2, 17], 'PR'], # 11
-                                ['PG',      [0, 2],     0,  40,   [2, 17], 'PG'], # 12
-                                ['PB',      [0, 1],     0,  60,   [2, 17], 'PB'], # 13
+                                ['PL (lum)',      [0, 4],     0,  250,  [2, 17], "PL"], # 10
+                                ['PR (Red)',      [0, 3],     0,  45,   [2, 17], 'PR'], # 11
+                                ['PG (Green)',      [0, 2],     0,  40,   [2, 17], 'PG'], # 12
+                                ['PB (Blue)',      [0, 1],     0,  60,   [2, 17], 'PB'], # 13
                                 ['O3',      [7, 0],     0,  2.6,  [2, 17], '03'], # 14
                                 ['HA',      [6, 0],     0,  0.6,  [2, 17], 'HA'], # 15
                                 ['S2',      [8, 0],     0,  0.6,  [2, 17], 'S2'], # 16
@@ -555,7 +555,7 @@ site_config = {
                                 ['difrp',   [4, 7],     0,  0.01, [2, 17], 'dr'], # 19
                                 ['difip',   [4, 8],     0,  0.01, [2, 17], 'di'], # 20
                                 ['dark',   [10, 9],     0,  0.01, [2, 17], 'dk'], # 21
-                                ['LRGB',   [10, 9],     0,  0.01, [2, 17], 'dk']],# 22
+                                ['LRGB (n.a.)',   [10, 9],     0,  0.01, [2, 17], 'dk']],# 22
                                 #Screen = 100; QHY400 ~ 92% DQE   HDR Mode    Screen = 160 sat  20190825 measured.
                 'filter_screen_sort':  [0, 1, 2, 10, 7, 19, 6, 18, 12, 11, 13, 8, 20, 3, \
                                         14, 15, 4, 16],   #  9, 21],  # 5, 17], #Most to least throughput, \
@@ -641,9 +641,10 @@ site_config = {
                 'y_active': 3194,
                 'x_pixel':  3.76,
                 'y_pixel':  3.76,
-                'pix_scale': 0.605194,    #   bin-2  2* math.degrees(math.atan(3.76/2563000))*3600
-                'x_field_deg': round(4784*0.605194/3600, 4),   #48 X 32 AMIN  3MIN X 0.5 DEG  
-                'y_field_deg': round(3194*0.605194/3600, 4),
+                'pix_scale': [0.303, 0.605194, 0.908, 1.21],   #   bin-2  2* math.degrees(math.atan(3.76/2563000))*3600
+                'x_field_deg': 0.5369,  #round(4784*0.605194/3600, 4),   #48 X 32 AMIN  3MIN X 0.5 DEG  
+                'y_field_deg': 0.4317,  #round(3194*0.605194/3600, 4),
+                'field_area_sq_amin': 1554,
                 'overscan_x': 24,
                 'overscan_y': 34,
                 'north_offset': 0.0,    #  These three are normally 0.0 for the primary telescope

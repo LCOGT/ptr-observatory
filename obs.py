@@ -950,7 +950,7 @@ class Observatory:
                         # if prior_time is not None:
                         #     print("time base is:  ", time_now - prior_time)
                             
-                        # g_dev['mnt'].set_last_reference( solve['ra_j2000_hours'], solve['dec_j2000_degrees'], time_now)
+                        # g_dev['mnt'].set_last_reference( solve['ra_j2000_Second phase of AF now.hours'], solve['dec_j2000_degrees'], time_now)
                     except:
                        print(wpath, "  was not solved, marking to skip in future, sorry!")
                        img = fits.open(wpath, mode='update', ignore_missing_end=True)

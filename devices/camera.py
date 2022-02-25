@@ -489,6 +489,7 @@ class Camera:
         req = command['required_params']
         opt = command['optional_params']
         action = command['action']
+
         self.user_id = command['user_id']
         if self.user_id != self.last_user_id:
             self.last_user_id = self.user_id
@@ -1336,7 +1337,7 @@ class Camera:
                             a0 = sourcef['a']
                             b0 = sourcef['b']
                             r0.append(round(math.sqrt(a0*a0 + b0*b0), 2))
-                    scale = self.config['camera'][self.name]['settings']['pix_scale']
+                    scale = self.config['camera'][self.name]['settings']['pix_scale']['pix_scale'][self.camera.BinX - 1]
                     result['FWHM'] = round(np.median(r0)*scale, 3)   #@0210524 was 2x larger but a and b are diameters not radii
                     result['mean_focus'] =  avg_foc[1]
 
