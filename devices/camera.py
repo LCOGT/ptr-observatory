@@ -462,7 +462,7 @@ class Camera:
         status['active_camera'] = self.name
         if self.config['camera'][self.name]['settings']['has_darkslide']:
             ds = self.darkslide_instance.slideStatus
-            status['darkslide'] = str(ds)
+            status['darkslide'] = g_dev['drk'].slideStatus
         else:
             status['darkslide']    = 'unknown'
         if self.exposure_busy:
@@ -495,18 +495,30 @@ class Camera:
         self.user_name = command['user_name']
         if self.user_name != self.last_user_name:
             self.last_user_name = self.user_name
-        if action == "expose" and not self.exposure_busy :
+        if action == "expose" and not self.exposure_busy:
             self.expose_command(req, opt, do_sep=True, quick=False)
-            self.exposure_busy = False     #Hangup needs to be guarded with a timeout.
+            self.exposure_busy = True     #Hangup needs to be guarded with a timeout.
             self.active_script = None
 
-#        elif action == "expose" and script_mode == 'make_superscreenflats':
+        elif action == "expose" and self.exposure_busy:
+            print("Cannot expose, camera is currently busy")
 #            self.screen_flat_script(req, opt)
 #            self.exposure_busy = False
 #            self.active_script = 'make_superscreenflats'
+        elif action == "darkslide_close":
+           # self.stop_command(req, opt)
+           # self.exposure_busy = False
+           g_dev['drk'].closeDarkslide()
+           print("OClosing the darkslide.")
+        elif action == "darkslide_open":
+           # self.stop_command(req, opt)
+           # self.exposure_busy = False
+           g_dev['drk'].openDarkslide()
+           print["Opening the darkslide."]
         elif action == "stop":
             self.stop_command(req, opt)
             self.exposure_busy = False
+            print("STOP  STOP  STOP received.")
         else:
 
             print(f"Command <{action}> not recognized.")
@@ -1049,6 +1061,7 @@ class Camera:
                     print('Exception in camera retry loop:  ', e)
                     self.retry_camera -= 1
                     num_retries += 1
+                    self.exposure_busy = False
                     continue
         #  This is the loop point for the seq count loop
         self.t11 = time.time()
@@ -1071,6 +1084,7 @@ class Camera:
                         low=0, high=0, script='False', opt=None, solve_it=False):
         print("Finish exposure Entered:  ", exposure_time, frame_type, 'to go: ', counter, \
               gather_status, do_sep, no_AWS, start_x, start_y, opt['area'])
+        self.status_time = time.time() + 10
         self.post_mnt = []
         self.post_rot = []
         self.post_foc = []
@@ -1090,6 +1104,9 @@ class Camera:
             g_dev['rot'].get_quick_status(self.post_rot)
             g_dev['foc'].get_quick_status(self.post_foc)
             g_dev['ocn'].get_quick_status(self.post_ocn)
+            if time.time() > self.status_time:
+                g_dev['obs'].update_status()
+                self.status_time = time.time() + 10
             if time.time() < self.completion_time:   #  NB Testing here if glob too early is delaying readout.
                 time.sleep(.5)
                 continue
@@ -1336,7 +1353,8 @@ class Camera:
                             a0 = sourcef['a']
                             b0 = sourcef['b']
                             r0.append(round(math.sqrt(a0*a0 + b0*b0), 2))
-                    scale = self.config['camera'][self.name]['settings']['pix_scale']
+
+                    scale = self.config['camera'][self.name]['settings']['pix_scale'][self.camera.BinX -1]
                     result['FWHM'] = round(np.median(r0)*scale, 3)   #@0210524 was 2x larger but a and b are diameters not radii
                     result['mean_focus'] =  avg_foc[1]
 
@@ -1349,6 +1367,7 @@ class Camera:
                     hdu = fits.PrimaryHDU(self.img)
                     self.img = None    #  Does this free up any resource?
                     # assign the keyword values and comment of the keyword as a tuple to write both to header.
+
                     hdu.header['BUNIT']    = ('adu', 'Unit of array values')
                     hdu.header['CCDXPIXE'] = (self.camera.PixelSizeX, '[um] Size of unbinned pixel, in X')  # DEH maybe change config units to meters or convert to m?
                     hdu.header['CCDYPIXE'] = (self.camera.PixelSizeY, '[um] Size of unbinned pixel, in Y')
@@ -1713,6 +1732,7 @@ class Camera:
                             pass    #  print ("File newest.fits not found, this is probably OK")
                         result = {'patch': bi_mean,
                                 'calc_sky': 0}  #avg_ocn[7]}
+                        self.exposure_busy = False
                         return result #  Note we are not calibrating. Just saving the file.
                     # elif frame_type in ['light']:
                     #     self.enqueue_for_AWS(reduced_data_size, im_path, red_name01)
@@ -1734,7 +1754,7 @@ class Camera:
                     result['filter'] = self.current_filter
                     result['error'] == False
                     g_dev['obs'].send_to_user("Expose cycle completed.", p_level='INFO')
-
+                    self.exposure_busy = False
                     return result
                 except Exception as e:
                     print('Header assembly block failed: ', e)
@@ -1748,6 +1768,7 @@ class Camera:
                     #     pass
                     self.t7 = time.time()
                     result = {'error': True}
+                self.exposure_busy = False
                 return result
             else:
                 time.sleep(1)
@@ -1759,6 +1780,7 @@ class Camera:
                 if remaining < -30:
                     print("Camera timed out, not connected")
                     result = {'error': True}
+                    self.exposure_busy = False
                     return result
 
 
