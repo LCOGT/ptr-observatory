@@ -1106,7 +1106,7 @@ class Camera:
             g_dev['ocn'].get_quick_status(self.post_ocn)
             if time.time() > self.status_time:
                 g_dev['obs'].update_status()
-                self.status_time = time.time() + 10
+                self.status_time = time.time() + 15
             if time.time() < self.completion_time:   #  NB Testing here if glob too early is delaying readout.
                 time.sleep(.5)
                 continue
