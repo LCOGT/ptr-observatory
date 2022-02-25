@@ -348,7 +348,7 @@ class Sequencer:
                     if block['project_id'] == project['project_name'] + '#' + project['created_at']:
                         block['project'] = project
                 else:
-                    print("Block has no specified project ID, sorry!   ", )
+                    print("Reservation asserting at this time.   ", )
             '''
             evaluate supplied projects for observable and mark as same. Discard
             unobservable projects.  Projects may be "site" projects or 'ptr' (network wide:
@@ -694,7 +694,7 @@ class Sequencer:
                             pitch = 0.125
 
                         if exposure['area'] in ['450', '450%', 450]:
-                            pitch = 0.1875
+                            pitch = 0.250
                         pane = 0
                     elif exposure['area'] in ['500', '500%',]:  # 6 or 7 exposures.  SQUARE
                         step = 1.466667
@@ -711,7 +711,7 @@ class Sequencer:
                         step = 1
                         offset = [(0, -1), (0, 1)] #Two mosaic steps 36 x 24mm chip  Square
                         pane = 1
-                        pitch = 0.1875*2   #Try this out for small overlap and tall field. 20220218 04:12 WER
+                        pitch = 0.25#*2   #Try this out for small overlap and tall field. 20220218 04:12 WER
                     else:
                         offset = [(0., 0.)] #Zero(no) mosaic offset
                         pitch = 0.
@@ -742,7 +742,7 @@ class Sequencer:
                             opt = {'area': 150, 'count': 1, 'bin': binning, 'filter': color, \
                                    'hint': block['project_id'] + "##" + dest_name, 'pane': pane}
                             print('Seq Blk sent to camera:  ', req, opt)
-                            g_dev['cam'].expose_command(req, opt, no_AWS=False)
+                            g_dev['cam'].expose_command(req, opt, no_AWS=False, solve_it=False)
                             t +=1
                             count -= 1
                             exposure['count'] = count
@@ -800,7 +800,7 @@ class Sequencer:
         while ephem.now() < g_dev['events']['Morn Bias Dark'] :   #Do not overrun the window end
             #g_dev['mnt'].unpark_command({}, {}) # Get there early
             #g_dev['mnt'].slewToSkyFlatAsync()
-            print("Expose Biases: b- 2, 1, 3;  300s darks.")
+            print("Expose Biases: b- 2, 1, 3, 4;  300s darks.")
             dark_time = 300
             req = {'time': 0.0,  'script': 'True', 'image_type': 'bias'}
             opt = {'area': "Full", 'count': 9, 'bin':'2 2', \
