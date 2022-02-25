@@ -348,7 +348,7 @@ class Sequencer:
                     if block['project_id'] == project['project_name'] + '#' + project['created_at']:
                         block['project'] = project
                 else:
-                    print("Block has no specified project ID, sorry!   ", )
+                    print("Reservation asserting at this time.   ", )
             '''
             evaluate supplied projects for observable and mark as same. Discard
             unobservable projects.  Projects may be "site" projects or 'ptr' (network wide:
@@ -694,7 +694,7 @@ class Sequencer:
                             pitch = 0.125
 
                         if exposure['area'] in ['450', '450%', 450]:
-                            pitch = 0.1875
+                            pitch = 0.250
                         pane = 0
                     elif exposure['area'] in ['500', '500%',]:  # 6 or 7 exposures.  SQUARE
                         step = 1.466667
@@ -742,7 +742,7 @@ class Sequencer:
                             opt = {'area': 150, 'count': 1, 'bin': binning, 'filter': color, \
                                    'hint': block['project_id'] + "##" + dest_name, 'pane': pane}
                             print('Seq Blk sent to camera:  ', req, opt)
-                            g_dev['cam'].expose_command(req, opt, no_AWS=False)
+                            g_dev['cam'].expose_command(req, opt, no_AWS=False, solve_it=False)
                             t +=1
                             count -= 1
                             exposure['count'] = count
