@@ -497,7 +497,7 @@ class Camera:
             self.last_user_name = self.user_name
         if action == "expose" and not self.exposure_busy:
             self.expose_command(req, opt, do_sep=True, quick=False)
-            self.exposure_busy = True     #Hangup needs to be guarded with a timeout.
+            self.exposure_busy = False     #Hangup needs to be guarded with a timeout.
             self.active_script = None
 
         elif action == "expose" and self.exposure_busy:
@@ -509,12 +509,12 @@ class Camera:
            # self.stop_command(req, opt)
            # self.exposure_busy = False
            g_dev['drk'].closeDarkslide()
-           print("OClosing the darkslide.")
+           print("Closing the darkslide.")
         elif action == "darkslide_open":
            # self.stop_command(req, opt)
            # self.exposure_busy = False
            g_dev['drk'].openDarkslide()
-           print["Opening the darkslide."]
+           print("Opening the darkslide.")
         elif action == "stop":
             self.stop_command(req, opt)
             self.exposure_busy = False
