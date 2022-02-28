@@ -389,6 +389,7 @@ class FilterWheel:
         #     filter_name = 'up'
         for match in range(int(self.config['filter_wheel1']['settings']['filter_count'])):  #NB Filter count MUST be correct in Config.
             if filter_name == self.filter_data[match][0]:
+
                 filt_pointer = match
                 break
         print('Filter name is:  ', self.filter_data[match][0])

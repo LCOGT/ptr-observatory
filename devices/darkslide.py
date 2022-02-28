@@ -12,10 +12,10 @@ from global_yard import g_dev
 class Darkslide(object):
     
     def __init__(self, com_port):
-        self.slideStatus = 'unknown'
+        self.slideStatus = 'Unknown'
         self.com_port = com_port
-        self.closeDarkslide()
-        self.slideStatus = 'Closed'
+        #self.closeDarkslide()
+        #self.slideStatus = 'Closed'
         g_dev['drk'] = self
 
         

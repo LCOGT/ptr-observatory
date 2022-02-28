@@ -320,9 +320,9 @@ class Camera:
             self.darkslide = True
             com_port = self.config['camera'][self.name]['settings']['darkslide_com']
             self.darkslide_instance = Darkslide(com_port)     #  NB eventually default after reboot should be closed.
-            self.darkslide_instance.closeDarkslide()   #  Consider turing off IR Obsy light at same time..
-            self.darkslide_open = False
-            print("Darkslide closed on camera startup.")
+            #self.darkslide_instance.closeDarkslide()   #  Consider turing off IR Obsy light at same time..
+            #self.darkslide_open = False
+            print("Darkslide unknown on camera startup.")
         self.last_user_name = "unknown user name"
         self.last_user_id ="unknown user ID"
         try:
@@ -606,13 +606,13 @@ class Camera:
             bin_x = eval(bin_x)[:2]   #This is meant to strip off the Pixel size when it comes in from aws.
         except:
             print('Bin eval did not work, no harm usually.')
-        if bin_x in ['4 4', 4, '4, 4', '4,4', [4, 4]]:     # For now this is the highest level of binning supported.
+        if bin_x in ['4 4', 4, '4, 4', '4,4', [4, 4], (4, 4)]:     # For now this is the highest level of binning supported.
             bin_x = 4
             self.ccd_sum = '4 4'
-        elif bin_x in ['3 3', 3, '3, 3', '3,3', [3, 3]]:   # replace with in and various formats or strip spaces.
+        elif bin_x in ['3 3', 3, '3, 3', '3,3', [3, 3], (3, 3)]:   # replace with in and various formats or strip spaces.
             bin_x = 3
             self.ccd_sum = '3 3'
-        elif bin_x in ['2 2', 2, '2, 2', '2,2', [2, 2]]:   #The bin spec is too convoluted. This needs a deep clean.
+        elif bin_x in ['2 2', 2, '2, 2', '2,2', [2, 2], (2, 2)]:   #The bin spec is too convoluted. This needs a deep clean.
             bin_x = 2
             self.ccd_sum = '2 2'
         else:
@@ -1325,6 +1325,7 @@ class Camera:
                 avg_rot = g_dev['rot'].get_average_status(self.pre_rot, self.post_rot)
                 avg_ocn = g_dev['ocn'].get_average_status(self.pre_ocn, self.post_ocn)
                 if frame_type[-5:] in ['focus', 'probe', "ental"]:
+
                     self.img = self.img + 100   #maintain a + pedestal for sep  THIS SHOULD not be needed for a raw input file.
                     self.img = self.img.astype("float")
                     #print(self.img.flags)

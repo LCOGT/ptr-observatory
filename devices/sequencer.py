@@ -927,8 +927,9 @@ class Sequencer:
         print('Eve Sky Flat sequence Starting, Enclosure PRESUMED Open. Telescope will un-park.')
         #breakpoint()
         camera_name = str(self.config['camera']['camera_1_1']['name'])
-        flat_count = 7
-        min_exposure = float(self.config['camera']['camera_1_1']['min_exposure']) 
+        flat_count = 3
+
+        min_exposure = float(self.config['camera']['camera_1_1']['settings']['min_exposure']) 
         exp_time = min_exposure # added 20220207 WER
         #  NB Sometime, try 2:2 binning and interpolate a 1:1 flat.  This might run a lot faster.
         if flat_count < 1: flat_count = 1
@@ -986,9 +987,8 @@ class Sequencer:
                         sky_lux = eval(self.redis_server.get('ocn_status'))['calc_HSI_lux']     #Why Eval, whould have float?
                     except:
                         print("Redis not running. lux set to 1000.")
-                        sky_lux = 1000
-                    exp_time = prior_scale*scale*13587/(collecting_area*sky_lux*float(g_dev['fil'].filter_data[current_filter][3]))  #g_dev['ocn'].calc_HSI_lux)  #meas_sky_lux)
-                    
+                        sky_lux = float(g_dev['ocn'].status['calc_HSI_lux'])
+                    exp_time = prior_scale*scale*25000/(collecting_area*sky_lux*float(g_dev['fil'].filter_data[current_filter][3]))  #g_dev['ocn'].calc_HSI_lux)  #meas_sky_lux)
                     print('Ex:  ', exp_time, scale, prior_scale, sky_lux, float(g_dev['fil'].filter_data[current_filter][3]))
                     #exp_time*= 4.9/9/2
                     if exp_time > 120:
@@ -1223,6 +1223,7 @@ class Sequencer:
             else:
                 result['FWHM'] = 3
                 result['mean_focus'] = g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron
+
             spot1 = result['FWHM']
             foc_pos1 = result['mean_focus']
             if math.isnan(spot1):

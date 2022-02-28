@@ -1214,7 +1214,7 @@ class Mount:
         #old_ha, old_dec = self.get_mount_reference()
         mnt_shelf = shelve.open(self.site_path + 'ptr_night_shelf/' + 'mount1')
         init_ra = mnt_shelf['flip_ra_cal_offset']
-        init_dec = mnt_shelf['flip dec_cal_offset']     # NB NB THese need to be modulo corrected, maybe limited
+        init_dec = mnt_shelf['flip_dec_cal_offset']     # NB NB THese need to be modulo corrected, maybe limited
    
         print("initial:  ", init_ra, init_dec)
         mnt_shelf['flip_ra_cal_offset'] = init_ra + err_ha    #NB NB NB maybe best to reverse signs here??
