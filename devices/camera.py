@@ -323,8 +323,8 @@ class Camera:
             #self.darkslide_instance.closeDarkslide()   #  Consider turing off IR Obsy light at same time..
             #self.darkslide_open = False
             print("Darkslide unknown on camera startup.")
-        self.last_user_name = "unknown user name"
-        self.last_user_id ="unknown user ID"
+        self.last_user_name = "Tobor"
+        self.last_user_id ="Tobor"
         try:
             seq = test_sequence(self.alias)
         except:
@@ -1359,6 +1359,13 @@ class Camera:
                     scale = self.config['camera'][self.name]['settings']['pix_scale'][self.camera.BinX -1]
                     result['FWHM'] = round(np.median(r0)*scale, 3)   #@0210524 was 2x larger but a and b are diameters not radii
                     result['mean_focus'] =  avg_foc[1]
+                    try:
+                        valid =  0.0 <= result['FWHM']<= 20. and 100 < result['mean_focus'] < 12600
+                        result['error'] = False
+                    except:
+                        result['error'] = True    # NB NB NB These are quick placeholders and need to be changed
+                        result['FWHM']  = 3.456
+                        result['mean_focus'] =  6543
 
                     focus_image = True
                 else:
@@ -1596,7 +1603,7 @@ class Camera:
 
                         hdu.header['USERNAME'] = self.last_user_name
                         hdu.header ['USERID']  = self.last_user_id
-                        print("User_name or id not found, using prior.")  #Insert last user nameand ID here if they are not supplied.
+                        #print("User_name or id not found, using prior.")  #Insert last user nameand ID here if they are not supplied.
                     
                     # NB This needs more development
                     im_type = 'EX'   #or EN for engineering....

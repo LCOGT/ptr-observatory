@@ -80,8 +80,8 @@ site_config = {
     
     'site_in_automatic_default': "Automatic",   # ["Manual", "Shutdown", "Automatic"]
     'automatic_detail_default': "Enclosure is initially set to Shutdown by SAF config.",
-    'auto_eve_bias_dark': False,
-    'auto_eve_sky_flat': False ,
+    'auto_eve_bias_dark': True,
+    'auto_eve_sky_flat': True ,
     'eve_sky_flat_sunset_offset': +0.0,  # Minutes  neg means before, + after.
     'auto_morn_sky_flat': False,
     'auto_morn_bias_dark': False,
@@ -316,18 +316,18 @@ site_config = {
             'desc':  'Optec Gemini',
             'driver': 'ASCOM.OptecGemini.Focuser',
 		  'com_port':  None,
-            # F4.9 setup
-            'reference': 5197,    # 20210313  Nominal at 10C Primary temperature
-            'ref_temp':  5.1,    # Update when pinning reference
-            'coef_c': 0,  # 26.055,   # Negative means focus moves out as Primary gets colder
-            'coef_0': 5197,  # Nominal intercept when Primary is at 0.0 C. 
-            'coef_date':  '20211210',    # This appears to be sensible result 44 points -13 to 3C'reference':  6431,    # Nominal at 10C Primary temperature
-            # #F9 setup
-            # 'reference': 4375,    #  Guess 20210904  Nominal at 10C Primary temperature
-            # 'ref_temp':  27.,    # Update when pinning reference
-            # 'coef_c': -78.337,   # negative means focus moves out as Primary gets colder
-            # 'coef_0': 5969,  # Nominal intercept when Primary is at 0.0 C. 
-            # 'coef_date':  '20210903',    # SWAG  OLD: This appears to be sensible result 44 points -13 to 3C
+            # # F4.9 setup
+            # 'reference': 5800,    # 20210313  Nominal at 10C Primary temperature
+            # 'ref_temp':  5.1,    # Update when pinning reference
+            # 'coef_c': 0,  # 26.055,   # Negative means focus moves out as Primary gets colder
+            # 'coef_0': 5800,  # Nominal intercept when Primary is at 0.0 C. 
+            # 'coef_date':  '20220301',    # This appears to be sensible result 44 points -13 to 3C'reference':  6431,    # Nominal at 10C Primary temperature
+            #F9 setup
+            'reference': 5743,    #  Meas   Nominal at 10C Primary temperature
+            'ref_temp':  4.8,    # Update when pinning reference
+            'coef_c': -78.337,   # negative means focus moves out as Primary gets colder
+            'coef_0': 5575,  # Nominal intercept when Primary is at 0.0 C. 
+            'coef_date':  '20220302',    # SWAG 
             'minimum': 0,     # NB this area is confusing steps and microns, and need fixing.
             'maximum': 12600,   #12672 actually
             'step_size': 1,

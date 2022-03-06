@@ -260,7 +260,7 @@ class Observatory:
  
 
         self.time_last_status = time.time() - 3
-        # Build the to-AWS Queue and start a thread.
+        # Build the to-AWS Try again, reboot, verify dome nad tel and start a thread.
   
         self.aws_queue = queue.PriorityQueue()
         self.aws_queue_thread = threading.Thread(target=self.send_to_AWS, args=())

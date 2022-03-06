@@ -238,11 +238,12 @@ class Sequencer:
                         time.sleep(10)
                     print("Open and slew Dome to azimuth opposite the Sun:  ", round(flat_spot, 1))
 
-                    # if enc_status['shutter_status'] in ['Closed', 'closed'] \
-                    #     and ocn_status['hold_duration'] <= 0.1:
-                    #     #breakpoint()
-                    #     g_dev['enc'].open_command({}, {})
-                    #     time.sleep(3)
+                    if enc_status['shutter_status'] in ['Closed', 'closed'] \
+                        and ocn_status['hold_duration'] <= 0.1:
+                        #breakpoint()
+                        g_dev['enc'].open_command({}, {})
+                        time.sleep(3)
+                    
                     g_dev['enc'].sync_mount_command({}, {})
                    #Prior to skyflats no dome following.
 
@@ -344,6 +345,7 @@ class Sequencer:
  
             house = []
             for project in projects:
+
                 if block['project_id']  != 'none':
                     if block['project_id'] == project['project_name'] + '#' + project['created_at']:
                         block['project'] = project
@@ -507,7 +509,7 @@ class Sequencer:
         # if bock['project'] is None:
             #user controlled block...
         #NB NB NB  if no project found, need to say so not fault. 20210624
-        #breakpoint()
+
         for target in block['project']['project_targets']:   #  NB NB NB Do multi-target projects make sense???
             dest_ra = float(target['ra']) - \
                 float(block_specification['project']['project_constraints']['ra_offset'])/15.
@@ -741,6 +743,14 @@ class Sequencer:
                             req = {'time': exp_time,  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': imtype}   #  NB Should pick up filter and constants from config
                             opt = {'area': 150, 'count': 1, 'bin': binning, 'filter': color, \
                                    'hint': block['project_id'] + "##" + dest_name, 'pane': pane}
+                                
+                            # now_date_timeZ = datetime.datetime.now().isoformat().split('.')[0] +'Z'
+                            # ephem_now = ephem.now()
+                            # events = g_dev['events']
+        
+                            # ended = left_to_do <= 0 or now_date_timeZ >= block['end'] \
+                            #         or ephem_now >= events['Observing Ends']
+
                             print('Seq Blk sent to camera:  ', req, opt)
                             g_dev['cam'].expose_command(req, opt, no_AWS=False, solve_it=False)
                             t +=1
@@ -850,7 +860,7 @@ class Sequencer:
                     break
            
                 print("Expose Biases: b_3")   
-                dark_time = 240
+                dark_time = 300
                 #for bias in range(9):
                 req = {'time': 0.0,  'script': 'True', 'image_type': 'bias'}
                 opt = {'area': "Full", 'count': 9, 'bin':'3 3', \
@@ -1474,6 +1484,7 @@ class Sequencer:
             #Digits are to help out pdb commands!
             a1, b1, c1, d1 = fit_quadratic(x, y)
             new_spot = round(a1*d1*d1 + b1*d1 + c1, 2)
+            breakpoint()
         except:
             print('Autofocus quadratic equation not converge. Moving back to starting focus:  ', foc_start)
             g_dev['foc'].focuser.Move((foc_start)*g_dev['foc'].micron_to_steps)
