@@ -73,7 +73,7 @@ site_config = {
     
     'site_in_automatic_default': "Automatic",   #  ["Manual", "Shutdown", "Automatic"]
     'automatic_detail_default': "Enclosure is initially set to Automatic mode.",
-    'auto_eve_bias_dark': False,
+    'auto_eve_bias_dark': True,
     'auto_eve_sky_flat': False,
     'eve_sky_flat_sunset_offset': +5.0,  #  Minutes  neg means before, + after.
     'auto_morn_sky_flat': False,
@@ -162,8 +162,8 @@ site_config = {
                                                                         #First Entry is always default condition.
                 'roof_shutter':  ['Auto', 'Open', 'Close', 'Lock Closed', 'Unlock'],
             },
-            'eve_bias_dark_dur':  2.0,   #  hours Duration, prior to next.
-            'eve_screen_flat_dur': 1.0,   #  hours Duration, prior to next.
+            'eve_bias_dark_dur':  2.5,   #  hours Duration, prior to next.
+            'eve_screen_flat_dur': 0.01,   #  hours Duration, prior to next.
             'operations_begin':  -1.0,   #  - hours from Sunset
             'eve_cooldown_offset': -.99,   #  - hours beforeSunset
             'eve_sky_flat_offset':  0.5,   #  - hours beforeSunset 
@@ -308,11 +308,11 @@ site_config = {
             'driver': 'ASCOM.OptecGemini.Focuser',
 			'com_port':  'COM9',
             #F4.9 setup
-            'reference':7937,    #  20210313  Nominal at 10C Primary temperature
+            'reference':7950,    #  20210313  Nominal at 10C Primary temperature
             'ref_temp':  5.06,    #  Update when pinning reference
-            'coef_c': 0,   #  Negative means focus moves out as Primary gets colder
-            'coef_0': 7937,  #  Nominal intercept when Primary is at 0.0 C. 
-            'coef_date':  '202120108',    #This appears to be sensible result 44 points -13 to 3C'reference':  6431,    #  Nominal at 10C Primary temperature
+            'coef_c': -38.86,   #  Negative means focus moves out as Primary gets colder
+            'coef_0': 7949.74,  #  Nominal intercept when Primary is at 0.0 C. 
+            'coef_date':  '20220304',    #This appears to be sensible result 44 points -13 to 3C'reference':  6431,    #  Nominal at 10C Primary temperature
             # #F9 setup
             # 'reference': 4375,    #   Guess 20210904  Nominal at 10C Primary temperature
             # 'ref_temp':  27.,    #  Update when pinning reference

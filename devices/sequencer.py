@@ -798,25 +798,25 @@ class Sequencer:
         #breakpoint()
         
         while ephem.now() < g_dev['events']['Morn Bias Dark'] :   #Do not overrun the window end
-            #g_dev['mnt'].unpark_command({}, {}) # Get there early
+            g_dev['mnt'].park_command({}, {}) # Get there early
             #g_dev['mnt'].slewToSkyFlatAsync()
-            print("Expose Biases: b- 2, 1, 3, 4;  300s darks.")
-            dark_time = 300
-            req = {'time': 0.0,  'script': 'True', 'image_type': 'bias'}
-            opt = {'area': "Full", 'count': 9, 'bin':'2 2', \
-                    'filter': 'dark'}
+            print("Expose Biases: b- 1, 2, 3, 4;  300s darks.")
+            dark_time = 600   # NB NB This should be a per bin config specified time.
+            # req = {'time': 0.0,  'script': 'True', 'image_type': 'bias'}
+            # opt = {'area': "Full", 'count': 9, 'bin':'2 2', \
+            #         'filter': 'dark'}
             for bias in range(9):
                 req = {'time': 0.0,  'script': 'True', 'image_type': 'bias'}
-                opt = {'area': "Full", 'count': 9, 'bin':'2 2', \
+                opt = {'area': "Full", 'count': 7, 'bin':'1 1', \
                         'filter': 'dark'}
                 result = g_dev['cam'].expose_command(req, opt, no_AWS=True, \
                                 do_sep=False, quick=False)
                 g_dev['obs'].update_status()
 
 
-                print("Expose d_2 using exposure:  ", dark_time )
+                print("Expose d_1 using exposure:  ", dark_time )
                 req = {'time':dark_time ,  'script': 'True', 'image_type': 'dark'}
-                opt = {'area': "Full", 'count':1, 'bin': '2 2', \
+                opt = {'area': "Full", 'count':1, 'bin': '1 1', \
                         'filter': 'dark'} 
                 result = g_dev['cam'].expose_command(req, opt, no_AWS=True, \
                                     do_sep=False, quick=False)
@@ -826,20 +826,20 @@ class Sequencer:
                 if ephem.now() >= g_dev['events']['End Eve Bias Dark']:
                     break
                 
-                print("Expose Biases: b_1")   
-                dark_time = 300
+                print("Expose Biases: b_2")   
+                #dark_time =600
                 #for bias in range(9):
                 req = {'time': 0.0,  'script': 'True', 'image_type': 'bias'}
-                opt = {'area': "Full", 'count': 9, 'bin': '1 1', \
+                opt = {'area': "Full", 'count': 7, 'bin': '2 2', \
                        'filter': 'dark'}
                 result = g_dev['cam'].expose_command(req, opt, no_AWS=True, \
                                 do_sep=False, quick=False)
                 g_dev['obs'].update_status()
  
 
-                print("Expose d_1 using exposure:  ", dark_time )
+                print("Expose d_2 using exposure:  ", dark_time )
                 req = {'time':dark_time ,  'script': 'True', 'image_type': 'dark'}
-                opt = {'area': "Full", 'count':1, 'bin': '1 1', \
+                opt = {'area': "Full", 'count':1, 'bin': '2 2', \
                         'filter': 'dark'} 
                 result = g_dev['cam'].expose_command(req, opt, no_AWS=True, \
                                     do_sep=False, quick=False)
@@ -850,7 +850,7 @@ class Sequencer:
                     break
            
                 print("Expose Biases: b_3")   
-                dark_time = 240
+                dark_time = 360
                 #for bias in range(9):
                 req = {'time': 0.0,  'script': 'True', 'image_type': 'bias'}
                 opt = {'area': "Full", 'count': 9, 'bin':'3 3', \
@@ -858,7 +858,8 @@ class Sequencer:
                 result = g_dev['cam'].expose_command(req, opt, no_AWS=True, \
                                 do_sep=False, quick=False)
                 g_dev['obs'].update_status()
-
+                if ephem.now() >= g_dev['events']['End Eve Bias Dark']:
+                    break
                 print("Expose d_3 using exposure:  ", dark_time )
                 req = {'time':dark_time,  'script': 'True', 'image_type': 'dark'}
                 opt = {'area': "Full", 'count':1, 'bin':'3 3', \
@@ -871,7 +872,7 @@ class Sequencer:
                 if ephem.now() >= g_dev['events']['End Eve Bias Dark']:
                     break
                 print("Expose Biases: b_4") 
-                dark_time = 120
+                dark_time = 360
                 for bias in range(9):
                     req = {'time': 0.0,  'script': 'True', 'image_type': 'bias'}
                     opt = {'area': "Full", 'count': 7, 'bin':'4 4', \
@@ -879,7 +880,8 @@ class Sequencer:
                     result = g_dev['cam'].expose_command(req, opt, no_AWS=True, \
                                     do_sep=False, quick=False)
                     g_dev['obs'].update_status()
-    
+                    if ephem.now() >= g_dev['events']['End Eve Bias Dark']:
+                        break
     
                     print("Expose d_4 using exposure:  ", dark_time )
                     req = {'time':dark_time ,  'script': 'True', 'image_type': 'dark'}
@@ -1003,7 +1005,8 @@ class Sequencer:
                 req = {'time': float(exp_time),  'alias': camera_name, 'image_type': 'sky flat', 'script': 'On'}
                 opt = { 'count': 1, 'bin':  '2,2', 'area': 150, 'filter': g_dev['fil'].filter_data[current_filter][0]}
                 print("using:  ", g_dev['fil'].filter_data[current_filter][0])
-               
+                if ephem_now < g_dev['events']['End Eve Sky Flats']:
+                    break
                 try:
                     result = g_dev['cam'].expose_command(req, opt, no_AWS=True, do_sep = False)
                     bright = result['patch']    #  Patch should be circular and 20% of Chip area. ToDo project
@@ -1467,7 +1470,7 @@ class Sequencer:
             result['mean_focus'] = g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron
         spot5 = result['FWHM']
         foc_pos5 = result['mean_focus']
-        x = [foc_pos3, foc_pos2, foc_pos1, foc_pos5, foc_pos4]
+        x = [foc_pos3, foc_pos2, foc_pos1, foc_pos5, foc_pos4]  # NB NB 20220218 This assigment is bogus!!!!
         y = [spot3, spot2, spot1, spot5, spot4]
         print('X, Y:  ', x, y)
         try:
