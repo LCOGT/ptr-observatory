@@ -446,6 +446,7 @@ site_config = {
                 'pix_scale': [1.0668, 2.13, 3.21, 4.27],    #_22*4499,     #  asec/pixel F9   0.5751  , F4.9  1.0481         
                 'x_field_deg': 1.3333,   #   round(4784*1.0481/3600, 4),
                 'y_field_deg': 1.0665,   #  round(3194*1.0481/3600, 4),
+                'field_area_sq_amin': 5120,  # sq-arcmin
                 'overscan_x': 24,
                 'overscan_y': 3,
                 'north_offset': 0.0,    #  These three are normally 0.0 for the primary telescope

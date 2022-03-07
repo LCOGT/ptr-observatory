@@ -322,6 +322,7 @@ site_config = {
             'minimum': 0,     #  NB this area is confusing steps and microns, and need fixing.
             'maximum': 12600,   #12672 actually
             'step_size': 1,
+            'af_step': 250,  #  microns ~4x focal tolerance?
             'backlash': 0,
             'unit': 'micron',
             'unit_conversion': 9.09090909091,
@@ -358,7 +359,7 @@ site_config = {
             'ip_string': None,
             "dual_wheel": False,
             'settings': {
-                'filter_count': 11,   #  !!!! Tis must be correct as to the number of filters!!!!
+                'filter_count': 15,   #  !!!! Tis must be correct as to the number of filters!!!!
                 'home_filter':  0,
                 'default_filter': "PL",
                 'filter_reference': 0,   #  We choose to use W as the default filter.  Gains taken at F9, Ceravolo 300mm
@@ -366,17 +367,21 @@ site_config = {
                         
                         #['w',     [0,  0],     0, 72.7, [1.00 ,  72], 'PL'],    #0.   For sequencer autofocus  consider foc or f filter
   
-                        ['PL (Lum)',    [0,  0],     0, 72.7, [1.00 ,  72], 'PhLum'],    #1.
-                        ['PB (Blue)',    [3,  3],     0, 42.3, [0.80 ,  97], 'PhRed'],    #4.
-                        ['PG (Green)',    [2,  2],     0, 18.6, [1.00 , 113], 'PhGreen'],    #3.
-                        ['PR (Red)',    [1,  1],     0, 11.0, [1.00 , 119], 'PhBlue'],    #2.
+                        ['Lum',    [0,  0],     0, 72.7, [1.00 ,  72], 'PhLum'],    #1.
+                        ['Blue',   [3,  3],     0, 42.3, [0.80 ,  97], 'PhRed'],    #4.
+                        ['Green',  [2,  2],     0, 18.6, [1.00 , 113], 'PhGreen'],    #3.
+                        ['Red',    [1,  1],     0, 11.0, [1.00 , 119], 'PhBlue'], 
+                        ['PL (Lum)',  [0,  0],     0, 72.7, [1.00 ,  72], 'PhLum'],    #1.
+                        ['PB (Blue)', [3,  3],     0, 42.3, [0.80 ,  97], 'PhRed'],    #4.
+                        ['PG (Green)',[2,  2],     0, 18.6, [1.00 , 113], 'PhGreen'],    #3.
+                        ['PR (Red)',  [1,  1],     0, 11.0, [1.00 , 119], 'PhBlue'],    #2.
                         ['O3',    [5,  5],     0, 1.84, [4.00 , 200], 'OIII'],    #6.
                         ['HA',    [4,  4],     0, .400, [5.00 , 200], 'Halpha'],    #5.
                         ['S2',    [6,  6],     0, .221, [10.0,  200], 'SII'],    #7.
                         ['focus', [0,  0],     0, 72.7, [1.00 ,  72], 'focus'],    #0. 
                         ['air',   [7,  7], -1000, 100., [1.00,   70], 'air'],    #8.
                         ['dark',  [6,  6],     0, .221, [   0,    0], 'dark'],   #9.
-                        ['LRGB',  [0,  0],     0, .221, [   0,    0], 'LRGB']],   #10.
+                        ['RGB(OSC)',  [0,  0],     0, .221, [   0,    0], 'LRGB']],   #10.
 
 
                 'filter_screen_sort':  [8, 1, 4, 3, 2, 6, 5, 7],   #  don't use narrow yet,  8, 10, 9], useless to try.
@@ -446,6 +451,7 @@ site_config = {
                 'pix_scale': [1.0668, 2.13, 3.21, 4.27],    #_22*4499,     #  asec/pixel F9   0.5751  , F4.9  1.0481         
                 'x_field_deg': 1.3333,   #   round(4784*1.0481/3600, 4),
                 'y_field_deg': 1.0665,   #  round(3194*1.0481/3600, 4),
+                'field_area_sq_amin': 5120,  # sq-arcmin
                 'overscan_x': 24,
                 'overscan_y': 3,
                 'north_offset': 0.0,    #  These three are normally 0.0 for the primary telescope
