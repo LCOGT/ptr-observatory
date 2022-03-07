@@ -323,8 +323,8 @@ class Camera:
             #self.darkslide_instance.closeDarkslide()   #  Consider turing off IR Obsy light at same time..
             #self.darkslide_open = False
             print("Darkslide unknown on camera startup.")
-        self.last_user_name = "unknown user name"
-        self.last_user_id ="unknown user ID"
+        self.last_user_name = "Tobor"
+        self.last_user_id ="Tobor"
         try:
             seq = test_sequence(self.alias)
         except:
@@ -936,7 +936,7 @@ class Camera:
                 pass
                # print("Motion check faulted.")
             if seq > 0:
-                g_dev['obs'].update_status()   # NB Make sure this routine has a fault guard.
+                g_dev['obs'].update_status(cancel_check=True)   # NB Make sure this routine has a fault guard.
             self.retry_camera = 3
             self.retry_camera_start_time = time.time()
 
@@ -1043,6 +1043,9 @@ class Camera:
                         print("Something terribly wrong, driver not recognized.!")
                         result = {}
                         result['error': True]
+                        if g_dev['obs'].stop_all_activity:
+                            result['stopped':  True]
+                            g_dev['obs'].stop_all_activity = False
                         return result
                     self.t9 = time.time()
                     #We go here to keep this subroutine a reasonable length, Basically still in Phase 2
@@ -1071,6 +1074,10 @@ class Camera:
             pass
         except:
             pass
+        result = {}
+        if g_dev['obs'].stop_all_activity:
+            result['stopped':  True]
+            g_dev['obs'].stop_all_activity = False
         return result
 
     def stop_command(self, required_params, optional_params):
@@ -1095,7 +1102,7 @@ class Camera:
         else:
             self.completion_time = self.t2 + exposure_time + 1
         result = {'error': False}
-        while True:    #This loop really needs a timeout.
+        while not g_dev['obs'].stop_all_activity:    #This loop really needs a timeout.
             self.post_mnt = []
             self.post_rot = []
             self.post_foc = []
@@ -1105,7 +1112,7 @@ class Camera:
             g_dev['foc'].get_quick_status(self.post_foc)
             g_dev['ocn'].get_quick_status(self.post_ocn)
             if time.time() > self.status_time:
-                g_dev['obs'].update_status()
+                g_dev['obs'].update_status(cancel_check=True)
                 self.status_time = time.time() + 15
             if time.time() < self.completion_time:   #  NB Testing here if glob too early is delaying readout.
                 time.sleep(.5)
@@ -1316,6 +1323,9 @@ class Camera:
                         g_dev['obs'].send_to_user("Flat rejected, too bright.", p_level='INFO')
                         result['error'] = True
                         result['patch'] = bi_mean
+                        if g_dev['obs'].stop_all_activity:
+                            result['stopped':  True]
+                            g_dev['obs'].stop_all_activity = False
                         return result   # signals to flat routine image was rejected, prompt return
                 g_dev['obs'].update_status()
                 counter = 0
@@ -1359,6 +1369,13 @@ class Camera:
                     scale = self.config['camera'][self.name]['settings']['pix_scale'][self.camera.BinX -1]
                     result['FWHM'] = round(np.median(r0)*scale, 3)   #@0210524 was 2x larger but a and b are diameters not radii
                     result['mean_focus'] =  avg_foc[1]
+                    try:
+                        valid =  0.0 <= result['FWHM']<= 20. and 100 < result['mean_focus'] < 12600
+                        result['error'] = False
+                    except:
+                        result['error'] = True    # NB NB NB These are quick placeholders and need to be changed
+                        result['FWHM']  = 3.456
+                        result['mean_focus'] =  6543
 
                     focus_image = True
                 else:
@@ -1596,7 +1613,7 @@ class Camera:
 
                         hdu.header['USERNAME'] = self.last_user_name
                         hdu.header ['USERID']  = self.last_user_id
-                        print("User_name or id not found, using prior.")  #Insert last user nameand ID here if they are not supplied.
+                        #print("User_name or id not found, using prior.")  #Insert last user nameand ID here if they are not supplied.
                     
                     # NB This needs more development
                     im_type = 'EX'   #or EN for engineering....
@@ -1688,6 +1705,10 @@ class Camera:
                         cal_name = cal_name[:-9] + 'F012' + cal_name[-7:]  # remove 'EX' add 'FO'   Could add seq to this
                         hdu.writeto(cal_path + cal_name, overwrite=True)
                         focus_image = False
+                        result = {}
+                        if g_dev['obs'].stop_all_activity:
+                            result['stopped':  True]
+                            g_dev['obs'].stop_all_activity = False
                         return result
                     if focus_image and solve_it :
 
@@ -1707,10 +1728,18 @@ class Camera:
                             err_dec = TARGDEC - DECJ2000
                             print("err ra, dec:  ", err_ha, err_dec)
                             g_dev['mnt'].set_last_reference(err_ha, err_dec, time_now)
+                            result = {}
+                            if g_dev['obs'].stop_all_activity:
+                                result['stopped':  True]
+                                g_dev['obs'].stop_all_activity = False
                             return result
                         except:
                             print(cal_path + cal_name, "  was not solved, marking to skip in future, sorry!")
                             #g_dev['mnt'].reset_last_reference()
+                            result = {}
+                            if g_dev['obs'].stop_all_activity:
+                                result['stopped':  True]
+                                g_dev['obs'].stop_all_activity = False
                             return result
                            #Return to classic processing
                        
@@ -1757,6 +1786,9 @@ class Camera:
                     result['error'] == False
                     g_dev['obs'].send_to_user("Expose cycle completed.", p_level='INFO')
                     self.exposure_busy = False
+                    if g_dev['obs'].stop_all_activity:
+                        result['stopped':  True]
+                        g_dev['obs'].stop_all_activity = False
                     return result
                 except Exception as e:
                     print('Header assembly block failed: ', e)
@@ -1771,6 +1803,10 @@ class Camera:
                     self.t7 = time.time()
                     result = {'error': True}
                 self.exposure_busy = False
+                result = {}
+                if g_dev['obs'].stop_all_activity:
+                    result['stopped':  True]
+                    g_dev['obs'].stop_all_activity = False
                 return result
             else:
                 time.sleep(1)
@@ -1779,11 +1815,16 @@ class Camera:
                 remaining = round(self.completion_time - self.t7, 1)
                 print("Exposure time remaining:  " + str(remaining))
                 g_dev['obs'].send_to_user("Exposure time remaining:  " + str(remaining), p_level='INFO')
+                if result is None:
+                    result = {}
                 if remaining < -30:
                     print("Camera timed out, not connected")
                     result = {'error': True}
                     self.exposure_busy = False
-                    return result
+                if g_dev['obs'].stop_all_activity:
+                    result['stopped':  True]
+                    g_dev['obs'].stop_all_activity = False
+                return result
 
 
                 #it takes about 15 seconds from AWS to get here for a bias.
