@@ -22,7 +22,6 @@ Abstract away Redis, Memurai, and local shares for IPC.
 import time
 import threading
 import queue
-from queue import Queue
 import requests
 import os
 import redis  #  Client, can work with Memurai
@@ -258,12 +257,10 @@ class Observatory:
         site_str = config['site']
         g_dev['site']:  site_str
         self.g_dev = g_dev
-        self.stop_all_activity = False
  
 
         self.time_last_status = time.time() - 3
         # Build the to-AWS Try again, reboot, verify dome nad tel and start a thread.
-        self.cmd_queue = Queue(maxsize = 20)
   
         self.aws_queue = queue.PriorityQueue()
         self.aws_queue_thread = threading.Thread(target=self.send_to_AWS, args=())
@@ -378,7 +375,7 @@ class Observatory:
         if response:
             print("Config uploaded successfully.")
 
-    def scan_requests(self, mount, cancel_check=False):
+    def scan_requests(self, mount):
         '''
         Outline of change 20200323 WER
         Get commands from AWS, and post a STOP/Cancel flag
@@ -415,66 +412,41 @@ class Observatory:
                                                    data=json.dumps(body)).json()
                 # Make sure the list is sorted in the order the jobs were issued
                 # Note: the ulid for a job is a unique lexicographically-sortable id
-                #  THe commands just read need to be saved:
-                # NB NB NB Need to delete old stale commands from prior sessions.
                 if len(unread_commands) > 0:
-                    unread_commands.sort(key=lambda x: x["ulid"])
-                    for cmd in unread_commands:
-                        if cmd['action'] in ['cancel_all_commands', 'stop']:
-                            g_dev['obs'].stop_all_activity = True
-                            print("A STOP / CANCEL has been received.")
-                            self.send_to_user("Cancel/Stop received. Usually processed by camera or sequencer.")
-                            self.send_to_user("Pending transfers to PTR Archive not affected.")
-                            #WE empty the queue
-                            while self.cmd_queue.qsize() > 0:
-                                print("Deleting Job:  ", self.cmd_queue.get())                          
-                        else:
-                            self.cmd_queue.put(cmd)  #SAVE THE COMMAND FOR LATER
-                            print("Appending job:  ", cmd)
-                    if cancel_check:
-                        return   #Note we do not process any commands.
-                #If no cancel_check call this is trying to get the next command,
-                #but now we pick it up from the queue
-                while self.cmd_queue.qsize() > 0:
-
                     #print(unread_commands)
-  
-                    #unread_commands.sort(key=lambda x: x["ulid"])
+                    unread_commands.sort(key=lambda x: x["ulid"])
                     # Process each job one at a time
-                    print("# of queued commands:  ", self.cmd_queue.qsize())
-                    cmd = self.cmd_queue.get() 
-                    #This code is redundant
-#
-                        
-                    if self.config['selector']['selector1']['driver'] is None:
-                        port = cmd['optional_params']['instrument_selector_position'] 
-                        g_dev['mnt'].instrument_port = port
-                        cam_name = self.config['selector']['selector1']['cameras'][port]
-                        if cmd['deviceType'][:6] == 'camera':
-                            #  Note camelCase is teh format of command keys
-                            cmd['required_params']['deviceInstance'] = cam_name
-                            cmd['deviceInstance'] = cam_name
-                            device_instance = cam_name
-                        else:
-                            try:
+                    print("# of incomming commands:  ", len(unread_commands))
+                    for cmd in unread_commands:
+                        if self.config['selector']['selector1']['driver'] is None:
+                            port = cmd['optional_params']['instrument_selector_position'] 
+                            g_dev['mnt'].instrument_port = port
+                            cam_name = self.config['selector']['selector1']['cameras'][port]
+                            if cmd['deviceType'][:6] == 'camera':
+                                #  Note camelCase is teh format of command keys
+                                cmd['required_params']['deviceInstance'] = cam_name
+                                cmd['deviceInstance'] = cam_name
+                                device_instance = cam_name
+                            else:
                                 try:
-                                    device_instance = cmd['deviceInstance']
+                                    try:
+                                        device_instance = cmd['deviceInstance']
+                                    except:
+                                        device_instance = cmd['required_params']['deviceInstance']
                                 except:
-                                    device_instance = cmd['required_params']['deviceInstance']
-                            except:
-                                #breakpoint()
-                                pass
-                    else:
-                        device_instance = cmd['deviceInstance']
-                    print('obs.scan_request: ', cmd)
+                                    #breakpoint()
+                                    pass
+                        else:
+                            device_instance = cmd['deviceInstance']
+                        print('obs.scan_request: ', cmd)
 
-                    device_type = cmd['deviceType']
-                    device = self.all_devices[device_type][device_instance]
-                    try:
-                    
-                        device.parse_command(cmd)
-                    except Exception as e:
-                        print( 'Exception in obs.scan_requests:  ', e)
+                        device_type = cmd['deviceType']
+                        device = self.all_devices[device_type][device_instance]
+                        try:
+                        
+                            device.parse_command(cmd)
+                        except Exception as e:
+                            print( 'Exception in obs.scan_requests:  ', e)
                # print('scan_requests finished in:  ', round(time.time() - t1, 3), '  seconds')
                 ## Test Tim's code
                 url_blk = "https://calendar.photonranch.org/dev/siteevents"
@@ -515,7 +487,7 @@ class Observatory:
                 print('Sequencer Hold asserted.')    #What we really want here is looking for a Cancel/Stop.
                 continue
 
-    def update_status(self, cancel_check=False):
+    def update_status(self):
         ''' Collect status from all devices and send an update to aws.
         Each device class is responsible for implementing the method
         `get_status` which returns a dictionary.
@@ -607,17 +579,6 @@ class Observatory:
             lane = 'device'
             final_send  = status
             send_status(obsy, lane, device_status)
-
-
-        #print("AWS Response:  ",response)
-        # NB should qualify acceptance and type '.' at that point.
-        self.time_last_status = time.time()
-        #self.redis_server.set('obs_time', self.time_last_status, ex=120 )
-        self.status_count +=1
-        if cancel_check:
-            self.scan_requests('mount1', cancel_check=True)
-
-
 # =============================================================================
 #         uri_status = f"https://status.photonranch.org/status/{self.name}/status/"
 #         # NB None of the strings can be empty.  Otherwise this put faults.
@@ -634,6 +595,11 @@ class Observatory:
 #             response = requests.post(uri_status, data=data)
 # =============================================================================
 
+        #print("AWS Response:  ",response)
+        # NB should qualify acceptance and type '.' at that point.
+        self.time_last_status = time.time()
+        #self.redis_server.set('obs_time', self.time_last_status, ex=120 )
+        self.status_count +=1
 # =============================================================================
 #         except:
 #             print('self.api.authenticated_request("PUT", uri, status):   Failed!')
