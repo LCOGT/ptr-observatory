@@ -424,15 +424,17 @@ class Observatory:
                             g_dev['obs'].stop_all_activity = True
                             print("A STOP / CANCEL has been received.")
                             self.send_to_user("Cancel/Stop received. Usually processed by camera or sequencer.")
-                            self.send_to_user("Pending transfers to PTR Archive not affected.")
+                            self.send_to_user("Pending transfers to PTR Archive are not usually affected.")
                             #WE empty the queue
                             while self.cmd_queue.qsize() > 0:
                                 print("Deleting Job:  ", self.cmd_queue.get())                          
                         else:
                             self.cmd_queue.put(cmd)  #SAVE THE COMMAND FOR LATER
                             print("Appending job:  ", cmd)
-                    if cancel_check:
-                        return   #Note we do not process any commands.
+                        if cancel_check:
+                            result = {'result':  'Canceled'} 
+
+                            return  result #Note this mechanism may not be needed.
                 #If no cancel_check call this is trying to get the next command,
                 #but now we pick it up from the queue
                 while self.cmd_queue.qsize() > 0:

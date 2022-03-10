@@ -249,6 +249,8 @@ class Camera:
         if self.config['camera'][self.name]['settings']['cooler_on']:    #NB NB why this logic, do we mean if not cooler found on, then turn it on and take the delay?
             self._set_cooler_on()
         print('Cooler started @:  ', self._temperature())  
+        self.camera_can_stop =  self.camera.CanStopExposure
+
         self.use_file_mode = False  #self.config['camera'][self.name]['use_file_mode']    #NB NB NB this is obsolte, clear nout file mode from code
         self.current_filter = 0    #W in Apache Ridge case. #This should come from config, filter section
         self.exposure_busy = False
@@ -1044,6 +1046,7 @@ class Camera:
                         result = {}
                         result['error': True]
                         if g_dev['obs'].stop_all_activity:
+                            breakpoint()
                             result['stopped':  True]
                             g_dev['obs'].stop_all_activity = False
                         return result
@@ -1076,7 +1079,8 @@ class Camera:
             pass
         result = {}
         if g_dev['obs'].stop_all_activity:
-            result['stopped':  True]
+            breakpoint()
+            result['stopped'] = True
             g_dev['obs'].stop_all_activity = False
         return result
 
@@ -1102,7 +1106,8 @@ class Camera:
         else:
             self.completion_time = self.t2 + exposure_time + 1
         result = {'error': False}
-        while not g_dev['obs'].stop_all_activity:    #This loop really needs a timeout.
+        cancel_found =  None
+        while True :   #not g_dev['obs'].stop_all_activity:    #This loop really needs a timeout.
             self.post_mnt = []
             self.post_rot = []
             self.post_foc = []
@@ -1112,14 +1117,20 @@ class Camera:
             g_dev['foc'].get_quick_status(self.post_foc)
             g_dev['ocn'].get_quick_status(self.post_ocn)
             if time.time() > self.status_time:
-                g_dev['obs'].update_status(cancel_check=True)
+                cancel_found = g_dev['obs'].update_status(cancel_check=True)
+                if cancel_found is not None or g_dev['obs'].stop_all_activity :
+
+                    self.camera.StopExposure()
+                    self.completion_time =self.t2 + 1
+                     
+                    #This should drop camera into readout.
                 self.status_time = time.time() + 15
             if time.time() < self.completion_time:   #  NB Testing here if glob too early is delaying readout.
                 time.sleep(.5)
                 continue
             incoming_image_list = []   #glob.glob(self.file_mode_path + '*.f*t*')
             self.t4 = time.time()
-            if (not self.use_file_mode and self.camera.ImageReady) or (self.use_file_mode and len(incoming_image_list) >= 1):   #   self.camera.ImageReady:
+            if (not self.use_file_mode and self.camera.ImageReady) or  (self.use_file_mode and len(incoming_image_list) >= 1):   #   self.camera.ImageReady:
                 #print("reading out camera, takes ~6 seconds.")
                 if self.use_file_mode:
                     time.sleep(3)
@@ -1150,6 +1161,11 @@ class Camera:
                     ####self.img_safe = self.camera.ImageArray
                     #NB NB Do not try to print ImageArray!!!!
                     self.img = np.array(self.camera.ImageArray)
+
+                    # if cancel_found:
+                    #     #Camera is now no longer busy,.
+                    #     breakpoint()
+                    #     return result['Cancelled': True]
                     self.img = self.img.astype('int32')
                     self.t4p5 = time.time()#As read, this is a Windows Safe Array of Longs
                     print("\n\nMedian of incoming image:  ", np.median(self.img), '\n\n')
@@ -1323,9 +1339,9 @@ class Camera:
                         g_dev['obs'].send_to_user("Flat rejected, too bright.", p_level='INFO')
                         result['error'] = True
                         result['patch'] = bi_mean
-                        if g_dev['obs'].stop_all_activity:
-                            result['stopped':  True]
-                            g_dev['obs'].stop_all_activity = False
+                        # if g_dev['obs'].stop_all_activity:
+                        #     result['stopped':  True]
+                        #     g_dev['obs'].stop_all_activity = False
                         return result   # signals to flat routine image was rejected, prompt return
                 g_dev['obs'].update_status()
                 counter = 0
@@ -1707,6 +1723,7 @@ class Camera:
                         focus_image = False
                         result = {}
                         if g_dev['obs'].stop_all_activity:
+                            breakpoint()
                             result['stopped':  True]
                             g_dev['obs'].stop_all_activity = False
                         return result
@@ -1730,6 +1747,7 @@ class Camera:
                             g_dev['mnt'].set_last_reference(err_ha, err_dec, time_now)
                             result = {}
                             if g_dev['obs'].stop_all_activity:
+                                breakpoint()
                                 result['stopped':  True]
                                 g_dev['obs'].stop_all_activity = False
                             return result
@@ -1738,6 +1756,7 @@ class Camera:
                             #g_dev['mnt'].reset_last_reference()
                             result = {}
                             if g_dev['obs'].stop_all_activity:
+                                breakpoint()
                                 result['stopped':  True]
                                 g_dev['obs'].stop_all_activity = False
                             return result
@@ -1787,7 +1806,8 @@ class Camera:
                     g_dev['obs'].send_to_user("Expose cycle completed.", p_level='INFO')
                     self.exposure_busy = False
                     if g_dev['obs'].stop_all_activity:
-                        result['stopped':  True]
+                        breakpoint()
+                        result['stopped'] = True
                         g_dev['obs'].stop_all_activity = False
                     return result
                 except Exception as e:
@@ -1804,9 +1824,9 @@ class Camera:
                     result = {'error': True}
                 self.exposure_busy = False
                 result = {}
-                if g_dev['obs'].stop_all_activity:
-                    result['stopped':  True]
-                    g_dev['obs'].stop_all_activity = False
+                # if g_dev['obs'].stop_all_activity:
+                #     result['stopped':  True]
+                #     g_dev['obs'].stop_all_activity = False
                 return result
             else:
                 time.sleep(1)
@@ -1821,10 +1841,10 @@ class Camera:
                     print("Camera timed out, not connected")
                     result = {'error': True}
                     self.exposure_busy = False
-                if g_dev['obs'].stop_all_activity:
-                    result['stopped':  True]
-                    g_dev['obs'].stop_all_activity = False
-                return result
+                # if g_dev['obs'].stop_all_activity:
+                #     result['stopped':  True]
+                #     g_dev['obs'].stop_all_activity = False
+               #return result
 
 
                 #it takes about 15 seconds from AWS to get here for a bias.
