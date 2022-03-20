@@ -263,7 +263,7 @@ class Observatory:
 
         self.time_last_status = time.time() - 3
         # Build the to-AWS Try again, reboot, verify dome nad tel and start a thread.
-        self.cmd_queue = Queue(maxsize = 20)
+        self.cmd_queue = Queue(maxsize = 30)
   
         self.aws_queue = queue.PriorityQueue()
         self.aws_queue_thread = threading.Thread(target=self.send_to_AWS, args=())
@@ -421,11 +421,19 @@ class Observatory:
                     unread_commands.sort(key=lambda x: x["ulid"])
                     for cmd in unread_commands:
                         if cmd['action'] in ['cancel_all_commands', 'stop']:
-                            g_dev['obs'].stop_all_activity = True
+
                             print("A STOP / CANCEL has been received.")
-                            self.send_to_user("Cancel/Stop received. Usually processed by camera or sequencer.")
+                            self.send_to_user("Cancel/Stop received. Exposure stopped, will begin readout then discard image.")
                             self.send_to_user("Pending transfers to PTR Archive not affected.")
                             #WE empty the queue
+                            try:
+                                if g_dev['cam'].exposure_busy:
+                                    g_dev['cam']._stop_expose()
+                                    g_dev['obs'].stop_all_activity = True
+                                else:
+                                    print("Camera is not busy.")
+                            except:
+                                print("Camera stop faulted.")
                             while self.cmd_queue.qsize() > 0:
                                 print("Deleting Job:  ", self.cmd_queue.get())                          
                         else:

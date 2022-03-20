@@ -348,7 +348,8 @@ class Sequencer:
                     if block['project_id'] == project['project_name'] + '#' + project['created_at']:
                         block['project'] = project
                 else:
-                    print("Reservation asserting at this time.   ", )
+                    pass
+                #print("Reservation asserting at this time.   ", )
             '''
             evaluate supplied projects for observable and mark as same. Discard
             unobservable projects.  Projects may be "site" projects or 'ptr' (network wide:
@@ -375,10 +376,15 @@ class Sequencer:
                 if not self.block_guard \
                     and (block['start'] <= now_date_timeZ < block['end']) \
                     and not self.is_in_completes(block['event_id']):
+                    if block['project_id'] in ['none', 'real_time_slot', 'real_time_block']:
+                        self.block_guard = True
+                        return   # Do not try to execute an empty block.
+                     
                     self.block_guard = True
+
                     completed_block = self.execute_block(block)  #In this we need to ultimately watch for weather holds.
                     self.append_completes(completed_block['event_id'])
-                    self.block_guard = False
+                    block['project_id'] in ['none', 'real_time_slot', 'real_time_block']
                     '''
                     When a scheduled block is completed it is not re-entered or the block needs to 
                     be restored.  IN the execute block we need to make a deepcopy of the input block
@@ -1219,7 +1225,8 @@ class Sequencer:
         result = {}
         #print("temporary patch in Sim values")
         print('Autofocus Starting at:  ', foc_pos0, '\n\n')
-        g_dev['foc'].focuser.guarded_move((foc_pos0 - 0* throw)*g_dev['foc'].micron_to_steps)   # NB added 20220209 Nasty bug, varies with prior state
+ 
+        g_dev['foc'].guarded_move((foc_pos0 - 0* throw)*g_dev['foc'].micron_to_steps)   # NB added 20220209 Nasty bug, varies with prior state
         #throw = throw  # NB again, from config.  Units are microns  Passed as default paramter
         retry = 0
         while retry < 3:
@@ -1238,7 +1245,7 @@ class Sequencer:
             else:
                 break
         print('Autofocus Moving In.\n\n')
-        g_dev['foc'].focuser.guarded_move((foc_pos0 - 1*throw)*g_dev['foc'].micron_to_steps)
+        g_dev['foc'].guarded_move((foc_pos0 - 1*throw)*g_dev['foc'].micron_to_steps)
         #opt['fwhm_sim'] = 4.
         if not sim:
             result = g_dev['cam'].expose_command(req, opt, no_AWS=True, solve_it=False) ## , script = 'auto_focus_script_1')  #  This is moving in one throw.
@@ -1251,7 +1258,7 @@ class Sequencer:
         g_dev['foc'].focuser.Move((foc_pos0 + 2*throw)*g_dev['foc'].micron_to_steps)
         time.sleep(10)#It is important to overshoot to overcome any backlash  WE need to be sure Exposure waits.
         print('Autofocus Moving back in half-way.\n\n')
-        g_dev['foc'].focuser.guarded_move((foc_pos0 + throw)*g_dev['foc'].micron_to_steps)  #NB NB NB THIS IS WRONG!
+        g_dev['foc'].guarded_move((foc_pos0 + throw)*g_dev['foc'].micron_to_steps)  #NB NB NB THIS IS WRONG!
         time.sleep(10)#opt['fwhm_sim'] = 5
         if not sim:
             result = g_dev['cam'].expose_command(req, opt, no_AWS=True, solve_it=False) ## , script = 'auto_focus_script_2')  #  This is moving out one throw.
@@ -1265,7 +1272,7 @@ class Sequencer:
         print('X, Y:  ', x, y, 'Desire center to be smallest.')
         if spot1 is None or spot2 is None or spot3 is None:  #New additon to stop crash when no spots
             print("No stars detected. Returning to starting focus and pointing.")
-            g_dev['foc'].focuser.guarded_move((focus_start)*g_dev['foc'].micron_to_steps)
+            g_dev['foc'].guarded_move((focus_start)*g_dev['foc'].micron_to_steps)
             self.sequencer_hold = False   #Allow comand checks.
             self.af_guard = False
             g_dev['mnt'].mount.SlewToCoordinatesAsync(start_ra, start_dec)
@@ -1282,7 +1289,7 @@ class Sequencer:
             except:
     
                 print('Autofocus quadratic equation not converge. Moving back to starting focus:  ', focus_start)
-                g_dev['foc'].focuser.guarded_move((focus_start)*g_dev['foc'].micron_to_steps)
+                g_dev['foc'].guarded_move((focus_start)*g_dev['foc'].micron_to_steps)
                 time.sleep(5)
                 self.sequencer_hold = False   #Allow comand checks.
                 self.af_guard = False
@@ -1296,7 +1303,7 @@ class Sequencer:
                 pos = int(d1*g_dev['foc'].micron_to_steps)
                 
                 
-                g_dev['foc'].focuser.guarded_move(pos)
+                g_dev['foc'].guarded_move(pos)
                 time.sleep(5)
                 g_dev['foc'].last_known_focus = d1
                 try:
@@ -1317,7 +1324,7 @@ class Sequencer:
                 print("Returning to:  ", start_ra, start_dec)
                 g_dev['mnt'].mount.SlewToCoordinatesAsync(start_ra, start_dec)   #Return to pre-focus pointing.
             if sim:
-                g_dev['foc'].focuser.guarded_move((focus_start)*g_dev['foc'].micron_to_steps)
+                g_dev['foc'].guarded_move((focus_start)*g_dev['foc'].micron_to_steps)
             #  NB here we could re-solve with the overlay spot just to verify solution is sane.
 
             #  NB NB We may want to consider sending the result image patch to AWS
@@ -1359,7 +1366,7 @@ class Sequencer:
         print("Returning to:  ", start_ra, start_dec)
         g_dev['mnt'].mount.SlewToCoordinatesAsync(start_ra, start_dec)   #Return to pre-focus pointing.
         if sim:
-            g_dev['foc'].focuser.guarded_move((focus_start)*g_dev['foc'].micron_to_steps)
+            g_dev['foc'].guarded_move((focus_start)*g_dev['foc'].micron_to_steps)
         #  NB here we could re-solve with the overlay spot just to verify solution is sane.
         self.sequencer_hold = False   #Allow comand checks.
         self.af_guard = False
@@ -1393,7 +1400,7 @@ class Sequencer:
             foc_start = g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron
         else:
             foc_start = begin_at  #In this case we start at a place close to a 3 point minimum. 
-            g_dev['foc'].focuser.guarded_move((foc_start)*g_dev['foc'].micron_to_steps)
+            g_dev['foc'].guarded_move((foc_start)*g_dev['foc'].micron_to_steps)
         print("Saved ra, dec, focus:  ", start_ra, start_dec, foc_start)
         try:
             #Check here for filter, guider, still moving  THIS IS A CLASSIC
@@ -1428,7 +1435,7 @@ class Sequencer:
         result = {}
         throw = g_dev['foc'].config['af_step']*1.5  #Steps need to be coarser spaced
         print('Autofocus Starting at:  ', foc_pos0, '\n\n')
-        g_dev['foc'].focuser.guarded_move((foc_pos0 - 0*throw)*g_dev['foc'].micron_to_steps)  #Added 20220209! A bit late
+        g_dev['foc'].guarded_move((foc_pos0 - 0*throw)*g_dev['foc'].micron_to_steps)  #Added 20220209! A bit late
         #throw = 100  # NB again, from config.  Units are microns
         if not sim:
             result = g_dev['cam'].expose_command(req, opt, no_AWS=True, solve_it=False)
@@ -1439,7 +1446,7 @@ class Sequencer:
         foc_pos1 = result['mean_focus']  
         
         print('Autofocus Moving In -1x, second time.\n\n')
-        g_dev['foc'].focuser.guarded_move((foc_pos0 - 1*throw)*g_dev['foc'].micron_to_steps)
+        g_dev['foc'].guarded_move((foc_pos0 - 1*throw)*g_dev['foc'].micron_to_steps)
         #opt['fwhm_sim'] = 4.
         if not sim:
             result = g_dev['cam'].expose_command(req, opt, no_AWS=True, solve_it=False)
@@ -1449,7 +1456,7 @@ class Sequencer:
         spot2 = result['FWHM']
         foc_pos2 = result['mean_focus']
         print('Autofocus Moving In -2x, second time.\n\n')
-        g_dev['foc'].focuser.guarded_move((foc_pos0 - 2*throw)*g_dev['foc'].micron_to_steps)
+        g_dev['foc'].guarded_move((foc_pos0 - 2*throw)*g_dev['foc'].micron_to_steps)
         #opt['fwhm_sim'] = 4.
         if not sim:
             result = g_dev['cam'].expose_command(req, opt, no_AWS=True, solve_it=False)
@@ -1460,9 +1467,9 @@ class Sequencer:
         foc_pos3 = result['mean_focus']
         #Need to check we are not going out too far!
         print('Autofocus Moving out +3X.\n\n')
-        g_dev['foc'].focuser.guarded_Move((foc_pos0 + 3*throw)*g_dev['foc'].micron_to_steps)
+        g_dev['foc'].guarded_move((foc_pos0 + 3*throw)*g_dev['foc'].micron_to_steps)
         print('Autofocus back in for backlash to +2X\n\n')#It is important to overshoot to overcome any backlash
-        g_dev['foc'].focuser.guarded_move((foc_pos0 + 2*throw)*g_dev['foc'].micron_to_steps)
+        g_dev['foc'].guarded_move((foc_pos0 + 2*throw)*g_dev['foc'].micron_to_steps)
         #opt['fwhm_sim'] = 5
         if not sim:
             result = g_dev['cam'].expose_command(req, opt, no_AWS=True, solve_it=False)
@@ -1472,7 +1479,7 @@ class Sequencer:
         spot4 = result['FWHM']
         foc_pos4 = result['mean_focus']
         print('Autofocus back in for backlash to +1X\n\n')
-        g_dev['foc'].focuser.guarded_move((foc_pos0 + throw)*g_dev['foc'].micron_to_steps)
+        g_dev['foc'].guarded_move((foc_pos0 + throw)*g_dev['foc'].micron_to_steps)
         #opt['fwhm_sim'] = 4.
         if not sim:
             result = g_dev['cam'].expose_command(req, opt, no_AWS=True, solve_it=False)
@@ -1490,7 +1497,7 @@ class Sequencer:
             new_spot = round(a1*d1*d1 + b1*d1 + c1, 2)
         except:
             print('Autofocus quadratic equation not converge. Moving back to starting focus:  ', foc_start)
-            g_dev['foc'].focuser.guarded_move((foc_start)*g_dev['foc'].micron_to_steps)
+            g_dev['foc'].guarded_move((foc_start)*g_dev['foc'].micron_to_steps)
             self.sequencer_hold = False   
             self.guard = False
             self.af_guard = False
@@ -1499,7 +1506,7 @@ class Sequencer:
             print ('Moving to Solved focus:  ', round(d1, 2), ' calculated:  ',  new_spot)
             #Saves a base for relative focus adjusts.
             pos = int(d1*g_dev['foc'].micron_to_steps)
-            g_dev['foc'].focuser.guarded_move(pos)
+            g_dev['foc'].guarded_move(pos)
             g_dev['foc'].last_known_focus = d1
             try:
                 g_dev['foc'].last_temperature = g_dev['foc'].focuser.Temperature
@@ -1520,11 +1527,11 @@ class Sequencer:
                 print('Known bug, Verifcation did not work. Returing to target using solved focus.')
         else:
             print('Coarse_focus did not converge. Moving back to starting focus:  ', foc_pos0)
-            g_dev['foc'].focuser.guarded_move((foc_start)*g_dev['foc'].micron_to_steps)
+            g_dev['foc'].guarded_move((foc_start)*g_dev['foc'].micron_to_steps)
         print("Returning to:  ", start_ra, start_dec)
         g_dev['mnt'].mount.SlewToCoordinatesAsync(start_ra, start_dec)   #Return to pre-focus pointing.
         if sim:
-            g_dev['foc'].focuser.guarded_move((foc_start)*g_dev['foc'].micron_to_steps)
+            g_dev['foc'].guarded_move((foc_start)*g_dev['foc'].micron_to_steps)
         self.sequencer_hold = False   
         self.guard = False
         self.af_guard = False
