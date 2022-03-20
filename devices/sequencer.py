@@ -238,11 +238,11 @@ class Sequencer:
                         time.sleep(10)
                     print("Open and slew Dome to azimuth opposite the Sun:  ", round(flat_spot, 1))
 
-                    # if enc_status['shutter_status'] in ['Closed', 'closed'] \
-                    #     and ocn_status['hold_duration'] <= 0.1:
-                    #     #breakpoint()
-                    #     g_dev['enc'].open_command({}, {})
-                    #     time.sleep(3)
+                    if enc_status['shutter_status'] in ['Closed', 'closed'] \
+                        and ocn_status['hold_duration'] <= 0.1:
+                        #breakpoint()
+                        g_dev['enc'].open_command({}, {})
+                        time.sleep(3)
                     g_dev['enc'].sync_mount_command({}, {})
                    #Prior to skyflats no dome following.
 
@@ -282,6 +282,7 @@ class Sequencer:
         ocn_status = g_dev['ocn'].status
         enc_status = g_dev['enc'].status
         events = g_dev['events']
+
         #g_dev['obs'].update_status()  #NB NEED to be sure we have current enclosure status.  Blows recursive limit
         self.current_script = "No current script"    #NB this is an unused remnant I think.
         #if True or     #Note this runs in Manual Mode as well.
@@ -375,6 +376,9 @@ class Sequencer:
                 if not self.block_guard \
                     and (block['start'] <= now_date_timeZ < block['end']) \
                     and not self.is_in_completes(block['event_id']):
+                    if block['project_id'] in ['none', 'real_time_slot', 'real_time_block']:
+                        self.block_guard = True
+                        return   # Do not try to execute an empty block.
                     self.block_guard = True
                     completed_block = self.execute_block(block)  #In this we need to ultimately watch for weather holds.
                     self.append_completes(completed_block['event_id'])
@@ -927,7 +931,7 @@ class Sequencer:
         """
         self.sky_guard = True
         print('Eve Sky Flat sequence Starting, Enclosure PRESUMED Open. Telescope will un-park.')
-        #breakpoint()
+
         camera_name = str(self.config['camera']['camera_1_1']['name'])
         flat_count = 3
 
@@ -988,7 +992,7 @@ class Sequencer:
                     try:
                         sky_lux = eval(self.redis_server.get('ocn_status'))['calc_HSI_lux']     #Why Eval, whould have float?
                     except:
-                        print("Redis not running. lux set to 1000.")
+                        #print("Redis not running. lux set to 1000.")
                         sky_lux = float(g_dev['ocn'].status['calc_HSI_lux'])
                     exp_time = prior_scale*scale*25000/(collecting_area*sky_lux*float(g_dev['fil'].filter_data[current_filter][3]))  #g_dev['ocn'].calc_HSI_lux)  #meas_sky_lux)
                     print('Ex:  ', exp_time, scale, prior_scale, sky_lux, float(g_dev['fil'].filter_data[current_filter][3]))
@@ -1005,7 +1009,7 @@ class Sequencer:
                 req = {'time': float(exp_time),  'alias': camera_name, 'image_type': 'sky flat', 'script': 'On'}
                 opt = { 'count': 1, 'bin':  '2,2', 'area': 150, 'filter': g_dev['fil'].filter_data[current_filter][0]}
                 print("using:  ", g_dev['fil'].filter_data[current_filter][0])
-                if ephem_now < g_dev['events']['End Eve Sky Flats']:
+                if ephem_now >= g_dev['events']['End Eve Sky Flats']:
                     break
                 try:
                     result = g_dev['cam'].expose_command(req, opt, no_AWS=True, do_sep = False)
