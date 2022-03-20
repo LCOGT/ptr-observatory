@@ -61,7 +61,6 @@ class Focuser:
         time.sleep(4)
 
         self.focuser.Connected = True
-
         #self.focuser.TempComp = False
         self.micron_to_steps= float(config['focuser']['focuser1']['unit_conversion'])   #  Note tis can be a bogus value
         self.steps_to_micron = 1/self.micron_to_steps
@@ -265,7 +264,6 @@ class Focuser:
             print("Something went wrong in focus-adjust.")
             
     def guarded_move(self, to_focus):
-
         try:
             self.focuser.Move(int(to_focus))
             time.sleep(0.1)
@@ -298,7 +296,7 @@ class Focuser:
                 time.sleep(0.5)
                 print('>f rel')
         else:
-            print('Supplied relative move is lacking a sign; ignoring command')
+            print('Supplied relative move is lacking a sign; ignoring.')
         #print(f"focuser cmd: move_relative:  ", req, opt)
     def move_absolute_command(self, req: dict, opt: dict):
         ''' set the focus position by moving to an absolute position '''

@@ -1,22 +1,16 @@
 
 """
-
 IMPORTANT TODOs:
-    
-    
+     
 WER 20211211
 
-IMPORTANT TODOs:
-    
+IMPORTANT TODOs: 
     
 Simplify.  No site specific if statements in main code if possible.
 Sort out when rotator is not installed and focus temp when no probe
 is in the Gemini.
 
 Abstract away Redis, Memurai, and local shares for IPC.
-
-
-
 """
 
 import time
@@ -68,21 +62,6 @@ from devices.sequencer import Sequencer
 from processing.calibration import calibrate
 from global_yard import g_dev  # g-dev is a place where it is easy to 
                                # monkey-patch whole devices.
-
-#import ssl
-
-#  THIS code flushes the SSL Certificate cache which sometimes fouls up updating
-#  the astropy time scales.
-
-# try:
-#     _create_unverified_https_context = ssl._create_unverified_context
-# except AttributeError:
-# # Legacy Python that doesn't verify HTTPS certificates by default
-#     pass
-# else:
-#     # Handle target environment that doesn't support HTTPS verification
-#     ssl._create_default_https_context = _create_unverified_https_context
-
 
 # move this function to a better location
 def to_bz2(filename, delete=False):
@@ -258,13 +237,13 @@ class Observatory:
         site_str = config['site']
         g_dev['site']:  site_str
         self.g_dev = g_dev
-        self.stop_all_activity = False
  
 
         self.time_last_status = time.time() - 3
         # Build the to-AWS Try again, reboot, verify dome nad tel and start a thread.
-        self.cmd_queue = Queue(maxsize = 20)
-  
+
+        self.cmd_queue = Queue(maxsize = 30)
+        self.stop_all_activity = False
         self.aws_queue = queue.PriorityQueue()
         self.aws_queue_thread = threading.Thread(target=self.send_to_AWS, args=())
         self.aws_queue_thread.start()
@@ -280,15 +259,6 @@ class Observatory:
         self.events_new = None
         self.reset_last_reference()
         
-        
-
-        # Build the site (from-AWS) Queue and start a thread.
-        # self.site_queue = queue.SimpleQueue()
-        # self.site_queue_thread = threading.Thread(target=self.get_from_AWS, args=())
-        # self.site_queue_thread.start()
-
-
-
     def set_last_reference(self,  delta_ra, delta_dec, last_time):
         mnt_shelf = shelve.open(self.site_path + 'ptr_night_shelf/' + 'last')
         mnt_shelf['ra_cal_offset'] = delta_ra
@@ -415,37 +385,43 @@ class Observatory:
                                                    data=json.dumps(body)).json()
                 # Make sure the list is sorted in the order the jobs were issued
                 # Note: the ulid for a job is a unique lexicographically-sortable id
-                #  THe commands just read need to be saved:
-                # NB NB NB Need to delete old stale commands from prior sessions.
                 if len(unread_commands) > 0:
+                    #print(unread_commands)
                     unread_commands.sort(key=lambda x: x["ulid"])
+                    # Process each job one at a time
+                    print("# of incomming commands:  ", len(unread_commands))
                     for cmd in unread_commands:
                         if cmd['action'] in ['cancel_all_commands', 'stop']:
                             g_dev['obs'].stop_all_activity = True
                             print("A STOP / CANCEL has been received.")
-                            self.send_to_user("Cancel/Stop received. Usually processed by camera or sequencer.")
+                            self.send_to_user("Cancel/Stop received. Exposure stopped, will begin readout then discard image.")
                             self.send_to_user("Pending transfers to PTR Archive not affected.")
                             #WE empty the queue
+                            try:
+                                if g_dev['cam'].exposure_busy:
+                                    g_dev['cam']._stop_expose()
+                                    g_dev['obs'].stop_all_activity = True
+                                else:
+                                    print("Camera is not busy.")
+                            except:
+                                print("Camera stop faulted.")
                             while self.cmd_queue.qsize() > 0:
-                                print("Deleting Job:  ", self.cmd_queue.get())                          
+                                print("Deleting Job:  ", self.cmd_queue.get())
                         else:
                             self.cmd_queue.put(cmd)  #SAVE THE COMMAND FOR LATER
                             print("Appending job:  ", cmd)
+                            
                     if cancel_check:
                         return   #Note we do not process any commands.
-                #If no cancel_check call this is trying to get the next command,
-                #but now we pick it up from the queue
                 while self.cmd_queue.qsize() > 0:
 
                     #print(unread_commands)
-  
+            
                     #unread_commands.sort(key=lambda x: x["ulid"])
                     # Process each job one at a time
                     print("# of queued commands:  ", self.cmd_queue.qsize())
                     cmd = self.cmd_queue.get() 
                     #This code is redundant
-#
-                        
                     if self.config['selector']['selector1']['driver'] is None:
                         port = cmd['optional_params']['instrument_selector_position'] 
                         g_dev['mnt'].instrument_port = port
@@ -464,6 +440,7 @@ class Observatory:
                             except:
                                 #breakpoint()
                                 pass
+##this is probably a bad import
                     else:
                         device_instance = cmd['deviceInstance']
                     print('obs.scan_request: ', cmd)
@@ -502,32 +479,21 @@ class Observatory:
                 Projects on the other hand can be a very large pool so how to manage becomes an issue.
                 TO the extent a project is not visible at a site, aws should not present it.  If it is
                 visible and passes the owners priority it should then be presented to the site.
-                
                 '''
-
                 if self.events_new is None:
                     url = 'https://api.photonranch.org/api/events?site=SAF'
-
                     self.events_new = requests.get(url).json()
                 return   # Continue   #This creates an infinite loop
-                
             else:
                 print('Sequencer Hold asserted.')    #What we really want here is looking for a Cancel/Stop.
                 continue
 
-    def update_status(self, cancel_check=False):
+    def update_status(self):
         ''' Collect status from all devices and send an update to aws.
         Each device class is responsible for implementing the method
         `get_status` which returns a dictionary.
         '''
-
-        # This stopping mechanism allows for threads to close cleanly.
         loud = False        
-        # if g_dev['cam_retry_doit']:
-        #     #breakpoint()   #THis should be obsolete.
-        #     del g_dev['cam']
-        #     device = Camera(g_dev['cam_retry_driver'], g_dev['cam_retry_name'], g_dev['cam_retry_config'])
-        #     print("Deleted and re-created:  ,", device)
         # Wait a bit between status updates
         while time.time() < self.time_last_status + self.status_interval:
             # time.sleep(self.st)atus_interval  #This was prior code
@@ -568,16 +534,7 @@ class Observatory:
                     result = device.get_status()
                 if result is not None:
                     status[dev_type][device_name] = result
-                    # if device_name == 'enclosure1':
-                    #     g_dev['enc'].status = result   #NB NB NB A big HACK!
-                    #print(device_name, result, '\n')
-        # Include the time that the status was assembled and sent.
-        #if remove_enc:
-            #breakpoint()
-            #status.pop('enclosure', None)
-            #status.pop('observing_conditions', None)
-            #status['observing_conditions'] = None
-            #status['enclosure'] = None
+
             
         status["timestamp"] = round((time.time() + t1)/2., 3)
         status['send_heartbeat'] = False
@@ -592,10 +549,7 @@ class Observatory:
             print('\n\nStatus Sent:  \n', status)   # from Update:  ', status))
         else:
             print('.') #, status)   # We print this to stay informed of process on the console.
-            # breakpoint()
-            # self.send_log_to_frontend("WARN cam1 just fell on the floor!")
-            # self.send_log_to_frontend("ERROR enc1 dome just collapsed.")
-            #  Consider inhibity unless status rate is low
+
         obsy = self.name
         if ocn_status is not None:
             lane = 'weather'
@@ -607,17 +561,6 @@ class Observatory:
             lane = 'device'
             final_send  = status
             send_status(obsy, lane, device_status)
-
-
-        #print("AWS Response:  ",response)
-        # NB should qualify acceptance and type '.' at that point.
-        self.time_last_status = time.time()
-        #self.redis_server.set('obs_time', self.time_last_status, ex=120 )
-        self.status_count +=1
-        if cancel_check:
-            self.scan_requests('mount1', cancel_check=True)
-
-
 # =============================================================================
 #         uri_status = f"https://status.photonranch.org/status/{self.name}/status/"
 #         # NB None of the strings can be empty.  Otherwise this put faults.
@@ -634,168 +577,14 @@ class Observatory:
 #             response = requests.post(uri_status, data=data)
 # =============================================================================
 
+        #print("AWS Response:  ",response)
+        # NB should qualify acceptance and type '.' at that point.
+        self.time_last_status = time.time()
+        #self.redis_server.set('obs_time', self.time_last_status, ex=120 )
+        self.status_count +=1
 # =============================================================================
 #         except:
 #             print('self.api.authenticated_request("PUT", uri, status):   Failed!')
-# =============================================================================
-            
-# =============================================================================
-#         status = {}
-#         # Loop through all types of devices.
-#         # For each type, we get and save the status of each device.
-# 
-#         if not self.config['wema_is_active']:
-#             device_list = self.device_types
-#             remove_enc = False
-#         else:
-#             device_list = self.wema_types  # self.short_status_devices 
-#             remove_enc = True
-#         for dev_type in device_list:
-#             # The status that we will send is grouped into lists of
-#             # devices by dev_type.
-#             status[dev_type] = {}
-#             # Names of all devices of the current type.
-#             # Recall that self.all_devices[type] is a dictionary of all
-#             # `type` devices, with key=name and val=device object itself.
-#             devices_of_type = self.all_devices.get(dev_type, {})
-#             device_names = devices_of_type.keys()
-# 
-#             for device_name in device_names:
-#                 # Get the actual device object...
-#                 device = devices_of_type[device_name]
-#                 # ...and add it to main status dict.
-# 
-#                 if device_name in self.config['wema_types'] and (self.is_wema or self.site_is_specific):
-#                     result = device.get_status(g_dev)
-#                     if self.site_is_specific:
-#                         remove_enc = False
-#                 else:
-# 
-#                     result = device.get_status()
-#                 if result is not None:
-#                     status[dev_type][device_name] = result
-#                     # if device_name == 'enclosure1':
-#                     #     g_dev['enc'].status = result   #NB NB NB A big HACK!
-#                     #print(device_name, result, '\n')
-#         # Include the time that the status was assembled and sent.
-#         #if remove_enc:
-#             #breakpoint()
-#             #status.pop('enclosure', None)
-#             #status.pop('observing_conditions', None)
-#             #status['observing_conditions'] = None
-#             #status['enclosure'] = None
-#             
-#         status["timestamp"] = round((time.time() + t1)/2., 3)
-#         status['send_heartbeat'] = False
-#         loud = False
-#         if loud:
-#             print('\n\nStatus Sent:  \n', status)   # from Update:  ', status))
-#         else:
-#             print('.') #, status)   # We print this to stay informed of process on the console.
-#             # breakpoint()
-#             # self.send_log_to_frontend("WARN cam1 just fell on the floor!")
-#             # self.send_log_to_frontend("ERROR enc1 dome just collapsed.")
-#             #  Consider inhibity unless status rate is low
-#         uri_status = f"https://status.photonranch.org/status/{self.name}/status/"
-#         # NB None of the strings can be empty.  Otherwise this put faults.
-#         try:    # 20190926  tHIS STARTED THROWING EXCEPTIONS OCCASIONALLY
-#             #print("AWS uri:  ", uri)
-#             #print('Status to be sent:  \n', status, '\n')
-# 
-#             payload ={
-#                 "statusType": "weather",
-#                 "status":  status
-#                 }
-#             #print("device Payload:  ", payload)
-#             data = json.dumps(payload)
-#             response = requests.post(uri_status, data=data)
-#             #self.api.authenticated_request("PUT", uri_status, status)   # response = is not  used
-#             #print("AWS Response:  ",response)
-#             # NB should qualify acceptance and type '.' at that point.
-#             self.time_last_status = time.time()
-#             #self.redis_server.set('obs_time', self.time_last_status, ex=120 )
-#             self.status_count +=1
-#         except:
-#             print('self.api.authenticated_request("PUT", uri, status):   Failed!')
-#             
-# 
-#         if not self.config['wema_is_active']:
-#             device_list = self.enc_types
-#             remove_enc = False
-#         else:
-#             #device_list = self.enc_types  # self.short_status_devices 
-#             remove_enc = True
-#             breakpoint()
-#         for dev_type in device_list:
-#             # The status that we will send is grouped into lists of
-#             # devices by dev_type.
-#             status[dev_type] = {}
-#             # Names of all devices of the current type.
-#             # Recall that self.all_devices[type] is a dictionary of all
-#             # `type` devices, with key=name and val=device object itself.
-#             devices_of_type = self.all_devices.get(dev_type, {})
-#             device_names = devices_of_type.keys()
-# 
-#             for device_name in device_names:
-#                 # Get the actual device object...
-#                 device = devices_of_type[device_name]
-#                 # ...and add it to main status dict.
-# 
-#                 if device_name in self.config['wema_types'] and (self.is_wema or self.site_is_specific):
-#                     result = device.get_status(g_dev)
-#                     if self.site_is_specific:
-#                         remove_enc = False
-#                 else:
-# 
-#                     result = device.get_status()
-#                 if result is not None:
-#                     status[dev_type][device_name] = result
-#                     # if device_name == 'enclosure1':
-#                     #     g_dev['enc'].status = result   #NB NB NB A big HACK!
-#                     #print(device_name, result, '\n')
-#         # Include the time that the status was assembled and sent.
-#         if remove_enc:
-#             #breakpoint()
-#             #status.pop('enclosure', None)
-#             #status.pop('observing_conditions', None)
-#             status['observing_conditions'] = None
-# 
-#             if g_dev['enc'].dome_on_wema:
-#                 status['enclosure'] = None
-#             
-#         status["timestamp"] = round((time.time() + t1)/2., 3)
-#         status['send_heartbeat'] = False
-#         loud = False
-#         if loud:
-#             print('\n\nStatus Sent:  \n', status)   # from Update:  ', status))
-#         else:
-#             print('.') #, status)   # We print this to stay informed of process on the console.
-#             # breakpoint()
-#             # self.send_log_to_frontend("WARN cam1 just fell on the floor!")
-#             # self.send_log_to_frontend("ERROR enc1 dome just collapsed.")
-#             #  Consider inhibity unless status rate is low
-#         uri_status = f"https://status.photonranch.org/status/{self.name}/status/"
-#         # NB None of the strings can be empty.  Otherwise this put faults.
-#         try:    # 20190926  tHIS STARTED THROWING EXCEPTIONS OCCASIONALLY
-#             #print("AWS uri:  ", uri)
-#             #print('Status to be sent:  \n', status, '\n')
-# 
-#             payload ={
-#                 "statusType": "enclosure",
-#                 "status":  status
-#                 }
-#             #print("device Payload:  ", payload)
-#             data = json.dumps(payload)
-#             response = requests.post(uri_status, data=data)
-#             #self.api.authenticated_request("PUT", uri_status, status)   # response = is not  used
-#             #print("AWS Response:  ",response)
-#             # NB should qualify acceptance and type '.' at that point.
-#             self.time_last_status = time.time()
-#             #self.redis_server.set('obs_time', self.time_last_status, ex=120 )
-#             self.status_count +=1
-#         except:
-#             print('self.api.authenticated_request("PUT", uri, status):   Failed!')
-# 
 # =============================================================================
 
     def update(self):
@@ -980,12 +769,6 @@ class Observatory:
                         img.close
                         img = fits.open(wpath, ignore_missing_end=True)
                         hdr = img[0].header
-                        # prior_ra_h, prior_dec, prior_time = g_dev['mnt'].get_last_reference()
-                        
-                        # if prior_time is not None:
-                        #     print("time base is:  ", time_now - prior_time)
-                            
-                        # g_dev['mnt'].set_last_reference( solve['ra_j2000_Second phase of AF now.hours'], solve['dec_j2000_degrees'], time_now)
                     except:
                        print(wpath, "  was not solved, marking to skip in future, sorry!")
                        img = fits.open(wpath, mode='update', ignore_missing_end=True)
@@ -994,43 +777,12 @@ class Observatory:
                        img.close()
                     hdu = hdu_save
                     #Return to classic processing
-                
-                # if self.site_name == 'saf':
-                #     wpath = paths['red_path_aux'] + paths['red_name01_lcl']
-                #     hdu.writeto(wpath, overwrite=True) #big fits to other computer in Neyle's office
-                #patch to test Midtone Contrast
-                
-                # image = 'Q:/000ptr_saf/archive/sq01/20201212 ans HH/reduced/HH--SigClip.fits'
-                # hdu_new = fits.open(image)
-                # hdu =hdu_new[0]
-
-
-
-
                 '''
                 Here we need to consider just what local reductions and calibrations really make sense to
                 process in-line vs doing them in another process.  For all practical purposes everything
                 below can be done in a different process, the exception perhaps has to do with autofocus
                 processing.
-
-
                 '''
-                # Note we may be using different files if calibrate is null.
-                # NB  We should only write this if calibrate actually succeeded to return a result ??
-
-                #  if frame_type == 'sky flat':
-                #      hdu.header['SKYSENSE'] = int(g_dev['scr'].bright_setting)
-                #
-                # if not quick:
-                #     hdu1.writeto(im_path + raw_name01, overwrite=True)
-                # raw_data_size = hdu1[0].data.size
-
-
-
-                #  NB Should this step be part of calibrate?  Second should we form and send a
-                #  CSV file to AWS and possibly overlay key star detections?
-                #  Possibly even astro solve and align a series or dither batch?
-                #  This might want to be yet another thread queue, esp if we want to do Aperture Photometry.
                 no_AWS = False
                 quick = False
                 do_sep = False
@@ -1075,59 +827,11 @@ class Observatory:
                 #we wre embedding a non-rectanglular image in a "square" and scaling it to 768^2.  We will impose a
                 #minimum subframe reporting of 32 x 32
 
-                # in_shape = hdu.data.shape
-                # in_shape = [in_shape[0], in_shape[1]]   #Have to convert to a list, cannot manipulate a tuple,
-                # if in_shape[0]%2 == 1:
-                #     in_shape[0] -= 1
-                # if in_shape[0] < 32:
-                #     in_shape[0] = 32
-                # if in_shape[1]%2 == 1:
-                #     in_shape[1] -= 1
-                # if in_shape[1] < 32:
-                #     in_shape[1] = 32
-                #Ok, we have an even array and a minimum 32x32 array.
-
                 # =============================================================================
                 # x = 2      From Numpy: a way to quickly embed an array in a larger one
                 # y = 3
                 # wall[x:x+block.shape[0], y:y+block.shape[1]] = block
                 # =============================================================================
-
-# =============================================================================
-#                 if in_shape[0] < in_shape[1]:
-#                     diff = int(abs(in_shape[1] - in_shape[0])/2)
-#                     in_max = int(hdu.data.mean()*0.8)
-#                     in_min = int(hdu.data.min() - 2)
-#                     if in_min < 0:
-#                         in_min = 0
-#                     new_img = np. zeros((in_shape[1], in_shape[1]))    #new square array
-#                     new_img[0:diff - 1, :] = in_min
-#                     new_img[diff-1, :] = in_max
-#                     new_img[diff:(diff + in_shape[0]), :] = hdu.data
-#                     new_img[(diff + in_shape[0]), :] = in_max
-#                     new_img[(diff + in_shape[0] + 1):(2*diff + in_shape[0]), :] = in_min
-#                     hdu.data = new_img
-#                 elif in_shape[0] > in_shape[1]:
-#                     #Same scheme as above, but expands second axis.
-#                     diff = int((in_shape[0] - in_shape[1])/2)
-#                     in_max = int(hdu.data.mean()*0.8)
-#                     in_min = int(hdu.data.min() - 2)
-#                     if in_min < 0:
-#                         in_min = 0
-#                     new_img = np. zeros((in_shape[0], in_shape[0]))    #new square array
-#                     new_img[:, 0:diff - 1] = in_min
-#                     new_img[:, diff-1] = in_max
-#                     new_img[:, diff:(diff + in_shape[1])] = hdu.data
-#                     new_img[:, (diff + in_shape[1])] = in_max
-#                     new_img[:, (diff + in_shape[1] + 1):(2*diff + in_shape[1])] = in_min
-#                     hdu.data = new_img
-#                 else:
-#                     #nothing to do, the array is already square
-#                     pass
-# =============================================================================
-
-
-
                 hdu.data = hdu.data.astype('uint16')
                 iy, ix = hdu.data.shape
                 if iy == ix:
@@ -1138,28 +842,9 @@ class Observatory:
                 hdu.data = resized_a.astype('uint16')
 
                 i768sq_data_size = hdu.data.size
-                # print('ABOUT to print paths.')
-                # print('Sending to:  ', paths['im_path'])
-                # print('Also to:     ', paths['i768sq_name10'])
 
                 hdu.writeto(paths['im_path'] + paths['i768sq_name10'], overwrite=True)
                 hdu.data = resized_a.astype('float')
-                #The following does a very lame contrast scaling.  A beer for best improvement on this code!!!
-                #Looks like Tim wins a beer.
-                # Old contrast scaling code:
-                #istd = np.std(hdu.data)
-                #imean = np.mean(hdu.data)
-                #if (imean + 3*istd) != 0:    #This does divide by zero in some bias images.
-                #    img3 = hdu.data/(imean + 3*istd)
-                #else:
-                #    img3 = hdu.data
-                #fix = np.where(img3 >= 0.999)
-                #fiz = np.where(img3 < 0)
-                #img3[fix] = .999
-                #img3[fiz] = 0
-                #img4 = img3*256
-                #img4 = img4.astype('uint8')   #Eliminates a user warning.
-                #imsave(paths['im_path'] + paths['jpeg_name10'], img4)  #NB File extension triggers JPEG conversion.
                 # New contrast scaling code: 
                 stretched_data_float = Stretch().stretch(hdu.data)
                 stretched_256 = 255*stretched_data_float
@@ -1176,52 +861,27 @@ class Observatory:
                 #print("post-unit8< hot, cold:  ", len(hot[0]), len(cold[0]))                
                 imsave(paths['im_path'] + paths['jpeg_name10'], stretched_data_uint8)
                 #img4 = stretched_data_uint8  # keep old name for compatibility
-
                 jpeg_data_size = abs(stretched_data_uint8.size - 1024)                # istd = np.std(hdu.data)
-
                 if not no_AWS:  #IN the no+AWS case should we skip more of the above processing?
                     #g_dev['cam'].enqueue_for_AWS(text_data_size, paths['im_path'], paths['text_name'])
                     g_dev['cam'].enqueue_for_AWS(jpeg_data_size, paths['im_path'], paths['jpeg_name10'])
                     g_dev['cam'].enqueue_for_AWS(i768sq_data_size, paths['im_path'], paths['i768sq_name10'])
                     #print('File size to AWS:', reduced_data_size)
                     g_dev['cam'].enqueue_for_AWS(13000000, paths['raw_path'], paths['raw_name00'])
-                    #if not quick:
-                #print('Sent to AWS Queue.')
+
                 time.sleep(0.5)
                 self.img = None   #Clean up all big objects.
                 try:
                     hdu = None
                 except:
                     pass
-                # try:
-                #     hdu1 = None
-                # except:
-                #     pass
                 print("\nReduction completed.")
                 g_dev['obs'].send_to_user("An image reduction has completed.", p_level='INFO')
                 self.reduce_queue.task_done()
             else:
                 time.sleep(.5)
                 
-
-
 if __name__ == "__main__":
-
-    # # Define a command line argument to specify the config file to use
-    # parser = argparse.ArgumentParser()
-    # parser.add_argument('--config', type=str, default="default")
-    # options = parser.parse_args()
-    # # Import the specified config file
-    # print(options.config)
-    # if options.config == "default":
-    #     config_file_name = "config"
-    # else:
-    #     config_file_name = f"config_files.config_{options.config}"
-    # config = importlib.import_module(config_file_name)
-    # print(f"Starting up {config.site_name}.")
-    # Start up the observatory
-
     import config
-
     o = Observatory(config.site_name, config.site_config)
     o.run()

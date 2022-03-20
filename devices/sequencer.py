@@ -238,11 +238,11 @@ class Sequencer:
                         time.sleep(10)
                     print("Open and slew Dome to azimuth opposite the Sun:  ", round(flat_spot, 1))
 
-                    # if enc_status['shutter_status'] in ['Closed', 'closed'] \
-                    #     and ocn_status['hold_duration'] <= 0.1:
-                    #     #breakpoint()
-                    #     g_dev['enc'].open_command({}, {})
-                    #     time.sleep(3)
+                    if enc_status['shutter_status'] in ['Closed', 'closed'] \
+                        and ocn_status['hold_duration'] <= 0.1:
+                        #breakpoint()
+                        g_dev['enc'].open_command({}, {})
+                        time.sleep(3)
                     g_dev['enc'].sync_mount_command({}, {})
                    #Prior to skyflats no dome following.
 
@@ -282,6 +282,7 @@ class Sequencer:
         ocn_status = g_dev['ocn'].status
         enc_status = g_dev['enc'].status
         events = g_dev['events']
+
         #g_dev['obs'].update_status()  #NB NEED to be sure we have current enclosure status.  Blows recursive limit
         self.current_script = "No current script"    #NB this is an unused remnant I think.
         #if True or     #Note this runs in Manual Mode as well.
@@ -348,7 +349,8 @@ class Sequencer:
                     if block['project_id'] == project['project_name'] + '#' + project['created_at']:
                         block['project'] = project
                 else:
-                    print("Reservation asserting at this time.   ", )
+                    pass
+                #print("Reservation asserting at this time.   ", )
             '''
             evaluate supplied projects for observable and mark as same. Discard
             unobservable projects.  Projects may be "site" projects or 'ptr' (network wide:
@@ -379,9 +381,10 @@ class Sequencer:
                         self.block_guard = True
                         return   # Do not try to execute an empty block.
                     self.block_guard = True
+
                     completed_block = self.execute_block(block)  #In this we need to ultimately watch for weather holds.
                     self.append_completes(completed_block['event_id'])
-                    self.block_guard = False
+                    block['project_id'] in ['none', 'real_time_slot', 'real_time_block']
                     '''
                     When a scheduled block is completed it is not re-entered or the block needs to 
                     be restored.  IN the execute block we need to make a deepcopy of the input block
@@ -808,16 +811,14 @@ class Sequencer:
             # req = {'time': 0.0,  'script': 'True', 'image_type': 'bias'}
             # opt = {'area': "Full", 'count': 9, 'bin':'2 2', \
             #         'filter': 'dark'}
-            for bias in range(11):
+            for bias in range(9):
                 req = {'time': 0.0,  'script': 'True', 'image_type': 'bias'}
                 opt = {'area': "Full", 'count': 7, 'bin':'1 1', \
                         'filter': 'dark'}
                 result = g_dev['cam'].expose_command(req, opt, no_AWS=True, \
                                 do_sep=False, quick=False)
                 g_dev['obs'].update_status()
-                
-                if ephem.now() + dark_time/86400. >= g_dev['events']['End Eve Bias Dark']:
-                    break
+
 
                 print("Expose d_1 using exposure:  ", dark_time )
                 req = {'time':dark_time ,  'script': 'True', 'image_type': 'dark'}
@@ -828,7 +829,7 @@ class Sequencer:
 
                 g_dev['obs'].update_status()
                 
-                if ephem.now() + dark_time/86400. >= g_dev['events']['End Eve Bias Dark']:
+                if ephem.now() >= g_dev['events']['End Eve Bias Dark']:
                     break
                 
                 print("Expose Biases: b_2")   
@@ -841,9 +842,7 @@ class Sequencer:
                                 do_sep=False, quick=False)
                 g_dev['obs'].update_status()
  
-                if ephem.now() + dark_time/86400. >= g_dev['events']['End Eve Bias Dark']:
-                    break
-                
+
                 print("Expose d_2 using exposure:  ", dark_time )
                 req = {'time':dark_time ,  'script': 'True', 'image_type': 'dark'}
                 opt = {'area': "Full", 'count':1, 'bin': '2 2', \
@@ -853,7 +852,7 @@ class Sequencer:
 
                 g_dev['obs'].update_status()
 
-                if ephem.now() + dark_time/86400. >= g_dev['events']['End Eve Bias Dark']:
+                if ephem.now() >= g_dev['events']['End Eve Bias Dark']:
                     break
            
                 print("Expose Biases: b_3")   
@@ -865,7 +864,7 @@ class Sequencer:
                 result = g_dev['cam'].expose_command(req, opt, no_AWS=True, \
                                 do_sep=False, quick=False)
                 g_dev['obs'].update_status()
-                if ephem.now() + dark_time/86400. >= g_dev['events']['End Eve Bias Dark']:
+                if ephem.now() >= g_dev['events']['End Eve Bias Dark']:
                     break
                 print("Expose d_3 using exposure:  ", dark_time )
                 req = {'time':dark_time,  'script': 'True', 'image_type': 'dark'}
@@ -876,7 +875,7 @@ class Sequencer:
                 print('Last dark result:  ', result)
                 g_dev['obs'].update_status()
                 
-                if ephem.now() + dark_time/86400. >= g_dev['events']['End Eve Bias Dark']:
+                if ephem.now() >= g_dev['events']['End Eve Bias Dark']:
                     break
                 print("Expose Biases: b_4") 
                 dark_time = 360
@@ -887,8 +886,8 @@ class Sequencer:
                     result = g_dev['cam'].expose_command(req, opt, no_AWS=True, \
                                     do_sep=False, quick=False)
                     g_dev['obs'].update_status()
-                if ephem.now() + dark_time/86400. >= g_dev['events']['End Eve Bias Dark']:
-                    break
+                    if ephem.now() >= g_dev['events']['End Eve Bias Dark']:
+                        break
     
                     print("Expose d_4 using exposure:  ", dark_time )
                     req = {'time':dark_time ,  'script': 'True', 'image_type': 'dark'}
@@ -934,7 +933,7 @@ class Sequencer:
         """
         self.sky_guard = True
         print('Eve Sky Flat sequence Starting, Enclosure PRESUMED Open. Telescope will un-park.')
-        #breakpoint()
+
         camera_name = str(self.config['camera']['camera_1_1']['name'])
         flat_count = 3
 
@@ -995,7 +994,7 @@ class Sequencer:
                     try:
                         sky_lux = eval(self.redis_server.get('ocn_status'))['calc_HSI_lux']     #Why Eval, whould have float?
                     except:
-                        print("Redis not running. lux set to 1000.")
+                        #print("Redis not running. lux set to 1000.")
                         sky_lux = float(g_dev['ocn'].status['calc_HSI_lux'])
                     exp_time = prior_scale*scale*25000/(collecting_area*sky_lux*float(g_dev['fil'].filter_data[current_filter][3]))  #g_dev['ocn'].calc_HSI_lux)  #meas_sky_lux)
                     print('Ex:  ', exp_time, scale, prior_scale, sky_lux, float(g_dev['fil'].filter_data[current_filter][3]))
@@ -1012,7 +1011,7 @@ class Sequencer:
                 req = {'time': float(exp_time),  'alias': camera_name, 'image_type': 'sky flat', 'script': 'On'}
                 opt = { 'count': 1, 'bin':  '2,2', 'area': 150, 'filter': g_dev['fil'].filter_data[current_filter][0]}
                 print("using:  ", g_dev['fil'].filter_data[current_filter][0])
-                if ephem.now() + float(exp_time/86400.) >= g_dev['events']['End Eve Bias Dark']:
+                if ephem_now >= g_dev['events']['End Eve Sky Flats']:
                     break
                 try:
                     result = g_dev['cam'].expose_command(req, opt, no_AWS=True, do_sep = False)
@@ -1153,8 +1152,10 @@ class Sequencer:
                         result['patch'] = cal_result
                         result['temperature'] = avg_foc[2]  This is probably tube not reported by Gemini.
         '''
-
-        throw = g_dev['foc'].config['af_step']
+        if self.config['site'] in ['sro']:   #NB this should be a site config key in the focuser or computed from f-ratio.
+            throw = 250
+        if self.config['site'] in ['saf']:  #  NB NB f4.9 this belongs in config, not in the code body!!!!
+            throw = 400
         self.sequencer_hold = False   #Allow comand checks.
         self.guard = False
         self.af_guard = True
@@ -1223,7 +1224,9 @@ class Sequencer:
         #print("temporary patch in Sim values")
         print('Autofocus Starting at:  ', foc_pos0, '\n\n')
 
+ 
         g_dev['foc'].guarded_move((foc_pos0 - 0* throw)*g_dev['foc'].micron_to_steps)   # NB added 20220209 Nasty bug, varies with prior state
+
         #throw = throw  # NB again, from config.  Units are microns  Passed as default paramter
         retry = 0
         while retry < 3:
@@ -1242,6 +1245,7 @@ class Sequencer:
             else:
                 break
         print('Autofocus Moving In.\n\n')
+
         g_dev['foc'].guarded_move((foc_pos0 - 1*throw)*g_dev['foc'].micron_to_steps)
         #opt['fwhm_sim'] = 4.
         if not sim:
@@ -1255,7 +1259,9 @@ class Sequencer:
         g_dev['foc'].focuser.Move((foc_pos0 + 2*throw)*g_dev['foc'].micron_to_steps)
         time.sleep(10)#It is important to overshoot to overcome any backlash  WE need to be sure Exposure waits.
         print('Autofocus Moving back in half-way.\n\n')
+
         g_dev['foc'].guarded_move((foc_pos0 + throw)*g_dev['foc'].micron_to_steps)  #NB NB NB THIS IS WRONG!
+
         time.sleep(10)#opt['fwhm_sim'] = 5
         if not sim:
             result = g_dev['cam'].expose_command(req, opt, no_AWS=True, solve_it=False) ## , script = 'auto_focus_script_2')  #  This is moving out one throw.
@@ -1269,6 +1275,7 @@ class Sequencer:
         print('X, Y:  ', x, y, 'Desire center to be smallest.')
         if spot1 is None or spot2 is None or spot3 is None:  #New additon to stop crash when no spots
             print("No stars detected. Returning to starting focus and pointing.")
+
             g_dev['foc'].guarded_move((focus_start)*g_dev['foc'].micron_to_steps)
             self.sequencer_hold = False   #Allow comand checks.
             self.af_guard = False
@@ -1286,6 +1293,7 @@ class Sequencer:
             except:
     
                 print('Autofocus quadratic equation not converge. Moving back to starting focus:  ', focus_start)
+
                 g_dev['foc'].guarded_move((focus_start)*g_dev['foc'].micron_to_steps)
                 time.sleep(5)
                 self.sequencer_hold = False   #Allow comand checks.
@@ -1300,6 +1308,7 @@ class Sequencer:
                 pos = int(d1*g_dev['foc'].micron_to_steps)
                 
                 
+
                 g_dev['foc'].guarded_move(pos)
                 time.sleep(5)
                 g_dev['foc'].last_known_focus = d1
@@ -1321,6 +1330,7 @@ class Sequencer:
                 print("Returning to:  ", start_ra, start_dec)
                 g_dev['mnt'].mount.SlewToCoordinatesAsync(start_ra, start_dec)   #Return to pre-focus pointing.
             if sim:
+
                 g_dev['foc'].guarded_move((focus_start)*g_dev['foc'].micron_to_steps)
             #  NB here we could re-solve with the overlay spot just to verify solution is sane.
 
@@ -1330,39 +1340,24 @@ class Sequencer:
             self.guard = False
             self.af_guard = False
             return
-        elif spot2 <= spot1 <= spot3:   #NB NB NB THIS need fleshing out
+        elif spot2 <= spot1 or spot3 <= spot1:
             if spot2 <= spot3: 
                 min_focus = foc_pos2
             if spot3 <= spot2:
                 min_focus = foc_pos3
             print("It appears camera is too far out; try again with coarse_focus_script.")
-            self.coarse_focus_script(req2, opt2, begin_at=min_focus)
+            self.coarse_focus_script(req2, opt2, throw=throw + 75, begin_at=min_focus)
             self.sequencer_hold = False   
             self.guard = False
             self.af_guard = False
-            print("Returning to:  ", start_ra, start_dec)
-            g_dev['mnt'].mount.SlewToCoordinatesAsync(start_ra, start_dec)
-            return
-        elif spot2 >= spot1>= spot3:
-            
-            if spot2 <= spot3: 
-                min_focus = foc_pos2
-            if spot3 <= spot2:
-                min_focus = foc_pos3
-            print("It appears camera is too far out; try again with coarse_focus_script.")
-            self.coarse_focus_script(req2, opt2,  begin_at=min_focus)
-            self.sequencer_hold = False   
-            self.guard = False
-            self.af_guard = False
-            print("Returning to:  ", start_ra, start_dec)
-            g_dev['mnt'].mount.SlewToCoordinatesAsync(start_ra, start_dec)
             return
         else:
-            print('Focus is very wrong so moving back to starting focus:  ', focus_start)
+            print('Spots are really wrong so moving back to starting focus:  ', focus_start)
             g_dev['foc'].focuser.Move((focus_start)*g_dev['foc'].micron_to_steps)
         print("Returning to:  ", start_ra, start_dec)
         g_dev['mnt'].mount.SlewToCoordinatesAsync(start_ra, start_dec)   #Return to pre-focus pointing.
         if sim:
+
             g_dev['foc'].guarded_move((focus_start)*g_dev['foc'].micron_to_steps)
         #  NB here we could re-solve with the overlay spot just to verify solution is sane.
         self.sequencer_hold = False   #Allow comand checks.
@@ -1374,7 +1369,7 @@ class Sequencer:
         return
 
 
-    def coarse_focus_script(self, req, opt, begin_at=None):
+    def coarse_focus_script(self, req, opt, throw=700, begin_at=None):
         '''
         V curve is a big move focus designed to fit two lines adjacent to the more normal focus curve.
         It finds the approximate focus, particulary for a new instrument. It requires 8 points plus
@@ -1430,9 +1425,8 @@ class Sequencer:
             opt = {'area': 100, 'count': 1, 'filter': 'focus'}
         foc_pos0 = foc_start
         result = {}
-        throw = g_dev['foc'].config['af_step']*1.5  #Steps need to be coarser spaced
         print('Autofocus Starting at:  ', foc_pos0, '\n\n')
-        breakpoint()
+
         g_dev['foc'].guarded_move((foc_pos0 - 0*throw)*g_dev['foc'].micron_to_steps)  #Added 20220209! A bit late
         #throw = 100  # NB again, from config.  Units are microns
         if not sim:
@@ -1442,8 +1436,17 @@ class Sequencer:
             result['mean_focus'] = g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron
         spot1 = result['FWHM']
         foc_pos1 = result['mean_focus']  
+        # if not sim:
+        #     result = g_dev['cam'].expose_command(req, opt, no_AWS=True) ## , script = 'auto_focus_script_0')  #  This is where we start.
+        # else:
+        #     result['FWHM'] = 3
+        #     result['mean_focus'] = foc_pos0
+        # spot1 = result['FWHM']
+        # foc_pos1 = result['mean_focus']
+        
         
         print('Autofocus Moving In -1x, second time.\n\n')
+
         g_dev['foc'].guarded_move((foc_pos0 - 1*throw)*g_dev['foc'].micron_to_steps)
         #opt['fwhm_sim'] = 4.
         if not sim:
@@ -1454,6 +1457,7 @@ class Sequencer:
         spot2 = result['FWHM']
         foc_pos2 = result['mean_focus']
         print('Autofocus Moving In -2x, second time.\n\n')
+
         g_dev['foc'].guarded_move((foc_pos0 - 2*throw)*g_dev['foc'].micron_to_steps)
         #opt['fwhm_sim'] = 4.
         if not sim:
@@ -1465,6 +1469,7 @@ class Sequencer:
         foc_pos3 = result['mean_focus']
         #Need to check we are not going out too far!
         print('Autofocus Moving out +3X.\n\n')
+
         g_dev['foc'].guarded_move((foc_pos0 + 3*throw)*g_dev['foc'].micron_to_steps)
         print('Autofocus back in for backlash to +2X\n\n')#It is important to overshoot to overcome any backlash
         g_dev['foc'].guarded_move((foc_pos0 + 2*throw)*g_dev['foc'].micron_to_steps)
@@ -1477,6 +1482,7 @@ class Sequencer:
         spot4 = result['FWHM']
         foc_pos4 = result['mean_focus']
         print('Autofocus back in for backlash to +1X\n\n')
+
         g_dev['foc'].guarded_move((foc_pos0 + throw)*g_dev['foc'].micron_to_steps)
         #opt['fwhm_sim'] = 4.
         if not sim:
@@ -1495,6 +1501,7 @@ class Sequencer:
             new_spot = round(a1*d1*d1 + b1*d1 + c1, 2)
         except:
             print('Autofocus quadratic equation not converge. Moving back to starting focus:  ', foc_start)
+
             g_dev['foc'].guarded_move((foc_start)*g_dev['foc'].micron_to_steps)
             self.sequencer_hold = False   
             self.guard = False
@@ -1504,12 +1511,13 @@ class Sequencer:
             print ('Moving to Solved focus:  ', round(d1, 2), ' calculated:  ',  new_spot)
             #Saves a base for relative focus adjusts.
             pos = int(d1*g_dev['foc'].micron_to_steps)
+
             g_dev['foc'].guarded_move(pos)
             g_dev['foc'].last_known_focus = d1
             try:
                 g_dev['foc'].last_temperature = g_dev['foc'].focuser.Temperature
             except:
-                g_dev['foc'].last_temperature = 10.0    #NB NB THis shoule be a site monthly default.
+                g_dev['foc'].last_temperature = 10.0    #NB NB This should be a site monthly default.
             g_dev['foc'].last_source = "coarse_focus_script"
             if not sim:
      
@@ -1525,6 +1533,7 @@ class Sequencer:
                 print('Known bug, Verifcation did not work. Returing to target using solved focus.')
         else:
             print('Coarse_focus did not converge. Moving back to starting focus:  ', foc_pos0)
+
             g_dev['foc'].guarded_move((foc_start)*g_dev['foc'].micron_to_steps)
         print("Returning to:  ", start_ra, start_dec)
         g_dev['mnt'].mount.SlewToCoordinatesAsync(start_ra, start_dec)   #Return to pre-focus pointing.
@@ -2091,6 +2100,41 @@ IF sweep
             print('Found an empty shelf.  Reset_(block)completes for:  ', camera)
         return 
 
-
+    # import math
+    # chip_x =1.4022
+    # chip_y = 0.9362
+    # def tile_field(field_x, field_y, chip_x, chip_y, overlap=12.5):
+    #     trial_x = field_x/(chip_x* (100 - abs(overlap))/100)
+    #     trial_y = field_y/(chip_y* (100 - abs(overlap))/100)
+    #     proposed_x = round(trial_x + 0.25, 0)
+    #     proposed_y = round(trial_y + 0.25, 0)
+    #     span_x = chip_x*proposed_x
+    #     span_y = chip_y*proposed_y
+    #     over_span_x = span_x - field_x
+    #     over_span_y = span_y - field_y
+    #     span_y = chip_y*proposed_y
+    #     if proposed_x - 1 >= 1:
+    #         x_overlap = over_span_x/(proposed_x - 1)
+    #     else:
+    #         x_overlap =(field_x - span_x)/2
+    #     if proposed_y - 1 >=  1:
+    #         y_overlap = over_span_y/(proposed_y - 1)
+    #     else:            
+    #         y_overlap =(field_y - span_y)/2
+    #     if 0 <= x_overlap  < overlap/100:
+    #         proposed_x += 1
+    #         span_x = chip_x*proposed_x
+    #         over_span_x = span_x - field_x
+    #         x_overlap = over_span_x/(proposed_x - 1)
+    #     if 0 <= y_overlap < overlap/100:
+    #         proposed_y += 1
+    #         span_y = chip_y*proposed_y
+    #         over_span_y = span_y - field_y
+    #         y_overlap = over_span_y/(proposed_y - 1)          
+    #     return(proposed_x, proposed_y, x_overlap, y_overlap)
+    # for side in range(0,7):
+    #     area = math.sqrt(2)**side
+    #     print(side, round(area, 3))
+    #     print(tile_field(side, side, chip_x, chip_y))
 
 
