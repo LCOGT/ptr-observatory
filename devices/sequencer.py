@@ -1392,7 +1392,7 @@ class Sequencer:
             foc_start = g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron
         else:
             foc_start = begin_at  #In this case we start at a place close to a 3 point minimum. 
-g_dev['foc'].guarded_move((foc_start)*g_dev['foc'].micron_to_steps)
+            g_dev['foc'].guarded_move((foc_start)*g_dev['foc'].micron_to_steps)
         print("Saved ra, dec, focus:  ", start_ra, start_dec, foc_start)
         try:
             #Check here for filter, guider, still moving  THIS IS A CLASSIC

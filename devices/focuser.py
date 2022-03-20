@@ -261,7 +261,7 @@ class Focuser:
             if loud: print('Adjusting focus by:  ', adjust, ' microns, to:  ', int(self.last_known_focus + adjust))
             self.move_absolute_command(req, opt)
         except:
-            
+            print("Something went wrong in focus-adjust.")
             
     def guarded_move(self, to_focus):
         

@@ -890,7 +890,8 @@ class Camera:
         for seq in range(count):
             #  SEQ is the outer repeat loop and takes count images; those individual exposures are wrapped in a
             #  retry-3-times framework with an additional timeout included in it.
-            if g_dev['obs'].stop_all_activity:  #This should kill a long loop of identical expsoures
+
+            if g_dev['obs'].stop_all_activity:  #This should kill a long loop of identical exposures
                 result['stopped'] =  True
                 g_dev['obs'].stop_all_activity = False
                 print("Camera Count loop terminated by Cancel Exposure")
