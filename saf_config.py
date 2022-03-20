@@ -70,18 +70,18 @@ site_config = {
     
     'TZ_database_name':  'America/Denver',
     'mpc_code':  'ZZ24',    # This is made up for now.
-    'time_offset':  -7.0,   # These two keys may be obsolete give the new TZ stuff 
-    'timezone': 'MST',      # This was meant to be coloquial Time zone abbreviation, alternate for "TX_data..."
+    'time_offset':  -6.0,   # These two keys may be obsolete give the new TZ stuff 
+    'timezone': 'MDT',      # This was meant to be coloquial Time zone abbreviation, alternate for "TX_data..."
     'latitude': 35.554298,     # Decimal degrees, North is Positive
     'longitude': -105.870197,   # Decimal degrees, West is negative
     'elevation': 2194,    # meters above sea level
     'reference_ambient':  10.0,  # Degrees Celsius.  Alternately 12 entries, one for every - mid month.
     'reference_pressure':  794.0,    #mbar   A rough guess 20200315
     
-    'site_in_automatic_default': "Automatic",   # ["Manual", "Shutdown", "Automatic"]
+    'site_in_automatic_default': "Shutdown",   # ["Manual", "Shutdown", "Automatic"]
     'automatic_detail_default': "Enclosure is initially set to Shutdown by SAF config.",
-    'auto_eve_bias_dark': False,
-    'auto_eve_sky_flat': False ,
+    'auto_eve_bias_dark': True,
+    'auto_eve_sky_flat': True ,
     'eve_sky_flat_sunset_offset': +0.0,  # Minutes  neg means before, + after.
     'auto_morn_sky_flat': False,
     'auto_morn_bias_dark': False,
@@ -152,7 +152,7 @@ site_config = {
             'name': 'HomeDome',
             'enc_is_specific':  False, 
             'hostIP':  '10.0.0.10',
-            'driver': 'ASCOMDome.Dome',  # ASCOM.DeviceHub.Dome',  # ASCOM.DigitalDomeWorks.Dome',  #"  ASCOMDome.Dome',
+            'driver': 'ASCOMDome.Dome',  #ASCOMDome.Dome',  # ASCOM.DeviceHub.Dome',  # ASCOM.DigitalDomeWorks.Dome',  #"  ASCOMDome.Dome',
 
             'has_lights':  False,
             'controlled_by': 'mount1',
@@ -315,7 +315,7 @@ site_config = {
             'name': 'focuser',
             'desc':  'Optec Gemini',
             'driver': 'ASCOM.OptecGemini.Focuser',
-		    'com_port':  None,
+		  'com_port':  None,
             # # F4.9 setup
             # 'reference': 5800,    # 20210313  Nominal at 10C Primary temperature
             # 'ref_temp':  5.1,    # Update when pinning reference
@@ -331,7 +331,6 @@ site_config = {
             'minimum': 0,     # NB this area is confusing steps and microns, and need fixing.
             'maximum': 12600,   #12672 actually
             'step_size': 1,
-            'af_step': 400,   #microns ~ 4X the focal tolerance?
             'backlash': 0,
             'unit': 'micron',
             'unit_conversion': 9.09090909091,
@@ -370,14 +369,14 @@ site_config = {
             'ip_string': 'http://10.0.0.110',
             "dual_wheel": True,
             'settings': {
-                'filter_count': 43,
+                'filter_count': 42,
                 'home_filter':  1,
                 'default_filter': "w",
                 'filter_reference': 1,   # We choose to use W as the default filter.  Gains taken at F9, Ceravolo 300mm
                 'filter_data': [['filter', 'filter_index', 'filter_offset', 'sky_gain', 'screen_gain', 'generic'],
                         
-                        #['air',  [0,  0], -800, 81.2, [2   ,  20], 'ai'],    # 0.  Gains 20211020 Clear NE sky
-                        #['focus',[7,  0],    0, 72.8, [360 , 170], 'w '],    # 1.
+                        ['air',  [0,  0], -800, 81.2, [2   ,  20], 'ai'],    # 0.  Gains 20211020 Clear NE sky
+                        ['focus',[7,  0],    0, 72.8, [360 , 170], 'w '],    # 1.
                         ['Lum',  [7,  0],    0, 72.8, [360 , 170], 'w '],    # 2.
                         ['Red',  [0,  8],    0, 72.8, [360 , 170], 'w '],    # 3.
                         ['Green',[0 , 7],    0, 72.8, [360 , 170], 'w '],    # 4.
@@ -405,9 +404,6 @@ site_config = {
                         ['N2',   [13, 0],    0, 0.04, [360 , 170], 'N2'],    #26.
                         ['S2',   [0,  4],    0, 0.07, [0.65,  20], 'S2'],    #27.
                         ['CR',   [0,  5],    0, 0.09, [360 , 170], 'Rc'],    #28.
-                        ['focus',[7,  0],    0, 72.8, [360 , 170], 'w '],    # 1.
-                        ['RGB (OSC)', [0,0],0,  0.0,  [360 , 170], 'rgb'],   #42
-                        ['air',  [0,  0], -800, 81.2, [2   ,  20], 'ai'],    # 0.
                         ['dark', [5,  6],    0, 0.20, [360 , 170], 'dk'],    #29                       ['dif',  [0,  1],    0, 0.21, [360 , 170], 'df'],    #25
                         ['difw',   [7,  1],  0, 300., [0.65,  20], 'dw'],    #30.
                         ['difup',  [1,  1],  0, 10.5, [0.65,  20], 'du'],    #31.
@@ -454,7 +450,7 @@ site_config = {
             'name': 'sq002me',      # Important because this points to a server file structure by that name.
             'desc':  'QHY 600Pro',
             'service_date': '20211111',
-            'driver': "ASCOM.QHYCCD.Camera", #"Maxim.CCDCamera",  # "ASCOM.QHYCCD.Camera", ## 'ASCOM.FLI.Kepler.Camera',
+            'driver': "ASCOM.QHYCCD_CAM2.Camera", #"Maxim.CCDCamera",  # "ASCOM.QHYCCD.Camera", ## 'ASCOM.FLI.Kepler.Camera',
             'detector':  'Sony IMX455',
             'manufacturer':  'QHY',
             'use_file_mode':  False,
@@ -484,10 +480,9 @@ site_config = {
                 'y_active': 3194,
                 'x_pixel':  3.76,
                 'y_pixel':  3.76,
-                'pix_scale': [0.2876, 0.5751, 0.8627, 1.1502],    # asec/pixel F9   0.5751  , F4.9  1.0481         
-                'x_field_deg': 0.7649,   #  round(4784*1.0481/3600, 4),
-                'y_field_deg': 0.5103,   # round(3194*1.0481/3600, 4),
-                'field_area_sq_amin': 1405,  # sq-arcmin
+                'pix_scale': [0.2876, 0.575, 0.863, 1.15],    # asec/pixel F9   0.5751  , F4.9  1.0481         
+                'x_field_deg': 1.3928,   #  round(4784*1.0481/3600, 4),
+                'y_field_deg': 0.9299,   # round(3194*1.0481/3600, 4),
                 'overscan_x': 24,
                 'overscan_y': 3,
                 'north_offset': 0.0,    # These three are normally 0.0 for the primary telescope

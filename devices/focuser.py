@@ -261,7 +261,7 @@ class Focuser:
             if loud: print('Adjusting focus by:  ', adjust, ' microns, to:  ', int(self.last_known_focus + adjust))
             self.move_absolute_command(req, opt)
         except:
-            print("Something went wrong in focus-adjust.")
+            
             
     def guarded_move(self, to_focus):
         
@@ -297,7 +297,7 @@ class Focuser:
                 time.sleep(0.5)
                 print('>f rel')
         else:
-            print('Supplied relative move is lacking a sign; ignoring command')
+            print('Supplied relative move is lacking a sign; ignoring.')
         #print(f"focuser cmd: move_relative:  ", req, opt)
     def move_absolute_command(self, req: dict, opt: dict):
         ''' set the focus position by moving to an absolute position '''

@@ -731,7 +731,10 @@ class Mount:
         print("mount cmd. slewing mount, req, opt:  ", req, opt)
 
         ''' unpark the telescope mount '''  #  NB can we check if unparked and save time?
-       
+        try:
+            self.object == opt['object']
+        except:
+            self.object == 'unspecified'    #NB could possibly augment with "Near --blah--"
         if self.mount.CanPark:
             #print("mount cmd: unparking mount")
             if self.mount.AtPark:

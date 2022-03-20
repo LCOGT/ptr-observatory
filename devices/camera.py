@@ -949,7 +949,7 @@ class Camera:
                 pass
                # print("Motion check faulted.")
             if seq > 0:
-                g_dev['obs'].update_status(cancel_check=True)   # NB Make sure this routine has a fault guard.
+                g_dev['obs'].update_status()   # NB Make sure this routine has a fault guard.
             self.retry_camera = 3
             self.retry_camera_start_time = time.time()
             while self.retry_camera > 0:
@@ -1044,7 +1044,11 @@ class Camera:
                             self.pre_rot = []
                             self.pre_foc = []
                             self.pre_ocn = []
-                            g_dev['obs'].send_to_user("Starting name!", p_level='INFO')
+                            try:
+                                name = g_dev['mnt'].object
+                            except:
+                                name = 'Unspecified'
+                            g_dev['obs'].send_to_user("Starting:  " + name, p_level='INFO')
                             g_dev['ocn'].get_quick_status(self.pre_ocn)   #NB NB WEMA must be running or this may fault.
                             g_dev['foc'].get_quick_status(self.pre_foc)
                             g_dev['rot'].get_quick_status(self.pre_rot)
@@ -1060,6 +1064,7 @@ class Camera:
                         print("Something terribly wrong, driver not recognized.!")
                         result = {}
                         result['error': True]
+
                         if g_dev['obs'].stop_all_activity:
                             result['stopped'] =  True
                             g_dev['obs'].stop_all_activity = False
@@ -1091,6 +1096,7 @@ class Camera:
             pass
         except:
             pass
+
         result = {}
         if g_dev['obs'].stop_all_activity:
             result['stopped'] =  True
@@ -1120,7 +1126,8 @@ class Camera:
         else:
             self.completion_time = self.t2 + exposure_time + 1
         result = {'error': False}
-        while True:  #not g_dev['obs'].stop_all_activity:    #This loop really needs a timeout.
+
+        while True:    #This loop really needs a timeout.
             self.post_mnt = []
             self.post_rot = []
             self.post_foc = []
@@ -1130,7 +1137,7 @@ class Camera:
             g_dev['foc'].get_quick_status(self.post_foc)
             g_dev['ocn'].get_quick_status(self.post_ocn)
             if time.time() > self.status_time:
-                g_dev['obs'].update_status(cancel_check=True)
+                g_dev['obs'].update_status()
                 self.status_time = time.time() + 15
             if time.time() < self.completion_time:   #  NB Testing here if glob too early is delaying readout.
                 time.sleep(.5)
@@ -1341,6 +1348,7 @@ class Camera:
                         g_dev['obs'].send_to_user("Flat rejected, too bright.", p_level='INFO')
                         result['error'] = True
                         result['patch'] = bi_mean
+
                         if g_dev['obs'].stop_all_activity:
                             result['stopped'] =  True
                             g_dev['obs'].stop_all_activity = False
@@ -1724,6 +1732,7 @@ class Camera:
                         cal_name = cal_name[:-9] + 'F012' + cal_name[-7:]  # remove 'EX' add 'FO'   Could add seq to this
                         hdu.writeto(cal_path + cal_name, overwrite=True)
                         focus_image = False
+
                         result = {}
                         if g_dev['obs'].stop_all_activity:
                             result['stopped'] =  True
@@ -1747,6 +1756,7 @@ class Camera:
                             err_dec = TARGDEC - DECJ2000
                             print("err ra, dec:  ", err_ha, err_dec)
                             g_dev['mnt'].set_last_reference(err_ha, err_dec, time_now)
+
                             result = {}
                             if g_dev['obs'].stop_all_activity:
                                 result['stopped'] =  True
@@ -1756,6 +1766,7 @@ class Camera:
                         except:
                             print(cal_path + cal_name, "  was not solved, marking to skip in future, sorry!")
                             #g_dev['mnt'].reset_last_reference()
+
                             result = {}
                             if g_dev['obs'].stop_all_activity:
                                 result['stopped'] =  True
@@ -1825,6 +1836,7 @@ class Camera:
                     self.t7 = time.time()
                     result = {'error': True}
                 self.exposure_busy = False
+
                 result = {}
                 if g_dev['obs'].stop_all_activity:
                     result['stopped'] =  True
@@ -1838,8 +1850,6 @@ class Camera:
                 remaining = round(self.completion_time - self.t7, 1)
                 print("Readout time remaining:  " + str(remaining))
                 g_dev['obs'].send_to_user("Exposure time remaining:  " + str(remaining), p_level='INFO')
-                if result is None:
-                    result = {}
                 if remaining < -30:
                     print("Camera timed out, not connected")
                     result = {'error': True}
@@ -1848,6 +1858,7 @@ class Camera:
                 #     result['stopped'] =  True
                 #     g_dev['obs'].stop_all_activity = False
                 # return result
+
 
 
                 #it takes about 15 seconds from AWS to get here for a bias.
