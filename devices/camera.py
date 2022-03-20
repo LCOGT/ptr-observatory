@@ -1101,7 +1101,9 @@ class Camera:
             self.completion_time = self.t2 + exposure_time + 1
         else:
             self.completion_time = self.t2 + exposure_time + 1
+
         result = {'error': False}
+  
         while not g_dev['obs'].stop_all_activity:    #This loop really needs a timeout.
             self.post_mnt = []
             self.post_rot = []
@@ -1335,6 +1337,8 @@ class Camera:
                 avg_rot = g_dev['rot'].get_average_status(self.pre_rot, self.post_rot)
                 avg_ocn = g_dev['ocn'].get_average_status(self.pre_ocn, self.post_ocn)
                 if frame_type[-5:] in ['focus', 'probe', "ental"]:
+                    if result is not None:
+                        result = {}
 
                     self.img = self.img + 100   #maintain a + pedestal for sep  THIS SHOULD not be needed for a raw input file.
                     self.img = self.img.astype("float")
@@ -1358,6 +1362,7 @@ class Camera:
                     border_x = int(ix*0.05)
                     border_y = int(iy*0.05)
                     r0 = []
+
                     for sourcef in sources:
                         if border_x < sourcef['x'] < ix - border_x and \
                             border_y < sourcef['y'] < iy - border_y and \
@@ -1824,7 +1829,7 @@ class Camera:
                 if g_dev['obs'].stop_all_activity:
                     result['stopped':  True]
                     g_dev['obs'].stop_all_activity = False
-                return result
+                #return result  #This causes a crash.
 
 
                 #it takes about 15 seconds from AWS to get here for a bias.

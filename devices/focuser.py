@@ -265,6 +265,7 @@ class Focuser:
             print("Something went wrong in focus-adjust.")
             
     def guarded_move(self, to_focus):
+
         try:
             self.focuser.Move(int(to_focus))
             time.sleep(0.1)
