@@ -217,6 +217,7 @@ class Camera:
             self._expose = self._ascom_expose
             self._stop_expose = self._ascom_stop_expose
             self.description = "ASCOM"
+            self.readout_after_stop = True
             self.maxim = False
             self.ascom = True
             print('ASCOM is connected:  ', self._connect(True))
@@ -249,6 +250,11 @@ class Camera:
         if self.config['camera'][self.name]['settings']['cooler_on']:    #NB NB why this logic, do we mean if not cooler found on, then turn it on and take the delay?
             self._set_cooler_on()
         print('Cooler started @:  ', self._temperature())  
+        # if self.camera.CanStopExposure:  Does not work for Maxim
+        #     self.can_be_stopped = True
+        # else:
+        #     self.can_be_stopped = False
+            
         self.use_file_mode = False  #self.config['camera'][self.name]['use_file_mode']    #NB NB NB this is obsolte, clear nout file mode from code
         self.current_filter = 0    #W in Apache Ridge case. #This should come from config, filter section
         self.exposure_busy = False
@@ -562,6 +568,7 @@ class Camera:
         #print("Checking if Maxim is still connected!")
         #  self.t7 is last time camera was read out
         #if self.t7 is not None and (time.time() - self.t7 > 30) and self.maxim:
+        self.exposure_busy = True
         try:
             self.user_name
         except:
@@ -883,6 +890,13 @@ class Camera:
         for seq in range(count):
             #  SEQ is the outer repeat loop and takes count images; those individual exposures are wrapped in a
             #  retry-3-times framework with an additional timeout included in it.
+
+            if g_dev['obs'].stop_all_activity:  #This should kill a long loop of identical exposures
+                result['stopped'] =  True
+                g_dev['obs'].stop_all_activity = False
+                print("Camera Count loop terminated by Cancel Exposure")
+                self.exposure_busy = False
+                return
             if seq > 0:
                 g_dev['obs'].update_status()
 
@@ -939,10 +953,14 @@ class Camera:
                 g_dev['obs'].update_status()   # NB Make sure this routine has a fault guard.
             self.retry_camera = 3
             self.retry_camera_start_time = time.time()
-
             while self.retry_camera > 0:
 
                 #NB Here we enter Phase 2
+                if g_dev['obs'].stop_all_activity:
+                    result['stopped'] =  True
+                    g_dev['obs'].stop_all_activity = False
+                    print("Camera retry loop stopped by Cancel Exposure")
+                    return
                 try:
                     self.t1 = time.time()
                     self.exposure_busy = True
@@ -1047,6 +1065,10 @@ class Camera:
                         print("Something terribly wrong, driver not recognized.!")
                         result = {}
                         result['error': True]
+
+                        if g_dev['obs'].stop_all_activity:
+                            result['stopped'] =  True
+                            g_dev['obs'].stop_all_activity = False
                         return result
                     self.t9 = time.time()
                     #We go here to keep this subroutine a reasonable length, Basically still in Phase 2
@@ -1062,7 +1084,7 @@ class Camera:
                     self.retry_camera = 0
                     break
                 except Exception as e:
-                    print('Exception in camera retry loop:  ', e)
+                    print('Exception in camera so attempt 3 retries:  ', e)
                     self.retry_camera -= 1
                     num_retries += 1
                     self.exposure_busy = False
@@ -1075,6 +1097,12 @@ class Camera:
             pass
         except:
             pass
+
+        result = {}
+        if g_dev['obs'].stop_all_activity:
+            result['stopped'] =  True
+            g_dev['obs'].stop_all_activity = False
+            self.exposure_busy = False
         return result
 
     def stop_command(self, required_params, optional_params):
@@ -1098,8 +1126,11 @@ class Camera:
             self.completion_time = self.t2 + exposure_time + 1
         else:
             self.completion_time = self.t2 + exposure_time + 1
+
         result = {'error': False}
-        while True:    #This loop really needs a timeout.
+  
+
+        while not g_dev['obs'].stop_all_activity:    #This loop really needs a timeout.
             self.post_mnt = []
             self.post_rot = []
             self.post_foc = []
@@ -1320,6 +1351,11 @@ class Camera:
                         g_dev['obs'].send_to_user("Flat rejected, too bright.", p_level='INFO')
                         result['error'] = True
                         result['patch'] = bi_mean
+
+                        if g_dev['obs'].stop_all_activity:
+                            result['stopped'] =  True
+                            g_dev['obs'].stop_all_activity = False
+                        self.exposure_busy = False
                         return result   # signals to flat routine image was rejected, prompt return
                 g_dev['obs'].update_status()
                 counter = 0
@@ -1329,6 +1365,8 @@ class Camera:
                 avg_rot = g_dev['rot'].get_average_status(self.pre_rot, self.post_rot)
                 avg_ocn = g_dev['ocn'].get_average_status(self.pre_ocn, self.post_ocn)
                 if frame_type[-5:] in ['focus', 'probe', "ental"]:
+                    if result is not None:
+                        result = {}
 
                     self.img = self.img + 100   #maintain a + pedestal for sep  THIS SHOULD not be needed for a raw input file.
                     self.img = self.img.astype("float")
@@ -1352,6 +1390,7 @@ class Camera:
                     border_x = int(ix*0.05)
                     border_y = int(iy*0.05)
                     r0 = []
+
                     for sourcef in sources:
                         if border_x < sourcef['x'] < ix - border_x and \
                             border_y < sourcef['y'] < iy - border_y and \
@@ -1699,6 +1738,11 @@ class Camera:
                         cal_name = cal_name[:-9] + 'F012' + cal_name[-7:]  # remove 'EX' add 'FO'   Could add seq to this
                         hdu.writeto(cal_path + cal_name, overwrite=True)
                         focus_image = False
+
+                        result = {}
+                        if g_dev['obs'].stop_all_activity:
+                            result['stopped'] =  True
+                            g_dev['obs'].stop_all_activity = False
                         return result
                     if focus_image and solve_it :
 
@@ -1718,10 +1762,22 @@ class Camera:
                             err_dec = TARGDEC - DECJ2000
                             print("err ra, dec:  ", err_ha, err_dec)
                             g_dev['mnt'].set_last_reference(err_ha, err_dec, time_now)
+
+                            result = {}
+                            if g_dev['obs'].stop_all_activity:
+                                result['stopped'] =  True
+                                g_dev['obs'].stop_all_activity = False
+                            self.exposure_busy = False
                             return result
                         except:
                             print(cal_path + cal_name, "  was not solved, marking to skip in future, sorry!")
                             #g_dev['mnt'].reset_last_reference()
+
+                            result = {}
+                            if g_dev['obs'].stop_all_activity:
+                                result['stopped'] =  True
+                                g_dev['obs'].stop_all_activity = False
+                            self.exposure_busy = False
                             return result
                            #Return to classic processing
                        
@@ -1768,6 +1824,10 @@ class Camera:
                     result['error'] == False
                     g_dev['obs'].send_to_user("Expose cycle completed.", p_level='INFO')
                     self.exposure_busy = False
+                    if g_dev['obs'].stop_all_activity:
+                        result['stopped'] =  True
+                        g_dev['obs'].stop_all_activity = False
+                    self.exposure_busy = False
                     return result
                 except Exception as e:
                     print('Header assembly block failed: ', e)
@@ -1782,20 +1842,28 @@ class Camera:
                     self.t7 = time.time()
                     result = {'error': True}
                 self.exposure_busy = False
+
+                result = {}
+                if g_dev['obs'].stop_all_activity:
+                    result['stopped'] =  True
+                    g_dev['obs'].stop_all_activity = False
+                self.exposure_busy = False
                 return result
             else:
                 time.sleep(1)
                 #g_dev['obs'].update_status()
                 self.t7 = time.time()
                 remaining = round(self.completion_time - self.t7, 1)
-                print("Exposure time remaining:  " + str(remaining))
+                print("Readout time remaining:  " + str(remaining))
                 g_dev['obs'].send_to_user("Exposure time remaining:  " + str(remaining), p_level='INFO')
                 if remaining < -30:
                     print("Camera timed out, not connected")
                     result = {'error': True}
                     self.exposure_busy = False
-                    return result
-
+                if g_dev['obs'].stop_all_activity:
+                    result['stopped':  True]
+                    g_dev['obs'].stop_all_activity = False
+                #return result  #This causes a crash.
 
                 #it takes about 15 seconds from AWS to get here for a bias.
         # except Exception as e:
