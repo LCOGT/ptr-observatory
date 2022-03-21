@@ -438,7 +438,7 @@ class Observatory:
                                 print("Deleting Job:  ", self.cmd_queue.get())
                         else:
                             self.cmd_queue.put(cmd)  #SAVE THE COMMAND FOR LATER
-                            print("Appending job:  ", cmd)
+                            print("Appending job:  ")  # Kilroy was here)
                             
                     if cancel_check:
                         return   #Note we do not process any commands.
