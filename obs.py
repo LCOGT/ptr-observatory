@@ -263,7 +263,7 @@ class Observatory:
         self.time_last_status = time.time() - 3
         # Build the to-AWS Try again, reboot, verify dome nad tel and start a thread.
         self.cmd_queue = Queue(maxsize = 30)
-        
+        self.stop_all_activity = False
         self.aws_queue = queue.PriorityQueue()
         self.aws_queue_thread = threading.Thread(target=self.send_to_AWS, args=())
         self.aws_queue_thread.start()
@@ -377,7 +377,7 @@ class Observatory:
         if response:
             print("Config uploaded successfully.")
 
-    def scan_requests(self, mount):
+    def scan_requests(self, mount, cancel_check=False):
         '''
         Outline of change 20200323 WER
         Get commands from AWS, and post a STOP/Cancel flag
@@ -420,35 +420,66 @@ class Observatory:
                     # Process each job one at a time
                     print("# of incomming commands:  ", len(unread_commands))
                     for cmd in unread_commands:
-                        if self.config['selector']['selector1']['driver'] is None:
-                            port = cmd['optional_params']['instrument_selector_position'] 
-                            g_dev['mnt'].instrument_port = port
-                            cam_name = self.config['selector']['selector1']['cameras'][port]
-                            if cmd['deviceType'][:6] == 'camera':
-                                #  Note camelCase is teh format of command keys
-                                cmd['required_params']['deviceInstance'] = cam_name
-                                cmd['deviceInstance'] = cam_name
-                                device_instance = cam_name
-                            else:
-                                try:
-                                    try:
-                                        device_instance = cmd['deviceInstance']
-                                    except:
-                                        device_instance = cmd['required_params']['deviceInstance']
-                                except:
-                                    #breakpoint()
-                                    pass
+                        if cmd['action'] in ['cancel_all_commands', 'stop']:
+                            g_dev['obs'].stop_all_activity = True
+                            print("A STOP / CANCEL has been received.")
+                            self.send_to_user("Cancel/Stop received. Exposure stopped, will begin readout then discard image.")
+                            self.send_to_user("Pending transfers to PTR Archive not affected.")
+                            #WE empty the queue
+                            try:
+                                if g_dev['cam'].exposure_busy:
+                                    g_dev['cam']._stop_expose()
+                                    g_dev['obs'].stop_all_activity = True
+                                else:
+                                    print("Camera is not busy.")
+                            except:
+                                print("Camera stop faulted.")
+                            while self.cmd_queue.qsize() > 0:
+                                print("Deleting Job:  ", self.cmd_queue.get())
                         else:
-                            device_instance = cmd['deviceInstance']
-                        print('obs.scan_request: ', cmd)
+                            self.cmd_queue.put(cmd)  #SAVE THE COMMAND FOR LATER
+                            print("Appending job:  ", cmd)
+                            
+                    if cancel_check:
+                        return   #Note we do not process any commands.
+                while self.cmd_queue.qsize() > 0:#print(unread_commands)
 
-                        device_type = cmd['deviceType']
-                        device = self.all_devices[device_type][device_instance]
-                        try:
-                        
-                            device.parse_command(cmd)
-                        except Exception as e:
-                            print( 'Exception in obs.scan_requests:  ', e)
+                    #print(unread_commands)
+            
+                    #unread_commands.sort(key=lambda x: x["ulid"])
+                    # Process each job one at a time
+                    print("# of queued commands:  ", self.cmd_queue.qsize())
+                    cmd = self.cmd_queue.get() 
+                    #This code is redundant
+                    if self.config['selector']['selector1']['driver'] is None:
+                        port = cmd['optional_params']['instrument_selector_position'] 
+                        g_dev['mnt'].instrument_port = port
+                        cam_name = self.config['selector']['selector1']['cameras'][port]
+                        if cmd['deviceType'][:6] == 'camera':
+                            #  Note camelCase is teh format of command keys
+                            cmd['required_params']['deviceInstance'] = cam_name
+                            cmd['deviceInstance'] = cam_name
+                            device_instance = cam_name
+                        else:
+                            try:
+                                try:
+                                    device_instance = cmd['deviceInstance']
+                                except:
+                                    device_instance = cmd['required_params']['deviceInstance']
+                            except:
+                                #breakpoint()
+                                pass
+                    else:
+                        device_instance = cmd['deviceInstance']
+                    print('obs.scan_request: ', cmd)
+
+                    device_type = cmd['deviceType']
+                    device = self.all_devices[device_type][device_instance]
+                    try:
+                    
+                        device.parse_command(cmd)
+                    except Exception as e:
+                        print( 'Exception in obs.scan_requests:  ', e)
                # print('scan_requests finished in:  ', round(time.time() - t1, 3), '  seconds')
                 ## Test Tim's code
                 url_blk = "https://calendar.photonranch.org/dev/siteevents"

@@ -80,8 +80,8 @@ site_config = {
     
     'site_in_automatic_default': "Automatic",   # ["Manual", "Shutdown", "Automatic"]
     'automatic_detail_default': "Enclosure is initially set to Shutdown by SAF config.",
-    'auto_eve_bias_dark': True,
-    'auto_eve_sky_flat': True ,
+    'auto_eve_bias_dark': False,
+    'auto_eve_sky_flat': False,
     'eve_sky_flat_sunset_offset': +0.0,  # Minutes  neg means before, + after.
     'auto_morn_sky_flat': False,
     'auto_morn_bias_dark': False,
