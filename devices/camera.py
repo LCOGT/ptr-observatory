@@ -1098,7 +1098,8 @@ class Camera:
         except:
             pass
 
-        result = {}
+        if result is None:    #NB THIS HANGS UP THE AF
+           result = {}
         if g_dev['obs'].stop_all_activity:
             result['stopped'] =  True
             g_dev['obs'].stop_all_activity = False
@@ -1415,6 +1416,7 @@ class Camera:
                     focus_image = False
 
                     #return result   #Used if focus not saved in calibs.
+
                 try:
                     hdu = fits.PrimaryHDU(self.img)
                     self.img = None    #  Does this free up any resource?
@@ -1720,6 +1722,7 @@ class Camera:
                              'text_name11': text_name,
                              'frame_type':  frame_type
                              }
+
                     if  self.config['site'] == 'saf':
                         os.makedirs(self.alt_path +  g_dev['day'] + '/reduced/', exist_ok=True)
                         red_path_aux = self.alt_path +  g_dev['day'] + '/reduced/'
@@ -1739,10 +1742,10 @@ class Camera:
                         hdu.writeto(cal_path + cal_name, overwrite=True)
                         focus_image = False
 
-                        result = {}
-                        if g_dev['obs'].stop_all_activity:
-                            result['stopped'] =  True
-                            g_dev['obs'].stop_all_activity = False
+                        # result = {}
+                        # if g_dev['obs'].stop_all_activity:
+                        #     result['stopped'] =  True
+                        #     g_dev['obs'].stop_all_activity = False
                         return result
                     if focus_image and solve_it :
 
@@ -1763,11 +1766,11 @@ class Camera:
                             print("err ra, dec:  ", err_ha, err_dec)
                             g_dev['mnt'].set_last_reference(err_ha, err_dec, time_now)
 
-                            result = {}
-                            if g_dev['obs'].stop_all_activity:
-                                result['stopped'] =  True
-                                g_dev['obs'].stop_all_activity = False
-                            self.exposure_busy = False
+                            # result = {}
+                            # if g_dev['obs'].stop_all_activity:
+                            #     result['stopped'] =  True
+                            #     g_dev['obs'].stop_all_activity = False
+                            # self.exposure_busy = False
                             return result
                         except:
                             print(cal_path + cal_name, "  was not solved, marking to skip in future, sorry!")
