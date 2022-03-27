@@ -143,7 +143,7 @@ def test_sequence(pCamera):
     return seq
 
 def reset_sequence(pCamera):
-    breakpoint()
+    #breakpoint()
     camShelf = shelve.open(g_dev['cam'].site_path + 'ptr_night_shelf/' + str(pCamera))
     #seq = camShelf['Sequence']      # a 9 character string
     seqInt = int(-1)
@@ -1061,6 +1061,7 @@ class Camera:
                             self.t2 = time.time()
 
                             self._expose (exposure_time, imtypeb)
+
                     else:
                         print("Something terribly wrong, driver not recognized.!")
                         result = {}
@@ -1117,6 +1118,7 @@ class Camera:
                         low=0, high=0, script='False', opt=None, solve_it=False):
         print("Finish exposure Entered:  ", exposure_time, frame_type, 'to go: ', counter, \
               gather_status, do_sep, no_AWS, start_x, start_y, opt['area'])
+
         self.status_time = time.time() + 10
         self.post_mnt = []
         self.post_rot = []
@@ -1365,8 +1367,9 @@ class Camera:
                 avg_foc = g_dev['foc'].get_average_status(self.pre_foc, self.post_foc)
                 avg_rot = g_dev['rot'].get_average_status(self.pre_rot, self.post_rot)
                 avg_ocn = g_dev['ocn'].get_average_status(self.pre_ocn, self.post_ocn)
+
                 if frame_type[-5:] in ['focus', 'probe', "ental"]:
-                    if result is not None:
+                    if result is  None:
                         result = {}
 
                     self.img = self.img + 100   #maintain a + pedestal for sep  THIS SHOULD not be needed for a raw input file.
@@ -1403,6 +1406,7 @@ class Camera:
                     scale = self.config['camera'][self.name]['settings']['pix_scale'][self.camera.BinX -1]
                     result['FWHM'] = round(np.median(r0)*scale, 3)   #@0210524 was 2x larger but a and b are diameters not radii
                     result['mean_focus'] =  avg_foc[1]
+
                     try:
                         valid =  0.0 <= result['FWHM']<= 20. and 100 < result['mean_focus'] < 12600
                         result['error'] = False
@@ -1735,7 +1739,7 @@ class Camera:
                         self.enqueue_image(db_data_size, im_path, db_name)
                         self.enqueue_image(raw_data_size, im_path, raw_name01)
                     '''
-
+                    #breakpoint()
                     if focus_image and not solve_it:
                         #Note we do not reduce focus images, except above in focus processing.
                         cal_name = cal_name[:-9] + 'F012' + cal_name[-7:]  # remove 'EX' add 'FO'   Could add seq to this
@@ -1776,11 +1780,11 @@ class Camera:
                             print(cal_path + cal_name, "  was not solved, marking to skip in future, sorry!")
                             #g_dev['mnt'].reset_last_reference()
 
-                            result = {}
-                            if g_dev['obs'].stop_all_activity:
-                                result['stopped'] =  True
-                                g_dev['obs'].stop_all_activity = False
-                            self.exposure_busy = False
+                            # result = {}
+                            # if g_dev['obs'].stop_all_activity:
+                            #     result['stopped'] =  True
+                            #     g_dev['obs'].stop_all_activity = False
+                            # self.exposure_busy = False
                             return result
                            #Return to classic processing
                        

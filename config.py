@@ -442,7 +442,7 @@ site_config = {
                 'y_active': 3600,
                 'x_pixel':  6,
                 'y_pixel':  6,
-                'pix_scale': 1.0668,     #_22*4499,     #  asec/pixel F9   0.5751  , F4.9  1.0481         
+                'pix_scale': [1.0668, 2.1336, 3.2004, 4.2672],     #  asec/pixel F9   0.5751  , F4.9  1.0481         
                 'x_field_deg': 1.3333,   #   round(4784*1.0481/3600, 4),
                 'y_field_deg': 1.0665,   #  round(3194*1.0481/3600, 4),
                 'overscan_x': 24,
