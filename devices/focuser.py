@@ -75,6 +75,7 @@ class Focuser:
             self.get_af_log()
         except:
             self.set_focal_ref_reset_log(config['focuser']['focuser1']['reference'])
+
         try:   #  NB NB NB This mess neads cleaning up.
             try:
 

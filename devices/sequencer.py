@@ -1231,8 +1231,11 @@ class Sequencer:
         retry = 0
         while retry < 3:
             if not sim:
+
                 result = g_dev['cam'].expose_command(req, opt, no_AWS=True, solve_it=False) ## , script = 'auto_focus_script_0')  #  This is where we start.
+               
             else:
+               
                 result['FWHM'] = 3
                 result['mean_focus'] = g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron
 
