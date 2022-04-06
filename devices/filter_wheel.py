@@ -326,11 +326,10 @@ class FilterWheel:
         ''' set the filter position by  param string filter position index '''
         'NBNBNB This routine may not be correct'
         #print("filter cmd: set_position")
-        breakpoint()
+
         filter_selections = self.filter_data[int(req['filter_num'])][1]
         #print('Selections:  ', filter_selections)
         if self.dual and self.custom:
-            breakpoint()
             r0 = self.r0
             r1 = self.r1
             r0['filterwheel']['position'] = filter_selections[0]

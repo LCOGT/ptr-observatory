@@ -880,6 +880,7 @@ class Enclosure:
         elif ((g_dev['events']['Cool Down, Open']  <= ephem_now < g_dev['events']['Observing Ends']) and \
                g_dev['enc'].mode == 'Automatic') and not (g_dev['ocn'].wx_hold or g_dev['ocn'].clamp_latch):
             if self.status_string in ['Closed']:
+                print("Entering Guarded open, Expect slew opposite Sun")
                 self.guarded_open()
             self.dome_opened = True
             self.dome_homed = True
@@ -887,6 +888,7 @@ class Enclosure:
             if self.status_string in ['Open'] and ephem_now < g_dev['events']['End Eve Sky Flats']:
                 if self.is_dome:
                     self.enclosure.SlewToAzimuth(az_opposite_sun)
+                    print("Slewing Opposite Sun")
                     g_dev['obs'].send_to_user("Dome slewing opposite the Solar azimuth", p_level='INFO')
                 time.sleep(5)
         #THIS should be the ultimate backup to force a close

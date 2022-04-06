@@ -935,44 +935,25 @@ class Sequencer:
         print('Eve Sky Flat sequence Starting, Enclosure PRESUMED Open. Telescope will un-park.')
 
         camera_name = str(self.config['camera']['camera_1_1']['name'])
-        flat_count = 3
-
+        flat_count = 9
         min_exposure = float(self.config['camera']['camera_1_1']['settings']['min_exposure']) 
         exp_time = min_exposure # added 20220207 WER
         #  NB Sometime, try 2:2 binning and interpolate a 1:1 flat.  This might run a lot faster.
         if flat_count < 1: flat_count = 1
         sim = False# g_dev['enc'].status['shutter_status'] in ['Closed', 'closed', 'Closing', 'closing']
         # if sim: 
-        #     pass
-        # 'min_exposure'
-        # if g_dev['mnt'].mount.AtPark:
-        #     g_dev['mnt'].unpark_command({}, {})
-        # g_dev['mnt'].slewToSkyFlatAsync()
 
-        
-        #NB NB we need to re-open is WX hold ends.
-        # if g_dev['enc'].is_dome and not g_dev['enc'].mode == 'Automatic':
-        #      g_dev['enc'].Slaved = True  #Bring the dome into the picture.
-        #     print('\n SERVOED THE DOME HOPEFULLY!\n')
-        #g_dev['obs'].update_status()
-        # try:
-        #     g_dev['scr'].screen_dark()
-        # except:
-        #     pass
-        #  We should probe to be sure dome is open, otherwise this is a test when closed and
-        #  we can speed it up
-        #Here we may need to switch off any
         #  Pick up list of filters is sky flat order of lowest to highest transparency.
         pop_list = self.config['filter_wheel']['filter_wheel1']['settings']['filter_sky_sort'].copy()
         print('filters by low to high transmission:  ', pop_list)
         #length = len(pop_list)
         obs_win_begin, sunset, sunrise, ephem_now = self.astro_events.getSunEvents()
         scale = 1.0
-        prior_scale = 1
+        prior_scale = 1   #THIS will be inhereted upon completion of the prior filter
         
         collecting_area = self.config['telescope']['telescope1']['collecting_area']/32000.
-        #  (g_dev['events']['Eve Sky Flats'] < 
-        while len(pop_list) > 0 and (g_dev['events']['Eve Sky Flats'] < ephem_now < g_dev['events']['End Eve Sky Flats']):
+        #   and (g_dev['events']['Eve Sky Flats'] < 
+        while len(pop_list) > 0  and ephem_now < g_dev['events']['End Eve Sky Flats']:
 
             current_filter = int(pop_list[0])
             acquired_count = 0
@@ -981,10 +962,10 @@ class Sequencer:
 
             g_dev['fil'].set_number_command(current_filter)
             #g_dev['mnt'].slewToSkyFlatAsync()
-            bright = 25000
-            scale = 1.0    #1.15   #20201121 adjustment
+            target_flat = 25000
+            #scale = 1.0    #1.15   #20201121 adjustment
+        
             
-            prior_scale = 1.0
             #breakpoint()
             while (acquired_count < flat_count): #and (ephem_now +3/1440) < g_dev['events']['End Eve Sky Flats' ]:
                 #if g_dev['enc'].is_dome:   #Does not apply
@@ -999,12 +980,12 @@ class Sequencer:
                     exp_time = prior_scale*scale*25000/(collecting_area*sky_lux*float(g_dev['fil'].filter_data[current_filter][3]))  #g_dev['ocn'].calc_HSI_lux)  #meas_sky_lux)
                     print('Ex:  ', exp_time, scale, prior_scale, sky_lux, float(g_dev['fil'].filter_data[current_filter][3]))
                     #exp_time*= 4.9/9/2
-                    if exp_time > 120:
-                        exp_time = 120    #Live with this limit.
-                    if exp_time <0.001:
-                        exp_time = 0.001
+                    if exp_time > 30:
+                        exp_time = 30    #Live with this limit.
+                    if exp_time <0.0001:
+                        exp_time = 0.0001
                     exp_time = round(exp_time, 4)
-                    prior_scale = prior_scale*scale
+                   # prior_scale = prior_scale*scale  #Only updaate prior scale when changing filters
                     print("Sky flat estimated exposure time, scale are:  ", exp_time, scale)
                 except:
                     exp_time = 0.3
@@ -1016,16 +997,18 @@ class Sequencer:
                 try:
                     result = g_dev['cam'].expose_command(req, opt, no_AWS=True, do_sep = False)
                     bright = result['patch']    #  Patch should be circular and 20% of Chip area. ToDo project
+
                 except:
                     print('*****NO result returned*****')
                     continue
                 g_dev['obs'].update_status()
                 try:
-                    scale = 25000/bright
+                    scale *= target_flat /bright           #Note we are scaling the scale
+                    print("New scale is:  ", scale)
                     if scale > 5:
                         scale = 5
-                    if scale < 0.33:
-                        scale = 0.33
+                    if scale < 0.2:
+                        scale = 0.2
                 except:
                     scale = 1.0
 
@@ -1034,9 +1017,8 @@ class Sequencer:
 
                 obs_win_begin, sunset, sunrise, ephem_now = self.astro_events.getSunEvents()
                 #  THE following code looks like a debug patch gone rogue.
-                if ephem_now < g_dev['events']['End Eve Sky Flats']:
-                    break
-                if bright > 30000 and (ephem_now < g_dev['events']['End Eve Sky Flats']):    #NB should gate with end of skyflat window as well.
+
+                if bright > 35000 and (ephem_now < g_dev['events']['End Eve Sky Flats']):    #NB should gate with end of skyflat window as well.
                     for i in range(1):
                         time.sleep(5)  #  #0 seconds of wait time.  Maybe shorten for wide bands?
                         g_dev['obs'].update_status()
@@ -1044,8 +1026,10 @@ class Sequencer:
                     acquired_count += 1
                     if acquired_count == flat_count:
                         pop_list.pop(0)
+
+                        prior_scale = 0.7*scale  #Here is where we pre-scale the next filter.
                         scale = 1
-                        prior_scale = 1
+
                 obs_win_begin, sunset, sunrise, ephem_now = self.astro_events.getSunEvents()
                 continue
         g_dev['mnt'].tracking = False   #  park_command({}, {})  #  NB this is provisional, Ok when simulating

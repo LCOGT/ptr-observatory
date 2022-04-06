@@ -73,6 +73,7 @@ screen_flat_PB = None
 screen_flat_EXO = None
 screen_flat_dif = None
 #
+saf_2 = None
 sky_flat_w = None
 sky_flat_air = None
 sky_flat_JU= None
@@ -161,9 +162,10 @@ def calibrate (hdu, lng_path, frame_type='light', quick=False):
         screen_flat_JB, screen_flat_JV, screen_flat_Rc, screen_flat_Ic, screen_flat_up, screen_flat_gp, screen_flat_rp, screen_flat_ip, \
         screen_flat_zp, screen_flat_z, screen_flat_y, screen_flat_O3, screen_flat_HA, screen_flat_N2, screen_flat_S2, screen_flat_EXO, \
         screen_flat_PL ,screen_flat_PB, screen_flat_PG, screen_flat_PR, screen_flat_NIR,  screen_flat_CR, screen_flat_dif,  \
-        dark_exposure_level, super_dark_2_long, dark_2_exposure_level
+        dark_exposure_level, super_dark_2_long, dark_2_exposure_level, saf_2
     loud = False
     if not quick:
+#breakpoint()
         if super_bias is None:
             try:
                 sbHdu = fits.open(lng_path + 'b_1.fits')
@@ -192,7 +194,20 @@ def calibrate (hdu, lng_path, frame_type='light', quick=False):
             except:
                 quick_bias = False
                 g_dev['obs'].send_to_user(" No bias_2 loaded.", p_level ='WARNING')
-
+                
+        if saf_2 is None:
+            try:
+                sbHdu = fits.open(lng_path + 'saf_2_air.fits')
+                saf_2 = sbHdu[0].data#.astype('float32')
+                #pedastal = sbHdu[0].header['PEDASTAL']
+                #super_bias_2 = super_bias_2 + pedastal
+                #sbHdu.close()
+                quick_bias = True
+                if loud: print(lng_path + 'saf_2_air.fits', 'Loaded')
+            except:
+                quick_bias = False
+                g_dev['obs'].send_to_user(" No saf_2_air loaded.", p_level ='WARNING')
+                
         # if super_dark_90 is None:
         #     try:
         #         sdHdu = fits.open(lng_path + 'md_1_90.fits')
@@ -542,7 +557,7 @@ def calibrate (hdu, lng_path, frame_type='light', quick=False):
 
 
     while True:   #Use break to drop through to exit.  i.e., do not calibrate frames we are acquring for calibration.
-        breakpoint
+
         ix = hdu.header['naxis1']
         iy = hdu.header['naxis2']
         pedastal = 0     # Pedastal will be applied near exit.
@@ -828,14 +843,31 @@ def calibrate (hdu, lng_path, frame_type='light', quick=False):
             elif img_filter in ['EXO', 'exo', 'Exo']:
                 do_flat = True
                 scr_flat = screen_flat_EXO
-            elif img_filter in ['air', 'AIR', 'Air']:
-                do_flat = True
-                scr_flat = screen_flat_air
+            # elif img_filter in ['air', 'AIR', 'Air']:   #Temp we do not do this
+            #     do_flat = True
+            #     scr_flat = screen_flat_air
             elif img_filter in ['dif', 'DIF', 'Dif']:
                 do_flat = True
                 scr_flat = screen_flat_dif
             else:
                 do_flat = False
+    #breakpoint()
+            try: 
+                
+                print('Entering Air flat field calculation.')
+                if saf_2 is not None:
+                    try:
+                        wrong = np.where(saf_2 <= 0.01)
+                        saf_2[wrong] = 0.01
+                        img = img/saf_2
+                        cal_string +=', SAF_2'
+                    except:
+                        print('Dividing by None not a good idea.')
+                        pass
+            except:
+                print("saf_2 flat math failed.")
+            if not quick: 
+                if loud:  print('QuickFlat result:  ', imageStats(img, loud))
         if do_flat and binning == 2: # and not g_dev['seq'].active_script == 'make_superscreenflats':
             try: 
                 

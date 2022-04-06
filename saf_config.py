@@ -79,9 +79,9 @@ site_config = {
     'reference_pressure':  794.0,    #mbar   A rough guess 20200315
     
     'site_in_automatic_default': "Automatic",   # ["Manual", "Shutdown", "Automatic"]
-    'automatic_detail_default': "Enclosure is initially set to Automatic by SAF config.",
-    'auto_eve_bias_dark':True,
-    'auto_eve_sky_flat': True,
+    'automatic_detail_default': "Enclosure is initially set to Shutdown by SAF config.",
+    'auto_eve_bias_dark': False,
+    'auto_eve_sky_flat': False,
     'eve_sky_flat_sunset_offset': +0.0,  # Minutes  neg means before, + after.
     'auto_morn_sky_flat': False,
     'auto_morn_bias_dark': False,
@@ -326,8 +326,8 @@ site_config = {
             'reference': 5743,    #  Meas   Nominal at 10C Primary temperature
             'ref_temp':  4.8,    # Update when pinning reference
             'coef_c': -78.337,   # negative means focus moves out as Primary gets colder
-            'coef_0': 5375,  # Nominal intercept when Primary is at 0.0 C. 
-            'coef_date':  '20220402',    # SWAG 
+            'coef_0': 5575,  # Nominal intercept when Primary is at 0.0 C. 
+            'coef_date':  '20220302',    # SWAG 
             'minimum': 0,     # NB this area is confusing steps and microns, and need fixing.
             'maximum': 12600,   #12672 actually
             'step_size': 1,
@@ -422,7 +422,7 @@ site_config = {
                 
                 
                 'filter_sky_sort': [13, 27, 26, 25, 28, 11, 12, 23, 24, 18, 10, 7, 17, 9,\
-                                    16, 15, 20, 14, 21, 22, 8, 19, 6, 0]    #No diffuser based filters  [8, 22, 21, 
+                                    16, 15, 20, 14, 21, 22, 8, 19, 6, 30, 0]    #No diffuser based filters  [8, 22, 21, 
                 #'filter_sky_sort': [7, 19, 2, 13, 18, 5, 15,\
                 #                   12, 4, 11, 16, 10, 9, 17, 3, 14, 1, 0]    #basically no diffuser based filters
                 #[32, 8, 22, 21, 20, 23, 31, 6, 7, 19, 27, 2, 37, 13, 18, 30, 5, 15, 36, 12,\
