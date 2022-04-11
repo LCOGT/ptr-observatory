@@ -1,6 +1,7 @@
 import win32com.client
 from global_yard import g_dev
 import time
+import config
 #import serial
 
 

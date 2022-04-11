@@ -61,7 +61,6 @@ class Focuser:
         time.sleep(4)
 
         self.focuser.Connected = True
-
         #self.focuser.TempComp = False
         self.micron_to_steps= float(config['focuser']['focuser1']['unit_conversion'])   #  Note tis can be a bogus value
         self.steps_to_micron = 1/self.micron_to_steps
@@ -71,6 +70,11 @@ class Focuser:
         self.last_known_focus = None
         self.last_temperature = None
         self.last_source = None
+
+        try:
+            self.get_af_log()
+        except:
+            self.set_focal_ref_reset_log(config['focuser']['focuser1']['reference'])
 
         try:   #  NB NB NB This mess neads cleaning up.
             try:
@@ -259,6 +263,16 @@ class Focuser:
             self.move_absolute_command(req, opt)
         except:
             print("Something went wrong in focus-adjust.")
+            
+    def guarded_move(self, to_focus):
+        try:
+            self.focuser.Move(int(to_focus))
+            time.sleep(0.1)
+            while self.focuser.IsMoving:
+                time.sleep(0.3)
+                print('>f')
+        except:
+            print("AF Guarded move failed.")
 
     def move_relative_command(self, req: dict, opt: dict):
         ''' set the focus position by moving relative to current position '''
