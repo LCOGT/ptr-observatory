@@ -150,8 +150,10 @@ class Sequencer:
         self.af_guard = False
         self.block_guard = False
         self.time_of_next_slew = time.time()
-        self.bias_dark_latch = True
-        self.sky_flat_latch = True
+        self.bias_dark_latch = True   #NB NB NB Should these initially be defined this way?
+        self.sky_flat_latch = True    
+        self.morn_sky_flat_latch = True
+        self.morn_bias_dark_latch = True   #NB NB NB Should these initially be defined this way?
         #breakpoint()
         self.reset_completes()
         
@@ -220,6 +222,7 @@ class Sequencer:
     def enc_to_skyflat_and_open(self ,enc_status, ocn_status, no_sky=False):
         #ocn_status = eval(self.redis_server.get('ocn_status'))
            #NB 120 is enough time to telescope to get pointed to East
+        self.time_of_next_slew = time.time() -1  #Set up so next block executes if unparked.
         if g_dev['mnt'].mount.AtParK:
             g_dev['mnt'].unpark_command({}, {}) # Get there early
             time.sleep(3)
@@ -228,37 +231,43 @@ class Sequencer:
                 g_dev['mnt'].slewToSkyFlatAsync()
                 #This should run once. Next time this phase is entered in > 120 seconds we 
             #flat_spot, flat_alt = g_dev['evnt'].flat_spot_now()
+            
 
         if time.time() >= self.time_of_next_slew:
-                #We slew to anti-solar Az and reissue this command every 120 seconds
-                flat_spot, flat_alt = g_dev['evnt'].flat_spot_now()
-                try:
-                    if not no_sky:
-                        g_dev['mnt'].slewToSkyFlatAsync()
-                        time.sleep(10)
-                    print("Open and slew Dome to azimuth opposite the Sun:  ", round(flat_spot, 1))
+            #We slew to anti-solar Az and reissue this command every 120 seconds
+            flat_spot, flat_alt = g_dev['evnt'].flat_spot_now()
+            try:
+                if not no_sky:
+                    g_dev['mnt'].slewToSkyFlatAsync()
+                    time.sleep(10)
+                print("Open and slew Dome to azimuth opposite the Sun:  ", round(flat_spot, 1))
 
-                    if enc_status['shutter_status'] in ['Closed', 'closed'] \
-                        and ocn_status['hold_duration'] <= 0.1:
-                        #breakpoint()
-                        g_dev['enc'].open_command({}, {})
-                        time.sleep(3)
-                    g_dev['enc'].sync_mount_command({}, {})
-                   #Prior to skyflats no dome following.
-
-                    self.dome_homed = False
-                    self.time_of_next_slew = time.time() + 120  # seconds between slews.
-                except:
-                    pass#
+                if enc_status['shutter_status'] in ['Closed', 'closed'] \
+                    and ocn_status['hold_duration'] <= 0.1:   #NB 
+                    #breakpoint()
+                    g_dev['enc'].open_command({}, {})
+                    print("Opening dome, will set Synchronize in 10 seconds.")
+                    time.sleep(10)
+                g_dev['enc'].sync_mount_command({}, {})
+                #Prior to skyflats no dome following.
+                self.dome_homed = False
+                self.time_of_next_slew = time.time() + 120  # seconds between slews.
+            except:
+                pass#
+        return
+                    
     def park_and_close(self, enc_status):
         try:
             if not g_dev['mnt'].mount.AtParK:   ###Test comment here
                 g_dev['mnt'].park_command({}, {}) # Get there early
         except:
-            pass
-        # if enc_status['shutter_status'] in ['open', ]:
-        #     g_dev['enc'].close_command( {}, {})
-        print("Park and Close was NOT NOT NOT executed.")
+            print("Park not executed during Park and Close" )
+        try:
+            if enc_status['shutter_status'] in ['open', ]:
+                g_dev['enc'].close_command( {}, {})
+        except:
+            print('Dome close not executed during Park and Close.')
+        
 
     ###############################
     #       Sequencer Commands and Scripts
@@ -298,23 +307,19 @@ class Sequencer:
             #NB The above put dome closed and telescope at Park, Which is where it should have been upon entry.   
             self.bias_dark_script(req, opt)
             self.bias_dark_latch = False
-        #elif  True or  
+ 
         elif ((g_dev['events']['Cool Down, Open']  <= ephem_now < g_dev['events']['Eve Sky Flats']) and \
                g_dev['enc'].mode == 'Automatic') and not g_dev['ocn'].wx_hold:  
             self.enc_to_skyflat_and_open(enc_status, ocn_status)
-        
-        #elif True or 
+
         elif self.sky_flat_latch and ((events['Eve Sky Flats'] <= ephem_now < events['End Eve Sky Flats'])  \
                and g_dev['enc'].mode == 'Automatic' and not g_dev['ocn'].wx_hold and \
                self.config['auto_eve_sky_flat']):
-            self.sky_flat_latch = False
 
-            #if enc_status['shutter_status'] in ['Closed', 'closed', 'Closing', 'closing']:
             self.enc_to_skyflat_and_open(enc_status, ocn_status)   #Just in case a Wx hold stopped opening      
-
             self.current_script = "Eve Sky Flat script starting"
             #print('Skipping Eve Sky Flats')
-            self.sky_flat_script({}, {})   #Null command dictionaries
+            self.sky_flat_script({}, {}, morn=False)   #Null command dictionaries
             self.sky_flat_latch = False
             
         elif enc_status['enclosure_mode'] in ['Autonomous!', 'Automatic'] and (events['Observing Begins'] <= ephem_now \
@@ -327,6 +332,11 @@ class Sequencer:
 
             if debug:
                 print("# of Blocks, projects:  ", len(g_dev['obs'].blocks),  len(g_dev['obs'].projects))
+                
+            #Note here we could evaluate projects to see which meet observability constraints and place them
+            #In an observables list, then we could pick one to start.  IF there is no pre-sheduled observing block
+            #it would just run.  Voila an Opportunistic scheduler.  An observing block may be empty or point to
+            #a project and if the project is runnable any way, it runs or is marked completed.
             # NB without deepcopy decrementing counts in blocks will be local to the machine an subject
             # to over_write as the respons from AWS updates. This is particularly important for owner
             # and background blocks.
@@ -391,7 +401,7 @@ class Sequencer:
                     so it does not get modified.
                     '''
             #print('block list exhausted')  
-            return
+            #return  Commented out 20220409 WER
             
                 
                 # print("Here we would enter an observing block:  ",
@@ -404,14 +414,48 @@ class Sequencer:
             #print("Block tested for observatility")
                 
                     
+        elif ((g_dev['events']['Observing Ends']  < ephem_now < g_dev['events']['Eve Sky Flats']) and \
+               g_dev['enc'].mode == 'Automatic') and not g_dev['ocn'].wx_hold and self.config['auto_morn_sky_flat']:  
+            self.enc_to_skyflat_and_open(enc_status, ocn_status)
+
+        elif self.morn_sky_flat_latch and ((events['Morn Sky Flats'] <= ephem_now < events['End Morn Sky Flats'])  \
+               and g_dev['enc'].mode == 'Automatic' and not g_dev['ocn'].wx_hold and \
+               self.config['auto_morn_sky_flat']):
+            self.enc_to_skyflat_and_open(enc_status, ocn_status)   #Just in case a Wx hold stopped opening      
+            self.current_script = "Morn Sky Flat script starting"
+            #print('Skipping Eve Sky Flats')
+            self.sky_flat_script({}, {}, morn=True)   #Null command dictionaries
+            self.morn_sky_flat_latch = False
+        elif self.morn_bias_dark_latch and ((events['Morn Bias Dark'] <= ephem_now < events['End Morn Bias Dark']) and \
+                  self.config['auto_morn_bias_dark'] and g_dev['enc'].mode == 'Automatic' ):
+            self.morn_bias_dark_latch = False
+            req = {'bin1': False, 'bin2': True, 'bin3': False, 'bin4': False, 'numOfBias': 45, \
+                   'numOfDark': 15, 'darkTime': 180, 'numOfDark2': 3, 'dark2Time': 360, \
+                   'hotMap': True, 'coldMap': True, 'script': 'genBiasDarkMaster', }
+            opt = {}
+            #No action needed on  the enclosure at this level
+            self.park_and_close(enc_status)
+            #NB The above put dome closed and telescope at Park, Which is where it should have been upon entry.   
+            self.bias_dark_script(req, opt)
+            self.morn_bias_dark_latch = False
         else:
             self.current_script = "No current script, or site not in Automatic."
-            #print("No active script is scheduled.")
-            return
+            try:
+                self.park_and_close(enc_status)
+            except:
+                print("Park and close failed at end of sequencer loop.")
+        return
     def take_lrgb_stack(self, req_None, opt=None):
         return
-
-        self.redis_server.set('sim_hold', True, ex=120)
+    def take_wugriz_stack(self, req_None, opt=None):
+        return
+    def take_UBRI_stack(self, req_None, opt=None):
+        return
+    def take_RGB_stack(self, req_None, opt=None):
+        return
+    def create_OSC_raw_image(self, req_None, opt=None):
+        return
+#    self.redis_server.set('sim_hold', True, ex=120)
             
     def clock_the_system(self, other_side=False):
         '''
@@ -802,8 +846,8 @@ class Sequencer:
         self.current_script = 'Afternoon Bias Dark'
         #dark_time = 300   #seed for 3x3 binning
         #breakpoint()
-        
-        while ephem.now() < g_dev['events']['Morn Bias Dark'] :   #Do not overrun the window end
+        #  20220410   NBNBNB Need to gat ending with morn or eve like flats./        
+        while ephem.now() < g_dev['events']['Eve Bias Dark'] :   #Do not overrun the window end
             g_dev['mnt'].park_command({}, {}) # Get there early
             #g_dev['mnt'].slewToSkyFlatAsync()
             print("Expose Biases: b- 1, 2, 3, 4;  300s darks.")
@@ -912,7 +956,7 @@ class Sequencer:
 
 
 
-    def sky_flat_script(self, req, opt):
+    def sky_flat_script(self, req, opt, morn=False):
         """
 
         If entered, put up a guard.
@@ -931,29 +975,31 @@ class Sequencer:
         Note we want Moon at least 30 degrees away
 
         """
-        self.sky_guard = True
-        print('Eve Sky Flat sequence Starting, Enclosure PRESUMED Open. Telescope will un-park.')
+        self.sky_guard = True   #20220409 I think this is obsolete or unused.
+        print('Sky Flat sequence Starting, Enclosure PRESUMED Open. Telescope should be on sky flat spot.')
 
         camera_name = str(self.config['camera']['camera_1_1']['name'])
-        flat_count = 9
+        flat_count = 7  #20220409  Just to speed things up a bit.
         min_exposure = float(self.config['camera']['camera_1_1']['settings']['min_exposure']) 
         exp_time = min_exposure # added 20220207 WER
         #  NB Sometime, try 2:2 binning and interpolate a 1:1 flat.  This might run a lot faster.
         if flat_count < 1: flat_count = 1
-        sim = False# g_dev['enc'].status['shutter_status'] in ['Closed', 'closed', 'Closing', 'closing']
-        # if sim: 
-
         #  Pick up list of filters is sky flat order of lowest to highest transparency.
         pop_list = self.config['filter_wheel']['filter_wheel1']['settings']['filter_sky_sort'].copy()
-        print('filters by low to high transmission:  ', pop_list)
+        if morn:
+            pop_list.reverse()
+            print('filters by high to low transmission:  ', pop_list)
+            ending = g_dev['events']['End Morn Sky Flats']
+        else:
+            print('filters by low to high transmission:  ', pop_list)
+            ending = g_dev['events']['End Eve Sky Flats']
         #length = len(pop_list)
         obs_win_begin, sunset, sunrise, ephem_now = self.astro_events.getSunEvents()
         scale = 1.0
-        prior_scale = 1   #THIS will be inhereted upon completion of the prior filter
-        
+        prior_scale = 1   #THIS will be inhereted upon completion of the prior filter       
         collecting_area = self.config['telescope']['telescope1']['collecting_area']/32000.
         #   and (g_dev['events']['Eve Sky Flats'] < 
-        while len(pop_list) > 0  and ephem_now < g_dev['events']['End Eve Sky Flats']:
+        while len(pop_list) > 0  and ephem_now < ending:
 
             current_filter = int(pop_list[0])
             acquired_count = 0
@@ -992,14 +1038,14 @@ class Sequencer:
                 req = {'time': float(exp_time),  'alias': camera_name, 'image_type': 'sky flat', 'script': 'On'}
                 opt = { 'count': 1, 'bin':  '2,2', 'area': 150, 'filter': g_dev['fil'].filter_data[current_filter][0]}
                 print("using:  ", g_dev['fil'].filter_data[current_filter][0])
-                if ephem_now >= g_dev['events']['End Eve Sky Flats']:
+                if ephem_now >= ending:
                     break
                 try:
                     result = g_dev['cam'].expose_command(req, opt, no_AWS=True, do_sep = False)
                     bright = result['patch']    #  Patch should be circular and 20% of Chip area. ToDo project
 
                 except:
-                    print('*****NO result returned*****')
+                    print("*****NO result returned*****  Will need to restart Camera")  #NB NB  NB this is drastic action needed.
                     continue
                 g_dev['obs'].update_status()
                 try:
@@ -1018,9 +1064,9 @@ class Sequencer:
                 obs_win_begin, sunset, sunrise, ephem_now = self.astro_events.getSunEvents()
                 #  THE following code looks like a debug patch gone rogue.
 
-                if bright > 35000 and (ephem_now < g_dev['events']['End Eve Sky Flats']):    #NB should gate with end of skyflat window as well.
+                if bright > 35000 and (ephem_now < ending):    #NB should gate with end of skyflat window as well.
                     for i in range(1):
-                        time.sleep(5)  #  #0 seconds of wait time.  Maybe shorten for wide bands?
+                        time.sleep(2)  #  #0 seconds of wait time.  Maybe shorten for wide bands?
                         g_dev['obs'].update_status()
                 else:
                     acquired_count += 1
@@ -1032,7 +1078,15 @@ class Sequencer:
 
                 obs_win_begin, sunset, sunrise, ephem_now = self.astro_events.getSunEvents()
                 continue
-        g_dev['mnt'].tracking = False   #  park_command({}, {})  #  NB this is provisional, Ok when simulating
+        if morn is False:
+            g_dev['mnt'].tracking = False   #  park_command({}, {})  #  NB this is provisional, Ok when simulating
+            self.eve_sky_flat_latch = False
+        elif morn:
+            try:
+                g_dev['mnt'].park_command({}, {})
+            except:
+                print("Mount did not park at end of morning skyflats.") 
+            self.morn_sky_flat_latch = False
         print('\nSky flat complete, or too early. Telescope Tracking is off.\n')
         self.sky_guard = False
 

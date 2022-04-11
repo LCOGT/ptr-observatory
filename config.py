@@ -82,9 +82,9 @@ site_config = {
     'automatic_detail_default': "Enclosure is initially set to Automatic by SAF config.",
     'auto_eve_bias_dark':True,
     'auto_eve_sky_flat': True,
-    'eve_sky_flat_sunset_offset': +0.0,  # Minutes  neg means before, + after.
-    'auto_morn_sky_flat': False,
-    'auto_morn_bias_dark': False,
+    'eve_sky_flat_sunset_offset': +0.0,  # Minutes  neg means before, + after.  NB NB NB Is this used?
+    'auto_morn_sky_flat': True,
+    'auto_morn_bias_dark': True,
     're-calibrate_on_solve': True, 
 
     'observing_conditions' : {     #for SAF
@@ -325,9 +325,9 @@ site_config = {
             #F9 setup
             'reference': 5743,    #  Meas   Nominal at 10C Primary temperature
             'ref_temp':  4.8,    # Update when pinning reference
-            'coef_c': -78.337,   # negative means focus moves out as Primary gets colder
-            'coef_0': 5375,  # Nominal intercept when Primary is at 0.0 C. 
-            'coef_date':  '20220402',    # SWAG 
+            'coef_c': -62.7082,     #20220408-78.337,   # negative means focus moves out as Primary gets colder
+            'coef_0': 5937,     #20220408, 5375,  # Nominal intercept when Primary is at 0.0 C. 
+            'coef_date':  '20220408',    #'20220402',    # SWAG 
             'minimum': 0,     # NB this area is confusing steps and microns, and need fixing.
             'maximum': 12600,   #12672 actually
             'step_size': 1,
