@@ -1013,7 +1013,12 @@ class Sequencer:
         
             
             #breakpoint()
-            while (acquired_count < flat_count): #and (ephem_now +3/1440) < g_dev['events']['End Eve Sky Flats' ]:
+            if not g_dev['enc'].status['shutter_status'] in ['Open', 'open']:
+                print("We expect the roof to be open to take skyflats.")
+                time.sleep(20)
+                g_dev['obs'].update_status()
+                
+            while (acquired_count < flat_count) and g_dev['enc'].status['shutter_status'] in ['Open', 'open']: # NB NB NB and roof is OPEN! and (ephem_now +3/1440) < g_dev['events']['End Eve Sky Flats' ]:
                 #if g_dev['enc'].is_dome:   #Does not apply
                 g_dev['mnt'].slewToSkyFlatAsync()
                 g_dev['obs'].update_status()
