@@ -80,7 +80,7 @@ site_config = {
     
     'site_in_automatic_default': "Automatic",   # ["Manual", "Shutdown", "Automatic"]
     'automatic_detail_default': "Enclosure is initially set to Automatic by SAF config.",
-    'auto_eve_bias_dark':True,
+    'auto_eve_bias_dark': True,
     'auto_eve_sky_flat': True,
     'eve_sky_flat_sunset_offset': +0.0,  # Minutes  neg means before, + after.  NB NB NB Is this used?
     'auto_morn_sky_flat': True,
@@ -388,7 +388,7 @@ site_config = {
                         ['ip',   [4,  0],    0, 3.35, [.65 ,  20], 'ip'],    #10.
                         ['z',    [5,  0],    0, .419, [1.0 ,  20], 'zs'],    #11.
                         ['zp',   [0,  9],    0, .523, [360 , 170], 'zp'],    #12.
-                        ['y',    [6,  0],    0, .100, [360 , 170], 'y '],    #13.
+                        ['y',    [6,  0],    0, 0.01, [360 , 170], 'y '],    #13.
                         ['EXO',  [8,  0],    0, 34.2, [360 , 170], 'ex'],    #14.
                         ['JB',   [9,  0],    0, 32.4, [0.65,  20], 'BB'],    #15.
                         ['JV',   [10, 0],    0, 23.3, [.32 ,  20], 'BV'],    #16.
@@ -402,7 +402,7 @@ site_config = {
                         ['O3',   [0,  2],    0, 1.84, [360 , 170], 'O3'],    #24.
                         ['HA',   [0,  3],    0, 0.05, [360 , 170], 'HA'],    #25.
                         ['N2',   [13, 0],    0, 0.04, [360 , 170], 'N2'],    #26.
-                        ['S2',   [0,  4],    0, 0.07, [0.65,  20], 'S2'],    #27.
+                        ['S2',   [0,  4],    0, 0.02, [0.65,  20], 'S2'],    #27.
                         ['CR',   [0,  5],    0, 0.09, [360 , 170], 'Rc'],    #28.
                         ['dark', [5,  6],    0, 0.20, [360 , 170], 'dk'],    #29                       ['dif',  [0,  1],    0, 0.21, [360 , 170], 'df'],    #25
                         ['difw',   [7,  1],  0, 300., [0.65,  20], 'dw'],    #30.

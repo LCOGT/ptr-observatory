@@ -15,6 +15,7 @@ import os
 import math
 import numpy as np
 from astropy.io import fits
+
 #from astropy.table import Table
 #from astropy.utils.data import get_pkg_data_filename
 import sep
@@ -31,8 +32,8 @@ from pprint import pprint
 # from skimage import img_as_float
 # from skimage import exposure
 # from skimage.io import imsaves
-# import matplotlib.pyplot as plt
-
+import matplotlib.pyplot as plt
+from scipy import stats
 # from PIL import Image
 from global_yard import g_dev
 #from processing.calibration import calibrate
@@ -1201,71 +1202,24 @@ class Camera:
                 #  NB Note this is QHY600 specific code.  Needs to be supplied in camera config as sliced regions.
                 pedastal = 100
                 ix, iy = self.img.shape
-
-
-
-
-
-                # if ix == 9600:
-                #     overscan = int((np.median(self.img[32:, -33:]) + np.median(self.img[0:29, :]))/2) - 1
-                #     trimmed = self.img[32:, :-34].astype('int32') + pedastal - overscan
-                #     if opt['area'] in [150, 'Full', 'full']:
-                #         square = trimmed
-                #     else:
-                #         square = trimmed[1590:1590 + 6388, :]
-                # elif ix == 4800:
-                #     overscan = int((np.median(self.img[16:, -17:]) + np.median(self.img[0:14, :]))/2) -1
-                #     trimmed = self.img[16:, :-17].astype('int32') + pedastal - overscan
-                #     if opt['area'] in [150, 'Full', 'full']:
-                #         square = trimmed
-                #     else:
-                #         square = trimmed[795:795 + 3194, :]
-                # else:
-                #     print("Incorrect chip size or bin specified.")
-
-
-                #This image shift code needs to be here but it is troubling.
+                self.dark_region = 0
                 #QHY 600Pro and 367
-
                 if ix == 9600:
-                    # if self.img[22, -34] == 0:
-
-                    self.overscan = int((np.median(self.img[24:, -33:]) + np.median(self.img[0:21, :]))/2) - 1
-                    trimmed = self.img[24:-8, :-34].astype('int32') + pedastal - self.overscan
-
-                    # elif self.img[30, -34] == 0:
-                    #     self.overscan = int((np.median(self.img[32:, -33:]) + np.median(self.img[0:29, :]))/2) - 1
-                    #     trimmed = self.img[32:, :-34].astype('int32') + pedastal - self.overscan
-
-                    # else:
-                    #     print("Image shift is incorrect, absolutely fatal error.")
-                        
-                    #     pass
-
-                    # if full:
-                    #     square = trimmed
-                    # else:
-                    #     square = trimmed[1590:1590 + 6388, :]
+                    self.dark_region = np.median(self.img[0:22, :-34])
+                    self.overscan = np.median(self.img[24:, -33:])
+                    trimmed = self.img[24:, :-34].astype('int32') + pedastal - self.overscan
                 elif ix == 4800:
-                    #Shift error needs documenting!
-                    #breakpoint()
-                    #if self.img[11, -18] == 0:   #This is the normal incoming image
-                    self.overscan = int((np.median(self.img[12:, -17:]) + np.median(self.img[0:10, :]))/2) - 1
-                    trimmed = self.img[12:-4, :-17].astype('int32') + pedastal - self.overscan
-
-                        #print("Shift 1", self.overscan, square.mean())
-                    # elif self.img[15, -18] == 0:     #This rarely occurs.  Neyle's Qhy600
-                    #     self.overscan = int((np.median(self.img[16:, -17:]) + np.median(self.img[0:14, :]))/2) -1
-                    #     trimmed = self.img[16:, :-17].astype('int32') + pedastal - self.overscan
-
-                    #     print("Rare error, Shift 2", self.overscan, trimmed.mean())
-
-                    # else:
-                    #     print("Image shift is incorrect, absolutely fatal error", self.img[0:20, -18])
-
-
-                        #pass
-
+                    self.dark_region = np.median(self.img[0:11, :-17])
+                    self.overscan = np.median(self.img[12:, -17:])
+                    trimmed = self.img[12:, :-17].astype('int32') + pedastal - self.overscan
+                elif ix == 3200:
+                    self.dark_region = np.median(self.img[0:7, :-11])
+                    self.overscan = np.median(self.img[8:, -11:]) 
+                    trimmed = self.img[8:, :-11].astype('int32') + pedastal - self.overscan
+                elif ix == 2400:
+                    self.dark_region = np.median(self.img[0:5, :-8])
+                    self.overscan = np.median(self.img[6:, -8:]) 
+                    trimmed = self.img[6 :-8].astype('int32') + pedastal - self.overscan
                 
                 #mrc2    Testing comment change, did this push to GitHub?
                 elif ix == 4096 and iy == 4096:   #MRC@
@@ -1324,6 +1278,8 @@ class Camera:
                 else:
                     print("UNSUPPORTED BINNING OR CAMERA!!", ix, iy)
                     trimmed = self.img
+                print("Mean, Median. Mode, Dark, Overscan:  ", trimmed.mean(), np.median(trimmed), \
+                       stats.mode(trimmed, axis=None), self.dark_region, self.overscan)
                     
 
 
@@ -1424,6 +1380,7 @@ class Camera:
                 try:
                     hdu = fits.PrimaryHDU(self.img)
                     self.img = None    #  Does this free up any resource?
+
                     # assign the keyword values and comment of the keyword as a tuple to write both to header.
 
                     hdu.header['BUNIT']    = ('adu', 'Unit of array values')
@@ -1637,6 +1594,8 @@ class Camera:
                     hdu.header['FRAMENUM'] = (int(next_seq), 'Running frame number')                                        
                     # DEH I need to understand these keywords better before writing header comments.
                     hdu.header['PEDASTAL'] = (-pedastal,  'adu, add this for zero based image.')
+                    hdu.header['DARKREGN'] = self.dark_region
+                    hdu.header['OVERSCAN'] = self.overscan
                     hdu.header['ERRORVAL'] = 0
                     hdu.header['PATCH']    = bi_mean - pedastal    #  A crude value for the central exposure
                     hdu.header['IMGAREA' ] = opt['area']
