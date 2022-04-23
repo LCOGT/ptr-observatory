@@ -439,11 +439,14 @@ class Sequencer:
             self.bias_dark_script(req, opt)
             self.morn_bias_dark_latch = False
         else:
-            self.current_script = "No current script, or site not in Automatic."
-            try:
-                self.park_and_close(enc_status)
-            except:
-                print("Park and close failed at end of sequencer loop.")
+            pass
+            # self.current_script = "No current script, or site not in Automatic."
+            # try:
+            #     self.park_and_close(enc_status)
+            #     print("A precautyionarly park, there is noting to do.")
+            #     time.sleep(10)
+            # except:
+            #     print("Park and close failed at end of sequencer loop.")
         return
     def take_lrgb_stack(self, req_None, opt=None):
         return
