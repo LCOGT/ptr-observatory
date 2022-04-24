@@ -31,8 +31,8 @@ from pprint import pprint
 # from skimage import img_as_float
 # from skimage import exposure
 # from skimage.io import imsaves
-# import matplotlib.pyplot as plt
-
+import matplotlib.pyplot as plt
+from scipy import stats
 # from PIL import Image
 from global_yard import g_dev
 #from processing.calibration import calibrate
@@ -1201,71 +1201,26 @@ class Camera:
                 #  NB Note this is QHY600 specific code.  Needs to be supplied in camera config as sliced regions.
                 pedastal = 100
                 ix, iy = self.img.shape
-
-
-
-
-
-                # if ix == 9600:
-                #     overscan = int((np.median(self.img[32:, -33:]) + np.median(self.img[0:29, :]))/2) - 1
-                #     trimmed = self.img[32:, :-34].astype('int32') + pedastal - overscan
-                #     if opt['area'] in [150, 'Full', 'full']:
-                #         square = trimmed
-                #     else:
-                #         square = trimmed[1590:1590 + 6388, :]
-                # elif ix == 4800:
-                #     overscan = int((np.median(self.img[16:, -17:]) + np.median(self.img[0:14, :]))/2) -1
-                #     trimmed = self.img[16:, :-17].astype('int32') + pedastal - overscan
-                #     if opt['area'] in [150, 'Full', 'full']:
-                #         square = trimmed
-                #     else:
-                #         square = trimmed[795:795 + 3194, :]
-                # else:
-                #     print("Incorrect chip size or bin specified.")
-
-
-                #This image shift code needs to be here but it is troubling.
+                self.dark_region = 0
                 #QHY 600Pro and 367
-
                 if ix == 9600:
-                    # if self.img[22, -34] == 0:
-
-                    self.overscan = int((np.median(self.img[24:, -33:]) + np.median(self.img[0:21, :]))/2) - 1
-                    trimmed = self.img[24:-8, :-34].astype('int32') + pedastal - self.overscan
-
-                    # elif self.img[30, -34] == 0:
-                    #     self.overscan = int((np.median(self.img[32:, -33:]) + np.median(self.img[0:29, :]))/2) - 1
-                    #     trimmed = self.img[32:, :-34].astype('int32') + pedastal - self.overscan
-
-                    # else:
-                    #     print("Image shift is incorrect, absolutely fatal error.")
-                        
-                    #     pass
-
-                    # if full:
-                    #     square = trimmed
-                    # else:
-                    #     square = trimmed[1590:1590 + 6388, :]
+                    self.dark_region = np.median(self.img[0:22, :-34])
+                    self.overscan = np.median(self.img[24:, -33:])
+                    trimmed = self.img[24:, :-34].astype('int32') + pedastal - self.overscan
                 elif ix == 4800:
-                    #Shift error needs documenting!
-                    #breakpoint()
-                    #if self.img[11, -18] == 0:   #This is the normal incoming image
-                    self.overscan = int((np.median(self.img[12:, -17:]) + np.median(self.img[0:10, :]))/2) - 1
-                    trimmed = self.img[12:-4, :-17].astype('int32') + pedastal - self.overscan
+                    self.dark_region = np.median(self.img[0:11, :-17])
+                    self.overscan = np.median(self.img[12:, -17:])
+                    trimmed = self.img[12:, :-17].astype('int32') + pedastal - self.overscan
+                elif ix == 3200:
+                    self.dark_region = np.median(self.img[0:7, :-11])
+                    self.overscan = np.median(self.img[8:, -11:]) 
+                    trimmed = self.img[8:, :-11].astype('int32') + pedastal - self.overscan
+                elif ix == 2400:
+                    self.dark_region = np.median(self.img[0:5, :-8])
+                    self.overscan = np.median(self.img[6:, -8:]) 
+                    trimmed = self.img[6 :-8].astype('int32') + pedastal - self.overscan
 
-                        #print("Shift 1", self.overscan, square.mean())
-                    # elif self.img[15, -18] == 0:     #This rarely occurs.  Neyle's Qhy600
-                    #     self.overscan = int((np.median(self.img[16:, -17:]) + np.median(self.img[0:14, :]))/2) -1
-                    #     trimmed = self.img[16:, :-17].astype('int32') + pedastal - self.overscan
-
-                    #     print("Rare error, Shift 2", self.overscan, trimmed.mean())
-
-                    # else:
-                    #     print("Image shift is incorrect, absolutely fatal error", self.img[0:20, -18])
-
-
-                        #pass
-
+                
                 
                 #mrc2    Testing comment change, did this push to GitHub?
                 elif ix == 4096 and iy == 4096:   #MRC@
@@ -1295,27 +1250,29 @@ class Camera:
                 #     self.overscan =np.median(self.img) - pedastal
                 #     trimmed = self.img.astype('int32') - 614.
                 #     #FAT
+                
                 elif ix == 4556 and iy == 3656:   #All this code needs to be driven from camera config.
-                    #breakpoint()
+
                     self.overscan = (np.median(self.img[4520:4556, :3600]) + np.median(self.img[:4500, 3620:3643]))/2.0
                     minus_overscan = self.img - (np.median(self.img[4520:4556, :3600]) + np.median(self.img[:4500, 3620:3643]))/2.0
                     print("1_1 Offset:  ", -np.median(minus_overscan[:4500, :3600]))
                     minus_overscan += pedastal + 50
                     trimmed = minus_overscan[:4500, :3600].astype('int32')
                 elif ix == 2278 and iy == 1828:   #All this code needs to be driven from camera config.
-                    #breakpoint()
+
                     self.overscan = (np.median(self.img[2260:2278, :1800]) + np.median(self.img[2250, 1810:1821]))/2.0
                     minus_overscan = self.img - (np.median(self.img[2260:2278, :1800]) + np.median(self.img[2250, 1810:1821]))/2.0
                     minus_overscan += pedastal + 140
                     trimmed = minus_overscan[:2250, :1800].astype('int32')
                 elif ix == 1518 and iy == 1218: 
-                    #breakpoint()
+
                     self.overscan = (np.median(self.img[1506:1518, :1200]) + np.median(self.img[:1500, 1206:1214]))/2.0
                     minus_overscan = self.img - (np.median(self.img[1506:1518, :1200]) + np.median(self.img[:1500, 1206:1214]))/2.0
                     minus_overscan += pedastal + 211 
                     trimmed = minus_overscan[:1500, :1200].astype('int32')
                     
-                elif ix == 1139 and iy == 914: 
+                elif ix == 1139 and iy == 914:
+
                     self.overscan = (np.median(self.img[1130:1139, :900]) + np.median(self.img[:1125, 905:910]))/2.
                     minus_overscan = self.img - (np.median(self.img[1130:1139, :900]) + np.median(self.img[:1125, 905:910]))/2.0
                     print("4_4 Offset:  ", -np.median(minus_overscan[:1125, :900]))
@@ -1324,7 +1281,9 @@ class Camera:
                 else:
                     print("UNSUPPORTED BINNING OR CAMERA!!", ix, iy)
                     trimmed = self.img
-                    
+                print("Mean, Median. Mode, Dark, Overscan:  ", trimmed.mean(), np.median(trimmed), \
+                       stats.mode(trimmed, axis=None), self.dark_region, self.overscan)
+                                       
 
 
                     #continue
