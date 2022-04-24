@@ -877,7 +877,7 @@ def calibrate (hdu, lng_path, frame_type='light', quick=False):
                         wrong = np.where(scr_flat <= 0.01)
                         scr_flat[wrong] = 0.01
                         img = img/scr_flat
-                        cal_string +=', SCF'
+                        cal_string +=', SKF'
                     except:
                         print('Dividing by None not a good idea.')
                         pass

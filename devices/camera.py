@@ -15,6 +15,7 @@ import os
 import math
 import numpy as np
 from astropy.io import fits
+
 #from astropy.table import Table
 #from astropy.utils.data import get_pkg_data_filename
 import sep
@@ -1219,8 +1220,6 @@ class Camera:
                     self.dark_region = np.median(self.img[0:5, :-8])
                     self.overscan = np.median(self.img[6:, -8:]) 
                     trimmed = self.img[6 :-8].astype('int32') + pedastal - self.overscan
-
-                
                 
                 #mrc2    Testing comment change, did this push to GitHub?
                 elif ix == 4096 and iy == 4096:   #MRC@
@@ -1250,29 +1249,27 @@ class Camera:
                 #     self.overscan =np.median(self.img) - pedastal
                 #     trimmed = self.img.astype('int32') - 614.
                 #     #FAT
-                
                 elif ix == 4556 and iy == 3656:   #All this code needs to be driven from camera config.
-
+                    #breakpoint()
                     self.overscan = (np.median(self.img[4520:4556, :3600]) + np.median(self.img[:4500, 3620:3643]))/2.0
                     minus_overscan = self.img - (np.median(self.img[4520:4556, :3600]) + np.median(self.img[:4500, 3620:3643]))/2.0
                     print("1_1 Offset:  ", -np.median(minus_overscan[:4500, :3600]))
                     minus_overscan += pedastal + 50
                     trimmed = minus_overscan[:4500, :3600].astype('int32')
                 elif ix == 2278 and iy == 1828:   #All this code needs to be driven from camera config.
-
+                    #breakpoint()
                     self.overscan = (np.median(self.img[2260:2278, :1800]) + np.median(self.img[2250, 1810:1821]))/2.0
                     minus_overscan = self.img - (np.median(self.img[2260:2278, :1800]) + np.median(self.img[2250, 1810:1821]))/2.0
                     minus_overscan += pedastal + 140
                     trimmed = minus_overscan[:2250, :1800].astype('int32')
                 elif ix == 1518 and iy == 1218: 
-
+                    #breakpoint()
                     self.overscan = (np.median(self.img[1506:1518, :1200]) + np.median(self.img[:1500, 1206:1214]))/2.0
                     minus_overscan = self.img - (np.median(self.img[1506:1518, :1200]) + np.median(self.img[:1500, 1206:1214]))/2.0
                     minus_overscan += pedastal + 211 
                     trimmed = minus_overscan[:1500, :1200].astype('int32')
                     
-                elif ix == 1139 and iy == 914:
-
+                elif ix == 1139 and iy == 914: 
                     self.overscan = (np.median(self.img[1130:1139, :900]) + np.median(self.img[:1125, 905:910]))/2.
                     minus_overscan = self.img - (np.median(self.img[1130:1139, :900]) + np.median(self.img[:1125, 905:910]))/2.0
                     print("4_4 Offset:  ", -np.median(minus_overscan[:1125, :900]))
@@ -1283,7 +1280,7 @@ class Camera:
                     trimmed = self.img
                 print("Mean, Median. Mode, Dark, Overscan:  ", trimmed.mean(), np.median(trimmed), \
                        stats.mode(trimmed, axis=None), self.dark_region, self.overscan)
-                                       
+                    
 
 
                     #continue
@@ -1383,6 +1380,7 @@ class Camera:
                 try:
                     hdu = fits.PrimaryHDU(self.img)
                     self.img = None    #  Does this free up any resource?
+
                     # assign the keyword values and comment of the keyword as a tuple to write both to header.
 
                     hdu.header['BUNIT']    = ('adu', 'Unit of array values')
@@ -1596,6 +1594,8 @@ class Camera:
                     hdu.header['FRAMENUM'] = (int(next_seq), 'Running frame number')                                        
                     # DEH I need to understand these keywords better before writing header comments.
                     hdu.header['PEDASTAL'] = (-pedastal,  'adu, add this for zero based image.')
+                    hdu.header['DARKREGN'] = self.dark_region
+                    hdu.header['OVERSCAN'] = self.overscan
                     hdu.header['ERRORVAL'] = 0
                     hdu.header['PATCH']    = bi_mean - pedastal    #  A crude value for the central exposure
                     hdu.header['IMGAREA' ] = opt['area']

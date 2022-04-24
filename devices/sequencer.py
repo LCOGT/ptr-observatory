@@ -202,7 +202,7 @@ class Sequencer:
             else:
                 self.sky_grid_pointing_run(req, opt)
         elif action == "run" and script in ("genBiasDarkMaster", "genBiasDarkMasters"):
-            self.bias_dark_script(req, opt)
+            self.bias_dark_script(req, opt, morn=True)
         elif action == "run" and script == 'takeLRGBStack':
             self.take_lrgb_stack(req, opt)
         elif action == "run" and script == "takeO3HaS2N2Stack":
@@ -287,11 +287,9 @@ class Sequencer:
         if g_dev['obs'].status_count < 3:
             return
         obs_win_begin, sunZ88Op, sunZ88Cl, ephem_now = self.astro_events.getSunEvents()
-
         ocn_status = g_dev['ocn'].status
         enc_status = g_dev['enc'].status
         events = g_dev['events']
-
         #g_dev['obs'].update_status()  #NB NEED to be sure we have current enclosure status.  Blows recursive limit
         self.current_script = "No current script"    #NB this is an unused remnant I think.
         #if True or     #Note this runs in Manual Mode as well.
@@ -305,11 +303,12 @@ class Sequencer:
             #No action needed on  the enclosure at this level
             self.park_and_close(enc_status)
             #NB The above put dome closed and telescope at Park, Which is where it should have been upon entry.   
-            self.bias_dark_script(req, opt)
+            self.bias_dark_script(req, opt, morn=False)
             self.bias_dark_latch = False
  
         elif ((g_dev['events']['Cool Down, Open']  <= ephem_now < g_dev['events']['Eve Sky Flats']) and \
                g_dev['enc'].mode == 'Automatic') and not g_dev['ocn'].wx_hold:  
+
             self.enc_to_skyflat_and_open(enc_status, ocn_status)
 
         elif self.sky_flat_latch and ((events['Eve Sky Flats'] <= ephem_now < events['End Eve Sky Flats'])  \
@@ -414,7 +413,7 @@ class Sequencer:
             #print("Block tested for observatility")
                 
                     
-        elif ((g_dev['events']['Observing Ends']  < ephem_now < g_dev['events']['Eve Sky Flats']) and \
+        elif ((g_dev['events']['Observing Ends']  < ephem_now < g_dev['events']['End Morn Sky Flats']) and \
                g_dev['enc'].mode == 'Automatic') and not g_dev['ocn'].wx_hold and self.config['auto_morn_sky_flat']:  
             self.enc_to_skyflat_and_open(enc_status, ocn_status)
 
@@ -423,9 +422,11 @@ class Sequencer:
                self.config['auto_morn_sky_flat']):
             self.enc_to_skyflat_and_open(enc_status, ocn_status)   #Just in case a Wx hold stopped opening      
             self.current_script = "Morn Sky Flat script starting"
+            self.morn_sky_flat_latch = False
             #print('Skipping Eve Sky Flats')
             self.sky_flat_script({}, {}, morn=True)   #Null command dictionaries
             self.morn_sky_flat_latch = False
+            self.park_and_close(enc_status)
         elif self.morn_bias_dark_latch and ((events['Morn Bias Dark'] <= ephem_now < events['End Morn Bias Dark']) and \
                   self.config['auto_morn_bias_dark'] and g_dev['enc'].mode == 'Automatic' ):
             self.morn_bias_dark_latch = False
@@ -436,12 +437,14 @@ class Sequencer:
             #No action needed on  the enclosure at this level
             self.park_and_close(enc_status)
             #NB The above put dome closed and telescope at Park, Which is where it should have been upon entry.   
-            self.bias_dark_script(req, opt)
+            self.bias_dark_script(req, opt, morn=True)
             self.morn_bias_dark_latch = False
+            self.park_and_close(enc_status)
         else:
             self.current_script = "No current script, or site not in Automatic."
             try:
-                self.park_and_close(enc_status)
+                pass
+                #self.park_and_close(enc_status)
             except:
                 print("Park and close failed at end of sequencer loop.")
         return
@@ -829,12 +832,12 @@ class Sequencer:
             #g_dev['enc'].close_command({}, {})
             g_dev['mnt'].park_command({}, {})
 
-            print("Auto close attempted at end of block.")
+            print("Auto PARK (not Close) attempted at end of block.")
         self.block_guard = False
         return block_specification #used to flush the queue as it completes.
 
 
-    def bias_dark_script(self, req=None, opt=None):
+    def bias_dark_script(self, req=None, opt=None, morn=False):
         """
 
         20200618   This has been drastically simplied for now to deal with only QHY600M.
@@ -842,28 +845,33 @@ class Sequencer:
         May still have a bug where it latches up only outputting 2x2 frames.
                  
         """
+
         self.sequencer_hold = True
-        self.current_script = 'Afternoon Bias Dark'
-        #dark_time = 300   #seed for 3x3 binning
-        #breakpoint()
-        #  20220410   NBNBNB Need to gat ending with morn or eve like flats./        
-        while ephem.now() < g_dev['events']['Eve Bias Dark'] :   #Do not overrun the window end
+        self.current_script = 'Bias Dark'
+        if morn:
+            ending = g_dev['events']['End Morn Bias Dark']
+        else:
+            ending = g_dev['events']['End Eve Bias Dark']      
+        while ephem.now() < ending :   #Do not overrun the window end
+ 
             g_dev['mnt'].park_command({}, {}) # Get there early
-            #g_dev['mnt'].slewToSkyFlatAsync()
+
             print("Expose Biases: b- 1, 2, 3, 4;  300s darks.")
-            dark_time = 600   # NB NB This should be a per bin config specified time.
-            # req = {'time': 0.0,  'script': 'True', 'image_type': 'bias'}
-            # opt = {'area': "Full", 'count': 9, 'bin':'2 2', \
-            #         'filter': 'dark'}
+            dark_time = 360   # NB NB This should be a per bin config specified time.
+
             for bias in range(9):
+                if ephem.now() + 210/86400 > ending:
+                    break
                 req = {'time': 0.0,  'script': 'True', 'image_type': 'bias'}
                 opt = {'area': "Full", 'count': 7, 'bin':'1 1', \
                         'filter': 'dark'}
+                print("Expose b_1")
                 result = g_dev['cam'].expose_command(req, opt, no_AWS=True, \
                                 do_sep=False, quick=False)
+               
                 g_dev['obs'].update_status()
-
-
+                if ephem.now() >=  (dark_time + 30)/86400 > ending:
+                    break                
                 print("Expose d_1 using exposure:  ", dark_time )
                 req = {'time':dark_time ,  'script': 'True', 'image_type': 'dark'}
                 opt = {'area': "Full", 'count':1, 'bin': '1 1', \
@@ -872,10 +880,8 @@ class Sequencer:
                                     do_sep=False, quick=False)
 
                 g_dev['obs'].update_status()
-                
-                if ephem.now() >= g_dev['events']['End Eve Bias Dark']:
+                if ephem.now() + 210/86400 > ending:
                     break
-                
                 print("Expose Biases: b_2")   
                 #dark_time =600
                 #for bias in range(9):
@@ -884,9 +890,10 @@ class Sequencer:
                        'filter': 'dark'}
                 result = g_dev['cam'].expose_command(req, opt, no_AWS=True, \
                                 do_sep=False, quick=False)
+                
                 g_dev['obs'].update_status()
- 
-
+                if ephem.now() >=  (dark_time + 30)/86400 > ending:
+                    break  
                 print("Expose d_2 using exposure:  ", dark_time )
                 req = {'time':dark_time ,  'script': 'True', 'image_type': 'dark'}
                 opt = {'area': "Full", 'count':1, 'bin': '2 2', \
@@ -895,20 +902,19 @@ class Sequencer:
                                     do_sep=False, quick=False)
 
                 g_dev['obs'].update_status()
-
-                if ephem.now() >= g_dev['events']['End Eve Bias Dark']:
+                if ephem.now() + 210/86400 > ending:
                     break
            
                 print("Expose Biases: b_3")   
-                dark_time = 360
+                dark_time = 300
                 #for bias in range(9):
                 req = {'time': 0.0,  'script': 'True', 'image_type': 'bias'}
-                opt = {'area': "Full", 'count': 9, 'bin':'3 3', \
+                opt = {'area': "Full", 'count': 7, 'bin':'3 3', \
                         'filter': 'dark'}
                 result = g_dev['cam'].expose_command(req, opt, no_AWS=True, \
                                 do_sep=False, quick=False)
                 g_dev['obs'].update_status()
-                if ephem.now() >= g_dev['events']['End Eve Bias Dark']:
+                if ephem.now() >=  (dark_time + 30)/86400 > ending:
                     break
                 print("Expose d_3 using exposure:  ", dark_time )
                 req = {'time':dark_time,  'script': 'True', 'image_type': 'dark'}
@@ -919,39 +925,37 @@ class Sequencer:
                 print('Last dark result:  ', result)
                 g_dev['obs'].update_status()
                 
-                if ephem.now() >= g_dev['events']['End Eve Bias Dark']:
+                if ephem.now() + 210/86400 > ending:
                     break
                 print("Expose Biases: b_4") 
-                dark_time = 360
-                for bias in range(9):
-                    req = {'time': 0.0,  'script': 'True', 'image_type': 'bias'}
-                    opt = {'area': "Full", 'count': 7, 'bin':'4 4', \
-                            'filter': 'dark'}
-                    result = g_dev['cam'].expose_command(req, opt, no_AWS=True, \
-                                    do_sep=False, quick=False)
-                    g_dev['obs'].update_status()
-                    if ephem.now() >= g_dev['events']['End Eve Bias Dark']:
-                        break
-    
-                    print("Expose d_4 using exposure:  ", dark_time )
-                    req = {'time':dark_time ,  'script': 'True', 'image_type': 'dark'}
-                    opt = {'area': "Full", 'count':1, 'bin': '4 4', \
-                            'filter': 'dark'} 
-                    result = g_dev['cam'].expose_command(req, opt, no_AWS=True, \
-                                        do_sep=False, quick=False)
-    
-                    g_dev['obs'].update_status()
-
-                if ephem.now() >= g_dev['events']['End Eve Bias Dark']:
+                dark_time = 240
+                #for bias in range(9):
+                req = {'time': 0.0,  'script': 'True', 'image_type': 'bias'}
+                opt = {'area': "Full", 'count': 7, 'bin':'4 4', \
+                        'filter': 'dark'}
+                result = g_dev['cam'].expose_command(req, opt, no_AWS=True, \
+                                do_sep=False, quick=False)
+                
+                g_dev['obs'].update_status()
+                if ephem.now() + (dark_time + 30)/86400 > ending:
                     break
+                print("Expose d_4 using exposure:  ", dark_time )
+                req = {'time':dark_time ,  'script': 'True', 'image_type': 'dark'}
+                opt = {'area': "Full", 'count':1, 'bin': '4 4', \
+                        'filter': 'dark'} 
+                result = g_dev['cam'].expose_command(req, opt, no_AWS=True, \
+                                    do_sep=False, quick=False)
 
-
+                g_dev['obs'].update_status()
+                if ephem.now() + 30/86400 >= ending:
+                    break
 
             print(" Bias/Dark acquisition is finished normally.")
  
 
         self.sequencer_hold = False
-        print("Bias/Dark acquisition has completed.")
+        g_dev['mnt'].park_command({}, {}) # Get there early
+        print("Bias/Dark Phase has passed.")
         return
 
 
@@ -979,7 +983,7 @@ class Sequencer:
         print('Sky Flat sequence Starting, Enclosure PRESUMED Open. Telescope should be on sky flat spot.')
 
         camera_name = str(self.config['camera']['camera_1_1']['name'])
-        flat_count = 7  #20220409  Just to speed things up a bit.
+        flat_count = 11  #20220409  Just to speed things up a bit.
         min_exposure = float(self.config['camera']['camera_1_1']['settings']['min_exposure']) 
         exp_time = min_exposure # added 20220207 WER
         #  NB Sometime, try 2:2 binning and interpolate a 1:1 flat.  This might run a lot faster.
@@ -1008,7 +1012,7 @@ class Sequencer:
 
             g_dev['fil'].set_number_command(current_filter)
             #g_dev['mnt'].slewToSkyFlatAsync()
-            target_flat = 25000
+            target_flat = 30000
             #scale = 1.0    #1.15   #20201121 adjustment
         
             
@@ -1028,11 +1032,11 @@ class Sequencer:
                     except:
                         #print("Redis not running. lux set to 1000.")
                         sky_lux = float(g_dev['ocn'].status['calc_HSI_lux'])
-                    exp_time = prior_scale*scale*25000/(collecting_area*sky_lux*float(g_dev['fil'].filter_data[current_filter][3]))  #g_dev['ocn'].calc_HSI_lux)  #meas_sky_lux)
+                    exp_time = prior_scale*scale*550/(collecting_area*sky_lux*float(g_dev['fil'].filter_data[current_filter][3]))  #g_dev['ocn'].calc_HSI_lux)  #meas_sky_lux)
                     print('Ex:  ', exp_time, scale, prior_scale, sky_lux, float(g_dev['fil'].filter_data[current_filter][3]))
                     #exp_time*= 4.9/9/2
-                    if exp_time > 30:
-                        exp_time = 30    #Live with this limit.
+                    if exp_time > 45:
+                        exp_time = 45    #Live with this limit.
                     if exp_time <0.0001:
                         exp_time = 0.0001
                     exp_time = round(exp_time, 4)
@@ -1056,10 +1060,10 @@ class Sequencer:
                 try:
                     scale *= target_flat /bright           #Note we are scaling the scale
                     print("New scale is:  ", scale)
-                    if scale > 5:
-                        scale = 5
-                    if scale < 0.2:
-                        scale = 0.2
+                    if scale > 10:
+                        scale = 10
+                    if scale < 0.1:
+                        scale = 0.1
                 except:
                     scale = 1.0
 
@@ -1077,8 +1081,8 @@ class Sequencer:
                     acquired_count += 1
                     if acquired_count == flat_count:
                         pop_list.pop(0)
-
-                        prior_scale = 0.7*scale  #Here is where we pre-scale the next filter.
+                        print("SCALE USED *************************:  ", scale)
+                        prior_scale = 1.0  #0.7*scale  #Here is where we pre-scale the next filter. TEMPORARILLY TAKE THIS OUT
                         scale = 1
 
                 obs_win_begin, sunset, sunrise, ephem_now = self.astro_events.getSunEvents()
