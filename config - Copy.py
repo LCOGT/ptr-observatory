@@ -70,8 +70,8 @@ site_config = {
     
     'TZ_database_name':  'America/Denver',
     'mpc_code':  'ZZ24',    # This is made up for now.
-    'time_offset':  -7.0,   # These two keys may be obsolete give the new TZ stuff 
-    'timezone': 'MST',      # This was meant to be coloquial Time zone abbreviation, alternate for "TX_data..."
+    'time_offset':  -6.0,   # These two keys may be obsolete give the new TZ stuff 
+    'timezone': 'MDT',      # This was meant to be coloquial Time zone abbreviation, alternate for "TX_data..."
     'latitude': 35.554298,     # Decimal degrees, North is Positive
     'longitude': -105.870197,   # Decimal degrees, West is negative
     'elevation': 2194,    # meters above sea level
@@ -81,10 +81,10 @@ site_config = {
     'site_in_automatic_default': "Automatic",   # ["Manual", "Shutdown", "Automatic"]
     'automatic_detail_default': "Enclosure is initially set to Shutdown by SAF config.",
     'auto_eve_bias_dark': False,
-    'auto_eve_sky_flat': False ,
+    'auto_eve_sky_flat': True,
     'eve_sky_flat_sunset_offset': +0.0,  # Minutes  neg means before, + after.
-    'auto_morn_sky_flat': False,
-    'auto_morn_bias_dark': False,
+    'auto_morn_sky_flat': True,
+    'auto_morn_bias_dark': True,
     're-calibrate_on_solve': True, 
 
     'observing_conditions' : {     #for SAF
@@ -152,7 +152,7 @@ site_config = {
             'name': 'HomeDome',
             'enc_is_specific':  False, 
             'hostIP':  '10.0.0.10',
-            'driver': 'ASCOMDome.Dome',  # ASCOM.DeviceHub.Dome',  # ASCOM.DigitalDomeWorks.Dome',  #"  ASCOMDome.Dome',
+            'driver': 'ASCOMDome.Dome',  #ASCOMDome.Dome',  # ASCOM.DeviceHub.Dome',  # ASCOM.DigitalDomeWorks.Dome',  #"  ASCOMDome.Dome',
 
             'has_lights':  False,
             'controlled_by': 'mount1',
@@ -193,11 +193,12 @@ site_config = {
             'default_zenith_avoid': 0.0,   # degrees floating, 0.0 means do not apply this constraint.
             'has_paddle': False,       # paddle refers to something supported by the Python code, not the AP paddle.
             'pointing_tel': 'tel1',     # This can be changed to 'tel2'... by user.  This establishes a default.
-            'west_clutch_ra_correction': -0.05323724387608619,  #20220214 Early WER
+            
+            'west_clutch_ra_correction': -0.05323724387608619,
             'west_clutch_dec_correction': 0.3251459235809251,
             'east_flip_ra_correction':   -0.039505313212952586, 
-
-            'east_flip_dec_correction':  -0.39607711292257797, #-0.7193552768006484,  # 356*0.5751/3600,  #Altair was Low and right, so too South and too West.
+            'east_flip_dec_correction':  -0.39607711292257797,
+            
                 'latitude_offset': 0.0,     # Decimal degrees, North is Positive   These *could* be slightly different than site.
                 'longitude_offset': 0.0,   # Decimal degrees, West is negative  #NB This could be an eval( <<site config data>>))
                 'elevation_offset': 0.0,  # meters above sea level
@@ -242,10 +243,10 @@ site_config = {
             'desc':  'Ceravolo 300mm F4.9/F9 convertable',
             'telescop': 'cvagr-0m30-f9-f4p9-001',
             'driver': None,                     # Essentially this device is informational.  It is mostly about the optics.
-            'collecting_area': 31808,
+            'collecting_area': 31808,   #Incorrect actually 32834 so off by 3%
             'obscuration':  0.55,  # Informatinal, already included in collecting_area.
             'aperture': 30,
-            'focal_length': 1470,  # 1470,   #2697,   # Converted to F9, measured 20200905  11.1C
+            'focal_length': 2697,  # 1470,   #2697,   # Converted to F9, measured 20200905  11.1C
             'has_dew_heater':  False,
             'screen_name': 'screen1',
             'focuser_name':  'focuser1',
@@ -316,18 +317,18 @@ site_config = {
             'desc':  'Optec Gemini',
             'driver': 'ASCOM.OptecGemini.Focuser',
 		  'com_port':  None,
-            # F4.9 setup
-            'reference': 5197,    # 20210313  Nominal at 10C Primary temperature
-            'ref_temp':  5.1,    # Update when pinning reference
-            'coef_c': 0,  # 26.055,   # Negative means focus moves out as Primary gets colder
-            'coef_0': 5197,  # Nominal intercept when Primary is at 0.0 C. 
-            'coef_date':  '20211210',    # This appears to be sensible result 44 points -13 to 3C'reference':  6431,    # Nominal at 10C Primary temperature
-            # #F9 setup
-            # 'reference': 4375,    #  Guess 20210904  Nominal at 10C Primary temperature
-            # 'ref_temp':  27.,    # Update when pinning reference
-            # 'coef_c': -78.337,   # negative means focus moves out as Primary gets colder
-            # 'coef_0': 5969,  # Nominal intercept when Primary is at 0.0 C. 
-            # 'coef_date':  '20210903',    # SWAG  OLD: This appears to be sensible result 44 points -13 to 3C
+            # # F4.9 setup
+            # 'reference': 5800,    # 20210313  Nominal at 10C Primary temperature
+            # 'ref_temp':  5.1,    # Update when pinning reference
+            # 'coef_c': 0,  # 26.055,   # Negative means focus moves out as Primary gets colder
+            # 'coef_0': 5800,  # Nominal intercept when Primary is at 0.0 C. 
+            # 'coef_date':  '20220301',    # This appears to be sensible result 44 points -13 to 3C'reference':  6431,    # Nominal at 10C Primary temperature
+            #F9 setup
+            'reference': 5743,    #  Meas   Nominal at 10C Primary temperature
+            'ref_temp':  4.8,    # Update when pinning reference
+            'coef_c': -78.337,   # negative means focus moves out as Primary gets colder
+            'coef_0': 5575,  # Nominal intercept when Primary is at 0.0 C. 
+            'coef_date':  '20220302',    # SWAG 
             'minimum': 0,     # NB this area is confusing steps and microns, and need fixing.
             'maximum': 12600,   #12672 actually
             'step_size': 1,
@@ -369,61 +370,61 @@ site_config = {
             'ip_string': 'http://10.0.0.110',
             "dual_wheel": True,
             'settings': {
-                'filter_count': 40,
+                'filter_count': 42,
                 'home_filter':  1,
                 'default_filter': "w",
                 'filter_reference': 1,   # We choose to use W as the default filter.  Gains taken at F9, Ceravolo 300mm
                 'filter_data': [['filter', 'filter_index', 'filter_offset', 'sky_gain', 'screen_gain', 'generic'],
                         
-                        ['air',  [0,  0], -800, 81.2, [2   ,  20], 'ai'],    # 0.  Gains 20211020 Clear NE sky
-                        ['focus',[7,  0],    0, 72.8, [360 , 170], 'w '],    #38.
-                        ['w',    [7,  0],    0, 72.8, [360 , 170], 'w '],    # 1.
-                        ['up',   [1,  0],    0, 2.97, [2   ,  20], 'up'],    # 2.
-                        ['gp',   [2,  0],    0, 52.5, [.77 ,  20], 'gp'],    # 3.
-                        ['rp',   [3,  0],    0, 14.5, [1.2 ,  20], 'rp'],    # 4.
-                        ['ip',   [4,  0],    0, 3.35, [.65 ,  20], 'ip'],    # 5.
-                        ['z',    [5,  0],    0, .419, [1.0 ,  20], 'zs'],    # 6.
-                        ['zp',   [0,  9],    0, .523, [360 , 170], 'zp'],    # 7.
-                        ['y',    [6,  0],    0, .100, [360 , 170], 'y '],    # 8.
-                        ['EXO',  [8,  0],    0, 34.2, [360 , 170], 'ex'],    # 9.
-                        ['JB',   [9,  0],    0, 32.4, [0.65,  20], 'BB'],    #10.
-                        ['JV',   [10, 0],    0, 23.3, [.32 ,  20], 'BV'],    #11.
-                        ['Rc',   [11, 0],    0, 14.3, [10  , 170], 'BR'],    #12.
-                        ['Ic',   [12, 0],    0, 2.17, [360 , 170], 'BI'],    #13.
-                        ['PL',   [7,  0],    0, 72.7, [360 , 170], 'PL'],    #14.
-                        ['PR',   [0,  8],    0, 11.0, [.32 ,  20], 'PB'],    #15.
-                        ['PG',   [0,  7],    0, 18.6, [30  , 170], 'PG'],    #16.
-                        ['PB',   [0,  6],    0, 42.3, [360 , 170], 'PR'],    #17.
-                        ['NIR',  [0, 10],    0, 3.06, [0.65,  20], 'ni'],    #18.
-                        ['O3',   [0,  2],    0, 1.84, [360 , 170], 'O3'],    #19.
-                        ['HA',   [0,  3],    0, 0.05, [360 , 170], 'HA'],    #20.
-                        ['N2',   [13, 0],    0, 0.04, [360 , 170], 'N2'],    #21.
-                        ['S2',   [0,  4],    0, 0.07, [0.65,  20], 'S2'],    #22.
-                        ['CR',   [0,  5],    0, 0.09, [360 , 170], 'Rc'],    #23.
-                        ['dark', [5,  6],    0, 0.20, [360 , 170], 'dk'],    #24
-                        ['dif',  [0,  1],    0, 0.21, [360 , 170], 'df'],    #25
-                        ['difw',   [7,  1],  0, 300., [0.65,  20], 'dw'],    #26.
-                        ['difup',  [1,  1],  0, 10.5, [0.65,  20], 'du'],    #27.
-                        ['difgp',  [2,  1],  0, 234,  [0.65,  20], 'dg'],    #28.
-                        ['difrp',  [3,  1],  0, 70.0, [0.65,  20], 'dr'],    #29.
-                        ['difip',  [4,  1],  0, 150., [0.65,  20], 'di'],    #30.
-                        ['difz',   [5,  1],  0, 0.73, [0.65,  20], 'ds'],    #31.
-                        ['dify',   [6,  1],  0, 0.15, [0.65,  20], 'dY'],    #32.
-                        ['difEXO', [8,  1],  0, 161., [0.65,  20], 'dx'],    #33.
-                        ['difJB',  [9,  1],  0, 42.5, [0.65,  20], 'dB'],    #34.
-                        ['difJV',  [10, 1],  0, 33.0, [0.65,  20], 'dV'],    #35.
-                        ['difRc',  [11, 1],  0, 22.2, [0.65,  20], 'dR'],    #36.
-                        ['difIc',  [12, 1],  0, 10. , [0.65,  20], 'dI'],    #37.
-                        ['LRGB',   [7,  0],  0, 72.8, [360 , 170], 'LRGB']], #39. valid entries, only 36 useable.
+                        ['air',  [0,  0], -800, 81.6, [2   ,  20], 'ai'],    # 0.  Gains 20211020 Clear NE sky
+                        ['focus',[7,  0],    0, 72.8, [360 , 170], 'w '],    # 1.
+                        ['Lum',  [7,  0],    0, 72.8, [360 , 170], 'w '],    # 2.
+                        ['Red',  [0,  8],    0, 11.0, [360 , 170], 'w '],    # 3.
+                        ['Green',[0 , 7],    0, 18.6, [360 , 170], 'w '],    # 4.
+                        ['Blue', [0,  6],    0, 42.3, [360 , 170], 'w '],    # 5.
+                        ['w',    [7,  0],    0, 74.5, [360 , 170], 'w '],    # 6.
+                        ['up',   [1,  0],    0, 1.39, [2   ,  20], 'up'],    # 7.
+                        ['gp',   [2,  0],    0, 49.4, [.77 ,  20], 'gp'],    # 8.
+                        ['rp',   [3,  0],    0, 17.5, [1.2 ,  20], 'rp'],    # 9.
+                        ['ip',   [4,  0],    0, 5.15, [.65 ,  20], 'ip'],    #10.
+                        ['z',    [5,  0],    0, .855, [1.0 ,  20], 'zs'],    #11.
+                        ['zp',   [0,  9],    0, 1.08, [360 , 170], 'zp'],    #12.
+                        ['y',    [6,  0],    0, .112, [360 , 170], 'y '],    #13.
+                        ['EXO',  [8,  0],    0, 39.7, [360 , 170], 'ex'],    #14.
+                        ['JB',   [9,  0],    0, 28.0, [0.65,  20], 'BB'],    #15.
+                        ['JV',   [10, 0],    0, 24.4, [.32 ,  20], 'BV'],    #16.
+                        ['Rc',   [11, 0],    0, 17.2, [10  , 170], 'BR'],    #17.
+                        ['Ic',   [12, 0],    0, 3.66, [360 , 170], 'BI'],    #18.
+                        ['PL (Lum)',[7,  0], 0, 74.34,[360 , 170], 'PL'],    #19.
+                        ['PR (Red)',[0,  8], 0, 13.7, [.32 ,  20], 'PB'],    #20.
+                        ['PG (Grn)',[0,  7], 0, 24.0, [30  , 170], 'PG'],    #21.
+                        ['PB (Blu)',[0,  6], 0, 37.4, [360 , 170], 'PR'],    #22.
+                        ['NIR',  [0, 10],    0, 5.11, [0.65,  20], 'ni'],    #23.
+                        ['O3',   [0,  2],    0, 1.79, [360 , 170], 'O3'],    #24.
+                        ['HA',   [0,  3],    0, .537, [360 , 170], 'HA'],    #25.
+                        ['N2',   [13, 0],    0, 0.32, [360 , 170], 'N2'],    #26.
+                        ['S2',   [0,  4],    0, .302, [0.65,  20], 'S2'],    #27.
+                        ['CR',   [0,  5],    0, .556, [360 , 170], 'Rc'],    #28.
+                        ['dark', [5,  6],    0, 0.20, [360 , 170], 'dk'],    #29                       ['dif',  [0,  1],    0, 0.21, [360 , 170], 'df'],    #25
+                        ['difw',   [7,  1],  0, 72.6, [0.65,  20], 'dw'],    #30.
+                        ['difup',  [1,  1],  0, 10.5, [0.65,  20], 'du'],    #31.   #NONE OF THESE OR BELOW ARE ACCURATE.
+                        ['difgp',  [2,  1],  0, 234,  [0.65,  20], 'dg'],    #32.
+                        ['difrp',  [3,  1],  0, 70.0, [0.65,  20], 'dr'],    #33.
+                        ['difip',  [4,  1],  0, 150., [0.65,  20], 'di'],    #34.
+                        ['difz',   [5,  1],  0, 0.73, [0.65,  20], 'ds'],    #35.
+                        ['dify',   [6,  1],  0, 0.15, [0.65,  20], 'dY'],    #36.
+                        ['difEXO', [8,  1],  0, 161., [0.65,  20], 'dx'],    #37.
+                        ['difJB',  [9,  1],  0, 42.5, [0.65,  20], 'dB'],    #38.
+                        ['difJV',  [10, 1],  0, 33.0, [0.65,  20], 'dV'],    #39.
+                        ['difRc',  [11, 1],  0, 22.2, [0.65,  20], 'dR'],    #40.
+                        ['difIc',  [12, 1],  0, 10. , [0.65,  20], 'dI']],   #41.
+                        #['LRGB',   [7,  0],  0, 72.8, [360 , 170], 'LRGB']],#42. valid entries, only 36 useable.
                 'filter_screen_sort':  [12, 0, 11, 2, 3, 5, 4, 1, 6],   # don't use narrow yet,  8, 10, 9], useless to try.
                 
                 
-                'filter_sky_sort': [8, 22, 21, 20, 23, 6, 7, 19, 2, 13, 18, 5, 15,\
-                                    12, 4, 11, 16, 10, 9, 17, 3, 14, 1, 0]    #No diffuser based filters  [8, 22, 21, 
-                #'filter_sky_sort': [7, 19, 2, 13, 18, 5, 15,\
-                #                   12, 4, 11, 16, 10, 9, 17, 3, 14, 1, 0]    #basically no diffuser based filters
-                #[32, 8, 22, 21, 20, 23, 31, 6, 7, 19, 27, 2, 37, 13, 18, 30, 5, 15, 36, 12,\
-                 #                  29, 4, 35, 34, 11, 16, 10, 33, 9, 17, 28, 3, 26, 14, 1, 0]                   
+                'filter_sky_sort': [13, 27, 26, 25, 28, 11, 12, 7, 24, 18, 23, 10, 20, 17, 9,\
+                                    21 ,16, 15, 14, 22, 8, 30, 19, 6, 0]    #  No diffuser based filters 
+
 
                                     
             },
@@ -447,7 +448,7 @@ site_config = {
             'name': 'sq002me',      # Important because this points to a server file structure by that name.
             'desc':  'QHY 600Pro',
             'service_date': '20211111',
-            'driver': "ASCOM.QHYCCD.Camera", #"Maxim.CCDCamera",  # "ASCOM.QHYCCD.Camera", ## 'ASCOM.FLI.Kepler.Camera',
+            'driver': "ASCOM.QHYCCD_CAM2.Camera", #"Maxim.CCDCamera",  # "ASCOM.QHYCCD.Camera", ## 'ASCOM.FLI.Kepler.Camera',
             'detector':  'Sony IMX455',
             'manufacturer':  'QHY',
             'use_file_mode':  False,
@@ -477,7 +478,7 @@ site_config = {
                 'y_active': 3194,
                 'x_pixel':  3.76,
                 'y_pixel':  3.76,
-                'pix_scale': 1.0551,     # asec/pixel F9   0.5751  , F4.9  1.0481         
+                'pix_scale': [0.2876, 0.575, 0.863, 1.15],    # asec/pixel F9   0.5751  , F4.9  1.0481         
                 'x_field_deg': 1.3928,   #  round(4784*1.0481/3600, 4),
                 'y_field_deg': 0.9299,   # round(3194*1.0481/3600, 4),
                 'overscan_x': 24,
@@ -489,8 +490,8 @@ site_config = {
                 'max_exposure': 300.0,
                 'can_subframe':  True,
                 'min_subframe':  [128, 128],       
-                'bin_modes':  [[2, 2, 1.06], [1, 1, 0.53], [3, 3, 1.58], [4, 4, 2.11]],   #Meaning no binning choice if list has only one entry, default should be first.
-                'default_bin':  [2, 2, 1.06],    # Matched to seeing situation by owner
+                'bin_modes':  [[2, 2, 0.575], [1, 1, 0.288], [3, 3, 0.863], [4, 4, 1.15]],   #Meaning no binning choice if list has only one entry, default should be first.
+                'default_bin':  [2, 2, 0.575],    # Matched to seeing situation by owner
                 'cycle_time':  [18, 15, 15, 12],  # 3x3 requires a 1, 1 reaout then a software bin, so slower.
                 'rbi_delay':  0.,      # This being zero says RBI is not available, eg. for SBIG.
                 'is_cmos':  True,

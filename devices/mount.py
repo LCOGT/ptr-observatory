@@ -215,7 +215,7 @@ class Mount:
         self.prior_roll_rate = 0
         self.prior_pitch_rate = 0
         self.offset_received = False
-        self.west_clutch_ra_correction = config['mount']['mount1']['west_clutch_ra_correction']   
+        self.west_clutch_ra_correction = config['mount']['mount1']['west_clutch_ra_correction']
         self.west_clutch_dec_correction = config['mount']['mount1']['west_clutch_dec_correction']
         self.east_flip_ra_correction = config['mount']['mount1']['east_flip_ra_correction']
         self.east_flip_dec_correction = config['mount']['mount1']['east_flip_dec_correction']

@@ -870,6 +870,7 @@ class Sequencer:
                                 do_sep=False, quick=False)
                
                 g_dev['obs'].update_status()
+                dark_time = 360
                 if ephem.now() >=  (dark_time + 30)/86400 > ending:
                     break                
                 print("Expose d_1 using exposure:  ", dark_time )
@@ -892,6 +893,7 @@ class Sequencer:
                                 do_sep=False, quick=False)
                 
                 g_dev['obs'].update_status()
+                dark_time = 360
                 if ephem.now() >=  (dark_time + 30)/86400 > ending:
                     break  
                 print("Expose d_2 using exposure:  ", dark_time )
@@ -983,7 +985,7 @@ class Sequencer:
         print('Sky Flat sequence Starting, Enclosure PRESUMED Open. Telescope should be on sky flat spot.')
 
         camera_name = str(self.config['camera']['camera_1_1']['name'])
-        flat_count = 11  #20220409  Just to speed things up a bit.
+        flat_count = 7  #20220409  Just to speed things up a bit.
         min_exposure = float(self.config['camera']['camera_1_1']['settings']['min_exposure']) 
         exp_time = min_exposure # added 20220207 WER
         #  NB Sometime, try 2:2 binning and interpolate a 1:1 flat.  This might run a lot faster.
@@ -1001,7 +1003,7 @@ class Sequencer:
         obs_win_begin, sunset, sunrise, ephem_now = self.astro_events.getSunEvents()
         scale = 1.0
         prior_scale = 1   #THIS will be inhereted upon completion of the prior filter       
-        collecting_area = self.config['telescope']['telescope1']['collecting_area']/32000.
+        collecting_area = self.config['telescope']['telescope1']['collecting_area']/31808.   # SAF at F4.9 is the reference
         #   and (g_dev['events']['Eve Sky Flats'] < 
         while len(pop_list) > 0  and ephem_now < ending:
 
@@ -1022,7 +1024,7 @@ class Sequencer:
                 time.sleep(20)
                 g_dev['obs'].update_status()
                 
-            while (acquired_count < flat_count) and g_dev['enc'].status['shutter_status'] in ['Open', 'open']: # NB NB NB and roof is OPEN! and (ephem_now +3/1440) < g_dev['events']['End Eve Sky Flats' ]:
+            while (acquired_count < flat_count):# and g_dev['enc'].status['shutter_status'] in ['Open', 'open']: # NB NB NB and roof is OPEN! and (ephem_now +3/1440) < g_dev['events']['End Eve Sky Flats' ]:
                 #if g_dev['enc'].is_dome:   #Does not apply
                 g_dev['mnt'].slewToSkyFlatAsync()
                 g_dev['obs'].update_status()
@@ -1032,14 +1034,15 @@ class Sequencer:
                     except:
                         #print("Redis not running. lux set to 1000.")
                         sky_lux = float(g_dev['ocn'].status['calc_HSI_lux'])
-                    exp_time = prior_scale*scale*550/(collecting_area*sky_lux*float(g_dev['fil'].filter_data[current_filter][3]))  #g_dev['ocn'].calc_HSI_lux)  #meas_sky_lux)
+
+                    exp_time = prior_scale*scale*target_flat/(collecting_area*sky_lux*float(g_dev['fil'].filter_data[current_filter][3]))  #g_dev['ocn'].calc_HSI_lux)  #meas_sky_lux)
                     print('Ex:  ', exp_time, scale, prior_scale, sky_lux, float(g_dev['fil'].filter_data[current_filter][3]))
                     #exp_time*= 4.9/9/2
-                    if exp_time > 45:
-                        exp_time = 45    #Live with this limit.
-                    if exp_time <0.0001:
-                        exp_time = 0.0001
-                    exp_time = round(exp_time, 4)
+                    if exp_time > 180:
+                        exp_time = 180    #Live with this limit.
+                    if exp_time <0.00001:
+                        exp_time = 0.00001
+                    exp_time = round(exp_time, 5)
                    # prior_scale = prior_scale*scale  #Only updaate prior scale when changing filters
                     print("Sky flat estimated exposure time, scale are:  ", exp_time, scale)
                 except:
@@ -1058,17 +1061,18 @@ class Sequencer:
                     continue
                 g_dev['obs'].update_status()
                 try:
+
                     scale *= target_flat /bright           #Note we are scaling the scale
                     print("New scale is:  ", scale)
-                    if scale > 10:
-                        scale = 10
-                    if scale < 0.1:
-                        scale = 0.1
+                    if scale > 5000:
+                        scale = 5000
+                    if scale < 0.01:
+                        scale = 0.01
                 except:
                     scale = 1.0
 
                 print('\n\n\n', "Patch/Bright:  ", bright, g_dev['fil'].filter_data[current_filter][0], \
-                      '  Gain: ', round(bright/(2.2*sky_lux*collecting_area*exp_time), 3), '\n\n\n')
+                      '  Gain: ', round(bright/(sky_lux*collecting_area*exp_time), 3), '\n\n\n')
 
                 obs_win_begin, sunset, sunrise, ephem_now = self.astro_events.getSunEvents()
                 #  THE following code looks like a debug patch gone rogue.
@@ -1082,7 +1086,7 @@ class Sequencer:
                     if acquired_count == flat_count:
                         pop_list.pop(0)
                         print("SCALE USED *************************:  ", scale)
-                        prior_scale = 1.0  #0.7*scale  #Here is where we pre-scale the next filter. TEMPORARILLY TAKE THIS OUT
+                        prior_scale = scale     #Here is where we pre-scale the next filter. TEMPORARILLY TAKE THIS OUT
                         scale = 1
 
                 obs_win_begin, sunset, sunrise, ephem_now = self.astro_events.getSunEvents()

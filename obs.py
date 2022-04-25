@@ -792,9 +792,10 @@ class Observatory:
                 if not paths['frame_type'] in ['bias', 'dark', 'flat', 'solar', 'lunar', 'skyflat', 'screen', 'spectrum', 'auto_focus']:
                     try:
                         hdu_save = hdu
+                        pixscale = hdu.header['PIXSCALE']
                         #wpath = 'C:/000ptr_saf/archive/sq01/20210528/reduced/saf-sq01-20210528-00019785-le-w-EX01.fits'
                         time_now = time.time()  #This should be more accurately defined earlier in the header
-                        solve = platesolve.platesolve(wpath, 1.0551)     #0.5478)
+                        solve = platesolve.platesolve(wpath, pixscale)     #0.5478)  #Should pull from header
 
                         print("PW Solves: " ,solve['ra_j2000_hours'], solve['dec_j2000_degrees'])
                         img = fits.open(wpath, mode='update', ignore_missing_end=True)
