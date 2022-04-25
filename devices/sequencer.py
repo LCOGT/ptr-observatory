@@ -1016,7 +1016,7 @@ class Sequencer:
             #scale = 1.0    #1.15   #20201121 adjustment
         
             
-            #breakpoint()
+            breakpoint()
             if not g_dev['enc'].status['shutter_status'] in ['Open', 'open']:
                 print("We expect the roof to be open to take skyflats.")
                 time.sleep(20)

@@ -253,6 +253,7 @@ class Mount:
             print("No mount ref found.")
             pass
         print("Reset Mount Reference.")
+
         self.reset_mount_reference()
         #NB THe paddle needs a re-think and needs to be cast into its own thread. 20200310 WER
         if self.has_paddle:
