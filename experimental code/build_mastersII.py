@@ -916,7 +916,7 @@ if __name__ == '__main__':
     for filt in [ 'w', 'air', 'PL', 'PR', 'PG', 'PB', 'EXO', 'HA', 'N2','S2', 'CR', 'O3', 'up', 'gp', 'rp', 'ip','zp', 'z', 'y', 'JB', 'JV', "JU", 'Rc', 'Ic', \
                  'red', 'green', 'blue', 'focus', 'osc', 'duo', 'quad', 'dif',]:  
 
-        make_master_flat(camera_name, archive_path, lng_path, filt, 'f_2_', 'b_2.fits', 'd_2.fits')
+        make_master_flat(camera_name, archive_path, lng_path, filt, 'f_', 'b_2.fits', 'd_2.fits')
 
     # build_hot_map(camera_name, lng_path, "md_1_1080.fits", "hm_1")
     # build_hot_image(camera_name, lng_path, "md_1_1080.fits", "hm_1.fits")
