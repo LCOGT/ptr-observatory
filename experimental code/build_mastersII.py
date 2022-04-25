@@ -385,7 +385,7 @@ def create_super_flat(input_images, lng_path, super_name, super_bias_name,
     super_image_sigma = []
     num = 0
     inputs = []
-    print('SF:  ', len(input_images), input_images)
+    print('SF:  ', len(input_images))#, input_images)
     try:
         super_bias = ccdproc.CCDData.read(lng_path + super_bias_name, ignore_missing_end=True)
         super_bias = super_bias.add(super_bias.meta['PEDASTAL']*u.adu)
@@ -401,14 +401,12 @@ def create_super_flat(input_images, lng_path, super_name, super_bias_name,
         for img in range(len_input):
             try:
                 try:
-                    if '13561' in input_images[0][img]:
-                        breakpoint()
                     img_in = ccdproc.CCDData.read(input_images[0][img],   format='fits', ignore_missing_end=True)
                     if first_image is None:
                         first_image = img_in
                 except:
                     print("bad input;  ", input_images[0][img])
-                    breakpoint()
+
                     os.remove(input_images[0][img])
                     continue
 
@@ -437,14 +435,19 @@ def create_super_flat(input_images, lng_path, super_name, super_bias_name,
 
                 val = np.median(im.data[int(ix//2) - int(ix//10) : int(ix//2) + int(ix//10), \
                                         int(iy//2) - int(iy//10) : int(iy//2) + int(iy//10)])
-                assert 7500 < val < 32500
+
+                assert 10000 < val < 35000
                 im.data /= val
                 im.data = im.data.astype(np.float32)
                 inputs.append(im)
-                print('Input flat.mean:  ', im.data.mean())
+                print('Input flat mean:  ', im.data.mean())
                 num += 1
             except:
                 print("Defective raw flat:  ", val, input_images[0][img])
+                try:
+                    os.remove(input_images[0][img])
+                except:
+                    pass
         #print(inputs[-1])
         if inputs is not None:
             combiner = Combiner(inputs)
@@ -541,12 +544,14 @@ def make_master_flat (alias, path, lng_path, filt, out_name, super_bias_name, \
     file_list = filter(os.path.isfile,  glob.glob(path +'*fsk_2_'+ filt +'-*'))
     file_list = sorted( file_list, key = os.path.getctime)   #getmtime
 
-    if len(file_list) < 3:
+    if len(file_list) < 5:
+        print("Too few flats in this filter:  ", filt)
         return
     #shuffle(file_list) Do this later
+
     file_list = file_list[:9*9]   #Temporarily limit size of reduction.
-    print('# of files:  ', len(file_list))
-    print(file_list)
+    print('# of ', filt,' files:  ', len(file_list))
+    #print(file_list)
     if len(file_list) > 63:
         file_list = file_list[-76:0]
     if len(file_list) > 11:
@@ -554,7 +559,7 @@ def make_master_flat (alias, path, lng_path, filt, out_name, super_bias_name, \
         if chunk %2 == 0: chunk += 1
     else:
         chunk = len(file_list)
-    if chunk > 11: chunk = 11
+
     print('Chunk size:  ', chunk, len(file_list)//chunk)
     #chunk = 9
     chunked_list = chunkify(file_list, chunk)
@@ -890,7 +895,7 @@ if __name__ == '__main__':
     #archive_path = "D:/000ptr_saf/archive/sq01/2020-06-13/"
     #archive_path = "D:/2020-06-19  Ha and O3 screen flats/"
     coll_path = "F:/ptr/archive/sq002me/20220421/raw/"
-    archive_path = "F:/ptr/archive/sq002me/20220421/calib/"
+    archive_path = "F:/ptr/archive/sq002me/calibs/"
     out_path  ="F:/ptr/archive/sq002me/lng/"
     lng_path = "F:/ptr/archive/sq002me/lng/"
     #debias_and_trim(camera_name, archive_path, '*HA*', out_path)
@@ -898,8 +903,8 @@ if __name__ == '__main__':
     # prepare_tpoint(camera_name, archive_path, '*APPM*',lng_path, out_path)
     # make_master_bias(camera_name, ou['filter']t_path, lng_path, '*f_3*', 'mb_1b.fits')
     keys =  ['filter', 'obstype']
-    ic1 = ImageFileCollection(coll_path, keywords=keys)
-    breakpoint()
+    # ic1 = ImageFileCollection(coll_path, keywords=keys)
+    # breakpoint()
     
     
     # for bias in ['b_4', 'b_3', 'b_2', 'b_1']:
@@ -908,9 +913,10 @@ if __name__ == '__main__':
     # for dark in  ['d_4', 'd_3', 'd_2', 'd_1']:
     #     make_master_dark(camera_name, archive_path,  lng_path, '*' + dark + '*', dark +'.fits', 'b_' + dark[-1]+'.fits')
 
-    for filt in [ 'y', 'zp', 'z', 'HA', 'N2','S2', 'CR', 'O3', 'up', 'gp', 'rp', 'ip', 'JB', 'JV', "JU", 'Rc', 'Ic', 'w', 'air', 'PL', 'PR', 'PG', 'PB', 'EXO', \
+    for filt in [ 'w', 'air', 'PL', 'PR', 'PG', 'PB', 'EXO', 'HA', 'N2','S2', 'CR', 'O3', 'up', 'gp', 'rp', 'ip','zp', 'z', 'y', 'JB', 'JV', "JU", 'Rc', 'Ic', \
                  'red', 'green', 'blue', 'focus', 'osc', 'duo', 'quad', 'dif',]:  
 
+        make_master_flat(camera_name, archive_path, lng_path, filt, 'f_2_', 'b_2.fits', 'd_2.fits')
 
     # build_hot_map(camera_name, lng_path, "md_1_1080.fits", "hm_1")
     # build_hot_image(camera_name, lng_path, "md_1_1080.fits", "hm_1.fits")

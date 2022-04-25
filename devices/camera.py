@@ -637,7 +637,7 @@ class Camera:
         #                                              ['settings']['reference_gain'][bin_x - 1]))
         readout_time = float(self.config['camera'][self.name]['settings']['cycle_time'][bin_x - 1])
         exposure_time = float(required_params.get('time', 0.0001))   #  0.0 may be the best default.  Use QHY min spec?  Config item?
-        exposure_time = min(exposure_time, 1440.)
+        exposure_time = min(exposure_time, 1200.)
         self.estimated_readtime = (exposure_time + readout_time)   #  3 is the outer retry loop maximum.
         #exposure_time = max(0.2, exposure_time)  #Saves the shutter, this needs qualify with imtype.
         imtype= required_params.get('image_type', 'light')
@@ -1240,7 +1240,7 @@ class Camera:
                 #temp so we can do a better thermal compensation.  THis would generally mean taking
                 #occasional biases.
                 
-                #FAT
+                #SRO
                 # elif ix == 4500 and iy == 3600:   #All this code needs to be driven from camera config.
                 #     self.overscan =np.median(self.img) - pedastal
                 #     trimmed = self.img.astype('int32') - 867.
@@ -1290,22 +1290,22 @@ class Camera:
                 #smin = np.where(square < 0)    # finds negative pixels  NB <0 where pedastal is 200. Useless!
 
                 self.t77 = time.time()
-                print('readout, transpose & Trim took:  ', round(self.t77 - self.t4, 1), ' sec,')# marks them as 0
+                #print('readout, transpose & Trim took:  ', round(self.t77 - self.t4, 1), ' sec,')# marks them as 0
                 #Should we consider correcting the image right here with cached bias, dark and hot pixel
                 #processing so downstream processing is reliable.  Maybe only do this for focus?
                 g_dev['obs'].send_to_user("Camera has read-out image.", p_level='INFO')
                 neg_pix = np.where(trimmed < 0)
-                print("negative pixel length:  ", len(neg_pix[0]))
+                #print("Negative pixel count:  ", len(neg_pix[0]))
 
                 trimmed[neg_pix] = 0
                 self.img = trimmed.astype('uint16')
                 
-                print('\n\nMedian of overscan-removed image, minus pedastal:  ', np.median(self.img) - pedastal, '\n\n')
+                print('Median of overscan-removed image, minus pedastal:  ', np.median(self.img) - pedastal, '\n\n')
                 ix, iy = self.img.shape
                 test_saturated = np.array(self.img[ix//3:ix*2//3, iy//3:iy*2//3])  # 1/9th the chip area, but central.
                 bi_mean = round((test_saturated.mean() + np.median(test_saturated))/2, 0)
                 if frame_type[-4:] == 'flat':
-                    if bi_mean >= self.config['camera'][self.name]['settings']['saturate']:
+                    if bi_mean > 40000.:   #self.config['camera'][self.name]['settings']['saturate']:
                         print("Flat rejected, too bright:  ", bi_mean)
                         g_dev['obs'].send_to_user("Flat rejected, too bright.", p_level='INFO')
                         result['error'] = True
@@ -1394,7 +1394,7 @@ class Camera:
                     except:
                         hdu.header['XBINING'] = (1, 'Pixel binning in x direction')
                         hdu.header['YBINING'] = (1, 'Pixel binning in y direction')
-                    hdu.header['CCDSUM']   = (self.ccd_sum, 'Sum of chip binning')
+                    hdu.header['CCDSUM']   = self.ccd_sum
                     # DEH pulls from config; master config will need to include keyword, or this line will need to change
                     
                     hdu.header['RDMODE'] = (self.config['camera'][self.name]['settings']['read_mode'], 'Camera read mode')
@@ -1651,14 +1651,18 @@ class Camera:
 
                     try: #  NB relocate this to Expose entry area.  Fill out except.  Might want to check on available space.
                         im_path_r = self.camera_path
+                        os.makedirs(im_path_r + '/calibs/', exist_ok=True)
                         os.makedirs(im_path_r + g_dev['day'] + '/to_AWS/', exist_ok=True)
                         os.makedirs(im_path_r + g_dev['day'] + '/raw/', exist_ok=True)
+                        os.makedirs(im_path_r + g_dev['day'] + '/focus/', exist_ok=True)
                         os.makedirs(im_path_r + g_dev['day'] + '/calib/', exist_ok=True)
                         os.makedirs(im_path_r + g_dev['day'] + '/reduced/', exist_ok=True)
                         im_path   = im_path_r + g_dev['day'] + '/to_AWS/'
                         raw_path  = im_path_r + g_dev['day'] + '/raw/'
                         cal_path  = im_path_r +  g_dev['day'] +'/calib/'
+                        focus_path  = im_path_r +  g_dev['day'] +'/focus/'
                         red_path  = im_path_r + g_dev['day'] + '/reduced/'
+                        calibs_path = im_path_r + '/calibs/'
 
                     except:
                         pass
@@ -1698,11 +1702,11 @@ class Camera:
                         self.enqueue_image(db_data_size, im_path, db_name)
                         self.enqueue_image(raw_data_size, im_path, raw_name01)
                     '''
-                    #breakpoint()
+
                     if focus_image and not solve_it:
                         #Note we do not reduce focus images, except above in focus processing.
                         cal_name = cal_name[:-9] + 'F012' + cal_name[-7:]  # remove 'EX' add 'FO'   Could add seq to this
-                        hdu.writeto(cal_path + cal_name, overwrite=True)
+                        hdu.writeto(focus_path + cal_name, overwrite=True)
                         focus_image = False
 
                         # result = {}
@@ -1713,7 +1717,7 @@ class Camera:
                     if focus_image and solve_it :
 
                         cal_name = cal_name[:-9] + 'FF' + cal_name[-7:]  # remove 'EX' add 'FO'   Could add seq to this
-                        hdu.writeto(cal_path + cal_name, overwrite=True)
+                        hdu.writeto(focus_path + cal_name, overwrite=True)
                         focus_image = False
                         try:
                             #wpath = 'C:/000ptr_saf/archive/sq01/20210528/reduced/saf-sq01-20210528-00019785-le-w-EX01.fits'
@@ -1736,7 +1740,7 @@ class Camera:
                             # self.exposure_busy = False
                             return result
                         except:
-                            print(cal_path + cal_name, "  was not solved, marking to skip in future, sorry!")
+                            #print(cal_path + cal_name, "  was not solved, marking to skip in future, sorry!")
                             #g_dev['mnt'].reset_last_reference()
 
                             # result = {}
@@ -1751,14 +1755,9 @@ class Camera:
 
                     # if  not script in ('True', 'true', 'On', 'on'):   #  not quick and    #Was moved 20201022 for grid
                     #     if not quick:
-                    self.enqueue_for_AWS(text_data_size, im_path, text_name)
-                    self.to_reduce((paths, hdu))
-                    hdu.writeto(raw_path + raw_name00, overwrite=True)   #Save full raw file locally
-                    g_dev['obs'].send_to_user("Raw image saved locally. ", p_level='INFO')
-
                     if frame_type in ('bias', 'dark', 'screenflat', 'skyflat'):
                         if not self.hint[0:54] == 'Flush':
-                            hdu.writeto(cal_path + cal_name, overwrite=True)
+                            hdu.writeto(calibs_path + cal_name, overwrite=True)
                         else:
                             pass
                         try:
@@ -1769,8 +1768,26 @@ class Camera:
                                 'calc_sky': 0}  #avg_ocn[7]}
                         self.exposure_busy = False
                         return result #  Note we are not calibrating. Just saving the file.
-                    # elif frame_type in ['light']:
-                    #     self.enqueue_for_AWS(reduced_data_size, im_path, red_name01)
+                    self.enqueue_for_AWS(text_data_size, im_path, text_name)
+                    self.to_reduce((paths, hdu))
+                    hdu.writeto(raw_path + raw_name00, overwrite=True)   #Save full raw file locally
+                    g_dev['obs'].send_to_user("Raw image saved locally. ", p_level='INFO')
+
+                    # if frame_type in ('bias', 'dark', 'screenflat', 'skyflat'):
+                    #     if not self.hint[0:54] == 'Flush':
+                    #         hdu.writeto(cal_path + cal_name, overwrite=True)
+                    #     else:
+                    #         pass
+                    #     try:
+                    #         os.remove(self.camera_path + 'newest.fits')
+                    #     except:
+                    #         pass    #  print ("File newest.fits not found, this is probably OK")
+                    #     result = {'patch': bi_mean,
+                    #             'calc_sky': 0}  #avg_ocn[7]}
+                    #     self.exposure_busy = False
+                    #     return result #  Note we are not calibrating. Just saving the file.
+                    # # elif frame_type in ['light']:
+                    # #     self.enqueue_for_AWS(reduced_data_size, im_path, red_name01)
 
                    #print("\n\Finish-Exposure is complete, saved:  " + raw_name00)#, raw_data_size, '\n')
                     g_dev['obs'].update_status()
