@@ -73,7 +73,7 @@ screen_flat_PB = None
 screen_flat_EXO = None
 screen_flat_dif = None
 #
-saf_2 = None
+
 sky_flat_w = None
 sky_flat_air = None
 sky_flat_JU= None
@@ -162,7 +162,7 @@ def calibrate (hdu, lng_path, frame_type='light', quick=False):
         screen_flat_JB, screen_flat_JV, screen_flat_Rc, screen_flat_Ic, screen_flat_up, screen_flat_gp, screen_flat_rp, screen_flat_ip, \
         screen_flat_zp, screen_flat_z, screen_flat_y, screen_flat_O3, screen_flat_HA, screen_flat_N2, screen_flat_S2, screen_flat_EXO, \
         screen_flat_PL ,screen_flat_PB, screen_flat_PG, screen_flat_PR, screen_flat_NIR,  screen_flat_CR, screen_flat_dif,  \
-        dark_exposure_level, super_dark_2_long, dark_2_exposure_level, saf_2
+        dark_exposure_level, super_dark_2_long, dark_2_exposure_level
     loud = False
     if not quick:
 #breakpoint()
@@ -450,17 +450,6 @@ def calibrate (hdu, lng_path, frame_type='light', quick=False):
                 quick_flat_CR = False
                 if loud: print('WARN: No CR Flat/Lum Loaded.')
 
-        # if screen_flat_CR is None:
-        #     try:
-        #         sfHdu = fits.open(lng_path + 'f_2_CR.fits')
-        #         screen_flat_CR = sfHdu[0].data.astype('float32')
-        #         quick_flat_CR = True
-        #         sfHdu.close()
-        #         if loud: print(lng_path + 'f_2_CR.fits', 'Loaded')
-        #     except:
-        #         quick_flat_CR = False
-        #         if loud: print('WARN: No CR Flat/Lum Loaded.')
-
         if screen_flat_PL is None:
             try:
                 sfHdu = fits.open(lng_path + 'f_2_PL.fits')
@@ -550,10 +539,10 @@ def calibrate (hdu, lng_path, frame_type='light', quick=False):
                 hot_map = shHdu[0].data
                 hot_pix = np.where(hot_map > 1)
                 apply_hot = True
-                print(lng_path + 'h_2.fits', 'Loaded')
+                if loud: print(lng_path + 'h_2.fits', 'Loaded')
             except:
                 apply_hot = False
-                print('WARN: No Hot Map Bin 2 Loaded.')
+                if loud: print('WARN: No Hot Map Bin 2 Loaded.')
 
 
     while True:   #Use break to drop through to exit.  i.e., do not calibrate frames we are acquring for calibration.
@@ -583,6 +572,7 @@ def calibrate (hdu, lng_path, frame_type='light', quick=False):
 # #           NB NB NB For the moment we have limited bin 1 and sub-frame calibrations
 # # =============================================================================
 # =============================================================================
+
         if frame_type in ['bias']:
             break    #  Do not bias calibrate a bias. 
 
@@ -698,35 +688,36 @@ def calibrate (hdu, lng_path, frame_type='light', quick=False):
             elif img_filter in ['EXO', 'exo', 'Exo']:
                 do_flat = True
                 scr_flat = screen_flat_EXO
-            # elif img_filter in ['air', 'AIR', 'Air']:   #Temp we do not do this
-            #     do_flat = True
-            #     scr_flat = screen_flat_air
+            elif img_filter in ['air', 'AIR', 'Air']:   #Temp we do not do this
+                do_flat = True
+                scr_flat = screen_flat_air
             elif img_filter in ['dif', 'DIF', 'Dif']:
                 do_flat = True
                 scr_flat = screen_flat_dif
             else:
                 do_flat = False
     #breakpoint()
-            try: 
+            # try: 
                 
-                print('Entering Air flat field calculation.')
-                if saf_2 is not None:
-                    try:
-                        wrong = np.where(saf_2 <= 0.01)
-                        saf_2[wrong] = 0.01
-                        img = img/saf_2
-                        cal_string +=', SAF_2'
-                    except:
-                        print('Dividing by None not a good idea.')
-                        pass
-            except:
-                print("saf_2 flat math failed.")
-            if not quick: 
-                if loud:  print('QuickFlat result:  ', imageStats(img, loud))
+            #     print('Entering Air flat field calculation.')
+            #     if saf_2 is not None:
+            #         try:
+            #             wrong = np.where(saf_2 <= 0.01)
+            #             saf_2[wrong] = 0.01
+            #             img = img/saf_2
+            #             cal_string +=', SAF_2'
+            #         except:
+            #             print('Dividing by None not a good idea.')
+            #             pass
+            # except:
+            #     print("saf_2 flat math failed.")
+            # if not quick: 
+            #     if loud:  print('QuickFlat result:  ', imageStats(img, loud))
+
         if do_flat and binning == 2: # and not g_dev['seq'].active_script == 'make_superscreenflats':
             try: 
                 
-                print('Entering flat field calculation.')
+                #print('Entering flat field calculation.')
                 if scr_flat is not None:
                     try:
                         wrong = np.where(scr_flat <= 0.01)

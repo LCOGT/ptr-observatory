@@ -613,7 +613,7 @@ class Camera:
         try:
             bin_x = eval(bin_x)[:2]   #This is meant to strip off the Pixel size when it comes in from aws.
         except:
-            print('Bin eval did not work, no harm usually.')
+            pass#print('Bin eval did not work, no harm usually.')
         if bin_x in ['4 4', 4, '4, 4', '4,4', [4, 4], (4, 4)]:     # For now this is the highest level of binning supported.
             bin_x = 4
             self.ccd_sum = '4 4'
@@ -1117,8 +1117,8 @@ class Camera:
     def finish_exposure(self, exposure_time, frame_type, counter, seq, \
                         gather_status=True, do_sep=False, no_AWS=False, start_x=None, start_y=None, quick=False, \
                         low=0, high=0, script='False', opt=None, solve_it=False):
-        print("Finish exposure Entered:  ", exposure_time, frame_type, 'to go: ', counter, \
-              gather_status, do_sep, no_AWS, start_x, start_y, opt['area'])
+        print("Finish exposure Entered:  ", exposure_time, frame_type, 'to go: ', counter, opt['area'])
+              #gather_status, do_sep, no_AWS, start_x, start_y, opt['area'])
 
         self.status_time = time.time() + 10
         self.post_mnt = []
@@ -1184,7 +1184,7 @@ class Camera:
                     self.img = np.array(self.camera.ImageArray)
                     self.img = self.img.astype('int32')
                     self.t4p5 = time.time()#As read, this is a Windows Safe Array of Longs
-                    print("\n\nMedian of incoming image:  ", np.median(self.img), '\n\n')
+                    #print("\n\nMedian of incoming image:  ", np.median(self.img), '\n\n')
 
                     ###self.img = np.array(self.img_safe) # _untransposed   incoming is (4800,3211) for QHY600Pro 2:2 Bin
                     #print(self.img_untransposed.shape)
@@ -1211,7 +1211,11 @@ class Camera:
                 elif ix == 4800:
                     self.dark_region = np.median(self.img[0:11, :-17])
                     self.overscan = np.median(self.img[12:, -17:])
-                    trimmed = self.img[12:, :-17].astype('int32') + pedastal - self.overscan
+
+                    if self.config['site'] =='mrc' and frame_type not in ('bias', 'dark', 'screenflat', 'skyflat'):
+                        trimmed = self.img[16:, :-17].astype('int32') + pedastal - self.overscan   #NB NB Temporary hack so old calibs work.
+                    else:
+                        trimmed = self.img[12:, :-17].astype('int32') + pedastal - self.overscan
                 elif ix == 3200:
                     self.dark_region = np.median(self.img[0:7, :-11])
                     self.overscan = np.median(self.img[8:, -11:]) 
@@ -1278,8 +1282,8 @@ class Camera:
                 else:
                     print("UNSUPPORTED BINNING OR CAMERA!!", ix, iy)
                     trimmed = self.img
-                print("Mean, Median. Mode, Dark, Overscan:  ", trimmed.mean(), np.median(trimmed), \
-                       stats.mode(trimmed, axis=None), self.dark_region, self.overscan)
+                #print("Mean, Median. Mode, Dark, Overscan:  ", trimmed.mean(), np.median(trimmed), \
+                #      stats.mode(trimmed, axis=None), self.dark_region, self.overscan)
                     
 
 
@@ -1300,7 +1304,7 @@ class Camera:
                 trimmed[neg_pix] = 0
                 self.img = trimmed.astype('uint16')
                 
-                print('Median of overscan-removed image, minus pedastal:  ', np.median(self.img) - pedastal, '\n\n')
+                print('Median of overscan-removed image:  ', np.median(self.img) - pedastal, '\n\n')
                 ix, iy = self.img.shape
                 test_saturated = np.array(self.img[ix//3:ix*2//3, iy//3:iy*2//3])  # 1/9th the chip area, but central.
                 bi_mean = round((test_saturated.mean() + np.median(test_saturated))/2, 0)

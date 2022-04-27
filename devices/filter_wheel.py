@@ -14,6 +14,7 @@ class FilterWheel:
         g_dev['fil']= self
         self.config = config['filter_wheel']
         #print("FW:  ", self.config)
+     
         self.dual_filter = self.config['filter_wheel1']['dual_wheel']
         self.ip = str(self.config['filter_wheel1']['ip_string'])
         self.filter_data = self.config['filter_wheel1']['settings']['filter_data'][1:]  #  Stips off column heading entry
@@ -392,11 +393,11 @@ class FilterWheel:
                 filt_pointer = match
                 break
         print('Filter name is:  ', self.filter_data[match][0])
-        print('Filter pointer:  ', filt_pointer)
+        #print('Filter pointer:  ', filt_pointer)
         self.filter_number = filt_pointer
         self.filter_selected = filter_name
         filter_selections = self.filter_data[filt_pointer][1]
-        print('Selections:  ', filter_selections)
+        #print('Selections:  ', filter_selections)
         self.filter_offset = float(self.filter_data[filt_pointer][2])
         if self.dual and self.custom:
             r0 = self.r0

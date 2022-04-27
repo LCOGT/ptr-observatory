@@ -992,6 +992,7 @@ class Sequencer:
         if flat_count < 1: flat_count = 1
         #  Pick up list of filters is sky flat order of lowest to highest transparency.
         pop_list = self.config['filter_wheel']['filter_wheel1']['settings']['filter_sky_sort'].copy()
+
         if morn:
             pop_list.reverse()
             print('filters by high to low transmission:  ', pop_list)
@@ -1026,7 +1027,7 @@ class Sequencer:
                 
             while (acquired_count < flat_count):# and g_dev['enc'].status['shutter_status'] in ['Open', 'open']: # NB NB NB and roof is OPEN! and (ephem_now +3/1440) < g_dev['events']['End Eve Sky Flats' ]:
                 #if g_dev['enc'].is_dome:   #Does not apply
-                g_dev['mnt'].slewToSkyFlatAsync()
+                #g_dev['mnt'].slewToSkyFlatAsync()
                 g_dev['obs'].update_status()
                 try:
                     try:

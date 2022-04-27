@@ -56,8 +56,8 @@ site_config = {
     'debug_site_mode': False,
     #'owner':  ['google-oauth2|102124071738955888216'],  # Neyle
     'owner':  ['google-oauth2|112401903840371673242'],  # Wayne
-    'owner_alias': ['WER'],
-    'admin_aliases': ["ANS", "WER", "TB", "DH", "KVH", "KC"],
+    'owner_alias': ['WER', 'TELOPS'],
+    'admin_aliases': ["ANS", "WER", "TELOPS", "TB", "DH", "KVH", "KC"],
     
 #From FAT:
     'client_hostname':  'MRC-0m35',
@@ -66,12 +66,15 @@ site_config = {
     'archive_path':  'Q:/',
     'wema_is_active':  True,          # True if the split computers used at a site.
     'wema_hostname': 'MRC-WMS-ENC',   # Prefer the shorter version
-    'wema_share_path':  'Q:/ptr/',  # '/wema_transfer/',
+    'wema_path':  'Q:/ptr/',  # '/wema_transfer/',
     'dome_on_wema':   True,
+    'site_IPC_mechanism':  'redis',   # ['None', shares', 'shelves', 'redis']  Pick One
+    'wema_write_share_path':  None,  # Meant to be where Wema puts status data.
+    'client_read_share_path':  None,
     'redis_ip': '10.15.0.109',  #'127.0.0.1', None if no redis path present, 
     'site_is_generic':  False,   # A simply  single computer ASCOM site.
     'site_is_specific':  False,  # Indicates some special code for this site, found at end of config.
-    'site_IPC_mechanism':  'shares',   # ['None', shares', 'shelves', 'redis']  Pick One
+    
     # 'aux_archive_path':  None, # '//house-computer/saf_archive_2/archive/',  #  Path to auxillary backup disk.     
 
 
@@ -98,10 +101,10 @@ site_config = {
     'site_in_automatic_default': "Automatic",   #"Manual", "Shutdown"
     'automatic_detail_default': "Enclosure is set to Automatic mode.",
     
-    'auto_eve_bias_dark': False,
-    'auto_eve_sky_flat': False,
-    'auto_morn_sky_flat': False,
-    'auto_morn_bias_dark':False,
+    'auto_eve_bias_dark': True,
+    'auto_eve_sky_flat': True,
+    'auto_morn_sky_flat': True,
+    'auto_morn_bias_dark': True,
     're-calibrate_on_solve': True, 
     'defaults': {
         'observing_conditions': 'observing_conditions1',
@@ -229,10 +232,10 @@ site_config = {
             'shutdown_script':  None,  
             'alignment': 'Alt-Az',
             'default_zenith_avoid': 7.0,   #degrees floating
-            'east_ra_correction': 0.0,
-            'east_dec_correction': 0.0,
-            'west_ha_correction_r': 0.0,
-            'west_dec_correction_r': 0.0,
+            'west_clutch_ra_correction': 0.0,
+            'west_clutch_dec_correction': 0.0,
+            'east_flip_ra_correction': 0.0,
+            'east_flip_dec_correction': 0.0,
             'has_paddle': False,
             'pointing_tel': 'tel1',
             'Selector':{
@@ -325,7 +328,7 @@ site_config = {
             'startup_script':  None,
             'recover_script':  None,
             'shutdown_script':  None,  
-            'collecting_area':  43042.0,
+            'collecting_area':  76147,    #178*178*math.pi*0.765
             'obscuration':  23.5,
             'aperture': 356,
             'f-ratio':  7.2,   #This and focal_length can be refined after a solve.
@@ -511,8 +514,8 @@ site_config = {
             "parent": "telescope1",
             "alias": "Dual filter wheel",
             "desc":  'FLI Centerline Custom Dual 50mm sq.',
-            'driver": ['ASCOM.FLI.FilterWheel1', 'ASCOM.FLI.FilterWheel2'],   #"Maxim",   #
-            "driver": "Maxim.CCDCamera",  #  'ASCOM.FLI.FilterWheel',   #'MAXIM',
+            #"driver": ['ASCOM.FLI.FilterWheel1', 'ASCOM.FLI.FilterWheel2'],   #"Maxim",   #
+            "driver":   'ASCOM.FLI.FilterWheel',   #  NB THIS IS THE NEW DRIVER FROM peter.oleynikov@gmail.com  
             "dual_wheel": True,
             # "parent": "telescope1",
             # "alias": "CWL2",
@@ -601,23 +604,20 @@ site_config = {
         #'default': 'camera_1_1',
         'camera_1_1': {
             'parent': 'telescope1',
-            'name': 'sq0003',      #Important because this points to a server file structure by that name.
+            'name': 'sq003',      #Important because this points to a server file structure by that name.
             'desc':  'QHY 600M Pro',
             'driver':  "ASCOM.QHYCCD.Camera", #"Maxim.CCDCamera",   #'ASCOM.FLI.Kepler.Camera', "ASCOM.QHYCCD.Camera",   #
             'detector':  'Sony IMX455',
             'manufacturer':  'QHY',
             'use_file_mode':  False,
             'file_mode_path':  'D:/archive/sq01/maxim/',
-            #<index>    CCDSUM = '1 1'        CCDSUM = '2 2'         CCDSUM = '3 3'      ccdsum = '4 4'
-            'biassec':  ['[1:9600, 1:6388]', '[1:4800, 3195:3211]', '[1:3200, 1:2129]', '[1:2400, 1:1597]'],
-            'datasec':  ['[25:9600, 1:6388]', '[1:4800, 1:3194]', '[9:3200, 1:2129]', '[7:2400, 1:1597]'],
-            'detsec':  '[1:9600, 1:6388]',
-            'ccdsec':  '[1:9600, 1:6388]',
-            'detsize': '[1:9600, 1:6388]',  # Physical chip data size as reutrned from driver
-            'trimsec':  ['[1:9576, 1:6388]', '[13:4800, 1:3194]', '[1:3192, 1:2129]', '[1:2394, 1:1597]'],
+            'detsize': '[1:9600, 1:6422]',  # Physical chip data size as reutrned from driver
+            'ccdsec': '[1:9600, 1:6422]',
+            'biassec': ['[1:24, 1:6388]', '[1:12, 1:3194]', '[1:8, 1:2129]', '[1:6, 1:1597]'],
+            'datasec': ['[25:9600, 1:6388]', '[13:4800, 1:3194]', '[9:3200, 1:2129]', '[7:2400, 1:1597]'],
+            'trimsec': ['[1:9576, 1:6388]', '[1:4788, 1:3194]', '[1:3192, 1:2129]', '[1:2394, 1:1597]'],
             
-             'detsize': '[1:9600, 1:6388]',  # Physical chip data size as reutrned from driver
-            'ccdsec': '[1:9600, 1:6388]',           
+            
             
             'settings': {
                 'temp_setpoint': -25,
@@ -638,9 +638,9 @@ site_config = {
                 'y_active': 3194,
                 'x_pixel':  3.76,
                 'y_pixel':  3.76,
-                'pix_scale': 0.6116369648949599,
-                'x_field_deg': round(4784*0.6116369648949599/3600, 4),   #49 X 32.6            
-                'y_field_deg': round(3194*0.6116369648949599/3600, 4),  #AMIN  3MIN X 0.5 DEG  
+                'pix_scale': 0.605194,    #   bin-2  2* math.degrees(math.atan(3.76/2563000))*3600
+                'x_field_deg': round(4784*0.605194/3600, 4),   #48 X 32 AMIN  3MIN X 0.5 DEG  
+                'y_field_deg': round(3194*0.605194/3600, 4),
                 'overscan_x': 24,
                 'overscan_y': 34,
                 'north_offset': 0.0,    #  These three are normally 0.0 for the primary telescope
@@ -654,12 +654,12 @@ site_config = {
                 'rbi_delay':  0,      # This being zero says RBI is not available, eg. for SBIG.
                 'is_cmos':  True,
                 'can_set_gain':  True,
-                'reference_gain': [1.3, 2.6, 3.9, 5.2],     #One val for each binning.
+                'reference_gain': [1.3, 2.6, 3.9, 5.2],     #???  One val for each binning. Assumed digitalsumming in camera???
                 'reference_noise': [6, 6, 6, 6],    #  NB Guess
                 'reference_dark': [.2, .8, 1.8, 3.2],  #  Guess
                 'max_linearity':  60000,   # Guess
                 'saturate':  65300,
-                'fullwell_capacity': [80000, 32000, 720000, 1280000],
+                'fullwell_capacity': [80000, 320000, 720000, 1280000],
                 'read_mode':  'Normal',
                 'readout_mode': 'Normal',
                 'readout_speed':  50,
