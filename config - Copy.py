@@ -80,7 +80,7 @@ site_config = {
     
     'site_in_automatic_default': "Automatic",   # ["Manual", "Shutdown", "Automatic"]
     'automatic_detail_default': "Enclosure is initially set to Shutdown by SAF config.",
-    'auto_eve_bias_dark': False,
+    'auto_eve_bias_dark': True,
     'auto_eve_sky_flat': True,
     'eve_sky_flat_sunset_offset': +0.0,  # Minutes  neg means before, + after.
     'auto_morn_sky_flat': True,
@@ -246,7 +246,7 @@ site_config = {
             'collecting_area': 31808,   #Incorrect actually 32834 so off by 3%
             'obscuration':  0.55,  # Informatinal, already included in collecting_area.
             'aperture': 30,
-            'focal_length': 2697,  # 1470,   #2697,   # Converted to F9, measured 20200905  11.1C
+            'focal_length': 1470,  # 1470,   #2697,   # Converted to F9, measured 20200905  11.1C
             'has_dew_heater':  False,
             'screen_name': 'screen1',
             'focuser_name':  'focuser1',
@@ -478,9 +478,9 @@ site_config = {
                 'y_active': 3194,
                 'x_pixel':  3.76,
                 'y_pixel':  3.76,
-                'pix_scale': [0.2876, 0.575, 0.863, 1.15],    # asec/pixel F9   0.5751  , F4.9  1.0481         
-                'x_field_deg': 1.3928,   #  round(4784*1.0481/3600, 4),
-                'y_field_deg': 0.9299,   # round(3194*1.0481/3600, 4),
+                'pix_scale': [0.528, 1.055, 1.583, 2.110],  #[0.2876, 0.575, 0.863, 1.15], #F9        [0.528, 1.055, 1.583, 2.110] F4.9
+                'x_field_deg': 1.042,   #  round(4784*1.055/3600, 4),
+                'y_field_deg': 0.936,   # round(3194*1.055/3600, 4),
                 'overscan_x': 24,
                 'overscan_y': 3,
                 'north_offset': 0.0,    # These three are normally 0.0 for the primary telescope
@@ -490,8 +490,8 @@ site_config = {
                 'max_exposure': 300.0,
                 'can_subframe':  True,
                 'min_subframe':  [128, 128],       
-                'bin_modes':  [[2, 2, 0.575], [1, 1, 0.288], [3, 3, 0.863], [4, 4, 1.15]],   #Meaning no binning choice if list has only one entry, default should be first.
-                'default_bin':  [2, 2, 0.575],    # Matched to seeing situation by owner
+                'bin_modes':  [[2, 2, 1.06], [1, 1, 0.53], [3, 3, 1.58], [4, 4,2.11]],   #Meaning no binning choice if list has only one entry, default should be first.
+                'default_bin':  [2, 2, 1.06],    # Matched to seeing situation by owner
                 'cycle_time':  [18, 15, 15, 12],  # 3x3 requires a 1, 1 reaout then a software bin, so slower.
                 'rbi_delay':  0.,      # This being zero says RBI is not available, eg. for SBIG.
                 'is_cmos':  True,
