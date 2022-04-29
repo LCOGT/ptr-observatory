@@ -393,6 +393,7 @@ class FilterWheel:
                 filt_pointer = match
                 break
         print('Filter name is:  ', self.filter_data[match][0])
+        g_dev['obs'].send_to_user('Filter set to:  ' + str(self.filter_data[match][0]))
         #print('Filter pointer:  ', filt_pointer)
         self.filter_number = filt_pointer
         self.filter_selected = filter_name

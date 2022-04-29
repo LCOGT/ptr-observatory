@@ -181,7 +181,7 @@ class Observatory:
         self.name = name      # NB NB NB Names needs a once-over.
         self.site_name = name
         self.config = config
-       
+        
         self.site = config['site']
         if self.config['wema_is_active']:
             self.hostname = self.hostname = socket.gethostname()
@@ -202,6 +202,7 @@ class Observatory:
             g_dev['site_path'] = self.site_path
             g_dev['wema_share_path']  = self.site_path  # Just to be safe.
             self.wema_path = g_dev['wema_share_path'] 
+        g_dev['obs'] = self
         if self.config['site_is_specific']:
              self.site_is_specific = True
         else:
@@ -363,7 +364,9 @@ class Observatory:
                 # Add the instantiated device to the collection of all devices.
                 self.all_devices[dev_type][name] = device
                 # NB 20200410 This dropped out of the code: self.all_devices[dev_type][name] = [device]
-        print("Finished creating devices.")
+        #print("Finished creating devices.")
+
+        g_dev['obs'].send_to_user("Finished creating devices.", p_level='INFO')
 
 
     def update_config(self):
@@ -716,7 +719,8 @@ class Observatory:
                 with open(im_path + name, 'rb') as f:
                     files = {'file': (im_path + name, f)}
                     #if name[-3:] == 'jpg':
-                    print('--> To AWS -->', str(im_path + name))
+                    #print('--> To AWS -->', str(im_path + name))
+                    g_dev['obs'].send_to_user('--> To AWS -->  ' + str(im_path + name), p_level='INFO')
                     requests.post(aws_resp['url'], data=aws_resp['fields'],
                                   files=files)
                 if name[-3:] == 'bz2' or name[-3:] == 'jpg' or \
@@ -728,8 +732,9 @@ class Observatory:
             else:
                 time.sleep(0.2)
                 
-    def send_to_user(self, p_log, p_level='INFO'):
+    def send_to_user(self, p_log, p_level='INFO', indent=0, color='wht'):
         url_log = "https://logs.photonranch.org/logs/newlog"
+        print(str(p_log))
         body = json.dumps({
             'site': self.config['site'],
             'log_message':  str(p_log),

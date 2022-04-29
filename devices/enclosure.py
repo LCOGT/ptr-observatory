@@ -297,7 +297,8 @@ class Enclosure:
                 self.prior_status = status
                 g_dev['enc'].status = status
             else:
-                breakpoint()
+                pass
+                #breakpoint()
             self.status = status
             g_dev['enc'].status = status
             return status
@@ -564,7 +565,7 @@ class Enclosure:
         if mnt_command is not None and mnt_command != '' and mnt_command != ['none']:
 
             try:
-                breakpoint()
+                #breakpoint()
                 #print( mnt_command)
                 # adj1 = dome_adjust(mount_command['altitude'], mount_command['azimuth'], \
                 #                   mount_command['hour_angle'])

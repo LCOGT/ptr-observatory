@@ -1117,14 +1117,18 @@ class Camera:
     def finish_exposure(self, exposure_time, frame_type, counter, seq, \
                         gather_status=True, do_sep=False, no_AWS=False, start_x=None, start_y=None, quick=False, \
                         low=0, high=0, script='False', opt=None, solve_it=False):
-        print("Finish exposure Entered:  ", exposure_time, frame_type, 'to go: ', counter, opt['area'])
+        #print("Finish exposure Entered:  ", exposure_time, frame_type, 'to go: ', counter, opt['area'])
               #gather_status, do_sep, no_AWS, start_x, start_y, opt['area'])
+        if counter > 1:
+            g_dev['obs'].send_to_user("Finish count " + str(int(counter)) + "; "  + str(exposure_time) + "sec exposures;  area = " + opt['area'], p_level="INFO")
+        else:
+            g_dev['obs'].send_to_user("Finish one "  + str(exposure_time) + "s exposure;  area = " + opt['area'], p_level="INFO")
 
         self.status_time = time.time() + 10
         self.post_mnt = []
         self.post_rot = []
         self.post_foc = []
-        self.post_ocn = []
+        self.post_ocn = [] 
         counter = 0
         if self.bin == 1:
             self.completion_time = self.t2 + exposure_time + 1
@@ -1736,7 +1740,7 @@ class Camera:
                             err_dec = TARGDEC - DECJ2000
                             print("err ra, dec:  ", err_ha, err_dec)
                             g_dev['mnt'].set_last_reference(err_ha, err_dec, time_now)
-
+                            g_dev['obs'].send_to_user("Position error; RA(h), DEC(deg):  ",  p_level='WARN')
                             # result = {}
                             # if g_dev['obs'].stop_all_activity:
                             #     result['stopped'] =  True
@@ -1818,6 +1822,7 @@ class Camera:
                     return result
                 except Exception as e:
                     print('Header assembly block failed: ', e)
+                    g_dev['obs'].send_to_user("Header assembly block failed: " + str(e),  p_level='ERROR')
                     try:
                         hdu = None
                     except:
@@ -1833,6 +1838,7 @@ class Camera:
                 result = {}
                 if g_dev['obs'].stop_all_activity:
                     result['stopped'] =  True
+                    g_dev['obs'].send_to_user("Camera stopped/cancelled! #1",  p_level='WARN')
                     g_dev['obs'].stop_all_activity = False
                 self.exposure_busy = False
                 return result
@@ -1841,14 +1847,16 @@ class Camera:
                 #g_dev['obs'].update_status()
                 self.t7 = time.time()
                 remaining = round(self.completion_time - self.t7, 1)
-                print("Readout time remaining:  " + str(remaining))
+                #print("Readout time remaining:  " + str(remaining))
                 g_dev['obs'].send_to_user("Exposure time remaining:  " + str(remaining), p_level='INFO')
                 if remaining < -30:
-                    print("Camera timed out, not connected")
+                    #print("Camera timed out, not connected")
+                    g_dev['obs'].send_to_user("Camera timed out, not connected! ",  p_level='ERROR')
                     result = {'error': True}
                     self.exposure_busy = False
                 if g_dev['obs'].stop_all_activity:
                     result['stopped':  True]
+                    g_dev['obs'].send_to_user("Camera stopped/cancelled! #2",  p_level='WARN')
                     g_dev['obs'].stop_all_activity = False
                 #return result  #This causes a crash.
 
