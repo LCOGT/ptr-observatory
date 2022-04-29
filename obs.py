@@ -41,7 +41,7 @@ from skimage.transform import resize
 #from skimage import exposure
 #from PIL import Image
 from skimage.io import imsave
-#import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt
 import sep
 from astropy.io import fits
 from planewave import platesolve
