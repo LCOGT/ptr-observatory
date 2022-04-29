@@ -565,6 +565,7 @@ class Camera:
         not the slower File Path.  THe mode used for focusing or other operations where we do not want to save any
         image data.
         '''
+ 
         #print('Expose Entered.  req:  ', required_params, 'opt:  ', optional_params)
         #print("Checking if Maxim is still connected!")
         #  self.t7 is last time camera was read out
@@ -1074,6 +1075,7 @@ class Camera:
                         return result
                     self.t9 = time.time()
                     #We go here to keep this subroutine a reasonable length, Basically still in Phase 2
+
                     result = self.finish_exposure(exposure_time,  frame_type, count - seq, \
                                          gather_status, do_sep, no_AWS, dist_x, dist_y, \
                                          quick=quick, low=ldr_handle_time, \
@@ -1120,9 +1122,9 @@ class Camera:
         #print("Finish exposure Entered:  ", exposure_time, frame_type, 'to go: ', counter, opt['area'])
               #gather_status, do_sep, no_AWS, start_x, start_y, opt['area'])
         if counter > 1:
-            g_dev['obs'].send_to_user("Finish count " + str(int(counter)) + "; "  + str(exposure_time) + "sec exposures;  area = " + opt['area'], p_level="INFO")
+            g_dev['obs'].send_to_user("Finish count " + str(int(counter)) + "; "  + str(exposure_time) + "sec exposures;  area = " + str(opt['area']), p_level="INFO")
         else:
-            g_dev['obs'].send_to_user("Finish one "  + str(exposure_time) + "s exposure;  area = " + opt['area'], p_level="INFO")
+            g_dev['obs'].send_to_user("Finish one "  + str(exposure_time) + "s exposure;  area = " + str(opt['area']), p_level="INFO")
 
         self.status_time = time.time() + 10
         self.post_mnt = []
