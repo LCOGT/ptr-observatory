@@ -856,7 +856,8 @@ class Mount:
                     self.offset_received = False
                     ra_dec = False
         except:
-            print("Bad coordinates supplied.")
+            #print("Bad coordinates supplied.")
+            g_dev['obs'].send_to_user("Bad coordinates supplied! ",  p_level="WARN")
             self.message = "Bad coordinates supplied, try again."
             self.offset_received = False
             self.ra_offset = 0
@@ -873,15 +874,17 @@ class Mount:
         self.go_coord(ra, dec, tracking_rate_ra=tracking_rate_ra, tracking_rate_dec = tracking_rate_dec)
         self.object = opt.get("object", "")
         if self.object == "":
-            print("Go to unamed target.")
+           # print("Go to unamed target.")
+            g_dev['obs'].send_to_user("Going to un-named target!  ",  p_level="INFO")
         else:
-            print("Going to:  ", self.object)   #NB Needs cleaning up.
+            #print("Going to:  ", self.object)   #NB Needs cleaning up.
+            g_dev['obs'].send_to_user("Going to:  " + str( self.object),  p_level="INFO")
             
     def re_seek(self, dither):
         if dither == 0:
             self.go_coord(self.last_ra, self.last_dec, self.last_tracking_rate_ra, self.last_tracking_rate_dec)
         else:
-            breakpoint()
+            pass#breakpoint()
             
             
             

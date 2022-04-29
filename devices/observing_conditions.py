@@ -216,7 +216,7 @@ class ObservingConditions:
                      pass
                  return status
             else:
-                breakpoint()
+                #breakpoint()
                 try:
                     self.current_ambient = self.status['temperature_C']
                 except:
