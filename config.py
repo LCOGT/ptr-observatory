@@ -194,10 +194,10 @@ site_config = {
             'has_paddle': False,       # paddle refers to something supported by the Python code, not the AP paddle.
             'pointing_tel': 'tel1',     # This can be changed to 'tel2'... by user.  This establishes a default.
             
-            'west_clutch_ra_correction': -0.05323724387608619,
+            'west_clutch_ra_correction': -0.05323724387608619,  #final:   0.0035776615398219747 -0.1450812805892454
             'west_clutch_dec_correction': 0.3251459235809251,
-            'east_flip_ra_correction':   -0.039505313212952586, 
-            'east_flip_dec_correction':  -0.39607711292257797,
+            'east_flip_ra_correction':   -0.040505313212952586, # Initially -0.039505313212952586, 
+            'east_flip_dec_correction':  -0.54607711292257797,  #initially  -0.39607711292257797,
             
                 'latitude_offset': 0.0,     # Decimal degrees, North is Positive   These *could* be slightly different than site.
                 'longitude_offset': 0.0,   # Decimal degrees, West is negative  #NB This could be an eval( <<site config data>>))

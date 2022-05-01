@@ -795,7 +795,10 @@ class Sequencer:
                             opt = {'area': 150, 'count': 1, 'bin': binning, 'filter': color, \
                                    'hint': block['project_id'] + "##" + dest_name, 'pane': pane}
                             print('Seq Blk sent to camera:  ', req, opt)
-                            g_dev['cam'].expose_command(req, opt, no_AWS=False, solve_it=False)
+                            result = g_dev['cam'].expose_command(req, opt, no_AWS=False, solve_it=False)
+                            if result['stopped'] is True:
+                                g_dev['obs'].send_to_user("Project Stopped becuase Exposure cancelled")
+                                return block_specification
                             t +=1
                             count -= 1
                             exposure['count'] = count
@@ -820,7 +823,7 @@ class Sequencer:
                     #         or abs(g_dev['ha']) > float(block_specification['project']['project_constraints']['max_ha'])
                     #         # Or mount has flipped, too low, too bright, entering zenith..
                     
-        print("Fini!")   #NB Should we consider turning off mount tracking?
+        print("Project block has finished!")   #NB Should we consider turning off mount tracking?
         if block_specification['project']['project_constraints']['close_on_block_completion']:
             #g_dev['mnt'].park_command({}, {})
             # NB NBNeed to write a more robust and generalized clean up.
@@ -1021,10 +1024,10 @@ class Sequencer:
             
 
             if not g_dev['enc'].status['shutter_status'] in ['Open', 'open']:
-                print("We expect the roof to be open to take skyflats.")
-                time.sleep(20)
+                g_dev['obs'].send_to_user("Wait for roof to be open to take skyflats. 60 sec delay loop.", p_level='INFO')
+                time.sleep(60)
                 g_dev['obs'].update_status()
-                
+                continue
             while (acquired_count < flat_count):# and g_dev['enc'].status['shutter_status'] in ['Open', 'open']: # NB NB NB and roof is OPEN! and (ephem_now +3/1440) < g_dev['events']['End Eve Sky Flats' ]:
                 #if g_dev['enc'].is_dome:   #Does not apply
                 #g_dev['mnt'].slewToSkyFlatAsync()
@@ -1041,10 +1044,12 @@ class Sequencer:
                     #exp_time*= 4.9/9/2
                     if exp_time > 180:
                         exp_time = 180    #Live with this limit.
-                    if exp_time <0.00001:
-                        exp_time = 0.00001
+                    if exp_time < min_exposure:   #NB it is too bright, should consider a delay here.
+                        print("Too bright, wating 60 seconds.")
+                        time.sleep(60)
+                        exp_time = min_exposure
                     exp_time = round(exp_time, 5)
-                   # prior_scale = prior_scale*scale  #Only updaate prior scale when changing filters
+                   # prior_scale = prior_scale*scale  #Only update prior scale when changing filters
                     print("Sky flat estimated exposure time, scale are:  ", exp_time, scale)
                 except:
                     exp_time = 0.3

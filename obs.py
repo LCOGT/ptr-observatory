@@ -408,6 +408,7 @@ class Observatory:
             time.sleep(self.command_interval)
            #  t1 = time.time()
             if not g_dev['seq'].sequencer_hold:
+                #print("Reading AWS command buffer.")
                 url_job = "https://jobs.photonranch.org/jobs/getnewjobs"
                 body = {"site": self.name}
                 # uri = f"{self.name}/{mount}/command/"
@@ -426,9 +427,9 @@ class Observatory:
                     for cmd in unread_commands:
                         if cmd['action'] in ['cancel_all_commands', 'stop']:
                             g_dev['obs'].stop_all_activity = True
-                            print("A STOP / CANCEL has been received.")
+                            #print("A STOP / CANCEL has been received.")
                             self.send_to_user("Cancel/Stop received. Exposure stopped, will begin readout then discard image.")
-                            self.send_to_user("Pending transfers to PTR Archive not affected.")
+                            self.send_to_user("Pending reductions and transfers to the PTR Archive are not affected.")
                             #WE empty the queue
                             try:
                                 if g_dev['cam'].exposure_busy:
@@ -442,7 +443,8 @@ class Observatory:
                                 print("Deleting Job:  ", self.cmd_queue.get())
                         else:
                             self.cmd_queue.put(cmd)  #SAVE THE COMMAND FOR LATER
-                            print("Appending job:  ")  # Kilroy was here)
+                            #print("Appending job:  ")  # Kilroy was here)
+                            self.send_to_user("Queueing up a new command... Hint:  " + cmd['action'])
                             
                     if cancel_check:
                         return   #Note we do not process any commands.
@@ -452,7 +454,8 @@ class Observatory:
             
                     #unread_commands.sort(key=lambda x: x["ulid"])
                     # Process each job one at a time
-                    print("# of queued commands:  ", self.cmd_queue.qsize())
+                    #print("# of queued commands:  ", self.cmd_queue.qsize())
+                    self.send_to_user("Number of queued commands:  " + str(self.cmd_queue.qsize()))
                     cmd = self.cmd_queue.get() 
                     #This code is redundant
                     if self.config['selector']['selector1']['driver'] is None:
@@ -486,38 +489,39 @@ class Observatory:
                         print( 'Exception in obs.scan_requests:  ', e)
                # print('scan_requests finished in:  ', round(time.time() - t1, 3), '  seconds')
                 ## Test Tim's code
-                url_blk = "https://calendar.photonranch.org/dev/siteevents"
-                body = json.dumps({
-                    'site':  self.config['site'],
-                    'start':  g_dev['d-a-y'] + 'T00:00:00Z',
-                    'end':    g_dev['next_day'] + 'T23:59:59Z',
-                    'full_project_details:':  False})
-                if True: #self.blocks is None:   #This currently prevents pick up of calendar changes.  OK for the moment.
-                    blocks = requests.post(url_blk, body).json()
-                    if len(blocks) > 0:   #   is not None:
-                        self.blocks = blocks
-                url_proj = "https://projects.photonranch.org/dev/get-all-projects"
-                if True: #self.projects is None:
-                    all_projects = requests.post(url_proj).json()
-                    self.projects = []
-                    if len(all_projects) > 0 and len(blocks)> 0:   #   is not None:
-                        self.projects = all_projects   #.append(all_projects)  #NOTE creating a list with a dict entry as item 0
-                        #self.projects.append(all_projects[1])
-                '''
-                Design Note.  blocks relate to scheduled time at a site so we expect AWS to mediate block 
-                assignments.  Priority of blocks is determined by the owner and a 'equipment match' for
-                background projects.
-                
-                Projects on the other hand can be a very large pool so how to manage becomes an issue.
-                TO the extent a project is not visible at a site, aws should not present it.  If it is
-                visible and passes the owners priority it should then be presented to the site.
-                
-                '''
-                if self.events_new is None:
-                    url = 'https://api.photonranch.org/api/events?site=SAF'
-
-                    self.events_new = requests.get(url).json()
-                return   # Continue   #This creates an infinite loop
+                if not cancel_check:
+                    url_blk = "https://calendar.photonranch.org/dev/siteevents"
+                    body = json.dumps({
+                        'site':  self.config['site'],
+                        'start':  g_dev['d-a-y'] + 'T00:00:00Z',
+                        'end':    g_dev['next_day'] + 'T23:59:59Z',
+                        'full_project_details:':  False})
+                    if True: #self.blocks is None:   #This currently prevents pick up of calendar changes.  OK for the moment.
+                        blocks = requests.post(url_blk, body).json()
+                        if len(blocks) > 0:   #   is not None:
+                            self.blocks = blocks
+                    url_proj = "https://projects.photonranch.org/dev/get-all-projects"
+                    if True: #self.projects is None:
+                        all_projects = requests.post(url_proj).json()
+                        self.projects = []
+                        if len(all_projects) > 0 and len(blocks)> 0:   #   is not None:
+                            self.projects = all_projects   #.append(all_projects)  #NOTE creating a list with a dict entry as item 0
+                            #self.projects.append(all_projects[1])
+                    '''
+                    Design Note.  blocks relate to scheduled time at a site so we expect AWS to mediate block 
+                    assignments.  Priority of blocks is determined by the owner and a 'equipment match' for
+                    background projects.
+                    
+                    Projects on the other hand can be a very large pool so how to manage becomes an issue.
+                    TO the extent a project is not visible at a site, aws should not present it.  If it is
+                    visible and passes the owners priority it should then be presented to the site.
+                    
+                    '''
+                    if self.events_new is None:
+                        url = 'https://api.photonranch.org/api/events?site=SAF'
+    
+                        self.events_new = requests.get(url).json()
+                return   # Continue   #Note this creates an infinite loop, and that is OK
                 
             else:
                 print('Sequencer Hold asserted.')    #What we really want here is looking for a Cancel/Stop.
@@ -636,6 +640,7 @@ class Observatory:
         self.time_last_status = time.time()
         #self.redis_server.set('obs_time', self.time_last_status, ex=120 )
         self.status_count +=1
+        self.scan_requests('mount1', cancel_check=True)
 # =============================================================================
 #         except:
 #             print('self.api.authenticated_request("PUT", uri, status):   Failed!')

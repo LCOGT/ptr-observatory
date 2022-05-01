@@ -889,18 +889,20 @@ class Camera:
         #  NB Important: None of above code talks to the camera!
         result = {}  #  This is a default return just in case
         num_retries = 0
-        for seq in range(count):
+        while count > 0:   #in range(count):
+            count -= 1
             #  SEQ is the outer repeat loop and takes count images; those individual exposures are wrapped in a
             #  retry-3-times framework with an additional timeout included in it.
-
+            if count > 0:
+                g_dev['obs'].update_status()
+                
             if g_dev['obs'].stop_all_activity:  #This should kill a long loop of identical exposures
                 result['stopped'] =  True
                 g_dev['obs'].stop_all_activity = False
                 print("Camera Count loop terminated by Cancel Exposure")
                 self.exposure_busy = False
-                return
-            if seq > 0:
-                g_dev['obs'].update_status()
+                return result
+
 
             self.pre_mnt = []
             self.pre_rot = []
@@ -937,7 +939,7 @@ class Camera:
                       
                     st = ""
                     time.sleep(0.2)
-                    if seq > 0:
+                    if count > 0:
                         g_dev['obs'].update_status()
                     #Refresh the probe of the dome status
                     if g_dev['enc'].is_dome:
@@ -951,7 +953,7 @@ class Camera:
             except:
                 pass
                # print("Motion check faulted.")
-            if seq > 0:
+            if count > 0:
                 g_dev['obs'].update_status()   # NB Make sure this routine has a fault guard.
             self.retry_camera = 3
             self.retry_camera_start_time = time.time()
@@ -959,9 +961,10 @@ class Camera:
 
                 #NB Here we enter Phase 2
                 if g_dev['obs'].stop_all_activity:
-                    result['stopped'] =  True
-                    g_dev['obs'].stop_all_activity = False
-                    print("Camera retry loop stopped by Cancel Exposure")
+                    if result['stopped'] is True:
+                        g_dev['obs'].stop_all_activity = False
+                        print("Camera retry loop stopped by Cancel Exposure")
+                        self.exposure_busy = False
                     return
                 try:
                     self.t1 = time.time()
@@ -1072,11 +1075,12 @@ class Camera:
                         if g_dev['obs'].stop_all_activity:
                             result['stopped'] =  True
                             g_dev['obs'].stop_all_activity = False
+                            self.exposure_busy = False
                         return result
                     self.t9 = time.time()
                     #We go here to keep this subroutine a reasonable length, Basically still in Phase 2
 
-                    result = self.finish_exposure(exposure_time,  frame_type, count - seq, \
+                    result = self.finish_exposure(exposure_time,  frame_type, count, \
                                          gather_status, do_sep, no_AWS, dist_x, dist_y, \
                                          quick=quick, low=ldr_handle_time, \
                                          high=ldr_handle_high_time, \
@@ -1086,6 +1090,11 @@ class Camera:
                     #  self._stop_expose()
                     #print("\nInner expose of a group took:  ", round(self.t10 - self.t0 , 2), ' returned:  ', result)
                     self.retry_camera = 0
+                    try:
+                        if result['stopped'] is True:
+                            count = 0
+                    except:
+                        pass
                     break
                 except Exception as e:
                     print('Exception in camera so attempt 3 retries:  ', e)
@@ -1107,6 +1116,7 @@ class Camera:
         if g_dev['obs'].stop_all_activity:
             result['stopped'] =  True
             g_dev['obs'].stop_all_activity = False
+            self.exposure_busy = False
             self.exposure_busy = False
         return result
 
@@ -1141,6 +1151,7 @@ class Camera:
   
 
         while not g_dev['obs'].stop_all_activity:    #This loop really needs a timeout.
+
             self.post_mnt = []
             self.post_rot = []
             self.post_foc = []
@@ -1150,8 +1161,9 @@ class Camera:
             g_dev['foc'].get_quick_status(self.post_foc)
             g_dev['ocn'].get_quick_status(self.post_ocn)
             if time.time() > self.status_time:
+                
+                self.status_time = time.time() + 10
                 g_dev['obs'].update_status()
-                self.status_time = time.time() + 15
             if time.time() < self.completion_time:   #  NB Testing here if glob too early is delaying readout.
                 time.sleep(.5)
                 continue
@@ -1820,7 +1832,7 @@ class Camera:
                     if g_dev['obs'].stop_all_activity:
                         result['stopped'] =  True
                         g_dev['obs'].stop_all_activity = False
-                    self.exposure_busy = False
+                        self.exposure_busy = False
                     return result
                 except Exception as e:
                     print('Header assembly block failed: ', e)
@@ -1853,14 +1865,15 @@ class Camera:
                 g_dev['obs'].send_to_user("Exposure time remaining:  " + str(remaining), p_level='INFO')
                 if remaining < -30:
                     #print("Camera timed out, not connected")
-                    g_dev['obs'].send_to_user("Camera timed out, not connected! ",  p_level='ERROR')
+                    g_dev['obs'].send_to_user("Camera timed out, apparently not connected! ",  p_level='ERROR')
                     result = {'error': True}
                     self.exposure_busy = False
-                if g_dev['obs'].stop_all_activity:
-                    result['stopped':  True]
-                    g_dev['obs'].send_to_user("Camera stopped/cancelled! #2",  p_level='WARN')
-                    g_dev['obs'].stop_all_activity = False
-                #return result  #This causes a crash.
+        if g_dev['obs'].stop_all_activity:
+            result['stopped'] = True
+            g_dev['obs'].send_to_user("Camera stopped/cancelled! #2",  p_level='WARN')
+            g_dev['obs'].stop_all_activity = False
+            self.exposure_busy = False
+        return result  #This causes a crash.
 
                 #it takes about 15 seconds from AWS to get here for a bias.
         # except Exception as e:
