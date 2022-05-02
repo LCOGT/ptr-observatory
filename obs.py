@@ -327,6 +327,7 @@ class Observatory:
             device_names = devices_of_type.keys()
             # Instantiate each device object from based on its type
             for name in device_names:
+                breakpoint()
                 driver = devices_of_type[name]["driver"]
                 settings = devices_of_type[name].get("settings", {})
                 # print('looking for dev-types:  ', dev_type)

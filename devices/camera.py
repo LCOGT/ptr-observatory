@@ -186,6 +186,7 @@ class Camera:
 
         '''
         self.name = name
+        breakpoint()
         g_dev[name + '_cam_retry_driver'] = driver
         g_dev[name + '_cam_retry_name'] = name
         g_dev[name + '_cam_retry_config'] = config
