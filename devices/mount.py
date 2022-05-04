@@ -247,14 +247,14 @@ class Mount:
         self.move_time = 0
         try:
             ra1, dec1 = self.get_mount_reference()
-            ra2, dec2 = self.get_mount_reference()
+            ra2, dec2 = self.get_flip_reference()
             print("Mount references clutch, flip (Look East):  ", ra1, dec1, ra2, dec2 )
         except:
             print("No mount ref found.")
             pass
-        print("Reset Mount Reference.")
+        #print("Reset Mount Reference.")
 
-        self.reset_mount_reference()
+        #self.reset_mount_reference()
         #NB THe paddle needs a re-think and needs to be cast into its own thread. 20200310 WER
         if self.has_paddle:
             self._paddle = serial.Serial('COM28', timeout=0.1)

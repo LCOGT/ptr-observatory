@@ -140,7 +140,7 @@ class Sequencer:
         print(self.description)
         redis_ip = config['redis_ip']
 
-        if redis_ip is not None:           
+        if redis_ip is not None:
             self.redis_server = redis.StrictRedis(host=redis_ip, port=6379, db=0,
                                               decode_responses=True)
             self.redis_wx_enabled = True
@@ -151,12 +151,12 @@ class Sequencer:
         self.block_guard = False
         self.time_of_next_slew = time.time()
         self.bias_dark_latch = True   #NB NB NB Should these initially be defined this way?
-        self.sky_flat_latch = True    
+        self.sky_flat_latch = True
         self.morn_sky_flat_latch = True
         self.morn_bias_dark_latch = True   #NB NB NB Should these initially be defined this way?
         #breakpoint()
         self.reset_completes()
-        
+
         try:
             self.is_in_completes(None)
         except:
@@ -218,7 +218,7 @@ class Sequencer:
             g_dev['mnt'].go_command(req, opt, calibrate=True, auto_center=False)
         else:
             print('Sequencer command:  ', command, ' not recognized.')
-            
+
     def enc_to_skyflat_and_open(self ,enc_status, ocn_status, no_sky=False):
         #ocn_status = eval(self.redis_server.get('ocn_status'))
            #NB 120 is enough time to telescope to get pointed to East
@@ -229,9 +229,9 @@ class Sequencer:
             self.time_of_next_slew = time.time() + 120   #NB 120 is enough time to telescope to get pointed to East
             if not no_sky:
                 g_dev['mnt'].slewToSkyFlatAsync()
-                #This should run once. Next time this phase is entered in > 120 seconds we 
+                #This should run once. Next time this phase is entered in > 120 seconds we
             #flat_spot, flat_alt = g_dev['evnt'].flat_spot_now()
-            
+
 
         if time.time() >= self.time_of_next_slew:
             #We slew to anti-solar Az and reissue this command every 120 seconds
@@ -243,7 +243,7 @@ class Sequencer:
                 print("Open and slew Dome to azimuth opposite the Sun:  ", round(flat_spot, 1))
 
                 if enc_status['shutter_status'] in ['Closed', 'closed'] \
-                    and ocn_status['hold_duration'] <= 0.1:   #NB 
+                    and ocn_status['hold_duration'] <= 0.1:   #NB
                     #breakpoint()
                     g_dev['enc'].open_command({}, {})
                     print("Opening dome, will set Synchronize in 10 seconds.")
@@ -255,7 +255,7 @@ class Sequencer:
             except:
                 pass#
         return
-                    
+
     def park_and_close(self, enc_status):
         try:
             if not g_dev['mnt'].mount.AtParK:   ###Test comment here
@@ -267,7 +267,7 @@ class Sequencer:
                 g_dev['enc'].close_command( {}, {})
         except:
             print('Dome close not executed during Park and Close.')
-        
+
 
     ###############################
     #       Sequencer Commands and Scripts
@@ -276,13 +276,13 @@ class Sequencer:
         '''
         This is called by the update loop.   Call from local status probe was removed
         #on 20211026 WER
-        
+
         This is where scripts are automagically started.  Be careful what you put in here if it is
         going to open the dome or move the telescope at unexpected times.
 
         Scripts must not block too long or they must provide for periodic calls to check status.
         '''
-        
+
         # NB Need a better way to get all the events.
         if g_dev['obs'].status_count < 3:
             return
@@ -302,12 +302,12 @@ class Sequencer:
             opt = {}
             #No action needed on  the enclosure at this level
             self.park_and_close(enc_status)
-            #NB The above put dome closed and telescope at Park, Which is where it should have been upon entry.   
+            #NB The above put dome closed and telescope at Park, Which is where it should have been upon entry.
             self.bias_dark_script(req, opt, morn=False)
             self.bias_dark_latch = False
- 
+
         elif ((g_dev['events']['Cool Down, Open']  <= ephem_now < g_dev['events']['Eve Sky Flats']) and \
-               g_dev['enc'].mode == 'Automatic') and not g_dev['ocn'].wx_hold:  
+               g_dev['enc'].mode == 'Automatic') and not g_dev['ocn'].wx_hold:
 
             self.enc_to_skyflat_and_open(enc_status, ocn_status)
 
@@ -315,12 +315,12 @@ class Sequencer:
                and g_dev['enc'].mode == 'Automatic' and not g_dev['ocn'].wx_hold and \
                self.config['auto_eve_sky_flat']):
 
-            self.enc_to_skyflat_and_open(enc_status, ocn_status)   #Just in case a Wx hold stopped opening      
+            self.enc_to_skyflat_and_open(enc_status, ocn_status)   #Just in case a Wx hold stopped opening
             self.current_script = "Eve Sky Flat script starting"
             #print('Skipping Eve Sky Flats')
             self.sky_flat_script({}, {}, morn=False)   #Null command dictionaries
             self.sky_flat_latch = False
-            
+
         elif enc_status['enclosure_mode'] in ['Autonomous!', 'Automatic'] and (events['Observing Begins'] <= ephem_now \
                                    < events['Observing Ends']) and not g_dev['ocn'].wx_hold \
                                    and  g_dev['obs'].blocks is not None and g_dev['obs'].projects \
@@ -331,7 +331,7 @@ class Sequencer:
 
             if debug:
                 print("# of Blocks, projects:  ", len(g_dev['obs'].blocks),  len(g_dev['obs'].projects))
-                
+
             #Note here we could evaluate projects to see which meet observability constraints and place them
             #In an observables list, then we could pick one to start.  IF there is no pre-sheduled observing block
             #it would just run.  Voila an Opportunistic scheduler.  An observing block may be empty or point to
@@ -339,7 +339,7 @@ class Sequencer:
             # NB without deepcopy decrementing counts in blocks will be local to the machine an subject
             # to over_write as the respons from AWS updates. This is particularly important for owner
             # and background blocks.
-            
+
             #First, sort blocks to be in ascending order, just to promote clarity. Remove expired projects.
             for block in blocks:  #  This merges project spec into the blocks.
                 for project in projects:
@@ -347,11 +347,11 @@ class Sequencer:
                         block['project'] = project
                         #print('Scheduled so removing:  ', project['project_name'])
                         #projects.remove(project)
-                        
+
             #The residual in projects can be treated as background.
             #print('Background:  ', len(projects), '\n\n', projects)
-            
- 
+
+
             house = []
             for project in projects:
                 if block['project_id']  != 'none':
@@ -382,7 +382,7 @@ class Sequencer:
             #     # Do not start a block within 15 min of end time???
             #print("Initial length:  ", len(blocks))
             for block in blocks:
-                now_date_timeZ = datetime.datetime.now().isoformat().split('.')[0] +'Z'           
+                now_date_timeZ = datetime.datetime.now().isoformat().split('.')[0] +'Z'
                 if not self.block_guard \
                     and (block['start'] <= now_date_timeZ < block['end']) \
                     and not self.is_in_completes(block['event_id']):
@@ -395,14 +395,14 @@ class Sequencer:
                     self.append_completes(completed_block['event_id'])
                     block['project_id'] in ['none', 'real_time_slot', 'real_time_block']
                     '''
-                    When a scheduled block is completed it is not re-entered or the block needs to 
+                    When a scheduled block is completed it is not re-entered or the block needs to
                     be restored.  IN the execute block we need to make a deepcopy of the input block
                     so it does not get modified.
                     '''
-            #print('block list exhausted')  
+            #print('block list exhausted')
             #return  Commented out 20220409 WER
-            
-                
+
+
                 # print("Here we would enter an observing block:  ",
                 #       block)
                 # breakpoint()
@@ -411,16 +411,16 @@ class Sequencer:
             # else:
             #     pass
             #print("Block tested for observatility")
-                
-                    
+
+
         elif ((g_dev['events']['Observing Ends']  < ephem_now < g_dev['events']['End Morn Sky Flats']) and \
-               g_dev['enc'].mode == 'Automatic') and not g_dev['ocn'].wx_hold and self.config['auto_morn_sky_flat']:  
+               g_dev['enc'].mode == 'Automatic') and not g_dev['ocn'].wx_hold and self.config['auto_morn_sky_flat']:
             self.enc_to_skyflat_and_open(enc_status, ocn_status)
 
         elif self.morn_sky_flat_latch and ((events['Morn Sky Flats'] <= ephem_now < events['End Morn Sky Flats'])  \
                and g_dev['enc'].mode == 'Automatic' and not g_dev['ocn'].wx_hold and \
                self.config['auto_morn_sky_flat']):
-            self.enc_to_skyflat_and_open(enc_status, ocn_status)   #Just in case a Wx hold stopped opening      
+            self.enc_to_skyflat_and_open(enc_status, ocn_status)   #Just in case a Wx hold stopped opening
             self.current_script = "Morn Sky Flat script starting"
             self.morn_sky_flat_latch = False
             #print('Skipping Eve Sky Flats')
@@ -436,7 +436,7 @@ class Sequencer:
             opt = {}
             #No action needed on  the enclosure at this level
             self.park_and_close(enc_status)
-            #NB The above put dome closed and telescope at Park, Which is where it should have been upon entry.   
+            #NB The above put dome closed and telescope at Park, Which is where it should have been upon entry.
             self.bias_dark_script(req, opt, morn=True)
             self.morn_bias_dark_latch = False
             self.park_and_close(enc_status)
@@ -459,28 +459,28 @@ class Sequencer:
     def create_OSC_raw_image(self, req_None, opt=None):
         return
 #    self.redis_server.set('sim_hold', True, ex=120)
-            
+
     def clock_the_system(self, other_side=False):
         '''
-        
+
         This routine carefully starts up the telescope and verifies the telescope is
         properly reporting correct coordiates and the dome is correctly positioning.
         Once a star field is returned, the system solves and synchs the telescope and
-        dome if necessary.  Next a detailed autofocus is performed on a Tycho star of 
+        dome if necessary.  Next a detailed autofocus is performed on a Tycho star of
         known mag and position.  The final reading from the autofocus is used for one
         last clocking.
-        
+
         other_side = True causes the telescope to then flip and repeat the process.
         From differences in the solutions, flip_shift offsets can be calculated.
-        
-        If this routine does not solve, the night is potentially lost so an alert 
-        messagge should be sent to the owner and telops, the enclosure closed and 
+
+        If this routine does not solve, the night is potentially lost so an alert
+        messagge should be sent to the owner and telops, the enclosure closed and
         left in manual, the telescope parked and instruments are put to bed.
-        
-        This routing is designed to begin when the altitude of the Sun is -9 degrees.  
+
+        This routing is designed to begin when the altitude of the Sun is -9 degrees.
         The target azimuth will change so the Moon is always 15 or more degrees away.
-        
-        If called in the Morning and the routing fails, the system is still put to 
+
+        If called in the Morning and the routing fails, the system is still put to
         bed but a less urgent message is sent to the owner and telops.
 
         Returns
@@ -488,44 +488,44 @@ class Sequencer:
         None.
 
         '''
-        
+
         '''
         if dome is closed: simulate
         if not simulate, check sun is down
                          check dome is open
-                         
+
         go to 90 az 60 alt then near tycho star
         Image and look for stars (or load simulated frames)
-        
+
         If stars not present:
             slew dome right-left increasing to find stars
-        if +/- 90 az change in dome does not work then 
+        if +/- 90 az change in dome does not work then
         things are very wrong -- close down and email list.
-        
+
         if stars present, then autofocus with wide tolerance
-        if after 5 tries no luck -- close down and email list. 
-        
+        if after 5 tries no luck -- close down and email list.
+
         if good autofocus then last frame is the check frame.
-        
+
         Try to astrometrically solve it.  if it solves, synch the
-        telescope.  Wait for dome to get in position and 
-        
+        telescope.  Wait for dome to get in position and
+
         Take second image, solve and synch again.
-        
+
         If tel motion > 1 amin, do one last time.
-        
-        Look at dome Az -- is dome following the telescope? 
+
+        Look at dome Az -- is dome following the telescope?
         Report if necessary
-        
+
         return control.
-        
-        
-        
-        
-        
-        
+
+
+
+
+
+
         '''
-        
+
     def execute_block(self, block_specification):
         #ocn_status = eval(self.redis_server.get('ocn_status'))
         #enc_status = eval(self.redis_server.get('enc_status'))
@@ -549,13 +549,13 @@ class Sequencer:
         t = 0
         '''
         # to do is Targets*Mosaic*(sum of filters * count)
-        
+
         Assume for now we only have one target and no mosaic factor.
         The the first thing to do is figure out how many exposures
         in the series.  If enhance AF is true they need to be injected
         at some point, but af does not decrement. This is still left to do
-        
-        
+
+
         '''
         # if bock['project'] is None:
             #user controlled block...
@@ -567,8 +567,8 @@ class Sequencer:
             dest_dec = float(target['dec']) - float(block_specification['project']['project_constraints']['dec_offset'])
             dest_ra, dest_dec = ra_dec_fix_hd(dest_ra,dest_dec)
             dest_name =target['name']
-            
-            ''' 
+
+            '''
             We be starting a block:
             Open dome if alt Sun < 5 degrees
             Unpark telescope
@@ -578,16 +578,16 @@ class Sequencer:
             the aimpoint at Alt ~30-35  Take an exposure, try to solve
             an possibly synch.  But be above any horizon
             effects.
-            
+
             THen autofocus, then finally go to the object
             whihc could be below Alt of 30.
             all of aboe for first of night then at start of a block
             do the square target check, then AF, then block, depending
             on AF more Frequently setting.
-            
+
             Consider a target check and even synch after a flip.
-            
-            
+
+
             '''
             try:
                 g_dev['mnt'].get_mount_coordinates()
@@ -604,7 +604,7 @@ class Sequencer:
                 except:
                     pass
 
-            
+
             #Compute how many to do.
             left_to_do = 0
             ended = False
@@ -632,7 +632,7 @@ class Sequencer:
                 else:
                     left_to_do += int(exposure['count'])
                     print('Singleton image')
-                
+
             print("Left to do initial value:  ", left_to_do)
             req = {'target': 'near_tycho_star'}
             initial_focus = True
@@ -643,7 +643,7 @@ class Sequencer:
                 #just_focused = True      ###DEBUG
                 if initial_focus: # and False:
                     #print("Enc Status:  ", g_dev['enc'].get_status())
-                    
+
 
                     # if not g_dev['enc'].shutter_is_closed:
                     self.auto_focus_script(req2, opt, throw = 600)
@@ -654,7 +654,7 @@ class Sequencer:
                     initial_focus = False    #  Make above on-time event per block
                     timer = time.time() + af_delay  # 45 minutes
                     #at block startup this should mean two AF cycles. Cosider using 5-point for the first.
-                    
+
                 #cycle through exposures decrementing counts    MAY want to double check left-to do but do nut remultiply by 4
                 for exposure in block['project']['exposures']:
                     # if block_specification['project']['project_constraints']['frequent_autofocus'] == True and (time.time() - timer) >= 0:
@@ -668,9 +668,9 @@ class Sequencer:
                     timer = time.time() + af_delay  #40 minutes to refocus
                     print("Executing: ", exposure, left_to_do)
                     color = exposure['filter']
-                    exp_time =  float(exposure['exposure']) 
+                    exp_time =  float(exposure['exposure'])
                     #dither = exposure['dither']
- 
+
                     if exposure['bin'] in [2, '2,2', '2, 2', '2 2']:
                         binning = '2 2'
                     elif exposure['bin'] in [3, '3,3', '3, 3', '3 3']:
@@ -679,36 +679,36 @@ class Sequencer:
                         binning = '1 1'
                     count = int(exposure['count'])
                     #  We should add a frame repeat count
-                    imtype = exposure['imtype'] 
+                    imtype = exposure['imtype']
                     #defocus = exposure['defocus']
 #                    if g_dev['site'] == 'saf':   #THis should be in config.
-                    if color[0] == 'B':  
+                    if color[0] == 'B':
                         color = 'PB'   #Map generic filters to site specific ones.   NB this does no tbelong here, it should be central with Cameras setup.
-                    if color[0] == 'G':  
+                    if color[0] == 'G':
                         color = 'PG'   # NB NB THis needs a clean up, these mappings should be in config
-                    if color[0] == 'R':  
+                    if color[0] == 'R':
                         color = 'PR'
-                    if color[0] == 'L':  
+                    if color[0] == 'L':
                         color = 'PL'
-                    if color[0] == 'W':  
+                    if color[0] == 'W':
                         color = 'w'
-                    if color[0] == 'g':  
+                    if color[0] == 'g':
                         color = 'gp'
                     if color[0] == 'r':    #NB This is redundant for Sloans when small cap.
                         color = 'rp'
                     if color[0] == 'i':     #NB NB THIS IS WRONG For Johnson and Bessell
                         color = 'ip'
-                    if color[0] == 'H':  
+                    if color[0] == 'H':
                         color = 'HA'
-                    if color[0] == 'O':  
+                    if color[0] == 'O':
                         color = 'O3'
-                    if color[0] == 'S':  
+                    if color[0] == 'S':
                         color = 'S2'
-                    if color[0] == 'C':  
+                    if color[0] == 'C':
                         color = 'CR'
                     if count <= 0:
                          continue
-                    #At this point we have 1 to 9 exposures to make in this filter.  Note different areas can be defined. 
+                    #At this point we have 1 to 9 exposures to make in this filter.  Note different areas can be defined.
                     if exposure['area'] in ['300', '300%', 300, '220', '220%', 220, '150', '150%', 150, ]:  # 4 or 5 expsoures.
                         if block_specification['project']['project_constraints']['add_center_to_mosaic']:
                             offset = [(0.0, 0.0), (-1.5, 1.), (1.5, 1.), (1.5, -1.), (-1.5, -1.)] #Aimpoint + Four mosaic quadrants 36 x 24mm chip
@@ -725,23 +725,23 @@ class Sequencer:
                             pitch = 0.1875
 
                     elif exposure['area'] in ['600', '600%', 600, '450', '450%', 450]:  # 9 exposures.
-                        offset = [(0.5, 0.5), 
-                                  (-0.5, 0.5), 
-                                  (-1.5, 0.5), 
-                                  (-1.5, -0.5), 
-                                  (-0.5, -0.5), 
-                                  (0.5, -0.5), 
-                                  (1.5, -0.5 ), 
+                        offset = [(0.5, 0.5),
+                                  (-0.5, 0.5),
+                                  (-1.5, 0.5),
+                                  (-1.5, -0.5),
+                                  (-0.5, -0.5),
+                                  (0.5, -0.5),
+                                  (1.5, -0.5 ),
                                   (1.5, 0.5),
-                                  (1.5, 1.5),  
-                                  (0.5 , 1.5), 
-                                  (-0.5, 1.5), 
-                                  (-1.5, 1.5), 
-                                  (-1.5, 0.5), 
-                                  (1.5, -0.5), 
+                                  (1.5, 1.5),
+                                  (0.5 , 1.5),
+                                  (-0.5, 1.5),
+                                  (-1.5, 1.5),
+                                  (-1.5, 0.5),
+                                  (1.5, -0.5),
                                   (-1.5, -1.5),
-                                  (-0.5, -1.5), 
-                                  (0.5, -1.5), 
+                                  (-0.5, -1.5),
+                                  (0.5, -1.5),
                                   (1.5, -1.5)] #Fifteen mosaic quadrants 36 x 24mm chip
                         if exposure['area'] in ['600', '600%', 600]:
                             pitch = 0.125
@@ -757,7 +757,7 @@ class Sequencer:
                             pane = 0
                         else:
                             offset = [(-1, 0.), (-1, step),  (1, step), (1, 0), \
-                                      (1, -step), (-1, -step)] #Six mosaic quadrants 36 x 24mm chip  
+                                      (1, -step), (-1, -step)] #Six mosaic quadrants 36 x 24mm chip
                             pane = 1
                         pitch = .375
                     elif exposure['area'] in ['+SQ', '133%']:  # 2 exposures.  SQUARE
@@ -770,7 +770,7 @@ class Sequencer:
                         pitch = 0.
                         pane = 0
                     for displacement in offset:
-                        
+
                         x_field_deg = g_dev['cam'].config['camera']['camera_1_1']['settings']['x_field_deg']
                         y_field_deg = g_dev['cam'].config['camera']['camera_1_1']['settings']['y_field_deg']
 
@@ -796,9 +796,12 @@ class Sequencer:
                                    'hint': block['project_id'] + "##" + dest_name, 'pane': pane}
                             print('Seq Blk sent to camera:  ', req, opt)
                             result = g_dev['cam'].expose_command(req, opt, no_AWS=False, solve_it=False)
-                            if result['stopped'] is True:
-                                g_dev['obs'].send_to_user("Project Stopped becuase Exposure cancelled")
-                                return block_specification
+                            try:
+                                if result['stopped'] is True:
+                                    g_dev['obs'].send_to_user("Project Stopped becuase Exposure cancelled")
+                                    return block_specification
+                            except:
+                                pass
                             t +=1
                             count -= 1
                             exposure['count'] = count
@@ -811,7 +814,7 @@ class Sequencer:
                             # new_ra = moon_ra
                             # new_dec = moon_dec
                         pane += 1
-                        
+
                     now_date_timeZ = datetime.datetime.now().isoformat().split('.')[0] +'Z'
                     ephem_now = ephem.now()
                     events = g_dev['events']
@@ -822,7 +825,7 @@ class Sequencer:
                     #         or g_dev['airmass'] > float( block_specification['project']['project_constraints']['max_airmass']) \
                     #         or abs(g_dev['ha']) > float(block_specification['project']['project_constraints']['max_ha'])
                     #         # Or mount has flipped, too low, too bright, entering zenith..
-                    
+
         print("Project block has finished!")   #NB Should we consider turning off mount tracking?
         if block_specification['project']['project_constraints']['close_on_block_completion']:
             #g_dev['mnt'].park_command({}, {})
@@ -846,7 +849,7 @@ class Sequencer:
         20200618   This has been drastically simplied for now to deal with only QHY600M.
 
         May still have a bug where it latches up only outputting 2x2 frames.
-                 
+
         """
 
         self.sequencer_hold = True
@@ -854,9 +857,9 @@ class Sequencer:
         if morn:
             ending = g_dev['events']['End Morn Bias Dark']
         else:
-            ending = g_dev['events']['End Eve Bias Dark']      
+            ending = g_dev['events']['End Eve Bias Dark']
         while ephem.now() < ending :   #Do not overrun the window end
- 
+
             g_dev['mnt'].park_command({}, {}) # Get there early
 
             print("Expose Biases: b- 1, 2, 3, 4;  300s darks.")
@@ -871,22 +874,22 @@ class Sequencer:
                 print("Expose b_1")
                 result = g_dev['cam'].expose_command(req, opt, no_AWS=True, \
                                 do_sep=False, quick=False)
-               
+
                 g_dev['obs'].update_status()
                 dark_time = 360
                 if ephem.now() >=  (dark_time + 30)/86400 > ending:
-                    break                
+                    break
                 print("Expose d_1 using exposure:  ", dark_time )
                 req = {'time':dark_time ,  'script': 'True', 'image_type': 'dark'}
                 opt = {'area': "Full", 'count':1, 'bin': '1 1', \
-                        'filter': 'dark'} 
+                        'filter': 'dark'}
                 result = g_dev['cam'].expose_command(req, opt, no_AWS=True, \
                                     do_sep=False, quick=False)
 
                 g_dev['obs'].update_status()
                 if ephem.now() + 210/86400 > ending:
                     break
-                print("Expose Biases: b_2")   
+                print("Expose Biases: b_2")
                 #dark_time =600
                 #for bias in range(9):
                 req = {'time': 0.0,  'script': 'True', 'image_type': 'bias'}
@@ -894,23 +897,23 @@ class Sequencer:
                        'filter': 'dark'}
                 result = g_dev['cam'].expose_command(req, opt, no_AWS=True, \
                                 do_sep=False, quick=False)
-                
+
                 g_dev['obs'].update_status()
                 dark_time = 360
                 if ephem.now() >=  (dark_time + 30)/86400 > ending:
-                    break  
+                    break
                 print("Expose d_2 using exposure:  ", dark_time )
                 req = {'time':dark_time ,  'script': 'True', 'image_type': 'dark'}
                 opt = {'area': "Full", 'count':1, 'bin': '2 2', \
-                        'filter': 'dark'} 
+                        'filter': 'dark'}
                 result = g_dev['cam'].expose_command(req, opt, no_AWS=True, \
                                     do_sep=False, quick=False)
 
                 g_dev['obs'].update_status()
                 if ephem.now() + 210/86400 > ending:
                     break
-           
-                print("Expose Biases: b_3")   
+
+                print("Expose Biases: b_3")
                 dark_time = 300
                 #for bias in range(9):
                 req = {'time': 0.0,  'script': 'True', 'image_type': 'bias'}
@@ -924,15 +927,15 @@ class Sequencer:
                 print("Expose d_3 using exposure:  ", dark_time )
                 req = {'time':dark_time,  'script': 'True', 'image_type': 'dark'}
                 opt = {'area': "Full", 'count':1, 'bin':'3 3', \
-                        'filter': 'dark'} 
+                        'filter': 'dark'}
                 result = g_dev['cam'].expose_command(req, opt, no_AWS=True, \
                                     do_sep=False, quick=False)
                 print('Last dark result:  ', result)
                 g_dev['obs'].update_status()
-                
+
                 if ephem.now() + 210/86400 > ending:
                     break
-                print("Expose Biases: b_4") 
+                print("Expose Biases: b_4")
                 dark_time = 240
                 #for bias in range(9):
                 req = {'time': 0.0,  'script': 'True', 'image_type': 'bias'}
@@ -940,14 +943,14 @@ class Sequencer:
                         'filter': 'dark'}
                 result = g_dev['cam'].expose_command(req, opt, no_AWS=True, \
                                 do_sep=False, quick=False)
-                
+
                 g_dev['obs'].update_status()
                 if ephem.now() + (dark_time + 30)/86400 > ending:
                     break
                 print("Expose d_4 using exposure:  ", dark_time )
                 req = {'time':dark_time ,  'script': 'True', 'image_type': 'dark'}
                 opt = {'area': "Full", 'count':1, 'bin': '4 4', \
-                        'filter': 'dark'} 
+                        'filter': 'dark'}
                 result = g_dev['cam'].expose_command(req, opt, no_AWS=True, \
                                     do_sep=False, quick=False)
 
@@ -956,7 +959,7 @@ class Sequencer:
                     break
 
             print(" Bias/Dark acquisition is finished normally.")
- 
+
 
         self.sequencer_hold = False
         g_dev['mnt'].park_command({}, {}) # Get there early
@@ -989,7 +992,7 @@ class Sequencer:
 
         camera_name = str(self.config['camera']['camera_1_1']['name'])
         flat_count = 7  #20220409  Just to speed things up a bit.
-        min_exposure = float(self.config['camera']['camera_1_1']['settings']['min_exposure']) 
+        min_exposure = float(self.config['camera']['camera_1_1']['settings']['min_exposure'])
         exp_time = min_exposure # added 20220207 WER
         #  NB Sometime, try 2:2 binning and interpolate a 1:1 flat.  This might run a lot faster.
         if flat_count < 1: flat_count = 1
@@ -1006,9 +1009,9 @@ class Sequencer:
         #length = len(pop_list)
         obs_win_begin, sunset, sunrise, ephem_now = self.astro_events.getSunEvents()
         scale = 1.0
-        prior_scale = 1   #THIS will be inhereted upon completion of the prior filter       
+        prior_scale = 1   #THIS will be inhereted upon completion of the prior filter
         collecting_area = self.config['telescope']['telescope1']['collecting_area']/31808.   # SAF at F4.9 is the reference
-        #   and (g_dev['events']['Eve Sky Flats'] < 
+        #   and (g_dev['events']['Eve Sky Flats'] <
         while len(pop_list) > 0  and ephem_now < ending:
 
             current_filter = int(pop_list[0])
@@ -1020,8 +1023,8 @@ class Sequencer:
             #g_dev['mnt'].slewToSkyFlatAsync()
             target_flat = 30000
             #scale = 1.0    #1.15   #20201121 adjustment
-        
-            
+
+
 
             if not g_dev['enc'].status['shutter_status'] in ['Open', 'open']:
                 g_dev['obs'].send_to_user("Wait for roof to be open to take skyflats. 60 sec delay loop.", p_level='INFO')
@@ -1104,7 +1107,7 @@ class Sequencer:
             try:
                 g_dev['mnt'].park_command({}, {})
             except:
-                print("Mount did not park at end of morning skyflats.") 
+                print("Mount did not park at end of morning skyflats.")
             self.morn_sky_flat_latch = False
         print('\nSky flat complete, or too early. Telescope Tracking is off.\n')
         self.sky_guard = False
@@ -1134,7 +1137,7 @@ class Sequencer:
         # Park Telescope
         req = {'time': exp_time,  'alias': camera_name, 'image_type': 'screen flat'}
         opt = {'area': 100, 'count': dark_count, 'filter': 'dark', 'hint': 'screen dark'}  #  air has highest throughput
- 
+
         result = g_dev['cam'].expose_command(req, opt, no_AWS=True)
         print('First dark 30-sec patch, filter = "air":  ', result['patch'])
         # g_dev['scr'].screen_light_on()
@@ -1188,8 +1191,8 @@ class Sequencer:
         g_dev['mnt'].Tracking = False   #park_command({}, {})
         print('Sky Flat sequence completed, Telescope tracking is off.')
         self.guard = False
-        
-    
+
+
 
     def auto_focus_script(self, req, opt, throw=600):
         '''
@@ -1221,7 +1224,7 @@ class Sequencer:
         opt2 = copy.deepcopy(opt)
 
         sim = False  # g_dev['enc'].status['shutter_status'] in ['Closed', 'Closing', 'closed', 'closing']
-        
+
         # try:
         #     self.redis_server.set('enc_cmd', 'sync_enc', ex=1200)
         #     self.redis_server.set('enc_cmd', 'open', ex=1200)
@@ -1244,7 +1247,7 @@ class Sequencer:
             #Check here for filter, guider, still moving  THIS IS A CLASSIC
             #case where a timeout is a smart idea.
             #Wait for external motion to cease before exposing.  Note this precludes satellite tracking.
-            st = "" 
+            st = ""
 
             #20210817  g_dev['enc'] does not exist,  so this faults. Cascade problem with user_id...
             while g_dev['foc'].focuser.IsMoving or g_dev['rot'].rotator.IsMoving or \
@@ -1281,7 +1284,7 @@ class Sequencer:
         #print("temporary patch in Sim values")
         print('Autofocus Starting at:  ', foc_pos0, '\n\n')
 
- 
+
         g_dev['foc'].guarded_move((foc_pos0 - 0* throw)*g_dev['foc'].micron_to_steps)   # NB added 20220209 Nasty bug, varies with prior state
 
         #throw = throw  # NB again, from config.  Units are microns  Passed as default paramter
@@ -1290,9 +1293,9 @@ class Sequencer:
             if not sim:
 
                 result = g_dev['cam'].expose_command(req, opt, no_AWS=True, solve_it=False) ## , script = 'auto_focus_script_0')  #  This is where we start.
-               
+
             else:
-               
+
                 result['FWHM'] = 3
                 result['mean_focus'] = g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron
 
@@ -1334,13 +1337,13 @@ class Sequencer:
         y = [spot2, spot1, spot3]
         print('X, Y:  ', x, y, 'Desire center to be smallest.')
         if spot1 is None or spot2 is None or spot3 is None:  #New additon to stop crash when no spots
-            print("No stars detected. Returning to starting focus and pointing.")
+            print("No stars detected. Returning to original focus setting and pointing.")
 
             g_dev['foc'].guarded_move((focus_start)*g_dev['foc'].micron_to_steps)
             self.sequencer_hold = False   #Allow comand checks.
             self.af_guard = False
             g_dev['mnt'].mount.SlewToCoordinatesAsync(start_ra, start_dec)
-            self.sequencer_hold = False   
+            self.sequencer_hold = False
             self.guard = False
             self.af_guard = False
             return
@@ -1349,9 +1352,9 @@ class Sequencer:
                 #Digits are to help out pdb commands!
                 a1, b1, c1, d1 = fit_quadratic(x, y)
                 new_spot = round(a1*d1*d1 + b1*d1 + c1, 2)
-    
+
             except:
-    
+
                 print('Autofocus quadratic equation not converge. Moving back to starting focus:  ', focus_start)
 
                 g_dev['foc'].guarded_move((focus_start)*g_dev['foc'].micron_to_steps)
@@ -1359,15 +1362,15 @@ class Sequencer:
                 self.sequencer_hold = False   #Allow comand checks.
                 self.af_guard = False
                 g_dev['mnt'].mount.SlewToCoordinatesAsync(start_ra, start_dec)
-                self.sequencer_hold = False   
+                self.sequencer_hold = False
                 self.guard = False
                 self.af_guard = False
-                return           
+                return
             if min(x) <= d1 <= max(x):
                 print ('Moving to Solved focus:  ', round(d1, 2), ' calculated:  ',  new_spot)
                 pos = int(d1*g_dev['foc'].micron_to_steps)
-                
-                
+
+
 
                 g_dev['foc'].guarded_move(pos)
                 time.sleep(5)
@@ -1377,7 +1380,7 @@ class Sequencer:
                 except:
                     g_dev['foc'].last_temperature = 7.5    #NB NB NB this should be a config file default.
                 g_dev['foc'].last_source = "auto_focus_script"
-                
+
                 if not sim:
                     result = g_dev['cam'].expose_command(req, opt, no_AWS=True, solve_it=False)  #   script = 'auto_focus_script_3')  #  This is verifying the new focus.
                 else:
@@ -1385,7 +1388,7 @@ class Sequencer:
                     result['mean_focus'] = g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron
                 spot4 = result['FWHM']
                 foc_pos4 = result['mean_focus']
-                print('\n\n\nFound best focus at:  ', foc_pos4,' measured is:  ',  round(spot4, 2), '\n\n\n')
+                print('\nFound best focus at:  ', foc_pos4,' measured is:  ',  round(spot4, 2), '\n')
                 g_dev['foc'].af_log(foc_pos4, spot4, new_spot)
                 print("Returning to:  ", start_ra, start_dec)
                 g_dev['mnt'].mount.SlewToCoordinatesAsync(start_ra, start_dec)   #Return to pre-focus pointing.
@@ -1396,18 +1399,21 @@ class Sequencer:
 
             #  NB NB We may want to consider sending the result image patch to AWS
             # NB NB NB I think we may have spot numbers wrong by 1 count and coarse focs not set up correctly.
-            self.sequencer_hold = False   
+            self.sequencer_hold = False
             self.guard = False
             self.af_guard = False
             return
         elif spot2 <= spot1 or spot3 <= spot1:
-            if spot2 <= spot3: 
+            if spot2 <= spot3:
                 min_focus = foc_pos2
             if spot3 <= spot2:
                 min_focus = foc_pos3
+                
+            ##  HERE we could add a fourth or fifth try.  The parabola cannot really invert, nor should we ever be at a wild point after the first focus is 
+            ##  set up.
             print("It appears camera is too far out; try again with coarse_focus_script.")
             self.coarse_focus_script(req2, opt2, throw=throw + 75, begin_at=min_focus)
-            self.sequencer_hold = False   
+            self.sequencer_hold = False
             self.guard = False
             self.af_guard = False
             return
@@ -1423,7 +1429,7 @@ class Sequencer:
         self.sequencer_hold = False   #Allow comand checks.
         self.af_guard = False
         #  NB NB We may want to consider sending the result image patch to AWS
-        self.sequencer_hold = False   
+        self.sequencer_hold = False
         self.guard = False
         self.af_guard = False
         return
@@ -1440,7 +1446,7 @@ class Sequencer:
         NBNBNB This code needs to go to known stars to be moe relaible and permit subframes
         '''
         print('AF entered with:  ', req, opt)
-        self.sequencer_hold = False   
+        self.sequencer_hold = False
         self.guard = False
         self.af_guard = True
         sim = False #g_dev['enc'].status['shutter_status'] in ['Closed', 'closed', 'Closing', 'closing']
@@ -1451,14 +1457,14 @@ class Sequencer:
         if begin_at is None:  #  ADDED 20120821 WER
             foc_start = g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron
         else:
-            foc_start = begin_at  #In this case we start at a place close to a 3 point minimum. 
+            foc_start = begin_at  #In this case we start at a place close to a 3 point minimum.
             g_dev['foc'].guarded_move((foc_start)*g_dev['foc'].micron_to_steps)
         print("Saved ra, dec, focus:  ", start_ra, start_dec, foc_start)
         try:
             #Check here for filter, guider, still moving  THIS IS A CLASSIC
             #case where a timeout is a smart idea.
             #Wait for external motion to cease before exposing.  Note this precludes satellite tracking.
-            st = "" 
+            st = ""
             while g_dev['foc'].focuser.IsMoving or g_dev['rot'].rotator.IsMoving or \
                   g_dev['mnt'].mount.Slewing: #or g_dev['enc'].status['dome_slewing']:   #Filter is moving??
                 if g_dev['foc'].focuser.IsMoving: st += 'f>'
@@ -1495,7 +1501,7 @@ class Sequencer:
             result['FWHM'] = 4
             result['mean_focus'] = g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron
         spot1 = result['FWHM']
-        foc_pos1 = result['mean_focus']  
+        foc_pos1 = result['mean_focus']
         # if not sim:
         #     result = g_dev['cam'].expose_command(req, opt, no_AWS=True) ## , script = 'auto_focus_script_0')  #  This is where we start.
         # else:
@@ -1503,8 +1509,8 @@ class Sequencer:
         #     result['mean_focus'] = foc_pos0
         # spot1 = result['FWHM']
         # foc_pos1 = result['mean_focus']
-        
-        
+
+
         print('Autofocus Moving In -1x, second time.\n\n')
 
         g_dev['foc'].guarded_move((foc_pos0 - 1*throw)*g_dev['foc'].micron_to_steps)
@@ -1563,10 +1569,10 @@ class Sequencer:
             print('Autofocus quadratic equation not converge. Moving back to starting focus:  ', foc_start)
 
             g_dev['foc'].guarded_move((foc_start)*g_dev['foc'].micron_to_steps)
-            self.sequencer_hold = False   
+            self.sequencer_hold = False
             self.guard = False
             self.af_guard = False
-            return 
+            return
         if min(x) <= d1 <= max(x):
             print ('Moving to Solved focus:  ', round(d1, 2), ' calculated:  ',  new_spot)
             #Saves a base for relative focus adjusts.
@@ -1580,7 +1586,7 @@ class Sequencer:
                 g_dev['foc'].last_temperature = 10.0    #NB NB This should be a site monthly default.
             g_dev['foc'].last_source = "coarse_focus_script"
             if not sim:
-     
+
                 result = g_dev['cam'].expose_command(req, opt, solve_it=False)
             else:
                 result['FWHM'] = new_spot
@@ -1599,7 +1605,7 @@ class Sequencer:
         g_dev['mnt'].mount.SlewToCoordinatesAsync(start_ra, start_dec)   #Return to pre-focus pointing.
         if sim:
             g_dev['foc'].guarded_move((foc_start)*g_dev['foc'].micron_to_steps)
-        self.sequencer_hold = False   
+        self.sequencer_hold = False
         self.guard = False
         self.af_guard = False
         return result
@@ -1650,7 +1656,7 @@ A variant on this is cover a grid, cover a + sign shape.
 IF sweep
         '''
        # ptr_utility.ModelOn = False
-        
+
         self. sky_guard = True
         ha_deg_steps = (-72.5, -62.5, -52.5, -42.5, -32.5, -22.5, -12.5, -2.5, \
                          -7.5, -17.5, -27.5, -37.5, -47.5, -57.5, -67.5, \
@@ -1701,7 +1707,7 @@ IF sweep
         ptr_utility.ModelOn = True
         self.sky_guard = False
         return
- 
+
     def cross_pointing_run(self, req, opt, spacing=30, vertical=False, grid=False, alt_minimum=25):
         '''
         unpark telescope
@@ -1747,7 +1753,7 @@ A variant on this is cover a grid, cover a + sign shape.
 IF sweep
         '''
        # ptr_utility.ModelOn = False
-        
+
         self. sky_guard = True
         points = [(-2.5, 0), (-2.5, -30), (-30, 0), (-60, 0), (2.5, 75), (0.5, 45), \
                   (0.5, 0), (30, 0), (60, 0)]
@@ -1799,7 +1805,7 @@ IF sweep
         ptr_utility.ModelOn = True
         self.sky_guard = False
         return
-    
+
     def sky_grid_pointing_run(self, req, opt, spacing=10, vertical=False, grid=False, alt_minimum=25):
         #camera_name = str(self.config['camera']['camera_1_1']['name'])
         '''
@@ -1907,12 +1913,12 @@ IF sweep
             result = 'simulated result.'
             count += 1
             print('\n\nResult:  ', result,   'To go count:  ', length - count,  '\n\n')
-            
+
         #g_dev['mnt'].park()
         print("Equatorial sweep completed. Happy reducing.")
         ptr_utility.ModelOn = True
         self.sky_guard = False
-        return       
+        return
 
     def rel_sky_grid_pointing_run(self, req, opt, spacing=10, vertical=False, grid=False, alt_minimum=25):
         #camera_name = str(self.config['camera']['camera_1_1']['name'])
@@ -2018,13 +2024,13 @@ IF sweep
             result = 'simulated result.'
             count += 1
             print('\n\nResult:  ', result,   'To go count:  ', length - count,  '\n\n')
-            
+
         g_dev['mnt'].mount.Tracking = False
         print("Equatorial sweep completed. Happy reducing.")
         ptr_utility.ModelOn = True
         self.sky_guard = False
-        return    
-       
+        return
+
     def vertical_pointing_run(self, req, opt, spacing=10, vertical=False, grid=False, alt_minimum=25):
         '''
         unpark telescope
@@ -2087,7 +2093,7 @@ IF sweep
             for degree_value in dec_steps:
                 target_ra =  ra_fix(g_dev['mnt'].mount.SiderealTime - ha)
 
-    
+
                 #     #  Go to closest Mag 7.5 Tycho * with no flip
                 # focus_star = tycho.dist_sort_targets(target_ra, target_dec, \
                 #                    g_dev['mnt'].mount.SiderealTime)
@@ -2096,7 +2102,7 @@ IF sweep
                 #     continue
                 # print("Going to near focus star " + str(focus_star[0]) + "  degrees away.")
                 req = {'ra':  target_ra,
-                       'dec': degree_value} 
+                       'dec': degree_value}
                 opt = {}
                 #Should have an Alt limit check here
                 g_dev['mnt'].go_command(req, opt)
@@ -2136,8 +2142,8 @@ IF sweep
         seq_shelf['completed_blocks']= lcl_list
         print('Appended completes contains:  ', seq_shelf['completed_blocks'])
         seq_shelf.close()
-        return 
-    
+        return
+
     def is_in_completes(self, check_block_id):
         camera = self.config['camera']['camera_1_1']['name']
         seq_shelf = shelve.open(g_dev['cam'].site_path + 'ptr_night_shelf/' + camera)
@@ -2149,7 +2155,7 @@ IF sweep
             seq_shelf.close()
             return False
 
-    
+
     def reset_completes(self):
         try:
             camera = self.config['camera']['camera_1_1']['name']
@@ -2158,7 +2164,7 @@ IF sweep
             seq_shelf.close()
         except:
             print('Found an empty shelf.  Reset_(block)completes for:  ', camera)
-        return 
+        return
 
     # import math
     # chip_x =1.4022
@@ -2179,7 +2185,7 @@ IF sweep
     #         x_overlap =(field_x - span_x)/2
     #     if proposed_y - 1 >=  1:
     #         y_overlap = over_span_y/(proposed_y - 1)
-    #     else:            
+    #     else:
     #         y_overlap =(field_y - span_y)/2
     #     if 0 <= x_overlap  < overlap/100:
     #         proposed_x += 1
@@ -2190,7 +2196,7 @@ IF sweep
     #         proposed_y += 1
     #         span_y = chip_y*proposed_y
     #         over_span_y = span_y - field_y
-    #         y_overlap = over_span_y/(proposed_y - 1)          
+    #         y_overlap = over_span_y/(proposed_y - 1)
     #     return(proposed_x, proposed_y, x_overlap, y_overlap)
     # for side in range(0,7):
     #     area = math.sqrt(2)**side

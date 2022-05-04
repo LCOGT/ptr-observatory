@@ -407,7 +407,7 @@ class Observatory:
             # Wait a bit before polling for new commands
             time.sleep(self.command_interval)
            #  t1 = time.time()
-            if not g_dev['seq'].sequencer_hold:
+            if True: #not g_dev['seq'].sequencer_hold:
                 #print("Reading AWS command buffer.")
                 url_job = "https://jobs.photonranch.org/jobs/getnewjobs"
                 body = {"site": self.name}
@@ -524,7 +524,7 @@ class Observatory:
                 return   # Continue   #Note this creates an infinite loop, and that is OK
                 
             else:
-                print('Sequencer Hold asserted.')    #What we really want here is looking for a Cancel/Stop.
+                pass#print('Sequencer Hold asserted.')    #What we really want here is looking for a Cancel/Stop.
                 continue
 
     def update_status(self):

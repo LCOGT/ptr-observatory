@@ -366,7 +366,7 @@ class FilterWheel:
         ''' set the filter position by filter name '''
         #print("filter cmd: set_name", req, opt)
         try:
-            filter_name = req['filter_name']
+            filter_name = req['filter']
         except:
             try:
                 filter_name = req['filter']
@@ -388,7 +388,7 @@ class FilterWheel:
         # if filter_name =="u":
         #     filter_name = 'up'
         for match in range(int(self.config['filter_wheel1']['settings']['filter_count'])):  #NB Filter count MUST be correct in Config.
-            if filter_name == self.filter_data[match][0]:
+            if filter_name in self.filter_data[match][0]:
 
                 filt_pointer = match
                 break

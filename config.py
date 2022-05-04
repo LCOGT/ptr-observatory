@@ -85,7 +85,7 @@ site_config = {
     'eve_sky_flat_sunset_offset': +0.0,  # Minutes  neg means before, + after.
     'auto_morn_sky_flat': False,
     'auto_morn_bias_dark': False,
-    're-calibrate_on_solve': True, 
+    're-calibrate_on_solve': False, 
 
     'observing_conditions' : {     #for SAF
         'observing_conditions1': {
@@ -326,8 +326,8 @@ site_config = {
             #F9 setup
             'reference': 5743,    #  Meas   Nominal at 10C Primary temperature
             'ref_temp':  4.8,    # Update when pinning reference
-            'coef_c': -78.337,   # negative means focus moves out as Primary gets colder
-            'coef_0': 5575,  # Nominal intercept when Primary is at 0.0 C. 
+            'coef_c': -77.57,   # negative means focus moves out/in as Primary gets colder/warmer.
+            'coef_0': 6155,   #5675,  20220502 Nominal intercept when Primary is at 0.0 C. 
             'coef_date':  '20220302',    # SWAG 
             'minimum': 0,     # NB this area is confusing steps and microns, and need fixing.
             'maximum': 12600,   #12672 actually
