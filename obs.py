@@ -235,7 +235,7 @@ class Observatory:
         #     self.get_status = config.get_ocn_status
         #     # Get current ocn status just as a test.
         #     self.status = self.get_status(g_dev)
-        #     # breakpoint()  # All test code
+        #     #breakpoint()  # All test code
         #     # quick = []
         #     # self.get_quick_status(quick)
         #     # print(quick)
@@ -322,12 +322,12 @@ class Observatory:
             self.all_devices[dev_type] = {}
             # Get the names of all the devices from each dev_type.
             # if dev_type == 'camera':
-            #     breakpoint()
+            #breakpoint()
             devices_of_type = config.get(dev_type, {})
             device_names = devices_of_type.keys()
             # Instantiate each device object from based on its type
             for name in device_names:
-                breakpoint()
+
                 driver = devices_of_type[name]["driver"]
                 settings = devices_of_type[name].get("settings", {})
                 # print('looking for dev-types:  ', dev_type)
@@ -376,7 +376,7 @@ class Observatory:
         '''
         uri = f"{self.name}/config/"
         self.config['events'] = g_dev['events']
-        # breakpoint()
+        #breakpoint()
         # pprint(self.config)
         response = self.api.authenticated_request("PUT", uri, self.config)
         if response:
@@ -446,7 +446,6 @@ class Observatory:
                             self.cmd_queue.put(cmd)  #SAVE THE COMMAND FOR LATER
                             #print("Appending job:  ")  # Kilroy was here)
                             self.send_to_user("Queueing up a new command... Hint:  " + cmd['action'])
-                            
                     if cancel_check:
                         return   #Note we do not process any commands.
                 while self.cmd_queue.qsize() > 0:#print(unread_commands)
@@ -605,7 +604,7 @@ class Observatory:
             print('\n\nStatus Sent:  \n', status)   # from Update:  ', status))
         else:
             print('.') #, status)   # We print this to stay informed of process on the console.
-            # breakpoint()
+            #breakpoint()
             # self.send_log_to_frontend("WARN cam1 just fell on the floor!")
             # self.send_log_to_frontend("ERROR enc1 dome just collapsed.")
             #  Consider inhibity unless status rate is low

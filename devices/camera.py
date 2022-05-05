@@ -186,7 +186,6 @@ class Camera:
 
         '''
         self.name = name
-        breakpoint()
         g_dev[name + '_cam_retry_driver'] = driver
         g_dev[name + '_cam_retry_name'] = name
         g_dev[name + '_cam_retry_config'] = config
@@ -199,6 +198,7 @@ class Camera:
         self.alias = config['camera'][self.name]['name']
         win32com.client.pythoncom.CoInitialize()
         print(driver, name)
+
         self.camera = win32com.client.Dispatch(driver)
 
         #self.camera = win32com.client.Dispatch('ASCOM.FLI.Kepler.Camera')
@@ -566,7 +566,7 @@ class Camera:
         not the slower File Path.  THe mode used for focusing or other operations where we do not want to save any
         image data.
         '''
- 
+
         #print('Expose Entered.  req:  ', required_params, 'opt:  ', optional_params)
         #print("Checking if Maxim is still connected!")
         #  self.t7 is last time camera was read out
@@ -1878,7 +1878,7 @@ class Camera:
 
                 #it takes about 15 seconds from AWS to get here for a bias.
         # except Exception as e:
-        #     breakpoint()
+        #breakpoint()
         #     counter += 1
         #     time.sleep(.01)
         #     print('Was waiting for exposure end, arriving here is bad news:  ', e)
