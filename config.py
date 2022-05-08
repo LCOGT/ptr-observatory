@@ -80,7 +80,7 @@ site_config = {
     
     'site_in_automatic_default': "Automatic",   # ["Manual", "Shutdown", "Automatic"]
     'automatic_detail_default': "Enclosure is initially set to Shutdown by SAF config.",
-    'auto_eve_bias_dark': False,
+    'auto_eve_bias_dark': True,
     'auto_eve_sky_flat': True,
     'eve_sky_flat_sunset_offset': +0.0,  # Minutes  neg means before, + after.
     'auto_morn_sky_flat': False,
@@ -604,8 +604,8 @@ site_config = {
                 'north_offset': 0.0,    # These three are normally 0.0 for the primary telescope
                 'east_offset': 0.0,     # Not sure why these three are even here.
                 'rotation': 0.0,        # Probably remove.
-                'min_exposure': 0.0001,
-                'max_exposure': 300.0,
+                'min_exposure': 0.00001,
+                'max_exposure': 360.0,
                 'can_subframe':  True,
                 'min_subframe':  [128, 128],       
                 'bin_modes':  [[2, 2, 1.06], [1, 1, 0.53], [3, 3, 1.58], [4, 4,2.11]],   #Meaning no binning choice if list has only one entry, default should be first.
@@ -646,14 +646,14 @@ site_config = {
         # 'camera_1_2': {
         #     'parent': 'telescope2',
         #     'name': 'sq001c',      # Important because this points to a server file structure by that name.
-        #     'desc':  'QHY 367C',
-        #     'service_date': '20200301',
-        #     'driver': "ASCOM.QHYCCD.Camera", #"Maxim.CCDCamera",  # "ASCOM.QHYCCD.Camera", ## 'ASCOM.FLI.Kepler.Camera',
-        #     'detector':  'Sony IMX455',  #Wrong
+        #     'desc':  'QHY 286C',
+        #     'service_date': '20220501',
+        #     'driver': "ASCOM.QHYCCD_GUIDER.Camera", #"Maxim.CCDCamera",  # "ASCOM.QHYCCD.Camera", ## 'ASCOM.FLI.Kepler.Camera',
+        #     'detector':  'Sony IMX571',
         #     'manufacturer':  'QHY',
         #     'use_file_mode':  False,
         #     'file_mode_path':  'G:/000ptr_saf/archive/ssq001c/autosaves/',
-        #     'detsize': '[1:9600, 1:6422]',  # QHY6376 Physical chip data size as returned from driver
+        #     'detsize': '[1:6280, 1:4210]',  # QHY6376 Physical chip data size as returned from driver
         #     'ccdsec': '[1:9600, 1:6422]',
         #     'biassec': ['[1:24, 1:6388]', '[1:12, 1:3194]', '[1:8, 1:2129]', '[1:6, 1:1597]'],
         #     'datasec': ['[25:9600, 1:6388]', '[13:4800, 1:3194]', '[9:3200, 1:2129]', '[7:2400, 1:1597]'],
