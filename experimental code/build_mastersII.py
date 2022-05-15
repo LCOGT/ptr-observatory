@@ -499,7 +499,7 @@ def make_master_bias (alias, path,  lng_path , selector_string, out_file):
     #file_list = file_list[:11*11]   #Temporarily limit size of reduction.
     print('# of files:  ', len(file_list))
     print(file_list)
-    breakpoint()
+
     if len(file_list) == 0:
         print("Empty list, returning.")
         return
@@ -658,7 +658,7 @@ def build_hot_image(camera_name, lng_path, in_image, out_name):
     img = ccdproc.CCDData.read(lng_path + in_image, format='fits')
     img_std = img.data.std()
     #img_mean = img.data.mean()
-    hot_pix = np.where(img.data > 2*img_std)
+    hot_pix = np.where(img.data > 4*img_std)
     saved = img.data.astype('int32')
     img.data -= img.data
     for pix in range(len(hot_pix[0])):
@@ -907,11 +907,11 @@ if __name__ == '__main__':
     # breakpoint()
     
     
-    # for bias in ['b_4', 'b_3', 'b_2', 'b_1']:
-    #      make_master_bias(camera_name, archive_path, out_path, '*' + bias + '*', bias + '.fits')
+    for bias in ['b_4', 'b_3', 'b_2', 'b_1']:
+          make_master_bias(camera_name, archive_path, out_path, '*' + bias + '*', bias + '.fits')
 
-    # for dark in  ['d_4', 'd_3', 'd_2', 'd_1']:
-    #     make_master_dark(camera_name, archive_path,  lng_path, '*' + dark + '*', dark +'.fits', 'b_' + dark[-1]+'.fits')
+    for dark in  ['d_4', 'd_3', 'd_2', 'd_1']:
+        make_master_dark(camera_name, archive_path,  lng_path, '*' + dark + '*', dark +'.fits', 'b_' + dark[-1]+'.fits')
 
     for filt in [ 'w', 'air', 'PL', 'PR', 'PG', 'PB', 'EXO', 'HA', 'N2','S2', 'CR', 'O3', \
                  'up', 'gp', 'rp', 'ip','zp', 'z', 'y', 'JB', 'JV', "JU", 'Rc', 'Ic', \

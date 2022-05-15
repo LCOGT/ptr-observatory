@@ -742,7 +742,7 @@ class Enclosure:
     #     pass
 
     def sync_mount_command(self, req: dict, opt: dict):
-        print("enclosure cmd: sync_az")
+        #print("enclosure cmd: sync_az")
         self.enclosure.Slaved = True
         self.following = True
         self.enclosure_synchronized =True
