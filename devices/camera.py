@@ -247,11 +247,11 @@ class Camera:
         #print('Maxim is connected:  ', self._connect(True))
         setpoint =(float(self.config['camera'][self.name]['settings']['temp_setpoint']))
         self._set_setpoint(setpoint)
-        print('Cooler started @:  ', self._setpoint())
+        print('Cooler Commanded to Cent.:  ', self._setpoint())
 
         if self.config['camera'][self.name]['settings']['cooler_on']:    #NB NB why this logic, do we mean if not cooler found on, then turn it on and take the delay?
             self._set_cooler_on()
-        print('Cooler started @:  ', self._temperature())  
+        print('Cooler began @:  ', self._temperature())  
         # if self.camera.CanStopExposure:  Does not work for Maxim
         #     self.can_be_stopped = True
         # else:
