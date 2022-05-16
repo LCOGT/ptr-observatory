@@ -9,6 +9,7 @@ import socket
 import os
 import config
 from config import get_enc_status
+from pprint import pprint
 
 
 '''
@@ -191,6 +192,7 @@ class Enclosure:
         self.config = config
         g_dev['enc'] = self
         self.slew_latch = False
+
         if self.config['site_in_automatic_default'] == "Automatic":
             self.site_in_automatic = True
             self.mode = 'Automatic' 
@@ -204,7 +206,6 @@ class Enclosure:
     
         self.time_of_next_slew = time.time()
         self.hostname = socket.gethostname()
-
         if self.hostname in self.config['wema_hostname']:
             self.is_wema = True
         else:
@@ -217,7 +218,7 @@ class Enclosure:
         if self.config['dome_on_wema']:
             self.dome_on_wema  =True
         else:
-            self.dome_on_wema = False   #False if wema enc is not a dome.
+            self.dome_on_wema = False
         if self.site in ['simulate',  'dht']:  #DEH: added just for testing purposes with ASCOM simulators.
             self.observing_conditions_connected = True
             self.site_is_proxy = False   
@@ -228,7 +229,7 @@ class Enclosure:
             #  Note OCN has no associated commands.
             #  Note monkey patch
             self.get_status = get_enc_status
-            self.get_status = config.get_enc_status
+            #self.get_status = config.get_enc_status   # NB NB Bogus line of code
             # Get current ocn status just as a test.
             self.status = self.get_status(g_dev)
 
@@ -253,7 +254,6 @@ class Enclosure:
         self.prior_status = {'enclosure_mode': 'Manual'}    #Just to initialze this rarely used variable.
         
     def get_status(self) -> dict:
-
         if not self.is_wema and self.site_has_proxy and self.dome_on_wema:
             if self.config['site_IPC_mechanism'] == 'shares':
                 try:
@@ -297,12 +297,13 @@ class Enclosure:
                 self.prior_status = status
                 g_dev['enc'].status = status
             else:
-                breakpoint()
+                pass
+                #breakpoint()
             self.status = status
             g_dev['enc'].status = status
             return status
 
-        if self.site_is_generic and self.is_wema and not self.dome_on_wema:#  NB Should be AND?
+        if self.site_is_generic or self.is_wema or not self.dome_on_wema:#  NB Should be AND?
             try:
                 shutter_status = self.enclosure.ShutterStatus
             except:
@@ -564,7 +565,7 @@ class Enclosure:
         if mnt_command is not None and mnt_command != '' and mnt_command != ['none']:
 
             try:
-                breakpoint()
+                #breakpoint()
                 #print( mnt_command)
                 # adj1 = dome_adjust(mount_command['altitude'], mount_command['azimuth'], \
                 #                   mount_command['hour_angle'])
@@ -741,7 +742,7 @@ class Enclosure:
     #     pass
 
     def sync_mount_command(self, req: dict, opt: dict):
-        print("enclosure cmd: sync_az")
+        #print("enclosure cmd: sync_az")
         self.enclosure.Slaved = True
         self.following = True
         self.enclosure_synchronized =True
@@ -880,6 +881,7 @@ class Enclosure:
         elif ((g_dev['events']['Cool Down, Open']  <= ephem_now < g_dev['events']['Observing Ends']) and \
                g_dev['enc'].mode == 'Automatic') and not (g_dev['ocn'].wx_hold or g_dev['ocn'].clamp_latch):
             if self.status_string in ['Closed']:
+                print("Entering Guarded open, Expect slew opposite Sun")
                 self.guarded_open()
             self.dome_opened = True
             self.dome_homed = True
@@ -887,6 +889,7 @@ class Enclosure:
             if self.status_string in ['Open'] and ephem_now < g_dev['events']['End Eve Sky Flats']:
                 if self.is_dome:
                     self.enclosure.SlewToAzimuth(az_opposite_sun)
+                    print("Slewing Opposite Sun")
                     g_dev['obs'].send_to_user("Dome slewing opposite the Solar azimuth", p_level='INFO')
                 time.sleep(5)
         #THIS should be the ultimate backup to force a close

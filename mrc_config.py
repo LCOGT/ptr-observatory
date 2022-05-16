@@ -66,9 +66,11 @@ site_config = {
     'archive_path':  'Q:/',
     'wema_is_active':  True,          # True if the split computers used at a site.
     'wema_hostname': 'MRC-WMS-ENC',   # Prefer the shorter version
-    'wema_share_path':  'Q:/ptr/',  # '/wema_transfer/',
+    'wema_path':  'Q:/ptr/',  # '/wema_transfer/',
     'dome_on_wema':   True,
-    'site_IPC_mechanism':  'shares',   # ['None', shares', 'shelves', 'redis']  Pick One
+    'site_IPC_mechanism':  'redis',   # ['None', shares', 'shelves', 'redis']  Pick One
+    'wema_write_share_path':  None,  # Meant to be where Wema puts status data.
+    'client_read_share_path':  None,
     'redis_ip': '10.15.0.109',  #'127.0.0.1', None if no redis path present, 
     'site_is_generic':  False,   # A simply  single computer ASCOM site.
     'site_is_specific':  False,  # Indicates some special code for this site, found at end of config.
@@ -230,8 +232,8 @@ site_config = {
             'shutdown_script':  None,  
             'alignment': 'Alt-Az',
             'default_zenith_avoid': 7.0,   #degrees floating
-            'west_clutch_ra_correction_r': 0.0,
-            'west_clutch_dec_correction_r': 0.0,
+            'west_clutch_ra_correction': 0.0,
+            'west_clutch_dec_correction': 0.0,
             'east_flip_ra_correction': 0.0,
             'east_flip_dec_correction': 0.0,
             'has_paddle': False,

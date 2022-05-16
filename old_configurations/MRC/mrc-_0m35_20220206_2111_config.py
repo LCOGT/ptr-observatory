@@ -511,7 +511,7 @@ site_config = {
             "parent": "telescope1",
             "alias": "Dual filter wheel",
             "desc":  'FLI Centerline Custom Dual 50mm sq.',
-            #"driver": ['ASCOM.FLI.FilterWheel1', 'ASCOM.FLI.FilterWheel2'],   #"Maxim",   #
+            'driver": ['ASCOM.FLI.FilterWheel1', 'ASCOM.FLI.FilterWheel2'],   #"Maxim",   #
             "driver": "Maxim.CCDCamera",  #  'ASCOM.FLI.FilterWheel',   #'MAXIM',
             "dual_wheel": True,
             # "parent": "telescope1",

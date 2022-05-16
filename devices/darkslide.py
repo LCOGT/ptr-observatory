@@ -6,28 +6,31 @@ Created on Sat Aug 15 19:19:56 2020
 """
 
 import serial
+from global_yard import g_dev
 
 
 class Darkslide(object):
     
     def __init__(self, com_port):
-        self.slideStatus = 'unknown'
+        self.slideStatus = 'Unknown'
         self.com_port = com_port
-        self.closeDarkslide()
+        #self.closeDarkslide()
+        #self.slideStatus = 'Closed'
+        g_dev['drk'] = self
 
         
    
     def openDarkslide(self):
         self._com = serial.Serial(self.com_port, timeout=0.3)
         self._com.write(b'@')
-        self.slideStatus = 'open'
+        self.slideStatus = 'Open'
         self._com.close()
         print("Darkslide Opened.")
     
     def closeDarkslide(self):
         self._com = serial.Serial(self.com_port, timeout=0.3)   #Com 12 for saf, needs fixing.
         self._com.write(b'A')
-        self.slideStatus = 'closed'
+        self.slideStatus = 'Closed'
         self._com.close()
         print("Darkslide Closed.")
        

@@ -15,13 +15,14 @@ import os
 import math
 import numpy as np
 from astropy.io import fits
+
 #from astropy.table import Table
 #from astropy.utils.data import get_pkg_data_filename
 import sep
 from astropy.time import Time
 import glob
 import shelve
-#from pprint import pprint
+from pprint import pprint
 
 
 #from os.path import join, dirname, abspath
@@ -31,8 +32,8 @@ import shelve
 # from skimage import img_as_float
 # from skimage import exposure
 # from skimage.io import imsaves
-# import matplotlib.pyplot as plt
-
+import matplotlib.pyplot as plt
+from scipy import stats
 # from PIL import Image
 from global_yard import g_dev
 #from processing.calibration import calibrate
@@ -143,7 +144,7 @@ def test_sequence(pCamera):
     return seq
 
 def reset_sequence(pCamera):
-    breakpoint()
+    #breakpoint()
     camShelf = shelve.open(g_dev['cam'].site_path + 'ptr_night_shelf/' + str(pCamera))
     #seq = camShelf['Sequence']      # a 9 character string
     seqInt = int(-1)
@@ -197,6 +198,7 @@ class Camera:
         self.alias = config['camera'][self.name]['name']
         win32com.client.pythoncom.CoInitialize()
         print(driver, name)
+
         self.camera = win32com.client.Dispatch(driver)
 
         #self.camera = win32com.client.Dispatch('ASCOM.FLI.Kepler.Camera')
@@ -217,6 +219,7 @@ class Camera:
             self._expose = self._ascom_expose
             self._stop_expose = self._ascom_stop_expose
             self.description = "ASCOM"
+            self.readout_after_stop = True
             self.maxim = False
             self.ascom = True
             print('ASCOM is connected:  ', self._connect(True))
@@ -244,11 +247,16 @@ class Camera:
         #print('Maxim is connected:  ', self._connect(True))
         setpoint =(float(self.config['camera'][self.name]['settings']['temp_setpoint']))
         self._set_setpoint(setpoint)
-        print('Cooler started @:  ', self._setpoint())
+        print('Cooler Commanded to Cent.:  ', self._setpoint())
 
         if self.config['camera'][self.name]['settings']['cooler_on']:    #NB NB why this logic, do we mean if not cooler found on, then turn it on and take the delay?
             self._set_cooler_on()
-        print('Cooler started @:  ', self._temperature())  
+        print('Cooler began @:  ', self._temperature())  
+        # if self.camera.CanStopExposure:  Does not work for Maxim
+        #     self.can_be_stopped = True
+        # else:
+        #     self.can_be_stopped = False
+            
         self.use_file_mode = False  #self.config['camera'][self.name]['use_file_mode']    #NB NB NB this is obsolte, clear nout file mode from code
         self.current_filter = 0    #W in Apache Ridge case. #This should come from config, filter section
         self.exposure_busy = False
@@ -321,11 +329,11 @@ class Camera:
             self.darkslide = True
             com_port = self.config['camera'][self.name]['settings']['darkslide_com']
             self.darkslide_instance = Darkslide(com_port)     #  NB eventually default after reboot should be closed.
-            self.darkslide_instance.closeDarkslide()   #  Consider turing off IR Obsy light at same time..
-            self.darkslide_open = False
-            print("Darkslide closed on camera startup.")
-        self.last_user_name = "unknown user name"
-        self.last_user_id ="unknown user ID"
+            #self.darkslide_instance.closeDarkslide()   #  Consider turing off IR Obsy light at same time..
+            #self.darkslide_open = False
+            print("Darkslide unknown on camera startup.")
+        self.last_user_name = "Tobor"
+        self.last_user_id ="Tobor"
         try:
             seq = test_sequence(self.alias)
         except:
@@ -463,7 +471,7 @@ class Camera:
         status['active_camera'] = self.name
         if self.config['camera'][self.name]['settings']['has_darkslide']:
             ds = self.darkslide_instance.slideStatus
-            status['darkslide'] = str(ds)
+            status['darkslide'] = g_dev['drk'].slideStatus
         else:
             status['darkslide']    = 'unknown'
         if self.exposure_busy:
@@ -496,18 +504,30 @@ class Camera:
         self.user_name = command['user_name']
         if self.user_name != self.last_user_name:
             self.last_user_name = self.user_name
-        if action == "expose" and not self.exposure_busy :
+        if action == "expose" and not self.exposure_busy:
             self.expose_command(req, opt, do_sep=True, quick=False)
             self.exposure_busy = False     #Hangup needs to be guarded with a timeout.
             self.active_script = None
 
-#        elif action == "expose" and script_mode == 'make_superscreenflats':
+        elif action == "expose" and self.exposure_busy:
+            print("Cannot expose, camera is currently busy")
 #            self.screen_flat_script(req, opt)
 #            self.exposure_busy = False
 #            self.active_script = 'make_superscreenflats'
+        elif action == "darkslide_close":
+           # self.stop_command(req, opt)
+           # self.exposure_busy = False
+           g_dev['drk'].closeDarkslide()
+           print("Closing the darkslide.")
+        elif action == "darkslide_open":
+           # self.stop_command(req, opt)
+           # self.exposure_busy = False
+           g_dev['drk'].openDarkslide()
+           print("Opening the darkslide.")
         elif action == "stop":
             self.stop_command(req, opt)
             self.exposure_busy = False
+            print("STOP  STOP  STOP received.")
         else:
 
             print(f"Command <{action}> not recognized.")
@@ -547,10 +567,12 @@ class Camera:
         not the slower File Path.  THe mode used for focusing or other operations where we do not want to save any
         image data.
         '''
+
         #print('Expose Entered.  req:  ', required_params, 'opt:  ', optional_params)
         #print("Checking if Maxim is still connected!")
         #  self.t7 is last time camera was read out
         #if self.t7 is not None and (time.time() - self.t7 > 30) and self.maxim:
+        self.exposure_busy = True
         try:
             self.user_name
         except:
@@ -594,14 +616,14 @@ class Camera:
         try:
             bin_x = eval(bin_x)[:2]   #This is meant to strip off the Pixel size when it comes in from aws.
         except:
-            print('Bin eval did not work, no harm usually.')
-        if bin_x in ['4 4', 4, '4, 4', '4,4', [4, 4]]:     # For now this is the highest level of binning supported.
+            pass#print('Bin eval did not work, no harm usually.')
+        if bin_x in ['4 4', 4, '4, 4', '4,4', [4, 4], (4, 4)]:     # For now this is the highest level of binning supported.
             bin_x = 4
             self.ccd_sum = '4 4'
-        elif bin_x in ['3 3', 3, '3, 3', '3,3', [3, 3]]:   # replace with in and various formats or strip spaces.
+        elif bin_x in ['3 3', 3, '3, 3', '3,3', [3, 3], (3, 3)]:   # replace with in and various formats or strip spaces.
             bin_x = 3
             self.ccd_sum = '3 3'
-        elif bin_x in ['2 2', 2, '2, 2', '2,2', [2, 2]]:   #The bin spec is too convoluted. This needs a deep clean.
+        elif bin_x in ['2 2', 2, '2, 2', '2,2', [2, 2], (2, 2)]:   #The bin spec is too convoluted. This needs a deep clean.
             bin_x = 2
             self.ccd_sum = '2 2'
         else:
@@ -618,7 +640,7 @@ class Camera:
         #                                              ['settings']['reference_gain'][bin_x - 1]))
         readout_time = float(self.config['camera'][self.name]['settings']['cycle_time'][bin_x - 1])
         exposure_time = float(required_params.get('time', 0.0001))   #  0.0 may be the best default.  Use QHY min spec?  Config item?
-        exposure_time = min(exposure_time, 1440.)
+        exposure_time = min(exposure_time, 1200.)
         self.estimated_readtime = (exposure_time + readout_time)   #  3 is the outer retry loop maximum.
         #exposure_time = max(0.2, exposure_time)  #Saves the shutter, this needs qualify with imtype.
         imtype= required_params.get('image_type', 'light')
@@ -869,11 +891,20 @@ class Camera:
         #  NB Important: None of above code talks to the camera!
         result = {}  #  This is a default return just in case
         num_retries = 0
-        for seq in range(count):
+        while count > 0:   #in range(count):
+            count -= 1
             #  SEQ is the outer repeat loop and takes count images; those individual exposures are wrapped in a
             #  retry-3-times framework with an additional timeout included in it.
-            if seq > 0:
+            if count > 0:
                 g_dev['obs'].update_status()
+                
+            if g_dev['obs'].stop_all_activity:  #This should kill a long loop of identical exposures
+                result['stopped'] =  True
+                g_dev['obs'].stop_all_activity = False
+                print("Camera Count loop terminated by Cancel Exposure")
+                self.exposure_busy = False
+                return result
+
 
             self.pre_mnt = []
             self.pre_rot = []
@@ -910,7 +941,7 @@ class Camera:
                       
                     st = ""
                     time.sleep(0.2)
-                    if seq > 0:
+                    if count > 0:
                         g_dev['obs'].update_status()
                     #Refresh the probe of the dome status
                     if g_dev['enc'].is_dome:
@@ -924,14 +955,19 @@ class Camera:
             except:
                 pass
                # print("Motion check faulted.")
-            if seq > 0:
+            if count > 0:
                 g_dev['obs'].update_status()   # NB Make sure this routine has a fault guard.
             self.retry_camera = 3
             self.retry_camera_start_time = time.time()
-
             while self.retry_camera > 0:
 
                 #NB Here we enter Phase 2
+                if g_dev['obs'].stop_all_activity:
+                    if result['stopped'] is True:
+                        g_dev['obs'].stop_all_activity = False
+                        print("Camera retry loop stopped by Cancel Exposure")
+                        self.exposure_busy = False
+                    return
                 try:
                     self.t1 = time.time()
                     self.exposure_busy = True
@@ -1016,7 +1052,11 @@ class Camera:
                             self.pre_rot = []
                             self.pre_foc = []
                             self.pre_ocn = []
-                            g_dev['obs'].send_to_user("Starting name!", p_level='INFO')
+                            try:
+                                name = g_dev['mnt'].object
+                            except:
+                                name = 'Unspecified'
+                            g_dev['obs'].send_to_user("Starting:  " + name, p_level='INFO')
                             g_dev['ocn'].get_quick_status(self.pre_ocn)   #NB NB WEMA must be running or this may fault.
                             g_dev['foc'].get_quick_status(self.pre_foc)
                             g_dev['rot'].get_quick_status(self.pre_rot)
@@ -1028,14 +1068,21 @@ class Camera:
                             self.t2 = time.time()
 
                             self._expose (exposure_time, imtypeb)
+
                     else:
                         print("Something terribly wrong, driver not recognized.!")
                         result = {}
                         result['error': True]
+
+                        if g_dev['obs'].stop_all_activity:
+                            result['stopped'] =  True
+                            g_dev['obs'].stop_all_activity = False
+                            self.exposure_busy = False
                         return result
                     self.t9 = time.time()
                     #We go here to keep this subroutine a reasonable length, Basically still in Phase 2
-                    result = self.finish_exposure(exposure_time,  frame_type, count - seq, \
+
+                    result = self.finish_exposure(exposure_time,  frame_type, count, \
                                          gather_status, do_sep, no_AWS, dist_x, dist_y, \
                                          quick=quick, low=ldr_handle_time, \
                                          high=ldr_handle_high_time, \
@@ -1045,11 +1092,17 @@ class Camera:
                     #  self._stop_expose()
                     #print("\nInner expose of a group took:  ", round(self.t10 - self.t0 , 2), ' returned:  ', result)
                     self.retry_camera = 0
+                    try:
+                        if result['stopped'] is True:
+                            count = 0
+                    except:
+                        pass
                     break
                 except Exception as e:
-                    print('Exception in camera retry loop:  ', e)
+                    print('Exception in camera so attempt 3 retries:  ', e)
                     self.retry_camera -= 1
                     num_retries += 1
+                    self.exposure_busy = False
                     continue
         #  This is the loop point for the seq count loop
         self.t11 = time.time()
@@ -1059,6 +1112,14 @@ class Camera:
             pass
         except:
             pass
+
+        if result is None:    #NB THIS HANGS UP THE AF
+           result = {}
+        if g_dev['obs'].stop_all_activity:
+            result['stopped'] =  True
+            g_dev['obs'].stop_all_activity = False
+            self.exposure_busy = False
+            self.exposure_busy = False
         return result
 
     def stop_command(self, required_params, optional_params):
@@ -1070,19 +1131,29 @@ class Camera:
     def finish_exposure(self, exposure_time, frame_type, counter, seq, \
                         gather_status=True, do_sep=False, no_AWS=False, start_x=None, start_y=None, quick=False, \
                         low=0, high=0, script='False', opt=None, solve_it=False):
-        print("Finish exposure Entered:  ", exposure_time, frame_type, 'to go: ', counter, \
-              gather_status, do_sep, no_AWS, start_x, start_y, opt['area'])
+        #print("Finish exposure Entered:  ", exposure_time, frame_type, 'to go: ', counter, opt['area'])
+              #gather_status, do_sep, no_AWS, start_x, start_y, opt['area'])
+        if counter > 1:
+            g_dev['obs'].send_to_user("Finish count " + str(int(counter)) + "; "  + str(exposure_time) + "sec exposures;  area = " + str(opt['area']), p_level="INFO")
+        else:
+            g_dev['obs'].send_to_user("Finish one "  + str(exposure_time) + "s exposure;  area = " + str(opt['area']), p_level="INFO")
+
+        self.status_time = time.time() + 10
         self.post_mnt = []
         self.post_rot = []
         self.post_foc = []
-        self.post_ocn = []
+        self.post_ocn = [] 
         counter = 0
         if self.bin == 1:
             self.completion_time = self.t2 + exposure_time + 1
         else:
             self.completion_time = self.t2 + exposure_time + 1
+
         result = {'error': False}
-        while True:    #This loop really needs a timeout.
+  
+
+        while not g_dev['obs'].stop_all_activity:    #This loop really needs a timeout.
+
             self.post_mnt = []
             self.post_rot = []
             self.post_foc = []
@@ -1091,6 +1162,10 @@ class Camera:
             g_dev['rot'].get_quick_status(self.post_rot)
             g_dev['foc'].get_quick_status(self.post_foc)
             g_dev['ocn'].get_quick_status(self.post_ocn)
+            if time.time() > self.status_time:
+                
+                self.status_time = time.time() + 10
+                g_dev['obs'].update_status()
             if time.time() < self.completion_time:   #  NB Testing here if glob too early is delaying readout.
                 time.sleep(.5)
                 continue
@@ -1129,7 +1204,7 @@ class Camera:
                     self.img = np.array(self.camera.ImageArray)
                     self.img = self.img.astype('int32')
                     self.t4p5 = time.time()#As read, this is a Windows Safe Array of Longs
-                    print("\n\nMedian of incoming image:  ", np.median(self.img), '\n\n')
+                    #print("\n\nMedian of incoming image:  ", np.median(self.img), '\n\n')
 
                     ###self.img = np.array(self.img_safe) # _untransposed   incoming is (4800,3211) for QHY600Pro 2:2 Bin
                     #print(self.img_untransposed.shape)
@@ -1147,71 +1222,28 @@ class Camera:
                 #  NB Note this is QHY600 specific code.  Needs to be supplied in camera config as sliced regions.
                 pedastal = 100
                 ix, iy = self.img.shape
-
-
-
-
-
-                # if ix == 9600:
-                #     overscan = int((np.median(self.img[32:, -33:]) + np.median(self.img[0:29, :]))/2) - 1
-                #     trimmed = self.img[32:, :-34].astype('int32') + pedastal - overscan
-                #     if opt['area'] in [150, 'Full', 'full']:
-                #         square = trimmed
-                #     else:
-                #         square = trimmed[1590:1590 + 6388, :]
-                # elif ix == 4800:
-                #     overscan = int((np.median(self.img[16:, -17:]) + np.median(self.img[0:14, :]))/2) -1
-                #     trimmed = self.img[16:, :-17].astype('int32') + pedastal - overscan
-                #     if opt['area'] in [150, 'Full', 'full']:
-                #         square = trimmed
-                #     else:
-                #         square = trimmed[795:795 + 3194, :]
-                # else:
-                #     print("Incorrect chip size or bin specified.")
-
-
-                #This image shift code needs to be here but it is troubling.
+                self.dark_region = 0
                 #QHY 600Pro and 367
-
                 if ix == 9600:
-                    # if self.img[22, -34] == 0:
-
-                    self.overscan = int((np.median(self.img[24:, -33:]) + np.median(self.img[0:21, :]))/2) - 1
-                    trimmed = self.img[24:-8, :-34].astype('int32') + pedastal - self.overscan
-
-                    # elif self.img[30, -34] == 0:
-                    #     self.overscan = int((np.median(self.img[32:, -33:]) + np.median(self.img[0:29, :]))/2) - 1
-                    #     trimmed = self.img[32:, :-34].astype('int32') + pedastal - self.overscan
-
-                    # else:
-                    #     print("Image shift is incorrect, absolutely fatal error.")
-                        
-                    #     pass
-
-                    # if full:
-                    #     square = trimmed
-                    # else:
-                    #     square = trimmed[1590:1590 + 6388, :]
+                    self.dark_region = np.median(self.img[0:22, :-34])
+                    self.overscan = np.median(self.img[24:, -33:])
+                    trimmed = self.img[24:, :-34].astype('int32') + pedastal - self.overscan
                 elif ix == 4800:
-                    #Shift error needs documenting!
-                    #breakpoint()
-                    #if self.img[11, -18] == 0:   #This is the normal incoming image
-                    self.overscan = int((np.median(self.img[12:, -17:]) + np.median(self.img[0:10, :]))/2) - 1
-                    trimmed = self.img[12:-4, :-17].astype('int32') + pedastal - self.overscan
+                    self.dark_region = np.median(self.img[0:11, :-17])
+                    self.overscan = np.median(self.img[12:, -17:])
 
-                        #print("Shift 1", self.overscan, square.mean())
-                    # elif self.img[15, -18] == 0:     #This rarely occurs.  Neyle's Qhy600
-                    #     self.overscan = int((np.median(self.img[16:, -17:]) + np.median(self.img[0:14, :]))/2) -1
-                    #     trimmed = self.img[16:, :-17].astype('int32') + pedastal - self.overscan
-
-                    #     print("Rare error, Shift 2", self.overscan, trimmed.mean())
-
-                    # else:
-                    #     print("Image shift is incorrect, absolutely fatal error", self.img[0:20, -18])
-
-
-                        #pass
-
+                    if self.config['site'] =='mrc' and frame_type not in ('bias', 'dark', 'screenflat', 'skyflat'):
+                        trimmed = self.img[16:, :-17].astype('int32') + pedastal - self.overscan   #NB NB Temporary hack so old calibs work.
+                    else:
+                        trimmed = self.img[12:, :-17].astype('int32') + pedastal - self.overscan
+                elif ix == 3200:
+                    self.dark_region = np.median(self.img[0:7, :-11])
+                    self.overscan = np.median(self.img[8:, -11:]) 
+                    trimmed = self.img[8:, :-11].astype('int32') + pedastal - self.overscan
+                elif ix == 2400:
+                    self.dark_region = np.median(self.img[0:5, :-8])
+                    self.overscan = np.median(self.img[6:, -8:]) 
+                    trimmed = self.img[6 :-8].astype('int32') + pedastal - self.overscan
                 
                 #mrc2    Testing comment change, did this push to GitHub?
                 elif ix == 4096 and iy == 4096:   #MRC@
@@ -1232,7 +1264,7 @@ class Camera:
                 #temp so we can do a better thermal compensation.  THis would generally mean taking
                 #occasional biases.
                 
-                #FAT
+                #SRO
                 # elif ix == 4500 and iy == 3600:   #All this code needs to be driven from camera config.
                 #     self.overscan =np.median(self.img) - pedastal
                 #     trimmed = self.img.astype('int32') - 867.
@@ -1270,6 +1302,8 @@ class Camera:
                 else:
                     print("UNSUPPORTED BINNING OR CAMERA!!", ix, iy)
                     trimmed = self.img
+                #print("Mean, Median. Mode, Dark, Overscan:  ", trimmed.mean(), np.median(trimmed), \
+                #      stats.mode(trimmed, axis=None), self.dark_region, self.overscan)
                     
 
 
@@ -1280,26 +1314,31 @@ class Camera:
                 #smin = np.where(square < 0)    # finds negative pixels  NB <0 where pedastal is 200. Useless!
 
                 self.t77 = time.time()
-                print('readout, transpose & Trim took:  ', round(self.t77 - self.t4, 1), ' sec,')# marks them as 0
+                #print('readout, transpose & Trim took:  ', round(self.t77 - self.t4, 1), ' sec,')# marks them as 0
                 #Should we consider correcting the image right here with cached bias, dark and hot pixel
                 #processing so downstream processing is reliable.  Maybe only do this for focus?
                 g_dev['obs'].send_to_user("Camera has read-out image.", p_level='INFO')
                 neg_pix = np.where(trimmed < 0)
-                print("negative pixel length:  ", len(neg_pix[0]))
+                #print("Negative pixel count:  ", len(neg_pix[0]))
 
                 trimmed[neg_pix] = 0
                 self.img = trimmed.astype('uint16')
                 
-                print('\n\nMedian of overscan-removed image, minus pedastal:  ', np.median(self.img) - pedastal, '\n\n')
+                print('Median of overscan-removed image:  ', np.median(self.img) - pedastal, '\n\n')
                 ix, iy = self.img.shape
                 test_saturated = np.array(self.img[ix//3:ix*2//3, iy//3:iy*2//3])  # 1/9th the chip area, but central.
                 bi_mean = round((test_saturated.mean() + np.median(test_saturated))/2, 0)
                 if frame_type[-4:] == 'flat':
-                    if bi_mean >= self.config['camera'][self.name]['settings']['saturate']:
+                    if bi_mean > 40000.:   #self.config['camera'][self.name]['settings']['saturate']:
                         print("Flat rejected, too bright:  ", bi_mean)
                         g_dev['obs'].send_to_user("Flat rejected, too bright.", p_level='INFO')
                         result['error'] = True
                         result['patch'] = bi_mean
+
+                        if g_dev['obs'].stop_all_activity:
+                            result['stopped'] =  True
+                            g_dev['obs'].stop_all_activity = False
+                        self.exposure_busy = False
                         return result   # signals to flat routine image was rejected, prompt return
                 g_dev['obs'].update_status()
                 counter = 0
@@ -1308,7 +1347,11 @@ class Camera:
                 avg_foc = g_dev['foc'].get_average_status(self.pre_foc, self.post_foc)
                 avg_rot = g_dev['rot'].get_average_status(self.pre_rot, self.post_rot)
                 avg_ocn = g_dev['ocn'].get_average_status(self.pre_ocn, self.post_ocn)
+
                 if frame_type[-5:] in ['focus', 'probe', "ental"]:
+                    if result is  None:
+                        result = {}
+
                     self.img = self.img + 100   #maintain a + pedestal for sep  THIS SHOULD not be needed for a raw input file.
                     self.img = self.img.astype("float")
                     #print(self.img.flags)
@@ -1318,6 +1361,7 @@ class Camera:
                     sources = sep.extract(self.img, 4.5, err=bkg.globalrms, minarea=15)  # Minarea should deal with hot pixels.
                     sources.sort(order = 'cflux')
                     print('No. of detections:  ', len(sources))
+
                     ix, iy = self.img.shape
                     r0 = 0
                     """
@@ -1330,6 +1374,7 @@ class Camera:
                     border_x = int(ix*0.05)
                     border_y = int(iy*0.05)
                     r0 = []
+
                     for sourcef in sources:
                         if border_x < sourcef['x'] < ix - border_x and \
                             border_y < sourcef['y'] < iy - border_y and \
@@ -1337,19 +1382,31 @@ class Camera:
                             a0 = sourcef['a']
                             b0 = sourcef['b']
                             r0.append(round(math.sqrt(a0*a0 + b0*b0), 2))
-                    scale = self.config['camera'][self.name]['settings']['pix_scale']
+
+                    scale = self.config['camera'][self.name]['settings']['pix_scale'][self.camera.BinX -1]
                     result['FWHM'] = round(np.median(r0)*scale, 3)   #@0210524 was 2x larger but a and b are diameters not radii
                     result['mean_focus'] =  avg_foc[1]
+
+                    try:
+                        valid =  0.0 <= result['FWHM']<= 20. and 100 < result['mean_focus'] < 12600
+                        result['error'] = False
+                    except:
+                        result['error'] = True    # NB NB NB These are quick placeholders and need to be changed
+                        result['FWHM']  = 3.456
+                        result['mean_focus'] =  6543
 
                     focus_image = True
                 else:
                     focus_image = False
 
                     #return result   #Used if focus not saved in calibs.
+
                 try:
                     hdu = fits.PrimaryHDU(self.img)
                     self.img = None    #  Does this free up any resource?
+
                     # assign the keyword values and comment of the keyword as a tuple to write both to header.
+
                     hdu.header['BUNIT']    = ('adu', 'Unit of array values')
                     hdu.header['CCDXPIXE'] = (self.camera.PixelSizeX, '[um] Size of unbinned pixel, in X')  # DEH maybe change config units to meters or convert to m?
                     hdu.header['CCDYPIXE'] = (self.camera.PixelSizeY, '[um] Size of unbinned pixel, in Y')
@@ -1361,7 +1418,7 @@ class Camera:
                     except:
                         hdu.header['XBINING'] = (1, 'Pixel binning in x direction')
                         hdu.header['YBINING'] = (1, 'Pixel binning in y direction')
-                    hdu.header['CCDSUM']   = (self.ccd_sum, 'Sum of chip binning')
+                    hdu.header['CCDSUM']   = self.ccd_sum
                     # DEH pulls from config; master config will need to include keyword, or this line will need to change
                     
                     hdu.header['RDMODE'] = (self.config['camera'][self.name]['settings']['read_mode'], 'Camera read mode')
@@ -1561,6 +1618,8 @@ class Camera:
                     hdu.header['FRAMENUM'] = (int(next_seq), 'Running frame number')                                        
                     # DEH I need to understand these keywords better before writing header comments.
                     hdu.header['PEDASTAL'] = (-pedastal,  'adu, add this for zero based image.')
+                    hdu.header['DARKREGN'] = self.dark_region
+                    hdu.header['OVERSCAN'] = self.overscan
                     hdu.header['ERRORVAL'] = 0
                     hdu.header['PATCH']    = bi_mean - pedastal    #  A crude value for the central exposure
                     hdu.header['IMGAREA' ] = opt['area']
@@ -1576,7 +1635,7 @@ class Camera:
 
                         hdu.header['USERNAME'] = self.last_user_name
                         hdu.header ['USERID']  = self.last_user_id
-                        print("User_name or id not found, using prior.")  #Insert last user nameand ID here if they are not supplied.
+                        #print("User_name or id not found, using prior.")  #Insert last user nameand ID here if they are not supplied.
                     
                     # NB This needs more development
                     im_type = 'EX'   #or EN for engineering....
@@ -1616,14 +1675,18 @@ class Camera:
 
                     try: #  NB relocate this to Expose entry area.  Fill out except.  Might want to check on available space.
                         im_path_r = self.camera_path
+                        os.makedirs(im_path_r + '/calibs/', exist_ok=True)
                         os.makedirs(im_path_r + g_dev['day'] + '/to_AWS/', exist_ok=True)
                         os.makedirs(im_path_r + g_dev['day'] + '/raw/', exist_ok=True)
+                        os.makedirs(im_path_r + g_dev['day'] + '/focus/', exist_ok=True)
                         os.makedirs(im_path_r + g_dev['day'] + '/calib/', exist_ok=True)
                         os.makedirs(im_path_r + g_dev['day'] + '/reduced/', exist_ok=True)
                         im_path   = im_path_r + g_dev['day'] + '/to_AWS/'
                         raw_path  = im_path_r + g_dev['day'] + '/raw/'
                         cal_path  = im_path_r +  g_dev['day'] +'/calib/'
+                        focus_path  = im_path_r +  g_dev['day'] +'/focus/'
                         red_path  = im_path_r + g_dev['day'] + '/reduced/'
+                        calibs_path = im_path_r + '/calibs/'
 
                     except:
                         pass
@@ -1650,6 +1713,7 @@ class Camera:
                              'text_name11': text_name,
                              'frame_type':  frame_type
                              }
+
                     if  self.config['site'] == 'saf':
                         os.makedirs(self.alt_path +  g_dev['day'] + '/reduced/', exist_ok=True)
                         red_path_aux = self.alt_path +  g_dev['day'] + '/reduced/'
@@ -1666,13 +1730,18 @@ class Camera:
                     if focus_image and not solve_it:
                         #Note we do not reduce focus images, except above in focus processing.
                         cal_name = cal_name[:-9] + 'F012' + cal_name[-7:]  # remove 'EX' add 'FO'   Could add seq to this
-                        hdu.writeto(cal_path + cal_name, overwrite=True)
+                        hdu.writeto(focus_path + cal_name, overwrite=True)
                         focus_image = False
+
+                        # result = {}
+                        # if g_dev['obs'].stop_all_activity:
+                        #     result['stopped'] =  True
+                        #     g_dev['obs'].stop_all_activity = False
                         return result
                     if focus_image and solve_it :
 
                         cal_name = cal_name[:-9] + 'FF' + cal_name[-7:]  # remove 'EX' add 'FO'   Could add seq to this
-                        hdu.writeto(cal_path + cal_name, overwrite=True)
+                        hdu.writeto(focus_path + cal_name, overwrite=True)
                         focus_image = False
                         try:
                             #wpath = 'C:/000ptr_saf/archive/sq01/20210528/reduced/saf-sq01-20210528-00019785-le-w-EX01.fits'
@@ -1687,10 +1756,22 @@ class Camera:
                             err_dec = TARGDEC - DECJ2000
                             print("err ra, dec:  ", err_ha, err_dec)
                             g_dev['mnt'].set_last_reference(err_ha, err_dec, time_now)
+                            g_dev['obs'].send_to_user("Position error; RA(h), DEC(deg):  ",  p_level='WARN')
+                            # result = {}
+                            # if g_dev['obs'].stop_all_activity:
+                            #     result['stopped'] =  True
+                            #     g_dev['obs'].stop_all_activity = False
+                            # self.exposure_busy = False
                             return result
                         except:
-                            print(cal_path + cal_name, "  was not solved, marking to skip in future, sorry!")
+                            #print(cal_path + cal_name, "  was not solved, marking to skip in future, sorry!")
                             #g_dev['mnt'].reset_last_reference()
+
+                            # result = {}
+                            # if g_dev['obs'].stop_all_activity:
+                            #     result['stopped'] =  True
+                            #     g_dev['obs'].stop_all_activity = False
+                            # self.exposure_busy = False
                             return result
                            #Return to classic processing
                        
@@ -1698,14 +1779,9 @@ class Camera:
 
                     # if  not script in ('True', 'true', 'On', 'on'):   #  not quick and    #Was moved 20201022 for grid
                     #     if not quick:
-                    self.enqueue_for_AWS(text_data_size, im_path, text_name)
-                    self.to_reduce((paths, hdu))
-                    hdu.writeto(raw_path + raw_name00, overwrite=True)   #Save full raw file locally
-                    g_dev['obs'].send_to_user("Raw image saved locally. ", p_level='INFO')
-
                     if frame_type in ('bias', 'dark', 'screenflat', 'skyflat'):
                         if not self.hint[0:54] == 'Flush':
-                            hdu.writeto(cal_path + cal_name, overwrite=True)
+                            hdu.writeto(calibs_path + cal_name, overwrite=True)
                         else:
                             pass
                         try:
@@ -1714,9 +1790,28 @@ class Camera:
                             pass    #  print ("File newest.fits not found, this is probably OK")
                         result = {'patch': bi_mean,
                                 'calc_sky': 0}  #avg_ocn[7]}
+                        self.exposure_busy = False
                         return result #  Note we are not calibrating. Just saving the file.
-                    # elif frame_type in ['light']:
-                    #     self.enqueue_for_AWS(reduced_data_size, im_path, red_name01)
+                    self.enqueue_for_AWS(text_data_size, im_path, text_name)
+                    self.to_reduce((paths, hdu))
+                    hdu.writeto(raw_path + raw_name00, overwrite=True)   #Save full raw file locally
+                    g_dev['obs'].send_to_user("Raw image saved locally. ", p_level='INFO')
+
+                    # if frame_type in ('bias', 'dark', 'screenflat', 'skyflat'):
+                    #     if not self.hint[0:54] == 'Flush':
+                    #         hdu.writeto(cal_path + cal_name, overwrite=True)
+                    #     else:
+                    #         pass
+                    #     try:
+                    #         os.remove(self.camera_path + 'newest.fits')
+                    #     except:
+                    #         pass    #  print ("File newest.fits not found, this is probably OK")
+                    #     result = {'patch': bi_mean,
+                    #             'calc_sky': 0}  #avg_ocn[7]}
+                    #     self.exposure_busy = False
+                    #     return result #  Note we are not calibrating. Just saving the file.
+                    # # elif frame_type in ['light']:
+                    # #     self.enqueue_for_AWS(reduced_data_size, im_path, red_name01)
 
                    #print("\n\Finish-Exposure is complete, saved:  " + raw_name00)#, raw_data_size, '\n')
                     g_dev['obs'].update_status()
@@ -1735,10 +1830,15 @@ class Camera:
                     result['filter'] = self.current_filter
                     result['error'] == False
                     g_dev['obs'].send_to_user("Expose cycle completed.", p_level='INFO')
-
+                    self.exposure_busy = False
+                    if g_dev['obs'].stop_all_activity:
+                        result['stopped'] =  True
+                        g_dev['obs'].stop_all_activity = False
+                        self.exposure_busy = False
                     return result
                 except Exception as e:
                     print('Header assembly block failed: ', e)
+                    g_dev['obs'].send_to_user("Header assembly block failed: " + str(e),  p_level='ERROR')
                     try:
                         hdu = None
                     except:
@@ -1749,23 +1849,37 @@ class Camera:
                     #     pass
                     self.t7 = time.time()
                     result = {'error': True}
+                self.exposure_busy = False
+
+                result = {}
+                if g_dev['obs'].stop_all_activity:
+                    result['stopped'] =  True
+                    g_dev['obs'].send_to_user("Camera stopped/cancelled! #1",  p_level='WARN')
+                    g_dev['obs'].stop_all_activity = False
+                self.exposure_busy = False
                 return result
             else:
                 time.sleep(1)
                 #g_dev['obs'].update_status()
                 self.t7 = time.time()
                 remaining = round(self.completion_time - self.t7, 1)
-                print("Exposure time remaining:  " + str(remaining))
+                #print("Readout time remaining:  " + str(remaining))
                 g_dev['obs'].send_to_user("Exposure time remaining:  " + str(remaining), p_level='INFO')
                 if remaining < -30:
-                    print("Camera timed out, not connected")
+                    #print("Camera timed out, not connected")
+                    g_dev['obs'].send_to_user("Camera timed out, apparently not connected! ",  p_level='ERROR')
                     result = {'error': True}
-                    return result
-
+                    self.exposure_busy = False
+        if g_dev['obs'].stop_all_activity:
+            result['stopped'] = True
+            g_dev['obs'].send_to_user("Camera stopped/cancelled! #2",  p_level='WARN')
+            g_dev['obs'].stop_all_activity = False
+            self.exposure_busy = False
+        return result  #This causes a crash.
 
                 #it takes about 15 seconds from AWS to get here for a bias.
         # except Exception as e:
-        #     breakpoint()
+        #breakpoint()
         #     counter += 1
         #     time.sleep(.01)
         #     print('Was waiting for exposure end, arriving here is bad news:  ', e)

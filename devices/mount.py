@@ -54,6 +54,8 @@ from astropy.coordinates import SkyCoord, FK5, ICRS, FK4, Distance, \
 import ptr_utility
 from config import site_config
 import math
+from pprint import pprint
+import ephem
 
 # =============================================================================
 # from astropy.utils.iers import conf
@@ -214,7 +216,7 @@ class Mount:
         self.prior_roll_rate = 0
         self.prior_pitch_rate = 0
         self.offset_received = False
-        self.west_clutch_ra_correction = config['mount']['mount1']['west_clutch_ra_correction']   
+        self.west_clutch_ra_correction = config['mount']['mount1']['west_clutch_ra_correction']
         self.west_clutch_dec_correction = config['mount']['mount1']['west_clutch_dec_correction']
         self.east_flip_ra_correction = config['mount']['mount1']['east_flip_ra_correction']
         self.east_flip_dec_correction = config['mount']['mount1']['east_flip_dec_correction']
@@ -246,12 +248,14 @@ class Mount:
         self.move_time = 0
         try:
             ra1, dec1 = self.get_mount_reference()
-            print("Mount reference:  ", ra1 ,dec1)
+            ra2, dec2 = self.get_flip_reference()
+            print("Mount references clutch, flip (Look East):  ", ra1, dec1, ra2, dec2 )
         except:
             print("No mount ref found.")
             pass
-        print("Reset Mount Reference.")
-        self.reset_mount_reference()
+        #print("Reset Mount Reference.")
+
+        #self.reset_mount_reference()
         #NB THe paddle needs a re-think and needs to be cast into its own thread. 20200310 WER
         if self.has_paddle:
             self._paddle = serial.Serial('COM28', timeout=0.1)
@@ -270,6 +274,10 @@ class Mount:
             self.paddeling = False
             #self.paddle_thread = threading.Thread(target=self.paddle, args=())
             #self.paddle_thread.start()
+        self.obs = ephem.Observer()
+        self.obs.long = config['longitude']*DTOR
+        self.obs.lat = config['latitude']*DTOR
+
         print("exiting mount _init")
 
  
@@ -459,9 +467,9 @@ class Mount:
             except:
                 self.pier_side = 0.   # This explicitly defines alt-az (Planewave) as Looking West (tel on East side)
             if self.pier_side == 0:
-                pier_side_str ="Looking West"
+                self.pier_side_str ="Looking West"
             else:
-                pier_side_str = "Looking East"
+                self.pier_side_str = "Looking East"
                 
             status = {
                 'timestamp': round(time.time(), 3),
@@ -476,8 +484,8 @@ class Mount:
                 'mount_right_ascension_rate': round(self.mount.RightAscensionRate, 9),   #Will use sec-RA/sid-sec
                 'demand_declination_rate': round(self.prior_pitch_rate, 8),
                 'mount_declination_rate': round(self.mount.DeclinationRate, 8),
-                'pier_side':self. pier_side,
-                'pier_side_str': pier_side_str,
+                'pier_side':self.pier_side,
+                'pier_side_str': self.pier_side_str,
                 'azimuth': round(self.mount.Azimuth, 3),
                 'target_az': round(self.target_az, 3),
                 'altitude': round(alt, 3),
@@ -729,7 +737,11 @@ class Mount:
         print("mount cmd. slewing mount, req, opt:  ", req, opt)
 
         ''' unpark the telescope mount '''  #  NB can we check if unparked and save time?
-       
+
+        try:
+            self.object = opt['object']
+        except:
+            self.object = 'unspecified'    #NB could possibly augment with "Near --blah--"
         if self.mount.CanPark:
             #print("mount cmd: unparking mount")
             if self.mount.AtPark:
@@ -740,6 +752,21 @@ class Mount:
         except:
             clutch_ra = 0.0
             clutch_dec = 0.0
+        if self.object in ['Moon', 'moon', 'Lune', 'lune', 'Luna', 'luna', 'Lun', 'lun']:
+            self.obs.date = ephem.now()
+            moon = ephem.Moon()
+            moon.compute(self.obs)
+            ra1, dec1 = moon.ra*RTOH, moon.dec*RTOD
+            self.obs.date = ephem.Date(ephem.now() + 1/144)   #  10 minutes
+            moon.compute(self.obs)
+            ra2, dec2 = moon.ra*RTOH, moon.dec*RTOD
+            dra_moon = (ra2 - ra1)*15*3600/600
+            ddec_moon = (dec2 - dec1)*3600/600
+            object_is_moon = True
+
+        else:
+            object_is_moon = False
+            
         try:
             icrs_ra, icrs_dec = self.get_mount_coordinates()
             if offset:   #This offset version supplies offsets as a fraction of the Full field.
@@ -756,8 +783,8 @@ class Mount:
                 field_y = y_field_deg
                 #20210317 Changed signs fron Neyle.  NEEDS CONFIG File level or support.
 
-                self.ra_offset = -offset_x*field_x  #/4   #NB NB 20201230 Signs needs to be verified. 20210904 used to be +=, which did not work.
-                self.dec_offset = offset_y*field_y  #/4    #NB where the 4 come from?                print("Offsets:  ", round(self.ra_offset, 5), round(self.dec_offset, 4))
+                self.ra_offset = -offset_x*field_x/2  #/4   #NB NB 20201230 Signs needs to be verified. 20210904 used to be +=, which did not work.
+                self.dec_offset = offset_y*field_y/2 #/4    #NB where the 4 come from?                print("Offsets:  ", round(self.ra_offset, 5), round(self.dec_offset, 4))
                 print('Offsets:  ', offset_x, self.ra_offset, offset_y, self.dec_offset)
                 
                 if not self.offset_received:
@@ -850,7 +877,8 @@ class Mount:
                     self.offset_received = False
                     ra_dec = False
         except:
-            print("Bad coordinates supplied.")
+            #print("Bad coordinates supplied.")
+            g_dev['obs'].send_to_user("Bad coordinates supplied! ",  p_level="WARN")
             self.message = "Bad coordinates supplied, try again."
             self.offset_received = False
             self.ra_offset = 0
@@ -864,18 +892,23 @@ class Mount:
 #         ra, dec = ra_dec_fix_h(ra + delta_ra, dec + delta_dec)   #Plus compensates for measured offset
 # =============================================================================
         self.move_time = time.time()
-        self.go_coord(ra, dec, tracking_rate_ra=tracking_rate_ra, tracking_rate_dec = tracking_rate_dec)
+        if object_is_moon:
+            self.go_coord(ra1, dec1, tracking_rate_ra=dra_moon, tracking_rate_dec = ddec_moon)
+        else:
+            self.go_coord(ra, dec, tracking_rate_ra=tracking_rate_ra, tracking_rate_dec = tracking_rate_dec)
         self.object = opt.get("object", "")
         if self.object == "":
-            print("Go to unamed target.")
+           # print("Go to unamed target.")
+            g_dev['obs'].send_to_user("Going to un-named target!  ",  p_level="INFO")
         else:
-            print("Going to:  ", self.object)   #NB Needs cleaning up.
+            #print("Going to:  ", self.object)   #NB Needs cleaning up.
+            g_dev['obs'].send_to_user("Going to:  " + str( self.object),  p_level="INFO")
             
     def re_seek(self, dither):
         if dither == 0:
             self.go_coord(self.last_ra, self.last_dec, self.last_tracking_rate_ra, self.last_tracking_rate_dec)
         else:
-            breakpoint()
+            pass#breakpoint()
             
             
             
@@ -1008,6 +1041,7 @@ class Mount:
         self.mount.Tracking = False
         self.move_time = time.time()
         self.mount.SlewToAltAzAsync(az, alt)
+
 
 
     def stop_command(self, req, opt):
@@ -1211,8 +1245,8 @@ class Mount:
     def  adjust_flip_reference(self, err_ha, err_dec):
         #old_ha, old_dec = self.get_mount_reference()
         mnt_shelf = shelve.open(self.site_path + 'ptr_night_shelf/' + 'mount1')
-        init_ra = mnt_shelf['ra_cal_offset']
-        init_dec = mnt_shelf['dec_cal_offset']     # NB NB THese need to be modulo corrected, maybe limited
+        init_ra = mnt_shelf['flip_ra_cal_offset']
+        init_dec = mnt_shelf['flip_dec_cal_offset']     # NB NB THese need to be modulo corrected, maybe limited
    
         print("initial:  ", init_ra, init_dec)
         mnt_shelf['flip_ra_cal_offset'] = init_ra + err_ha    #NB NB NB maybe best to reverse signs here??
@@ -1246,8 +1280,8 @@ class Mount:
     def get_flip_reference(self):
         mnt_shelf = shelve.open(self.site_path + 'ptr_night_shelf/' + 'mount1')
         #NB NB NB The ease may best have a sign change asserted.
-        delta_ra = mnt_shelf['flip_ra_cal_offset'] + self.west_clutch_ra_correction + self.east_flip_ra_correction
-        delta_dec = mnt_shelf['flip_dec_cal_offset'] + self.west_clutch_dec_correction + self.east_flip_dec_correction
+        delta_ra = mnt_shelf['flip_ra_cal_offset'] + self.east_flip_ra_correction
+        delta_dec = mnt_shelf['flip_dec_cal_offset'] + self.east_flip_dec_correction
         mnt_shelf.close()
         return delta_ra, delta_dec
     

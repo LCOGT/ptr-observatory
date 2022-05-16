@@ -4,6 +4,7 @@ import time
 import serial
 import requests
 import json
+from pprint import pprint
 
 
 class FilterWheel:
@@ -12,8 +13,8 @@ class FilterWheel:
         self.name = name
         g_dev['fil']= self
         self.config = config['filter_wheel']
-        breakpoint()
         #print("FW:  ", self.config)
+     
         self.dual_filter = self.config['filter_wheel1']['dual_wheel']
         self.ip = str(self.config['filter_wheel1']['ip_string'])
         self.filter_data = self.config['filter_wheel1']['settings']['filter_data'][1:]  #  Stips off column heading entry
@@ -54,19 +55,65 @@ class FilterWheel:
             self.filter_selected = self.filter_data[self.filter_reference][0]   #This is the default expected after a
             self.filter_number = self.filter_reference
             self.filter_offset = self.filter_data[self.filter_reference][2]
-        elif type(driver) == list:
+        elif driver == 'ASCOM.FLI.FilterWheel' and self.dual_filter:  #   == list:
             self.maxim = False
             self.dual = True
 
-            win32com.client.pythoncom.CoInitialize()
-            self.filter_front = win32com.client.Dispatch(driver[0])
-            self.filter_front.Connected = True
-            win32com.client.pythoncom.CoInitialize()
-            self.filter_back = win32com.client.Dispatch(driver[1])
+            #win32com.client.pythoncom.CoInitialize()
+            #breakpoint()
+            fw0 = win32com.client.Dispatch(driver)  #  Closest to Camera
+            fw1 = win32com.client.Dispatch(driver)  #  Closest to Telescope
+            print(fw0, fw1)
+            actions0 = fw0.SupportedActions
+            actions1 = fw1.SupportedActions
+            for action in actions0:
+                pass #print("action0:   " + action)
+            for action in actions1:
+                pass #print("action1:   " + action)
+            device_names0 = fw0.Action('GetDeviceNames', '')
+            #print ('action0:    ' + device_names0)
+            devices0 = device_names0.split(';')
+            device_names1 = fw1.Action('GetDeviceNames', '')
+            #print ('action1:    ' + device_names1)
+            devices1 = device_names1.split(';')
+            fw0.Action("SetDeviceName", devices0[0])
+            fw1.Action('SetDeviceName', devices1[1])
+            fw0.Connected = True
+            fw1.Connected = True
+            #print("Conn 1,2:  ", fw0.Connected, fw1.Connected)
+            #print('Pos  1,2:  ', fw0.Position, fw1.Position)
+            #breakpoint()
+            
+            
+            
+            self.filter_back = fw1 #win32com.client.Dispatch(driver)  #  Closest to Camera
+            self.filter_front = fw0 #win32com.client.Dispatch(driver)  #  Closest to Telescope
             self.filter_back.Connected = True
+            self.filter_front.Connected = True
 #            flifil1 or flifil3?
 #            HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\ASCOM\FilterWheel Drivers\ASCOM.FLI.FilterWheel1
-            print("filters are connected")
+            print("filters are connected:  ", self.filter_front.Connected, self.filter_back.Connected)
+            print("filter positions:  ", self.filter_front.Position, self.filter_back.Position)
+            # self.filter_front.Position = 0
+            # self.filter_back.Position  = 0
+            # print("filter positions should be 0, 0:  ", self.filter_front.Position, self.filter_back.Position)
+            # self.filter_front.Position = 4
+            # self.filter_back.Position  = 2
+            # print("filter positions should be 4, 2:  ", self.filter_front.Position, self.filter_back.Position) 
+            # self.filter_front.Position = 2
+            # self.filter_back.Position  = 4
+            # print("filter positions should be 2, 4:  ", self.filter_front.Position, self.filter_back.Position)
+            # breakpoint()
+            #abooove back upplugged
+            #now frront unplugged.
+            #4 is diffuser, ok. #0 is air, #2 is w with blue tape wedge.
+            
+            #Now plug both in after both out.
+            #Restart code.
+            
+            #back is in 2, see tape. Position reports 0.  Command to 3
+            
+            #THE FRONT WHEEL RESPONDS EVEN THOUGH I DID NOT CONNECT TO IT!self.
             self.dual = True
             self.custom = False
             self.filter_selected = self.filter_data[self.filter_reference][0]
@@ -280,11 +327,10 @@ class FilterWheel:
         ''' set the filter position by  param string filter position index '''
         'NBNBNB This routine may not be correct'
         #print("filter cmd: set_position")
-        breakpoint()
+
         filter_selections = self.filter_data[int(req['filter_num'])][1]
         #print('Selections:  ', filter_selections)
         if self.dual and self.custom:
-            breakpoint()
             r0 = self.r0
             r1 = self.r1
             r0['filterwheel']['position'] = filter_selections[0]
@@ -320,7 +366,7 @@ class FilterWheel:
         ''' set the filter position by filter name '''
         #print("filter cmd: set_name", req, opt)
         try:
-            filter_name = req['filter_name']
+            filter_name = req['filter']
         except:
             try:
                 filter_name = req['filter']
@@ -342,15 +388,17 @@ class FilterWheel:
         # if filter_name =="u":
         #     filter_name = 'up'
         for match in range(int(self.config['filter_wheel1']['settings']['filter_count'])):  #NB Filter count MUST be correct in Config.
-            if filter_name == self.filter_data[match][0]:
+            if filter_name in self.filter_data[match][0]:
+
                 filt_pointer = match
                 break
         print('Filter name is:  ', self.filter_data[match][0])
-        print('Filter pointer:  ', filt_pointer)
+        g_dev['obs'].send_to_user('Filter set to:  ' + str(self.filter_data[match][0]))
+        #print('Filter pointer:  ', filt_pointer)
         self.filter_number = filt_pointer
         self.filter_selected = filter_name
         filter_selections = self.filter_data[filt_pointer][1]
-        print('Selections:  ', filter_selections)
+        #print('Selections:  ', filter_selections)
         self.filter_offset = float(self.filter_data[filt_pointer][2])
         if self.dual and self.custom:
             r0 = self.r0
