@@ -49,7 +49,7 @@ import httplib2
 from auto_stretch.stretch import Stretch
 import socket
 import ptr_events
-import config
+
 from pprint import pprint
 # import device classes:
 from devices.camera import Camera
@@ -320,6 +320,7 @@ class Observatory:
             #     breakpoint()
             devices_of_type = config.get(dev_type, {})
             device_names = devices_of_type.keys()
+
             # Instantiate each device object from based on its type
             for name in device_names:
                 driver = devices_of_type[name]["driver"]
@@ -334,9 +335,13 @@ class Observatory:
                     device = Mount(driver, name, settings, self.config, self.astro_events, tel=True) #NB this needs to be straightened out.
                 elif dev_type == "telescope":   # order of attaching is sensitive
                     device = Telescope(driver, name, settings, self.config, tel=True)
+
                 elif dev_type == "rotator":
                     device = Rotator(driver, name, self.config)
+
+ 
                 elif dev_type == "focuser":
+    
                     device = Focuser(driver, name, self.config)
                 elif dev_type == "screen":
                     device = Screen(driver, name, self.config)

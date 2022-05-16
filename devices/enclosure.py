@@ -191,7 +191,6 @@ class Enclosure:
         self.config = config
         g_dev['enc'] = self
         self.slew_latch = False
-        breakpoint()
         if self.config['site_in_automatic_default'] == "Automatic":
             self.site_in_automatic = True
             self.mode = 'Automatic' 
@@ -205,6 +204,7 @@ class Enclosure:
     
         self.time_of_next_slew = time.time()
         self.hostname = socket.gethostname()
+
         if self.hostname in self.config['wema_hostname']:
             self.is_wema = True
         else:
@@ -217,7 +217,7 @@ class Enclosure:
         if self.config['dome_on_wema']:
             self.dome_on_wema  =True
         else:
-            self.dome_on_wema = False
+            self.dome_on_wema = False   #False if wema enc is not a dome.
         if self.site in ['simulate',  'dht']:  #DEH: added just for testing purposes with ASCOM simulators.
             self.observing_conditions_connected = True
             self.site_is_proxy = False   
@@ -253,6 +253,7 @@ class Enclosure:
         self.prior_status = {'enclosure_mode': 'Manual'}    #Just to initialze this rarely used variable.
         
     def get_status(self) -> dict:
+
         if not self.is_wema and self.site_has_proxy and self.dome_on_wema:
             if self.config['site_IPC_mechanism'] == 'shares':
                 try:
@@ -301,7 +302,7 @@ class Enclosure:
             g_dev['enc'].status = status
             return status
 
-        if self.site_is_generic or self.is_wema or not self.dome_on_wema:#  NB Should be AND?
+        if self.site_is_generic and self.is_wema and not self.dome_on_wema:#  NB Should be AND?
             try:
                 shutter_status = self.enclosure.ShutterStatus
             except:

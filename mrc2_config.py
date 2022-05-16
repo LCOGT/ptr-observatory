@@ -1,4 +1,3 @@
-
 # -*- coding: utf-8 -*-
 '''
 Created on Fri Aug  2 11:57:41 2019
@@ -429,20 +428,25 @@ site_config = {
             'recover_script':  None,
             'shutdown_script':  None,  
             'settings': {
-                'filter_count': '20',
+                'filter_count': '24',
                 'filter_reference': '1',
                 'filter_data': [['filter', 'filter_index', 'filter_offset', 'sky_gain', 'screen_gain', 'abbreviation'],
                                 ['air',     [0, 0], -1000, 0.01, [2, 17], 'ai'],   # 0
-                                ['w',       [1, 0],     0, 0.01, [2, 17], 'w '],   # 1
+                                
+                                ['Lum',     [1, 0],     0, 0.01, [2, 17], 'w '],   # 20
+                                ['Red',     [0, 4],     0, 0.01, [2, 17], 'r '],  # 21                                ['JV (Grn)',      [0, 3],     0, 0.01, [2, 17], 'V '],   # 9
+                                ['Green',   [0, 3],     0, 0.01, [2, 17], 'V '],   # 22
+                                ['Blue',    [0, 1],     0, 0.01, [2, 17], 'B '],   # 23
+                                ['w (Lum)', [1, 0],     0, 0.01, [2, 17], 'w '],   # 1
                                 ['dif',     [2, 0],     0, 0.01, [2, 17], 'df'],   # 2
                                 ['O3',      [3, 0],     0, 0.01, [2, 17], 'O3'],   # 3
                                 ['HA',      [4, 0],     0, 0.01, [2, 17], 'HA'],   # 4
                                 ['N2',      [5, 5],     0, 0.01, [2, 17], 'S2'],   # 5
                                 ['S2',      [6, 6],     0, 0.01, [2, 17], 'N2'],   # 6
-                                ['JB',      [0, 1],     0, 0.01, [2, 17], 'B '],   # 7
+                                ['JB (Blu)',      [0, 1],     0, 0.01, [2, 17], 'B '],   # 7
                                 ['g',       [0, 2],     0, 0.01, [2, 17], 'g '],   # 8
-                                ['JV',      [0, 3],     0, 0.01, [2, 17], 'V '],   # 9
-                                ['r',       [0, 4],     0, 0.01, [2, 17], 'r '],  # 10
+                                ['JV (Grn)',      [0, 3],     0, 0.01, [2, 17], 'V '],   # 9
+                                ['r (Red)',       [0, 4],     0, 0.01, [2, 17], 'r '],  # 10
                                 ['i',       [0, 5],     0, 0.01, [2, 17], 'i '],  # 11
                                 ['EXO',     [0, 6],     0, 0.01, [2, 17], 'EX'],  # 12
                                 ['difJB',   [2, 1],     0, 0.01, [2, 17], 'Ha'],  # 13
@@ -498,8 +502,12 @@ site_config = {
                 'y_width':  4096,
                 'x_chip':   4096,
                 'y_chip':   4096,
-                'x_pixel':  9,
-                'y_pixel':  9,
+                'x_pixel':  9.0,
+                'y_pixel': 9.0,
+                'pix_scale': [0.4685, 0.9371, 1.4506, 1.8742],    #   bin-2  2* math.degrees(math.atan(9/3962000))*3600
+                'x_field_deg': round(4096*0.468547/3600, 4),   #32_0 X 32 AMIN  3MIN X 0.5 DEG  
+                'y_field_deg': round(4096*0.468547/3600, 4),
+                'field_area_sq_amin': 1023,
                 'overscan_x': 0,
                 'overscan_y': 0,
                 'north_offset': 0.0,
@@ -524,7 +532,7 @@ site_config = {
                 'square_detector': True,
                 'areas_implemented': ["600%", "300%", "220%", "150%", "Full", "Sqr", '71%', '50%',  '35%', '25%', '12%'],
                 'default_area':  "Full",
-                'bin_modes':  [[2,2], [1,1], [3, 3], [4, 4]],     #Meaning no binning if list has only one entry
+                'bin_modes':  [[2, 2, 0.9371], [1, 1, 0.4685], [3, 3, 1.4056], [4, 4, 1.8742]],     #Meaning no binning if list has only one entry
                 'default_bin':  [2, 2],    #Always square and matched to seeing situation by owner
                 'cycle_time':  [18, 15, 12, 9],  # 3x3 requires a 1, 1 reaout then a software bin, so slower.
                 'has_darkslide':  False,
@@ -879,4 +887,5 @@ QHY600         AstroImaging Equipment
 
 
 '''
+
 

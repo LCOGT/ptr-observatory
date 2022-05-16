@@ -12,6 +12,7 @@ class FilterWheel:
         self.name = name
         g_dev['fil']= self
         self.config = config['filter_wheel']
+        breakpoint()
         #print("FW:  ", self.config)
         self.dual_filter = self.config['filter_wheel1']['dual_wheel']
         self.ip = str(self.config['filter_wheel1']['ip_string'])
@@ -56,7 +57,7 @@ class FilterWheel:
         elif type(driver) == list:
             self.maxim = False
             self.dual = True
-            breakpoint()
+
             win32com.client.pythoncom.CoInitialize()
             self.filter_front = win32com.client.Dispatch(driver[0])
             self.filter_front.Connected = True
