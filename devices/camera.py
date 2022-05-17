@@ -321,6 +321,7 @@ class Camera:
         self.f_positions = []
         self.overscan_bin_1 = None   #Remember last overscan if we take a subframe
         self.overscan_bin_2 = None
+        breakpoint()
         self.hint = None
         self.focus_cache = None
         self.darkslide = False
