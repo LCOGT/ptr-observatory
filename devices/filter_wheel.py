@@ -13,11 +13,7 @@ class FilterWheel:
         self.name = name
         g_dev['fil']= self
         self.config = config['filter_wheel']
-        #print("FW:  ", self.config)
-<<<<<<< HEAD
 
-=======
->>>>>>> c7ba453f657e57e748bca3daf5452ad25fa327ee
         self.dual_filter = self.config['filter_wheel1']['dual_wheel']
         self.ip = str(self.config['filter_wheel1']['ip_string'])
         self.filter_data = self.config['filter_wheel1']['settings']['filter_data'][1:]  #  Stips off column heading entry
