@@ -742,10 +742,11 @@ class Enclosure:
     #     pass
 
     def sync_mount_command(self, req: dict, opt: dict):
-        print("enclosure cmd: sync_az")
-        self.enclosure.Slaved = True
-        self.following = True
-        self.enclosure_synchronized =True
+        #print("enclosure cmd: sync_az")
+        if self.site not in ['sro', 'mrc', 'mrc2']:
+            self.enclosure.Slaved = True
+            self.following = True
+            self.enclosure_synchronized =True
 
     # def park_command(self, req: dict, opt: dict):
     #     ''' park the enclosure if it's a dome '''

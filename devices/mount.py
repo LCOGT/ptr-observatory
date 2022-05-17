@@ -55,6 +55,7 @@ import ptr_utility
 from config import site_config
 import math
 from pprint import pprint
+import ephem
 
 # =============================================================================
 # from astropy.utils.iers import conf
@@ -273,6 +274,10 @@ class Mount:
             self.paddeling = False
             #self.paddle_thread = threading.Thread(target=self.paddle, args=())
             #self.paddle_thread.start()
+        self.obs = ephem.Observer()
+        self.obs.long = config['longitude']*DTOR
+        self.obs.lat = config['latitude']*DTOR
+
         print("exiting mount _init")
 
  
@@ -732,10 +737,11 @@ class Mount:
         print("mount cmd. slewing mount, req, opt:  ", req, opt)
 
         ''' unpark the telescope mount '''  #  NB can we check if unparked and save time?
+
         try:
-            self.object == opt['object']
+            self.object = opt['object']
         except:
-            self.object == 'unspecified'    #NB could possibly augment with "Near --blah--"
+            self.object = 'unspecified'    #NB could possibly augment with "Near --blah--"
         if self.mount.CanPark:
             #print("mount cmd: unparking mount")
             if self.mount.AtPark:
@@ -746,6 +752,21 @@ class Mount:
         except:
             clutch_ra = 0.0
             clutch_dec = 0.0
+        if self.object in ['Moon', 'moon', 'Lune', 'lune', 'Luna', 'luna', 'Lun', 'lun']:
+            self.obs.date = ephem.now()
+            moon = ephem.Moon()
+            moon.compute(self.obs)
+            ra1, dec1 = moon.ra*RTOH, moon.dec*RTOD
+            self.obs.date = ephem.Date(ephem.now() + 1/144)   #  10 minutes
+            moon.compute(self.obs)
+            ra2, dec2 = moon.ra*RTOH, moon.dec*RTOD
+            dra_moon = (ra2 - ra1)*15*3600/600
+            ddec_moon = (dec2 - dec1)*3600/600
+            object_is_moon = True
+
+        else:
+            object_is_moon = False
+            
         try:
             icrs_ra, icrs_dec = self.get_mount_coordinates()
             if offset:   #This offset version supplies offsets as a fraction of the Full field.
@@ -871,7 +892,10 @@ class Mount:
 #         ra, dec = ra_dec_fix_h(ra + delta_ra, dec + delta_dec)   #Plus compensates for measured offset
 # =============================================================================
         self.move_time = time.time()
-        self.go_coord(ra, dec, tracking_rate_ra=tracking_rate_ra, tracking_rate_dec = tracking_rate_dec)
+        if object_is_moon:
+            self.go_coord(ra1, dec1, tracking_rate_ra=dra_moon, tracking_rate_dec = ddec_moon)
+        else:
+            self.go_coord(ra, dec, tracking_rate_ra=tracking_rate_ra, tracking_rate_dec = tracking_rate_dec)
         self.object = opt.get("object", "")
         if self.object == "":
            # print("Go to unamed target.")

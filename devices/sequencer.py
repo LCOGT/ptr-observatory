@@ -251,7 +251,7 @@ class Sequencer:
                 g_dev['enc'].sync_mount_command({}, {})
                 #Prior to skyflats no dome following.
                 self.dome_homed = False
-                self.time_of_next_slew = time.time() + 120  # seconds between slews.
+                self.time_of_next_slew = time.time() + 60  # seconds between slews.
             except:
                 pass#
         return
@@ -328,6 +328,13 @@ class Sequencer:
             blocks = g_dev['obs'].blocks
             projects = g_dev['obs'].projects
             debug = False
+            if enc_status['shutter_status'] in ['Closed', 'closed'] \
+                and ocn_status['hold_duration'] <= 0.1:   #NB
+                #breakpoint()
+                g_dev['enc'].open_command({}, {})
+                print("Opening dome, will set Synchronize in 10 seconds.")
+                time.sleep(10)
+            g_dev['enc'].sync_mount_command({}, {})
 
             if debug:
                 print("# of Blocks, projects:  ", len(g_dev['obs'].blocks),  len(g_dev['obs'].projects))
@@ -532,6 +539,8 @@ class Sequencer:
         self.block_guard = True
         # NB we assume the dome is open and already slaving.
         block = copy.deepcopy(block_specification)
+        ocn_status = g_dev['ocn'].status
+        enc_status = g_dev['enc'].status
         # #unpark, open dome etc.
         # #if not end of block
         # if not enc_status in ['open', 'Open', 'opening', 'Opening']:
@@ -567,6 +576,13 @@ class Sequencer:
             dest_dec = float(target['dec']) - float(block_specification['project']['project_constraints']['dec_offset'])
             dest_ra, dest_dec = ra_dec_fix_hd(dest_ra,dest_dec)
             dest_name =target['name']
+            if enc_status['shutter_status'] in ['Closed', 'closed'] \
+                and ocn_status['hold_duration'] <= 0.1:   #NB
+                #breakpoint()
+                g_dev['enc'].open_command({}, {})
+                print("Opening dome, will set Synchronize in 10 seconds.")
+                time.sleep(10)
+            g_dev['enc'].sync_mount_command({}, {})
 
             '''
             We be starting a block:
