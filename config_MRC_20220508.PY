@@ -105,7 +105,7 @@ site_config = {
     'auto_eve_sky_flat': True,
     'auto_morn_sky_flat': True,
     'auto_morn_bias_dark': True,
-    're-calibrate_on_solve': False, 
+    're-calibrate_on_solve': True, 
     'defaults': {
         'observing_conditions': 'observing_conditions1',
         'enclosure': 'enclosure1',
@@ -117,7 +117,6 @@ site_config = {
         'screen': 'screen1',
         'filter_wheel': 'filter_wheel1',
         'camera': 'camera_1_1',
-        
         'sequencer': 'sequencer1'
         },
     'device_types': [
@@ -131,7 +130,6 @@ site_config = {
         'selector',
         'filter_wheel',
         'camera',
-
         'sequencer',
         ],
      'wema_types': [
@@ -149,7 +147,6 @@ site_config = {
         'selector',
         'filter_wheel',
         'camera',
-   
         'sequencer',
         ],
      
@@ -517,8 +514,8 @@ site_config = {
             "parent": "telescope1",
             "alias": "Dual filter wheel",
             "desc":  'FLI Centerline Custom Dual 50mm sq.',
-            "driver": "Maxim.CCDCamera",  #['ASCOM.FLI.FilterWheel1', 'ASCOM.FLI.FilterWheel2'],   #"Maxim",   #
-            #"driver":   'ASCOM.FLI.FilterWheel',   #  NB THIS IS THE NEW DRIVER FROM peter.oleynikov@gmail.com  Found in Kepler ASCOM section
+            #"driver": ['ASCOM.FLI.FilterWheel1', 'ASCOM.FLI.FilterWheel2'],   #"Maxim",   #
+            "driver":   'ASCOM.FLI.FilterWheel',   #  NB THIS IS THE NEW DRIVER FROM peter.oleynikov@gmail.com  
             "dual_wheel": True,
             # "parent": "telescope1",
             # "alias": "CWL2",
@@ -641,7 +638,7 @@ site_config = {
                 'y_active': 3194,
                 'x_pixel':  3.76,
                 'y_pixel':  3.76,
-                'pix_scale': [0.302597, 0.605194, 0.907791, 1.210388],    #   bin-2  2* math.degrees(math.atan(3.76/2563000))*3600
+                'pix_scale': 0.605194,    #   bin-2  2* math.degrees(math.atan(3.76/2563000))*3600
                 'x_field_deg': round(4784*0.605194/3600, 4),   #48 X 32 AMIN  3MIN X 0.5 DEG  
                 'y_field_deg': round(3194*0.605194/3600, 4),
                 'overscan_x': 24,
