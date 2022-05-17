@@ -14,7 +14,7 @@ class FilterWheel:
         g_dev['fil']= self
         self.config = config['filter_wheel']
         #print("FW:  ", self.config)
-     
+
         self.dual_filter = self.config['filter_wheel1']['dual_wheel']
         self.ip = str(self.config['filter_wheel1']['ip_string'])
         self.filter_data = self.config['filter_wheel1']['settings']['filter_data'][1:]  #  Stips off column heading entry
@@ -55,6 +55,31 @@ class FilterWheel:
             self.filter_selected = self.filter_data[self.filter_reference][0]   #This is the default expected after a
             self.filter_number = self.filter_reference
             self.filter_offset = self.filter_data[self.filter_reference][2]
+        elif type(driver) is list and self.dual_filter:
+            '''THIS IS A FAST KLUDGE TO GET MRC@ WORKING, NEED TO VERIFY THE FILTER ORDERING'''
+            self.filter_back = win32com.client.Dispatch(driver[0])  #  Closest to Camera
+            self.filter_front = win32com.client.Dispatch(driver[1])  #  Closest to Telescope
+            self.filter_back.Connected = True
+            self.filter_front.Connected = True
+
+            self.filter_front.Position = 0
+            self.filter_back.Position  = 0
+            self.dual = True
+            self.custom = False
+            self.filter_selected = self.filter_data[self.filter_reference][0]
+            self.filter_number = self.filter_reference
+            self.filter_offset = self.filter_data[self.filter_reference][2]
+            #First setup:
+            time.sleep(1)
+            while self.filter_front.Position == -1:
+                time.sleep(0.2)
+            self.filter_front.Position = self.filter_data[self.filter_reference][1][1]
+            time.sleep(1)
+            while self.filter_back.Position == -1:
+                time.sleep(0.2)
+            self.filter_back.Position = self.filter_data[self.filter_reference][1][0]
+            time.sleep(1)
+            print(self.filter_selected, self.filter_offset)   #self.filter_front.Names, self.filter_back.Names, 
         elif driver == 'ASCOM.FLI.FilterWheel' and self.dual_filter:  #   == list:
             self.maxim = False
             self.dual = True
