@@ -811,10 +811,13 @@ class Sequencer:
                             opt = {'area': 150, 'count': 1, 'bin': binning, 'filter': color, \
                                    'hint': block['project_id'] + "##" + dest_name, 'pane': pane}
                             print('Seq Blk sent to camera:  ', req, opt)
+                            obs_win_begin, sunZ88Op, sunZ88Cl, ephem_now = self.astro_events.getSunEvents()
+                            if ephem.now() + exp_time/86400 >= block['end']:
+                                break
                             result = g_dev['cam'].expose_command(req, opt, no_AWS=False, solve_it=False)
                             try:
                                 if result['stopped'] is True:
-                                    g_dev['obs'].send_to_user("Project Stopped becuase Exposure cancelled")
+                                    g_dev['obs'].send_to_user("Project Stopped because Exposure cancelled")
                                     return block_specification
                             except:
                                 pass
@@ -836,7 +839,7 @@ class Sequencer:
                     events = g_dev['events']
 
                     ended = left_to_do <= 0 or now_date_timeZ >= block['end'] \
-                            or ephem_now >= events['Observing Ends']
+                            or ephem.now() >= events['Observing Ends']
                     #                                                    ]\
                     #         or g_dev['airmass'] > float( block_specification['project']['project_constraints']['max_airmass']) \
                     #         or abs(g_dev['ha']) > float(block_specification['project']['project_constraints']['max_ha'])
@@ -1028,7 +1031,7 @@ class Sequencer:
         prior_scale = 1   #THIS will be inhereted upon completion of the prior filter
         collecting_area = self.config['telescope']['telescope1']['collecting_area']/31808.   # SAF at F4.9 is the reference
         #   and (g_dev['events']['Eve Sky Flats'] <
-        while len(pop_list) > 0  and ephem_now < ending:
+        while len(pop_list) > 0  and ephem.now() < ending:
 
             current_filter = int(pop_list[0])
             acquired_count = 0
@@ -1075,7 +1078,7 @@ class Sequencer:
                 req = {'time': float(exp_time),  'alias': camera_name, 'image_type': 'sky flat', 'script': 'On'}
                 opt = { 'count': 1, 'bin':  '2,2', 'area': 150, 'filter': g_dev['fil'].filter_data[current_filter][0]}
                 print("using:  ", g_dev['fil'].filter_data[current_filter][0])
-                if ephem_now >= ending:
+                if ephem.now() >= ending:
                     break
                 try:
                     result = g_dev['cam'].expose_command(req, opt, no_AWS=True, do_sep = False)
@@ -1102,7 +1105,7 @@ class Sequencer:
                 obs_win_begin, sunset, sunrise, ephem_now = self.astro_events.getSunEvents()
                 #  THE following code looks like a debug patch gone rogue.
 
-                if bright > 35000 and (ephem_now < ending):    #NB should gate with end of skyflat window as well.
+                if bright > 35000 and (ephem.now() < ending):    #NB should gate with end of skyflat window as well.
                     for i in range(1):
                         time.sleep(2)  #  #0 seconds of wait time.  Maybe shorten for wide bands?
                         g_dev['obs'].update_status()

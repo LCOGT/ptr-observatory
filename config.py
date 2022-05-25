@@ -48,7 +48,7 @@ site_config = {
     
         
     'host_wema_site_name':  'SRO',  #  The umbrella header for obsys in close geographic proximity.
-    'name': 'PTR Sierra Remote Observatory 0m3f38',
+    'name': 'PTR Sierra Remote Observatory 0m30f3.8',
     'airport_code':  'FAT  :  Fresno Air Terminal', 
     'location': 'Near Shaver Lake CA,  USA',
     'observatory_url': 'https://www.sierra-remote.com/',   #  This is meant to be optional
