@@ -510,6 +510,7 @@ class FilterWheel:
                     continue
                 else:
                     print('Filters:  ',r0_t,r1_t)
+
                     break
  
         elif self.dual and not self.maxim:

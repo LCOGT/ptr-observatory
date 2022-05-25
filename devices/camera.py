@@ -194,6 +194,8 @@ class Camera:
     
         if name == 'camera_1_1':     #NBDefaults sets up Selected 'cam'
             g_dev['cam'] = self
+        if name == 'camera_1_2':     #NBDefaults sets up Selected 'cam'
+            g_dev['cam_2'] = self
         self.config = config
         self.alias = config['camera'][self.name]['name']
         win32com.client.pythoncom.CoInitialize()
@@ -505,7 +507,11 @@ class Camera:
         if self.user_name != self.last_user_name:
             self.last_user_name = self.user_name
         if action == "expose" and not self.exposure_busy:
-            self.expose_command(req, opt, do_sep=True, quick=False)
+
+            #g_dev['obs'].camera_2_queue.put(g_dev['cam_2'].expose_command(req, opt, do_sep=True, quick=False))
+            
+            #self.expose_command(req, opt, do_sep=True, quick=False)
+            g_dev['cam_2'].expose_command(req, opt, do_sep=True, quick=False)
             self.exposure_busy = False     #Hangup needs to be guarded with a timeout.
             self.active_script = None
 
@@ -787,7 +793,13 @@ class Camera:
         # print(self.len_x, self.len_y)
         #  NB Area is just a series of subframes centered on the chip.
         # "area": ['100%', '71%', '50%',  '35%', '25%', '12%']
-
+        # '''@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@'''
+        # if area == []:
+        #     area = 100   #NB NB NB Temp fix for broken UI 20220520 WER
+        #     self.area = 100
+        # if opt['area'] == []:
+        #     opt['area'] = 100
+        # '''@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@'''
         if 72 < area <= 100:  #  This is completely incorrect, this section needs a total re-think 20201021 WER
             self.camera_num_x = self.len_x
             self.camera_start_x = 0
@@ -1133,6 +1145,9 @@ class Camera:
                         low=0, high=0, script='False', opt=None, solve_it=False):
         #print("Finish exposure Entered:  ", exposure_time, frame_type, 'to go: ', counter, opt['area'])
               #gather_status, do_sep, no_AWS, start_x, start_y, opt['area'])
+        if opt['area'] == []:
+            opt['area'] = 100
+    
         if counter > 1:
             g_dev['obs'].send_to_user("Finish count " + str(int(counter)) + "; "  + str(exposure_time) + "sec exposures;  area = " + str(opt['area']), p_level="INFO")
         else:
@@ -1244,6 +1259,14 @@ class Camera:
                     self.dark_region = np.median(self.img[0:5, :-8])
                     self.overscan = np.median(self.img[6:, -8:]) 
                     trimmed = self.img[6 :-8].astype('int32') + pedastal - self.overscan
+                elif ix == 6280:   # NB NB NB Assumed here is 286 is same as the 600 Sony Chip.
+                    self.dark_region = np.median(self.img[0:22, :-34])
+                    self.overscan = np.median(self.img[24:, -33:])
+                    trimmed = self.img[24:, :-34].astype('int32') + pedastal - self.overscan
+                elif ix == 3140:
+                    self.dark_region = np.median(self.img[0:11, :-17])
+                    self.overscan = np.median(self.img[12:, -17:])
+                    trimmed = self.img[12:, :-17].astype('int32') + pedastal - self.overscan
                 
                 #mrc2    Testing comment change, did this push to GitHub?
                 elif ix == 4096 and iy == 4096:   #MRC@
