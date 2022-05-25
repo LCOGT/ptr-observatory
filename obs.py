@@ -415,6 +415,7 @@ class Observatory:
         have parallel mountings or independently controlled cameras.
         '''
 
+        '''***********************************This can fault, needs a try except on all AWS transactions.'''
         # This stopping mechanism allows for threads to close cleanly.
         while not self.stopped:
             # Wait a bit before polling for new commands
