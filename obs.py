@@ -433,8 +433,10 @@ class Observatory:
                                                    data=json.dumps(body)).json()
                 # Make sure the list is sorted in the order the jobs were issued
                 # Note: the ulid for a job is a unique lexicographically-sortable id
+
                 if len(unread_commands) > 0:
-                    #print(unread_commands)
+                    print(unread_commands)
+
                     unread_commands.sort(key=lambda x: x["ulid"])
                     # Process each job one at a time
                     print("# of incomming commands:  ", len(unread_commands))
@@ -471,7 +473,8 @@ class Observatory:
                     self.send_to_user("Number of queued commands:  " + str(self.cmd_queue.qsize()))
                     cmd = self.cmd_queue.get() 
                     #This code is redundant
-                    if self.config['selector']['selector1']['driver'] is None:
+                    #breakpoint()
+                    if self.config['selector']['selector1']['driver'] is not None:
                         port = cmd['optional_params']['instrument_selector_position'] 
                         g_dev['mnt'].instrument_port = port
                         cam_name = self.config['selector']['selector1']['cameras'][port]
@@ -496,7 +499,6 @@ class Observatory:
                     device_type = cmd['deviceType']
                     device = self.all_devices[device_type][device_instance]
                     try:
-                        #breakpoint()
                         device.parse_command(cmd)
                     except Exception as e:
                         print( 'Exception in obs.scan_requests:  ', e)

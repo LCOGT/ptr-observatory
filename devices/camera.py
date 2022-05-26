@@ -193,8 +193,9 @@ class Camera:
         g_dev[name] = self
     
         if name == 'camera_1_1':     #NBDefaults sets up Selected 'cam'
+            g_dev['cam_1'] = self
             g_dev['cam'] = self
-        if name == 'camera_1_2':     #NBDefaults sets up Selected 'cam'
+        if name == 'camera_2_2':     #NBDefaults sets up Selected 'cam'
             g_dev['cam_2'] = self
         self.config = config
         self.alias = config['camera'][self.name]['name']
@@ -507,13 +508,15 @@ class Camera:
         if self.user_name != self.last_user_name:
             self.last_user_name = self.user_name
         if action == "expose" and not self.exposure_busy:
-
+            if command['deviceInstance'] == 'camera_1_1':
             #g_dev['obs'].camera_2_queue.put(g_dev['cam_2'].expose_command(req, opt, do_sep=True, quick=False))
             
-            #self.expose_command(req, opt, do_sep=True, quick=False)
-            g_dev['cam_2'].expose_command(req, opt, do_sep=True, quick=False)
-            self.exposure_busy = False     #Hangup needs to be guarded with a timeout.
-            self.active_script = None
+                self.expose_command(req, opt, do_sep=True, quick=False)
+            elif command['deviceInstance'] == 'camera_2_2':
+                g_dev['cam_2'].expose_command(req, opt, do_sep=True, quick=False)
+            else:
+                self.exposure_busy = False     #Hangup needs to be guarded with a timeout.
+                self.active_script = None
 
         elif action == "expose" and self.exposure_busy:
             print("Cannot expose, camera is currently busy")
