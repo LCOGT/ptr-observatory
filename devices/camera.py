@@ -510,8 +510,8 @@ class Camera:
 
             #g_dev['obs'].camera_2_queue.put(g_dev['cam_2'].expose_command(req, opt, do_sep=True, quick=False))
             
-            #self.expose_command(req, opt, do_sep=True, quick=False)
-            g_dev['cam_2'].expose_command(req, opt, do_sep=True, quick=False)
+            self.expose_command(req, opt, do_sep=True, quick=False)
+            #g_dev['cam_2'].expose_command(req, opt, do_sep=True, quick=False)
             self.exposure_busy = False     #Hangup needs to be guarded with a timeout.
             self.active_script = None
 

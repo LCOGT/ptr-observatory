@@ -812,7 +812,9 @@ class Sequencer:
                                    'hint': block['project_id'] + "##" + dest_name, 'pane': pane}
                             print('Seq Blk sent to camera:  ', req, opt)
                             obs_win_begin, sunZ88Op, sunZ88Cl, ephem_now = self.astro_events.getSunEvents()
-                            if ephem.now() + exp_time/86400 >= block['end']:
+
+                            now_date_timeZ = datetime.datetime.now().isoformat().split('.')[0] +'Z'
+                            if now_date_timeZ >= block['end'] :
                                 break
                             result = g_dev['cam'].expose_command(req, opt, no_AWS=False, solve_it=False)
                             try:
