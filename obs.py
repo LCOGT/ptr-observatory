@@ -269,12 +269,24 @@ class Observatory:
         self.aws_queue_thread = threading.Thread(target=self.send_to_AWS, args=())
         self.aws_queue_thread.start()
 
+
+        # =============================================================================
+        # Here we set up the camera_2 Queue and Thread:
+        # =============================================================================
+        self.camera_2_queue = queue.Queue(maxsize=50)
+        self.camera_2_queue_thread = threading.Thread(target=self.take_cam_2_image, args=())#, kwargs={})
+        self.camera_2_queue_thread.start()
+        
         # =============================================================================
         # Here we set up the reduction Queue and Thread:
         # =============================================================================
         self.reduce_queue = queue.Queue(maxsize=50)
         self.reduce_queue_thread = threading.Thread(target=self.reduce_image, args=())
         self.reduce_queue_thread.start()
+        # #cam-2
+        # self.reduce_queue_cam_2 = queue.Queue(maxsize=50)
+        # self.reduce_queue_thread_cam_2  = threading.Thread(target=self.reduce_image_cam_2, args=())
+        # self.reduce_queue_thread_cam_2 .start()
         self.blocks = None
         self.projects = None
         self.events_new = None
@@ -484,7 +496,7 @@ class Observatory:
                     device_type = cmd['deviceType']
                     device = self.all_devices[device_type][device_instance]
                     try:
-                    
+                        #breakpoint()
                         device.parse_command(cmd)
                     except Exception as e:
                         print( 'Exception in obs.scan_requests:  ', e)
@@ -754,6 +766,22 @@ class Observatory:
             
             
     # Note this is another thread!
+    def take_cam_2_image(self):
+        while True:
+            if not self.camera_2_queue.empty():
+                # print(self)
+                # print(self.reduce_queue)
+                # print(self.reduce_queue.empty)
+                breakpoint()
+
+                pri_image = self.camera_2_queue.get(block=False)
+                #print(pri_image)
+                if pri_image is None:
+                    time.sleep(.5)
+                    continue
+                else:
+                    breakpoint()
+        
     def reduce_image(self):
         '''
         The incoming object is typically a large fits HDU. Found in its

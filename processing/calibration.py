@@ -513,11 +513,11 @@ def calibrate (hdu, lng_path, frame_type='light', quick=False):
                 if loud: print('WARN: No EXO Flat/Lum Loaded.')
         if screen_flat_air is None:
             try:
-                sfHdu = fits.open(lng_path + 'f_2_air.fits')
+                sfHdu = fits.open(lng_path + 'f_1_air.fits')
                 screen_flat_air = sfHdu[0].data.astype('float32')
                 quick_flat_air = True
                 sfHdu.close()
-                if loud: print(lng_path + 'f_2_air.fits', 'Loaded')
+                if loud: print(lng_path + 'f_1_air.fits', 'Loaded')
             except:
                 quick_flat_air = False
                 if loud: print('WARN: No air Flat/Lum Loaded.')
@@ -615,7 +615,7 @@ def calibrate (hdu, lng_path, frame_type='light', quick=False):
             break       #  Do not calibrate a flat.
         do_flat = True   #20210224@18:13
 
-        if binning == 2 :
+        if binning == 1 :
             if img_filter in ['w', 'W']:
                 do_flat = True
                 scr_flat = screen_flat_w
@@ -714,7 +714,7 @@ def calibrate (hdu, lng_path, frame_type='light', quick=False):
             # if not quick: 
             #     if loud:  print('QuickFlat result:  ', imageStats(img, loud))
 
-        if do_flat and binning == 2: # and not g_dev['seq'].active_script == 'make_superscreenflats':
+        if do_flat and binning == 1: # and not g_dev['seq'].active_script == 'make_superscreenflats':
             try: 
                 
                 #print('Entering flat field calculation.')
