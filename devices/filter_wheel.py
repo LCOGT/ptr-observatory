@@ -373,7 +373,7 @@ class FilterWheel:
         #print('Selections:  ', filter_selections)
         self.filter_number = filter_number
         self.filter_selected = self.filter_data[filter_number][0]
-        breakpoint()
+
         if self.dual and self.custom:
 
             r0 = self.r0
