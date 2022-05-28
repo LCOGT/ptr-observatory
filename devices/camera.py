@@ -197,7 +197,9 @@ class Camera:
             g_dev['cam'] = self
         if name == 'camera_2_2':     #NBDefaults sets up Selected 'cam'
             g_dev['cam_2'] = self
+            g_dev['cam'] = self
         self.config = config
+
         self.alias = config['camera'][self.name]['name']
         win32com.client.pythoncom.CoInitialize()
         print(driver, name)

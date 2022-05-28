@@ -250,9 +250,9 @@ class Observatory:
             self.redis_wx_enabled = False
             g_dev['redis'] = None    #a  placeholder.
         # Send the config to aws   # NB NB NB This has faulted.
-        self.update_config()
+        ### self.update_config()
         # Use the configuration to instantiate objects for all devices.
-        self.create_devices(config)
+        self.create_devices(config, aux=True)
         self.loud_status = False
         #g_dev['obs']: self
         g_dev['obs'] = self 
@@ -326,7 +326,7 @@ class Observatory:
         mnt_shelf.close()
         return
 
-    def create_devices(self, config: dict):
+    def create_devices(self, config: dict, aux=False):
         # This dict will store all created devices, subcategorized by dev_type.
         self.all_devices = {}
         # Create device objects by type, going through the config by type.
@@ -338,8 +338,13 @@ class Observatory:
             devices_of_type = config.get(dev_type, {})
             device_names = devices_of_type.keys()
             # Instantiate each device object from based on its type
-            for name in device_names:
 
+            for name in device_names:
+                # print(name)
+                # breakpoint()
+
+                if not (aux and '2' in name):
+                    continue
                 driver = devices_of_type[name]["driver"]
                 settings = devices_of_type[name].get("settings", {})
                 # print('looking for dev-types:  ', dev_type)
@@ -582,6 +587,7 @@ class Observatory:
         for dev_type in device_list:
             # The status that we will send is grouped into lists of
             # devices by dev_type.
+
             status[dev_type] = {}
             # Names of all devices of the current type.
             # Recall that self.all_devices[type] is a dictionary of all
@@ -593,6 +599,7 @@ class Observatory:
                 # Get the actual device object...
                 device = devices_of_type[device_name]
                 # ...and add it to main status dict.
+                breakpoint()
                 if device_name in self.config['wema_types'] and (self.is_wema or self.site_is_specific):
                     result = device.get_status(g_dev=g_dev)
                     if self.site_is_specific:

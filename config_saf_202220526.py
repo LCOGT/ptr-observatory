@@ -243,7 +243,7 @@ site_config = {
             'desc':  'Ceravolo 300mm F4.9/F9 convertable',
             'telescop': 'cvagr-0m30-f9-f4p9-001',
             'driver': None,                     # Essentially this device is informational.  It is mostly about the optics.
-            'collecting_area': 31808,   #Incorrect actually 32834 so off by 3%
+            'collecting_area': 38877,
             'obscuration':  0.55,  # Informatinal, already included in collecting_area.
             'aperture': 30,
             'focal_length': 1470,  # 1470,   #2697,   # Converted to F9, measured 20200905  11.1C
@@ -280,48 +280,48 @@ site_config = {
     
         },
         
-        # 'telescope2': {
-        #     'parent': 'mount1',
-        #     'name': 'Main OTA',
-        #     'desc':  'Astro-Physics Starfire 180mmF8',
-        #     'telescop': 'apref-0m180-f8-=-001',
-        #     'driver': None,                     # Essentially this device is informational.  It is mostly about the optics.
-        #     'collecting_area': 25466,   #Incorrect actually 32834 so off by 3%
-        #     'obscuration':  0.0,  # Informatinal, already included in collecting_area.
-        #     'aperture': 180,
-        #     'focal_length': 1440,  # 1470,   #2697,   # Converted to F9, measured 20200905  11.1C
-        #     'has_dew_heater':  False,
-        #     'screen_name': 'screen2',
-        #     'focuser_name':  'focuser2',
-        #     'rotator_name':  'rotator2',
-        #     'has_instrument_selector': False,   # This is a default for a single instrument system
-        #     'selector_positions': 1,            # Note starts with 1
-        #     'instrument names':  ['camera_1_2'],
-        #     'instrument aliases':  ['QHY376Color'],
-        #     'configuration': {
-        #          "position1": ["darkslide1", "filter_wheel1", "camera1"]
-        #          },
-        #     'camera_name':  'camera_1_2',
-        #     'filter_wheel_name':  'filter_wheel2',
-        #     'has_fans':  True,
-        #     'has_cover':  True,
-        #     'axis_offset_east': -19.5,  # East is negative  THese will vary per telescope.
-        #     'axis_offset_south': -8,  # South is negative
+        'telescope2': {
+            'parent': 'mount1',
+            'name': 'Main OTA',
+            'desc':  'Astro-Physics Starfire 180mmF8',
+            'telescop': 'apref-0m180-f8-=-001',
+            'driver': None,                     # Essentially this device is informational.  It is mostly about the optics.
+            'collecting_area': 25466, 
+            'obscuration':  0.0,  # Informatinal, already included in collecting_area.
+            'aperture': 180,
+            'focal_length': 1440,  # 1470,   #2697,   # Converted to F9, measured 20200905  11.1C
+            'has_dew_heater':  False,
+            'screen_name': 'screen2',
+            'focuser_name':  'focuser2',
+            'rotator_name':  'rotator2',
+            'has_instrument_selector': False,   # This is a default for a single instrument system
+            'selector_positions': 1,            # Note starts with 1
+            'instrument names':  ['camera_2_2'],
+            'instrument aliases':  ['QHY376Color'],
+            'configuration': {
+                  "position1": ["darkslide1", "filter_wheel1", "camera1"]
+                  },
+            'camera_name':  'camera_1_2',
+            'filter_wheel_name':  'filter_wheel2',
+            'has_fans':  True,
+            'has_cover':  True,
+            'axis_offset_east': 0, #19.5,  # East is negative  THese will vary per telescope.
+            'axis_offset_south': 0, #-8,  # South is negative
 
-        #     'settings': {
-        #         'fans': ['Auto', 'High', 'Low', 'Off'],
-        #         'offset_collimation': 0.0,    # If the mount model is current, these numbers are usually near 0.0
-        #                                       # for tel1.  Units are arcseconds.
-        #         'offset_declination': 0.0,
-        #         'offset_flexure': 0.0,
-        #         'west_flip_ha_offset': 0.0,  # new terms.
-        #         'west_flip_ca_offset': 0.0,
-        #         'west_flip_dec_offset': 0.0
-        #     },
+            'settings': {
+                'fans': ['Auto', 'High', 'Low', 'Off'],
+                'offset_collimation': 0.0,    # If the mount model is current, these numbers are usually near 0.0
+                                              # for tel1.  Units are arcseconds.
+                'offset_declination': 0.0,
+                'offset_flexure': 0.0,
+                'west_flip_ha_offset': 0.0,  # new terms.
+                'west_flip_ca_offset': 0.0,
+                'west_flip_dec_offset': 0.0
+            },
     
     
     
-        # }
+        }
     },
 
     'rotator': {
@@ -337,18 +337,18 @@ site_config = {
             'backlash':  0.0,
             'unit':  'degree'    # 'steps'
         },
-        # 'rotator2': {
-        #     'parent': 'telescope1',
-        #     'name': 'rotator',
-        #     'desc':  'Opetc Gemini',
-        #     'driver': 'ASCOM.OptecGemini.Rotator',
-        #     'com_port':  'COM10',
-        #     'minimum': -180.,
-        #     'maximum': 360.0,
-        #     'step_size':  0.0001,     # Is this correct?
-        #     'backlash':  0.0,
-        #     'unit':  'degree'    # 'steps'
-        # },
+        'rotator2': {
+            'parent': 'telescope1',
+            'name': 'rotator',
+            'desc':  'Opetc Gemini',
+            'driver': 'ASCOM.OptecGemini.Rotator',
+            'com_port':  'COM10',
+            'minimum': -180.,
+            'maximum': 360.0,
+            'step_size':  0.0001,     # Is this correct?
+            'backlash':  0.0,
+            'unit':  'degree'    # 'steps'
+        },
     },
 
     'screen': {
@@ -363,17 +363,17 @@ site_config = {
 
 
         },
-        # 'screen2': {
-        #     'parent': 'telescope2',
-        #     'name': 'screen',
-        #     'desc':  'Optec Alnitak Flip-Flat"',
-        #     'driver': 'COM14',  # This needs to be a 4 or 5 character string as in 'COM8' or 'COM22'
-        #     'minimum': 5,   # This is the % of light emitted when Screen is on and nominally at 0% bright.
-        #     'saturate': 255,  # Out of 0 - 255, this is the last value where the screen is linear with output.
-        #                       # These values have a minor temperature sensitivity yet to quantify.
+        'screen2': {
+            'parent': 'telescope2',
+            'name': 'screen',
+            'desc':  'Optec Alnitak Flip-Flat"',
+            'driver': 'COM14',  # This needs to be a 4 or 5 character string as in 'COM8' or 'COM22'
+            'minimum': 5,   # This is the % of light emitted when Screen is on and nominally at 0% bright.
+            'saturate': 255,  # Out of 0 - 255, this is the last value where the screen is linear with output.
+                              # These values have a minor temperature sensitivity yet to quantify.
 
 
-        # },
+        },
     
     },
 
@@ -404,32 +404,32 @@ site_config = {
             'unit_conversion': 9.09090909091,
             'has_dial_indicator': False
         },
-#         'focuser2': {
-#             'parent': 'telescope2',
-#             'name': 'focuser',
-#             'desc':  'Optec Gemini',
-#             'driver': 'ASCOM.OptecGemini.Focuser',
-# 		  'com_port':  None,
-#             # # F4.9 setup
-#             # 'reference': 5800,    # 20210313  Nominal at 10C Primary temperature
-#             # 'ref_temp':  5.1,    # Update when pinning reference
-#             # 'coef_c': 0,  # 26.055,   # Negative means focus moves out as Primary gets colder
-#             # 'coef_0': 5800,  # Nominal intercept when Primary is at 0.0 C. 
-#             # 'coef_date':  '20220301',    # This appears to be sensible result 44 points -13 to 3C'reference':  6431,    # Nominal at 10C Primary temperature
-#             #F9 setup
-#             'reference': 6000,    #  Meas   Nominal at 10C Primary temperature
-#             'ref_temp':  20,    # Update when pinning reference
-#             'coef_c': 0,   # negative means focus moves out as Primary gets colder
-#             'coef_0': 6000,  # Nominal intercept when Primary is at 0.0 C. 
-#             'coef_date':  '20220502',    # SWAG 
-#             'minimum': 0,     # NB this area is confusing steps and microns, and need fixing.
-#             'maximum': 12600,   #12672 actually
-#             'step_size': 1,
-#             'backlash': 0,
-#             'unit': 'micron',
-#             'unit_conversion': 9.09090909091,
-#             'has_dial_indicator': False
-#         },
+        'focuser2': {
+            'parent': 'telescope2',
+            'name': 'focuser',
+            'desc':  'Optec Gemini',
+            'driver': 'ASCOM.OptecGemini.Focuser',
+		  'com_port':  None,
+            # # F4.9 setup
+            # 'reference': 5800,    # 20210313  Nominal at 10C Primary temperature
+            # 'ref_temp':  5.1,    # Update when pinning reference
+            # 'coef_c': 0,  # 26.055,   # Negative means focus moves out as Primary gets colder
+            # 'coef_0': 5800,  # Nominal intercept when Primary is at 0.0 C. 
+            # 'coef_date':  '20220301',    # This appears to be sensible result 44 points -13 to 3C'reference':  6431,    # Nominal at 10C Primary temperature
+            #F9 setup
+            'reference': 6000,    #  Meas   Nominal at 10C Primary temperature
+            'ref_temp':  20,    # Update when pinning reference
+            'coef_c': 0,   # negative means focus moves out as Primary gets colder
+            'coef_0': 6000,  # Nominal intercept when Primary is at 0.0 C. 
+            'coef_date':  '20220502',    # SWAG 
+            'minimum': 0,     # NB this area is confusing steps and microns, and need fixing.
+            'maximum': 12600,   #12672 actually
+            'step_size': 1,
+            'backlash': 0,
+            'unit': 'micron',
+            'unit_conversion': 9.09090909091,
+            'has_dial_indicator': False
+        },
     },
 
     'selector': {

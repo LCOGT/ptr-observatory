@@ -676,7 +676,7 @@ class Mount:
         action = command['action']
         self.check_connect()
         if action == "go":
-            breakpoint()
+
             self.go_command(req, opt)   #  Entered from Target Explorer or Telescope tabs.
         elif action == "stop":
             self.stop_command(req, opt)
@@ -747,12 +747,12 @@ class Mount:
             if self.mount.AtPark:
                 self.mount.Unpark()   #  Note we do not open the dome since we may be mount testing in the daytime.
         try:
-            clutch_ra = g_dev['mnt']['mount_1']['east_clutch_ra_correction']
-            clutch_dec = g_dev['mnt']['mount_1']['east_clutch_dec_correction']
+            clutch_ra = g_dev['mnt']['mount1']['east_clutch_ra_correction']
+            clutch_dec = g_dev['mnt']['mount1']['east_clutch_dec_correction']
         except:
             clutch_ra = 0.0
             clutch_dec = 0.0
-        if self.object in ['Moon', 'moon', 'Lune', 'lune', 'Luna', 'luna', 'Lun', 'lun']:
+        if self.object in ['Moon', 'moon', 'Lune', 'lune', 'Luna', 'luna',]:
             self.obs.date = ephem.now()
             moon = ephem.Moon()
             moon.compute(self.obs)
@@ -934,7 +934,8 @@ class Mount:
         #result in a flip.  So first figure out if there will be a flip:
 
        
-        new_pierside =  self.mount.DestinationSideOfPier(ra, dec) #  A tuple gets returned: (pierside, Ra.h and dec.d)  
+        new_pierside =  self.mount.DestinationSideOfPier(ra, dec) #  A tuple gets returned: (pierside, Ra.h and dec.d)
+
         try:
                                                              #  NB NB Might be good to log is flipping on a re-seek.
             if len(new_pierside) > 1:
