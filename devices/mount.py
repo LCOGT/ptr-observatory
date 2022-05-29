@@ -403,9 +403,10 @@ class Mount:
         return self.current_icrs_ra, self.current_icrs_dec
 
     def get_status(self):
-        #This is for now 20201230, the primary place to source mount/tel status, needs fixing.
+        #This is for now 20201230, the primary place to source mount/tel status, needs fixing.\#NB a lot of the status time is taken up with Mount communication.
         self.check_connect()
-        self.paddle()   # NB Should ohly be called if in config.
+        #breakpoint()
+        #self.paddle()   # NB Should ohly be called if in config.
         alt = self.mount.Altitude
         zen = round((90 - alt), 3)
         if zen > 90:
@@ -420,8 +421,8 @@ class Mount:
         airmass = round(airmass, 4)
         #Be careful to preserve order
         #print(self.device_name, self.name)
-        if self.site_is_proxy:
-            self.site_is_proxy = True
+        # if self.site_is_proxy:
+        #     self.site_is_proxy = True
 
 # =============================================================================
 #       The notion of multiple telescopes has not been implemented yet.

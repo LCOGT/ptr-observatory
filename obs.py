@@ -151,6 +151,7 @@ def patch_httplib(bsize=400000):
     httplib2.httplib.HTTPConnection.send = send
     
 def send_status(obsy, column, status_to_send):
+    #ss = time.time()
     uri_status = f"https://status.photonranch.org/status/{obsy}/status/"
     # NB None of the strings can be empty.  Otherwise this put faults.
     try:    # 20190926  tHIS STARTED THROWING EXCEPTIONS OCCASIONALLY
@@ -169,7 +170,7 @@ def send_status(obsy, column, status_to_send):
 
     except:
         print('self.api.authenticated_request("PUT", uri, status):   Failed!')
-        
+    #print("ss:  ", time.time() - ss)   
 class Observatory:
 
     def __init__(self, name, config):
@@ -419,7 +420,7 @@ class Observatory:
         # This stopping mechanism allows for threads to close cleanly.
         while not self.stopped:
             # Wait a bit before polling for new commands
-            time.sleep(self.command_interval)
+            ## time.sleep(self.command_interval)
            #  t1 = time.time()
             if True: #not g_dev['seq'].sequencer_hold:
                 #print("Reading AWS command buffer.")
@@ -563,10 +564,12 @@ class Observatory:
         #     device = Camera(g_dev['cam_retry_driver'], g_dev['cam_retry_name'], g_dev['cam_retry_config'])
         #     print("Deleted and re-created:  ,", device)
         # Wait a bit between status updates
-        while time.time() < self.time_last_status + self.status_interval:
-            # time.sleep(self.st)atus_interval  #This was prior code
-            # print("Staus send skipped.")
-            return   # Note we are just not sending status, too soon.
+        
+        
+        # while time.time() < self.time_last_status + self.status_interval:
+        #     # time.sleep(self.st)atus_interval  #This was prior code
+        #     # print("Staus send skipped.")
+        #     return   # Note we are just not sending status, too soon.
 
         t1 = time.time()
         status = {}
@@ -582,6 +585,7 @@ class Observatory:
         for dev_type in device_list:
             # The status that we will send is grouped into lists of
             # devices by dev_type.
+            #stat_time = time.time()
             status[dev_type] = {}
             # Names of all devices of the current type.
             # Recall that self.all_devices[type] is a dictionary of all
@@ -605,6 +609,7 @@ class Observatory:
                     # if device_name == 'enclosure1':
                     #     g_dev['enc'].status = result   #NB NB NB A big HACK!
                     #print(device_name, result, '\n')
+            #print(device_name, time.time() - stat_time)
         # Include the time that the status was assembled and sent.
         #if remove_enc:
             #breakpoint()
@@ -625,7 +630,7 @@ class Observatory:
         if loud:
             print('\n\nStatus Sent:  \n', status)   # from Update:  ', status))
         else:
-            print('.') #, status)   # We print this to stay informed of process on the console.
+            print('~') #, status)   # We print this to stay informed of process on the console.
             #breakpoint()
             # self.send_log_to_frontend("WARN cam1 just fell on the floor!")
             # self.send_log_to_frontend("ERROR enc1 dome just collapsed.")
@@ -662,7 +667,7 @@ class Observatory:
         self.time_last_status = time.time()
         #self.redis_server.set('obs_time', self.time_last_status, ex=120 )
         self.status_count +=1
-        self.scan_requests('mount1', cancel_check=True)
+        #self.scan_requests('mount1', cancel_check=True)
 # =============================================================================
 #         except:
 #             print('self.api.authenticated_request("PUT", uri, status):   Failed!')
@@ -694,10 +699,20 @@ class Observatory:
         we can spend much less effort taking frames that are saturated. Save The Shutter!
 
         """
-
+        #think of this as an event loop prototype.
+        
+        s = time.time()
         self.update_status()
+        #print('st: ', time.time() - s)
         try:
+
+            if g_dev['cam_1'].cam_busy:
+                g_dev['cam_1'].finish_exposure()
+            if g_dev['cam_2'].cam_busy:
+                g_dev['cam_2'].finish_exposure()#     breakpoint()
+            s = time.time()
             self.scan_requests('mount1')   #NBNBNB THis has faulted, usually empty input lists.
+            #print("rq:  ",time.time() - s)
         except:
             pass
             #print("self.scan_requests('mount1') threw an exception, probably empty input queues.")
@@ -716,6 +731,9 @@ class Observatory:
             #     ).start()
             # Keep the main thread alive, otherwise signals are ignored
             while True:
+                #self.cam_1_busy = False
+                #self.cam_2_busy = False
+
                 self.update()
                 # `Ctrl-C` will exit the program.
         except KeyboardInterrupt:
