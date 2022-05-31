@@ -403,9 +403,10 @@ class Mount:
         return self.current_icrs_ra, self.current_icrs_dec
 
     def get_status(self):
-        #This is for now 20201230, the primary place to source mount/tel status, needs fixing.
+        #This is for now 20201230, the primary place to source mount/tel status, needs fixing.\#NB a lot of the status time is taken up with Mount communication.
         self.check_connect()
-        self.paddle()   # NB Should ohly be called if in config.
+        #breakpoint()
+        #self.paddle()   # NB Should ohly be called if in config.
         alt = self.mount.Altitude
         zen = round((90 - alt), 3)
         if zen > 90:
@@ -420,8 +421,8 @@ class Mount:
         airmass = round(airmass, 4)
         #Be careful to preserve order
         #print(self.device_name, self.name)
-        if self.site_is_proxy:
-            self.site_is_proxy = True
+        # if self.site_is_proxy:
+        #     self.site_is_proxy = True
 
 # =============================================================================
 #       The notion of multiple telescopes has not been implemented yet.
@@ -676,7 +677,7 @@ class Mount:
         action = command['action']
         self.check_connect()
         if action == "go":
-            breakpoint()
+
             self.go_command(req, opt)   #  Entered from Target Explorer or Telescope tabs.
         elif action == "stop":
             self.stop_command(req, opt)
@@ -747,12 +748,12 @@ class Mount:
             if self.mount.AtPark:
                 self.mount.Unpark()   #  Note we do not open the dome since we may be mount testing in the daytime.
         try:
-            clutch_ra = g_dev['mnt']['mount_1']['east_clutch_ra_correction']
-            clutch_dec = g_dev['mnt']['mount_1']['east_clutch_dec_correction']
+            clutch_ra = g_dev['mnt']['mount1']['east_clutch_ra_correction']
+            clutch_dec = g_dev['mnt']['mount1']['east_clutch_dec_correction']
         except:
             clutch_ra = 0.0
             clutch_dec = 0.0
-        if self.object in ['Moon', 'moon', 'Lune', 'lune', 'Luna', 'luna', 'Lun', 'lun']:
+        if self.object in ['Moon', 'moon', 'Lune', 'lune', 'Luna', 'luna',]:
             self.obs.date = ephem.now()
             moon = ephem.Moon()
             moon.compute(self.obs)
@@ -934,7 +935,8 @@ class Mount:
         #result in a flip.  So first figure out if there will be a flip:
 
        
-        new_pierside =  self.mount.DestinationSideOfPier(ra, dec) #  A tuple gets returned: (pierside, Ra.h and dec.d)  
+        new_pierside =  self.mount.DestinationSideOfPier(ra, dec) #  A tuple gets returned: (pierside, Ra.h and dec.d)
+
         try:
                                                              #  NB NB Might be good to log is flipping on a re-seek.
             if len(new_pierside) > 1:

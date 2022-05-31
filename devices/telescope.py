@@ -93,8 +93,8 @@ class Telescope:
         return
 
     def get_status(self):
-        status = g_dev['mnt'].get_status()
-        return status
+        #status = g_dev['mnt'].get_status()
+        return  #status
 #         #This is for now 20201230, NO LONGER primary place to source mount/tel status, needs fixing.
 #         alt = g_dev['mnt'].mount.Altitude
 #         zen = round((90 - alt), 3)
