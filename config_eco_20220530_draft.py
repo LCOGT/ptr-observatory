@@ -19,18 +19,18 @@ import ptr_events
 # NB NB  Json is not bi-directional with tuples (), use lists [], nested if tuples as needed, instead.
 # NB NB  My convention is if a value is naturally a float I add a decimal point even to 0.
 g_dev = None
-site_name = 'saf'
+site_name = 'eco'
 site_config = {
     'site': str(site_name.lower()),
-    'site_id': 'ARO',
-    'site_desc': "Apache Ridge Observatory, Santa Fe, NM, USA. 2194m",
-    'airport_code':  'SAF',
-    'obsy_id': 'SAF1',
-    'obs_desc': "0m3f4.9/9 Ceravolo Astrograph, AP1600",
+    'site_id': 'ECO',
+    'site_desc': "Eltham College Observatory, Victoria Australia",
+    'airport_code':  'MEB',
+    'obsy_id': 'ECO1',
+    'obs_desc': "0m4f6.8 Planewave CDK, Bisque Mounting",
     'debug_site_mode': False,
     'debug_obsy_mode': False,
     'owner':  ['google-oauth2|102124071738955888216', 'google-oauth2|112401903840371673242'],  # Neyle,  Or this can be some aws handle.
-    'owner_alias': ['ANS', 'WER'],
+    'owner_alias': ['MF', 'WER'],
     'admin_aliases': ["ANS", "WER", 'KVH', "TELOPS", "TB", "DH", "KVH", 'KC'],
     
       # Indicates some special code for a single site.
@@ -53,9 +53,9 @@ site_config = {
     'site_is_specific':  False,
     
 #   'host_wema_site_name':  'ARO',
-    'name': 'Apache Ridge Observatory 0m3f4.9/9',
+    'name': 'Eltham College Observatory, 0m4f6.8',
 
-    'location': 'Santa Fe, New Mexico,  USA',
+    'location': 'Eltham, Victoria, Australia',
     'observatory_url': 'https://starz-r-us.sky/clearskies2',   # This is meant to be optional
     'observatory_logo': None,   # I expect 
     'dedication':   '''
@@ -68,23 +68,23 @@ site_config = {
     'location _pole_monitor': None,  #This probably gets us to some sort of image (Polaris in the North)
     'location_seeing_report': None,  # Probably a path to 
     
-    'TZ_database_name':  'America/Denver',
+    'TZ_database_name':  'Victoria/Australia',
     'mpc_code':  'ZZ24',    # This is made up for now.
-    'time_offset':  -6.0,   # These two keys may be obsolete give the new TZ stuff 
-    'timezone': 'MDT',      # This was meant to be coloquial Time zone abbreviation, alternate for "TX_data..."
-    'latitude': 35.554298,     # Decimal degrees, North is Positive
-    'longitude': -105.870197,   # Decimal degrees, West is negative
-    'elevation': 2194,    # meters above sea level
+    'time_offset':  10.0,   # These two keys may be obsolete given the new TZ stuff 
+    'timezone': 'AEST',      # This was meant to be coloquial Time zone abbreviation, alternate for "TX_data..."
+    'latitude': -37.7009722,     # Decimal degrees, North is Positive
+    'longitude': 145.1918056,   # Decimal degrees, West is negative
+    'elevation': 881,    # meters above sea level
     'reference_ambient':  10.0,  # Degrees Celsius.  Alternately 12 entries, one for every - mid month.
-    'reference_pressure':  794.0,    #mbar   A rough guess 20200315
+    'reference_pressure':  920.0,    #mbar   A rough guess 20220529
     
     'site_in_automatic_default': "Automatic",   # ["Manual", "Shutdown", "Automatic"]
     'automatic_detail_default': "Enclosure is initially set to Shutdown by SAF config.",
-    'auto_eve_bias_dark': True,
-    'auto_eve_sky_flat': True,
+    'auto_eve_bias_dark': False,
+    'auto_eve_sky_flat': False,
     'eve_sky_flat_sunset_offset': +0.0,  # Minutes  neg means before, + after.
-    'auto_morn_sky_flat': True,
-    'auto_morn_bias_dark': True,
+    'auto_morn_sky_flat': False,
+    'auto_morn_bias_dark': False,
     're-calibrate_on_solve': False, 
 
     'observing_conditions' : {     #for SAF
@@ -337,18 +337,18 @@ site_config = {
             'backlash':  0.0,
             'unit':  'degree'    # 'steps'
         },
-        # 'rotator2': {
-        #     'parent': 'telescope1',
-        #     'name': 'rotator',
-        #     'desc':  'Opetc Gemini',
-        #     'driver': 'ASCOM.OptecGemini.Rotator',
-        #     'com_port':  'COM10',
-        #     'minimum': -180.,
-        #     'maximum': 360.0,
-        #     'step_size':  0.0001,     # Is this correct?
-        #     'backlash':  0.0,
-        #     'unit':  'degree'    # 'steps'
-        # },
+        'rotator2': {
+            'parent': 'telescope1',
+            'name': 'rotator',
+            'desc':  'Opetc Gemini',
+            'driver': 'ASCOM.OptecGemini.Rotator',
+            'com_port':  'COM10',
+            'minimum': -180.,
+            'maximum': 360.0,
+            'step_size':  0.0001,     # Is this correct?
+            'backlash':  0.0,
+            'unit':  'degree'    # 'steps'
+        },
     },
 
     'screen': {
@@ -363,17 +363,17 @@ site_config = {
 
 
         },
-        # 'screen2': {
-        #     'parent': 'telescope2',
-        #     'name': 'screen',
-        #     'desc':  'Optec Alnitak Flip-Flat"',
-        #     'driver': 'COM14',  # This needs to be a 4 or 5 character string as in 'COM8' or 'COM22'
-        #     'minimum': 5,   # This is the % of light emitted when Screen is on and nominally at 0% bright.
-        #     'saturate': 255,  # Out of 0 - 255, this is the last value where the screen is linear with output.
-        #                       # These values have a minor temperature sensitivity yet to quantify.
+        'screen2': {
+            'parent': 'telescope2',
+            'name': 'screen',
+            'desc':  'Optec Alnitak Flip-Flat"',
+            'driver': 'COM14',  # This needs to be a 4 or 5 character string as in 'COM8' or 'COM22'
+            'minimum': 5,   # This is the % of light emitted when Screen is on and nominally at 0% bright.
+            'saturate': 255,  # Out of 0 - 255, this is the last value where the screen is linear with output.
+                              # These values have a minor temperature sensitivity yet to quantify.
 
 
-        # },
+        },
     
     },
 
@@ -404,32 +404,32 @@ site_config = {
             'unit_conversion': 9.09090909091,
             'has_dial_indicator': False
         },
-#         'focuser2': {
-#             'parent': 'telescope2',
-#             'name': 'focuser',
-#             'desc':  'Optec Gemini',
-#             'driver': 'ASCOM.OptecGemini.Focuser',
-# 		      'com_port':  None,
-#             # # F4.9 setup
-#             # 'reference': 5800,    # 20210313  Nominal at 10C Primary temperature
-#             # 'ref_temp':  5.1,    # Update when pinning reference
-#             # 'coef_c': 0,  # 26.055,   # Negative means focus moves out as Primary gets colder
-#             # 'coef_0': 5800,  # Nominal intercept when Primary is at 0.0 C. 
-#             # 'coef_date':  '20220301',    # This appears to be sensible result 44 points -13 to 3C'reference':  6431,    # Nominal at 10C Primary temperature
-#             #F9 setup
-#             'reference': 6000,    #  Meas   Nominal at 10C Primary temperature
-#             'ref_temp':  20,    # Update when pinning reference
-#             'coef_c': 0,   # negative means focus moves out as Primary gets colder
-#             'coef_0': 6000,  # Nominal intercept when Primary is at 0.0 C. 
-#             'coef_date':  '20220502',    # SWAG 
-#             'minimum': 0,     # NB this area is confusing steps and microns, and need fixing.
-#             'maximum': 12600,   #12672 actually
-#             'step_size': 1,
-#             'backlash': 0,
-#             'unit': 'micron',
-#             'unit_conversion': 9.09090909091,
-#             'has_dial_indicator': False
-#         },
+        'focuser2': {
+            'parent': 'telescope2',
+            'name': 'focuser',
+            'desc':  'Optec Gemini',
+            'driver': 'ASCOM.OptecGemini.Focuser',
+		  'com_port':  None,
+            # # F4.9 setup
+            # 'reference': 5800,    # 20210313  Nominal at 10C Primary temperature
+            # 'ref_temp':  5.1,    # Update when pinning reference
+            # 'coef_c': 0,  # 26.055,   # Negative means focus moves out as Primary gets colder
+            # 'coef_0': 5800,  # Nominal intercept when Primary is at 0.0 C. 
+            # 'coef_date':  '20220301',    # This appears to be sensible result 44 points -13 to 3C'reference':  6431,    # Nominal at 10C Primary temperature
+            #F9 setup
+            'reference': 6000,    #  Meas   Nominal at 10C Primary temperature
+            'ref_temp':  20,    # Update when pinning reference
+            'coef_c': 0,   # negative means focus moves out as Primary gets colder
+            'coef_0': 6000,  # Nominal intercept when Primary is at 0.0 C. 
+            'coef_date':  '20220502',    # SWAG 
+            'minimum': 0,     # NB this area is confusing steps and microns, and need fixing.
+            'maximum': 12600,   #12672 actually
+            'step_size': 1,
+            'backlash': 0,
+            'unit': 'micron',
+            'unit_conversion': 9.09090909091,
+            'has_dial_indicator': False
+        },
     },
 
     'selector': {

@@ -503,7 +503,7 @@ class Camera:
 
     def parse_command(self, command):
         #print("Camera Command incoming:  ", command)
-        req = command['required_params']
+        self.req = command['required_params']
         self.opt = command['optional_params']
         action = command['action']
         self.user_id = command['user_id']
@@ -514,12 +514,13 @@ class Camera:
             self.last_user_name = self.user_name
         if action == "expose" and not self.exposure_busy:
             if command['deviceInstance'] == 'camera_1_1':
-            #g_dev['obs'].camera_2_queue.put(g_dev['cam_2'].expose_command(req, self.opt, self.do_sep=True, quick=False))
-            
-                self.expose_command(req, self.opt, do_sep=True, quick=False)
+                #g_dev['obs'].camera_2_queue.put
+                g_dev['cam_1'].expose_command(self.req, self.opt, do_sep=True, quick=False)
+                self.expose_command(self.req, self.opt, do_sep=True, quick=False)
             elif command['deviceInstance'] == 'camera_2_2':
-                g_dev['cam_2'].expose_command(req, self.opt, do_sep=True, quick=False)
+                g_dev['cam_2'].expose_command(self.req, self.opt, do_sep=True, quick=False)
             else:
+                print("Only one camera at a time is supported now, soory!")
                 self.exposure_busy = False     #Hangup needs to be guarded with a timeout.
                 self.active_script = None
                 self.cam_busy = False
@@ -1197,9 +1198,10 @@ class Camera:
                 continue
             self.incoming_image_list = []   #glob.glob(self.file_mode_path + '*.f*t*')
             self.t4 = time.time()
-            print('testing ImageReady')
+            #print('testing ImageReady')
             if self.camera.ImageReady: #(not self.use_file_mode and self.camera.ImageReady) or (self.use_file_mode and len(incoming_image_list) >= 1):   #   self.camera.ImageReady:
-                #print("reading out camera, takes ~6 seconds.")
+                print("reading out camera, takes ~6 seconds.")
+                t1 = time.time()
                 # if self.use_file_mode:
                 #     time.sleep(3)
                 #     tries = 0
@@ -1229,6 +1231,7 @@ class Camera:
                 ####self.img_safe = self.camera.ImageArray
                 #NB NB Do not try to print ImageArray!!!!
                 self.img = np.array(self.camera.ImageArray)
+                print("readout took:  ", self.t4p4 - t1, '  sec.')
                 self.img = self.img.astype('int32')
                 self.t4p5 = time.time()#As read, this is a Windows Safe Array of Longs
                 #print("\n\nMedian of incoming image:  ", np.median(self.img), '\n\n')

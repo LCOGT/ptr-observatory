@@ -447,7 +447,7 @@ class Observatory:
                     print("# of incomming commands:  ", len(unread_commands))
                     for cmd in unread_commands:
                         if time.time() - unread_commands[0]['timestamp_ms']/1000 > 1800:   # Start with a 30 min flush.
-                            breakpoint()
+                            
                             continue   #Toss out old commands
                         elif cmd['action'] in ['cancel_all_commands', 'stop']:
                             g_dev['obs'].stop_all_activity = True
@@ -483,11 +483,12 @@ class Observatory:
                     #This code is redundant
                     #breakpoint()
                     if self.config['selector']['selector1']['driver'] is not None:
-                        port = cmd['optional_params']['instrument_selector_position'] 
-                        g_dev['mnt'].instrument_port = port
-                        cam_name = self.config['selector']['selector1']['cameras'][port]
+                        port_m1 = cmd['optional_params']['instrument_selector_position'] 
+                        g_dev['mnt'].instrument_port = port_m1
+                        cam_name = self.config['selector']['selector1']['cameras'][port_m1]
                         if cmd['deviceType'][:6] == 'camera':
-                            #  Note camelCase is teh format of command keys
+                            breakpoint()
+                            #  Note camelCase is *the* format For command keys
                             cmd['required_params']['deviceInstance'] = cam_name
                             cmd['deviceInstance'] = cam_name
                             device_instance = cam_name
@@ -836,6 +837,7 @@ class Observatory:
                 #NB Important decision here, do we flash calibrate screen and sky flats?  For now, Yes.
 
                 #cal_result =
+
                 calibrate(hdu, lng_path, paths['frame_type'], quick=False)
                 #print("Calibrate returned:  ", hdu.data, cal_result)
                 #Before saving reduced or generating postage, we flip
