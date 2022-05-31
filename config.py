@@ -73,11 +73,11 @@ site_config = {
     
     'site_in_automatic_default': "Automatic",   #  ["Manual", "Shutdown", "Automatic"]
     'automatic_detail_default': "Enclosure is initially set to Automatic mode.",
-    'auto_eve_bias_dark': False,
+    'auto_eve_bias_dark': True,
     'auto_eve_sky_flat': True,
     'eve_sky_flat_sunset_offset': +5.0,  #  Minutes  neg means before, + after.
     'auto_morn_sky_flat': True,
-    'auto_morn_bias_dark': False,
+    'auto_morn_bias_dark': True,
     're-calibrate_on_solve': True, 
     
     'defaults': {
@@ -238,7 +238,7 @@ site_config = {
             'collecting_area': 55381,
             'obscuration':  24.2,   #  %
             'aperture': 305,
-            'focal_length': 1160, #1470,   #2697,   #  Converted to F9, measured 20200905  11.1C
+            'focal_length': 1160, 
             'has_dew_heater':  True,
             'screen_name': 'screen1',
             'focuser_name':  'focuser1',
@@ -442,7 +442,7 @@ site_config = {
                 'y_active': 3600,
                 'x_pixel':  6,
                 'y_pixel':  6,
-                'pix_scale': [1.0668, 2.1336, 3.2004, 4.2272],    #_22*4499,     #  asec/pixel F9   0.5751  , F4.9  1.0481         
+                'pix_scale': [1.067, 2.134, 3.201, 2.268],    #_22*4499,     #  asec/pixel F9   0.5751  , F4.9  1.0481         
                 'x_field_deg': 1.3333,   #   round(4784*1.0481/3600, 4),
                 'y_field_deg': 1.0665,   #  round(3194*1.0481/3600, 4),
                 'overscan_x': 24,
