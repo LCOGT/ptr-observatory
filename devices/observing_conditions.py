@@ -167,7 +167,6 @@ class ObservingConditions:
             DESCRIPTION.
 
         '''
-
         if not self.is_wema and self.site_has_proxy:
             if self.config['site_IPC_mechanism'] == 'shares':
                 try:
@@ -261,23 +260,42 @@ class ObservingConditions:
                 self.new_pressure = round(float(self.pressure[0]), 2)
             except:
                 self.new_pressure = round(float(self.pressure), 2)
-            status = {"temperature_C": round(self.temperature, 2),
-                      "pressure_mbar": self.new_pressure,
-                      "humidity_%": self.sky_monitor.Humidity,
-                      "dewpoint_C": self.sky_monitor.DewPoint,
-                      "sky_temp_C": round(self.sky_monitor.SkyTemperature,2),
-                      "last_sky_update_s":  round(self.sky_monitor.TimeSinceLastUpdate('SkyTemperature'), 2),
-                      "wind_m/s": abs(round(self.sky_monitor.WindSpeed, 2)),
-                      'rain_rate': self.sky_monitor.RainRate,
-                      'solar_flux_w/m^2': None,
-                      'cloud_cover_%': str(self.sky_monitor.CloudCover),
-                      "calc_HSI_lux": illum,
-                      "calc_sky_mpsas": round(uni_measure,2),    #  Provenance of 20.01 is dubious 20200504 WER
-                      #"wx_ok": wx_str,  #str(self.sky_monitor_oktoimage.IsSafe),
-                      "open_ok": self.ok_to_open,
-                      'wx_hold': self.wx_hold,
-                      'hold_duration': self.wx_to_go
-                      }
+            try:
+                status = {"temperature_C": round(self.temperature, 2),
+                          "pressure_mbar": self.new_pressure,
+                          "humidity_%": self.sky_monitor.Humidity,
+                          "dewpoint_C": self.sky_monitor.DewPoint,
+                          "sky_temp_C": round(self.sky_monitor.SkyTemperature,2),
+                          "last_sky_update_s":  round(self.sky_monitor.TimeSinceLastUpdate('SkyTemperature'), 2),
+                          "wind_m/s": abs(round(self.sky_monitor.WindSpeed, 2)),
+                          'rain_rate': self.sky_monitor.RainRate,
+                          'solar_flux_w/m^2': None,
+                          'cloud_cover_%': str(self.sky_monitor.CloudCover),
+                          "calc_HSI_lux": illum,
+                          "calc_sky_mpsas": round(uni_measure,2),    #  Provenance of 20.01 is dubious 20200504 WER
+                          #"wx_ok": wx_str,  #str(self.sky_monitor_oktoimage.IsSafe),
+                          "open_ok": self.ok_to_open,
+                          'wx_hold': self.wx_hold,
+                          'hold_duration': self.wx_to_go
+                          }
+            except:
+                status = {"temperature_C": round(self.temperature, 2),
+                          "pressure_mbar": self.new_pressure,
+                          "humidity_%": self.sky_monitor.Humidity,
+                          "dewpoint_C": self.sky_monitor.DewPoint,
+                          "sky_temp_C": round(self.sky_monitor.SkyTemperature,2),
+                          "last_sky_update_s":  round(self.sky_monitor.TimeSinceLastUpdate('SkyTemperature'), 2),
+                          "wind_m/s": abs(round(self.sky_monitor.WindSpeed, 2)),
+                          'rain_rate': self.sky_monitor.RainRate,
+                          'solar_flux_w/m^2': None,
+                          'cloud_cover_%': 'unknown',    #str(self.sky_monitor.CloudCover), # Soetimes faults.
+                          "calc_HSI_lux": illum,
+                          "calc_sky_mpsas": round(uni_measure,2),    #  Provenance of 20.01 is dubious 20200504 WER
+                          #"wx_ok": wx_str,  #str(self.sky_monitor_oktoimage.IsSafe),
+                          "open_ok": self.ok_to_open,
+                          'wx_hold': self.wx_hold,
+                          'hold_duration': self.wx_to_go
+                          }
             self.current_ambient = round(self.temperature, 2)
             dew_point_gap = not (self.sky_monitor.Temperature  - self.sky_monitor.DewPoint) < 2
             temp_bounds = not (self.sky_monitor.Temperature < -15) or (self.sky_monitor.Temperature > 42)
