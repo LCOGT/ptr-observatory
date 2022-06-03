@@ -200,7 +200,7 @@ class ObservingConditions:
                         except:
                             print("Using prior OCN status after 4 failures.")
                             g_dev['ocn'].status =self.prior_status
-                            return self.prior_status()
+                            return self.prior_status
             elif self.config['site_IPC_mechanism'] == 'redis':
                  try:
                      status = eval(g_dev['redis'].get('wx_state'))
@@ -215,7 +215,7 @@ class ObservingConditions:
                      pass
                  return status
             else:
-                breakpoint()
+                #breakpoint()
                 try:
                     self.current_ambient = self.status['temperature_C']
                 except:

@@ -147,6 +147,7 @@ try:
     tycho_cat = open("C:/Users/obs/documents/GitHub/ptr-observatory/support_info/tycho_mag_7.dat", 'r')
 except:
     tycho_cat = open("C:/Users/User/Documents/GitHub/ptr-observatory/support_info/tycho_mag_7.dat", 'r')
+    #C:\Users\User\Documents\GitHub\ptr-observatory\support_info
 tycho_tuple = []
 count = 0
 for line in tycho_cat:

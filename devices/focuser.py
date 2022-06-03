@@ -259,10 +259,10 @@ class Focuser:
                 pass
             req = {'position':  str(self.last_known_focus + adjust)}
             opt = {}
-            if loud: print('Adjusting focus by:  ', adjust, ' microns, to:  ', int(self.last_known_focus + adjust))
+            #if loud: print('Adjusting focus by:  ', adjust, ' microns, to:  ', int(self.last_known_focus + adjust))
             self.move_absolute_command(req, opt)
         except:
-            print("Something went wrong in focus-adjust.")
+            print("Focus-adjust: no changes made.")
             
     def guarded_move(self, to_focus):
         try:
@@ -301,7 +301,7 @@ class Focuser:
         #print(f"focuser cmd: move_relative:  ", req, opt)
     def move_absolute_command(self, req: dict, opt: dict):
         ''' set the focus position by moving to an absolute position '''
-        print("focuser cmd: move_absolute:  ", req, opt)
+        #print("focuser cmd: move_absolute:  ", req, opt)
         position = int(float(req['position']))
         current_position =self.focuser.Position*self.steps_to_micron
         if current_position > position:

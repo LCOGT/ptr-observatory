@@ -73,11 +73,11 @@ site_config = {
     
     'site_in_automatic_default': "Automatic",   #  ["Manual", "Shutdown", "Automatic"]
     'automatic_detail_default': "Enclosure is initially set to Automatic mode.",
-    'auto_eve_bias_dark': False,
-    'auto_eve_sky_flat': False,
-    'eve_sky_flat_sunset_offset': +5.0,  #  Minutes  neg means before, + after.
-    'auto_morn_sky_flat': False,
-    'auto_morn_bias_dark': False,
+    'auto_eve_bias_dark': True,
+    'auto_eve_sky_flat': True,
+    'eve_sky_flat_sunset_offset': +5.0,  #  Minutes  neg means before, + after.   NB is this ever used?
+    'auto_morn_sky_flat': True,
+    'auto_morn_bias_dark': True,
     're-calibrate_on_solve': True, 
     
     'defaults': {
@@ -235,7 +235,7 @@ site_config = {
             'name': 'Main OTA',
             'desc':  'AP 305mm F3.8 Ricarrdi Honders',
             'driver': None,                     #  Essentially this device is informational.  It is mostly about the optics.
-            'collecting_area': 55390,
+            'collecting_area': 55381,
             'obscuration':  24.2,   #  %
             'aperture': 305,
             'focal_length': 1160, #1470,   #2697,   #  Converted to F9, measured 20200905  11.1C
@@ -703,7 +703,7 @@ def get_ocn_status(g_dev=None):
                       }
         return status
     else:
-        breakpoint()       #  Debug bad place.
+        pass#breakpoint()       #  Debug bad place.
 
 def get_enc_status(g_dev=None):
     if site_config['site'] == 'sro':   #  Belts and suspenders.
@@ -767,7 +767,8 @@ def get_enc_status(g_dev=None):
                  }
         return status
     else:
-        breakpoint()     #  Debug bad place.
+        pass
+    #breakpoint()     #  Debug bad place.
 if __name__ == '__main__':
     j_dump = json.dumps(site_config)
     site_unjasoned = json.loads(j_dump)

@@ -151,8 +151,6 @@ def patch_httplib(bsize=400000):
     httplib2.httplib.HTTPConnection.send = send
     
 def send_status(obsy, column, status_to_send):
-    #ss = time.time()
-
     uri_status = f"https://status.photonranch.org/status/{obsy}/status/"
     # NB None of the strings can be empty.  Otherwise this put faults.
     try:    # 20190926  tHIS STARTED THROWING EXCEPTIONS OCCASIONALLY
@@ -171,7 +169,7 @@ def send_status(obsy, column, status_to_send):
 
     except:
         print('self.api.authenticated_request("PUT", uri, status):   Failed!')
-    #print("ss:  ", time.time() - ss)   
+        
 class Observatory:
 
     def __init__(self, name, config):
@@ -252,9 +250,9 @@ class Observatory:
             self.redis_wx_enabled = False
             g_dev['redis'] = None    #a  placeholder.
         # Send the config to aws   # NB NB NB This has faulted.
-        self.update_config()
+        ### self.update_config()
         # Use the configuration to instantiate objects for all devices.
-        self.create_devices(config)
+        self.create_devices(config, aux=True)
         self.loud_status = False
         #g_dev['obs']: self
         g_dev['obs'] = self 
@@ -328,7 +326,7 @@ class Observatory:
         mnt_shelf.close()
         return
 
-    def create_devices(self, config: dict):
+    def create_devices(self, config: dict, aux=False):
         # This dict will store all created devices, subcategorized by dev_type.
         self.all_devices = {}
         # Create device objects by type, going through the config by type.
@@ -340,8 +338,13 @@ class Observatory:
             devices_of_type = config.get(dev_type, {})
             device_names = devices_of_type.keys()
             # Instantiate each device object from based on its type
-            for name in device_names:
 
+            for name in device_names:
+                # print(name)
+                # breakpoint()
+
+                if not (aux and '2' in name):
+                    continue
                 driver = devices_of_type[name]["driver"]
                 settings = devices_of_type[name].get("settings", {})
                 # print('looking for dev-types:  ', dev_type)
@@ -421,7 +424,7 @@ class Observatory:
         # This stopping mechanism allows for threads to close cleanly.
         while not self.stopped:
             # Wait a bit before polling for new commands
-            ## time.sleep(self.command_interval)
+            time.sleep(self.command_interval)
            #  t1 = time.time()
             if True: #not g_dev['seq'].sequencer_hold:
                 #print("Reading AWS command buffer.")
@@ -448,7 +451,7 @@ class Observatory:
                     print("# of incomming commands:  ", len(unread_commands))
                     for cmd in unread_commands:
                         if time.time() - unread_commands[0]['timestamp_ms']/1000 > 1800:   # Start with a 30 min flush.
-                            
+                            breakpoint()
                             continue   #Toss out old commands
                         elif cmd['action'] in ['cancel_all_commands', 'stop']:
                             g_dev['obs'].stop_all_activity = True
@@ -484,12 +487,11 @@ class Observatory:
                     #This code is redundant
                     #breakpoint()
                     if self.config['selector']['selector1']['driver'] is not None:
-                        port_m1 = cmd['optional_params']['instrument_selector_position'] 
-                        g_dev['mnt'].instrument_port = port_m1
-                        cam_name = self.config['selector']['selector1']['cameras'][port_m1]
+                        port = cmd['optional_params']['instrument_selector_position'] 
+                        g_dev['mnt'].instrument_port = port
+                        cam_name = self.config['selector']['selector1']['cameras'][port]
                         if cmd['deviceType'][:6] == 'camera':
-                            breakpoint()
-                            #  Note camelCase is *the* format For command keys
+                            #  Note camelCase is teh format of command keys
                             cmd['required_params']['deviceInstance'] = cam_name
                             cmd['deviceInstance'] = cam_name
                             device_instance = cam_name
@@ -566,12 +568,10 @@ class Observatory:
         #     device = Camera(g_dev['cam_retry_driver'], g_dev['cam_retry_name'], g_dev['cam_retry_config'])
         #     print("Deleted and re-created:  ,", device)
         # Wait a bit between status updates
-        
-        
-        # while time.time() < self.time_last_status + self.status_interval:
-        #     # time.sleep(self.st)atus_interval  #This was prior code
-        #     # print("Staus send skipped.")
-        #     return   # Note we are just not sending status, too soon.
+        while time.time() < self.time_last_status + self.status_interval:
+            # time.sleep(self.st)atus_interval  #This was prior code
+            # print("Staus send skipped.")
+            return   # Note we are just not sending status, too soon.
 
         t1 = time.time()
         status = {}
@@ -585,11 +585,9 @@ class Observatory:
             device_list = self.device_types  # self.short_status_devices 
             remove_enc = True
         for dev_type in device_list:
-            if dev_type in ['mount', 'mount1']:
-                pass#breakpoint()
             # The status that we will send is grouped into lists of
             # devices by dev_type.
-            #stat_time = time.time()
+
             status[dev_type] = {}
             # Names of all devices of the current type.
             # Recall that self.all_devices[type] is a dictionary of all
@@ -601,6 +599,7 @@ class Observatory:
                 # Get the actual device object...
                 device = devices_of_type[device_name]
                 # ...and add it to main status dict.
+                breakpoint()
                 if device_name in self.config['wema_types'] and (self.is_wema or self.site_is_specific):
                     result = device.get_status(g_dev=g_dev)
                     if self.site_is_specific:
@@ -613,7 +612,6 @@ class Observatory:
                     # if device_name == 'enclosure1':
                     #     g_dev['enc'].status = result   #NB NB NB A big HACK!
                     #print(device_name, result, '\n')
-            #print(device_name, time.time() - stat_time)
         # Include the time that the status was assembled and sent.
         #if remove_enc:
             #breakpoint()
@@ -634,7 +632,7 @@ class Observatory:
         if loud:
             print('\n\nStatus Sent:  \n', status)   # from Update:  ', status))
         else:
-            print('~') #, status)   # We print this to stay informed of process on the console.
+            print('.') #, status)   # We print this to stay informed of process on the console.
             #breakpoint()
             # self.send_log_to_frontend("WARN cam1 just fell on the floor!")
             # self.send_log_to_frontend("ERROR enc1 dome just collapsed.")
@@ -671,7 +669,7 @@ class Observatory:
         self.time_last_status = time.time()
         #self.redis_server.set('obs_time', self.time_last_status, ex=120 )
         self.status_count +=1
-        #self.scan_requests('mount1', cancel_check=True)
+        self.scan_requests('mount1', cancel_check=True)
 # =============================================================================
 #         except:
 #             print('self.api.authenticated_request("PUT", uri, status):   Failed!')
@@ -703,20 +701,10 @@ class Observatory:
         we can spend much less effort taking frames that are saturated. Save The Shutter!
 
         """
-        #think of this as an event loop prototype.
-        
-        s = time.time()
-        self.update_status()
-        #print('st: ', time.time() - s)
-        try:
 
-            if g_dev['cam_1'].cam_busy:
-                g_dev['cam_1'].finish_exposure()
-            if g_dev['cam_2'].cam_busy:
-                g_dev['cam_2'].finish_exposure()#     breakpoint()
-            s = time.time()
+        self.update_status()
+        try:
             self.scan_requests('mount1')   #NBNBNB THis has faulted, usually empty input lists.
-            #print("rq:  ",time.time() - s)
         except:
             pass
             #print("self.scan_requests('mount1') threw an exception, probably empty input queues.")
@@ -735,9 +723,6 @@ class Observatory:
             #     ).start()
             # Keep the main thread alive, otherwise signals are ignored
             while True:
-                #self.cam_1_busy = False
-                #self.cam_2_busy = False
-
                 self.update()
                 # `Ctrl-C` will exit the program.
         except KeyboardInterrupt:
@@ -840,7 +825,6 @@ class Observatory:
                 #NB Important decision here, do we flash calibrate screen and sky flats?  For now, Yes.
 
                 #cal_result =
-
                 calibrate(hdu, lng_path, paths['frame_type'], quick=False)
                 #print("Calibrate returned:  ", hdu.data, cal_result)
                 #Before saving reduced or generating postage, we flip

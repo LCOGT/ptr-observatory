@@ -55,6 +55,7 @@ import ptr_utility
 from config import site_config
 import math
 from pprint import pprint
+import ephem
 
 # =============================================================================
 # from astropy.utils.iers import conf
@@ -215,7 +216,7 @@ class Mount:
         self.prior_roll_rate = 0
         self.prior_pitch_rate = 0
         self.offset_received = False
-        self.west_clutch_ra_correction = config['mount']['mount1']['west_clutch_ra_correction']   
+        self.west_clutch_ra_correction = config['mount']['mount1']['west_clutch_ra_correction']
         self.west_clutch_dec_correction = config['mount']['mount1']['west_clutch_dec_correction']
         self.east_flip_ra_correction = config['mount']['mount1']['east_flip_ra_correction']
         self.east_flip_dec_correction = config['mount']['mount1']['east_flip_dec_correction']
@@ -247,13 +248,14 @@ class Mount:
         self.move_time = 0
         try:
             ra1, dec1 = self.get_mount_reference()
-            ra2, dec2 = self.get_mount_reference()
+            ra2, dec2 = self.get_flip_reference()
             print("Mount references clutch, flip (Look East):  ", ra1, dec1, ra2, dec2 )
         except:
             print("No mount ref found.")
             pass
-        print("Reset Mount Reference.")
-        self.reset_mount_reference()
+        #print("Reset Mount Reference.")
+
+        #self.reset_mount_reference()
         #NB THe paddle needs a re-think and needs to be cast into its own thread. 20200310 WER
         if self.has_paddle:
             self._paddle = serial.Serial('COM28', timeout=0.1)
@@ -272,6 +274,10 @@ class Mount:
             self.paddeling = False
             #self.paddle_thread = threading.Thread(target=self.paddle, args=())
             #self.paddle_thread.start()
+        self.obs = ephem.Observer()
+        self.obs.long = config['longitude']*DTOR
+        self.obs.lat = config['latitude']*DTOR
+
         print("exiting mount _init")
 
  
@@ -397,9 +403,10 @@ class Mount:
         return self.current_icrs_ra, self.current_icrs_dec
 
     def get_status(self):
-        #This is for now 20201230, the primary place to source mount/tel status, needs fixing.
+        #This is for now 20201230, the primary place to source mount/tel status, needs fixing.\#NB a lot of the status time is taken up with Mount communication.
         self.check_connect()
-        self.paddle()   # NB Should ohly be called if in config.
+        #breakpoint()
+        #self.paddle()   # NB Should ohly be called if in config.
         alt = self.mount.Altitude
         zen = round((90 - alt), 3)
         if zen > 90:
@@ -414,8 +421,8 @@ class Mount:
         airmass = round(airmass, 4)
         #Be careful to preserve order
         #print(self.device_name, self.name)
-        if self.site_is_proxy:
-            self.site_is_proxy = True
+        # if self.site_is_proxy:
+        #     self.site_is_proxy = True
 
 # =============================================================================
 #       The notion of multiple telescopes has not been implemented yet.
@@ -731,20 +738,36 @@ class Mount:
         print("mount cmd. slewing mount, req, opt:  ", req, opt)
 
         ''' unpark the telescope mount '''  #  NB can we check if unparked and save time?
+
         try:
-            self.object == opt['object']
+            self.object = opt['object']
         except:
-            self.object == 'unspecified'    #NB could possibly augment with "Near --blah--"
+            self.object = 'unspecified'    #NB could possibly augment with "Near --blah--"
         if self.mount.CanPark:
             #print("mount cmd: unparking mount")
             if self.mount.AtPark:
                 self.mount.Unpark()   #  Note we do not open the dome since we may be mount testing in the daytime.
         try:
-            clutch_ra = g_dev['mnt']['mount_1']['east_clutch_ra_correction']
-            clutch_dec = g_dev['mnt']['mount_1']['east_clutch_dec_correction']
+            clutch_ra = g_dev['mnt']['mount1']['east_clutch_ra_correction']
+            clutch_dec = g_dev['mnt']['mount1']['east_clutch_dec_correction']
         except:
             clutch_ra = 0.0
             clutch_dec = 0.0
+        if self.object in ['Moon', 'moon', 'Lune', 'lune', 'Luna', 'luna',]:
+            self.obs.date = ephem.now()
+            moon = ephem.Moon()
+            moon.compute(self.obs)
+            ra1, dec1 = moon.ra*RTOH, moon.dec*RTOD
+            self.obs.date = ephem.Date(ephem.now() + 1/144)   #  10 minutes
+            moon.compute(self.obs)
+            ra2, dec2 = moon.ra*RTOH, moon.dec*RTOD
+            dra_moon = (ra2 - ra1)*15*3600/600
+            ddec_moon = (dec2 - dec1)*3600/600
+            object_is_moon = True
+
+        else:
+            object_is_moon = False
+            
         try:
             icrs_ra, icrs_dec = self.get_mount_coordinates()
             if offset:   #This offset version supplies offsets as a fraction of the Full field.
@@ -855,7 +878,8 @@ class Mount:
                     self.offset_received = False
                     ra_dec = False
         except:
-            print("Bad coordinates supplied.")
+            #print("Bad coordinates supplied.")
+            g_dev['obs'].send_to_user("Bad coordinates supplied! ",  p_level="WARN")
             self.message = "Bad coordinates supplied, try again."
             self.offset_received = False
             self.ra_offset = 0
@@ -869,18 +893,23 @@ class Mount:
 #         ra, dec = ra_dec_fix_h(ra + delta_ra, dec + delta_dec)   #Plus compensates for measured offset
 # =============================================================================
         self.move_time = time.time()
-        self.go_coord(ra, dec, tracking_rate_ra=tracking_rate_ra, tracking_rate_dec = tracking_rate_dec)
+        if object_is_moon:
+            self.go_coord(ra1, dec1, tracking_rate_ra=dra_moon, tracking_rate_dec = ddec_moon)
+        else:
+            self.go_coord(ra, dec, tracking_rate_ra=tracking_rate_ra, tracking_rate_dec = tracking_rate_dec)
         self.object = opt.get("object", "")
         if self.object == "":
-            print("Go to unamed target.")
+           # print("Go to unamed target.")
+            g_dev['obs'].send_to_user("Going to un-named target!  ",  p_level="INFO")
         else:
-            print("Going to:  ", self.object)   #NB Needs cleaning up.
+            #print("Going to:  ", self.object)   #NB Needs cleaning up.
+            g_dev['obs'].send_to_user("Going to:  " + str( self.object),  p_level="INFO")
             
     def re_seek(self, dither):
         if dither == 0:
             self.go_coord(self.last_ra, self.last_dec, self.last_tracking_rate_ra, self.last_tracking_rate_dec)
         else:
-            breakpoint()
+            pass#breakpoint()
             
             
             
@@ -906,7 +935,8 @@ class Mount:
         #result in a flip.  So first figure out if there will be a flip:
 
        
-        new_pierside =  self.mount.DestinationSideOfPier(ra, dec) #  A tuple gets returned: (pierside, Ra.h and dec.d)  
+        new_pierside =  self.mount.DestinationSideOfPier(ra, dec) #  A tuple gets returned: (pierside, Ra.h and dec.d)
+
         try:
                                                              #  NB NB Might be good to log is flipping on a re-seek.
             if len(new_pierside) > 1:
@@ -1013,6 +1043,7 @@ class Mount:
         self.mount.Tracking = False
         self.move_time = time.time()
         self.mount.SlewToAltAzAsync(az, alt)
+
 
 
     def stop_command(self, req, opt):

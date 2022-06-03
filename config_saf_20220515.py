@@ -2,7 +2,7 @@
 '''
 
 Created on Fri Feb 07,  11:57:41 2020
-Updated 20220601 WER   This version does not support color camera channel.
+Updated 20220206T23:16 WER
 
 @author: wrosing
 
@@ -26,7 +26,7 @@ site_config = {
     'site_desc': "Apache Ridge Observatory, Santa Fe, NM, USA. 2194m",
     'airport_code':  'SAF',
     'obsy_id': 'SAF1',
-    'obs_desc': "0m3f4.9/9 Ceravolo Astrograph, AP1600",
+    'obs_desc': "0m3f4.9/9 Ceravolo Astrogaph, AP1600",
     'debug_site_mode': False,
     'debug_obsy_mode': False,
     'owner':  ['google-oauth2|102124071738955888216', 'google-oauth2|112401903840371673242'],  # Neyle,  Or this can be some aws handle.
@@ -80,8 +80,8 @@ site_config = {
     
     'site_in_automatic_default': "Automatic",   # ["Manual", "Shutdown", "Automatic"]
     'automatic_detail_default': "Enclosure is initially set to Shutdown by SAF config.",
-    'auto_eve_bias_dark': False,
-    'auto_eve_sky_flat': False,
+    'auto_eve_bias_dark': True,
+    'auto_eve_sky_flat': True,
     'eve_sky_flat_sunset_offset': +0.0,  # Minutes  neg means before, + after.
     'auto_morn_sky_flat': False,
     'auto_morn_bias_dark': False,
@@ -243,7 +243,7 @@ site_config = {
             'desc':  'Ceravolo 300mm F4.9/F9 convertable',
             'telescop': 'cvagr-0m30-f9-f4p9-001',
             'driver': None,                     # Essentially this device is informational.  It is mostly about the optics.
-            'collecting_area': 38877,
+            'collecting_area': 31808,   #Incorrect actually 32834 so off by 3%
             'obscuration':  0.55,  # Informatinal, already included in collecting_area.
             'aperture': 30,
             'focal_length': 1470,  # 1470,   #2697,   # Converted to F9, measured 20200905  11.1C
@@ -286,7 +286,7 @@ site_config = {
         #     'desc':  'Astro-Physics Starfire 180mmF8',
         #     'telescop': 'apref-0m180-f8-=-001',
         #     'driver': None,                     # Essentially this device is informational.  It is mostly about the optics.
-        #     'collecting_area': 25466, 
+        #     'collecting_area': 25466,   #Incorrect actually 32834 so off by 3%
         #     'obscuration':  0.0,  # Informatinal, already included in collecting_area.
         #     'aperture': 180,
         #     'focal_length': 1440,  # 1470,   #2697,   # Converted to F9, measured 20200905  11.1C
@@ -296,17 +296,17 @@ site_config = {
         #     'rotator_name':  'rotator2',
         #     'has_instrument_selector': False,   # This is a default for a single instrument system
         #     'selector_positions': 1,            # Note starts with 1
-        #     'instrument names':  ['camera_2_2'],
+        #     'instrument names':  ['camera_1_2'],
         #     'instrument aliases':  ['QHY376Color'],
         #     'configuration': {
-        #           "position1": ["darkslide1", "filter_wheel1", "camera1"]
-        #           },
+        #          "position1": ["darkslide1", "filter_wheel1", "camera1"]
+        #          },
         #     'camera_name':  'camera_1_2',
         #     'filter_wheel_name':  'filter_wheel2',
         #     'has_fans':  True,
         #     'has_cover':  True,
-        #     'axis_offset_east': 0, #19.5,  # East is negative  THese will vary per telescope.
-        #     'axis_offset_south': 0, #-8,  # South is negative
+        #     'axis_offset_east': -19.5,  # East is negative  THese will vary per telescope.
+        #     'axis_offset_south': -8,  # South is negative
 
         #     'settings': {
         #         'fans': ['Auto', 'High', 'Low', 'Off'],
@@ -383,7 +383,7 @@ site_config = {
             'name': 'focuser',
             'desc':  'Optec Gemini',
             'driver': 'ASCOM.OptecGemini.Focuser',
-		    'com_port': 'COM13',    #AP 'COM5'  No Temp Probe.
+		  'com_port':  None,
             # # F4.9 setup
             # 'reference': 5800,    # 20210313  Nominal at 10C Primary temperature
             # 'ref_temp':  5.1,    # Update when pinning reference
@@ -391,10 +391,10 @@ site_config = {
             # 'coef_0': 5800,  # Nominal intercept when Primary is at 0.0 C. 
             # 'coef_date':  '20220301',    # This appears to be sensible result 44 points -13 to 3C'reference':  6431,    # Nominal at 10C Primary temperature
             #F9 setup
-            'reference': 4443, #5743,    #  Meas   Nominal at 10C Primary temperature
+            'reference': 5743,    #  Meas   Nominal at 10C Primary temperature
             'ref_temp':  4.8,    # Update when pinning reference
-            'coef_c': 0.0, #-77.57,   # negative means focus moves out/in as Primary gets colder/warmer.
-            'coef_0': 4443, #6155,   #5675,  20220502 Nominal intercept when Primary is at 0.0 C. 
+            'coef_c': -77.57,   # negative means focus moves out/in as Primary gets colder/warmer.
+            'coef_0': 6155,   #5675,  20220502 Nominal intercept when Primary is at 0.0 C. 
             'coef_date':  '20220302',    # SWAG 
             'minimum': 0,     # NB this area is confusing steps and microns, and need fixing.
             'maximum': 12600,   #12672 actually
@@ -409,7 +409,7 @@ site_config = {
 #             'name': 'focuser',
 #             'desc':  'Optec Gemini',
 #             'driver': 'ASCOM.OptecGemini.Focuser',
-# 		      'com_port':  None,
+# 		  'com_port':  None,
 #             # # F4.9 setup
 #             # 'reference': 5800,    # 20210313  Nominal at 10C Primary temperature
 #             # 'ref_temp':  5.1,    # Update when pinning reference
@@ -628,7 +628,7 @@ site_config = {
                 'read_mode':  'Normal',
                 'readout_mode':  'Normal',
                 'readout_speed': 0.6,
-                'areas_implemented': ["Full", "600%", "500%", "450%", "300%", "220%", "150%", "133%", "100%", "Sqr", '71%', '50%',  '35%', '25%', '12%'],
+                'areas_implemented': ["Full", "600%", "500%", "450%", "300%", "220%", "150%", "133%", "Full", "Sqr", '71%', '50%',  '35%', '25%', '12%'],
                 'default_area':  "Full",
                 'has_darkslide':  True,
                 'darkslide_com':  'COM17',
@@ -643,7 +643,7 @@ site_config = {
                 },
             },
         },
-        # 'camera_2_2': {
+        # 'camera_1_2': {
         #     'parent': 'telescope2',
         #     'name': 'sq001c',      # Important because this points to a server file structure by that name.
         #     'desc':  'QHY 286C',
@@ -653,34 +653,34 @@ site_config = {
         #     'manufacturer':  'QHY',
         #     'use_file_mode':  False,
         #     'file_mode_path':  'G:/000ptr_saf/archive/ssq001c/autosaves/',
-        #     'detsize': '[1:6280, 1:4210]',  # QHY286Physical chip data size as returned from driver
-        #     'ccdsec': '[1:6280, 1:4210]',
+        #     'detsize': '[1:6280, 1:4210]',  # QHY6376 Physical chip data size as returned from driver
+        #     'ccdsec': '[1:9600, 1:6422]',
         #     'biassec': ['[1:24, 1:6388]', '[1:12, 1:3194]', '[1:8, 1:2129]', '[1:6, 1:1597]'],
         #     'datasec': ['[25:9600, 1:6388]', '[13:4800, 1:3194]', '[9:3200, 1:2129]', '[7:2400, 1:1597]'],
         #     'trimsec': ['[1:9576, 1:6388]', '[1:4788, 1:3194]', '[1:3192, 1:2129]', '[1:2394, 1:1597]'],
 
         #     'settings': {
-        #         'temp_setpoint': -10.0,
+        #         'temp_setpoint': -12.5,
         #         'calib_setpoints': [-12.5, -10, -7.5, -5],  # Should vary with season? by day-of-year mod len(list)
         #         'day_warm': False,
         #         'cooler_on': True,
         #         'x_start':  0,
         #         'y_start':  0,
-        #         'x_width':  6280,   # NB Should be set up with overscan, which this camera is!  20200315 WER
-        #         'y_width':  4210,
-        #         'x_chip':  6280,   # NB Should specify the active pixel area.   20200315 WER
-        #         'y_chip':  4210,
+        #         'x_width':  4800,   # NB Should be set up with overscan, which this camera is!  20200315 WER
+        #         'y_width':  3211,
+        #         'x_chip':  9576,   # NB Should specify the active pixel area.   20200315 WER
+        #         'y_chip':  6388,
         #         'x_trim_offset':  8,   # NB these four entries are guesses.
         #         'y_trim_offset':  8,
-        #         'x_bias_start':  6280,
-        #         'y_bias_start' : 4210,
-        #         'x_active': 6252,
-        #         'y_active': 4176,
+        #         'x_bias_start':  9577,
+        #         'y_bias_start' : 6389,
+        #         'x_active': 4784,
+        #         'y_active': 3194,
         #         'x_pixel':  3.76,
         #         'y_pixel':  3.76,
-        #         'pix_scale': [0.539, 1.077, 1.616, 2.154],  #[0.2876, 0.575, 0.863, 1.15], #F9        [0.528, 1.055, 1.583, 2.110] F4.9
-        #         'x_field_deg': 0.9652,   #  round(4784*1.055/3600, 4),
-        #         'y_field_deg': 0.6447,   # round(3194*1.055/3600, 4),
+        #         'pix_scale': [0.528, 1.055, 1.583, 2.110],  #[0.2876, 0.575, 0.863, 1.15], #F9        [0.528, 1.055, 1.583, 2.110] F4.9
+        #         'x_field_deg': 1.042,   #  round(4784*1.055/3600, 4),
+        #         'y_field_deg': 0.936,   # round(3194*1.055/3600, 4),
         #         'overscan_x': 24,
         #         'overscan_y': 3,
         #         'north_offset': 0.0,    # These three are normally 0.0 for the primary telescope
@@ -690,8 +690,8 @@ site_config = {
         #         'max_exposure': 300.0,
         #         'can_subframe':  True,
         #         'min_subframe':  [128, 128],       
-        #         'bin_modes':  [[2, 2, 1.06], [1, 1, 0.53], [3, 3, 1.58], [4, 4, 2.11]],   #Meaning no binning choice if list has only one entry, default should be first.
-        #         'default_bin':  [2, 2, 1.06],    # Matched to seeing situation by owner   # Matched to seeing situation by owner
+        #         'bin_modes':  [[2, 2, 1.06], [1, 1, 0.53], [3, 3, 1.58], [4, 4,2.11]],   #Meaning no binning choice if list has only one entry, default should be first.
+        #         'default_bin':  [2, 2, 1.06],    # Matched to seeing situation by owner
         #         'cycle_time':  [18, 15, 15, 12],  # 3x3 requires a 1, 1 reaout then a software bin, so slower.
         #         'rbi_delay':  0.,      # This being zero says RBI is not available, eg. for SBIG.
         #         'is_cmos':  True,
@@ -703,7 +703,7 @@ site_config = {
         #         'reference_dark': [.2, .8, 1.8, 3.2],  #  Guess
         #         'max_linearity':  60000,   # Guess  60% of this is max counts for skyflats.  75% rejects the skyflat
         #         'saturate':  65300,
-        #         'fullwell_capacity': [90000, 360000, 7810000, 1144000],
+        #         'fullwell_capacity': [80000, 320000, 720000, 1280000],
         #                             #hdu.header['RDMODE'] = (self.config['camera'][self.name]['settings']['read_mode'], 'Camera read mode')
         #             #hdu.header['RDOUTM'] = (self.config['camera'][self.name]['readout_mode'], 'Camera readout mode')
         #             #hdu.header['RDOUTSP'] = (self.config['camera'][self.name]['settings']['readout_speed'], '[FPS] Readout speed')
@@ -713,7 +713,6 @@ site_config = {
         #         'areas_implemented': ["Full", "600%", "500%", "450%", "300%", "220%", "150%", "133%", "Full", "Sqr", '71%', '50%',  '35%', '25%', '12%'],
         #         'default_area':  "Full",
         #         'has_darkslide':  False,
-        #         'has_flip_flat':  True,
         #         'darkslide_com':  'COM17',
         #         'has_screen': True,
         #         'screen_settings':  {
@@ -725,7 +724,7 @@ site_config = {
         #             'screen_x0':  8.683
         #         },
         #     },
-        # },
+        #},
 
     },
 

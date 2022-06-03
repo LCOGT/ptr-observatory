@@ -25,12 +25,8 @@ site_name = 'sro'
 
 site_config = {
     'site': str(site_name.lower()),
-    'site_desc': "PTR @ Sierra Remote Observatory, near Fresno CA, USA. 1405m",
-    'airport_code':  'FAT : Fresno Air Terminal',
-    'obsy_id': 'SRO1',
-    'obs_desc': "0m3f38 AP Riccardi-Honders, PW-L500equ",
+    'site_id': 'sro',
     'debug_site_mode': False,
-    'debug_obsy_mode': False,
     'owner':  ['google-oauth2|112401903840371673242'],  # WER,  Or this can be 
                                                         # some aws handle.
     'owner_alias': ['WER', 'TELOPS'],
@@ -42,7 +38,6 @@ site_config = {
     'aux_archive_path':  None, # '//house-computer/saf_archive_2/archive/',  #  Path to auxillary backup disk. 
     'wema_is_active':  False,    #True if split computers used at a site.
     'wema_hostname':  [],  #  Prefer the shorter version
-    'wema_path':  None,
     'dome_on_wema': False, #  Implying enclosure controlled by client.
     'site_IPC_mechanism':  None,   # ['None', 'shares', 'redis']  Pick One
     'wema_write_share_path':  None,   # This and below provide two different ways to define              
@@ -68,8 +63,8 @@ site_config = {
     
     'TZ_database_name':  'America/Los_Angeles',
     'mpc_code':  'ZZ23',    #  This is made up for now.
-    'time_offset':  -8.0,   #  These two keys may be obsolete give the new TZ stuff 
-    'timezone': 'PST',      #  This was meant to be coloquial Time zone abbreviation, alternate for "TX_data..."
+    'time_offset':  -7.0,   #  These two keys may be obsolete give the new TZ stuff 
+    'timezone': 'PDT',      #  This was meant to be coloquial Time zone abbreviation, alternate for "TX_data..."
     'latitude': 37.0701111,     #  Decimal degrees, North is Positive
     'longitude': -119.412417,   #  Decimal degrees, West is negative
     'elevation': 1405,    #  meters above sea level
@@ -79,9 +74,9 @@ site_config = {
     'site_in_automatic_default': "Automatic",   #  ["Manual", "Shutdown", "Automatic"]
     'automatic_detail_default': "Enclosure is initially set to Automatic mode.",
     'auto_eve_bias_dark': False,
-    'auto_eve_sky_flat': False,
+    'auto_eve_sky_flat': True,
     'eve_sky_flat_sunset_offset': +5.0,  #  Minutes  neg means before, + after.
-    'auto_morn_sky_flat': False,
+    'auto_morn_sky_flat': True,
     'auto_morn_bias_dark': False,
     're-calibrate_on_solve': True, 
     
@@ -240,7 +235,7 @@ site_config = {
             'name': 'Main OTA',
             'desc':  'AP 305mm F3.8 Ricarrdi Honders',
             'driver': None,                     #  Essentially this device is informational.  It is mostly about the optics.
-            'collecting_area': 55390,
+            'collecting_area': 55381,
             'obscuration':  24.2,   #  %
             'aperture': 305,
             'focal_length': 1160, #1470,   #2697,   #  Converted to F9, measured 20200905  11.1C
@@ -386,7 +381,7 @@ site_config = {
                 'filter_screen_sort':  [8, 1, 4, 3, 2, 6, 5, 7],   #  don't use narrow yet,  8, 10, 9], useless to try.
                 
                 
-                'filter_sky_sort': [7, 5, 6, 2, 3, 1, 1, 8]    #No diffuser based filters
+                'filter_sky_sort': [7, 5, 6, 2, 3, 4, 1, 8]    #No diffuser based filters
                 #'filter_sky_sort': [7, 19, 2, 13, 18, 5, 15,\
                 #                    12, 4, 11, 16, 10, 9, 17, 3, 14, 1, 0]    #basically no diffuser based filters
                 #[32, 8, 22, 21, 20, 23, 31, 6, 7, 19, 27, 2, 37, 13, 18, 30, 5, 15, 36, 12,\
@@ -421,8 +416,8 @@ site_config = {
             'file_mode_path':  'G:/000ptr_saf/archive/sq01/autosaves/',   #NB Incorrect site, etc. Not used at SRO.  Please clean up.
 
             'settings': {
-                'temp_setpoint': -35,
-                'calib_setpoints': [-30, -25, -20, -15, -10 ],  #  Should vary with season? 
+                'temp_setpoint': -45,
+                'calib_setpoints': [-35,-30, -25, -20, -15, -10 ],  #  Should vary with season? 
                 'day_warm': False,
                 'cooler_on': True,
                 'x_start':  0,
@@ -447,7 +442,7 @@ site_config = {
                 'y_active': 3600,
                 'x_pixel':  6,
                 'y_pixel':  6,
-                'pix_scale': 1.0668,     #_22*4499,     #  asec/pixel F9   0.5751  , F4.9  1.0481         
+                'pix_scale': [1.0668, 2.1336, 3.2004, 4.2272],    #_22*4499,     #  asec/pixel F9   0.5751  , F4.9  1.0481         
                 'x_field_deg': 1.3333,   #   round(4784*1.0481/3600, 4),
                 'y_field_deg': 1.0665,   #  round(3194*1.0481/3600, 4),
                 'overscan_x': 24,
@@ -708,7 +703,7 @@ def get_ocn_status(g_dev=None):
                       }
         return status
     else:
-        breakpoint()       #  Debug bad place.
+        pass#breakpoint()       #  Debug bad place.
 
 def get_enc_status(g_dev=None):
     if site_config['site'] == 'sro':   #  Belts and suspenders.
@@ -772,7 +767,8 @@ def get_enc_status(g_dev=None):
                  }
         return status
     else:
-        breakpoint()     #  Debug bad place.
+        pass
+    #breakpoint()     #  Debug bad place.
 if __name__ == '__main__':
     j_dump = json.dumps(site_config)
     site_unjasoned = json.loads(j_dump)
