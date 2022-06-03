@@ -198,7 +198,7 @@ class Camera:
             g_dev['cam_1'].cam_busy = False
         if self.name == 'camera_2_2':     #NBDefaults sets up Selected 'cam'
             g_dev['cam_2'] = self
-            g_dev['cam'] = self
+            #g_dev['cam'] = self
             g_dev['cam_2'].cam_busy = False
         self.config = config
 
@@ -1075,7 +1075,7 @@ class Camera:
                         self.pre_foc = []
                         self.pre_ocn = []
                         try:
-                            name = g_dev['mnt'].object
+                            name = g_dev['mnt'].object   #NB NB COnfusing name, shoudl be 'target'!
                         except:
                             name = 'Unspecified'
                         g_dev['obs'].send_to_user("Starting:  " + name, p_level='INFO')

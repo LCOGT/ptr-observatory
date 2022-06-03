@@ -152,6 +152,7 @@ def patch_httplib(bsize=400000):
     
 def send_status(obsy, column, status_to_send):
     #ss = time.time()
+
     uri_status = f"https://status.photonranch.org/status/{obsy}/status/"
     # NB None of the strings can be empty.  Otherwise this put faults.
     try:    # 20190926  tHIS STARTED THROWING EXCEPTIONS OCCASIONALLY
@@ -584,6 +585,8 @@ class Observatory:
             device_list = self.device_types  # self.short_status_devices 
             remove_enc = True
         for dev_type in device_list:
+            if dev_type in ['mount', 'mount1']:
+                pass#breakpoint()
             # The status that we will send is grouped into lists of
             # devices by dev_type.
             #stat_time = time.time()
