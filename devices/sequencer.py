@@ -293,6 +293,7 @@ class Sequencer:
         #g_dev['obs'].update_status()  #NB NEED to be sure we have current enclosure status.  Blows recursive limit
         self.current_script = "No current script"    #NB this is an unused remnant I think.
         #if True or     #Note this runs in Manual Mode as well.
+
         if self.bias_dark_latch and ((events['Eve Bias Dark'] <= ephem_now < events['End Eve Bias Dark']) and \
              self.config['auto_eve_bias_dark'] and g_dev['enc'].mode == 'Automatic' ):
             self.bias_dark_latch = False
@@ -400,7 +401,7 @@ class Sequencer:
 
                     completed_block = self.execute_block(block)  #In this we need to ultimately watch for weather holds.
                     self.append_completes(completed_block['event_id'])
-                    block['project_id'] in ['none', 'real_time_slot', 'real_time_block']
+                    #block['project_id'] in ['none', 'real_time_slot', 'real_time_block']
                     '''
                     When a scheduled block is completed it is not re-entered or the block needs to
                     be restored.  IN the execute block we need to make a deepcopy of the input block
@@ -562,7 +563,7 @@ class Sequencer:
         Assume for now we only have one target and no mosaic factor.
         The the first thing to do is figure out how many exposures
         in the series.  If enhance AF is true they need to be injected
-        at some point, but af does not decrement. This is still left to do
+        at some point, but it does not decrement. This is still left to do
 
 
         '''
@@ -1066,6 +1067,7 @@ class Sequencer:
                     exp_time = prior_scale*scale*target_flat/(collecting_area*sky_lux*float(g_dev['fil'].filter_data[current_filter][3]))  #g_dev['ocn'].calc_HSI_lux)  #meas_sky_lux)
                     print('Ex:  ', exp_time, scale, prior_scale, sky_lux, float(g_dev['fil'].filter_data[current_filter][3]))
                     #exp_time*= 4.9/9/2
+
                     if exp_time > 180:
                         exp_time = 180    #Live with this limit.
                     if exp_time < min_exposure:   #NB it is too bright, should consider a delay here.
