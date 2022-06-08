@@ -44,6 +44,14 @@ FlI FW 1     Closest to tel
 FlI FW 2     closest to cam  flifil0
 QHY600         AstroImaging Equipment
 
+<<<<<<< Updated upstream
+=======
+#2345678901234567890123456789012345678901234567890123456789012345678901234567890
+import json
+import time
+import ptr_events
+from pprint import pprint
+>>>>>>> Stashed changes
 
 '''
 
@@ -51,8 +59,18 @@ QHY600         AstroImaging Equipment
 
 site_name = 'mrc'    #NB These must be unique across all of PTR. Pre-pend with airport code if needed: 'sba_wmdo'
 site_config = {
+<<<<<<< Updated upstream
     'site': str(site_name).lower(),
     'site_id': 'mrc',
+=======
+    'site': str(site_name.lower()),
+    'site_id': 'ARO',
+    'version_date': '20220608.0'
+    'site_desc': "Apache Ridge Observatory, Santa Fe, NM, USA. 2194m",
+    'airport_code':  'SAF',
+    'obsy_id': 'SAF1',
+    'obs_desc': "0m3f4.9/9 Ceravolo Astrograph, AP1600",
+>>>>>>> Stashed changes
     'debug_site_mode': False,
     #'owner':  ['google-oauth2|102124071738955888216'],  # Neyle
     'owner':  ['google-oauth2|112401903840371673242'],  # Wayne
@@ -452,6 +470,7 @@ site_config = {
             'name': 'focuser',
             'desc':  'Optec Gemini',
             'driver': 'ASCOM.OptecGemini.Focuser',
+<<<<<<< Updated upstream
             'startup_script':  None,
             'recover_script':  None,
             'shutdown_script':  None, 
@@ -464,6 +483,23 @@ site_config = {
             'use_local_temp':  True,
             'minimum': 0,    # NB this needs clarifying, we are mixing steps and microns.
             'maximum': 12700,
+=======
+		    'com_port': 'COM13',    #AP 'COM5'  No Temp Probe.
+            # # F4.9 setup
+            # 'reference': 5800,    # 20210313  Nominal at 10C Primary temperature
+            # 'ref_temp':  5.1,    # Update when pinning reference
+            # 'coef_c': 0,  # 26.055,   # Negative means focus moves out as Primary gets colder
+            # 'coef_0': 5800,  # Nominal intercept when Primary is at 0.0 C. 
+            # 'coef_date':  '20220301',    # This appears to be sensible result 44 points -13 to 3C'reference':  6431,    # Nominal at 10C Primary temperature
+            #F9 setup
+            'reference': 4800, #5743,    #  Meas   Nominal at 10C Primary temperature
+            'ref_temp':  17.5,    # Update when pinning reference
+            'coef_c': -77.57,   # negative means focus moves out/in as Primary gets colder/warmer.
+            'coef_0': 6400, #6155,   #5675,  20220502 Nominal intercept when Primary is at 0.0 C. 
+            'coef_date':  '20220608',    # SWAG  Very speculative
+            'minimum': 0,     # NB this area is confusing steps and microns, and need fixing.
+            'maximum': 12600,   #12672 actually
+>>>>>>> Stashed changes
             'step_size': 1,
             'backlash':  0,
             'unit': 'steps',
@@ -809,6 +845,11 @@ site_config = {
 
 get_ocn_status = None
 get_enc_status = None
+<<<<<<< Updated upstream
+=======
+pprint(config)
+ 
+>>>>>>> Stashed changes
 if __name__ == '__main__':
     '''
     This is a simple test to send and receive via json.
