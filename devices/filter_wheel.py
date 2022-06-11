@@ -56,6 +56,7 @@ class FilterWheel:
             self.filter_offset = self.filter_data[self.filter_reference][2]
         elif type(driver) is list and self.dual_filter:
             '''THIS IS A FAST KLUDGE TO GET MRC@ WORKING, NEED TO VERIFY THE FILTER ORDERING'''
+            
             self.filter_back = win32com.client.Dispatch(driver[0])  #  Closest to Camera
             self.filter_front = win32com.client.Dispatch(driver[1])  #  Closest to Telescope
             self.filter_back.Connected = True
@@ -172,7 +173,7 @@ class FilterWheel:
             #self._expose = self._maxim_expose
             #self._stop_expose = self._maxim_stop_expose
             self.description = 'Maxim is Filter Controller.'
-            print('Maxim is connected:  ', self._connect(True))
+            print('Maxim is connected:  ', self._connect(True)) 
             #self._setpoint(float(-100))
             #self.app = win32com.client.Dispatch("Maxim.Application")
             #self.app.TelescopeConnected = True
@@ -352,6 +353,10 @@ class FilterWheel:
         req = command['required_params']
         opt = command['optional_params']
         action = command['action']
+        is_connected = self._maxim_connected()
+        if not is_connected:
+            print("Found filter disconnected, reconnecting!")
+            self.maxim_connect(True)
         if action == "set_position":
             self.set_position_command(req, opt)
         elif action == "set_name":

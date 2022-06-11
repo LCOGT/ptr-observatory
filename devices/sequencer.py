@@ -1085,6 +1085,7 @@ class Sequencer:
                 if ephem.now() >= ending:
                     break
                 try:
+                    
                     result = g_dev['cam'].expose_command(req, opt, no_AWS=True, do_sep = False)
                     bright = result['patch']    #  Patch should be circular and 20% of Chip area. ToDo project
 
