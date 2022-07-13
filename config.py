@@ -63,7 +63,7 @@ site_config = {
     
     'TZ_database_name':  'America/Los_Angeles',
     'mpc_code':  'ZZ23',    #  This is made up for now.
-    'time_offset':  -7.0,   #  These two keys may be obsolete give the new TZ stuff 
+    'time_offset':  -7,   #  These two keys may be obsolete give the new TZ stuff 
     'timezone': 'PDT',      #  This was meant to be coloquial Time zone abbreviation, alternate for "TX_data..."
     'latitude': 37.0701111,     #  Decimal degrees, North is Positive
     'longitude': -119.412417,   #  Decimal degrees, West is negative
@@ -235,7 +235,7 @@ site_config = {
             'name': 'Main OTA',
             'desc':  'AP 305mm F3.8 Ricarrdi Honders',
             'driver': None,                     #  Essentially this device is informational.  It is mostly about the optics.
-            'collecting_area': 55381,
+            'collecting_area': 25019,
             'obscuration':  24.2,   #  %
             'aperture': 305,
             'focal_length': 1160, 
@@ -358,24 +358,24 @@ site_config = {
             'ip_string': None,
             "dual_wheel": False,
             'settings': {
-                'filter_count': 11,   #  !!!! Tis must be correct as to the number of filters!!!!
+                'filter_count': 9,   #  !!!! This must be correct as to the number of filters!!!!
                 'home_filter':  0,
                 'default_filter': "PL",
                 'filter_reference': 0,   #  We choose to use W as the default filter.  Gains taken at F9, Ceravolo 300mm
                 'filter_data': [['filter', 'filter_index', 'filter_offset', 'sky_gain', 'screen_gain', 'alias'],  #NB NB NB add cwl & bw in nm.
                         
                         #['w',     [0,  0],     0, 72.7, [1.00 ,  72], 'PL'],    #0.   For sequencer autofocus  consider foc or f filter
-                        ['focus', [0,  0],     0, 72.7, [1.00 ,  72], 'focus'],    #0.   
-                        ['PL',    [0,  0],     0, 72.7, [1.00 ,  72], 'PhLum'],    #1.
-                        ['PR',    [1,  1],     0, 11.0, [1.00 , 119], 'PhBlue'],    #2.
-                        ['PG',    [2,  2],     0, 18.6, [1.00 , 113], 'PhGreen'],    #3.
-                        ['PB',    [3,  3],     0, 42.3, [0.80 ,  97], 'PhRed'],    #4.
-                        ['HA',    [4,  4],     0, .400, [5.00 , 200], 'Halpha'],    #5.
-                        ['O3',    [5,  5],     0, 1.84, [4.00 , 200], 'OIII'],    #6.
-                        ['S2',    [6,  6],     0, .221, [10.0,  200], 'SII'],    #7.
-                        ['air',   [7,  7], -1000, 100., [1.00,   70], 'air'],    #8.
-                        ['dark',  [6,  6],     0, .221, [   0,    0], 'dark'],   #9.
-                        ['LRGB',  [0,  0],     0, .221, [   0,    0], 'LRGB']],   #10.
+                        ['focus', [0,  0],     0, 73,  [1.00 ,  72], 'focus'],    #0.   
+                        ['PL',    [0,  0],     0, 73,  [1.00 ,  72], 'PhLum'],    #1.
+                        ['PR',    [1,  1],     0, 73,  [1.00 , 119], 'PhBlue'],    #2.
+                        ['PG',    [2,  2],     0, 73,  [1.00 , 113], 'PhGreen'],    #3.
+                        ['PB',    [3,  3],     0, 73,  [0.80 ,  97], 'PhRed'],    #4.
+                        ['HA',    [4,  4],     0, .5,  [5.00 , 200], 'Halpha'],    #5.
+                        ['O3',    [5,  5],     0, 1.8, [4.00 , 200], 'OIII'],    #6.
+                        ['S2',    [6,  6],     0, .5,  [10.0,  200], 'SII'],    #7.
+                        ['air',   [7,  7], -1000, 80., [1.00,   70], 'air']],    #8.
+                        # ['dark',  [6,  6],     0, .221, [   0,    0], 'dark'],   #9.
+                        # ['LRGB',  [0,  0],     0, .221, [   0,    0], 'LRGB']],   #10.
 
 
                 'filter_screen_sort':  [8, 1, 4, 3, 2, 6, 5, 7],   #  don't use narrow yet,  8, 10, 9], useless to try.
@@ -416,7 +416,7 @@ site_config = {
             'file_mode_path':  'G:/000ptr_saf/archive/sq01/autosaves/',   #NB Incorrect site, etc. Not used at SRO.  Please clean up.
 
             'settings': {
-                'temp_setpoint': -45,
+                'temp_setpoint': -35,
                 'calib_setpoints': [-35,-30, -25, -20, -15, -10 ],  #  Should vary with season? 
                 'day_warm': False,
                 'cooler_on': True,
@@ -431,22 +431,47 @@ site_config = {
                 'y_trim_offset':  0,
                 'pre_bias_available': False,  #if so need to specify as below for post_bias.
                 'post_bias_available': True,  #if so need to specify as below for post_bias.
-                'x_bias_start':  4520,
-                'y_bias_start': 3620,
-                'x_bias_end':  4556,       # Vert band self.img[-38:-18, 0]
-                'y_bias_send': 3643,
-                'corner_everlap': True,
-                'x_bias_line': True,
+                'x_bias_start':  4501,
+                'y_bias_start': 3601,
+                'x_bias_end':  4520,       # Vert band self.img[-38:-18, 0]
+                'y_bias_end': 3620,
+                'overscan_x': 20,
+                'overscan_y': 20,
+                'corner_everlap': False,
+                'x_bias_line': False,
                 'y_bias_line': True,
                 'x_active': 4500,
                 'y_active': 3600,
-                'x_pixel':  6,
+                #bin_1
+                'data_sec': '[1:4556, 1:3656]',
+                'det_sec':  '[1:4556, 1:3656]',
+                'bias_sec': '[4501:4520, 1:3600]',
+                'trim_sec': '[1:4500, 1:3600]',
+                #bin_2
+                'data_sec_2': '[1:2278, 1:1828]',
+                'det_sec_2':  '[1:2278, 1:1828]',
+                'bias_sec_2': '[2501:2260, 1:1800',
+                'trim_sec_2': '[1:2500, 1:1800]',
+                #bin_3
+                'data_sec_3': '[1:1518, 1:1218]',
+                'det_sec_3':  '[1:1518, 1:1218]',
+                'bias_sec_3': '[1501:1506, 1:1200]',
+                'trim_sec_3': '[1:1500, 1:1200]',
+                #bin_4
+                'data_sec_4': '[1:1139, 1:914]',
+                'det_sec_4':  '[1:1139, 1:914]',
+                'bias_sec_4': '[1126:1130, 1:900]',
+                'trim_sec_4': '[1:1125, 1:900]',
+                'x_pixel':  6,    #Microns
                 'y_pixel':  6,
-                'pix_scale': [1.067, 2.134, 3.201, 2.268],    #_22*4499,     #  asec/pixel F9   0.5751  , F4.9  1.0481         
+                'sections': {
+                    'bin_1_1': 'g',
+                    'bin_2_2': 'h',
+                            },
+                'pix_scale': [1.067, 2.134, 3.201, 4.268],    #_22*4499,     #  asec/pixel F9   0.5751  , F4.9  1.0481         
                 'x_field_deg': 1.3333,   #   round(4784*1.0481/3600, 4),
                 'y_field_deg': 1.0665,   #  round(3194*1.0481/3600, 4),
-                'overscan_x': 24,
-                'overscan_y': 3,
+
                 'north_offset': 0.0,    #  These three are normally 0.0 for the primary telescope
                 'east_offset': 0.0,     #  Not sure why these three are even here.
                 'rotation': 0.0,        #  Probably remove.
@@ -454,8 +479,9 @@ site_config = {
                 'max_exposure': 3600,
                 'can_subframe':  True,
                 'min_subframe':  [128, 128],       
-                'bin_modes':  [[1, 1, 1.07], [2, 2, 2.13], [3, 3, 3.21], [4, 4, 4.27]],   #Meaning no binning choice if list has only one entry, default should be first.
+                'bin_modes':  [[1, 1, 1.07], [2, 2, 2.13], [3, 3, 3.20], [4, 4, 4.27]],   #Meaning no binning choice if list has only one entry, default should be first.
                 'default_bin':  [1, 1, 1.07],    #  Matched to seeing situation by owner
+                'flat_bin_spec':  '1,1',     # NB NB NB inconsistent! Please fix
                 'cycle_time':  [30, 20, 15, 12],  # 3x3 requires a 1, 1 reaout then a software bin, so slower.
                 'rbi_delay':  0.,      #  This being zero says RBI is not available, eg. for SBIG.
                 'is_cmos':  False,
@@ -609,7 +635,7 @@ def get_ocn_status(g_dev=None):
                     except:
                         print('SRO Weather source problem, using last known good report.')
                         wx_fields = last_good_wx_fields
-                        wx_fields = wx_line.split()
+
                         skyTemperature = f_to_c(float( wx_fields[4]))
                         temperature = f_to_c(float(wx_fields[5]))
                         windspeed = round(float(wx_fields[7])/2.237, 2)
