@@ -353,10 +353,11 @@ class FilterWheel:
         req = command['required_params']
         opt = command['optional_params']
         action = command['action']
-        is_connected = self._maxim_connected()
-        if not is_connected:
-            print("Found filter disconnected, reconnecting!")
-            self.maxim_connect(True)
+        if self.maxim:     #NB NB NB Annoying but maxium sometimes disconnects.
+            is_connected = self._maxim_connected()
+            if not is_connected:
+                print("Found filter disconnected, reconnecting!")
+                self.maxim_connect(True)
         if action == "set_position":
             self.set_position_command(req, opt)
         elif action == "set_name":
