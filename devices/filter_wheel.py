@@ -14,6 +14,9 @@ class FilterWheel:
         g_dev['fil']= self
         self.config = config['filter_wheel']
 
+        pass
+        pass
+        
         self.dual_filter = self.config['filter_wheel1']['dual_wheel']
         self.ip = str(self.config['filter_wheel1']['ip_string'])
         self.filter_data = self.config['filter_wheel1']['settings']['filter_data'][1:]  #  Stips off column heading entry
@@ -179,7 +182,7 @@ class FilterWheel:
             #self.app.TelescopeConnected = True
             #print("Maxim Telescope Connected: ", self.app.TelescopeConnected)
             print('Filter control is via Maxim filter interface.')
-            print("Initial filters reported is:  ", self.filter.Filter, self.filter.GuiderFilter)
+            print("Initial filters reported are:  ", self.filter.Filter, self.filter.GuiderFilter)
             self.maxim = True
             self.ascom = False
             self.dual = True

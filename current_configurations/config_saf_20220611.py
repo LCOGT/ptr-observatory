@@ -23,6 +23,7 @@ site_name = 'saf'
 site_config = {
     'site': str(site_name.lower()),
     'site_id': 'ARO',
+    'version_date': '20220611.0wer',  #wer
     'site_desc': "Apache Ridge Observatory, Santa Fe, NM, USA. 2194m",
     'airport_code':  'SAF',
     'obsy_id': 'SAF1',
@@ -81,7 +82,7 @@ site_config = {
     'site_in_automatic_default': "Automatic",   # ["Manual", "Shutdown", "Automatic"]
     'automatic_detail_default': "Enclosure is initially set to Shutdown by SAF config.",
     'auto_eve_bias_dark': False,
-    'auto_eve_sky_flat': False,
+    'auto_eve_sky_flat': False ,
     'eve_sky_flat_sunset_offset': +0.0,  # Minutes  neg means before, + after.
     'auto_morn_sky_flat': False,
     'auto_morn_bias_dark': False,

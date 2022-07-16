@@ -179,6 +179,7 @@ class Mount:
         self.name = name
         self.astro_events = astro_events
         g_dev['mnt'] = self
+
         self.site = config['site']
         self.site_path = config['client_path']
         self.config = config
@@ -678,7 +679,7 @@ class Mount:
         action = command['action']
         self.check_connect()
         if action == "go":
-
+            breakpoint()
             self.go_command(req, opt)   #  Entered from Target Explorer or Telescope tabs.
         elif action == "stop":
             self.stop_command(req, opt)

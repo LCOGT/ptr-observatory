@@ -578,7 +578,7 @@ class Observatory:
             send_status(obsy, lane, enc_status)
         if  device_status is not None:
             lane = 'device'
-            final_send  = status
+            #final_send = status
             send_status(obsy, lane, device_status)
 # =============================================================================
 #         uri_status = f"https://status.photonranch.org/status/{self.name}/status/"
@@ -604,9 +604,7 @@ class Observatory:
 # =============================================================================
 #         except:
 #             print('self.api.authenticated_request("PUT", uri, status):   Failed!')
-# =============================================================================
-            
-# =============================================================================
+
 #         status = {}
 #         # Loop through all types of devices.
 #         # For each type, we get and save the status of each device.
@@ -904,9 +902,15 @@ class Observatory:
                 #Note the raw image is not flipped/
 
                 # NB NB NB I do not think we should be flipping ALt_Az images.
-                if hdu.header['PIERSIDE'] == "Look West":
-                    hdu.data = np.flip(hdu.data)
-                    hdu.header['IMGFLIP'] = True
+                #NB NB NB I think ever raw images should be flipped so that at
+                #PA = 0.0. that N is up and East is to the left.  SInce LCO only
+                #has fork telescopes all LCO instruments have the same native alignment
+                #in the archive.   WER  0220703
+# =============================================================================
+#                 if hdu.header['PIERSIDE'] == "Look West":
+#                     hdu.data = np.flip(hdu.data)
+#                     hdu.header['IMGFLIP'] = True
+# =============================================================================
                 print('Reduced Mean:  ', round(hdu.data.mean() + hdu.header['PEDASTAL'], 2))
                 #wpath = paths['im_path'] + paths['red_name01']
                 #hdu.writeto(wpath, overwrite=True)  # NB overwrite == True is dangerous in production code.  This is big fits to AWS
@@ -920,7 +924,7 @@ class Observatory:
                         hdu_save = hdu
                         #wpath = 'C:/000ptr_saf/archive/sq01/20210528/reduced/saf-sq01-20210528-00019785-le-w-EX01.fits'
                         time_now = time.time()  #This should be more accurately defined earlier in the header
-                        solve = platesolve.platesolve(wpath, 1.0551)     #0.5478)
+                        solve = platesolve.platesolve(wpath, 1.067)     #0.5478)
                         print("PW Solves: " ,solve['ra_j2000_hours'], solve['dec_j2000_degrees'])
                         img = fits.open(wpath, mode='update', ignore_missing_end=True)
                         hdr = img[0].header
@@ -1002,6 +1006,7 @@ class Observatory:
                 quick = False
                 do_sep = False
                 spot = None
+                #Note this was turned off because very rarely it hangs internally.
                 if do_sep:    #WE have already ran this code when focusing, but we should not ever get here when doing that.
                     try:
                         img = hdu.data.copy().astype('float')
@@ -1098,7 +1103,7 @@ class Observatory:
                 hdu.data = hdu.data.astype('uint16')
                 iy, ix = hdu.data.shape
                 if iy == ix:
-                    resized_a = resize(hdu.data, (768,768), preserve_range=True)
+                    resized_a = resize(hdu.data, (1280, 1280), preserve_range=True)
                 else:
                     resized_a = resize(hdu.data, (int(1536*iy/ix), 1536), preserve_range=True)  #  We should trim chips so ratio is exact.
                 #print('New small fits size:  ', resized_a.shape)
@@ -1151,7 +1156,7 @@ class Observatory:
                     g_dev['cam'].enqueue_for_AWS(jpeg_data_size, paths['im_path'], paths['jpeg_name10'])
                     g_dev['cam'].enqueue_for_AWS(i768sq_data_size, paths['im_path'], paths['i768sq_name10'])
                     #print('File size to AWS:', reduced_data_size)
-                    g_dev['cam'].enqueue_for_AWS(13000000, paths['raw_path'], paths['raw_name00'])
+                    g_dev['cam'].enqueue_for_AWS(13000000, paths['raw_path'], paths['raw_name00'])    #NB need to chunkify 25% larger then small fits.
                     #if not quick:
                 #print('Sent to AWS Queue.')
                 time.sleep(0.5)
