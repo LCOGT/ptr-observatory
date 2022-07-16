@@ -59,7 +59,7 @@ class FilterWheel:
             self.filter_offset = self.filter_data[self.filter_reference][2]
         elif type(driver) is list and self.dual_filter:
             '''THIS IS A FAST KLUDGE TO GET MRC@ WORKING, NEED TO VERIFY THE FILTER ORDERING'''
-            
+            breakpoint()
             self.filter_back = win32com.client.Dispatch(driver[0])  #  Closest to Camera
             self.filter_front = win32com.client.Dispatch(driver[1])  #  Closest to Telescope
             self.filter_back.Connected = True
@@ -86,7 +86,7 @@ class FilterWheel:
         elif driver == 'ASCOM.FLI.FilterWheel' and self.dual_filter:  #   == list:
             self.maxim = False
             self.dual = True
-
+            breakpoint()
             #win32com.client.pythoncom.CoInitialize()
             #breakpoint()
             fw0 = win32com.client.Dispatch(driver)  #  Closest to Camera
@@ -465,7 +465,7 @@ class FilterWheel:
         #print("filter cmd: set_name", req, opt)
 
         try:
-            filter_name = req['filter']
+            filter_name = req['filter_name']
         except:
             try:
                 filter_name = req['filter']

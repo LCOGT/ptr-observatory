@@ -257,15 +257,7 @@ def remove_overscan (hdu):
     #temp so we can do a better thermal compensation.  THis would generally mean taking
     #occasional biases.
     
-    #FAT
-    # elif ix == 4500 and iy == 3600:   #All this code needs to be driven from camera config.
-    #     overscan =np.median(img) - pedastal
-    #     trimmed = img.astype('int32') - 867.
-            
-    # elif ix == 2250 and iy == 1800:   #All this code needs to be driven from camera config.
-    #     overscan =np.median(img) - pedastal
-    #     trimmed = img.astype('int32') - 614.
-    #     #FAT
+  
     elif ix == 4556 and iy == 3656:   #All this code needs to be driven from camera config.
         overscan_x = np.median(img[4500:4520, :3600])
         overscan_y = np.median(img[3600:3620, :4500])
@@ -274,14 +266,8 @@ def remove_overscan (hdu):
         field = np.median(img[:4500, :3600])
         sfield = np.median(img[20:4480, :3600])
         offset = field - overscan_y
-        #print ('x, y, xy, avg, f, sf, offset:  ',  overscan_x, overscan_y, overscan_xy, overscan_avg, field, sfield, offset)
-
+        print ('x, y, xy, avg, f, sf, offset:  ',  overscan_x, overscan_y, overscan_xy, overscan_avg, field, sfield, offset)
         minus_overscan = img - overscan_y - offset + pedastal
-        #print("1_1 Bias Offset:  ", minus_overscan2 := np.median(minus_overscan[:4500, :3600]))
-
-
-        #minus_overscan += pedastal + 46
-
         trimmed = minus_overscan[:4500, :3600].astype('int32')
         final = np.median(trimmed)
         print ('x, y, xy, avg, f, sf, offset, final:  ',  overscan_x, overscan_y, overscan_xy, overscan_avg, field, sfield, offset, final)
@@ -293,22 +279,36 @@ def remove_overscan (hdu):
         print("2_2 Bias offset:  " , minus_overscan2 := np.median(minus_overscan[:2250, :1800]))
         minus_overscan += pedastal + 157
         trimmed = minus_overscan[:2250, :1800]
-    # elif ix == 1518 and iy == 1218: 
+ 
+    # elif ix == 4556 and iy == 3656:   #All this code needs to be driven from camera config.
     #     #breakpoint()
-    #     overscan = (np.median(img[1506:1518, :1200]) + np.median(img[:1500, 1206:1214]))/2.0
-    #     minus_overscan = img - (np.median(img[1506:1518, :1200]) + np.median(img[:1500, 1206:1214]))/2.0
-    #     minus_overscan += pedastal + 211 
-    #     trimmed = minus_overscan[:1500, :1200].astype('int32')
-        
-    # elif ix == 1139 and iy == 914: 
-    #     overscan = (np.median(img[1130:1139, :900]) + np.median(img[:1125, 905:910]))/2.
-    #     minus_overscan = img - (np.median(img[1130:1139, :900]) + np.median(img[:1125, 905:910]))/2.0
-    #     print("4_4 Offset:  ", -np.median(minus_overscan[:1125, :900]))
-    #     minus_overscan += pedastal + 403
-    #     trimmed = minus_overscan[:1125, :900].astype('int32') 
+    #     self.overscan = (np.median(self.img[4520:4556, :3600]) + np.median(self.img[:4500, 3620:3643]))/2.0
+    #     minus_overscan = self.img - (np.median(self.img[4520:4556, :3600]) + np.median(self.img[:4500, 3620:3643]))/2.0
+    #     print("1_1 Offset:  ", -np.median(minus_overscan[:4500, :3600]))
+    #     minus_overscan += pedastal + 50
+    #     trimmed = minus_overscan[:4500, :3600].astype('int32')
+    # elif ix == 2278 and iy == 1828:   #All this code needs to be driven from camera config.
+    #     #breakpoint()
+    #     self.overscan = (np.median(self.img[2260:2278, :1800]) + np.median(self.img[2250, 1810:1821]))/2.0
+    #     minus_overscan = self.img - (np.median(self.img[2260:2278, :1800]) + np.median(self.img[2250, 1810:1821]))/2.0
+    #     minus_overscan += pedastal + 140
+    #     trimmed = minus_overscan[:2250, :1800].astype('int32')
+    elif ix == 1518 and iy == 1218: 
+        #breakpoint()
+        overscan = (np.median(img[1506:1518, :1200]) + np.median(img[:1500, 1206:1214]))/2.0
+        minus_overscan = img - (np.median(img[1506:1518, :1200]) + np.median(img[:1500, 1206:1214]))/2.0
+        minus_overscan += pedastal + 211 
+        trimmed = minus_overscan[:1500, :1200].astype('int32')   
+    elif ix == 1139 and iy == 914: 
+        overscan = (np.median(img[1130:1139, :900]) + np.median(img[:1125, 905:910]))/2.
+        minus_overscan = img - (np.median(img[1130:1139, :900]) + np.median(img[:1125, 905:910]))/2.0
+        print("4_4 Offset:  ", -np.median(minus_overscan[:1125, :900]))
+        minus_overscan += pedastal + 403
+        trimmed = minus_overscan[:1125, :900].astype('int32') 
     else:
         print("UNSUPPORTED BINNING OR CAMERA!!", ix, iy)
         trimmed = img
+ 
         
 
 
