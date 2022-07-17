@@ -131,6 +131,7 @@ class Sequencer:
         self.name = name
         self.astro_events = astro_events
         self.config = config
+
         g_dev['seq'] = self
         self.connected = True
         self.description = "Sequencer for script execution."
@@ -934,47 +935,49 @@ class Sequencer:
                 g_dev['obs'].update_status()
                 if ephem.now() + 210/86400 > ending:
                     break
+                
+                if self.config['site'] != 'mrc2':   #NB Please implement in the site config not in-line.
 
-                # print("Expose Biases: b_3")
-                # dark_time = 300
-                # #for bias in range(9):
-                # req = {'time': 0.0,  'script': 'True', 'image_type': 'bias'}
-                # opt = {'area': "Full", 'count': 7, 'bin':'3 3', \
-                #         'filter': 'dark'}
-                # result = g_dev['cam'].expose_command(req, opt, no_AWS=True, \
-                #                 do_sep=False, quick=False)
-                # g_dev['obs'].update_status()
-                # if ephem.now() >=  (dark_time + 30)/86400 > ending:
-                #     break
-                # print("Expose d_3 using exposure:  ", dark_time )
-                # req = {'time':dark_time,  'script': 'True', 'image_type': 'dark'}
-                # opt = {'area': "Full", 'count':1, 'bin':'3 3', \
-                #         'filter': 'dark'}
-                # result = g_dev['cam'].expose_command(req, opt, no_AWS=True, \
-                #                     do_sep=False, quick=False)
-                # print('Last dark result:  ', result)
-                # g_dev['obs'].update_status()
+                    print("Expose Biases: b_3")
+                    dark_time = 300
+                    #for bias in range(9):
+                    req = {'time': 0.0,  'script': 'True', 'image_type': 'bias'}
+                    opt = {'area': "Full", 'count': 7, 'bin':'3 3', \
+                            'filter': 'dark'}
+                    result = g_dev['cam'].expose_command(req, opt, no_AWS=True, \
+                                    do_sep=False, quick=False)
+                    g_dev['obs'].update_status()
+                    if ephem.now() >=  (dark_time + 30)/86400 > ending:
+                        break
+                    print("Expose d_3 using exposure:  ", dark_time )
+                    req = {'time':dark_time,  'script': 'True', 'image_type': 'dark'}
+                    opt = {'area': "Full", 'count':1, 'bin':'3 3', \
+                            'filter': 'dark'}
+                    result = g_dev['cam'].expose_command(req, opt, no_AWS=True, \
+                                        do_sep=False, quick=False)
+                    print('Last dark result:  ', result)
+                    g_dev['obs'].update_status()
 
-                # if ephem.now() + 210/86400 > ending:
-                #     break
-                # print("Expose Biases: b_4")
-                # dark_time = 240
-                # #for bias in range(9):
-                # req = {'time': 0.0,  'script': 'True', 'image_type': 'bias'}
-                # opt = {'area': "Full", 'count': 7, 'bin':'4 4', \
-                #         'filter': 'dark'}
-                # result = g_dev['cam'].expose_command(req, opt, no_AWS=True, \
-                #                 do_sep=False, quick=False)
+                if ephem.now() + 210/86400 > ending:
+                    break
+                print("Expose Biases: b_4")
+                dark_time = 240
+                #for bias in range(9):
+                req = {'time': 0.0,  'script': 'True', 'image_type': 'bias'}
+                opt = {'area': "Full", 'count': 7, 'bin':'4 4', \
+                        'filter': 'dark'}
+                result = g_dev['cam'].expose_command(req, opt, no_AWS=True, \
+                                do_sep=False, quick=False)
 
-                # g_dev['obs'].update_status()
-                # if ephem.now() + (dark_time + 30)/86400 > ending:
-                #     break
-                # print("Expose d_4 using exposure:  ", dark_time )
-                # req = {'time':dark_time ,  'script': 'True', 'image_type': 'dark'}
-                # opt = {'area': "Full", 'count':1, 'bin': '4 4', \
-                #         'filter': 'dark'}
-                # result = g_dev['cam'].expose_command(req, opt, no_AWS=True, \
-                #                     do_sep=False, quick=False)
+                g_dev['obs'].update_status()
+                if ephem.now() + (dark_time + 30)/86400 > ending:
+                    break
+                print("Expose d_4 using exposure:  ", dark_time )
+                req = {'time':dark_time ,  'script': 'True', 'image_type': 'dark'}
+                opt = {'area': "Full", 'count':1, 'bin': '4 4', \
+                        'filter': 'dark'}
+                result = g_dev['cam'].expose_command(req, opt, no_AWS=True, \
+                                    do_sep=False, quick=False)
 
                 g_dev['obs'].update_status()
                 if ephem.now() + 30/86400 >= ending:

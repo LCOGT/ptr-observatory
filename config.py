@@ -440,6 +440,7 @@ site_config = {
                 'y_bias_line': True,
                 'x_active': 4500,
                 'y_active': 3600,
+                #THIS IS ALL WRONG!
                 'det_size': '[1:4556, 1:3656]',  # Physical chip data size as reutrned from driver
                 'ccd_sec': '[1:4556, 1:3656]',
                 'bias_sec': ['[1:22, 1:6388]', '[1:11, 1:3194]', '[1:7, 1:2129]', '[1:5, 1:1597]'],
@@ -448,7 +449,7 @@ site_config = {
                 'trim_sec': ['[1:9576, 1:6388]', '[1:4788, 1:3194]', '[1:3192, 1:2129]', '[1:2394, 1:1597]'],
                 'x_pixel':  6,
                 'y_pixel':  6,
-                'pix_scale': [1.067, 2.134, 3.201, 2.268],    #_22*4499,     #  asec/pixel F9   0.5751  , F4.9  1.0481         
+                'pix_scale': [1.067, 2.134, 3.201, 4.268],    #_22*4499,     #  asec/pixel F9   0.5751  , F4.9  1.0481         
                 'x_field_deg': 1.3333,   #   round(4784*1.0481/3600, 4),
                 'y_field_deg': 1.0665,   #  round(3194*1.0481/3600, 4),
                 'overscan_x': 24,
