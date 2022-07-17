@@ -1194,7 +1194,7 @@ class Camera:
 
                 #  NB NB  Be very careful this is the exact code used in build_master and calibration  modules.
                 #  NB Note this is QHY600 specific code.  Needs to be supplied in camera config as sliced regions.
-                pedastal = 100
+                pedastal = 0.0   #Np Pedastal for a raw image.  SEP may need one though..
                 ix, iy = self.img.shape
                 #breakpoint()
 # =============================================================================
@@ -1440,7 +1440,7 @@ class Camera:
                 
                 if frame_type[-5:] in ['focus', 'probe', "ental"]:
 
-                    self.img = self.img + 100   #maintain a + pedestal for sep  THIS SHOULD not be needed for a raw input file.
+                    self.img = self.img #+ 100   #maintain a + pedestal for sep  THIS SHOULD not be needed for a raw input file.
                     self.img = self.img.astype("float")
                     #print(self.img.flags)
                     self.img = self.img.copy(order='C')   #  NB Should we move this up to where we read the array?
@@ -1862,6 +1862,7 @@ class Camera:
                     #     if not quick:
                     self.enqueue_for_AWS(text_data_size, im_path, text_name)
                     hdu.writeto(raw_path + raw_name00, overwrite=True)   #Save full raw file locally
+                    print('Raw:  ', raw_path + raw_name00)
                     self.to_reduce((paths, hdu))
                     #Here we should decimate and send big fits
                   

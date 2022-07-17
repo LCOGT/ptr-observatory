@@ -156,7 +156,7 @@ def simpleColumnFix(img, col):
     return img
 
 def remove_overscan (hdu):
-
+ 
     img = copy.deepcopy(hdu.data)
     meta = copy.deepcopy(hdu.header)
     #  NB NB  Be very careful this is the exact code used in build_master and calibration  modules.
@@ -170,94 +170,34 @@ def remove_overscan (hdu):
     img = img.transpose().astype('float32') #Transose in and out to make analysis more x, y traditional in terms of coordinate order
     print('Calib cycle shape:  ', img.shape)
     print("Incoming image:  ", img)
+    # NB NB This should be driven by a camera config file entry not use chip sizes to sort, not scaleable.
 
-
-
-
-
-    # if ix == 9600:
-    #     overscan = int((np.median(img[32:, -33:]) + np.median(img[0:29, :]))/2) - 1
-    #     trimmed = img[32:, :-34].astype('int32') + pedastal - overscan
-    #     if opt['area'] in [150, 'Full', 'full']:
-    #         square = trimmed
-    #     else:
-    #         square = trimmed[1590:1590 + 6388, :]
-    # elif ix == 4800:
-    #     overscan = int((np.median(img[16:, -17:]) + np.median(img[0:14, :]))/2) -1
-    #     trimmed = img[16:, :-17].astype('int32') + pedastal - overscan
-    #     if opt['area'] in [150, 'Full', 'full']:
-    #         square = trimmed
-    #     else:
-    #         square = trimmed[795:795 + 3194, :]
-    # else:
-    #     print("Incorrect chip size or bin specified.")
-
-
-    #This image shift code needs to be here but it is troubling.
     #QHY 600Pro and 367
-    
-    #This should be driven by a camea config file entry not use chip sizes to sort, not scaleable.
-
-    if ix == 9600:     #GHY600
-        # if img[22, -34] == 0:
-
+    if ix == 9600:     #GHY600 Bin 1
         overscan = int((np.median(img[24:, -33:]) + np.median(img[0:21, :]))/2) - 1
         trimmed = img[24:-8, :-34].astype('int32') + pedastal - overscan
-
-        # elif img[30, -34] == 0:
-        #     overscan = int((np.median(img[32:, -33:]) + np.median(img[0:29, :]))/2) - 1
-        #     trimmed = img[32:, :-34].astype('int32') + pedastal - overscan
-
-        # else:
-        #     print("Image shift is incorrect, absolutely fatal error.")
-            
-        #     pass
-
-        # if full:
-        #     square = trimmed
-        # else:
-        #     square = trimmed[1590:1590 + 6388, :]
-    elif ix == 4800:    #QHY600
-        #Shift error needs documenting!
-        #breakpoint()
-        #if img[11, -18] == 0:   #This is the normal incoming image
+    elif ix == 4800:    #QHY600 Bin 2
         overscan = int((np.median(img[12:, -17:]) + np.median(img[0:10, :]))/2) - 1
         trimmed = img[12:-4, :-17].astype('int32') + pedastal - overscan
-
-            #print("Shift 1", overscan, square.mean())
-        # elif img[15, -18] == 0:     #This rarely occurs.  Neyle's Qhy600
-        #     overscan = int((np.median(img[16:, -17:]) + np.median(img[0:14, :]))/2) -1
-        #     trimmed = img[16:, :-17].astype('int32') + pedastal - overscan
-
-        #     print("Rare error, Shift 2", overscan, trimmed.mean())
-
-        # else:
-        #     print("Image shift is incorrect, absolutely fatal error", img[0:20, -18])
-
-
-            #pass
-
-    
+    elif ix == 3200:     #GHY600 Bin3
+        overscan = int((np.median(img[8:, -11:]) + np.median(img[0:7, :]))/2) - 1
+        trimmed = img[24:-8, :-34].astype('int32') + pedastal - overscan
+    elif ix == 2400:     #GHY600 Bin4
+        overscan = int((np.median(img[6:, -9:]) + np.median(img[0:5, :]))/2) - 1
+        trimmed = img[6:-2, :-8].astype('int32') + pedastal - overscan
     #mrc2    Testing comment change, did this push to GitHub?
     elif ix == 4096 and iy == 4096:   #FLI 16803
-
         trimmed = img.astype('int32') - 913.   #20211128 Cooler = -35C
         overscan = 0
-
     elif ix ==2048 and iy == 2048:   #MRC@
         trimmed = img.astype('int32') - 1046.   #20211128 Cooler = -35C
         overscan = 0
-    #Bin 3 not possible for FLI camera
-        
+    #Bin 3 not possible for FLI camera       
     elif ix == 1024 and iy == 1024:   #MRC@
         trimmed = img.astype('int32') - 1548.   #20211128 Cooler = -35C
         overscan = 0
-
-    #NBNB for cameras without proper overscan maybe we save the bias frame value vs chip
-    #temp so we can do a better thermal compensation.  THis would generally mean taking
-    #occasional biases.
     
-  
+    #SR0 SBIG 16200
     elif ix == 4556 and iy == 3656:   #All this code needs to be driven from camera config.
         overscan_x = np.median(img[4500:4520, :3600])
         overscan_y = np.median(img[3600:3620, :4500])
@@ -271,7 +211,6 @@ def remove_overscan (hdu):
         trimmed = minus_overscan[:4500, :3600].astype('int32')
         final = np.median(trimmed)
         print ('x, y, xy, avg, f, sf, offset, final:  ',  overscan_x, overscan_y, overscan_xy, overscan_avg, field, sfield, offset, final)
-
     elif ix == 2278 and iy == 1828:   #All this code needs to be driven from camera config.
        # breakpoint()
         overscan = np.median(img[2250:, :1800]) 
@@ -279,20 +218,6 @@ def remove_overscan (hdu):
         print("2_2 Bias offset:  " , minus_overscan2 := np.median(minus_overscan[:2250, :1800]))
         minus_overscan += pedastal + 157
         trimmed = minus_overscan[:2250, :1800]
- 
-    # elif ix == 4556 and iy == 3656:   #All this code needs to be driven from camera config.
-    #     #breakpoint()
-    #     self.overscan = (np.median(self.img[4520:4556, :3600]) + np.median(self.img[:4500, 3620:3643]))/2.0
-    #     minus_overscan = self.img - (np.median(self.img[4520:4556, :3600]) + np.median(self.img[:4500, 3620:3643]))/2.0
-    #     print("1_1 Offset:  ", -np.median(minus_overscan[:4500, :3600]))
-    #     minus_overscan += pedastal + 50
-    #     trimmed = minus_overscan[:4500, :3600].astype('int32')
-    # elif ix == 2278 and iy == 1828:   #All this code needs to be driven from camera config.
-    #     #breakpoint()
-    #     self.overscan = (np.median(self.img[2260:2278, :1800]) + np.median(self.img[2250, 1810:1821]))/2.0
-    #     minus_overscan = self.img - (np.median(self.img[2260:2278, :1800]) + np.median(self.img[2250, 1810:1821]))/2.0
-    #     minus_overscan += pedastal + 140
-    #     trimmed = minus_overscan[:2250, :1800].astype('int32')
     elif ix == 1518 and iy == 1218: 
         #breakpoint()
         overscan = (np.median(img[1506:1518, :1200]) + np.median(img[:1500, 1206:1214]))/2.0
@@ -309,95 +234,13 @@ def remove_overscan (hdu):
         print("UNSUPPORTED BINNING OR CAMERA!!", ix, iy)
         trimmed = img
  
-        
+    meta['OVERSCAN'] = overscan
+    meta['PEDASTAL'] = pedastal
 
-
-        #continue
-
-    #trimmed = trimmed.transpose()
-    #This may need a re-think:   Maybe kill neg and anything really hot if there are only a few.
-    #smin = np.where(square < 0)    # finds negative pixels  NB <0 where pedastal is 200. Useless!
-
-
-    #Should we consider correcting the image right here with cached bias, dark and hot pixel
-    #processing so downstream processing is reliable.  Maybe only do this for focus?
-# =============================================================================
-#     g_dev['obs'].send_to_user("Camera has read-out image.", p_level='INFO')
-#     neg_pix = np.where(trimmed < 0)
-#     print("negative pixel length:  ", len(neg_pix[0]))
-# 
-#     trimmed[neg_pix] = 0
-#     img = trimmed.astype('uint16')
-#     
-#     print('\n\nMedian of overscan-removed image, minus pedastal:  ', np.median(img) - pedastal, '\n\n')
-#     ix, iy = img.shape
-#     test_saturated = np.array(img[ix//3:ix*2//3, iy//3:iy*2//3])  # 1/9th the chip area, but central.
-#     bi_mean = round((test_saturated.mean() + np.median(test_saturated))/2, 0)
-#     if frame_type[-4:] == 'flat':
-#         if bi_mean >= self.config['camera'][self.name]['settings']['saturate']:
-#             print("Flat rejected, too bright:  ", bi_mean)
-#             g_dev['obs'].send_to_user("Flat rejected, too bright.", p_level='INFO')
-#             result['error'] = True
-#             result['patch'] = bi_mean
-#             return result   # signals to flat routine image was rejected, prompt return
-#     g_dev['obs'].update_status()
-#     counter = 0
-# 
-#     avg_mnt = g_dev['mnt'].get_average_status(self.pre_mnt, self.post_mnt)
-#     avg_foc = g_dev['foc'].get_average_status(self.pre_foc, self.post_foc)
-#     avg_rot = g_dev['rot'].get_average_status(self.pre_rot, self.post_rot)
-#     avg_ocn = g_dev['ocn'].get_average_status(self.pre_ocn, self.post_ocn)
-#     if frame_type[-5:] in ['focus', 'probe', "ental"]:
-# 
-#         img = img + 100   #maintain a + pedestal for sep  THIS SHOULD not be needed for a raw input file.
-#         img = img.astype("float")
-#         #print(img.flags)
-#         img = img.copy(order='C')   #  NB Should we move this up to where we read the array?
-#         bkg = sep.Background(img)
-#         img -= bkg
-#         sources = sep.extract(img, 4.5, err=bkg.globalrms, minarea=15)  # Minarea should deal with hot pixels.
-#         sources.sort(order = 'cflux')
-#         print('No. of detections:  ', len(sources))
-# 
-#         ix, iy = img.shape
-#         r0 = 0
-#         """
-#         ToDo here:  1) do not deal with a source nearer than 5% to an edge.
-#         2) do not pick any saturated sources.
-#         3) form a histogram and then pick the median winner
-#         4) generate data for a report.
-#         5) save data and image for engineering runs.
-#         """
-#         border_x = int(ix*0.05)
-#         border_y = int(iy*0.05)
-#         r0 = []
-#         for sourcef in sources:
-#             if border_x < sourcef['x'] < ix - border_x and \
-#                 border_y < sourcef['y'] < iy - border_y and \
-#                 sourcef['peak']  < 55000 and sourcef['cpeak'] < 55000:  #Consider a lower bound
-#                 a0 = sourcef['a']
-#                 b0 = sourcef['b']
-#                 r0.append(round(math.sqrt(a0*a0 + b0*b0), 2))
-# 
-#         scale = self.config['camera'][self.name]['settings']['pix_scale'][self.camera.BinX -1]
-#         result['FWHM'] = round(np.median(r0)*scale, 3)   #@0210524 was 2x larger but a and b are diameters not radii
-#         result['mean_focus'] =  avg_foc[1]
-#         try:
-#             valid =  0.0 <= result['FWHM']<= 20. and 100 < result['mean_focus'] < 12600
-#             result['error'] = False
-#         except:
-#             result['error'] = True    # NB NB NB These are quick placeholders and need to be changed
-#             result['FWHM']  = 3.456
-#             result['mean_focus'] =  6543
-# 
-#         focus_image = True
-#     else:
-#         focus_image = False
-# 
-#         #return result   #Used if focus not saved in calibs.
-#     
-# =============================================================================
-    return
+    hdu.header = meta
+    hdu.data = trimmed.transpose()
+    print("Reduced, overscan:  ", np.median(trimmed - pedastal), "  ", overscan)
+    return hdu
 
 #This is a brute force linear version. This needs to be more sophisticated and camera independent.
 
@@ -410,8 +253,10 @@ def calibrate (hdu, lng_path, frame_type='light', quick=False):
         dark_exposure_level, super_dark_2_long, dark_2_exposure_level
     loud = False
 
+    hdu = remove_overscan(hdu)
+
     if not quick:
-#breakpoint()
+
         if super_bias is None:
             try:
                 sbHdu = fits.open(lng_path + 'b_1.fits')
@@ -799,8 +644,6 @@ def calibrate (hdu, lng_path, frame_type='light', quick=False):
         start_x = 0
         start_y = 0
         cal_string = ''
-        #NB here we remove overscan
-        img = remove_overscan(hdu)
         if not quick:
             img = hdu.data.astype('float32')
             pedastal = hdu.header['PEDASTAL']

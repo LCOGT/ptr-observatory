@@ -101,8 +101,8 @@ site_config = {
     'site_in_automatic_default': "Automatic",   #"Manual", "Shutdown"
     'automatic_detail_default': "Enclosure is set to Automatic mode.",
     
-    'auto_eve_bias_dark': False,
-    'auto_eve_sky_flat': False,
+    'auto_eve_bias_dark': True,
+    'auto_eve_sky_flat': True,
     'auto_morn_sky_flat': False,
     'auto_morn_bias_dark': False,
     're-calibrate_on_solve': False, 
@@ -620,7 +620,7 @@ site_config = {
             
             'settings': {
                 'temp_setpoint': -25,
-                'calib_setpoints': [-25, -22.5,- 20, -17.5 ],  #  Picked by day-of-year mod len(list)
+                'calib_setpoints': [25, -22.5, 20, -17.5 ],  #  Picked by day-of-year mod len(list)
                 'day_warm': False,
                 'cooler_on': True,
                 'x_start':  0,
@@ -637,7 +637,7 @@ site_config = {
                 'y_active': 3194,
                 'det_size': '[1:9600, 1:6422]',  # Physical chip data size as reutrned from driver
                 'ccd_sec': '[1:9600, 1:6422]',
-                'bias_sec': ['[1:22, 1:6388]', '[1:11, 1:3194]', '[1:7, 1:2129]', '[1:5, 1:1597]'],
+                'bias_sec': ['[1:24, 1:6388]', '[1:12, 1:3194]', '[1:8, 1:2129]', '[1:6, 1:1597]'],
                 'det_sec': ['[25:9600, 1:6388]', '[13:4800, 1:3194]', '[9:3200, 1:2129]', '[7:2400, 1:1597]'],
                 'data_sec': ['[25:9600, 1:6388]', '[13:4800, 1:3194]', '[9:3200, 1:2129]', '[7:2400, 1:1597]'],
                 'trim_sec': ['[1:9576, 1:6388]', '[1:4788, 1:3194]', '[1:3192, 1:2129]', '[1:2394, 1:1597]'],
