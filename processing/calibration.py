@@ -173,17 +173,17 @@ def remove_overscan (hdu):
     # NB NB This should be driven by a camera config file entry not use chip sizes to sort, not scaleable.
     #QHY 600Pro and 367
     if ix == 9600:     #GHY600 Bin 1
-        overscan = int((np.median(img[24:, -33:]) + np.median(img[0:21, :]))/2) - 1
+        overscan = np.median(img[24:, -33:]) #+ np.median(img[0:21, :]))/2) - 1
         trimmed = img[24:-8, :-34].astype('float32') + pedastal - overscan
     elif ix == 4800:    #QHY600 Bin 2
-        overscan = int((np.median(img[12:, -17:]) + np.median(img[0:10, :]))/2) - 1
+        overscan = np.median(img[12:, -17:]) #+ np.median(img[0:10, :]))/2) - 1
         trimmed = img[12:-4, :-17].astype('float32') + pedastal - overscan
     elif ix == 3200:     #GHY600 Bin3
-        overscan = int((np.median(img[8:, -11:]) + np.median(img[0:7, :]))/2) - 1
-        trimmed = img[24:-8, :-34].astype('float32') + pedastal - overscan
+        overscan = np.median(img[8:, -11:]) #+ np.median(img[0:7, :]))/2) - 1
+        trimmed = img[8:-3, :-12].astype('float32') + pedastal - overscan
     elif ix == 2400:     #GHY600 Bin4
-        overscan = int((np.median(img[6:, -9:]) + np.median(img[0:5, :]))/2) - 1
-        trimmed = img[6:-2, :-8].astype('float322') + pedastal - overscan
+        overscan = np.median(img[6:, -9:]) #+ np.median(img[0:5, :]))/2) - 1
+        trimmed = img[6:-2, :-9].astype('float322') + pedastal - overscan
         
     #mrc2    On-semi 16803 CCD
     elif ix == 4132 and iy == 4117:   #FLI 16803
