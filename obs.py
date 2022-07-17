@@ -911,8 +911,8 @@ class Observatory:
 #                     hdu.data = np.flip(hdu.data)
 #                     hdu.header['IMGFLIP'] = True
 # =============================================================================
-                breakpoint()
-                print('Reduced Mean:  ', round(hdu.data.mean() + hdu.header['PEDASTAL'], 2))
+
+                # NB BAD 20220717 print('Reduced Mean:  ', round(hdu.data.mean() + hdu.header['PEDASTAL'], 2))
                 #wpath = paths['im_path'] + paths['red_name01']
                 #hdu.writeto(wpath, overwrite=True)  # NB overwrite == True is dangerous in production code.  This is big fits to AWS
                 reduced_data_size = hdu.data.size

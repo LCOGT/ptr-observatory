@@ -199,39 +199,17 @@ def remove_overscan (hdu):
 
     #SR0 SBIG 16200
     elif ix == 4556 and iy == 3656:   #All this code needs to be driven from camera config.
-        breakpoint()
-        overscan_x = np.median(img[4500:4520, :3600])
-        overscan_y = np.median(img[3600:3620, :4500])
-        overscan_xy = np.median(img[4500:4520, 3600:3620])
-        overscan_avg =( overscan_x + overscan_y)/2
-        field = np.median(img[:4500, :3600])
-        sfield = np.median(img[20:4480, :3600])
-        offset = field - overscan_y
-        print ('x, y, xy, avg, f, sf, offset:  ',  overscan_x, overscan_y, overscan_xy, overscan_avg, field, sfield, offset)
-        minus_overscan = img - overscan_y - offset + pedastal
-        trimmed = minus_overscan[:4500, :3600].astype('float32')
-        final = np.median(trimmed)
-        print ('x, y, xy, avg, f, sf, offset, final:  ',  overscan_x, overscan_y, overscan_xy, overscan_avg, field, sfield, offset, final)
+        overscan = np.median(img[3638:3647, 250:4400])  # A centrally quiet region
+        trimmed = img[:4500, :3600].astype('float32') - overscan + pedastal
     elif ix == 2278 and iy == 1828:   #All this code needs to be driven from camera config.
-        breakpoint()
-        overscan = np.median(img[2250:, :1800]) 
-        minus_overscan = img - overscan
-        print("2_2 Bias offset:  " , minus_overscan2 := np.median(minus_overscan[:2250, :1800]))
-        minus_overscan += pedastal + 157
-        trimmed = minus_overscan[:2250, :1800].astype('float322')
+        overscan = np.median(img[1819:1823, 125:2200])  # A centrally quiet region
+        trimmed = img[:2250, :1800].astype('float32') - overscan + pedastal
     elif ix == 1518 and iy == 1218: 
-        breakpoint()
-        overscan = (np.median(img[1506:1518, :1200]) + np.median(img[:1500, 1206:1214]))/2.0
-        minus_overscan = img - (np.median(img[1506:1518, :1200]) + np.median(img[:1500, 1206:1214]))/2.0
-        minus_overscan += pedastal + 211 
-        trimmed = minus_overscan[:1500, :1200].astype('float32')   
+        overscan = np.median(img[1212:1215, 83:1480])  # A centrally quiet region
+        trimmed = img[:1500, :1200].astype('float32') - overscan + pedastal
     elif ix == 1139 and iy == 914: 
-        breakpoint()
-        overscan = (np.median(img[1130:1139, :900]) + np.median(img[:1125, 905:910]))/2.
-        minus_overscan = img - (np.median(img[1130:1139, :900]) + np.median(img[:1125, 905:910]))/2.0
-        print("4_4 Offset:  ", -np.median(minus_overscan[:1125, :900]))
-        minus_overscan += pedastal + 403
-        trimmed = minus_overscan[:1125, :900].astype('float322') 
+        overscan = np.median(img[909:911, 62:1100])  # A centrally quiet region
+        trimmed = img[:1125, :900].astype('float32') - overscan + pedastal
     else:
         print("UNSUPPORTED Camera or Bin mode!!", ix, iy)
         trimmed = img
