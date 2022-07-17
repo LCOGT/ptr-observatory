@@ -171,34 +171,35 @@ def remove_overscan (hdu):
     print('Calib cycle shape:  ', img.shape)
     print("Incoming image:  ", img)
     # NB NB This should be driven by a camera config file entry not use chip sizes to sort, not scaleable.
-
     #QHY 600Pro and 367
     if ix == 9600:     #GHY600 Bin 1
         overscan = int((np.median(img[24:, -33:]) + np.median(img[0:21, :]))/2) - 1
-        trimmed = img[24:-8, :-34].astype('int32') + pedastal - overscan
+        trimmed = img[24:-8, :-34].astype('float32') + pedastal - overscan
     elif ix == 4800:    #QHY600 Bin 2
         overscan = int((np.median(img[12:, -17:]) + np.median(img[0:10, :]))/2) - 1
-        trimmed = img[12:-4, :-17].astype('int32') + pedastal - overscan
+        trimmed = img[12:-4, :-17].astype('float32') + pedastal - overscan
     elif ix == 3200:     #GHY600 Bin3
         overscan = int((np.median(img[8:, -11:]) + np.median(img[0:7, :]))/2) - 1
-        trimmed = img[24:-8, :-34].astype('int32') + pedastal - overscan
+        trimmed = img[24:-8, :-34].astype('float32') + pedastal - overscan
     elif ix == 2400:     #GHY600 Bin4
         overscan = int((np.median(img[6:, -9:]) + np.median(img[0:5, :]))/2) - 1
-        trimmed = img[6:-2, :-8].astype('int32') + pedastal - overscan
-    #mrc2    Testing comment change, did this push to GitHub?
-    elif ix == 4096 and iy == 4096:   #FLI 16803
-        trimmed = img.astype('int32') - 913.   #20211128 Cooler = -35C
-        overscan = 0
-    elif ix ==2048 and iy == 2048:   #MRC@
-        trimmed = img.astype('int32') - 1046.   #20211128 Cooler = -35C
-        overscan = 0
+        trimmed = img[6:-2, :-8].astype('float322') + pedastal - overscan
+        
+    #mrc2    On-semi 16803 CCD
+    elif ix == 4132 and iy == 4117:   #FLI 16803
+        overscan = np.median(img[35:, 2:20])   #Horizontal overscan matches buld of main array very well.
+        trimmed = img[43:,20:].astype('float32') - overscan + pedastal
+    elif ix == 2066 and iy == 2058:   #MRC@
+        overscan = np.median(img[17: ,1:10]) 
+        trimmed = img[21:,10:].astype('float32')  - overscan + pedastal
     #Bin 3 not possible for FLI camera       
-    elif ix == 1024 and iy == 1024:   #MRC@
-        trimmed = img.astype('int32') - 1548.   #20211128 Cooler = -35C
-        overscan = 0
-    
+    elif ix == 1033 and iy == 1029:   #MRC@
+        overscan = np.median(img[8:, 0:5]) 
+        trimmed = img[10:,5:].astype('float32')  - overscan + pedastal
+
     #SR0 SBIG 16200
     elif ix == 4556 and iy == 3656:   #All this code needs to be driven from camera config.
+        breakpoint()
         overscan_x = np.median(img[4500:4520, :3600])
         overscan_y = np.median(img[3600:3620, :4500])
         overscan_xy = np.median(img[4500:4520, 3600:3620])
@@ -208,30 +209,31 @@ def remove_overscan (hdu):
         offset = field - overscan_y
         print ('x, y, xy, avg, f, sf, offset:  ',  overscan_x, overscan_y, overscan_xy, overscan_avg, field, sfield, offset)
         minus_overscan = img - overscan_y - offset + pedastal
-        trimmed = minus_overscan[:4500, :3600].astype('int32')
+        trimmed = minus_overscan[:4500, :3600].astype('float32')
         final = np.median(trimmed)
         print ('x, y, xy, avg, f, sf, offset, final:  ',  overscan_x, overscan_y, overscan_xy, overscan_avg, field, sfield, offset, final)
     elif ix == 2278 and iy == 1828:   #All this code needs to be driven from camera config.
-       # breakpoint()
+        breakpoint()
         overscan = np.median(img[2250:, :1800]) 
         minus_overscan = img - overscan
         print("2_2 Bias offset:  " , minus_overscan2 := np.median(minus_overscan[:2250, :1800]))
         minus_overscan += pedastal + 157
-        trimmed = minus_overscan[:2250, :1800]
+        trimmed = minus_overscan[:2250, :1800].astype('float322')
     elif ix == 1518 and iy == 1218: 
-        #breakpoint()
+        breakpoint()
         overscan = (np.median(img[1506:1518, :1200]) + np.median(img[:1500, 1206:1214]))/2.0
         minus_overscan = img - (np.median(img[1506:1518, :1200]) + np.median(img[:1500, 1206:1214]))/2.0
         minus_overscan += pedastal + 211 
-        trimmed = minus_overscan[:1500, :1200].astype('int32')   
+        trimmed = minus_overscan[:1500, :1200].astype('float32')   
     elif ix == 1139 and iy == 914: 
+        breakpoint()
         overscan = (np.median(img[1130:1139, :900]) + np.median(img[:1125, 905:910]))/2.
         minus_overscan = img - (np.median(img[1130:1139, :900]) + np.median(img[:1125, 905:910]))/2.0
         print("4_4 Offset:  ", -np.median(minus_overscan[:1125, :900]))
         minus_overscan += pedastal + 403
-        trimmed = minus_overscan[:1125, :900].astype('int32') 
+        trimmed = minus_overscan[:1125, :900].astype('float322') 
     else:
-        print("UNSUPPORTED BINNING OR CAMERA!!", ix, iy)
+        print("UNSUPPORTED Camera or Bin mode!!", ix, iy)
         trimmed = img
  
     meta['OVERSCAN'] = overscan
