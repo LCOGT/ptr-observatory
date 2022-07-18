@@ -484,6 +484,7 @@ site_config = {
                 'areas_implemented': ["Full", "600%", "500%", "450%", "300%", "220%", "150%", "133%", "Full", "Sqr", '71%', '50%',  '35%', '25%', '12%'],
                 'default_area':  "Full",
                 'default_rotation': 0.0000,
+                'flat_bin_spec': '1,1',    #Default binning for flats
                 'has_darkslide':  False,
                 'darkslide_com':  None,
                 'has_screen': True,
@@ -669,7 +670,7 @@ def get_ocn_status(g_dev=None):
         wind_limit = windspeed < 60/2.235   #sky_monitor reports m/s, Clarity may report in MPH
         sky_amb_limit  = skyTemperature < -20
         humidity_limit =humidity < 85
-        rain_limit = True #r ainRate <= 0.001
+        rain_limit = True # Rain Rate <= 0.001
         wx_is_ok = dew_point_gap and temp_bounds and wind_limit and sky_amb_limit and \
                         humidity_limit and rain_limit
         #  NB  wx_is_ok does not include ambient light or altitude of the Sun
@@ -703,8 +704,8 @@ def get_ocn_status(g_dev=None):
                       "wx_ok": wx_str,  #str(self.sky_monitor_oktoimage.IsSafe),
                       "open_ok": wx_str,  #T his is the special bit in the 
                                            # Boltwood for a roof close relay
-                      'wx_hold': 'n.a.',  # THis is usually added by the OCN Manager
-                      'hold_duration': 'n.a.',
+                      'wx_hold': False,  # THis is usually added by the OCN Manager
+                      'hold_duration': 0.0,
                       'meas_sky_mpsas': 22   # THis is a plug.  NB NB NB
                       #"image_ok": str(self.sky_monitor_oktoimage.IsSafe)
                       }
@@ -767,8 +768,8 @@ def get_enc_status(g_dev=None):
             e_mode = g_dev['enc'].mode
         status = {'shutter_status': stat_string,   # NB NB NB "Roof is open|closed' is more inforative for FAT, but we make boolean decsions on 'Open'
                   'enclosure_synchronized': True,
-                  'dome_azimuth': 'n.a',
-                  'dome_slewing': 'n.a',
+                  'dome_azimuth': 0.0,
+                  'dome_slewing': False,
                   'enclosure_mode': e_mode,
                   'enclosure_message':  ''
                  }

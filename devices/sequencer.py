@@ -1020,7 +1020,7 @@ class Sequencer:
         camera_name = str(self.config['camera']['camera_1_1']['name'])
         flat_count = 5 #20220409  Just to speed things up a bit.
         min_exposure = float(self.config['camera']['camera_1_1']['settings']['min_exposure'])
-        bin_spec = '2,2'
+        bin_spec = '1,1'
         try:
             bin_spec = self.config['camera']['camera_1_1']['settings']['flat_bin_spec']
         except:
