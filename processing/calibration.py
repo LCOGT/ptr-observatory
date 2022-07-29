@@ -199,8 +199,9 @@ def remove_overscan (hdu):
 
     #SR0 SBIG 16200
     elif ix == 4556 and iy == 3656:   #All this code needs to be driven from camera config.
+
         overscan = np.median(img[3638:3647, 250:4400])  # A centrally quiet region
-        trimmed = img[:4500, :3600].astype('float32') - overscan + pedastal
+        trimmed = img[:4500, :3600].astype('float32') - (overscan + 3.0) + pedastal   #Established for -25.5 actual temp 20220724
     elif ix == 2278 and iy == 1828:   #All this code needs to be driven from camera config.
         overscan = np.median(img[1819:1823, 125:2200])  # A centrally quiet region
         trimmed = img[:2250, :1800].astype('float32') - overscan + pedastal
@@ -215,7 +216,7 @@ def remove_overscan (hdu):
         trimmed = img
  
     meta['OVERSCAN'] = overscan
-    meta['PEDASTAL'] = pedastal
+    meta['PEDASTAL'] = -pedastal
 
     hdu.header = meta
     hdu.data = trimmed.transpose()
@@ -231,7 +232,7 @@ def calibrate (hdu, lng_path, frame_type='light', quick=False):
         screen_flat_zp, screen_flat_z, screen_flat_y, screen_flat_O3, screen_flat_HA, screen_flat_N2, screen_flat_S2, screen_flat_EXO, \
         screen_flat_PL ,screen_flat_PB, screen_flat_PG, screen_flat_PR, screen_flat_NIR,  screen_flat_CR, screen_flat_dif,  \
         dark_exposure_level, super_dark_2_long, dark_2_exposure_level
-    loud = False
+    loud = False 
 
     hdu = remove_overscan(hdu)
 
@@ -830,9 +831,9 @@ def calibrate (hdu, lng_path, frame_type='light', quick=False):
     fix_neg_pix = np.where(hdu.data < 0)
     if loud: print('# of < 0  pixels:  ', len(fix_neg_pix[0]))  #  Do not change values here.
     hdu.data[fix_neg_pix] = 0
-    fix_max_pix = np.where(hdu.data > 65530)
+    fix_max_pix = np.where(hdu.data > 65535)
     if loud: print("Max data value is:  ", fix_max_pix, len(fix_max_pix[0]))
-    hdu.data[fix_max_pix] = 65530.
+    hdu.data[fix_max_pix] = 65535.
    #print("Pre uint", hdu.data.mean())
     #hdu.data = hdu.data.astype('uint16')  #NB NB NB Reduce storage?? Is this needed?
     #   NB NB NB these procedures are intended for the flash images.

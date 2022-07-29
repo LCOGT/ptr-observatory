@@ -36,7 +36,7 @@ import matplotlib.pyplot as plt
 
 # from PIL import Image
 from global_yard import g_dev
-#from processing.calibration import calibrate
+from processing.calibration import calibrate
 #from devices.sequencer import Sequencer
 from devices.darkslide import Darkslide
 import ptr_utility
@@ -144,7 +144,7 @@ def test_sequence(pCamera):
     return seq
 
 def reset_sequence(pCamera):
-    breakpoint()
+    #breakpoint()
     camShelf = shelve.open(g_dev['cam'].site_path + 'ptr_night_shelf/' + str(pCamera))
     #seq = camShelf['Sequence']      # a 9 character string
     seqInt = int(-1)
@@ -729,11 +729,11 @@ class Camera:
 
         # ---- DEH changes to frame_type for banzai compliance and clarity ----
         # send everything except test images to AWS.
-       
+
         no_AWS, self.toss = True if imtype.lower() == 'test image' else False, False
         quick = True if imtype.lower() == 'quick' else False
         # clearly define which frames do not do_sep, the rest default to do_sep.
-        if imtype.lower() in ('quick', 'bias', 'dark', 'screen flat', 'sky flat', 'near flat', 'thar flat', \
+        if imtype.lower() in ('quick', 'bias', 'dark', 'screen flat', 'sky flat', 'near flat', 'thor flat', \
                                 'arc flat', 'lamp flat', 'solar flat'):
             do_sep = False
         else:
@@ -748,7 +748,7 @@ class Camera:
             imtypeb = False  # don't open the shutter.
             lamps = 'turn on led+tungsten lamps here, if lampflat'
             frame_type = imtype.replace(' ', '')
-        elif imtype.lower() in ('near flat', 'thar flat', 'arc flat'):
+        elif imtype.lower() in ('near flat', 'thor flat', 'arc flat'):
             imtypeb = False
             lamps = 'turn on ThAr or NeAr lamps here'
             frame_type = 'arc'
@@ -1178,7 +1178,7 @@ class Camera:
                 self.img = np.array(self.camera.ImageArray)
                 self.img = self.img.astype('int32')
                 self.t4p5 = time.time()#As read, this is a Windows Safe Array of Longs
-                print("\n\nMedian of incoming image:  ", np.median(self.img), '\n\n')
+                #print("\n\nMedian of incoming image:  ", np.median(self.img), '\n\n')
 
                 ###self.img = np.array(self.img_safe) # _untransposed   incoming is (4800,3211) for QHY600Pro 2:2 Bin
                 #print(self.img_untransposed.shape)
@@ -1194,7 +1194,7 @@ class Camera:
 
                 #  NB NB  Be very careful this is the exact code used in build_master and calibration  modules.
                 #  NB Note this is QHY600 specific code.  Needs to be supplied in camera config as sliced regions.
-                pedastal = 0.0   #Np Pedastal for a raw image.  SEP may need one though..
+                pedastal = 0.0   #No Pedastal for a raw image.  SEP may need one though..
                 ix, iy = self.img.shape
                 #breakpoint()
 # =============================================================================
@@ -1413,12 +1413,14 @@ class Camera:
 # =============================================================================
 
                 neg_pix = np.where(trimmed < 0)
-                print("No. of negative pixels fixed:  ", len(neg_pix[0]))
+                #print("No. of negative pixels fixed:  ", len(neg_pix[0]))
                 trimmed[neg_pix] = 0
+                pos_pix = np.where(trimmed > 65535)
+                trimmed[pos_pix] = 65535
                 self.img = trimmed.astype('uint16')
                 # breakpoint()
                 # print("65538 test:  , max, min ", self.img[0][0], self.img.max(), self.img.min())
-                print('\nMedian of overscan-removed image, minus pedastal:  ', np.median(self.img) - pedastal, '\n\n')
+                #print('\nMedian of overscan-removed image, minus pedastal:  ', np.median(self.img) - pedastal, '\n\n')
 
                 ix, iy = self.img.shape
                 test_saturated = np.array(self.img[ix//3:ix*2//3, iy//3:iy*2//3])  # 1/9th the chip area, but central.
@@ -1743,6 +1745,7 @@ class Camera:
                     # NB This needs more development
                     im_type = 'EX'   #or EN for engineering....
                     f_ext = ""
+
                     if frame_type in ('bias', 'dark', 'lampflat', 'skyflat', 'screenflat', 'solarflat', 'arc'):
                         f_ext = "-"
                         if opt['area'] == 150:
@@ -1863,6 +1866,8 @@ class Camera:
                     self.enqueue_for_AWS(text_data_size, im_path, text_name)
                     hdu.writeto(raw_path + raw_name00, overwrite=True)   #Save full raw file locally
                     print('Raw:  ', raw_path + raw_name00)
+                    #calibrate(hdu, cal_path+cal_name)
+
                     self.to_reduce((paths, hdu))
                     #Here we should decimate and send big fits
                   
