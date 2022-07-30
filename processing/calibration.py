@@ -168,8 +168,8 @@ def remove_overscan (hdu):
 
     #undo MIRA transpose used earlier img = img.transpose().astype('float32') 
     img = img.transpose().astype('float32') #Transose in and out to make analysis more x, y traditional in terms of coordinate order
-    print('Calib cycle shape:  ', img.shape)
-    print("Incoming image:  ", img)
+    #print('Calib cycle shape:  ', img.shape)
+    #print("Incoming image:  ", img)
     # NB NB This should be driven by a camera config file entry not use chip sizes to sort, not scaleable.
     #QHY 600Pro and 367
     if ix == 9600:     #GHY600 Bin 1
@@ -220,7 +220,9 @@ def remove_overscan (hdu):
 
     hdu.header = meta
     hdu.data = trimmed.transpose()
-    print("Reduced, overscan:  ", np.median(trimmed - pedastal), "  ", overscan)
+
+    if meta['OBSTYPE'] in ['BIAS', 'DARK']:
+        print("Reduced median bias or dark region, overscan:  ", np.median(trimmed - pedastal), "  ", overscan)
     return hdu
 
 #This is a brute force linear version. This needs to be more sophisticated and camera independent.

@@ -1098,8 +1098,8 @@ class Camera:
     def finish_exposure(self, exposure_time, frame_type, counter, seq, \
                         gather_status=True, do_sep=False, no_AWS=False, start_x=None, start_y=None, quick=False, \
                         low=0, high=0, script='False', opt=None, solve_it=False):
-        print("Finish exposure Entered:  ", exposure_time, frame_type, 'to go: ', counter, \
-              gather_status, do_sep, no_AWS, start_x, start_y, opt['area'])
+        print("Finish exposure Entered:  ", exposure_time, 'sec.;   # of ', frame_type, 'to go: ', counter)
+        #, gather_status, do_sep, no_AWS, start_x, start_y, opt['area'])
         self.status_time = time.time() + 10
         self.post_mnt = []
         self.post_rot = []
@@ -1107,9 +1107,9 @@ class Camera:
         self.post_ocn = []
         counter = 0
         if self.bin == 1:
-            self.completion_time = self.t2 + exposure_time + 1
+            self.completion_time = self.t2 + exposure_time + 0
         else:
-            self.completion_time = self.t2 + exposure_time + 1
+            self.completion_time = self.t2 + exposure_time + 0
         result = {'error': False}
         while True:    #This loop really needs a timeout.
             self.post_mnt = []
@@ -1136,16 +1136,15 @@ class Camera:
                 self.t4p4 = time.time()
                 ####self.img_safe = self.camera.ImageArray
                 #NB NB Do not try to print ImageArray!!!!
-                self.img = np.array(self.camera.ImageArray)
-
-  
+                self.img = np.array(self.camera.ImageArray).astype('uint16')
                 self.t4p5 = time.time()#As read, this is a Windows Safe Array of Longs
-                print("\n\nMedian of incoming image:  ", np.median(self.img), '\n\n')
+                if frame_type in ['bias', 'dark']:
+                    print("Median of full area bias or dark  image:  ", np.median(self.img),)
                 #self.img = self.img.transpose()  #Need to Transpose so MIRA shows correct orientation, 0,0 lower left.
                 #NB DO not do this, pass image through to AWS with as little touch as possible.
 
-                pedastal = None
-                self.overscan = None
+                pedastal = 0
+                #self.overscan = 0
 
                 # if self.use_file_mode:
                 #     time.sleep(3)
@@ -1171,12 +1170,12 @@ class Camera:
                 #         break
                 #     print ('Grab took :  ', tries*delay, ' sec')
                 # else:
-                time.sleep(0.1)   #  This delay appears to be necessary. 20200804 WER
+                #time.sleep(0.1)   #  This delay appears to be necessary. 20200804 WER
                 self.t4p4 = time.time()
                 ####self.img_safe = self.camera.ImageArray
                 #NB NB Do not try to print ImageArray!!!!
-                self.img = np.array(self.camera.ImageArray)
-                self.img = self.img.astype('int32')
+                #self.img = np.array(self.camera.ImageArray)
+                #self.img = self.img.astype('int32')
                 self.t4p5 = time.time()#As read, this is a Windows Safe Array of Longs
                 #print("\n\nMedian of incoming image:  ", np.median(self.img), '\n\n')
 
@@ -1185,7 +1184,7 @@ class Camera:
                 #self.img = self.img_untransposed    #   .transpose()  Only use this if Maxim has changed orientation.
                 #  print('incoming shape:  ', self.img.shape)
                 self.t5 = time.time()
-                pier_side = g_dev['mnt'].mount.sideOfPier    #0 = Tel Looking West, is flipped.
+                pier_side = g_dev['mnt'].mount.sideOfPier    #0 == Tel Looking West, is flipped.
                 # print('setup took:  ', round(self.t2 - self.t0))
                 # print('time to first readout try: ', round(self.t4 - self.t2, 2), ' sec,')
                 # print('to get safearray: ', round(self.t4p5 - self.t2, 2), ' sec,')
@@ -1197,209 +1196,15 @@ class Camera:
                 pedastal = 0.0   #No Pedastal for a raw image.  SEP may need one though..
                 ix, iy = self.img.shape
                 #breakpoint()
-# =============================================================================
-# 
-# 
-# 
-#                 #     ###self.img = np.array(self.img_safe) # _untransposed   incoming is (4800,3211) for QHY600Pro 2:2 Bin
-#                 #     #print(self.img_untransposed.shape)
-#                 #     #self.img = self.img_untransposed    #   .transpose()  Only use this if Maxim has changed orientation.
-#                 #     #  print('incoming shape:  ', self.img.shape)
-#                 # self.t5 = time.time()
-#                 # #pier_side = g_dev['mnt'].mount.sideOfPier    #0 = Tel Looking West, is flipped.
-#                 # if pier_side == 0:
-#                 #     self.img = np.flip(self.img)
-#                     
-#                 # #  NB NB  Be very careful this is the exact code used in build_master and calibration  modules.
-#                 # #  NB Note this is QHY600 specific code.  Needs to be supplied in camera config as sliced regions.
-#                 # pedastal = 100
-#                 # ix, iy = self.img.shape
-# 
-# 
-# 
-# 
-# 
-#                 # # if ix == 9600:
-#                 # #     overscan = int((np.median(self.img[32:, -33:]) + np.median(self.img[0:29, :]))/2) - 1
-#                 # #     trimmed = self.img[32:, :-34].astype('int32') + pedastal - overscan
-#                 # #     if opt['area'] in [150, 'Full', 'full']:
-#                 # #         square = trimmed
-#                 # #     else:
-#                 # #         square = trimmed[1590:1590 + 6388, :]
-#                 # # elif ix == 4800:
-#                 # #     overscan = int((np.median(self.img[16:, -17:]) + np.median(self.img[0:14, :]))/2) -1
-#                 # #     trimmed = self.img[16:, :-17].astype('int32') + pedastal - overscan
-#                 # #     if opt['area'] in [150, 'Full', 'full']:
-#                 # #         square = trimmed
-#                 # #     else:
-#                 # #         square = trimmed[795:795 + 3194, :]
-#                 # # else:
-#                 # #     print("Incorrect chip size or bin specified.")
-# 
-#                 if ix == 9600:
-#                     pass
-#                     # if self.img[22, -34] == 0:
-# 
-# 
-#                 # #This image shift code needs to be here but it is troubling.
-#                 # #QHY 600Pro and 367
-# 
-#                 # if ix == 9600:
-#                 #     # if self.img[22, -34] == 0:
-# 
-#                 #     self.overscan = int((np.median(self.img[24:, -33:]) + np.median(self.img[0:21, :]))/2) - 1
-#                 #     trimmed = self.img[24:-8, :-34].astype('int32') + pedastal - self.overscan
-# 
-#                 #     # elif self.img[30, -34] == 0:
-#                 #     #     self.overscan = int((np.median(self.img[32:, -33:]) + np.median(self.img[0:29, :]))/2) - 1
-#                 #     #     trimmed = self.img[32:, :-34].astype('int32') + pedastal - self.overscan
-# 
-#                 #     # else:
-#                 #     #     print("Image shift is incorrect, absolutely fatal error.")
-#                         
-#                 #     #     pass
-# 
-#                 #     # if full:
-#                 #     #     square = trimmed
-#                 #     # else:
-#                 #     #     square = trimmed[1590:1590 + 6388, :]
-#                 # elif ix == 4800:
-#                 #     #Shift error needs documenting!
-#                 #     #breakpoint()
-#                 #     #if self.img[11, -18] == 0:   #This is the normal incoming image
-#                 #     self.overscan = int((np.median(self.img[12:, -17:]) + np.median(self.img[0:10, :]))/2) - 1
-#                 #     trimmed = self.img[12:-4, :-17].astype('int32') + pedastal - self.overscan
-# 
-#                 #         #print("Shift 1", self.overscan, square.mean())
-#                 #     # elif self.img[15, -18] == 0:     #This rarely occurs.  Neyle's Qhy600
-#                 #     #     self.overscan = int((np.median(self.img[16:, -17:]) + np.median(self.img[0:14, :]))/2) -1
-#                 #     #     trimmed = self.img[16:, :-17].astype('int32') + pedastal - self.overscan
-# 
-#                 #     #     print("Rare error, Shift 2", self.overscan, trimmed.mean())
-# 
-#                 #     # else:
-#                 #     #     print("Image shift is incorrect, absolutely fatal error", self.img[0:20, -18])
-# 
-# 
-#                 #         #pass
-# 
-#                 
-# 
-#                 #mrc2    Testing comment change, did this push to GitHub?
-#                 
-#                 elif ix == 4132 and iy == 4117:   #MRC@
-#                     trimmed = self.img.astype('int32') - 1010. + pedastal   #20211128 Cooler = -35C
-#                     self.overscan = 1010.
-#                     print('Mean:  ', trimmed.mean())
-#                 elif ix ==2048 and iy == 2048:   #MRC@
-#                     trimmed = self.img.astype('int32') - 1143. + pedastal   #20211128 Cooler = -35C
-#                     self.overscan = 1143.
-#                     print('Mean:  ', trimmed.mean())
-#                 #Bin 3 not possible for FLI camera
-#                 elif ix == 1024 and iy == 1024:   #MRC@
-#                     trimmed = self.img.astype('int32') - 1652. + pedastal   #20211128 Cooler = -35C
-#                     self.overscan =1652.
-#                     print('Mean:  ', trimmed.mean())         
-#                 
-#                 #NBNB for cameras without proper overscan maybe we save the bias frame value vs chip
-#                 #temp so we can do a better thermal compensation.  THis would generally mean taking
-#                 #occasional biases.
-# 
-#                 
-#                 # #FAT
-#                 # # elif ix == 4500 and iy == 3600:   #All this code needs to be driven from camera config.
-#                 # #     self.overscan =np.median(self.img) - pedastal
-#                 # #     trimmed = self.img.astype('int32') - 867.
-#                         
-# 
-#                 # # elif ix == 2250 and iy == 1800:   #All this code needs to be driven from camera config.
-#                 # #     self.overscan =np.median(self.img) - pedastal
-#                 # #     trimmed = self.img.astype('int32') - 614.
-#                 # #     #FAT
-#                 # elif ix == 4556 and iy == 3656:   #All this code needs to be driven from camera config.
-#                 #     #breakpoint()
-#                 #     self.overscan = (np.median(self.img[4520:4556, :3600]) + np.median(self.img[:4500, 3620:3643]))/2.0
-#                 #     minus_overscan = self.img - (np.median(self.img[4520:4556, :3600]) + np.median(self.img[:4500, 3620:3643]))/2.0
-#                 #     print("1_1 Offset:  ", -np.median(minus_overscan[:4500, :3600]))
-#                 #     minus_overscan += pedastal + 50
-#                 #     trimmed = minus_overscan[:4500, :3600].astype('int32')
-#                 # elif ix == 2278 and iy == 1828:   #All this code needs to be driven from camera config.
-#                 #     #breakpoint()
-#                 #     self.overscan = (np.median(self.img[2260:2278, :1800]) + np.median(self.img[2250, 1810:1821]))/2.0
-#                 #     minus_overscan = self.img - (np.median(self.img[2260:2278, :1800]) + np.median(self.img[2250, 1810:1821]))/2.0
-#                 #     minus_overscan += pedastal + 140
-#                 #     trimmed = minus_overscan[:2250, :1800].astype('int32')
-#                 # elif ix == 1518 and iy == 1218: 
-#                 #     #breakpoint()
-#                 #     self.overscan = (np.median(self.img[1506:1518, :1200]) + np.median(self.img[:1500, 1206:1214]))/2.0
-#                 #     minus_overscan = self.img - (np.median(self.img[1506:1518, :1200]) + np.median(self.img[:1500, 1206:1214]))/2.0
-#                 #     minus_overscan += pedastal + 211 
-#                 #     trimmed = minus_overscan[:1500, :1200].astype('int32')
-#                     
-#                 # elif ix == 1139 and iy == 914: 
-#                 #     self.overscan = (np.median(self.img[1130:1139, :900]) + np.median(self.img[:1125, 905:910]))/2.
-#                 #     minus_overscan = self.img - (np.median(self.img[1130:1139, :900]) + np.median(self.img[:1125, 905:910]))/2.0
-#                 #     print("4_4 Offset:  ", -np.median(minus_overscan[:1125, :900]))
-#                 #     minus_overscan += pedastal + 403
-#                 #     trimmed = minus_overscan[:1125, :900].astype('int32') 
-#                 # else:
-#                 #     print("UNSUPPORTED BINNING OR CAMERA!!", ix, iy)
-#                 #     trimmed = self.img
-#                     
-# 
-# 
-#                 #     #continue
-# 
-# # =============================================================================breakpoint
-# 
-# # =============================================================================
-# 
-#                 # elif ix == 2250 and iy == 1800:   #All this code needs to be driven from camera config.
-#                 #     self.overscan =np.median(self.img) - pedastal
-#                 #     trimmed = self.img.astype('int32') - 614.
-#                 #     #FAT
-#                 elif ix == 4556 and iy == 3656:   #All this code needs to be driven from camera config.
-#                     #breakpoint()
-#                     self.overscan = (np.median(self.img[4520:4556, :3600]) + np.median(self.img[:4500, 3620:3643]))/2.0
-#                     minus_overscan = self.img - (np.median(self.img[4520:4556, :3600]) + np.median(self.img[:4500, 3620:3643]))/2.0
-#                     print("1_1 Offset:  ", -np.median(minus_overscan[:4500, :3600]))
-#                     minus_overscan += pedastal + 50
-#                     trimmed = minus_overscan[:4500, :3600].astype('int32')
-#                 elif ix == 2278 and iy == 1828:   #All this code needs to be driven from camera config.
-#                     #breakpoint()
-#                     self.overscan = (np.median(self.img[2260:2278, :1800]) + np.median(self.img[2250, 1810:1821]))/2.0
-#                     minus_overscan = self.img - (np.median(self.img[2260:2278, :1800]) + np.median(self.img[2250, 1810:1821]))/2.0
-#                     minus_overscan += pedastal + 140
-#                     trimmed = minus_overscan[:2250, :1800].astype('int32')
-#                 elif ix == 1518 and iy == 1218: 
-#                     #breakpoint()
-#                     self.overscan = (np.median(self.img[1506:1518, :1200]) + np.median(self.img[:1500, 1206:1214]))/2.0
-#                     minus_overscan = self.img - (np.median(self.img[1506:1518, :1200]) + np.median(self.img[:1500, 1206:1214]))/2.0
-#                     minus_overscan += pedastal + 211 
-#                     trimmed = minus_overscan[:1500, :1200].astype('int32')   
-#                 elif ix == 1139 and iy == 914: 
-#                     self.overscan = (np.median(self.img[1130:1139, :900]) + np.median(self.img[:1125, 905:910]))/2.
-#                     minus_overscan = self.img - (np.median(self.img[1130:1139, :900]) + np.median(self.img[:1125, 905:910]))/2.0
-#                     print("4_4 Offset:  ", -np.median(minus_overscan[:1125, :900]))
-#                     minus_overscan += pedastal + 403
-#                     trimmed = minus_overscan[:1125, :900].astype('int32') 
-#                 else:
-#                     print("UNSUPPORTED BINNING OR CAMERA!!", ix, iy)
-#                     trimmed = self.img
-#                     
-# 
-# 
-#                     #continue
-#                 #trimmed = trimmed.transpose()
-# =============================================================================
+
                 trimmed = self.img
                 #This may need a re-think:   Maybe kill neg and anything really hot if there are only a few.
                 #smin = np.where(square < 0)    # finds negative pixels  NB <0 where pedastal is 200. Useless!
 
                 self.t77 = time.time()
                # print('readout, transpose & Trim took:  ', round(self.t77 - self.t4, 1), ' sec,')# marks them as 0
-                #Should we consider correcting the image right here with cached bias, dark and hot pixel
-                #processing so downstream processing is reliable.  Maybe only do this for focus?
+
+                # NB NB this funcion could be part of a night log usign the looger module.
                 g_dev['obs'].send_to_user("Camera has read-out image.", p_level='INFO')
 
 # =============================================================================
@@ -1411,30 +1216,24 @@ class Camera:
 #                 
 #                 print('\n\nMedian of raw image, neg pixels removed:  ', np.median(self.img) , '\n\n')
 # =============================================================================
-
-                neg_pix = np.where(trimmed < 0)
-                #print("No. of negative pixels fixed:  ", len(neg_pix[0]))
-                trimmed[neg_pix] = 0
-                pos_pix = np.where(trimmed > 65535)
-                trimmed[pos_pix] = 65535
-                self.img = trimmed.astype('uint16')
-                # breakpoint()
-                # print("65538 test:  , max, min ", self.img[0][0], self.img.max(), self.img.min())
-                #print('\nMedian of overscan-removed image, minus pedastal:  ', np.median(self.img) - pedastal, '\n\n')
-
-                ix, iy = self.img.shape
+                neg_pix = np.where(self.img < 0)
+                if len(neg_pix[0]) >0: print("No. of negative pixels fixed:  ", len(neg_pix[0]))
+                self.img[neg_pix] = 0
+                pos_pix = np.where(self.img > 65535)
+                if len(pos_pix[0]) > 0: print("No. of overflow pixels fixed:  ", len(pos_pix[0]))
+                self.img[pos_pix] = 65535
                 test_saturated = np.array(self.img[ix//3:ix*2//3, iy//3:iy*2//3])  # 1/9th the chip area, but central.
-                bi_mean = round((test_saturated.mean() + np.median(test_saturated))/2, 0)
-                if frame_type[-4:] == 'flat':
+                bi_mean = round((test_saturated.mean() + np.median(test_saturated))/2, 1)
+                if frame_type[-4:] == 'flat':   #NB use in operator
                     if bi_mean >= self.config['camera'][self.name]['settings']['saturate']:
-                        print("Flat rejected, too bright:  ", bi_mean)
+                        print("Flat rejected, center is too bright:  ", bi_mean)
                         g_dev['obs'].send_to_user("Flat rejected, too bright.", p_level='INFO')
                         result['error'] = True
                         result['patch'] = bi_mean
                         return result   # signals to flat routine image was rejected, prompt return
                 g_dev['obs'].update_status()
                 counter = 0
-
+                #Not self.post... was captured just before readout so it is accurate through the end of the exposure
                 avg_mnt = g_dev['mnt'].get_average_status(self.pre_mnt, self.post_mnt)
                 avg_foc = g_dev['foc'].get_average_status(self.pre_foc, self.post_foc)
                 avg_rot = g_dev['rot'].get_average_status(self.pre_rot, self.post_rot)
@@ -1865,7 +1664,7 @@ class Camera:
                     #     if not quick:
                     self.enqueue_for_AWS(text_data_size, im_path, text_name)
                     hdu.writeto(raw_path + raw_name00, overwrite=True)   #Save full raw file locally
-                    print('Raw:  ', raw_path + raw_name00)
+                    #print('Raw:  ', raw_path + raw_name00)
                     #calibrate(hdu, cal_path+cal_name)
 
                     self.to_reduce((paths, hdu))
@@ -1930,10 +1729,12 @@ class Camera:
                 #g_dev['obs'].update_status()
                 self.t7 = time.time()
                 remaining = round(self.completion_time - self.t7, 1)
-                print("Exposure time remaining:  " + str(remaining))
+                if remaining < 0:
+                    print("Readout time remaining:  " + str(remaining))
                 g_dev['obs'].send_to_user("Exposure time remaining:  " + str(remaining), p_level='INFO')
                 if remaining < -30:
-                    print("Camera timed out, not connected")
+                    print("Camera timed out; probably is no longer connected, resetting it now.")
+                    g_dev['obs'].send_to_user("Camera timed out; probably is no longer connected, resetting it now.", p_level='INFO')
                     result = {'error': True}
                     self.exposure_busy = False
                     return result

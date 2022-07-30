@@ -1171,7 +1171,7 @@ class Observatory:
                 #     hdu1 = None
                 # except:
                 #     pass
-                print("\nReduction completed.")
+                #print("\nReduction completed.")
                 g_dev['obs'].send_to_user("An image reduction has completed.", p_level='INFO')
                 self.reduce_queue.task_done()
             else:
