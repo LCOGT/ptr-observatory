@@ -283,7 +283,7 @@ class Camera:
             for file_path in glob.glob(self.file_mode_path + '*.f*t*'):
                 os.remove(file_path)
         except:
-            print ("*.fits files on D: not found, this is normally OK.")
+            print ("Temporary *.fits files not found, this is normally OK.")
         if self.config['camera'][self.name]['settings']['is_cmos']  == True:
             self.is_cmos = True
         else:
@@ -769,7 +769,9 @@ class Camera:
         sub_frame_fraction = optional_params.get('subframe', None)
         # Need to put in support for chip mode once we have implmented in-line bias correct and trim.
         try:
-            if type(area) == str and area[-1] == '%':  #Re-use of variable is crappy coding
+            if type(area) == str and area[-1] == '%':  #NB NB NB Re-use of variable is crappy coding
+                #The whole area implementation needs rework for anything specified larger that the full chip.
+                #Subframes are more logical to specify as fractionals of the base chip.
                 area = int(area[0:-1])
             elif area in ('Sqr', 'sqr', '100%', 100):
                 area = 100
@@ -835,7 +837,7 @@ class Camera:
             self.camera_num_y = self.len_y
             self.camera_start_y = 0
             self.area = 150
-            print("Default area used = 100%, ie. the full chip:  ", self.len_x,self.len_y )
+           #print("Default area used = 100%, ie. the full chip:  ", self.len_x,self.len_y )
 
         #Next apply any subframe setting here.  Be very careful to keep fractional specs and pixel values disinguished.
         if self.area == self.previous_area and sub_frame_fraction is not None and \
@@ -1107,9 +1109,9 @@ class Camera:
         self.post_ocn = []
         counter = 0
         if self.bin == 1:
-            self.completion_time = self.t2 + exposure_time + 0
+            self.completion_time = self.t2 + exposure_time + 1
         else:
-            self.completion_time = self.t2 + exposure_time + 0
+            self.completion_time = self.t2 + exposure_time + 1
         result = {'error': False}
         while True:    #This loop really needs a timeout.
             self.post_mnt = []
@@ -1122,13 +1124,18 @@ class Camera:
             g_dev['ocn'].get_quick_status(self.post_ocn)
             if time.time() > self.status_time:
                 g_dev['obs'].update_status()
-                self.status_time = time.time() + 15
+                self.status_time = time.time() + 10
             if time.time() < self.completion_time:   #  NB Testing here if glob too early is delaying readout.
-                time.sleep(.5)
+                time.sleep(2)
+                self.t7b = time.time()
+                remaining = round(self.completion_time - self.t7b, 1)
+                if remaining > 0:
+                    print (str(round(remaining, 1))+'sec.', str(round(100*remaining/exposure_time, 1))+'%')
                 continue
             incoming_image_list = []   #glob.glob(self.file_mode_path + '*.f*t*')
             self.t4 = time.time()
             pier_side = g_dev['mnt'].mount.sideOfPier
+
             if (not self.use_file_mode and self.camera.ImageReady) or (self.use_file_mode and len(incoming_image_list) >= 1):   #   self.camera.ImageReady:
                 #print("reading out camera, takes ~6 seconds.")
 
@@ -1144,7 +1151,7 @@ class Camera:
                 #NB DO not do this, pass image through to AWS with as little touch as possible.
 
                 pedastal = 0
-                #self.overscan = 0
+                self.overscan = 0
 
                 # if self.use_file_mode:
                 #     time.sleep(3)
@@ -1369,22 +1376,22 @@ class Camera:
 
                     if self.bin == 1:
                         hdu.header['DATASEC'] = self.config['camera'][self.name]['settings']['data_sec'][0]
-                        hdu.header['DETSEC'] = self.config['camera'][self.name] ['settings']['det_sec'][0]
+                        hdu.header['DETSEC']  = self.config['camera'][self.name]['settings']['det_sec' ][0]
                         hdu.header['BIASSEC'] = self.config['camera'][self.name]['settings']['bias_sec'][0]
                         hdu.header['TRIMSEC'] = self.config['camera'][self.name]['settings']['trim_sec'][0]
                     elif self.bin == 2:
                         hdu.header['DATASEC'] = self.config['camera'][self.name]['settings']['data_sec'][1]
-                        hdu.header['DETSEC'] = self.config['camera'][self.name] ['settings']['det_sec'][1]
+                        hdu.header['DETSEC']  = self.config['camera'][self.name]['settings']['det_sec' ][1]
                         hdu.header['BIASSEC'] = self.config['camera'][self.name]['settings']['bias_sec'][1]
                         hdu.header['TRIMSEC'] = self.config['camera'][self.name]['settings']['trim_sec'][1]
                     elif self.bin == 3:
                         hdu.header['DATASEC'] = self.config['camera'][self.name]['settings']['data_sec'][2]
-                        hdu.header['DETSEC'] = self.config['camera'][self.name] ['settings']['det_sec'][2]
+                        hdu.header['DETSEC']  = self.config['camera'][self.name]['settings']['det_sec' ][2]
                         hdu.header['BIASSEC'] = self.config['camera'][self.name]['settings']['bias_sec'][2]
                         hdu.header['TRIMSEC'] = self.config['camera'][self.name]['settings']['trim_sec'][2]
                     else:   # self.bin == 4:
                         hdu.header['DATASEC'] = self.config['camera'][self.name]['settings']['data_sec'][3]
-                        hdu.header['DETSEC'] = self.config['camera'][self.name] ['settings']['det_sec'][3]
+                        hdu.header['DETSEC']  = self.config['camera'][self.name]['settings']['det_sec' ][3]
                         hdu.header['BIASSEC'] = self.config['camera'][self.name]['settings']['bias_sec'][3]
                         hdu.header['TRIMSEC'] = self.config['camera'][self.name]['settings']['trim_sec'][3]
                         
@@ -1729,9 +1736,11 @@ class Camera:
                 #g_dev['obs'].update_status()
                 self.t7 = time.time()
                 remaining = round(self.completion_time - self.t7, 1)
+                # if remaining > 0:
+                #     print (round(remaining, 1), round(100*remaining/self.expsoure, 1))
                 if remaining < 0:
-                    print("Readout time remaining:  " + str(remaining))
-                g_dev['obs'].send_to_user("Exposure time remaining:  " + str(remaining), p_level='INFO')
+                    print("Readout time remaining:  " + str(round(13 + remaining, 1)), ' sec')
+                    g_dev['obs'].send_to_user("Readout time remaining:  " + str(round(13 + remaining, 1)) + ' s.', p_level='INFO')
                 if remaining < -30:
                     print("Camera timed out; probably is no longer connected, resetting it now.")
                     g_dev['obs'].send_to_user("Camera timed out; probably is no longer connected, resetting it now.", p_level='INFO')
