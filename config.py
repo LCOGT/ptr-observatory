@@ -439,6 +439,8 @@ site_config = {
                 'x_bias_line': True,
                 'y_bias_line': True,
                 'bin_enable': ['1 1'], 
+                'ref_dak': 360.0,
+                'long_dark': 600.0,
                 'x_active': 4500,
                 'y_active': 3600,
                 #THIS IS ALL WRONG!
@@ -462,7 +464,7 @@ site_config = {
                 'max_exposure': 3600,
                 'can_subframe':  True,
                 'min_subframe':  [128, 128],       
-                'bin_modes':  [[1, 1, 1.07], [2, 2, 2.13], [3, 3, 3.21], [4, 4, 4.27]],   #Meaning no binning choice if list has only one entry, default should be first.
+                'bin_modes':  [[1, 1, 1.07]], #  , [2, 2, 2.13], [3, 3, 3.21], [4, 4, 4.27]],   #Meaning no binning choice if list has only one entry, default should be first.
                 'default_bin':  [1, 1, 1.07],    #  Matched to seeing situation by owner
                 'cycle_time':  [30, 20, 15, 12],  # 3x3 requires a 1, 1 reaout then a software bin, so slower.
                 'rbi_delay':  0.,      #  This being zero says RBI is not available, eg. for SBIG.

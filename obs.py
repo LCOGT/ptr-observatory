@@ -960,7 +960,7 @@ class Observatory:
                             
                         # g_dev['mnt'].set_last_reference( solve['ra_j2000_Second phase of AF now.hours'], solve['dec_j2000_degrees'], time_now)
                     except:
-                       print('Image:  ',wpath[-23:-5], " did not solve; this is usually OK.")
+                       print('Image:  ',wpath[-24:-5], " did not solve; this is usually OK.")
                        img = fits.open(wpath, mode='update', ignore_missing_end=True)
                        hdr = img[0].header
                        hdr['NO-SOLVE'] = True
