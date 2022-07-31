@@ -17,6 +17,10 @@ import ptr_events
 #  NB NB  Json is not bi-directional with tuples (), use lists [], nested if tuples as needed, instead.
 #  NB NB  My convention is if a value is naturally a float I add a decimal point even to 0.
 g_dev = None
+
+ bolt = ['u', 'g', 'r', 'i', 'zs', 'B', 'V', 'EXO', 'w', 'O3', 'Ha', 'S', 'Cr', 'NIR']
+ print(len(bolt))
+ 
 site_name = 'sro'
 
                     #\\192.168.1.57\SRO10-Roof  r:
