@@ -156,16 +156,14 @@ def simpleColumnFix(img, col):
     return img
 
 def remove_overscan (hdu):
- 
-    img = copy.deepcopy(hdu.data)
-    meta = copy.deepcopy(hdu.header)
+    img = hdu.data # copy.deepcopy(hdu.data)
+    start_size = img.size
+    start_img = img.copy
+    meta = hdu.header #copy.deepcopy(hdu.header)
     #  NB NB  Be very careful this is the exact code used in build_master and calibration  modules.
     #  NB Note this is QHY600 specific code.  Needs to be supplied in camera config as sliced regions.
     pedastal = 100
-
     iy, ix = img.shape
-
-
     #undo MIRA transpose used earlier img = img.transpose().astype('float32') 
     img = img.transpose().astype('float32') #Transose in and out to make analysis more x, y traditional in terms of coordinate order
     #print('Calib cycle shape:  ', img.shape)
@@ -174,43 +172,43 @@ def remove_overscan (hdu):
     #QHY 600Pro and 367
     if ix == 9600:     #GHY600 Bin 1
         overscan = np.median(img[24:, -33:]) #+ np.median(img[0:21, :]))/2) - 1
-        trimmed = img[24:-8, :-34].astype('float32') + pedastal - overscan
+        trimmed = img[24:-8, :-34] + pedastal - overscan
     elif ix == 4800:    #QHY600 Bin 2
         overscan = np.median(img[12:, -17:]) #+ np.median(img[0:10, :]))/2) - 1
-        trimmed = img[12:-4, :-17].astype('float32') + pedastal - overscan
+        trimmed = img[12:-4, :-17] + pedastal - overscan
     elif ix == 3200:     #GHY600 Bin3
         overscan = np.median(img[8:, -11:]) #+ np.median(img[0:7, :]))/2) - 1
-        trimmed = img[8:-3, :-12].astype('float32') + pedastal - overscan
+        trimmed = img[8:-3, :-12] + pedastal - overscan
     elif ix == 2400:     #GHY600 Bin4
         overscan = np.median(img[6:, -9:]) #+ np.median(img[0:5, :]))/2) - 1
-        trimmed = img[6:-2, :-9].astype('float322') + pedastal - overscan
+        trimmed = img[6:-2, :-9] + pedastal - overscan
         
     #mrc2    On-semi 16803 CCD
     elif ix == 4132 and iy == 4117:   #FLI 16803
         overscan = np.median(img[35:, 2:20])   #Horizontal overscan matches buld of main array very well.
-        trimmed = img[43:,20:].astype('float32') - overscan + pedastal
+        trimmed = img[43:,20:] - overscan + pedastal
     elif ix == 2066 and iy == 2058:   #MRC@
         overscan = np.median(img[17: ,1:10]) 
-        trimmed = img[21:,10:].astype('float32')  - overscan + pedastal
+        trimmed = img[21:,10:]  - overscan + pedastal
     #Bin 3 not possible for FLI camera       
     elif ix == 1033 and iy == 1029:   #MRC@
         overscan = np.median(img[8:, 0:5]) 
-        trimmed = img[10:,5:].astype('float32')  - overscan + pedastal
+        trimmed = img[10:,5:]  - overscan + pedastal
 
     #SR0 SBIG 16200
     elif ix == 4556 and iy == 3656:   #All this code needs to be driven from camera config.
 
         overscan = np.median(img[3638:3647, 250:4400])  # A centrally quiet region
-        trimmed = img[:4500, :3600].astype('float32') - (overscan + 3.0) + pedastal   #Established for -25.5 actual temp 20220724
+        trimmed = img[:4500, :3600] - (overscan + 3.0) + pedastal   #Established for -25.5 actual temp 20220724
     elif ix == 2278 and iy == 1828:   #All this code needs to be driven from camera config.
         overscan = np.median(img[1819:1823, 125:2200])  # A centrally quiet region
-        trimmed = img[:2250, :1800].astype('float32') - overscan + pedastal
+        trimmed = img[:2250, :1800] - overscan + pedastal
     elif ix == 1518 and iy == 1218: 
         overscan = np.median(img[1212:1215, 83:1480])  # A centrally quiet region
-        trimmed = img[:1500, :1200].astype('float32') - overscan + pedastal
+        trimmed = img[:1500, :1200] - overscan + pedastal
     elif ix == 1139 and iy == 914: 
         overscan = np.median(img[909:911, 62:1100])  # A centrally quiet region
-        trimmed = img[:1125, :900].astype('float32') - overscan + pedastal
+        trimmed = img[:1125, :900] - overscan + pedastal
     else:
         print("UNSUPPORTED Camera or Bin mode!!", ix, iy)
         trimmed = img
@@ -223,6 +221,11 @@ def remove_overscan (hdu):
 
     if meta['OBSTYPE'] in ['BIAS', 'DARK']:
         print("Reduced median bias or dark region, overscan:  ", np.median(trimmed - pedastal), "  ", overscan)
+    # end_size = hdu.data.size
+    # print('Start, End size, dtype:  ', start_size, end_size, hdu.data.dtype)
+    # if end_size >= start_size:
+    #     pass
+    # #breakpoint()
     return hdu
 
 #This is a brute force linear version. This needs to be more sophisticated and camera independent.
@@ -267,7 +270,7 @@ def calibrate (hdu, lng_path, frame_type='light', quick=False):
                 if loud: print(lng_path + 'b_2.fits', 'Loaded')
             except:
                 quick_bias = False
-                g_dev['obs'].send_to_user(" No bias_2 loaded.", p_level ='WARNING')
+                #g_dev['obs'].send_to_user(" No bias_2 loaded.", p_level ='WARNING')
                 
         # if saf_2 is None:
         #     try:
@@ -301,7 +304,7 @@ def calibrate (hdu, lng_path, frame_type='light', quick=False):
                 sdHdu = fits.open(lng_path + 'd_ref.fits')
                 dark_exposure_level = sdHdu[0].header['EXPTIME']
                 super_dark = sdHdu[0].data/dark_exposure_level  #Convert to adu/sec
-                super_dark = super_dark.astype('float32')
+                #super_dark = super_dark.astype('float32')
                 if loud: print('sdark:  ', super_dark.mean())
                 sdHdu.close()
                 #fix = np.where(super_dark_360 < 0)
@@ -317,7 +320,7 @@ def calibrate (hdu, lng_path, frame_type='light', quick=False):
                 dark_ref_exposure_level = sdHdu[0].header['EXPTIME']
 
                 super_dark_2  = sdHdu[0].data/dark_ref_exposure_level  #Converto to ADU/sec
-                super_dark_2 = super_dark_2.astype('float32')
+                #super_dark_2 = super_dark_2.astype('float32')
                 if loud: print('sdark_2:  ', super_dark_2.mean())
                 sdHdu.close()
                 #fix = np.where(super_dark_360 < 0)
@@ -332,7 +335,7 @@ def calibrate (hdu, lng_path, frame_type='light', quick=False):
                 sdHdu = fits.open(lng_path + 'd_ref_long.fits')
                 dark_ref_long_exposure_level = sdHdu[0].header['EXPTIME']
                 super_dark_ref_long  = sdHdu[0].data/dark_ref_long_exposure_level  #Converto to ADU/sec
-                super_dark_ref_long = super_dark_ref_long.astype('float32')
+                #super_dark_ref_long = super_dark_ref_long.astype('float32')
                 if loud: print('sdark_2:  ', super_dark_ref_long.mean())
                 sdHdu.close()
                 #fix = np.where(super_dark_360 < 0)
@@ -831,10 +834,10 @@ def calibrate (hdu, lng_path, frame_type='light', quick=False):
     hdu.data += pedastal
     hdu.header['PEDASTAL'] = (-pedastal,  'Add to get zero ADU based image')
     fix_neg_pix = np.where(hdu.data < 0)
-    if loud: print('# of < 0  pixels:  ', len(fix_neg_pix[0]))  #  Do not change values here.
+    #print('# of < 0  pixels:  ', len(fix_neg_pix[0]))  #  Do not change values here.
     hdu.data[fix_neg_pix] = 0
     fix_max_pix = np.where(hdu.data > 65535)
-    if loud: print("Max data value is:  ", fix_max_pix, len(fix_max_pix[0]))
+    #print("Max data value is:  ", fix_max_pix, len(fix_max_pix[0]))
     hdu.data[fix_max_pix] = 65535.
    #print("Pre uint", hdu.data.mean())
     #hdu.data = hdu.data.astype('uint16')  #NB NB NB Reduce storage?? Is this needed?
@@ -851,6 +854,7 @@ def calibrate (hdu, lng_path, frame_type='light', quick=False):
     result['patch'] = abs(round((hdu.data.mean() + np.median(hdu.data))/2 - pedastal, 1))
     result['temperature'] = None
     #g_dev['obs'].send_to_user('Calibration complete.', p_level='INFO')
+    #print('End Calib result dytpe, size:  ', hdu.data.dtype, hdu.data.size)
     return result
 
 

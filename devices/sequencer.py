@@ -151,6 +151,7 @@ class Sequencer:
         self.af_guard = False
         self.block_guard = False
         self.time_of_next_slew = time.time()
+        #NB NB These should be set up from config once a day at Noon/Startup time
         self.bias_dark_latch = True   #NB NB NB Should these initially be defined this way?
         self.sky_flat_latch = True
         self.morn_sky_flat_latch = True
@@ -421,27 +422,28 @@ class Sequencer:
             #     pass
             #print("Block tested for observatility")
 
-
-        elif ((g_dev['events']['Observing Ends']  < ephem_now < g_dev['events']['End Morn Sky Flats']) and \
-               g_dev['enc'].mode == 'Automatic') and not g_dev['ocn'].wx_hold and self.config['auto_morn_sky_flat']:
-            self.enc_to_skyflat_and_open(enc_status, ocn_status)
-        #*********NB NB system hangs here 
+        # #System hangs on this state
+        # elif ((g_dev['events']['Observing Ends']  < ephem_now < g_dev['events']['End Morn Sky Flats']) and \
+        #        g_dev['enc'].mode == 'Automatic') and not g_dev['ocn'].wx_hold and self.config['auto_morn_sky_flat']:
+        #     self.enc_to_skyflat_and_open(enc_status, ocn_status)
+        # #*********NB NB system hangs here 
         elif self.morn_sky_flat_latch and ((events['Morn Sky Flats'] <= ephem_now < events['End Morn Sky Flats'])  \
                and g_dev['enc'].mode == 'Automatic' and not g_dev['ocn'].wx_hold and \
                self.config['auto_morn_sky_flat']):
             self.enc_to_skyflat_and_open(enc_status, ocn_status)   #Just in case a Wx hold stopped opening
             self.current_script = "Morn Sky Flat script starting"
-            self.morn_sky_flat_latch = False
+            #self.morn_sky_flat_latch = False
             #print('Skipping Eve Sky Flats')
             self.sky_flat_script({}, {}, morn=True)   #Null command dictionaries
             self.morn_sky_flat_latch = False
-            self.park_and_close(enc_status)
+            #self.park_and_close(enc_status)
         elif self.morn_bias_dark_latch and ((events['Morn Bias Dark'] <= ephem_now < events['End Morn Bias Dark']) and \
                   self.config['auto_morn_bias_dark'] and g_dev['enc'].mode == 'Automatic' ):
+            #breakpoint()
             self.morn_bias_dark_latch = False
             req = {'bin1': False, 'bin2': True, 'bin3': False, 'bin4': False, 'numOfBias': 45, \
-                   'numOfDark': 15, 'darkTime': 180, 'numOfDark2': 3, 'dark2Time': 360, \
-                   'hotMap': True, 'coldMap': True, 'script': 'genBiasDarkMaster', }
+                    'numOfDark': 15, 'darkTime': 180, 'numOfDark2': 3, 'dark2Time': 360, \
+                    'hotMap': True, 'coldMap': True, 'script': 'genBiasDarkMaster', }
             opt = {}
             #No action needed on  the enclosure at this level
             self.park_and_close(enc_status)
@@ -741,8 +743,13 @@ class Sequencer:
                             pitch = 0.25
                         if exposure['area'] in ['150', '150%', 150]:
                             pitch = 0.1875
-
-                    elif exposure['area'] in ['600', '600%', 600, '450', '450%', 450]:  # 9 exposures.
+                            
+                    elif exposure['area'] in ['600', '600%', '4x4d', '4x4']:
+                        offset = [(0,0), (0.4641, 0), (0.4461, 0.7334), (-0.4461, 0.7334), (-0.4461, 0), (-0.4461, -0.7334), \
+                                  (0.4461, -0.7334), (1.335, -0.7334), (1.335, 0), (1.335, 0.7334), (1.335, 1.4667), \
+                                  (.4461, 1.4667), (-0.4461, 1.4667), (-1.335, 1.4667), (-1.335, 0.7334), (-1.335, -0.0), \
+                                  (-1.335, -0.7334), (1.335, -1.4667), (-0.4461, -1.4467), (0.4461, -1.4467), (1.335, -1.4667)]
+                        pitch = -1  #A signal to do something special.  ##'600', '600%', 600, 
                         offset = [(0.5, 0.5),
                                   (-0.5, 0.5),
                                   (-1.5, 0.5),
@@ -791,9 +798,14 @@ class Sequencer:
 
                         x_field_deg = g_dev['cam'].config['camera']['camera_1_1']['settings']['x_field_deg']
                         y_field_deg = g_dev['cam'].config['camera']['camera_1_1']['settings']['y_field_deg']
-
-                        d_ra = displacement[0]*(pitch)*(x_field_deg/15.)  # 0.764243 deg = 0.0509496 Hours  These and pixscale should be computed in config.
-                        d_dec = displacement[1]*( pitch)*(y_field_deg)  # = 0.5102414999999999   #Deg
+                        if pitch == -1:
+                            #Note positive offset means a negative displacement in RA for spiral to wrap CCW.
+                            #Note offsets are absolute degrees.
+                            d_ra = -displacement[0]
+                            d_dec = displacement[1]
+                        else:
+                            d_ra = displacement[0]*(pitch)*(x_field_deg/15.)  # 0.764243 deg = 0.0509496 Hours  These and pixscale should be computed in config.
+                            d_dec = displacement[1]*( pitch)*(y_field_deg)  # = 0.5102414999999999   #Deg
                         new_ra = dest_ra + d_ra
                         new_dec= dest_dec + d_dec
                         new_ra, new_dec = ra_dec_fix_hd(new_ra, new_dec)
@@ -885,8 +897,14 @@ class Sequencer:
 
             g_dev['mnt'].park_command({}, {}) # Get there early
 
-            print("Expose Biases: b- 1, 2;  360/300s darks.")
-            dark_time = 360   # NB NB This should be a per bin config specified time.
+            print("Expose Biases: by configured binning;  normal and long darks.")
+
+                # 'bin_enable': ['1 1'], 
+                # 'ref_dak': 360.0,
+                # 'long_dark': 600.0,
+            dark_time = self.config['camera']['camera_1_1']['settings']['ref_dark']
+            long_dark_time = self.config['camera']['camera_1_1']['settings']['long_dark']
+
 
             for bias in range(9):   #9*(9 +1) per cycle.
                 if ephem.now() + 210/86400 > ending:
@@ -900,9 +918,9 @@ class Sequencer:
                                     do_sep=False, quick=False)
                     g_dev['obs'].update_status()
                     dark_time = 360
-                    if ephem.now() >=  (dark_time + 30)/86400 > ending:
+                    if ephem.now() + (dark_time + 30)/86400 > ending:
                         break
-                    print("Expose d_1 using exposure:  ", dark_time )
+                    print("Expose ref_dark using exposure:  ", dark_time )
                     req = {'time':dark_time ,  'script': 'True', 'image_type': 'dark'}
                     opt = {'area': "Full", 'count':1, 'bin': '1 1', \
                             'filter': 'dark'}
@@ -910,6 +928,18 @@ class Sequencer:
                                         do_sep=False, quick=False)
     
                     g_dev['obs'].update_status()
+                    if long_dark_time is not None and long_dark_time > dark_time:
+
+                        if ephem.now() + (long_dark_time + 30)/86400 > ending:
+                            break
+                        print("Expose long dark using exposure:  ", long_dark_time)
+                        req = {'time':long_dark_time ,  'script': 'True', 'image_type': 'dark'}
+                        opt = {'area': "Full", 'count':1, 'bin': '1 1', \
+                                'filter': 'dark'}
+                        result = g_dev['cam'].expose_command(req, opt, no_AWS=True, \
+                                            do_sep=False, quick=False)
+        
+                        g_dev['obs'].update_status()
                 # if ephem.now() + 210/86400 > ending:
                 #     break
                 # print("Expose Biases: b_2")
@@ -1045,6 +1075,7 @@ class Sequencer:
         prior_scale = 1   #THIS will be inhereted upon completion of the prior filter
         collecting_area = self.config['telescope']['telescope1']['collecting_area']/31808.   # SAF at F4.9 is the reference
         #   and (g_dev['events']['Eve Sky Flats'] <
+
         while len(pop_list) > 0  and ephem.now() < ending:
 
             current_filter = int(pop_list[0])

@@ -899,7 +899,7 @@ class Observatory:
                 #Before saving reduced or generating postage, we flip
                 #the images so East is left and North is up based on
                 #The keyword PIERSIDE defines the orientation.
-                #Note the raw image is not flipped/
+                #Note the raw ibmage is not flipped/
 
                 # NB NB NB I do not think we should be flipping ALt_Az images.
                 #NB NB NB I think ever raw images should be flipped so that at
@@ -916,8 +916,16 @@ class Observatory:
                 #wpath = paths['im_path'] + paths['red_name01']
                 #hdu.writeto(wpath, overwrite=True)  # NB overwrite == True is dangerous in production code.  This is big fits to AWS
                 reduced_data_size = hdu.data.size
+                
+                #print('***** Reduced data size, dtype:  ', reduced_data_size, hdu.data.dtype, hdu.header['BITPIX'], hdu.header['NAXIS1'])
+
                 wpath = paths['red_path'] + paths['red_name01_lcl']    #This name is convienent for local sorting
+
                 hdu.writeto(wpath, overwrite=True) #Bigfit reduced
+                #This was in camera after reduce and it had a race condition.
+  
+                if hdu.header['OBSTYPE'].lower() in ('bias', 'dark', 'screenflat', 'skyflat'):
+                    hdu.writeto(paths['cal_path'] + paths['cal_name'], overwrite=True)
                 
                 #Will try here to solve
                 if not paths['frame_type'] in ['bias', 'dark', 'flat', 'solar', 'lunar', 'skyflat', 'screen', 'spectrum', 'auto_focus']:

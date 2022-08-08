@@ -18,8 +18,8 @@ import ptr_events
 #  NB NB  My convention is if a value is naturally a float I add a decimal point even to 0.
 g_dev = None
 
- bolt = ['u', 'g', 'r', 'i', 'zs', 'B', 'V', 'EXO', 'w', 'O3', 'Ha', 'S', 'Cr', 'NIR']
- print(len(bolt))
+ # bolt = ['u', 'g', 'r', 'i', 'zs', 'B', 'V', 'EXO', 'w', 'O3', 'Ha', 'S', 'Cr', 'NIR']
+ # print(len(bolt))
  
 site_name = 'sro'
 
@@ -77,7 +77,7 @@ site_config = {
     
     'site_in_automatic_default': "Automatic",   #  ["Manual", "Shutdown", "Automatic"]
     'automatic_detail_default': "Enclosure is initially set to Automatic mode.",
-    'auto_eve_bias_dark': True,
+    'auto_eve_bias_dark': False,
     'auto_eve_sky_flat': True,
     'eve_sky_flat_sunset_offset': +5.0,  #  Minutes  neg means before, + after.
     'auto_morn_sky_flat': True,
@@ -443,7 +443,7 @@ site_config = {
                 'x_bias_line': True,
                 'y_bias_line': True,
                 'bin_enable': ['1 1'], 
-                'ref_dak': 360.0,
+                'ref_dark': 360.0,
                 'long_dark': 600.0,
                 'x_active': 4500,
                 'y_active': 3600,
@@ -488,7 +488,7 @@ site_config = {
                 'saturate':  42000,    # e-.  This is a close guess, not measured, but taken from data sheet.
                 'max_linearity': 40000,
                 'fullwell_capacity': [45000, 45000, 45000, 45000],  #e-.   We need to sort out the units properly NB NB NB
-                'areas_implemented': ["Full", "600%", "500%", "450%", "300%", "220%", "150%", "133%", "Full", "Sqr", '71%', '50%',  '35%', '25%', '12%'],
+                'areas_implemented': ["Full",'4x4d', "600%", "500%", "450%", "300%", "220%", "150%", "133%", "Full", "Sqr", '71%', '50%',  '35%', '25%', '12%'],
                 'default_area':  "Full",
                 'default_rotation': 0.0000,
                 'flat_bin_spec': '1,1',    #Default binning for flats
@@ -623,8 +623,9 @@ def get_ocn_status(g_dev=None):
                         last_good_wx_fields = wx_fields
                     except:
                         print('SRO Weather source problem, using last known good report.')
+                        # NB NB NB we need to shelve the last know good so this does not fail on startup.
                         wx_fields = last_good_wx_fields
-                        wx_fields = wx_line.split()
+                        #wx_fields = wx_line.split()   This cause a fault. Wx line not available.
                         skyTemperature = f_to_c(float( wx_fields[4]))
                         temperature = f_to_c(float(wx_fields[5]))
                         windspeed = round(float(wx_fields[7])/2.237, 2)

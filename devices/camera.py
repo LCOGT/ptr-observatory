@@ -1670,7 +1670,7 @@ class Camera:
                     # if  not script in ('True', 'true', 'On', 'on'):   #  not quick and    #Was moved 20201022 for grid
                     #     if not quick:
                     self.enqueue_for_AWS(text_data_size, im_path, text_name)
-                    hdu.writeto(raw_path + raw_name00, overwrite=True)   #Save full raw file locally
+                    hdu.writeto(raw_path + raw_name00, overwrite=False)   #Save full raw file locally
                     #print('Raw:  ', raw_path + raw_name00)
                     #calibrate(hdu, cal_path+cal_name)
 
@@ -1678,20 +1678,20 @@ class Camera:
                     #Here we should decimate and send big fits
                   
                     g_dev['obs'].send_to_user("Raw image saved locally. ", p_level='INFO')
-
-                    if frame_type in ('bias', 'dark', 'screenflat', 'skyflat'):
-                        if not self.hint[0:54] == 'Flush':
-                            hdu.writeto(cal_path + cal_name, overwrite=True)
-                        else:
-                            pass
-                        try:
-                            os.remove(self.camera_path + 'newest.fits')
-                        except:
-                            pass    #  print ("File newest.fits not found, this is probably OK")
-                        result = {'patch': bi_mean,
-                                'calc_sky': 0}  #avg_ocn[7]}
-                        self.exposure_busy = False
-                        return result #  Note we are not calibrating. Just saving the file.
+                    #Moved into Calibrate to eliminate race conditon is saving this.
+                    # if frame_type in ('bias', 'dark', 'screenflat', 'skyflat'):
+                    #     if not self.hint[0:54] == 'Flush':
+                    #         hdu.writeto(cal_path + cal_name, overwrite=True)
+                    #     else:
+                    #         pass
+                    #     try:
+                    #         os.remove(self.camera_path + 'newest.fits')
+                    #     except:
+                    #         pass    #  print ("File newest.fits not found, this is probably OK")
+                    #     result = {'patch': bi_mean,
+                    #             'calc_sky': 0}  #avg_ocn[7]}
+                    #     self.exposure_busy = False
+                    #     return result #  Note we are not calibrating. Just saving the file.
                     # elif frame_type in ['light']:
                     #     self.enqueue_for_AWS(reduced_data_size, im_path, red_name01)
 
