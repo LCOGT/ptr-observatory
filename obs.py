@@ -899,7 +899,7 @@ class Observatory:
                 #Before saving reduced or generating postage, we flip
                 #the images so East is left and North is up based on
                 #The keyword PIERSIDE defines the orientation.
-                #Note the raw image is not flipped/
+                #Note the raw ibmage is not flipped/
 
                 # NB NB NB I do not think we should be flipping ALt_Az images.
                 #NB NB NB I think ever raw images should be flipped so that at
@@ -912,12 +912,20 @@ class Observatory:
 #                     hdu.header['IMGFLIP'] = True
 # =============================================================================
 
-                print('Reduced Mean:  ', round(hdu.data.mean() + hdu.header['PEDASTAL'], 2))
+                # NB BAD 20220717 print('Reduced Mean:  ', round(hdu.data.mean() + hdu.header['PEDASTAL'], 2))
                 #wpath = paths['im_path'] + paths['red_name01']
                 #hdu.writeto(wpath, overwrite=True)  # NB overwrite == True is dangerous in production code.  This is big fits to AWS
                 reduced_data_size = hdu.data.size
+                
+                #print('***** Reduced data size, dtype:  ', reduced_data_size, hdu.data.dtype, hdu.header['BITPIX'], hdu.header['NAXIS1'])
+
                 wpath = paths['red_path'] + paths['red_name01_lcl']    #This name is convienent for local sorting
+
                 hdu.writeto(wpath, overwrite=True) #Bigfit reduced
+                #This was in camera after reduce and it had a race condition.
+  
+                if hdu.header['OBSTYPE'].lower() in ('bias', 'dark', 'screenflat', 'skyflat'):
+                    hdu.writeto(paths['cal_path'] + paths['cal_name'], overwrite=True)
                 
                 #Will try here to solve
                 if not paths['frame_type'] in ['bias', 'dark', 'flat', 'solar', 'lunar', 'skyflat', 'screen', 'spectrum', 'auto_focus']:
@@ -925,6 +933,7 @@ class Observatory:
                         hdu_save = hdu
                         #wpath = 'C:/000ptr_saf/archive/sq01/20210528/reduced/saf-sq01-20210528-00019785-le-w-EX01.fits'
                         time_now = time.time()  #This should be more accurately defined earlier in the header
+                        #NB NB The following needs better bin management
                         solve = platesolve.platesolve(wpath, 1.067)     #0.5478)
                         print("PW Solves: " ,solve['ra_j2000_hours'], solve['dec_j2000_degrees'])
                         img = fits.open(wpath, mode='update', ignore_missing_end=True)
@@ -959,7 +968,7 @@ class Observatory:
                             
                         # g_dev['mnt'].set_last_reference( solve['ra_j2000_Second phase of AF now.hours'], solve['dec_j2000_degrees'], time_now)
                     except:
-                       print(wpath, "  was not solved, marking to skip in future, sorry!")
+                       print('Image:  ',wpath[-24:-5], " did not solve; this is usually OK.")
                        img = fits.open(wpath, mode='update', ignore_missing_end=True)
                        hdr = img[0].header
                        hdr['NO-SOLVE'] = True
@@ -1170,7 +1179,7 @@ class Observatory:
                 #     hdu1 = None
                 # except:
                 #     pass
-                print("\nReduction completed.")
+                #print("\nReduction completed.")
                 g_dev['obs'].send_to_user("An image reduction has completed.", p_level='INFO')
                 self.reduce_queue.task_done()
             else:

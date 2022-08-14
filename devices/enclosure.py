@@ -881,18 +881,25 @@ class Enclosure:
             self.dome_homed = True    #g_dev['events']['Cool Down, Open']  <=
         elif ((g_dev['events']['Cool Down, Open']  <= ephem_now < g_dev['events']['Observing Ends']) and \
                g_dev['enc'].mode == 'Automatic') and not (g_dev['ocn'].wx_hold or g_dev['ocn'].clamp_latch):
-            if self.status_string in ['Closed']:
-                print("Entering Guarded open, Expect slew opposite Sun")
-                self.guarded_open()
+            try:
+                if self.status_string in ['Closed']:   #Fails at SRO, attriute not set. 20220806 wer
+                #****************************NB NB NB For SRO we have no control so just observe and skip all this logic
+                    print("Entering Guarded open, Expect slew opposite Sun")
+                    self.guarded_open()
+            except:
+                pass
             self.dome_opened = True
             self.dome_homed = True
             #if _redis: g_dev['redis'].set('Enc Auto Opened', True, ex= 600)   # Unused
-            if self.status_string in ['Open'] and ephem_now < g_dev['events']['End Eve Sky Flats']:
-                if self.is_dome:
-                    self.enclosure.SlewToAzimuth(az_opposite_sun)
-                    print("Slewing Opposite Sun")
-                    g_dev['obs'].send_to_user("Dome slewing opposite the Solar azimuth", p_level='INFO')
-                time.sleep(5)
+            try:
+                if self.status_string in ['Open'] and ephem_now < g_dev['events']['End Eve Sky Flats']:
+                    if self.is_dome:
+                        self.enclosure.SlewToAzimuth(az_opposite_sun)
+                        print("Slewing Opposite Sun")
+                        g_dev['obs'].send_to_user("Dome slewing opposite the Solar azimuth", p_level='INFO')
+                    time.sleep(5)
+            except:
+                pass
         #THIS should be the ultimate backup to force a close
         elif ephem_now >=  g_dev['events']['Civil Dawn']:  #sunrise + 45/1440:
             #WE are now outside the observing window, so Sun is up!!!
@@ -909,10 +916,15 @@ class Enclosure:
                 else:
                     self.state = 'Automatic Daytime normally Closed the ' + shutter_str
                 try:
-                    if self.status_string in ['Open']:
-                        self.enclosure.CloseShutter()
-                    self.dome_opened = False
-                    self.dome_homed = True
+                   try:
+                       if self.status_string in ['Open']:
+                           self.enclosure.CloseShutter()
+                   except:
+                       pass
+                           
+                           
+                   self.dome_opened = False
+                   self.dome_homed = True
                    # print("Daytime Close issued to the " + shutter_str  + "   No longer following Mount.")
                 except:
                     print("Shutter Failed to close at Civil Dawn.")
