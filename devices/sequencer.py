@@ -122,7 +122,7 @@ def ra_dec_fix_hd(ra, dec):
     if ra >= 24:
         ra -= 24
     if ra < 0:
-        ra = 24
+        ra += 24
     return ra, dec
 
 class Sequencer:
@@ -629,6 +629,7 @@ class Sequencer:
             left_to_do = 0
             ended = False
             #  NB NB NB Any mosaic larger than +SQ should be specified in degrees and be square
+            #  NB NB NB NB this is the source of a big error$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$!!!! WER 20220814
             for exposure in block['project']['exposures']:
                 multiplex = 0
                 if exposure['area'] in ['300', '300%', 300, '220', '220%', 220, '150', '150%', 150, '250', '250%', 250]:
@@ -745,31 +746,30 @@ class Sequencer:
                             pitch = 0.1875
                             
                     elif exposure['area'] in ['600', '600%', '4x4d', '4x4']:
-                        offset = [(0,0), (0.4641, 0), (0.4461, 0.7334), (-0.4461, 0.7334), (-0.4461, 0), (-0.4461, -0.7334), \
-                                  (0.4461, -0.7334), (1.335, -0.7334), (1.335, 0), (1.335, 0.7334), (1.335, 1.4667), \
-                                  (.4461, 1.4667), (-0.4461, 1.4667), (-1.335, 1.4667), (-1.335, 0.7334), (-1.335, -0.0), \
-                                  (-1.335, -0.7334), (1.335, -1.4667), (-0.4461, -1.4467), (0.4461, -1.4467), (1.335, -1.4667)]
+                        offset = [(0,0), (-1, 0), (-1, 0.9) (-1, 1.8), (0, 1.8), (1, 1.8), (2, 0.9), (1, 0.9), (0, 0.9), \
+                                  (2, 0), (1, 0), (1, -0.9), (0, -0.9), (-1, -0.9), (-1, -1.8), (0, -1.8), (1, -1.8)]
+                                 #((2, -1,8), (2, -0.9), (2, 1.8))  #  Dead areas for star fill-in.
                         pitch = -1  #A signal to do something special.  ##'600', '600%', 600, 
-                        offset = [(0.5, 0.5),
-                                  (-0.5, 0.5),
-                                  (-1.5, 0.5),
-                                  (-1.5, -0.5),
-                                  (-0.5, -0.5),
-                                  (0.5, -0.5),
-                                  (1.5, -0.5 ),
-                                  (1.5, 0.5),
-                                  (1.5, 1.5),
-                                  (0.5 , 1.5),
-                                  (-0.5, 1.5),
-                                  (-1.5, 1.5),
-                                  (-1.5, 0.5),
-                                  (1.5, -0.5),
-                                  (-1.5, -1.5),
-                                  (-0.5, -1.5),
-                                  (0.5, -1.5),
-                                  (1.5, -1.5)] #Fifteen mosaic quadrants 36 x 24mm chip
-                        if exposure['area'] in ['600', '600%', 600]:
-                            pitch = 0.125
+                        # offset = [(0.5, 0.5),
+                        #           (-0.5, 0.5),
+                        #           (-1.5, 0.5),
+                        #           (-1.5, -0.5),
+                        #           (-0.5, -0.5),
+                        #           (0.5, -0.5),
+                        #           (1.5, -0.5 ),
+                        #           (1.5, 0.5),
+                        #           (1.5, 1.5),
+                        #           (0.5 , 1.5),
+                        #           (-0.5, 1.5),
+                        #           (-1.5, 1.5),
+                        #           (-1.5, 0.5),
+                        #           (1.5, -0.5),
+                        #           (-1.5, -1.5),
+                        #           (-0.5, -1.5),
+                        #           (0.5, -1.5),
+                        #           (1.5, -1.5)] #Fifteen mosaic quadrants 36 x 24mm chip
+                        # if exposure['area'] in ['600', '600%', 600]:
+                        #     pitch = 0.125
 
                         if exposure['area'] in ['450', '450%', 450]:
                             pitch = 0.250
@@ -801,7 +801,7 @@ class Sequencer:
                         if pitch == -1:
                             #Note positive offset means a negative displacement in RA for spiral to wrap CCW.
                             #Note offsets are absolute degrees.
-                            d_ra = -displacement[0]
+                            d_ra = -displacement[0]/15.
                             d_dec = displacement[1]
                         else:
                             d_ra = displacement[0]*(pitch)*(x_field_deg/15.)  # 0.764243 deg = 0.0509496 Hours  These and pixscale should be computed in config.

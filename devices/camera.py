@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+
 """
 Created on Tue Apr 20 22:19:25 2021
 
@@ -1326,8 +1326,12 @@ class Camera:
                         hdu.header['CCDSTEMP'] = (round(self.camera.SetCCDTemperature, 3), '[deg C] CCD set temperature')
                         hdu.header['CCDATEMP'] = (round(self.camera.CCDTemperature, 3), '[deg C] CCD actual temperature')
                     hdu.header['COOLERON'] = self._cooler_on()
-                    hdu.header['INSTRUME'] = (self.camera_model, 'Instrument used')
-                    hdu.header['CAMNAME']  = (self.alias, 'Name of camera')
+                    hdu.header['SITEID'] = self.config['site_id']
+                    hdu.header['TELID'] = self.config['mount']['mount1']['tel_id']
+                    hdu.header['PROPID'] = 'ptr-' + self.config['site_id'] + '-001-0001'
+                    hdu.header['BLKUID']   = ('1234567890', 'Just a placeholder right now. WER')
+                    hdu.header['INSTRUME'] = (self.alias, 'Name of camera')
+                    hdu.header['CAMNAME']  = (self.camera_model, 'Instrument used')
                     hdu.header['DETECTOR'] = (self.config['camera'][self.name]['detector'], 'Name of camera detector')
                     hdu.header['CAMMANUF'] = (self.config['camera'][self.name]['manufacturer'], 'Name of camera manufacturer')
                     hdu.header['GAIN']     = (self.config['camera'][self.name]['settings']['reference_gain'][self.camera.BinX - 1], '[e-/ADU] Pixel gain')
@@ -1536,7 +1540,8 @@ class Camera:
                     hdu.header['IMGAREA' ] = opt['area']
                     hdu.header['XORGSUBF'] = self.camera_start_x    #This makes little sense to fix...  NB ALL NEEDS TO COME FROM CONFIG!!
                     hdu.header['YORGSUBF'] = self.camera_start_y
-                    #hdu.header['BLKUID']   = ('None', 'Group type')
+
+                    
                     #hdu.header['BLKSDATE'] = ('None', 'Group unique ID
 
                     try:
