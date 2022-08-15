@@ -79,7 +79,7 @@
 					"model": {"IH": 0.0, "ID": 0.0, "WIH": 0.0, "WID": 0.0, "CH": 0.0, "NP": 0.0, "MA": 0.0, "ME": 0.0, "TF": 0.0, "TX": 0.0, "HCES": 0.0, "HCEC": 0.0, "DCES": 0.0, "DCEC": 0.0}}},
 				"telescope": {
 					"telescope1": {
-						"parent": "mount1", "name": "Main OTA", "desc": "Ceravolo 300mm F4.9/F9 convertable", "telescop": "cvagr-0m30-f9-f4p9-001",
+						"parent": "mount1", "name": "Main OTA", "desc": "Ceravolo 300mm F4.9/F9 convertable", "telescop": "saf1", "ptrtel" : "cvagr-0m30-f9-f4p9-001",
 						"driver": null, "collecting_area": 31808, "obscuration": 0.55, "aperture": 30, "focal_length": 2697, "has_dew_heater": false,
 						"screen_name": "screen1", "focuser_name": "focuser1", "rotator_name": "rotator1", "has_instrument_selector": false,
 						"selector_positions": 1, "instrument names": ["camera1"], "instrument aliases": ["QHY600Mono"],
@@ -137,7 +137,7 @@
 									"parent": "camera_1", "name": "None", "desc": "None", "spectrograph": "None", "driver": "None", "switches": "None"}},
 							"camera": {
 								"camera_1_1": {
-									"parent": "telescope1", "name": "sq002me", "desc": "QHY 600Pro", "service_date": "20211111", "driver": "ASCOM.QHYCCD_CAM2.Camera", 
+									"parent": "telescope1", "name": "sq02", "desc": "QHY 600Pro", "service_date": "20211111", "driver": "ASCOM.QHYCCD_CAM2.Camera", 
 									"detector": "Sony IMX455", "manufacturer": "QHY", "use_file_mode": false, "file_mode_path": "G:/000ptr_saf/archive/sq01/autosaves/",
 									"detsize": "[1:9600, 1:6422]", "ccdsec": "[1:9600, 1:6422]", "biassec": ["[1:24, 1:6388]", "[1:12, 1:3194]", "[1:8, 1:2129]", "[1:6, 1:1597]"],
 									"datasec": ["[25:9600, 1:6388]", "[13:4800, 1:3194]", "[9:3200, 1:2129]", "[7:2400, 1:1597]"],

@@ -1327,10 +1327,12 @@ class Camera:
                         hdu.header['CCDATEMP'] = (round(self.camera.CCDTemperature, 3), '[deg C] CCD actual temperature')
                     hdu.header['COOLERON'] = self._cooler_on()
                     hdu.header['SITEID'] = self.config['site_id'].replace('-','').replace('_','')
-                    hdu.header['TELID'] = self.config['mount']['mount1']['tel_id']
+                    hdu.header['TELID'] = self.config['telescope']['telescope1']['telescop']
+                    hdu.header['PTRTEL'] = self.config['telescope']['telescope1']['ptrtel']
+                    hdu.header['TELESCOP'] = (self.config['telescope']['telescope1']['desc'], 'Name of the telescope')
                     hdu.header['PROPID'] = 'ptr-' + self.config['site_id'] + '-001-0001'
                     hdu.header['BLKUID']   = ('1234567890', 'Just a placeholder right now. WER')
-                    hdu.header['INSTRUME'] = (self.alias, 'Name of camera')
+                    hdu.header['INSTRUME'] = (self.alias, 'Name of camera')                    
                     hdu.header['CAMNAME']  = (self.camera_model, 'Instrument used')
                     hdu.header['DETECTOR'] = (self.config['camera'][self.name]['detector'], 'Name of camera detector')
                     hdu.header['CAMMANUF'] = (self.config['camera'][self.name]['manufacturer'], 'Name of camera manufacturer')
@@ -1405,7 +1407,8 @@ class Camera:
                     if self.pane is not None:
                         hdu.header['MOSAIC'] = (True, 'Is mosaic')
                         hdu.header['PANE'] = self.pane
-                    hdu.header['TELESCOP'] = (self.config['telescope']['telescope1']['desc'], 'Name of the telescope')
+                    
+                    
                     hdu.header['FOCAL']    = (round(float(self.config['telescope']['telescope1']['focal_length']), 2), \
                                               '[mm] Telescope focal length')
                     hdu.header['APR-DIA']  = (round(float(self.config['telescope']['telescope1']['aperture']), 2), \
@@ -1419,17 +1422,23 @@ class Camera:
                     hdu.header['OBJECT']   = (g_dev['mnt'].object, 'Object name')
                     #hdu.header['RA']  = (g_dev['mnt'].current_icrs_ra, '[deg] Telescope right ascension')
                     #hdu.header['DEC'] = (g_dev['mnt'].current_icrs_dec, '[deg] Telescope declination')
-                    hdu.header['RA'] = (ptr_utility.hToH_MS(g_dev['mnt'].current_icrs_ra), '[HH MM SS sss] Telescope right ascension')
-                    hdu.header['DEC'] = (ptr_utility.dToD_MS(g_dev['mnt'].current_icrs_dec), '[sDD MM SS ss] Telescope declination')
-                    hdu.header['TARG-CHK'] = (g_dev['mnt'].current_icrs_ra + g_dev['mnt'].current_icrs_dec, '[deg] Sum of RA and dec')
+                    
+                    ## 16 August 22: MTF - LCO (and many others) currently use decimal degrees for basically everything, so I've updated the fits header for that.
+                    ## ALSO you reported that RA is in degrees, but provided it in hours anyway! I multiplied that by 15
+                    
+                    hdu.header['RA-HMS'] = (ptr_utility.hToH_MS(g_dev['mnt'].current_icrs_ra), '[HH MM SS sss] Telescope right ascension')
+                    hdu.header['DEC-DMS'] = (ptr_utility.dToD_MS(g_dev['mnt'].current_icrs_dec), '[sDD MM SS ss] Telescope declination')
+                    
+                    
+                    hdu.header['TARG-CHK'] = ((g_dev['mnt'].current_icrs_ra * 15) + g_dev['mnt'].current_icrs_dec, '[deg] Sum of RA and dec')
                     hdu.header['CATNAME']  = (g_dev['mnt'].object, 'Catalog object name')
-                    hdu.header['CAT-RA']   = (g_dev['mnt'].current_icrs_ra, '[deg] Catalog RA of object')
+                    hdu.header['CAT-RA']   = (float(g_dev['mnt'].current_icrs_ra) * 15, '[deg] Catalog RA of object')
                     hdu.header['CAT-DEC']  = (g_dev['mnt'].current_icrs_dec, '[deg] Catalog Dec of object')
-                    hdu.header['TARGRA']  = g_dev['mnt'].current_icrs_ra
+                    hdu.header['TARGRA']  = float(g_dev['mnt'].current_icrs_ra) * 15
                     hdu.header['TARGDEC'] = g_dev['mnt'].current_icrs_dec
 
                     hdu.header['SID-TIME'] = (self.pre_mnt[3], '[deg] Sidereal time')
-                    hdu.header['OBJCTRA']  = (self.pre_mnt[1], '[deg] Object RA')
+                    hdu.header['OBJCTRA']  = (float(self.pre_mnt[1])*15, '[deg] Object RA')
                     hdu.header['OBJCTDEC'] = (self.pre_mnt[2], '[deg] Object dec')
                     #hdu.header['OBJCTRA2'] = (self.pre_mnt[1], '[deg] Object RA 2')
                     #hdu.header['OBJCDEC2'] = (self.pre_mnt[2], '[deg] Object dec 2')
@@ -1462,14 +1471,14 @@ class Camera:
                             pass
 
                     #  if gather_status:
-                    hdu.header['MNT-SIDT'] = (avg_mnt['sidereal_time'], '[deg] Mount sidereal time')
-                    hdu.header['MNT-RA']   = (avg_mnt['right_ascension'], '[deg] Mount RA')
+                    hdu.header['MNT-SIDT'] = (avg_mnt['sidereal_time'], '[hrs] Mount sidereal time')
+                    hdu.header['MNT-RA']   = (float(avg_mnt['right_ascension'])*15, '[deg] Mount RA')
                     ha = avg_mnt['sidereal_time'] - avg_mnt['right_ascension']
                     while ha >= 12:
                         ha -= 24.
                     while ha < -12:
                         ha += 24.
-                    hdu.header['MNT-HA']   = (round(ha, 5), '[deg] Average mount hour angle')  #Note these are average mount observed values.
+                    hdu.header['MNT-HA']   = (round(ha, 5), '[hrs] Average mount hour angle')  #Note these are average mount observed values.
                     g_dev['ha'] = round(ha, 5)
                     hdu.header['MNT-DEC']  = (avg_mnt['declination'], '[deg] Average mount declination')
                     hdu.header['MNT-RAV']  = (avg_mnt['tracking_right_ascension_rate'], '[] Mount tracking RA rate')
@@ -1531,10 +1540,10 @@ class Camera:
                     hdu.header['FRAMENUM'] = (int(next_seq), 'Running frame number')                                        
                     # DEH I need to understand these keywords better before writing header comments.
                     if pedastal is not None:
-                        hdu.header['PEDASTAL'] = (-pedastal,  'adu, add this for zero based image.')
+                        hdu.header['PEDESTAL'] = (-pedastal,  'adu, add this for zero based image.')
                         hdu.header['PATCH']    = bi_mean - pedastal    #  A crude value for the central exposure - pedastal    #  A crude value for the central exposure
                     else:
-                        hdu.header['PEDASTAL'] = (0.0, 'Dummy value for a raw image')
+                        hdu.header['PEDESTAL'] = (0.0, 'Dummy value for a raw image')
                         hdu.header['PATCH']    = bi_mean    #  A crude value for the central exposure
                     hdu.header['ERRORVAL'] = 0
                     hdu.header['IMGAREA' ] = opt['area']

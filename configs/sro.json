@@ -75,7 +75,8 @@
 							"model": {"IH": 0.0, "ID": 0.0, "WIH": 0.0, "WID": 0.0, "CH": 0.0, "NP": 0.0, "MA": 0.0, "ME": 0.0, "TF": 0.0, "TX": 0.0, "HCES": 0.0, "HCEC": 0.0, "DCES": 0.0, "DCEC": 0.0}}}},
 						"telescope": {
 							"telescope1": {
-								"parent": "mount1", "name": "Main OTA", "desc": "AP 305mm F3.8 Ricarrdi Honders", "driver": null, "collecting_area": 55381, "obscuration": 24.2,
+								"parent": "mount1", "name": "Main OTA", "desc": "AP 305mm F3.8 Ricarrdi Honders", "telescop": "sro1", "ptrtel" : "cvagr-0m30-f9-f4p9-001",
+								"driver": null, "collecting_area": 55381, "obscuration": 24.2,
 								"aperture": 305, "focal_length": 1160, "has_dew_heater": true, "screen_name": "screen1", "focuser_name": "focuser1",
 								"rotator_name": "rotator1", "has_instrument_selector": false, "selector_positions": 1, "instrument names": ["camera1"],
 								"instrument aliases": ["SBIG16200"], "configuration": {"position1": ["darkslide1", "filter_wheel1", "camera1"]},
@@ -119,7 +120,7 @@
 													"lamp_box1": {
 														"parent": "camera_1", "name": "None", "desc": "None", "spectrograph": "None", "driver": "None", "switches": "None"}},
 													"camera": {
-														"camera_1_1": {"parent": "telescope1", "name": "kb001ms", "desc": "SBIG16200",
+														"camera_1_1": {"parent": "telescope1", "name": "kb01", "desc": "SBIG16200",
 														"service_date": "20211111", "driver": "Maxim.CCDCamera", "detector": "KAF16200",
 														"manufacturer": "On-Semi", "use_file_mode": false, "file_mode_path": "G:/000ptr_saf/archive/sq01/autosaves/",
 														"settings": {"temp_setpoint": -45, "calib_setpoints": [-35, -30, -25, -20, -15, -10],
