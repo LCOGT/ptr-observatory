@@ -89,7 +89,7 @@
 
 			"telescope": {
 				"telescope1": {
-					"parent": "mount1", "name": "Main OTA", "desc": "Planewave CDK 14 F7.2", "telescop": "pwcdk-0m35-f7p2-001", "driver": "None",
+					"parent": "mount1", "name": "Main OTA", "desc": "Planewave CDK 14 F7.2", "telescop": "mrc1", "ptrtel": "pwcdk-0m35-f7p2-001", "driver": "None",
 					"startup_script": null, "recover_script": null, "shutdown_script": null, "collecting_area": 76147, "obscuration": 23.5,
 					"aperture": 356, "f-ratio": 7.2, "focal_length": 2563, "screen_name": "screen1", "focuser_name": "focuser1", "rotator_name": "rotator1",
 					"has_instrument_selector": false, "selector_positions": 1, "instrument names": ["camera_1_1"],
@@ -140,7 +140,7 @@
 								"filter_sky_sort": [15, 3, 14, 8, 13, 11, 12, 6, 7, 10, 2, 1, 0]}}}, 
 								
 						"camera": {
-							"camera_1_1": {"parent": "telescope1", "name": "sq003", "desc": "QHY 600M Pro", "driver": "ASCOM.QHYCCD.Camera", "detector": "Sony IMX455",
+							"camera_1_1": {"parent": "telescope1", "name": "sq03", "desc": "QHY 600M Pro", "driver": "ASCOM.QHYCCD.Camera", "detector": "Sony IMX455",
 							"manufacturer": "QHY", "use_file_mode": false, "file_mode_path": "D:/archive/sq01/maxim/", 
 							"settings": {"temp_setpoint": -25, "calib_setpoints": [-25, -22.5, -20, -17.5], "day_warm": false, "cooler_on": true, "x_start": 0, "y_start": 0,
 							"x_width": 4800, "y_width": 3211, "x_chip": 9576, "y_chip": 6388, "x_trim_offset": 8, "y_trim_offset": 8, "x_bias_start": 9577, "y_bias_start": 6389, 
