@@ -9,7 +9,9 @@ import datetime as datetime
 from datetime import timedelta
 import socket
 import struct
+import sys
 import os
+from os import getcwd
 import shelve
 import math
 from collections import namedtuple
@@ -25,6 +27,7 @@ from pprint import pprint
 #This should be removed or put in a try
 from astropy.utils.iers import conf
 #conf.auto_max_age = None 
+from pathlib import Path
 
 
     
@@ -142,12 +145,24 @@ def az_sort_targets(pSidTime, grid=4):
     
 iso_day = datetime.date.today().isocalendar()
 equinox_years = round((iso_day[0] + ((iso_day[1]-1)*7 + (iso_day[2] ))/365), 2) - 2000
-#C:/Users/obs/Documents/GitHub/ptr-observatory/support_info
+
+## MFitzgerald commented out 15th August 2022. In order to relativise the directories rather than hardcode
+# #C:/Users/obs/Documents/GitHub/ptr-observatory/support_info
+# try:
+#     tycho_cat = open("C:/Users/obs/documents/GitHub/ptr-observatory/support_info/tycho_mag_7.dat", 'r')
+# except:
+#     tycho_cat = open("C:/Users/User/Documents/GitHub/ptr-observatory/support_info/tycho_mag_7.dat", 'r')
+#     #C:\Users\User\Documents\GitHub\ptr-observatory\support_info
+
+# New relative path Tycho opener
+parentPath = Path(getcwd())
+print ("Current Working Directory is: " + str(parentPath))
+#print (str(parentPath) + "\support_info\\tycho_mag_7.dat")
 try:
-    tycho_cat = open("C:/Users/obs/documents/GitHub/ptr-observatory/support_info/tycho_mag_7.dat", 'r')
+    tycho_cat = open(str(parentPath) + "\support_info\\tycho_mag_7.dat", 'r')
 except:
-    tycho_cat = open("C:/Users/User/Documents/GitHub/ptr-observatory/support_info/tycho_mag_7.dat", 'r')
-    #C:\Users\User\Documents\GitHub\ptr-observatory\support_info
+    print ("Tycho Catalogue failed to open")
+
 tycho_tuple = []
 count = 0
 for line in tycho_cat:
@@ -164,12 +179,24 @@ for line in tycho_cat:
 tycho_cat.close()
 tycho_tuple.sort()
 
+
+
+
 #Run and set tpt_tuple to a grid.
 
+## MFitzgerald commented out 15th August 2022. In order to relativise the directories rather than hardcode
+# try:
+#     tpt_perfect = open("C:/Users/obs/documents/GitHub/ptr-observatory/processing/TPOINT/perfct.dat", 'r')
+# except:
+#     tpt_perfect = open("C:/Users/User/documents/GitHub/ptr-observatory/processing/TPOINT/perfct.dat", 'r')
+    
 try:
-    tpt_perfect = open("C:/Users/obs/documents/GitHub/ptr-observatory/processing/TPOINT/perfct.dat", 'r')
+    tpt_perfect = open(str(parentPath) + "\processing\\TPOINT\\perfct.dat", 'r')    
 except:
-    tpt_perfect = open("C:/Users/User/documents/GitHub/ptr-observatory/processing/TPOINT/perfct.dat", 'r')
+    print("TPoint catalogue failed to open ")    
+
+
+
 tpt_tuple1 = []
 count = 0
 toss = tpt_perfect.readline()
@@ -196,7 +223,6 @@ tpt_tuple = []
 for entry in tpt_tuple1:
     tpt_tuple.append(entry[1])
 #print(tpt_tuple)
-    
     
 if __name__ == '__main__':
     print (len(az_sort_targets(17)))
