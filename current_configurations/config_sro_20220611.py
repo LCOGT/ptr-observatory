@@ -11,7 +11,7 @@ Created on Fri Feb 07,  11:57:41 2020
 #234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678
 import json
 import time
-import ptr_events
+#import ptr_events
 #from pprint import pprint
 
 #  NB NB  Json is not bi-directional with tuples (), use lists [], nested if tuples as needed, instead.
@@ -514,6 +514,9 @@ site_config = {
     },
 }
     
+with open("sample.json", "w") as outfile:
+    json.dump(site_config, outfile)
+    
 def linearize_unihedron(uni_value):
     #  Based on 20180811 data   --- Highly suspect.  Need to re-do 20210807
     uni_value = float(uni_value)
@@ -769,6 +772,8 @@ def get_enc_status(g_dev=None):
     else:
         pass
     #breakpoint()     #  Debug bad place.
+    
+    
 if __name__ == '__main__':
     j_dump = json.dumps(site_config)
     site_unjasoned = json.loads(j_dump)

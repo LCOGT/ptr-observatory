@@ -1326,7 +1326,7 @@ class Camera:
                         hdu.header['CCDSTEMP'] = (round(self.camera.SetCCDTemperature, 3), '[deg C] CCD set temperature')
                         hdu.header['CCDATEMP'] = (round(self.camera.CCDTemperature, 3), '[deg C] CCD actual temperature')
                     hdu.header['COOLERON'] = self._cooler_on()
-                    hdu.header['SITEID'] = self.config['site_id']
+                    hdu.header['SITEID'] = self.config['site_id'].replace('-','').replace('_','')
                     hdu.header['TELID'] = self.config['mount']['mount1']['tel_id']
                     hdu.header['PROPID'] = 'ptr-' + self.config['site_id'] + '-001-0001'
                     hdu.header['BLKUID']   = ('1234567890', 'Just a placeholder right now. WER')
