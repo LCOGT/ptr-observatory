@@ -12,7 +12,7 @@ NB NB NB  If we have one config file then paths need to change depending upon wh
 #2345678901234567890123456789012345678901234567890123456789012345678901234567890
 import json
 import time
-import ptr_events
+#import ptr_events
 #from pprint import pprint
 
 
@@ -553,7 +553,10 @@ site_config = {
 }
 get_ocn_status = None   # NB these are placeholders for site specific routines for in a config file
 get_enc_status = None
- 
+
+with open("sample.json", "w") as outfile:
+    json.dump(site_config, outfile)
+
 if __name__ == '__main__':
     j_dump = json.dumps(site_config)
     site_unjasoned = json.loads(j_dump)
