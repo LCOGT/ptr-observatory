@@ -1319,12 +1319,12 @@ class Camera:
                     hdu.header['RDOUTSP'] = (self.config['camera'][self.name]['settings']['readout_speed'], '[FPS] Readout speed')
                     if self.maxim:
 
-                        hdu.header['CCDSTEMP'] = (round(self.camera.TemperatureSetpoint, 3), '[deg C] CCD set temperature')
-                        hdu.header['CCDATEMP'] = (round(self.camera.Temperature, 3), '[deg C] CCD actual temperature')
+                        hdu.header['CCDSTEMP'] = (round(self.camera.TemperatureSetpoint, 3), '[C] CCD set temperature')
+                        hdu.header['CCDATEMP'] = (round(self.camera.Temperature, 3), '[C] CCD actual temperature')
                         
                     if self.ascom:
-                        hdu.header['CCDSTEMP'] = (round(self.camera.SetCCDTemperature, 3), '[deg C] CCD set temperature')
-                        hdu.header['CCDATEMP'] = (round(self.camera.CCDTemperature, 3), '[deg C] CCD actual temperature')
+                        hdu.header['CCDSTEMP'] = (round(self.camera.SetCCDTemperature, 3), '[C] CCD set temperature')
+                        hdu.header['CCDATEMP'] = (round(self.camera.CCDTemperature, 3), '[C] CCD actual temperature')
                     hdu.header['COOLERON'] = self._cooler_on()
                     hdu.header['SITEID'] = self.config['site_id'].replace('-','').replace('_','')
                     hdu.header['TELID'] = self.config['telescope']['telescope1']['telescop']
@@ -1420,12 +1420,13 @@ class Camera:
                     hdu.header['HEIGHT'] = (round(float(self.config['elevation']), 2), '[m] Altitude of Telescope above sea level')
                     hdu.header['MPC-CODE'] = (self.config['mpc_code'], 'Site code')       # This is made up for now.
                     hdu.header['OBJECT']   = (g_dev['mnt'].object, 'Object name')
-                    #hdu.header['RA']  = (g_dev['mnt'].current_icrs_ra, '[deg] Telescope right ascension')
-                    #hdu.header['DEC'] = (g_dev['mnt'].current_icrs_dec, '[deg] Telescope declination')
+                    
                     
                     ## 16 August 22: MTF - LCO (and many others) currently use decimal degrees for basically everything, so I've updated the fits header for that.
                     ## ALSO you reported that RA is in degrees, but provided it in hours anyway! I multiplied that by 15
-                    
+                    hdu.header['RA']  = (float(g_dev['mnt'].current_icrs_ra) * 15, '[deg] Telescope right ascension')
+                    hdu.header['DEC'] = (g_dev['mnt'].current_icrs_dec, '[deg] Telescope declination')
+                    hdu.header['RAhrs']  = (g_dev['mnt'].current_icrs_ra, '[hrs] Telescope right ascension')
                     hdu.header['RA-HMS'] = (ptr_utility.hToH_MS(g_dev['mnt'].current_icrs_ra), '[HH MM SS sss] Telescope right ascension')
                     hdu.header['DEC-DMS'] = (ptr_utility.dToD_MS(g_dev['mnt'].current_icrs_dec), '[sDD MM SS ss] Telescope declination')
                     
@@ -1516,14 +1517,14 @@ class Camera:
                     hdu.header['ROTMOVNG'] = (avg_rot[2], 'Rotator is moving')
                     hdu.header['FOCUS'] = (self.config['focuser']['focuser1']['name'], 'Focuser name')
                     hdu.header['FOCUSPOS'] = (avg_foc[1], '[um] Focuser position')
-                    hdu.header['FOCUSTMP'] = (avg_foc[2], '[deg C] Focuser temperature')
+                    hdu.header['FOCUSTMP'] = (avg_foc[2], '[C] Focuser temperature')
                     hdu.header['FOCUSMOV'] = (avg_foc[3], 'Focuser is moving')
                     
                     hdu.header['WXSTATE'] = (g_dev['ocn'].wx_is_ok, 'Weather system state')
-                    hdu.header['SKY-TEMP'] = (avg_ocn[1], '[deg C] Sky temperature')
-                    hdu.header['AIR-TEMP'] = (avg_ocn[2], '[deg C] External temperature')
+                    hdu.header['SKY-TEMP'] = (avg_ocn[1], '[C] Sky temperature')
+                    hdu.header['AIR-TEMP'] = (avg_ocn[2], '[C] External temperature')
                     hdu.header['HUMIDITY'] = (avg_ocn[3], '[%] Percentage humidity')
-                    hdu.header['DEWPOINT'] = (avg_ocn[4], '[deg C] Dew point')
+                    hdu.header['DEWPOINT'] = (avg_ocn[4], '[C] Dew point')
                     hdu.header['WINDSPEE'] = (avg_ocn[5], '[km/h] Wind speed')
                     hdu.header['PRESSURE'] = (avg_ocn[6], '[mbar] Atmospheric pressure')
                     hdu.header['CALC-LUX'] = (avg_ocn[7], '[mag/arcsec^2] Expected sky brightness')
