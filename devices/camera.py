@@ -1423,10 +1423,10 @@ class Camera:
                     hdu.header['MPC-CODE'] = (self.config['mpc_code'], 'Site code')       # This is made up for now.
                     
                     if g_dev['mnt'].object == "Unspecified":
-                        RA = g_dev['mnt'].current_icrs_ra
-                        DEC = g_dev['mnt'].current_icrs_dec
-                        RAstring = f'{RA:.2f}'.replace('.','h')
-                        DECstring = f'{DEC:.2f}'.replace('-','n').replace('.','d')
+                        RAtemp = g_dev['mnt'].current_icrs_ra
+                        DECtemp = g_dev['mnt'].current_icrs_dec
+                        RAstring = f'{RAtemp:.2f}'.replace('.','h')
+                        DECstring = f'{DECtemp:.2f}'.replace('-','n').replace('.','d')
                         hdu.header['OBJECT'] = RAstring + "ra" + DECstring + "dec"
                     else:
                         hdu.header['OBJECT']   = (g_dev['mnt'].object, 'Object name')
