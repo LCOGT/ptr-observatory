@@ -53,6 +53,7 @@ QHY600         AstroImaging Equipment
 #site_name = 'mrc'    #NB These must be unique across all of PTR. Pre-pend with airport code if needed: 'sba_wmdo'
 site_name = input('What site am I running at?\n') 
 
+
 #print (site_name)
 
 # THIS BIT OF CODE DUMPS AN OLD CONFIG FILE TO A NEW JSON... where    
@@ -60,6 +61,7 @@ site_name = input('What site am I running at?\n')
 #     json.dump(sitegoog, outfile)
 
 try:
+
     with open("configs\\" +str(site_name) + '.json', 'r') as f:
       site_config = json.load(f)
 except:

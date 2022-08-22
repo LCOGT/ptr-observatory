@@ -49,7 +49,7 @@ import httplib2
 from auto_stretch.stretch import Stretch
 import socket
 import ptr_events
-import config
+#import config
 
 # import device classes:
 from devices.camera import Camera

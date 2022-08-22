@@ -1040,6 +1040,81 @@ class Sequencer:
         Non photometric shutters need longer exposure times.
         Note with alt-az mount we could get very near the zenith zone.
         Note we want Moon at least 30 degrees away
+        
+        20220821  New try at this code
+        Set up parameters for the site, camera, etc.
+        set up 'end-time'.  Calling into this happens elesewhere at the prescribed start time
+        Pick forward or reverse filter list depemnding on Eve or Morn flats. -- "the pop-list"
+        flat count = 3
+        scale = 1, used to drive exposure to ~32500ADU That is the target_flat value
+        prior scale = 1  When changing filters apply this scale so we do not wast time.  This 
+        is intended to fix the problem the gain estimates are wrong.
+        while len(pop_list) > 0  and ephem.now() < ending: 
+            Get the filter, its 'gain'
+            go the the solar flat spot  (Tel should be there earlier)
+            possibly here if not on flat spot or roof not open:
+                time.sleep(10)
+                continue the loop
+                
+                (Note if SRO roof opens late we are likely behinf the 8-ball and we waste time
+                 on the Narrow Band filters.)
+            calculate exposure (for S2 filter if Night, PL filter if morning.)
+            if evening and exposure > 180 sec sky is too dark for that filter so:
+                pop that filter
+                flat count = 3
+                continue the loop
+            if morning and exposure < 1 sec then sky too bright for that filter so:
+                pop tht tilter
+                flat count = 3
+                continue the loop
+                
+            Here I think we need another loop that gets the number of flats or pops 
+            the filter and then continues the above loop.
+            Tries = 6   #basically prevent a spin on one filter from eating up the window.
+            While flatcount > 0 and tries > 0 and ephem.now() < ending:
+                Expose the filter for the computed time.
+                Now lets fix the  convoluted code.
+                The central patch should ideally be ~= target flat, so
+                scale = target_flat/patch, avoiding the obvious divide by zero.  A problem
+                here is if Patch is >> 65,000 we only scale exposure by about half. So it makes
+                some sense to cut it down more so we converge faster.  (Scaling up seems to work
+                on the first pass.)
+                
+                if patch is say 30000 <= patch <= 35000, accept the exposure as a valid flat:
+                    flatcount -= 1
+                    tried =- 1
+                    scale = prior_scale*target_flat/patch    #prior _scale is 1.0
+                elif outside that range
+                    tried =- 1
+                    scale = prior_scale*target_flat/patch as adjusted by the above paragraph.
+                    
+                        Next step is a bit subtle.  if the loop is going to fail because with the flat_count
+                        or tries are exceeded we need to set up prior_scale.  The theory is if the session worked
+                        perfect we end with an effective scale on 1.  But the sky fades very fast so to do this 
+                        right we need somthing more like an average-scale.  However for now, keep it simple.
+                        So the assumption is is the scale for the s2 filter to expose correctly is 0.9 then
+                        the S2 signal is "bright".  So we put that factor into prior scale so when we move to HA
+                        the system will bias the first HA exposure assuming it will be bright for that band as well.
+                        
+                        What I have seen so far is there is variation night to night is the sky transmission in the 
+                        red bands. Add that to the fast chages is skybrighness after SRO opens and ... challenging.
+                        
+                        Note in old code I try recomputing the "gain".  Ideally a better way to do this would be to
+                        create a persisten gain list of say the last 7 successful nights per filter of course and then
+                        seed the above more accurately.  
+                        
+                        Now once we get rid of CCD cameras this becomes a bit easier since min exposure can be 0.0001 sec.
+                        But readout time then starts to dominate.  All fine you say but if we have a full wheel of filters
+                        then haveing only 35 or so minutes is still limiting.
+                        
+                        I am going to push this to Git right now so MFitz can comment. Then i will get back to the pseudo code.
+
+                
+                
+            
+                
+            
+        
 
         """
 
@@ -1055,7 +1130,7 @@ class Sequencer:
             bin_spec = self.config['camera']['camera_1_1']['settings']['flat_bin_spec']
         except:
             pass
-        exp_time = min_exposure # added 20220207 WER
+        exp_time = min_exposure # added 20220207 WER  0.2 sec for SRO
         #  NB Sometime, try 2:2 binning and interpolate a 1:1 flat.  This might run a lot faster.
         if flat_count < 1: flat_count = 1
         #  Pick up list of filters is sky flat order of lowest to highest transparency.
@@ -1109,10 +1184,10 @@ class Sequencer:
                     exp_time = prior_scale*scale*target_flat/(collecting_area*sky_lux*float(g_dev['fil'].filter_data[current_filter][3]))  #g_dev['ocn'].calc_HSI_lux)  #meas_sky_lux)
                     print('Ex:  ', exp_time, scale, prior_scale, sky_lux, float(g_dev['fil'].filter_data[current_filter][3]))
 
-                    if evening and exp_time > 400:
+                    if evening and exp_time > 180:
                         #exp_time = 60    #Live with this limit.  Basically started too late
-                        print('Break because proposed evening exposure > 60 seconds:  ', exp_time)
-                        g_dev['obs'].send_to_user('Try next filter because proposed  flat exposure > 60 seconds.', p_level='INFO')
+                        print('Break because proposed evening exposure > 180 seconds:  ', exp_time)
+                        g_dev['obs'].send_to_user('Try next filter because proposed  flat exposure > 180 seconds.', p_level='INFO')
                         pop_list.pop(0)
                         break
                     if exp_time < min_exposure:   #NB it is too bright, should consider a delay here.
