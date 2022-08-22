@@ -1354,15 +1354,17 @@ class Camera:
                     hdu.header['JD-START'] = (Time(self.t2 , format='unix').jd, '[UTC days] Julian Date at start of exposure')
                     #hdu.header['JD-HELIO'] = 'bogus'       # Heliocentric Julian Date at exposure midpoint
                     hdu.header['OBSTYPE'] = (frame_type.upper(), 'Observation type')   #This report is fixed and it should vary...NEEDS FIXING!
+                    hdu.header['IMAGETYP'] = (frame_type.upper(), 'Observation type')
                     hdu.header['EXPTIME']  = (exposure_time, '[s] Requested exposure length')   # This is the exposure in seconds specified by the user
                     hdu.header['BUNIT']    = 'adu'
                     hdu.header['DATE-OBS'] = datetime.datetime.isoformat(datetime.datetime.utcfromtimestamp(self.t2))
                     hdu.header['EXPTIME']  = exposure_time   #This is the exposure in seconds specified by the user
                     hdu.header['EXPOSURE'] = exposure_time   #Ideally this needs to be calculated from actual times
-                    hdu.header['FILTER ']  = self.current_filter  # NB this should read from the wheel!
-                    hdu.header['FILTEROF'] = self.current_offset
+                    #hdu.header['FILTER ']  = self.current_filter  # NB this should read from the wheel!
+                    #hdu.header['FILTEROF'] = self.current_offset
                     #hdu.header['EXPOSURE'] = (self.t?-self.t2, '[s] Actual exposure length')   # Calculated from actual times
                     hdu.header['FILTER']  = (self.current_filter, 'Filter type')  # NB this should read from the wheel!
+
                     hdu.header['FILTEROF'] = (self.current_offset, 'Filer offset')
                     hdu.header['FILTRNUM'] = ('PTR_ADON_HA_0023',  'An index into a DB')  #Get a number from the hardware or via Maxim.  NB NB why not cwl and BW instead, plus P
                     if g_dev['scr'] is not None and frame_type == 'screenflat':
@@ -1419,7 +1421,15 @@ class Camera:
                     hdu.header['LONGITUD'] = (round(float(self.config['longitude']), 6), '[Deg E] Telescope Longitude')
                     hdu.header['HEIGHT'] = (round(float(self.config['elevation']), 2), '[m] Altitude of Telescope above sea level')
                     hdu.header['MPC-CODE'] = (self.config['mpc_code'], 'Site code')       # This is made up for now.
-                    hdu.header['OBJECT']   = (g_dev['mnt'].object, 'Object name')
+                    
+                    if g_dev['mnt'].object == "Unspecified":
+                        RAtemp = g_dev['mnt'].current_icrs_ra
+                        DECtemp = g_dev['mnt'].current_icrs_dec
+                        RAstring = f'{RAtemp:.2f}'.replace('.','h')
+                        DECstring = f'{DECtemp:.2f}'.replace('-','n').replace('.','d')
+                        hdu.header['OBJECT'] = RAstring + "ra" + DECstring + "dec"
+                    else:
+                        hdu.header['OBJECT']   = (g_dev['mnt'].object, 'Object name')
                     
                     
                     ## 16 August 22: MTF - LCO (and many others) currently use decimal degrees for basically everything, so I've updated the fits header for that.
@@ -1452,6 +1462,9 @@ class Camera:
                     hdu.header['OBSNOTE']  = self.hint[0:54]            #Needs to be truncated.
                     if self.maxim:
                         hdu.header['FLIPSTAT'] = 'None'   # This is a maxim camera setup, not a flip status
+                    
+                    
+                    
                     #hdu.header['SEQCOUNT'] = (int(counter), 'Image sequence counter')
                     hdu.header['DITHER']   = (0, '[] Dither')
                     hdu.header['OPERATOR'] = ("WER", 'Site operator')
