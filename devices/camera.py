@@ -1422,7 +1422,7 @@ class Camera:
                     hdu.header['HEIGHT'] = (round(float(self.config['elevation']), 2), '[m] Altitude of Telescope above sea level')
                     hdu.header['MPC-CODE'] = (self.config['mpc_code'], 'Site code')       # This is made up for now.
                     
-                    if g_dev['mnt'].object == "Unspecified":
+                    if g_dev['mnt'].object == "Unspecified" or g_dev['mnt'].object == "empty" :
                         RAtemp = g_dev['mnt'].current_icrs_ra
                         DECtemp = g_dev['mnt'].current_icrs_dec
                         RAstring = f'{RAtemp:.2f}'.replace('.','h')
