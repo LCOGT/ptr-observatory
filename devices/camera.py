@@ -1425,8 +1425,8 @@ class Camera:
                     if g_dev['mnt'].object == "Unspecified" or g_dev['mnt'].object == "empty" :
                         RAtemp = g_dev['mnt'].current_icrs_ra
                         DECtemp = g_dev['mnt'].current_icrs_dec
-                        RAstring = f'{RAtemp:.2f}'.replace('.','h')
-                        DECstring = f'{DECtemp:.2f}'.replace('-','n').replace('.','d')
+                        RAstring = f'{RAtemp:.1f}'.replace('.','h')
+                        DECstring = f'{DECtemp:.1f}'.replace('-','n').replace('.','d')
                         hdu.header['OBJECT'] = RAstring + "ra" + DECstring + "dec"
                         hdu.header['OBJSPECF']= "no"
                     else:
