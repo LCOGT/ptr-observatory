@@ -51,7 +51,7 @@ class Events:
         self.siteElevation =  round(float(self.config['elevation']), 3)
         self.siteRefTemp =  round(float(self.config['reference_ambient']), 2)       #These should be a monthly average data.
         self.siteRefPress =  round(float(self.config['reference_pressure']), 2)
-
+        self.flat_offset = self.config['eve_sky_flat_sunset_offset']    # -35 min for SRO
     ###############################
     ###    Internal Methods    ####
     ###############################
@@ -512,7 +512,7 @@ class Events:
         #     pass
         # finally:
         #     pass
-
+        eve_skyFlatBegin = sunset +  self.flat_offset/1440
         #  NB NB Should add sit time to this report.
         print('Events module reporting for duty. \n')
         print('Ephem date     :    ', dayNow)
@@ -525,32 +525,32 @@ class Events:
         print('Moon phase %   :    ', round(mid_moon_phase, 1), '%\n')
         print("Key events for the evening, presented by the Solar System: \n")
         if self.config['site'] == 'sro':
-            evnt = [('Eve Bias Dark      ', ephem.Date(sunset -125/1440)),
-                    ('End Eve Bias Dark  ', ephem.Date(sunset - 5/1440)),
+            evnt = [('Eve Bias Dark      ', ephem.Date(eve_skyFlatBegin -125/1440)),
+                    ('End Eve Bias Dark  ', ephem.Date(eve_skyFlatBegin - 5/1440)),
                     #('Eve Scrn Flats     ', ephem.Date(beginEveScreenFlats)),
                     #('End Eve Scrn Flats ', ephem.Date(endEveScreenFlats)),
                     ('Sun Set            ', sunset),
-                    ('Ops Window Start   ', ephem.Date(sunset + 1/1440)),  #Enclosure may open.
-                    ('Cool Down, Open    ', ephem.Date(sunset + 2/1440)),
-                    ('Eve Sky Flats      ', ephem.Date(sunset + 3/1440)),
+                    ('Ops Window Start   ', ephem.Date(eve_skyFlatBegin)),  #Enclosure may open.
+                    ('Cool Down, Open    ', ephem.Date(eve_skyFlatBegin)),
+                    ('Eve Sky Flats      ', ephem.Date(eve_skyFlatBegin)),   #  Nominally -35 for SRO
                     ('Civil Dusk         ', civilDusk),
                     ('Naut Dusk          ', nauticalDusk), 
-                    ('End Eve Sky Flats  ', ephem.Date(nauticalDusk + 5 /1440)),
-                    ('Clock & Auto Focus ', ephem.Date(nautDusk_plus_half -7/1440.)),
+                    ('End Eve Sky Flats  ', ephem.Date(nauticalDusk - 10/1440)),
+                    ('Clock & Auto Focus ', ephem.Date(nautDusk_plus_half -12/1440.)),
                     ('Observing Begins   ', ephem.Date(nautDusk_plus_half)),
                     ('Astro Dark         ', astroDark),
                     ('Middle of Night    ', middleNight),
                     ('End Astro Dark     ', astroEnd),
                     ('Observing Ends     ', ephem.Date(nautDawn_minus_half )),
                     ('Naut Dawn          ', nauticalDawn),
-                    ('Morn Sky Flats     ', ephem.Date(nauticalDawn  +15/1440.)),
+                    ('Morn Sky Flats     ', ephem.Date(nauticalDawn + 10/1440.)),
                     ('Civil Dawn         ', civilDawn),
-                    ('End Morn Sky Flats ', ephem.Date(sunrise  - 5/1440.)),
-                    ('Ops Window Closes  ', ephem.Date(sunrise - 2/1440.)),   #Enclosure must close 5 min after sunrise
-                    ('Close and Park     ', ephem.Date(sunrise - 1/1440.)),
+                    ('End Morn Sky Flats ', ephem.Date(sunrise + 15/1440.)),
+                    ('Ops Window Closes  ', ephem.Date(sunrise + 15/1440.)),   #Enclosure must close 5 min after sunrise
+                    ('Close and Park     ', ephem.Date(sunrise + 15/1440.)),
                     ('Sun Rise           ', sunrise),  
-                    ('Morn Bias Dark     ', ephem.Date(sunrise + 5/1440.)),
-                    ('End Morn Bias Dark ', ephem.Date(sunrise + 125/1440.)),        
+                    ('Morn Bias Dark     ', ephem.Date(sunrise + 20/1440.)),
+                    ('End Morn Bias Dark ', ephem.Date(sunrise + 120/1440.)),        
                     ('Prior Moon Rise    ', last_moonrise),
                     ('Prior Moon Transit ', last_moontransit),
                     ('Prior Moon Set     ', last_moonset),

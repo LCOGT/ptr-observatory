@@ -55,9 +55,9 @@
   "reference_pressure": 867.254,
   "site_in_automatic_default": "Automatic",
   "automatic_detail_default": "Enclosure is initially set to Automatic mode.",
-  "auto_eve_bias_dark": false,
-  "auto_eve_sky_flat": false,
-  "eve_sky_flat_sunset_offset": 5,
+  "auto_eve_bias_dark": true,
+  "auto_eve_sky_flat": true,
+  "eve_sky_flat_sunset_offset": -35,
   "auto_morn_sky_flat": true,
   "auto_morn_bias_dark": true,
   "re-calibrate_on_solve": true,
@@ -296,10 +296,10 @@
       "desc": "Optec Gemini",
       "driver": "ASCOM.OptecGemini.Focuser",
       "com_port": "COM9",
-      "reference": 7937,
+      "reference": 7637,
       "ref_temp": 5.06,
       "coef_c": 0,
-      "coef_0": 7937,
+      "coef_0": 7637,
       "coef_date": "202120108",
       "minimum": 0,
       "maximum": 12600,
@@ -395,7 +395,7 @@
               1,
               119
             ],
-            "PhBlue"
+            "PhRed"
           ],
           [
             "PG",
@@ -423,7 +423,7 @@
               0.8,
               97
             ],
-            "PhRed"
+            "PhBlue"
           ],
           [
             "HA",
@@ -521,13 +521,13 @@
           7
         ],
         "filter_sky_sort": [
+          8,
           6,
+          7,
+          3,
           4,
           5,
-          1,
-          2,
-          3,
-          0
+          2
         ]
       }
     }

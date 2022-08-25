@@ -1120,6 +1120,7 @@ class Sequencer:
 
         self.sky_guard = True   #20220409 I think this is obsolete or unused.
         print('Sky Flat sequence Starting, Enclosure PRESUMED Open. Telescope should be on sky flat spot.')
+        breakpoint()
         g_dev['obs'].send_to_user('Sky Flat sequence Starting, Enclosure PRESUMED Open. Telescope should be on sky flat spot.', p_level='INFO')
         evening = not morn
         camera_name = str(self.config['camera']['camera_1_1']['name'])
@@ -1174,6 +1175,7 @@ class Sequencer:
                 #if g_dev['enc'].is_dome:   #Does not apply
                 g_dev['mnt'].slewToSkyFlatAsync()  #FRequently do this to dither.
                 g_dev['obs'].update_status()
+
                 try:
                     try:
                         sky_lux = eval(self.redis_server.get('ocn_status'))['calc_HSI_lux']     #Why Eval, whould have float?

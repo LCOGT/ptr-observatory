@@ -155,6 +155,7 @@ def send_status(obsy, column, status_to_send):
     try:    # 20190926  tHIS STARTED THROWING EXCEPTIONS OCCASIONALLY
         #print("AWS uri:  ", uri)
         #print('Status to be sent:  \n', status, '\n')
+
         payload ={
             "statusType": str(column),
             "status":  status_to_send

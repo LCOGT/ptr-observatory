@@ -85,7 +85,6 @@ class Focuser:
                 self.last_known_focus = self.reference
                 self.last_source = "Focuser__init__  Calculate Comp references Config"
             except:
-                #breakpoint()
                 self.reference = float(self.get_focal_ref())   #need to change to config supplied
                 self.last_known_focus = self.reference
                 print("Focus reference updated from Night Shelf:  ", self.reference)
