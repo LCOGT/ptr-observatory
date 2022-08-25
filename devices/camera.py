@@ -1422,20 +1422,26 @@ class Camera:
                     hdu.header['HEIGHT'] = (round(float(self.config['elevation']), 2), '[m] Altitude of Telescope above sea level')
                     hdu.header['MPC-CODE'] = (self.config['mpc_code'], 'Site code')       # This is made up for now.
                     
-                    if g_dev['mnt'].object == "Unspecified":
+                    if g_dev['mnt'].object == "Unspecified" or g_dev['mnt'].object == "empty" :
                         RAtemp = g_dev['mnt'].current_icrs_ra
                         DECtemp = g_dev['mnt'].current_icrs_dec
-                        RAstring = f'{RAtemp:.2f}'.replace('.','h')
-                        DECstring = f'{DECtemp:.2f}'.replace('-','n').replace('.','d')
+                        RAstring = f'{RAtemp:.1f}'.replace('.','h')
+                        DECstring = f'{DECtemp:.1f}'.replace('-','n').replace('.','d')
                         hdu.header['OBJECT'] = RAstring + "ra" + DECstring + "dec"
+                        hdu.header['OBJSPECF']= "no"
                     else:
                         hdu.header['OBJECT']   = (g_dev['mnt'].object, 'Object name')
+                        hdu.header['OBJSPECF']= "yes"
                     
                     
                     ## 16 August 22: MTF - LCO (and many others) currently use decimal degrees for basically everything, so I've updated the fits header for that.
                     ## ALSO you reported that RA is in degrees, but provided it in hours anyway! I multiplied that by 15
                     hdu.header['RA']  = (float(g_dev['mnt'].current_icrs_ra) * 15, '[deg] Telescope right ascension')
                     hdu.header['DEC'] = (g_dev['mnt'].current_icrs_dec, '[deg] Telescope declination')
+                    
+                    hdu.header['ORIGRA'] = hdu.header['RA']
+                    hdu.header['ORIGDEC'] = hdu.header['DEC']
+                    
                     hdu.header['RAhrs']  = (g_dev['mnt'].current_icrs_ra, '[hrs] Telescope right ascension')
                     hdu.header['RA-HMS'] = (ptr_utility.hToH_MS(g_dev['mnt'].current_icrs_ra), '[HH MM SS sss] Telescope right ascension')
                     hdu.header['DEC-DMS'] = (ptr_utility.dToD_MS(g_dev['mnt'].current_icrs_dec), '[sDD MM SS ss] Telescope declination')
