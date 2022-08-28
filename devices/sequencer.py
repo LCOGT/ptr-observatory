@@ -315,7 +315,7 @@ class Sequencer:
             self.enc_to_skyflat_and_open(enc_status, ocn_status)
 
         elif self.sky_flat_latch and ((events['Eve Sky Flats'] <= ephem_now < events['End Eve Sky Flats'])  \
-               and g_dev['enc'].mode == 'Automatic' and not g_dev['ocn'].wx_hold and \
+               and g_dev['enc'].mode in [ 'Automatic', 'Autonomous'] and not g_dev['ocn'].wx_hold and \
                self.config['auto_eve_sky_flat']):
 
             self.enc_to_skyflat_and_open(enc_status, ocn_status)   #Just in case a Wx hold stopped opening
@@ -331,8 +331,8 @@ class Sequencer:
             blocks = g_dev['obs'].blocks
             projects = g_dev['obs'].projects
             debug = False
-            if enc_status['shutter_status'] in ['Closed', 'closed'] \
-                and ocn_status['hold_duration'] <= 0.1:   #NB
+            if self.config['site'] != 'sro' and  enc_status['shutter_status'] in ['Closed', 'closed'] \
+                and float(ocn_status['hold_duration']) <= 0.1:   #NB   this blockes SR from running 20220826
                 #breakpoint()
                 g_dev['enc'].open_command({}, {})
                 print("Opening dome, will set Synchronize in 10 seconds.")
@@ -1120,11 +1120,11 @@ class Sequencer:
 
         self.sky_guard = True   #20220409 I think this is obsolete or unused.
         print('Sky Flat sequence Starting, Enclosure PRESUMED Open. Telescope should be on sky flat spot.')
-        breakpoint()
+
         g_dev['obs'].send_to_user('Sky Flat sequence Starting, Enclosure PRESUMED Open. Telescope should be on sky flat spot.', p_level='INFO')
         evening = not morn
         camera_name = str(self.config['camera']['camera_1_1']['name'])
-        flat_count = 3 #20220409  Just to speed things up a bit.
+        flat_count = 5
         min_exposure = float(self.config['camera']['camera_1_1']['settings']['min_exposure'])
         bin_spec = '1,1'
         try:
@@ -1132,8 +1132,8 @@ class Sequencer:
         except:
             pass
         exp_time = min_exposure # added 20220207 WER  0.2 sec for SRO
-        #  NB Sometime, try 2:2 binning and interpolate a 1:1 flat.  This might run a lot faster.
-        if flat_count < 1: flat_count = 1
+        
+        
         #  Pick up list of filters is sky flat order of lowest to highest transparency.
         pop_list = self.config['filter_wheel']['filter_wheel1']['settings']['filter_sky_sort'].copy()
 
@@ -1159,7 +1159,7 @@ class Sequencer:
             #req = {'filter': current_filter}
             #opt =  {'filter': current_filter}
 
-            g_dev['fil'].set_number_command(current_filter)
+            g_dev['fil'].set_number_command(current_filter)  #  20220825  NB NB NB Change this to using a list of filter names.
             g_dev['mnt'].slewToSkyFlatAsync()
             target_flat = 30000
             #scale = 1.0    #1.15   #20201121 adjustment
@@ -1186,17 +1186,28 @@ class Sequencer:
                     exp_time = prior_scale*scale*target_flat/(collecting_area*sky_lux*float(g_dev['fil'].filter_data[current_filter][3]))  #g_dev['ocn'].calc_HSI_lux)  #meas_sky_lux)
                     print('Ex:  ', exp_time, scale, prior_scale, sky_lux, float(g_dev['fil'].filter_data[current_filter][3]))
 
-                    if evening and exp_time > 180:
+                    if evening and exp_time > 120:
                         #exp_time = 60    #Live with this limit.  Basically started too late
                         print('Break because proposed evening exposure > 180 seconds:  ', exp_time)
                         g_dev['obs'].send_to_user('Try next filter because proposed  flat exposure > 180 seconds.', p_level='INFO')
                         pop_list.pop(0)
                         break
-                    if exp_time < min_exposure:   #NB it is too bright, should consider a delay here.
+                    if morn and exp_time < min_exposure:
+                        #exp_time = 60    #Live with this limit.  Basically started too late
+                        print('Break because proposed evening exposure > 180 seconds:  ', exp_time)
+                        g_dev['obs'].send_to_user('Try next filter because proposed  flat exposure < min_exposure.', p_level='INFO')
+                        pop_list.pop(0)
+                        break
+                    if evening and exp_time < min_exposure:   #NB it is too bright, should consider a delay here.
                     #**************THIS SHOUD BE A WHILE LOOP! WAITING FOR THE SKY TO GET DARK AND EXP TIME TO BE LONGER********************
-                        print("Too bright, wating 120 seconds.")
-                        g_dev['obs'].send_to_user('Delay 120 seconds to let it get darker.', p_level='INFO')
-                        time.sleep(120)
+                        print("Too bright, wating 180 seconds.")
+                        g_dev['obs'].send_to_user('Delay 180 seconds to let it get darker.', p_level='INFO')
+                        time.sleep(180)
+                    if morn and exp_time > 120 :   #NB it is too bright, should consider a delay here.
+                     #**************THIS SHOUD BE A WHILE LOOP! WAITING FOR THE SKY TO GET DARK AND EXP TIME TO BE LONGER********************
+                        print("Too dim, wating 180 seconds.")
+                        g_dev['obs'].send_to_user('Delay 180 seconds to let it get lighterer.', p_level='INFO')
+                        time.sleep(180)
                         #*****************NB Recompute exposure or otherwise wait
                         exp_time = min_exposure
                     exp_time = round(exp_time, 5)
