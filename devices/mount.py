@@ -179,6 +179,7 @@ class Mount:
         self.name = name
         self.astro_events = astro_events
         g_dev['mnt'] = self
+
         self.site = config['site']
         self.site_path = config['client_path']
         self.config = config
@@ -246,6 +247,7 @@ class Mount:
         #self.site_in_automatic = config['site_in_automatic_default']
         #self.automatic_detail = config['automatic_detail_default']
         self.move_time = 0
+
         try:
             ra1, dec1 = self.get_mount_reference()
             ra2, dec2 = self.get_flip_reference()

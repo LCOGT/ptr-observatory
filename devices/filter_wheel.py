@@ -14,6 +14,9 @@ class FilterWheel:
         g_dev['fil']= self
         self.config = config['filter_wheel']
 
+        pass
+        pass
+        
         self.dual_filter = self.config['filter_wheel1']['dual_wheel']
         self.ip = str(self.config['filter_wheel1']['ip_string'])
         self.filter_data = self.config['filter_wheel1']['settings']['filter_data'][1:]  #  Stips off column heading entry
@@ -56,7 +59,7 @@ class FilterWheel:
             self.filter_offset = self.filter_data[self.filter_reference][2]
         elif type(driver) is list and self.dual_filter:
             '''THIS IS A FAST KLUDGE TO GET MRC@ WORKING, NEED TO VERIFY THE FILTER ORDERING'''
-            
+            breakpoint()
             self.filter_back = win32com.client.Dispatch(driver[0])  #  Closest to Camera
             self.filter_front = win32com.client.Dispatch(driver[1])  #  Closest to Telescope
             self.filter_back.Connected = True
@@ -83,7 +86,7 @@ class FilterWheel:
         elif driver == 'ASCOM.FLI.FilterWheel' and self.dual_filter:  #   == list:
             self.maxim = False
             self.dual = True
-
+            breakpoint()
             #win32com.client.pythoncom.CoInitialize()
             #breakpoint()
             fw0 = win32com.client.Dispatch(driver)  #  Closest to Camera
@@ -179,7 +182,7 @@ class FilterWheel:
             #self.app.TelescopeConnected = True
             #print("Maxim Telescope Connected: ", self.app.TelescopeConnected)
             print('Filter control is via Maxim filter interface.')
-            print("Initial filters reported is:  ", self.filter.Filter, self.filter.GuiderFilter)
+            print("Initial filters reported are:  ", self.filter.Filter, self.filter.GuiderFilter)
             self.maxim = True
             self.ascom = False
             self.dual = True
@@ -353,10 +356,11 @@ class FilterWheel:
         req = command['required_params']
         opt = command['optional_params']
         action = command['action']
-        is_connected = self._maxim_connected()
-        if not is_connected:
-            print("Found filter disconnected, reconnecting!")
-            self.maxim_connect(True)
+        if self.maxim:     #NB NB NB Annoying but maxium sometimes disconnects.
+            is_connected = self._maxim_connected()
+            if not is_connected:
+                print("Found filter disconnected, reconnecting!")
+                self.maxim_connect(True)
         if action == "set_position":
             self.set_position_command(req, opt)
         elif action == "set_name":
@@ -461,7 +465,7 @@ class FilterWheel:
         #print("filter cmd: set_name", req, opt)
 
         try:
-            filter_name = req['filter']
+            filter_name = req['filter_name']
         except:
             try:
                 filter_name = req['filter']
