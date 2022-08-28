@@ -51,7 +51,7 @@ class Events:
         self.siteElevation =  round(float(self.config['elevation']), 3)
         self.siteRefTemp =  round(float(self.config['reference_ambient']), 2)       #These should be a monthly average data.
         self.siteRefPress =  round(float(self.config['reference_pressure']), 2)
-
+        self.flat_offset = self.config['eve_sky_flat_sunset_offset']    # -35 min for SRO
     ###############################
     ###    Internal Methods    ####
     ###############################
@@ -512,7 +512,7 @@ class Events:
         #     pass
         # finally:
         #     pass
-
+        eve_skyFlatBegin = sunset +  self.flat_offset/1440
         #  NB NB Should add sit time to this report.
         print('Events module reporting for duty. \n')
         print('Ephem date     :    ', dayNow)
@@ -525,36 +525,32 @@ class Events:
         print('Moon phase %   :    ', round(mid_moon_phase, 1), '%\n')
         print("Key events for the evening, presented by the Solar System: \n")
         if self.config['site'] == 'sro':
-            evnt = [('Eve Bias Dark      ', ephem.Date(sunset -125/1440)),
-                    ('End Eve Bias Dark  ', ephem.Date(sunset - 5/1440)),
+            evnt = [('Eve Bias Dark      ', ephem.Date(eve_skyFlatBegin -125/1440)),
+                    ('End Eve Bias Dark  ', ephem.Date(eve_skyFlatBegin - 5/1440)),
                     #('Eve Scrn Flats     ', ephem.Date(beginEveScreenFlats)),
                     #('End Eve Scrn Flats ', ephem.Date(endEveScreenFlats)),
-                    ('Ops Window Start   ', ephem.Date(sunset - 1/1440)),  #Enclosure may open.
-                    ('Cool Down, Open    ', ephem.Date(sunset -0.5/1440)),
-                    ('Eve Sky Flats      ', ephem.Date(sunset + 1/1440)),
                     ('Sun Set            ', sunset),
-                    ('End Eve Sky Flats  ', ephem.Date(civilDusk +5 /1440)),
+                    ('Ops Window Start   ', ephem.Date(eve_skyFlatBegin)),  #Enclosure may open.
+                    ('Cool Down, Open    ', ephem.Date(eve_skyFlatBegin)),
+                    ('Eve Sky Flats      ', ephem.Date(eve_skyFlatBegin)),   #  Nominally -35 for SRO
                     ('Civil Dusk         ', civilDusk),
-                    ('Naut Dusk          ', nauticalDusk),               
-                    ('Clock & Auto Focus ', ephem.Date(nauticalDusk + 1/1440.)),
+                    ('Naut Dusk          ', nauticalDusk), 
+                    ('End Eve Sky Flats  ', ephem.Date(nauticalDusk - 10/1440)),
+                    ('Clock & Auto Focus ', ephem.Date(nautDusk_plus_half -12/1440.)),
                     ('Observing Begins   ', ephem.Date(nautDusk_plus_half)),
                     ('Astro Dark         ', astroDark),
                     ('Middle of Night    ', middleNight),
                     ('End Astro Dark     ', astroEnd),
                     ('Observing Ends     ', ephem.Date(nautDawn_minus_half )),
                     ('Naut Dawn          ', nauticalDawn),
+                    ('Morn Sky Flats     ', ephem.Date(nauticalDawn + 10/1440.)),
                     ('Civil Dawn         ', civilDawn),
-                    ('Morn Sky Flats     ', ephem.Date(civilDawn  -5/1440.)),
-                    ('End Morn Sky Flats ', ephem.Date(sunrise  - 5/1440.)),
-                    ('Close and Park     ', ephem.Date(sunrise -2/1440.)),
-                    ('Ops Window Closes  ', ephem.Date(sunrise - 2/1440.)),   #Enclosure must close 5 min after sunrise
-    
-                    ('Morn Bias Dark     ', ephem.Date(sunrise + 5/1440.)),
-                    ('End Morn Bias Dark ', ephem.Date(sunrise + 125/1440.)),
-    
-    
-                    #('End Morn Sky Flats ', ephem.Date(sunrise - 1/1440)),        
-                    ('Sun Rise           ', sunrise),
+                    ('End Morn Sky Flats ', ephem.Date(sunrise + 15/1440.)),
+                    ('Ops Window Closes  ', ephem.Date(sunrise + 15/1440.)),   #Enclosure must close 5 min after sunrise
+                    ('Close and Park     ', ephem.Date(sunrise + 15/1440.)),
+                    ('Sun Rise           ', sunrise),  
+                    ('Morn Bias Dark     ', ephem.Date(sunrise + 20/1440.)),
+                    ('End Morn Bias Dark ', ephem.Date(sunrise + 120/1440.)),        
                     ('Prior Moon Rise    ', last_moonrise),
                     ('Prior Moon Transit ', last_moontransit),
                     ('Prior Moon Set     ', last_moonset),
@@ -563,36 +559,32 @@ class Events:
                     ('Moon Set           ', next_moonset)]           
         else:
             
-            evnt = [('Eve Bias Dark      ', ephem.Date(civilDusk -247/1440)),
-                    ('End Eve Bias Dark  ', ephem.Date(civilDusk - 127/1440)),
+            evnt = [('Eve Bias Dark      ', ephem.Date(sunset -200/1440)),
+                    ('End Eve Bias Dark  ', ephem.Date(sunset - 80/1440)),
                     #('Eve Scrn Flats     ', ephem.Date(beginEveScreenFlats)),
                     #('End Eve Scrn Flats ', ephem.Date(endEveScreenFlats)),
-                    ('Ops Window Start   ', ephem.Date(civilDusk - 126/1440)),  #Enclosure may open.
-                    ('Cool Down, Open    ', ephem.Date(civilDusk - 125/1440)),
-                    ('Eve Sky Flats      ', ephem.Date(civilDusk - 120/1440)),
+                    ('Ops Window Start   ', ephem.Date(sunset - 71/1440)),  #Enclosure may open.
+                    ('Cool Down, Open    ', ephem.Date(sunset - 70/1440)),
+                    ('Eve Sky Flats      ', ephem.Date(sunset - 60/1440)),
                     ('Sun Set            ', sunset),
-                    ('End Eve Sky Flats  ', ephem.Date(civilDusk - 1/1440)),
                     ('Civil Dusk         ', civilDusk),
-                    ('Naut Dusk          ', nauticalDusk),               
-                    ('Clock & Auto Focus ', ephem.Date(nauticalDusk + 1/1440.)),
+                    ('Naut Dusk          ', nauticalDusk), 
+                    ('End Eve Sky Flats  ', ephem.Date(nauticalDusk + 5 /1440)),             
+                    ('Clock & Auto Focus ', ephem.Date(nautDusk_plus_half -7/1440.)),
                     ('Observing Begins   ', ephem.Date(nautDusk_plus_half)),
                     ('Astro Dark         ', astroDark),
                     ('Middle of Night    ', middleNight),
                     ('End Astro Dark     ', astroEnd),
                     ('Observing Ends     ', ephem.Date(nautDawn_minus_half )),
                     ('Naut Dawn          ', nauticalDawn),
+                    ('Morn Sky Flats     ', ephem.Date(nauticalDawn  +15/1440.)),
                     ('Civil Dawn         ', civilDawn),
-                    ('Morn Sky Flats     ', ephem.Date(civilDawn  + 1/1440.)),
-                    ('End Morn Sky Flats ', ephem.Date(civilDawn  + 76/1440.)),
-                    ('Close and Park     ', ephem.Date(civilDawn  + 77/1440.)),
-                    ('Ops Window Closes  ', ephem.Date(civilDawn  + 79/1440.)),   #Enclosure must close 5 min after sunrise
-    
-                    ('Morn Bias Dark     ', ephem.Date(civilDawn + 81/1440.)),
-                    ('End Morn Bias Dark ', ephem.Date(civilDawn + 171/1440.)),
-    
-    
-                    #('End Morn Sky Flats ', ephem.Date(sunrise - 1/1440)),        
                     ('Sun Rise           ', sunrise),
+                    ('End Morn Sky Flats ', ephem.Date(sunrise + 60/1440.)),
+                    ('Ops Window Closes  ', ephem.Date(civilDawn  + 61/1440.)),   #Enclosure must close 5 min after sunrise
+                    ('Close and Park     ', ephem.Date(sunrise + 66/1440.)),
+                    ('Morn Bias Dark     ', ephem.Date(civilDawn + 68/1440.)),
+                    ('End Morn Bias Dark ', ephem.Date(civilDawn + 188/1440.)),
                     ('Prior Moon Rise    ', last_moonrise),
                     ('Prior Moon Transit ', last_moontransit),
                     ('Prior Moon Set     ', last_moonset),

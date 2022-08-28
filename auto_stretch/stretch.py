@@ -91,7 +91,10 @@ class Stretch:
         """
 
         # Normalize the data
-        d = data / np.max(data)
+        try:
+            d = data / np.max(data)
+        except:
+            d = data    #NB this avoids div by 0 is image is a very flat bias
 
         # Obtain the stretch parameters
         stretch_params = self._get_stretch_parameters(d)
