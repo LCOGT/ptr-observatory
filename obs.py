@@ -175,6 +175,7 @@ class Observatory:
     def __init__(self, name, config):
         # This is the ayneclass through which we can make authenticated api calls.
         self.api = API_calls()
+        
         self.command_interval = 3   # seconds between polls for new commands
         self.status_interval = 4    # NOTE THESE IMPLEMENTED AS A DELTA NOT A RATE.
 
