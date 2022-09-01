@@ -512,7 +512,7 @@ class Events:
         #     pass
         # finally:
         #     pass
-        eve_skyFlatBegin = sunset +  self.flat_offset/1440
+        eve_skyFlatBegin = sunset +  -32.5/1440  #  NB NB this should come from sro.jscon
         #  NB NB Should add sit time to this report.
         print('Events module reporting for duty. \n')
         print('Ephem date     :    ', dayNow)
