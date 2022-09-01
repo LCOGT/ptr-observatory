@@ -53,7 +53,7 @@ def dome_adjust_rah_decd(hah=0.01, dec=90, flip='Looking West', r=60, offe=21, o
 
     ## NB NB NB offsets can be switched to prefer one OTA for dome positioning
 
-    lat = 36.18*DTOR     #saf
+    lat = 35.554298*DTOR     #saf
     rd = 60
     xm = 0
     ym = 0
@@ -101,7 +101,7 @@ def dome_adjust_rah_decd(hah=0.01, dec=90, flip='Looking West', r=60, offe=21, o
         
     
     print(a*RTOD, e*RTOD)
-    print(a*RTOD, e*RTOD)
+    return round(a*RTOD, 2)
     
   
 #fornpush
