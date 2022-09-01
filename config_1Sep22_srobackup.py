@@ -17,10 +17,6 @@ import ptr_events
 #  NB NB  Json is not bi-directional with tuples (), use lists [], nested if tuples as needed, instead.
 #  NB NB  My convention is if a value is naturally a float I add a decimal point even to 0.
 g_dev = None
-
- # bolt = ['u', 'g', 'r', 'i', 'zs', 'B', 'V', 'EXO', 'w', 'O3', 'Ha', 'S', 'Cr', 'NIR']
- # print(len(bolt))
- 
 site_name = 'sro'
 
                     #\\192.168.1.57\SRO10-Roof  r:
@@ -78,10 +74,10 @@ site_config = {
     'site_in_automatic_default': "Automatic",   #  ["Manual", "Shutdown", "Automatic"]
     'automatic_detail_default': "Enclosure is initially set to Automatic mode.",
     'auto_eve_bias_dark': False,
-    'auto_eve_sky_flat': False,
+    'auto_eve_sky_flat': True,
     'eve_sky_flat_sunset_offset': +5.0,  #  Minutes  neg means before, + after.
     'auto_morn_sky_flat': True,
-    'auto_morn_bias_dark': True,
+    'auto_morn_bias_dark': False,
     're-calibrate_on_solve': True, 
     
     'defaults': {
@@ -182,10 +178,9 @@ site_config = {
     'mount': {
         'mount1': {
             'parent': 'enclosure1',
-            'tel_id': '0m30',
-            'name': 'sropier',
+            'name': 'safpier',
             'hostIP':  '10.0.0.140',     #Can be a name if local DNS recognizes it.
-            'hostname':  'sropier',
+            'hostname':  'safpier',
             'desc':  'Planewave L500 AltAz',
             'driver': 'ASCOM.PWI4.Telescope',
             'alignment': 'Equatorial',
@@ -238,8 +233,6 @@ site_config = {
         'telescope1': {
             'parent': 'mount1',
             'name': 'Main OTA',
-            'telescop': 'sro1',
-            'ptrtel': 'cvagr-0m30-f9-f4p9-001',
             'desc':  'AP 305mm F3.8 Ricarrdi Honders',
             'driver': None,                     #  Essentially this device is informational.  It is mostly about the optics.
             'collecting_area': 55381,
@@ -373,12 +366,12 @@ site_config = {
                         
                         #['w',     [0,  0],     0, 72.7, [1.00 ,  72], 'PL'],    #0.   For sequencer autofocus  consider foc or f filter
                         ['focus', [0,  0],     0, 72.7, [1.00 ,  72], 'focus'],    #0.   
-                        ['PL',    [0,  0],     0, 620, [1.00 ,  72], 'PhLum'],    #1.
-                        ['PR',    [1,  1],     0, 170, [1.00 , 119], 'PhBlue'],    #2.
-                        ['PG',    [2,  2],     0, 220, [1.00 , 113], 'PhGreen'],    #3.
-                        ['PB',    [3,  3],     0, 300, [0.80 ,  97], 'PhRed'],    #4.
+                        ['PL',    [0,  0],     0, 72.7, [1.00 ,  72], 'PhLum'],    #1.
+                        ['PR',    [1,  1],     0, 11.0, [1.00 , 119], 'PhBlue'],    #2.
+                        ['PG',    [2,  2],     0, 18.6, [1.00 , 113], 'PhGreen'],    #3.
+                        ['PB',    [3,  3],     0, 42.3, [0.80 ,  97], 'PhRed'],    #4.
                         ['HA',    [4,  4],     0, .400, [5.00 , 200], 'Halpha'],    #5.
-                        ['O3',    [5,  5],     0, 6, [4.00 , 200], 'OIII'],    #6.
+                        ['O3',    [5,  5],     0, 1.84, [4.00 , 200], 'OIII'],    #6.
                         ['S2',    [6,  6],     0, .221, [10.0,  200], 'SII'],    #7.
                         ['air',   [7,  7], -1000, 100., [1.00,   70], 'air'],    #8.
                         ['dark',  [6,  6],     0, .221, [   0,    0], 'dark'],   #9.
@@ -388,7 +381,7 @@ site_config = {
                 'filter_screen_sort':  [8, 1, 4, 3, 2, 6, 5, 7],   #  don't use narrow yet,  8, 10, 9], useless to try.
                 
                 
-                'filter_sky_sort': [6, 4, 5, 1, 2, 3,  0]    #No diffuser based filters
+                'filter_sky_sort': [7, 5, 6, 2, 3, 4, 1, 8]    #No diffuser based filters
                 #'filter_sky_sort': [7, 19, 2, 13, 18, 5, 15,\
                 #                    12, 4, 11, 16, 10, 9, 17, 3, 14, 1, 0]    #basically no diffuser based filters
                 #[32, 8, 22, 21, 20, 23, 31, 6, 7, 19, 27, 2, 37, 13, 18, 30, 5, 15, 36, 12,\
@@ -423,7 +416,7 @@ site_config = {
             'file_mode_path':  'G:/000ptr_saf/archive/sq01/autosaves/',   #NB Incorrect site, etc. Not used at SRO.  Please clean up.
 
             'settings': {
-                'temp_setpoint': -25,
+                'temp_setpoint': -45,
                 'calib_setpoints': [-35,-30, -25, -20, -15, -10 ],  #  Should vary with season? 
                 'day_warm': False,
                 'cooler_on': True,
@@ -445,21 +438,11 @@ site_config = {
                 'corner_everlap': True,
                 'x_bias_line': True,
                 'y_bias_line': True,
-                'bin_enable': ['1 1'], 
-                'ref_dark': 360.0,
-                'long_dark': 600.0,
                 'x_active': 4500,
                 'y_active': 3600,
-                #THIS IS ALL WRONG!
-                'det_size': '[1:4556, 1:3656]',  # Physical chip data size as returned from driver
-                'ccd_sec': '[1:4556, 1:3656]',
-                'bias_sec': ['[1:22, 1:6388]', '[1:11, 1:3194]', '[1:7, 1:2129]', '[1:5, 1:1597]'],
-                'det_sec': ['[25:9600, 1:6388]', '[13:4800, 1:3194]', '[9:3200, 1:2129]', '[7:2400, 1:1597]'],
-                'data_sec': ['[25:9600, 1:6388]', '[13:4800, 1:3194]', '[9:3200, 1:2129]', '[7:2400, 1:1597]'],
-                'trim_sec': ['[1:9576, 1:6388]', '[1:4788, 1:3194]', '[1:3192, 1:2129]', '[1:2394, 1:1597]'],
                 'x_pixel':  6,
                 'y_pixel':  6,
-                'pix_scale': [1.067, 2.134, 3.201, 4.268],    #_22*4499,     #  asec/pixel F9   0.5751  , F4.9  1.0481         
+                'pix_scale': [1.067, 2.134, 3.201, 2.268],    #_22*4499,     #  asec/pixel F9   0.5751  , F4.9  1.0481         
                 'x_field_deg': 1.3333,   #   round(4784*1.0481/3600, 4),
                 'y_field_deg': 1.0665,   #  round(3194*1.0481/3600, 4),
                 'overscan_x': 24,
@@ -471,7 +454,7 @@ site_config = {
                 'max_exposure': 3600,
                 'can_subframe':  True,
                 'min_subframe':  [128, 128],       
-                'bin_modes':  [[1, 1, 1.07]], #  , [2, 2, 2.13], [3, 3, 3.21], [4, 4, 4.27]],   #Meaning no binning choice if list has only one entry, default should be first.
+                'bin_modes':  [[1, 1, 1.07], [2, 2, 2.13], [3, 3, 3.21], [4, 4, 4.27]],   #Meaning no binning choice if list has only one entry, default should be first.
                 'default_bin':  [1, 1, 1.07],    #  Matched to seeing situation by owner
                 'cycle_time':  [30, 20, 15, 12],  # 3x3 requires a 1, 1 reaout then a software bin, so slower.
                 'rbi_delay':  0.,      #  This being zero says RBI is not available, eg. for SBIG.
@@ -481,7 +464,6 @@ site_config = {
                 'can_set_gain':  True,
                 'reference_gain': [2., 4., 18., 32.],     #  One val for each binning. SWAG!
                 'reference_noise': [10, 10, 10, 10],    #  All SWAGs right now!
-                'ref_dark': 360.,
                 'reference_dark': [0.0, 0.0, 0.0, 0.0],     #  Might these best be pedastal values?  NO!
                                     #hdu.header['RDMODE'] = (self.config['camera'][self.name]['settings']['read_mode'], 'Camera read mode')
                     #hdu.header['RDOUTM'] = (self.config['camera'][self.name]['readout_mode'], 'Camera readout mode')
@@ -492,10 +474,9 @@ site_config = {
                 'saturate':  42000,    # e-.  This is a close guess, not measured, but taken from data sheet.
                 'max_linearity': 40000,
                 'fullwell_capacity': [45000, 45000, 45000, 45000],  #e-.   We need to sort out the units properly NB NB NB
-                'areas_implemented': ["Full",'4x4d', "600%", "500%", "450%", "300%", "220%", "150%", "133%", "Full", "Sqr", '71%', '50%',  '35%', '25%', '12%'],
+                'areas_implemented': ["Full", "600%", "500%", "450%", "300%", "220%", "150%", "133%", "Full", "Sqr", '71%', '50%',  '35%', '25%', '12%'],
                 'default_area':  "Full",
                 'default_rotation': 0.0000,
-                'flat_bin_spec': '1,1',    #Default binning for flats
                 'has_darkslide':  False,
                 'darkslide_com':  None,
                 'has_screen': True,
@@ -627,9 +608,8 @@ def get_ocn_status(g_dev=None):
                         last_good_wx_fields = wx_fields
                     except:
                         print('SRO Weather source problem, using last known good report.')
-                        # NB NB NB we need to shelve the last know good so this does not fail on startup.
                         wx_fields = last_good_wx_fields
-                        #wx_fields = wx_line.split()   This cause a fault. Wx line not available.
+                        wx_fields = wx_line.split()
                         skyTemperature = f_to_c(float( wx_fields[4]))
                         temperature = f_to_c(float(wx_fields[5]))
                         windspeed = round(float(wx_fields[7])/2.237, 2)
@@ -682,7 +662,7 @@ def get_ocn_status(g_dev=None):
         wind_limit = windspeed < 60/2.235   #sky_monitor reports m/s, Clarity may report in MPH
         sky_amb_limit  = skyTemperature < -20
         humidity_limit =humidity < 85
-        rain_limit = True # Rain Rate <= 0.001
+        rain_limit = True #r ainRate <= 0.001
         wx_is_ok = dew_point_gap and temp_bounds and wind_limit and sky_amb_limit and \
                         humidity_limit and rain_limit
         #  NB  wx_is_ok does not include ambient light or altitude of the Sun
@@ -716,8 +696,8 @@ def get_ocn_status(g_dev=None):
                       "wx_ok": wx_str,  #str(self.sky_monitor_oktoimage.IsSafe),
                       "open_ok": wx_str,  #T his is the special bit in the 
                                            # Boltwood for a roof close relay
-                      'wx_hold': False,  # THis is usually added by the OCN Manager
-                      'hold_duration': 0.0,
+                      'wx_hold': 'n.a.',  # THis is usually added by the OCN Manager
+                      'hold_duration': 'n.a.',
                       'meas_sky_mpsas': 22   # THis is a plug.  NB NB NB
                       #"image_ok": str(self.sky_monitor_oktoimage.IsSafe)
                       }
@@ -780,8 +760,8 @@ def get_enc_status(g_dev=None):
             e_mode = g_dev['enc'].mode
         status = {'shutter_status': stat_string,   # NB NB NB "Roof is open|closed' is more inforative for FAT, but we make boolean decsions on 'Open'
                   'enclosure_synchronized': True,
-                  'dome_azimuth': 0.0,
-                  'dome_slewing': False,
+                  'dome_azimuth': 'n.a',
+                  'dome_slewing': 'n.a',
                   'enclosure_mode': e_mode,
                   'enclosure_message':  ''
                  }
@@ -789,13 +769,13 @@ def get_enc_status(g_dev=None):
     else:
         pass
     #breakpoint()     #  Debug bad place.
-# if __name__ == '__main__':
-#     j_dump = json.dumps(site_config)
-#     site_unjasoned = json.loads(j_dump)
-#     if str(site_config)  == str(site_unjasoned):
-#         print('Strings matched.')
-#     if site_config == site_unjasoned:
-#         print('Dictionaries matched.')
+if __name__ == '__main__':
+    j_dump = json.dumps(site_config)
+    site_unjasoned = json.loads(j_dump)
+    if str(site_config)  == str(site_unjasoned):
+        print('Strings matched.')
+    if site_config == site_unjasoned:
+        print('Dictionaries matched.')
         
         
 

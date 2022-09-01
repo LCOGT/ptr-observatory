@@ -1295,7 +1295,7 @@ class Camera:
 
                     #return result   #Used if focus not saved in calibs.
                 try:
-                    
+                    #breakpoint()
                     hdu = fits.PrimaryHDU(self.img.transpose())   #THis needs to be done to keep fits "traditional." 0,0 upper left.
                     self.img = None    #  Does this free up any resource?
                     # assign the keyword values and comment of the keyword as a tuple to write both to header.
@@ -1329,7 +1329,8 @@ class Camera:
                     hdu.header['SITEID'] = self.config['site_id'].replace('-','').replace('_','')
                     hdu.header['TELID'] = self.config['telescope']['telescope1']['telescop']
                     hdu.header['PTRTEL'] = self.config['telescope']['telescope1']['ptrtel']
-                    hdu.header['TELESCOP'] = (self.config['telescope']['telescope1']['desc'], 'Name of the telescope')
+                    #breakpoint()
+                    hdu.header['TELESCOP'] = (self.config['telescope']['telescope1']['desc'], 'Name of the telescope')  #20220901 Deleted ['desc'] WER
                     hdu.header['PROPID'] = 'ptr-' + self.config['site_id'] + '-001-0001'
                     hdu.header['BLKUID']   = ('1234567890', 'Just a placeholder right now. WER')
                     hdu.header['INSTRUME'] = (self.alias, 'Name of camera')                    
