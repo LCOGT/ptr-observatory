@@ -1,10 +1,12 @@
+
+
 {"site": "saf",
 "site_id": "ARO",
 "version_date": "20220611.0wer",
 "site_desc": "Apache Ridge Observatory, Santa Fe, NM, USA. 2194m",
 "airport_code": "SAF",
 "obsy_id": "SAF1",
-"obs_desc": "0m3f4.9/9 Ceravolo Astrogaph, AP1600",
+"obs_desc": "0m3f4.9/9 Ceravolo Astrograph, AP1600",
 "debug_site_mode": false,
 "debug_obsy_mode": false,
 "owner": ["google-oauth2|102124071738955888216", "google-oauth2|112401903840371673242"],
@@ -17,9 +19,10 @@
 "wema_is_active": true,
 "wema_hostname": "SAF-WEMA",
 "wema_path": "C:/ptr/",
-"dome_on_wema": false,
+"dome_on_wema": true,
 "site_IPC_mechanism": "shares",
 "wema_write_share_path": "C:/ptr/wema_transfer/",
+"wema_share_path": "C:/ptr/wema_transfer/",
 "client_read_share_path": "//saf-wema/wema_transfer/",
 "redis_ip": null,
 "site_is_generic": false,
@@ -50,6 +53,9 @@
 "auto_morn_sky_flat": false,
 "auto_morn_bias_dark": false,
 "re-calibrate_on_solve": true,
+"get_ocn_status": null,
+"get_enc_status": null,
+"not_used_variable": null,        
 "observing_conditions": {
 	"observing_conditions1": {
 		"parent": "site", "name": "Boltwood", "driver": "ASCOM.Boltwood.ObservingConditions", "driver_2": "ASCOM.Boltwood.OkToOpen.SafetyMonitor",
@@ -60,18 +66,18 @@
 		"telescope": "telescope1", "focuser": "focuser1", "rotator": "rotator1", "selector": null, "filter_wheel": "filter_wheel1",
 		"camera": "camera_1_1", "sequencer": "sequencer1"},
 		"device_types": ["observing_conditions", "enclosure", "mount", "telescope", "rotator", "focuser", "selector", "filter_wheel", "camera", "sequencer"],
-		"wema_types": ["observing_conditions"], "short_status_devices": ["enclosure", "mount", "telescope", "rotator", "focuser", "selector", "filter_wheel", "camera", "sequencer"],
+		"wema_types": ["observing_conditions", "enclosure"], "short_status_devices": [ "mount", "telescope", "rotator", "focuser", "selector", "filter_wheel", "camera", "sequencer"],
 		"enclosure": {
 			"enclosure1": {
-				"parent": "site", "name": "HomeDome", "enc_is_specific": false, "hostIP": "10.0.0.10", "driver": "ASCOMDome.Dome", "has_lights": false,
-				"controlled_by": "mount1", "is_dome": true, "mode": "Automatic", "enc_radius": 70, "common_offset_east": -19.5, "common_offset_south": -8,
+				"parent": "site", "name": "HomeDome", "enc_is_specific": false, "hostIP": "10.0.0.10", "driver": "ASCOM.DigitalDomeWorks.Dome", "has_lights": true,
+				"controlled_by": "mount1", "is_dome": true, "enclosure_mode": "Automatic", "enc_radius": 70, "common_offset_east": -19.5, "common_offset_south": -8,
 				"cool_down": 89.0, 
 				"settings": {"lights": ["Auto", "White", "Red", "IR", "Off"], "roof_shutter": ["Auto", "Open", "Close", "Lock Closed", "Unlock"]},
 				"eve_bias_dark_dur": 2.0, "eve_screen_flat_dur": 1.0, "operations_begin": -1.0, "eve_cooldown_offset": -0.99, "eve_sky_flat_offset": 0.5,
 				"morn_sky_flat_offset": 0.4, "morning_close_offset": 0.41, "operations_end": 0.42}},
 			"mount": {
 				"mount1": {
-					"parent": "enclosure1", "name": "safpier", "hostIP": "10.0.0.140", "hostname": "safpier", "desc": "AP 1600 GoTo", "driver": "AstroPhysicsV2.Telescope",
+					"parent": "enclosure1", "tel_id": "0m30", "name": "safpier", "hostIP": "10.0.0.140", "hostname": "safpier", "desc": "AP 1600 GoTo", "driver": "AstroPhysicsV2.Telescope",
 					"alignment": "Equatorial", "default_zenith_avoid": 0.0, "has_paddle": false, "pointing_tel": "tel1", "west_clutch_ra_correction": -0.05323724387608619,
 					"west_clutch_dec_correction": 0.3251459235809251, "east_flip_ra_correction": -0.039505313212952586, "east_flip_dec_correction": -0.39607711292257797,
 					"latitude_offset": 0.0, "longitude_offset": 0.0, "elevation_offset": 0.0, "home_park_altitude": 0.0, "home_park_azimuth": 180.0, "horizon": 20.0,

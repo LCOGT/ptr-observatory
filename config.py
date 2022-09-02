@@ -55,7 +55,7 @@ QHY600         AstroImaging Equipment
 #site_name = 'mrc'    #NB These must be unique across all of PTR. Pre-pend with airport code if needed: 'sba_wmdo'
 site_name = input('What site am I running at?\n')
 
-
+breakpoint()
 
 sys.path.append(os.path.join(pathlib.Path().resolve(),"configs", site_name))
 
