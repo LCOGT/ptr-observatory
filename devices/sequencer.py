@@ -751,41 +751,23 @@ class Sequencer:
                                   (2, 0), (1, 0), (1, -0.9), (0, -0.9), (-1, -0.9), (-1, -1.8), (0, -1.8), (1, -1.8)]
                                  #((2, -1,8), (2, -0.9), (2, 1.8))  #  Dead areas for star fill-in.
                         pitch = -1  #A signal to do something special.  ##'600', '600%', 600, 
-                        # offset = [(0.5, 0.5),
-                        #           (-0.5, 0.5),
-                        #           (-1.5, 0.5),
-                        #           (-1.5, -0.5),
-                        #           (-0.5, -0.5),
-                        #           (0.5, -0.5),
-                        #           (1.5, -0.5 ),
-                        #           (1.5, 0.5),
-                        #           (1.5, 1.5),
-                        #           (0.5 , 1.5),
-                        #           (-0.5, 1.5),
-                        #           (-1.5, 1.5),
-                        #           (-1.5, 0.5),
-                        #           (1.5, -0.5),
-                        #           (-1.5, -1.5),
-                        #           (-0.5, -1.5),
-                        #           (0.5, -1.5),
-                        #           (1.5, -1.5)] #Fifteen mosaic quadrants 36 x 24mm chip
-                        # if exposure['area'] in ['600', '600%', 600]:
-                        #     pitch = 0.125
-
-                        if exposure['area'] in ['450', '450%', 450]:
-                            pitch = 0.250
+                    elif exposure['area'] in ['2x2', '500%']:
+                        offset= [(0,0), (-0.5, 0), (-0.5, .35), (0.5, 0.35), (0.5, 0), (-0.5, -0.35), (0.5, -0.35), ]
+                        pitch = 1
+                    elif exposure['area'] in ['450', '450%', 450]:
+                        pitch = 0.250
                         pane = 0
-                    elif exposure['area'] in ['500', '500%',]:  # 6 or 7 exposures.  SQUARE
-                        step = 1.466667
-                        if block_specification['project']['project_constraints']['add_center_to_mosaic']:
-                            offset = [(0., 0.), (-1, 0.), (-1, step), (1, step), (1, 0), \
-                                      (1, -step), (-1, -step)] #Aimpoint + six mosaic quadrants 36 x 24mm chip
-                            pane = 0
-                        else:
-                            offset = [(-1, 0.), (-1, step),  (1, step), (1, 0), \
-                                      (1, -step), (-1, -step)] #Six mosaic quadrants 36 x 24mm chip
-                            pane = 1
-                        pitch = .375
+                    # elif exposure['area'] in ['500', '500%',]:  # 6 or 7 exposures.  SQUARE
+                    #     step = 1.466667
+                    #     if block_specification['project']['project_constraints']['add_center_to_mosaic']:
+                    #         offset = [(0., 0.), (-1, 0.), (-1, step), (1, step), (1, 0), \
+                    #                   (1, -step), (-1, -step)] #Aimpoint + six mosaic quadrants 36 x 24mm chip
+                    #         pane = 0
+                    #     else:
+                    #         offset = [(-1, 0.), (-1, step),  (1, step), (1, 0), \
+                    #                   (1, -step), (-1, -step)] #Six mosaic quadrants 36 x 24mm chip
+                    #         pane = 1
+                    #     pitch = .375
                     elif exposure['area'] in ['+SQ', '133%']:  # 2 exposures.  SQUARE
                         step = 1
                         offset = [(0, -1), (0, 1)] #Two mosaic steps 36 x 24mm chip  Square

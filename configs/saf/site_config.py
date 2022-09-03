@@ -606,7 +606,7 @@ site_config = {
                 'y_active': 3194,
                 'x_pixel':  3.76,
                 'y_pixel':  3.76,
-                'pix_scale': [0.528, 1.055, 1.583, 2.110],  #[0.2876, 0.575, 0.863, 1.15], #F9        [0.528, 1.055, 1.583, 2.110] F4.9
+                'pix_scale': [0.528, 1.055, 1.583, 2.110],  # VErified for saf 20220903 WER [0.2876, 0.575, 0.863, 1.15], #F9        [0.528, 1.055, 1.583, 2.110] F4.9
                 'x_field_deg': 1.042,   #  round(4784*1.055/3600, 4),
                 'y_field_deg': 0.7044,   # round(3194*1.055/3600, 4),
                 'overscan_x': 24,
@@ -638,7 +638,7 @@ site_config = {
                 'read_mode':  'Normal',
                 'readout_mode':  'Normal',
                 'readout_speed': 0.6,
-                'areas_implemented': ["Full", "600%", "500%", "450%", "300%", "220%", "150%", "133%", "100%", "Sqr", '71%', '50%',  '35%', '25%', '12%'],
+                'areas_implemented': ["Full", '2x2', '4x4',"600%", "500%", "450%", "300%", "220%", "150%", "133%", "100%", "Sqr", '71%', '50%',  '35%', '25%', '12%'],
                 'default_area':  "Full",
                 'has_darkslide':  True,
                 'darkslide_com':  'COM17',

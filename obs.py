@@ -47,9 +47,9 @@ from planewave import platesolve
 import bz2
 import httplib2
 from auto_stretch.stretch import Stretch
-import socket
+
 import ptr_events
-#import config
+import socket
 
 # import device classes:
 from devices.camera import Camera
@@ -1204,8 +1204,9 @@ if __name__ == "__main__":
     # config = importlib.import_module(config_file_name)
     # print(f"Starting up {config.site_name}.")
     # Start up the observatory
-
+ 
     import config
+
 
     o = Observatory(config.site_name, config.site_config)
     o.run()
