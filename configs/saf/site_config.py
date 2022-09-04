@@ -51,7 +51,7 @@ site_config = {
     'aux_archive_path':  None,
     'wema_is_active':  True,     # True if an agent (ie a wema) is used at a site.   # Wemas are split sites -- at least two CPS's sharing the control.                          
     'wema_hostname':  'SAF-WEMA',
-    'wema_path': 'C:/ptr/',      #Local storage on Wems disk.
+    'wema_path': 'C:/ptr/',      #Local storage on Wema disk.
     'dome_on_wema':  True,       #NB NB NB CHange this confusing name. 'dome_controlled_by_wema'
     'site_IPC_mechanism':  'shares',   # ['None', shares', 'shelves', 'redis']
     'wema_write_share_path':  'C:/ptr/wema_transfer/',  # Meant to be where Wema puts status data.

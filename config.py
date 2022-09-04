@@ -6,7 +6,6 @@ Updated 20220904 22:42WER
 @authors: wrosing, mfitz
 ''' 
 
-
 #import json
 import sys
 #import time
@@ -20,7 +19,6 @@ import socket
 host_site = socket.gethostname()[:3].lower()   #  NB May be better to split on
                                          # '-' and use first part of hostname.
 sys.path.append(os.path.join(pathlib.Path().resolve(),"configs", host_site))
-
 try:
     from site_config import *
 except:
@@ -31,19 +29,16 @@ except:
         site_name = input('What site am I running at?\n')
         sys.path.append(os.path.join(pathlib.Path().resolve(),"configs", \
                         site_name))
-
         try:
             from site_config import *
         except:
             print (str(site_name) + " isn't a real place, or there isn't a \
                                      config file that I can find!")
             sys.exit()
-
     except:
         print('You need to supply a correct site name.')
         sys.exit()
-
-#print (site_config)
+#  print (site_config)
 
 
 

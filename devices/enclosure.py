@@ -442,52 +442,52 @@ class Enclosure:
             # NB NB THis really needs a context manage so no dangling open files
             breakpoint()
             try:
-                enc_cmd = open(self.config['wema_share_path'] + 'enc_cmd.txt', 'r')
+                enc_cmd = open(self.config['wema_write_share_path'] + 'enc_cmd.txt', 'r')
                 enc_status = json.loads(enc_cmd.readline())
                 enc_cmd.close()
-                os.remove(self.config['wema_share_path'] + 'enc_cmd.txt')
+                os.remove(self.config['wema_write_share_path'] + 'enc_cmd.txt')
                 redis_command = enc_status
             except:
                 try:
                     time.sleep(1)
-                    enc_cmd = open(self.config['wema_share_path'] + 'enc_cmd.txt', 'r')
+                    enc_cmd = open(self.config['wema_write_share_path'] + 'enc_cmd.txt', 'r')
                     enc_status = json.loads(enc_cmd.readline())
                     enc_cmd.close()
-                    os.remove(self.config['wema_share_path'] + 'enc_cmd.txt')
+                    os.remove(self.config['wema_write_share_path'] + 'enc_cmd.txt')
                     redis_command = enc_status
                 except:
                     try:
                         time.sleep(1)
-                        enc_cmd = open(self.config['wema_share_path'] + 'enc_cmd.txt', 'r')
+                        enc_cmd = open(self.config['wema_write_share_path'] + 'enc_cmd.txt', 'r')
                         enc_status = json.loads(enc_cmd.readline())
                         enc_cmd.close()
-                        os.remove(self.config['wema_share_path'] + 'enc_cmd.txt')
+                        os.remove(self.config['wema_write_share_path'] + 'enc_cmd.txt')
                         redis_command = enc_status
                     except:
                         #print("Finding enc_cmd failed after 3 tries, no harm done.")
                         redis_command = ['none']
             mnt_command = None
             try:
-              mnt_cmd = open(self.config['wema_share_path'] + 'mnt_cmd.txt', 'r')
+              mnt_cmd = open(self.config['wema_write_share_path'] + 'mnt_cmd.txt', 'r')
               mnt_status = json.loads(mnt_cmd.readline())
               mnt_cmd.close()
-              os.remove(self.config['wema_share_path'] + 'mnt_cmd.txt')
+              os.remove(self.config['wema_write_share_path'] + 'mnt_cmd.txt')
               mnt_command = mnt_status
             except:
                 try:
                     time.sleep(1)
-                    mnt_cmd = open(self.config['wema_share_path'] + 'mnt_cmd.txt', 'r')
+                    mnt_cmd = open(self.config['wema_write_share_path'] + 'mnt_cmd.txt', 'r')
                     mnt_status = json.loads(mnt_cmd.readline())
                     mnt_cmd.close()
-                    os.remove(self.config['wema_share_path'] + 'mnt_cmd.txt')
+                    os.remove(self.config['wema_write_share_path'] + 'mnt_cmd.txt')
                     mnt_command = mnt_status
                 except:
                     try:
                         time.sleep(1)
-                        mnt_cmd = open(self.config['wema_share_path'] + 'mnt_cmd.txt', 'r')
+                        mnt_cmd = open(self.config['wema_write_share_path'] + 'mnt_cmd.txt', 'r')
                         mnt_status = json.loads(mnt_cmd.readline())
                         mnt_cmd.close()
-                        os.remove(self.config['wema_share_path'] + 'mnt_cmd.txt')
+                        os.remove(self.config['wema_write_share_path'] + 'mnt_cmd.txt')
                         mnt_command = mnt_status
                     except:
                         #print("Finding enc_cmd failed after 3 tries, no harm done.")

@@ -108,13 +108,13 @@ class WxEncAgent:
             else:  
                 #This host is a client
                 self.is_wema = False  #This is a client.
-                self.site_path = config['client_share_path']
+                self.site_path = config['client_write_share_path']
                 g_dev['site_path'] = self.site_path
                 g_dev['wema_write_share_path']  = self.site_path  # Just to be safe.
                 self.wema_path = g_dev['wema_write_share_path'] 
         else:
             self.is_wema = False  #This is a client.
-            self.site_path = config['client_share_path']
+            self.site_path = config['client_write_share_path']
             g_dev['site_path'] = self.site_path
             g_dev['wema_write_share_path']  = self.site_path  # Just to be safe.
             self.wema_path = g_dev['wema_write_share_path'] 
