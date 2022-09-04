@@ -25,22 +25,12 @@ from pprint import pprint
 import matplotlib.pyplot as plt
 
 
-#from os.path import join, dirname, abspath
-
-# from skimage import data, io, filters
-# from skimage.transform import resize
-# from skimage import img_as_float
-# from skimage import exposure
-# from skimage.io import imsaves
-# import matplotlib.pyplot as plt
-
-# from PIL import Image
-from global_yard import g_dev
-from processing.calibration import calibrate
 #from devices.sequencer import Sequencer
 from devices.darkslide import Darkslide
 import ptr_utility
 from planewave import platesolve
+from global_yard import g_dev
+from processing.calibration import calibrate
 
 
 #string  = \\HOUSE-COMPUTER\saf_archive_2\archive
