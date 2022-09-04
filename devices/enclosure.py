@@ -405,24 +405,24 @@ class Enclosure:
                 return status
         if self.is_wema and self.config['site_IPC_mechanism'] == 'shares':
             try:
-                enclosure = open(self.config['wema_share_path']+'enclosure.txt', 'w')
+                enclosure = open(self.config['wema_write_share_path']+'enclosure.txt', 'w')
                 enclosure.write(json.dumps(status))
                 enclosure.close()
             except:
                 time.sleep(3)
                 try:
-                    enclosure = open(self.config['wema_share_path']+'enclosure.txt', 'w')
+                    enclosure = open(self.config['wema_write_share_path']+'enclosure.txt', 'w')
                     enclosure.write(json.dumps(status))
                     enclosure.close()
                 except:
                     time.sleep(3)
                     try:
-                        enclosure = open(self.config['wema_share_path']+'enclosure.txt', 'w')
+                        enclosure = open(self.config['wem_-write_share_path']+'enclosure.txt', 'w')
                         enclosure.write(json.dumps(status))
                         enclosure.close()
                     except:
                         time.sleep(3)
-                        enclosure = open(self.config['wema_share_path']+'enclosure.txt', 'w')
+                        enclosure = open(self.config['wema_write_share_path']+'enclosure.txt', 'w')
                         enclosure.write(json.dumps(status))
                         enclosure.close()
                         print("4th try to write enclosure status.")
@@ -440,6 +440,7 @@ class Enclosure:
         if self.is_wema and self.site_has_proxy and self.config['site_IPC_mechanism'] == 'shares':
             _redis = False
             # NB NB THis really needs a context manage so no dangling open files
+            breakpoint()
             try:
                 enc_cmd = open(self.config['wema_share_path'] + 'enc_cmd.txt', 'r')
                 enc_status = json.loads(enc_cmd.readline())
