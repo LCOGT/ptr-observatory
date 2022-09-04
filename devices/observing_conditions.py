@@ -170,7 +170,7 @@ class ObservingConditions:
         if not self.is_wema and self.site_has_proxy:
             if self.config['site_IPC_mechanism'] == 'shares':
                 try:
-                    weather = open(g_dev['wema_share_path'] + 'weather.txt', 'r')
+                    weather = open(g_dev['wema_write_share_path'] + 'weather.txt', 'r')
                     status = json.loads(weather.readline())
                     weather.close()
                     self.status = status

@@ -49,16 +49,16 @@ site_config = {
     'client_path': 'F:/ptr/',
     'archive_path': 'F:/ptr/',       # Where images are kept.
     'aux_archive_path':  None,
-    'wema_is_active':  True,     # True if an agent is used at a site.   # Wemas are split sites -- at least two CPS's sharing the control.                          
+    'wema_is_active':  True,     # True if an agent (ie a wema) is used at a site.   # Wemas are split sites -- at least two CPS's sharing the control.                          
     'wema_hostname':  'SAF-WEMA',
     'wema_path': 'C:/ptr/',      #Local storage on Wems disk.
     'dome_on_wema':  True,       #NB NB NB CHange this confusing name. 'dome_controlled_by_wema'
     'site_IPC_mechanism':  'shares',   # ['None', shares', 'shelves', 'redis']
     'wema_write_share_path':  'C:/ptr/wema_transfer/',  # Meant to be where Wema puts status data.
-    'client_read_share_path':  '//saf-wema/wema_transfer/',
+    'client_write_share_path':  '//saf-wema/wema_transfer/',
     'redis_ip': None,   # None if no redis path present, localhost if redis iself-contained
     'site_is_generic':  False,   # A simple single computer ASCOM site.
-    'site_is_specific':  False,
+    'site_is_specific':  False,  #  Meaning like SRO with site specific methods to read weatehr and roof status
     
 #   'host_wema_site_name':  'ARO',
     'name': 'Apache Ridge Observatory 0m3f4.9/9',
@@ -88,12 +88,12 @@ site_config = {
     
     'site_in_automatic_default': "Manual",   # ["Manual", "Shutdown", "Automatic"]
     'automatic_detail_default': "Enclosure is initially set to Manual by SAF config.",
-    'auto_eve_bias_dark': False,
+    'auto_eve_bias_dark': True,
     'auto_eve_sky_flat': False,
     'eve_sky_flat_sunset_offset': -60.0,  # Minutes  neg means before, + after.
     'auto_morn_sky_flat': False,
     'auto_morn_bias_dark': False,
-    're-calibrate_on_solve': False, 
+    're-calibrate_on_solve': True, 
     'get_ocn_status': None,
     'get_enc_status': None,
     'not_used_variabl': None,

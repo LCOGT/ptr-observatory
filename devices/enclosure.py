@@ -625,6 +625,7 @@ class Enclosure:
              shares = True
              generic = False
         if action == "open":
+            breakpoint()
             if _redis: 
                 g_dev['redis'].set('enc_cmd', 'open', ex=300)
             if shares:  
@@ -681,24 +682,24 @@ class Enclosure:
 
         if len(cmd_list) > 0:
             try:
-                enclosure = open(self.config['client_path']+'enc_cmd.txt', 'w')
+                enclosure = open(self.config['client_write_share_path']+'enc_cmd.txt', 'w')
                 enclosure.write(json.dumps(cmd_list))
                 enclosure.close()
             except:
                 try:
                     time.sleep(3)
-                    enclosure = open(self.config['client_path']+'enc_cmd.txt', 'w')
+                    enclosure = open(self.config['client_write_share_path']+'enc_cmd.txt', 'w')
                     enclosure.write(json.dumps(cmd_list))
                     enclosure.close()
                 except:
                     try:
                         time.sleep(3)
-                        enclosure = open(self.config['client_path']+'enc_cmd.txt', 'w')
+                        enclosure = open(self.config['client_write_share_path']+'enc_cmd.txt', 'w')
                         enclosure.write(json.dumps(cmd_list))
                         enclosure.close()
                     except:
                         time.sleep(3)
-                        enclosure = open(self.config['client_path']+'enc_cmd.txt', 'w')
+                        enclosure = open(self.config['client_write_share_path']+'enc_cmd.txt', 'w')
                         enclosure.write(json.dumps(cmd_list))
                         enclosure.close()
                         print("4th try to append to enc-cmd  list.")

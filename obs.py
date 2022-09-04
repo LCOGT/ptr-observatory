@@ -195,7 +195,7 @@ class Observatory:
                 self.is_wema = False  #This is a client.
                 self.site_path = config['client_path']
                 g_dev['site_path'] = self.site_path
-                g_dev['wema_share_path'] = config['client_read_share_path']    # Just to be safe.
+                g_dev['wema_share_path'] = config['client_write_share_path']    # Just to be safe.
                 self.wema_path = g_dev['wema_share_path'] 
         else:
             self.is_wema = False  #This is a client.
