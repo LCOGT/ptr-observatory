@@ -1372,7 +1372,6 @@ class Camera:
 #                     # detsec also needs to be changed appropriately.
 #
 # =============================================================================
-
                     if self.bin == 1:
                         hdu.header['DATASEC'] = self.config['camera'][self.name]['settings']['data_sec'][0]
                         hdu.header['DETSEC']  = self.config['camera'][self.name]['settings']['det_sec' ][0]
@@ -1646,7 +1645,7 @@ class Camera:
                              'text_name11': text_name,
                              'frame_type':  frame_type
                              }
-                    if  self.config['site'] == 'saf':    #ADD an owner specified request to do this save
+                    if  False and self.config['site'] == 'saf':    #ADD an owner specified request to do this save
                         os.makedirs(self.alt_path +  g_dev['day'] + '/reduced/', exist_ok=True)
                         red_path_aux = self.alt_path +  g_dev['day'] + '/reduced/'
                         paths['red_path_aux'] = red_path_aux
