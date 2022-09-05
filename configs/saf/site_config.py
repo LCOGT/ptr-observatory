@@ -250,6 +250,7 @@ site_config = {
         'telescope1': {
             'parent': 'mount1',
             'name': 'Main OTA',
+            'ptrtel':  "saf1",
             'desc':  'Ceravolo 300mm F4.9/F9 convertable',
             'telescop': 'cvagr-0m30-f9-f4p9-001',
             'driver': None,                     # Essentially this device is informational.  It is mostly about the optics.
@@ -401,11 +402,11 @@ site_config = {
             # 'coef_0': 5800,  # Nominal intercept when Primary is at 0.0 C. 
             # 'coef_date':  '20220301',    # This appears to be sensible result 44 points -13 to 3C'reference':  6431,    # Nominal at 10C Primary temperature
             #F9 setup
-            'reference': 5743, #5743,    #  Meas   Nominal at 10C Primary temperature
+            'reference': 4424, #5743,    #  Meas   Nominal at 10C Primary temperature
             'ref_temp':  4.8,    # Update when pinning reference
             'coef_c': 0.0, #-77.57,   # negative means focus moves out/in as Primary gets colder/warmer.
-            'coef_0': 5775, #6155,   #5675,  20220502 Nominal intercept when Primary is at 0.0 C. 
-            'coef_date':  '20220901?',    # SWAG 
+            'coef_0': 4424, #6155,   #5675,  20220502 Nominal intercept when Primary is at 0.0 C. 
+            'coef_date':  '20220905?',    # SWAG 
             'minimum': 0,     # NB this area is confusing steps and microns, and need fixing.
             'maximum': 12600,   #12672 actually
             'step_size': 1,
@@ -581,11 +582,7 @@ site_config = {
             'manufacturer':  'QHY',
             'use_file_mode':  False,
             'file_mode_path':  'G:/000ptr_saf/archive/sq01/autosaves/',
-            'detsize': '[1:9600, 1:6422]',  # QHY600Pro Physical chip data size as returned from driver
-            'ccdsec': '[1:9600, 1:6422]',
-            'biassec': ['[1:24, 1:6388]', '[1:12, 1:3194]', '[1:8, 1:2129]', '[1:6, 1:1597]'],
-            'datasec': ['[25:9600, 1:6388]', '[13:4800, 1:3194]', '[9:3200, 1:2129]', '[7:2400, 1:1597]'],
-            'trimsec': ['[1:9576, 1:6388]', '[1:4788, 1:3194]', '[1:3192, 1:2129]', '[1:2394, 1:1597]'],
+
 
             'settings': {
                 'temp_setpoint': -12.5,
@@ -609,6 +606,12 @@ site_config = {
                 'pix_scale': [0.528, 1.055, 1.583, 2.110],  # VErified for saf 20220903 WER [0.2876, 0.575, 0.863, 1.15], #F9        [0.528, 1.055, 1.583, 2.110] F4.9
                 'x_field_deg': 1.042,   #  round(4784*1.055/3600, 4),
                 'y_field_deg': 0.7044,   # round(3194*1.055/3600, 4),
+                'detsize': '[1:9600, 1:6422]',  # QHY600Pro Physical chip data size as returned from driver
+                'ccd_sec': '[1:9600, 1:6422]',
+                'bias_sec': ['[1:24, 1:6388]', '[1:12, 1:3194]', '[1:8, 1:2129]', '[1:6, 1:1597]'],
+                'det_sec':  ['[25:9600, 1:6388]', '[13:4800, 1:3194]', '[9:3200, 1:2129]', '[7:2400, 1:1597]'],
+                'data_sec': ['[25:9600, 1:6388]', '[13:4800, 1:3194]', '[9:3200, 1:2129]', '[7:2400, 1:1597]'],
+                'trim_sec': ['[1:9576, 1:6388]', '[1:4788, 1:3194]', '[1:3192, 1:2129]', '[1:2394, 1:1597]'],
                 'overscan_x': 24,
                 'overscan_y': 3,
                 'north_offset': 0.0,    # These three are normally 0.0 for the primary telescope

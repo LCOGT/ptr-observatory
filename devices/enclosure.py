@@ -625,7 +625,7 @@ class Enclosure:
              shares = True
              generic = False
         if action == "open":
-            breakpoint()
+            
             if _redis: 
                 g_dev['redis'].set('enc_cmd', 'open', ex=300)
             if shares:  
@@ -744,7 +744,7 @@ class Enclosure:
 
     def sync_mount_command(self, req: dict, opt: dict):
         #print("enclosure cmd: sync_az")
-        if self.site not in ['sro', 'mrc', 'mrc2']:
+        if self.site not in ['sro', 'mrc', 'mrc2', 'saf']:
             self.enclosure.Slaved = True
             self.following = True
             self.enclosure_synchronized =True

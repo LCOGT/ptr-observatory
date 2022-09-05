@@ -239,21 +239,18 @@ class Camera:
             self.app = win32com.client.Dispatch("Maxim.Application")
             #self.app.TelescopeConnected = True
             #print("Maxim Telescope Connected: ", self.app.TelescopeConnected)
-            print('Control is via Maxim camera interface.')
-            print('Note telescope is NOT connected to Maxim.')
-        #print('Maxim is connected:  ', self._connect(True))
-
+            print('Control is via Maxim camera interface, not ASCOM.')
+            print('Please note telescope is NOT connected to Maxim.') 
+        ##  NB NB Consider starting at low end of cooling and then gradually increasing it 
         print('Cooler started @:  ', self._setpoint())
         setpoint =(float(self.config['camera'][self.name]['settings']['temp_setpoint']))
         self._set_setpoint(setpoint)
-
         print('Cooler setpoint is now:  ', setpoint)
-        
-
         if self.config['camera'][self.name]['settings']['cooler_on']:    #NB NB why this logic, do we mean if not cooler found on, then turn it on and take the delay?
             self._set_cooler_on()
-        print('Cooler Cooling beginning @:  ', self._temperature())  
-
+        print('Cooler Cooling beginning @:  ', self._temperature())
+        time.sleep(5)
+        print("TEC  % load:  ",  self._maxim_cooler_power())
         self.use_file_mode = False  #self.config['camera'][self.name]['use_file_mode']    #NB NB NB this is obsolte, clear nout file mode from code
         self.current_filter = 0    #W in Apache Ridge case. #This should come from config, filter section
         self.exposure_busy = False
@@ -362,6 +359,12 @@ class Camera:
 
     def _maxim_temperature(self):
         return self.camera.Temperature
+    
+    def _maxim_cooler_power(self):
+        return self.camera.CoolerPower
+    
+    def _maxim_heatsink_temp(self):
+        return self.camera.HeatSinkTemperature
     
     def _maxim_cooler_on(self):
         return self.camera.CoolerOn   # NB NB NB This would be a good place to put a warming protector
@@ -1372,7 +1375,6 @@ class Camera:
 #                     # detsec also needs to be changed appropriately.
 #
 # =============================================================================
-
                     if self.bin == 1:
                         hdu.header['DATASEC'] = self.config['camera'][self.name]['settings']['data_sec'][0]
                         hdu.header['DETSEC']  = self.config['camera'][self.name]['settings']['det_sec' ][0]
@@ -1646,7 +1648,7 @@ class Camera:
                              'text_name11': text_name,
                              'frame_type':  frame_type
                              }
-                    if  self.config['site'] == 'saf':    #ADD an owner specified request to do this save
+                    if  False and self.config['site'] == 'saf':    #ADD an owner specified request to do this save
                         os.makedirs(self.alt_path +  g_dev['day'] + '/reduced/', exist_ok=True)
                         red_path_aux = self.alt_path +  g_dev['day'] + '/reduced/'
                         paths['red_path_aux'] = red_path_aux

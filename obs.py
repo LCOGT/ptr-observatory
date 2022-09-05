@@ -917,10 +917,12 @@ class Observatory:
                 # NB BAD 20220717 print('Reduced Mean:  ', round(hdu.data.mean() + hdu.header['PEDASTAL'], 2))
                 #wpath = paths['im_path'] + paths['red_name01']
                 #hdu.writeto(wpath, overwrite=True)  # NB overwrite == True is dangerous in production code.  This is big fits to AWS
+                #print ("original path")
+                #print (paths)
                 reduced_data_size = hdu.data.size
                 
                 #print('***** Reduced data size, dtype:  ', reduced_data_size, hdu.data.dtype, hdu.header['BITPIX'], hdu.header['NAXIS1'])
-
+                
                 wpath = paths['red_path'] + paths['red_name01_lcl']    #This name is convienent for local sorting
 
                 hdu.writeto(wpath, overwrite=True) #Bigfit reduced
@@ -932,19 +934,37 @@ class Observatory:
                 #Will try here to solve
                 if not paths['frame_type'] in ['bias', 'dark', 'flat', 'solar', 'lunar', 'skyflat', 'screen', 'spectrum', 'auto_focus']:
                     try:
-                        hdu_save = hdu
+                        #hdu_save = hdu
                         #wpath = 'C:/000ptr_saf/archive/sq01/20210528/reduced/saf-sq01-20210528-00019785-le-w-EX01.fits'
-                        time_now = time.time()  #This should be more accurately defined earlier in the header
+                        #time_now = time.time()  #This should be more accurately defined earlier in the header
                         #NB NB The following needs better bin management
-                        solve = platesolve.platesolve(wpath, 1.067)     #0.5478)
+                        #solve = platesolve.platesolve(wpath, 1.067)     #0.5478)
+                        solve = platesolve.platesolve(wpath, float(hdu.header['PIXSCALE']))     #0.5478)
                         print("PW Solves: " ,solve['ra_j2000_hours'], solve['dec_j2000_degrees'])
-                        img = fits.open(wpath, mode='update', ignore_missing_end=True)
-                        hdr = img[0].header
+                        #img = fits.open(wpath, mode='update', ignore_missing_end=True)
+                        #hdr = img[0].header
+                        #hdr=hdu.header
                         #  Update the header.
-                        hdr['RA-J2000'] = solve['ra_j2000_hours']
-                        hdr['DECJ2000'] = solve['dec_j2000_degrees']
-                        hdr['MEAS-SCL'] = solve['arcsec_per_pixel']
-                        hdr['MEAS-ROT'] = solve['rot_angle_degs']
+                        hdu.header['RA-J20PW'] = solve['ra_j2000_hours']
+                        hdu.header['DECJ20PW'] = solve['dec_j2000_degrees']
+                        hdu.header['RAHRS'] = float(solve['ra_j2000_hours'])
+                        hdu.header['RA'] = float(solve['ra_j2000_hours']*15)
+                        hdu.header['DEC'] = float(solve['dec_j2000_degrees'])
+                        
+                        hdu.header['MEAS-SPW'] = solve['arcsec_per_pixel']
+                        hdu.header['MEAS-RPW'] = solve['rot_angle_degs']
+                        
+                        #MTF woz ere - This updates the RA and Dec in the raw file header if a solution is found
+                        with fits.open(paths['raw_path'] + paths['raw_name00'], 'update') as f:
+                            for hdbf in f:
+                                hdbf.header['RA-J20PW'] = solve['ra_j2000_hours']
+                                hdbf.header['DECJ20PW'] = solve['dec_j2000_degrees']
+                                hdbf.header['RAHRS'] = float(solve['ra_j2000_hours'])
+                                hdbf.header['RA'] = float(solve['ra_j2000_hours']*15)
+                                hdbf.header['DEC'] = float(solve['dec_j2000_degrees'])                                
+                                hdbf.header['MEAS-SPW'] = solve['arcsec_per_pixel']
+                                hdbf.header['MEAS-RPW'] = solve['rot_angle_degs']
+                        
                         target_ra  = g_dev['mnt'].current_icrs_ra
                         target_dec = g_dev['mnt'].current_icrs_dec
                         solved_ra = solve['ra_j2000_hours']
@@ -959,10 +979,10 @@ class Observatory:
                             g_dev['mnt'].adjust_mount_reference(err_ha, err_dec)
                         else:
                             g_dev['mnt'].adjust_flip_reference(err_ha, err_dec)   #Need to verify signs
-                        img.flush()
-                        img.close
-                        img = fits.open(wpath, ignore_missing_end=True)
-                        hdr = img[0].header
+                        #img.flush()
+                        #img.close
+                        #img = fits.open(wpath, ignore_missing_end=True)
+                        #hdr = img[0].header
                         # prior_ra_h, prior_dec, prior_time = g_dev['mnt'].get_last_reference()
                         
                         # if prior_time is not None:
@@ -971,11 +991,15 @@ class Observatory:
                         # g_dev['mnt'].set_last_reference( solve['ra_j2000_Second phase of AF now.hours'], solve['dec_j2000_degrees'], time_now)
                     except:
                        print('Image:  ',wpath[-24:-5], " did not solve; this is usually OK.")
-                       img = fits.open(wpath, mode='update', ignore_missing_end=True)
-                       hdr = img[0].header
-                       hdr['NO-SOLVE'] = True
-                       img.close()
-                    hdu = hdu_save
+                       #img = fits.open(wpath, mode='update', ignore_missing_end=True)
+                       #hdr = img[0].header
+                       hdu.header['RA-J20PW'] = False
+                       hdu.header['DECJ20PW'] = False
+                       hdu.header['MEAS-SPW'] = False
+                       hdu.header['MEAS-RPW'] = False
+                       #hdu.header['NO-SOLVE'] = True
+                       #img.close()
+                    #hdu = hdu_save
                     #Return to classic processing
                 
                 # if self.site_name == 'saf':

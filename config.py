@@ -13,9 +13,6 @@ import os
 import pathlib
 import socket
 
-#  NB NB NB json is not bi-directional with tuples (), instead, use lists [],
-                                                       #    nested if needed.
-
 host_site = socket.gethostname()[:3].lower()   #  NB May be better to split on
                                          # '-' and use first part of hostname.
 sys.path.append(os.path.join(pathlib.Path().resolve(),"configs", host_site))
