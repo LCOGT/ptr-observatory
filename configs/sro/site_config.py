@@ -426,7 +426,7 @@ site_config = {
             'file_mode_path':  'G:/000ptr_saf/archive/sq01/autosaves/',   #NB Incorrect site, etc. Not used at SRO.  Please clean up.
 
             'settings': {
-                'temp_setpoint': -32.5,
+                'temp_setpoint': -20,
                 'calib_setpoints': [-35,-30, -25, -20, -15, -10 ],  #  Should vary with season? 
                 'day_warm': False,
                 'cooler_on': True,
