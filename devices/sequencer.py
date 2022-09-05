@@ -581,8 +581,8 @@ class Sequencer:
             dest_ra, dest_dec = ra_dec_fix_hd(dest_ra,dest_dec)
             dest_name =target['name']
 
-            if enc_status['shutter_status'] in ['Closed', 'closed']:  # \  NB NB 20220901 WER fix this!
-                #and ocn_status['hold_duration'] <= 0.1:   #NB
+            if enc_status['shutter_status'] in ['Closed', 'closed'] and ocn_status['hold_duration'] <= 0.1:   #NB  # \  NB NB 20220901 WER fix this!
+                
                 #breakpoint()
                 g_dev['enc'].open_command({}, {})
                 print("Opening dome, will set Synchronize in 10 seconds.")
