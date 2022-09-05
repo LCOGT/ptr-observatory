@@ -440,7 +440,6 @@ class Enclosure:
         if self.is_wema and self.site_has_proxy and self.config['site_IPC_mechanism'] == 'shares':
             _redis = False
             # NB NB THis really needs a context manage so no dangling open files
-            breakpoint()
             try:
                 enc_cmd = open(self.config['wema_write_share_path'] + 'enc_cmd.txt', 'r')
                 enc_status = json.loads(enc_cmd.readline())
