@@ -2,12 +2,12 @@
 # -*- coding: utf-8 -*-
 '''
 Created on Fri Feb 07,  11:57:41 2020
-20220601  Update for statuss corruption incident.  This worked today.
+20220902  Update for status corruption incident.  This worked today.
 
 @author: wrosing
 '''
 #                                                                                        1         1         1       1
-#        1         2         3         4         6         7         8         9         0         1         2       2   
+#        1         2         3         4         6         7         8         9         0         1         2       2
 #234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678
 import json
 import time
@@ -374,9 +374,12 @@ site_config = {
                         #['w',     [0,  0],     0, 72.7, [1.00 ,  72], 'PL'],    #0.   For sequencer autofocus  consider foc or f filter
                         ['focus', [0,  0],     0, 72.7, [1.00 ,  72], 'focus'],    #0.   
                         ['PL',    [0,  0],     0, 620, [1.00 ,  72], 'PhLum'],    #1.
-                        ['PR',    [1,  1],     0, 170, [1.00 , 119], 'PhBlue'],    #2.
+                        ['PR',    [1,  1],     0, 170, [1.00 , 119], 'PhRed'],    #2.
                         ['PG',    [2,  2],     0, 220, [1.00 , 113], 'PhGreen'],    #3.
-                        ['PB',    [3,  3],     0, 300, [0.80 ,  97], 'PhRed'],    #4.
+                        ['PB',    [3,  3],     0, 300, [0.80 ,  97], 'PhBlue'],    #4.
+                        #['PR',    [1,  1],     0, 170, [1.00 , 119], 'PhBlue'],    #2.
+                        #['PG',    [2,  2],     0, 220, [1.00 , 113], 'PhGreen'],    #3.
+                        #['PB',    [3,  3],     0, 300, [0.80 ,  97], 'PhRed'],    #4.
                         ['HA',    [4,  4],     0, .400, [5.00 , 200], 'Halpha'],    #5.
                         ['O3',    [5,  5],     0, 6, [4.00 , 200], 'OIII'],    #6.
                         ['S2',    [6,  6],     0, .221, [10.0,  200], 'SII'],    #7.
@@ -423,7 +426,7 @@ site_config = {
             'file_mode_path':  'G:/000ptr_saf/archive/sq01/autosaves/',   #NB Incorrect site, etc. Not used at SRO.  Please clean up.
 
             'settings': {
-                'temp_setpoint': -25,
+                'temp_setpoint': -32.5,
                 'calib_setpoints': [-35,-30, -25, -20, -15, -10 ],  #  Should vary with season? 
                 'day_warm': False,
                 'cooler_on': True,
