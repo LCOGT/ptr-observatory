@@ -88,7 +88,7 @@ site_config = {
     
     'site_in_automatic_default': "Manual",   # ["Manual", "Shutdown", "Automatic"]
     'automatic_detail_default': "Enclosure is initially set to Manual by SAF config.",
-    'auto_eve_bias_dark': True,
+    'auto_eve_bias_dark': False,
     'auto_eve_sky_flat': False,
     'eve_sky_flat_sunset_offset': -60.0,  # Minutes  neg means before, + after.
     'auto_morn_sky_flat': False,
@@ -621,7 +621,7 @@ site_config = {
                 'max_exposure': 360.0,
                 'can_subframe':  True,
                 'min_subframe':  [128, 128],       
-                'bin_modes':  [[2, 2, 1.06], [1, 1, 0.53], [3, 3, 1.58], [4, 4,2.11]],   #Meaning no binning choice if list has only one entry, default should be first.
+                'bin_modes':  [[1, 1, 0.53], [2, 2, 1.06], [3, 3, 1.58], [4, 4, 2.11]],   #Meaning no binning choice if list has only one entry, default should be first.
                 'default_bin':  [2, 2, 1.06],    # Matched to seeing situation by owner
                 'cycle_time':  [18, 15, 15, 12],  # 3x3 requires a 1, 1 reaout then a software bin, so slower.
                 'rbi_delay':  0.,      # This being zero says RBI is not available, eg. for SBIG.
