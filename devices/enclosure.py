@@ -543,7 +543,7 @@ class Enclosure:
             self.site_in_automatic = False
             self.mode = 'Shutdown'
         elif self.is_dome and redis_command == 'go_home':
-            if _redis: g_dev['redis'].delete('goHome')
+            if _redis: g_dev['redis'].delete('go_home')
         elif self.is_dome and redis_command == 'sync_enc':
             self.following = True
             print("Scope Dome following set On")
