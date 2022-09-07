@@ -944,7 +944,7 @@ class Observatory:
                         #img = fits.open(wpath, mode='update', ignore_missing_end=True)
                         #hdr = img[0].header
                         #hdr=hdu.header
-                        #  Update the header.
+                        #  Update the NEW header for a 'Reduced" fits. The Raw fits has not been changed.
                         hdu.header['RA-J20PW'] = solve['ra_j2000_hours']
                         hdu.header['DECJ20PW'] = solve['dec_j2000_degrees']
                         hdu.header['RAHRS'] = float(solve['ra_j2000_hours'])
