@@ -543,7 +543,7 @@ class Enclosure:
             self.site_in_automatic = False
             self.mode = 'Shutdown'
         elif self.is_dome and redis_command == 'go_home':
-            if _redis: g_dev['redis'].delete('goHome')
+            if _redis: g_dev['redis'].delete('go_home')
         elif self.is_dome and redis_command == 'sync_enc':
             self.following = True
             print("Scope Dome following set On")
@@ -667,7 +667,18 @@ class Enclosure:
                 self.mode = 'Shutdown'
             g_dev['enc'].site_in_automatic = False
             g_dev['enc'].automatic_detail =  "Site Shutdown"
-        # elif action == "slew_alt":
+        elif action == "home_dome":
+            if shares: 
+                cmd_list.append('go_home')
+        elif action == 'track_telescope':
+            if shares: 
+                cmd_list.append('sync_enc')
+        elif action =='stop_tracking_telescope':
+            if shares: 
+                cmd_list.append('unsync_enc')
+        elif action == 'simulate_weather_hold':
+            if shares: 
+                cmd_list.append('toggle_wx_hold')
         #     self.slew_alt_command(req, opt)
         # elif action == "slew_az":
         #     self.slew_az_command(req, opt)
