@@ -624,6 +624,9 @@ class Camera:
         elif bin_x in ['2 2', 2, '2, 2', '2,2', [2, 2], (2, 2)]:   #The bin spec is too convoluted. This needs a deep clean.
             bin_x = 2
             self.ccd_sum = '2 2'
+        elif bin_x in ['0 0', 0, '0, 0', '0,0', [0, 0], (0, 0)]:   # 0,0 is an indicator for selecting the default binning
+            bin_x = self.config['camera'][self.name]['settings']['default_bin']
+            self.ccd_sum = str(bin_x) + ' ' + str(bin_x)
         else:
             bin_x = 1
             self.ccd_sum = '1 1'
