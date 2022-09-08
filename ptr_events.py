@@ -512,7 +512,7 @@ class Events:
         #     pass
         # finally:
         #     pass
-        eve_skyFlatBegin = sunset +  -32.5/1440  #  NB NB this should come from sro.jscon
+        #eve_skyFlatBegin = sunset +  -32.5/1440  #  NB NB this should come from sro.jscon
         #  NB NB Should add sit time to this report.
         print('Events module reporting for duty. \n')
         print('Ephem date     :    ', dayNow)
@@ -525,6 +525,7 @@ class Events:
         print('Moon phase %   :    ', round(mid_moon_phase, 1), '%\n')
         print("Key events for the evening, presented by the Solar System: \n")
         if self.config['site'] == 'sro':
+            eve_skyFlatBegin = sunset +  -32.5/1440  #  NB NB this should come from sro.jscon
             evnt = [('Eve Bias Dark      ', ephem.Date(eve_skyFlatBegin -125/1440)),
                     ('End Eve Bias Dark  ', ephem.Date(eve_skyFlatBegin - 5/1440)),
                     #('Eve Scrn Flats     ', ephem.Date(beginEveScreenFlats)),
@@ -558,13 +559,13 @@ class Events:
                     ('Moon Transit       ', next_moontransit),
                     ('Moon Set           ', next_moonset)]           
         else:
-            
-            evnt = [('Eve Bias Dark      ', ephem.Date(sunset -200/1440)),
-                    ('End Eve Bias Dark  ', ephem.Date(sunset - 80/1440)),
+            eve_skyFlatBegin = sunset - 60/1440  #  NB NB this should come from sro.jscon
+            evnt = [('Eve Bias Dark      ', ephem.Date(sunset -185/1440)),
+                    ('End Eve Bias Dark  ', ephem.Date(sunset - 65/1440)),
                     #('Eve Scrn Flats     ', ephem.Date(beginEveScreenFlats)),
                     #('End Eve Scrn Flats ', ephem.Date(endEveScreenFlats)),
-                    ('Ops Window Start   ', ephem.Date(sunset - 71/1440)),  #Enclosure may open.
-                    ('Cool Down, Open    ', ephem.Date(sunset - 70/1440)),
+                    ('Ops Window Start   ', ephem.Date(sunset - 64/1440)),  #Enclosure may open.
+                    ('Cool Down, Open    ', ephem.Date(sunset - 63/1440)),
                     ('Eve Sky Flats      ', ephem.Date(sunset - 60/1440)),
                     ('Sun Set            ', sunset),
                     ('Civil Dusk         ', civilDusk),
