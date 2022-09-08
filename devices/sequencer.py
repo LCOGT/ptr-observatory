@@ -692,8 +692,10 @@ class Sequencer:
                     color = exposure['filter']
                     exp_time =  float(exposure['exposure'])
                     #dither = exposure['dither']
-
-                    if exposure['bin'] in [2, '2,2', '2, 2', '2 2']:
+                    if exposure['bin'] in['0', '0,0', '0 0']:
+                        if g_dev['cam'].config['camera']['camera_1_1']['settings']['default_bin'][0] == 1:
+                            binning = '1 1'
+                    elif exposure['bin'] in [2, '2,2', '2, 2', '2 2']:
                         binning = '2 2'
                     elif exposure['bin'] in [3, '3,3', '3, 3', '3 3']:
                         binning = '3 3'
