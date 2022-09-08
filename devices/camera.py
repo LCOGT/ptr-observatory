@@ -1043,6 +1043,8 @@ class Camera:
                             self.pre_ocn = []
                             if frame_type in ('flat', 'screenflat', 'skyflat', 'dark', 'bias'):
                                 g_dev['obs'].send_to_user("Starting " + str(frame_type) + "calibration exposure.", p_level='INFO')
+                            elif frame_type in ('focus'):
+                                g_dev['obs'].send_to_user("Starting " + str(frame_type) + " exposure.", p_level='INFO')
                             else:                                
                                 g_dev['obs'].send_to_user("Starting * name! * by user: " + self.user_name, p_level='INFO')
                             g_dev['ocn'].get_quick_status(self.pre_ocn)   #NB NB WEMA must be running or this may fault.
