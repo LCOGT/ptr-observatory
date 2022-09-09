@@ -1046,7 +1046,7 @@ class Camera:
                             elif frame_type in ('focus'):
                                 g_dev['obs'].send_to_user("Starting " + str(frame_type) + " exposure.", p_level='INFO')
                             else:                                
-                                g_dev['obs'].send_to_user("Starting * name! * by user: " + self.user_name, p_level='INFO')
+                                g_dev['obs'].send_to_user("Starting * name! * by user: " + str(self.user_name), p_level='INFO')
                             g_dev['ocn'].get_quick_status(self.pre_ocn)   #NB NB WEMA must be running or this may fault.
                             g_dev['foc'].get_quick_status(self.pre_foc)
                             g_dev['rot'].get_quick_status(self.pre_rot)
@@ -1101,7 +1101,8 @@ class Camera:
     def finish_exposure(self, exposure_time, frame_type, counter, seq, \
                         gather_status=True, do_sep=False, no_AWS=False, start_x=None, start_y=None, quick=False, \
                         low=0, high=0, script='False', opt=None, solve_it=False):
-        print("Finish exposure Entered:  ", exposure_time, 'sec.;   # of ', frame_type, 'to go: ', counter)
+        print("Finish exposure Entered:  " + str(exposure_time) + 'sec.;   # of ', frame_type, 'to go: ', counter)
+        g_dev['obs'].send_to_user("Starting Exposure: "+ str(exposure_time) + ' sec.;   # of ' + frame_type + ' frames. Remaining: ' + str(counter), p_level='INFO')
         #, gather_status, do_sep, no_AWS, start_x, start_y, opt['area'])
         self.status_time = time.time() + 10
         self.post_mnt = []
@@ -1115,6 +1116,7 @@ class Camera:
             self.completion_time = self.t2 + exposure_time + 1
         result = {'error': False}
         notifyReadOutOnlyOnce=0
+        quartileExposureReport=0
         while True:    #This loop really needs a timeout.
             self.post_mnt = []
             self.post_rot = []
@@ -1133,6 +1135,20 @@ class Camera:
                 remaining = round(self.completion_time - self.t7b, 1)
                 if remaining > 0:
                     print (str(round(remaining, 1))+'sec.', str(round(100*remaining/exposure_time, 1))+'%')
+                    if quartileExposureReport==0:    # Silly daft but workable exposure time reporting by MTF
+                        initialRemaining=remaining
+                        quartileExposureReport=quartileExposureReport+1
+                    if quartileExposureReport==1 and remaining < initialRemaining*.75 and initialRemaining > 30:
+                        quartileExposureReport=quartileExposureReport+1
+                        g_dev['obs'].send_to_user("Exposure 25% complete. Remaining: " + str(remaining) + ' sec.', p_level='INFO')
+                    if quartileExposureReport==2 and remaining < initialRemaining*.50 and initialRemaining > 30:
+                        quartileExposureReport=quartileExposureReport+1
+                        g_dev['obs'].send_to_user("Exposure 50% complete. Remaining: " + str(remaining) + ' sec.', p_level='INFO')
+                    if quartileExposureReport==3 and remaining < initialRemaining*.25 and initialRemaining > 30:
+                        quartileExposureReport=quartileExposureReport+1
+                        g_dev['obs'].send_to_user("Exposure 75% complete. Remaining: " + str(remaining) + ' sec.', p_level='INFO')
+                        
+                    
                 continue
             incoming_image_list = []   #glob.glob(self.file_mode_path + '*.f*t*')
             self.t4 = time.time()

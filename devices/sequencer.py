@@ -1465,14 +1465,18 @@ class Sequencer:
                 result['FWHM'] = 3
                 result['mean_focus'] = g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron
 
-            spot1 = result['FWHM']
-            foc_pos1 = result['mean_focus']
-            if math.isnan(spot1):
-                retry += 1
-                print("Retry of central focus star)")
-                continue
-            else:
-                break
+            
+            try: 
+                spot1 = result['FWHM']
+                foc_pos1 = result['mean_focus']
+                if math.isnan(spot1):
+                    retry += 1
+                    print("Retry of central focus star)")
+                    continue
+                else:
+                    break
+            except:
+                print ("Failed FWHM measurement.")
         print('Autofocus Moving In.\n\n')
 
         g_dev['foc'].guarded_move((foc_pos0 - 1*throw)*g_dev['foc'].micron_to_steps)
