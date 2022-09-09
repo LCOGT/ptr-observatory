@@ -1776,8 +1776,8 @@ class Camera:
                 #     print (round(remaining, 1), round(100*remaining/self.expsoure, 1))
                 
                 if remaining < 0 and notifyReadOutOnlyOnce == 0:
-                    print("Readout time remaining:  " + str(round(13 + remaining, 1)), ' sec')
-                    g_dev['obs'].send_to_user("Readout time remaining:  " + str(round(13 + remaining, 1)) + ' s.', p_level='INFO')
+                    print("Reading out image. Time remaining: " + str(round(13 + remaining, 1)), ' sec')
+                    g_dev['obs'].send_to_user("Reading out image. Time remaining: " + str(round(13 + remaining, 1)) + ' s.', p_level='INFO')
                     notifyReadOutOnlyOnce=1
                 if remaining < -30:
                     print("Camera timed out; probably is no longer connected, resetting it now.")

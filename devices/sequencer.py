@@ -1657,77 +1657,81 @@ class Sequencer:
             opt = {'area': 100, 'count': 1, 'filter': 'focus'}
         foc_pos0 = foc_start
         result = {}
-        print('Autofocus Starting at:  ', foc_pos0, '\n\n')
-
-        g_dev['foc'].guarded_move((foc_pos0 - 0*throw)*g_dev['foc'].micron_to_steps)  #Added 20220209! A bit late
-        #throw = 100  # NB again, from config.  Units are microns
-        if not sim:
-            result = g_dev['cam'].expose_command(req, opt, no_AWS=True, solve_it=False)
-        else:
-            result['FWHM'] = 4
-            result['mean_focus'] = g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron
-        spot1 = result['FWHM']
-        foc_pos1 = result['mean_focus']
-        # if not sim:
-        #     result = g_dev['cam'].expose_command(req, opt, no_AWS=True) ## , script = 'auto_focus_script_0')  #  This is where we start.
-        # else:
-        #     result['FWHM'] = 3
-        #     result['mean_focus'] = foc_pos0
-        # spot1 = result['FWHM']
-        # foc_pos1 = result['mean_focus']
-
-
-        print('Autofocus Moving In -1x, second time.\n\n')
-
-        g_dev['foc'].guarded_move((foc_pos0 - 1*throw)*g_dev['foc'].micron_to_steps)
-        #opt['fwhm_sim'] = 4.
-        if not sim:
-            result = g_dev['cam'].expose_command(req, opt, no_AWS=True, solve_it=False)
-        else:
-            result['FWHM'] = 5
-            result['mean_focus'] = g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron
-        spot2 = result['FWHM']
-        foc_pos2 = result['mean_focus']
-        print('Autofocus Moving In -2x, second time.\n\n')
-
-        g_dev['foc'].guarded_move((foc_pos0 - 2*throw)*g_dev['foc'].micron_to_steps)
-        #opt['fwhm_sim'] = 4.
-        if not sim:
-            result = g_dev['cam'].expose_command(req, opt, no_AWS=True, solve_it=False)
-        else:
-            result['FWHM'] = 6
-            result['mean_focus'] = g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron
-        spot3 = result['FWHM']
-        foc_pos3 = result['mean_focus']
-        #Need to check we are not going out too far!
-        print('Autofocus Moving out +3X.\n\n')
-
-        g_dev['foc'].guarded_move((foc_pos0 + 3*throw)*g_dev['foc'].micron_to_steps)
-        print('Autofocus back in for backlash to +2X\n\n')#It is important to overshoot to overcome any backlash
-        g_dev['foc'].guarded_move((foc_pos0 + 2*throw)*g_dev['foc'].micron_to_steps)
-        #opt['fwhm_sim'] = 5
-        if not sim:
-            result = g_dev['cam'].expose_command(req, opt, no_AWS=True, solve_it=False)
-        else:
-            result['FWHM'] = 6.5
-            result['mean_focus'] = g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron
-        spot4 = result['FWHM']
-        foc_pos4 = result['mean_focus']
-        print('Autofocus back in for backlash to +1X\n\n')
-
-        g_dev['foc'].guarded_move((foc_pos0 + throw)*g_dev['foc'].micron_to_steps)
-        #opt['fwhm_sim'] = 4.
-        if not sim:
-            result = g_dev['cam'].expose_command(req, opt, no_AWS=True, solve_it=False)
-        else:
-            result['FWHM'] = 5.75
-            result['mean_focus'] = g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron
-        spot5 = result['FWHM']
-        foc_pos5 = result['mean_focus']
-        x = [foc_pos3, foc_pos2, foc_pos1, foc_pos5, foc_pos4]  # NB NB 20220218 This assigment is bogus!!!!
-        y = [spot3, spot2, spot1, spot5, spot4]
-        print('X, Y:  ', x, y)
         try:
+            print('Autofocus Starting at:  ', foc_pos0, '\n\n')
+    
+            g_dev['foc'].guarded_move((foc_pos0 - 0*throw)*g_dev['foc'].micron_to_steps)  #Added 20220209! A bit late
+            #throw = 100  # NB again, from config.  Units are microns
+            if not sim:
+                result = g_dev['cam'].expose_command(req, opt, no_AWS=True, solve_it=False)
+            else:
+                result['FWHM'] = 4
+                result['mean_focus'] = g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron
+            spot1 = result['FWHM']
+            foc_pos1 = result['mean_focus']
+            # if not sim:
+            #     result = g_dev['cam'].expose_command(req, opt, no_AWS=True) ## , script = 'auto_focus_script_0')  #  This is where we start.
+            # else:
+            #     result['FWHM'] = 3
+            #     result['mean_focus'] = foc_pos0
+            # spot1 = result['FWHM']
+            # foc_pos1 = result['mean_focus']
+    
+    
+            print('Autofocus Moving In -1x, second time.\n\n')
+    
+            g_dev['foc'].guarded_move((foc_pos0 - 1*throw)*g_dev['foc'].micron_to_steps)
+            #opt['fwhm_sim'] = 4.
+            if not sim:
+                result = g_dev['cam'].expose_command(req, opt, no_AWS=True, solve_it=False)
+            else:
+                result['FWHM'] = 5
+                result['mean_focus'] = g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron
+            spot2 = result['FWHM']
+            foc_pos2 = result['mean_focus']
+            print('Autofocus Moving In -2x, second time.\n\n')
+    
+            g_dev['foc'].guarded_move((foc_pos0 - 2*throw)*g_dev['foc'].micron_to_steps)
+            #opt['fwhm_sim'] = 4.
+            if not sim:
+                result = g_dev['cam'].expose_command(req, opt, no_AWS=True, solve_it=False)
+            else:
+                result['FWHM'] = 6
+                result['mean_focus'] = g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron
+            spot3 = result['FWHM']
+            foc_pos3 = result['mean_focus']
+            #Need to check we are not going out too far!
+            print('Autofocus Moving out +3X.\n\n')
+    
+            g_dev['foc'].guarded_move((foc_pos0 + 3*throw)*g_dev['foc'].micron_to_steps)
+            print('Autofocus back in for backlash to +2X\n\n')#It is important to overshoot to overcome any backlash
+            g_dev['foc'].guarded_move((foc_pos0 + 2*throw)*g_dev['foc'].micron_to_steps)
+            #opt['fwhm_sim'] = 5
+            if not sim:
+                result = g_dev['cam'].expose_command(req, opt, no_AWS=True, solve_it=False)
+            else:
+                result['FWHM'] = 6.5
+                result['mean_focus'] = g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron
+            spot4 = result['FWHM']
+            foc_pos4 = result['mean_focus']
+            print('Autofocus back in for backlash to +1X\n\n')
+    
+            g_dev['foc'].guarded_move((foc_pos0 + throw)*g_dev['foc'].micron_to_steps)
+            #opt['fwhm_sim'] = 4.
+            if not sim:
+                result = g_dev['cam'].expose_command(req, opt, no_AWS=True, solve_it=False)
+            else:
+                result['FWHM'] = 5.75
+                result['mean_focus'] = g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron
+            spot5 = result['FWHM']
+            foc_pos5 = result['mean_focus']
+        except:
+            print ("autofocus failed somewhere.")
+        
+        try:
+            x = [foc_pos3, foc_pos2, foc_pos1, foc_pos5, foc_pos4]  # NB NB 20220218 This assigment is bogus!!!!
+            y = [spot3, spot2, spot1, spot5, spot4]
+            print('X, Y:  ', x, y)
             #Digits are to help out pdb commands!
             a1, b1, c1, d1 = fit_quadratic(x, y)
             new_spot = round(a1*d1*d1 + b1*d1 + c1, 2)
