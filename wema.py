@@ -29,6 +29,7 @@ from api_calls import API_calls
 import ptr_events
 from devices.observing_conditions import ObservingConditions
 from devices.enclosure import Enclosure
+from pprint import pprint
 
 from global_yard import g_dev
 
@@ -243,7 +244,7 @@ class WxEncAgent:
         #print(self.config)
         response = self.api.authenticated_request("PUT", uri, self.config)
         if response:
-            print("Config uploaded successfully.")
+            print("\n\nConfig uploaded successfully.")
 
     def scan_requests(self, mount):
         return

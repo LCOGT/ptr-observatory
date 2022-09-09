@@ -86,8 +86,8 @@ site_config = {
     'reference_ambient':  10.0,  # Degrees Celsius.  Alternately 12 entries, one for every - mid month.
     'reference_pressure':  794.0,    #mbar   A rough guess 20200315
     
-    'site_in_automatic_default': "Manual",   # ["Manual", "Shutdown", "Automatic"]
-    'automatic_detail_default': "Enclosure is initially set to Manual by SAF config.",
+    'site_in_automatic_default': "Automatic",   # ["Manual", "Shutdown", "Automatic"]
+    'automatic_detail_default': "Enclosure is initially set to Automatic by SAF config.",
     'auto_eve_bias_dark': True,
     'auto_eve_sky_flat': True,
     'eve_sky_flat_sunset_offset': -60.0,  # Minutes  neg means before, + after.
