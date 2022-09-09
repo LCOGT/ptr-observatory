@@ -243,9 +243,8 @@ class WxEncAgent:
         self.config['events'] = g_dev['events']
         #print(self.config)
         response = self.api.authenticated_request("PUT", uri, self.config)
-        breakpoint()
         if response:
-            print(self.config, "\n\nConfig uploaded successfully.")
+            print("\n\nConfig uploaded successfully.")
 
     def scan_requests(self, mount):
         return
