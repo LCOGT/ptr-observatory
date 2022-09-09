@@ -1042,7 +1042,7 @@ class Camera:
                             self.pre_foc = []
                             self.pre_ocn = []
                             if frame_type in ('flat', 'screenflat', 'skyflat', 'dark', 'bias'):
-                                g_dev['obs'].send_to_user("Starting " + str(frame_type) + "calibration exposure.", p_level='INFO')
+                                g_dev['obs'].send_to_user("Starting " + str(frame_type) + " calibration exposure.", p_level='INFO')
                             elif frame_type in ('focus'):
                                 g_dev['obs'].send_to_user("Starting " + str(frame_type) + " exposure.", p_level='INFO')
                             else:                                
@@ -1114,6 +1114,7 @@ class Camera:
         else:
             self.completion_time = self.t2 + exposure_time + 1
         result = {'error': False}
+        notifyReadOutOnlyOnce=0
         while True:    #This loop really needs a timeout.
             self.post_mnt = []
             self.post_rot = []
@@ -1773,9 +1774,11 @@ class Camera:
                 remaining = round(self.completion_time - self.t7, 1)
                 # if remaining > 0:
                 #     print (round(remaining, 1), round(100*remaining/self.expsoure, 1))
-                if remaining < 0:
+                
+                if remaining < 0 and notifyReadOutOnlyOnce == 0:
                     print("Readout time remaining:  " + str(round(13 + remaining, 1)), ' sec')
                     g_dev['obs'].send_to_user("Readout time remaining:  " + str(round(13 + remaining, 1)) + ' s.', p_level='INFO')
+                    notifyReadOutOnlyOnce=1
                 if remaining < -30:
                     print("Camera timed out; probably is no longer connected, resetting it now.")
                     g_dev['obs'].send_to_user("Camera timed out; probably is no longer connected, resetting it now.", p_level='INFO')

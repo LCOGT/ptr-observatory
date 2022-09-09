@@ -2,6 +2,7 @@
 
 import time
 import datetime
+from datetime import timedelta
 #from random import shuffle
 import copy
 from global_yard import g_dev
@@ -15,6 +16,7 @@ import redis
 import math
 import ephem
 from pprint import pprint
+import os
 
 '''
 Autofocus NOTE 20200122
@@ -1004,7 +1006,19 @@ class Sequencer:
 
             print(" Bias/Dark acquisition is finished normally.")
 
-
+        if morn:
+            print ("sending end of night token to AWS")
+            #g_dev['cam'].enqueue_for_AWS(jpeg_data_size, paths['im_path'], paths['jpeg_name10'])
+            yesterday = datetime.datetime.now() - timedelta(1)
+            print (datetime.strftime(yesterday, '%Y%m%d'))
+            runNight=datetime.datetime.strftime(yesterday, '%Y%m%d')
+            isExist = os.path.exists(g_dev['cam'].site_path + 'tokens')
+            if not isExist:
+                os.makedirs(g_dev['cam'].site_path + 'tokens')
+            runNightToken= g_dev['cam'].site_path + 'tokens/' + self.config['site'] + runNight
+            with open(runNightToken, 'w') as f:
+                f.write('Night Completed')
+            g_dev['obs'].aws_queue.put((13000000, runNightToken), block=False)
         self.sequencer_hold = False
         g_dev['mnt'].park_command({}, {}) # Get there early
         print("Bias/Dark Phase has passed.")
