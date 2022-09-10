@@ -1566,7 +1566,11 @@ class Sequencer:
                 else:
                     result['FWHM'] = new_spot
                     result['mean_focus'] = g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron
-                spot4 = result['FWHM']
+                try:
+                    spot4 = result['FWHM']
+                except:
+                    print ("FWHM failed in spot4")
+                    spot4 = None
                 foc_pos4 = result['mean_focus']
                 print('\nFound best focus at:  ', foc_pos4,' measured is:  ',  round(spot4, 2), '\n')
                 g_dev['foc'].af_log(foc_pos4, spot4, new_spot)
@@ -1681,7 +1685,11 @@ class Sequencer:
             else:
                 result['FWHM'] = 4
                 result['mean_focus'] = g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron
-            spot1 = result['FWHM']
+            try:
+                spot1 = result['FWHM']
+            except:
+                print ("FWHM failed in spot1")
+                spot1 = None
             foc_pos1 = result['mean_focus']
             # if not sim:
             #     result = g_dev['cam'].expose_command(req, opt, no_AWS=True) ## , script = 'auto_focus_script_0')  #  This is where we start.
@@ -1701,7 +1709,11 @@ class Sequencer:
             else:
                 result['FWHM'] = 5
                 result['mean_focus'] = g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron
-            spot2 = result['FWHM']
+            try:
+                spot2 = result['FWHM']
+            except:
+                print ("FWHM failed in spot2")
+                spot2 = None
             foc_pos2 = result['mean_focus']
             print('Autofocus Moving In -2x, second time.\n\n')
     
@@ -1712,7 +1724,11 @@ class Sequencer:
             else:
                 result['FWHM'] = 6
                 result['mean_focus'] = g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron
-            spot3 = result['FWHM']
+            try:
+                spot3 = result['FWHM']
+            except:
+                print ("FWHM failed in spot3")
+                spot3 = None
             foc_pos3 = result['mean_focus']
             #Need to check we are not going out too far!
             print('Autofocus Moving out +3X.\n\n')
@@ -1726,7 +1742,11 @@ class Sequencer:
             else:
                 result['FWHM'] = 6.5
                 result['mean_focus'] = g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron
-            spot4 = result['FWHM']
+            try:
+                spot4 = result['FWHM']
+            except:
+                print ("FWHM failed in spot4")
+                spot4 = None
             foc_pos4 = result['mean_focus']
             print('Autofocus back in for backlash to +1X\n\n')
     
@@ -1737,7 +1757,11 @@ class Sequencer:
             else:
                 result['FWHM'] = 5.75
                 result['mean_focus'] = g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron
-            spot5 = result['FWHM']
+            try:
+                spot5 = result['FWHM']
+            except:
+                print ("FWHM failed in spot5")
+                spot5 = None
             foc_pos5 = result['mean_focus']
         except:
             print ("autofocus failed somewhere.")
