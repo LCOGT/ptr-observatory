@@ -1006,11 +1006,13 @@ class Sequencer:
 
             print(" Bias/Dark acquisition is finished normally.")
 
-        if morn:
+        if morn : # NB NB NB Skking over: module 'datetime' has no attribute 'strftime'
             print ("sending end of night token to AWS")
             #g_dev['cam'].enqueue_for_AWS(jpeg_data_size, paths['im_path'], paths['jpeg_name10'])
-            yesterday = datetime.datetime.now() - timedelta(1)
-            print (datetime.strftime(yesterday, '%Y%m%d'))
+            #yesterday= datetime.datetime.now() - datetime.datetime.timedelta(1)
+            #hdu.header['L1PUBDAT'] = datetime.strftime(yesterday, '%Y-%m-%dT%H:%M:%S.%fZ') 
+            yesterday = datetime.datetime.now() - datetime.timedelta(1)
+            print (datetime.datetime.strftime(yesterday, '%Y%m%d'))
             runNight=datetime.datetime.strftime(yesterday, '%Y%m%d')
             isExist = os.path.exists(g_dev['cam'].site_path + 'tokens')
             if not isExist:
@@ -1486,7 +1488,11 @@ class Sequencer:
         else:
             result['FWHM'] = 4
             result['mean_focus'] = g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron
-        spot2 = result['FWHM']
+        try:
+            spot2 = result['FWHM']
+        except:
+            print ("FWHM failed in spot2")
+            spot2 = None
         foc_pos2 = result['mean_focus']
         print('Autofocus Overtaveling Out.\n\n')
         g_dev['foc'].focuser.Move((foc_pos0 + 2*throw)*g_dev['foc'].micron_to_steps)
@@ -1501,7 +1507,11 @@ class Sequencer:
         else:
             result['FWHM'] = 4.5
             result['mean_focus'] = g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron
-        spot3 = result['FWHM']
+        try:
+            spot3 = result['FWHM']
+        except:
+            print ("FWHM failed in spot3")
+            spot3 = None
         foc_pos3 = result['mean_focus']
         x = [foc_pos2, foc_pos1, foc_pos3]
         y = [spot2, spot1, spot3]
