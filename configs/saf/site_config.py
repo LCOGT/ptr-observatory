@@ -28,7 +28,8 @@ site_name = 'saf'
 
 site_config = {
     'site': str(site_name.lower()),
-    'site_id': 'ARO',
+    #'site_id': 'ARO',
+    'site_id': 'SAF',
     "version_date": "20220611.0_wer",
     'site_desc': "Apache Ridge Observatory, Santa Fe, NM, USA. 2194m",
     'airport_code':  'SAF',
@@ -250,9 +251,11 @@ site_config = {
         'telescope1': {
             'parent': 'mount1',
             'name': 'Main OTA',
-            'ptrtel':  "saf1",
+            #'ptrtel':  "saf1",
+            'telescop':  "saf1",
             'desc':  'Ceravolo 300mm F4.9/F9 convertable',
-            'telescop': 'cvagr-0m30-f9-f4p9-001',
+            #'telescop': 'cvagr-0m30-f9-f4p9-001',
+            'ptrtel': 'cvagr-0m30-f9-f4p9-001',
             'driver': None,                     # Essentially this device is informational.  It is mostly about the optics.
             'collecting_area': 31808,
             'obscuration':  0.55,  # Informatinal, already included in collecting_area.
