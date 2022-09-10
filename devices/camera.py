@@ -1370,7 +1370,8 @@ class Camera:
                                               'Start date and time of observation')
                     hdu.header['DAY-OBS'] = (g_dev['day'], 'Date at start of observing night')
                     hdu.header['MJD-OBS'] = (Time(self.t2, format='unix').mjd, '[UTC days] Modified Julian Date start date/time')    #NB NB NB Needs to be fixed, mid-exposure dates as well.
-                    hdu.header['L1PUBDAT'] = datetime.datetime.utcnow().strftime(‘%Y-%m-%dT%H:%M:%S.%fZ’) # IF THIS DOESN"T WORK, subtract the extra datetime ...
+                    yesterday= datetime.date.today - datetime.timedelta(days=1)
+                    hdu.header['L1PUBDAT'] = yesterday.strftime(‘%Y-%m-%dT%H:%M:%S.%fZ’) # IF THIS DOESN"T WORK, subtract the extra datetime ...
                     hdu.header['JD-START'] = (Time(self.t2 , format='unix').jd, '[UTC days] Julian Date at start of exposure')
                     #hdu.header['JD-HELIO'] = 'bogus'       # Heliocentric Julian Date at exposure midpoint
                     hdu.header['OBSTYPE'] = (frame_type.upper(), 'Observation type')   #This report is fixed and it should vary...NEEDS FIXING!
