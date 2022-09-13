@@ -24,16 +24,16 @@ g_dev = None
  # bolt = ['u', 'g', 'r', 'i', 'zs', 'B', 'V', 'EXO', 'w', 'O3', 'Ha', 'S', 'Cr', 'NIR']
  # print(len(bolt))
  
-site_name = 'saf'
+site_name = 'aro'
 
 site_config = {
     'site': str(site_name.lower()),
     #'site_id': 'ARO',
-    'site_id': 'SAF',
-    "version_date": "20220611.0_wer",
+    'site_id': 'ARO',
+    "version_date": "20220913.wer",
     'site_desc': "Apache Ridge Observatory, Santa Fe, NM, USA. 2194m",
-    'airport_code':  'SAF',
-    'obsy_id': 'SAF1',
+    'airport_codes':  ['SAF', 'ABQ', 'LSN'],
+    'obsy_id': 'aro1',
     'obs_desc': "0m3f4.9/9 Ceravolo Astrograph, AP1600",
     'debug_site_mode': False,
     'debug_obsy_mode': False,
@@ -195,7 +195,7 @@ site_config = {
     'mount': {
         'mount1': {
             'parent': 'enclosure1',
-            'name': 'safpier',
+            'name': 'aropier1',
             'hostIP':  '10.0.0.140',     #Can be a name if local DNS recognizes it.
             'hostname':  'safpier',
             'desc':  'AP 1600 GoTo',
