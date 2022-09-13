@@ -2,13 +2,13 @@
 """
 
 IMPORTANT TODOs:
-    
-    
+
+
 WER 20211211
 
 IMPORTANT TODOs:
-    
-    
+
+
 Simplify.  No site specific if statements in main code if possible.
 Sort out when rotator is not installed and focus temp when no probe
 is in the Gemini.
@@ -65,7 +65,7 @@ from devices.selector import Selector
 from devices.screen import Screen
 from devices.sequencer import Sequencer
 from processing.calibration import calibrate
-from global_yard import g_dev  # g-dev is a place where it is easy to 
+from global_yard import g_dev  # g-dev is a place where it is easy to
                                # monkey-patch whole devices.
 
 #import ssl
@@ -148,7 +148,7 @@ def patch_httplib(bsize=400000):
         else:
             self.sock.sendall(p_data)
     httplib2.httplib.HTTPConnection.send = send
-    
+
 def send_status(obsy, column, status_to_send):
     uri_status = f"https://status.photonranch.org/status/{obsy}/status/"
     # NB None of the strings can be empty.  Otherwise this put faults.
@@ -169,20 +169,20 @@ def send_status(obsy, column, status_to_send):
 
     except:
         print('self.api.authenticated_request("PUT", uri, status):   Failed!')
-        
+
 class Observatory:
 
     def __init__(self, name, config):
         # This is the ayneclass through which we can make authenticated api calls.
         self.api = API_calls()
-        
+
         self.command_interval = 3   # seconds between polls for new commands
         self.status_interval = 4    # NOTE THESE IMPLEMENTED AS A DELTA NOT A RATE.
 
         self.name = name      # NB NB NB Names needs a once-over.
         self.site_name = name
         self.config = config
-       
+
         self.site = config['site']
         if self.config['wema_is_active']:
             self.hostname = self.hostname = socket.gethostname()
@@ -190,19 +190,19 @@ class Observatory:
                 self.is_wema = True
                 g_dev['wema_share_path'] = config['wema_write_share_path']
                 self.wema_path = g_dev['wema_share_path']
-            else:  
+            else:
                 #This host is a client
                 self.is_wema = False  #This is a client.
                 self.site_path = config['client_path']
                 g_dev['site_path'] = self.site_path
                 g_dev['wema_share_path'] = config['client_write_share_path']    # Just to be safe.
-                self.wema_path = g_dev['wema_share_path'] 
+                self.wema_path = g_dev['wema_share_path']
         else:
             self.is_wema = False  #This is a client.
             self.site_path = config['client_path']
             g_dev['site_path'] = self.site_path
             g_dev['wema_share_path']  = self.site_path  # Just to be safe.
-            self.wema_path = g_dev['wema_share_path'] 
+            self.wema_path = g_dev['wema_share_path']
         if self.config['site_is_specific']:
              self.site_is_specific = True
         else:
@@ -223,16 +223,16 @@ class Observatory:
         self.astro_events.compute_day_directory()
         self.astro_events.display_events()
 
-  
+
         if self.site in ['simulate',  'dht']:  #DEH: added just for testing purposes with ASCOM simulators.
             self.observing_conditions_connected = True
-            self.site_is_proxy = False   
+            self.site_is_proxy = False
             print("observing_conditions: Simulator drivers connected True")
         # elif self.config['site_is_specific']:
         #     self.site_is_specific = True
         #     #  Note OCN has no associated commands.
         #     #  Here we monkey patch
-            
+
         #     self.get_status = config.get_ocn_status
         #     # Get current ocn status just as a test.
         #     self.status = self.get_status(g_dev)
@@ -242,7 +242,7 @@ class Observatory:
         #     # print(quick)
         #Define a redis server if needed.
         redis_ip = config['redis_ip']
-        if redis_ip is not None:           
+        if redis_ip is not None:
             self.redis_server = redis.StrictRedis(host=redis_ip, port=6379, db=0,
                                               decode_responses=True)
             self.redis_wx_enabled = True
@@ -256,15 +256,15 @@ class Observatory:
         self.create_devices(config)
         self.loud_status = False
         #g_dev['obs']: self
-        g_dev['obs'] = self 
+        g_dev['obs'] = self
         site_str = config['site']
         g_dev['site']:  site_str
         self.g_dev = g_dev
- 
+
 
         self.time_last_status = time.time() - 3
         # Build the to-AWS Try again, reboot, verify dome nad tel and start a thread.
-  
+
         self.aws_queue = queue.PriorityQueue()
         self.aws_queue_thread = threading.Thread(target=self.send_to_AWS, args=())
         self.aws_queue_thread.start()
@@ -272,15 +272,16 @@ class Observatory:
         # =============================================================================
         # Here we set up the reduction Queue and Thread:
         # =============================================================================
-        self.reduce_queue = queue.Queue(maxsize=50)
+        #self.reduce_queue = queue.Queue(maxsize=50)
+        self.reduce_queue = queue.Queue() # Why do we want a maximum size and lose files?
         self.reduce_queue_thread = threading.Thread(target=self.reduce_image, args=())
         self.reduce_queue_thread.start()
         self.blocks = None
         self.projects = None
         self.events_new = None
         self.reset_last_reference()
-        
-        
+
+
 
         # Build the site (from-AWS) Queue and start a thread.
         # self.site_queue = queue.SimpleQueue()
@@ -422,7 +423,7 @@ class Observatory:
                     print("# of incomming commands:  ", len(unread_commands))
                     for cmd in unread_commands:
                         if self.config['selector']['selector1']['driver'] is None:
-                            port = cmd['optional_params']['instrument_selector_position'] 
+                            port = cmd['optional_params']['instrument_selector_position']
                             g_dev['mnt'].instrument_port = port
                             cam_name = self.config['selector']['selector1']['cameras'][port]
                             if cmd['deviceType'][:6] == 'camera':
@@ -446,7 +447,7 @@ class Observatory:
                         device_type = cmd['deviceType']
                         device = self.all_devices[device_type][device_instance]
                         try:
-                        
+
                             device.parse_command(cmd)
                         except Exception as e:
                             print( 'Exception in obs.scan_requests:  ', e)
@@ -458,10 +459,11 @@ class Observatory:
                     'start':  g_dev['d-a-y'] + 'T00:00:00Z',
                     'end':    g_dev['next_day'] + 'T23:59:59Z',
                     'full_project_details:':  False})
-                if True: #self.blocks is None:   #This currently prevents pick up of calendar changes.  OK for the moment.
+                if True: #self.blocks is None:   #This currently prevents pick up of calendar changes.
                     blocks = requests.post(url_blk, body).json()
                     if len(blocks) > 0:   #   is not None:
                         self.blocks = blocks
+
                 url_proj = "https://projects.photonranch.org/dev/get-all-projects"
                 if True: #self.projects is None:
                     all_projects = requests.post(url_proj).json()
@@ -469,15 +471,19 @@ class Observatory:
                     if len(all_projects) > 0 and len(blocks)> 0:   #   is not None:
                         self.projects = all_projects   #.append(all_projects)  #NOTE creating a list with a dict entry as item 0
                         #self.projects.append(all_projects[1])
+                    #  Note the above does not load projects if there are no blocks scheduled. A sched block may or may not have
+                    #    an associated project.
+                    ###self.observable = self.project_sort(self.projects)
+
                 '''
-                Design Note.  blocks relate to scheduled time at a site so we expect AWS to mediate block 
+                Design Note.  blocks relate to scheduled time at a site so we expect AWS to mediate block
                 assignments.  Priority of blocks is determined by the owner and a 'equipment match' for
                 background projects.
-                
+
                 Projects on the other hand can be a very large pool so how to manage becomes an issue.
                 TO the extent a project is not visible at a site, aws should not present it.  If it is
                 visible and passes the owners priority it should then be presented to the site.
-                
+
                 '''
 
                 if self.events_new is None:
@@ -485,7 +491,7 @@ class Observatory:
 
                     self.events_new = requests.get(url).json()
                 return   # Continue   #This creates an infinite loop
-                
+
             else:
                 print('Sequencer Hold asserted.')    #What we really want here is looking for a Cancel/Stop.
                 continue
@@ -497,7 +503,7 @@ class Observatory:
         '''
 
         # This stopping mechanism allows for threads to close cleanly.
-        loud = False        
+        loud = False
         # if g_dev['cam_retry_doit']:
         #     #breakpoint()   #THis should be obsolete.
         #     del g_dev['cam']
@@ -518,7 +524,7 @@ class Observatory:
             device_list = self.device_types
             remove_enc = False
         else:
-            device_list = self.device_types  # self.short_status_devices 
+            device_list = self.device_types  # self.short_status_devices
             remove_enc = True
         for dev_type in device_list:
             # The status that we will send is grouped into lists of
@@ -553,7 +559,7 @@ class Observatory:
             #status.pop('observing_conditions', None)
             #status['observing_conditions'] = None
             #status['enclosure'] = None
-            
+
         status["timestamp"] = round((time.time() + t1)/2., 3)
         status['send_heartbeat'] = False
         try:
@@ -588,7 +594,7 @@ class Observatory:
 #         try:    # 20190926  tHIS STARTED THROWING EXCEPTIONS OCCASIONALLY
 #             #print("AWS uri:  ", uri)
 #             #print('Status to be sent:  \n', status, '\n')
-# 
+#
 #             payload ={
 #                 "statusType": "device",
 #                 "status":  status
@@ -610,12 +616,12 @@ class Observatory:
 #         status = {}
 #         # Loop through all types of devices.
 #         # For each type, we get and save the status of each device.
-# 
+#
 #         if not self.config['wema_is_active']:
 #             device_list = self.device_types
 #             remove_enc = False
 #         else:
-#             device_list = self.wema_types  # self.short_status_devices 
+#             device_list = self.wema_types  # self.short_status_devices
 #             remove_enc = True
 #         for dev_type in device_list:
 #             # The status that we will send is grouped into lists of
@@ -626,18 +632,18 @@ class Observatory:
 #             # `type` devices, with key=name and val=device object itself.
 #             devices_of_type = self.all_devices.get(dev_type, {})
 #             device_names = devices_of_type.keys()
-# 
+#
 #             for device_name in device_names:
 #                 # Get the actual device object...
 #                 device = devices_of_type[device_name]
 #                 # ...and add it to main status dict.
-# 
+#
 #                 if device_name in self.config['wema_types'] and (self.is_wema or self.site_is_specific):
 #                     result = device.get_status(g_dev)
 #                     if self.site_is_specific:
 #                         remove_enc = False
 #                 else:
-# 
+#
 #                     result = device.get_status()
 #                 if result is not None:
 #                     status[dev_type][device_name] = result
@@ -651,7 +657,7 @@ class Observatory:
 #             #status.pop('observing_conditions', None)
 #             #status['observing_conditions'] = None
 #             #status['enclosure'] = None
-#             
+#
 #         status["timestamp"] = round((time.time() + t1)/2., 3)
 #         status['send_heartbeat'] = False
 #         loud = False
@@ -668,7 +674,7 @@ class Observatory:
 #         try:    # 20190926  tHIS STARTED THROWING EXCEPTIONS OCCASIONALLY
 #             #print("AWS uri:  ", uri)
 #             #print('Status to be sent:  \n', status, '\n')
-# 
+#
 #             payload ={
 #                 "statusType": "weather",
 #                 "status":  status
@@ -684,13 +690,13 @@ class Observatory:
 #             self.status_count +=1
 #         except:
 #             print('self.api.authenticated_request("PUT", uri, status):   Failed!')
-#             
-# 
+#
+#
 #         if not self.config['wema_is_active']:
 #             device_list = self.enc_types
 #             remove_enc = False
 #         else:
-#             #device_list = self.enc_types  # self.short_status_devices 
+#             #device_list = self.enc_types  # self.short_status_devices
 #             remove_enc = True
 #             breakpoint()
 #         for dev_type in device_list:
@@ -702,18 +708,18 @@ class Observatory:
 #             # `type` devices, with key=name and val=device object itself.
 #             devices_of_type = self.all_devices.get(dev_type, {})
 #             device_names = devices_of_type.keys()
-# 
+#
 #             for device_name in device_names:
 #                 # Get the actual device object...
 #                 device = devices_of_type[device_name]
 #                 # ...and add it to main status dict.
-# 
+#
 #                 if device_name in self.config['wema_types'] and (self.is_wema or self.site_is_specific):
 #                     result = device.get_status(g_dev)
 #                     if self.site_is_specific:
 #                         remove_enc = False
 #                 else:
-# 
+#
 #                     result = device.get_status()
 #                 if result is not None:
 #                     status[dev_type][device_name] = result
@@ -726,10 +732,10 @@ class Observatory:
 #             #status.pop('enclosure', None)
 #             #status.pop('observing_conditions', None)
 #             status['observing_conditions'] = None
-# 
+#
 #             if g_dev['enc'].dome_on_wema:
 #                 status['enclosure'] = None
-#             
+#
 #         status["timestamp"] = round((time.time() + t1)/2., 3)
 #         status['send_heartbeat'] = False
 #         loud = False
@@ -746,7 +752,7 @@ class Observatory:
 #         try:    # 20190926  tHIS STARTED THROWING EXCEPTIONS OCCASIONALLY
 #             #print("AWS uri:  ", uri)
 #             #print('Status to be sent:  \n', status, '\n')
-# 
+#
 #             payload ={
 #                 "statusType": "enclosure",
 #                 "status":  status
@@ -762,7 +768,7 @@ class Observatory:
 #             self.status_count +=1
 #         except:
 #             print('self.api.authenticated_request("PUT", uri, status):   Failed!')
-# 
+#
 # =============================================================================
 
     def update(self):
@@ -853,7 +859,7 @@ class Observatory:
                 time.sleep(0.1)
             else:
                 time.sleep(0.2)
-                
+
     def send_to_user(self, p_log, p_level='INFO'):
         url_log = "https://logs.photonranch.org/logs/newlog"
         body = json.dumps({
@@ -866,13 +872,12 @@ class Observatory:
             resp = requests.post(url_log, body)
         except:
             print("Log did not send, usually not fatal.")
-            
-            
+
+
     # Note this is another thread!
     def reduce_image(self):
         '''
-        The incoming object is typically a large fits HDU. Found in its
-        header will be both standard image parameters and destination filenames
+        The incoming object is typically a large fits HDU. Found in its        header will be both standard image parameters and destination filenames
 
         '''
         while True:
@@ -920,17 +925,17 @@ class Observatory:
                 #print ("original path")
                 #print (paths)
                 reduced_data_size = hdu.data.size
-                
+
                 #print('***** Reduced data size, dtype:  ', reduced_data_size, hdu.data.dtype, hdu.header['BITPIX'], hdu.header['NAXIS1'])
-                
+
                 wpath = paths['red_path'] + paths['red_name01_lcl']    #This name is convienent for local sorting
 
                 hdu.writeto(wpath, overwrite=True) #Bigfit reduced
                 #This was in camera after reduce and it had a race condition.
-  
+
                 if hdu.header['OBSTYPE'].lower() in ('bias', 'dark', 'screenflat', 'skyflat'):
                     hdu.writeto(paths['cal_path'] + paths['cal_name'], overwrite=True)
-                
+
                 #Will try here to solve
                 if not paths['frame_type'] in ['bias', 'dark', 'flat', 'solar', 'lunar', 'skyflat', 'screen', 'spectrum', 'auto_focus']:
                     try:
@@ -950,10 +955,10 @@ class Observatory:
                         hdu.header['RAHRS'] = float(solve['ra_j2000_hours'])
                         hdu.header['RA'] = float(solve['ra_j2000_hours']*15)
                         hdu.header['DEC'] = float(solve['dec_j2000_degrees'])
-                        
+
                         hdu.header['MEAS-SPW'] = solve['arcsec_per_pixel']
                         hdu.header['MEAS-RPW'] = solve['rot_angle_degs']
-                        
+
                         #MTF woz ere - This updates the RA and Dec in the raw file header if a solution is found
                         with fits.open(paths['raw_path'] + paths['raw_name00'], 'update') as f:
                             for hdbf in f:
@@ -961,10 +966,10 @@ class Observatory:
                                 hdbf.header['DECJ20PW'] = solve['dec_j2000_degrees']
                                 hdbf.header['RAHRS'] = float(solve['ra_j2000_hours'])
                                 hdbf.header['RA'] = float(solve['ra_j2000_hours']*15)
-                                hdbf.header['DEC'] = float(solve['dec_j2000_degrees'])                                
+                                hdbf.header['DEC'] = float(solve['dec_j2000_degrees'])
                                 hdbf.header['MEAS-SPW'] = solve['arcsec_per_pixel']
                                 hdbf.header['MEAS-RPW'] = solve['rot_angle_degs']
-                        
+
                         target_ra  = g_dev['mnt'].current_icrs_ra
                         target_dec = g_dev['mnt'].current_icrs_dec
                         solved_ra = solve['ra_j2000_hours']
@@ -984,10 +989,10 @@ class Observatory:
                         #img = fits.open(wpath, ignore_missing_end=True)
                         #hdr = img[0].header
                         # prior_ra_h, prior_dec, prior_time = g_dev['mnt'].get_last_reference()
-                        
+
                         # if prior_time is not None:
                         #     print("time base is:  ", time_now - prior_time)
-                            
+
                         # g_dev['mnt'].set_last_reference( solve['ra_j2000_Second phase of AF now.hours'], solve['dec_j2000_degrees'], time_now)
                     except:
                        print('Image:  ',wpath[-24:-5], " did not solve; this is usually OK.")
@@ -1001,12 +1006,12 @@ class Observatory:
                        #img.close()
                     #hdu = hdu_save
                     #Return to classic processing
-                
+
                 # if self.site_name == 'saf':
                 #     wpath = paths['red_path_aux'] + paths['red_name01_lcl']
                 #     hdu.writeto(wpath, overwrite=True) #big fits to other computer in Neyle's office
                 #patch to test Midtone Contrast
-                
+
                 # image = 'Q:/000ptr_saf/archive/sq01/20201212 ans HH/reduced/HH--SigClip.fits'
                 # hdu_new = fits.open(image)
                 # hdu =hdu_new[0]
@@ -1168,7 +1173,7 @@ class Observatory:
                 #img4 = img3*256
                 #img4 = img4.astype('uint8')   #Eliminates a user warning.
                 #imsave(paths['im_path'] + paths['jpeg_name10'], img4)  #NB File extension triggers JPEG conversion.
-                # New contrast scaling code: 
+                # New contrast scaling code:
                 stretched_data_float = Stretch().stretch(hdu.data)
                 stretched_256 = 255*stretched_data_float
                 hot = np.where(stretched_256 > 255)
@@ -1181,7 +1186,7 @@ class Observatory:
                 cold = np.where(stretched_data_uint8 < 0)
                 stretched_data_uint8[hot] = 255
                 stretched_data_uint8[cold] = 0
-                #print("post-unit8< hot, cold:  ", len(hot[0]), len(cold[0]))                
+                #print("post-unit8< hot, cold:  ", len(hot[0]), len(cold[0]))
                 imsave(paths['im_path'] + paths['jpeg_name10'], stretched_data_uint8)
                 #img4 = stretched_data_uint8  # keep old name for compatibility
 
@@ -1210,7 +1215,10 @@ class Observatory:
                 self.reduce_queue.task_done()
             else:
                 time.sleep(.5)
-                
+    # def project_sort(self, projects):
+    #     pprint(projects)
+
+
 
 
 if __name__ == "__main__":
@@ -1228,7 +1236,7 @@ if __name__ == "__main__":
     # config = importlib.import_module(config_file_name)
     # print(f"Starting up {config.site_name}.")
     # Start up the observatory
- 
+
     import config
 
 
