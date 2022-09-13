@@ -9,9 +9,9 @@ Created on Fri Feb 07,  11:57:41 2020
 #                                                                                        1         1         1       1
 #        1         2         3         4         6         7         8         9         0         1         2       2
 #234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678
-import json
+#import json
 import time
-import ptr_events
+#import ptr_events
 #from pprint import pprint
 
 #  NB NB  Json is not bi-directional with tuples (), use lists [], nested if tuples as needed, instead.
@@ -20,7 +20,7 @@ g_dev = None
 
  # bolt = ['u', 'g', 'r', 'i', 'zs', 'B', 'V', 'EXO', 'w', 'O3', 'Ha', 'S', 'Cr', 'NIR']
  # print(len(bolt))
- 
+
 site_name = 'sro'
 
                     #\\192.168.1.57\SRO10-Roof  r:
@@ -31,29 +31,29 @@ site_config = {
     'site': str(site_name.lower()),
     'site_id': 'sro',
     'debug_site_mode': False,
-    'owner':  ['google-oauth2|112401903840371673242'],  # WER,  Or this can be 
+    'owner':  ['google-oauth2|112401903840371673242'],  # WER,  Or this can be
                                                         # some aws handle.
     'owner_alias': ['WER', 'TELOPS'],
     'admin_aliases': ["ANS", "WER", "KVH", "TELOPS", "TB", "DH", 'KC'],
-    
+
     'client_hostname':  'SRO-0m30',
     'client_path':  'F:/ptr/',  # Generic place for this host to stash misc stuff
-    'archive_path':  'F:/ptr/',  # Meant to be where /archive/<camera_id> is added by camera. 
-    'aux_archive_path':  None, # '//house-computer/saf_archive_2/archive/',  #  Path to auxillary backup disk. 
+    'archive_path':  'F:/ptr/',  # Meant to be where /archive/<camera_id> is added by camera.
+    'aux_archive_path':  None, # '//house-computer/saf_archive_2/archive/',  #  Path to auxillary backup disk.
     'wema_is_active':  False,    #True if split computers used at a site.
     'wema_hostname':  [],  #  Prefer the shorter version
     'dome_on_wema': False, #  Implying enclosure controlled by client.
     'site_IPC_mechanism':  None,   # ['None', 'shares', 'redis']  Pick One
-    'wema_write_share_path':  None,   # This and below provide two different ways to define              
+    'wema_write_share_path':  None,   # This and below provide two different ways to define
     'client_read_share_path':  None,  #     a path to a network share.
-    'redis_ip': None,  #'127.0.0.1', None if no redis path present, 
+    'redis_ip': None,  #'127.0.0.1', None if no redis path present,
     'site_is_generic':  False,   # A simple single computer ASCOM site.
     'site_is_specific':  True,  # Indicates some special code for this site, found at end of config.
-    
-        
+
+
     'host_wema_site_name':  'SRO',  #  The umbrella header for obsys in close geographic proximity.
     'name': 'PTR Sierra Remote Observatory 0m3f38',
-    'airport_code':  'FAT  :  Fresno Air Terminal', 
+    'airport_code':  'FAT  :  Fresno Air Terminal',
     'location': 'Near Shaver Lake CA,  USA',
     'observatory_url': 'https://www.sierra-remote.com/',   #  This is meant to be optional
     'observatory_logo': None,   # I expect these will ususally end up as .png format icons
@@ -64,26 +64,26 @@ site_config = {
     'location_night_allsky':  None,  #  Thus ultimately should be a URL, usually Mono camera with filters.
     'location _pole_monitor': None,  #This probably gets us to some sort of image (Polaris in the North)
     'location_seeing_report': None,  # Probably a path to a jpeg or png graph.
-    
+
     'TZ_database_name':  'America/Los_Angeles',
     'mpc_code':  'ZZ23',    #  This is made up for now.
-    'time_offset':  -7.0,   #  These two keys may be obsolete give the new TZ stuff 
+    'time_offset':  -7.0,   #  These two keys may be obsolete given the new TZ stuff
     'timezone': 'PDT',      #  This was meant to be coloquial Time zone abbreviation, alternate for "TX_data..."
     'latitude': 37.0701111,     #  Decimal degrees, North is Positive
     'longitude': -119.412417,   #  Decimal degrees, West is negative
     'elevation': 1405,    #  meters above sea level
     'reference_ambient':  10,  #  Degrees Celsius.  Alternately 12 entries, one for every - mid month.
     'reference_pressure':  867.254,    #mbar   A rough guess 20200315
-    
+
     'site_in_automatic_default': "Automatic",   #  ["Manual", "Shutdown", "Automatic"]
     'automatic_detail_default': "Enclosure is initially set to Automatic mode.",
-    'auto_eve_bias_dark': False,
-    'auto_eve_sky_flat': False,
-    'eve_sky_flat_sunset_offset': +5.0,  #  Minutes  neg means before, + after.
+    'auto_eve_bias_dark': True,
+    'auto_eve_sky_flat': True,
+    'eve_sky_flat_sunset_offset': +35.0,  #  Minutes  neg means before, + after.
     'auto_morn_sky_flat': True,
     'auto_morn_bias_dark': True,
-    're-calibrate_on_solve': True, 
-    
+    're-calibrate_on_solve': True,
+
     'defaults': {
         'observing_conditions': 'observing_conditions1',  #  These are used as keys, may go away.
         'enclosure': 'enclosure1',
@@ -117,9 +117,9 @@ site_config = {
     'enc_types': [
             'enclosure'
             ],
-    'short_status_devices':  [    #THIS shoudl no longer be necessary
+    'short_status_devices': [
             'observing_conditions',
-            'enclosure', 
+            'enclosure',
             'mount',
             'telescope',
             'screen',
@@ -133,7 +133,7 @@ site_config = {
     'observing_conditions' : {
         'observing_conditions1': {
             'parent': 'site',
-            'ocn_is_specific':  True,  # Indicates some special site code. 
+            'ocn_is_specific':  True,  # Indicates some special site code.
             # Intention it is found in this file.
             'name': 'SRO File',
             'driver': 'Windows.Share',  # Could be redis, ASCOM, ...
@@ -151,7 +151,7 @@ site_config = {
     'enclosure': {
         'enclosure1': {
             'parent': 'site',
-            'enc_is_specific':  True,  # Indicates some special site code. 
+            'enc_is_specific':  True,  # Indicates some special site code.
             'name': 'SRO File',
             'hostIP':  'NONE',
             'driver': None,  #'ASCOM.DigitalDomeWorks.Dome',  #  ASCOMDome.Dome',  #  ASCOM.DeviceHub.Dome',  #  ASCOM.DigitalDomeWorks.Dome',  #"  ASCOMDome.Dome',
@@ -159,8 +159,8 @@ site_config = {
             'controlled_by': 'mount1',
 			'is_dome': False,
             'mode': 'Automatic',
-            
-            'cool_down': 89.0,     #  Minutes prior to sunset.
+
+            'cool_down': 35.0,    #  Minutes prior to sunset.
             'settings': {
                 'lights':  ['Auto', 'White', 'Red', 'IR', 'Off'],       #A way to encode possible states or options???
                                                                         #First Entry is always default condition.
@@ -170,7 +170,7 @@ site_config = {
             'eve_screen_flat_dur': 1.0,   #  hours Duration, prior to next.
             'operations_begin':  -1.0,   #  - hours from Sunset
             'eve_cooldown_offset': -.99,   #  - hours beforeSunset
-            'eve_sky_flat_offset':  0.5,   #  - hours beforeSunset 
+            'eve_sky_flat_offset':  0.5,   #  - hours beforeSunset
             'morn_sky_flat_offset':  0.4,   #  + hours after Sunrise
             'morning_close_offset':  0.41,   #  + hours after Sunrise
             'operations_end':  0.42,
@@ -210,8 +210,8 @@ site_config = {
                      '270': 10,
                      '360': 10
                      },  #  We use a dict because of fragmented azimuth mesurements.
-                'refraction_on': True, 
-                'model_on': True, 
+                'refraction_on': True,
+                'model_on': True,
                 'rates_on': True,
                 'model': {
                     'IH': 0.0,
@@ -245,7 +245,7 @@ site_config = {
             'collecting_area': 55381,
             'obscuration':  24.2,   #  %
             'aperture': 305,
-            'focal_length': 1160, 
+            'focal_length': 1160,
             'has_dew_heater':  True,
             'screen_name': 'screen1',
             'focuser_name':  'focuser1',
@@ -297,7 +297,7 @@ site_config = {
             'parent': 'telescope1',
             'name': 'screen',
             'desc':  'Optec Alnitak 16"',
-            'driver': 'ASCOM.OptecAlnitak.CoverCalibrator', 
+            'driver': 'ASCOM.OptecAlnitak.CoverCalibrator',
             'com_port': 'COM10',  #  This needs to be a 4 or 5 character string as in 'COM8' or 'COM22'
             'minimum': 5,   #  This is the % of light emitted when Screen is on and nominally at 0% bright.
             'saturate': 255,  #  Out of 0 - 255, this is the last value where the screen is linear with output.
@@ -318,13 +318,13 @@ site_config = {
             'reference':7937,    #  20210313  Nominal at 10C Primary temperature
             'ref_temp':  5.06,    #  Update when pinning reference
             'coef_c': 0,   #  Negative means focus moves out as Primary gets colder
-            'coef_0': 7937,  #  Nominal intercept when Primary is at 0.0 C. 
+            'coef_0': 7937,  #  Nominal intercept when Primary is at 0.0 C.
             'coef_date':  '202120108',    #This appears to be sensible result 44 points -13 to 3C'reference':  6431,    #  Nominal at 10C Primary temperature
             # #F9 setup
             # 'reference': 4375,    #   Guess 20210904  Nominal at 10C Primary temperature
             # 'ref_temp':  27.,    #  Update when pinning reference
             # 'coef_c': -78.337,   #  negative means focus moves out as Primary gets colder
-            # 'coef_0': 5969,  #  Nominal intercept when Primary is at 0.0 C. 
+            # 'coef_0': 5969,  #  Nominal intercept when Primary is at 0.0 C.
             # 'coef_date':  '20210903',    #  SWAG  OLD: This appears to be sensible result 44 points -13 to 3C
             'minimum': 0,     #  NB this area is confusing steps and microns, and need fixing.
             'maximum': 12600,   #12672 actually
@@ -361,18 +361,18 @@ site_config = {
             "parent": "telescope1",
             "name": "SBIG 8-position wheel" ,  #"LCO filter wheel FW50_001d",
             'service_date': '20180101',
-            "driver":   "Maxim.CCDCamera",   #"LCO.dual",  #  'ASCOM.FLI.FilterWheel', 
+            "driver":   "Maxim.CCDCamera",   #"LCO.dual",  #  'ASCOM.FLI.FilterWheel',
             'ip_string': None,
             "dual_wheel": False,
             'settings': {
-                'filter_count': 11,   #  !!!! Tis must be correct as to the number of filters!!!!
+                'filter_count': 11,   #  This must be correct as to the number of filters
                 'home_filter':  0,
                 'default_filter': "PL",
                 'filter_reference': 0,   #  We choose to use W as the default filter.  Gains taken at F9, Ceravolo 300mm
                 'filter_data': [['filter', 'filter_index', 'filter_offset', 'sky_gain', 'screen_gain', 'alias'],  #NB NB NB add cwl & bw in nm.
-                        
+
                         #['w',     [0,  0],     0, 72.7, [1.00 ,  72], 'PL'],    #0.   For sequencer autofocus  consider foc or f filter
-                        ['focus', [0,  0],     0, 72.7, [1.00 ,  72], 'focus'],    #0.   
+                        ['focus', [0,  0],     0, 72.7, [1.00 ,  72], 'focus'],    #0.
                         ['PL',    [0,  0],     0, 620, [1.00 ,  72], 'PhLum'],    #1.
                         ['PR',    [1,  1],     0, 170, [1.00 , 119], 'PhRed'],    #2.
                         ['PG',    [2,  2],     0, 220, [1.00 , 113], 'PhGreen'],    #3.
@@ -389,19 +389,19 @@ site_config = {
 
 
                 'filter_screen_sort':  [8, 1, 4, 3, 2, 6, 5, 7],   #  don't use narrow yet,  8, 10, 9], useless to try.
-                
-                
+
+
                 'filter_sky_sort': [6, 4, 5, 1, 2, 3,  0]    #No diffuser based filters
                 #'filter_sky_sort': [7, 19, 2, 13, 18, 5, 15,\
                 #                    12, 4, 11, 16, 10, 9, 17, 3, 14, 1, 0]    #basically no diffuser based filters
                 #[32, 8, 22, 21, 20, 23, 31, 6, 7, 19, 27, 2, 37, 13, 18, 30, 5, 15, 36, 12,\
-                 #                   29, 4, 35, 34, 11, 16, 10, 33, 9, 17, 28, 3, 26, 14, 1, 0]                   
+                 #                   29, 4, 35, 34, 11, 16, 10, 33, 9, 17, 28, 3, 26, 14, 1, 0]
 
-                                    
+
             },
         },
     },
-        
+
     'lamp_box': {
         'lamp_box1': {
             'parent': 'camera_1',  # Parent is camera for the spectrograph
@@ -412,7 +412,7 @@ site_config = {
             'switches': "None"  # A string of switches/lamps the box has for the FITS header. # 'None'; "Off,Mirr,Tung,NeAr" for UVEX
         },
     },
-    
+
     'camera': {
         'camera_1_1': {
             'parent': 'telescope1',
@@ -427,7 +427,7 @@ site_config = {
 
             'settings': {
                 'temp_setpoint': -18,
-                'calib_setpoints': [-35,-30, -25, -20, -15, -10 ],  #  Should vary with season? 
+                'calib_setpoints': [-35,-30, -25, -20, -15, -10 ],  #  Should vary with season?
                 'day_warm': False,
                 'cooler_on': True,
                 'x_start':  0,
@@ -448,7 +448,6 @@ site_config = {
                 'corner_everlap': True,
                 'x_bias_line': True,
                 'y_bias_line': True,
-                'bin_enable': ['1 1'], 
                 'ref_dark': 360.0,
                 'long_dark': 600.0,
                 'x_active': 4500,
@@ -462,7 +461,7 @@ site_config = {
                 'trim_sec': ['[1:9576, 1:6388]', '[1:4788, 1:3194]', '[1:3192, 1:2129]', '[1:2394, 1:1597]'],
                 'x_pixel':  6,
                 'y_pixel':  6,
-                'pix_scale': [1.067, 2.134, 3.201, 4.268],    #_22*4499,     #  asec/pixel F9   0.5751  , F4.9  1.0481         
+                'pix_scale': [1.067, 2.134, 3.201, 4.268],
                 'x_field_deg': 1.3333,   #   round(4784*1.0481/3600, 4),
                 'y_field_deg': 1.0665,   #  round(3194*1.0481/3600, 4),
                 'overscan_x': 24,
@@ -473,14 +472,15 @@ site_config = {
                 'min_exposure': 0.2,
                 'max_exposure': 3600,
                 'can_subframe':  True,
-                'min_subframe':  [128, 128],       
+                'min_subframe':  [128, 128],
                 'bin_modes':  [[1, 1, 1.07]], #  , [2, 2, 2.13], [3, 3, 3.21], [4, 4, 4.27]],   #Meaning no binning choice if list has only one entry, default should be first.
                 'default_bin':  [1, 1, 1.07],    #  Matched to seeing situation by owner
+                'bin_enable': ['1 1'],
                 'cycle_time':  [30, 20, 15, 12],  # 3x3 requires a 1, 1 reaout then a software bin, so slower.
                 'rbi_delay':  0.,      #  This being zero says RBI is not available, eg. for SBIG.
                 'is_cmos':  False,
                 'is_color':  False,
-                'bayer_pattern':  None,    #  Need to verify R as in RGGB is pixel x=0, y=0, B is x=1, y = 1
+                'bayer_pattern':  None,    #  'RGGB" is a valid string in camera is color.
                 'can_set_gain':  True,
                 'reference_gain': [2., 4., 18., 32.],     #  One val for each binning. SWAG!
                 'reference_noise': [10, 10, 10, 10],    #  All SWAGs right now!
@@ -535,7 +535,7 @@ site_config = {
         },
     },
 }
-    
+
 def linearize_unihedron(uni_value):
     #  Based on 20180811 data   --- Highly suspect.  Need to re-do 20210807
     uni_value = float(uni_value)
@@ -548,7 +548,7 @@ def linearize_unihedron(uni_value):
     else:
         uni_corr = 6000
     return uni_corr
- 
+
 def f_to_c(f):
     return round(5*(f - 32)/9, 2)
 last_good_wx_fields = 'n.a'
@@ -641,13 +641,14 @@ def get_ocn_status(g_dev=None):
                         #timeSinceLastUpdate = wx_fields[13]
                         open_ok = wx_fields[19]
         #self.last_weather =   NB found this fragment
+        open_ok = open_ok
         try:
             daily= open('W:/daily.txt', 'r')
             daily_lines = daily.readlines()
 
             daily.close()
             pressure = round(33.846*float(daily_lines[-3].split()[1]), 2)
-            bright_percent_string = daily_lines[-4].split()[1]  #NB needs to be incorporated
+            #bright_percent_string = daily_lines[-4].split()[1]  #NB needs to be incorporated
             last_good_daily_lines = daily_lines
         except:
             time.sleep(5)
@@ -678,6 +679,7 @@ def get_ocn_status(g_dev=None):
         if illum > 100:
             illum = int(illum)
         calc_HSI_lux = illum
+        calc_HSI_lux = calc_HSI_lux
         # NOte criterian below can now vary with the site config file.
         dew_point_gap = not (temperature  - dewpoint) < 2
         temp_bounds = not (temperature < -10) or (temperature > 40)
@@ -698,7 +700,7 @@ def get_ocn_status(g_dev=None):
                 wx_str = 'No'
                 wx_is_ok = False
         except:
-            
+
             if wx_is_ok:
                 wx_str = "Yes"
             else:
@@ -717,7 +719,7 @@ def get_ocn_status(g_dev=None):
                       "calc_HSI_lux": illum,
                       "calc_sky_mpsas": round((mag - 20.01),2),    #  Provenance of 20.01 is dubious 20200504 WER
                       "wx_ok": wx_str,  #str(self.sky_monitor_oktoimage.IsSafe),
-                      "open_ok": wx_str,  #T his is the special bit in the 
+                      "open_ok": wx_str,  #T his is the special bit in the
                                            # Boltwood for a roof close relay
                       'wx_hold': False,  # THis is usually added by the OCN Manager
                       'hold_duration': 0.0,
@@ -799,7 +801,3 @@ def get_enc_status(g_dev=None):
 #         print('Strings matched.')
 #     if site_config == site_unjasoned:
 #         print('Dictionaries matched.')
-        
-        
-
-

@@ -929,7 +929,38 @@ class Sequencer:
                                             do_sep=False, quick=False)
         
                         g_dev['obs'].update_status()
-                # if ephem.now() + 210/86400 > ending:
+                if "2 2" in self.config['camera']['camera_1_1']['settings']['bin_enable']:
+                    req = {'time': 0.0,  'script': 'True', 'image_type': 'bias'}
+                    opt = {'area': "Full", 'count': 9, 'bin':'2 2', \
+                            'filter': 'dark'}
+                    print("Expose b_1")
+                    result = g_dev['cam'].expose_command(req, opt, no_AWS=True, \
+                                    do_sep=False, quick=False)
+                    g_dev['obs'].update_status()
+                    dark_time = 360
+                    if ephem.now() + (dark_time + 30)/86400 > ending:
+                        break
+                    print("Expose ref_dark using exposure:  ", dark_time )
+                    req = {'time':dark_time ,  'script': 'True', 'image_type': 'dark'}
+                    opt = {'area': "Full", 'count':1, 'bin': '2 2', \
+                            'filter': 'dark'}
+                    result = g_dev['cam'].expose_command(req, opt, no_AWS=True, \
+                                        do_sep=False, quick=False)
+    
+                    g_dev['obs'].update_status()
+                    if long_dark_time is not None and long_dark_time > dark_time:
+
+                        if ephem.now() + (long_dark_time + 30)/86400 > ending:
+                            break
+                        print("Expose long dark using exposure:  ", long_dark_time)
+                        req = {'time':long_dark_time ,  'script': 'True', 'image_type': 'dark'}
+                        opt = {'area': "Full", 'count':1, 'bin': '2 2', \
+                                'filter': 'dark'}
+                        result = g_dev['cam'].expose_command(req, opt, no_AWS=True, \
+                                            do_sep=False, quick=False)
+        
+                        g_dev['obs'].update_status()
+                                # if ephem.now() + 210/86400 > ending:
                 #     break
                 # print("Expose Biases: b_2")
                 # #dark_time =600
