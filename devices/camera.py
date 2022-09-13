@@ -1042,11 +1042,11 @@ class Camera:
                             self.pre_foc = []
                             self.pre_ocn = []
                             if frame_type in ('flat', 'screenflat', 'skyflat', 'dark', 'bias'):
-                                g_dev['obs'].send_to_user("Starting " + str(frame_type) + "calibration exposure.", p_level='INFO')
+                                g_dev['obs'].send_to_user("Starting " + str(frame_type) + " calibration exposure.", p_level='INFO')
                             elif frame_type in ('focus'):
                                 g_dev['obs'].send_to_user("Starting " + str(frame_type) + " exposure.", p_level='INFO')
                             else:                                
-                                g_dev['obs'].send_to_user("Starting * name! * by user: " + self.user_name, p_level='INFO')
+                                g_dev['obs'].send_to_user("Starting * name! * by user: " + str(self.user_name), p_level='INFO')
                             g_dev['ocn'].get_quick_status(self.pre_ocn)   #NB NB WEMA must be running or this may fault.
                             g_dev['foc'].get_quick_status(self.pre_foc)
                             g_dev['rot'].get_quick_status(self.pre_rot)
@@ -1101,7 +1101,8 @@ class Camera:
     def finish_exposure(self, exposure_time, frame_type, counter, seq, \
                         gather_status=True, do_sep=False, no_AWS=False, start_x=None, start_y=None, quick=False, \
                         low=0, high=0, script='False', opt=None, solve_it=False):
-        print("Finish exposure Entered:  ", exposure_time, 'sec.;   # of ', frame_type, 'to go: ', counter)
+        print("Finish exposure Entered:  " + str(exposure_time) + 'sec.;   # of ', frame_type, 'to go: ', counter)
+        g_dev['obs'].send_to_user("Starting Exposure: "+ str(exposure_time) + ' sec.;   # of ' + frame_type + ' frames. Remaining: ' + str(counter), p_level='INFO')
         #, gather_status, do_sep, no_AWS, start_x, start_y, opt['area'])
         self.status_time = time.time() + 10
         self.post_mnt = []
@@ -1114,6 +1115,8 @@ class Camera:
         else:
             self.completion_time = self.t2 + exposure_time + 1
         result = {'error': False}
+        notifyReadOutOnlyOnce=0
+        quartileExposureReport=0
         while True:    #This loop really needs a timeout.
             self.post_mnt = []
             self.post_rot = []
@@ -1132,6 +1135,20 @@ class Camera:
                 remaining = round(self.completion_time - self.t7b, 1)
                 if remaining > 0:
                     print (str(round(remaining, 1))+'sec.', str(round(100*remaining/exposure_time, 1))+'%')
+                    if quartileExposureReport==0:    # Silly daft but workable exposure time reporting by MTF
+                        initialRemaining=remaining
+                        quartileExposureReport=quartileExposureReport+1
+                    if quartileExposureReport==1 and remaining < initialRemaining*.75 and initialRemaining > 30:
+                        quartileExposureReport=quartileExposureReport+1
+                        g_dev['obs'].send_to_user("Exposure 25% complete. Remaining: " + str(remaining) + ' sec.', p_level='INFO')
+                    if quartileExposureReport==2 and remaining < initialRemaining*.50 and initialRemaining > 30:
+                        quartileExposureReport=quartileExposureReport+1
+                        g_dev['obs'].send_to_user("Exposure 50% complete. Remaining: " + str(remaining) + ' sec.', p_level='INFO')
+                    if quartileExposureReport==3 and remaining < initialRemaining*.25 and initialRemaining > 30:
+                        quartileExposureReport=quartileExposureReport+1
+                        g_dev['obs'].send_to_user("Exposure 75% complete. Remaining: " + str(remaining) + ' sec.', p_level='INFO')
+                        
+                    
                 continue
             incoming_image_list = []   #glob.glob(self.file_mode_path + '*.f*t*')
             self.t4 = time.time()
@@ -1353,6 +1370,8 @@ class Camera:
                                               'Start date and time of observation')
                     hdu.header['DAY-OBS'] = (g_dev['day'], 'Date at start of observing night')
                     hdu.header['MJD-OBS'] = (Time(self.t2, format='unix').mjd, '[UTC days] Modified Julian Date start date/time')    #NB NB NB Needs to be fixed, mid-exposure dates as well.
+                    yesterday= datetime.datetime.now() - datetime.timedelta(1)
+                    hdu.header['L1PUBDAT'] = datetime.datetime.strftime(yesterday, '%Y-%m-%dT%H:%M:%S.%fZ') # IF THIS DOESN"T WORK, subtract the extra datetime ...
                     hdu.header['JD-START'] = (Time(self.t2 , format='unix').jd, '[UTC days] Julian Date at start of exposure')
                     #hdu.header['JD-HELIO'] = 'bogus'       # Heliocentric Julian Date at exposure midpoint
                     hdu.header['OBSTYPE'] = (frame_type.upper(), 'Observation type')   #This report is fixed and it should vary...NEEDS FIXING!
@@ -1773,9 +1792,11 @@ class Camera:
                 remaining = round(self.completion_time - self.t7, 1)
                 # if remaining > 0:
                 #     print (round(remaining, 1), round(100*remaining/self.expsoure, 1))
-                if remaining < 0:
-                    print("Readout time remaining:  " + str(round(13 + remaining, 1)), ' sec')
-                    g_dev['obs'].send_to_user("Readout time remaining:  " + str(round(13 + remaining, 1)) + ' s.', p_level='INFO')
+                
+                if remaining < 0 and notifyReadOutOnlyOnce == 0:
+                    print("Reading out image. Time remaining: " + str(round(13 + remaining, 1)), ' sec')
+                    g_dev['obs'].send_to_user("Reading out image. Time remaining: " + str(round(13 + remaining, 1)) + ' s.', p_level='INFO')
+                    notifyReadOutOnlyOnce=1
                 if remaining < -30:
                     print("Camera timed out; probably is no longer connected, resetting it now.")
                     g_dev['obs'].send_to_user("Camera timed out; probably is no longer connected, resetting it now.", p_level='INFO')
