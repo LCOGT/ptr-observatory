@@ -2,7 +2,7 @@
 '''
 
 Created on Fri Feb 07,  11:57:41 2020
-Updated 20220601 WER   This version does not support color camera channel.
+Updated 20220914 WER   This version does not support color camera channel.
 
 @author: wrosing
 
