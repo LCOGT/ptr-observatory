@@ -1487,9 +1487,15 @@ class Sequencer:
                 result['FWHM'] = 3
                 result['mean_focus'] = g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron
 
-            spot1 = result['FWHM']
-            foc_pos1 = result['mean_focus']
-            if math.isnan(spot1):
+            try:
+                spot1 = result['FWHM']
+                foc_pos1 = result['mean_focus']
+            except:
+                spot1 = False
+                foc_pos1 = False
+                print ("spot1 failed in autofocus script")
+
+            if math.isnan(spot1) or spot1 ==False:
                 retry += 1
                 print("Retry of central focus star)")
                 continue
@@ -1504,8 +1510,14 @@ class Sequencer:
         else:
             result['FWHM'] = 4
             result['mean_focus'] = g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron
-        spot2 = result['FWHM']
-        foc_pos2 = result['mean_focus']
+        try:
+            spot2 = result['FWHM']
+            foc_pos2 = result['mean_focus']
+        except:
+            spot2 = False
+            foc_pos2 = False
+            print ("spot2 failed on autofocus moving in")
+
         print('Autofocus Overtaveling Out.\n\n')
         g_dev['foc'].focuser.Move((foc_pos0 + 2*throw)*g_dev['foc'].micron_to_steps)
         time.sleep(10)#It is important to overshoot to overcome any backlash  WE need to be sure Exposure waits.
@@ -1519,12 +1531,17 @@ class Sequencer:
         else:
             result['FWHM'] = 4.5
             result['mean_focus'] = g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron
-        spot3 = result['FWHM']
-        foc_pos3 = result['mean_focus']
+        try:
+            spot3 = result['FWHM']
+            foc_pos3 = result['mean_focus']
+        except:
+            spot3 = False
+            foc_pos3 = False
+            print ("spot3 failed on autofocus moving in")
         x = [foc_pos2, foc_pos1, foc_pos3]
         y = [spot2, spot1, spot3]
         print('X, Y:  ', x, y, 'Desire center to be smallest.')
-        if spot1 is None or spot2 is None or spot3 is None:  #New additon to stop crash when no spots
+        if spot1 is None or spot2 is None or spot3 is None or spot1 == False or spot2 == False or spot3 == False:  #New additon to stop crash when no spots
             print("No stars detected. Returning to original focus setting and pointing.")
 
             g_dev['foc'].guarded_move((focus_start)*g_dev['foc'].micron_to_steps)
@@ -1574,8 +1591,13 @@ class Sequencer:
                 else:
                     result['FWHM'] = new_spot
                     result['mean_focus'] = g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron
-                spot4 = result['FWHM']
-                foc_pos4 = result['mean_focus']
+                try:
+                    spot4 = result['FWHM']
+                    foc_pos4 = result['mean_focus']
+                except:
+                    spot4 = False
+                    foc_pos4 = False
+                    print ("spot4 failed ")
                 print('\nFound best focus at:  ', foc_pos4,' measured is:  ',  round(spot4, 2), '\n')
                 g_dev['foc'].af_log(foc_pos4, spot4, new_spot)
                 print("Returning to:  ", start_ra, start_dec)
@@ -1688,8 +1710,13 @@ class Sequencer:
         else:
             result['FWHM'] = 4
             result['mean_focus'] = g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron
-        spot1 = result['FWHM']
-        foc_pos1 = result['mean_focus']
+        try:
+            spot1 = result['FWHM']
+            foc_pos1 = result['mean_focus']
+        except:
+            spot1 = False
+            foc_pos1 = False
+            print ("spot1 failed on coarse focus script")
         # if not sim:
         #     result = g_dev['cam'].expose_command(req, opt, no_AWS=True) ## , script = 'auto_focus_script_0')  #  This is where we start.
         # else:
@@ -1708,8 +1735,13 @@ class Sequencer:
         else:
             result['FWHM'] = 5
             result['mean_focus'] = g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron
-        spot2 = result['FWHM']
-        foc_pos2 = result['mean_focus']
+        try:
+            spot2 = result['FWHM']
+            foc_pos2 = result['mean_focus']
+        except:
+            spot2 = False
+            foc_pos2 = False
+            print ("spot2 failed on coarse focus script")
         print('Autofocus Moving In -2x, second time.\n\n')
 
         g_dev['foc'].guarded_move((foc_pos0 - 2*throw)*g_dev['foc'].micron_to_steps)
@@ -1719,8 +1751,13 @@ class Sequencer:
         else:
             result['FWHM'] = 6
             result['mean_focus'] = g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron
-        spot3 = result['FWHM']
-        foc_pos3 = result['mean_focus']
+        try:
+            spot3 = result['FWHM']
+            foc_pos3 = result['mean_focus']
+        except:
+            spot3 = False
+            foc_pos3 = False
+            print ("spot3 failed on coarse focus script")
         #Need to check we are not going out too far!
         print('Autofocus Moving out +3X.\n\n')
 
@@ -1733,8 +1770,13 @@ class Sequencer:
         else:
             result['FWHM'] = 6.5
             result['mean_focus'] = g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron
-        spot4 = result['FWHM']
-        foc_pos4 = result['mean_focus']
+        try:
+            spot4 = result['FWHM']
+            foc_pos4 = result['mean_focus']
+        except:
+            spot4 = False
+            foc_pos4 = False
+            print ("spot4 failed on coarse focus script")
         print('Autofocus back in for backlash to +1X\n\n')
 
         g_dev['foc'].guarded_move((foc_pos0 + throw)*g_dev['foc'].micron_to_steps)
@@ -1744,8 +1786,13 @@ class Sequencer:
         else:
             result['FWHM'] = 5.75
             result['mean_focus'] = g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron
-        spot5 = result['FWHM']
-        foc_pos5 = result['mean_focus']
+        try:
+            spot5 = result['FWHM']
+            foc_pos5 = result['mean_focus']
+        except:
+            spot5 = False
+            foc_pos5 = False
+            print ("spot5 failed on coarse focus script")
         x = [foc_pos3, foc_pos2, foc_pos1, foc_pos5, foc_pos4]  # NB NB 20220218 This assigment is bogus!!!!
         y = [spot3, spot2, spot1, spot5, spot4]
         print('X, Y:  ', x, y)
