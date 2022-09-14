@@ -79,10 +79,14 @@ class Focuser:
 
         try:   #  NB NB NB This mess neads cleaning up.
             try:
+                if not self.site in ['sro']:
+                    self.last_temperature = self.focuser.Temperature
+                    self.reference = self.calculate_compensation(self.focuser.Temperature)   #need to change to config supplied
+                else:
+                    self.last_temperature = g_dev['ocn'].temperature
+                    self.reference = self.calculate_compensation(g_dev['ocn'].temperature)
 
-                self.last_temperature = self.focuser.Temperature
-                self.reference = self.calculate_compensation(self.focuser.Temperature)   #need to change to config supplied
-                print("Focus position set from temp compensated value:  ", self.reference)
+                print("Focus position set from temp compensated value:  ", self.reference, '.  Temp used:  ', self.last_temperature)
                 self.last_known_focus = self.reference
                 self.last_source = "Focuser__init__  Calculate Comp references Config"
             except:
@@ -105,11 +109,9 @@ class Focuser:
 
         if -20 <= temp_primary <= 45:
             trial = round(float(self.config['coef_0'] + float(self.config['coef_c'])*temp_primary), 1)
-
             trial = max(trial, 500)  #These values are for an Optec Gemini.
             trial = min(trial, 12150)
             # NB NB Numbers should all come fron site config.
-
             #print('Calculated focus compensated position:  ', trial)
             return int(trial)
         else:
@@ -333,6 +335,12 @@ class Focuser:
         ''' autofocus '''
         print(f"focuser cmd: auto")
 
+    def set_focal_ref(self, ref):
+        cam_shelf = shelve.open(self.site_path + 'ptr_night_shelf/' + self.camera_name)
+        cam_shelf['focus_ref'] = ref
+        cam_shelf.close()
+        return
+
     def set_focal_ref_reset_log(self, ref):
         cam_shelf = shelve.open(self.site_path + 'ptr_night_shelf/' + self.camera_name)
         cam_shelf['focus_ref'] = ref
@@ -345,7 +353,7 @@ class Focuser:
         cam_shelf = shelve.open(self.site_path + 'ptr_night_shelf/' + self.camera_name, writeback=True)
         try:
             f_temp = self.focuser.Temperature   #NB refering a quantity possibly from WEMA if no focus temp available.
-        except:
+        except:                                 #Note above in temp comp, sro has no temp probe on gemini
             f_temp = g_dev['ocn'].status['temperature_C']
 
         cam_shelf['af_log'].append((f_temp, ref, fwhm, solved, datetime.datetime.now().isoformat()))
