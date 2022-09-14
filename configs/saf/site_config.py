@@ -24,16 +24,16 @@ g_dev = None
  # bolt = ['u', 'g', 'r', 'i', 'zs', 'B', 'V', 'EXO', 'w', 'O3', 'Ha', 'S', 'Cr', 'NIR']
  # print(len(bolt))
  
-site_name = 'saf'
+site_name = 'aro'
 
 site_config = {
     'site': str(site_name.lower()),
     #'site_id': 'ARO',
-    'site_id': 'SAF',
-    "version_date": "20220611.0_wer",
+    'site_id': 'ARO',
+    "version_date": "20220913.wer",
     'site_desc': "Apache Ridge Observatory, Santa Fe, NM, USA. 2194m",
-    'airport_code':  'SAF',
-    'obsy_id': 'SAF1',
+    'airport_codes':  ['SAF', 'ABQ', 'LSN'],
+    'obsy_id': 'aro1',
     'obs_desc': "0m3f4.9/9 Ceravolo Astrograph, AP1600",
     'debug_site_mode': False,
     'debug_obsy_mode': False,
@@ -88,7 +88,7 @@ site_config = {
     'reference_pressure':  794.0,    #mbar   A rough guess 20200315
     
     'site_in_automatic_default': "Automatic",   # ["Manual", "Shutdown", "Automatic"]
-    'automatic_detail_default': "Enclosure is initially set to Automatic by SAF config.",
+    'automatic_detail_default': "Enclosure is initially set to Automatic by SAF site_config.",
     'auto_eve_bias_dark': True,
     'auto_eve_sky_flat': True,
     'eve_sky_flat_sunset_offset': -60.0,  # Minutes  neg means before, + after.
@@ -195,7 +195,7 @@ site_config = {
     'mount': {
         'mount1': {
             'parent': 'enclosure1',
-            'name': 'safpier',
+            'name': 'aropier1',
             'hostIP':  '10.0.0.140',     #Can be a name if local DNS recognizes it.
             'hostname':  'safpier',
             'desc':  'AP 1600 GoTo',
@@ -625,7 +625,8 @@ site_config = {
                 'can_subframe':  True,
                 'min_subframe':  [128, 128],       
                 'bin_modes':  [[1, 1, 0.53], [2, 2, 1.06], [3, 3, 1.58], [4, 4, 2.11]],   #Meaning no binning choice if list has only one entry, default should be first.
-                'default_bin':  [2, 2, 1.06],    # Matched to seeing situation by owner
+                'default_bin':  ['2 2'],
+                'bin_enable':['2 2'],
                 'cycle_time':  [18, 15, 15, 12],  # 3x3 requires a 1, 1 reaout then a software bin, so slower.
                 'rbi_delay':  0.,      # This being zero says RBI is not available, eg. for SBIG.
                 'is_cmos':  True,
@@ -635,6 +636,8 @@ site_config = {
                 'reference_gain': [1.3, 2.6, 3.9, 5.2],     #One val for each binning.
                 'reference_noise': [6, 6, 6, 6],    #  NB Guess
                 'reference_dark': [.2, .8, 1.8, 3.2],  #  Guess
+                'ref_dark': 360.0,    #  this needs fixing.
+                'long_dark':600.0,
                 'max_linearity':  60000,   # Guess  60% of this is max counts for skyflats.  75% rejects the skyflat
                 'saturate':  65300,
                 'fullwell_capacity': [80000, 320000, 720000, 1280000],
