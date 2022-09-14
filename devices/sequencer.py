@@ -335,7 +335,7 @@ class Sequencer:
             blocks = g_dev['obs'].blocks
             projects = g_dev['obs'].projects
             debug = False
-            if self.config['site'] != 'sro' and  enc_status['shutter_status'] in ['Closed', 'closed'] \
+            if self.config['site_roof_control'] != 'no' and  enc_status['shutter_status'] in ['Closed', 'closed'] \
                 and float(ocn_status['hold_duration']) <= 0.1:   #NB   this blockes SR from running 20220826
                 #breakpoint()
                 g_dev['enc'].open_command({}, {})
