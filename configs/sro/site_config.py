@@ -38,6 +38,7 @@ site_config = {
 
     'client_hostname':  'SRO-0m30',
     'client_path':  'F:/ptr/',  # Generic place for this host to stash misc stuff
+    'alt_path':  'F:/ptr/',  # Generic place for this host to stash misc stuff
     'archive_path':  'F:/ptr/',  # Meant to be where /archive/<camera_id> is added by camera.
     'aux_archive_path':  None, # '//house-computer/saf_archive_2/archive/',  #  Path to auxillary backup disk.
     'wema_is_active':  False,    #True if split computers used at a site.
@@ -75,6 +76,7 @@ site_config = {
     'reference_ambient':  10,  #  Degrees Celsius.  Alternately 12 entries, one for every - mid month.
     'reference_pressure':  867.254,    #mbar   A rough guess 20200315
 
+    'site_roof_control': 'no', #MTF entered this in to remove sro specific code.... Basically do we have control of the roof or not see line 338 sequencer.py
     'site_in_automatic_default': "Automatic",   #  ["Manual", "Shutdown", "Automatic"]
     'automatic_detail_default': "Enclosure is initially set to Automatic mode.",
     'auto_eve_bias_dark': True,
@@ -315,11 +317,11 @@ site_config = {
             'driver': 'ASCOM.OptecGemini.Focuser',
 			'com_port':  'COM9',
             #F4.9 setup
-            'reference':7937,    #  20210313  Nominal at 10C Primary temperature
-            'ref_temp':  5.06,    #  Update when pinning reference
-            'coef_c': 0,   #  Negative means focus moves out as Primary gets colder
-            'coef_0': 7937,  #  Nominal intercept when Primary is at 0.0 C.
-            'coef_date':  '202120108',    #This appears to be sensible result 44 points -13 to 3C'reference':  6431,    #  Nominal at 10C Primary temperature
+            'reference':7650,    #  20210313  Nominal at 10C Primary temperature
+            'ref_temp':  6265.0,    #  Update when pinning reference
+            'coef_c': -8.529,   #  Negative means focus moves out as Primary gets colder
+            'coef_0': 7853.86,  #  Nominal intercept when Primary is at 0.0 C.
+            'coef_date':  '20220914',    #This appears to be sensible result 44 points -13 to 3C'reference':  6431,    #  Nominal at 10C Primary temperature
             # #F9 setup
             # 'reference': 4375,    #   Guess 20210904  Nominal at 10C Primary temperature
             # 'ref_temp':  27.,    #  Update when pinning reference
@@ -330,6 +332,7 @@ site_config = {
             'maximum': 12600,   #12672 actually
             'step_size': 1,
             'backlash': 0,
+            'throw' : 250,
             'unit': 'micron',
             'unit_conversion': 9.09090909091,
             'has_dial_indicator': False

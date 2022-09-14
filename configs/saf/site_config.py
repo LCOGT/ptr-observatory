@@ -23,7 +23,7 @@ g_dev = None
 
  # bolt = ['u', 'g', 'r', 'i', 'zs', 'B', 'V', 'EXO', 'w', 'O3', 'Ha', 'S', 'Cr', 'NIR']
  # print(len(bolt))
- 
+
 site_name = 'aro'
 
 site_config = {
@@ -41,16 +41,17 @@ site_config = {
                'google-oauth2|112401903840371673242'],  # Neyle,
     'owner_alias': ['ANS', 'WER'],
     'admin_aliases': ["ANS", "WER", 'KVH', "TELOPS", "TB", "DH", "KVH", 'KC'],
-    
+
       # Indicates some special code for a single site.
                                  # Intention it is found in this file.
-                                 # Fat is intended to be simple since 
+                                 # Fat is intended to be simple since
                                  # there is so little to control.
     'client_hostname':"SAF-WEMA",     # Generic place for this host to stash.
     'client_path': 'F:/ptr/',
+    'alt_path': '//house-computer/saf_archive_2/archive/sq01/',
     'archive_path': 'F:/ptr/',       # Where images are kept.
     'aux_archive_path':  None,
-    'wema_is_active':  True,     # True if an agent (ie a wema) is used at a site.   # Wemas are split sites -- at least two CPS's sharing the control.                          
+    'wema_is_active':  True,     # True if an agent (ie a wema) is used at a site.   # Wemas are split sites -- at least two CPS's sharing the control.
     'wema_hostname':  'SAF-WEMA',
     'wema_path': 'C:/ptr/',      #Local storage on Wema disk.
     'dome_on_wema':  True,       #NB NB NB CHange this confusing name. 'dome_controlled_by_wema'
@@ -60,33 +61,34 @@ site_config = {
     'redis_ip': None,   # None if no redis path present, localhost if redis iself-contained
     'site_is_generic':  False,   # A simple single computer ASCOM site.
     'site_is_specific':  False,  #  Meaning like SRO with site specific methods to read weatehr and roof status
-    
+
 #   'host_wema_site_name':  'ARO',
     'name': 'Apache Ridge Observatory 0m3f4.9/9',
 
     'location': 'Santa Fe, New Mexico,  USA',
     'observatory_url': 'https://starz-r-us.sky/clearskies2',   # This is meant to be optional
-    'observatory_logo': None,   # I expect 
+    'observatory_logo': None,   # I expect
     'dedication':   '''
                     Now is the time for all good persons
-                    to get out and vote, lest we lose 
+                    to get out and vote, lest we lose
                     charge of our democracy.
                     ''',    # i.e, a multi-line text block supplied and formatted by the owner.
     'location_day_allsky':  None,  #  Thus ultimately should be a URL, probably a color camera.
     'location_night_allsky':  None,  #  Thus ultimately should be a URL, usually Mono camera with filters.
     'location _pole_monitor': None,  #This probably gets us to some sort of image (Polaris in the North)
-    'location_seeing_report': None,  # Probably a path to 
-    
+    'location_seeing_report': None,  # Probably a path to
+
     'TZ_database_name':  'America/Denver',
     'mpc_code':  'ZZ24',    # This is made up for now.
-    'time_offset':  -6.0,   # These two keys may be obsolete give the new TZ stuff 
+    'time_offset':  -6.0,   # These two keys may be obsolete give the new TZ stuff
     'timezone': 'MDT',      # This was meant to be coloquial Time zone abbreviation, alternate for "TX_data..."
     'latitude': 35.554298,     # Decimal degrees, North is Positive
     'longitude': -105.870197,   # Decimal degrees, West is negative
     'elevation': 2194,    # meters above sea level
     'reference_ambient':  10.0,  # Degrees Celsius.  Alternately 12 entries, one for every - mid month.
     'reference_pressure':  794.0,    #mbar   A rough guess 20200315
-    
+
+    'site_roof_control': 'yes', #MTF entered this in to remove sro specific code.... Basically do we have control of the roof or not see line 338 sequencer.py
     'site_in_automatic_default': "Automatic",   # ["Manual", "Shutdown", "Automatic"]
     'automatic_detail_default': "Enclosure is initially set to Automatic by SAF site_config.",
     'auto_eve_bias_dark': True,
@@ -94,7 +96,7 @@ site_config = {
     'eve_sky_flat_sunset_offset': -60.0,  # Minutes  neg means before, + after.
     'auto_morn_sky_flat': True,
     'auto_morn_bias_dark': True,
-    're-calibrate_on_solve': True, 
+    're-calibrate_on_solve': True,
     'get_ocn_status': None,
     'get_enc_status': None,
     'not_used_variabl': None,
@@ -111,7 +113,7 @@ site_config = {
             'unihedron_port':  10    # False, None or numeric of COM port.
         },
     },
-    
+
     'defaults': {
         'observing_conditions': 'observing_conditions1',  # These are used as keys, may go away.
         'enclosure': 'enclosure1',
@@ -140,7 +142,7 @@ site_config = {
         ],
     'wema_types': [
        'observing_conditions',
-       'enclosure',    
+       'enclosure',
        ],
     'short_status_devices':  [
        # 'observing_conditions',
@@ -155,13 +157,13 @@ site_config = {
        'camera',
        'sequencer',
        ],
-    
+
     'enclosure': {
         'enclosure1': {
             'parent': 'site',
 
             'name': 'HomeDome',
-            'enc_is_specific':  False, 
+            'enc_is_specific':  False,
             'hostIP':  '10.0.0.10',
             'driver': 'ASCOM.DigitalDomeWorks.Dome',  #  'ASCOMDome.Dome',  #ASCOMDome.Dome',  # ASCOM.DeviceHub.Dome',  # ASCOM.DigitalDomeWorks.Dome',  #"  ASCOMDome.Dome',
 
@@ -172,7 +174,7 @@ site_config = {
             'enc_radius':  70,  #  inches Ok for now.
             'common_offset_east': -19.5,  # East is negative.  These will vary per telescope.
             'common_offset_south': -8,  # South is negative.   So think of these as default.
-            
+
             'cool_down': 89.0,     # Minutes prior to sunset.
             'settings': {
                 'lights':  ['Auto', 'White', 'Red', 'IR', 'Off'],       #A way to encode possible states or options???
@@ -183,7 +185,7 @@ site_config = {
             'eve_screen_flat_dur': 1.0,   # hours Duration, prior to next.
             'operations_begin':  -1.0,   # - hours from Sunset
             'eve_cooldown_offset': -.99,   # - hours beforeSunset
-            'eve_sky_flat_offset':  0.5,   # - hours beforeSunset 
+            'eve_sky_flat_offset':  0.5,   # - hours beforeSunset
             'morn_sky_flat_offset':  0.4,   # + hours after Sunrise
             'morning_close_offset':  0.41,   # + hours after Sunrise
             'operations_end':  0.42,
@@ -204,12 +206,12 @@ site_config = {
             'default_zenith_avoid': 0.0,   # degrees floating, 0.0 means do not apply this constraint.
             'has_paddle': False,       # paddle refers to something supported by the Python code, not the AP paddle.
             'pointing_tel': 'tel1',     # This can be changed to 'tel2'... by user.  This establishes a default.
-            
+
             'west_clutch_ra_correction': -0.05323724387608619,  #final:   0.0035776615398219747 -0.1450812805892454
             'west_clutch_dec_correction': 0.3251459235809251,
-            'east_flip_ra_correction':   -0.040505313212952586, # Initially -0.039505313212952586, 
+            'east_flip_ra_correction':   -0.040505313212952586, # Initially -0.039505313212952586,
             'east_flip_dec_correction':  -0.54607711292257797,  #initially  -0.39607711292257797,
-            
+
                 'latitude_offset': 0.0,     # Decimal degrees, North is Positive   These *could* be slightly different than site.
                 'longitude_offset': 0.0,   # Decimal degrees, West is negative  #NB This could be an eval( <<site config data>>))
                 'elevation_offset': 0.0,  # meters above sea level
@@ -245,7 +247,7 @@ site_config = {
                 },
             },
 
- 
+
 
     'telescope': {                            # OTA = Optical Tube Assembly.
         'telescope1': {
@@ -289,18 +291,18 @@ site_config = {
                 'west_flip_ca_offset': 0.0,
                 'west_flip_dec_offset': 0.0
             },
-    
-    
-    
+
+
+
         },
-        
+
         # 'telescope2': {
         #     'parent': 'mount1',
         #     'name': 'Main OTA',
         #     'desc':  'Astro-Physics Starfire 180mmF8',
         #     'telescop': 'apref-0m180-f8-=-001',
         #     'driver': None,                     # Essentially this device is informational.  It is mostly about the optics.
-        #     'collecting_area': 25466, 
+        #     'collecting_area': 25466,
         #     'obscuration':  0.0,  # Informatinal, already included in collecting_area.
         #     'aperture': 180,
         #     'focal_length': 1440,  # 1470,   #2697,   # Converted to F9, measured 20200905  11.1C
@@ -332,9 +334,9 @@ site_config = {
         #         'west_flip_ca_offset': 0.0,
         #         'west_flip_dec_offset': 0.0
         #     },
-    
-    
-    
+
+
+
         # }
     },
 
@@ -349,6 +351,7 @@ site_config = {
             'maximum': 360.0,
             'step_size':  0.0001,     # Is this correct?
             'backlash':  0.0,
+            'throw': 400,
             'unit':  'degree'    # 'steps'
         },
         # 'rotator2': {
@@ -388,7 +391,7 @@ site_config = {
 
 
         # },
-    
+
     },
 
     'focuser': {
@@ -402,14 +405,14 @@ site_config = {
             # 'reference': 5800,    # 20210313  Nominal at 10C Primary temperature
             # 'ref_temp':  5.1,    # Update when pinning reference
             # 'coef_c': 0,  # 26.055,   # Negative means focus moves out as Primary gets colder
-            # 'coef_0': 5800,  # Nominal intercept when Primary is at 0.0 C. 
+            # 'coef_0': 5800,  # Nominal intercept when Primary is at 0.0 C.
             # 'coef_date':  '20220301',    # This appears to be sensible result 44 points -13 to 3C'reference':  6431,    # Nominal at 10C Primary temperature
             #F9 setup
             'reference': 4424, #5743,    #  Meas   Nominal at 10C Primary temperature
             'ref_temp':  4.8,    # Update when pinning reference
             'coef_c': 0.0, #-77.57,   # negative means focus moves out/in as Primary gets colder/warmer.
-            'coef_0': 4424, #6155,   #5675,  20220502 Nominal intercept when Primary is at 0.0 C. 
-            'coef_date':  '20220905?',    # SWAG 
+            'coef_0': 4424, #6155,   #5675,  20220502 Nominal intercept when Primary is at 0.0 C.
+            'coef_date':  '20220905?',    # SWAG
             'minimum': 0,     # NB this area is confusing steps and microns, and need fixing.
             'maximum': 12600,   #12672 actually
             'step_size': 1,
@@ -428,14 +431,14 @@ site_config = {
 #             # 'reference': 5800,    # 20210313  Nominal at 10C Primary temperature
 #             # 'ref_temp':  5.1,    # Update when pinning reference
 #             # 'coef_c': 0,  # 26.055,   # Negative means focus moves out as Primary gets colder
-#             # 'coef_0': 5800,  # Nominal intercept when Primary is at 0.0 C. 
+#             # 'coef_0': 5800,  # Nominal intercept when Primary is at 0.0 C.
 #             # 'coef_date':  '20220301',    # This appears to be sensible result 44 points -13 to 3C'reference':  6431,    # Nominal at 10C Primary temperature
 #             #F9 setup
 #             'reference': 6000,    #  Meas   Nominal at 10C Primary temperature
 #             'ref_temp':  20,    # Update when pinning reference
 #             'coef_c': 0,   # negative means focus moves out as Primary gets colder
-#             'coef_0': 6000,  # Nominal intercept when Primary is at 0.0 C. 
-#             'coef_date':  '20220502',    # SWAG 
+#             'coef_0': 6000,  # Nominal intercept when Primary is at 0.0 C.
+#             'coef_date':  '20220502',    # SWAG
 #             'minimum': 0,     # NB this area is confusing steps and microns, and need fixing.
 #             'maximum': 12600,   #12672 actually
 #             'step_size': 1,
@@ -466,7 +469,7 @@ site_config = {
             },
 
     },
-    
+
     'filter_wheel': {
         "filter_wheel1": {
             "parent": "telescope1",
@@ -481,7 +484,7 @@ site_config = {
                 'default_filter': "w",
                 'filter_reference': 1,   # We choose to use W as the default filter.  Gains taken at F9, Ceravolo 300mm
                 'filter_data': [['filter', 'filter_index', 'filter_offset', 'sky_gain', 'screen_gain', 'generic'],
-                        
+
                         ['air',  [0,  0], -800, 81.6, [2   ,  20], 'ai'],    # 0.  Gains 20211020 Clear NE sky
                         ['focus',[7,  0],    0, 72.8, [360 , 170], 'w '],    # 1.
                         ['Lum',  [7,  0],    0, 72.8, [360 , 170], 'w '],    # 2.
@@ -526,13 +529,13 @@ site_config = {
                         ['difIc',  [12, 1],  0, 10. , [0.65,  20], 'dI']],   #41.
                         #['LRGB',   [7,  0],  0, 72.8, [360 , 170], 'LRGB']],#42. valid entries, only 36 useable.
                 'filter_screen_sort':  [12, 0, 11, 2, 3, 5, 4, 1, 6],   # don't use narrow yet,  8, 10, 9], useless to try.
-                
-                
+
+
                 'filter_sky_sort': [13, 27, 26, 25, 28, 11, 12, 7, 24, 18, 23, 10, 20, 17, 9,\
-                                    21 ,16, 15, 14, 22, 8, 30, 19, 6, 0]    #  No diffuser based filters 
+                                    21 ,16, 15, 14, 22, 8, 30, 19, 6, 0]    #  No diffuser based filters
 
 
-                                    
+
             },
                 # "filter_wheel2": {
                 #     "parent": "telescope2",
@@ -541,7 +544,7 @@ site_config = {
                 #     "driver": 'ASCOM.QHYFWRS232.FilterWheel',  #"Maxim",   #['ASCOM.FLI.FilterWheel1', 'ASCOM.FLI.FilterWheel2'],
                 #     'startup_script':  'None',
                 #     'recover_script':  'None',
-                #     'shutdown_script':  'None',  
+                #     'shutdown_script':  'None',
                 #     'settings': {
                 #         'filter_count': '5',
                 #         'filter_reference': '0',
@@ -551,18 +554,18 @@ site_config = {
                 #                         ['air',   '(2,  0)', '-0.779', '0.01', ['2', '17'], 'ai'],  #  2
                 #                         ['dark1', '(3,  0)', '0.000', '0.00', ['2', '17'], 'dk'],  # 4
                 #                         ['dark2', '(4,  0)', '-0.779', '0.00', ['2', '17'], 'dk']],  # 5
-         
+
                 #         'filter_screen_sort':  ['2', '0', '1'],
                 #         'filter_sky_sort':     ['1', '0', '2']  #
 
                 #     },
                 # },
 
-                                        
+
 
         },
     },
-        
+
     'lamp_box': {
         'lamp_box1': {
             'parent': 'camera_1',  # Parent is camera for the spectrograph
@@ -573,7 +576,7 @@ site_config = {
             'switches': "None"  # A string of switches/lamps the box has for the FITS header. # 'None'; "Off,Mirr,Tung,NeAr" for UVEX
         },
     },
-    
+
     'camera': {
         'camera_1_1': {
             'parent': 'telescope1',
@@ -623,7 +626,7 @@ site_config = {
                 'min_exposure': 0.00001,
                 'max_exposure': 360.0,
                 'can_subframe':  True,
-                'min_subframe':  [128, 128],       
+                'min_subframe':  [128, 128],
                 'bin_modes':  [[1, 1, 0.53], [2, 2, 1.06], [3, 3, 1.58], [4, 4, 2.11]],   #Meaning no binning choice if list has only one entry, default should be first.
                 'default_bin':  ['2 2'],
                 'bin_enable':['2 2'],
@@ -708,7 +711,7 @@ site_config = {
         #         'min_exposure': 0.0001,
         #         'max_exposure': 300.0,
         #         'can_subframe':  True,
-        #         'min_subframe':  [128, 128],       
+        #         'min_subframe':  [128, 128],
         #         'bin_modes':  [[2, 2, 1.06], [1, 1, 0.53], [3, 3, 1.58], [4, 4, 2.11]],   #Meaning no binning choice if list has only one entry, default should be first.
         #         'default_bin':  [2, 2, 1.06],    # Matched to seeing situation by owner   # Matched to seeing situation by owner
         #         'cycle_time':  [18, 15, 15, 12],  # 3x3 requires a 1, 1 reaout then a software bin, so slower.
@@ -770,7 +773,7 @@ site_config = {
 }
 get_ocn_status = None   # NB these are placeholders for site specific routines for in a config file
 get_enc_status = None
- 
+
 if __name__ == '__main__':
     j_dump = json.dumps(site_config)
     site_unjasoned = json.loads(j_dump)
@@ -778,7 +781,3 @@ if __name__ == '__main__':
         print('Strings matched.')
     if site_config == site_unjasoned:
         print('Dictionaries matched.')
-        
-        
-
-

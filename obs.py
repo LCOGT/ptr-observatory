@@ -487,8 +487,8 @@ class Observatory:
                 '''
 
                 if self.events_new is None:
-                    url = 'https://api.photonranch.org/api/events?site=SAF'
-
+                    #url = 'https://api.photonranch.org/api/events?site=SAF'
+                    url = 'https://api.photonranch.org/api/events?site='+self.site_name.upper()
                     self.events_new = requests.get(url).json()
                 return   # Continue   #This creates an infinite loop
 
@@ -834,6 +834,8 @@ class Observatory:
             if not self.aws_queue.empty():
                 pri_image = self.aws_queue.get(block=False)
                 if pri_image is None:
+                    print ("got an empty entry in aws_queue???")
+                    self.aws_queue.task_done()
                     time.sleep(0.2)
                     continue
                 # Here we parse the file, set up and send to AWS

@@ -157,11 +157,11 @@ class Camera:
     """
 
     ###filter, focuser, rotator must be set up prior to camera.
-    #Since this is a class definition we need to pre-enter with a list of classes 
+    #Since this is a class definition we need to pre-enter with a list of classes
     #to be created by a camera factory.
 
     def __init__(self, driver: str, name: str, config: dict):
-        
+
         """
         Added monkey patches to make ASCOM/Maxim differences
         go away from the bulk of the in-line code.
@@ -181,7 +181,7 @@ class Camera:
         g_dev[name + '_cam_retry_config'] = config
         g_dev[name + '_cam_retry_doit'] = False
         g_dev[name] = self
-    
+
         if name == 'camera_1_1':     #NBDefaults sets up Selected 'cam'
             g_dev['cam'] = self
         self.config = config
@@ -240,8 +240,8 @@ class Camera:
             #self.app.TelescopeConnected = True
             #print("Maxim Telescope Connected: ", self.app.TelescopeConnected)
             print('Control is via Maxim camera interface, not ASCOM.')
-            print('Please note telescope is NOT connected to Maxim.') 
-        ##  NB NB Consider starting at low end of cooling and then gradually increasing it 
+            print('Please note telescope is NOT connected to Maxim.')
+        ##  NB NB Consider starting at low end of cooling and then gradually increasing it
         print('Cooler started @:  ', self._setpoint())
         setpoint =(float(self.config['camera'][self.name]['settings']['temp_setpoint']))
         self._set_setpoint(setpoint)
@@ -261,7 +261,7 @@ class Camera:
         self.site_path = self.config['client_path']
         self.archive_path = self.config['archive_path'] +'archive/'
         self.camera_path = self.archive_path  + self.alias + "/"
-        self.alt_path = '//house-computer/saf_archive_2/archive/sq01/'    #NB NB this should come from config file, it is site dependent.
+        self.alt_path = self.config['alt_path']    #NB NB this should come from config file, it is site dependent.
         self.autosave_path = self.camera_path +'autosave/'
         self.lng_path = self.camera_path + "lng/"
         self.seq_path = self.camera_path + "seq/"
@@ -359,16 +359,16 @@ class Camera:
 
     def _maxim_temperature(self):
         return self.camera.Temperature
-    
+
     def _maxim_cooler_power(self):
         return self.camera.CoolerPower
-    
+
     def _maxim_heatsink_temp(self):
         return self.camera.HeatSinkTemperature
-    
+
     def _maxim_cooler_on(self):
         return self.camera.CoolerOn   # NB NB NB This would be a good place to put a warming protector
-    
+
     def _maxim_set_cooler_on(self):
         self.camera.CoolerOn = True
         print("3s wait for cooler to start up.")
@@ -378,7 +378,7 @@ class Camera:
     def _maxim_set_setpoint(self, p_temp):
         self.camera.TemperatureSetpoint = float(p_temp)
         return self.camera.TemperatureSetpoint
-    
+
     def _maxim_setpoint(self):
         return self.camera.TemperatureSetpoint
 
@@ -397,14 +397,14 @@ class Camera:
 
     def _ascom_temperature(self):
         return self.camera.CCDTemperature
-    
+
     def _ascom_cooler_on(self):
         return self.camera.CoolerOn   # NB NB NB This would be a good place to put a warming protector
 
     def _ascom_set_cooler_on(self):
         self.camera.CoolerOn = True
         return self.camera.CoolerOn
-    
+
     def _ascom_set_setpoint(self, p_temp):
         if self.camera.CanSetCCDTemperature:
             self.camera.SetCCDTemperature = float(p_temp)
@@ -412,14 +412,14 @@ class Camera:
         else:
             print ("Camera cannot set cooling temperature.")
             return p_temp
-        
+
     def _ascom_setpoint(self):
         if self.camera.CanSetCCDTemperature:
             return self.camera.SetCCDTemperature
         else:
             print ("Camera cannot set cooling temperature: Using 10.0C")
             return 10.0
-        
+
     def _ascom_expose(self, exposure_time, imtypeb):
             self.camera.StartExposure(exposure_time, imtypeb)
 
@@ -588,7 +588,7 @@ class Camera:
 
             probe = self._cooler_on()
             if not probe:
-                self._set_cooler_on() 
+                self._set_cooler_on()
                 print('Found cooler off.')
                 try:
                     self._connect(False)
@@ -667,11 +667,11 @@ class Camera:
         if not imtype.lower() in ['auto_focus', 'focus', 'autofocus probe']:
             g_dev['foc'].adjust_focus(loud=True)
         sub_frame_fraction = optional_params.get('subframe', None)
-        
+
         #  The following bit of code is convoluted.  Presumably when we get Autofocus working this will get cleaned up.
         # self.toss = False
         # self.do_sep = False
-        
+
         # if imtype.lower() in ('light', 'light frame', 'experimental', 'screen flat', 'sky flat', \
         #                       'test image', 'auto_focus', 'focus', 'autofocus probe'):
         #                         #here we might eventually turn on spectrograph lamps as needed for the imtype.
@@ -737,10 +737,10 @@ class Camera:
         # shutter open/close status, turn on lamps, frames: ARC, BIAS, BPM, DARK, DOUBLE(2 lit fib.),
         # EXPERIMENTAL(autofocus), EXPOSE(obj), GUIDE, LAMPFLAT, SKYFLAT, STANDARD, TARGET(Obj+ThAr)
         if imtype.lower() in ('bias', 'dark', 'lamp flat'):
-            if imtype.lower() == 'bias': 
+            if imtype.lower() == 'bias':
                 exposure_time = 0.0
             # else:
-            #     exposure_time = self.config['camera'][self.name]['settings']['min_exposure'] 
+            #     exposure_time = self.config['camera'][self.name]['settings']['min_exposure']
             imtypeb = False  # don't open the shutter.
             lamps = 'turn on led+tungsten lamps here, if lampflat'
             frame_type = imtype.replace(' ', '')
@@ -911,7 +911,7 @@ class Camera:
                 #case where a timeout is a smart idea.
                 #Wait for external motion to cease before exposing.  Note this precludes satellite tracking.
                 st = ""
- 
+
                 if g_dev['enc'].is_dome:
                     try:
                         enc_slewing = g_dev['enc'].status['dome_slewing']
@@ -932,7 +932,7 @@ class Camera:
                     if round(time.time() - g_dev['mnt'].move_time, 1) >=75:
                        print("|n\n DOME OR MOUNT HAS TIMED OUT!|n|n")
                        break
-                      
+
                     st = ""
                     time.sleep(0.2)
                     if seq > 0:
@@ -1045,7 +1045,7 @@ class Camera:
                                 g_dev['obs'].send_to_user("Starting " + str(frame_type) + " calibration exposure.", p_level='INFO')
                             elif frame_type in ('focus'):
                                 g_dev['obs'].send_to_user("Starting " + str(frame_type) + " exposure.", p_level='INFO')
-                            else:                                
+                            else:
                                 g_dev['obs'].send_to_user("Starting * name! * by user: " + str(self.user_name), p_level='INFO')
                             g_dev['ocn'].get_quick_status(self.pre_ocn)   #NB NB WEMA must be running or this may fault.
                             g_dev['foc'].get_quick_status(self.pre_foc)
@@ -1147,8 +1147,8 @@ class Camera:
                     if quartileExposureReport==3 and remaining < initialRemaining*.25 and initialRemaining > 30:
                         quartileExposureReport=quartileExposureReport+1
                         g_dev['obs'].send_to_user("Exposure 75% complete. Remaining: " + str(remaining) + ' sec.', p_level='INFO')
-                        
-                    
+
+
                 continue
             incoming_image_list = []   #glob.glob(self.file_mode_path + '*.f*t*')
             self.t4 = time.time()
@@ -1235,10 +1235,10 @@ class Camera:
 # =============================================================================
 #                 neg_pix = np.where(trimmed < 0)
 #                 print("negative pixel count:  ", len(neg_pix[0]))
-# 
+#
 #                 trimmed[neg_pix] = 0
 #                 self.img = trimmed.astype('uint16')
-#                 
+#
 #                 print('\n\nMedian of raw image, neg pixels removed:  ', np.median(self.img) , '\n\n')
 # =============================================================================
                 neg_pix = np.where(self.img < 0)
@@ -1263,7 +1263,7 @@ class Camera:
                 avg_foc = g_dev['foc'].get_average_status(self.pre_foc, self.post_foc)
                 avg_rot = g_dev['rot'].get_average_status(self.pre_rot, self.post_rot)
                 avg_ocn = g_dev['ocn'].get_average_status(self.pre_ocn, self.post_ocn)
-                
+
                 if frame_type[-5:] in ['focus', 'probe', "ental"]:
 
                     self.img = self.img #+ 100   #maintain a + pedestal for sep  THIS SHOULD not be needed for a raw input file.
@@ -1331,7 +1331,7 @@ class Camera:
                         hdu.header['YBINING'] = (1, 'Pixel binning in y direction')
                     hdu.header['CCDSUM']   = (self.ccd_sum, 'Sum of chip binning')
                     # DEH pulls from config; master config will need to include keyword, or this line will need to change
-                    
+
                     hdu.header['RDMODE'] = (self.config['camera'][self.name]['settings']['read_mode'], 'Camera read mode')
                     hdu.header['RDOUTM'] = (self.config['camera'][self.name]['settings']['readout_mode'], 'Camera readout mode')
                     hdu.header['RDOUTSP'] = (self.config['camera'][self.name]['settings']['readout_speed'], '[FPS] Readout speed')
@@ -1339,7 +1339,7 @@ class Camera:
 
                         hdu.header['CCDSTEMP'] = (round(self.camera.TemperatureSetpoint, 3), '[C] CCD set temperature')
                         hdu.header['CCDATEMP'] = (round(self.camera.Temperature, 3), '[C] CCD actual temperature')
-                        
+
                     if self.ascom:
                         hdu.header['CCDSTEMP'] = (round(self.camera.SetCCDTemperature, 3), '[C] CCD set temperature')
                         hdu.header['CCDATEMP'] = (round(self.camera.CCDTemperature, 3), '[C] CCD actual temperature')
@@ -1351,7 +1351,7 @@ class Camera:
                     hdu.header['TELESCOP'] = (self.config['telescope']['telescope1']['desc'], 'Name of the telescope')  #20220901 Deleted ['desc'] WER
                     hdu.header['PROPID'] = 'ptr-' + self.config['site_id'] + '-001-0001'
                     hdu.header['BLKUID']   = ('1234567890', 'Just a placeholder right now. WER')
-                    hdu.header['INSTRUME'] = (self.alias, 'Name of camera')                    
+                    hdu.header['INSTRUME'] = (self.alias, 'Name of camera')
                     hdu.header['CAMNAME']  = (self.camera_model, 'Instrument used')
                     hdu.header['DETECTOR'] = (self.config['camera'][self.name]['detector'], 'Name of camera detector')
                     hdu.header['CAMMANUF'] = (self.config['camera'][self.name]['manufacturer'], 'Name of camera manufacturer')
@@ -1390,13 +1390,13 @@ class Camera:
                     hdu.header['FILTRNUM'] = ('PTR_ADON_HA_0023',  'An index into a DB')  #Get a number from the hardware or via Maxim.  NB NB why not cwl and BW instead, plus P
                     if g_dev['scr'] is not None and frame_type == 'screenflat':
                         hdu.header['SCREEN']   = (int(g_dev['scr'].bright_setting), 'Screen brightness setting')
-                        
+
 # =============================================================================
 #                     #WER:  Darren these values are nominal with respect to a raw chip and then delineate which
 #                     #zones of the chip are what.  In our case we are only entering this region with Trimmed
-#                     #Data  The Biassec and Trimsec are essentially zero and detsec = datasec.  This is not 
+#                     #Data  The Biassec and Trimsec are essentially zero and detsec = datasec.  This is not
 #                     #always the case.  This all needs re-thinking if we are going to Run BANSAI at site.
-#                         
+#
 #                     # DEH finish these keywords, for BANZAI. all of these should be a string of format '[x1:x2,y1:y2]'
 #                     # biassec needs to change, the overscan can be a region larger than 1-pixel-wide column.
 #                     # detsec also needs to be changed appropriately.
@@ -1422,15 +1422,15 @@ class Camera:
                         hdu.header['DETSEC']  = self.config['camera'][self.name]['settings']['det_sec' ][3]
                         hdu.header['BIASSEC'] = self.config['camera'][self.name]['settings']['bias_sec'][3]
                         hdu.header['TRIMSEC'] = self.config['camera'][self.name]['settings']['trim_sec'][3]
-                        
+
                     #The above code sets up a proper, 0,0 lower left MIRA view of the raw image.  NB NB Should index by binning setting
                     hdu.header['SATURATE'] = (float(self.config['camera'][self.name]['settings']['saturate']), '[ADU] Saturation level')  # will come from config(?)
                     hdu.header['MAXLIN'] = (float(self.config['camera'][self.name]['settings']['max_linearity']), '[ADU] Non-linearity level')
                     if self.pane is not None:
                         hdu.header['MOSAIC'] = (True, 'Is mosaic')
                         hdu.header['PANE'] = self.pane
-                    
-                    
+
+
                     hdu.header['FOCAL']    = (round(float(self.config['telescope']['telescope1']['focal_length']), 2), \
                                               '[mm] Telescope focal length')
                     hdu.header['APR-DIA']  = (round(float(self.config['telescope']['telescope1']['aperture']), 2), \
@@ -1441,7 +1441,7 @@ class Camera:
                     hdu.header['LONGITUD'] = (round(float(self.config['longitude']), 6), '[Deg E] Telescope Longitude')
                     hdu.header['HEIGHT'] = (round(float(self.config['elevation']), 2), '[m] Altitude of Telescope above sea level')
                     hdu.header['MPC-CODE'] = (self.config['mpc_code'], 'Site code')       # This is made up for now.
-                    
+
                     if g_dev['mnt'].object == "Unspecified" or g_dev['mnt'].object == "empty" :
                         RAtemp = g_dev['mnt'].current_icrs_ra
                         DECtemp = g_dev['mnt'].current_icrs_dec
@@ -1452,21 +1452,21 @@ class Camera:
                     else:
                         hdu.header['OBJECT']   = (g_dev['mnt'].object, 'Object name')
                         hdu.header['OBJSPECF']= "yes"
-                    
-                    
+
+
                     ## 16 August 22: MTF - LCO (and many others) currently use decimal degrees for basically everything, so I've updated the fits header for that.
                     ## ALSO you reported that RA is in degrees, but provided it in hours anyway! I multiplied that by 15
                     hdu.header['RA']  = (float(g_dev['mnt'].current_icrs_ra) * 15, '[deg] Telescope right ascension')
                     hdu.header['DEC'] = (g_dev['mnt'].current_icrs_dec, '[deg] Telescope declination')
-                    
+
                     hdu.header['ORIGRA'] = hdu.header['RA']
                     hdu.header['ORIGDEC'] = hdu.header['DEC']
-                    
+
                     hdu.header['RAhrs']  = (g_dev['mnt'].current_icrs_ra, '[hrs] Telescope right ascension')
                     hdu.header['RA-HMS'] = (ptr_utility.hToH_MS(g_dev['mnt'].current_icrs_ra), '[HH MM SS sss] Telescope right ascension')
                     hdu.header['DEC-DMS'] = (ptr_utility.dToD_MS(g_dev['mnt'].current_icrs_dec), '[sDD MM SS ss] Telescope declination')
-                    
-                    
+
+
                     hdu.header['TARG-CHK'] = ((g_dev['mnt'].current_icrs_ra * 15) + g_dev['mnt'].current_icrs_dec, '[deg] Sum of RA and dec')
                     hdu.header['CATNAME']  = (g_dev['mnt'].object, 'Catalog object name')
                     hdu.header['CAT-RA']   = (float(g_dev['mnt'].current_icrs_ra) * 15, '[deg] Catalog RA of object')
@@ -1488,9 +1488,9 @@ class Camera:
                     hdu.header['OBSNOTE']  = self.hint[0:54]            #Needs to be truncated.
                     if self.maxim:
                         hdu.header['FLIPSTAT'] = 'None'   # This is a maxim camera setup, not a flip status
-                    
-                    
-                    
+
+
+
                     #hdu.header['SEQCOUNT'] = (int(counter), 'Image sequence counter')
                     hdu.header['DITHER']   = (0, '[] Dither')
                     hdu.header['OPERATOR'] = ("WER", 'Site operator')
@@ -1505,7 +1505,7 @@ class Camera:
                     hdu.header['ENCWLIGT'] = ("", 'Enclosure white lights state')
                     if g_dev['enc'] is not None:
                         try:
-                            
+
                             hdu.header['ENC1STAT'] = g_dev['enc'].status['shutter_status']  #['shutter_status'], 'Shutter status')   #"Open/Closed" enclosure 1 status
                         except:
                             pass
@@ -1550,7 +1550,7 @@ class Camera:
                     hdu.header['DECCORR'] = (g_dev['mnt'].dec_corr, '[deg] Declination correction')
 
                     hdu.header['OTA'] = "Main"
-                    hdu.header['SELECTEL'] = ("tel1", "Nominted OTA for pointing") 
+                    hdu.header['SELECTEL'] = ("tel1", "Nominted OTA for pointing")
                     hdu.header['ROTATOR']  = (self.config['rotator']['rotator1']['name'], 'Rotator name')
                     hdu.header['ROTANGLE'] = (avg_rot[1], '[deg] Rotator angle')
                     hdu.header['ROTMOVNG'] = (avg_rot[2], 'Rotator is moving')
@@ -1558,7 +1558,7 @@ class Camera:
                     hdu.header['FOCUSPOS'] = (avg_foc[1], '[um] Focuser position')
                     hdu.header['FOCUSTMP'] = (avg_foc[2], '[C] Focuser temperature')
                     hdu.header['FOCUSMOV'] = (avg_foc[3], 'Focuser is moving')
-                    
+
                     hdu.header['WXSTATE'] = (g_dev['ocn'].wx_is_ok, 'Weather system state')
                     hdu.header['SKY-TEMP'] = (avg_ocn[1], '[C] Sky temperature')
                     hdu.header['AIR-TEMP'] = (avg_ocn[2], '[C] External temperature')
@@ -1572,12 +1572,12 @@ class Camera:
                     self.pix_ang = (self.camera.PixelSizeX*self.camera.BinX/(float(self.config['telescope'] \
                                               ['telescope1']['focal_length'])*1000.))
                     hdu.header['PIXSCALE'] = (round(math.degrees(math.atan(self.pix_ang))*3600., 4), '[arcsec/pixel] Nominal pixel scale on sky')
-                    hdu.header['REQNUM']   = ('00000001', 'Request number')                  
+                    hdu.header['REQNUM']   = ('00000001', 'Request number')
                     hdu.header['ISMASTER'] = (False, 'Is master image')
 
                     current_camera_name = self.alias
                     next_seq = next_sequence(current_camera_name)
-                    hdu.header['FRAMENUM'] = (int(next_seq), 'Running frame number')                                        
+                    hdu.header['FRAMENUM'] = (int(next_seq), 'Running frame number')
                     # DEH I need to understand these keywords better before writing header comments.
                     if pedastal is not None:
                         hdu.header['PEDESTAL'] = (-pedastal,  'adu, add this for zero based image.')
@@ -1590,7 +1590,7 @@ class Camera:
                     hdu.header['XORGSUBF'] = self.camera_start_x    #This makes little sense to fix...  NB ALL NEEDS TO COME FROM CONFIG!!
                     hdu.header['YORGSUBF'] = self.camera_start_y
 
-                    
+
                     #hdu.header['BLKSDATE'] = ('None', 'Group unique ID
 
                     try:
@@ -1601,7 +1601,7 @@ class Camera:
                         hdu.header['USERNAME'] = self.last_user_name
                         hdu.header ['USERID']  = self.last_user_id
                         #print("User_name or id not found, using prior.")  #Insert last user nameand ID here if they are not supplied.
-                    
+
                     # NB This needs more development
                     im_type = 'EX'   #or EN for engineering....
                     f_ext = ""
@@ -1718,8 +1718,8 @@ class Camera:
                             #g_dev['mnt'].reset_last_reference()
                             return result
                            #Return to classic processing
-                       
-                        
+
+
 
                     # if  not script in ('True', 'true', 'On', 'on'):   #  not quick and    #Was moved 20201022 for grid
                     #     if not quick:
@@ -1730,7 +1730,7 @@ class Camera:
 
                     self.to_reduce((paths, hdu))
                     #Here we should decimate and send big fits
-                  
+
                     g_dev['obs'].send_to_user("Raw image saved locally. ", p_level='INFO')
                     #Moved into Calibrate to eliminate race conditon is saving this.
                     # if frame_type in ('bias', 'dark', 'screenflat', 'skyflat'):
@@ -1759,7 +1759,7 @@ class Camera:
                     if self.overscan is not None:
                         result['patch'] = bi_mean - self.overscan
                     else:
-                       result['patch'] = bi_mean 
+                       result['patch'] = bi_mean
                     result['calc_sky'] = 0 #avg_ocn[7]
                     result['temperature'] = 0 #avg_foc[2]
                     # print('GAIN: ', result['patch'], avg_ocn[7], exposure_time, 'g: ', \
@@ -1792,7 +1792,7 @@ class Camera:
                 remaining = round(self.completion_time - self.t7, 1)
                 # if remaining > 0:
                 #     print (round(remaining, 1), round(100*remaining/self.expsoure, 1))
-                
+
                 if remaining < 0 and notifyReadOutOnlyOnce == 0:
                     print("Reading out image. Time remaining: " + str(round(13 + remaining, 1)), ' sec')
                     g_dev['obs'].send_to_user("Reading out image. Time remaining: " + str(round(13 + remaining, 1)) + ' s.', p_level='INFO')
