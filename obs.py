@@ -487,8 +487,8 @@ class Observatory:
                 '''
 
                 if self.events_new is None:
-                    url = 'https://api.photonranch.org/api/events?site=SAF'
-
+                    #url = 'https://api.photonranch.org/api/events?site=SAF'
+                    url = 'https://api.photonranch.org/api/events?site='+self.site_name.upper()
                     self.events_new = requests.get(url).json()
                 return   # Continue   #This creates an infinite loop
 
