@@ -2,7 +2,7 @@
 '''
 
 Created on Fri Feb 07,  11:57:41 2020
-Updated 20220601 WER   This version does not support color camera channel.
+Updated 20220914 WER   This version does not support color camera channel.
 
 @author: wrosing
 
@@ -90,9 +90,9 @@ site_config = {
 
     'site_roof_control': 'yes', #MTF entered this in to remove sro specific code.... Basically do we have control of the roof or not see line 338 sequencer.py
     'site_in_automatic_default': "Manual",   # ["Manual", "Shutdown", "Automatic"]
-    'automatic_detail_default': "Enclosure is initially set to Manual in ARO site_config.",
+    'automatic_detail_default': "Enclosure is initially set to Manual by ARO site_config.",
     'auto_eve_bias_dark': True,
-    'auto_eve_sky_flat': True,
+    'auto_eve_sky_flat': False,
     'eve_sky_flat_sunset_offset': -60.0,  # Minutes  neg means before, + after.
     'auto_morn_sky_flat': True,
     'auto_morn_bias_dark': True,
@@ -254,7 +254,7 @@ site_config = {
             'parent': 'mount1',
             'name': 'Main OTA',
             #'ptrtel':  "saf1",
-            'telescop':  "saf1",
+            'telescop': 'aro1',
             'desc':  'Ceravolo 300mm F4.9/F9 convertable',
             #'telescop': 'cvagr-0m30-f9-f4p9-001',
             'ptrtel': 'cvagr-0m30-f9-f4p9-001',
@@ -417,6 +417,7 @@ site_config = {
             'maximum': 12600,   #12672 actually
             'step_size': 1,
             'backlash': 0,
+            'throw': 300,
             'unit': 'micron',
             'unit_conversion': 9.09090909091,
             'has_dial_indicator': False

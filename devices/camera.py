@@ -1111,9 +1111,9 @@ class Camera:
         self.post_ocn = []
         counter = 0
         if self.bin == 1:
-            self.completion_time = self.t2 + exposure_time + 1
+            self.completion_time = self.t2 + exposure_time + 15
         else:
-            self.completion_time = self.t2 + exposure_time + 1
+            self.completion_time = self.t2 + exposure_time + 12
         result = {'error': False}
         notifyReadOutOnlyOnce=0
         quartileExposureReport=0
@@ -1345,7 +1345,7 @@ class Camera:
                         hdu.header['CCDATEMP'] = (round(self.camera.CCDTemperature, 3), '[C] CCD actual temperature')
                     hdu.header['COOLERON'] = self._cooler_on()
                     hdu.header['SITEID'] = self.config['site_id'].replace('-','').replace('_','')
-                    hdu.header['TELID'] = self.config['telescope']['telescope1']['telescop']
+                    hdu.header['TELID'] = self.config['telescope']['telescope1']['telescop'][:4]
                     hdu.header['PTRTEL'] = self.config['telescope']['telescope1']['ptrtel']
                     #breakpoint()
                     hdu.header['TELESCOP'] = (self.config['telescope']['telescope1']['desc'], 'Name of the telescope')  #20220901 Deleted ['desc'] WER
