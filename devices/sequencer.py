@@ -302,6 +302,10 @@ class Sequencer:
         if self.bias_dark_latch and ((events['Eve Bias Dark'] <= ephem_now < events['End Eve Bias Dark']) and \
              self.config['auto_eve_bias_dark'] and g_dev['enc'].mode == 'Automatic' ):
             self.bias_dark_latch = False
+            # MTF - this was just to interject a focus call early in the night for testing. If it is later than Oct 2022, delete this.
+            #focus_star = tycho.dist_sort_targets(g_dev['mnt'].current_icrs_ra, g_dev['mnt'].current_icrs_dec, \
+            #                        g_dev['mnt'].current_sidereal)
+            #print (focus_star)
             req = {'bin1': False, 'bin2': True, 'bin3': False, 'bin4': False, 'numOfBias': 45, \
                    'numOfDark': 15, 'darkTime': 180, 'numOfDark2': 3, 'dark2Time': 360, \
                    'hotMap': True, 'coldMap': True, 'script': 'genBiasDarkMaster', }
