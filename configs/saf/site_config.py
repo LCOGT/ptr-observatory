@@ -252,7 +252,7 @@ site_config = {
             'parent': 'mount1',
             'name': 'Main OTA',
             #'ptrtel':  "saf1",
-            'telescop':  "saf1",
+            'telescop': 'aro1',
             'desc':  'Ceravolo 300mm F4.9/F9 convertable',
             #'telescop': 'cvagr-0m30-f9-f4p9-001',
             'ptrtel': 'cvagr-0m30-f9-f4p9-001',
