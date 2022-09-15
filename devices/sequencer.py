@@ -692,6 +692,10 @@ class Sequencer:
                     initial_focus = False
                     just_focused = True
                     timer = time.time() + af_delay  #40 minutes to refocus
+                    #print (block['project']['project_name'])
+                    # MTF - Allocate the project target name to object name
+                    print ("Observing " + str(block['project']['project_targets'][0]['name']))
+                    #opt['object_name']=block['project']['project_targets'][0]['name']
                     print("Executing: ", exposure, left_to_do)
                     color = exposure['filter']
                     exp_time =  float(exposure['exposure'])
@@ -816,7 +820,7 @@ class Sequencer:
                         if imtype in ['light'] and count > 0:
                             req = {'time': exp_time,  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': imtype}   #  NB Should pick up filter and constants from config
                             opt = {'area': 150, 'count': 1, 'bin': binning, 'filter': color, \
-                                   'hint': block['project_id'] + "##" + dest_name, 'pane': pane}
+                                   'hint': block['project_id'] + "##" + dest_name, 'object_name': block['project']['project_targets'][0]['name'], 'pane': pane}
                             print('Seq Blk sent to camera:  ', req, opt)
                             obs_win_begin, sunZ88Op, sunZ88Cl, ephem_now = self.astro_events.getSunEvents()
 
