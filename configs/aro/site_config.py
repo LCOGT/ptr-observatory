@@ -28,6 +28,7 @@ site_name = 'aro'
 
 site_config = {
     'site': str(site_name.lower()),
+    'site_name':  'aro','
     #'site_id': 'ARO',
     'site_id': 'ARO',
     "version_date": "20220913.wer",
