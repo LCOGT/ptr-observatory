@@ -501,6 +501,20 @@ class Camera:
         if self.user_id != self.last_user_id:
             self.last_user_id = self.user_id
         self.user_name = command['user_name']
+
+        #if self.object_name != '':
+        #    self.object_name = opt['object_name']
+        #else:
+        #    self.object_name = False
+        print (opt)
+        print ("Look here")
+        if 'object_name' in opt:            # this is the worlds laziest bit of code... it is just until some javascript is updated. remove try except >Oct22
+            if opt['object_name'] == '':
+                opt['object_name']= 'Unspecified'
+            print (opt['object_name'])
+        else:
+            opt['object_name']= 'Unspecified'
+            print (opt['object_name'])
         if self.user_name != self.last_user_name:
             self.last_user_name = self.user_name
         if action == "expose" and not self.exposure_busy:
@@ -652,12 +666,13 @@ class Camera:
         lcl_repeat = 1
         if count < 1:
             count = 1   #Hence frame does not repeat unless count > 1
-
+        #breakpoint()
         #  Here we set up the filter, and later on possibly rotational composition.
         try:    #20200716   FW throwing error (-4)
-            requested_filter_name = str(optional_params.get('filter', 'w'))   #Default should come from config.
+            #requested_filter_name = str(optional_params.get('filter', 'w'))   #Default should come from config.
+            requested_filter_name = str(optional_params.get('filter', self.config['filter_wheel1']['settings']['default_filter']))   #Default DOES come from config.
             self.current_filter = requested_filter_name
-            g_dev['fil'].set_name_command({'filter': requested_filter_name}, {})
+            self.current_filter = g_dev['fil'].set_name_command({'filter': requested_filter_name}, {})
         except Exception as e:
             print("Camera filter setup:  ", e)
             #breakpoint()
@@ -1046,7 +1061,10 @@ class Camera:
                             elif frame_type in ('focus'):
                                 g_dev['obs'].send_to_user("Starting " + str(frame_type) + " exposure.", p_level='INFO')
                             else:
-                                g_dev['obs'].send_to_user("Starting * name! * by user: " + str(self.user_name), p_level='INFO')
+                                if 'object_name' in opt:
+                                    g_dev['obs'].send_to_user("Starting " + str(opt['object_name']) + " by user: " + str(self.user_name), p_level='INFO')
+                                else:
+                                    g_dev['obs'].send_to_user("Starting an unnamed frame by user: " + str(self.user_name), p_level='INFO')
                             g_dev['ocn'].get_quick_status(self.pre_ocn)   #NB NB WEMA must be running or this may fault.
                             g_dev['foc'].get_quick_status(self.pre_foc)
                             g_dev['rot'].get_quick_status(self.pre_rot)
@@ -1442,16 +1460,24 @@ class Camera:
                     hdu.header['HEIGHT'] = (round(float(self.config['elevation']), 2), '[m] Altitude of Telescope above sea level')
                     hdu.header['MPC-CODE'] = (self.config['mpc_code'], 'Site code')       # This is made up for now.
 
-                    if g_dev['mnt'].object == "Unspecified" or g_dev['mnt'].object == "empty" :
+
+                    if 'object_name' in opt:
+                        if opt['object_name'] != "Unspecified" and opt['object_name'] != '':
+                            hdu.header['OBJECT'] = opt['object_name']
+                            hdu.header['OBJSPECF']= "yes"
+                    elif g_dev['mnt'].object != "Unspecified" or g_dev['mnt'].object != "empty" :
+                        hdu.header['OBJECT']   = (g_dev['mnt'].object, 'Object name')
+                        hdu.header['OBJSPECF']= "yes"
+                    else:
                         RAtemp = g_dev['mnt'].current_icrs_ra
                         DECtemp = g_dev['mnt'].current_icrs_dec
                         RAstring = f'{RAtemp:.1f}'.replace('.','h')
                         DECstring = f'{DECtemp:.1f}'.replace('-','n').replace('.','d')
                         hdu.header['OBJECT'] = RAstring + "ra" + DECstring + "dec"
                         hdu.header['OBJSPECF']= "no"
-                    else:
-                        hdu.header['OBJECT']   = (g_dev['mnt'].object, 'Object name')
-                        hdu.header['OBJSPECF']= "yes"
+
+                    if frame_type in ('bias', 'dark', 'lampflat', 'skyflat', 'screenflat', 'solarflat', 'arc'):
+                        hdu.header['OBJECT'] = frame_type
 
 
                     ## 16 August 22: MTF - LCO (and many others) currently use decimal degrees for basically everything, so I've updated the fits header for that.
