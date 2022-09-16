@@ -16,7 +16,7 @@ import socket
 host_site = socket.gethostname()[:3].lower()   #  NB May be better to split on
                                          # '-' and use first part of hostname.
 if host_site =='saf':
-    host_site == 'aro'    #  NB NB THIS is a blatant hack.
+    host_site = 'aro'    #  NB NB THIS is a blatant hack.
 sys.path.append(os.path.join(pathlib.Path().resolve(),"configs", host_site))
 try:
     from site_config import *

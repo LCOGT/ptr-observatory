@@ -353,7 +353,7 @@ class WxEncAgent:
         except:
             print("Log did not send, usually not fatal.")
 if __name__ == "__main__":
-    breakpoint()
+
     import config
     wema = WxEncAgent(config.site_name, config.site_config)
     

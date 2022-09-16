@@ -30,7 +30,7 @@ site_config = {
     'site': str(site_name.lower()),
     'site_name':  'aro','
     #'site_id': 'ARO',
-    'site_id': 'ARO',
+    'site_id': 'aro',
     "version_date": "20220913.wer",
     'site_desc': "Apache Ridge Observatory, Santa Fe, NM, USA. 2194m",
     'airport_codes':  ['SAF', 'ABQ', 'LSN'],
