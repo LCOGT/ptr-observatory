@@ -21,19 +21,19 @@ if host_site =='saf':
 sys.path.append(os.path.join(pathlib.Path().resolve(),"configs", host_site))
 
 #print (pathlib.Path().resolve().replace('ptr-observatory',''))
-cwd = str(pathlib.Path().resolve())
-print (cwd.replace('ptr-observatory',''))
-hwd = cwd.replace('ptr-observatory','')
-hostnamefile=glob.glob(hwd+'hostname*')
-print (hostnamefile[0])
-print (hostnamefile[0].split('hostname'))
-print (hostnamefile[0].split('hostname')[1])
-site_name = hostnamefile[0].split('hostname')[1]
-print (site_name)
+# cwd = str(pathlib.Path().resolve())
+# print (cwd.replace('ptr-observatory',''))
+# hwd = cwd.replace('ptr-observatory','')
+# hostnamefile=glob.glob(hwd+'hostname*')
+# print (hostnamefile[0])
+# print (hostnamefile[0].split('hostname'))
+# print (hostnamefile[0].split('hostname')[1])
+# site_name = hostnamefile[0].split('hostname')[1]
+# print (site_name)
 
-sys.path.append(os.path.join(pathlib.Path().resolve(),"configs", 'sro'))
-from site_config import *
-sys.exit()
+# sys.path.append(os.path.join(pathlib.Path().resolve(),"configs", 'sro'))
+# from site_config import *
+# sys.exit()
 try:
     from site_config import *
 except:
