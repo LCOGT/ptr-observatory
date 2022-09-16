@@ -670,9 +670,13 @@ class Camera:
         #  Here we set up the filter, and later on possibly rotational composition.
         try:    #20200716   FW throwing error (-4)
             #requested_filter_name = str(optional_params.get('filter', 'w'))   #Default should come from config.
-            requested_filter_name = str(optional_params.get('filter', self.config['filter_wheel1']['settings']['default_filter']))   #Default DOES come from config.
+            requested_filter_name = str(optional_params.get('filter', self.config['filter_wheel']['filter_wheel1']['settings']['default_filter']))   #Default DOES come from config.
+
             self.current_filter = requested_filter_name
             self.current_filter = g_dev['fil'].set_name_command({'filter': requested_filter_name}, {})
+            if self.current_filter == 'none':
+                print ("skipping exposure as no adequate filter match found")
+                return
         except Exception as e:
             print("Camera filter setup:  ", e)
             #breakpoint()

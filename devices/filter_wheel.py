@@ -496,8 +496,10 @@ class FilterWheel:
         # If filter was not identified, find a substitute filter
         if filterIDed==0:
             print ("Requested filter: " +str(filter_name) + " does not exist on this filter wheel")
-            print ("Finding a substitution")
+            #print ("Finding a substitution")
             filter_name = self.substitute_filter(filter_name)
+            if filter_name == 'none':
+                return 'none'
             for match in range(int(self.config['filter_wheel1']['settings']['filter_count'])):  #NB Filter count MUST be correct in Config.
                 if filter_name in self.filter_data[match][0]:
 
@@ -594,7 +596,16 @@ class FilterWheel:
         print ("Finding substitute for "  + filter_name)
 
         #filterNames= ['PL', 'PR','PG','PB', 'O3', 'HA', 'S2']
-        filterNames = self.filter_data[:][0]
+        #breakpoint()
+        #filterNames=[]
+        #for i in range(len(self.filter_data)):
+
+
+
+
+        #breakpoint()
+        #filterNames = self.filter_data[0][:]
+        filterNames= self.config['filter_wheel1']['settings']['filter_list']
         requestedFilter = filter_name
 
         print ("Available Filters: " + str(filterNames))
@@ -635,8 +646,8 @@ class FilterWheel:
             priorityOrder = ['zp', 'zs', 'z']
 
         # white clear filter
-        if requestedFilter == 'w' or requestedFilter == 'Lum' or requestedFilter == 'clear' or requestedFilter == 'L' or requestedFilter == 'W':
-            priorityOrder = ['w', 'Lum', 'clear']
+        if requestedFilter == 'w' or requestedFilter == 'Lum' or requestedFilter == 'PL' or requestedFilter == 'clear' or requestedFilter == 'L' or requestedFilter == 'W':
+            priorityOrder = ['w', 'Lum', 'PL', 'clear']
 
         #Generic H
         if requestedFilter == 'HA' or requestedFilter == 'H':
@@ -662,14 +673,16 @@ class FilterWheel:
 
         if len(priorityOrder) != 0:
             for i in range(len(priorityOrder)):
-                print (priorityOrder[i])
-                if priorityOrder[i] in filterNames:
-                    print ("Got it. Substitute filter is " + str(priorityOrder[i]))
-                    substituteFilter=priorityOrder[i]
-                    return substituteFilter
+                #print (priorityOrder[i])
+                for q in range(len(filterNames)):
+                    if priorityOrder[i] == filterNames[q]:
+                        print ("Got it. Substitute filter is " + str(priorityOrder[i]))
+                        substituteFilter=priorityOrder[i]
+                        return substituteFilter
 
-        print ("No Substitute Filter Found. Using site default filter.")
-        return self.config['filter_wheel1']['settings']['default_filter']
+        print ("No Substitute Filter Found. Skipping exposure.")
+        #return self.config['filter_wheel1']['settings']['default_filter']
+        return 'none'
 
 
 if __name__ == '__main__':
