@@ -56,7 +56,10 @@ def terminate_restart_observer(site_path, no_restart=False):
 
         #subprocess.call('C:/Users/obs/Documents/GitHub/ptr-observatory/restart_obs.bat')
         #The above routine does not return but does start a process.
-        os.system('cmd /c C:\\Users\\obs\\Documents\\GitHub\\ptr-observatory\\restart_obs.bat')
+        parentPath = Path(getcwd())
+        os.system('cmd /c ' + str(parentPath) + '\restart_obs.bat')
+        #print ('cmd /c ' + str(parentPath) + '\restart_obs.bat')
+        #os.system('cmd /c C:\\Users\\obs\\Documents\\GitHub\\ptr-observatory\\restart_obs.bat')
         #  worked with /k, try /c Which should terminate
         return
     
@@ -353,7 +356,7 @@ class WxEncAgent:
         except:
             print("Log did not send, usually not fatal.")
 if __name__ == "__main__":
-    breakpoint()
+    #breakpoint()
     import config
     wema = WxEncAgent(config.site_name, config.site_config)
     

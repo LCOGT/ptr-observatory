@@ -12,12 +12,28 @@ import sys
 import os
 import pathlib
 import socket
+import glob
 
 host_site = socket.gethostname()[:3].lower()   #  NB May be better to split on
                                          # '-' and use first part of hostname.
 if host_site =='saf':
     host_site == 'aro'    #  NB NB THIS is a blatant hack.
 sys.path.append(os.path.join(pathlib.Path().resolve(),"configs", host_site))
+
+#print (pathlib.Path().resolve().replace('ptr-observatory',''))
+cwd = str(pathlib.Path().resolve())
+print (cwd.replace('ptr-observatory',''))
+hwd = cwd.replace('ptr-observatory','')
+hostnamefile=glob.glob(hwd+'hostname*')
+print (hostnamefile[0])
+print (hostnamefile[0].split('hostname'))
+print (hostnamefile[0].split('hostname')[1])
+site_name = hostnamefile[0].split('hostname')[1]
+print (site_name)
+
+sys.path.append(os.path.join(pathlib.Path().resolve(),"configs", 'sro'))
+from site_config import *
+sys.exit()
 try:
     from site_config import *
 except:
