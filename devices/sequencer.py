@@ -718,30 +718,30 @@ class Sequencer:
                     imtype = exposure['imtype']
                     #defocus = exposure['defocus']
 #                    if g_dev['site'] == 'saf':   #THis should be in config.
-                    if color[0] == 'B':
-                        color = 'PB'   #Map generic filters to site specific ones.   NB this does no tbelong here, it should be central with Cameras setup.
-                    if color[0] == 'G':
-                        color = 'PG'   # NB NB THis needs a clean up, these mappings should be in config
-                    if color[0] == 'R':
-                        color = 'PR'
-                    if color[0] == 'L':
-                        color = 'PL'
-                    if color[0] == 'W':
-                        color = 'w'
-                    if color[0] == 'g':
-                        color = 'gp'
-                    if color[0] == 'r':    #NB This is redundant for Sloans when small cap.
-                        color = 'rp'
-                    if color[0] == 'i':     #NB NB THIS IS WRONG For Johnson and Bessell
-                        color = 'ip'
-                    if color[0] == 'H':
-                        color = 'HA'
-                    if color[0] == 'O':
-                        color = 'O3'
-                    if color[0] == 'S':
-                        color = 'S2'
-                    if color[0] == 'C':
-                        color = 'CR'
+                    # if color[0] == 'B':
+                    #     color = 'PB'   #Map generic filters to site specific ones.   NB this does no tbelong here, it should be central with Cameras setup.
+                    # if color[0] == 'G':
+                    #     color = 'PG'   # NB NB THis needs a clean up, these mappings should be in config
+                    # if color[0] == 'R':
+                    #     color = 'PR'
+                    # if color[0] == 'L':
+                    #     color = 'PL'
+                    # if color[0] == 'W':
+                    #     color = 'w'
+                    # if color[0] == 'g':
+                    #     color = 'gp'
+                    # if color[0] == 'r':    #NB This is redundant for Sloans when small cap.
+                    #     color = 'rp'
+                    # if color[0] == 'i':     #NB NB THIS IS WRONG For Johnson and Bessell
+                    #     color = 'ip'
+                    # if color[0] == 'H':
+                    #     color = 'HA'
+                    # if color[0] == 'O':
+                    #     color = 'O3'
+                    # if color[0] == 'S':
+                    #     color = 'S2'
+                    # if color[0] == 'C':
+                    #     color = 'CR'
                     if count <= 0:
                          continue
                     #At this point we have 1 to 9 exposures to make in this filter.  Note different areas can be defined.
