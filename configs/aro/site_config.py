@@ -483,6 +483,7 @@ site_config = {
                 'filter_count': 42,
                 'home_filter':  1,
                 'default_filter': "w",
+                'filter_list': ['PL','PR','PG','PB','HA','O3','S2', 'N2', 'NIR', 'up','gp', 'rp','ip','z','zp','y','EXO','JB','JV','Rc','Ic', 'air','w'], # A list of actual physical filters for the substitution function
                 'filter_reference': 1,   # We choose to use W as the default filter.  Gains taken at F9, Ceravolo 300mm
                 'filter_data': [['filter', 'filter_index', 'filter_offset', 'sky_gain', 'screen_gain', 'generic'],
 
@@ -505,10 +506,14 @@ site_config = {
                         ['JV',   [10, 0],    0, 24.4, [.32 ,  20], 'BV'],    #16.
                         ['Rc',   [11, 0],    0, 17.2, [10  , 170], 'BR'],    #17.
                         ['Ic',   [12, 0],    0, 3.66, [360 , 170], 'BI'],    #18.
-                        ['PL (Lum)',[7,  0], 0, 74.34,[360 , 170], 'PL'],    #19.
-                        ['PR (Red)',[0,  8], 0, 13.7, [.32 ,  20], 'PB'],    #20.
-                        ['PG (Grn)',[0,  7], 0, 24.0, [30  , 170], 'PG'],    #21.
-                        ['PB (Blu)',[0,  6], 0, 37.4, [360 , 170], 'PR'],    #22.
+                        #['PL (Lum)',[7,  0], 0, 74.34,[360 , 170], 'PL'],    #19.   # MTF to WER - I am removing the brackets because they will
+                        #['PR (Red)',[0,  8], 0, 13.7, [.32 ,  20], 'PB'],    #20.   # cause problems in a few areas in the future.
+                        #['PG (Grn)',[0,  7], 0, 24.0, [30  , 170], 'PG'],    #21.
+                        #['PB (Blu)',[0,  6], 0, 37.4, [360 , 170], 'PR'],    #22.
+                        ['PL',[7,  0], 0, 74.34,[360 , 170], 'PL'],    #19.
+                        ['PR',[0,  8], 0, 13.7, [.32 ,  20], 'PB'],    #20.
+                        ['PG',[0,  7], 0, 24.0, [30  , 170], 'PG'],    #21.
+                        ['PB',[0,  6], 0, 37.4, [360 , 170], 'PR'],    #22.
                         ['NIR',  [0, 10],    0, 5.11, [0.65,  20], 'ni'],    #23.
                         ['O3',   [0,  2],    0, 1.79, [360 , 170], 'O3'],    #24.
                         ['HA',   [0,  3],    0, .537, [360 , 170], 'HA'],    #25.
