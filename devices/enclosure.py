@@ -755,7 +755,7 @@ class Enclosure:
 
     def sync_mount_command(self, req: dict, opt: dict):
         #print("enclosure cmd: sync_az")
-        if self.site not in ['sro', 'mrc', 'mrc2', 'saf']:
+        if self.site not in ['sro', 'mrc', 'mrc2', 'aro']:  #NB NB GASP, this needs a re-think!!
             self.enclosure.Slaved = True
             self.following = True
             self.enclosure_synchronized =True
