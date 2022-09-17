@@ -98,20 +98,9 @@ site_config = {
     're-calibrate_on_solve': True,
     'get_ocn_status': None,
     'get_enc_status': None,
-    'not_used_variabl': None,
-    'observing_conditions' : {     #for SAF
-        'observing_conditions1': {
-            'parent': 'site',
-            'name': 'Boltwood',
-            'driver': 'ASCOM.Boltwood.ObservingConditions',
-            'driver_2':  'ASCOM.Boltwood.OkToOpen.SafetyMonitor',
-            'driver_3':  'ASCOM.Boltwood.OkToImage.SafetyMonitor',
-            'redis_ip': '127.0.0.1',   #None if no redis path present
-            'has_unihedron':  True,
-            'uni_driver': 'ASCOM.SQM.serial.ObservingConditions',
-            'unihedron_port':  10    # False, None or numeric of COM port.
-        },
-    },
+    'not_used_variable': None,
+    
+
 
     'defaults': {
         'observing_conditions': 'observing_conditions1',  # These are used as keys, may go away.
@@ -157,6 +146,22 @@ site_config = {
        'sequencer',
        ],
 
+    'wema_status_span':  ['aro'],
+
+    'observing_conditions' : {     #for SAF
+        'observing_conditions1': {
+            'parent': 'site',
+            'name': 'Boltwood',
+            'driver': 'ASCOM.Boltwood.ObservingConditions',
+            'driver_2':  'ASCOM.Boltwood.OkToOpen.SafetyMonitor',
+            'driver_3':  'ASCOM.Boltwood.OkToImage.SafetyMonitor',
+            'redis_ip': '127.0.0.1',   #None if no redis path present
+            'has_unihedron':  True,
+            'uni_driver': 'ASCOM.SQM.serial.ObservingConditions',
+            'unihedron_port':  10    # False, None or numeric of COM port.
+        },
+    },
+    
     'enclosure': {
         'enclosure1': {
             'parent': 'site',
