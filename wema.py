@@ -286,7 +286,6 @@ class WxEncAgent:
             device_status = status
         except:
             pass
-
         obsy = self.name
         if ocn_status is not None:
             lane = 'weather'
@@ -294,10 +293,21 @@ class WxEncAgent:
         if enc_status is not None:
             lane = 'enclosure'
             send_status(obsy, lane, enc_status)
-        if  device_status is not None:
-            lane = 'device'
-            final_send  = status
-            send_status(obsy, lane, device_status)
+        if self.name == 'mrc':
+            self.name = 'mrc2'
+            obsy = self.name
+            if ocn_status is not None:
+                lane = 'weather'
+                send_status(obsy, lane, ocn_status)  #NB NB Do not remove this sed for SAF!
+            if enc_status is not None:
+                lane = 'enclosure'
+                send_status(obsy, lane, enc_status)
+            
+        # if  device_status is not None:
+        #     lane = 'device'
+        #     final_send  = status
+        #     send_status(obsy, lane, device_status)
+
         loud = False
         if loud:
             print('\n\n > Status Sent:  \n', status)
