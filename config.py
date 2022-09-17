@@ -104,10 +104,10 @@ site_config = {
     'reference_pressure':  977.83,  #mbar Alternately 12 entries, one for every - mid month.
     'site_in_automatic_default': "Automatic",   #"Manual", "Shutdown"
     'automatic_detail_default': "Enclosure is set to Automatic mode.",
-    'auto_eve_bias_dark': False,
-    'auto_eve_sky_flat': False,
-    'auto_morn_sky_flat': False,
-    'auto_morn_bias_dark': False,
+    'auto_eve_bias_dark': True,
+    'auto_eve_sky_flat': True,
+    'auto_morn_sky_flat': True,
+    'auto_morn_bias_dark': True,
     're-calibrate_on_solve': True, 
     
     'defaults': {
