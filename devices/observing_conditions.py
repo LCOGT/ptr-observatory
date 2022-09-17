@@ -6,8 +6,10 @@ import time
 import json
 import socket
 from global_yard import g_dev
-import config
 from config import get_ocn_status
+import config
+
+from pprint import pprint
 # import ptr_events
 
 
@@ -55,7 +57,7 @@ class ObservingConditions:
 
     def __init__(self, driver: str, name: str, config: dict, astro_events):
         #  We need a way to specify whihc computer in the wema in the
-        #  the singular config_file or we have two configurations.
+        #  the singular config file or we have two configurations.
         #  import socket
         #  print(socket.gethostname())
 
@@ -111,8 +113,8 @@ class ObservingConditions:
             self.site_is_specific = True
             #  Note OCN has no associated commands.
             #  Here we monkey patch
-
             self.get_status = get_ocn_status
+            #self.get_status = config.get_ocn_status  #NB THis line is bogus
             # Get current ocn status just as a test.
             self.status = self.get_status(g_dev)
             # breakpoint()  # All test code
@@ -152,7 +154,7 @@ class ObservingConditions:
 
     def get_status(self):   # This is purely generic code for a generic site.
                             # It may be overwritten with a monkey patch found 
-                            # in the appropriate config_file.py
+                            # in the appropriate config.py
         '''
         Regularly calling this routine returns weather status dict for AWS, evaluates the Wx 
         reporting and manages temporary closes, known as weather-holds.
@@ -165,6 +167,7 @@ class ObservingConditions:
             DESCRIPTION.
 
         '''
+
         if not self.is_wema and self.site_has_proxy:
             if self.config['site_IPC_mechanism'] == 'shares':
                 try:
@@ -178,7 +181,7 @@ class ObservingConditions:
                 except:
                     try:
                         time.sleep(3)
-                        weather = open(g_dev['wema_write_share_path'] + 'weather.txt', 'r')
+                        weather = open(g_dev['wema_share_path'] + 'weather.txt', 'r')
                         status = json.loads(weather.readline())
                         weather.close()
                         self.status = status
@@ -188,7 +191,7 @@ class ObservingConditions:
                     except:
                         try:
                             time.sleep(3)
-                            weather = open(g_dev['wema_write_share_path'] + 'weather.txt', 'r')
+                            weather = open(g_dev['wema_share_path'] + 'weather.txt', 'r')
                             status = json.loads(weather.readline())
                             weather.close()
                             self.status = status
@@ -198,7 +201,7 @@ class ObservingConditions:
                         except:
                             print("Using prior OCN status after 4 failures.")
                             g_dev['ocn'].status =self.prior_status
-                            return self.prior_status()
+                            return self.prior_status
             elif self.config['site_IPC_mechanism'] == 'redis':
                  try:
                      status = eval(g_dev['redis'].get('wx_state'))
@@ -213,7 +216,7 @@ class ObservingConditions:
                      pass
                  return status
             else:
-                breakpoint()
+                #breakpoint()
                 try:
                     self.current_ambient = self.status['temperature_C']
                 except:
@@ -258,23 +261,42 @@ class ObservingConditions:
                 self.new_pressure = round(float(self.pressure[0]), 2)
             except:
                 self.new_pressure = round(float(self.pressure), 2)
-            status = {"temperature_C": round(self.temperature, 2),
-                      "pressure_mbar": self.new_pressure,
-                      "humidity_%": self.sky_monitor.Humidity,
-                      "dewpoint_C": self.sky_monitor.DewPoint,
-                      "sky_temp_C": round(self.sky_monitor.SkyTemperature,2),
-                      "last_sky_update_s":  round(self.sky_monitor.TimeSinceLastUpdate('SkyTemperature'), 2),
-                      "wind_m/s": abs(round(self.sky_monitor.WindSpeed, 2)),
-                      'rain_rate': self.sky_monitor.RainRate,
-                      'solar_flux_w/m^2': None,
-                      'cloud_cover_%': str(self.sky_monitor.CloudCover),
-                      "calc_HSI_lux": illum,
-                      "calc_sky_mpsas": round(uni_measure,2),    #  Provenance of 20.01 is dubious 20200504 WER
-                      #"wx_ok": wx_str,  #str(self.sky_monitor_oktoimage.IsSafe),
-                      "open_ok": self.ok_to_open,
-                      'wx_hold': self.wx_hold,
-                      'hold_duration': self.wx_to_go
-                      }
+            try:
+                status = {"temperature_C": round(self.temperature, 2),
+                          "pressure_mbar": self.new_pressure,
+                          "humidity_%": self.sky_monitor.Humidity,
+                          "dewpoint_C": self.sky_monitor.DewPoint,
+                          "sky_temp_C": round(self.sky_monitor.SkyTemperature,2),
+                          "last_sky_update_s":  round(self.sky_monitor.TimeSinceLastUpdate('SkyTemperature'), 2),
+                          "wind_m/s": abs(round(self.sky_monitor.WindSpeed, 2)),
+                          'rain_rate': self.sky_monitor.RainRate,
+                          'solar_flux_w/m^2': None,
+                          'cloud_cover_%': str(self.sky_monitor.CloudCover),
+                          "calc_HSI_lux": illum,
+                          "calc_sky_mpsas": round(uni_measure,2),    #  Provenance of 20.01 is dubious 20200504 WER
+                          #"wx_ok": wx_str,  #str(self.sky_monitor_oktoimage.IsSafe),
+                          "open_ok": self.ok_to_open,
+                          'wx_hold': self.wx_hold,
+                          'hold_duration': self.wx_to_go
+                          }
+            except:
+                status = {"temperature_C": round(self.temperature, 2),
+                          "pressure_mbar": self.new_pressure,
+                          "humidity_%": self.sky_monitor.Humidity,
+                          "dewpoint_C": self.sky_monitor.DewPoint,
+                          "sky_temp_C": round(self.sky_monitor.SkyTemperature,2),
+                          "last_sky_update_s":  round(self.sky_monitor.TimeSinceLastUpdate('SkyTemperature'), 2),
+                          "wind_m/s": abs(round(self.sky_monitor.WindSpeed, 2)),
+                          'rain_rate': self.sky_monitor.RainRate,
+                          'solar_flux_w/m^2': None,
+                          'cloud_cover_%': 'unknown',    #str(self.sky_monitor.CloudCover), # Soetimes faults.
+                          "calc_HSI_lux": illum,
+                          "calc_sky_mpsas": round(uni_measure,2),    #  Provenance of 20.01 is dubious 20200504 WER
+                          #"wx_ok": wx_str,  #str(self.sky_monitor_oktoimage.IsSafe),
+                          "open_ok": self.ok_to_open,
+                          'wx_hold': self.wx_hold,
+                          'hold_duration': self.wx_to_go
+                          }
             self.current_ambient = round(self.temperature, 2)
             dew_point_gap = not (self.sky_monitor.Temperature  - self.sky_monitor.DewPoint) < 2
             temp_bounds = not (self.sky_monitor.Temperature < -15) or (self.sky_monitor.Temperature > 42)

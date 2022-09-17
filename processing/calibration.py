@@ -3,6 +3,7 @@
 Created on Tue Nov 19 20:08:38 2019
 wer
 """
+import copy
 import time
 import threading
 import queue
@@ -21,6 +22,7 @@ from skimage.io import imsave
 import matplotlib.pyplot as plt
 from PIL import Image
 from global_yard import g_dev
+from pprint import pprint
 '''
 
 Note no call outs.  Maybe we should check there are no zero values in flats?
@@ -40,7 +42,7 @@ super_bias = None
 super_bias_2 = None
 super_dark = None
 super_dark_2 = None
-super_dark_2_long = None
+super_dark_ref_long = None
 hot_map = None
 hot_pix = None
 apply_hot = None
@@ -72,6 +74,7 @@ screen_flat_PB = None
 screen_flat_EXO = None
 screen_flat_dif = None
 #
+
 sky_flat_w = None
 sky_flat_air = None
 sky_flat_JU= None
@@ -101,7 +104,7 @@ sky_flat_EXO = None
 sky_flat_air = None
 sky_flat_dif = None
 dark_exposure_level = 0.0
-dark_2_exposure_level = 0
+dark_ref_exposure_level = 0
 dark_long_exposure_level = 0.0
 
 
@@ -152,6 +155,79 @@ def simpleColumnFix(img, col):
     img = img.astype(np.uint16)
     return img
 
+def remove_overscan (hdu):
+    img = hdu.data # copy.deepcopy(hdu.data)
+    start_size = img.size
+    start_img = img.copy
+    meta = hdu.header #copy.deepcopy(hdu.header)
+    #  NB NB  Be very careful this is the exact code used in build_master and calibration  modules.
+    #  NB Note this is QHY600 specific code.  Needs to be supplied in camera config as sliced regions.
+    pedastal = 100
+    iy, ix = img.shape
+    #undo MIRA transpose used earlier img = img.transpose().astype('float32') 
+    img = img.transpose().astype('float32') #Transose in and out to make analysis more x, y traditional in terms of coordinate order
+    #print('Calib cycle shape:  ', img.shape)
+    #print("Incoming image:  ", img)
+    # NB NB This should be driven by a camera config file entry not use chip sizes to sort, not scaleable.
+    #QHY 600Pro and 367
+    if ix == 9600:     #GHY600 Bin 1
+        overscan = np.median(img[24:, -33:]) #+ np.median(img[0:21, :]))/2) - 1
+        trimmed = img[24:-8, :-34] + pedastal - overscan
+    elif ix == 4800:    #QHY600 Bin 2
+        overscan = np.median(img[12:, -17:]) #+ np.median(img[0:10, :]))/2) - 1
+        trimmed = img[12:-4, :-17] + pedastal - overscan
+    elif ix == 3200:     #GHY600 Bin3
+        overscan = np.median(img[8:, -11:]) #+ np.median(img[0:7, :]))/2) - 1
+        trimmed = img[8:-3, :-12] + pedastal - overscan
+    elif ix == 2400:     #GHY600 Bin4
+        overscan = np.median(img[6:, -9:]) #+ np.median(img[0:5, :]))/2) - 1
+        trimmed = img[6:-2, :-9] + pedastal - overscan
+        
+    #mrc2    On-semi 16803 CCD
+    elif ix == 4132 and iy == 4117:   #FLI 16803
+        overscan = np.median(img[35:, 2:20])   #Horizontal overscan matches buld of main array very well.
+        trimmed = img[43:,20:] - overscan + pedastal
+    elif ix == 2066 and iy == 2058:   #MRC@
+        overscan = np.median(img[17: ,1:10]) 
+        trimmed = img[21:,10:]  - overscan + pedastal
+    #Bin 3 not possible for FLI camera       
+    elif ix == 1033 and iy == 1029:   #MRC@
+        overscan = np.median(img[8:, 0:5]) 
+        trimmed = img[10:,5:]  - overscan + pedastal
+
+    #SR0 SBIG 16200
+    elif ix == 4556 and iy == 3656:   #All this code needs to be driven from camera config.
+
+        overscan = np.median(img[3638:3647, 250:4400])  # A centrally quiet region
+        trimmed = img[:4500, :3600] - (overscan + 3.0) + pedastal   #Established for -25.5 actual temp 20220724
+    elif ix == 2278 and iy == 1828:   #All this code needs to be driven from camera config.
+        overscan = np.median(img[1819:1823, 125:2200])  # A centrally quiet region
+        trimmed = img[:2250, :1800] - overscan + pedastal
+    elif ix == 1518 and iy == 1218: 
+        overscan = np.median(img[1212:1215, 83:1480])  # A centrally quiet region
+        trimmed = img[:1500, :1200] - overscan + pedastal
+    elif ix == 1139 and iy == 914: 
+        overscan = np.median(img[909:911, 62:1100])  # A centrally quiet region
+        trimmed = img[:1125, :900] - overscan + pedastal
+    else:
+        print("UNSUPPORTED Camera or Bin mode!!", ix, iy)
+        trimmed = img
+ 
+    meta['OVERSCAN'] = overscan
+    meta['PEDASTAL'] = -pedastal
+
+    hdu.header = meta
+    hdu.data = trimmed.transpose()
+
+    if meta['OBSTYPE'] in ['BIAS', 'DARK']:
+        print("Reduced median bias or dark region, overscan:  ", np.median(trimmed - pedastal), "  ", overscan)
+    # end_size = hdu.data.size
+    # print('Start, End size, dtype:  ', start_size, end_size, hdu.data.dtype)
+    # if end_size >= start_size:
+    #     pass
+    # #breakpoint()
+    return hdu
+
 #This is a brute force linear version. This needs to be more sophisticated and camera independent.
 
 def calibrate (hdu, lng_path, frame_type='light', quick=False):
@@ -160,12 +236,16 @@ def calibrate (hdu, lng_path, frame_type='light', quick=False):
         screen_flat_JB, screen_flat_JV, screen_flat_Rc, screen_flat_Ic, screen_flat_up, screen_flat_gp, screen_flat_rp, screen_flat_ip, \
         screen_flat_zp, screen_flat_z, screen_flat_y, screen_flat_O3, screen_flat_HA, screen_flat_N2, screen_flat_S2, screen_flat_EXO, \
         screen_flat_PL ,screen_flat_PB, screen_flat_PG, screen_flat_PR, screen_flat_NIR,  screen_flat_CR, screen_flat_dif,  \
-        dark_exposure_level, super_dark_2_long, dark_2_exposure_level
-    loud = False
+        dark_exposure_level, super_dark_ref_long, dark_ref_exposure_level
+    loud = False 
+
+    hdu = remove_overscan(hdu)
+
     if not quick:
+
         if super_bias is None:
             try:
-                sbHdu = fits.open(lng_path + 'b_1.fits')
+                sbHdu = fits.open(lng_path + 'b_ref.fits')
                 super_bias = sbHdu[0].data#.astype('float32')
                 pedastal = sbHdu[0].header['PEDASTAL']
                 super_bias = super_bias + pedastal
@@ -174,7 +254,7 @@ def calibrate (hdu, lng_path, frame_type='light', quick=False):
                 #super_bias[fix] = int(super_bias.mean())
                 sbHdu.close()
                 quick_bias = True
-                if loud: print(lng_path + 'b_1.fits', 'Loaded')
+                if loud: print(lng_path + 'b_ref.fits', 'Loaded')
             except:
                 quick_bias = False
                 #print('WARN: No Bias_1 Loaded.')
@@ -190,8 +270,21 @@ def calibrate (hdu, lng_path, frame_type='light', quick=False):
                 if loud: print(lng_path + 'b_2.fits', 'Loaded')
             except:
                 quick_bias = False
-                g_dev['obs'].send_to_user(" No bias_2 loaded.", p_level ='WARNING')
-
+                #g_dev['obs'].send_to_user(" No bias_2 loaded.", p_level ='WARNING')
+                
+        # if saf_2 is None:
+        #     try:
+        #         sbHdu = fits.open(lng_path + 'saf_ref_air.fits')
+        #         saf_2 = sbHdu[0].data#.astype('float32')
+        #         #pedastal = sbHdu[0].header['PEDASTAL']
+        #         #super_bias_2 = super_bias_2 + pedastal
+        #         #sbHdu.close()
+        #         quick_bias = True
+        #         if loud: print(lng_path + 'saf_ref_air.fits', 'Loaded')
+        #     except:
+        #         quick_bias = False
+        #         g_dev['obs'].send_to_user(" No saf_ref_air loaded.", p_level ='WARNING')
+                
         # if super_dark_90 is None:
         #     try:
         #         sdHdu = fits.open(lng_path + 'md_1_90.fits')
@@ -208,26 +301,26 @@ def calibrate (hdu, lng_path, frame_type='light', quick=False):
         #         print('WARN: No dark_1_90 Loaded.')
         if super_dark is None:
             try:
-                sdHdu = fits.open(lng_path + 'd_1.fits')
+                sdHdu = fits.open(lng_path + 'd_ref.fits')
                 dark_exposure_level = sdHdu[0].header['EXPTIME']
                 super_dark = sdHdu[0].data/dark_exposure_level  #Convert to adu/sec
-                super_dark = super_dark.astype('float32')
+                #super_dark = super_dark.astype('float32')
                 if loud: print('sdark:  ', super_dark.mean())
                 sdHdu.close()
                 #fix = np.where(super_dark_360 < 0)
                 #super_dark_360[fix] = 0
                 quick_dark= True
-                if loud: print(lng_path + 'd_1.fits', 'Loaded')
+                if loud: print(lng_path + 'd_ref.fits', 'Loaded')
             except:
                quick_dark = False
                if loud: print('WARN: No dark_1 Loaded.')
         if super_dark_2 is None:
             try:
                 sdHdu = fits.open(lng_path + 'd_2.fits')
-                dark_2_exposure_level = sdHdu[0].header['EXPTIME']
+                dark_ref_exposure_level = sdHdu[0].header['EXPTIME']
 
-                super_dark_2  = sdHdu[0].data/dark_2_exposure_level  #Converto to ADU/sec
-                super_dark_2 = super_dark_2.astype('float32')
+                super_dark_2  = sdHdu[0].data/dark_ref_exposure_level  #Converto to ADU/sec
+                #super_dark_2 = super_dark_2.astype('float32')
                 if loud: print('sdark_2:  ', super_dark_2.mean())
                 sdHdu.close()
                 #fix = np.where(super_dark_360 < 0)
@@ -237,292 +330,281 @@ def calibrate (hdu, lng_path, frame_type='light', quick=False):
             except:
                 quick_dark_2 = False
                 if loud: print('WARN: No dark_2 Loaded.')
-        if super_dark_2_long is None:
+        if super_dark_ref_long is None:
             try:
-                sdHdu = fits.open(lng_path + 'd_2_long.fits')
-                dark_2_long_exposure_level = sdHdu[0].header['EXPTIME']
-                super_dark_2_long  = sdHdu[0].data/dark_2_long_exposure_level  #Converto to ADU/sec
-                super_dark_2_long = super_dark_2_long.astype('float32')
-                if loud: print('sdark_2:  ', super_dark_2_long.mean())
+                sdHdu = fits.open(lng_path + 'd_ref_long.fits')
+                dark_ref_long_exposure_level = sdHdu[0].header['EXPTIME']
+                super_dark_ref_long  = sdHdu[0].data/dark_ref_long_exposure_level  #Converto to ADU/sec
+                #super_dark_ref_long = super_dark_ref_long.astype('float32')
+                if loud: print('sdark_2:  ', super_dark_ref_long.mean())
                 sdHdu.close()
                 #fix = np.where(super_dark_360 < 0)
                 #super_dark_360[fix] = 0
-                quick_dark_2_long = True
-                if loud: print(lng_path + 'd_2_long.fits', 'Loaded')
+                quick_dark_ref_long = True
+                if loud: print(lng_path + 'd_ref_long.fits', 'Loaded')
             except:
-                quick_dark_2_long = False
-                if loud: print('WARN: No dark_2_long Loaded.')
+                quick_dark_ref_long = False
+                if loud: print('WARN: No dark_ref_long Loaded.')
 
         if screen_flat_w is None:
             try:
-                sfHdu = fits.open(lng_path + 'f_2_w.fits')
+                sfHdu = fits.open(lng_path + 'f_ref_w.fits')
                 screen_flat_w = sfHdu[0].data.astype('float32')
                 quick_flat_w = True
                 sfHdu.close()
-                if loud: print(lng_path + 'f_2_w.fits', 'Loaded')
+                if loud: print(lng_path + 'f_ref_w.fits', 'Loaded')
             except:
                 quick_flat_w = False
                 if loud: print('WARN: No w Flat/Lum Loaded.')
         if screen_flat_JU is None:
             try:
-                sfHdu = fits.open(lng_path + 'f_2_JU.fits')
+                sfHdu = fits.open(lng_path + 'f_ref_JU.fits')
                 screen_flat_JU = sfHdu[0].data.astype('float32')
                 quick_flat_JU = True
                 sfHdu.close()
-                if loud: print(lng_path + 'f_2_JU.fits', 'Loaded')
+                if loud: print(lng_path + 'f_ref_JU.fits', 'Loaded')
             except:
                 quick_flat_JU = False
                 if loud: print('WARN: No JU Flat/Lum Loaded.')
         if screen_flat_JB is None:
             try:
-                sfHdu = fits.open(lng_path + 'f_2_JB.fits')
+                sfHdu = fits.open(lng_path + 'f_ref_JB.fits')
                 screen_flat_JB = sfHdu[0].data.astype('float32')
                 quick_flat_JB = True
                 sfHdu.close()
-                if loud: print(lng_path + 'f_2_JB.fits', 'Loaded')
+                if loud: print(lng_path + 'f_ref_JB.fits', 'Loaded')
             except:
                 quick_flat_JB = False
                 if loud: print('WARN: No B Flat/Lum Loaded.')
         if screen_flat_JV is None:
             try:
-                sfHdu = fits.open(lng_path + 'f_2_JV.fits')
+                sfHdu = fits.open(lng_path + 'f_ref_JV.fits')
                 screen_flat_JV = sfHdu[0].data.astype('float32')
                 quick_flat_JV = True
                 sfHdu.close()
-                if loud: print(lng_path + 'f_2_JV.fits', 'Loaded')
+                if loud: print(lng_path + 'f_ref_JV.fits', 'Loaded')
             except:
                 quick_flat_JV = False
                 if loud: print('WARN: No V Flat/Lum Loaded.')
         if screen_flat_Rc is None:
             try:
-                sfHdu = fits.open(lng_path + 'f_2_Rc.fits')
+                sfHdu = fits.open(lng_path + 'f_ref_Rc.fits')
                 screen_flat_Rc = sfHdu[0].data.astype('float32')
                 quick_flat_Rc = True
                 sfHdu.close()
-                if loud: print(lng_path + 'f_2_Rc.fits', 'Loaded')
+                if loud: print(lng_path + 'f_ref_Rc.fits', 'Loaded')
             except:
                 quick_flat_Rc = False
                 if loud: print('WARN: No Rc Flat/Lum Loaded.')
         if screen_flat_Ic is None:
             try:
-                sfHdu = fits.open(lng_path + 'f_2_Ic.fits')
+                sfHdu = fits.open(lng_path + 'f_ref_Ic.fits')
                 screen_flat_Ic = sfHdu[0].data.astype('float32')
                 quick_flat_Ic = True
                 sfHdu.close()
-                if loud: print(lng_path + 'f_2_Ic.fits', 'Loaded')
+                if loud: print(lng_path + 'f_ref_Ic.fits', 'Loaded')
             except:
                 quick_flat_Ic = False
                 if loud: print('WARN: No Ic Flat/Lum Loaded.')
         if screen_flat_up is None:
             try:
-                sfHdu = fits.open(lng_path + 'f_2_up.fits')
+                sfHdu = fits.open(lng_path + 'f_ref_up.fits')
                 screen_flat_up = sfHdu[0].data.astype('float32')
                 quick_flat_up = True
                 sfHdu.close()
-                if loud: print(lng_path + 'f_2_up.fits', 'Loaded')
+                if loud: print(lng_path + 'f_ref_up.fits', 'Loaded')
             except:
                 quick_flat_up = False
                 if loud: print('WARN: No up Flat/Lum Loaded.')
         if screen_flat_gp is None:
             try:
-                sfHdu = fits.open(lng_path + 'f_2_gp.fits')
+                sfHdu = fits.open(lng_path + 'f_ref_gp.fits')
                 screen_flat_gp = sfHdu[0].data.astype('float32')
                 quick_flat_gp = True
                 sfHdu.close()
-                if loud: print(lng_path + 'f_2_gp.fits', 'Loaded')
+                if loud: print(lng_path + 'f_ref_gp.fits', 'Loaded')
             except:
                 quick_flat_gp = False
                 if loud: print('WARN: No gp Flat/Lum Loaded.')
         if screen_flat_rp is None:
             try:
-                sfHdu = fits.open(lng_path + 'f_2_rp.fits')
+                sfHdu = fits.open(lng_path + 'f_ref_rp.fits')
                 screen_flat_rp = sfHdu[0].data.astype('float32')
                 quick_flat_rp = True
                 sfHdu.close()
-                if loud: print(lng_path + 'f_2_rp.fits', 'Loaded')
+                if loud: print(lng_path + 'f_ref_rp.fits', 'Loaded')
             except:
                 quick_flat_rp = False
                 if loud: print('WARN: No rp Flat/Lum Loaded.')
         if screen_flat_ip is None:
             try:
-                sfHdu = fits.open(lng_path + 'f_2_ip.fits')
+                sfHdu = fits.open(lng_path + 'f_ref_ip.fits')
                 screen_flat_ip = sfHdu[0].data.astype('float32')
                 quick_flat_ip = True
                 sfHdu.close()
-                if loud: print(lng_path + 'f_2_ip.fits', 'Loaded')
+                if loud: print(lng_path + 'f_ref_ip.fits', 'Loaded')
             except:
                 quick_flat_ip = False
                 if loud: print('WARN: No ip Flat/Lum Loaded.')
         if screen_flat_zp is None:
             try:
-                sfHdu = fits.open(lng_path + 'f_2_zp.fits')
+                sfHdu = fits.open(lng_path + 'f_ref_zp.fits')
                 screen_flat_zp = sfHdu[0].data.astype('float32')
                 quick_flat_zp = True
                 sfHdu.close()
-                if loud: print(lng_path + 'f_2_zp.fits', 'Loaded')
+                if loud: print(lng_path + 'f_ref_zp.fits', 'Loaded')
             except:
                 quick_flat_zp = False
                 if loud: print('WARN: No zp Flat/Lum Loaded.')        
         if screen_flat_z is None:
             try:
-                sfHdu = fits.open(lng_path + 'f_2_z.fits')
+                sfHdu = fits.open(lng_path + 'f_ref_z.fits')
                 screen_flat_z = sfHdu[0].data.astype('float32')
                 quick_flat_z = True
                 sfHdu.close()
-                if loud: print(lng_path + 'f_2_z.fits', 'Loaded')
+                if loud: print(lng_path + 'f_ref_z.fits', 'Loaded')
             except:
                 quick_flat_z = False
                 if loud: print('WARN: No z Flat/Lum Loaded.')
         if screen_flat_y is None:
             try:
-                sfHdu = fits.open(lng_path + 'f_2_y.fits')
+                sfHdu = fits.open(lng_path + 'f_ref_y.fits')
                 screen_flat_y = sfHdu[0].data.astype('float32')
                 quick_flat_y = True
                 sfHdu.close()
-                if loud: print(lng_path + 'f_2_y.fits', 'Loaded')
+                if loud: print(lng_path + 'f_ref_y.fits', 'Loaded')
             except:
                 quick_flat_y = False
                 if loud: print('WARN: No y Flat/Lum Loaded.')
         if screen_flat_HA is None:
             try:
-                sfHdu = fits.open(lng_path + 'f_2_HA.fits')
+                sfHdu = fits.open(lng_path + 'f_ref_HA.fits')
                 screen_flat_HA = sfHdu[0].data.astype('float32')
                 quick_flat_HA = True
                 sfHdu.close()
-                if loud: print(lng_path + 'f_2_HA.fits', 'Loaded')
+                if loud: print(lng_path + 'f_ref_HA.fits', 'Loaded')
             except:
                 quick_flat_HA = False
                 if loud: print('WARN: No HA Flat/Lum Loaded.')
         if screen_flat_O3 is None:
             try:
-                sfHdu = fits.open(lng_path + 'f_2_O3.fits')
+                sfHdu = fits.open(lng_path + 'f_ref_O3.fits')
                 screen_flat_O3 = sfHdu[0].data.astype('float32')
                 quick_flat_O3 = True
                 sfHdu.close()
-                if loud: print(lng_path + 'f_2_O3.fits', 'Loaded')
+                if loud: print(lng_path + 'f_ref_O3.fits', 'Loaded')
             except:
                 quick_flat_O3 = False
                 if loud: print('WARN: No O3 Flat/Lum Loaded.')
         if screen_flat_N2 is None:
             try:
-                sfHdu = fits.open(lng_path + 'f_2_N2.fits')
+                sfHdu = fits.open(lng_path + 'f_ref_N2.fits')
                 screen_flat_N2 = sfHdu[0].data.astype('float32')
                 quick_flat_N2 = True
                 sfHdu.close()
-                if loud: print(lng_path + 'f_2_N2.fits', 'Loaded')
+                if loud: print(lng_path + 'f_ref_N2.fits', 'Loaded')
             except:
                 quick_flat_N2 = False
                 if loud: print('WARN: No N2 Flat/Lum Loaded.')
         if screen_flat_S2 is None:
             try:
-                sfHdu = fits.open(lng_path + 'f_2_S2.fits')
+                sfHdu = fits.open(lng_path + 'f_ref_S2.fits')
                 screen_flat_S2 = sfHdu[0].data.astype('float32')
                 quick_flat_S2 = True
                 sfHdu.close()
-                if loud: print(lng_path + 'f_2_S2.fits', 'Loaded')
+                if loud: print(lng_path + 'f_ref_S2.fits', 'Loaded')
             except:
                 quick_flat_S2 = False
                 if loud: print('WARN: No S2 Flat/Lum Loaded.')
         if screen_flat_CR is None:
             try:
-                sfHdu = fits.open(lng_path + 'f_2_CR.fits')
+                sfHdu = fits.open(lng_path + 'f_ref_CR.fits')
                 screen_flat_CR = sfHdu[0].data.astype('float32')
                 quick_flat_CR = True
                 sfHdu.close()
-                if loud: print(lng_path + 'f_2_CR.fits', 'Loaded')
+                if loud: print(lng_path + 'f_ref_CR.fits', 'Loaded')
             except:
                 quick_flat_CR = False
                 if loud: print('WARN: No CR Flat/Lum Loaded.')
 
-        # if screen_flat_CR is None:
-        #     try:
-        #         sfHdu = fits.open(lng_path + 'f_2_CR.fits')
-        #         screen_flat_CR = sfHdu[0].data.astype('float32')
-        #         quick_flat_CR = True
-        #         sfHdu.close()
-        #         if loud: print(lng_path + 'f_2_CR.fits', 'Loaded')
-        #     except:
-        #         quick_flat_CR = False
-        #         if loud: print('WARN: No CR Flat/Lum Loaded.')
-
         if screen_flat_PL is None:
             try:
-                sfHdu = fits.open(lng_path + 'f_2_PL.fits')
+                sfHdu = fits.open(lng_path + 'f_ref_PL.fits')
                 screen_flat_PL = sfHdu[0].data.astype('float32')
                 quick_flat_PL = True
                 sfHdu.close()
-                if loud: print(lng_path + 'f_2_PL.fits', 'Loaded')
+                if loud: print(lng_path + 'f_ref_PL.fits', 'Loaded')
             except:
                 quick_flat_PL = False
                 if loud: print('WARN: No PL Flat/Lum Loaded.')
         if screen_flat_PB is None:
             try:
-                sfHdu = fits.open(lng_path + 'f_2_PB.fits')
+                sfHdu = fits.open(lng_path + 'f_ref_PB.fits')
                 screen_flat_PB = sfHdu[0].data.astype('float32')
                 quick_flat_PB = True
                 sfHdu.close()
-                if loud: print(lng_path + 'f_2_PB.fits', 'Loaded')
+                if loud: print(lng_path + 'f_ref_PB.fits', 'Loaded')
             except:
                 quick_flat_PB = False
                 if loud: print('WARN: No PB Flat/Lum Loaded.')
         if screen_flat_PR is None:
             try:
-                sfHdu = fits.open(lng_path + 'f_2_PR.fits')
+                sfHdu = fits.open(lng_path + 'f_ref_PR.fits')
                 screen_flat_PR = sfHdu[0].data.astype('float32')
                 quick_flat_PR = True
                 sfHdu.close()
-                if loud: print(lng_path + 'f_2_PR.fits', 'Loaded')
+                if loud: print(lng_path + 'f_ref_PR.fits', 'Loaded')
             except:
                 quick_flat_PR = False
                 if loud: print('WARN: No PR Flat/Lum Loaded.')
         if screen_flat_PG is None:
             try:
-                sfHdu = fits.open(lng_path + 'f_2_PG.fits')
+                sfHdu = fits.open(lng_path + 'f_ref_PG.fits')
                 screen_flat_PG = sfHdu[0].data.astype('float32')
 
                 quick_flat_PG = True
                 sfHdu.close()
-                if loud: print(lng_path + 'f_2_PG.fits', 'Loaded')
+                if loud: print(lng_path + 'f_ref_PG.fits', 'Loaded')
             except:
                 quick_flat_PG = False
                 if loud: print('WARN: No PG Flat/Lum Loaded.')
         if screen_flat_NIR is None:
             try:
-                sfHdu = fits.open(lng_path + 'f_2_NIR.fits')
+                sfHdu = fits.open(lng_path + 'f_ref_NIR.fits')
                 screen_flat_NIR = sfHdu[0].data.astype('float32')
                 quick_flat_NIR = True
                 sfHdu.close()
-                if loud: print(lng_path + 'f_2_NIR.fits', 'Loaded')
+                if loud: print(lng_path + 'f_ref_NIR.fits', 'Loaded')
             except:
                 quick_flat_NIR = False
                 if loud: print('WARN: No NIR Flat/Lum Loaded.')
         if screen_flat_EXO is None:
             try:
-                sfHdu = fits.open(lng_path + 'f_2_exo.fits')
+                sfHdu = fits.open(lng_path + 'f_ref_exo.fits')
                 screen_flat_EXO = sfHdu[0].data.astype('float32')
                 quick_flat_EXO = True
                 sfHdu.close()
-                if loud: print(lng_path + 'f_2_exo.fits', 'Loaded')
+                if loud: print(lng_path + 'f_ref_exo.fits', 'Loaded')
             except:
                 quick_flat_EXO = False
                 if loud: print('WARN: No EXO Flat/Lum Loaded.')
         if screen_flat_air is None:
             try:
-                sfHdu = fits.open(lng_path + 'f_2_air.fits')
+                sfHdu = fits.open(lng_path + 'f_ref_air.fits')
                 screen_flat_air = sfHdu[0].data.astype('float32')
                 quick_flat_air = True
                 sfHdu.close()
-                if loud: print(lng_path + 'f_2_air.fits', 'Loaded')
+                if loud: print(lng_path + 'f_ref_air.fits', 'Loaded')
             except:
                 quick_flat_air = False
                 if loud: print('WARN: No air Flat/Lum Loaded.')
         if screen_flat_dif is None:
             try:
-                sfHdu = fits.open(lng_path + 'f_2_dif.fits')
+                sfHdu = fits.open(lng_path + 'f_ref_dif.fits')
                 screen_flat_dif = sfHdu[0].data.astype('float32')
                 quick_flat_dif = True
                 sfHdu.close()
-                if loud: print(lng_path + 'f_2_dif.fits', 'Loaded')
+                if loud: print(lng_path + 'f_ref_dif.fits', 'Loaded')
             except:
                 quick_flat_dif = False
                 if loud: print('WARN: No dif Flat/Lum Loaded.')
@@ -530,179 +612,34 @@ def calibrate (hdu, lng_path, frame_type='light', quick=False):
         if hot_pix is None:
 
             try:
-                shHdu = fits.open(lng_path + 'h_2.fits')
+                shHdu = fits.open(lng_path + 'h_ref.fits')
                 hot_map = shHdu[0].data
                 hot_pix = np.where(hot_map > 1)
                 apply_hot = True
-                print(lng_path + 'h_2.fits', 'Loaded')
+                if loud: print(lng_path + 'h_ref.fits', 'Loaded')
             except:
                 apply_hot = False
-                print('WARN: No Hot Map Bin 2 Loaded.')
+                if loud: print('WARN: No Hot Map Bin ref Loaded.')
 
 
     while True:   #Use break to drop through to exit.  i.e., do not calibrate frames we are acquring for calibration.
-        breakpoint
-        ix = hdu.header['naxis1']
-        iy = hdu.header['naxis2']
-        pedastal = 0     # Pedastal will be applied near exit.
-        overscan = 0
-        img = hdu.data.astype('int32')
-        
-                # if ix == 9600:
-                #     overscan = int((np.median(img[32:, -33:]) + np.median(img[0:29, :]))/2) - 1
-                #     trimmed = img[32:, :-34].astype('int32') + pedastal - overscan
-                #     if opt['area'] in [150, 'Full', 'full']:
-                #         square = trimmed
-                #     else:
-                #         square = trimmed[1590:1590 + 6388, :]
-                # elif ix == 4800:
-                #     overscan = int((np.median(img[16:, -17:]) + np.median(img[0:14, :]))/2) -1
-                #     trimmed = img[16:, :-17].astype('int32') + pedastal - overscan
-                #     if opt['area'] in [150, 'Full', 'full']:
-                #         square = trimmed
-                #     else:
-                #         square = trimmed[795:795 + 3194, :]
-                # else:
-                #     print("Incorrect chip size or bin specified.")
 
 
-                #This image shift code needs to be here but it is troubling.
-                #QHY 600Pro and 367
-
-        if ix == 9600:
-            # if img[22, -34] == 0:
-
-            int((np.median(img[24:, -33:]) + np.median(img[0:21, :]))/2) - 1
-            overscan = int((np.median(img[24:, -33:]) + np.median(img[0:21, :]))/2) - 1
-            img = img[24:-8, :-34].astype('int32')  - overscan
-
-            # elif img[30, -34] == 0:
-            #     overscan = int((np.median(img[32:, -33:]) + np.median(img[0:29, :]))/2) - 1
-            #     trimmed = img[32:, :-34].astype('int32') + pedastal - overscan
-
-            # else:
-            #     print("Image shift is incorrect, absolutely fatal error.")
-                
-            #     pass
-
-            # if full:
-            #     square = trimmed
-            # else:
-            #     square = trimmed[1590:1590 + 6388, :]
-        elif ix == 4800:
-            #Shift error needs documenting!
-
-            #if img[11, -18] == 0:   #This is the normal incoming image
-            # int((np.median(img[12:, -17:]) + np.median(img[0:10, :]))/2) - 1
-
-            overscan = int((np.median(img[0:10, :-18]) + np.median(img[11:16, :-18]))/2 - 1)  # Chip at -30C.
-
-            img = img[:3194, -4784:]  - overscan
-
-
-                #print("Shift 1", overscan, square.mean())
-            # elif img[15, -18] == 0:     #This rarely occurs.  Neyle's Qhy600
-            #     overscan = int((np.median(img[16:, -17:]) + np.median(img[0:14, :]))/2) -1
-            #     trimmed = img[16:, :-17].astype('int32') + pedastal - overscan
-
-            #     print("Rare error, Shift 2", overscan, trimmed.mean())
-
-            # else:
-            #     print("Image shift is incorrect, absolutely fatal error", img[0:20, -18])
-
-
-                #pass
-# 
-#                 
-#                 #mrc2    Testing comment change, did this push to GitHub?
-#                 elif ix == 4096 and iy == 4096:   #MRC@
-#                     trimmed = self.img.astype('int32') - 913.   #20211128 Cooler = -35C
-#                     self.overscan = 0
-# 
-#                 elif ix ==2048 and iy == 2048:   #MRC@
-#                     trimmed = self.img.astype('int32') - 1046.   #20211128 Cooler = -35C
-#                     self.overscan = 0
-#                 #Bin 3 not possible for FLI camera
-#                     
-#                 elif ix == 1024 and iy == 1024:   #MRC@
-#                     trimmed = self.img.astype('int32') - 1548.   #20211128 Cooler = -35C
-#                     self.overscan = 0
-# 
-#                 #NBNB for cameras without proper overscan maybe we save the bias frame value vs chip
-#                 #temp so we can do a better thermal compensation.  THis would generally mean taking
-#                 #occasional biases.
-#                 
-#                 #FAT
-#                 # elif ix == 4500 and iy == 3600:   #All this code needs to be driven from camera config.
-#                 #     self.overscan =np.median(self.img) - pedastal
-#                 #     trimmed = self.img.astype('int32') - 867.
-#                         
-#                 # elif ix == 2250 and iy == 1800:   #All this code needs to be driven from camera config.
-#                 #     self.overscan =np.median(self.img) - pedastal
-#                 #     trimmed = self.img.astype('int32') - 614.
-#                 #     #FAT
-#                 elif ix == 4556 and iy == 3656:   #All this code needs to be driven from camera config.
-#                     #breakpoint()
-#                     self.overscan = (np.median(self.img[4520:4556, :3600]) + np.median(self.img[:4500, 3620:3643]))/2.0
-#                     minus_overscan = self.img - (np.median(self.img[4520:4556, :3600]) + np.median(self.img[:4500, 3620:3643]))/2.0
-#                     print("1_1 Offset:  ", -np.median(minus_overscan[:4500, :3600]))
-#                     minus_overscan += pedastal + 50
-#                     trimmed = minus_overscan[:4500, :3600].astype('int32')
-#                 elif ix == 2278 and iy == 1828:   #All this code needs to be driven from camera config.
-#                     #breakpoint()
-#                     self.overscan = (np.median(self.img[2260:2278, :1800]) + np.median(self.img[2250, 1810:1821]))/2.0
-#                     minus_overscan = self.img - (np.median(self.img[2260:2278, :1800]) + np.median(self.img[2250, 1810:1821]))/2.0
-#                     minus_overscan += pedastal + 140
-#                     trimmed = minus_overscan[:2250, :1800].astype('int32')
-#                 elif ix == 1518 and iy == 1218: 
-#                     #breakpoint()
-#                     self.overscan = (np.median(self.img[1506:1518, :1200]) + np.median(self.img[:1500, 1206:1214]))/2.0
-#                     minus_overscan = self.img - (np.median(self.img[1506:1518, :1200]) + np.median(self.img[:1500, 1206:1214]))/2.0
-#                     minus_overscan += pedastal + 211 
-#                     trimmed = minus_overscan[:1500, :1200].astype('int32')
-#                     
-#                 elif ix == 1139 and iy == 914: 
-#                     self.overscan = (np.median(self.img[1130:1139, :900]) + np.median(self.img[:1125, 905:910]))/2.
-#                     minus_overscan = self.img - (np.median(self.img[1130:1139, :900]) + np.median(self.img[:1125, 905:910]))/2.0
-#                     print("4_4 Offset:  ", -np.median(minus_overscan[:1125, :900]))
-#                     minus_overscan += pedastal + 403
-#                     trimmed = minus_overscan[:1125, :900].astype('int32') 
-#                 else:
-#                     print("UNSUPPORTED BINNING OR CAMERA!!", ix, iy)
-#               trimmed = trimmed.transpose()
-#               self.img = trimmed.astype('uint16')
-                # print('readout, transpose & Trim took:  ', round(self.t77 - self.t4, 1), ' sec,')# marks them as 0
-                # #Should we consider correcting the image right here with cached bias, dark and hot pixel
-                # #processing so downstream processing is reliable.  Maybe only do this for focus?
-                # g_dev['obs'].send_to_user("Camera has read-out image.", p_level='INFO')
-                # neg_pix = np.where(trimmed < 0)
-                # print("negative pixel length:  ", len(neg_pix[0]))
-
-                # trimmed[neg_pix] = 0
-# =============================================================================
-
-                #trimmed = trimmed.transpose()
-                #This may need a re-think:   Maybe kill neg and anything really hot if there are only a few.
-        ix = hdu.header['naxis1']
-        iy = hdu.header['naxis2']
-        hdu.header['CALCOVER'] = (overscan, 'Overscan applied.')
-        pedastal = 100  # NB NB  ?? = int(max(100, img.std()*5)) = 90 for QHY600
-        hdu.data = img
 
 
         start_x = 0
         start_y = 0
         cal_string = ''
-        if not quick:
-            img = hdu.data.astype('float32')
-            pedastal = hdu.header['PEDASTAL']
-            img = img + pedastal
-            mn, std = imageStats(img, False)
-            if loud: print('InputImage (high):  ', imageStats(img, False))
-        else:
-            img = hdu.data.astype('float32')
-            pedastal = hdu.header['PEDASTAL']
-            img = img + pedastal
+        #if not quick:
+        img = hdu.data#.astype('float32')
+        pedastal = hdu.header['PEDASTAL']
+        img = img + pedastal
+        mn, std = imageStats(img, False)
+        #     if loud: print('InputImage (high):  ', imageStats(img, False))
+        # else:
+        #     img = hdu.data#.astype('float32')
+        #     pedastal = hdu.header['PEDASTAL']
+        #     img = img + pedastal
         ix, iy = img.shape
         area  = hdu.header['IMGAREA']
         binning = hdu.header['XBINING']
@@ -712,6 +649,7 @@ def calibrate (hdu, lng_path, frame_type='light', quick=False):
 # #           NB NB NB For the moment we have limited bin 1 and sub-frame calibrations
 # # =============================================================================
 # =============================================================================
+
         if frame_type in ['bias']:
             break    #  Do not bias calibrate a bias. 
 
@@ -740,7 +678,7 @@ def calibrate (hdu, lng_path, frame_type='light', quick=False):
                 if loud: print('QuickDark_1: ', imageStats(img, loud))
             cal_string += ', D'
         elif super_dark_2 is not None and binning == 2:
-            if data_exposure_level > dark_2_exposure_level:
+            if data_exposure_level > dark_ref_exposure_level:
                 if loud: print("WARNING:  Master dark being used over-scaled")
             img =  (img - super_dark_2[start_x:(start_x + img.shape[0]), start_y:(start_y + img.shape[1]) \
                                 ]*data_exposure_level)
@@ -754,7 +692,7 @@ def calibrate (hdu, lng_path, frame_type='light', quick=False):
             break       #  Do not calibrate a flat.
         do_flat = True   #20210224@18:13
 
-        if binning == 2 :
+        if binning == 1 :
             if img_filter in ['w', 'W']:
                 do_flat = True
                 scr_flat = screen_flat_w
@@ -827,7 +765,7 @@ def calibrate (hdu, lng_path, frame_type='light', quick=False):
             elif img_filter in ['EXO', 'exo', 'Exo']:
                 do_flat = True
                 scr_flat = screen_flat_EXO
-            elif img_filter in ['air', 'AIR', 'Air']:
+            elif img_filter in ['air', 'AIR', 'Air']:   #Temp we do not do this
                 do_flat = True
                 scr_flat = screen_flat_air
             elif img_filter in ['dif', 'DIF', 'Dif']:
@@ -835,16 +773,34 @@ def calibrate (hdu, lng_path, frame_type='light', quick=False):
                 scr_flat = screen_flat_dif
             else:
                 do_flat = False
-        if do_flat and binning == 2: # and not g_dev['seq'].active_script == 'make_superscreenflats':
+    #breakpoint()
+            # try: 
+                
+            #     print('Entering Air flat field calculation.')
+            #     if saf_2 is not None:
+            #         try:
+            #             wrong = np.where(saf_2 <= 0.01)
+            #             saf_2[wrong] = 0.01
+            #             img = img/saf_2
+            #             cal_string +=', SAF_2'
+            #         except:
+            #             print('Dividing by None not a good idea.')
+            #             pass
+            # except:
+            #     print("saf_2 flat math failed.")
+            # if not quick: 
+            #     if loud:  print('QuickFlat result:  ', imageStats(img, loud))
+
+        if do_flat and binning == 1: # and not g_dev['seq'].active_script == 'make_superscreenflats':
             try: 
                 
-                print('Entering flat field calculation.')
+                #print('Entering flat field calculation.')
                 if scr_flat is not None:
                     try:
                         wrong = np.where(scr_flat <= 0.01)
                         scr_flat[wrong] = 0.01
                         img = img/scr_flat
-                        cal_string +=', SCF'
+                        cal_string +=', SKF'
                     except:
                         print('Dividing by None not a good idea.')
                         pass
@@ -878,13 +834,13 @@ def calibrate (hdu, lng_path, frame_type='light', quick=False):
     hdu.data += pedastal
     hdu.header['PEDASTAL'] = (-pedastal,  'Add to get zero ADU based image')
     fix_neg_pix = np.where(hdu.data < 0)
-    if loud: print('# of < 0  pixels:  ', len(fix_neg_pix[0]))  #  Do not change values here.
+    #print('# of < 0  pixels:  ', len(fix_neg_pix[0]))  #  Do not change values here.
     hdu.data[fix_neg_pix] = 0
-    fix_max_pix = np.where(hdu.data > 65530)
-    if loud: print("Max data value is:  ", fix_max_pix, len(fix_max_pix[0]))
-    hdu.data[fix_max_pix] = 65530.
+    fix_max_pix = np.where(hdu.data > 65535)
+    #print("Max data value is:  ", fix_max_pix, len(fix_max_pix[0]))
+    hdu.data[fix_max_pix] = 65535.
    #print("Pre uint", hdu.data.mean())
-    hdu.data = hdu.data.astype('uint16')  #NB NB NB Reduce storage?? Is this needed?
+    #hdu.data = hdu.data.astype('uint16')  #NB NB NB Reduce storage?? Is this needed?
     #   NB NB NB these procedures are intended for the flash images.
     #print("Post uint", hdu.data.mean())
     result = {}
@@ -898,6 +854,7 @@ def calibrate (hdu, lng_path, frame_type='light', quick=False):
     result['patch'] = abs(round((hdu.data.mean() + np.median(hdu.data))/2 - pedastal, 1))
     result['temperature'] = None
     #g_dev['obs'].send_to_user('Calibration complete.', p_level='INFO')
+    #print('End Calib result dytpe, size:  ', hdu.data.dtype, hdu.data.size)
     return result
 
 

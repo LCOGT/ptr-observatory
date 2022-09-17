@@ -94,7 +94,8 @@ class Telescope:
 
     def get_status(self):
         status = g_dev['mnt'].get_status()
-        return status
+ 
+        return  status
 #         #This is for now 20201230, NO LONGER primary place to source mount/tel status, needs fixing.
 #         alt = g_dev['mnt'].mount.Altitude
 #         zen = round((90 - alt), 3)
@@ -150,7 +151,6 @@ class Telescope:
 #             else:
 #                 self.current_icrs_ra = g_dev['mnt'].mount.RightAscension
 #                 self.current_icrs_dec = g_dev['mnt'].mount.Declination
-#             breakpoint()
 #             status = {
 #                 'timestamp': round(time.time(), 3),
 #                 'right_ascension': round(self.current_icrs_ra, 5),  #
@@ -174,7 +174,7 @@ class Telescope:
 #         else:
 #             print('Proper device_name is missing, or tel == None')
 #             status = {'defective':  'status'}
-        return status  #json.dumps(status)
+#       return status  #json.dumps(status)
 
     def get_quick_status(self, pre):
         g_dev['mn'].get_quick_status(pre)

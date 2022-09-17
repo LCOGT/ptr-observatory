@@ -2,14 +2,15 @@ import win32com.client
 from global_yard import g_dev
 import redis
 import time
-import math
+import math as math
 import shelve
 import json
 import socket
 import os
 import config
 from config import get_enc_status
-import math
+from pprint import pprint
+
 
 '''
 Curently this module interfaces to a Dome (az control) or a pop-top roof style enclosure.
@@ -27,34 +28,160 @@ Shutter, Roof, Slit, etc., are the same things.
 '''
 
 # =============================================================================
-# This module has been modified into wema only code
+# This module has been modified into wema only code, then unmodified to be normal enclousre code.
 # =============================================================================
+
+DEG_SYM = '°'
+PI = math.pi
+TWOPI = math.pi*2
+PIOVER2 = math.pi/2.
+DTOR = math.pi/180.
+RTOD = 180/math.pi
+STOR = math.pi/180./3600.
+RTOS = 3600.*180./math.pi
+RTOH = 12./math.pi
+HTOR = math.pi/12.
+HTOS = 15*3600.
+DTOS = 3600.
+STOD = 1/3600.
+STOH = 1/3600/15.
+SecTOH = 1/3600.
+APPTOSID = 1.00273811906 #USNO Supplement
+MOUNTRATE = 15*APPTOSID  #15.0410717859
+KINGRATE = 15.029
 def f_to_c(f):
     return round(5*(f - 32)/9, 2)
 
-def dome_adjust_rah_decd(hah, azd, altd, flip, r, offe, offs ):  #Flip = 'east' implies tel looking East.
-                                            #AP Park five is 'west'. offsets are neg for east and
-                                            #south at Park five.
-    if flip == 'East':
-        y = offe + r*math.sin(math.radians(hah*15.))
-        if azd >270 or azd <= 90:
-            x = offs + r*math.cos(math.radians(altd))
-        else:
-            x = offs - r*math.cos(math.radians(altd))
-                               
-    elif flip == 'West':
-        y = -offe + r*math.sin(hah*15)
-        if azd >270 or azd <= 90:
-            x = -offs + r*math.cos(math.radians(altd))
-        else:
-            x = -offs - r*math.cos(math.radians(altd))
-    naz = -math.degrees(math.atan2(y,x))
-    if naz < 0:
-        naz += 360
-    if naz >= 360: 
-        naz -= 360
-        
-    return round(naz, 2)
+def convert_to_mechanical_h_d(pRa, pDec, pFlip):
+    if pFlip == 'East':
+        return (pRa, pDec)
+    else:
+        fDec = 180. - pDec
+        pRa += 12.
+        while pRa >= 24:
+            pRa -= 24.
+        while pRa < 0.:
+            pRa += 24.
+        return (pRa, fDec)
+
+def rect_sph_d(pX, pY, pZ):
+    rSq = pX*pX + pY*pY + pZ*pZ
+    return math.degrees(math.atan2(pY, pX)), math.degrees(math.asin(pZ/rSq))
+
+def sph_rect_d(pRoll, pPitch):
+    pRoll = math.radians(pRoll)
+    pPitch = math.radians(pPitch)
+    cPitch = math.cos(pPitch)
+    return math.cos(pRoll)*cPitch, math.sin(pRoll)*cPitch, math.sin(pPitch)
+
+def rotate_r(pX, pY, pTheta):
+    cTheta = math.cos(pTheta)
+    sTheta = math.sin(pTheta)
+    return pX * cTheta - pY * sTheta, pX * sTheta + pY * cTheta
+
+def centration_d (theta, a, b):
+    theta = math.radians(theta)
+    return math.degrees(math.atan2(math.sin(theta) - STOR*b, math.cos(theta) - STOR*a))
+
+def centration_r (theta, a, b):
+    # = math.radians(theta)
+    return (math.atan2(math.sin(theta) - STOR*b, math.cos(theta) - STOR*a))
+
+def transform_raDec_to_haDec_r(pRa, pDec, pSidTime):
+
+    return (reduce_ha_r(pSidTime - pRa), reduce_dec_r(pDec))
+
+def transform_haDec_to_raDec_r(pHa, pDec, pSidTime):
+    return (reduce_ra_r(pSidTime - pHa), reduce_dec_r(pDec))
+
+def transform_haDec_to_azAlt_r(pLocal_hour_angle, pDec, latr):
+    sinLat = math.sin(latr)
+    cosLat = math.cos(latr)
+    decr = pDec
+    sinDec = math.sin(decr)
+    cosDec = math.cos(decr)
+    mHar = pLocal_hour_angle
+    sinHa = math.sin(mHar)
+    cosHa = math.cos(mHar)
+    altitude = math.asin(sinLat*sinDec + cosLat*cosDec*cosHa)
+    y = sinHa
+    x = cosHa*sinLat - math.tan(decr)*cosLat
+    azimuth = math.atan2(y, x) + PI
+    azimuth = reduce_az_r(azimuth)
+    altitude = reduce_alt_r(altitude)
+    return (azimuth, altitude)#, local_hour_angle)
+
+def transform_azAlt_to_haDec_r(pAz, pAlt, latr):
+    sinLat = math.sin(latr)
+    cosLat = math.cos(latr)
+    alt = pAlt
+    sinAlt = math.sin(alt)
+    cosAlt = math.cos(alt)
+    az = pAz - PI
+    sinAz = math.sin(az)
+    cosAz = math.cos(az)
+    if abs(abs(alt) - PIOVER2) < 1.0*STOR:
+        return (0.0, reduce_dec_r(latr))     #by convention azimuth points South at local zenith
+    else:
+        dec = math.asin(sinAlt*sinLat - cosAlt*cosAz*cosLat)
+        ha = math.atan2(sinAz, (cosAz*sinLat + math.tan(alt)*cosLat))
+        return (reduce_ha_r(ha), reduce_dec_r(dec))
+
+def transform_azAlt_to_raDec_r(pAz, pAlt, pLatitude, pSidTime):
+    ha, dec = transform_azAlt_to_haDec_r(pAz, pAlt, pLatitude)
+    return transform_haDec_to_raDec_r(ha, dec, pSidTime)
+
+# =============================================================================
+# 
+# def dome_adjust_rah_decd(hah, azd, altd, flip, r, offe, offs ):  #Flip = 'east' implies tel looking East.
+#                                             #AP Park five is 'West'. offsets are neg for east and
+#                                             #south at Park five.
+#     #First lay down in Y X plane a crow's eye view and a mount pointing up into Z axis
+#     # with the appriate telescope OTA fffsets.  Use "Looking East" 
+# 
+#     #For a latitude that is positive, and incoming ha = 0, dec = 0
+#     #we need to rotate those coordinates so the X footprints are correct,
+#     x = None
+#     y = None
+#     z = None
+#     flip = "Looking East"
+#     offe = -19.5
+#     offs = -8
+#     rad = 60
+#     hah = 5
+#     dec = 35.5
+#     lat = 35.5 
+#     print(x, y, z, "Dec = lat")                                  
+#     if flip == 'Looking West':
+#         x = offs*math.cos(math.radians(dec - lat))
+#         y = offe
+#         z = rad*math.cos(math.radians(dec - lat))
+#         # if azd >270 or azd <= 90:
+#         #     x = offs + r*math.cos(math.radians(altd))
+#         # else:
+#         #     x = offs - r*math.cos(math.radians(altd)
+#     elif flip == 'Looking East':
+#         x = -offs*math.cos(math.radians(dec -lat))
+#         y = -offe
+#         z = rad*math.cos(math.radians(dec - lat))
+#         #y = -offe + r*math.sin(hah*15)
+#     print(x, y, z) 
+#     #Now the next step is rotate in the Y -Z plane to deal
+#     #with the HA on the mount.  Note as the mount follows
+#     #the stars, X, (60" up even) does not vary
+#     y, z = rotate_r(y, z, -hah*HTOR)
+#     print(x, y, z, -math.degrees(math.atan2(y,x)))
+# 
+# 
+#     basically cos(latitude)
+#     naz = -math.degrees(math.atan2(y,x))
+#     if naz < 0:
+#         naz += 360
+#     if naz >= 360: 
+#         naz -= 360
+#         
+#     return round(naz, 2)
+# =============================================================================
 
 class Enclosure:
 
@@ -65,6 +192,7 @@ class Enclosure:
         self.config = config
         g_dev['enc'] = self
         self.slew_latch = False
+
         if self.config['site_in_automatic_default'] == "Automatic":
             self.site_in_automatic = True
             self.mode = 'Automatic' 
@@ -99,8 +227,9 @@ class Enclosure:
             self.site_is_specific = True
             self.site_is_generic = False
             #  Note OCN has no associated commands.
-            #  Here we monkey patch
+            #  Note monkey patch
             self.get_status = get_enc_status
+            #self.get_status = config.get_enc_status   # NB NB Bogus line of code
             # Get current ocn status just as a test.
             self.status = self.get_status(g_dev)
 
@@ -168,7 +297,8 @@ class Enclosure:
                 self.prior_status = status
                 g_dev['enc'].status = status
             else:
-                breakpoint()
+                pass
+                #breakpoint()
             self.status = status
             g_dev['enc'].status = status
             return status
@@ -275,24 +405,24 @@ class Enclosure:
                 return status
         if self.is_wema and self.config['site_IPC_mechanism'] == 'shares':
             try:
-                enclosure = open(self.config['wema_share_path']+'enclosure.txt', 'w')
+                enclosure = open(self.config['wema_write_share_path']+'enclosure.txt', 'w')
                 enclosure.write(json.dumps(status))
                 enclosure.close()
             except:
                 time.sleep(3)
                 try:
-                    enclosure = open(self.config['wema_share_path']+'enclosure.txt', 'w')
+                    enclosure = open(self.config['wema_write_share_path']+'enclosure.txt', 'w')
                     enclosure.write(json.dumps(status))
                     enclosure.close()
                 except:
                     time.sleep(3)
                     try:
-                        enclosure = open(self.config['wema_share_path']+'enclosure.txt', 'w')
+                        enclosure = open(self.config['wem_-write_share_path']+'enclosure.txt', 'w')
                         enclosure.write(json.dumps(status))
                         enclosure.close()
                     except:
                         time.sleep(3)
-                        enclosure = open(self.config['wema_share_path']+'enclosure.txt', 'w')
+                        enclosure = open(self.config['wema_write_share_path']+'enclosure.txt', 'w')
                         enclosure.write(json.dumps(status))
                         enclosure.close()
                         print("4th try to write enclosure status.")
@@ -311,52 +441,52 @@ class Enclosure:
             _redis = False
             # NB NB THis really needs a context manage so no dangling open files
             try:
-                enc_cmd = open(self.config['wema_share_path'] + 'enc_cmd.txt', 'r')
+                enc_cmd = open(self.config['wema_write_share_path'] + 'enc_cmd.txt', 'r')
                 enc_status = json.loads(enc_cmd.readline())
                 enc_cmd.close()
-                os.remove(self.config['wema_share_path'] + 'enc_cmd.txt')
+                os.remove(self.config['wema_write_share_path'] + 'enc_cmd.txt')
                 redis_command = enc_status
             except:
                 try:
                     time.sleep(1)
-                    enc_cmd = open(self.config['wema_share_path'] + 'enc_cmd.txt', 'r')
+                    enc_cmd = open(self.config['wema_write_share_path'] + 'enc_cmd.txt', 'r')
                     enc_status = json.loads(enc_cmd.readline())
                     enc_cmd.close()
-                    os.remove(self.config['wema_share_path'] + 'enc_cmd.txt')
+                    os.remove(self.config['wema_write_share_path'] + 'enc_cmd.txt')
                     redis_command = enc_status
                 except:
                     try:
                         time.sleep(1)
-                        enc_cmd = open(self.config['wema_share_path'] + 'enc_cmd.txt', 'r')
+                        enc_cmd = open(self.config['wema_write_share_path'] + 'enc_cmd.txt', 'r')
                         enc_status = json.loads(enc_cmd.readline())
                         enc_cmd.close()
-                        os.remove(self.config['wema_share_path'] + 'enc_cmd.txt')
+                        os.remove(self.config['wema_write_share_path'] + 'enc_cmd.txt')
                         redis_command = enc_status
                     except:
                         #print("Finding enc_cmd failed after 3 tries, no harm done.")
                         redis_command = ['none']
             mnt_command = None
             try:
-              mnt_cmd = open(self.config['wema_share_path'] + 'mnt_cmd.txt', 'r')
+              mnt_cmd = open(self.config['wema_write_share_path'] + 'mnt_cmd.txt', 'r')
               mnt_status = json.loads(mnt_cmd.readline())
               mnt_cmd.close()
-              os.remove(self.config['wema_share_path'] + 'mnt_cmd.txt')
+              os.remove(self.config['wema_write_share_path'] + 'mnt_cmd.txt')
               mnt_command = mnt_status
             except:
                 try:
                     time.sleep(1)
-                    mnt_cmd = open(self.config['wema_share_path'] + 'mnt_cmd.txt', 'r')
+                    mnt_cmd = open(self.config['wema_write_share_path'] + 'mnt_cmd.txt', 'r')
                     mnt_status = json.loads(mnt_cmd.readline())
                     mnt_cmd.close()
-                    os.remove(self.config['wema_share_path'] + 'mnt_cmd.txt')
+                    os.remove(self.config['wema_write_share_path'] + 'mnt_cmd.txt')
                     mnt_command = mnt_status
                 except:
                     try:
                         time.sleep(1)
-                        mnt_cmd = open(self.config['wema_share_path'] + 'mnt_cmd.txt', 'r')
+                        mnt_cmd = open(self.config['wema_write_share_path'] + 'mnt_cmd.txt', 'r')
                         mnt_status = json.loads(mnt_cmd.readline())
                         mnt_cmd.close()
-                        os.remove(self.config['wema_share_path'] + 'mnt_cmd.txt')
+                        os.remove(self.config['wema_write_share_path'] + 'mnt_cmd.txt')
                         mnt_command = mnt_status
                     except:
                         #print("Finding enc_cmd failed after 3 tries, no harm done.")
@@ -413,7 +543,7 @@ class Enclosure:
             self.site_in_automatic = False
             self.mode = 'Shutdown'
         elif self.is_dome and redis_command == 'go_home':
-            if _redis: g_dev['redis'].delete('goHome')
+            if _redis: g_dev['redis'].delete('go_home')
         elif self.is_dome and redis_command == 'sync_enc':
             self.following = True
             print("Scope Dome following set On")
@@ -435,7 +565,7 @@ class Enclosure:
         if mnt_command is not None and mnt_command != '' and mnt_command != ['none']:
 
             try:
-                breakpoint()
+                #breakpoint()
                 #print( mnt_command)
                 # adj1 = dome_adjust(mount_command['altitude'], mount_command['azimuth'], \
                 #                   mount_command['hour_angle'])
@@ -495,6 +625,7 @@ class Enclosure:
              shares = True
              generic = False
         if action == "open":
+            
             if _redis: 
                 g_dev['redis'].set('enc_cmd', 'open', ex=300)
             if shares:  
@@ -536,7 +667,18 @@ class Enclosure:
                 self.mode = 'Shutdown'
             g_dev['enc'].site_in_automatic = False
             g_dev['enc'].automatic_detail =  "Site Shutdown"
-        # elif action == "slew_alt":
+        elif action == "home_dome":
+            if shares: 
+                cmd_list.append('go_home')
+        elif action == 'track_telescope':
+            if shares: 
+                cmd_list.append('sync_enc')
+        elif action =='stop_tracking_telescope':
+            if shares: 
+                cmd_list.append('unsync_enc')
+        elif action == 'simulate_weather_hold':
+            if shares: 
+                cmd_list.append('toggle_wx_hold')
         #     self.slew_alt_command(req, opt)
         # elif action == "slew_az":
         #     self.slew_az_command(req, opt)
@@ -551,24 +693,24 @@ class Enclosure:
 
         if len(cmd_list) > 0:
             try:
-                enclosure = open(self.config['client_path']+'enc_cmd.txt', 'w')
+                enclosure = open(self.config['client_write_share_path']+'enc_cmd.txt', 'w')
                 enclosure.write(json.dumps(cmd_list))
                 enclosure.close()
             except:
                 try:
                     time.sleep(3)
-                    enclosure = open(self.config['client_path']+'enc_cmd.txt', 'w')
+                    enclosure = open(self.config['client_write_share_path']+'enc_cmd.txt', 'w')
                     enclosure.write(json.dumps(cmd_list))
                     enclosure.close()
                 except:
                     try:
                         time.sleep(3)
-                        enclosure = open(self.config['client_path']+'enc_cmd.txt', 'w')
+                        enclosure = open(self.config['client_write_share_path']+'enc_cmd.txt', 'w')
                         enclosure.write(json.dumps(cmd_list))
                         enclosure.close()
                     except:
                         time.sleep(3)
-                        enclosure = open(self.config['client_path']+'enc_cmd.txt', 'w')
+                        enclosure = open(self.config['client_write_share_path']+'enc_cmd.txt', 'w')
                         enclosure.write(json.dumps(cmd_list))
                         enclosure.close()
                         print("4th try to append to enc-cmd  list.")
@@ -612,10 +754,11 @@ class Enclosure:
     #     pass
 
     def sync_mount_command(self, req: dict, opt: dict):
-        print("enclosure cmd: sync_az")
-        self.enclosure.Slaved = True
-        self.following = True
-        self.enclosure_synchronized =True
+        #print("enclosure cmd: sync_az")
+        if self.site not in ['sro', 'mrc', 'mrc2', 'aro']:  #NB NB GASP, this needs a re-think!!
+            self.enclosure.Slaved = True
+            self.following = True
+            self.enclosure_synchronized =True
 
     # def park_command(self, req: dict, opt: dict):
     #     ''' park the enclosure if it's a dome '''
@@ -750,16 +893,25 @@ class Enclosure:
             self.dome_homed = True    #g_dev['events']['Cool Down, Open']  <=
         elif ((g_dev['events']['Cool Down, Open']  <= ephem_now < g_dev['events']['Observing Ends']) and \
                g_dev['enc'].mode == 'Automatic') and not (g_dev['ocn'].wx_hold or g_dev['ocn'].clamp_latch):
-            if self.status_string in ['Closed']:
-                self.guarded_open()
+            try:
+                if self.status_string in ['Closed']:   #Fails at SRO, attriute not set. 20220806 wer
+                #****************************NB NB NB For SRO we have no control so just observe and skip all this logic
+                    print("Entering Guarded open, Expect slew opposite Sun")
+                    self.guarded_open()
+            except:
+                pass
             self.dome_opened = True
             self.dome_homed = True
             #if _redis: g_dev['redis'].set('Enc Auto Opened', True, ex= 600)   # Unused
-            if self.status_string in ['Open'] and ephem_now < g_dev['events']['End Eve Sky Flats']:
-                if self.is_dome:
-                    self.enclosure.SlewToAzimuth(az_opposite_sun)
-                    g_dev['obs'].send_to_user("Dome slewing opposite the Solar azimuth", p_level='INFO')
-                time.sleep(5)
+            try:
+                if self.status_string in ['Open'] and ephem_now < g_dev['events']['End Eve Sky Flats']:
+                    if self.is_dome:
+                        self.enclosure.SlewToAzimuth(az_opposite_sun)
+                        print("Slewing Opposite Sun")
+                        g_dev['obs'].send_to_user("Dome slewing opposite the Solar azimuth", p_level='INFO')
+                    time.sleep(5)
+            except:
+                pass
         #THIS should be the ultimate backup to force a close
         elif ephem_now >=  g_dev['events']['Civil Dawn']:  #sunrise + 45/1440:
             #WE are now outside the observing window, so Sun is up!!!
@@ -776,10 +928,15 @@ class Enclosure:
                 else:
                     self.state = 'Automatic Daytime normally Closed the ' + shutter_str
                 try:
-                    if self.status_string in ['Open']:
-                        self.enclosure.CloseShutter()
-                    self.dome_opened = False
-                    self.dome_homed = True
+                   try:
+                       if self.status_string in ['Open']:
+                           self.enclosure.CloseShutter()
+                   except:
+                       pass
+                           
+                           
+                   self.dome_opened = False
+                   self.dome_homed = True
                    # print("Daytime Close issued to the " + shutter_str  + "   No longer following Mount.")
                 except:
                     print("Shutter Failed to close at Civil Dawn.")

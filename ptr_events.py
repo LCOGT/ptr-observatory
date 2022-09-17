@@ -18,12 +18,12 @@ from datetime import datetime
 import time
 #import pytz
 from math import degrees
-# import skyfield 
+# import skyfield
 # from skyfield import api, almanac
 # from skyfield.nutationlib import iau2000b
 # print('ObsImports:  ', config, '\n\'', config.site_config['site'])
 from global_yard import *
- 
+
 from astropy.time import Time
 #from pprint import pprint
 
@@ -51,7 +51,7 @@ class Events:
         self.siteElevation =  round(float(self.config['elevation']), 3)
         self.siteRefTemp =  round(float(self.config['reference_ambient']), 2)       #These should be a monthly average data.
         self.siteRefPress =  round(float(self.config['reference_pressure']), 2)
-
+        self.flat_offset = self.config['eve_sky_flat_sunset_offset']    # -35 min for SRO
     ###############################
     ###    Internal Methods    ####
     ###############################
@@ -214,7 +214,7 @@ class Events:
         if SunAlt2 > 90:
             SunAlt2 = 180 - SunAlt2
         else:
-            SunAz2 = degrees(sun.az)   
+            SunAz2 = degrees(sun.az)
         if loud: print('Flatspots:  ', SunAz1, SunAlt1, SunAz2, SunAlt2)
         FlatEndRa, FlatEndDec = ptr.radec_of(str(SunAz2), str(SunAlt2))
         if loud: print('Eve Flat:  ', FlatStartRa, FlatStartDec, FlatEndRa, FlatEndDec)
@@ -303,7 +303,7 @@ class Events:
     def getSunEvents(self):
         '''
         This is used in the enclosure module to determine if is a good time
-        of day to open. 
+        of day to open.
         '''
         sun = ephem.Sun()
         #sun.compute(dayNow)
@@ -420,40 +420,41 @@ class Events:
         ptr.elev = self.siteElevation
         ptr.compute_pressure()
         ptr.temp = self.siteRefTemp
-        
+
         ptr.horizon = '-0:34'
         sunset = ptr.next_setting(sun)
         middleNight = ptr.next_antitransit(sun)
         sunrise = ptr.next_rising(sun)
+        midday = ptr.next_transit(sun)
         next_moonrise = ptr.next_rising(moon)
         next_moontransit = ptr.next_transit(moon)
         next_moonset = ptr.next_setting(moon)
         last_moonrise = ptr.previous_rising(moon)
         last_moontransit = ptr.previous_transit(moon)
         last_moonset = ptr.previous_setting(moon)
-        
+
         ptr.horizon = '-6'
         sun.compute(ptr)
         #if loud: print('Sun -6: ', sun.ra, sun.dec, sun.az, sun.alt)
         civilDusk = ptr.next_setting(sun)
         civilDawn = ptr.next_rising(sun)
-        
+
         ptr.horizon = '-12'
         sun.compute(ptr)
         #if loud: print('Sun -12: ', sun.ra, sun.dec, sun.az, sun.alt)
         nauticalDusk = ptr.next_setting(sun)    #Can start clocking and autofocus.
         nauticalDawn = ptr.next_rising(sun)
-        
+
         ptr.horizon = '-18'
         sun.compute(ptr)
         #if loud: print('Sun -18: ', sun.ra, sun.dec, sun.az, sun.alt)
         #if loud: print('Dark: ', sun.az, sun.alt)
         astroDark = ptr.next_setting(sun)
         astroEnd = ptr.next_rising(sun)
-        
+
         nautDusk_plus_half = (nauticalDusk + astroDark)/2     #observing starts
         nautDawn_minus_half = (nauticalDawn + astroEnd)/2     #Observing ends.
-              
+
         duration = (astroEnd - astroDark)*24
         ptr.date = middleNight
         moon.compute(ptr)
@@ -464,7 +465,7 @@ class Events:
         mid_moon_ra = moon.ra
         mid_moon_dec = moon.dec
         mid_moon_phase = moon.phase
-        
+
         ptr.horizon = '2'
         sun.compute(ptr)
         #if loud: print('Sun 2: ', sun.ra, sun.dec, sun.az, sun.alt)
@@ -479,7 +480,7 @@ class Events:
         #if loud: print('Sun -14.9: ', sun.ra, sun.dec, sun.az, sun.alt)
         eve_skyFlatEnd = ptr.next_setting(sun)
         morn_skyFlatBegin = ptr.next_rising(sun)
-        
+
         endEveScreenFlats = ops_win_begin - LONGESTSCREEN
         #beginEveScreenFlats = endEveScreenFlats - SCREENFLATDURATION
         endEveBiasDark = ops_win_begin - LONGESTDARK
@@ -512,7 +513,7 @@ class Events:
         #     pass
         # finally:
         #     pass
-
+        #eve_skyFlatBegin = sunset +  -32.5/1440  #  NB NB this should come from sro.jscon
         #  NB NB Should add sit time to this report.
         print('Events module reporting for duty. \n')
         print('Ephem date     :    ', dayNow)
@@ -524,42 +525,73 @@ class Events:
         print('Moon Ra; Dec   :    ', round(mid_moon_ra, 2), ";  ", round(mid_moon_dec, 1))
         print('Moon phase %   :    ', round(mid_moon_phase, 1), '%\n')
         print("Key events for the evening, presented by the Solar System: \n")
-        evnt = [('Eve Bias Dark      ', ephem.Date(civilDusk -247/1440)),
-                ('End Eve Bias Dark  ', ephem.Date(civilDusk - 127/1440)),
-                #('Eve Scrn Flats     ', ephem.Date(beginEveScreenFlats)),
-                #('End Eve Scrn Flats ', ephem.Date(endEveScreenFlats)),
-                ('Ops Window Start   ', ephem.Date(civilDusk - 126/1440)),  #Enclosure may open.
-                ('Cool Down, Open    ', ephem.Date(civilDusk - 125/1440)),
-                ('Eve Sky Flats      ', ephem.Date(civilDusk - 120/1440)),
+        #if self.config['site'] == 'sro':
+        eve_skyFlatBegin = sunset +  self.config['eve_sky_flat_sunset_offset']/1440  #  NB NB this should come from config
+        evnt = [('Eve Bias Dark      ', ephem.Date(eve_skyFlatBegin -125/1440)),
+                ('End Eve Bias Dark  ', ephem.Date(eve_skyFlatBegin - 5/1440)),
+                ('Ops Window Start   ', ephem.Date(eve_skyFlatBegin)),  #Enclosure may open.
+                ('Cool Down, Open    ', ephem.Date(eve_skyFlatBegin)),
+                ('Eve Sky Flats      ', ephem.Date(eve_skyFlatBegin)),   #  Nominally -35 for SRO
                 ('Sun Set            ', sunset),
-                ('End Eve Sky Flats  ', ephem.Date(civilDusk - 1/1440)),
                 ('Civil Dusk         ', civilDusk),
-                ('Naut Dusk          ', nauticalDusk),               
-                ('Clock & Auto Focus ', ephem.Date(nauticalDusk + 1/1440.)),
+                ('Naut Dusk          ', nauticalDusk),
+                ('End Eve Sky Flats  ', ephem.Date(nauticalDusk - 10/1440)),
+                ('Clock & Auto Focus ', ephem.Date(nautDusk_plus_half -12/1440.)),
                 ('Observing Begins   ', ephem.Date(nautDusk_plus_half)),
                 ('Astro Dark         ', astroDark),
                 ('Middle of Night    ', middleNight),
                 ('End Astro Dark     ', astroEnd),
                 ('Observing Ends     ', ephem.Date(nautDawn_minus_half )),
                 ('Naut Dawn          ', nauticalDawn),
+                ('Morn Sky Flats     ', ephem.Date(nauticalDawn + 10/1440.)),
                 ('Civil Dawn         ', civilDawn),
-                ('Morn Sky Flats     ', ephem.Date(civilDawn  + 1/1440.)),
-                ('Morn Sky Flats End ', ephem.Date(civilDawn  + 76/1440.)),
-                ('Close and Park     ', ephem.Date(civilDawn  + 77/1440.)),
-                ('Ops Window Closes  ', ephem.Date(civilDawn  + 79/1440.)),   #Enclosure must close 5 min after sunrise
-
-                ('Morn Bias Dark     ', ephem.Date(civilDawn + 81/1440.)),
-                ('End Morn Bias      ', ephem.Date(civilDawn + 171/1440.)),
-
-
-                #('End Morn Sky Flats ', ephem.Date(sunrise - 1/1440)),        
+                ('End Morn Sky Flats ', ephem.Date(sunrise + 15/1440.)),
+                ('Ops Window Closes  ', ephem.Date(sunrise + 15/1440.)),   #Enclosure must close 5 min after sunrise
+                ('Close and Park     ', ephem.Date(sunrise + 15/1440.)),
                 ('Sun Rise           ', sunrise),
+                ('Morn Bias Dark     ', ephem.Date(sunrise + 20/1440.)),
+                ('End Morn Bias Dark ', ephem.Date(sunrise + 120/1440.)),
                 ('Prior Moon Rise    ', last_moonrise),
                 ('Prior Moon Transit ', last_moontransit),
                 ('Prior Moon Set     ', last_moonset),
                 ('Moon Rise          ', next_moonrise),
                 ('Moon Transit       ', next_moontransit),
-                ('Moon Set           ', next_moonset)]
+                ('Moon Set           ', next_moonset),
+                ('Midday archive Cull', midday)]
+        # else:
+        #     eve_skyFlatBegin = sunset - 60/1440  #  NB NB this should come from saf.json
+        #     evnt = [('Eve Bias Dark      ', ephem.Date(sunset -185/1440)),
+        #             ('End Eve Bias Dark  ', ephem.Date(sunset - 65/1440)),
+        #             #('Eve Scrn Flats     ', ephem.Date(beginEveScreenFlats)),
+        #             #('End Eve Scrn Flats ', ephem.Date(endEveScreenFlats)),
+        #             ('Ops Window Start   ', ephem.Date(sunset - 64/1440)),  #Enclosure may open.
+        #             ('Cool Down, Open    ', ephem.Date(sunset - 63/1440)),
+        #             ('Eve Sky Flats      ', ephem.Date(sunset - 60/1440)),
+        #             ('Sun Set            ', sunset),
+        #             ('Civil Dusk         ', civilDusk),
+        #             ('Naut Dusk          ', nauticalDusk),
+        #             ('End Eve Sky Flats  ', ephem.Date(nauticalDusk + 5 /1440)),
+        #             ('Clock & Auto Focus ', ephem.Date(nautDusk_plus_half -7/1440.)),
+        #             ('Observing Begins   ', ephem.Date(nautDusk_plus_half)),
+        #             ('Astro Dark         ', astroDark),
+        #             ('Middle of Night    ', middleNight),
+        #             ('End Astro Dark     ', astroEnd),
+        #             ('Observing Ends     ', ephem.Date(nautDawn_minus_half )),
+        #             ('Naut Dawn          ', nauticalDawn),
+        #             ('Morn Sky Flats     ', ephem.Date(nauticalDawn  +15/1440.)),
+        #             ('Civil Dawn         ', civilDawn),
+        #             ('Sun Rise           ', sunrise),
+        #             ('End Morn Sky Flats ', ephem.Date(sunrise + 60/1440.)),
+        #             ('Ops Window Closes  ', ephem.Date(civilDawn  + 61/1440.)),   #Enclosure must close 5 min after sunrise
+        #             ('Close and Park     ', ephem.Date(sunrise + 66/1440.)),
+        #             ('Morn Bias Dark     ', ephem.Date(civilDawn + 68/1440.)),
+        #             ('End Morn Bias Dark ', ephem.Date(civilDawn + 188/1440.)),
+        #             ('Prior Moon Rise    ', last_moonrise),
+        #             ('Prior Moon Transit ', last_moontransit),
+        #             ('Prior Moon Set     ', last_moonset),
+        #             ('Moon Rise          ', next_moonrise),
+        #             ('Moon Transit       ', next_moontransit),
+        #             ('Moon Set           ', next_moonset)]
 
         #print("No report of post-close events is available yet. \n\n")
         evnt_sort = self._sortTuple(evnt)
@@ -590,11 +622,3 @@ class Events:
         # print("g_dev['events']:  ", g_dev['events'])
 
         #NB I notice some minor discrepancies in lunar timing. Should re-check all the dates and times wer 20200408
-
-
-
-
-
-
-
-

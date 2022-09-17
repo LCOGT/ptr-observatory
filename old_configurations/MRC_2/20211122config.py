@@ -55,9 +55,47 @@ site_config = {
     'owner':  ['google-oauth2|112401903840371673242'],  # Wayne
     'owner_alias': ['WER'],
     'admin_aliases': ["ANS", "WER", "TB", "DH", "KVH", "KC"],
-    'agent_wms_enc_active':  True,    #True if the agent is used at a site.
-    'redis_ip': '10.15.0.109',  #'127.0.0.1',  
-    'defaults': {   #TIM this may no longer be needed.  
+    'client_hostname':  'mrc-westpier',
+    'client_share_path':  'Q:/ptr/',  # Generic place for this host to stash.
+    'archive_pth':  'Q:/',
+    'wema_is_active':  True,          # True if the split computers used at a site.
+    'wema_hostname': 'MRC-WMS-ENC',   # Prefer the shorter version
+    'wema_share_path':  'Q:/ptr/',  # '/wema_transfer/',
+    'redis_ip': '10.15.0.109',  #'127.0.0.1', None if no redis path present, 
+    'site_is_generic':  False,   # A simplee single computer ASCOM site.
+    'site_is_specific':  False,  # Indicates some special code for this site, found at end of config.
+    'site_IPC_mechanism':  'shares',   # ['None', shares', 'shelves', 'redis']  Pick One  
+
+    'name': 'Mountain Ranch Camp Observatory 0m6f6.8',
+    'location': 'Santa Barbara, California,  USA',
+    'airport_code': 'SBA',
+    'telescope_description':  '0m61 f6.8 Planewave CDK',
+    #'site_path': 'Q:/',     #Really important, this is where state and results are stored.
+    'observatory_url': 'https://starz-r-us.sky/clearskies',
+    'description':  '''
+                    Now is the time for all good persons
+                    to get out and vote early and often lest
+                    we lose charge of our democracy.
+                    ''',    #i.e, a multi-line text block supplied by the owner.  Must be careful about the contents for now.
+
+    'mpc_code':  'ZZ23',    #This is made up for now.
+    'time_offset':  -7,
+    'TZ_database_name':  'America/Los_Angeles',
+    'timezone': 'PDT',      
+    'latitude': 34.34595969,     #Decimal degrees, North is Positive
+    'longitude': -119.6811323955,   #Decimal degrees, West is negative
+    'elevation': 317.75,    # meters above sea level
+    'reference_ambient':  15.0,  #Degrees Celsius.  Alternately 12 entries, one for every - mid month.
+    'reference_pressure':  977.83,  #mbar Alternately 12 entries, one for every - mid month.
+    'site_in_automatic_default': "Automatic",   #"Manual", "Shutdown"
+    'automatic_detail_default': "Enclosure is set to Automatic mode.",
+    'auto_eve_bias_dark': False,
+    'auto_eve_sky_flat': False,
+    'auto_morn_sky_flat': False,
+    'auto_morn_bias_dark':False,
+    're-calibrate_on_solve': True, 
+    
+        'defaults': {   #TIM this may no longer be needed.  
         'observing_conditions': 'observing_conditions1',
         'enclosure': 'enclosure1',
         'mount': 'mount1',
@@ -67,7 +105,7 @@ site_config = {
         'selector': 'selector1',
         'screen': 'screen1',
         'filter_wheel': 'filter_wheel1',
-        'camera': 'camera_1',
+        'camera': 'camera_1_1',
         'sequencer': 'sequencer1',
         },
     'device_types': [
@@ -84,7 +122,11 @@ site_config = {
             'sequencer',
 
             ],
-    'short_status_devices':  [
+     'wema_types': [
+            'observing_conditions',
+            'enclosure',    
+            ],
+     'short_status_devices':  [
             'enclosure',
             'mount',
             'telescope',
@@ -96,29 +138,7 @@ site_config = {
             'camera',
             'sequencer',
             ],
-    'name': 'Mountain Ranch Camp Observatory 0m6f6.8',
-    'location': 'Santa Barbara, California,  USA',
-    'airport_code': 'SBA',
-    'telescope_description':  '0m61 f6.8 Planewave CDK',
-    'site_path': 'Q:/',     #Really important, this is where state and results are stored.
-    'observatory_url': 'https://starz-r-us.sky/clearskies',
-    'description':  '''
-                    Now is the time for all good persons
-                    to get out and vote early and often lest
-                    we lose charge of our democracy.
-                    ''',    #i.e, a multi-line text block supplied by the owner.  Must be careful about the contents for now.
-
-    'mpc_code':  'ZZ23',    #This is made up for now.
-    'time_offset':  -7,
-    'TZ_database_name':  'America/Los_Angeles',
-    'timezone': 'PDT',      
-    'latitude': 34.34595969,     #Decimal degrees, North is Positive
-    'longitude': -119.6811323955,   #Decimal degrees, West is negative
-    'elevation': 317.75,    # meters above sea level
-    'reference_ambient':  [15.0],  #Degrees Celsius.  Alternately 12 entries, one for every - mid month.
-    'reference_pressure':  [977.83],  #mbar Alternately 12 entries, one for every - mid month.
-    'site_in_automatic_default': "Automatic",   #"Manual", "Shutdown"
-    'automatic_detail_default': "Enclosure is set to Automatic mode.",
+    
     'observing_conditions': {
         'observing_conditions1': {
             'parent': 'site',
@@ -332,7 +352,7 @@ site_config = {
             'ports': 4,
             'default': 0,
             'instruments':  ['Main_camera', 'eShell_spect', 'Planet_camera', 'UVEX_spect'],
-            'cameras':  ['camera_1', 'camera_1_2', None, 'camera_1_4'],
+            'cameras':  ['camera_1_1', 'camera_1_2', None, 'camera_1_4'],
             'guiders':  [None, 'ag_1_2', None, 'ag_1_4'],
             },
 
@@ -401,7 +421,7 @@ site_config = {
     'camera': {
         #'cameras': ['camera_1', 'camera_1_2'],
         #'autoguiders': ['ag_1_2', 'ag _1_4'],
-        'camera_1': {
+        'camera_1_1': {
             'parent': 'telescope1',
             'name': 'kf001',      #Important because this points to a server file structure by that name.
             'desc':  'FLI Microline OnSemi 16803',
@@ -742,6 +762,9 @@ site_config = {
     },
  }    #This brace closes the while configuration dictionary. Match found up top at:  site_config = {
 
+get_ocn_status = None
+get_enc_status = None
+
 if __name__ == '__main__':
     '''
     This is a simple test to send and receive via json.
@@ -757,3 +780,42 @@ if __name__ == '__main__':
         print('Dictionaries matched.')
     else:
         print('Dictionaries did not match.')
+
+'''
+Ports.txt
+Tested 20200925  
+
+COM8    SkyRoof
+COM9    PWI4
+COM10   PWI4
+COM11   Dew Heater
+COM12   EFA
+COM13   Alnitak Screen
+COM14  	Gemini
+COM15   Darkslide
+COM16   Camera Peg
+        Pwr 1  FLI unPlug
+        Pwr 2
+        Pwr 3
+        Pwr 4   Cam and filters.
+Com17   OTA Peg
+        Pwr 1  Gemini
+        Pwr 2 EFA
+
+Located on CDK 14 OTA:
+
+Pegasus Astro  COM17
+PW EFA PWI3    COM12
+PW DEW Heat    COM11
+GEMINI         COM14
+
+Located on Camera Assembly:
+
+Pegasus Astro   COM16
+Vincent Shutt   COM15   Darkslide
+FlI FW 1     Closest to tel
+FlI FW 2     closest to cam  flifil0
+QHY600         AstroImaging Equipment
+
+
+'''

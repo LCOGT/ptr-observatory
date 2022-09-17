@@ -4,6 +4,7 @@ import time
 import serial
 import requests
 import json
+from pprint import pprint
 
 
 class FilterWheel:
@@ -12,13 +13,16 @@ class FilterWheel:
         self.name = name
         g_dev['fil']= self
         self.config = config['filter_wheel']
-        #print("FW:  ", self.config)
+
+        pass
+        pass
+
         self.dual_filter = self.config['filter_wheel1']['dual_wheel']
         self.ip = str(self.config['filter_wheel1']['ip_string'])
         self.filter_data = self.config['filter_wheel1']['settings']['filter_data'][1:]  #  Stips off column heading entry
         self.filter_screen_sort = self.config['filter_wheel1']['settings']['filter_screen_sort']
         self.filter_reference = int(self.config['filter_wheel1']['settings']['filter_reference'])
-   
+
         #  THIS CODE DOES NOT implement a filter via the Maxim application which is passed in
         #  as a valid instance of class camera.
         self.filter_message = '-'
@@ -28,7 +32,7 @@ class FilterWheel:
             home the wheel and get responses, hat indicates it is connected.
             set current_0 and _1 to [0, 0]
             position to default of w/L filter.
-            
+
             '''
 
             r0 = requests.get(self.ip + '/filterwheel/0/position')
@@ -53,19 +57,16 @@ class FilterWheel:
             self.filter_selected = self.filter_data[self.filter_reference][0]   #This is the default expected after a
             self.filter_number = self.filter_reference
             self.filter_offset = self.filter_data[self.filter_reference][2]
-        elif type(driver) == list:
-            self.maxim = False
-            self.dual = True
-            breakpoint()
-            win32com.client.pythoncom.CoInitialize()
-            self.filter_front = win32com.client.Dispatch(driver[0])
-            self.filter_front.Connected = True
-            win32com.client.pythoncom.CoInitialize()
-            self.filter_back = win32com.client.Dispatch(driver[1])
+        elif type(driver) is list and self.dual_filter:
+            '''THIS IS A FAST KLUDGE TO GET MRC@ WORKING, NEED TO VERIFY THE FILTER ORDERING'''
+
+            self.filter_back = win32com.client.Dispatch(driver[0])  #  Closest to Camera
+            self.filter_front = win32com.client.Dispatch(driver[1])  #  Closest to Telescope
             self.filter_back.Connected = True
-#            flifil1 or flifil3?
-#            HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\ASCOM\FilterWheel Drivers\ASCOM.FLI.FilterWheel1
-            print("filters are connected")
+            self.filter_front.Connected = True
+
+            self.filter_front.Position = 0
+            self.filter_back.Position  = 0
             self.dual = True
             self.custom = False
             self.filter_selected = self.filter_data[self.filter_reference][0]
@@ -81,29 +82,110 @@ class FilterWheel:
                 time.sleep(0.2)
             self.filter_back.Position = self.filter_data[self.filter_reference][1][0]
             time.sleep(1)
-            print(self.filter_selected, self.filter_offset)   #self.filter_front.Names, self.filter_back.Names, 
+            print(self.filter_selected, self.filter_offset)   #self.filter_front.Names, self.filter_back.Names,
+        elif driver == 'ASCOM.FLI.FilterWheel' and self.dual_filter:  #   == list:
+            self.maxim = False
+            self.dual = True
+
+            #win32com.client.pythoncom.CoInitialize()
+            #breakpoint()
+            fw0 = win32com.client.Dispatch(driver)  #  Closest to Camera
+            fw1 = win32com.client.Dispatch(driver)  #  Closest to Telescope
+            print(fw0, fw1)
+
+            actions0 = fw0.SupportedActions
+            actions1 = fw1.SupportedActions
+            for action in actions0:
+                print("action0:   "+ action)
+            for action in actions1:
+                print("action1:   " + action)
+            device_names0 = fw0.Action('GetDeviceNames', '')
+            print ('action0:    ' + device_names0)
+            devices0 = device_names0.split(';')
+            device_names1 = fw1.Action('GetDeviceNames', '')
+            print ('action1:    ' + device_names1)
+            devices1 = device_names1.split(';')
+            fw0.Action("SetDeviceName", devices0[0])
+            fw1.Action('SetDeviceName', devices1[1])
+            fw0.Connected = True
+            fw1.Connected = True
+            print("Conn 1,2:  ", fw0.Connected, fw1.Connected)
+            print('Pos  1,2:  ', fw0.Position, fw1.Position)
+            #breakpoint()
+
+
+
+            self.filter_back = fw1 #win32com.client.Dispatch(driver)  #  Closest to Camera
+            self.filter_front = fw0 #win32com.client.Dispatch(driver)  #  Closest to Telescope
+            self.filter_back.Connected = True
+            self.filter_front.Connected = True
+#            flifil1 or flifil3?
+#            HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\ASCOM\FilterWheel Drivers\ASCOM.FLI.FilterWheel1
+            print("filters are connected:  ", self.filter_front.Connected, self.filter_back.Connected)
+            print("filter positions:  ", self.filter_front.Position, self.filter_back.Position)
+            # self.filter_front.Position = 0
+            # self.filter_back.Position  = 0
+            # print("filter positions should be 0, 0:  ", self.filter_front.Position, self.filter_back.Position)
+            # self.filter_front.Position = 4
+            # self.filter_back.Position  = 2
+            # print("filter positions should be 4, 2:  ", self.filter_front.Position, self.filter_back.Position)
+            # self.filter_front.Position = 2
+            # self.filter_back.Position  = 4
+            # print("filter positions should be 2, 4:  ", self.filter_front.Position, self.filter_back.Position)
+            # breakpoint()
+            #abooove back upplugged
+            #now frront unplugged.
+            #4 is diffuser, ok. #0 is air, #2 is w with blue tape wedge.
+
+            #Now plug both in after both out.
+            #Restart code.
+
+            #back is in 2, see tape. Position reports 0.  Command to 3
+
+            #THE FRONT WHEEL RESPONDS EVEN THOUGH I DID NOT CONNECT TO IT!self.
+            self.dual = True
+            self.custom = False
+            self.filter_selected = self.filter_data[self.filter_reference][0]
+            self.filter_number = self.filter_reference
+            self.filter_offset = self.filter_data[self.filter_reference][2]
+            #First setup:
+            time.sleep(1)
+            while self.filter_front.Position == -1:
+                time.sleep(0.2)
+            self.filter_front.Position = self.filter_data[self.filter_reference][1][1]
+            time.sleep(1)
+            while self.filter_back.Position == -1:
+                time.sleep(0.2)
+            self.filter_back.Position = self.filter_data[self.filter_reference][1][0]
+            time.sleep(1)
+            print(self.filter_selected, self.filter_offset)   #self.filter_front.Names, self.filter_back.Names,
         elif driver.lower() in ["maxim.ccdcamera", 'maxim', 'maximdl', 'maximdlpro']:
+            '''
+            20220508 Changed since FLI Dual code is failing. This presumes Maxim is filter wheel controller
+            and it may be the Aux-camera contrller as well.
+            '''
             #print('Maxim controlled filter (ONLY) is initializing.')
+
             win32com.client.pythoncom.CoInitialize()
             self.filter = win32com.client.Dispatch(driver)
             #Monkey patch in Maxim specific methods.
             self._connected = self._maxim_connected
             self._connect = self._maxim_connect
-            self._setpoint = self._maxim_setpoint
+            #self._setpoint = self._maxim_setpoint
             #self._temperature = self._maxim_temperature
             #self._expose = self._maxim_expose
             #self._stop_expose = self._maxim_stop_expose
             self.description = 'Maxim is Filter Controller.'
             print('Maxim is connected:  ', self._connect(True))
-            self._setpoint(float(-100))
+            #self._setpoint(float(-100))
             #self.app = win32com.client.Dispatch("Maxim.Application")
             #self.app.TelescopeConnected = True
             #print("Maxim Telescope Connected: ", self.app.TelescopeConnected)
             print('Filter control is via Maxim filter interface.')
-            print("Initial filter reported is:  ", self.filter.Filter)
+            print("Initial filters reported are:  ", self.filter.Filter, self.filter.GuiderFilter)
             self.maxim = True
             self.ascom = False
-            self.dual = False
+            self.dual = True
             self.custom = False
             self.filter_selected = self.filter_data[self.filter_reference][0]   #This is the default expected after a
                                                                                 #Home or power-up cycle.
@@ -122,19 +204,19 @@ class FilterWheel:
                 self.filter_name = 'lpr'
             except:
                 print("QHY Filter not connected.")
-                
+
                 ###ser.write(b'1') get you to Duo
                 # 0 is lpr
                 # 2 is air
                 # 3 in dark
-                
-                
-                
-            
+
+
+
+
         else:
             '''
             We default here to setting up a single wheel ASCOM driver.
-            
+
             We need to distinguish here between an independent ASCOM filter wheel
             and a filter that is supported by maxim.  That is specified if a Maxim
             based driver is supplied. IF so it is NOT actually Dispatched, instead
@@ -151,6 +233,63 @@ class FilterWheel:
             self.filter_front = win32com.client.Dispatch(driver)
             self.filter_front.Connected = True
             print("Currently QHY RS232 FW")
+
+    '''
+     FLI.filter_wheel.py
+
+     Object-oriented interface for handling FLI (Finger Lakes Instrumentation)
+     USB filter wheels
+
+     author:       Craig Wm. Versek, Yankee Environmental Systems
+     author_email: cwv@yesinc.com
+    """
+
+    __author__ = 'Craig Wm. Versek'
+    __date__ = '2012-08-16'
+
+    import sys, time
+
+    from ctypes import byref, c_char, c_char_p, c_long, c_ubyte, c_double
+
+    from lib import FLILibrary, FLIError, FLIWarning, flidomain_t, flidev_t,\
+                    fliframe_t, FLIDOMAIN_USB, FLIDEVICE_FILTERWHEEL
+
+    from device import USBDevice
+    ###############################################################################
+    DEBUG = False
+
+    ###############################################################################
+    class USBFilterWheel(USBDevice):
+        #load the DLL
+        _libfli = FLILibrary.getDll(debug=DEBUG)
+        _domain = flidomain_t(FLIDOMAIN_USB | FLIDEVICE_FILTERWHEEL)
+
+        def __init__(self, dev_name, model):
+            USBDevice.__init__(self, dev_name = dev_name, model = model)
+
+        def set_filter_pos(self, pos):
+            self._libfli.FLISetFilterPos(self._dev, c_long(pos))
+
+        def get_filter_pos(self):
+            pos = c_long()
+            self._libfli.FLIGetFilterPos(self._dev, byref(pos))
+            return pos.value
+
+        def get_filter_count(self):
+            count = c_long()
+            self._libfli.FLIGetFilterCount(self._dev, byref(count))
+            return count.value
+
+
+
+    ###############################################################################
+    #  TEST CODE
+    ###############################################################################
+    if __name__ == "__main__":
+        fws = USBFilterWheel.find_devices()
+        fw0 = fws[0]
+    '''
+
 
     #The patches.   Note these are essentially a getter-setter/property constructs.
     #  NB we are here talking to Maxim acting only as a filter controller.
@@ -187,7 +326,7 @@ class FilterWheel:
         #         'wheel_is_moving': 'false'
         #         }
         #     return status
-            
+
         try:
             # if self.dual and (self.filter_front.Position == -1 or self.filter_back.Position == -1):
             #     f_move = True
@@ -217,6 +356,11 @@ class FilterWheel:
         req = command['required_params']
         opt = command['optional_params']
         action = command['action']
+        if self.maxim:     #NB NB NB Annoying but maxium sometimes disconnects.
+            is_connected = self._maxim_connected()
+            if not is_connected:
+                print("Found filter disconnected, reconnecting!")
+                self.maxim_connect(True)
         if action == "set_position":
             self.set_position_command(req, opt)
         elif action == "set_name":
@@ -238,6 +382,7 @@ class FilterWheel:
         #print('Selections:  ', filter_selections)
         self.filter_number = filter_number
         self.filter_selected = self.filter_data[filter_number][0]
+
         if self.dual and self.custom:
 
             r0 = self.r0
@@ -248,12 +393,12 @@ class FilterWheel:
             r1_pr = requests.put(self.ip + '/filterwheel/1/position', json=r1)
             if str(r0_pr) == str(r1_pr) == '<Response [200]>':
                 print ("Set up filter configuration;  ", filter_selections)
-            
-            
+
+
         elif self.dual and not self.custom:  #Dual FLI
 
-        
-        
+
+
             #NB the order of the filter_selected [1] may be incorrect
             try:
                 while self.filter_front.Position == -1:
@@ -279,11 +424,11 @@ class FilterWheel:
         ''' set the filter position by  param string filter position index '''
         'NBNBNB This routine may not be correct'
         #print("filter cmd: set_position")
-        breakpoint()
+
         filter_selections = self.filter_data[int(req['filter_num'])][1]
         #print('Selections:  ', filter_selections)
+
         if self.dual and self.custom:
-            breakpoint()
             r0 = self.r0
             r1 = self.r1
             r0['filterwheel']['position'] = filter_selections[0]
@@ -292,8 +437,8 @@ class FilterWheel:
             r1_pr = requests.put(self.ip + '/filterwheel/1/position', json=r1)
             if str(r0_pr) == str(r1_pr) == '<Response [200]>':
                 print ("Set up filter configuration;  ", filter_selections)
-            
-            
+
+
         elif self.dual and not self.custom:
             try:
                 while self.filter_front.Position == -1:
@@ -318,13 +463,14 @@ class FilterWheel:
     def set_name_command(self, req: dict, opt: dict):
         ''' set the filter position by filter name '''
         #print("filter cmd: set_name", req, opt)
+
         try:
             filter_name = req['filter_name']
         except:
             try:
                 filter_name = req['filter']
             except:
-                print("filter dictionary is screwed up big time.")
+                print("filter dictionary is seriously messed up.")
 
         # if filter_name =="W":     #  NB This is a temp patch
         #     filter_name = 'w'
@@ -340,17 +486,36 @@ class FilterWheel:
         #     filter_name = 'ip'
         # if filter_name =="u":
         #     filter_name = 'up'
+        filterIDed=0
         for match in range(int(self.config['filter_wheel1']['settings']['filter_count'])):  #NB Filter count MUST be correct in Config.
-            if filter_name == self.filter_data[match][0]:
+            if filter_name in self.filter_data[match][0]:
+
                 filt_pointer = match
+                filterIDed=1
                 break
+        # If filter was not identified, find a substitute filter
+        if filterIDed==0:
+            print ("Requested filter: " +str(filter_name) + " does not exist on this filter wheel")
+            #print ("Finding a substitution")
+            filter_name = self.substitute_filter(filter_name)
+            if filter_name == 'none':
+                return 'none'
+            for match in range(int(self.config['filter_wheel1']['settings']['filter_count'])):  #NB Filter count MUST be correct in Config.
+                if filter_name in self.filter_data[match][0]:
+
+                    filt_pointer = match
+                    filterIDed=1
+                    break
+
         print('Filter name is:  ', self.filter_data[match][0])
-        print('Filter pointer:  ', filt_pointer)
+        g_dev['obs'].send_to_user('Filter set to:  ' + str(self.filter_data[match][0]))
+        #print('Filter pointer:  ', filt_pointer)
         self.filter_number = filt_pointer
         self.filter_selected = filter_name
         filter_selections = self.filter_data[filt_pointer][1]
-        print('Selections:  ', filter_selections)
+        #print('Selections:  ', filter_selections)
         self.filter_offset = float(self.filter_data[filt_pointer][2])
+
         if self.dual and self.custom:
             r0 = self.r0
             r1 = self.r1
@@ -370,12 +535,10 @@ class FilterWheel:
                     continue
                 else:
                     print('Filters:  ',r0_t,r1_t)
-                    break
-                    
 
-            
-            
-        elif self.dual:
+                    break
+
+        elif self.dual and not self.maxim:
              try:
                  while self.filter_front.Position == -1:
                      time.sleep(0.4)
@@ -391,8 +554,8 @@ class FilterWheel:
              except:
                  pass#breakpoint()
              self.filter_offset = float(self.filter_data[filt_pointer][2])
-        elif self.maxim:
-            
+        elif self.maxim and self.dual:
+
 # =============================================================================
 #             flifil0 is closest to telescope,???
 #             flifil1 is closest to camera.???
@@ -414,6 +577,8 @@ class FilterWheel:
 
             self.filter_offset = float(self.filter_data[filt_pointer][2])
 
+        return filter_name
+
     def home_command(self, req: dict, opt: dict):
         ''' set the filter to the home position '''  #NB this is setting to default not Home.
         print("filter cmd: home", req, opt)
@@ -426,6 +591,98 @@ class FilterWheel:
         self.filter_selected = 'w'
         self.filter_reference = 2
         self.filter_offset = int(self.filter_data[2][2])
+
+    def substitute_filter(self, filter_name):
+        print ("Finding substitute for "  + filter_name)
+
+        #filterNames= ['PL', 'PR','PG','PB', 'O3', 'HA', 'S2']
+        #breakpoint()
+        #filterNames=[]
+        #for i in range(len(self.filter_data)):
+
+
+
+
+        #breakpoint()
+        #filterNames = self.filter_data[0][:]
+        filterNames= self.config['filter_wheel1']['settings']['filter_list']
+        requestedFilter = filter_name
+
+        print ("Available Filters: " + str(filterNames))
+        print ("Requested Filter : " + str(requestedFilter))
+
+
+        substituteFilter = 'none'
+        priorityOrder=[]
+
+        #Very unglamourous but perfectly workable filter selection if/thens. Elegance comes later.
+
+        #U broadband filter
+        if requestedFilter == 'up' or requestedFilter == 'U' or requestedFilter == 'JU' :
+            priorityOrder = ['up', 'U', 'JU']
+
+        #Blue broadband filter
+        if requestedFilter == 'JB' or requestedFilter == 'PB' or requestedFilter == 'B' :
+            priorityOrder = ['JB', 'PB']
+
+        #Green broadband filter
+        if requestedFilter == 'JV' or requestedFilter == 'PG' or requestedFilter == 'G':
+            priorityOrder = ['JV', 'PG']
+
+        #Generic sdss-g filter
+        if requestedFilter == 'gp' or requestedFilter == 'g':
+            priorityOrder = ['gp']
+
+        #Red broadband filter
+        if requestedFilter == 'Rc' or requestedFilter == 'PR' or requestedFilter == 'rp' or requestedFilter == 'R' or requestedFilter == 'r':
+            priorityOrder = ['rp','Rc', 'PR']
+
+        #Infrared broadband filter
+        if requestedFilter == 'Ic' or requestedFilter == 'ip' or requestedFilter == 'i' :
+            priorityOrder = ['ip', 'Ic']
+
+        #z broadband filter
+        if requestedFilter == 'z' or requestedFilter == 'zs' or requestedFilter == 'zp':
+            priorityOrder = ['zp', 'zs', 'z']
+
+        # white clear filter
+        if requestedFilter == 'w' or requestedFilter == 'Lum' or requestedFilter == 'PL' or requestedFilter == 'clear' or requestedFilter == 'L' or requestedFilter == 'W':
+            priorityOrder = ['w', 'Lum', 'PL', 'clear']
+
+        #Generic H
+        if requestedFilter == 'HA' or requestedFilter == 'H':
+            priorityOrder = ['HA']
+
+        #Generic O
+        if requestedFilter == 'O3' or requestedFilter == 'O':
+            priorityOrder = ['O3']
+
+        #Generic S
+        if requestedFilter == 'S2' or requestedFilter == 'S':
+            priorityOrder = ['S2']
+
+        #Generic C
+        if requestedFilter == 'C' or requestedFilter == 'CR':
+            priorityOrder = ['CR']
+
+        # Exoplanet filter
+        if requestedFilter == 'EXO' :
+            priorityOrder = ['EXO', 'ip', 'Ic', 'rp','Rc','PR','w', 'Lum', 'clear' ]
+
+
+
+        if len(priorityOrder) != 0:
+            for i in range(len(priorityOrder)):
+                #print (priorityOrder[i])
+                for q in range(len(filterNames)):
+                    if priorityOrder[i] == filterNames[q]:
+                        print ("Got it. Substitute filter is " + str(priorityOrder[i]))
+                        substituteFilter=priorityOrder[i]
+                        return substituteFilter
+
+        print ("No Substitute Filter Found. Skipping exposure.")
+        #return self.config['filter_wheel1']['settings']['default_filter']
+        return 'none'
 
 
 if __name__ == '__main__':
