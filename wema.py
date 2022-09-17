@@ -25,10 +25,13 @@ import requests
 import time
 import shelve
 import socket
+
+import config   #It makes sense to call this and get it out of the way early.
 from api_calls import API_calls
 import ptr_events
 from devices.observing_conditions import ObservingConditions
 from devices.enclosure import Enclosure
+from pprint import pprint
 
 from global_yard import g_dev
 
@@ -55,7 +58,10 @@ def terminate_restart_observer(site_path, no_restart=False):
 
         #subprocess.call('C:/Users/obs/Documents/GitHub/ptr-observatory/restart_obs.bat')
         #The above routine does not return but does start a process.
-        os.system('cmd /c C:\\Users\\obs\\Documents\\GitHub\\ptr-observatory\\restart_obs.bat')
+        parentPath = Path(getcwd())
+        os.system('cmd /c ' + str(parentPath) + '\restart_obs.bat')
+        #print ('cmd /c ' + str(parentPath) + '\restart_obs.bat')
+        #os.system('cmd /c C:\\Users\\obs\\Documents\\GitHub\\ptr-observatory\\restart_obs.bat')
         #  worked with /k, try /c Which should terminate
         return
     
@@ -108,13 +114,13 @@ class WxEncAgent:
             else:  
                 #This host is a client
                 self.is_wema = False  #This is a client.
-                self.site_path = config['client_share_path']
+                self.site_path = config['client_write_share_path']
                 g_dev['site_path'] = self.site_path
                 g_dev['wema_write_share_path']  = self.site_path  # Just to be safe.
                 self.wema_path = g_dev['wema_write_share_path'] 
         else:
             self.is_wema = False  #This is a client.
-            self.site_path = config['client_share_path']
+            self.site_path = config['client_write_share_path']
             g_dev['site_path'] = self.site_path
             g_dev['wema_write_share_path']  = self.site_path  # Just to be safe.
             self.wema_path = g_dev['wema_write_share_path'] 
@@ -243,7 +249,7 @@ class WxEncAgent:
         #print(self.config)
         response = self.api.authenticated_request("PUT", uri, self.config)
         if response:
-            print("Config uploaded successfully.")
+            print("\n\nConfig uploaded successfully.")
 
     def scan_requests(self, mount):
         return
@@ -353,7 +359,8 @@ class WxEncAgent:
             print("Log did not send, usually not fatal.")
 if __name__ == "__main__":
 
-    import config
+    #breakpoint()
+
     wema = WxEncAgent(config.site_name, config.site_config)
     
     wema.run()

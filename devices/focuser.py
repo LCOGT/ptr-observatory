@@ -56,6 +56,7 @@ class Focuser:
         self.camera_name = config['camera']['camera_1_1']['name']
         g_dev['foc'] = self
         self.config = config['focuser']['focuser1']
+        self.throw = int(config['focuser']['focuser1']['throw'])
         win32com.client.pythoncom.CoInitialize()
         self.focuser = win32com.client.Dispatch(driver)
         time.sleep(4)
@@ -78,14 +79,17 @@ class Focuser:
 
         try:   #  NB NB NB This mess neads cleaning up.
             try:
+                if not self.site in ['sro']:
+                    self.last_temperature = self.focuser.Temperature
+                    self.reference = self.calculate_compensation(self.focuser.Temperature)   #need to change to config supplied
+                else:
+                    self.last_temperature = g_dev['ocn'].temperature
+                    self.reference = self.calculate_compensation(g_dev['ocn'].temperature)
 
-                self.last_temperature = self.focuser.Temperature
-                self.reference = self.calculate_compensation(self.focuser.Temperature)   #need to change to config supplied
-                print("Focus position set from temp compensated value:  ", self.reference)
+                print("Focus position set from temp compensated value:  ", self.reference, '.  Temp used:  ', self.last_temperature)
                 self.last_known_focus = self.reference
                 self.last_source = "Focuser__init__  Calculate Comp references Config"
             except:
-                #breakpoint()
                 self.reference = float(self.get_focal_ref())   #need to change to config supplied
                 self.last_known_focus = self.reference
                 print("Focus reference updated from Night Shelf:  ", self.reference)
@@ -105,11 +109,9 @@ class Focuser:
 
         if -20 <= temp_primary <= 45:
             trial = round(float(self.config['coef_0'] + float(self.config['coef_c'])*temp_primary), 1)
-
             trial = max(trial, 500)  #These values are for an Optec Gemini.
             trial = min(trial, 12150)
             # NB NB Numbers should all come fron site config.
-            
             #print('Calculated focus compensated position:  ', trial)
             return int(trial)
         else:
@@ -133,7 +135,7 @@ class Focuser:
             except:
                 temp = 10.0   #NB NB NB this needs to be a proper monthly config file default.
             status = {
-                "focus_position": round(self.focuser.Position*self.steps_to_micron, 1),       
+                "focus_position": round(self.focuser.Position*self.steps_to_micron, 1),
                 "focus_temperature":  temp,
                 "focus_moving": self.focuser.IsMoving,
                 'comp': self.config['coef_c'],
@@ -148,7 +150,7 @@ class Focuser:
         try:
             quick.append(self.focuser.Temperature)
         except:
-            quick.append(10.0)   
+            quick.append(10.0)
         quick.append(self.focuser.IsMoving)
         return quick
 
@@ -234,7 +236,7 @@ class Focuser:
     def get_position(self, counts=False):
         if not counts:
             return int(self.focuser.Position*self.steps_to_micron)
-        
+
     def adjust_focus(self, loud=False):
         #Note the adjustment is relative to the last formal focus procedure where
         #self.last_termperature was used to position the focuser.  Do not use
@@ -263,7 +265,7 @@ class Focuser:
             self.move_absolute_command(req, opt)
         except:
             print("Focus-adjust: no changes made.")
-            
+
     def guarded_move(self, to_focus):
         try:
             self.focuser.Move(int(to_focus))
@@ -324,14 +326,20 @@ class Focuser:
     def stop_command(self, req: dict, opt: dict):
         ''' stop focuser movement '''
         print(f"focuser cmd: stop")
-        
+
     def home_command(self, req: dict, opt: dict):
         ''' set the focuser to the home position'''
         print(f"focuser cmd: home")
-        
+
     def auto_command(self, req: dict, opt: dict):
         ''' autofocus '''
         print(f"focuser cmd: auto")
+
+    def set_focal_ref(self, ref):
+        cam_shelf = shelve.open(self.site_path + 'ptr_night_shelf/' + self.camera_name)
+        cam_shelf['focus_ref'] = ref
+        cam_shelf.close()
+        return
 
     def set_focal_ref_reset_log(self, ref):
         cam_shelf = shelve.open(self.site_path + 'ptr_night_shelf/' + self.camera_name)
@@ -339,24 +347,24 @@ class Focuser:
         cam_shelf['af_log'] = []
         cam_shelf.close()
         return
-    
+
     def af_log(self, ref, fwhm, solved):   #  Note once focus comp is in place this data is lame and
                                            #  need to be combined with great care.
         cam_shelf = shelve.open(self.site_path + 'ptr_night_shelf/' + self.camera_name, writeback=True)
         try:
             f_temp = self.focuser.Temperature   #NB refering a quantity possibly from WEMA if no focus temp available.
-        except:
+        except:                                 #Note above in temp comp, sro has no temp probe on gemini
             f_temp = g_dev['ocn'].status['temperature_C']
 
         cam_shelf['af_log'].append((f_temp, ref, fwhm, solved, datetime.datetime.now().isoformat()))
         cam_shelf.close()
         return
-    
+
     def get_af_log(self):
         cam_shelf = shelve.open(self.site_path + 'ptr_night_shelf/' + self.camera_name, writeback=True)
         for item in cam_shelf['af_log']:
             print(str(item))
-        
+
     def get_focal_ref(self):
         cam_shelf = shelve.open(self.site_path + 'ptr_night_shelf/' + self.camera_name)
         focus_ref = cam_shelf['focus_ref']  # NB Shoudl we also return and use the ref temp?
@@ -365,4 +373,3 @@ class Focuser:
 
 if __name__ == '__main__':
     pass
-
