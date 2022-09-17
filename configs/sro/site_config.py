@@ -81,7 +81,7 @@ site_config = {
     'automatic_detail_default': "Enclosure is initially set to Automatic mode.",
     'auto_eve_bias_dark': True,
     'auto_eve_sky_flat': True,
-    'eve_sky_flat_sunset_offset': +35.0,  #  Minutes  neg means before, + after.
+    'eve_sky_flat_sunset_offset': -32.5,  #  Minutes  neg means before, + after.
     'auto_morn_sky_flat': True,
     'auto_morn_bias_dark': True,
     're-calibrate_on_solve': True,
@@ -371,6 +371,7 @@ site_config = {
                 'filter_count': 11,   #  This must be correct as to the number of filters
                 'home_filter':  0,
                 'default_filter': "PL",
+                'filter_list': ['PL','PR','PG','PB','HA','O3','S2', 'air'], # A list of actual physical filters for the substitution function
                 'filter_reference': 0,   #  We choose to use W as the default filter.  Gains taken at F9, Ceravolo 300mm
                 'filter_data': [['filter', 'filter_index', 'filter_offset', 'sky_gain', 'screen_gain', 'alias'],  #NB NB NB add cwl & bw in nm.
 
@@ -429,7 +430,7 @@ site_config = {
             'file_mode_path':  'G:/000ptr_saf/archive/sq01/autosaves/',   #NB Incorrect site, etc. Not used at SRO.  Please clean up.
 
             'settings': {
-                'temp_setpoint': -18,
+                'temp_setpoint': -22,   #Updated from -18 WER 20220914 Afternoon
                 'calib_setpoints': [-35,-30, -25, -20, -15, -10 ],  #  Should vary with season?
                 'day_warm': False,
                 'cooler_on': True,

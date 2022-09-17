@@ -15,6 +15,9 @@ import redis
 import math
 import ephem
 from pprint import pprint
+import shutil
+import os
+
 
 '''
 Autofocus NOTE 20200122
@@ -270,6 +273,35 @@ class Sequencer:
         except:
             print('Dome close not executed during Park and Close.')
 
+    def midday_cull(self):
+        FORTNIGHT=60*60*24*7*2
+        #dir_path='D:/PTRMFO/'
+        dir_path=self.config['client_path'] + '\\' + 'archive'
+        cameras=[d for d in os.listdir(dir_path) if os.path.isdir(d)]
+        for camera in cameras:  # Go through each camera directory
+            print ("*****************************************")
+            print ("Camera: " + str(camera))
+            timenow_cull=time.time()
+            cameradir=dir_path + '\\' + camera + '\\'
+            directories=[d for d in os.listdir(cameradir) if os.path.isdir(d)]
+            deleteDirectories=[]
+            deleteTimes=[]
+            for q in range(len(directories)):
+                if ((timenow_cull)-os.path.getmtime(cameradir + directories[q])) > FORTNIGHT:
+                    deleteDirectories.append(directories[q])
+                    deleteTimes.append(((timenow_cull)-os.path.getmtime(cameradir +directories[q])) /60/60/24/7)
+
+
+
+            print ("These are the directories earmarked for  ")
+            print ("Eternal destruction. And how old they are")
+            print ("in weeks\n")
+
+            for entry in range(len(deleteDirectories)):
+                print (deleteDirectories[entry] + ' ' + str(deleteTimes[entry]) + ' weeks old.')
+                #shutil.rmtree(cameradir + deleteDirectories[entry]) # THIS IS THE DELETER WHEN WE ARE READY!
+
+        return
 
     ###############################
     #       Sequencer Commands and Scripts
@@ -312,6 +344,9 @@ class Sequencer:
             #NB The above put dome closed and telescope at Park, Which is where it should have been upon entry.
             self.bias_dark_script(req, opt, morn=False)
             self.bias_dark_latch = False
+
+        elif (events['Midday archive Cull'] <= ephem_now < (events['Midday archive Cull'] + 5* ephem.minute)):
+              self.midday_cull()
 
         elif ((g_dev['events']['Cool Down, Open']  <= ephem_now < g_dev['events']['Eve Sky Flats']) and \
                g_dev['enc'].mode == 'Automatic') and not g_dev['ocn'].wx_hold:
@@ -692,6 +727,10 @@ class Sequencer:
                     initial_focus = False
                     just_focused = True
                     timer = time.time() + af_delay  #40 minutes to refocus
+                    #print (block['project']['project_name'])
+                    # MTF - Allocate the project target name to object name
+                    print ("Observing " + str(block['project']['project_targets'][0]['name']))
+                    #opt['object_name']=block['project']['project_targets'][0]['name']
                     print("Executing: ", exposure, left_to_do)
                     color = exposure['filter']
                     exp_time =  float(exposure['exposure'])
@@ -714,30 +753,30 @@ class Sequencer:
                     imtype = exposure['imtype']
                     #defocus = exposure['defocus']
 #                    if g_dev['site'] == 'saf':   #THis should be in config.
-                    if color[0] == 'B':
-                        color = 'PB'   #Map generic filters to site specific ones.   NB this does no tbelong here, it should be central with Cameras setup.
-                    if color[0] == 'G':
-                        color = 'PG'   # NB NB THis needs a clean up, these mappings should be in config
-                    if color[0] == 'R':
-                        color = 'PR'
-                    if color[0] == 'L':
-                        color = 'PL'
-                    if color[0] == 'W':
-                        color = 'w'
-                    if color[0] == 'g':
-                        color = 'gp'
-                    if color[0] == 'r':    #NB This is redundant for Sloans when small cap.
-                        color = 'rp'
-                    if color[0] == 'i':     #NB NB THIS IS WRONG For Johnson and Bessell
-                        color = 'ip'
-                    if color[0] == 'H':
-                        color = 'HA'
-                    if color[0] == 'O':
-                        color = 'O3'
-                    if color[0] == 'S':
-                        color = 'S2'
-                    if color[0] == 'C':
-                        color = 'CR'
+                    # if color[0] == 'B':
+                    #     color = 'PB'   #Map generic filters to site specific ones.   NB this does no tbelong here, it should be central with Cameras setup.
+                    # if color[0] == 'G':
+                    #     color = 'PG'   # NB NB THis needs a clean up, these mappings should be in config
+                    # if color[0] == 'R':
+                    #     color = 'PR'
+                    # if color[0] == 'L':
+                    #     color = 'PL'
+                    # if color[0] == 'W':
+                    #     color = 'w'
+                    # if color[0] == 'g':
+                    #     color = 'gp'
+                    # if color[0] == 'r':    #NB This is redundant for Sloans when small cap.
+                    #     color = 'rp'
+                    # if color[0] == 'i':     #NB NB THIS IS WRONG For Johnson and Bessell
+                    #     color = 'ip'
+                    # if color[0] == 'H':
+                    #     color = 'HA'
+                    # if color[0] == 'O':
+                    #     color = 'O3'
+                    # if color[0] == 'S':
+                    #     color = 'S2'
+                    # if color[0] == 'C':
+                    #     color = 'CR'
                     if count <= 0:
                          continue
                     #At this point we have 1 to 9 exposures to make in this filter.  Note different areas can be defined.
@@ -816,7 +855,7 @@ class Sequencer:
                         if imtype in ['light'] and count > 0:
                             req = {'time': exp_time,  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': imtype}   #  NB Should pick up filter and constants from config
                             opt = {'area': 150, 'count': 1, 'bin': binning, 'filter': color, \
-                                   'hint': block['project_id'] + "##" + dest_name, 'pane': pane}
+                                   'hint': block['project_id'] + "##" + dest_name, 'object_name': block['project']['project_targets'][0]['name'], 'pane': pane}
                             print('Seq Blk sent to camera:  ', req, opt)
                             obs_win_begin, sunZ88Op, sunZ88Cl, ephem_now = self.astro_events.getSunEvents()
 
