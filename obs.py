@@ -1081,67 +1081,12 @@ class Observatory:
                         spot = None
 
                 reduced_data_size = hdu.data.size
-                #g_dev['obs'].update_status()
-                #Here we need to process images which upon input, may not be square.  The way we will do that
-                #is find which dimension is largest.  We then pad the opposite dimension with 1/2 of the difference,
-                #and add vertical or horizontal lines filled with img(min)-2 but >=0.  The immediate last or first line
-                #of fill adjacent to the image is set to 80% of img(max) so any subsequent subframing selections by the
-                #user is informed. If the incoming image dimensions are odd, they will be decreased by one.  In essence
-                #we wre embedding a non-rectanglular image in a "square" and scaling it to 768^2.  We will impose a
-                #minimum subframe reporting of 32 x 32
-
-                # in_shape = hdu.data.shape
-                # in_shape = [in_shape[0], in_shape[1]]   #Have to convert to a list, cannot manipulate a tuple,
-                # if in_shape[0]%2 == 1:
-                #     in_shape[0] -= 1
-                # if in_shape[0] < 32:
-                #     in_shape[0] = 32
-                # if in_shape[1]%2 == 1:
-                #     in_shape[1] -= 1
-                # if in_shape[1] < 32:
-                #     in_shape[1] = 32
-                #Ok, we have an even array and a minimum 32x32 array.
 
                 # =============================================================================
                 # x = 2      From Numpy: a way to quickly embed an array in a larger one
                 # y = 3
                 # wall[x:x+block.shape[0], y:y+block.shape[1]] = block
                 # =============================================================================
-
-# =============================================================================
-#                 if in_shape[0] < in_shape[1]:
-#                     diff = int(abs(in_shape[1] - in_shape[0])/2)
-#                     in_max = int(hdu.data.mean()*0.8)
-#                     in_min = int(hdu.data.min() - 2)
-#                     if in_min < 0:
-#                         in_min = 0
-#                     new_img = np. zeros((in_shape[1], in_shape[1]))    #new square array
-#                     new_img[0:diff - 1, :] = in_min
-#                     new_img[diff-1, :] = in_max
-#                     new_img[diff:(diff + in_shape[0]), :] = hdu.data
-#                     new_img[(diff + in_shape[0]), :] = in_max
-#                     new_img[(diff + in_shape[0] + 1):(2*diff + in_shape[0]), :] = in_min
-#                     hdu.data = new_img
-#                 elif in_shape[0] > in_shape[1]:
-#                     #Same scheme as above, but expands second axis.
-#                     diff = int((in_shape[0] - in_shape[1])/2)
-#                     in_max = int(hdu.data.mean()*0.8)
-#                     in_min = int(hdu.data.min() - 2)
-#                     if in_min < 0:
-#                         in_min = 0
-#                     new_img = np. zeros((in_shape[0], in_shape[0]))    #new square array
-#                     new_img[:, 0:diff - 1] = in_min
-#                     new_img[:, diff-1] = in_max
-#                     new_img[:, diff:(diff + in_shape[1])] = hdu.data
-#                     new_img[:, (diff + in_shape[1])] = in_max
-#                     new_img[:, (diff + in_shape[1] + 1):(2*diff + in_shape[1])] = in_min
-#                     hdu.data = new_img
-#                 else:
-#                     #nothing to do, the array is already square
-#                     pass
-# =============================================================================
-
-
 
                 hdu.data = hdu.data.astype('uint16')
                 iy, ix = hdu.data.shape
@@ -1159,22 +1104,7 @@ class Observatory:
 
                 hdu.writeto(paths['im_path'] + paths['i768sq_name10'], overwrite=True)
                 hdu.data = resized_a.astype('float')
-                #The following does a very lame contrast scaling.  A beer for best improvement on this code!!!
-                #Looks like Tim wins a beer.
-                # Old contrast scaling code:
-                #istd = np.std(hdu.data)
-                #imean = np.mean(hdu.data)
-                #if (imean + 3*istd) != 0:    #This does divide by zero in some bias images.
-                #    img3 = hdu.data/(imean + 3*istd)
-                #else:
-                #    img3 = hdu.data
-                #fix = np.where(img3 >= 0.999)
-                #fiz = np.where(img3 < 0)
-                #img3[fix] = .999
-                #img3[fiz] = 0
-                #img4 = img3*256
-                #img4 = img4.astype('uint8')   #Eliminates a user warning.
-                #imsave(paths['im_path'] + paths['jpeg_name10'], img4)  #NB File extension triggers JPEG conversion.
+
                 # New contrast scaling code:
                 stretched_data_float = Stretch().stretch(hdu.data)
                 stretched_256 = 255*stretched_data_float
