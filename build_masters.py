@@ -43,6 +43,7 @@ from scipy import stats
 import matplotlib.pyplot as plt
 from PIL import Image
 from planewave import platesolve
+from processing.calibration import calibrate
 from pprint import pprint as pprint    #Note overload of a standard keyword.
 
 from skimage import data, io, filters
@@ -637,121 +638,27 @@ def make_master_flat (alias, path, lng_path, selector_string, out_name, super_bi
     create_super_flat(chunked_list, lng_path, out_name, super_bias_name, super_dark_name)
 
 
-def de_offset_and_trim(camera_name, archive_path, selector_string, out_path, full=False, norm=False):
+def de_offset_and_trim(camera_name, archive_path, selector_string, lng_path,  out_path, full=False, norm=False):
     #NB this needs to rename fit and fts files to fits
     file_list = glob.glob(archive_path + selector_string)
- #   file_list.sort
-    print(file_list)
+    #file_list.sort
+    #print(file_list)
     print('# of files:  ', len(file_list))
 
-    p22 = 0
-    p30 = 0
-    p_else = 0
-    shift_error = None
+
     for image in file_list:
-        #print('Processing:  ', image)
+
         image_hdr = fits.open(image)
         img = image_hdr[0]
         #img = ccdproc.CCDData.read(image, unit='adu', format='fits')
         # Overscan remove and trim
-        if  norm:
-            pedastal = 0.0
-        else:
-            pedastal = 100    #I guess fix for a corrupt import here at this line.
-        img.data = img.data.transpose()  #Do this for convenience of sorting trimming details.
-        ix, iy = img.data.shape
-        '''
-        img.data[22:24,-35:]
-        array([[  0,   0, 132, 132, 131, 122, 125, 127, 136, 135, 135, 123,         
-        '''
-# =============================================================================
-# # =============================================================================
-# #             #  NB  The special casing is fixing a problem with WMD SQ01 camera.
-# #             #  NB  Need to check exact same pixels are passing through as in the
-# #             #  Camera code.
-# # =============================================================================
-# =============================================================================
+        calibrate(img, lng_path)
 
-        if ix == 9600:
-            if img.data[22, -34] == 0:
-                p22 += 1
-                overscan = int((np.median(img.data[24:, -33:]) + np.median(img.data[0:21, :]))/2) - 1
-                trimmed = img.data[24:-8, :-34].astype('int32') + pedastal - overscan
-                square = trimmed
-                shift_error = -8
-            elif img.data[30, -34] == 0:
-                p30 += 1
-                overscan = int((np.median(img.data[32:, -33:]) + np.median(img.data[0:29, :]))/2) - 1
-                trimmed = img.data[32:, :-34].astype('int32') + pedastal - overscan
-                square = trimmed
-                shift_error = 0
-            else:
-                p_else +=1
-                breakpoint()
-
-            if full:
-                square = trimmed
-            else:
-                square = trimmed[1590:1590 + 6388, :]
-        elif ix == 4800:
-            #Shift error needs documenting!
-            if img.data[11, -18] == 0:
-                p22 += 1
-                overscan = int((np.median(img.data[12:, -17:]) + np.median(img.data[0:10, :]))/2) - 1 
-                trimmed = img.data[12:-4, :-17].astype('int32') + pedastal - overscan
-                shift_error = -4
-                square = trimmed 
-            elif img.data[15, -18] == 0:
-                p30 += 1
-                overscan = int((np.median(img.data[16:, -17:]) + np.median(img.data[0:14, :]))/2) -1 
-                trimmed = img.data[16:, :-17].astype('int32') + pedastal - overscan
-                square = trimmed
-                shift_error = 0
-            else:
-                p_else +=1
-                breakpoint()
-
-            if full:
-                square = trimmed
-            else:
-                square = trimmed[795:795 + 3194, :]
-        else:
-            print("Incorrect chip size or bin specified or already-converted:  skipping.")
-            continue
-        square = square.transpose()
-        std = square.std()
-        smin = np.where(square < (pedastal - 5*std))    #finds negative pixels
-        shot = np.where(square > (pedastal + 5*std))
-        # lmax = square[-200:, :200].max()
-        # lhpix = np.where(square == lmax)
-        # print(lmax, lhpix[0], lhpix[1])
-        print('Mean, min, max, std, overscan, # neg, hot pixels:  ', square.mean(), square.min(), square.max(), std, overscan, len(smin[0]), len(shot[0]))
-        square[smin] = 0               #marks them as , note pedastal is 100
-        if not norm:img.data = square.astype('uint16')
-        img.header['NAXIS1'] = square.shape[0]
-        img.header['NAXIS2'] = square.shape[1]
-        img.header['BUNIT'] = 'adu'
-        img.header['PEDASTAL'] = -pedastal
-        img.header['ERRORVAL'] = 0
-        img.header['OVERSCAN'] = overscan
-        med, std = image_stats(img, p_median=True)
-        if shift_error:
-            img.header['SHIFTERR'] = shift_error
-        img.header['PATCHMED'] = med
-        img.header['PATCHSTD'] = std   
-        img.header['HISTORY'] = "Maxim image debiased and trimmed."
-        #img.write(out_path + image.split('\\')[1], overwrite=True)
-
-        if norm:
-            img.data = square.astype('float32')
-            med, std = image_stats(img, p_median=True)
-            img.data = img.data/med
-            img.header['HISTORY'] = "Normalized to median of central 10%"
-            img.header['PATCHMED'] = med
-            img.header['PATCHSTD'] = std
-        os.makedirs(archive_path + 'trimmed/', exist_ok=True)
-        image_hdr.writeto(archive_path + 'trimmed/' + image.split('\\')[1], overwrite=True)
+        ims = image.split('raw')[1][1:]
+        image_hdr.writeto(out_path + ims, overwrite=True)
         image_hdr.close()
+        print('Processed:  ', image)
+        
     print('Debias and trim Finished. P22, P30', p22, p30)
     
 
@@ -1471,13 +1378,13 @@ if __name__ == '__main__':
     camera_name = 'sq01'  #  config.site_config['camera']['camera1']['name']
     #archive_path = "D:/000ptr_saf/archive/sq01/2020-06-13/"
     #archive_path = "D:/2020-06-19  Ha and O3 screen flats/"
-    archive_path = "F:/000ptr_saf/archive/sq01/20211030/raw/"
+    archive_path = "F:/ptr/archive/kb001ms/20220731/raw/"
 
-    out_path = "F:/000ptr_saf/archive/sq01/20211030/reduced/"
+    out_path = "F:/ptr/archive/kb001ms/20220731/reduced/"
 
-    lng_path = "F:/000ptr_saf/archive/sq01/lng/"
+    lng_path = "F:/ptr/archive/kb001ms/lng/"
     #APPM_prepare_TPOINT()
-    #de_offset_and_trim(camera_name, archive_path, '*-00*.*', out_path, full=True, norm=False)
+    de_offset_and_trim(camera_name, archive_path, '*-00*.*', lng_path,  out_path, full=True, norm=False)
     #prepare_tpoint(camera_name, archive_path, '*.f*t*', lng_path, out_path)
     #prepare_tpoint(camera_name, archive_path, '*04-06*.f*t*', lng_path, out_path)
     #organize_calib(camera_name, archive_path, out_path, lng_path, '1', 'fb_1-4.fits')
@@ -1506,7 +1413,7 @@ if __name__ == '__main__':
     # out_path = 'Z:/saf/Beehive/analysis/'
 
     # lng_path = "C:/000ptr_saf/archive/sq01/lng/"
-    correct_image(camera_name, archive_path, '*-e00*', lng_path, out_path)
+    #correct_image(camera_name, archive_path, '*-e00*', lng_path, out_path)
     #annotate_image(camera_name, archive_path, '*-00*', lng_path, out_path)
     #sep_image(camera_name, archive_path, '*.f*t*', lng_path, out_path)
 

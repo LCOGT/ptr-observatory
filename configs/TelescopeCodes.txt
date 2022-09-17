@@ -1,0 +1,3 @@
+Telescope codes also need to be four characters!
+
+BUT... that is easy - e.g. mrc1, mrc2, etc. Unless we have 36 telescopes at a site that should be easy enough.

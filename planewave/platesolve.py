@@ -4,10 +4,14 @@ from subprocess import Popen, PIPE
 import tempfile
 import glob
 from astropy.io import fits
+from pathlib import Path
+from os import getcwd
+parentPath = Path(getcwd())
 
 # Point this to the location of the "ps3cli.exe" executable
-PS3CLI_EXE = 'C:/Users/obs/Documents/GitHub/ptr-observatory/planewave/ps3cli/ps3cli.exe'
+#PS3CLI_EXE = 'C:/Users/obs/Documents/GitHub/ptr-observatory/planewave/ps3cli/ps3cli.exe'
 
+PS3CLI_EXE = str(parentPath) +'/planewave/ps3cli/ps3cli.exe'
 # For testing purposes...
 #PS3CLI_EXE = r"C:\Users\kmi\Desktop\Planewave work\Code\PWGit\PWCode\ps3cli\bin\Debug\ps3cli.exe"
 
@@ -54,7 +58,7 @@ def platesolve(image_file, arcsec_per_pixel):
         # Linux systems need to run ps3cli via the mono runtime,
         # so add that to the beginning of the command/argument list
         args.insert(0, "mono")
-    
+
     process = Popen(
             args,
             stdout=stdout_destination,
@@ -66,9 +70,9 @@ def platesolve(image_file, arcsec_per_pixel):
 
     if exit_code != 0:
         raise Exception("Error finding solution.\n" +
-                        "Exit code: " + str(exit_code) + "\n" + 
+                        "Exit code: " + str(exit_code) + "\n" +
                         "Error output: " + stderr)
-    
+
     return parse_platesolve_output(output_file_path)
 
 def parse_platesolve_output(output_file):
@@ -77,6 +81,7 @@ def parse_platesolve_output(output_file):
     results = {}
 
     for line in f.readlines():
+        #print (line)
         line = line.strip()
         if line == "":
             continue
@@ -84,11 +89,11 @@ def parse_platesolve_output(output_file):
         fields = line.split("=")
         if len(fields) != 2:
             continue
-        
+
         keyword, value = fields
 
         results[keyword] = float(value)
-    
+
     return results
 
 if __name__ == '__main__':
@@ -106,7 +111,7 @@ if __name__ == '__main__':
         except:
            print("Item did not solve:  ", item)
 
-    
+
 # Traceback (most recent call last):
 
 #   File "<ipython-input-9-8939b03f1935>", line 2, in <module>

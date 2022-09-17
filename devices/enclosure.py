@@ -405,24 +405,24 @@ class Enclosure:
                 return status
         if self.is_wema and self.config['site_IPC_mechanism'] == 'shares':
             try:
-                enclosure = open(self.config['wema_share_path']+'enclosure.txt', 'w')
+                enclosure = open(self.config['wema_write_share_path']+'enclosure.txt', 'w')
                 enclosure.write(json.dumps(status))
                 enclosure.close()
             except:
                 time.sleep(3)
                 try:
-                    enclosure = open(self.config['wema_share_path']+'enclosure.txt', 'w')
+                    enclosure = open(self.config['wema_write_share_path']+'enclosure.txt', 'w')
                     enclosure.write(json.dumps(status))
                     enclosure.close()
                 except:
                     time.sleep(3)
                     try:
-                        enclosure = open(self.config['wema_share_path']+'enclosure.txt', 'w')
+                        enclosure = open(self.config['wem_-write_share_path']+'enclosure.txt', 'w')
                         enclosure.write(json.dumps(status))
                         enclosure.close()
                     except:
                         time.sleep(3)
-                        enclosure = open(self.config['wema_share_path']+'enclosure.txt', 'w')
+                        enclosure = open(self.config['wema_write_share_path']+'enclosure.txt', 'w')
                         enclosure.write(json.dumps(status))
                         enclosure.close()
                         print("4th try to write enclosure status.")
@@ -441,52 +441,52 @@ class Enclosure:
             _redis = False
             # NB NB THis really needs a context manage so no dangling open files
             try:
-                enc_cmd = open(self.config['wema_share_path'] + 'enc_cmd.txt', 'r')
+                enc_cmd = open(self.config['wema_write_share_path'] + 'enc_cmd.txt', 'r')
                 enc_status = json.loads(enc_cmd.readline())
                 enc_cmd.close()
-                os.remove(self.config['wema_share_path'] + 'enc_cmd.txt')
+                os.remove(self.config['wema_write_share_path'] + 'enc_cmd.txt')
                 redis_command = enc_status
             except:
                 try:
                     time.sleep(1)
-                    enc_cmd = open(self.config['wema_share_path'] + 'enc_cmd.txt', 'r')
+                    enc_cmd = open(self.config['wema_write_share_path'] + 'enc_cmd.txt', 'r')
                     enc_status = json.loads(enc_cmd.readline())
                     enc_cmd.close()
-                    os.remove(self.config['wema_share_path'] + 'enc_cmd.txt')
+                    os.remove(self.config['wema_write_share_path'] + 'enc_cmd.txt')
                     redis_command = enc_status
                 except:
                     try:
                         time.sleep(1)
-                        enc_cmd = open(self.config['wema_share_path'] + 'enc_cmd.txt', 'r')
+                        enc_cmd = open(self.config['wema_write_share_path'] + 'enc_cmd.txt', 'r')
                         enc_status = json.loads(enc_cmd.readline())
                         enc_cmd.close()
-                        os.remove(self.config['wema_share_path'] + 'enc_cmd.txt')
+                        os.remove(self.config['wema_write_share_path'] + 'enc_cmd.txt')
                         redis_command = enc_status
                     except:
                         #print("Finding enc_cmd failed after 3 tries, no harm done.")
                         redis_command = ['none']
             mnt_command = None
             try:
-              mnt_cmd = open(self.config['wema_share_path'] + 'mnt_cmd.txt', 'r')
+              mnt_cmd = open(self.config['wema_write_share_path'] + 'mnt_cmd.txt', 'r')
               mnt_status = json.loads(mnt_cmd.readline())
               mnt_cmd.close()
-              os.remove(self.config['wema_share_path'] + 'mnt_cmd.txt')
+              os.remove(self.config['wema_write_share_path'] + 'mnt_cmd.txt')
               mnt_command = mnt_status
             except:
                 try:
                     time.sleep(1)
-                    mnt_cmd = open(self.config['wema_share_path'] + 'mnt_cmd.txt', 'r')
+                    mnt_cmd = open(self.config['wema_write_share_path'] + 'mnt_cmd.txt', 'r')
                     mnt_status = json.loads(mnt_cmd.readline())
                     mnt_cmd.close()
-                    os.remove(self.config['wema_share_path'] + 'mnt_cmd.txt')
+                    os.remove(self.config['wema_write_share_path'] + 'mnt_cmd.txt')
                     mnt_command = mnt_status
                 except:
                     try:
                         time.sleep(1)
-                        mnt_cmd = open(self.config['wema_share_path'] + 'mnt_cmd.txt', 'r')
+                        mnt_cmd = open(self.config['wema_write_share_path'] + 'mnt_cmd.txt', 'r')
                         mnt_status = json.loads(mnt_cmd.readline())
                         mnt_cmd.close()
-                        os.remove(self.config['wema_share_path'] + 'mnt_cmd.txt')
+                        os.remove(self.config['wema_write_share_path'] + 'mnt_cmd.txt')
                         mnt_command = mnt_status
                     except:
                         #print("Finding enc_cmd failed after 3 tries, no harm done.")
@@ -543,7 +543,7 @@ class Enclosure:
             self.site_in_automatic = False
             self.mode = 'Shutdown'
         elif self.is_dome and redis_command == 'go_home':
-            if _redis: g_dev['redis'].delete('goHome')
+            if _redis: g_dev['redis'].delete('go_home')
         elif self.is_dome and redis_command == 'sync_enc':
             self.following = True
             print("Scope Dome following set On")
@@ -625,6 +625,7 @@ class Enclosure:
              shares = True
              generic = False
         if action == "open":
+            
             if _redis: 
                 g_dev['redis'].set('enc_cmd', 'open', ex=300)
             if shares:  
@@ -666,7 +667,18 @@ class Enclosure:
                 self.mode = 'Shutdown'
             g_dev['enc'].site_in_automatic = False
             g_dev['enc'].automatic_detail =  "Site Shutdown"
-        # elif action == "slew_alt":
+        elif action == "home_dome":
+            if shares: 
+                cmd_list.append('go_home')
+        elif action == 'track_telescope':
+            if shares: 
+                cmd_list.append('sync_enc')
+        elif action =='stop_tracking_telescope':
+            if shares: 
+                cmd_list.append('unsync_enc')
+        elif action == 'simulate_weather_hold':
+            if shares: 
+                cmd_list.append('toggle_wx_hold')
         #     self.slew_alt_command(req, opt)
         # elif action == "slew_az":
         #     self.slew_az_command(req, opt)
@@ -681,24 +693,24 @@ class Enclosure:
 
         if len(cmd_list) > 0:
             try:
-                enclosure = open(self.config['client_path']+'enc_cmd.txt', 'w')
+                enclosure = open(self.config['client_write_share_path']+'enc_cmd.txt', 'w')
                 enclosure.write(json.dumps(cmd_list))
                 enclosure.close()
             except:
                 try:
                     time.sleep(3)
-                    enclosure = open(self.config['client_path']+'enc_cmd.txt', 'w')
+                    enclosure = open(self.config['client_write_share_path']+'enc_cmd.txt', 'w')
                     enclosure.write(json.dumps(cmd_list))
                     enclosure.close()
                 except:
                     try:
                         time.sleep(3)
-                        enclosure = open(self.config['client_path']+'enc_cmd.txt', 'w')
+                        enclosure = open(self.config['client_write_share_path']+'enc_cmd.txt', 'w')
                         enclosure.write(json.dumps(cmd_list))
                         enclosure.close()
                     except:
                         time.sleep(3)
-                        enclosure = open(self.config['client_path']+'enc_cmd.txt', 'w')
+                        enclosure = open(self.config['client_write_share_path']+'enc_cmd.txt', 'w')
                         enclosure.write(json.dumps(cmd_list))
                         enclosure.close()
                         print("4th try to append to enc-cmd  list.")
@@ -743,7 +755,7 @@ class Enclosure:
 
     def sync_mount_command(self, req: dict, opt: dict):
         #print("enclosure cmd: sync_az")
-        if self.site not in ['sro', 'mrc', 'mrc2']:
+        if self.site not in ['sro', 'mrc', 'mrc2', 'aro']:  #NB NB GASP, this needs a re-think!!
             self.enclosure.Slaved = True
             self.following = True
             self.enclosure_synchronized =True
@@ -881,18 +893,25 @@ class Enclosure:
             self.dome_homed = True    #g_dev['events']['Cool Down, Open']  <=
         elif ((g_dev['events']['Cool Down, Open']  <= ephem_now < g_dev['events']['Observing Ends']) and \
                g_dev['enc'].mode == 'Automatic') and not (g_dev['ocn'].wx_hold or g_dev['ocn'].clamp_latch):
-            if self.status_string in ['Closed']:
-                print("Entering Guarded open, Expect slew opposite Sun")
-                self.guarded_open()
+            try:
+                if self.status_string in ['Closed']:   #Fails at SRO, attriute not set. 20220806 wer
+                #****************************NB NB NB For SRO we have no control so just observe and skip all this logic
+                    print("Entering Guarded open, Expect slew opposite Sun")
+                    self.guarded_open()
+            except:
+                pass
             self.dome_opened = True
             self.dome_homed = True
             #if _redis: g_dev['redis'].set('Enc Auto Opened', True, ex= 600)   # Unused
-            if self.status_string in ['Open'] and ephem_now < g_dev['events']['End Eve Sky Flats']:
-                if self.is_dome:
-                    self.enclosure.SlewToAzimuth(az_opposite_sun)
-                    print("Slewing Opposite Sun")
-                    g_dev['obs'].send_to_user("Dome slewing opposite the Solar azimuth", p_level='INFO')
-                time.sleep(5)
+            try:
+                if self.status_string in ['Open'] and ephem_now < g_dev['events']['End Eve Sky Flats']:
+                    if self.is_dome:
+                        self.enclosure.SlewToAzimuth(az_opposite_sun)
+                        print("Slewing Opposite Sun")
+                        g_dev['obs'].send_to_user("Dome slewing opposite the Solar azimuth", p_level='INFO')
+                    time.sleep(5)
+            except:
+                pass
         #THIS should be the ultimate backup to force a close
         elif ephem_now >=  g_dev['events']['Civil Dawn']:  #sunrise + 45/1440:
             #WE are now outside the observing window, so Sun is up!!!
@@ -909,10 +928,15 @@ class Enclosure:
                 else:
                     self.state = 'Automatic Daytime normally Closed the ' + shutter_str
                 try:
-                    if self.status_string in ['Open']:
-                        self.enclosure.CloseShutter()
-                    self.dome_opened = False
-                    self.dome_homed = True
+                   try:
+                       if self.status_string in ['Open']:
+                           self.enclosure.CloseShutter()
+                   except:
+                       pass
+                           
+                           
+                   self.dome_opened = False
+                   self.dome_homed = True
                    # print("Daytime Close issued to the " + shutter_str  + "   No longer following Mount.")
                 except:
                     print("Shutter Failed to close at Civil Dawn.")

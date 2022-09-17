@@ -9,7 +9,9 @@ import datetime as datetime
 from datetime import timedelta
 import socket
 import struct
+import sys
 import os
+from os import getcwd
 import shelve
 import math
 from collections import namedtuple
@@ -24,10 +26,11 @@ from global_yard import g_dev
 from pprint import pprint
 #This should be removed or put in a try
 from astropy.utils.iers import conf
-#conf.auto_max_age = None 
+#conf.auto_max_age = None
+from pathlib import Path
 
 
-    
+
 #print(count)
 
 
@@ -67,11 +70,15 @@ def reduceAz(pAz):
     return pAz
 
 def transform_haDec_to_azAlt(pLocal_hour_angle, pDec):
-    lat = 35.55444
-    try:
-        lat = g_dev['evnt'].siteLatitude
-    except:
-        pass
+    #lat = 35.55444
+    #try:
+    #print ("Michael's latitude tester")
+    #print (g_dev)
+
+    lat = g_dev['evnt'].siteLatitude  # MTF Edit..... there is no try... if you can't get the lat then you deserve to crash.
+    #print ("laitude: lat)
+    #except:
+    #    pass
     latr = math.radians(lat)
     sinLat = math.sin(latr)
     cosLat = math.cos(latr)
@@ -96,7 +103,12 @@ def dist_sort_targets(pRa, pDec, pSidTime):
     Horizon cull is applied.
     '''
     #print(pRa, pDec, pSidTime)
-    global tycho_tuple
+    if 'tycho_tuple' not in globals():
+        bootup_tycho()
+        print ("Booting up Tycho catalogue for the first time")
+
+
+
     ha =   reduceHa(pSidTime - pRa)
     c1 = SkyCoord(ra=pRa*u.hr, dec=pDec*u.deg)
     sortedTargetList = []
@@ -105,8 +117,20 @@ def dist_sort_targets(pRa, pDec, pSidTime):
         c2 = SkyCoord(ra=star[1]*u.hr, dec=star[0]*u.deg)
         cat_ha = reduceHa(pSidTime - star[1])
         sep = c1.separation(c2)
+        #print ("declination")
+        #print (star[0])
+        #print ("separation")
+        #print (sep.degree)
+
         if sep.degree > 65 :
             continue
+
+        az, alt = transform_haDec_to_azAlt(cat_ha, star[0])   # MTF added this to institute altitude checks for focus stars.
+
+        if  alt < 30.0 or alt > 80.0:
+            continue
+        #print ("altitude")
+        #print (alt)
         sortedTargetList.append((sep.degree, star))
     sortedTargetList.sort()
     #print('distSortTargets', len(targetList), targetList, '\n\n')
@@ -131,72 +155,104 @@ def az_sort_targets(pSidTime, grid=4):
         az, alt = transform_haDec_to_azAlt(cat_ha, star[1][0])
         #if cat_sign == sign:
 
-        if  alt < 17.5 or alt > 80:
-            continue
+        #if  alt < 17.5 or alt > 80:
+        #    continue
         az_sorted_targets.append((az, star[1]))
     az_sorted_targets.sort()
     #print('distSortTargets', len(targetList), targetList, '\n\n')
     #print('AzSortTargets', az_sorted_targets[:],len(az_sorted_targets[:]), '\n\n')
     return az_sorted_targets[::int(grid)]
 #Run some code on module load:
-    
-iso_day = datetime.date.today().isocalendar()
-equinox_years = round((iso_day[0] + ((iso_day[1]-1)*7 + (iso_day[2] ))/365), 2) - 2000
-#C:/Users/obs/Documents/GitHub/ptr-observatory/support_info
-try:
-    tycho_cat = open("C:/Users/obs/documents/GitHub/ptr-observatory/support_info/tycho_mag_7.dat", 'r')
-except:
-    tycho_cat = open("C:/Users/User/Documents/GitHub/ptr-observatory/support_info/tycho_mag_7.dat", 'r')
-    #C:\Users\User\Documents\GitHub\ptr-observatory\support_info
-tycho_tuple = []
-count = 0
-for line in tycho_cat:
-    entry = line.split(' ')
-    count += 1
-    ra_hours = round((float(entry[4])/60 + float(entry[3]))/60 + float(entry[2]) + equinox_years* float(entry[11])/3600, 5)
-    if entry[6][0] == '-':
-        sign = -1
-    else:
-        sign = 1
-    #print (entry, sign, float(entry[6][1:]), float(entry[7]), float(entry[8]))
-    dec_degrees = round(sign*(float(entry[8])/3600 + float(entry[7])/60 + float(entry[6][1:])) + equinox_years* float(entry[13])/3600, 4)
-    tycho_tuple.append((dec_degrees, ra_hours))
-tycho_cat.close()
-tycho_tuple.sort()
 
-#Run and set tpt_tuple to a grid.
+def bootup_tycho():
 
-try:
-    tpt_perfect = open("C:/Users/obs/documents/GitHub/ptr-observatory/processing/TPOINT/perfct.dat", 'r')
-except:
-    tpt_perfect = open("C:/Users/User/documents/GitHub/ptr-observatory/processing/TPOINT/perfct.dat", 'r')
-tpt_tuple1 = []
-count = 0
-toss = tpt_perfect.readline()
-toss = tpt_perfect.readline()
-toss = tpt_perfect.readline()
-toss = tpt_perfect.readline()
-for line in tpt_perfect:
-    entry = line.split(' ')
-    if entry[0][0:3] == 'END':
-        break
-    ha  = reduceHa(-(int(entry[0]) + (int(entry[1]) + float(entry[2])/60.0)/60.))
-    if abs(ha)>6:
-        continue
-    if entry[3][0] == '-':
-        sign = -1
-    else:
-        sign = 1
-    dec = sign*(int(entry[3][1:]) + (int(entry[4]) + float(entry[5])/60)/60.)
-    count += 1
-    az, alt = transform_haDec_to_azAlt(ha, dec)
-    tpt_tuple1.append((az, (ha, dec)))
-tpt_tuple1.sort()
-tpt_tuple = []
-for entry in tpt_tuple1:
-    tpt_tuple.append(entry[1])
-#print(tpt_tuple)
-    
-    
+
+
+    iso_day = datetime.date.today().isocalendar()
+    equinox_years = round((iso_day[0] + ((iso_day[1]-1)*7 + (iso_day[2] ))/365), 2) - 2000
+
+    ## MFitzgerald commented out 15th August 2022. In order to relativise the directories rather than hardcode
+    # #C:/Users/obs/Documents/GitHub/ptr-observatory/support_info
+    # try:
+    #     tycho_cat = open("C:/Users/obs/documents/GitHub/ptr-observatory/support_info/tycho_mag_7.dat", 'r')
+    # except:
+    #     tycho_cat = open("C:/Users/User/Documents/GitHub/ptr-observatory/support_info/tycho_mag_7.dat", 'r')
+    #     #C:\Users\User\Documents\GitHub\ptr-observatory\support_info
+
+    # New relative path Tycho opener
+    parentPath = Path(getcwd())
+    print ("Current Working Directory is: " + str(parentPath))
+    #print (str(parentPath) + "\support_info\\tycho_mag_7.dat")
+    try:
+        tycho_cat = open(str(parentPath) + "\support_info\\tycho_mag_7.dat", 'r')
+    except:
+        print ("Tycho Catalogue failed to open")
+
+    global tycho_tuple
+    tycho_tuple = []
+    count = 0
+    for line in tycho_cat:
+        entry = line.split(' ')
+        count += 1
+        ra_hours = round((float(entry[4])/60 + float(entry[3]))/60 + float(entry[2]) + equinox_years* float(entry[11])/3600, 5)
+        if entry[6][0] == '-':
+            sign = -1
+        else:
+            sign = 1
+        #print (entry, sign, float(entry[6][1:]), float(entry[7]), float(entry[8]))
+        dec_degrees = round(sign*(float(entry[8])/3600 + float(entry[7])/60 + float(entry[6][1:])) + equinox_years* float(entry[13])/3600, 4)
+        tycho_tuple.append((dec_degrees, ra_hours))
+    tycho_cat.close()
+    tycho_tuple.sort()
+
+
+
+
+    #Run and set tpt_tuple to a grid.
+
+    ## MFitzgerald commented out 15th August 2022. In order to relativise the directories rather than hardcode
+    # try:
+    #     tpt_perfect = open("C:/Users/obs/documents/GitHub/ptr-observatory/processing/TPOINT/perfct.dat", 'r')
+    # except:
+    #     tpt_perfect = open("C:/Users/User/documents/GitHub/ptr-observatory/processing/TPOINT/perfct.dat", 'r')
+
+    try:
+        tpt_perfect = open(str(parentPath) + "\processing\\TPOINT\\perfct.dat", 'r')
+    except:
+        print("TPoint catalogue failed to open ")
+
+
+    global tpt_tuple
+
+    tpt_tuple1 = []
+    count = 0
+    toss = tpt_perfect.readline()
+    toss = tpt_perfect.readline()
+    toss = tpt_perfect.readline()
+    toss = tpt_perfect.readline()
+    for line in tpt_perfect:
+        entry = line.split(' ')
+        if entry[0][0:3] == 'END':
+            break
+        ha  = reduceHa(-(int(entry[0]) + (int(entry[1]) + float(entry[2])/60.0)/60.))
+        if abs(ha)>6:
+            continue
+        if entry[3][0] == '-':
+            sign = -1
+        else:
+            sign = 1
+        dec = sign*(int(entry[3][1:]) + (int(entry[4]) + float(entry[5])/60)/60.)
+        count += 1
+        az, alt = transform_haDec_to_azAlt(ha, dec)
+        tpt_tuple1.append((az, (ha, dec)))
+    tpt_tuple1.sort()
+    tpt_tuple = []
+    for entry in tpt_tuple1:
+        tpt_tuple.append(entry[1])
+    #print(tpt_tuple)
+
+
 if __name__ == '__main__':
-    print (len(az_sort_targets(17)))
+    #print (len(az_sort_targets(17)))
+
+    print ("MTF has commented a line out here")
