@@ -25,6 +25,8 @@ import requests
 import time
 import shelve
 import socket
+
+import config   #It makes sense to call this and get it out of the way early.
 from api_calls import API_calls
 import ptr_events
 from devices.observing_conditions import ObservingConditions

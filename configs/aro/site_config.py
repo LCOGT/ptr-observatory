@@ -28,10 +28,8 @@ site_name = 'aro'
 
 site_config = {
     'site': str(site_name.lower()),
-    'site_name':  'aro','
-    #'site_id': 'ARO',
-    'site_id': 'aro',
-    "version_date": "20220913.wer",
+    'site_id': str(site_name.lower()),   #used by PROPID keyword in fits header, can be changed here
+    "version_date": "20220916.wer",
     'site_desc': "Apache Ridge Observatory, Santa Fe, NM, USA. 2194m",
     'airport_codes':  ['SAF', 'ABQ', 'LSN'],
     'obsy_id': 'aro1',
@@ -47,18 +45,18 @@ site_config = {
                                  # Intention it is found in this file.
                                  # Fat is intended to be simple since
                                  # there is so little to control.
-    'client_hostname':"SAF-WEMA",     # Generic place for this host to stash.
+    'client_hostname':"ARO-WEMA",     # Generic place for this host to stash.
     'client_path': 'F:/ptr/',
     'alt_path': '//house-computer/saf_archive_2/archive/sq01/',
     'archive_path': 'F:/ptr/',       # Where images are kept.
     'aux_archive_path':  None,
     'wema_is_active':  True,     # True if an agent (ie a wema) is used at a site.   # Wemas are split sites -- at least two CPS's sharing the control.
-    'wema_hostname':  'SAF-WEMA',
+    'wema_hostname':  'ARO-WEMA',
     'wema_path': 'C:/ptr/',      #Local storage on Wema disk.
     'dome_on_wema':  True,       #NB NB NB CHange this confusing name. 'dome_controlled_by_wema'
     'site_IPC_mechanism':  'shares',   # ['None', shares', 'shelves', 'redis']
     'wema_write_share_path':  'C:/ptr/wema_transfer/',  # Meant to be where Wema puts status data.
-    'client_write_share_path':  '//saf-wema/wema_transfer/',
+    'client_write_share_path':  '//aro-wema/wema_transfer/',
     'redis_ip': None,   # None if no redis path present, localhost if redis iself-contained
     'site_is_generic':  False,   # A simple single computer ASCOM site.
     'site_is_specific':  False,  #  Meaning like SRO with site specific methods to read weatehr and roof status
@@ -273,6 +271,7 @@ site_config = {
             'instrument names':  ['camera1'],
             'instrument aliases':  ['QHY600Mono'],
             'configuration': {
+                 'f-ratio':  'f4.9',     #  This needs expanding into something easy for the owner to change.
                  "position1": ["darkslide1", "filter_wheel1", "camera1"]
                  },
             'camera_name':  'camera_1_1',

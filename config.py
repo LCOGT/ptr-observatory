@@ -12,12 +12,14 @@ import sys
 import os
 import pathlib
 import socket
+from pprint import pprint
 
-host_site = socket.gethostname()[:3].lower()   #  NB May be better to split on
-                                         # '-' and use first part of hostname.
-if host_site =='saf':
-    host_site = 'aro'    #  NB NB THIS is a blatant hack.
+host_site = socket.gethostname()[:3].lower()   #  NB May be better to split on                                    # '-' and use first part of hostname.
+# if host_site =='saf':
+#     host_site = 'aro'    #  NB NB THIS is a blatant hack.
 sys.path.append(os.path.join(pathlib.Path().resolve(),"configs", host_site))
+pprint(sys.path)
+
 try:
     from site_config import *
 except:

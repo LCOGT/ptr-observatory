@@ -51,7 +51,8 @@ from auto_stretch.stretch import Stretch
 import ptr_events
 import socket
 
-# import device classes:
+# import PTR related classes:
+import config
 from devices.camera import Camera
 from devices.filter_wheel import FilterWheel
 from devices.focuser import Focuser
