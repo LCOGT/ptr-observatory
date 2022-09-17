@@ -104,6 +104,15 @@ def to_bz2(filename, delete=False):
         return False
 
 
+def to_fz(filename, delete=False):
+    print ("Making an fz file")
+    tempFZ=fits.open(filename)
+    #print (tempFZ)
+    #print (tempFZ[0])
+    hdu=fits.CompImageHDU(tempFZ[0].data, tempFZ[0].header)
+    hdu.writeto(filename+'.fz')
+    return True
+
 # move this function to a better location
 def from_bz2(filename, delete=False):
     try:
@@ -841,7 +850,7 @@ class Observatory:
                 # Here we parse the file, set up and send to AWS
                 im_path = pri_image[1][0]
                 name = pri_image[1][1]
-                if not (name[-3:] == 'jpg' or name[-3:] == 'txt'):
+                if not (name[-3:] == 'jpg' or name[-3:] == 'txt' or '.fits.fz' in name):
                     # compress first
                     to_bz2(im_path + name)
                     name = name + '.bz2'
@@ -853,8 +862,11 @@ class Observatory:
                     print('--> To AWS -->', str(im_path + name))
                     requests.post(aws_resp['url'], data=aws_resp['fields'],
                                   files=files)
+
+
+
                 if name[-3:] == 'bz2' or name[-3:] == 'jpg' or \
-                        name[-3:] == 'txt':
+                        name[-3:] == 'txt' or '.fits.fz' in name:
                     os.remove(im_path + name)
 
                 self.aws_queue.task_done()
@@ -1124,12 +1136,46 @@ class Observatory:
 
                 jpeg_data_size = abs(stretched_data_uint8.size - 1024)                # istd = np.std(hdu.data)
 
+                #
+                # MTF - a temporary routine to create fz for BANZAI testing for Darren
+                #
+                #print (name)
+                #print (name[-3:])
+                #if (name[-3:] == 'bz2'):
+                #  print ("Making test fz file for Darren")
+                #  to_fz(im_path + name.replace('.bz2',''))
+                #  aws_req = {"object_name": name.replace('.bz2','.fz')}
+                #  aws_resp = g_dev['obs'].api.authenticated_request('POST', '/upload/', aws_req)
+                ##  with open(im_path + name, 'rb') as f:
+                 #     files = {'file': (im_path + name.replace('.bz2','.fz'), f)}
+                  #    print('--> To AWS -->', str(im_path + name))
+                   #   requests.post(aws_resp['url'], data=aws_resp['fields'],
+                   #                 files=files)
+
+                print ("Making an fz file")
+                #tempFZ=fits.open(filename)
+                #print (tempFZ)
+                #print (tempFZ[0])
+                hdufz=fits.CompImageHDU(hdu.data, hdu.header)
+                hdufz.writeto(paths['raw_path'] + paths['raw_name00'] +'.fz')
+
+
+
+
+
+
+
+                ########################################################################
+
+
                 if not no_AWS:  #IN the no+AWS case should we skip more of the above processing?
                     #g_dev['cam'].enqueue_for_AWS(text_data_size, paths['im_path'], paths['text_name'])
                     g_dev['cam'].enqueue_for_AWS(jpeg_data_size, paths['im_path'], paths['jpeg_name10'])
                     g_dev['cam'].enqueue_for_AWS(i768sq_data_size, paths['im_path'], paths['i768sq_name10'])
                     #print('File size to AWS:', reduced_data_size)
                     g_dev['cam'].enqueue_for_AWS(13000000, paths['raw_path'], paths['raw_name00'])    #NB need to chunkify 25% larger then small fits.
+                    #if not quick:
+                    g_dev['cam'].enqueue_for_AWS(26000000, paths['raw_path'], paths['raw_name00'] +'.fz')    #NB need to chunkify 25% larger then small fits.
                     #if not quick:
                 #print('Sent to AWS Queue.')
                 time.sleep(0.5)

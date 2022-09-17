@@ -425,6 +425,7 @@ class Events:
         sunset = ptr.next_setting(sun)
         middleNight = ptr.next_antitransit(sun)
         sunrise = ptr.next_rising(sun)
+        midday = ptr.next_transit(sun)
         next_moonrise = ptr.next_rising(moon)
         next_moontransit = ptr.next_transit(moon)
         next_moonset = ptr.next_setting(moon)
@@ -524,72 +525,73 @@ class Events:
         print('Moon Ra; Dec   :    ', round(mid_moon_ra, 2), ";  ", round(mid_moon_dec, 1))
         print('Moon phase %   :    ', round(mid_moon_phase, 1), '%\n')
         print("Key events for the evening, presented by the Solar System: \n")
-        if self.config['site'] == 'sro':
-            eve_skyFlatBegin = sunset +  -32.5/1440  #  NB NB this should come from sro.json
-            evnt = [('Eve Bias Dark      ', ephem.Date(eve_skyFlatBegin -125/1440)),
-                    ('End Eve Bias Dark  ', ephem.Date(eve_skyFlatBegin - 5/1440)),
-                    ('Ops Window Start   ', ephem.Date(eve_skyFlatBegin)),  #Enclosure may open.
-                    ('Cool Down, Open    ', ephem.Date(eve_skyFlatBegin)),
-                    ('Eve Sky Flats      ', ephem.Date(eve_skyFlatBegin)),   #  Nominally -35 for SRO
-                    ('Sun Set            ', sunset),
-                    ('Civil Dusk         ', civilDusk),
-                    ('Naut Dusk          ', nauticalDusk),
-                    ('End Eve Sky Flats  ', ephem.Date(nauticalDusk - 10/1440)),
-                    ('Clock & Auto Focus ', ephem.Date(nautDusk_plus_half -12/1440.)),
-                    ('Observing Begins   ', ephem.Date(nautDusk_plus_half)),
-                    ('Astro Dark         ', astroDark),
-                    ('Middle of Night    ', middleNight),
-                    ('End Astro Dark     ', astroEnd),
-                    ('Observing Ends     ', ephem.Date(nautDawn_minus_half )),
-                    ('Naut Dawn          ', nauticalDawn),
-                    ('Morn Sky Flats     ', ephem.Date(nauticalDawn + 10/1440.)),
-                    ('Civil Dawn         ', civilDawn),
-                    ('End Morn Sky Flats ', ephem.Date(sunrise + 15/1440.)),
-                    ('Ops Window Closes  ', ephem.Date(sunrise + 15/1440.)),   #Enclosure must close 5 min after sunrise
-                    ('Close and Park     ', ephem.Date(sunrise + 15/1440.)),
-                    ('Sun Rise           ', sunrise),
-                    ('Morn Bias Dark     ', ephem.Date(sunrise + 20/1440.)),
-                    ('End Morn Bias Dark ', ephem.Date(sunrise + 120/1440.)),
-                    ('Prior Moon Rise    ', last_moonrise),
-                    ('Prior Moon Transit ', last_moontransit),
-                    ('Prior Moon Set     ', last_moonset),
-                    ('Moon Rise          ', next_moonrise),
-                    ('Moon Transit       ', next_moontransit),
-                    ('Moon Set           ', next_moonset)]
-        else:
-            eve_skyFlatBegin = sunset - 60/1440  #  NB NB this should come from saf.json
-            evnt = [('Eve Bias Dark      ', ephem.Date(sunset -185/1440)),
-                    ('End Eve Bias Dark  ', ephem.Date(sunset - 65/1440)),
-                    #('Eve Scrn Flats     ', ephem.Date(beginEveScreenFlats)),
-                    #('End Eve Scrn Flats ', ephem.Date(endEveScreenFlats)),
-                    ('Ops Window Start   ', ephem.Date(sunset - 64/1440)),  #Enclosure may open.
-                    ('Cool Down, Open    ', ephem.Date(sunset - 63/1440)),
-                    ('Eve Sky Flats      ', ephem.Date(sunset - 60/1440)),
-                    ('Sun Set            ', sunset),
-                    ('Civil Dusk         ', civilDusk),
-                    ('Naut Dusk          ', nauticalDusk),
-                    ('End Eve Sky Flats  ', ephem.Date(nauticalDusk + 5 /1440)),
-                    ('Clock & Auto Focus ', ephem.Date(nautDusk_plus_half -7/1440.)),
-                    ('Observing Begins   ', ephem.Date(nautDusk_plus_half)),
-                    ('Astro Dark         ', astroDark),
-                    ('Middle of Night    ', middleNight),
-                    ('End Astro Dark     ', astroEnd),
-                    ('Observing Ends     ', ephem.Date(nautDawn_minus_half )),
-                    ('Naut Dawn          ', nauticalDawn),
-                    ('Morn Sky Flats     ', ephem.Date(nauticalDawn  +15/1440.)),
-                    ('Civil Dawn         ', civilDawn),
-                    ('Sun Rise           ', sunrise),
-                    ('End Morn Sky Flats ', ephem.Date(sunrise + 60/1440.)),
-                    ('Ops Window Closes  ', ephem.Date(civilDawn  + 61/1440.)),   #Enclosure must close 5 min after sunrise
-                    ('Close and Park     ', ephem.Date(sunrise + 66/1440.)),
-                    ('Morn Bias Dark     ', ephem.Date(civilDawn + 68/1440.)),
-                    ('End Morn Bias Dark ', ephem.Date(civilDawn + 188/1440.)),
-                    ('Prior Moon Rise    ', last_moonrise),
-                    ('Prior Moon Transit ', last_moontransit),
-                    ('Prior Moon Set     ', last_moonset),
-                    ('Moon Rise          ', next_moonrise),
-                    ('Moon Transit       ', next_moontransit),
-                    ('Moon Set           ', next_moonset)]
+        #if self.config['site'] == 'sro':
+        eve_skyFlatBegin = sunset +  self.config['eve_sky_flat_sunset_offset']/1440  #  NB NB this should come from config
+        evnt = [('Eve Bias Dark      ', ephem.Date(eve_skyFlatBegin -125/1440)),
+                ('End Eve Bias Dark  ', ephem.Date(eve_skyFlatBegin - 5/1440)),
+                ('Ops Window Start   ', ephem.Date(eve_skyFlatBegin)),  #Enclosure may open.
+                ('Cool Down, Open    ', ephem.Date(eve_skyFlatBegin)),
+                ('Eve Sky Flats      ', ephem.Date(eve_skyFlatBegin)),   #  Nominally -35 for SRO
+                ('Sun Set            ', sunset),
+                ('Civil Dusk         ', civilDusk),
+                ('Naut Dusk          ', nauticalDusk),
+                ('End Eve Sky Flats  ', ephem.Date(nauticalDusk - 10/1440)),
+                ('Clock & Auto Focus ', ephem.Date(nautDusk_plus_half -12/1440.)),
+                ('Observing Begins   ', ephem.Date(nautDusk_plus_half)),
+                ('Astro Dark         ', astroDark),
+                ('Middle of Night    ', middleNight),
+                ('End Astro Dark     ', astroEnd),
+                ('Observing Ends     ', ephem.Date(nautDawn_minus_half )),
+                ('Naut Dawn          ', nauticalDawn),
+                ('Morn Sky Flats     ', ephem.Date(nauticalDawn + 10/1440.)),
+                ('Civil Dawn         ', civilDawn),
+                ('End Morn Sky Flats ', ephem.Date(sunrise + 15/1440.)),
+                ('Ops Window Closes  ', ephem.Date(sunrise + 15/1440.)),   #Enclosure must close 5 min after sunrise
+                ('Close and Park     ', ephem.Date(sunrise + 15/1440.)),
+                ('Sun Rise           ', sunrise),
+                ('Morn Bias Dark     ', ephem.Date(sunrise + 20/1440.)),
+                ('End Morn Bias Dark ', ephem.Date(sunrise + 120/1440.)),
+                ('Prior Moon Rise    ', last_moonrise),
+                ('Prior Moon Transit ', last_moontransit),
+                ('Prior Moon Set     ', last_moonset),
+                ('Moon Rise          ', next_moonrise),
+                ('Moon Transit       ', next_moontransit),
+                ('Moon Set           ', next_moonset),
+                ('Midday archive Cull', midday)]
+        # else:
+        #     eve_skyFlatBegin = sunset - 60/1440  #  NB NB this should come from saf.json
+        #     evnt = [('Eve Bias Dark      ', ephem.Date(sunset -185/1440)),
+        #             ('End Eve Bias Dark  ', ephem.Date(sunset - 65/1440)),
+        #             #('Eve Scrn Flats     ', ephem.Date(beginEveScreenFlats)),
+        #             #('End Eve Scrn Flats ', ephem.Date(endEveScreenFlats)),
+        #             ('Ops Window Start   ', ephem.Date(sunset - 64/1440)),  #Enclosure may open.
+        #             ('Cool Down, Open    ', ephem.Date(sunset - 63/1440)),
+        #             ('Eve Sky Flats      ', ephem.Date(sunset - 60/1440)),
+        #             ('Sun Set            ', sunset),
+        #             ('Civil Dusk         ', civilDusk),
+        #             ('Naut Dusk          ', nauticalDusk),
+        #             ('End Eve Sky Flats  ', ephem.Date(nauticalDusk + 5 /1440)),
+        #             ('Clock & Auto Focus ', ephem.Date(nautDusk_plus_half -7/1440.)),
+        #             ('Observing Begins   ', ephem.Date(nautDusk_plus_half)),
+        #             ('Astro Dark         ', astroDark),
+        #             ('Middle of Night    ', middleNight),
+        #             ('End Astro Dark     ', astroEnd),
+        #             ('Observing Ends     ', ephem.Date(nautDawn_minus_half )),
+        #             ('Naut Dawn          ', nauticalDawn),
+        #             ('Morn Sky Flats     ', ephem.Date(nauticalDawn  +15/1440.)),
+        #             ('Civil Dawn         ', civilDawn),
+        #             ('Sun Rise           ', sunrise),
+        #             ('End Morn Sky Flats ', ephem.Date(sunrise + 60/1440.)),
+        #             ('Ops Window Closes  ', ephem.Date(civilDawn  + 61/1440.)),   #Enclosure must close 5 min after sunrise
+        #             ('Close and Park     ', ephem.Date(sunrise + 66/1440.)),
+        #             ('Morn Bias Dark     ', ephem.Date(civilDawn + 68/1440.)),
+        #             ('End Morn Bias Dark ', ephem.Date(civilDawn + 188/1440.)),
+        #             ('Prior Moon Rise    ', last_moonrise),
+        #             ('Prior Moon Transit ', last_moontransit),
+        #             ('Prior Moon Set     ', last_moonset),
+        #             ('Moon Rise          ', next_moonrise),
+        #             ('Moon Transit       ', next_moontransit),
+        #             ('Moon Set           ', next_moonset)]
 
         #print("No report of post-close events is available yet. \n\n")
         evnt_sort = self._sortTuple(evnt)
