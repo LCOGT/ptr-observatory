@@ -319,7 +319,7 @@ class Observatory:
             self.all_devices[dev_type] = {}
             # Get the names of all the devices from each dev_type.
             # if dev_type == 'camera':
-            #     breakpoint()
+
             devices_of_type = config.get(dev_type, {})
             device_names = devices_of_type.keys()
             # Instantiate each device object from based on its type
@@ -690,7 +690,6 @@ class Observatory:
 #         else:
 #             #device_list = self.enc_types  # self.short_status_devices 
 #             remove_enc = True
-#             breakpoint()
 #         for dev_type in device_list:
 #             # The status that we will send is grouped into lists of
 #             # devices by dev_type.

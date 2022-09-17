@@ -1756,7 +1756,7 @@ class Camera:
 
                 #it takes about 15 seconds from AWS to get here for a bias.
         # except Exception as e:
-        #     breakpoint()
+
         #     counter += 1
         #     time.sleep(.01)
         #     print('Was waiting for exposure end, arriving here is bad news:  ', e)

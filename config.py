@@ -225,6 +225,7 @@ site_config = {
     'mount': {
         'mount1': {
             'parent': 'enclosure1',
+            'tel_id': '0m35',
             'name': 'eastpier',
             'hostIP':  '10.15.0.30',
             'hostname':  'eastpier',

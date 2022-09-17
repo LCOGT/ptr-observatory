@@ -151,7 +151,6 @@ class Telescope:
 #             else:
 #                 self.current_icrs_ra = g_dev['mnt'].mount.RightAscension
 #                 self.current_icrs_dec = g_dev['mnt'].mount.Declination
-#             breakpoint()
 #             status = {
 #                 'timestamp': round(time.time(), 3),
 #                 'right_ascension': round(self.current_icrs_ra, 5),  #
