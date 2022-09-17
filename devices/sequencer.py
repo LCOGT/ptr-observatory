@@ -15,6 +15,9 @@ import redis
 import math
 import ephem
 from pprint import pprint
+import shutil
+import os
+
 
 '''
 Autofocus NOTE 20200122
@@ -270,6 +273,35 @@ class Sequencer:
         except:
             print('Dome close not executed during Park and Close.')
 
+    def midday_cull(self):
+        FORTNIGHT=60*60*24*7*2
+        #dir_path='D:/PTRMFO/'
+        dir_path=self.config['client_path'] + '\\' + 'archive'
+        cameras=[d for d in os.listdir(dir_path) if os.path.isdir(d)]
+        for camera in cameras:  # Go through each camera directory
+            print ("*****************************************")
+            print ("Camera: " + str(camera))
+            timenow_cull=time.time()
+            cameradir=dir_path + '\\' + camera + '\\'
+            directories=[d for d in os.listdir(cameradir) if os.path.isdir(d)]
+            deleteDirectories=[]
+            deleteTimes=[]
+            for q in range(len(directories)):
+                if ((timenow_cull)-os.path.getmtime(cameradir + directories[q])) > FORTNIGHT:
+                    deleteDirectories.append(directories[q])
+                    deleteTimes.append(((timenow_cull)-os.path.getmtime(cameradir +directories[q])) /60/60/24/7)
+
+
+
+            print ("These are the directories earmarked for  ")
+            print ("Eternal destruction. And how old they are")
+            print ("in weeks\n")
+
+            for entry in range(len(deleteDirectories)):
+                print (deleteDirectories[entry] + ' ' + str(deleteTimes[entry]) + ' weeks old.')
+                #shutil.rmtree(cameradir + deleteDirectories[entry]) # THIS IS THE DELETER WHEN WE ARE READY!
+
+        return
 
     ###############################
     #       Sequencer Commands and Scripts
@@ -312,6 +344,9 @@ class Sequencer:
             #NB The above put dome closed and telescope at Park, Which is where it should have been upon entry.
             self.bias_dark_script(req, opt, morn=False)
             self.bias_dark_latch = False
+
+        elif (events['Midday archive Cull'] <= ephem_now < (events['Midday archive Cull'] + 5* ephem.minute)):
+              self.midday_cull()
 
         elif ((g_dev['events']['Cool Down, Open']  <= ephem_now < g_dev['events']['Eve Sky Flats']) and \
                g_dev['enc'].mode == 'Automatic') and not g_dev['ocn'].wx_hold:

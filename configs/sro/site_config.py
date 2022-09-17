@@ -81,7 +81,7 @@ site_config = {
     'automatic_detail_default': "Enclosure is initially set to Automatic mode.",
     'auto_eve_bias_dark': True,
     'auto_eve_sky_flat': True,
-    'eve_sky_flat_sunset_offset': +35.0,  #  Minutes  neg means before, + after.
+    'eve_sky_flat_sunset_offset': -32.5,  #  Minutes  neg means before, + after.
     'auto_morn_sky_flat': True,
     'auto_morn_bias_dark': True,
     're-calibrate_on_solve': True,
