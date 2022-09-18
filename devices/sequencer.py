@@ -2,6 +2,7 @@
 
 import time
 import datetime
+from datetime import timedelta
 #from random import shuffle
 import copy
 from global_yard import g_dev
@@ -276,6 +277,7 @@ class Sequencer:
     def midday_cull(self):
         FORTNIGHT=60*60*24*7*2
         #dir_path='D:/PTRMFO/'
+
         dir_path=self.config['client_path'] + '\\' + 'archive'
         cameras=[d for d in os.listdir(dir_path) if os.path.isdir(d)]
         for camera in cameras:  # Go through each camera directory
@@ -296,7 +298,7 @@ class Sequencer:
             print ("These are the directories earmarked for  ")
             print ("Eternal destruction. And how old they are")
             print ("in weeks\n")
-
+            g_dev['obs'].send_to_user("Culling " + str(len(deleteDirectories)) +" from the local archive.", p_level='INFO')
             for entry in range(len(deleteDirectories)):
                 print (deleteDirectories[entry] + ' ' + str(deleteTimes[entry]) + ' weeks old.')
                 #shutil.rmtree(cameradir + deleteDirectories[entry]) # THIS IS THE DELETER WHEN WE ARE READY!
@@ -1079,9 +1081,28 @@ class Sequencer:
             print(" Bias/Dark acquisition is finished normally.")
 
 
+
         self.sequencer_hold = False
         g_dev['mnt'].park_command({}, {}) # Get there early
         print("Bias/Dark Phase has passed.")
+
+
+
+        if morn:
+            print ("sending end of night token to AWS")
+            #g_dev['cam'].enqueue_for_AWS(jpeg_data_size, paths['im_path'], paths['jpeg_name10'])
+            yesterday = datetime.datetime.now() - timedelta(1)
+            print (datetime.strftime(yesterday, '%Y%m%d'))
+            runNight=datetime.datetime.strftime(yesterday, '%Y%m%d')
+            isExist = os.path.exists(g_dev['cam'].site_path + 'tokens')
+            if not isExist:
+                os.makedirs(g_dev['cam'].site_path + 'tokens')
+            runNightToken= g_dev['cam'].site_path + 'tokens/' + self.config['site'] + runNight
+            with open(runNightToken, 'w') as f:
+                f.write('Night Completed')
+            g_dev['obs'].aws_queue.put((13000000, runNightToken), block=False)
+        g_dev['obs'].send_to_user("End of Night Token sent to AWS.", p_level='INFO')
+
         return
 
 
