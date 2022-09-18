@@ -298,7 +298,7 @@ class WxEncAgent:
         obsy = self.name
         if ocn_status is not None:
             lane = 'weather'
-            send_status(obsy, lane, ocn_status)  #NB NB Do not remove this sed for SAF!
+            send_status(obsy, lane, ocn_status)  #NB NB Do not remove this send for SAF!
         if enc_status is not None:
             lane = 'enclosure'
             send_status(obsy, lane, enc_status)
@@ -307,7 +307,7 @@ class WxEncAgent:
             obsy = self.name
             if ocn_status is not None:
                 lane = 'weather'
-                send_status(obsy, lane, ocn_status)  #NB NB Do not remove this sed for SAF!
+                send_status(obsy, lane, ocn_status)  #NB NB Do not remove this send for SAF!
             if enc_status is not None:
                 lane = 'enclosure'
                 send_status(obsy, lane, enc_status)
