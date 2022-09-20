@@ -56,6 +56,7 @@ site_config = {
     'name': 'PTR Sierra Remote Observatory 0m3f38',
     'airport_code':  'FAT  :  Fresno Air Terminal',
     'location': 'Near Shaver Lake CA,  USA',
+    'telescope_description': 'n.a.',
     'observatory_url': 'https://www.sierra-remote.com/',   #  This is meant to be optional
     'observatory_logo': None,   # I expect these will ususally end up as .png format icons
     'description':  '''Sierra Remote Observatories​ provide telescope Hosting for Remote Astronomical Imaging,
@@ -155,13 +156,12 @@ site_config = {
             'parent': 'site',
             'enc_is_specific':  True,  # Indicates some special site code.
             'name': 'SRO File',
-            'hostIP':  'NONE',
+            'hostIP':  None,
             'driver': None,  #'ASCOM.DigitalDomeWorks.Dome',  #  ASCOMDome.Dome',  #  ASCOM.DeviceHub.Dome',  #  ASCOM.DigitalDomeWorks.Dome',  #"  ASCOMDome.Dome',
             'has_lights':  False,
             'controlled_by': 'mount1',
 			'is_dome': False,
             'mode': 'Automatic',
-
             'cool_down': 35.0,    #  Minutes prior to sunset.
             'settings': {
                 'lights':  ['Auto', 'White', 'Red', 'IR', 'Off'],       #A way to encode possible states or options???
