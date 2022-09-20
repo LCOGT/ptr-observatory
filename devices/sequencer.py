@@ -616,11 +616,16 @@ class Sequencer:
         #NB NB NB  if no project found, need to say so not fault. 20210624
         #breakpoint()
         for target in block['project']['project_targets']:   #  NB NB NB Do multi-target projects make sense???
-            dest_ra = float(target['ra']) - \
-                float(block_specification['project']['project_constraints']['ra_offset'])/15.
-            dest_dec = float(target['dec']) - float(block_specification['project']['project_constraints']['dec_offset'])
-            dest_ra, dest_dec = ra_dec_fix_hd(dest_ra,dest_dec)
-            dest_name =target['name']
+
+            try:
+                dest_ra = float(target['ra']) - \
+                    float(block_specification['project']['project_constraints']['ra_offset'])/15.
+                dest_dec = float(target['dec']) - float(block_specification['project']['project_constraints']['dec_offset'])
+                dest_ra, dest_dec = ra_dec_fix_hd(dest_ra,dest_dec)
+                dest_name =target['name']
+            except:
+                print ("Could not execute project due to poorly formatted or corrupt RA or Dec in project_targets")
+                continue
 
             if enc_status['shutter_status'] in ['Closed', 'closed'] and ocn_status['hold_duration'] <= 0.1:   #NB  # \  NB NB 20220901 WER fix this!
 
