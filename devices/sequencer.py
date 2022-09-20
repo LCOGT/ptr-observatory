@@ -1106,7 +1106,7 @@ class Sequencer:
             runNightToken= g_dev['cam'].site_path + 'tokens/' + self.config['site'] + runNight
             with open(runNightToken, 'w') as f:
                 f.write('Night Completed')
-            g_dev['obs'].aws_queue.put((13000000, runNightToken), block=False)
+            g_dev['obs'].aws_queue.put((30000000, runNightToken), block=False)
         g_dev['obs'].send_to_user("End of Night Token sent to AWS.", p_level='INFO')
 
         return
