@@ -8,7 +8,7 @@ import json
 import socket
 import os
 import config
-from config import get_enc_status
+
 from pprint import pprint
 
 

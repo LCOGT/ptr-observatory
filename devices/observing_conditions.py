@@ -6,7 +6,7 @@ import time
 import json
 import socket
 from global_yard import g_dev
-from config import get_ocn_status
+
 import config
 
 from pprint import pprint
@@ -241,7 +241,7 @@ class ObservingConditions:
                 try:
                     uni_measure = self.unihedron.SkyQuality   #  Provenance of 20.01 is dubious 20200504 WER
                 except:
-                    print("Unihedron did not read.")
+                    #print("Unihedron did not read.")
                     uni_measure = 0
             if uni_measure == 0:
                 uni_measure = round((mag - 20.01),2)   #  Fixes Unihedron when sky is too bright
