@@ -625,6 +625,7 @@ class Sequencer:
                 dest_name =target['name']
             except:
                 print ("Could not execute project due to poorly formatted or corrupt RA or Dec in project_targets")
+                g_dev['obs'].send_to_user("Could not execute project due to poorly formatted or corrupt RA or Dec in project_targets", p_level='INFO')
                 continue
 
             if enc_status['shutter_status'] in ['Closed', 'closed'] and ocn_status['hold_duration'] <= 0.1:   #NB  # \  NB NB 20220901 WER fix this!
@@ -1097,7 +1098,7 @@ class Sequencer:
             print ("sending end of night token to AWS")
             #g_dev['cam'].enqueue_for_AWS(jpeg_data_size, paths['im_path'], paths['jpeg_name10'])
             yesterday = datetime.datetime.now() - timedelta(1)
-            print (datetime.strftime(yesterday, '%Y%m%d'))
+            #print (datetime.datetime.strftime(yesterday, '%Y%m%d'))
             runNight=datetime.datetime.strftime(yesterday, '%Y%m%d')
             isExist = os.path.exists(g_dev['cam'].site_path + 'tokens')
             if not isExist:
@@ -1681,8 +1682,10 @@ class Sequencer:
         elif spot2 <= spot1 or spot3 <= spot1:
             if spot2 <= spot3:
                 min_focus = foc_pos2
-            if spot3 <= spot2:
+            elif spot3 <= spot2:
                 min_focus = foc_pos3
+            else:
+                min_focus = foc_pos0
 
             ##  HERE we could add a fourth or fifth try.  The parabola cannot really invert, nor should we ever be at a wild point after the first focus is
             ##  set up.
