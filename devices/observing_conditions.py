@@ -6,8 +6,9 @@ import time
 import json
 import socket
 from global_yard import g_dev
+#breakpoint()
 
-import config
+from site_config import get_ocn_status
 
 from pprint import pprint
 # import ptr_events
@@ -153,13 +154,13 @@ class ObservingConditions:
         self.last_wx = None
 
     def get_status(self):   # This is purely generic code for a generic site.
-                            # It may be overwritten with a monkey patch found 
+                            # It may be overwritten with a monkey patch found
                             # in the appropriate config.py
         '''
-        Regularly calling this routine returns weather status dict for AWS, evaluates the Wx 
+        Regularly calling this routine returns weather status dict for AWS, evaluates the Wx
         reporting and manages temporary closes, known as weather-holds.
-        
-        
+
+
 
         Returns
         -------
@@ -227,7 +228,7 @@ class ObservingConditions:
             except:
                 pass
             return status
-                
+
 
         if self.site_is_generic or self.is_wema:  #These operations are common to a generic single computer or wema site.
             status= {}
@@ -305,7 +306,7 @@ class ObservingConditions:
             humidity_limit = 1 < self.sky_monitor.Humidity < 85
             rain_limit = self.sky_monitor.RainRate <= 0.001
 
-      
+
             self.wx_is_ok = dew_point_gap and temp_bounds and wind_limit and sky_amb_limit and \
                             humidity_limit and rain_limit
             #  NB  wx_is_ok does not include ambient light or altitude of the Sun
@@ -315,7 +316,7 @@ class ObservingConditions:
             else:
                 wx_str = "No"   #Ideally we add the dominant reason in priority order.
                 status["wx_ok"] = "Yes"
-        
+
             g_dev['wx_ok']  =  self.wx_is_ok
             if self.config['site_IPC_mechanism'] == 'shares':
                 try:
@@ -345,7 +346,7 @@ class ObservingConditions:
                             print("4th try to write weather status.")
             elif self.config['site_IPC_mechanism'] == 'redis':
 
-                g_dev['redis'].set('wx_state', status)  #THis needs to become generalized IP      
+                g_dev['redis'].set('wx_state', status)  #THis needs to become generalized IP
 
             # Only write when around dark, put in CSV format, used to calibrate Unihedron.
             sunZ88Op, sunZ88Cl, sunrise, ephemNow = g_dev['obs'].astro_events.getSunEvents()
@@ -367,12 +368,12 @@ class ObservingConditions:
             The very first time though at Noon, self.open_is_ok will always be False but the
             Weather, which does not include ambient light, can be good.  We will assume that
             changes in ambient light are dealt with more by the Events module.
-    
+
             We want the wx_hold signal to go up and down as a guage on the quality of the
             afternoon.  If there are a lot of cycles, that indicates unsettled conditons even
             if any particular instant is perfect.  So we set self.wx_hold to false during class
             __init__().
-    
+
             When we get to this point of the code first time we expect self.wx_is_ok to be true
             '''
             obs_win_begin, sunset, sunrise, ephemNow = self.astro_events.getSunEvents()
@@ -414,7 +415,7 @@ class ObservingConditions:
                         print('Sorry, Tobor is clamping enclosure shut for the night.')
                     self.clamp_latch = True
                     self.wx_clamp = True
-    
+
                 self.wx_hold_last_updated = time.time()
             self.status = status
             g_dev['ocn'].status = status
@@ -448,7 +449,7 @@ class ObservingConditions:
             self.meas_sky_lux = linearize_unihedron(uni_measure)
             quick.append(float(self.meas_sky_lux))     # intended for Unihedron
         return quick
-    
+
     def get_average_status(self, pre, post):
         average = []
         average.append(round((pre[0] + post[0])/2, 3))
