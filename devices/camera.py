@@ -1650,8 +1650,8 @@ class Camera:
                                                 next_seq  + f_ext + '-'  + im_type + '00.fits'
                     raw_name00 = self.config['site'] + '-' + current_camera_name + '-' + g_dev['day'] + '-' + \
                         next_seq  + '-' + im_type + '00.fits'
-                    fzraw_name00 = self.config['site'] + '-' + current_camera_name + '-' + g_dev['day'] + '-' + \
-                        next_seq  + '-' + im_type + '00.fits.fz'
+                    #fzraw_name00 = self.config['site'] + '-' + current_camera_name + '-' + g_dev['day'] + '-' + \
+                    #    next_seq  + '-' + im_type + '00.fits.fz'
                     red_name01 = self.config['site'] + '-' + current_camera_name + '-' + g_dev['day'] + '-' + \
                         next_seq  + '-' + im_type + '01.fits'
                     red_name01_lcl = red_name01[:-9]+ pier_string + self.current_filter +"-" + red_name01[-9:]
@@ -1696,7 +1696,7 @@ class Camera:
                              'red_path_aux':  None,
                              'cal_name':  cal_name,
                              'raw_name00': raw_name00,
-                             'fzraw_name00': fzraw_name00,
+                             #'fzraw_name00': fzraw_name00,
                              'red_name01': red_name01,
                              'red_name01_lcl': red_name01_lcl,
                              'i768sq_name10': i768sq_name,
