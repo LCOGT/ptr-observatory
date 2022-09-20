@@ -11,10 +11,10 @@ once this code is stable enough to run as a service.
 
 We need to resolve the 'redis' solution for each site. 20120826
 
-Note this is derived from OBS but is WEMA so we shoudl not need to build
-things from a config file, but rather by implicatin just pick the correct
-data from the config file.  All config files for a cluster of mounts/teleescops
-under one WEMA should start with common data for the WEMA.  Not the wema
+Note this is derived from OBS but is WEMA so we should not need to build
+things from a config file, but rather by implication just pick the correct
+data from the config file.  All config files for a cluster of mounts/telescops
+under one WEMA should start with common data for the WEMA.  Note the wema
 has no knowledge of how many mnt/tels there may be in any given enclosure.
 """
 
@@ -297,7 +297,7 @@ class WxEncAgent:
         obsy = self.name
         if ocn_status is not None:
             lane = 'weather'
-            send_status(obsy, lane, ocn_status)  #NB NB Do not remove this sed for SAF!
+            send_status(obsy, lane, ocn_status)  #NB NB Do not remove this send for SAF!
         if enc_status is not None:
             lane = 'enclosure'
             send_status(obsy, lane, enc_status)
@@ -306,7 +306,7 @@ class WxEncAgent:
             obsy = self.name
             if ocn_status is not None:
                 lane = 'weather'
-                send_status(obsy, lane, ocn_status)  #NB NB Do not remove this sed for SAF!
+                send_status(obsy, lane, ocn_status)  #NB NB Do not remove this send for SAF!
             if enc_status is not None:
                 lane = 'enclosure'
                 send_status(obsy, lane, enc_status)

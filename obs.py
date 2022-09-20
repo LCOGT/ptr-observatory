@@ -1030,7 +1030,10 @@ class Observatory:
                 # hdu_new = fits.open(image)
                 # hdu =hdu_new[0]
 
-
+                ## Need to make an FZ file here before things get changed below
+                print ("Making an fz file")
+                hdufz=fits.CompImageHDU(hdu.data, hdu.header)
+                hdufz.writeto(paths['raw_path'] + paths['raw_name00'] +'.fz')
 
 
                 '''
@@ -1152,12 +1155,7 @@ class Observatory:
                    #   requests.post(aws_resp['url'], data=aws_resp['fields'],
                    #                 files=files)
 
-                print ("Making an fz file")
-                #tempFZ=fits.open(filename)
-                #print (tempFZ)
-                #print (tempFZ[0])
-                hdufz=fits.CompImageHDU(hdu.data, hdu.header)
-                hdufz.writeto(paths['raw_path'] + paths['raw_name00'] +'.fz')
+
 
 
 

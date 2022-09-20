@@ -2,6 +2,7 @@
 
 import time
 import datetime
+from datetime import timedelta
 #from random import shuffle
 import copy
 from global_yard import g_dev
@@ -276,6 +277,7 @@ class Sequencer:
     def midday_cull(self):
         FORTNIGHT=60*60*24*7*2
         #dir_path='D:/PTRMFO/'
+
         dir_path=self.config['client_path'] + '\\' + 'archive'
         cameras=[d for d in os.listdir(dir_path) if os.path.isdir(d)]
         for camera in cameras:  # Go through each camera directory
@@ -296,7 +298,7 @@ class Sequencer:
             print ("These are the directories earmarked for  ")
             print ("Eternal destruction. And how old they are")
             print ("in weeks\n")
-
+            g_dev['obs'].send_to_user("Culling " + str(len(deleteDirectories)) +" from the local archive.", p_level='INFO')
             for entry in range(len(deleteDirectories)):
                 print (deleteDirectories[entry] + ' ' + str(deleteTimes[entry]) + ' weeks old.')
                 #shutil.rmtree(cameradir + deleteDirectories[entry]) # THIS IS THE DELETER WHEN WE ARE READY!
@@ -392,8 +394,13 @@ class Sequencer:
             #First, sort blocks to be in ascending order, just to promote clarity. Remove expired projects.
             for block in blocks:  #  This merges project spec into the blocks.
                 for project in projects:
-                    if block['project_id'] == project['project_name'] + '#' + project['created_at']:
-                        block['project'] = project
+  
+                    try:
+                        if block['project_id'] == project['project_name'] + '#' + project['created_at']:
+                            block['project'] = project
+                    except:
+                        block['project'] = None  #nb nb nb 20220920   this faults with 'string indices must be integers". WER
+
                         #print('Scheduled so removing:  ', project['project_name'])
                         #projects.remove(project)
 
@@ -614,11 +621,17 @@ class Sequencer:
         #NB NB NB  if no project found, need to say so not fault. 20210624
         #breakpoint()
         for target in block['project']['project_targets']:   #  NB NB NB Do multi-target projects make sense???
-            dest_ra = float(target['ra']) - \
-                float(block_specification['project']['project_constraints']['ra_offset'])/15.
-            dest_dec = float(target['dec']) - float(block_specification['project']['project_constraints']['dec_offset'])
-            dest_ra, dest_dec = ra_dec_fix_hd(dest_ra,dest_dec)
-            dest_name =target['name']
+
+            try:
+                dest_ra = float(target['ra']) - \
+                    float(block_specification['project']['project_constraints']['ra_offset'])/15.
+                dest_dec = float(target['dec']) - float(block_specification['project']['project_constraints']['dec_offset'])
+                dest_ra, dest_dec = ra_dec_fix_hd(dest_ra,dest_dec)
+                dest_name =target['name']
+            except:
+                print ("Could not execute project due to poorly formatted or corrupt RA or Dec in project_targets")
+                g_dev['obs'].send_to_user("Could not execute project due to poorly formatted or corrupt RA or Dec in project_targets", p_level='INFO')
+                continue
 
             if enc_status['shutter_status'] in ['Closed', 'closed'] and ocn_status['hold_duration'] <= 0.1:   #NB  # \  NB NB 20220901 WER fix this!
 
@@ -1079,9 +1092,28 @@ class Sequencer:
             print(" Bias/Dark acquisition is finished normally.")
 
 
+
         self.sequencer_hold = False
         g_dev['mnt'].park_command({}, {}) # Get there early
         print("Bias/Dark Phase has passed.")
+
+
+
+        if morn:
+            print ("sending end of night token to AWS")
+            #g_dev['cam'].enqueue_for_AWS(jpeg_data_size, paths['im_path'], paths['jpeg_name10'])
+            yesterday = datetime.datetime.now() - timedelta(1)
+            #print (datetime.datetime.strftime(yesterday, '%Y%m%d'))
+            runNight=datetime.datetime.strftime(yesterday, '%Y%m%d')
+            isExist = os.path.exists(g_dev['cam'].site_path + 'tokens')
+            if not isExist:
+                os.makedirs(g_dev['cam'].site_path + 'tokens')
+            runNightToken= g_dev['cam'].site_path + 'tokens/' + self.config['site'] + runNight
+            with open(runNightToken, 'w') as f:
+                f.write('Night Completed')
+            g_dev['obs'].aws_queue.put((30000000, runNightToken), block=False)
+        g_dev['obs'].send_to_user("End of Night Token sent to AWS.", p_level='INFO')
+
         return
 
 
@@ -1460,16 +1492,7 @@ class Sequencer:
         #print('AF entered with:  ', req, opt, '\n .. and sim =  ', sim)
         #self.sequencer_hold = True  #Blocks command checks.
         #Here we jump in too  fast and need for mount to settle
-# =============================================================================
-# =============================================================================
-# =============================================================================
-        start_ra = g_dev['mnt'].mount.RightAscension   #Read these to go back.  NB NB Need to cleanly pass these on so fcureturns to proper target.
-        start_dec = g_dev['mnt'].mount.Declination
-        focus_start = g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron
-# =============================================================================
-# =============================================================================
-# =============================================================================
-        print("Saved ra, dec, focus:  ", start_ra, start_dec, focus_start)
+
         try:
             #Check here for filter, guider, still moving  THIS IS A CLASSIC
             #case where a timeout is a smart idea.
@@ -1490,7 +1513,16 @@ class Sequencer:
         except:
             print("Motion check faulted.")
 
-        #  NBNBNB Need to preserve  and restore on exit, incoming filter setting
+# ============================================================================= Save AFTER mount has settled down.
+# =============================================================================
+# =============================================================================
+        start_ra = g_dev['mnt'].mount.RightAscension   #Read these to go back.  NB NB Need to cleanly pass these on so we can return to proper target.
+        start_dec = g_dev['mnt'].mount.Declination
+        focus_start = g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron
+# =============================================================================
+# =============================================================================
+# =============================================================================
+        print("Saved  *mounting* ra, dec, focus:  ", start_ra, start_dec, focus_start)
 
         if req2['target'] == 'near_tycho_star':   ## 'bin', 'area'  Other parameters
 
@@ -1558,13 +1590,13 @@ class Sequencer:
             print ("spot2 failed on autofocus moving in")
 
         print('Autofocus Overtaveling Out.\n\n')
-        g_dev['foc'].focuser.Move((foc_pos0 + 2*throw)*g_dev['foc'].micron_to_steps)
-        time.sleep(10)#It is important to overshoot to overcome any backlash  WE need to be sure Exposure waits.
+        g_dev['foc'].guarded_move((foc_pos0 + 2*throw)*g_dev['foc'].micron_to_steps)
+       #time.sleep(10)#It is important to overshoot to overcome any backlash  WE need to be sure Exposure waits.
         print('Autofocus Moving back in half-way.\n\n')
 
         g_dev['foc'].guarded_move((foc_pos0 + throw)*g_dev['foc'].micron_to_steps)  #NB NB NB THIS IS WRONG!
 
-        time.sleep(10)#opt['fwhm_sim'] = 5
+        #time.sleep(10)#opt['fwhm_sim'] = 5
         if not sim:
             result = g_dev['cam'].expose_command(req, opt, no_AWS=True, solve_it=False) ## , script = 'auto_focus_script_2')  #  This is moving out one throw.
         else:
@@ -1605,7 +1637,167 @@ class Sequencer:
                 time.sleep(5)
                 self.sequencer_hold = False   #Allow comand checks.
                 self.af_guard = False
-                g_dev['mnt'].mount.SlewToCoordinatesAsync(start_ra, start_dec)
+                g_dev['mnt'].mount.SlewToCoordinatesAsync(start_ra, start_dec)   #NB NB Does this really take us back to starting point?
+                self.sequencer_hold = False
+                self.guard = False
+                self.af_guard = False
+                return
+            if min(x) <= d1 <= max(x):
+                print ('Moving to Solved focus:  ', round(d1, 2), ' calculated:  ',  new_spot)
+                pos = int(d1*g_dev['foc'].micron_to_steps)
+
+
+
+                g_dev['foc'].guarded_move(pos)
+                time.sleep(5)
+                g_dev['foc'].last_known_focus = d1
+                try:
+                    g_dev['foc'].last_temperature = g_dev['foc'].focuser.Temperature
+                except:
+                    g_dev['foc'].last_temperature = 7.5    #NB NB NB this should be a config file default.
+                g_dev['foc'].last_source = "auto_focus_script"
+
+                if not sim:
+                    result = g_dev['cam'].expose_command(req, opt, no_AWS=True, solve_it=False)  #   script = 'auto_focus_script_3')  #  This is verifying the new focus.
+                else:
+                    result['FWHM'] = new_spot
+                    result['mean_focus'] = g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron
+                try:
+                    spot4 = result['FWHM']
+                    foc_pos4 = result['mean_focus']
+                except:
+                    spot4 = False
+                    foc_pos4 = False
+                    print ("spot4 failed ")
+                print('\nFound best focus at:  ', foc_pos4,' measured is:  ',  round(spot4, 2), '\n')
+                g_dev['foc'].af_log(foc_pos4, spot4, new_spot)
+                print("Returning to:  ", start_ra, start_dec)
+                g_dev['mnt'].mount.SlewToCoordinatesAsync(start_ra, start_dec)   #Return to pre-focus pointing.
+            if sim:
+
+                g_dev['foc'].guarded_move((focus_start)*g_dev['foc'].micron_to_steps)
+            #  NB here we could re-solve with the overlay spot just to verify solution is sane.
+
+            #  NB NB We may want to consider sending the result image patch to AWS
+            # NB NB NB I think we may have spot numbers wrong by 1 count and coarse focs not set up correctly.
+            self.sequencer_hold = False
+            self.guard = False
+            self.af_guard = False
+            return
+        elif spot2  <= spot1 < spot3:      #Add to the inside
+            pass
+            print('Autofocus Moving In 2nd time.\n\n')
+            g_dev['foc'].guarded_move((foc_pos0 - 2.5*throw)*g_dev['foc'].micron_to_steps)
+            if not sim:
+                result = g_dev['cam'].expose_command(req, opt, no_AWS=True, solve_it=False) ## , script = 'auto_focus_script_1')  #  This is moving in one throw.
+            else:
+                result['FWHM'] = 6
+                result['mean_focus'] = g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron
+            try:
+                spot4 = result['FWHM']
+                foc_pos4 = result['mean_focus']
+            except:
+                spot4 = False
+                foc_pos4 = False
+                print ("spot4 failed on autofocus moving in 2nd time.")
+            x = [foc_pos4, foc_pos2, foc_pos1, foc_pos3]
+            y = [spot4, spot2, spot1, spot3]
+            print('X, Y:  ', x, y, 'Desire center to be smallest.')
+            try:
+                #Digits are to help out pdb commands!
+                a1, b1, c1, d1 = fit_quadratic(x, y)
+                new_spot = round(a1*d1*d1 + b1*d1 + c1, 2)
+
+            except:
+
+                print('Autofocus quadratic equation not converge. Moving back to starting focus:  ', focus_start)
+
+                g_dev['foc'].guarded_move((focus_start)*g_dev['foc'].micron_to_steps)
+                time.sleep(5)
+                self.sequencer_hold = False   #Allow comand checks.
+                self.af_guard = False
+                g_dev['mnt'].mount.SlewToCoordinatesAsync(start_ra, start_dec)   #NB NB Does this really take us back to starting point?
+                self.sequencer_hold = False
+                self.guard = False
+                self.af_guard = False
+                return
+            if min(x) <= d1 <= max(x):
+                print ('Moving to Solved focus:  ', round(d1, 2), ' calculated:  ',  new_spot)
+                pos = int(d1*g_dev['foc'].micron_to_steps)
+
+
+
+                g_dev['foc'].guarded_move(pos)
+                time.sleep(5)
+                g_dev['foc'].last_known_focus = d1
+                try:
+                    g_dev['foc'].last_temperature = g_dev['foc'].focuser.Temperature
+                except:
+                    g_dev['foc'].last_temperature = 7.5    #NB NB NB this should be a config file default.
+                g_dev['foc'].last_source = "auto_focus_script"
+
+                if not sim:
+                    result = g_dev['cam'].expose_command(req, opt, no_AWS=True, solve_it=False)  #   script = 'auto_focus_script_3')  #  This is verifying the new focus.
+                else:
+                    result['FWHM'] = new_spot
+                    result['mean_focus'] = g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron
+                try:
+                    spot4 = result['FWHM']
+                    foc_pos4 = result['mean_focus']
+                except:
+                    spot4 = False
+                    foc_pos4 = False
+                    print ("spot4 failed ")
+                print('\nFound best focus at:  ', foc_pos4,' measured is:  ',  round(spot4, 2), '\n')
+                g_dev['foc'].af_log(foc_pos4, spot4, new_spot)
+                print("Returning to:  ", start_ra, start_dec)
+                g_dev['mnt'].mount.SlewToCoordinatesAsync(start_ra, start_dec)   #Return to pre-focus pointing.
+            if sim:
+
+                g_dev['foc'].guarded_move((focus_start)*g_dev['foc'].micron_to_steps)
+            #  NB here we could re-solve with the overlay spot just to verify solution is sane.
+
+            #  NB NB We may want to consider sending the result image patch to AWS
+            # NB NB NB I think we may have spot numbers wrong by 1 count and coarse focs not set up correctly.
+            self.sequencer_hold = False
+            self.guard = False
+            self.af_guard = False
+            return
+
+        elif spot2 > spot1 >= spot3:       #Add to the outside
+            pass
+            print('Autofocus Moving back in half-way.\n\n')
+
+            g_dev['foc'].guarded_move((foc_pos0 + 2.5*throw)*g_dev['foc'].micron_to_steps)  #NB NB NB THIS IS WRONG!
+            if not sim:
+                result = g_dev['cam'].expose_command(req, opt, no_AWS=True, solve_it=False) ## , script = 'auto_focus_script_2')  #  This is moving out one throw.
+            else:
+                result['FWHM'] = 5.5
+                result['mean_focus'] = g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron
+            try:
+                spot4 = result['FWHM']
+                foc_pos3 = result['mean_focus']
+            except:
+                spot4 = False
+                foc_pos4 = False
+                print ("spot4 failed on autofocus moving out 2nd time.")
+            x = [foc_pos2, foc_pos1, foc_pos3, foc_pos4]
+            y = [spot2, spot1, spot3, spot4]
+            print('X, Y:  ', x, y, 'Desire center to be smallest.')
+            try:
+                #Digits are to help out pdb commands!
+                a1, b1, c1, d1 = fit_quadratic(x, y)
+                new_spot = round(a1*d1*d1 + b1*d1 + c1, 2)
+
+            except:
+
+                print('Autofocus quadratic equation not converge. Moving back to starting focus:  ', focus_start)
+
+                g_dev['foc'].guarded_move((focus_start)*g_dev['foc'].micron_to_steps)
+                time.sleep(5)
+                self.sequencer_hold = False   #Allow comand checks.
+                self.af_guard = False
+                g_dev['mnt'].mount.SlewToCoordinatesAsync(start_ra, start_dec)   #NB NB Does this really take us back to starting point?
                 self.sequencer_hold = False
                 self.guard = False
                 self.af_guard = False
@@ -1655,8 +1847,10 @@ class Sequencer:
         elif spot2 <= spot1 or spot3 <= spot1:
             if spot2 <= spot3:
                 min_focus = foc_pos2
-            if spot3 <= spot2:
+            elif spot3 <= spot2:
                 min_focus = foc_pos3
+            else:
+                min_focus = foc_pos0
 
             ##  HERE we could add a fourth or fifth try.  The parabola cannot really invert, nor should we ever be at a wild point after the first focus is
             ##  set up.
