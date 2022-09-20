@@ -357,7 +357,7 @@ class ObservingConditions:
                     wl.write(str(time.time()) + ', ' + str(illum) + ', ' + str(mag - 20.01) + ', ' \
                              + str(uni_measure) + ", \n")
                     wl.close()
-                    print('Unihedron log worked.')
+                    #print('Unihedron log worked.')
                     self.sample_time = time.time()
                 except:
                     self.sample_time = time.time() - 61
