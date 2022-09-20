@@ -1758,6 +1758,10 @@ class Camera:
                     #     if not quick:
                     self.enqueue_for_AWS(text_data_size, im_path, text_name)
                     hdu.writeto(raw_path + raw_name00, overwrite=False)   #Save full raw file locally
+                    ## Need to make an FZ file here before things get changed below
+                    print ("Making an fz file")
+                    hdufz=fits.CompImageHDU(hdu.data, hdu.header)
+                    hdufz.writeto(paths['raw_path'] + paths['raw_name00'] +'.fz')
                     #print('Raw:  ', raw_path + raw_name00)
                     #calibrate(hdu, cal_path+cal_name)
 
