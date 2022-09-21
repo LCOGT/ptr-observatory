@@ -1133,9 +1133,10 @@ class Camera:
         self.post_ocn = []
         counter = 0
         if self.bin == 1:
-            self.completion_time = self.t2 + exposure_time + 15
+            cycle_time = exposure_time + 15
         else:
-            self.completion_time = self.t2 + exposure_time + 12
+            cycle_time = exposure_time + 12
+        self.completion_time = self.t2 + cycle_time + 12
         result = {'error': False}
         notifyReadOutOnlyOnce=0
         quartileExposureReport=0
@@ -1156,7 +1157,7 @@ class Camera:
                 self.t7b = time.time()
                 remaining = round(self.completion_time - self.t7b, 1)
                 if remaining > 0:
-                    print (str(round(remaining, 1))+'sec.', str(round(100*remaining/exposure_time, 1))+'%')
+                    print (str(round(remaining, 1))+'sec.', str(round(100*remaining/cycle_time, 1))+'%')
                     if quartileExposureReport==0:    # Silly daft but workable exposure time reporting by MTF
                         initialRemaining=remaining
                         quartileExposureReport=quartileExposureReport+1
@@ -1335,7 +1336,7 @@ class Camera:
 
                     #return result   #Used if focus not saved in calibs.
                 try:
-                    #breakpoint()
+                    breakpoint()
                     hdu = fits.PrimaryHDU(self.img.transpose())   #THis needs to be done to keep fits "traditional." 0,0 upper left.
                     self.img = None    #  Does this free up any resource?
                     # assign the keyword values and comment of the keyword as a tuple to write both to header.
