@@ -105,14 +105,14 @@ def to_bz2(filename, delete=False):
         return False
 
 
-def to_fz(filename, delete=False):
-    print ("Making an fz file")
-    tempFZ=fits.open(filename)
-    #print (tempFZ)
-    #print (tempFZ[0])
-    hdu=fits.CompImageHDU(tempFZ[0].data, tempFZ[0].header)
-    hdu.writeto(filename+'.fz')
-    return True
+# def to_fz(filename, delete=False):
+#     print ("Making an fz file")
+#     tempFZ=fits.open(filename)
+#     #print (tempFZ)
+#     #print (tempFZ[0])
+#     hdu=fits.CompImageHDU(tempFZ[0].data, tempFZ[0].header)
+#     hdu.writeto(filename+'.fz')
+#     return True
 
 # move this function to a better location
 def from_bz2(filename, delete=False):
