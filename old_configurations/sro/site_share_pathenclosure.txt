@@ -1,1 +1,0 @@
-{"shutter_status": "Closed", "enclosure_synchronized": true, "enclosure_home": true, "dome_azimuth": [316.5], "dome_slewing": false, "enclosure_mode": "Automatic", "enclosure_message": ""}

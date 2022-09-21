@@ -1,6 +1,0 @@
-
-Alnitak Astro Flip-Flat/Flat-Man Controller
-4/6/2020 12:39:28 PM
-COMPORT:6
-Turning off light.
-Light is off.
