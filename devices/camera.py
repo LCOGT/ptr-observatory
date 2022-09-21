@@ -1020,12 +1020,12 @@ class Camera:
                         ldr_handle_high_time = None  #  This is not maxim-specific
 
                         #print('Filter number is:  ', self.camera.Filter)
-                        try:
-                            for file_path in glob.glob('D:*.fit'):
+                        #try:
+                        #    for file_path in glob.glob('D:*.fit'):
                                 #os.remove(file_path)
-                                pass
-                        except:
-                            pass
+                        #        pass
+                        #except:
+                        #    pass
                         if self.darkslide and imtypeb:
                             self.darkslide_instance.openDarkslide()
                             self.darkslide_open = True
@@ -1155,7 +1155,7 @@ class Camera:
                 time.sleep(2)
                 self.t7b = time.time()
                 remaining = round(self.completion_time - self.t7b, 1)
-                if remaining > 0:
+                if remaining > 0 and exposure_time > 0:
                     print (str(round(remaining, 1))+'sec.', str(round(100*remaining/exposure_time, 1))+'%')
                     if quartileExposureReport==0:    # Silly daft but workable exposure time reporting by MTF
                         initialRemaining=remaining
