@@ -72,6 +72,7 @@ site_config = {
     'site_IPC_mechanism':  'redis',   # ['None', shares', 'shelves', 'redis']  Pick One
     'wema_write_share_path': 'Q:/ptr/',  # Meant to be where Wema puts status data.
     'client_read_share_path':  'Q:/ptr/',
+    'client_write_share_path':  'Q:/ptr/',
     'redis_ip': '10.15.0.109',  #'127.0.0.1', None if no redis path present, 
     'site_is_generic':  False,   # A simply  single computer ASCOM site.
     'site_is_specific':  False,  # Indicates some special code for this site, found at end of config.
@@ -641,7 +642,10 @@ site_config = {
     },
 }    #This brace closes the while configuration dictionary. Match found up top at:  site_config = {
 
-
+def get_ocn_status():
+    pass
+def get_enc_status():
+    pass
 if __name__ == '__main__':
     '''
     This is a simple test to send and receive via json.
