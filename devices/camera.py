@@ -135,15 +135,21 @@ def test_sequence(pCamera):
 
 def reset_sequence(pCamera):
     #breakpoint()
-    camShelf = shelve.open(g_dev['cam'].site_path + 'ptr_night_shelf/' + str(pCamera))
+    try:
+        camShelf = shelve.open(g_dev['cam'].site_path + 'ptr_night_shelf/' + str(pCamera))
+        seqInt = int(-1)
+        seqInt  += 1
+        seq = ('0000000000'+str(seqInt))[-8:]
+        print('Making new seq: ' , pCamera, seq)
+        camShelf['Sequence'] = seq
+        camShelf.close()
+        return seq
+    except:
+        print ("Nothing on the cam shelf in reset_sequence")
+        return None
     #seq = camShelf['Sequence']      # a 9 character string
-    seqInt = int(-1)
-    seqInt  += 1
-    seq = ('0000000000'+str(seqInt))[-8:]
-    print('Making new seq: ' , pCamera, seq)
-    camShelf['Sequence'] = seq
-    camShelf.close()
-    return seq
+    
+    
 
 # Default filter needs to be pulled from site camera or filter config
 

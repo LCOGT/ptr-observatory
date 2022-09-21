@@ -262,6 +262,9 @@ class Observatory:
             g_dev['redis'] = None    #a  placeholder.
         # Send the config to aws   # NB NB NB This has faulted.
         self.update_config()
+        
+               
+        
         # Use the configuration to instantiate objects for all devices.
         self.create_devices(config)
         self.loud_status = False
@@ -270,6 +273,12 @@ class Observatory:
         site_str = config['site']
         g_dev['site']:  site_str
         self.g_dev = g_dev
+
+        # Check directory system has been constructed (for new sites or changed directories in configs) - MTF
+        if not os.path.exists(g_dev['cam'].site_path + 'ptr_night_shelf'):
+            os.makedirs(g_dev['cam'].site_path + 'ptr_night_shelf')
+        if not os.path.exists(g_dev['cam'].site_path + 'archive'):
+            os.makedirs(g_dev['cam'].site_path + 'archive')
 
 
         self.time_last_status = time.time() - 3
@@ -337,6 +346,7 @@ class Observatory:
             device_names = devices_of_type.keys()
             # Instantiate each device object from based on its type
             for name in device_names:
+                print (name)
                 driver = devices_of_type[name]["driver"]
                 settings = devices_of_type[name].get("settings", {})
                 # print('looking for dev-types:  ', dev_type)
