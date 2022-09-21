@@ -1,0 +1,15 @@
+env/
+venv/
+.env
+.credentials
+
+__pycache__
+*.pyc
+*.pyo
+
+sandbox/
+.vscode/
+
+bash.exe.stackdump
+images/*.fits
+new_config-Copy.py
