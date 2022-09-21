@@ -105,14 +105,14 @@ def to_bz2(filename, delete=False):
         return False
 
 
-def to_fz(filename, delete=False):
-    print ("Making an fz file")
-    tempFZ=fits.open(filename)
-    #print (tempFZ)
-    #print (tempFZ[0])
-    hdu=fits.CompImageHDU(tempFZ[0].data, tempFZ[0].header)
-    hdu.writeto(filename+'.fz')
-    return True
+# def to_fz(filename, delete=False):
+#     print ("Making an fz file")
+#     tempFZ=fits.open(filename)
+#     #print (tempFZ)
+#     #print (tempFZ[0])
+#     hdu=fits.CompImageHDU(tempFZ[0].data, tempFZ[0].header)
+#     hdu.writeto(filename+'.fz')
+#     return True
 
 # move this function to a better location
 def from_bz2(filename, delete=False):
@@ -860,7 +860,7 @@ class Observatory:
                 # Here we parse the file, set up and send to AWS
                 im_path = pri_image[1][0]
                 name = pri_image[1][1]
-                if not (name[-3:] == 'jpg' or name[-3:] == 'txt' or '.fits.fz' in name):
+                if not (name[-3:] == 'jpg' or name[-3:] == 'txt' or name[-3:] == 'token' or '.fits.fz' in name):
                     # compress first
                     to_bz2(im_path + name)
                     name = name + '.bz2'

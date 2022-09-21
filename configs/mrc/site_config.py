@@ -72,6 +72,7 @@ site_config = {
     'site_IPC_mechanism':  'redis',   # ['None', shares', 'shelves', 'redis']  Pick One
     'wema_write_share_path': 'Q:/ptr/',  # Meant to be where Wema puts status data.
     'client_read_share_path':  'Q:/ptr/',
+    'client_write_share_path': 'Q:/ptr/',
     'redis_ip': '10.15.0.109',  #'127.0.0.1', None if no redis path present, 
     'site_is_generic':  False,   # A simply  single computer ASCOM site.
     'site_is_specific':  False,  # Indicates some special code for this site, found at end of config.
@@ -569,14 +570,16 @@ site_config = {
                 'can_subframe':  True,
                 'min_subframe': [128,128],
                 'bin_modes':  [[1, 1, 0.303], [2, 2, 0.605],  [3, 3, 0.908], [4, 4, 1.21]],     #Meaning fixed binning if list has only one entry
-                'default_bin':  [2, 2, 0.605],     #Always square and matched to seeing situation by owner
+                'default_bin':  [2, 2, 0.605],
+                'bin_enable':  ['2 2'],  #  Always square and matched to seeing situation by owner
                 'cycle_time':  [18, 15, 15, 12],
-                'rbi_delay':  0,      # This being zero says RBI is not available, eg. for SBIG.
+                'rbi_delay':  0,      #  This being zero says RBI is not available, eg. for SBIG.
                 'is_cmos':  True,
                 'is_color': False,
                 'can_set_gain':  True,
-                'ref_dark': None,
-                'reference_gain': [1.3, 2.6, 3.9, 5.2],     #One val for each binning. Assumed digitalsumming in camera???
+                'ref_dark': 360,
+                'long_dark': 600,   #  s.  
+                'reference_gain': [1.3, 2.6, 3.9, 5.2],     #  One val for each binning. Assumed digitalsumming in camera???
                 'reference_noise': [6, 6, 6, 6],    #  NB Guess
                 'reference_dark': [.2, .8, 1.8, 3.2],  #  Guess
                 'max_linearity':  60000,   # Guess
@@ -641,7 +644,10 @@ site_config = {
     },
 }    #This brace closes the while configuration dictionary. Match found up top at:  site_config = {
 
-
+def get_ocn_status():
+    pass
+def get_enc_status():
+    pass
 if __name__ == '__main__':
     '''
     This is a simple test to send and receive via json.

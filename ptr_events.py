@@ -556,8 +556,7 @@ class Events:
                 ('Prior Moon Set     ', last_moonset),
                 ('Moon Rise          ', next_moonrise),
                 ('Moon Transit       ', next_moontransit),
-                ('Moon Set           ', next_moonset),
-                ('Midday archive Cull', midday)]
+                ('Moon Set           ', next_moonset)]
         # else:
         #     eve_skyFlatBegin = sunset - 60/1440  #  NB NB this should come from saf.json
         #     evnt = [('Eve Bias Dark      ', ephem.Date(sunset -185/1440)),
