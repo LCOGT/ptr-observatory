@@ -18,7 +18,8 @@ import ephem
 from pprint import pprint
 import shutil
 import os
-
+import imp
+import ptr_events
 
 '''
 Autofocus NOTE 20200122
@@ -274,36 +275,36 @@ class Sequencer:
         except:
             print('Dome close not executed during Park and Close.')
 
-    def midday_cull(self):
-        FORTNIGHT=60*60*24*7*2
-        #dir_path='D:/PTRMFO/'
+    # def archive_cull(self):
+    #     FORTNIGHT=60*60*24*7*2
+    #     #dir_path='D:/PTRMFO/'
 
-        dir_path=self.config['client_path'] + '\\' + 'archive'
-        cameras=[d for d in os.listdir(dir_path) if os.path.isdir(d)]
-        for camera in cameras:  # Go through each camera directory
-            print ("*****************************************")
-            print ("Camera: " + str(camera))
-            timenow_cull=time.time()
-            cameradir=dir_path + '\\' + camera + '\\'
-            directories=[d for d in os.listdir(cameradir) if os.path.isdir(d)]
-            deleteDirectories=[]
-            deleteTimes=[]
-            for q in range(len(directories)):
-                if ((timenow_cull)-os.path.getmtime(cameradir + directories[q])) > FORTNIGHT:
-                    deleteDirectories.append(directories[q])
-                    deleteTimes.append(((timenow_cull)-os.path.getmtime(cameradir +directories[q])) /60/60/24/7)
+    #     dir_path=self.config['client_path'] + '\\' + 'archive'
+    #     cameras=[d for d in os.listdir(dir_path) if os.path.isdir(d)]
+    #     for camera in cameras:  # Go through each camera directory
+    #         print ("*****************************************")
+    #         print ("Camera: " + str(camera))
+    #         timenow_cull=time.time()
+    #         cameradir=dir_path + '\\' + camera + '\\'
+    #         directories=[d for d in os.listdir(cameradir) if os.path.isdir(d)]
+    #         deleteDirectories=[]
+    #         deleteTimes=[]
+    #         for q in range(len(directories)):
+    #             if ((timenow_cull)-os.path.getmtime(cameradir + directories[q])) > FORTNIGHT:
+    #                 deleteDirectories.append(directories[q])
+    #                 deleteTimes.append(((timenow_cull)-os.path.getmtime(cameradir +directories[q])) /60/60/24/7)
 
 
 
-            print ("These are the directories earmarked for  ")
-            print ("Eternal destruction. And how old they are")
-            print ("in weeks\n")
-            g_dev['obs'].send_to_user("Culling " + str(len(deleteDirectories)) +" from the local archive.", p_level='INFO')
-            for entry in range(len(deleteDirectories)):
-                print (deleteDirectories[entry] + ' ' + str(deleteTimes[entry]) + ' weeks old.')
-                #shutil.rmtree(cameradir + deleteDirectories[entry]) # THIS IS THE DELETER WHEN WE ARE READY!
+    #         print ("These are the directories earmarked for  ")
+    #         print ("Eternal destruction. And how old they are")
+    #         print ("in weeks\n")
+    #         g_dev['obs'].send_to_user("Culling " + str(len(deleteDirectories)) +" from the local archive.", p_level='INFO')
+    #         for entry in range(len(deleteDirectories)):
+    #             print (deleteDirectories[entry] + ' ' + str(deleteTimes[entry]) + ' weeks old.')
+    #             #shutil.rmtree(cameradir + deleteDirectories[entry]) # THIS IS THE DELETER WHEN WE ARE READY!
 
-        return
+    #     return
 
     ###############################
     #       Sequencer Commands and Scripts
@@ -347,8 +348,11 @@ class Sequencer:
             self.bias_dark_script(req, opt, morn=False)
             self.bias_dark_latch = False
 
-        elif (events['Midday archive Cull'] <= ephem_now < (events['Midday archive Cull'] + 5* ephem.minute)):
-              self.midday_cull()
+        #elif ( (events['End Morn Bias Dark'] + 60 * ephem.minute) <= ephem_now <  events['Midday archive Cull']):
+        #    self.midday_cull()
+        #    g_dev['obs'].send_to_user("Culling the local archive.", p_level='INFO')
+        #    print ("Cull routine")
+
 
         elif ((g_dev['events']['Cool Down, Open']  <= ephem_now < g_dev['events']['Eve Sky Flats']) and \
                g_dev['enc'].mode == 'Automatic') and not g_dev['ocn'].wx_hold:
@@ -394,7 +398,7 @@ class Sequencer:
             #First, sort blocks to be in ascending order, just to promote clarity. Remove expired projects.
             for block in blocks:  #  This merges project spec into the blocks.
                 for project in projects:
-  
+
                     try:
                         if block['project_id'] == project['project_name'] + '#' + project['created_at']:
                             block['project'] = project
@@ -411,8 +415,12 @@ class Sequencer:
             house = []
             for project in projects:
                 if block['project_id']  != 'none':
-                    if block['project_id'] == project['project_name'] + '#' + project['created_at']:
-                        block['project'] = project
+                    try:
+
+                        if block['project_id'] == project['project_name'] + '#' + project['created_at']:
+                            block['project'] = project
+                    except:
+                        block['project'] = None
                 else:
                     pass
                 #print("Reservation asserting at this time.   ", )
@@ -620,6 +628,10 @@ class Sequencer:
             #user controlled block...
         #NB NB NB  if no project found, need to say so not fault. 20210624
         #breakpoint()
+
+
+        # Remove None entries before running through list
+        #print (block['project']['project_targets'])
         for target in block['project']['project_targets']:   #  NB NB NB Do multi-target projects make sense???
 
             try:
@@ -1100,6 +1112,8 @@ class Sequencer:
 
 
         if morn:
+            # UNDERTAKING END OF NIGHT ROUTINES
+
             print ("sending end of night token to AWS")
             #g_dev['cam'].enqueue_for_AWS(jpeg_data_size, paths['im_path'], paths['jpeg_name10'])
             yesterday = datetime.datetime.now() - timedelta(1)
@@ -1108,11 +1122,50 @@ class Sequencer:
             isExist = os.path.exists(g_dev['cam'].site_path + 'tokens')
             if not isExist:
                 os.makedirs(g_dev['cam'].site_path + 'tokens')
-            runNightToken= g_dev['cam'].site_path + 'tokens/' + self.config['site'] + runNight
+            runNightToken= g_dev['cam'].site_path + 'tokens/' + self.config['site'] + runNight + '.token'
             with open(runNightToken, 'w') as f:
                 f.write('Night Completed')
             g_dev['obs'].aws_queue.put((30000000, runNightToken), block=False)
-        g_dev['obs'].send_to_user("End of Night Token sent to AWS.", p_level='INFO')
+            g_dev['obs'].send_to_user("End of Night Token sent to AWS.", p_level='INFO')
+
+            # Culling the archive
+            FORTNIGHT=60*60*24*7*2
+            #dir_path='D:/PTRMFO/'
+
+            dir_path=self.config['client_path'] + '\\' + 'archive'
+            cameras=[d for d in os.listdir(dir_path) if os.path.isdir(d)]
+            for camera in cameras:  # Go through each camera directory
+                print ("*****************************************")
+                print ("Camera: " + str(camera))
+                timenow_cull=time.time()
+                cameradir=dir_path + '\\' + camera + '\\'
+                directories=[d for d in os.listdir(cameradir) if os.path.isdir(d)]
+                deleteDirectories=[]
+                deleteTimes=[]
+                for q in range(len(directories)):
+                    if ((timenow_cull)-os.path.getmtime(cameradir + directories[q])) > FORTNIGHT:
+                        deleteDirectories.append(directories[q])
+                        deleteTimes.append(((timenow_cull)-os.path.getmtime(cameradir +directories[q])) /60/60/24/7)
+
+
+
+                print ("These are the directories earmarked for  ")
+                print ("Eternal destruction. And how old they are")
+                print ("in weeks\n")
+                g_dev['obs'].send_to_user("Culling " + str(len(deleteDirectories)) +" from the local archive.", p_level='INFO')
+                for entry in range(len(deleteDirectories)):
+                    print (deleteDirectories[entry] + ' ' + str(deleteTimes[entry]) + ' weeks old.')
+                    #shutil.rmtree(cameradir + deleteDirectories[entry]) # THIS IS THE DELETER WHEN WE ARE READY!
+
+            # Reopening config
+            imp.reload(config)
+            self.config = config
+            # Getting new times for the new day
+            #self.astro_events = ptr_events.Events(self.config)
+            self.astro_events.compute_day_directory()
+            self.astro_events.display_events()
+            # sending this up to AWS
+            self.update_config()
 
         return
 
