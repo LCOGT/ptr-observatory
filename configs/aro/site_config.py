@@ -352,8 +352,8 @@ site_config = {
             #F9 setup
             'reference': 4573, #5743,    #  Meas   Nominal at 10C Primary temperature
             'ref_temp':  20,    # Update when pinning reference
-            'coef_c': -55.9946, #-77.57,   # negative means focus moves out/in as Primary gets colder/warmer.
-            'coef_0': 5333.0, #6155,   #5675,  20220502 Nominal intercept when Primary is at 0.0 C.
+            'coef_c': -55.9946,  #-77.57,   # negative means focus moves out/in as Primary gets colder/warmer.
+            'coef_0': 5333.0, #6155,   #5675,  20220502 Nominal intercept when Primary is at 0.0 C. f4.9 cONFIGURATION
             'coef_date':  '20220920',    # TEMP RANGE 12 TO 19, 6 MEASUREMENTS
             'minimum': 0,     # NB this area is confusing steps and microns, and need fixing.
             'maximum': 12600,   #12672 actually
