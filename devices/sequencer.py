@@ -21,6 +21,7 @@ import os
 import imp
 import ptr_events
 
+
 '''
 Autofocus NOTE 20200122
 
@@ -1165,7 +1166,16 @@ class Sequencer:
             self.astro_events.compute_day_directory()
             self.astro_events.display_events()
             # sending this up to AWS
-            self.update_config()
+            '''
+            Send the config to aws.
+            '''
+            uri = f"{self.name}/config/"
+            self.config['events'] = g_dev['events']
+            # breakpoint()
+            # pprint(self.config)
+            response = self.api.authenticated_request("PUT", uri, self.config)
+            if response:
+                print("Config uploaded successfully.")
 
         return
 
