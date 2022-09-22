@@ -23,7 +23,7 @@ import glob
 import shelve
 from pprint import pprint
 import matplotlib.pyplot as plt
-import numpy
+
 
 #from devices.sequencer import Sequencer
 from devices.darkslide import Darkslide
@@ -135,15 +135,21 @@ def test_sequence(pCamera):
 
 def reset_sequence(pCamera):
     #breakpoint()
-    camShelf = shelve.open(g_dev['cam'].site_path + 'ptr_night_shelf/' + str(pCamera))
+    try:
+        camShelf = shelve.open(g_dev['cam'].site_path + 'ptr_night_shelf/' + str(pCamera))
+        seqInt = int(-1)
+        seqInt  += 1
+        seq = ('0000000000'+str(seqInt))[-8:]
+        print('Making new seq: ' , pCamera, seq)
+        camShelf['Sequence'] = seq
+        camShelf.close()
+        return seq
+    except:
+        print ("Nothing on the cam shelf in reset_sequence")
+        return None
     #seq = camShelf['Sequence']      # a 9 character string
-    seqInt = int(-1)
-    seqInt  += 1
-    seq = ('0000000000'+str(seqInt))[-8:]
-    print('Making new seq: ' , pCamera, seq)
-    camShelf['Sequence'] = seq
-    camShelf.close()
-    return seq
+    
+    
 
 # Default filter needs to be pulled from site camera or filter config
 
@@ -1020,12 +1026,12 @@ class Camera:
                         ldr_handle_high_time = None  #  This is not maxim-specific
 
                         #print('Filter number is:  ', self.camera.Filter)
-                        #try:
-                        #    for file_path in glob.glob('D:*.fit'):
+                        try:
+                            for file_path in glob.glob('D:*.fit'):
                                 #os.remove(file_path)
-                        #        pass
-                        #except:
-                        #    pass
+                                pass
+                        except:
+                            pass
                         if self.darkslide and imtypeb:
                             self.darkslide_instance.openDarkslide()
                             self.darkslide_open = True
@@ -1133,9 +1139,10 @@ class Camera:
         self.post_ocn = []
         counter = 0
         if self.bin == 1:
-            self.completion_time = self.t2 + exposure_time + 15
+            cycle_time = exposure_time + 15
         else:
-            self.completion_time = self.t2 + exposure_time + 12
+            cycle_time = exposure_time + 12
+        self.completion_time = self.t2 + cycle_time + 12
         result = {'error': False}
         notifyReadOutOnlyOnce=0
         quartileExposureReport=0
@@ -1155,8 +1162,8 @@ class Camera:
                 time.sleep(2)
                 self.t7b = time.time()
                 remaining = round(self.completion_time - self.t7b, 1)
-                if remaining > 0 and exposure_time > 0:
-                    print (str(round(remaining, 1))+'sec.', str(round(100*remaining/exposure_time, 1))+'%')
+                if remaining > 0:
+                    print (str(round(remaining, 1))+'sec.', str(round(100*remaining/cycle_time, 1))+'%')
                     if quartileExposureReport==0:    # Silly daft but workable exposure time reporting by MTF
                         initialRemaining=remaining
                         quartileExposureReport=quartileExposureReport+1
@@ -1335,7 +1342,7 @@ class Camera:
 
                     #return result   #Used if focus not saved in calibs.
                 try:
-                    #breakpoint()
+                    breakpoint()
                     hdu = fits.PrimaryHDU(self.img.transpose())   #THis needs to be done to keep fits "traditional." 0,0 upper left.
                     self.img = None    #  Does this free up any resource?
                     # assign the keyword values and comment of the keyword as a tuple to write both to header.
@@ -1760,10 +1767,8 @@ class Camera:
                     hdu.writeto(raw_path + raw_name00, overwrite=False)   #Save full raw file locally
                     ## Need to make an FZ file here before things get changed below
                     print ("Making an fz file")
-                    hdufz=fits.CompImageHDU(numpy.asarray(hdu.data, dtype=int), hdu.header)
-                    hdufz.verify('fix')
-                    hdufz.writeto(raw_path + raw_name00 +'.fz')
-
+                    hdufz=fits.CompImageHDU(hdu.data, hdu.header)
+                    hdufz.writeto(paths['raw_path'] + paths['raw_name00'] +'.fz')
                     #print('Raw:  ', raw_path + raw_name00)
                     #calibrate(hdu, cal_path+cal_name)
 
