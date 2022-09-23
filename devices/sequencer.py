@@ -1159,8 +1159,8 @@ class Sequencer:
                     #shutil.rmtree(cameradir + deleteDirectories[entry]) # THIS IS THE DELETER WHEN WE ARE READY!
 
             # Reopening config
-            imp.reload(config)
-            self.config = config
+            #imp.reload(config)
+            #self.config = config
             # Getting new times for the new day
             #self.astro_events = ptr_events.Events(self.config)
             self.astro_events.compute_day_directory()
