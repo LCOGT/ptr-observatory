@@ -23,7 +23,7 @@ import glob
 import shelve
 from pprint import pprint
 import matplotlib.pyplot as plt
-
+import numpy
 
 #from devices.sequencer import Sequencer
 from devices.darkslide import Darkslide
@@ -1767,7 +1767,7 @@ class Camera:
                     hdu.writeto(raw_path + raw_name00, overwrite=False)   #Save full raw file locally
                     ## Need to make an FZ file here before things get changed below
                     print ("Making an fz file")
-                    hdufz=fits.CompImageHDU(hdu.data, hdu.header)
+                    hdufz=fits.CompImageHDU(numpy.array(hdu.data), hdu.header)
                     hdufz.writeto(paths['raw_path'] + paths['raw_name00'] +'.fz')
                     #print('Raw:  ', raw_path + raw_name00)
                     #calibrate(hdu, cal_path+cal_name)
