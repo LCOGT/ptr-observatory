@@ -91,7 +91,7 @@ site_config = {
     'site_in_automatic_default': "Automatic",   # ["Manual", "Shutdown", "Automatic"]
     'automatic_detail_default': "Enclosure is initially set to Automatic by ARO site_config.",
     'auto_eve_bias_dark': True,
-    'auto_eve_sky_flat': False,
+    'auto_eve_sky_flat': True,
     'eve_sky_flat_sunset_offset': -60.0,  # Minutes  neg means before, + after.
     'auto_morn_sky_flat': True,
     'auto_morn_bias_dark': True,
@@ -454,7 +454,7 @@ site_config = {
                 'filter_screen_sort':  [12, 0, 11, 2, 3, 5, 4, 1, 6],   # don't use narrow yet,  8, 10, 9], useless to try.
 
 
-                'filter_sky_sort': [13, 27, 26, 25, 28, 11, 12, 7, 24, 18, 23, 10, 20, 17, 9,\
+                'filter_sky_sort': [ 27, 26, 25, 28, 12, 7, 24, 18, 23, 10, 20, 17, 9,\
                                     21 ,16, 15, 14, 22, 8, 30, 19, 6, 0]    #  No diffuser based filters
 
 
