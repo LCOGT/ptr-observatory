@@ -860,24 +860,25 @@ class Observatory:
                 # Here we parse the file, set up and send to AWS
                 im_path = pri_image[1][0]
                 name = pri_image[1][1]
-                if not (name[-3:] == 'jpg' or name[-3:] == 'txt' or name[-3:] == 'token' or '.fits.fz' in name):
+                if not (name[-3:] == 'jpg' or name[-3:] == 'txt' or 'token'  in name or '.fits.fz' in name):
                     # compress first
                     to_bz2(im_path + name)
                     name = name + '.bz2'
                 aws_req = {"object_name": name}
                 aws_resp = g_dev['obs'].api.authenticated_request('POST', '/upload/', aws_req)
-                with open(im_path + name, 'rb') as f:
-                    files = {'file': (im_path + name, f)}
-                    #if name[-3:] == 'jpg':
-                    print('--> To AWS -->', str(im_path + name))
-                    requests.post(aws_resp['url'], data=aws_resp['fields'],
-                                  files=files)
+                if ':.bz2' not in im_path + name:
+                    with open(im_path + name, 'rb') as f:
+                        files = {'file': (im_path + name, f)}
+                        #if name[-3:] == 'jpg':
+                        print('--> To AWS -->', str(im_path + name))
+                        requests.post(aws_resp['url'], data=aws_resp['fields'],
+                                      files=files)
 
 
 
-                if name[-3:] == 'bz2' or name[-3:] == 'jpg' or \
-                        name[-3:] == 'txt' or '.fits.fz' in name:
-                    os.remove(im_path + name)
+                    if name[-3:] == 'bz2' or name[-3:] == 'jpg' or \
+                            name[-3:] == 'txt' or '.fits.fz' in name:
+                        os.remove(im_path + name)
 
                 self.aws_queue.task_done()
                 time.sleep(0.1)

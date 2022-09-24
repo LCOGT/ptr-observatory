@@ -148,8 +148,8 @@ def reset_sequence(pCamera):
         print ("Nothing on the cam shelf in reset_sequence")
         return None
     #seq = camShelf['Sequence']      # a 9 character string
-    
-    
+
+
 
 # Default filter needs to be pulled from site camera or filter config
 
@@ -1342,7 +1342,7 @@ class Camera:
 
                     #return result   #Used if focus not saved in calibs.
                 try:
-
+                    #breakpoint()
                     hdu = fits.PrimaryHDU(self.img.transpose())   #THis needs to be done to keep fits "traditional." 0,0 upper left.
                     self.img = None    #  Does this free up any resource?
                     # assign the keyword values and comment of the keyword as a tuple to write both to header.
