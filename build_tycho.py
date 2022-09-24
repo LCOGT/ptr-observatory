@@ -217,7 +217,7 @@ def bootup_tycho():
     #     tpt_perfect = open("C:/Users/User/documents/GitHub/ptr-observatory/processing/TPOINT/perfct.dat", 'r')
 
     try:
-        tpt_perfect = open(str(parentPath) + "\processing\\TPOINT\\perfct.dat", 'r')
+        tpt_perfect = open(str(parentPath) + "\\processing\\TPOINT\\perfct.dat", 'r')
     except:
         print("TPoint catalogue failed to open ")
 
