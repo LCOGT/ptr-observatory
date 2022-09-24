@@ -1133,8 +1133,9 @@ class Sequencer:
             FORTNIGHT=60*60*24*7*2
             #dir_path='D:/PTRMFO/'
 
-            dir_path=self.config['client_path'] + '\\' + 'archive'
+            dir_path=self.config['client_path'] + 'archive'
             cameras=[d for d in os.listdir(dir_path) if os.path.isdir(d)]
+            print (cameras)
             for camera in cameras:  # Go through each camera directory
                 print ("*****************************************")
                 print ("Camera: " + str(camera))
@@ -1173,7 +1174,7 @@ class Sequencer:
             self.config['events'] = g_dev['events']
             # breakpoint()
             # pprint(self.config)
-            response = self.api.authenticated_request("PUT", uri, self.config)
+            response = g_dev['obs'].api.authenticated_request("PUT", uri, self.config)
             if response:
                 print("Config uploaded successfully.")
 
