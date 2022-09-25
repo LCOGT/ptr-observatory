@@ -20,6 +20,7 @@ import shutil
 import os
 import imp
 import ptr_events
+from glob import glob
 
 
 '''
@@ -169,6 +170,9 @@ class Sequencer:
             self.is_in_completes(None)
         except:
             self.reset_completes()
+
+
+
 
 
 
@@ -1131,23 +1135,26 @@ class Sequencer:
 
             # Culling the archive
             FORTNIGHT=60*60*24*7*2
-            #dir_path='D:/PTRMFO/'
-
-            dir_path=self.config['client_path'] + 'archive'
-            cameras=[d for d in os.listdir(dir_path) if os.path.isdir(d)]
+            print (self.config['client_path'] + 'archive/')
+            dir_path=self.config['client_path'] + 'archive/'
+            #cameras=[d for d in os.listdir(dir_path) if os.path.isdir(d)]
+            cameras=glob(dir_path + "*/")
             print (cameras)
             for camera in cameras:  # Go through each camera directory
                 print ("*****************************************")
                 print ("Camera: " + str(camera))
                 timenow_cull=time.time()
-                cameradir=dir_path + '\\' + camera + '\\'
-                directories=[d for d in os.listdir(cameradir) if os.path.isdir(d)]
+                #cameradir=camera
+                #directories=[d for d in os.listdir(cameradir) if os.path.isdir(d)]
+                directories=glob(camera + "*/")
                 deleteDirectories=[]
                 deleteTimes=[]
+                #print (directories)
                 for q in range(len(directories)):
-                    if ((timenow_cull)-os.path.getmtime(cameradir + directories[q])) > FORTNIGHT:
+                    print
+                    if ((timenow_cull)-os.path.getmtime(directories[q])) > FORTNIGHT:
                         deleteDirectories.append(directories[q])
-                        deleteTimes.append(((timenow_cull)-os.path.getmtime(cameradir +directories[q])) /60/60/24/7)
+                        deleteTimes.append(((timenow_cull)-os.path.getmtime(directories[q])) /60/60/24/7)
 
 
 
