@@ -1116,7 +1116,7 @@ class Sequencer:
         print("Bias/Dark Phase has passed.")
 
 
-
+        time.sleep(300) # Wait for telescope to park
         if morn:
             # UNDERTAKING END OF NIGHT ROUTINES
 
