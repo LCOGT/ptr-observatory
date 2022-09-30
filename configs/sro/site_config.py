@@ -99,6 +99,8 @@ site_config = {
     'operations_end':  0.42,
     're-calibrate_on_solve': True,
 
+    'pointing_calibration_on_startup': True,
+
     'defaults': {
         'observing_conditions': 'observing_conditions1',  #  These are used as keys, may go away.
         'enclosure': 'enclosure1',

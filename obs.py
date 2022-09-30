@@ -267,6 +267,10 @@ class Observatory:
 
         # Use the configuration to instantiate objects for all devices.
         self.create_devices(config)
+
+
+
+
         self.loud_status = False
         #g_dev['obs']: self
         g_dev['obs'] = self
@@ -306,6 +310,21 @@ class Observatory:
         # self.site_queue = queue.SimpleQueue()
         # self.site_queue_thread = threading.Thread(target=self.get_from_AWS, args=())
         # self.site_queue_thread.start()
+
+        # Pointing Calibration on Startup
+        if self.config['pointing_calibration_on_startup'] == True:
+            g_dev['mnt'].mount.SlewToAltAzAsync(270, 75)
+            g_dev['mnt'].mount.Tracking = True
+            g_dev['obs'].send_to_user("Slewing to Pointing Calibration Area.")
+            time.sleep(30)
+            g_dev['obs'].send_to_user("Running a Pointing Calibration Exposure.")
+            print ("Pointing Run ")
+            req = {'time': 20,  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'auto_focus'}   #  NB Should pick up filter and constats from config
+            #opt = {'area': 150, 'count': 1, 'bin': '2, 2', 'filter': 'focus'}
+            opt = {'area': 150, 'count': 1, 'bin': 'default', 'filter': 'Lum'}
+            result = g_dev['cam'].expose_command(req, opt, no_AWS=True, solve_it=True)
+            print ("Waiting for solve")
+            time.sleep(15)
 
 
 
@@ -1011,10 +1030,15 @@ class Observatory:
                         print("err ra, dec:  ", err_ha, err_dec)
                         #NB NB NB Need to add Pierside as a parameter to this cacc 20220214 WER
 
-                        if g_dev['mnt'].pier_side_str == 'Looking West':
+                        if err_ha > 1200 or err_dec > 1200 or err_ha < -1200 or err_dec < -1200:
+                            g_dev['mnt'].reset_mount_reference()
+                            print ("I've reset the mount_reference")
+                            g_dev['mnt'].current_icrs_ra = solve['ra_j2000_hours']
+                            g_dev['mnt'].current_icrs_dec = solve['dec_j2000_hours']
+                        elif g_dev['mnt'].pier_side_str == 'Looking West':
                             g_dev['mnt'].adjust_mount_reference(err_ha, err_dec)
                         else:
-                            g_dev['mnt'].adjust_flip_reference(err_ha, err_dec)   #Need to verify signs
+                            g_dev['mnt'].adjust_flip_reference(err_ha, err_dec)
                         #img.flush()
                         #img.close
                         #img = fits.open(wpath, ignore_missing_end=True)

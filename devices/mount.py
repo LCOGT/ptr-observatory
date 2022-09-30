@@ -1095,7 +1095,7 @@ class Mount:
         else:
             print("Mount is not capable of finding home. Slewing to zenith.")
             self.move_time = time.time()
-            self.mount.SlewToAltAzAsync(88., 0.)
+            self.mount.SlewToAltAzAsync(0, 80)
 
     def flat_panel_command(self, req, opt):
         ''' slew to the flat panel if it exists '''

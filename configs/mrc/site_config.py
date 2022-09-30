@@ -116,6 +116,7 @@ site_config = {
     'auto_morn_sky_flat': True,
     'auto_morn_bias_dark': True,
     're-calibrate_on_solve': True,
+    'pointing_calibration_on_startup': False,
 
     'defaults': {
         'observing_conditions': 'observing_conditions1',

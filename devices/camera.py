@@ -1753,7 +1753,12 @@ class Camera:
                             err_dec = round((TARGDEC - DECJ2000)*3600, 1)
                             print("Focus images error in ra, dec, asec:  ", err_ha, err_dec)
                             #g_dev['mnt'].set_last_reference(err_ha, err_dec, time_now)
-                            if g_dev['mnt'].pier_side_str == 'Looking West':
+                            if err_ha > 1200 or err_dec > 1200 or err_ha < -1200 or err_dec < -1200:
+                                g_dev['mnt'].reset_mount_reference()
+                                print ("I've reset the mount_reference")
+                                g_dev['mnt'].current_icrs_ra = solve['ra_j2000_hours']
+                                g_dev['mnt'].current_icrs_dec = solve['dec_j2000_hours']
+                            elif g_dev['mnt'].pier_side_str == 'Looking West':
                                 g_dev['mnt'].adjust_mount_reference(err_ha, err_dec)
                             else:
                                 g_dev['mnt'].adjust_flip_reference(err_ha, err_dec)
