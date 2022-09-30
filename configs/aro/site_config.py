@@ -49,6 +49,7 @@ site_config = {
     'client_path': 'F:/ptr/',
     'alt_path': '//house-computer/saf_archive_2/archive/sq01/',
     'archive_path': 'F:/ptr/',       # Where images are kept.
+    'archive_age' : -99.9, # Number of days to keep files in the local archive before deletion. Negative means never delete
     'aux_archive_path':  None,
     'wema_is_active':  True,     # True if an agent (ie a wema) is used at a site.   # Wemas are split sites -- at least two CPS's sharing the control.
     'wema_hostname':  'ARO-WEMA',
@@ -99,7 +100,7 @@ site_config = {
     'get_ocn_status': None,
     'get_enc_status': None,
     'not_used_variable': None,
-    
+
 
 
     'defaults': {
@@ -161,7 +162,7 @@ site_config = {
             'unihedron_port':  10    # False, None or numeric of COM port.
         },
     },
-    
+
     'enclosure': {
         'enclosure1': {
             'parent': 'site',

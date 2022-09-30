@@ -262,9 +262,9 @@ class Observatory:
             g_dev['redis'] = None    #a  placeholder.
         # Send the config to aws   # NB NB NB This has faulted.
         self.update_config()
-        
-               
-        
+
+
+
         # Use the configuration to instantiate objects for all devices.
         self.create_devices(config)
         self.loud_status = False
@@ -284,7 +284,7 @@ class Observatory:
         self.time_last_status = time.time() - 3
         # Build the to-AWS Try again, reboot, verify dome nad tel and start a thread.
 
-        self.aws_queue = queue.PriorityQueue()
+        self.aws_queue = queue.PriorityQueue(maxsize=0)
         self.aws_queue_thread = threading.Thread(target=self.send_to_AWS, args=())
         self.aws_queue_thread.start()
 
@@ -848,22 +848,27 @@ class Observatory:
     def send_to_AWS(self):  # pri_image is a tuple, smaller first item has priority.
                             # second item is also a tuple containing im_path and name.
 
+        #if 'oneAtATime' not in locals():
+        oneAtATime=0
         # This stopping mechanism allows for threads to close cleanly.
+        #print ("One " +str(oneAtATime))
         while True:
-            if not self.aws_queue.empty():
+            if (not self.aws_queue.empty()) and oneAtATime==0:
+                oneAtATime=1
                 pri_image = self.aws_queue.get(block=False)
                 if pri_image is None:
                     print ("got an empty entry in aws_queue???")
                     self.aws_queue.task_done()
+                    oneAtATime=0
                     time.sleep(0.2)
                     continue
                 # Here we parse the file, set up and send to AWS
                 im_path = pri_image[1][0]
                 name = pri_image[1][1]
-                if not (name[-3:] == 'jpg' or name[-3:] == 'txt' or 'token'  in name or '.fits.fz' in name):
+                #if not (name[-3:] == 'jpg' or name[-3:] == 'txt' or '.token'  in name or '.fits.fz' in name):
                     # compress first
-                    to_bz2(im_path + name)
-                    name = name + '.bz2'
+                #    to_bz2(im_path + name)
+                #    name = name + '.bz2'
                 aws_req = {"object_name": name}
                 aws_resp = g_dev['obs'].api.authenticated_request('POST', '/upload/', aws_req)
                 if ':.bz2' not in im_path + name:
@@ -877,10 +882,11 @@ class Observatory:
 
 
                     if name[-3:] == 'bz2' or name[-3:] == 'jpg' or \
-                            name[-3:] == 'txt' or '.fits.fz' in name:
+                            name[-3:] == 'txt' or '.fits.fz' in name or '.token' in name:
                         os.remove(im_path + name)
 
                 self.aws_queue.task_done()
+                oneAtATime=0
                 time.sleep(0.1)
             else:
                 time.sleep(0.2)
@@ -1126,6 +1132,11 @@ class Observatory:
                 # print('Also to:     ', paths['i768sq_name10'])
 
                 hdu.writeto(paths['im_path'] + paths['i768sq_name10'], overwrite=True)
+                # This is the new fz file for the small fits, the above thing that gets bz2'ed will be deleted
+                hdufz=fits.CompImageHDU(np.asarray(hdu.data, dtype=np.float32), hdu.header)
+                hdufz.verify('fix')
+                hdufz.writeto(paths['im_path'] + paths['i768sq_name10'] +'.fz')
+
                 hdu.data = resized_a.astype('float')
 
                 # New contrast scaling code:
@@ -1177,9 +1188,9 @@ class Observatory:
                 if not no_AWS:  #IN the no+AWS case should we skip more of the above processing?
                     #g_dev['cam'].enqueue_for_AWS(text_data_size, paths['im_path'], paths['text_name'])
                     g_dev['cam'].enqueue_for_AWS(jpeg_data_size, paths['im_path'], paths['jpeg_name10'])
-                    g_dev['cam'].enqueue_for_AWS(i768sq_data_size, paths['im_path'], paths['i768sq_name10'])
+                    g_dev['cam'].enqueue_for_AWS(i768sq_data_size, paths['im_path'], paths['i768sq_name10'] +'.fz')
                     #print('File size to AWS:', reduced_data_size)
-                    g_dev['cam'].enqueue_for_AWS(13000000, paths['raw_path'], paths['raw_name00'])    #NB need to chunkify 25% larger then small fits.
+                    #g_dev['cam'].enqueue_for_AWS(13000000, paths['raw_path'], paths['raw_name00'])    #NB need to chunkify 25% larger then small fits.
                     #if not quick:
                     g_dev['cam'].enqueue_for_AWS(26000000, paths['raw_path'], paths['raw_name00'] +'.fz')    #NB need to chunkify 25% larger then small fits.
                     #if not quick:
@@ -1221,8 +1232,8 @@ if __name__ == "__main__":
     # print(f"Starting up {config.site_name}.")
     # Start up the observatory
 
-    import config
+    #import config
 
-
+    #oneAtATime=0
     o = Observatory(config.site_name, config.site_config)
     o.run()

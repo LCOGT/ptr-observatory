@@ -513,7 +513,6 @@ class Camera:
         #else:
         #    self.object_name = False
         print (opt)
-        print ("Look here")
         if 'object_name' in opt:            # this is the worlds laziest bit of code... it is just until some javascript is updated. remove try except >Oct22
             if opt['object_name'] == '':
                 opt['object_name']= 'Unspecified'
@@ -1676,7 +1675,7 @@ class Camera:
                     #lng_path = self.lng_path
 
                     hdu.header['FILEPATH'] = str(im_path_r) +'to_AWS/'
-                    hdu.header['FILENAME'] = str(raw_name00)
+                    hdu.header['FILENAME'] = str(raw_name00 + '.fz')
 
                     try: #  NB relocate this to Expose entry area.  Fill out except.  Might want to check on available space.
                         im_path_r = self.camera_path
@@ -1737,13 +1736,15 @@ class Camera:
                     if focus_image and solve_it :
 
                         cal_name = cal_name[:-9] + 'FF' + cal_name[-7:]  # remove 'EX' add 'FO'   Could add seq to this
+                        hdu.data=hdu.data.astype('float32')
                         hdu.writeto(cal_path + cal_name, overwrite=True)
                         focus_image = False
                         try:
                             #wpath = 'C:/000ptr_saf/archive/sq01/20210528/reduced/saf-sq01-20210528-00019785-le-w-EX01.fits'
                             time_now = time.time()
-                            solve = platesolve.platesolve(cal_path + cal_name, 1.06) #hdu.header['PIXSCALE'])
-                            print("PW Solves: " ,solve['ra_j2000_hours'], solve['dec_j2000_degrees'])
+                            solve = platesolve.platesolve(cal_path + cal_name, 1.10) #hdu.header['PIXSCALE'])
+                            print (solve)
+                            print("PW Solves: " +str(solve['ra_j2000_hours']) +str(solve['dec_j2000_degrees']))
                             TARGRA  = g_dev['mnt'].current_icrs_ra
                             TARGDEC = g_dev['mnt'].current_icrs_dec
                             RAJ2000 = solve['ra_j2000_hours']
@@ -1751,12 +1752,16 @@ class Camera:
                             err_ha = round((TARGRA - RAJ2000)*15*3600, 1)
                             err_dec = round((TARGDEC - DECJ2000)*3600, 1)
                             print("Focus images error in ra, dec, asec:  ", err_ha, err_dec)
-                            g_dev['mnt'].set_last_reference(err_ha, err_dec, time_now)
-                            return result
+                            #g_dev['mnt'].set_last_reference(err_ha, err_dec, time_now)
+                            if g_dev['mnt'].pier_side_str == 'Looking West':
+                                g_dev['mnt'].adjust_mount_reference(err_ha, err_dec)
+                            else:
+                                g_dev['mnt'].adjust_flip_reference(err_ha, err_dec)
+                            #return result
                         except:
                             print(cal_path + cal_name, "  was not solved, sorry!")
-                            #g_dev['mnt'].reset_last_reference()
-                            return result
+                        ##    #g_dev['mnt'].reset_last_reference()
+                            #return result
                            #Return to classic processing
 
 
@@ -1768,6 +1773,7 @@ class Camera:
                     ## Need to make an FZ file here before things get changed below
                     print ("Making an fz file")
                     hdufz=fits.CompImageHDU(np.asarray(hdu.data, dtype=np.float32), hdu.header)
+                    #hdufz.header['FILENAME']=raw_path + raw_name00 +'.fz'
                     hdufz.verify('fix')
                     hdufz.writeto(raw_path + raw_name00 +'.fz')
                     #print('Raw:  ', raw_path + raw_name00)
