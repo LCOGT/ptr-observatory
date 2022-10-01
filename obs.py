@@ -1030,7 +1030,7 @@ class Observatory:
                         print("err ra, dec:  ", err_ha, err_dec)
                         #NB NB NB Need to add Pierside as a parameter to this cacc 20220214 WER
 
-                        if err_ha > 1200 or err_dec > 1200 or err_ha < -1200 or err_dec < -1200:
+                        if err_ha > 100 or err_dec > 100 or err_ha < -100 or err_dec < -100:
                             g_dev['mnt'].reset_mount_reference()
                             print ("I've reset the mount_reference")
                             g_dev['mnt'].current_icrs_ra = solve['ra_j2000_hours']

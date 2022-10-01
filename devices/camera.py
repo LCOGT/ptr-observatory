@@ -1779,7 +1779,7 @@ class Camera:
                             err_dec = round((TARGDEC - DECJ2000)*3600, 1)
                             print("Focus images error in ra, dec, asec:  ", err_ha, err_dec)
                             #g_dev['mnt'].set_last_reference(err_ha, err_dec, time_now)
-                            if err_ha > 1200 or err_dec > 1200 or err_ha < -1200 or err_dec < -1200:
+                            if err_ha > 100 or err_dec > 100 or err_ha < -100 or err_dec < -100:
                                 g_dev['mnt'].reset_mount_reference()
                                 print ("I've reset the mount_reference")
                                 g_dev['mnt'].current_icrs_ra = solve['ra_j2000_hours']
@@ -1866,7 +1866,7 @@ class Camera:
                         g_dev['cam'].enqueue_for_AWS(jpeg_data_size, paths['im_path'], paths['jpeg_name10'])
 
                     # assemble the small fits and send that up quickly.
-                    i768sq_data_size = hdu.data.size
+                    i768sq_data_size = hdusmall.data.size
                     # print('ABOUT to print paths.')
                     # print('Sending to:  ', paths['im_path'])
                     # print('Also to:     ', paths['i768sq_name10'])
