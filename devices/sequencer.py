@@ -758,11 +758,14 @@ class Sequencer:
                     for run in range(2):
                         if run ==0:
                             # First point at a generic alt/az
-                            print ("Slewing to a generic alt/az for a pointing run")
+                            print ("Slewing to a generic alt/az for a pointing calibration")
+                            g_dev['obs'].send_to_user("Slewing to a generic alt/az for a pointing calibration")
                             g_dev['mnt'].mount.SlewToAltAzAsync(90, 75) # Move around to non-objectionable point on the sky
                             g_dev['mnt'].mount.Tracking = True
                             time.sleep(30)
                         elif run ==1:
+                            print ("Slewing to the target ra and dec for a pointing check")
+                            g_dev['obs'].send_to_user("Slewing to the target ra and dec for a pointing check")
                             print ("ra:  " +str(dest_ra))
                             print ("dec: " +str(dest_dec))
                             g_dev['mnt'].go_coord(dest_ra, dest_dec)

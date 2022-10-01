@@ -311,20 +311,20 @@ class Observatory:
         # self.site_queue_thread = threading.Thread(target=self.get_from_AWS, args=())
         # self.site_queue_thread.start()
 
-        # Pointing Calibration on Startup
-        if self.config['pointing_calibration_on_startup'] == True:
-            g_dev['mnt'].mount.SlewToAltAzAsync(270, 75)
-            g_dev['mnt'].mount.Tracking = True
-            g_dev['obs'].send_to_user("Slewing to Pointing Calibration Area.")
-            time.sleep(30)
-            g_dev['obs'].send_to_user("Running a Pointing Calibration Exposure.")
-            print ("Pointing Run ")
-            req = {'time': 20,  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'auto_focus'}   #  NB Should pick up filter and constats from config
-            #opt = {'area': 150, 'count': 1, 'bin': '2, 2', 'filter': 'focus'}
-            opt = {'area': 150, 'count': 1, 'bin': 'default', 'filter': 'Lum'}
-            result = g_dev['cam'].expose_command(req, opt, no_AWS=True, solve_it=True)
-            print ("Waiting for solve")
-            time.sleep(15)
+        # # Pointing Calibration on Startup
+        # if self.config['pointing_calibration_on_startup'] == True:
+        #     g_dev['mnt'].mount.SlewToAltAzAsync(270, 75)
+        #     g_dev['mnt'].mount.Tracking = True
+        #     g_dev['obs'].send_to_user("Slewing to Pointing Calibration Area.")
+        #     time.sleep(30)
+        #     g_dev['obs'].send_to_user("Running a Pointing Calibration Exposure.")
+        #     print ("Pointing Run ")
+        #     req = {'time': 20,  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'auto_focus'}   #  NB Should pick up filter and constats from config
+        #     #opt = {'area': 150, 'count': 1, 'bin': '2, 2', 'filter': 'focus'}
+        #     opt = {'area': 150, 'count': 1, 'bin': 'default', 'filter': 'Lum'}
+        #     result = g_dev['cam'].expose_command(req, opt, no_AWS=True, solve_it=True)
+        #     print ("Waiting for solve")
+        #     time.sleep(15)
 
 
 
@@ -1133,7 +1133,7 @@ class Observatory:
                     except:
                         spot = None
 
-                reduced_data_size = hdu.data.size
+                #reduced_data_size = hdu.data.size
 
                 # =============================================================================
                 # x = 2      From Numpy: a way to quickly embed an array in a larger one
@@ -1141,46 +1141,18 @@ class Observatory:
                 # wall[x:x+block.shape[0], y:y+block.shape[1]] = block
                 # =============================================================================
 
-                hdu.data = hdu.data.astype('uint16')
-                iy, ix = hdu.data.shape
-                if iy == ix:
-                    resized_a = resize(hdu.data, (1280, 1280), preserve_range=True)
-                else:
-                    resized_a = resize(hdu.data, (int(1536*iy/ix), 1536), preserve_range=True)  #  We should trim chips so ratio is exact.
+                #hdu.data = hdu.data.astype('uint16')
+                #iy, ix = hdu.data.shape
+                #if iy == ix:
+                #    resized_a = resize(hdu.data, (1280, 1280), preserve_range=True)
+                #else:
+                #    resized_a = resize(hdu.data, (int(1536*iy/ix), 1536), preserve_range=True)  #  We should trim chips so ratio is exact.
                 #print('New small fits size:  ', resized_a.shape)
-                hdu.data = resized_a.astype('uint16')
+                #hdu.data = resized_a.astype('uint16')
 
-                i768sq_data_size = hdu.data.size
-                # print('ABOUT to print paths.')
-                # print('Sending to:  ', paths['im_path'])
-                # print('Also to:     ', paths['i768sq_name10'])
+                #SMALL FITS CODE WENT HERE
 
-                hdu.writeto(paths['im_path'] + paths['i768sq_name10'], overwrite=True)
-                # This is the new fz file for the small fits, the above thing that gets bz2'ed will be deleted
-                hdufz=fits.CompImageHDU(np.asarray(hdu.data, dtype=np.float32), hdu.header)
-                hdufz.verify('fix')
-                hdufz.writeto(paths['im_path'] + paths['i768sq_name10'] +'.fz')
-
-                hdu.data = resized_a.astype('float')
-
-                # New contrast scaling code:
-                stretched_data_float = Stretch().stretch(hdu.data)
-                stretched_256 = 255*stretched_data_float
-                hot = np.where(stretched_256 > 255)
-                cold = np.where(stretched_256 < 0)
-                stretched_256[hot] = 255
-                stretched_256[cold] = 0
-                #print("pre-unit8< hot, cold:  ", len(hot[0]), len(cold[0]))
-                stretched_data_uint8 = stretched_256.astype('uint8')  # Eliminates a user warning
-                hot = np.where(stretched_data_uint8 > 255)
-                cold = np.where(stretched_data_uint8 < 0)
-                stretched_data_uint8[hot] = 255
-                stretched_data_uint8[cold] = 0
-                #print("post-unit8< hot, cold:  ", len(hot[0]), len(cold[0]))
-                imsave(paths['im_path'] + paths['jpeg_name10'], stretched_data_uint8)
-                #img4 = stretched_data_uint8  # keep old name for compatibility
-
-                jpeg_data_size = abs(stretched_data_uint8.size - 1024)                # istd = np.std(hdu.data)
+                #JPEG CODE WENT HERE
 
                 #
                 # MTF - a temporary routine to create fz for BANZAI testing for Darren
@@ -1211,8 +1183,8 @@ class Observatory:
 
                 if not no_AWS:  #IN the no+AWS case should we skip more of the above processing?
                     #g_dev['cam'].enqueue_for_AWS(text_data_size, paths['im_path'], paths['text_name'])
-                    g_dev['cam'].enqueue_for_AWS(jpeg_data_size, paths['im_path'], paths['jpeg_name10'])
-                    g_dev['cam'].enqueue_for_AWS(i768sq_data_size, paths['im_path'], paths['i768sq_name10'] +'.fz')
+                    #g_dev['cam'].enqueue_for_AWS(jpeg_data_size, paths['im_path'], paths['jpeg_name10'])
+                    #g_dev['cam'].enqueue_for_AWS(i768sq_data_size, paths['im_path'], paths['i768sq_name10'] +'.fz')
                     #print('File size to AWS:', reduced_data_size)
                     #g_dev['cam'].enqueue_for_AWS(13000000, paths['raw_path'], paths['raw_name00'])    #NB need to chunkify 25% larger then small fits.
                     #if not quick:
@@ -1230,7 +1202,8 @@ class Observatory:
                 # except:
                 #     pass
                 #print("\nReduction completed.")
-                g_dev['obs'].send_to_user("An image reduction has completed.", p_level='INFO')
+                g_dev['obs'].send_to_user("An image has been readout from the camera and sent to the cloud.", p_level='INFO') ## MTF says that this isn't actuallytrue and isn't actually informative! Will comment out and see if anyone notices.....
+
                 self.reduce_queue.task_done()
             else:
                 time.sleep(.5)
