@@ -357,6 +357,8 @@ site_config = {
             'coef_c': -55.9946,  #-77.57,   # negative means focus moves out/in as Primary gets colder/warmer.
             'coef_0': 5333.0, #6155,   #5675,  20220502 Nominal intercept when Primary is at 0.0 C. f4.9 cONFIGURATION
             'coef_date':  '20220920',    # TEMP RANGE 12 TO 19, 6 MEASUREMENTS
+            'z_compression': 0.0, #  microns per degree of zenith distance
+            'z_coef_date':  '20221002',   # 'reference': 4375,    #   Guess 20210904  Nominal at 10C Primary temperature
             'minimum': 0,     # NB this area is confusing steps and microns, and need fixing.
             'maximum': 12600,   #12672 actually
             'step_size': 1,
