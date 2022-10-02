@@ -167,8 +167,8 @@ class Sequencer:
         self.sky_flat_latch = True
         self.morn_sky_flat_latch = True
         self.morn_bias_dark_latch = True   #NB NB NB Should these initially be defined this way?
-        #breakpoint()
-        self.reset_completes()
+
+        self.reset_completes()  # NB NB Note this is reset each time sequencer is restarted.
 
         try:
             self.is_in_completes(None)
@@ -2756,6 +2756,7 @@ IF sweep
         #print('Completes contains:  ', seq_shelf['completed_blocks'])
         if check_block_id in seq_shelf['completed_blocks']:
             seq_shelf.close()
+            print("Block ID in completed blocks:  ",  check_block_id)
             return True
         else:
             seq_shelf.close()

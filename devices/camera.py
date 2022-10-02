@@ -1760,12 +1760,13 @@ class Camera:
                     if focus_image and not solve_it:
                         #Note we do not reduce focus images, except above in focus processing.
                         cal_name = cal_name[:-9] + 'F012' + cal_name[-7:]  # remove 'EX' add 'FO'   Could add seq to this
+                        hdu.data=hdu.data.astype('float32')
                         hdu.writeto(cal_path + cal_name, overwrite=True)
                         focus_image = False
                         return result
                     if focus_image and solve_it :
 
-                        cal_name = cal_name[:-9] + 'FF' + cal_name[-7:]  # remove 'EX' add 'FO'   Could add seq to this
+                        cal_name = cal_name[:-9] + 'FS' + cal_name[-7:]  # remove 'EX' add 'FO'   Could add seq to this
                         hdu.data=hdu.data.astype('float32')
                         hdu.writeto(cal_path + cal_name, overwrite=True)
                         focus_image = False

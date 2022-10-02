@@ -1027,18 +1027,22 @@ class Observatory:
                         #breakpoint()
                         err_ha = target_ra - solved_ra
                         err_dec = target_dec - solved_dec
-                        print("err ra, dec:  ", err_ha, err_dec)
+                        print(" coordinate error in ra, dec:  (asec) ", round(err_ha*15*3600, 2), round(err_dec*3600, 2))  #NB WER changed units 20221012
                         #NB NB NB Need to add Pierside as a parameter to this cacc 20220214 WER
-
+                        #NB NB NB this needs rethinking, the incoming units are hours in HA or degrees of dec
                         if err_ha > 100 or err_dec > 100 or err_ha < -100 or err_dec < -100:
-                            g_dev['mnt'].reset_mount_reference()
-                            print ("I've reset the mount_reference")
-                            g_dev['mnt'].current_icrs_ra = solve['ra_j2000_hours']
-                            g_dev['mnt'].current_icrs_dec = solve['dec_j2000_hours']
+                           # g_dev['mnt'].reset_mount_reference()
+                            print ("I've been inhibited from reset the mount_reference 1")
+                            #g_dev['mnt'].current_icrs_ra = solve['ra_j2000_hours']
+                            #g_dev['mnt'].current_icrs_dec = solve['dec_j2000_hours']
                         elif g_dev['mnt'].pier_side_str == 'Looking West':
-                            g_dev['mnt'].adjust_mount_reference(err_ha, err_dec)
+                            #g_dev['mnt'].adjust_mount_reference(err_ha, err_dec)
+                            print ("I've been inhibited from reset the mount_reference 2")
+                            pass
                         else:
-                            g_dev['mnt'].adjust_flip_reference(err_ha, err_dec)
+                            #g_dev['mnt'].adjust_flip_reference(err_ha, err_dec)
+                            print ("I've been inhibited from reset the mount_reference 3")
+                            pass
                         #img.flush()
                         #img.close
                         #img = fits.open(wpath, ignore_missing_end=True)
