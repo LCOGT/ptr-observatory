@@ -329,8 +329,8 @@ site_config = {
             'coef_c': -8.529,   #  Negative means focus moves out as Primary gets colder
             'coef_0': 7853.86,  #  Nominal intercept when Primary is at 0.0 C.
             'coef_date':  '20220914',    #This appears to be sensible result 44 points -13 to 3C'reference':  6431,    #  Nominal at 10C Primary temperature
-            # #F9 setup
-            # 'reference': 4375,    #   Guess 20210904  Nominal at 10C Primary temperature
+            'z_compression': -0.927, #  microns per degree of zenith distance
+            'z_coef_date':  '20221002',   # 'reference': 4375,    #   Guess 20210904  Nominal at 10C Primary temperature
             # 'ref_temp':  27.,    #  Update when pinning reference
             # 'coef_c': -78.337,   #  negative means focus moves out as Primary gets colder
             # 'coef_0': 5969,  #  Nominal intercept when Primary is at 0.0 C.
@@ -437,7 +437,7 @@ site_config = {
             'file_mode_path':  'G:/000ptr_saf/archive/sq01/autosaves/',   #NB Incorrect site, etc. Not used at SRO.  Please clean up.
 
             'settings': {
-                'temp_setpoint': -22,   #Updated from -18 WER 20220914 Afternoon
+                'temp_setpoint': -25,   #Updated from -18 WER 20220914 Afternoon
                 'calib_setpoints': [-35,-30, -25, -20, -15, -10 ],  #  Should vary with season?
                 'day_warm': False,
                 'cooler_on': True,

@@ -1649,6 +1649,8 @@ class Sequencer:
 # ============================================================================= Save AFTER mount has settled down.
 # =============================================================================
 # =============================================================================
+        #  NB NB NB PLEASE NOTE WE ARE GETTING THE START POSITIONS WE EXPECT TO RETURN TO FROM THE MOUNT AND FOCUSER
+        #  SO this may reult in drift if the return does not go to the mecahnical Ra and DEC.
         start_ra = g_dev['mnt'].mount.RightAscension   #Read these to go back.  NB NB Need to cleanly pass these on so we can return to proper target.
         start_dec = g_dev['mnt'].mount.Declination
         focus_start = g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron
@@ -1665,12 +1667,12 @@ class Sequencer:
                                     g_dev['mnt'].current_sidereal)
             print("Going to near focus star " + str(focus_star[0][0]) + "  degrees away.")
             g_dev['mnt'].go_coord(focus_star[0][1][1], focus_star[0][1][0])
-            req = {'time': 12.5,  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'auto_focus'}   #  NB Should pick up filter and constats from config
+            req = {'time': 12.5,  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'focus'}   #  NB Should pick up filter and constats from config
             #opt = {'area': 150, 'count': 1, 'bin': '2, 2', 'filter': 'focus'}
             opt = {'area': 150, 'count': 1, 'bin': 'default', 'filter': 'focus'}
         else:
             pass   #Just take an image where currently pointed.
-            req = {'time': 15,  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'auto_focus'}   #  NB Should pick up filter and constats from config
+            req = {'time': 15,  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'focus'}   #  NB Should pick up filter and constats from config
             #opt = {'area': 150, 'count': 1, 'bin': '2, 2', 'filter': 'focus'}
             opt = {'area': 150, 'count': 1, 'bin': 'default', 'filter': 'focus'}
         foc_pos0 = focus_start
@@ -1751,10 +1753,10 @@ class Sequencer:
         if spot1 is None or spot2 is None or spot3 is None or spot1 == False or spot2 == False or spot3 == False:  #New additon to stop crash when no spots
             print("No stars detected. Returning to original focus setting and pointing.")
 
-            g_dev['foc'].guarded_move((focus_start)*g_dev['foc'].micron_to_steps)
+            g_dev['foc'].guarded_move((focus_start)*g_dev['foc'].micron_to_steps)  #NB NB 20221002 THis unit fix shoudl be in the routine. WER
             self.sequencer_hold = False   #Allow comand checks.
             self.af_guard = False
-            g_dev['mnt'].mount.SlewToCoordinatesAsync(start_ra, start_dec)
+            g_dev['mnt'].mount.SlewToCoordinatesAsync(start_ra, start_dec)  #MAKE sure same style coordinates.
             self.sequencer_hold = False
             self.guard = False
             self.af_guard = False

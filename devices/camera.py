@@ -778,7 +778,7 @@ class Camera:
 
         no_AWS, self.toss = True if imtype.lower() == 'test image' else False, False
         quick = True if imtype.lower() == 'quick' else False
-        # clearly define which frames do not do_sep, the rest default to do_sep.
+        # clearly define which frames do not do_sep, the rest default to do_sep.  NBNB this is obsolete and needs rework 20221002 WER
         if imtype.lower() in ('quick', 'bias', 'dark', 'screen flat', 'sky flat', 'near flat', 'thor flat', \
                                 'arc flat', 'lamp flat', 'solar flat'):
             do_sep = False
@@ -802,6 +802,10 @@ class Camera:
             imtypeb = True  # open the shutter.
             lamps = 'screen lamp or none'
             frame_type = imtype.replace(' ', '')  # note banzai doesn't appear to include screen or solar flat keywords.
+        elif imtype.lower() == 'focus':
+            frame_type = 'focus'
+            imtypeb = True
+            lamps = None
         else:  # 'light', 'experimental', 'autofocus probe', 'quick', 'test image', or any other image type
             imtypeb = True
             lamps = None

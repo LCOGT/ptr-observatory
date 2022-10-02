@@ -77,6 +77,11 @@ class Focuser:
         except:
             self.set_focal_ref_reset_log(config['focuser']['focuser1']['reference'])
 
+        try:
+            self.z_compression = config['focuser']['focuser1']['z_compression']
+        except:
+            self.z_compression = 0.0
+
         try:   #  NB NB NB This mess neads cleaning up.
             try:
                 if not self.site in ['sro']:
@@ -242,6 +247,10 @@ class Focuser:
         #self.last_termperature was used to position the focuser.  Do not use
         #move_relative()  Functionally dependent of temp, coef_c and filter thickness.
 
+        # NB NB NB this routine may build up a rounding error so consider making it more
+        #absolute.  However if the user adjusted the focus then appling just a delta to their setpoint
+        # makes more sense than a full recalcutatin of ax + b...
+
         try:
             if self.site != 'sro':
                 temp_delta = self.focuser.Temperature - self.last_temperature
@@ -255,6 +264,14 @@ class Focuser:
             if abs(temp_delta)> 0.1 and self.last_temperature is not None:
                 adjust = round(temp_delta*float(self.config['coef_c']), 1)
             adjust += g_dev['fil'].filter_offset
+
+            try:
+                z_distance = 90.0 - g_dev['mnt'].mount.Altitude
+                adjust += self.z_compression*z_distance
+                print ('Adjust focus to:  ', round(adjust, 1))
+            except:
+                pass    #no need to add a zero adjustment
+
             try:
                 self.last_temperature = g_dev['ocn'].status['temperature_C']  #Save this for next adjustment
             except:
@@ -367,7 +384,7 @@ class Focuser:
                 print(str(item))
         except:
             print ("There is no focus log on the night shelf.")
-            
+
 
 
     def get_focal_ref(self):
