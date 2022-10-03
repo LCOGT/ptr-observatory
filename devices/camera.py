@@ -1887,8 +1887,6 @@ class Camera:
                     im_type = 'EX'   #or EN for engineering....
                     f_ext = ""
 
-                    print ("Maybe we are here?")
-
                     if frame_type in ('bias', 'dark', 'lampflat', 'skyflat', 'screenflat', 'solarflat', 'arc'):
                         f_ext = "-"
                         if opt['area'] == 150:

@@ -563,8 +563,8 @@ site_config = {
                 'y_pixel':  3.76,
                 'pix_scale': [0.302597, 0.605194, 0.907791, 1.210388],    #   bin-2  2* math.degrees(math.atan(3.76/2563000))*3600
 
-                'CameraXSize' : 4096,
-                'CameraYSize' : 4096,
+                'CameraXSize' : 4784,
+                'CameraYSize' : 3194,
                 'MaxBinX' : 2,
                 'MaxBinY' : 2,
                 'StartX' : 1,

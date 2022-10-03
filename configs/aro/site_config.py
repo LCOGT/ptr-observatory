@@ -516,8 +516,8 @@ site_config = {
                 'y_pixel':  3.76,
                 'pix_scale': [0.528, 1.055, 1.583, 2.110],  # VErified for saf 20220903 WER [0.2876, 0.575, 0.863, 1.15], #F9        [0.528, 1.055, 1.583, 2.110] F4.9
 
-                'CameraXSize' : 4096,
-                'CameraYSize' : 4096,
+                'CameraXSize' : 9600,
+                'CameraYSize' : 6422,
                 'MaxBinX' : 2,
                 'MaxBinY' : 2,
                 'StartX' : 1,
