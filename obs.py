@@ -961,12 +961,12 @@ class Observatory:
                 hdu.data += pedastal
                 hdu.header['PEDESTAL'] = (-pedastal,  'Add to get zero ADU based image')
 
-                fix_neg_pix = np.where(hdu.data < 0)
+                #fix_neg_pix = np.where(hdu.data < 0)
                 #print('# of < 0  pixels:  ', len(fix_neg_pix[0]))  #  Do not change values here.
-                hdu.data[fix_neg_pix] = 0
-                fix_max_pix = np.where(hdu.data > 65535)
+                #hdu.data[fix_neg_pix] = 0
+                #fix_max_pix = np.where(hdu.data > 65535)
                 #print("Max data value is:  ", fix_max_pix, len(fix_max_pix[0]))
-                hdu.data[fix_max_pix] = 65535.
+                #hdu.data[fix_max_pix] = 65535.
 
                 ####################################################################################################
 
@@ -1049,7 +1049,7 @@ class Observatory:
                         print(" coordinate error in ra, dec:  (asec) ", round(err_ha*15*3600, 2), round(err_dec*3600, 2))  #NB WER changed units 20221012
                         #NB NB NB Need to add Pierside as a parameter to this cacc 20220214 WER
 
-                        
+
                         try:
                             if g_dev['mnt'].pier_side_str == 'Looking West':
                                 g_dev['mnt'].adjust_mount_reference(err_ha, err_dec)

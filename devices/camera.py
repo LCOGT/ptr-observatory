@@ -23,7 +23,7 @@ import glob
 import shelve
 from pprint import pprint
 import matplotlib.pyplot as plt
- 
+
 import traceback
 
 from auto_stretch.stretch import Stretch
@@ -248,6 +248,7 @@ class Camera:
             self.description = "ASCOM"
             self.maxim = False
             self.ascom = True
+            self.theskyx = False
             print('ASCOM is connected:  ', self._connect(True))
             print('Control is ASCOM camera driver.')
 
@@ -278,8 +279,8 @@ class Camera:
             self.ascom = False
             self.theskyx = True
             print('TheSkyX is connected:  ')
-            self.app = win32com.client.Dispatch("CCDSoft2XAdaptor.ccdsoft5Camera") 
-            
+            self.app = win32com.client.Dispatch("CCDSoft2XAdaptor.ccdsoft5Camera")
+
         else:
             print('Maxim camera is initializing.')
             #Monkey patch in Maxim specific methods.
@@ -294,17 +295,18 @@ class Camera:
             self._stop_expose = self._maxim_stop_expose
             self._imageavailable = self._maxim_imageavailable
             self._getImageArray = self._maxim_getImageArray
-            
+
             self.description = 'MAXIM'
             self.maxim = True
             self.ascom = False
+            self.theskyx = False
             print('Maxim is connected:  ', self._connect(True))
-            self.app = win32com.client.Dispatch("Maxim.Application")        
+            self.app = win32com.client.Dispatch("Maxim.Application")
             print (self.camera)
             self.camera.SetFullFrame()
             self.camera.SetFullFrame
-            
-            
+
+
             #self.app.TelescopeConnected = True
             #print("Maxim Telescope Connected: ", self.app.TelescopeConnected)
             print('Control is via Maxim camera interface, not ASCOM.')
@@ -341,7 +343,7 @@ class Camera:
                 os.mkdir(self.config['archive_path'] +'archive/' + datetime.datetime.strftime(datetime.datetime.now(), '%Y%m%d'))
             except:
                 print ("Couldn't make autosave directory")
-        
+
         try:
             for file_path in glob.glob(self.file_mode_path + '*.f*t*'):
                 os.remove(file_path)
@@ -440,15 +442,15 @@ class Camera:
         return
 
     #The patches.   Note these are essentially  getter-setter/property constructs.
-    
+
     def _theskyx_set_setpoint(self, p_temp):
         print ("NOT SURE HOW TO SET TEMP POINT IN THE SKY YET")
         self.camera.TemperatureSetPoint  = float(p_temp)
         return self.camera.TemperatureSetPoint
-    
+
     def _theskyx_connected(self):
         return self.camera.LinkEnabled
-        
+
     def _theskyx_connect(self, p_connect):
         self.camera.LinkEnabled = p_connect
         return self.camera.LinkEnabled
@@ -485,20 +487,20 @@ class Camera:
 
     def _theskyx_stop_expose(self):
         self.camera.AbortExposure()
-        
+
     def _theskyx_imageavailable(self):
         print (self.camera.IsExposureComplete)
         return (self.camera.IsExposureComplete)
-    
-    def _theskyx_getImageArray(self):        
+
+    def _theskyx_getImageArray(self):
         return (fits.open(self.camera.LastImageFileName)[0].data)
-    
-    
-    
-    
+
+
+
+
     def _maxim_connected(self):
         return self.camera.LinkEnabled
-        
+
     def _maxim_connect(self, p_connect):
         self.camera.LinkEnabled = p_connect
         return self.camera.LinkEnabled
@@ -533,22 +535,22 @@ class Camera:
 
     def _maxim_stop_expose(self):
         self.camera.AbortExposure()
-        
+
     def _maxim_imageavailable(self):
         return (self.camera.ImageReady)
-        
+
     def _maxim_getImageArray(self):
         return (self.camera.ImageArray)
-    
-        
+
+
 
     def _ascom_connected(self):
         return self.camera.Connected
-    
+
     def _ascom_imageavailable(self):
         return (self.camera.ImageReady)
-    
-    
+
+
 
     def _ascom_connect(self, p_connect):
         self.camera.Connected = p_connect
@@ -584,10 +586,10 @@ class Camera:
 
     def _ascom_stop_expose(self):
             self.camera.StopExposure()   #ASCOM also has an AbortExposure method.
-            
+
     def _ascom_getImageArray(self):
-        return (self.camera.ImageArray)        
-    
+        return (self.camera.ImageArray)
+
 
     def create_simple_autosave(self, exp_time=0, img_type=0, speed=0, suffix='', \
                                repeat=1, readout_mode="Normal", filter_name='W', \
@@ -974,7 +976,7 @@ class Camera:
             self.camera.BinX = self.bin_x
             self.bin_y = min(bin_y, self.camera_max_y_bin)
             self.camera.BinY = self.bin_y
-        
+
         self.len_x = self.camera_x_size//self.bin_x
         self.len_y = self.camera_y_size//self.bin_y    #Unit is binned pixels.
         self.len_xs = 0  # THIS IS A HACK, indicating no overscan.
@@ -1185,13 +1187,13 @@ class Camera:
                         except:
                             print ("ECO enclosure on exposure fail, line 1020")
                         g_dev['foc'].get_quick_status(self.pre_foc)
-                        try: 
+                        try:
                             g_dev['rot'].get_quick_status(self.pre_rot)
                         except:
                             print ("ECO Don't have no rotator 1025")
                         try:
                             g_dev['mnt'].get_quick_status(self.pre_mnt)
-                        except: 
+                        except:
                             print ("ra_cal_offset is an issue")
                         ldr_handle_time = None
                         # try:
@@ -1272,8 +1274,8 @@ class Camera:
                             else:
                                 imtypeb = 0
                             self.t2 = time.time()
-                            
-                            print ("We got here222")
+
+
 
                             self._expose (exposure_time, imtypeb)
                     else :
@@ -1283,7 +1285,7 @@ class Camera:
                         return result
                     self.t9 = time.time()
                     #We go here to keep this subroutine a reasonable length, Basically still in Phase 2
-                    print ("We got here")
+
                     result = self.finish_exposure(exposure_time,  frame_type, count - seq, \
                                          gather_status, do_sep, no_AWS, dist_x, dist_y, \
                                          quick=quick, low=ldr_handle_time, \
@@ -1447,7 +1449,7 @@ class Camera:
                 #self.img = self.img_untransposed    #   .transpose()  Only use this if Maxim has changed orientation.
                 #  print('incoming shape:  ', self.img.shape)
                 self.t5 = time.time()
-                try:                    
+                try:
                     pier_side = g_dev['mnt'].mount.sideOfPier    #0 == Tel Looking West, is flipped.
                 except:
                     print ("This mount doesn't report sideofpier")
@@ -1563,7 +1565,7 @@ class Camera:
                     focus_image = False
 
                     #return result   #Used if focus not saved in calibs.
-                print ("We got here")
+
                 try:
                     #breakpoint()
                     hdu = fits.PrimaryHDU(self.img.transpose())   #THis needs to be done to keep fits "traditional." 0,0 upper left.
@@ -1673,7 +1675,7 @@ class Camera:
                         hdu.header['DETSEC']  = self.config['camera'][self.name]['settings']['det_sec' ][3]
                         hdu.header['BIASSEC'] = self.config['camera'][self.name]['settings']['bias_sec'][3]
                         hdu.header['TRIMSEC'] = self.config['camera'][self.name]['settings']['trim_sec'][3]
-                    print ("this is where we are")
+
                     #The above code sets up a proper, 0,0 lower left MIRA view of the raw image.  NB NB Should index by binning setting
                     hdu.header['SATURATE'] = (float(self.config['camera'][self.name]['settings']['saturate']), '[ADU] Saturation level')  # will come from config(?)
                     hdu.header['MAXLIN'] = (float(self.config['camera'][self.name]['settings']['max_linearity']), '[ADU] Non-linearity level')
@@ -1825,7 +1827,7 @@ class Camera:
                         hdu.header['ROTMOVNG'] = (avg_rot[2], 'Rotator is moving')
                     except:
                         print ("have to have no rotator header itesm when no rotator")
-                    
+
                     try:
                         hdu.header['FOCUS'] = (self.config['focuser']['focuser1']['name'], 'Focuser name')
                         hdu.header['FOCUSPOS'] = (avg_foc[1], '[um] Focuser position')
@@ -1834,7 +1836,7 @@ class Camera:
                     except:
                         print ("There is something fishy in the focuser routine")
 
-                    
+
                     try:
                         hdu.header['WXSTATE'] = (g_dev['ocn'].wx_is_ok, 'Weather system state')
                         hdu.header['SKY-TEMP'] = (avg_ocn[1], '[C] Sky temperature')
@@ -1972,6 +1974,7 @@ class Camera:
                         self.enqueue_image(raw_data_size, im_path, raw_name01)
                     '''
 
+
                     if focus_image:
                         if len(self.biasframe) > 10:
                             hdu.data=hdu.data-self.biasframe
@@ -2035,11 +2038,12 @@ class Camera:
 
                     #
 
+
                     #if self.biasframe == None :
                     #    print ("Skipping Bias Frame")
                     #else:
                         # Bias frame quick flash
-                    if not frame_type.lower() in ('bias', 'dark', 'flat'): # Don't process jpgs or small fits for biases and darks
+                    if not frame_type.lower() in ('bias', 'dark', 'flat', 'screenflat', 'skyflat'): # Don't process jpgs or small fits for biases and darks
                         hdusmall=copy.deepcopy(hdu)
                         hdusmall.data = hdusmall.data.astype('float32')
 
@@ -2157,7 +2161,7 @@ class Camera:
                    #print("\n\Finish-Exposure is complete, saved:  " + raw_name00)#, raw_data_size, '\n')
                     g_dev['obs'].update_status()
                     result['mean_focus'] = avg_foc[1]
-                    try:                        
+                    try:
                         result['mean_rotation'] = avg_rot[1]
                     except:
                         print ("we ain't got no rotator matey")

@@ -515,6 +515,14 @@ site_config = {
                 'x_pixel':  3.76,
                 'y_pixel':  3.76,
                 'pix_scale': [0.528, 1.055, 1.583, 2.110],  # VErified for saf 20220903 WER [0.2876, 0.575, 0.863, 1.15], #F9        [0.528, 1.055, 1.583, 2.110] F4.9
+
+                'CameraXSize' : 4096,
+                'CameraYSize' : 4096,
+                'MaxBinX' : 2,
+                'MaxBinY' : 2,
+                'StartX' : 1,
+                'StartY' : 1,
+
                 'x_field_deg': 1.042,   #  round(4784*1.055/3600, 4),
                 'y_field_deg': 0.7044,   # round(3194*1.055/3600, 4),
                 'detsize': '[1:9600, 1:6422]',  # QHY600Pro Physical chip data size as returned from driver

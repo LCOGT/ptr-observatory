@@ -562,6 +562,15 @@ site_config = {
                 'x_pixel':  3.76,
                 'y_pixel':  3.76,
                 'pix_scale': [0.302597, 0.605194, 0.907791, 1.210388],    #   bin-2  2* math.degrees(math.atan(3.76/2563000))*3600
+
+                'CameraXSize' : 4096,
+                'CameraYSize' : 4096,
+                'MaxBinX' : 2,
+                'MaxBinY' : 2,
+                'StartX' : 1,
+                'StartY' : 1,
+
+
                 'x_field_deg': round(4784*0.605194/3600, 4),   #48 X 32 AMIN  3MIN X 0.5 DEG
                 'y_field_deg': round(3194*0.605194/3600, 4),
                 'overscan_x': 24,
