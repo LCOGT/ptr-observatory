@@ -240,7 +240,8 @@ site_config = {
             'west_clutch_ra_correction': 0.0,
             'west_clutch_dec_correction': 0.0,
             'east_flip_ra_correction': 0.0,
-            'east_flip_dec_correction': 0.0,
+            'east_flip_dec_correction': 0.0,  #
+            'permissive_mount_reset' : 'no', # if this is set to yes, it will reset the mount at startup and when coordinates are out significantly
             'has_paddle': False,
             'pointing_tel': 'tel1',
             'Selector':{

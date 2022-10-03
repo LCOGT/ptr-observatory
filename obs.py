@@ -26,6 +26,7 @@ import requests
 import os
 import redis  #  Client, can work with Memurai
 import json
+import astropy
 import numpy as np
 import math
 import shelve
@@ -186,6 +187,7 @@ class Observatory:
         # This is the ayneclass through which we can make authenticated api calls.
         self.api = API_calls()
 
+
         self.command_interval = 3   # seconds between polls for new commands
         self.status_interval = 4    # NOTE THESE IMPLEMENTED AS A DELTA NOT A RATE.
 
@@ -268,7 +270,11 @@ class Observatory:
         # Use the configuration to instantiate objects for all devices.
         self.create_devices(config)
 
-
+        # clear up astropy cache
+        astropy.utils.data.clear_download_cache()
+        if not os.path.exists(g_dev['cam'].site_path + 'astropycache'):
+            os.makedirs(g_dev['cam'].site_path + 'astropycache')
+        astropy.config.set_temp_cache(g_dev['cam'].site_path + 'astropycache')
 
 
         self.loud_status = False
@@ -303,6 +309,8 @@ class Observatory:
         self.projects = None
         self.events_new = None
         self.reset_last_reference()
+        if self.config['mount']['mount1']['permissive_mount_reset'] == 'yes':
+           g_dev['mnt'].reset_mount_reference()
 
 
 
@@ -1049,6 +1057,22 @@ class Observatory:
                         print(" coordinate error in ra, dec:  (asec) ", round(err_ha*15*3600, 2), round(err_dec*3600, 2))  #NB WER changed units 20221012
                         #NB NB NB Need to add Pierside as a parameter to this cacc 20220214 WER
 
+                        #NB NB NB this needs rethinking, the incoming units are hours in HA or degrees of dec
+                        if (err_ha*15*3600 > 1200 or err_dec*3600 > 1200 or err_ha*15*3600 < -1200 or err_dec*3600 < -1200) and   self.config['mount']['mount1']['permissive_mount_reset'] == 'yes':
+                            g_dev['mnt'].reset_mount_reference()
+                            print ("I've  reset the mount_reference 1")
+                            g_dev['mnt'].current_icrs_ra = solve['ra_j2000_hours']
+                            g_dev['mnt'].current_icrs_dec = solve['dec_j2000_hours']
+                            err_ha = 0
+                            err_dec = 0
+                        elif g_dev['mnt'].pier_side_str == 'Looking West':
+                            g_dev['mnt'].adjust_mount_reference(err_ha, err_dec)
+                            print ("I've been inhibited from reset the mount_reference 2")
+                            pass
+                        else:
+                            g_dev['mnt'].adjust_flip_reference(err_ha, err_dec)
+                            print ("I've been inhibited from reset the mount_reference 3")
+                            pass
 
                         try:
                             if g_dev['mnt'].pier_side_str == 'Looking West':
@@ -1058,20 +1082,7 @@ class Observatory:
                         except:
                             print ("This mount doesn't report pierside")
 
-                        #NB NB NB this needs rethinking, the incoming units are hours in HA or degrees of dec
-                        if err_ha > 100 or err_dec > 100 or err_ha < -100 or err_dec < -100:
-                           # g_dev['mnt'].reset_mount_reference()
-                            print ("I've been inhibited from reset the mount_reference 1")
-                            #g_dev['mnt'].current_icrs_ra = solve['ra_j2000_hours']
-                            #g_dev['mnt'].current_icrs_dec = solve['dec_j2000_hours']
-                        elif g_dev['mnt'].pier_side_str == 'Looking West':
-                            #g_dev['mnt'].adjust_mount_reference(err_ha, err_dec)
-                            print ("I've been inhibited from reset the mount_reference 2")
-                            pass
-                        else:
-                            #g_dev['mnt'].adjust_flip_reference(err_ha, err_dec)
-                            print ("I've been inhibited from reset the mount_reference 3")
-                            pass
+
 
                         #img.flush()
                         #img.close

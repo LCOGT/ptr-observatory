@@ -212,7 +212,8 @@ site_config = {
             'default_zenith_avoid': 0.0,   # degrees floating, 0.0 means do not apply this constraint.
             'has_paddle': False,       # paddle refers to something supported by the Python code, not the AP paddle.
             'pointing_tel': 'tel1',     # This can be changed to 'tel2'... by user.  This establishes a default.
-
+  #
+            'permissive_mount_reset' : 'no', # if this is set to yes, it will reset the mount at startup and when coordinates are out significantly
             'west_clutch_ra_correction': -0.05323724387608619,  #final:   0.0035776615398219747 -0.1450812805892454
             'west_clutch_dec_correction': 0.3251459235809251,
             'east_flip_ra_correction':   -0.040505313212952586, # Initially -0.039505313212952586,
