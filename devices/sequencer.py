@@ -11,6 +11,7 @@ import build_tycho as tycho
 import config
 import shelve
 #from pprint import pprint
+from api_calls import API_calls
 import ptr_utility
 import redis
 import math
@@ -20,6 +21,11 @@ import shutil
 import os
 import imp
 import ptr_events
+from glob import glob
+from astropy.coordinates import EarthLocation
+from astropy.coordinates import SkyCoord, AltAz
+from astropy.time import Time
+import astropy.units as u
 
 '''
 Autofocus NOTE 20200122
@@ -161,13 +167,17 @@ class Sequencer:
         self.sky_flat_latch = True
         self.morn_sky_flat_latch = True
         self.morn_bias_dark_latch = True   #NB NB NB Should these initially be defined this way?
-        #breakpoint()
-        self.reset_completes()
+
+        self.reset_completes()  # NB NB Note this is reset each time sequencer is restarted.
 
         try:
             self.is_in_completes(None)
         except:
             self.reset_completes()
+
+
+
+
 
 
     def get_status(self):
@@ -180,6 +190,8 @@ class Sequencer:
         #     if g_dev['obs'].status_count > 3:   #Gove syste time to settle.
         #         self.manager()      #  There be dragons here!  <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
         return status
+
+
 
 
 
@@ -316,7 +328,6 @@ class Sequencer:
 
         Scripts must not block too long or they must provide for periodic calls to check status.
         '''
-        debug = True
 
         # NB Need a better way to get all the events.
         if g_dev['obs'].status_count < 3:
@@ -367,14 +378,13 @@ class Sequencer:
             self.sky_flat_script({}, {}, morn=False)   #Null command dictionaries
             self.sky_flat_latch = False
 
-        elif debug or enc_status['enclosure_mode'] in ['Autonomous!', 'Automatic'] and (events['Observing Begins'] <= ephem_now \
-                                   < events['Observing Ends']) and not g_dev['ocn'].wx_hold:  # \
-                                   #and  g_dev['obs'].blocks is not None and g_dev['obs'].projects \
-                                   #is not None:   #NB NB Blocked out 0922 WER
-
+        elif enc_status['enclosure_mode'] in ['Autonomous!', 'Automatic'] and (events['Observing Begins'] <= ephem_now \
+                                   < events['Observing Ends']) and not g_dev['ocn'].wx_hold \
+                                   and  g_dev['obs'].blocks is not None and g_dev['obs'].projects \
+                                   is not None:
             blocks = g_dev['obs'].blocks
             projects = g_dev['obs'].projects
-            
+            debug = False
             if self.config['site_roof_control'] != 'no' and  enc_status['shutter_status'] in ['Closed', 'closed'] \
                 and float(ocn_status['hold_duration']) <= 0.1:   #NB   this blockes SR from running 20220826
                 #breakpoint()
@@ -384,8 +394,7 @@ class Sequencer:
             g_dev['enc'].sync_mount_command({}, {})
 
             if debug:
-                pass
-            #print("# of Blocks, projects:  ", len(g_dev['obs'].blocks),  len(g_dev['obs'].projects))
+                print("# of Blocks, projects:  ", len(g_dev['obs'].blocks),  len(g_dev['obs'].projects))
 
             #Note here we could evaluate projects to see which meet observability constraints and place them
             #In an observables list, then we could pick one to start.  IF there is no pre-sheduled observing block
@@ -411,9 +420,12 @@ class Sequencer:
             #The residual in projects can be treated as background.
             #print('Background:  ', len(projects), '\n\n', projects)
 
+
+            house = []
             for project in projects:
                 if block['project_id']  != 'none':
                     try:
+
                         if block['project_id'] == project['project_name'] + '#' + project['created_at']:
                             block['project'] = project
                     except:
@@ -460,7 +472,6 @@ class Sequencer:
                     be restored.  IN the execute block we need to make a deepcopy of the input block
                     so it does not get modified.
                     '''
-            debug = False
             #print('block list exhausted')
             #return  Commented out 20220409 WER
 
@@ -473,80 +484,6 @@ class Sequencer:
             # else:
             #     pass
             #print("Block tested for observatility")
-            
-            
-                            # #First, sort blocks to be in ascending order, just to promote clarity. Remove expired projects.
-                            # for block in blocks:  #  This merges project spec into the blocks.
-                            #     for project in projects:
-                            #         if block['project_id'] == project['project_name'] + '#' + project['created_at']:
-                            #             block['project'] = project
-                            #             #print('Scheduled so removing:  ', project['project_name'])
-                            #             #projects.remove(project)
-                                        
-                            # #The residual in projects can be treated as background.
-                            # #print('Background:  ', len(projects), '\n\n', projects)
-                            
-                 
-                            # house = []
-                            # for project in projects:
-                            #     if block['project_id']  != 'none':
-                            #         if block['project_id'] == project['project_name'] + '#' + project['created_at']:
-                            #             block['project'] = project
-                            #     else:
-                            #         pass
-                            #     #print("Reservation asserting at this time.   ", )
-                            # '''
-                            # evaluate supplied projects for observable and mark as same. Discard
-                            # unobservable projects.  Projects may be "site" projects or 'ptr' (network wide:
-                            # All, Owner, PTR-network, North, South.)
-                            #     The westernmost project is offered to run unless there is a runnable scheduled block.
-                            #     for any given time, are the constraints met? Airmass < x, Moon Phaze < y, moon dist > z,
-                            #     flip rules
-                
-                            # '''
-                            # # breakpoint()
-                            # # #Figure out which are observable.  Currently only supports one target/proj
-                            # # NB Observing events without a project are "observable."
-                            # # observable = []
-                            # # for projects in projects:
-                            # #     ra = projects['project_targets']['ra']
-                            # #     dec = projects['project_targets']['dec']
-                            # #     sid = g_dev['mnt'].mount.SiderealTime
-                            # #     ha = tycho.reduceHA(sid - ra)
-                            # #     az, alt = transform_haDec_to_azAlt(ha, dec)
-                            # #     # Do not start a block within 15 min of end time???
-                            # #print("Initial length:  ", len(blocks))
-                            # for block in blocks:
-                            #     now_date_timeZ = datetime.datetime.now().isoformat().split('.')[0] +'Z'           
-                            #     if not self.block_guard \
-                            #         and (block['start'] <= now_date_timeZ < block['end']) \
-                            #         and not self.is_in_completes(block['event_id']):
-                            #         if block['project_id'] in ['none', 'real_time_slot', 'real_time_block']:
-                            #             self.block_guard = True
-                            #             return   # Do not try to execute an empty block.
-                            #         self.block_guard = True
-                
-                            #         completed_block = self.execute_block(block)  #In this we need to ultimately watch for weather holds.
-                            #         self.append_completes(completed_block['event_id'])
-                            #         block['project_id'] in ['none', 'real_time_slot', 'real_time_block']
-                            #         '''
-                            #         When a scheduled block is completed it is not re-entered or the block needs to 
-                            #         be restored.  IN the execute block we need to make a deepcopy of the input block
-                            #         so it does not get modified.
-                            #         '''
-                            # #print('block list exhausted')  
-                            # #return  Commented out 20220409 WER
-                            
-                
-                # print("Here we would enter an observing block:  ",
-                #       block)
-                # breakpoint()
-            #OK here we go to a generalized block execution routine that runs
-            #until exhaustion of the observing window.
-            # else:
-            #     pass
-            #print("Block tested for observatility")
-                
 
         # #System hangs on this state
         # elif ((g_dev['events']['Observing Ends']  < ephem_now < g_dev['events']['End Morn Sky Flats']) and \
@@ -666,6 +603,9 @@ class Sequencer:
     def execute_block(self, block_specification):
         #ocn_status = eval(self.redis_server.get('ocn_status'))
         #enc_status = eval(self.redis_server.get('enc_status'))
+        print('|n|n Staring a new project!  \n')
+        print(block_specification, ' \n\n\n')
+
         self.block_guard = True
         # NB we assume the dome is open and already slaving.
         block = copy.deepcopy(block_specification)
@@ -794,15 +734,62 @@ class Sequencer:
             print("Left to do initial value:  ", left_to_do)
             req = {'target': 'near_tycho_star'}
             initial_focus = True
+            initial_pointing = True
             af_delay = 45*60  #This must be a big number!
 
             while left_to_do > 0 and not ended:
+
+                #MTF - It was very often that the start of a project, the pointing would be far off... so I am instituting a pre-project point shot
+                #This is also important because it needs to slew to a tycho star to focus... so...... if the pointing is off, it won't get there!
+                #IT is a little buggy so far! But it will get there soon.
+                if initial_pointing:
+
+
+                    # Figure out rough RA and Dec
+                    #location = EarthLocation.from_geodetic(self.config['longitude']*u.deg, self.config['latitude']*u.deg, self.config['elevation'])
+                    #newAltAzcoordiantes = SkyCoord(alt = 75*u.deg, az = 90*u.deg , obstime = Time(datetime.datetime.utcnow(), scale='utc'), frame = 'altaz', location = location)
+                    #print (newAltAzcoordiantes.icrs)
+
+
+
+
+
+
+                    for run in range(2):
+                        if run ==0:
+                            # First point at a generic alt/az
+                            print ("Slewing to a generic alt/az for a pointing calibration")
+                            g_dev['obs'].send_to_user("Slewing to a generic alt/az for a pointing calibration")
+                            g_dev['mnt'].mount.SlewToAltAzAsync(90, 75) # Move around to non-objectionable point on the sky
+                            g_dev['mnt'].mount.Tracking = True
+                            time.sleep(30)
+                        elif run ==1:
+                            print ("Slewing to the target ra and dec for a pointing check")
+                            g_dev['obs'].send_to_user("Slewing to the target ra and dec for a pointing check")
+                            print ("ra:  " +str(dest_ra))
+                            print ("dec: " +str(dest_dec))
+                            g_dev['mnt'].go_coord(dest_ra, dest_dec)
+                            time.sleep(30)
+
+                        g_dev['obs'].send_to_user("Running a Pointing Calibration Exposure. " + str(run+1) +" of 2.")
+                        print ("Pointing Run " + str(run))
+                        req = {'time': 20,  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'auto_focus'}   #  NB Should pick up filter and constats from config
+                        #opt = {'area': 150, 'count': 1, 'bin': '2, 2', 'filter': 'focus'}
+                        opt = {'area': 150, 'count': 1, 'bin': 'default', 'filter': 'Lum'}
+                        result = g_dev['cam'].expose_command(req, opt, no_AWS=True, solve_it=True)
+                        print ("Waiting for solve")
+                        time.sleep(15)
+                    initial_pointing = False
+
+
+
+
 
                 #just_focused = True      ###DEBUG
                 if initial_focus: # and False:
                     #print("Enc Status:  ", g_dev['enc'].get_status())
 
-
+                    g_dev['obs'].send_to_user("Running an initial autofocus run.")
                     # if not g_dev['enc'].shutter_is_closed:
                     self.auto_focus_script(req2, opt, throw = 600)
                     #     pass
@@ -812,6 +799,12 @@ class Sequencer:
                     initial_focus = False    #  Make above on-time event per block
                     timer = time.time() + af_delay  # 45 minutes
                     #at block startup this should mean two AF cycles. Cosider using 5-point for the first.
+
+
+
+
+
+
 
                 #cycle through exposures decrementing counts    MAY want to double check left-to do but do nut remultiply by 4
                 for exposure in block['project']['exposures']:
@@ -1182,7 +1175,7 @@ class Sequencer:
         print("Bias/Dark Phase has passed.")
 
 
-
+        time.sleep(300) # Wait for telescope to park
         if morn:
             # UNDERTAKING END OF NIGHT ROUTINES
 
@@ -1197,48 +1190,70 @@ class Sequencer:
             runNightToken= g_dev['cam'].site_path + 'tokens/' + self.config['site'] + runNight + '.token'
             with open(runNightToken, 'w') as f:
                 f.write('Night Completed')
-            g_dev['obs'].aws_queue.put((30000000, runNightToken), block=False)
+            image = (g_dev['cam'].site_path + 'tokens/', self.config['site'] + runNight + '.token')
+            g_dev['obs'].aws_queue.put((30000000000, image), block=False)
             g_dev['obs'].send_to_user("End of Night Token sent to AWS.", p_level='INFO')
 
             # Culling the archive
-            FORTNIGHT=60*60*24*7*2
-            #dir_path='D:/PTRMFO/'
+            #FORTNIGHT=60*60*24*7*2
+            if self.config['archive_age'] > 0 :
+                print (self.config['client_path'] + 'archive/')
+                dir_path=self.config['client_path'] + 'archive/'
+                #cameras=[d for d in os.listdir(dir_path) if os.path.isdir(d)]
+                cameras=glob(dir_path + "*/")
+                print (cameras)
+                for camera in cameras:  # Go through each camera directory
+                    print ("*****************************************")
+                    print ("Camera: " + str(camera))
+                    timenow_cull=time.time()
+                    #cameradir=camera
+                    #directories=[d for d in os.listdir(cameradir) if os.path.isdir(d)]
+                    directories=glob(camera + "*/")
+                    deleteDirectories=[]
+                    deleteTimes=[]
+                    #print (directories)
+                    for q in range(len(directories)):
 
-            dir_path=self.config['client_path'] + '\\' + 'archive'
-            cameras=[d for d in os.listdir(dir_path) if os.path.isdir(d)]
-            for camera in cameras:  # Go through each camera directory
-                print ("*****************************************")
-                print ("Camera: " + str(camera))
-                timenow_cull=time.time()
-                cameradir=dir_path + '\\' + camera + '\\'
-                directories=[d for d in os.listdir(cameradir) if os.path.isdir(d)]
-                deleteDirectories=[]
-                deleteTimes=[]
-                for q in range(len(directories)):
-                    if ((timenow_cull)-os.path.getmtime(cameradir + directories[q])) > FORTNIGHT:
-                        deleteDirectories.append(directories[q])
-                        deleteTimes.append(((timenow_cull)-os.path.getmtime(cameradir +directories[q])) /60/60/24/7)
+                        if ((timenow_cull)-os.path.getmtime(directories[q])) > (self.config['archive_age'] * 24* 60 * 60) :
+                            deleteDirectories.append(directories[q])
+                            deleteTimes.append(((timenow_cull)-os.path.getmtime(directories[q])) /60/60/24/7)
 
 
 
-                print ("These are the directories earmarked for  ")
-                print ("Eternal destruction. And how old they are")
-                print ("in weeks\n")
-                g_dev['obs'].send_to_user("Culling " + str(len(deleteDirectories)) +" from the local archive.", p_level='INFO')
-                for entry in range(len(deleteDirectories)):
-                    print (deleteDirectories[entry] + ' ' + str(deleteTimes[entry]) + ' weeks old.')
-                    #shutil.rmtree(cameradir + deleteDirectories[entry]) # THIS IS THE DELETER WHEN WE ARE READY!
+                    print ("These are the directories earmarked for  ")
+                    print ("Eternal destruction. And how old they are")
+                    print ("in weeks\n")
+                    g_dev['obs'].send_to_user("Culling " + str(len(deleteDirectories)) +" from the local archive.", p_level='INFO')
+                    for entry in range(len(deleteDirectories)):
+                        print (deleteDirectories[entry] + ' ' + str(deleteTimes[entry]) + ' weeks old.')
+                        shutil.rmtree(deleteDirectories[entry]) # THIS IS THE DELETER WHEN WE ARE READY!
 
             # Reopening config
-            imp.reload(config)
-            self.config = config
+            #imp.reload(config)
+            #self.config = config
             # Getting new times for the new day
             #self.astro_events = ptr_events.Events(self.config)
             self.astro_events.compute_day_directory()
             self.astro_events.display_events()
             # sending this up to AWS
-            #NBNBNB This is not the way to do this.  Will fix later on today. WER The code is in obs.
-            #self.update_config()
+            '''
+            Send the config to aws.
+            '''
+            uri = f"{self.name}/config/"
+            self.config['events'] = g_dev['events']
+            # breakpoint()
+            # pprint(self.config)
+            response = g_dev['obs'].api.authenticated_request("PUT", uri, self.config)
+            if response:
+                print("Config uploaded successfully.")
+            
+            # If you are using TheSkyX, then update the autosave path
+            if self.config['camera']['camera_1_1']['driver'] == "CCDSoft2XAdaptor.ccdsoft5Camera":
+                g_dev['cam'].camera.AutoSavePath = self.config['archive_path'] +'archive/' + datetime.datetime.strftime(datetime.datetime.now(), '%Y%m%d')
+                try:
+                    os.mkdir(self.config['archive_path'] +'archive/' + datetime.datetime.strftime(datetime.datetime.now(), '%Y%m%d'))
+                except:
+                    print ("Couldn't make autosave directory")
 
         return
 
@@ -1642,6 +1657,8 @@ class Sequencer:
 # ============================================================================= Save AFTER mount has settled down.
 # =============================================================================
 # =============================================================================
+        #  NB NB NB PLEASE NOTE WE ARE GETTING THE START POSITIONS WE EXPECT TO RETURN TO FROM THE MOUNT AND FOCUSER
+        #  SO this may reult in drift if the return does not go to the mecahnical Ra and DEC.
         start_ra = g_dev['mnt'].mount.RightAscension   #Read these to go back.  NB NB Need to cleanly pass these on so we can return to proper target.
         start_dec = g_dev['mnt'].mount.Declination
         focus_start = g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron
@@ -1658,12 +1675,14 @@ class Sequencer:
                                     g_dev['mnt'].current_sidereal)
             print("Going to near focus star " + str(focus_star[0][0]) + "  degrees away.")
             g_dev['mnt'].go_coord(focus_star[0][1][1], focus_star[0][1][0])
-            req = {'time': 12.5,  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'auto_focus'}   #  NB Should pick up filter and constats from config
-            opt = {'area': 150, 'count': 1, 'bin': '2, 2', 'filter': 'focus'}
+            req = {'time': 12.5,  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'focus'}   #  NB Should pick up filter and constats from config
+            #opt = {'area': 150, 'count': 1, 'bin': '2, 2', 'filter': 'focus'}
+            opt = {'area': 150, 'count': 1, 'bin': 'default', 'filter': 'focus'}
         else:
             pass   #Just take an image where currently pointed.
-            req = {'time': 15,  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'auto_focus'}   #  NB Should pick up filter and constats from config
-            opt = {'area': 150, 'count': 1, 'bin': '2, 2', 'filter': 'focus'}
+            req = {'time': 15,  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'focus'}   #  NB Should pick up filter and constats from config
+            #opt = {'area': 150, 'count': 1, 'bin': '2, 2', 'filter': 'focus'}
+            opt = {'area': 150, 'count': 1, 'bin': 'default', 'filter': 'focus'}
         foc_pos0 = focus_start
         result = {}
         #print("temporary patch in Sim values")
@@ -1738,13 +1757,14 @@ class Sequencer:
         x = [foc_pos2, foc_pos1, foc_pos3]
         y = [spot2, spot1, spot3]
         print('X, Y:  ', x, y, 'Desire center to be smallest.')
+
         if spot1 is None or spot2 is None or spot3 is None or spot1 == False or spot2 == False or spot3 == False:  #New additon to stop crash when no spots
             print("No stars detected. Returning to original focus setting and pointing.")
 
-            g_dev['foc'].guarded_move((focus_start)*g_dev['foc'].micron_to_steps)
+            g_dev['foc'].guarded_move((focus_start)*g_dev['foc'].micron_to_steps)  #NB NB 20221002 THis unit fix shoudl be in the routine. WER
             self.sequencer_hold = False   #Allow comand checks.
             self.af_guard = False
-            g_dev['mnt'].mount.SlewToCoordinatesAsync(start_ra, start_dec)
+            g_dev['mnt'].mount.SlewToCoordinatesAsync(start_ra, start_dec)  #MAKE sure same style coordinates.
             self.sequencer_hold = False
             self.guard = False
             self.af_guard = False
@@ -2744,6 +2764,7 @@ IF sweep
         #print('Completes contains:  ', seq_shelf['completed_blocks'])
         if check_block_id in seq_shelf['completed_blocks']:
             seq_shelf.close()
+            print("Block ID in completed blocks:  ",  check_block_id)
             return True
         else:
             seq_shelf.close()
