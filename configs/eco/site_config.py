@@ -52,7 +52,7 @@ site_config = {
     'site_is_specific':  True,  # Indicates some special code for this site, found at end of config.
 
 
-    'host_wema_site_name':  'SRO',  #  The umbrella header for obsys in close geographic proximity.
+    'host_wema_site_name':  'ECO',  #  The umbrella header for obsys in close geographic proximity.
     'name': 'Eltham College Observatory, 0m4f6.8',
     'airport_code':  'MEL: Melbourne Airport',
     'location': 'Eltham, Victoria, Australia',
@@ -378,7 +378,7 @@ site_config = {
             "parent": "telescope1",
             "name": "SBIG 8-position wheel" ,  #"LCO filter wheel FW50_001d",
             'service_date': '20180101',
-            "driver":   "Maxim.CCDCamera",   #"LCO.dual",  #  'ASCOM.FLI.FilterWheel',
+            "driver":   "CCDSoft2XAdaptor.ccdsoft5Camera",   #"LCO.dual",  #  'ASCOM.FLI.FilterWheel',
             #"driver":   "Maxim.Image",   #"LCO.dual",  #  'ASCOM.FLI.FilterWheel',
             'ip_string': None,
             "dual_wheel": False,
@@ -438,7 +438,7 @@ site_config = {
             'name': 'ec001ms',      #  Important because this points to a server file structure by that name.
             'desc':  'SBIG16803',
             'service_date': '20211111',
-            'driver': "Maxim.CCDCamera",  # "ASCOM.QHYCCD.Camera", ##  'ASCOM.FLI.Kepler.Camera',
+            'driver': "CCDSoft2XAdaptor.ccdsoft5Camera",  # "ASCOM.QHYCCD.Camera", ##  'ASCOM.FLI.Kepler.Camera',
             'detector':  'KAF16803',
             'manufacturer':  'On-Semi',
             'use_file_mode':  False,
@@ -481,6 +481,13 @@ site_config = {
                 'x_pixel':  6,
                 'y_pixel':  6,
                 'pix_scale': [1.067, 2.134, 3.201, 4.268],
+                'CameraXSize' : 4096,
+                'CameraYSize' : 4096,
+                'MaxBinX' : 2,
+                'MaxBinY' : 2,
+                'StartX' : 1,
+                'StartY' : 1,
+                
                 'x_field_deg': 1.3333,   #   round(4784*1.0481/3600, 4),
                 'y_field_deg': 1.0665,   #  round(3194*1.0481/3600, 4),
                 'overscan_x': 24,
@@ -823,6 +830,13 @@ site_config = {
 
 #get_ocn_status = None   # NB these are placeholders for site specific routines for in a config file
 def get_enc_status(g_dev=None):
-    print ("no encolsure control")
+    status = {'shutter_status': "bluib",   # NB NB NB "Roof is open|closed' is more inforative for FAT, but we make boolean decsions on 'Open'
+              'enclosure_synchronized': True,
+              'dome_azimuth': 0.0,
+              'dome_slewing': False,
+              'enclosure_mode': "Autonomous!",
+              'enclosure_message':  ''
+             }
+    return status
 def get_ocn_status(g_dev=None):
     print ("no encolsure control")

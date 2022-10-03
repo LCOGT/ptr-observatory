@@ -353,10 +353,14 @@ class Mount:
                # breakpoint()
                 pass
             self.get_current_times()
-            if self.mount.sideOfPier == 1:
-                pierside = 1    #West (flip) side so Looking East   #Make this assignment a code-wide convention.
-            else:
-                pierside = 0   #East side so Looking West
+            try:
+                if self.mount.sideOfPier == 1:
+                    pierside = 1    #West (flip) side so Looking East   #Make this assignment a code-wide convention.
+                else:
+                    pierside = 0   #East side so Looking West
+            except:
+                pierside=0
+                print ("Mount does not report pier side.")
             self.current_sidereal = self.mount.SiderealTime
             uncorr_mech_ra_h = self.mount.RightAscension
             uncorr_mech_dec_d = self.mount.Declination
@@ -383,11 +387,15 @@ class Mount:
             #             #print("Rate found:  ", self.prior_roll_rate, self.prior_pitch_rate, self.ha_corr, self.dec_corr)
             # except:
             #     print("mount status rate adjust exception.")
-            
-            if self.mount.sideOfPier == look_west:
-                ra_cal_offset, dec_cal_offset = self.get_mount_reference()
-            else:
-                ra_cal_offset, dec_cal_offset = self.get_flip_reference() 
+            try:
+                if self.mount.sideOfPier == look_west:
+                    ra_cal_offset, dec_cal_offset = self.get_mount_reference()
+                else:
+                    ra_cal_offset, dec_cal_offset = self.get_flip_reference() 
+            except:
+                ra_cal_offset=0
+                dec_cal_offset=0
+                print ("Mount does not report pier side")
             jnow_ra_r = ptr_utility.reduce_ra_r(app_ra_r - ra_cal_offset*HTOR)    # NB the mnt_refs are subtracted here.  Units are correct.
             jnow_dec_r = ptr_utility.reduce_dec_r( app_dec_r - dec_cal_offset*DTOR)
             jnow_ra_r, jnow_dec_r = ra_dec_fix_r(jnow_ra_r, jnow_dec_r)
@@ -399,7 +407,12 @@ class Mount:
             #breakpoint()
             #NB This is an unused and not completely implemented path, or does Planwave PWI-4 use it?
             #breakpoint()   #20201230 WE should not get here.
-            ra_cal_offset, dec_cal_offset = self.get_mount_reference() 
+            try:
+                ra_cal_offset, dec_cal_offset = self.get_mount_reference() 
+            except:
+                ra_cal_offset=0
+                dec_cal_offset=0
+                print ("Mount does not report pier side")
             self.current_icrs_ra = ra_fix_r(self.mount.RightAscension - ra_cal_offset)    #May not be applied in positioning
             self.current_icrs_dec = self.mount.Declination - dec_cal_offset
         return self.current_icrs_ra, self.current_icrs_dec
@@ -586,7 +599,12 @@ class Mount:
         airmass = abs(round(sec_z - 0.0018167*(sec_z - 1) - 0.002875*((sec_z - 1)**2) - 0.0008083*((sec_z - 1)**3),3))
         if airmass > 10: airmass = 10
         airmass = round(airmass, 4)
-        ra_off, dec_off = self.get_mount_reference()
+        try:
+            ra_off, dec_off = self.get_mount_reference()
+        except:
+            print ("get_quick_status offset... is zero")
+            ra_off = 0
+            dec_off = 0
         # NB NB THis code would be safer as a dict or other explicity named structure
         pre.append(time.time())
         icrs_ra, icrs_dec = self.get_mount_coordinates()
@@ -937,28 +955,33 @@ class Mount:
         #result in a flip.  So first figure out if there will be a flip:
 
        
-        new_pierside =  self.mount.DestinationSideOfPier(ra, dec) #  A tuple gets returned: (pierside, Ra.h and dec.d)
-
         try:
-                                                             #  NB NB Might be good to log is flipping on a re-seek.
-            if len(new_pierside) > 1:
-                if new_pierside[0] == 0:
+            new_pierside =  self.mount.DestinationSideOfPier(ra, dec) #  A tuple gets returned: (pierside, Ra.h and dec.d)
+        
+
+            try:
+                                                                 #  NB NB Might be good to log is flipping on a re-seek.
+                if len(new_pierside) > 1:
+                    if new_pierside[0] == 0:
+                        delta_ra, delta_dec = self.get_mount_reference()
+                        pier_east = 1
+                    else:
+                        delta_ra, delta_dec = self.get_flip_reference()
+                        pier_east = 0
+            except:
+                if new_pierside == 0:
                     delta_ra, delta_dec = self.get_mount_reference()
                     pier_east = 1
                 else:
                     delta_ra, delta_dec = self.get_flip_reference()
                     pier_east = 0
+    
+            #Update incoming ra and dec with mounting offsets.
+            ra += delta_ra #NB it takes a restart to pick up a new correction which is also J.now.
+            dec += delta_dec
         except:
-            if new_pierside == 0:
-                delta_ra, delta_dec = self.get_mount_reference()
-                pier_east = 1
-            else:
-                delta_ra, delta_dec = self.get_flip_reference()
-                pier_east = 0
-
-        #Update incoming ra and dec with mounting offsets.
-        ra += delta_ra #NB it takes a restart to pick up a new correction which is also J.now.
-        dec += delta_dec
+            print ("mount really doesn't like pierside calls")
+            pier_east = 1
         ra, dec = ra_dec_fix_h(ra,dec)
         if self.mount.EquatorialSystem == 1:    #equTopocentric
             self.get_current_times()   #  NB We should find a way to refresh this once a day, esp. for status return.
@@ -983,7 +1006,11 @@ class Mount:
         self.ra_mech, self.dec_mech = ptr_utility.transform_haDec_to_raDec_r(self.ha_mech, self.dec_mech, self.sid_now_r)
         self.ha_corr = ptr_utility.reduce_ha_r(self.ha_mech -self. ha_obs_r)*RTOS
         self.dec_corr = ptr_utility.reduce_dec_r(self.dec_mech - self.dec_obs_r)*RTOS
-        self.mount.Tracking = True
+        
+        try:
+            self.mount.Tracking = True
+        except:
+            print ("this mount may not accept tracking commands")
         self.move_time = time.time()
         az, alt = ptr_utility.transform_haDec_to_azAlt_r(self.ha_mech, self.dec_mech, self.latitude_r)
         print('MODEL HA, DEC, AZ, Refraction:  (asec)  ', self.ha_corr, self.dec_corr, az*RTOD, self.refr_asec)
@@ -1044,7 +1071,10 @@ class Mount:
         self.unpark_command()
         self.mount.Tracking = False
         self.move_time = time.time()
-        self.mount.SlewToAltAzAsync(az, alt)
+        try: 
+            self.mount.SlewToAltAzAsync(az, alt)
+        except:
+            print ("NEED TO POINT TELESCOPE TO RA AND DEC, MOUNT DOES NOT HAVE AN ALTAZ request in the driver")
 
 
 

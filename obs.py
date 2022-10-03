@@ -1004,11 +1004,14 @@ class Observatory:
                         err_dec = target_dec - solved_dec
                         print("err ra, dec:  ", err_ha, err_dec)
                         #NB NB NB Need to add Pierside as a parameter to this cacc 20220214 WER
-
-                        if g_dev['mnt'].pier_side_str == 'Looking West':
-                            g_dev['mnt'].adjust_mount_reference(err_ha, err_dec)
-                        else:
-                            g_dev['mnt'].adjust_flip_reference(err_ha, err_dec)   #Need to verify signs
+                        
+                        try:
+                            if g_dev['mnt'].pier_side_str == 'Looking West':
+                                g_dev['mnt'].adjust_mount_reference(err_ha, err_dec)
+                            else:
+                                g_dev['mnt'].adjust_flip_reference(err_ha, err_dec)   #Need to verify signs
+                        except:
+                            print ("This mount doesn't report pierside")
                         #img.flush()
                         #img.close
                         #img = fits.open(wpath, ignore_missing_end=True)
