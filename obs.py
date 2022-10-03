@@ -951,7 +951,26 @@ class Observatory:
                 #NB Important decision here, do we flash calibrate screen and sky flats?  For now, Yes.
 
                 #cal_result =
-                calibrate(hdu, lng_path, paths['frame_type'], quick=False)
+
+                ####################################################################################################
+                #### MTF trying out a thing. Commenting out "calibrate" and just doing the small things from there here - 3 Oct 22
+                # MOTIVATION === a lot of hard-coded stuff for specific cameras making life hard at ECO....
+                #calibrate(hdu, lng_path, paths['frame_type'], quick=False)
+
+                pedastal = 100
+                hdu.data += pedastal
+                hdu.header['PEDESTAL'] = (-pedastal,  'Add to get zero ADU based image')
+
+                fix_neg_pix = np.where(hdu.data < 0)
+                #print('# of < 0  pixels:  ', len(fix_neg_pix[0]))  #  Do not change values here.
+                hdu.data[fix_neg_pix] = 0
+                fix_max_pix = np.where(hdu.data > 65535)
+                #print("Max data value is:  ", fix_max_pix, len(fix_max_pix[0]))
+                hdu.data[fix_max_pix] = 65535.
+
+                ####################################################################################################
+
+
                 #print("Calibrate returned:  ", hdu.data, cal_result)
                 #Before saving reduced or generating postage, we flip
                 #the images so East is left and North is up based on
