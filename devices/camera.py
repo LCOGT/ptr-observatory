@@ -1142,7 +1142,7 @@ class Camera:
             cycle_time = exposure_time + 15
         else:
             cycle_time = exposure_time + 12
-        self.completion_time = self.t2 + cycle_time + 12
+        self.completion_time = self.t2 + cycle_time 
         result = {'error': False}
         notifyReadOutOnlyOnce=0
         quartileExposureReport=0
@@ -1342,7 +1342,7 @@ class Camera:
 
                     #return result   #Used if focus not saved in calibs.
                 try:
-                    breakpoint()
+                    
                     hdu = fits.PrimaryHDU(self.img.transpose())   #THis needs to be done to keep fits "traditional." 0,0 upper left.
                     self.img = None    #  Does this free up any resource?
                     # assign the keyword values and comment of the keyword as a tuple to write both to header.

@@ -1,0 +1,216 @@
+Revision date 22 February 2007
+
+-----------------------------------------------------------------------------
+
+
+                     - - - - - - -
+                      T P O I N T
+                     - - - - - - -
+
+
+            Telescope Pointing Analysis Program
+
+
+                    Copyright 1996-2007
+
+                      P.T.Wallace, UK
+
+
+TPOINT (also known as proTPOINT) is an interactive telescope pointing
+analysis system which runs on Personal Computers under Microsoft Windows
+or Linux and on other Unix platforms.
+
+It allows data from pointing tests to be input and fitted to various
+models.  The residuals from the fits can be displayed in a variety of
+graphical formats.  If systematic errors are visible, the pointing
+model can be adjusted by adding and removing terms.
+
+One backup copy of this software may be made for the use of the
+original recipient.  The documentation hardcopy must not be copied.
+The software may be used only with the telescope for which it is
+licensed, by the individual or institute that licensed the software.
+It may be installed on more than one computer but only one copy may
+be used at any one time.  The software or documentation must not be
+copied to others.
+
+DISCLAIMER:  While every effort has been taken to ensure that this
+software functions as described in the documentation, the author
+cannot accept responsibility for any adverse consequences arising from
+its use.
+
+Patrick Wallace
+ptw@tpsoft.demon.co.uk
++44-1235-531198
+
+-----------------------------------------------------------------------------
+
+INSTALLING AND USING TPOINT ON A UNIX COMPUTER
+
+The standard TPOINT distribution includes a makefile and all the
+files necessary to build an executable system, for a specific Unix.
+The only pre-requisites are the Unix operating system itself and
+the tcl/tk package, which is used for graphics.  The package is
+supplied as separate files on a single CD-ROM.  Installation is
+straightforward, and the makefile can easily be adapted should the
+default installation procedure not be ideal.  This is how to install
+TPOINT:
+
+    1) Mount the CD-ROM and either cd to it or copy the contents
+       to a directory on the hard disk and cd to that.
+
+    2) Invoke make.  By default, the makefile will copy files to
+       the directories $HOME/bin, $HOME/etc/tpoint and $HOME/etc/sgs,
+       creating them if they do not already exist.  If these
+       destinations are not suitable, either edit the makefile, or
+       alternatively use make INSTALL_DIR= to override the $HOME
+       default.
+
+    3) Make sure the script tpoint and the executable tpointx are in
+       your path.  (The makefile puts them in $HOME/bin by default.)
+
+Should de-installation become necessary, type make deinstall.
+
+To run TPOINT:
+
+    cd to the directory you wish to work from and type tpoint.
+    The system will start, and, over the next few seconds, read
+    in various script and catalogue files.  The appearance of
+    the * prompt indicates that the program is ready to accept
+    TPOINT commands.  To exit type the END command.
+
+    If the program fails to start, or if error messages appear
+    during the start-up phase, or if the graphics commands fail
+    to work, the things to check first are (a) paths, (b) the
+    location and contents of the tpoint.ini file, (c) the location
+    and contents of the sgs.ini file and (d) the existence,
+    location and version of the tcl/tk software.
+
+Documentation:
+
+    A printed copy of the TPOINT manual is supplied with the
+    CD-ROM containing the executable.
+
+Demonstration:
+
+    1)  Type TPOINT to start the system.  Wait for the * prompt.
+
+    2)  Type INDAT AAT15 to read a sample data file (authentic,
+        unedited AAT data).
+
+    3)  Type CALL AAT to fit the standard AAT model.
+
+    5)  CALL E9 to plot nine assorted graphs of the residuals.
+
+    6)  Type END or further TPOINT commands (for example HELP).
+
+  Instructions for carrying out a fuller demonstration are given under
+  the heading "a more complete demonstration", later.
+
+-----------------------------------------------------------------------------
+
+A MORE COMPLETE DEMONSTRATION
+
+Start the package by typing
+
+     TPOINT
+
+The messages refer to the internal star catalogue (there to simplify
+the format of input data) and a procedure library.  It is easy to have
+your own versions of these files, either read in automatically at
+startup time, or on demand during the run.  Then type
+
+     HELP
+
+to enter the hierarchical help system.  Type
+
+     COMMANDS
+
+to list all the commands provided.  Pursue any further paths through
+the help library that you wish, ultimately escaping by pressing
+return enough times (or CTRL/Z then return for a quick exit).
+
+You are going to build a pointing model for the UK Schmidt Telescope
+at Siding Spring, NSW, Australia.  The UKST is a 1.2 metre aperture
+wide field camera on a fork mount.  It wasn't built for high pointing
+accuracy but tracks well under the control of an autoguider.  Read in
+the pointing test data by typing
+
+     INDAT UKST
+
+Each observation listed on the screen is the star name (in the
+catalogue) and the synchro RA,Dec.  Type
+
+     GSCAT
+
+The graph is like a "rifle target".  We want all the blobs to be
+as close to the middle as possible.  Type
+
+     GSMAP
+
+to show the individual pointing errors as a function of position on
+the sky.  This is just one graphics format.  When modelling a telescope
+you generally want to look at lots of graphs before you decide what to
+do next.  One quick way is to type
+
+     CALL E9
+
+(This is a preprogrammed procedure in action.)  The basic model for
+an equatorial consists of six terms - two encoder zeroes, the
+of the polar axis up/down and left/right, the nonperpendicularity
+between the HA and Dec axes and collimation error (the
+nonperpendicularity between where you want the desired pointing
+axis and the Dec axis).  Type
+
+     CALL EQUAT
+
+to select these six terms and
+
+     CLIST
+
+to show that they start out zero.  Type
+
+     FIT
+
+to obtain the best values.  The RMS error is about 13 arcsec,
+already pretty good.  Type
+
+     G X H
+
+to show the east-west errors against HA.  Note the signs of a
+systematic error - a steady slope.  Shall we try to model it?
+Not yet - let's have a better look at the errors.  Type
+
+     CALL E9
+
+The graph plotting Dec errors against HA shows where the trouble
+really lies.  This is due to fork flexure:  the weight of the
+telescope makes the fork sag.  You expect maximum sag is on the
+meridian, affecting Dec only but to be the same for all Decs.
+There should be no sag at HA 6 hours because the fork will distort
+in a parallelogram way.  Hence we expect corrections of the form
+dDec = k*cos(HA) to be useful.  Such a terms can be added to the
+model by typing
+
+     USE FO
+     FIT
+
+Note the dramatically reduced RMS, down to less than half its
+previous value.  Look for further systematic errors by typing
+
+     CALL E9
+
+There aren't any, so we have a final model - just seven terms.
+
+Data files from other telescopes are provided.  Examine the pointing
+of the 3.9 metre AAT by typing
+
+     INDAT AAT15
+     CALL AAT
+     GSCAT
+
+The outer circle of the plot is 10 arcsec in diameter, less than
+a quarter the diameter of Jupiter's disc.  The inner circle (marking
+the RMS value) is only about twice the diameter of the Galilean
+satellites.
+
+-----------------------------------------------------------------------------

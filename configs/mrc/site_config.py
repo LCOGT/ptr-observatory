@@ -208,11 +208,11 @@ site_config = {
                 
                 'roof_shutter':  ['Auto', 'Open', 'Close', 'Lock Closed', 'Unlock'],
             },
-            'eve_bias_dark_dur':  2.0,   #hours Duration, prior to next.
+            'eve_bias_dark_dur':  1.5,   #hours Duration, prior to next. #NB NB THis needs to be incorporated into PTR events. WER
             'eve_screen_flat_dur': 1.0,   #hours Duration, prior to next.
             'operations_begin':  -1.0,   #  - hours from Sunset
-            'eve_cooldown_offset': -.99,   #  - hours beforeSunset
-            'eve_sky_flat_offset':  0.5,   #  - hours beforeSunset 
+            'eve_cooldown_offset': -1.0,   #  - hours beforeSunset
+            'eve_sky_flat_offset':  -(60 - 40/60),   #  - hours beforeSunset 
             'morn_sky_flat_offset':  0.4,   #  + hours after Sunrise
             'morning_close_offset':  0.41,   #  + hours after Sunrise
             'operations_end':  0.42,
@@ -224,10 +224,10 @@ site_config = {
     'mount': {
         'mount1': {
             'parent': 'enclosure1',
-            'tel_id': '0m35',
-            'name': 'eastpier',
+            'tel_id': 'mrc1',
+            'name': 'mrc1-0m35',
             'hostIP':  '10.15.0.30',
-            'hostname':  'eastpier',
+            'hostname':  'mrc-0m35',
             'desc':  'Planewave L500 AltAz',
             'driver': 'ASCOM.PWI4.Telescope',  # Was 'ASCOM.AltAzDS.Telescope' prior to 20210417 WER
             'startup_script':  None,
@@ -327,6 +327,7 @@ site_config = {
             'name': 'Main OTA',
             'desc':  'Planewave CDK 14 F7.2',
             'telescop': 'mrc1',
+            'ptrtel': 'mrc1',
             'driver': 'None',                     #Essentially this device is informational.  It is mostly about the optics.
             'startup_script':  None,
             'recover_script':  None,

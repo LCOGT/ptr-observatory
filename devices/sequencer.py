@@ -170,7 +170,6 @@ class Sequencer:
             self.reset_completes()
 
 
-
     def get_status(self):
         status = {
             "active_script": None,
@@ -181,8 +180,6 @@ class Sequencer:
         #     if g_dev['obs'].status_count > 3:   #Gove syste time to settle.
         #         self.manager()      #  There be dragons here!  <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
         return status
-
-
 
 
 
@@ -319,6 +316,7 @@ class Sequencer:
 
         Scripts must not block too long or they must provide for periodic calls to check status.
         '''
+        debug = True
 
         # NB Need a better way to get all the events.
         if g_dev['obs'].status_count < 3:
@@ -369,13 +367,14 @@ class Sequencer:
             self.sky_flat_script({}, {}, morn=False)   #Null command dictionaries
             self.sky_flat_latch = False
 
-        elif enc_status['enclosure_mode'] in ['Autonomous!', 'Automatic'] and (events['Observing Begins'] <= ephem_now \
-                                   < events['Observing Ends']) and not g_dev['ocn'].wx_hold \
-                                   and  g_dev['obs'].blocks is not None and g_dev['obs'].projects \
-                                   is not None:
+        elif debug or enc_status['enclosure_mode'] in ['Autonomous!', 'Automatic'] and (events['Observing Begins'] <= ephem_now \
+                                   < events['Observing Ends']) and not g_dev['ocn'].wx_hold:  # \
+                                   #and  g_dev['obs'].blocks is not None and g_dev['obs'].projects \
+                                   #is not None:   #NB NB Blocked out 0922 WER
+
             blocks = g_dev['obs'].blocks
             projects = g_dev['obs'].projects
-            debug = False
+            
             if self.config['site_roof_control'] != 'no' and  enc_status['shutter_status'] in ['Closed', 'closed'] \
                 and float(ocn_status['hold_duration']) <= 0.1:   #NB   this blockes SR from running 20220826
                 #breakpoint()
@@ -385,7 +384,8 @@ class Sequencer:
             g_dev['enc'].sync_mount_command({}, {})
 
             if debug:
-                print("# of Blocks, projects:  ", len(g_dev['obs'].blocks),  len(g_dev['obs'].projects))
+                pass
+            #print("# of Blocks, projects:  ", len(g_dev['obs'].blocks),  len(g_dev['obs'].projects))
 
             #Note here we could evaluate projects to see which meet observability constraints and place them
             #In an observables list, then we could pick one to start.  IF there is no pre-sheduled observing block
@@ -411,12 +411,9 @@ class Sequencer:
             #The residual in projects can be treated as background.
             #print('Background:  ', len(projects), '\n\n', projects)
 
-
-            house = []
             for project in projects:
                 if block['project_id']  != 'none':
                     try:
-
                         if block['project_id'] == project['project_name'] + '#' + project['created_at']:
                             block['project'] = project
                     except:
@@ -463,6 +460,7 @@ class Sequencer:
                     be restored.  IN the execute block we need to make a deepcopy of the input block
                     so it does not get modified.
                     '''
+            debug = False
             #print('block list exhausted')
             #return  Commented out 20220409 WER
 
@@ -475,6 +473,80 @@ class Sequencer:
             # else:
             #     pass
             #print("Block tested for observatility")
+            
+            
+                            # #First, sort blocks to be in ascending order, just to promote clarity. Remove expired projects.
+                            # for block in blocks:  #  This merges project spec into the blocks.
+                            #     for project in projects:
+                            #         if block['project_id'] == project['project_name'] + '#' + project['created_at']:
+                            #             block['project'] = project
+                            #             #print('Scheduled so removing:  ', project['project_name'])
+                            #             #projects.remove(project)
+                                        
+                            # #The residual in projects can be treated as background.
+                            # #print('Background:  ', len(projects), '\n\n', projects)
+                            
+                 
+                            # house = []
+                            # for project in projects:
+                            #     if block['project_id']  != 'none':
+                            #         if block['project_id'] == project['project_name'] + '#' + project['created_at']:
+                            #             block['project'] = project
+                            #     else:
+                            #         pass
+                            #     #print("Reservation asserting at this time.   ", )
+                            # '''
+                            # evaluate supplied projects for observable and mark as same. Discard
+                            # unobservable projects.  Projects may be "site" projects or 'ptr' (network wide:
+                            # All, Owner, PTR-network, North, South.)
+                            #     The westernmost project is offered to run unless there is a runnable scheduled block.
+                            #     for any given time, are the constraints met? Airmass < x, Moon Phaze < y, moon dist > z,
+                            #     flip rules
+                
+                            # '''
+                            # # breakpoint()
+                            # # #Figure out which are observable.  Currently only supports one target/proj
+                            # # NB Observing events without a project are "observable."
+                            # # observable = []
+                            # # for projects in projects:
+                            # #     ra = projects['project_targets']['ra']
+                            # #     dec = projects['project_targets']['dec']
+                            # #     sid = g_dev['mnt'].mount.SiderealTime
+                            # #     ha = tycho.reduceHA(sid - ra)
+                            # #     az, alt = transform_haDec_to_azAlt(ha, dec)
+                            # #     # Do not start a block within 15 min of end time???
+                            # #print("Initial length:  ", len(blocks))
+                            # for block in blocks:
+                            #     now_date_timeZ = datetime.datetime.now().isoformat().split('.')[0] +'Z'           
+                            #     if not self.block_guard \
+                            #         and (block['start'] <= now_date_timeZ < block['end']) \
+                            #         and not self.is_in_completes(block['event_id']):
+                            #         if block['project_id'] in ['none', 'real_time_slot', 'real_time_block']:
+                            #             self.block_guard = True
+                            #             return   # Do not try to execute an empty block.
+                            #         self.block_guard = True
+                
+                            #         completed_block = self.execute_block(block)  #In this we need to ultimately watch for weather holds.
+                            #         self.append_completes(completed_block['event_id'])
+                            #         block['project_id'] in ['none', 'real_time_slot', 'real_time_block']
+                            #         '''
+                            #         When a scheduled block is completed it is not re-entered or the block needs to 
+                            #         be restored.  IN the execute block we need to make a deepcopy of the input block
+                            #         so it does not get modified.
+                            #         '''
+                            # #print('block list exhausted')  
+                            # #return  Commented out 20220409 WER
+                            
+                
+                # print("Here we would enter an observing block:  ",
+                #       block)
+                # breakpoint()
+            #OK here we go to a generalized block execution routine that runs
+            #until exhaustion of the observing window.
+            # else:
+            #     pass
+            #print("Block tested for observatility")
+                
 
         # #System hangs on this state
         # elif ((g_dev['events']['Observing Ends']  < ephem_now < g_dev['events']['End Morn Sky Flats']) and \
@@ -1165,7 +1237,8 @@ class Sequencer:
             self.astro_events.compute_day_directory()
             self.astro_events.display_events()
             # sending this up to AWS
-            self.update_config()
+            #NBNBNB This is not the way to do this.  Will fix later on today. WER The code is in obs.
+            #self.update_config()
 
         return
 

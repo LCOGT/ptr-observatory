@@ -181,7 +181,7 @@ def send_status(obsy, column, status_to_send):
         print('self.api.authenticated_request("PUT", uri, status):   Failed!')
 
 class Observatory:
-
+    global debug
     def __init__(self, name, config):
         # This is the ayneclass through which we can make authenticated api calls.
         self.api = API_calls()
@@ -481,15 +481,20 @@ class Observatory:
                     'full_project_details:':  False})
                 if True: #self.blocks is None:   #This currently prevents pick up of calendar changes.
                     blocks = requests.post(url_blk, body).json()
+
                     if len(blocks) > 0:   #   is not None:
                         self.blocks = blocks
+                    else:
+                        self.blocks = None
 
                 url_proj = "https://projects.photonranch.org/dev/get-all-projects"
                 if True: #self.projects is None:
                     all_projects = requests.post(url_proj).json()
                     self.projects = []
-                    if len(all_projects) > 0 and len(blocks)> 0:   #   is not None:
+
+                    if len(all_projects) > 0 and len(blocks)> 0:   #   NB NB whey do we insist on a block existing?
                         self.projects = all_projects   #.append(all_projects)  #NOTE creating a list with a dict entry as item 0
+                        #20220923 WER  nb the following statement does not accomplish anything!
                         #self.projects.append(all_projects[1])
                     #  Note the above does not load projects if there are no blocks scheduled. A sched block may or may not have
                     #    an associated project.
@@ -999,9 +1004,9 @@ class Observatory:
                         solved_ra = solve['ra_j2000_hours']
                         solved_dec = solve['dec_j2000_degrees']
                         #breakpoint()
-                        err_ha = target_ra - solved_ra
-                        err_dec = target_dec - solved_dec
-                        print("err ra, dec:  ", err_ha, err_dec)
+                        err_ha = (target_ra - solved_ra)
+                        err_dec = (target_dec - solved_dec)
+                        print("err ra, dec; in arcmin:  ", round(err_ha*15*60, 2), round(err_dec*60, 2))
                         #NB NB NB Need to add Pierside as a parameter to this cacc 20220214 WER
 
                         if g_dev['mnt'].pier_side_str == 'Looking West':
