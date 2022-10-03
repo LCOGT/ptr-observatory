@@ -1518,7 +1518,13 @@ class Camera:
 
                     if frame_type in ('bias', 'dark', 'lampflat', 'skyflat', 'screenflat', 'solarflat', 'arc'):
                         hdu.header['OBJECT'] = frame_type
-
+                    if not any("OBJECT" in s for s in hdu.header.keys()):
+                        RAtemp = g_dev['mnt'].current_icrs_ra
+                        DECtemp = g_dev['mnt'].current_icrs_dec
+                        RAstring = f'{RAtemp:.1f}'.replace('.','h')
+                        DECstring = f'{DECtemp:.1f}'.replace('-','n').replace('.','d')
+                        hdu.header['OBJECT'] = RAstring + "ra" + DECstring + "dec"
+                        hdu.header['OBJSPECF']= "no"
 
                     ## 16 August 22: MTF - LCO (and many others) currently use decimal degrees for basically everything, so I've updated the fits header for that.
                     ## ALSO you reported that RA is in degrees, but provided it in hours anyway! I multiplied that by 15
@@ -1757,9 +1763,20 @@ class Camera:
                         self.enqueue_image(raw_data_size, im_path, raw_name01)
                     '''
 
+                    if focus_image:
+                        if len(self.biasframe) > 10:
+                            hdu.data=hdu.data-self.biasframe
+                        #if self.darkframe == None:
+                        #    print ("Skipping Bias Frame")
+                        #else:
+                            # Dark frame quick flash
+                        if len(self.darkframe) > 10:
+                            hdu.data=hdu.data-(self.darkframe*exposure_time)
+
                     if focus_image and not solve_it:
                         #Note we do not reduce focus images, except above in focus processing.
                         cal_name = cal_name[:-9] + 'F012' + cal_name[-7:]  # remove 'EX' add 'FO'   Could add seq to this
+
                         hdu.data=hdu.data.astype('float32')
                         hdu.writeto(cal_path + cal_name, overwrite=True)
                         focus_image = False
@@ -1808,85 +1825,87 @@ class Camera:
                     #### MTF - moving jpeg right up here so it gets sent as soon as humanly possible.
 
                     #
-                    hdusmall=copy.deepcopy(hdu)
-                    hdusmall.data = hdusmall.data.astype('float32')
+
                     #if self.biasframe == None :
                     #    print ("Skipping Bias Frame")
                     #else:
                         # Bias frame quick flash
+                    if not frame_type.lower() in ('bias', 'dark', 'flat'): # Don't process jpgs or small fits for biases and darks
+                        hdusmall=copy.deepcopy(hdu)
+                        hdusmall.data = hdusmall.data.astype('float32')
 
-                    if len(self.biasframe) > 10:
-                        hdusmall.data=hdusmall.data-self.biasframe
-                    #if self.darkframe == None:
-                    #    print ("Skipping Bias Frame")
-                    #else:
-                        # Dark frame quick flash
-                    if len(self.darkframe) > 10:
-                        hdusmall.data=hdusmall.data-(self.darkframe*exposure_time)
-                    inputData=np.asarray(hdusmall.data)
+                        if len(self.biasframe) > 10:
+                            hdusmall.data=hdusmall.data-self.biasframe
+                        #if self.darkframe == None:
+                        #    print ("Skipping Bias Frame")
+                        #else:
+                            # Dark frame quick flash
+                        if len(self.darkframe) > 10:
+                            hdusmall.data=hdusmall.data-(self.darkframe*exposure_time)
+                        inputData=np.asarray(hdusmall.data)
 
-                    inputData[inputData > self.config['camera'][self.name]['settings']['saturate']] = self.config['camera'][self.name]['settings']['saturate']
-                    inputData[inputData < -100] = -100
-                    inputData=inputData-np.min(inputData)
-                    #inputData=np.nan_to_num(inputData)
-                    hdusmall.data=inputData
-                    # Getting the mode of the image.
-                    #modeData =np.rint(inputData) # To do the mode properly it needs to be in integer steps - a float has too many potential values
-                    #modeElement = np.argmax(mode(modeData[~np.isnan(modeData)])[1])
-                    #imageMode = mode(modeData)[0][modeElement]
+                        inputData[inputData > self.config['camera'][self.name]['settings']['saturate']] = self.config['camera'][self.name]['settings']['saturate']
+                        inputData[inputData < -100] = -100
+                        inputData=inputData-np.min(inputData)
+                        #inputData=np.nan_to_num(inputData)
+                        hdusmall.data=inputData
+                        # Getting the mode of the image.
+                        #modeData =np.rint(inputData) # To do the mode properly it needs to be in integer steps - a float has too many potential values
+                        #modeElement = np.argmax(mode(modeData[~np.isnan(modeData)])[1])
+                        #imageMode = mode(modeData)[0][modeElement]
 
 
-                    hdusmall.data = hdusmall.data.astype('int16')
-                    iy, ix = hdusmall.data.shape
-                    if iy == ix:
-                        resized_a = resize(hdusmall.data, (1280, 1280), preserve_range=True)
-                    else:
-                        resized_a = resize(hdusmall.data, (int(1536*iy/ix), 1536), preserve_range=True)  #  We should trim chips so ratio is exact.
-                    #print('New small fits size:  ', resized_a.shape)
-                    hdusmall.data = resized_a.astype('int16')
+                        hdusmall.data = hdusmall.data.astype('int16')
+                        iy, ix = hdusmall.data.shape
+                        if iy == ix:
+                            resized_a = resize(hdusmall.data, (1280, 1280), preserve_range=True)
+                        else:
+                            resized_a = resize(hdusmall.data, (int(1536*iy/ix), 1536), preserve_range=True)  #  We should trim chips so ratio is exact.
+                        #print('New small fits size:  ', resized_a.shape)
+                        hdusmall.data = resized_a.astype('int16')
 
-                    # JPEG CODE
-                    # New contrast scaling code:
-                    stretched_data_float = Stretch().stretch(hdusmall.data)
-                    stretched_256 = 255*stretched_data_float
-                    hot = np.where(stretched_256 > 255)
-                    cold = np.where(stretched_256 < 0)
-                    stretched_256[hot] = 255
-                    stretched_256[cold] = 0
-                    #print("pre-unit8< hot, cold:  ", len(hot[0]), len(cold[0]))
-                    stretched_data_uint8 = stretched_256.astype('uint8')  # Eliminates a user warning
-                    hot = np.where(stretched_data_uint8 > 255)
-                    cold = np.where(stretched_data_uint8 < 0)
-                    stretched_data_uint8[hot] = 255
-                    stretched_data_uint8[cold] = 0
-                    #print("post-unit8< hot, cold:  ", len(hot[0]), len(cold[0]))
-                    imsave(paths['im_path'] + paths['jpeg_name10'], stretched_data_uint8)
-                    #img4 = stretched_data_uint8  # keep old name for compatibility
+                        # JPEG CODE
+                        # New contrast scaling code:
+                        stretched_data_float = Stretch().stretch(hdusmall.data)
+                        stretched_256 = 255*stretched_data_float
+                        hot = np.where(stretched_256 > 255)
+                        cold = np.where(stretched_256 < 0)
+                        stretched_256[hot] = 255
+                        stretched_256[cold] = 0
+                        #print("pre-unit8< hot, cold:  ", len(hot[0]), len(cold[0]))
+                        stretched_data_uint8 = stretched_256.astype('uint8')  # Eliminates a user warning
+                        hot = np.where(stretched_data_uint8 > 255)
+                        cold = np.where(stretched_data_uint8 < 0)
+                        stretched_data_uint8[hot] = 255
+                        stretched_data_uint8[cold] = 0
+                        #print("post-unit8< hot, cold:  ", len(hot[0]), len(cold[0]))
+                        imsave(paths['im_path'] + paths['jpeg_name10'], stretched_data_uint8)
+                        #img4 = stretched_data_uint8  # keep old name for compatibility
 
-                    jpeg_data_size = abs(stretched_data_uint8.size - 1024)                # istd = np.std(hdu.data)
-                    # JPEG CODE
+                        jpeg_data_size = abs(stretched_data_uint8.size - 1024)                # istd = np.std(hdu.data)
+                        # JPEG CODE
 
-                    # enqueue the jpeg quickly up.
-                    if not no_AWS:
-                        g_dev['cam'].enqueue_for_AWS(jpeg_data_size, paths['im_path'], paths['jpeg_name10'])
+                        # enqueue the jpeg quickly up.
+                        if not no_AWS:
+                            g_dev['cam'].enqueue_for_AWS(jpeg_data_size, paths['im_path'], paths['jpeg_name10'])
 
-                    # assemble the small fits and send that up quickly.
-                    i768sq_data_size = hdusmall.data.size
-                    # print('ABOUT to print paths.')
-                    # print('Sending to:  ', paths['im_path'])
-                    # print('Also to:     ', paths['i768sq_name10'])
+                        # assemble the small fits and send that up quickly.
+                        i768sq_data_size = hdusmall.data.size
+                        # print('ABOUT to print paths.')
+                        # print('Sending to:  ', paths['im_path'])
+                        # print('Also to:     ', paths['i768sq_name10'])
 
-                    #hdu.writeto(paths['im_path'] + paths['i768sq_name10'], overwrite=True)
-                    # This is the new fz file for the small fits, the above thing that gets bz2'ed will be deleted
-                    hdufz=fits.CompImageHDU(np.asarray(hdusmall.data, dtype=np.float32), hdusmall.header)
-                    hdufz.verify('fix')
-                    hdufz.writeto(paths['im_path'] + paths['i768sq_name10'] +'.fz')
+                        #hdu.writeto(paths['im_path'] + paths['i768sq_name10'], overwrite=True)
+                        # This is the new fz file for the small fits, the above thing that gets bz2'ed will be deleted
+                        hdufz=fits.CompImageHDU(np.asarray(hdusmall.data, dtype=np.float32), hdusmall.header)
+                        hdufz.verify('fix')
+                        hdufz.writeto(paths['im_path'] + paths['i768sq_name10'] +'.fz')
 
-                    #hdu.data = resized_a.astype('float')
-                    if not no_AWS:
-                        g_dev['cam'].enqueue_for_AWS(i768sq_data_size, paths['im_path'], paths['i768sq_name10'] +'.fz')
+                        #hdu.data = resized_a.astype('float')
+                        if not no_AWS:
+                            g_dev['cam'].enqueue_for_AWS(i768sq_data_size, paths['im_path'], paths['i768sq_name10'] +'.fz')
 
-                        g_dev['obs'].send_to_user("A preview image has been sent to the GUI.", p_level='INFO') ## MTF says that this isn't actuallytrue and isn't actually informative! Will comment out and see if anyone notices.....
+                            g_dev['obs'].send_to_user("A preview image has been sent to the GUI.", p_level='INFO') ## MTF says that this isn't actuallytrue and isn't actually informative! Will comment out and see if anyone notices.....
 
 
 
