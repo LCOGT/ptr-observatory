@@ -96,20 +96,20 @@ def parse_platesolve_output(output_file):
 
     return results
 
-if __name__ == '__main__':
+#if __name__ == '__main__':
 
-    file_list = glob.glob('C:/000ptr_saf/archive/sq01/20210502/reduced/*.f*t*')
-    file_list.sort()
+#    file_list = glob.glob('C:/000ptr_saf/archive/sq01/20210502/reduced/*.f*t*')
+#    file_list.sort()
 
-    for item in file_list:
-        try:
-            solve= platesolve(item, 0.5478)
-            img = fits.open(item)
-            hdr = img[0].header
-            breakpoint()
-            print(hdr['MNT-RA  '], hdr['MNT-DEC '], solve['ra_j2000_hours'], solve['dec_j2000_degrees'], hdr['MNT-SIDT'])
-        except:
-           print("Item did not solve:  ", item)
+#    for item in file_list:
+#        try:
+#            solve= platesolve(item, 0.5478)
+#            img = fits.open(item)
+#            hdr = img[0].header
+#            breakpoint()
+#            print(hdr['MNT-RA  '], hdr['MNT-DEC '], solve['ra_j2000_hours'], solve['dec_j2000_degrees'], hdr['MNT-SIDT'])
+#        except:
+#           print("Item did not solve:  ", item)
 
 
 # Traceback (most recent call last):

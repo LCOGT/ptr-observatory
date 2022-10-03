@@ -49,6 +49,7 @@ site_config = {
     'client_path': 'F:/ptr/',
     'alt_path': '//house-computer/saf_archive_2/archive/sq01/',
     'archive_path': 'F:/ptr/',       # Where images are kept.
+    'archive_age' : -99.9, # Number of days to keep files in the local archive before deletion. Negative means never delete
     'aux_archive_path':  None,
     'wema_is_active':  True,     # True if an agent (ie a wema) is used at a site.   # Wemas are split sites -- at least two CPS's sharing the control.
     'wema_hostname':  'ARO-WEMA',
@@ -88,18 +89,19 @@ site_config = {
     'reference_pressure':  794.0,    #mbar   A rough guess 20200315
 
     'site_roof_control': 'yes', #MTF entered this in to remove sro specific code.... Basically do we have control of the roof or not see line 338 sequencer.py
-    'site_in_automatic_default': "Manual",   # ["Manual", "Shutdown", "Automatic"]
-    'automatic_detail_default': "Enclosure is initially set to Manual by ARO site_config.",
+    'site_in_automatic_default': "Automatic",   # ["Manual", "Shutdown", "Automatic"]
+    'automatic_detail_default': "Enclosure is initially set to Automatic by ARO site_config.",
     'auto_eve_bias_dark': True,
-    'auto_eve_sky_flat': False,
+    'auto_eve_sky_flat': True,
     'eve_sky_flat_sunset_offset': -60.0,  # Minutes  neg means before, + after.
     'auto_morn_sky_flat': True,
     'auto_morn_bias_dark': True,
     're-calibrate_on_solve': True,
+    'pointing_calibration_on_startup': False,
     'get_ocn_status': None,
     'get_enc_status': None,
     'not_used_variable': None,
-    
+
 
 
     'defaults': {
@@ -161,7 +163,7 @@ site_config = {
             'unihedron_port':  10    # False, None or numeric of COM port.
         },
     },
-    
+
     'enclosure': {
         'enclosure1': {
             'parent': 'site',
@@ -352,9 +354,11 @@ site_config = {
             #F9 setup
             'reference': 4573, #5743,    #  Meas   Nominal at 10C Primary temperature
             'ref_temp':  20,    # Update when pinning reference
-            'coef_c': -55.9946, #-77.57,   # negative means focus moves out/in as Primary gets colder/warmer.
-            'coef_0': 5333.0, #6155,   #5675,  20220502 Nominal intercept when Primary is at 0.0 C.
+            'coef_c': -55.9946,  #-77.57,   # negative means focus moves out/in as Primary gets colder/warmer.
+            'coef_0': 5333.0, #6155,   #5675,  20220502 Nominal intercept when Primary is at 0.0 C. f4.9 cONFIGURATION
             'coef_date':  '20220920',    # TEMP RANGE 12 TO 19, 6 MEASUREMENTS
+            'z_compression': 0.0, #  microns per degree of zenith distance
+            'z_coef_date':  '20221002',   # 'reference': 4375,    #   Guess 20210904  Nominal at 10C Primary temperature
             'minimum': 0,     # NB this area is confusing steps and microns, and need fixing.
             'maximum': 12600,   #12672 actually
             'step_size': 1,
@@ -454,7 +458,7 @@ site_config = {
                 'filter_screen_sort':  [12, 0, 11, 2, 3, 5, 4, 1, 6],   # don't use narrow yet,  8, 10, 9], useless to try.
 
 
-                'filter_sky_sort': [13, 27, 26, 25, 28, 11, 12, 7, 24, 18, 23, 10, 20, 17, 9,\
+                'filter_sky_sort': [ 27, 26, 25, 28, 12, 7, 24, 18, 23, 10, 20, 17, 9,\
                                     21 ,16, 15, 14, 22, 8, 30, 19, 6, 0]    #  No diffuser based filters
 
 
@@ -511,6 +515,14 @@ site_config = {
                 'x_pixel':  3.76,
                 'y_pixel':  3.76,
                 'pix_scale': [0.528, 1.055, 1.583, 2.110],  # VErified for saf 20220903 WER [0.2876, 0.575, 0.863, 1.15], #F9        [0.528, 1.055, 1.583, 2.110] F4.9
+
+                'CameraXSize' : 9600,
+                'CameraYSize' : 6422,
+                'MaxBinX' : 2,
+                'MaxBinY' : 2,
+                'StartX' : 1,
+                'StartY' : 1,
+
                 'x_field_deg': 1.042,   #  round(4784*1.055/3600, 4),
                 'y_field_deg': 0.7044,   # round(3194*1.055/3600, 4),
                 'detsize': '[1:9600, 1:6422]',  # QHY600Pro Physical chip data size as returned from driver

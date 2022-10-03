@@ -217,39 +217,42 @@ def bootup_tycho():
     #     tpt_perfect = open("C:/Users/User/documents/GitHub/ptr-observatory/processing/TPOINT/perfct.dat", 'r')
 
     try:
-        tpt_perfect = open(str(parentPath) + "\processing\\TPOINT\\perfct.dat", 'r')
+        tpt_perfect = open(str(parentPath) + "\\processing\\TPOINT\\perfct.dat", 'r')
     except:
         print("TPoint catalogue failed to open ")
 
+    try:
+        global tpt_tuple
 
-    global tpt_tuple
+        tpt_tuple1 = []
+        count = 0
 
-    tpt_tuple1 = []
-    count = 0
-    toss = tpt_perfect.readline()
-    toss = tpt_perfect.readline()
-    toss = tpt_perfect.readline()
-    toss = tpt_perfect.readline()
-    for line in tpt_perfect:
-        entry = line.split(' ')
-        if entry[0][0:3] == 'END':
-            break
-        ha  = reduceHa(-(int(entry[0]) + (int(entry[1]) + float(entry[2])/60.0)/60.))
-        if abs(ha)>6:
-            continue
-        if entry[3][0] == '-':
-            sign = -1
-        else:
-            sign = 1
-        dec = sign*(int(entry[3][1:]) + (int(entry[4]) + float(entry[5])/60)/60.)
-        count += 1
-        az, alt = transform_haDec_to_azAlt(ha, dec)
-        tpt_tuple1.append((az, (ha, dec)))
-    tpt_tuple1.sort()
-    tpt_tuple = []
-    for entry in tpt_tuple1:
-        tpt_tuple.append(entry[1])
-    #print(tpt_tuple)
+        toss = tpt_perfect.readline()
+        toss = tpt_perfect.readline()
+        toss = tpt_perfect.readline()
+        toss = tpt_perfect.readline()
+        for line in tpt_perfect:
+            entry = line.split(' ')
+            if entry[0][0:3] == 'END':
+                break
+            ha  = reduceHa(-(int(entry[0]) + (int(entry[1]) + float(entry[2])/60.0)/60.))
+            if abs(ha)>6:
+                continue
+            if entry[3][0] == '-':
+                sign = -1
+            else:
+                sign = 1
+            dec = sign*(int(entry[3][1:]) + (int(entry[4]) + float(entry[5])/60)/60.)
+            count += 1
+            az, alt = transform_haDec_to_azAlt(ha, dec)
+            tpt_tuple1.append((az, (ha, dec)))
+        tpt_tuple1.sort()
+        tpt_tuple = []
+        for entry in tpt_tuple1:
+            tpt_tuple.append(entry[1])
+        #print(tpt_tuple)
+    except:
+        print ("Tpoint catalogue failed to be parsed into tpt_tuple")
 
 
 if __name__ == '__main__':

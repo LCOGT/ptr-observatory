@@ -210,8 +210,25 @@ class FilterWheel:
                 # 2 is air
                 # 3 in dark
 
-
-
+        # This controls the filter wheel through TheSkyX
+        elif driver == 'CCDSoft2XAdaptor.ccdsoft5Camera':
+            self.maxim = False
+            self.dual = False
+            self.custom = False
+            self.theskyx = True
+            win32com.client.pythoncom.CoInitialize()
+            com_object = win32com.client.Dispatch(driver)
+            # #return self.filter.filterWheelIsConnected
+            # for key in dir(com_object):
+            #     method = getattr(com_object,key)
+            #     if str(type(method)) == "<type 'instance'>":
+            #         print (key)
+            #         for sub_method in dir(method):
+            #             if not sub_method.startswith("_") and not "clsid" in sub_method.lower():
+            #                 print ("\t"+sub_method)
+            #     else:
+            #         print ("\t",method)
+            
 
         else:
             '''
@@ -622,11 +639,11 @@ class FilterWheel:
             priorityOrder = ['up', 'U', 'JU']
 
         #Blue broadband filter
-        if requestedFilter == 'JB' or requestedFilter == 'PB' or requestedFilter == 'B' :
+        if requestedFilter == 'JB' or requestedFilter == 'PB' or requestedFilter == 'B' or requestedFilter == 'Blue' :
             priorityOrder = ['JB', 'PB']
 
         #Green broadband filter
-        if requestedFilter == 'JV' or requestedFilter == 'PG' or requestedFilter == 'G':
+        if requestedFilter == 'JV' or requestedFilter == 'PG' or requestedFilter == 'G' or requestedFilter == 'Green':
             priorityOrder = ['JV', 'PG']
 
         #Generic sdss-g filter
@@ -634,7 +651,7 @@ class FilterWheel:
             priorityOrder = ['gp']
 
         #Red broadband filter
-        if requestedFilter == 'Rc' or requestedFilter == 'PR' or requestedFilter == 'rp' or requestedFilter == 'R' or requestedFilter == 'r':
+        if requestedFilter == 'Rc' or requestedFilter == 'PR' or requestedFilter == 'rp' or requestedFilter == 'R' or requestedFilter == 'r' or requestedFilter == 'Red':
             priorityOrder = ['rp','Rc', 'PR']
 
         #Infrared broadband filter
