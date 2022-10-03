@@ -639,11 +639,11 @@ class FilterWheel:
             priorityOrder = ['up', 'U', 'JU']
 
         #Blue broadband filter
-        if requestedFilter == 'JB' or requestedFilter == 'PB' or requestedFilter == 'B' :
+        if requestedFilter == 'JB' or requestedFilter == 'PB' or requestedFilter == 'B' or requestedFilter == 'Blue' :
             priorityOrder = ['JB', 'PB']
 
         #Green broadband filter
-        if requestedFilter == 'JV' or requestedFilter == 'PG' or requestedFilter == 'G':
+        if requestedFilter == 'JV' or requestedFilter == 'PG' or requestedFilter == 'G' or requestedFilter == 'Green':
             priorityOrder = ['JV', 'PG']
 
         #Generic sdss-g filter
@@ -651,7 +651,7 @@ class FilterWheel:
             priorityOrder = ['gp']
 
         #Red broadband filter
-        if requestedFilter == 'Rc' or requestedFilter == 'PR' or requestedFilter == 'rp' or requestedFilter == 'R' or requestedFilter == 'r':
+        if requestedFilter == 'Rc' or requestedFilter == 'PR' or requestedFilter == 'rp' or requestedFilter == 'R' or requestedFilter == 'r' or requestedFilter == 'Red':
             priorityOrder = ['rp','Rc', 'PR']
 
         #Infrared broadband filter

@@ -23,7 +23,13 @@ import glob
 import shelve
 from pprint import pprint
 import matplotlib.pyplot as plt
+ 
 import traceback
+
+from auto_stretch.stretch import Stretch
+from skimage.io import imsave
+from skimage.transform import resize
+
 
 #from devices.sequencer import Sequencer
 from devices.darkslide import Darkslide
@@ -31,6 +37,10 @@ import ptr_utility
 from planewave import platesolve
 from global_yard import g_dev
 from processing.calibration import calibrate
+import copy
+from os import getcwd
+from pathlib import Path
+
 
 
 #string  = \\HOUSE-COMPUTER\saf_archive_2\archive
@@ -195,6 +205,26 @@ class Camera:
         win32com.client.pythoncom.CoInitialize()
         print(driver, name)
         self.camera = win32com.client.Dispatch(driver)
+
+
+        print ("loading flash dark frame and bias frame if available")
+
+        #parentPath = Path(getcwd())
+        #print ("Current Working Directory is: " + str(parentPath))
+        #print (str(parentPath) + "\support_info\\tycho_mag_7.dat")
+        try:
+            self.biasframe = fits.open(self.config['archive_path'] + 'calibmasters/' + self.alias +'/BIAS_master.fits')
+            self.biasframe = np.asarray(self.biasframe[0].data, dtype=np.int16)
+        except:
+            print ("Bias frame not available")
+            self.biasframe = [0]
+        #    print ("Bias")
+        try:
+            self.darkframe = fits.open(self.config['archive_path'] + 'calibmasters/' + self.alias +'/DARK_master.fits')
+            self.darkframe = np.asarray(self.darkframe[0].data, dtype=np.float32)
+        except:
+            print ("Dark frame not available")
+            self.darkframe = [0]
 
         #self.camera = win32com.client.Dispatch('ASCOM.FLI.Kepler.Camera')
         #Need logic here if camera denies connection.
@@ -642,7 +672,6 @@ class Camera:
         #else:
         #    self.object_name = False
         print (opt)
-        print ("Look here")
         if 'object_name' in opt:            # this is the worlds laziest bit of code... it is just until some javascript is updated. remove try except >Oct22
             if opt['object_name'] == '':
                 opt['object_name']= 'Unspecified'
@@ -885,7 +914,7 @@ class Camera:
 
         no_AWS, self.toss = True if imtype.lower() == 'test image' else False, False
         quick = True if imtype.lower() == 'quick' else False
-        # clearly define which frames do not do_sep, the rest default to do_sep.
+        # clearly define which frames do not do_sep, the rest default to do_sep.  NBNB this is obsolete and needs rework 20221002 WER
         if imtype.lower() in ('quick', 'bias', 'dark', 'screen flat', 'sky flat', 'near flat', 'thor flat', \
                                 'arc flat', 'lamp flat', 'solar flat'):
             do_sep = False
@@ -909,6 +938,10 @@ class Camera:
             imtypeb = True  # open the shutter.
             lamps = 'screen lamp or none'
             frame_type = imtype.replace(' ', '')  # note banzai doesn't appear to include screen or solar flat keywords.
+        elif imtype.lower() == 'focus':
+            frame_type = 'focus'
+            imtypeb = True
+            lamps = None
         else:  # 'light', 'experimental', 'autofocus probe', 'quick', 'test image', or any other image type
             imtypeb = True
             lamps = None
@@ -1213,12 +1246,12 @@ class Camera:
                             self.pre_foc = []
                             self.pre_ocn = []
                             if frame_type in ('flat', 'screenflat', 'skyflat', 'dark', 'bias'):
-                                g_dev['obs'].send_to_user("Starting " + str(frame_type) + " calibration exposure.", p_level='INFO')
-                            elif frame_type in ('focus'):
-                                g_dev['obs'].send_to_user("Starting " + str(frame_type) + " exposure.", p_level='INFO')
+                                g_dev['obs'].send_to_user("Starting " + str(exposure_time) + "s " + str(frame_type) + " calibration exposure.", p_level='INFO')
+                            elif frame_type in ('focus', 'auto_focus'):
+                                g_dev['obs'].send_to_user("Starting " + str(exposure_time) + "s "+ str(frame_type) + " exposure.", p_level='INFO')
                             else:
                                 if 'object_name' in opt:
-                                    g_dev['obs'].send_to_user("Starting " + str(opt['object_name']) + " by user: " + str(self.user_name), p_level='INFO')
+                                    g_dev['obs'].send_to_user("Starting " + str(exposure_time) + "s exposure of "+ str(opt['object_name']) + " by user: " + str(self.user_name), p_level='INFO')
                                 else:
                                     g_dev['obs'].send_to_user("Starting an unnamed frame by user: " + str(self.user_name), p_level='INFO')
                             try:
@@ -1438,7 +1471,7 @@ class Camera:
                # print('readout, transpose & Trim took:  ', round(self.t77 - self.t4, 1), ' sec,')# marks them as 0
 
                 # NB NB this funcion could be part of a night log usign the looger module.
-                g_dev['obs'].send_to_user("Camera has read-out image.", p_level='INFO')
+                # g_dev['obs'].send_to_user("Camera has read-out image.", p_level='INFO')  # MTF - seeing if this is irrelevant info - If you know that the raw image is saved, then you also know the camera read out the image and the messages are always within seconds of each other
 
 # =============================================================================
 #                 neg_pix = np.where(trimmed < 0)
@@ -1678,7 +1711,13 @@ class Camera:
 
                     if frame_type in ('bias', 'dark', 'lampflat', 'skyflat', 'screenflat', 'solarflat', 'arc'):
                         hdu.header['OBJECT'] = frame_type
-
+                    if not any("OBJECT" in s for s in hdu.header.keys()):
+                        RAtemp = g_dev['mnt'].current_icrs_ra
+                        DECtemp = g_dev['mnt'].current_icrs_dec
+                        RAstring = f'{RAtemp:.1f}'.replace('.','h')
+                        DECstring = f'{DECtemp:.1f}'.replace('-','n').replace('.','d')
+                        hdu.header['OBJECT'] = RAstring + "ra" + DECstring + "dec"
+                        hdu.header['OBJSPECF']= "no"
 
                     ## 16 August 22: MTF - LCO (and many others) currently use decimal degrees for basically everything, so I've updated the fits header for that.
                     ## ALSO you reported that RA is in degrees, but provided it in hours anyway! I multiplied that by 15
@@ -1881,7 +1920,7 @@ class Camera:
                     #lng_path = self.lng_path
 
                     hdu.header['FILEPATH'] = str(im_path_r) +'to_AWS/'
-                    hdu.header['FILENAME'] = str(raw_name00)
+                    hdu.header['FILENAME'] = str(raw_name00 + '.fz')
 
                     try: #  NB relocate this to Expose entry area.  Fill out except.  Might want to check on available space.
                         im_path_r = self.camera_path
@@ -1933,22 +1972,36 @@ class Camera:
                         self.enqueue_image(raw_data_size, im_path, raw_name01)
                     '''
 
+                    if focus_image:
+                        if len(self.biasframe) > 10:
+                            hdu.data=hdu.data-self.biasframe
+                        #if self.darkframe == None:
+                        #    print ("Skipping Bias Frame")
+                        #else:
+                            # Dark frame quick flash
+                        if len(self.darkframe) > 10:
+                            hdu.data=hdu.data-(self.darkframe*exposure_time)
+
                     if focus_image and not solve_it:
                         #Note we do not reduce focus images, except above in focus processing.
                         cal_name = cal_name[:-9] + 'F012' + cal_name[-7:]  # remove 'EX' add 'FO'   Could add seq to this
+
+                        hdu.data=hdu.data.astype('float32')
                         hdu.writeto(cal_path + cal_name, overwrite=True)
                         focus_image = False
                         return result
                     if focus_image and solve_it :
 
-                        cal_name = cal_name[:-9] + 'FF' + cal_name[-7:]  # remove 'EX' add 'FO'   Could add seq to this
+                        cal_name = cal_name[:-9] + 'FS' + cal_name[-7:]  # remove 'EX' add 'FO'   Could add seq to this
+                        hdu.data=hdu.data.astype('float32')
                         hdu.writeto(cal_path + cal_name, overwrite=True)
                         focus_image = False
                         try:
                             #wpath = 'C:/000ptr_saf/archive/sq01/20210528/reduced/saf-sq01-20210528-00019785-le-w-EX01.fits'
                             time_now = time.time()
-                            solve = platesolve.platesolve(cal_path + cal_name, 1.06) #hdu.header['PIXSCALE'])
-                            print("PW Solves: " ,solve['ra_j2000_hours'], solve['dec_j2000_degrees'])
+                            solve = platesolve.platesolve(cal_path + cal_name, 1.10) #hdu.header['PIXSCALE'])
+                            print (solve)
+                            print("PW Solves: " +str(solve['ra_j2000_hours']) +str(solve['dec_j2000_degrees']))
                             TARGRA  = g_dev['mnt'].current_icrs_ra
                             TARGDEC = g_dev['mnt'].current_icrs_dec
                             RAJ2000 = solve['ra_j2000_hours']
@@ -1956,12 +2009,21 @@ class Camera:
                             err_ha = round((TARGRA - RAJ2000)*15*3600, 1)
                             err_dec = round((TARGDEC - DECJ2000)*3600, 1)
                             print("Focus images error in ra, dec, asec:  ", err_ha, err_dec)
-                            g_dev['mnt'].set_last_reference(err_ha, err_dec, time_now)
-                            return result
+                            #g_dev['mnt'].set_last_reference(err_ha, err_dec, time_now)
+                            if err_ha > 100 or err_dec > 100 or err_ha < -100 or err_dec < -100:
+                                g_dev['mnt'].reset_mount_reference()
+                                print ("I've reset the mount_reference")
+                                g_dev['mnt'].current_icrs_ra = solve['ra_j2000_hours']
+                                g_dev['mnt'].current_icrs_dec = solve['dec_j2000_hours']
+                            elif g_dev['mnt'].pier_side_str == 'Looking West':
+                                g_dev['mnt'].adjust_mount_reference(err_ha, err_dec)
+                            else:
+                                g_dev['mnt'].adjust_flip_reference(err_ha, err_dec)
+                            #return result
                         except:
                             print(cal_path + cal_name, "  was not solved, sorry!")
-                            #g_dev['mnt'].reset_last_reference()
-                            return result
+                        ##    #g_dev['mnt'].reset_last_reference()
+                            #return result
                            #Return to classic processing
 
 
@@ -1969,10 +2031,103 @@ class Camera:
                     # if  not script in ('True', 'true', 'On', 'on'):   #  not quick and    #Was moved 20201022 for grid
                     #     if not quick:
                     self.enqueue_for_AWS(text_data_size, im_path, text_name)
+                    #### MTF - moving jpeg right up here so it gets sent as soon as humanly possible.
+
+                    #
+
+                    #if self.biasframe == None :
+                    #    print ("Skipping Bias Frame")
+                    #else:
+                        # Bias frame quick flash
+                    if not frame_type.lower() in ('bias', 'dark', 'flat'): # Don't process jpgs or small fits for biases and darks
+                        hdusmall=copy.deepcopy(hdu)
+                        hdusmall.data = hdusmall.data.astype('float32')
+
+                        if len(self.biasframe) > 10:
+                            hdusmall.data=hdusmall.data-self.biasframe
+                        #if self.darkframe == None:
+                        #    print ("Skipping Bias Frame")
+                        #else:
+                            # Dark frame quick flash
+                        if len(self.darkframe) > 10:
+                            hdusmall.data=hdusmall.data-(self.darkframe*exposure_time)
+                        inputData=np.asarray(hdusmall.data)
+
+                        inputData[inputData > self.config['camera'][self.name]['settings']['saturate']] = self.config['camera'][self.name]['settings']['saturate']
+                        inputData[inputData < -100] = -100
+                        inputData=inputData-np.min(inputData)
+                        #inputData=np.nan_to_num(inputData)
+                        hdusmall.data=inputData
+                        # Getting the mode of the image.
+                        #modeData =np.rint(inputData) # To do the mode properly it needs to be in integer steps - a float has too many potential values
+                        #modeElement = np.argmax(mode(modeData[~np.isnan(modeData)])[1])
+                        #imageMode = mode(modeData)[0][modeElement]
+
+
+                        hdusmall.data = hdusmall.data.astype('int16')
+                        iy, ix = hdusmall.data.shape
+                        if iy == ix:
+                            resized_a = resize(hdusmall.data, (1280, 1280), preserve_range=True)
+                        else:
+                            resized_a = resize(hdusmall.data, (int(1536*iy/ix), 1536), preserve_range=True)  #  We should trim chips so ratio is exact.
+                        #print('New small fits size:  ', resized_a.shape)
+                        hdusmall.data = resized_a.astype('int16')
+
+                        # JPEG CODE
+                        # New contrast scaling code:
+                        stretched_data_float = Stretch().stretch(hdusmall.data)
+                        stretched_256 = 255*stretched_data_float
+                        hot = np.where(stretched_256 > 255)
+                        cold = np.where(stretched_256 < 0)
+                        stretched_256[hot] = 255
+                        stretched_256[cold] = 0
+                        #print("pre-unit8< hot, cold:  ", len(hot[0]), len(cold[0]))
+                        stretched_data_uint8 = stretched_256.astype('uint8')  # Eliminates a user warning
+                        hot = np.where(stretched_data_uint8 > 255)
+                        cold = np.where(stretched_data_uint8 < 0)
+                        stretched_data_uint8[hot] = 255
+                        stretched_data_uint8[cold] = 0
+                        #print("post-unit8< hot, cold:  ", len(hot[0]), len(cold[0]))
+                        imsave(paths['im_path'] + paths['jpeg_name10'], stretched_data_uint8)
+                        #img4 = stretched_data_uint8  # keep old name for compatibility
+
+                        jpeg_data_size = abs(stretched_data_uint8.size - 1024)                # istd = np.std(hdu.data)
+                        # JPEG CODE
+
+                        # enqueue the jpeg quickly up.
+                        if not no_AWS:
+                            g_dev['cam'].enqueue_for_AWS(jpeg_data_size, paths['im_path'], paths['jpeg_name10'])
+
+                        # assemble the small fits and send that up quickly.
+                        i768sq_data_size = hdusmall.data.size
+                        # print('ABOUT to print paths.')
+                        # print('Sending to:  ', paths['im_path'])
+                        # print('Also to:     ', paths['i768sq_name10'])
+
+                        #hdu.writeto(paths['im_path'] + paths['i768sq_name10'], overwrite=True)
+                        # This is the new fz file for the small fits, the above thing that gets bz2'ed will be deleted
+                        hdufz=fits.CompImageHDU(np.asarray(hdusmall.data, dtype=np.float32), hdusmall.header)
+                        hdufz.verify('fix')
+                        hdufz.writeto(paths['im_path'] + paths['i768sq_name10'] +'.fz')
+
+                        #hdu.data = resized_a.astype('float')
+                        if not no_AWS:
+                            g_dev['cam'].enqueue_for_AWS(i768sq_data_size, paths['im_path'], paths['i768sq_name10'] +'.fz')
+
+                            g_dev['obs'].send_to_user("A preview image has been sent to the GUI.", p_level='INFO') ## MTF says that this isn't actuallytrue and isn't actually informative! Will comment out and see if anyone notices.....
+
+
+
+
+
+
+
+
                     hdu.writeto(raw_path + raw_name00, overwrite=False)   #Save full raw file locally
                     ## Need to make an FZ file here before things get changed below
                     print ("Making an fz file")
                     hdufz=fits.CompImageHDU(np.asarray(hdu.data, dtype=np.float32), hdu.header)
+                    #hdufz.header['FILENAME']=raw_path + raw_name00 +'.fz'
                     hdufz.verify('fix')
                     hdufz.writeto(raw_path + raw_name00 +'.fz')
                     #print('Raw:  ', raw_path + raw_name00)
@@ -1981,7 +2136,7 @@ class Camera:
                     self.to_reduce((paths, hdu))
                     #Here we should decimate and send big fits
 
-                    g_dev['obs'].send_to_user("Raw image saved locally. ", p_level='INFO')
+                    #g_dev['obs'].send_to_user("Raw image saved at the observatory. ", p_level='INFO')
                     #Moved into Calibrate to eliminate race conditon is saving this.
                     # if frame_type in ('bias', 'dark', 'screenflat', 'skyflat'):
                     #     if not self.hint[0:54] == 'Flush':
@@ -2021,7 +2176,7 @@ class Camera:
                     result['gain'] = 0
                     result['filter'] = self.current_filter
                     result['error'] == False
-                    g_dev['obs'].send_to_user("Expose cycle completed.", p_level='INFO')
+                    #g_dev['obs'].send_to_user("Expose cycle completed.", p_level='INFO')    MTF -- I am commenting this out... this actually doesn't add information for the user, mayhaps for us but no use for the observer who has just been told the image was saved anyway
                     self.exposure_busy = False
                     return result
                 except Exception as e:
@@ -2074,3 +2229,31 @@ class Camera:
     def to_reduce(self, to_red):
         #print('Passed to to_reduce:  ', to_red[0], to_red[1].data.shape, to_red[1].header['FILTER'])
         g_dev['obs'].reduce_queue.put(to_red, block=False)
+
+
+    def mode(ndarray,axis=0):
+        if ndarray.size == 1:
+            return (ndarray[0],1)
+        elif ndarray.size == 0:
+            raise Exception('Attempted to find mode on an empty array!')
+        try:
+            axis = [i for i in range(ndarray.ndim)][axis]
+        except IndexError:
+            raise Exception('Axis %i out of range for array with %i dimension(s)' % (axis,ndarray.ndim))
+        srt = np.sort(ndarray,axis=axis)
+        dif = np.diff(srt,axis=axis)
+        shape = [i for i in dif.shape]
+        shape[axis] += 2
+        indices = np.indices(shape)[axis]
+        index = tuple([slice(None) if i != axis else slice(1,-1) for i in range(dif.ndim)])
+        indices[index][dif == 0] = 0
+        indices.sort(axis=axis)
+        bins = np.diff(indices,axis=axis)
+        location = np.argmax(bins,axis=axis)
+        mesh = np.indices(bins.shape)
+        index = tuple([slice(None) if i != axis else 0 for i in range(dif.ndim)])
+        index = [mesh[i][index].ravel() if i != axis else location.ravel() for i in range(bins.ndim)]
+        counts = bins[tuple(index)].reshape(location.shape)
+        index[axis] = indices[tuple(index)]
+        modals = srt[tuple(index)].reshape(location.shape)
+        return (modals, counts)

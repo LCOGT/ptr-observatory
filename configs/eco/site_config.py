@@ -40,6 +40,7 @@ site_config = {
     'client_path':  'C:/ptr/',  # Generic place for this host to stash misc stuff
     'alt_path':  'C:/ptr/',  # Generic place for this host to stash misc stuff
     'archive_path':  'C:/ptr/',  # Meant to be where /archive/<camera_id> is added by camera.
+    'archive_age' : 14.0, # Number of days to keep files in the local archive before deletion. Negative means never delete
     'aux_archive_path':  None, # '//house-computer/saf_archive_2/archive/',  #  Path to auxillary backup disk.
     'wema_is_active':  False,    #True if split computers used at a site.
     'wema_hostname':  [],  #  Prefer the shorter version
@@ -85,6 +86,7 @@ site_config = {
     'auto_morn_sky_flat': True,
     'auto_morn_bias_dark': True,
     're-calibrate_on_solve': True,
+    'pointing_calibration_on_startup': False,
 
     'defaults': {
         'observing_conditions': 'observing_conditions1',  #  These are used as keys, may go away.
@@ -307,7 +309,7 @@ site_config = {
             'unit':  'degree'    #  'steps'
         },
     },
-    
+
     'screen': {
         'screen1': {
             'parent': 'telescope1',

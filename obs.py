@@ -262,11 +262,15 @@ class Observatory:
             g_dev['redis'] = None    #a  placeholder.
         # Send the config to aws   # NB NB NB This has faulted.
         self.update_config()
-        
-               
-        
+
+
+
         # Use the configuration to instantiate objects for all devices.
         self.create_devices(config)
+
+
+
+
         self.loud_status = False
         #g_dev['obs']: self
         g_dev['obs'] = self
@@ -284,7 +288,7 @@ class Observatory:
         self.time_last_status = time.time() - 3
         # Build the to-AWS Try again, reboot, verify dome nad tel and start a thread.
 
-        self.aws_queue = queue.PriorityQueue()
+        self.aws_queue = queue.PriorityQueue(maxsize=0)
         self.aws_queue_thread = threading.Thread(target=self.send_to_AWS, args=())
         self.aws_queue_thread.start()
 
@@ -306,6 +310,21 @@ class Observatory:
         # self.site_queue = queue.SimpleQueue()
         # self.site_queue_thread = threading.Thread(target=self.get_from_AWS, args=())
         # self.site_queue_thread.start()
+
+        # # Pointing Calibration on Startup
+        # if self.config['pointing_calibration_on_startup'] == True:
+        #     g_dev['mnt'].mount.SlewToAltAzAsync(270, 75)
+        #     g_dev['mnt'].mount.Tracking = True
+        #     g_dev['obs'].send_to_user("Slewing to Pointing Calibration Area.")
+        #     time.sleep(30)
+        #     g_dev['obs'].send_to_user("Running a Pointing Calibration Exposure.")
+        #     print ("Pointing Run ")
+        #     req = {'time': 20,  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'auto_focus'}   #  NB Should pick up filter and constats from config
+        #     #opt = {'area': 150, 'count': 1, 'bin': '2, 2', 'filter': 'focus'}
+        #     opt = {'area': 150, 'count': 1, 'bin': 'default', 'filter': 'Lum'}
+        #     result = g_dev['cam'].expose_command(req, opt, no_AWS=True, solve_it=True)
+        #     print ("Waiting for solve")
+        #     time.sleep(15)
 
 
 
@@ -848,22 +867,27 @@ class Observatory:
     def send_to_AWS(self):  # pri_image is a tuple, smaller first item has priority.
                             # second item is also a tuple containing im_path and name.
 
+        #if 'oneAtATime' not in locals():
+        oneAtATime=0
         # This stopping mechanism allows for threads to close cleanly.
+        #print ("One " +str(oneAtATime))
         while True:
-            if not self.aws_queue.empty():
+            if (not self.aws_queue.empty()) and oneAtATime==0:
+                oneAtATime=1
                 pri_image = self.aws_queue.get(block=False)
                 if pri_image is None:
                     print ("got an empty entry in aws_queue???")
                     self.aws_queue.task_done()
+                    oneAtATime=0
                     time.sleep(0.2)
                     continue
                 # Here we parse the file, set up and send to AWS
                 im_path = pri_image[1][0]
                 name = pri_image[1][1]
-                if not (name[-3:] == 'jpg' or name[-3:] == 'txt' or 'token'  in name or '.fits.fz' in name):
+                #if not (name[-3:] == 'jpg' or name[-3:] == 'txt' or '.token'  in name or '.fits.fz' in name):
                     # compress first
-                    to_bz2(im_path + name)
-                    name = name + '.bz2'
+                #    to_bz2(im_path + name)
+                #    name = name + '.bz2'
                 aws_req = {"object_name": name}
                 aws_resp = g_dev['obs'].api.authenticated_request('POST', '/upload/', aws_req)
                 if ':.bz2' not in im_path + name:
@@ -877,10 +901,11 @@ class Observatory:
 
 
                     if name[-3:] == 'bz2' or name[-3:] == 'jpg' or \
-                            name[-3:] == 'txt' or '.fits.fz' in name:
+                            name[-3:] == 'txt' or '.fits.fz' in name or '.token' in name:
                         os.remove(im_path + name)
 
                 self.aws_queue.task_done()
+                oneAtATime=0
                 time.sleep(0.1)
             else:
                 time.sleep(0.2)
@@ -926,7 +951,26 @@ class Observatory:
                 #NB Important decision here, do we flash calibrate screen and sky flats?  For now, Yes.
 
                 #cal_result =
-                calibrate(hdu, lng_path, paths['frame_type'], quick=False)
+
+                ####################################################################################################
+                #### MTF trying out a thing. Commenting out "calibrate" and just doing the small things from there here - 3 Oct 22
+                # MOTIVATION === a lot of hard-coded stuff for specific cameras making life hard at ECO....
+                #calibrate(hdu, lng_path, paths['frame_type'], quick=False)
+
+                pedastal = 100
+                hdu.data += pedastal
+                hdu.header['PEDESTAL'] = (-pedastal,  'Add to get zero ADU based image')
+
+                fix_neg_pix = np.where(hdu.data < 0)
+                #print('# of < 0  pixels:  ', len(fix_neg_pix[0]))  #  Do not change values here.
+                hdu.data[fix_neg_pix] = 0
+                fix_max_pix = np.where(hdu.data > 65535)
+                #print("Max data value is:  ", fix_max_pix, len(fix_max_pix[0]))
+                hdu.data[fix_max_pix] = 65535.
+
+                ####################################################################################################
+
+
                 #print("Calibrate returned:  ", hdu.data, cal_result)
                 #Before saving reduced or generating postage, we flip
                 #the images so East is left and North is up based on
@@ -1002,8 +1046,9 @@ class Observatory:
                         #breakpoint()
                         err_ha = target_ra - solved_ra
                         err_dec = target_dec - solved_dec
-                        print("err ra, dec:  ", err_ha, err_dec)
+                        print(" coordinate error in ra, dec:  (asec) ", round(err_ha*15*3600, 2), round(err_dec*3600, 2))  #NB WER changed units 20221012
                         #NB NB NB Need to add Pierside as a parameter to this cacc 20220214 WER
+
                         
                         try:
                             if g_dev['mnt'].pier_side_str == 'Looking West':
@@ -1012,6 +1057,22 @@ class Observatory:
                                 g_dev['mnt'].adjust_flip_reference(err_ha, err_dec)   #Need to verify signs
                         except:
                             print ("This mount doesn't report pierside")
+
+                        #NB NB NB this needs rethinking, the incoming units are hours in HA or degrees of dec
+                        if err_ha > 100 or err_dec > 100 or err_ha < -100 or err_dec < -100:
+                           # g_dev['mnt'].reset_mount_reference()
+                            print ("I've been inhibited from reset the mount_reference 1")
+                            #g_dev['mnt'].current_icrs_ra = solve['ra_j2000_hours']
+                            #g_dev['mnt'].current_icrs_dec = solve['dec_j2000_hours']
+                        elif g_dev['mnt'].pier_side_str == 'Looking West':
+                            #g_dev['mnt'].adjust_mount_reference(err_ha, err_dec)
+                            print ("I've been inhibited from reset the mount_reference 2")
+                            pass
+                        else:
+                            #g_dev['mnt'].adjust_flip_reference(err_ha, err_dec)
+                            print ("I've been inhibited from reset the mount_reference 3")
+                            pass
+
                         #img.flush()
                         #img.close
                         #img = fits.open(wpath, ignore_missing_end=True)
@@ -1106,7 +1167,7 @@ class Observatory:
                     except:
                         spot = None
 
-                reduced_data_size = hdu.data.size
+                #reduced_data_size = hdu.data.size
 
                 # =============================================================================
                 # x = 2      From Numpy: a way to quickly embed an array in a larger one
@@ -1114,41 +1175,18 @@ class Observatory:
                 # wall[x:x+block.shape[0], y:y+block.shape[1]] = block
                 # =============================================================================
 
-                hdu.data = hdu.data.astype('uint16')
-                iy, ix = hdu.data.shape
-                if iy == ix:
-                    resized_a = resize(hdu.data, (1280, 1280), preserve_range=True)
-                else:
-                    resized_a = resize(hdu.data, (int(1536*iy/ix), 1536), preserve_range=True)  #  We should trim chips so ratio is exact.
+                #hdu.data = hdu.data.astype('uint16')
+                #iy, ix = hdu.data.shape
+                #if iy == ix:
+                #    resized_a = resize(hdu.data, (1280, 1280), preserve_range=True)
+                #else:
+                #    resized_a = resize(hdu.data, (int(1536*iy/ix), 1536), preserve_range=True)  #  We should trim chips so ratio is exact.
                 #print('New small fits size:  ', resized_a.shape)
-                hdu.data = resized_a.astype('uint16')
+                #hdu.data = resized_a.astype('uint16')
 
-                i768sq_data_size = hdu.data.size
-                # print('ABOUT to print paths.')
-                # print('Sending to:  ', paths['im_path'])
-                # print('Also to:     ', paths['i768sq_name10'])
+                #SMALL FITS CODE WENT HERE
 
-                hdu.writeto(paths['im_path'] + paths['i768sq_name10'], overwrite=True)
-                hdu.data = resized_a.astype('float')
-
-                # New contrast scaling code:
-                stretched_data_float = Stretch().stretch(hdu.data)
-                stretched_256 = 255*stretched_data_float
-                hot = np.where(stretched_256 > 255)
-                cold = np.where(stretched_256 < 0)
-                stretched_256[hot] = 255
-                stretched_256[cold] = 0
-                #print("pre-unit8< hot, cold:  ", len(hot[0]), len(cold[0]))
-                stretched_data_uint8 = stretched_256.astype('uint8')  # Eliminates a user warning
-                hot = np.where(stretched_data_uint8 > 255)
-                cold = np.where(stretched_data_uint8 < 0)
-                stretched_data_uint8[hot] = 255
-                stretched_data_uint8[cold] = 0
-                #print("post-unit8< hot, cold:  ", len(hot[0]), len(cold[0]))
-                imsave(paths['im_path'] + paths['jpeg_name10'], stretched_data_uint8)
-                #img4 = stretched_data_uint8  # keep old name for compatibility
-
-                jpeg_data_size = abs(stretched_data_uint8.size - 1024)                # istd = np.std(hdu.data)
+                #JPEG CODE WENT HERE
 
                 #
                 # MTF - a temporary routine to create fz for BANZAI testing for Darren
@@ -1179,10 +1217,10 @@ class Observatory:
 
                 if not no_AWS:  #IN the no+AWS case should we skip more of the above processing?
                     #g_dev['cam'].enqueue_for_AWS(text_data_size, paths['im_path'], paths['text_name'])
-                    g_dev['cam'].enqueue_for_AWS(jpeg_data_size, paths['im_path'], paths['jpeg_name10'])
-                    g_dev['cam'].enqueue_for_AWS(i768sq_data_size, paths['im_path'], paths['i768sq_name10'])
+                    #g_dev['cam'].enqueue_for_AWS(jpeg_data_size, paths['im_path'], paths['jpeg_name10'])
+                    #g_dev['cam'].enqueue_for_AWS(i768sq_data_size, paths['im_path'], paths['i768sq_name10'] +'.fz')
                     #print('File size to AWS:', reduced_data_size)
-                    g_dev['cam'].enqueue_for_AWS(13000000, paths['raw_path'], paths['raw_name00'])    #NB need to chunkify 25% larger then small fits.
+                    #g_dev['cam'].enqueue_for_AWS(13000000, paths['raw_path'], paths['raw_name00'])    #NB need to chunkify 25% larger then small fits.
                     #if not quick:
                     g_dev['cam'].enqueue_for_AWS(26000000, paths['raw_path'], paths['raw_name00'] +'.fz')    #NB need to chunkify 25% larger then small fits.
                     #if not quick:
@@ -1198,7 +1236,8 @@ class Observatory:
                 # except:
                 #     pass
                 #print("\nReduction completed.")
-                g_dev['obs'].send_to_user("An image reduction has completed.", p_level='INFO')
+                g_dev['obs'].send_to_user("An image has been readout from the camera and sent to the cloud.", p_level='INFO') ## MTF says that this isn't actuallytrue and isn't actually informative! Will comment out and see if anyone notices.....
+
                 self.reduce_queue.task_done()
             else:
                 time.sleep(.5)
@@ -1224,8 +1263,8 @@ if __name__ == "__main__":
     # print(f"Starting up {config.site_name}.")
     # Start up the observatory
 
-    import config
+    #import config
 
-
+    #oneAtATime=0
     o = Observatory(config.site_name, config.site_config)
     o.run()

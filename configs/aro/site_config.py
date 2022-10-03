@@ -49,6 +49,7 @@ site_config = {
     'client_path': 'F:/ptr/',
     'alt_path': '//house-computer/saf_archive_2/archive/sq01/',
     'archive_path': 'F:/ptr/',       # Where images are kept.
+    'archive_age' : -99.9, # Number of days to keep files in the local archive before deletion. Negative means never delete
     'aux_archive_path':  None,
     'wema_is_active':  True,     # True if an agent (ie a wema) is used at a site.   # Wemas are split sites -- at least two CPS's sharing the control.
     'wema_hostname':  'ARO-WEMA',
@@ -96,10 +97,11 @@ site_config = {
     'auto_morn_sky_flat': True,
     'auto_morn_bias_dark': True,
     're-calibrate_on_solve': True,
+    'pointing_calibration_on_startup': False,
     'get_ocn_status': None,
     'get_enc_status': None,
     'not_used_variable': None,
-    
+
 
 
     'defaults': {
@@ -161,7 +163,7 @@ site_config = {
             'unihedron_port':  10    # False, None or numeric of COM port.
         },
     },
-    
+
     'enclosure': {
         'enclosure1': {
             'parent': 'site',
@@ -355,6 +357,8 @@ site_config = {
             'coef_c': -55.9946,  #-77.57,   # negative means focus moves out/in as Primary gets colder/warmer.
             'coef_0': 5333.0, #6155,   #5675,  20220502 Nominal intercept when Primary is at 0.0 C. f4.9 cONFIGURATION
             'coef_date':  '20220920',    # TEMP RANGE 12 TO 19, 6 MEASUREMENTS
+            'z_compression': 0.0, #  microns per degree of zenith distance
+            'z_coef_date':  '20221002',   # 'reference': 4375,    #   Guess 20210904  Nominal at 10C Primary temperature
             'minimum': 0,     # NB this area is confusing steps and microns, and need fixing.
             'maximum': 12600,   #12672 actually
             'step_size': 1,

@@ -40,6 +40,7 @@ site_config = {
     'client_path':  'F:/ptr/',  # Generic place for this host to stash misc stuff
     'alt_path':  'F:/ptr/',  # Generic place for this host to stash misc stuff
     'archive_path':  'F:/ptr/',  # Meant to be where /archive/<camera_id> is added by camera.
+    'archive_age' : 14.0, # Number of days to keep files in the local archive before deletion. Negative means never delete
     'aux_archive_path':  None, # '//house-computer/saf_archive_2/archive/',  #  Path to auxillary backup disk.
     'wema_is_active':  False,    #True if split computers used at a site.
     'wema_hostname':  [],  #  Prefer the shorter version
@@ -56,7 +57,7 @@ site_config = {
     'name': 'PTR Sierra Remote Observatory 0m3f38',
     'airport_code':  'FAT  :  Fresno Air Terminal',
     'location': 'Near Shaver Lake CA,  USA',
-    'telescope_description': 'n.a.',
+    'telescope_description': 'Astro-Physics, 300mmF3.8 Ricardi Honders Astrograph.',
     'observatory_url': 'https://www.sierra-remote.com/',   #  This is meant to be optional
     'observatory_logo': None,   # I expect these will ususally end up as .png format icons
     'description':  '''Sierra Remote Observatories​ provide telescope Hosting for Remote Astronomical Imaging,
@@ -82,10 +83,23 @@ site_config = {
     'automatic_detail_default': "Enclosure is initially set to Automatic mode.",
     'auto_eve_bias_dark': True,
     'auto_eve_sky_flat': True,
-    'eve_sky_flat_sunset_offset': -32.5,  #  Minutes  neg means before, + after.
     'auto_morn_sky_flat': True,
     'auto_morn_bias_dark': True,
+    #Event related constants.
+    'eve_bias_dark_dur':  2.0,   #  hours Duration, prior to next.
+    'eve_screen_flat_dur': 0.0,   #  hours Duration, prior to next.
+    'operations_begin':  -1.0,   #  - hours from Sunset
+    'eve_sky_flat_sunset_offset': -35,  #  Minutes  neg means before, + after.  OPENING TIME
+    'morn_sky_flat_sunrise_offset' : +15.0,  #  Minutes  neg means before, + after.  CLOSING TIME
+
+    'eve_cooldown_offset': -.99,   #  - hours beforeSunset
+    'eve_sky_flat_offset':  0.5,   #  - hours beforeSunset
+    'morn_sky_flat_offset':  0.4,   #  + hours after Sunrise
+    'morning_close_offset':  0.41,   #  + hours after Sunrise
+    'operations_end':  0.42,
     're-calibrate_on_solve': True,
+
+    'pointing_calibration_on_startup': True,
 
     'defaults': {
         'observing_conditions': 'observing_conditions1',  #  These are used as keys, may go away.
@@ -168,14 +182,7 @@ site_config = {
                                                                         #First Entry is always default condition.
                 'roof_shutter':  ['Auto', 'Open', 'Close', 'Lock Closed', 'Unlock'],
             },
-            'eve_bias_dark_dur':  2.0,   #  hours Duration, prior to next.
-            'eve_screen_flat_dur': 1.0,   #  hours Duration, prior to next.
-            'operations_begin':  -1.0,   #  - hours from Sunset
-            'eve_cooldown_offset': -.99,   #  - hours beforeSunset
-            'eve_sky_flat_offset':  0.5,   #  - hours beforeSunset
-            'morn_sky_flat_offset':  0.4,   #  + hours after Sunrise
-            'morning_close_offset':  0.41,   #  + hours after Sunrise
-            'operations_end':  0.42,
+
         },
     },
 
@@ -322,8 +329,8 @@ site_config = {
             'coef_c': -8.529,   #  Negative means focus moves out as Primary gets colder
             'coef_0': 7853.86,  #  Nominal intercept when Primary is at 0.0 C.
             'coef_date':  '20220914',    #This appears to be sensible result 44 points -13 to 3C'reference':  6431,    #  Nominal at 10C Primary temperature
-            # #F9 setup
-            # 'reference': 4375,    #   Guess 20210904  Nominal at 10C Primary temperature
+            'z_compression': -0.927, #  microns per degree of zenith distance
+            'z_coef_date':  '20221002',   # 'reference': 4375,    #   Guess 20210904  Nominal at 10C Primary temperature
             # 'ref_temp':  27.,    #  Update when pinning reference
             # 'coef_c': -78.337,   #  negative means focus moves out as Primary gets colder
             # 'coef_0': 5969,  #  Nominal intercept when Primary is at 0.0 C.
@@ -430,7 +437,7 @@ site_config = {
             'file_mode_path':  'G:/000ptr_saf/archive/sq01/autosaves/',   #NB Incorrect site, etc. Not used at SRO.  Please clean up.
 
             'settings': {
-                'temp_setpoint': -22,   #Updated from -18 WER 20220914 Afternoon
+                'temp_setpoint': -25,   #Updated from -18 WER 20220914 Afternoon
                 'calib_setpoints': [-35,-30, -25, -20, -15, -10 ],  #  Should vary with season?
                 'day_warm': False,
                 'cooler_on': True,
