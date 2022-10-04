@@ -205,6 +205,7 @@ site_config = {
             'west_clutch_dec_correction': 0.0, #
             'east_flip_ra_correction':  0.0, #
             'east_flip_dec_correction': 0.0,  #
+            'permissive_mount_reset' : 'yes', # if this is set to yes, it will reset the mount at startup and when coordinates are out significantly
             'settings': {
 			    'latitude_offset': 0.0,     #Decimal degrees, North is Positive   These *could* be slightly different than site.
 			    'longitude_offset': 0.0,   #Decimal degrees, West is negative  #NB This could be an eval( <<site config data>>))
@@ -473,6 +474,14 @@ site_config = {
                 'x_pixel':  6,
                 'y_pixel':  6,
                 'pix_scale': [1.067, 2.134, 3.201, 4.268],
+
+                'CameraXSize' : 4556,
+                'CameraYSize' : 3656,
+                'MaxBinX' : 2,
+                'MaxBinY' : 2,
+                'StartX' : 1,
+                'StartY' : 1,
+
                 'x_field_deg': 1.3333,   #   round(4784*1.0481/3600, 4),
                 'y_field_deg': 1.0665,   #  round(3194*1.0481/3600, 4),
                 'overscan_x': 24,

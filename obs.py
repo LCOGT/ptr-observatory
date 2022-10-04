@@ -26,6 +26,7 @@ import requests
 import os
 import redis  #  Client, can work with Memurai
 import json
+import astropy
 import numpy as np
 import math
 import shelve
@@ -186,6 +187,7 @@ class Observatory:
         # This is the ayneclass through which we can make authenticated api calls.
         self.api = API_calls()
 
+
         self.command_interval = 3   # seconds between polls for new commands
         self.status_interval = 4    # NOTE THESE IMPLEMENTED AS A DELTA NOT A RATE.
 
@@ -268,7 +270,11 @@ class Observatory:
         # Use the configuration to instantiate objects for all devices.
         self.create_devices(config)
 
-
+        # clear up astropy cache
+        astropy.utils.data.clear_download_cache()
+        if not os.path.exists(g_dev['cam'].site_path + 'astropycache'):
+            os.makedirs(g_dev['cam'].site_path + 'astropycache')
+        astropy.config.set_temp_cache(g_dev['cam'].site_path + 'astropycache')
 
 
         self.loud_status = False
@@ -303,6 +309,8 @@ class Observatory:
         self.projects = None
         self.events_new = None
         self.reset_last_reference()
+        if self.config['mount']['mount1']['permissive_mount_reset'] == 'yes':
+           g_dev['mnt'].reset_mount_reference()
 
 
 
@@ -951,7 +959,26 @@ class Observatory:
                 #NB Important decision here, do we flash calibrate screen and sky flats?  For now, Yes.
 
                 #cal_result =
-                calibrate(hdu, lng_path, paths['frame_type'], quick=False)
+
+                ####################################################################################################
+                #### MTF trying out a thing. Commenting out "calibrate" and just doing the small things from there here - 3 Oct 22
+                # MOTIVATION === a lot of hard-coded stuff for specific cameras making life hard at ECO....
+                #calibrate(hdu, lng_path, paths['frame_type'], quick=False)
+
+                pedastal = 100
+                hdu.data += pedastal
+                hdu.header['PEDESTAL'] = (-pedastal,  'Add to get zero ADU based image')
+
+                #fix_neg_pix = np.where(hdu.data < 0)
+                #print('# of < 0  pixels:  ', len(fix_neg_pix[0]))  #  Do not change values here.
+                #hdu.data[fix_neg_pix] = 0
+                #fix_max_pix = np.where(hdu.data > 65535)
+                #print("Max data value is:  ", fix_max_pix, len(fix_max_pix[0]))
+                #hdu.data[fix_max_pix] = 65535.
+
+                ####################################################################################################
+
+
                 #print("Calibrate returned:  ", hdu.data, cal_result)
                 #Before saving reduced or generating postage, we flip
                 #the images so East is left and North is up based on
@@ -1029,20 +1056,34 @@ class Observatory:
                         err_dec = target_dec - solved_dec
                         print(" coordinate error in ra, dec:  (asec) ", round(err_ha*15*3600, 2), round(err_dec*3600, 2))  #NB WER changed units 20221012
                         #NB NB NB Need to add Pierside as a parameter to this cacc 20220214 WER
+
                         #NB NB NB this needs rethinking, the incoming units are hours in HA or degrees of dec
-                        if err_ha > 100 or err_dec > 100 or err_ha < -100 or err_dec < -100:
-                           # g_dev['mnt'].reset_mount_reference()
-                            print ("I've been inhibited from reset the mount_reference 1")
-                            #g_dev['mnt'].current_icrs_ra = solve['ra_j2000_hours']
-                            #g_dev['mnt'].current_icrs_dec = solve['dec_j2000_hours']
+                        if (err_ha*15*3600 > 1200 or err_dec*3600 > 1200 or err_ha*15*3600 < -1200 or err_dec*3600 < -1200) and   self.config['mount']['mount1']['permissive_mount_reset'] == 'yes':
+                            g_dev['mnt'].reset_mount_reference()
+                            print ("I've  reset the mount_reference 1")
+                            g_dev['mnt'].current_icrs_ra = solve['ra_j2000_hours']
+                            g_dev['mnt'].current_icrs_dec = solve['dec_j2000_hours']
+                            err_ha = 0
+                            err_dec = 0
                         elif g_dev['mnt'].pier_side_str == 'Looking West':
-                            #g_dev['mnt'].adjust_mount_reference(err_ha, err_dec)
+                            g_dev['mnt'].adjust_mount_reference(err_ha, err_dec)
                             print ("I've been inhibited from reset the mount_reference 2")
                             pass
                         else:
-                            #g_dev['mnt'].adjust_flip_reference(err_ha, err_dec)
+                            g_dev['mnt'].adjust_flip_reference(err_ha, err_dec)
                             print ("I've been inhibited from reset the mount_reference 3")
                             pass
+
+                        try:
+                            if g_dev['mnt'].pier_side_str == 'Looking West':
+                                g_dev['mnt'].adjust_mount_reference(err_ha, err_dec)
+                            else:
+                                g_dev['mnt'].adjust_flip_reference(err_ha, err_dec)   #Need to verify signs
+                        except:
+                            print ("This mount doesn't report pierside")
+
+
+
                         #img.flush()
                         #img.close
                         #img = fits.open(wpath, ignore_missing_end=True)

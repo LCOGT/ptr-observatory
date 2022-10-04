@@ -212,7 +212,8 @@ site_config = {
             'default_zenith_avoid': 0.0,   # degrees floating, 0.0 means do not apply this constraint.
             'has_paddle': False,       # paddle refers to something supported by the Python code, not the AP paddle.
             'pointing_tel': 'tel1',     # This can be changed to 'tel2'... by user.  This establishes a default.
-
+  #
+            'permissive_mount_reset' : 'no', # if this is set to yes, it will reset the mount at startup and when coordinates are out significantly
             'west_clutch_ra_correction': -0.05323724387608619,  #final:   0.0035776615398219747 -0.1450812805892454
             'west_clutch_dec_correction': 0.3251459235809251,
             'east_flip_ra_correction':   -0.040505313212952586, # Initially -0.039505313212952586,
@@ -515,6 +516,14 @@ site_config = {
                 'x_pixel':  3.76,
                 'y_pixel':  3.76,
                 'pix_scale': [0.528, 1.055, 1.583, 2.110],  # VErified for saf 20220903 WER [0.2876, 0.575, 0.863, 1.15], #F9        [0.528, 1.055, 1.583, 2.110] F4.9
+
+                'CameraXSize' : 9600,
+                'CameraYSize' : 6422,
+                'MaxBinX' : 2,
+                'MaxBinY' : 2,
+                'StartX' : 1,
+                'StartY' : 1,
+
                 'x_field_deg': 1.042,   #  round(4784*1.055/3600, 4),
                 'y_field_deg': 0.7044,   # round(3194*1.055/3600, 4),
                 'detsize': '[1:9600, 1:6422]',  # QHY600Pro Physical chip data size as returned from driver

@@ -240,7 +240,8 @@ site_config = {
             'west_clutch_ra_correction': 0.0,
             'west_clutch_dec_correction': 0.0,
             'east_flip_ra_correction': 0.0,
-            'east_flip_dec_correction': 0.0,
+            'east_flip_dec_correction': 0.0,  #
+            'permissive_mount_reset' : 'no', # if this is set to yes, it will reset the mount at startup and when coordinates are out significantly
             'has_paddle': False,
             'pointing_tel': 'tel1',
             'Selector':{
@@ -562,6 +563,15 @@ site_config = {
                 'x_pixel':  3.76,
                 'y_pixel':  3.76,
                 'pix_scale': [0.302597, 0.605194, 0.907791, 1.210388],    #   bin-2  2* math.degrees(math.atan(3.76/2563000))*3600
+
+                'CameraXSize' : 4784,
+                'CameraYSize' : 3194,
+                'MaxBinX' : 2,
+                'MaxBinY' : 2,
+                'StartX' : 1,
+                'StartY' : 1,
+
+
                 'x_field_deg': round(4784*0.605194/3600, 4),   #48 X 32 AMIN  3MIN X 0.5 DEG
                 'y_field_deg': round(3194*0.605194/3600, 4),
                 'overscan_x': 24,

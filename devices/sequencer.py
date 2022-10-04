@@ -1246,6 +1246,14 @@ class Sequencer:
             response = g_dev['obs'].api.authenticated_request("PUT", uri, self.config)
             if response:
                 print("Config uploaded successfully.")
+            
+            # If you are using TheSkyX, then update the autosave path
+            if self.config['camera']['camera_1_1']['driver'] == "CCDSoft2XAdaptor.ccdsoft5Camera":
+                g_dev['cam'].camera.AutoSavePath = self.config['archive_path'] +'archive/' + datetime.datetime.strftime(datetime.datetime.now(), '%Y%m%d')
+                try:
+                    os.mkdir(self.config['archive_path'] +'archive/' + datetime.datetime.strftime(datetime.datetime.now(), '%Y%m%d'))
+                except:
+                    print ("Couldn't make autosave directory")
 
         return
 
