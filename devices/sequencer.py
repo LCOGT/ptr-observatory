@@ -1201,9 +1201,12 @@ class Sequencer:
                 print (cameras)
                 for camera in cameras:
                     bigfzs=glob(camera + "/" + runNight + "/raw/*.fz")
+
                     for fzneglect in bigfzs:
-                        g_dev['cam'].enqueue_for_AWS(26000000, fzneglect)
-                time.sleep(60)
+                        print ("Reattempting upload of " + str(os.path.basename(fzneglect)))
+                        breakpoint()
+                        g_dev['cam'].enqueue_for_AWS(26000000, camera + "/" + runNight + "/raw/", os.path.basename(fzneglect))
+                time.sleep(300)
                 if (g_dev['obs'].aws_queue.empty()):
                     break
 
