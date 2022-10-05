@@ -2142,6 +2142,9 @@ class Camera:
                             #g_dev['cam'].enqueue_for_AWS(i768sq_data_size, paths['im_path'], paths['i768sq_name10'] +'.fz')
 
                             g_dev['obs'].send_to_user("A preview image has been sent to the GUI.", p_level='INFO') ## MTF says that this isn't actuallytrue and isn't actually informative! Will comment out and see if anyone notices.....
+                    else:
+                        hduraw=copy.deepcopy(hdu)
+
 
                     ## Need to make an FZ file here before things get changed below
                     print ("Making an fz file")
@@ -2243,7 +2246,7 @@ class Camera:
                     return result
                 except Exception as e:
                     print('Header assembly block failed: ', e)
-                    print(traceback.format_exc())
+
 
                     try:
                         hdu = None
