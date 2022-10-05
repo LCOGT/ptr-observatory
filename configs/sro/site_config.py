@@ -39,6 +39,7 @@ site_config = {
     'client_hostname':  'SRO-0m30',
     'client_path':  'F:/ptr/',  # Generic place for this host to stash misc stuff
     'alt_path':  'F:/ptr/',  # Generic place for this host to stash misc stuff
+    'save_to_alt_path' : 'no',
     'archive_path':  'F:/ptr/',  # Meant to be where /archive/<camera_id> is added by camera.
     'archive_age' : 14.0, # Number of days to keep files in the local archive before deletion. Negative means never delete
     'aux_archive_path':  None, # '//house-computer/saf_archive_2/archive/',  #  Path to auxillary backup disk.

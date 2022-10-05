@@ -1961,6 +1961,10 @@ class Camera:
                              'frame_type':  frame_type
                              }
                     # Some unnecessary saf specific site code commented out here - MTF 5 October 22
+
+
+
+
                     #if  False and self.config['site'] == 'saf':    #ADD an owner specified request to do this save
                     #    os.makedirs(self.alt_path +  g_dev['day'] + '/reduced/', exist_ok=True)
                     #    red_path_aux = self.alt_path +  g_dev['day'] + '/reduced/'
@@ -2193,10 +2197,27 @@ class Camera:
                             print(traceback.format_exc())
                             time.sleep(10)
                             saverretries=saverretries+1
+
+
+                    # Save to alt_path routine
+                    if self.config['save_to_alt_path'] == 'yes':    #ADD an owner specified request to do this save
+                        os.makedirs(self.alt_path +  g_dev['day'] + '/reduced/', exist_ok=True)
+                        try:
+                            hduraw.writeto(raw_path + raw_name00, overwrite=True)   #Save full raw file locally
+                            saver = 1
+                        except Exception as e:
+                            print('Failed to write raw file: ', e)
+                            if 'requested' in e and 'written' in e:
+
+                                print (astropy.utils.data.check_download_cache())
+                                #astropy.utils.data.clear_download_cache()
+                            print(traceback.format_exc())
+                            time.sleep(10)
+                            saverretries=saverretries+1
+                        #red_path_aux = self.alt_path +  g_dev['day'] + '/reduced/'
+                        #paths['red_path_aux'] = red_path_aux
                     # remove file from memory
                     del hduraw
-
-
 
                     self.to_reduce((paths, pixscale))
                     #Here we should decimate and send big fits

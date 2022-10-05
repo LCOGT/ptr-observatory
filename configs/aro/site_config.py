@@ -48,6 +48,7 @@ site_config = {
     'client_hostname':"ARO-WEMA",     # Generic place for this host to stash.
     'client_path': 'F:/ptr/',
     'alt_path': '//house-computer/saf_archive_2/archive/sq01/',
+    'save_to_alt_path' : 'no',
     'archive_path': 'F:/ptr/',       # Where images are kept.
     'archive_age' : -99.9, # Number of days to keep files in the local archive before deletion. Negative means never delete
     'aux_archive_path':  None,

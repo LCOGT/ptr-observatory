@@ -62,7 +62,8 @@ site_config = {
 
     'client_hostname':  'MRC-0m35',
     'client_path':  'Q:/ptr/',  # Generic place for client host to stash misc stuff
-    'alt_path':  'q:/ptr/',  # Generic place for this host to stash misc stuff
+    'alt_path':  'q:/ptr/',  # Generic place for this host to stash misc stuff    'save_to_alt_path' : 'no',
+
     'archive_path':  'Q:/ptr/',
     'archive_age' : -99.9, # Number of days to keep files in the local archive before deletion. Negative means never delete
     'aux_archive_path':  None,
