@@ -249,8 +249,8 @@ site_config = {
             'parent': 'mount1',
             'name': 'Main OTA',
             'telescop': 'sro1',
-            'ptrtel': 'cvagr-0m30-f9-f4p9-001',
-            'desc':  'AP 305mm F3.8 Ricarrdi Honders',
+            'ptrtel': 'cvagr-0m30-f9-f4p9-001',  #NB NB NB this is for SRO not sro1
+            'desc':  'AP 305mm F3.8 Ricarrdi Honders',   # NB NB NB This is correct for sro1
             'driver': None,                     #  Essentially this device is informational.  It is mostly about the optics.
             'collecting_area': 55381,
             'obscuration':  24.2,   #  %

@@ -1853,6 +1853,7 @@ class Camera:
                     self.pix_ang = (self.config['camera'][self.name]['settings']['x_pixel']*self.camera.BinX/(float(self.config['telescope'] \
                                               ['telescope1']['focal_length'])*1000.))
                     hdu.header['PIXSCALE'] = (round(math.degrees(math.atan(self.pix_ang))*3600., 4), '[arcsec/pixel] Nominal pixel scale on sky')
+                    pixscale=float(hdu.header['PIXSCALE'])
                     hdu.header['REQNUM']   = ('00000001', 'Request number')
                     hdu.header['ISMASTER'] = (False, 'Is master image')
 
@@ -1939,7 +1940,7 @@ class Camera:
                     text = open(im_path + text_name, 'w')  #This is needed by AWS to set up database.
                     text.write(str(hdu.header))
                     text.close()
-                    text_data_size = min(len(str(hdu.header)) - 4096, 2048)
+                    #text_data_size = min(len(str(hdu.header)) - 4096, 2048)
                     paths = {'im_path':  im_path,
                              'raw_path':  raw_path,
                              'cal_path':  cal_path,
@@ -1959,10 +1960,11 @@ class Camera:
                              'text_name11': text_name,
                              'frame_type':  frame_type
                              }
-                    if  False and self.config['site'] == 'saf':    #ADD an owner specified request to do this save
-                        os.makedirs(self.alt_path +  g_dev['day'] + '/reduced/', exist_ok=True)
-                        red_path_aux = self.alt_path +  g_dev['day'] + '/reduced/'
-                        paths['red_path_aux'] = red_path_aux
+                    # Some unnecessary saf specific site code commented out here - MTF 5 October 22
+                    #if  False and self.config['site'] == 'saf':    #ADD an owner specified request to do this save
+                    #    os.makedirs(self.alt_path +  g_dev['day'] + '/reduced/', exist_ok=True)
+                    #    red_path_aux = self.alt_path +  g_dev['day'] + '/reduced/'
+                    #    paths['red_path_aux'] = red_path_aux
                     #script = None
                     '''
                     self.enqueue_image(text_data_size, im_path, text_name)
@@ -2043,6 +2045,8 @@ class Camera:
                     #else:
                         # Bias frame quick flash
                     if not frame_type.lower() in ('bias', 'dark', 'flat', 'screenflat', 'skyflat'): # Don't process jpgs or small fits for biases and darks
+
+                        # Make a version of hdu to use as jpg and small fits as well as a local raw used file for planewave solves
                         hdusmall=copy.deepcopy(hdu)
                         hdusmall.data = hdusmall.data.astype('float32')
 
@@ -2054,6 +2058,10 @@ class Camera:
                             # Dark frame quick flash
                         if len(self.darkframe) > 10:
                             hdusmall.data=hdusmall.data-(self.darkframe*exposure_time)
+
+                        hdusmall.data = hdusmall.data.astype('int16')
+                        hduraw=copy.deepcopy(hdusmall) # This is the holder for the local raw file
+
                         inputData=np.asarray(hdusmall.data)
 
                         inputData[inputData > self.config['camera'][self.name]['settings']['saturate']] = self.config['camera'][self.name]['settings']['saturate']
@@ -2061,20 +2069,25 @@ class Camera:
                         inputData=inputData-np.min(inputData)
                         #inputData=np.nan_to_num(inputData)
                         hdusmall.data=inputData
+                        # saving memory
+                        del inputData
+
+
                         # Getting the mode of the image.
                         #modeData =np.rint(inputData) # To do the mode properly it needs to be in integer steps - a float has too many potential values
                         #modeElement = np.argmax(mode(modeData[~np.isnan(modeData)])[1])
                         #imageMode = mode(modeData)[0][modeElement]
 
 
-                        hdusmall.data = hdusmall.data.astype('int16')
                         iy, ix = hdusmall.data.shape
                         if iy == ix:
                             resized_a = resize(hdusmall.data, (1280, 1280), preserve_range=True)
                         else:
                             resized_a = resize(hdusmall.data, (int(1536*iy/ix), 1536), preserve_range=True)  #  We should trim chips so ratio is exact.
                         #print('New small fits size:  ', resized_a.shape)
+
                         hdusmall.data = resized_a.astype('int16')
+                        del resized_a
 
                         # JPEG CODE
                         # New contrast scaling code:
@@ -2091,18 +2104,21 @@ class Camera:
                         stretched_data_uint8[hot] = 255
                         stretched_data_uint8[cold] = 0
                         #print("post-unit8< hot, cold:  ", len(hot[0]), len(cold[0]))
-                        imsave(paths['im_path'] + paths['jpeg_name10'], stretched_data_uint8)
+                        try:
+                            imsave(paths['im_path'] + paths['jpeg_name10'], stretched_data_uint8)
                         #img4 = stretched_data_uint8  # keep old name for compatibility
 
-                        jpeg_data_size = abs(stretched_data_uint8.size - 1024)                # istd = np.std(hdu.data)
+                        #jpeg_data_size = abs(stretched_data_uint8.size - 1024)                # istd = np.std(hdu.data)
                         # JPEG CODE
 
                         # enqueue the jpeg quickly up.
-                        if not no_AWS:
-                            g_dev['cam'].enqueue_for_AWS(100, paths['im_path'], paths['jpeg_name10'])
+                            if not no_AWS:
+                                g_dev['cam'].enqueue_for_AWS(100, paths['im_path'], paths['jpeg_name10'])
+                        except:
+                            print ("there was an issue saving the preview jpg. Pushing on though")
 
                         # assemble the small fits and send that up quickly.
-                        i768sq_data_size = hdusmall.data.size
+                        #i768sq_data_size = hdusmall.data.size
                         # print('ABOUT to print paths.')
                         # print('Sending to:  ', paths['im_path'])
                         # print('Also to:     ', paths['i768sq_name10'])
@@ -2110,6 +2126,8 @@ class Camera:
                         #hdu.writeto(paths['im_path'] + paths['i768sq_name10'], overwrite=True)
                         # This is the new fz file for the small fits, the above thing that gets bz2'ed will be deleted
                         hdufz=fits.CompImageHDU(np.asarray(hdusmall.data, dtype=np.float32), hdusmall.header)
+                        # remove file from memory
+                        del hdusmall
                         hdufz.verify('fix')
                         try:
                             hdufz.writeto(paths['im_path'] + paths['i768sq_name10'] +'.fz')
@@ -2128,9 +2146,10 @@ class Camera:
                     ## Need to make an FZ file here before things get changed below
                     print ("Making an fz file")
                     hdufz=fits.CompImageHDU(np.asarray(hdu.data, dtype=np.float32), hdu.header)
+                    # remove file from memory
+                    del hdu
                     #hdufz.header['FILENAME']=raw_path + raw_name00 +'.fz'
                     hdufz.verify('fix')
-
 
                     saver=0
                     saverretries=0
@@ -2147,6 +2166,8 @@ class Camera:
                             print(traceback.format_exc())
                             time.sleep(10)
                             saverretries=saverretries+1
+                    # remove file from memory
+                    del hdufz
 
 
                     if not no_AWS:
@@ -2158,7 +2179,7 @@ class Camera:
                     saverretries=0
                     while saver == 0 and saverretries < 10:
                         try:
-                            hdu.writeto(raw_path + raw_name00, overwrite=True)   #Save full raw file locally
+                            hduraw.writeto(raw_path + raw_name00, overwrite=True)   #Save full raw file locally
                             saver = 1
                         except Exception as e:
                             print('Failed to write raw file: ', e)
@@ -2169,8 +2190,12 @@ class Camera:
                             print(traceback.format_exc())
                             time.sleep(10)
                             saverretries=saverretries+1
+                    # remove file from memory
+                    del hduraw
 
-                    self.to_reduce((paths, hdu))
+
+
+                    self.to_reduce((paths, pixscale))
                     #Here we should decimate and send big fits
 
                     #g_dev['obs'].send_to_user("Raw image saved at the observatory. ", p_level='INFO')

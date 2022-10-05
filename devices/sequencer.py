@@ -742,44 +742,44 @@ class Sequencer:
                 #MTF - It was very often that the start of a project, the pointing would be far off... so I am instituting a pre-project point shot
                 #This is also important because it needs to slew to a tycho star to focus... so...... if the pointing is off, it won't get there!
                 #IT is a little buggy so far! But it will get there soon.
-                if initial_pointing:
+                # if initial_pointing:
 
 
-                    # Figure out rough RA and Dec
-                    #location = EarthLocation.from_geodetic(self.config['longitude']*u.deg, self.config['latitude']*u.deg, self.config['elevation'])
-                    #newAltAzcoordiantes = SkyCoord(alt = 75*u.deg, az = 90*u.deg , obstime = Time(datetime.datetime.utcnow(), scale='utc'), frame = 'altaz', location = location)
-                    #print (newAltAzcoordiantes.icrs)
-
-
-
+                #     # Figure out rough RA and Dec
+                #     #location = EarthLocation.from_geodetic(self.config['longitude']*u.deg, self.config['latitude']*u.deg, self.config['elevation'])
+                #     #newAltAzcoordiantes = SkyCoord(alt = 75*u.deg, az = 90*u.deg , obstime = Time(datetime.datetime.utcnow(), scale='utc'), frame = 'altaz', location = location)
+                #     #print (newAltAzcoordiantes.icrs)
 
 
 
-                    for run in range(2):
-                        if run ==0:
-                            # First point at a generic alt/az
-                            print ("Slewing to a generic alt/az for a pointing calibration")
-                            g_dev['obs'].send_to_user("Slewing to a generic alt/az for a pointing calibration")
-                            g_dev['mnt'].mount.SlewToAltAzAsync(90, 75) # Move around to non-objectionable point on the sky
-                            g_dev['mnt'].mount.Tracking = True
-                            time.sleep(30)
-                        elif run ==1:
-                            print ("Slewing to the target ra and dec for a pointing check")
-                            g_dev['obs'].send_to_user("Slewing to the target ra and dec for a pointing check")
-                            print ("ra:  " +str(dest_ra))
-                            print ("dec: " +str(dest_dec))
-                            g_dev['mnt'].go_coord(dest_ra, dest_dec)
-                            time.sleep(30)
 
-                        g_dev['obs'].send_to_user("Running a Pointing Calibration Exposure. " + str(run+1) +" of 2.")
-                        print ("Pointing Run " + str(run))
-                        req = {'time': 20,  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'auto_focus'}   #  NB Should pick up filter and constats from config
-                        #opt = {'area': 150, 'count': 1, 'bin': '2, 2', 'filter': 'focus'}
-                        opt = {'area': 150, 'count': 1, 'bin': 'default', 'filter': 'Lum'}
-                        result = g_dev['cam'].expose_command(req, opt, no_AWS=True, solve_it=True)
-                        print ("Waiting for solve")
-                        time.sleep(15)
-                    initial_pointing = False
+
+
+                #     for run in range(2):
+                #         if run ==0:
+                #             # First point at a generic alt/az
+                #             print ("Slewing to a generic alt/az for a pointing calibration")
+                #             g_dev['obs'].send_to_user("Slewing to a generic alt/az for a pointing calibration")
+                #             g_dev['mnt'].mount.SlewToAltAzAsync(90, 75) # Move around to non-objectionable point on the sky
+                #             g_dev['mnt'].mount.Tracking = True
+                #             time.sleep(30)
+                #         elif run ==1:
+                #             print ("Slewing to the target ra and dec for a pointing check")
+                #             g_dev['obs'].send_to_user("Slewing to the target ra and dec for a pointing check")
+                #             print ("ra:  " +str(dest_ra))
+                #             print ("dec: " +str(dest_dec))
+                #             g_dev['mnt'].go_coord(dest_ra, dest_dec)
+                #             time.sleep(30)
+
+                #         g_dev['obs'].send_to_user("Running a Pointing Calibration Exposure. " + str(run+1) +" of 2.")
+                #         print ("Pointing Run " + str(run))
+                #         req = {'time': 20,  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'auto_focus'}   #  NB Should pick up filter and constats from config
+                #         #opt = {'area': 150, 'count': 1, 'bin': '2, 2', 'filter': 'focus'}
+                #         opt = {'area': 150, 'count': 1, 'bin': 'default', 'filter': 'Lum'}
+                #         result = g_dev['cam'].expose_command(req, opt, no_AWS=True, solve_it=True)
+                #         print ("Waiting for solve")
+                #         time.sleep(15)
+                #     initial_pointing = False
 
 
 
@@ -1701,8 +1701,11 @@ class Sequencer:
 
             focus_star = tycho.dist_sort_targets(g_dev['mnt'].current_icrs_ra, g_dev['mnt'].current_icrs_dec, \
                                     g_dev['mnt'].current_sidereal)
-            print("Going to near focus star " + str(focus_star[0][0]) + "  degrees away.")
-            g_dev['mnt'].go_coord(focus_star[0][1][1], focus_star[0][1][0])
+            try:
+                print("Going to near focus star " + str(focus_star[0][0]) + "  degrees away.")
+                g_dev['mnt'].go_coord(focus_star[0][1][1], focus_star[0][1][0])
+            except:
+                print ("Issues pointing to a tycho star. Focussing at the current pointing.")
             req = {'time': 12.5,  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'focus'}   #  NB Should pick up filter and constats from config
             #opt = {'area': 150, 'count': 1, 'bin': '2, 2', 'filter': 'focus'}
             opt = {'area': 150, 'count': 1, 'bin': 'default', 'filter': 'focus'}

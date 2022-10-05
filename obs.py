@@ -51,6 +51,7 @@ from auto_stretch.stretch import Stretch
 
 import ptr_events
 import socket
+import traceback
 
 # import PTR related classes:
 import config
@@ -944,18 +945,19 @@ class Observatory:
                 # print(self.reduce_queue)
                 # print(self.reduce_queue.empty)
 
-                pri_image = self.reduce_queue.get(block=False)
+                (paths, pixscale) = self.reduce_queue.get(block=False)
+                #print (paths)
                 #print(pri_image)
-                if pri_image is None:
+                if paths is None:
                     time.sleep(.5)
                     continue
                 # Here we parse the input and calibrate it.
 
-                paths = pri_image[0]
-                hdu = pri_image[1]
-                backup = pri_image[0].copy()   #NB NB Should this be a deepcopy?
+                #paths = pri_image[0]
+                #hdu = pri_image[1]
+                #backup = pri_image[0].copy()   #NB NB Should this be a deepcopy? MTF never used commmented out 5 Oct 22
 
-                lng_path =  g_dev['cam'].lng_path
+                #lng_path =  g_dev['cam'].lng_path # MTF never used commmented out 5 Oct 22
                 #NB Important decision here, do we flash calibrate screen and sky flats?  For now, Yes.
 
                 #cal_result =
@@ -965,9 +967,10 @@ class Observatory:
                 # MOTIVATION === a lot of hard-coded stuff for specific cameras making life hard at ECO....
                 #calibrate(hdu, lng_path, paths['frame_type'], quick=False)
 
-                pedastal = 100
-                hdu.data += pedastal
-                hdu.header['PEDESTAL'] = (-pedastal,  'Add to get zero ADU based image')
+                # MTF commented out 5 Oct 22 - happens to a file that never gets saved
+                #pedastal = 100
+                #hdu.data += pedastal
+                #hdu.header['PEDESTAL'] = (-pedastal,  'Add to get zero ADU based image')
 
                 #fix_neg_pix = np.where(hdu.data < 0)
                 #print('# of < 0  pixels:  ', len(fix_neg_pix[0]))  #  Do not change values here.
@@ -1001,17 +1004,21 @@ class Observatory:
                 #hdu.writeto(wpath, overwrite=True)  # NB overwrite == True is dangerous in production code.  This is big fits to AWS
                 #print ("original path")
                 #print (paths)
-                reduced_data_size = hdu.data.size
+                #reduced_data_size = hdu.data.size
 
                 #print('***** Reduced data size, dtype:  ', reduced_data_size, hdu.data.dtype, hdu.header['BITPIX'], hdu.header['NAXIS1'])
 
-                wpath = paths['red_path'] + paths['red_name01_lcl']    #This name is convienent for local sorting
 
-                hdu.writeto(wpath, overwrite=True) #Bigfit reduced
+                # MTF - this file is never used but takes up diskspace, so MTF commented out 5 Oct 22
+                #wpath = paths['red_path'] + paths['red_name01_lcl']    #This name is convienent for local sorting
+                #hdu.writeto(wpath, overwrite=True) #Bigfit reduced
+
                 #This was in camera after reduce and it had a race condition.
 
-                if hdu.header['OBSTYPE'].lower() in ('bias', 'dark', 'screenflat', 'skyflat'):
-                    hdu.writeto(paths['cal_path'] + paths['cal_name'], overwrite=True)
+
+                # MTF commented out 5 Oct 22 - creates files that will never be used
+                #if hdu.header['OBSTYPE'].lower() in ('bias', 'dark', 'screenflat', 'skyflat'):
+                #    hdu.writeto(paths['cal_path'] + paths['cal_name'], overwrite=True)
 
                 #Will try here to solve
                 if not paths['frame_type'] in ['bias', 'dark', 'flat', 'solar', 'lunar', 'skyflat', 'screen', 'spectrum', 'auto_focus']:
@@ -1021,31 +1028,34 @@ class Observatory:
                         #time_now = time.time()  #This should be more accurately defined earlier in the header
                         #NB NB The following needs better bin management
                         #solve = platesolve.platesolve(wpath, 1.067)     #0.5478)
-                        solve = platesolve.platesolve(wpath, float(hdu.header['PIXSCALE']))     #0.5478)
+                        #solve = platesolve.platesolve(wpath, float(hdu.header['PIXSCALE']))     #0.5478)
+                        # MTF - changed to using the debiased, dedarked image for solving in PW 5 Oct 22
+                        solve = platesolve.platesolve(paths['raw_path'] + paths['raw_name00'], pixscale)     #0.5478)
                         print("PW Solves: " ,solve['ra_j2000_hours'], solve['dec_j2000_degrees'])
                         #img = fits.open(wpath, mode='update', ignore_missing_end=True)
                         #hdr = img[0].header
                         #hdr=hdu.header
-                        #  Update the NEW header for a 'Reduced" fits. The Raw fits has not been changed.
-                        hdu.header['RA-J20PW'] = solve['ra_j2000_hours']
-                        hdu.header['DECJ20PW'] = solve['dec_j2000_degrees']
-                        hdu.header['RAHRS'] = float(solve['ra_j2000_hours'])
-                        hdu.header['RA'] = float(solve['ra_j2000_hours']*15)
-                        hdu.header['DEC'] = float(solve['dec_j2000_degrees'])
+                        ##  Update the NEW header for a 'Reduced" fits. The Raw fits has not been changed.
+                        #hdu.header['RA-J20PW'] = solve['ra_j2000_hours']
+                        #hdu.header['DECJ20PW'] = solve['dec_j2000_degrees']
+                        #hdu.header['RAHRS'] = float(solve['ra_j2000_hours'])
+                        #hdu.header['RA'] = float(solve['ra_j2000_hours']*15)
+                        #hdu.header['DEC'] = float(solve['dec_j2000_degrees'])
 
-                        hdu.header['MEAS-SPW'] = solve['arcsec_per_pixel']
-                        hdu.header['MEAS-RPW'] = solve['rot_angle_degs']
+                        #hdu.header['MEAS-SPW'] = solve['arcsec_per_pixel']
+                        #hdu.header['MEAS-RPW'] = solve['rot_angle_degs']
 
-                        #MTF woz ere - This updates the RA and Dec in the raw file header if a solution is found
-                        with fits.open(paths['raw_path'] + paths['raw_name00'], 'update') as f:
-                            for hdbf in f:
-                                hdbf.header['RA-J20PW'] = solve['ra_j2000_hours']
-                                hdbf.header['DECJ20PW'] = solve['dec_j2000_degrees']
-                                hdbf.header['RAHRS'] = float(solve['ra_j2000_hours'])
-                                hdbf.header['RA'] = float(solve['ra_j2000_hours']*15)
-                                hdbf.header['DEC'] = float(solve['dec_j2000_degrees'])
-                                hdbf.header['MEAS-SPW'] = solve['arcsec_per_pixel']
-                                hdbf.header['MEAS-RPW'] = solve['rot_angle_degs']
+                        # What MTF created, MTF taketh away - 5 Oct 22 - unnecessary header update
+                        # #MTF woz ere - This updates the RA and Dec in the raw file header if a solution is found
+                        # with fits.open(paths['raw_path'] + paths['raw_name00'], 'update') as f:
+                        #     for hdbf in f:
+                        #         hdbf.header['RA-J20PW'] = solve['ra_j2000_hours']
+                        #         hdbf.header['DECJ20PW'] = solve['dec_j2000_degrees']
+                        #         hdbf.header['RAHRS'] = float(solve['ra_j2000_hours'])
+                        #         hdbf.header['RA'] = float(solve['ra_j2000_hours']*15)
+                        #         hdbf.header['DEC'] = float(solve['dec_j2000_degrees'])
+                        #         hdbf.header['MEAS-SPW'] = solve['arcsec_per_pixel']
+                        #         hdbf.header['MEAS-RPW'] = solve['rot_angle_degs']
 
                         target_ra  = g_dev['mnt'].current_icrs_ra
                         target_dec = g_dev['mnt'].current_icrs_dec
@@ -1094,14 +1104,15 @@ class Observatory:
                         #     print("time base is:  ", time_now - prior_time)
 
                         # g_dev['mnt'].set_last_reference( solve['ra_j2000_Second phase of AF now.hours'], solve['dec_j2000_degrees'], time_now)
-                    except:
-                       print('Image:  ',wpath[-24:-5], " did not solve; this is usually OK.")
+                    except Exception as e:
+                       print("Image:  did not platesolve; this is usually OK. ")
+                       #print(traceback.format_exc())
                        #img = fits.open(wpath, mode='update', ignore_missing_end=True)
                        #hdr = img[0].header
-                       hdu.header['RA-J20PW'] = False
-                       hdu.header['DECJ20PW'] = False
-                       hdu.header['MEAS-SPW'] = False
-                       hdu.header['MEAS-RPW'] = False
+                       #hdu.header['RA-J20PW'] = False
+                       #hdu.header['DECJ20PW'] = False
+                       #hdu.header['MEAS-SPW'] = False
+                       #hdu.header['MEAS-RPW'] = False
                        #hdu.header['NO-SOLVE'] = True
                        #img.close()
                     #hdu = hdu_save
@@ -1143,41 +1154,44 @@ class Observatory:
                 #  CSV file to AWS and possibly overlay key star detections?
                 #  Possibly even astro solve and align a series or dither batch?
                 #  This might want to be yet another thread queue, esp if we want to do Aperture Photometry.
-                no_AWS = False
-                quick = False
-                do_sep = False
-                spot = None
-                #Note this was turned off because very rarely it hangs internally.
-                if do_sep:    #WE have already ran this code when focusing, but we should not ever get here when doing that.
-                    try:
-                        img = hdu.data.copy().astype('float')
-                        bkg = sep.Background(img)
-                        #breakpoint()
-                        #bkg_rms = bkg.rms()
-                        img = img - bkg
-                        sources = sep.extract(img, 4.5, err=bkg.globalrms, minarea=9)#, filter_kernel=kern)
-                        sources.sort(order = 'cflux')
 
-                        #print('No. of detections:  ', len(sources))
-                        sep_result = []
-                        spots = []
-                        for source in sources:
-                            a0 = source['a']
-                            b0 =  source['b']
-                            r0 = 2*round(math.sqrt(a0**2 + b0**2), 2)
-                            sep_result.append((round((source['x']), 2), round((source['y']), 2), round((source['cflux']), 2), \
-                                           round(r0), 3))
-                            spots.append(round((r0), 2))
-                        spot = np.array(spots)
-                        try:
-                            spot = np.median(spot[-9:-2])   #  This grabs seven spots.
-                            #print(sep_result, '\n', 'Spot ,flux, #_sources, avg_focus:  ', spot, source['cflux'], len(sources), avg_foc[1], '\n')
-                            if len(sep_result) < 5:
-                                spot = None
-                        except:
-                            spot = None
-                    except:
-                        spot = None
+                # MTF commented this out 5 oCt 22 - hdus are no longer sent to the reduce queue and this sep code is never run. We can move that to the official
+                # normal queue at some point in the future.
+                # no_AWS = False
+                # quick = False
+                # do_sep = False
+                # spot = None
+                # #Note this was turned off because very rarely it hangs internally.
+                # if do_sep:    #WE have already ran this code when focusing, but we should not ever get here when doing that.
+                #     try:
+                #         img = hdu.data.copy().astype('float')
+                #         bkg = sep.Background(img)
+                #         #breakpoint()
+                #         #bkg_rms = bkg.rms()
+                #         img = img - bkg
+                #         sources = sep.extract(img, 4.5, err=bkg.globalrms, minarea=9)#, filter_kernel=kern)
+                #         sources.sort(order = 'cflux')
+
+                #         #print('No. of detections:  ', len(sources))
+                #         sep_result = []
+                #         spots = []
+                #         for source in sources:
+                #             a0 = source['a']
+                #             b0 =  source['b']
+                #             r0 = 2*round(math.sqrt(a0**2 + b0**2), 2)
+                #             sep_result.append((round((source['x']), 2), round((source['y']), 2), round((source['cflux']), 2), \
+                #                            round(r0), 3))
+                #             spots.append(round((r0), 2))
+                #         spot = np.array(spots)
+                #         try:
+                #             spot = np.median(spot[-9:-2])   #  This grabs seven spots.
+                #             #print(sep_result, '\n', 'Spot ,flux, #_sources, avg_focus:  ', spot, source['cflux'], len(sources), avg_foc[1], '\n')
+                #             if len(sep_result) < 5:
+                #                 spot = None
+                #         except:
+                #             spot = None
+                #     except:
+                #         spot = None
 
                 #reduced_data_size = hdu.data.size
 
@@ -1239,10 +1253,10 @@ class Observatory:
                 #print('Sent to AWS Queue.')
                 time.sleep(0.5)
                 self.img = None   #Clean up all big objects.
-                try:
-                    hdu = None
-                except:
-                    pass
+                #try:
+                #    hdu = None
+                #except:
+                #    pass
                 # try:
                 #     hdu1 = None
                 # except:
