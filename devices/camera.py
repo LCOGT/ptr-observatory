@@ -40,7 +40,7 @@ from processing.calibration import calibrate
 import copy
 from os import getcwd
 from pathlib import Path
-
+import astropy
 
 
 #string  = \\HOUSE-COMPUTER\saf_archive_2\archive
@@ -1876,11 +1876,11 @@ class Camera:
 
                     try:
                         hdu.header['USERNAME'] = self.user_name
-                        hdu.header ['USERID']  = self.user_id
+                        hdu.header ['USERID']  = str(self.user_id).replace('-','').replace('|','')
                     except:
 
                         hdu.header['USERNAME'] = self.last_user_name
-                        hdu.header ['USERID']  = self.last_user_id
+                        hdu.header ['USERID']  = str(self.last_user_id).replace('-','').replace('|','')
                         #print("User_name or id not found, using prior.")  #Insert last user nameand ID here if they are not supplied.
 
                     # NB This needs more development
@@ -2032,7 +2032,7 @@ class Camera:
 
                     # if  not script in ('True', 'true', 'On', 'on'):   #  not quick and    #Was moved 20201022 for grid
                     #     if not quick:
-                    self.enqueue_for_AWS(text_data_size, im_path, text_name)
+                    self.enqueue_for_AWS(10, im_path, text_name)
                     #### MTF - moving jpeg right up here so it gets sent as soon as humanly possible.
 
                     #
@@ -2099,7 +2099,7 @@ class Camera:
 
                         # enqueue the jpeg quickly up.
                         if not no_AWS:
-                            g_dev['cam'].enqueue_for_AWS(jpeg_data_size, paths['im_path'], paths['jpeg_name10'])
+                            g_dev['cam'].enqueue_for_AWS(100, paths['im_path'], paths['jpeg_name10'])
 
                         # assemble the small fits and send that up quickly.
                         i768sq_data_size = hdusmall.data.size
@@ -2111,30 +2111,64 @@ class Camera:
                         # This is the new fz file for the small fits, the above thing that gets bz2'ed will be deleted
                         hdufz=fits.CompImageHDU(np.asarray(hdusmall.data, dtype=np.float32), hdusmall.header)
                         hdufz.verify('fix')
-                        hdufz.writeto(paths['im_path'] + paths['i768sq_name10'] +'.fz')
+                        try:
+                            hdufz.writeto(paths['im_path'] + paths['i768sq_name10'] +'.fz')
+                            if not no_AWS:
+                                g_dev['cam'].enqueue_for_AWS(1000, paths['im_path'], paths['i768sq_name10'] +'.fz')
+
+                        except:
+                            print ("there was an issue saving the small fits. Pushing on though")
 
                         #hdu.data = resized_a.astype('float')
                         if not no_AWS:
-                            g_dev['cam'].enqueue_for_AWS(i768sq_data_size, paths['im_path'], paths['i768sq_name10'] +'.fz')
+                            #g_dev['cam'].enqueue_for_AWS(i768sq_data_size, paths['im_path'], paths['i768sq_name10'] +'.fz')
 
                             g_dev['obs'].send_to_user("A preview image has been sent to the GUI.", p_level='INFO') ## MTF says that this isn't actuallytrue and isn't actually informative! Will comment out and see if anyone notices.....
 
-
-
-
-
-
-
-
-                    hdu.writeto(raw_path + raw_name00, overwrite=False)   #Save full raw file locally
                     ## Need to make an FZ file here before things get changed below
                     print ("Making an fz file")
                     hdufz=fits.CompImageHDU(np.asarray(hdu.data, dtype=np.float32), hdu.header)
                     #hdufz.header['FILENAME']=raw_path + raw_name00 +'.fz'
                     hdufz.verify('fix')
-                    hdufz.writeto(raw_path + raw_name00 +'.fz')
-                    #print('Raw:  ', raw_path + raw_name00)
-                    #calibrate(hdu, cal_path+cal_name)
+
+
+                    saver=0
+                    saverretries=0
+                    while saver == 0  and saverretries < 10:
+                        try:
+                            hdufz.writeto(raw_path + raw_name00 +'.fz', overwrite=True)   #Save full fz file locally
+                            saver = 1
+                        except Exception as e:
+                            print('Failed to write raw fz file: ', e)
+                            if 'requested' in e and 'written' in e:
+                                print (astropy.utils.data.check_download_cache())
+                                #astropy.utils.data.clear_download_cache()
+
+                            print(traceback.format_exc())
+                            time.sleep(10)
+                            saverretries=saverretries+1
+
+
+                    if not no_AWS:
+                        self.enqueue_for_AWS(26000000, paths['raw_path'], paths['raw_name00'] +'.fz')
+                        g_dev['obs'].send_to_user("An image has been readout from the camera and sent to the cloud.", p_level='INFO')
+
+
+                    saver=0
+                    saverretries=0
+                    while saver == 0 and saverretries < 10:
+                        try:
+                            hdu.writeto(raw_path + raw_name00, overwrite=True)   #Save full raw file locally
+                            saver = 1
+                        except Exception as e:
+                            print('Failed to write raw file: ', e)
+                            if 'requested' in e and 'written' in e:
+
+                                print (astropy.utils.data.check_download_cache())
+                                #astropy.utils.data.clear_download_cache()
+                            print(traceback.format_exc())
+                            time.sleep(10)
+                            saverretries=saverretries+1
 
                     self.to_reduce((paths, hdu))
                     #Here we should decimate and send big fits
@@ -2185,6 +2219,7 @@ class Camera:
                 except Exception as e:
                     print('Header assembly block failed: ', e)
                     print(traceback.format_exc())
+
                     try:
                         hdu = None
                     except:

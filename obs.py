@@ -271,7 +271,7 @@ class Observatory:
         self.create_devices(config)
 
         # clear up astropy cache
-        astropy.utils.data.clear_download_cache()
+        # astropy.utils.data.clear_download_cache()   This command fixes the cache when it is broken, needs to be moved to catch this error
         if not os.path.exists(g_dev['cam'].site_path + 'astropycache'):
             os.makedirs(g_dev['cam'].site_path + 'astropycache')
         astropy.config.set_temp_cache(g_dev['cam'].site_path + 'astropycache')
@@ -1065,14 +1065,14 @@ class Observatory:
                             g_dev['mnt'].current_icrs_dec = solve['dec_j2000_hours']
                             err_ha = 0
                             err_dec = 0
-                        elif g_dev['mnt'].pier_side_str == 'Looking West':
-                            g_dev['mnt'].adjust_mount_reference(err_ha, err_dec)
-                            print ("I've been inhibited from reset the mount_reference 2")
-                            pass
-                        else:
-                            g_dev['mnt'].adjust_flip_reference(err_ha, err_dec)
-                            print ("I've been inhibited from reset the mount_reference 3")
-                            pass
+                        #elif g_dev['mnt'].pier_side_str == 'Looking West':
+                        #    g_dev['mnt'].adjust_mount_reference(err_ha, err_dec)
+                        #    print ("I've been inhibited from reset the mount_reference 2")
+                        #    pass
+                        #else:
+                        #    g_dev['mnt'].adjust_flip_reference(err_ha, err_dec)
+                        #    print ("I've been inhibited from reset the mount_reference 3")
+                        #    pass
 
                         try:
                             if g_dev['mnt'].pier_side_str == 'Looking West':
@@ -1157,6 +1157,7 @@ class Observatory:
                         img = img - bkg
                         sources = sep.extract(img, 4.5, err=bkg.globalrms, minarea=9)#, filter_kernel=kern)
                         sources.sort(order = 'cflux')
+
                         #print('No. of detections:  ', len(sources))
                         sep_result = []
                         spots = []
@@ -1226,14 +1227,14 @@ class Observatory:
                 ########################################################################
 
 
-                if not no_AWS:  #IN the no+AWS case should we skip more of the above processing?
+                #if not no_AWS:  #IN the no+AWS case should we skip more of the above processing?
                     #g_dev['cam'].enqueue_for_AWS(text_data_size, paths['im_path'], paths['text_name'])
                     #g_dev['cam'].enqueue_for_AWS(jpeg_data_size, paths['im_path'], paths['jpeg_name10'])
                     #g_dev['cam'].enqueue_for_AWS(i768sq_data_size, paths['im_path'], paths['i768sq_name10'] +'.fz')
                     #print('File size to AWS:', reduced_data_size)
                     #g_dev['cam'].enqueue_for_AWS(13000000, paths['raw_path'], paths['raw_name00'])    #NB need to chunkify 25% larger then small fits.
                     #if not quick:
-                    g_dev['cam'].enqueue_for_AWS(26000000, paths['raw_path'], paths['raw_name00'] +'.fz')    #NB need to chunkify 25% larger then small fits.
+                    #g_dev['cam'].enqueue_for_AWS(26000000, paths['raw_path'], paths['raw_name00'] +'.fz')    #NB need to chunkify 25% larger then small fits.
                     #if not quick:
                 #print('Sent to AWS Queue.')
                 time.sleep(0.5)
@@ -1247,7 +1248,7 @@ class Observatory:
                 # except:
                 #     pass
                 #print("\nReduction completed.")
-                g_dev['obs'].send_to_user("An image has been readout from the camera and sent to the cloud.", p_level='INFO') ## MTF says that this isn't actuallytrue and isn't actually informative! Will comment out and see if anyone notices.....
+                #g_dev['obs'].send_to_user("An image has been readout from the camera and sent to the cloud.", p_level='INFO') ## MTF says that this isn't actuallytrue and isn't actually informative! Will comment out and see if anyone notices.....
 
                 self.reduce_queue.task_done()
             else:

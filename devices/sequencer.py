@@ -1179,11 +1179,39 @@ class Sequencer:
         if morn:
             # UNDERTAKING END OF NIGHT ROUTINES
 
-            print ("sending end of night token to AWS")
-            #g_dev['cam'].enqueue_for_AWS(jpeg_data_size, paths['im_path'], paths['jpeg_name10'])
+
+            # Setting runnight for mop up scripts
             yesterday = datetime.datetime.now() - timedelta(1)
             #print (datetime.datetime.strftime(yesterday, '%Y%m%d'))
             runNight=datetime.datetime.strftime(yesterday, '%Y%m%d')
+
+            # Check the archive directory and upload any big fits that haven't been uploaded
+            # wait until the queue is empty before mopping up
+            while True:
+                if (not g_dev['obs'].aws_queue.empty()):
+                    print ("Waiting for aws queue to empty at the end of the night")
+                    time.sleep(60)
+                else:
+                    break
+
+            # Go through and add any remaining fz files to the aws queue .... hopefully that is enough? If not, I will make it keep going until it is sure.
+            while True:
+                dir_path=self.config['client_path'] + 'archive/'
+                cameras=glob(dir_path + "*/")
+                print (cameras)
+                for camera in cameras:
+                    bigfzs=glob(camera + "/" + runNight + "/raw/*.fz")
+                    for fzneglect in bigfzs:
+                        g_dev['cam'].enqueue_for_AWS(26000000, fzneglect)
+                time.sleep(60)
+                if (g_dev['obs'].aws_queue.empty()):
+                    break
+
+
+            # Sending token to AWS to inform it that all files have been uploaded
+            print ("sending end of night token to AWS")
+            #g_dev['cam'].enqueue_for_AWS(jpeg_data_size, paths['im_path'], paths['jpeg_name10'])
+
             isExist = os.path.exists(g_dev['cam'].site_path + 'tokens')
             if not isExist:
                 os.makedirs(g_dev['cam'].site_path + 'tokens')
@@ -1246,7 +1274,7 @@ class Sequencer:
             response = g_dev['obs'].api.authenticated_request("PUT", uri, self.config)
             if response:
                 print("Config uploaded successfully.")
-            
+
             # If you are using TheSkyX, then update the autosave path
             if self.config['camera']['camera_1_1']['driver'] == "CCDSoft2XAdaptor.ccdsoft5Camera":
                 g_dev['cam'].camera.AutoSavePath = self.config['archive_path'] +'archive/' + datetime.datetime.strftime(datetime.datetime.now(), '%Y%m%d')
