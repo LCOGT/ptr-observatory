@@ -234,6 +234,7 @@ class Observatory:
         #Soon the primary event / time values come from AWS>
         self.astro_events = ptr_events.Events(self.config)
         self.astro_events.compute_day_directory()
+
         self.astro_events.display_events()
 
 

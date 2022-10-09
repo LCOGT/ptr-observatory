@@ -2471,10 +2471,10 @@ def test_icrs_mount_icrs():
 
 ut_now, sid_now, equinox_now, day_of_year = get_current_times()
 sidTime = round(sid_now.hour , 7)
-print('Ut, Sid, Jnow:  ',  ut_now, sid_now, equinox_now)
-press = 970*u.hPa
-temp = 10*u.deg_C
-hum = 0.5           #50%
+print('Ut, Sid, Jnow, DoY:  ',  ut_now, sid_now, equinox_now, day_of_year)
+# press = 970*u.hPa
+# temp = 10*u.deg_C
+# hum = 0.5           #50%
 
 print('Utility module loaded at: ', ephem.now(), round((ephem.now()), 4))
 print('Local system Sidereal time is:  ', sidTime)
