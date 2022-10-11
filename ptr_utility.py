@@ -2476,7 +2476,7 @@ print('Ut, Sid, Jnow, DoY:  ',  ut_now, sid_now, equinox_now, day_of_year)
 # temp = 10*u.deg_C
 # hum = 0.5           #50%
 
-print('Utility module loaded at: ', ephem.now(), round((ephem.now()), 4))
+print('UPTR utility module loaded at: ', ephem.now(), round((ephem.now()), 4))
 print('Local system Sidereal time is:  ', sidTime)
 #SEQ_Counter = '000000'  #Should this be longer and persistently increasing?
 if __name__ == '__main__':

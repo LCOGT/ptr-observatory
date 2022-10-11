@@ -1980,14 +1980,17 @@ class Camera:
 
 
                     if focus_image:
-                        if len(self.biasframe) > 10:
-                            hdu.data=hdu.data-self.biasframe
-                        #if self.darkframe == None:
-                        #    print ("Skipping Bias Frame")
-                        #else:
-                            # Dark frame quick flash
-                        if len(self.darkframe) > 10:
-                            hdu.data=hdu.data-(self.darkframe*exposure_time)
+                        try:
+                            if len(self.biasframe) > 10:
+                                hdu.data=hdu.data-self.biasframe
+                            #if self.darkframe == None:
+                            #    print ("Skipping Bias Frame")
+                            #else:
+                                # Dark frame quick flash
+                            if len(self.darkframe) > 10:
+                                hdu.data=hdu.data-(self.darkframe*exposure_time)
+                        except Exception as e:
+                            print ("debias/darking focus image failed: ", e)
 
                     if focus_image and not solve_it:
                         #Note we do not reduce focus images, except above in focus processing.
@@ -2053,15 +2056,17 @@ class Camera:
                         # Make a version of hdu to use as jpg and small fits as well as a local raw used file for planewave solves
                         hdusmall=copy.deepcopy(hdu)
                         hdusmall.data = hdusmall.data.astype('float32')
-
-                        if len(self.biasframe) > 10:
-                            hdusmall.data=hdusmall.data-self.biasframe
-                        #if self.darkframe == None:
-                        #    print ("Skipping Bias Frame")
-                        #else:
-                            # Dark frame quick flash
-                        if len(self.darkframe) > 10:
-                            hdusmall.data=hdusmall.data-(self.darkframe*exposure_time)
+                        try:
+                            if len(self.biasframe) > 10:
+                                hdusmall.data=hdusmall.data-self.biasframe
+                            #if self.darkframe == None:
+                            #    print ("Skipping Bias Frame")
+                            #else:
+                                # Dark frame quick flash
+                            if len(self.darkframe) > 10:
+                                hdusmall.data=hdusmall.data-(self.darkframe*exposure_time)
+                        except Exception as e:
+                            print ("debias/darking light frame failed: ", e)
 
                         hdusmall.data = hdusmall.data.astype('int16')
                         hduraw=copy.deepcopy(hdusmall) # This is the holder for the local raw file

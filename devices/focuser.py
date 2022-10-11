@@ -71,6 +71,8 @@ class Focuser:
         self.last_known_focus = None
         self.last_temperature = None
         self.last_source = None
+        self.time_of_last_focus = datetime.datetime.now() - datetime.timedelta(days=1) # Initialise last focus as yesterday
+        self.images_since_last_focus = 10000 # Set images since last focus as sillyvalue
 
         try:
             self.get_af_log()
@@ -268,7 +270,7 @@ class Focuser:
             try:
                 z_distance = 90.0 - g_dev['mnt'].mount.Altitude
                 adjust += self.z_compression*z_distance
-                print ('Adjust focus to:  ', round(adjust, 1))
+                print ('Adjust focus by:  ', round(adjust, 1), '  microns')
             except:
                 pass    #no need to add a zero adjustment
 

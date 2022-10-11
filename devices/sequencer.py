@@ -460,7 +460,7 @@ class Sequencer:
                     and (block['start'] <= now_date_timeZ < block['end']) \
                     and not self.is_in_completes(block['event_id']):
                     if block['project_id'] in ['none', 'real_time_slot', 'real_time_block']:
-                        self.block_guard = True
+                        self.block_guard = False   # Changed from True WER on 20221011@2:24 UTC
                         return   # Do not try to execute an empty block.
                     self.block_guard = True
 
@@ -1286,6 +1286,10 @@ class Sequencer:
                 except:
                     print ("Couldn't make autosave directory")
 
+            # Resetting complete projects
+            print ("Nightly reset of complete projects")
+            self.reset_completes()
+
         return
 
 
@@ -1646,6 +1650,26 @@ class Sequencer:
         #    throw = 250
         #if self.config['site'] in ['saf']:  #  NB NB f4.9 this belongs in config, not in the code body!!!!
         #    throw = 400
+
+
+        # First check how long it has been since the last focus
+        print ("Time of last focus")
+        print ( g_dev['foc'].time_of_last_focus)
+        print ("Time since last focus")
+        print (datetime.datetime.now() - g_dev['foc'].time_of_last_focus)
+
+
+        print ("Threshold time between auto focus routines (hours)")
+        print (self.config['periodic_focus_time'])
+
+        if ((datetime.datetime.now() - g_dev['foc'].time_of_last_focus)) > datetime.timedelta(hours=self.config['periodic_focus_time']):
+            print ("Sufficient time has passed since last focus to do auto_focus")
+            g_dev['foc'].time_of_last_focus = datetime.datetime.now()
+        else:
+            print ("too soon since last autofacus")
+            return
+
+
         throw = g_dev['foc'].throw
         self.sequencer_hold = False   #Allow comand checks.
         self.guard = False

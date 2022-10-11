@@ -189,8 +189,8 @@ class Observatory:
         self.api = API_calls()
 
 
-        self.command_interval = 3   # seconds between polls for new commands
-        self.status_interval = 4    # NOTE THESE IMPLEMENTED AS A DELTA NOT A RATE.
+        self.command_interval = 0   # seconds between polls for new commands
+        self.status_interval = 0    # NOTE THESE IMPLEMENTED AS A DELTA NOT A RATE.
 
         self.name = name      # NB NB NB Names needs a once-over.
         self.site_name = name
@@ -452,8 +452,8 @@ class Observatory:
         # This stopping mechanism allows for threads to close cleanly.
         while not self.stopped:
             # Wait a bit before polling for new commands
-            time.sleep(self.command_interval)
-           #  t1 = time.time()
+            # time.sleep(self.command_interval)   # NB NB this is a blocking delay and does nothing. Consider changing WER
+            # t1 = time.time()
             if not g_dev['seq'].sequencer_hold:
                 url_job = "https://jobs.photonranch.org/jobs/getnewjobs"
                 body = {"site": self.name}
@@ -464,10 +464,9 @@ class Observatory:
                 unread_commands = requests.request('POST', url_job, \
                                                    data=json.dumps(body)).json()
                 # Make sure the list is sorted in the order the jobs were issued
-                # Note: the ulid for a job is a unique lexicographically-sortable id
                 if len(unread_commands) > 0:
                     #print(unread_commands)
-                    unread_commands.sort(key=lambda x: x["ulid"])
+                    unread_commands.sort(key=lambda x: x["timestamp_ms"])   # changed ulid to timestamp_ms WER
                     # Process each job one at a time
                     print("# of incomming commands:  ", len(unread_commands))
                     for cmd in unread_commands:

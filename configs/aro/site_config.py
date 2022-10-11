@@ -99,6 +99,12 @@ site_config = {
     'auto_morn_bias_dark': True,
     're-calibrate_on_solve': True,
     'pointing_calibration_on_startup': False,
+    'periodic_focus_time' : 0.5, # This is a time, in hours, over which to bypass automated focussing (e.g. at the start of a project it will not refocus if a new project starts X hours after the last focus)
+    'stdev_fwhm' : 0.5, # This is the expected variation in FWHM at a given telescope/camera/site combination. This is used to check if a fwhm is within normal range or the focus has shifted
+    'focus_exposure_time': 15, # Exposure time in seconds for exposure image
+    'solve_nth_image' : 10, # Only solve every nth image
+    'solve_timer' : 5, # Only solve every X minutes
+    'threshold_mount_update' : 10, # only update mount when X arcseconds away
     'get_ocn_status': None,
     'get_enc_status': None,
     'not_used_variable': None,
