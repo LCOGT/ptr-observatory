@@ -24,3 +24,4 @@ devices/__pycache__/telescope.cpython-39.pyc
 planewave/__pycache__/platesolve.cpython-39.pyc
 processing/__pycache__/calibration.cpython-39.pyc
 *.pyc
+*.pyc

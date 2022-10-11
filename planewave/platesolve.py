@@ -65,13 +65,17 @@ def platesolve(image_file, arcsec_per_pixel):
             stderr=PIPE
             )
 
-    (stdout, stderr) = process.communicate()  # Obtain stdout and stderr output from the wcs tool
+    (stdout, stderr) = process.communicate(timeout=20)  # Obtain stdout and stderr output from the wcs tool
     exit_code = process.wait() # Wait for process to complete and obtain the exit code
 
     if exit_code != 0:
-        raise Exception("Error finding solution.\n" +
-                        "Exit code: " + str(exit_code) + "\n" +
-                        "Error output: " + stderr)
+        print ("Exit code: ")
+        print (exit_code)
+        print ("Error output: ")
+        print (stderr)
+        raise Exception("Error finding solution.\n")
+                        #"Exit code: " + str(exit_code) + "\n" +
+                        #"Error output: " + stderr)
 
     return parse_platesolve_output(output_file_path)
 

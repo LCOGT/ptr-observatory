@@ -1290,6 +1290,11 @@ class Sequencer:
             print ("Nightly reset of complete projects")
             self.reset_completes()
 
+            g_dev['obs'].blocks = None
+            g_dev['obs'].projects = None
+            g_dev['obs'].events_new = None
+            g_dev['obs'].reset_last_reference()
+
         return
 
 
