@@ -161,7 +161,7 @@ def bootup_tycho():
 
     # Run and set tpt_tuple to a grid.
     try:
-        tpt_perfect = open(str(parentPath) + "\processing\\TPOINT\\perfect.dat", "r")
+        tpt_perfect = open(str(parentPath) + "\support_info\\perfect.dat", "r")
     except:
         print("TPoint catalogue failed to open.")
 
