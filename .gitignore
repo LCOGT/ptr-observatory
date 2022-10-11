@@ -9,7 +9,6 @@ __pycache__
 
 sandbox/
 .vscode/
+.pylint
 
-bash.exe.stackdump
-images/*.fits
-new_config-Copy.py
+.DS_Store
