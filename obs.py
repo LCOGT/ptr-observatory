@@ -1127,7 +1127,61 @@ class Observatory:
                 # hdu_new = fits.open(image)
                 # hdu =hdu_new[0]
 
+                ###MTF inclusion here - this is a pretty blatant exact copy of the bit in finish_exposure in camera.py
+                ### It is SEP for focus tracking
+                img = fits.open(paths['raw_path'] + paths['raw_name00'], mode='update', ignore_missing_end=True)
 
+
+                #img = self.img #+ 100   #maintain a + pedestal for sep  THIS SHOULD not be needed for a raw input file.
+                img = img[0].data.astype("float")
+                #print(self.img.flags)
+                img = img.copy(order='C')   #  NB Should we move this up to where we read the array?
+                bkg = sep.Background(img)
+                img -= bkg
+                sources = sep.extract(img, 4.5, err=bkg.globalrms, minarea=15)  # Minarea should deal with hot pixels.
+                sources.sort(order = 'cflux')
+                print('No. of detections:  ', len(sources))
+
+                ix, iy = img.shape
+                r0 = 0
+                """
+                ToDo here:  1) do not deal with a source nearer than 5% to an edge.
+                2) do not pick any saturated sources.
+                3) form a histogram and then pick the median winner
+                4) generate data for a report.
+                5) save data and image for engineering runs.
+                """
+                border_x = int(ix*0.05)
+                border_y = int(iy*0.05)
+                r0 = []
+                for sourcef in sources:
+                    if border_x < sourcef['x'] < ix - border_x and \
+                        border_y < sourcef['y'] < iy - border_y and \
+                        sourcef['peak']  < 35000 and sourcef['cpeak'] < 35000:  #Consider a lower bound
+                        a0 = sourcef['a']
+                        b0 = sourcef['b']
+                        r0.append(round(math.sqrt(a0*a0 + b0*b0), 2))
+
+                #scale = self.config['camera'][self.name]['settings']['pix_scale'][self.camera.BinX -1]
+                FWHM = round(np.median(r0)*pixscale, 3)   #@0210524 was 2x larger but a and b are diameters not radii
+                print ("This image has a FWHM of " + str(FWHM))
+
+                g_dev['foc'].focus_tracker.pop(0)
+                g_dev['foc'].focus_tracker.append(FWHM)
+                print ("Last ten FWHM : ")
+                print (g_dev['foc'].focus_tracker)
+                print ("Median last ten FWHM")
+                print (np.nanmedian(g_dev['foc'].focus_tracker))
+                print ("Last solved focus FWHM")
+                print(g_dev['foc'].last_focus_fwhm)
+                #result['mean_focus'] =  avg_foc[1]
+                #try:
+                #    valid =  0.0 <= result['FWHM']<= 20. and 100 < result['mean_focus'] < 12600
+                #    result['error'] = False
+                #except:
+                #    result['error'] = True    # NB NB NB These are quick placeholders and need to be changed
+                #    result['FWHM']  = 3.456
+                #    result['mean_focus'] =  6543
 
 
                 '''

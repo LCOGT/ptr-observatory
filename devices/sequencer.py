@@ -1654,7 +1654,7 @@ class Sequencer:
 
         # First check how long it has been since the last focus
         print ("Time of last focus")
-        print ( g_dev['foc'].time_of_last_focus)
+        print (g_dev['foc'].time_of_last_focus)
         print ("Time since last focus")
         print (datetime.datetime.now() - g_dev['foc'].time_of_last_focus)
 
@@ -1733,12 +1733,12 @@ class Sequencer:
                 g_dev['mnt'].go_coord(focus_star[0][1][1], focus_star[0][1][0])
             except:
                 print ("Issues pointing to a tycho star. Focussing at the current pointing.")
-            req = {'time': 12.5,  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'focus'}   #  NB Should pick up filter and constats from config
+            req = {'time': self.config['focus_exposure_time'],  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'focus'}   #  NB Should pick up filter and constats from config
             #opt = {'area': 150, 'count': 1, 'bin': '2, 2', 'filter': 'focus'}
             opt = {'area': 150, 'count': 1, 'bin': 'default', 'filter': 'focus'}
         else:
             pass   #Just take an image where currently pointed.
-            req = {'time': 15,  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'focus'}   #  NB Should pick up filter and constats from config
+            req = {'time': self.config['focus_exposure_time'],  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'focus'}   #  NB Should pick up filter and constats from config
             #opt = {'area': 150, 'count': 1, 'bin': '2, 2', 'filter': 'focus'}
             opt = {'area': 150, 'count': 1, 'bin': 'default', 'filter': 'focus'}
         foc_pos0 = focus_start
@@ -1887,6 +1887,7 @@ class Sequencer:
             self.sequencer_hold = False
             self.guard = False
             self.af_guard = False
+            g_dev['foc'].last_focus_fwhm = round(spot4, 2)
             return
         elif spot2  <= spot1 < spot3:      #Add to the inside
             pass
@@ -1966,6 +1967,7 @@ class Sequencer:
             self.sequencer_hold = False
             self.guard = False
             self.af_guard = False
+            g_dev['foc'].last_focus_fwhm = round(spot4, 2)
             return
 
         elif spot2 > spot1 >= spot3:       #Add to the outside
@@ -2047,6 +2049,8 @@ class Sequencer:
             self.sequencer_hold = False
             self.guard = False
             self.af_guard = False
+
+            g_dev['foc'].last_focus_fwhm = round(spot4, 2)
             return
         elif spot2 <= spot1 or spot3 <= spot1:
             if spot2 <= spot3:
@@ -2079,6 +2083,10 @@ class Sequencer:
         self.sequencer_hold = False
         self.guard = False
         self.af_guard = False
+
+
+
+
         return
 
 

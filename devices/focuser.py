@@ -9,6 +9,7 @@ import datetime
 import requests
 import json
 from pprint import pprint
+import numpy
 
 
 
@@ -73,6 +74,8 @@ class Focuser:
         self.last_source = None
         self.time_of_last_focus = datetime.datetime.now() - datetime.timedelta(days=1) # Initialise last focus as yesterday
         self.images_since_last_focus = 10000 # Set images since last focus as sillyvalue
+        self.last_focus_fwhm = None
+        self.focus_tracker=[numpy.nan,numpy.nan,numpy.nan,numpy.nan,numpy.nan,numpy.nan,numpy.nan,numpy.nan,numpy.nan,numpy.nan]
 
         try:
             self.get_af_log()
