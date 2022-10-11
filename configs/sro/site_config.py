@@ -657,19 +657,25 @@ def get_ocn_status(g_dev=None):
                         #self.focus_temp = temperature
                         last_good_wx_fields = wx_fields
                     except:
-                        print('SRO Weather source problem, using last known good report.')
-                        # NB NB NB we need to shelve the last know good so this does not fail on startup.
-                        wx_fields = last_good_wx_fields
-                        #wx_fields = wx_line.split()   This cause a fault. Wx line not available.
-                        skyTemperature = f_to_c(float( wx_fields[4]))
-                        temperature = f_to_c(float(wx_fields[5]))
-                        windspeed = round(float(wx_fields[7])/2.237, 2)
-                        humidity =  float(wx_fields[8])
-                        dewpoint = f_to_c(float(wx_fields[9]))
-                        #timeSinceLastUpdate = wx_fields[13]
-                        open_ok = wx_fields[19]
+                        try:
+                            print('SRO Weather source problem, using last known good report.')
+                            # NB NB NB we need to shelve the last know good so this does not fail on startup.
+                            wx_fields = last_good_wx_fields
+                            #wx_fields = wx_line.split()   This cause a fault. Wx line not available.
+                            skyTemperature = f_to_c(float( wx_fields[4]))
+                            temperature = f_to_c(float(wx_fields[5]))
+                            windspeed = round(float(wx_fields[7])/2.237, 2)
+                            humidity =  float(wx_fields[8])
+                            dewpoint = f_to_c(float(wx_fields[9]))
+                            #timeSinceLastUpdate = wx_fields[13]
+                            open_ok = wx_fields[19]
+                        except:
+                            print ("cannot open last known good report")
         #self.last_weather =   NB found this fragment
-        open_ok = open_ok
+        try:
+            open_ok = open_ok
+        except:
+            open_ok = False
         try:
             daily= open('W:/daily.txt', 'r')
             daily_lines = daily.readlines()
@@ -694,9 +700,12 @@ def get_ocn_status(g_dev=None):
                     pressure = round(33.846*float(daily_lines[-3].split()[1]), 2)
                     last_good_daily_lines = daily_lines
                 except:
-                    print('SRO Daily source problem, using last known good pressure.')
-                    daily_lines = last_good_daily_lines
-                    pressure = round(33.846*float(daily_lines[-3].split()[1]), 2)
+                    try:
+                        print('SRO Daily source problem, using last known good pressure.')
+                        daily_lines = last_good_daily_lines
+                        pressure = round(33.846*float(daily_lines[-3].split()[1]), 2)
+                    except:
+                        print ("problem getting last known good pressure")
                    # pressure = round(33.846*float(self.last_good_daily_lines[-3].split()[1]), 2)
         try:   # 20220105 Experienced a glitch, probably the first try faulted in the code above.
             pressure = float(pressure)
@@ -706,18 +715,21 @@ def get_ocn_status(g_dev=None):
 
         if illum > 100:
             illum = int(illum)
-        calc_HSI_lux = illum
-        calc_HSI_lux = calc_HSI_lux
-        # NOte criterian below can now vary with the site config file.
-        dew_point_gap = not (temperature  - dewpoint) < 2
-        temp_bounds = not (temperature < -10) or (temperature > 40)
-        # NB NB NB Thiseeds to go into a config entry.
-        wind_limit = windspeed < 60/2.235   #sky_monitor reports m/s, Clarity may report in MPH
-        sky_amb_limit  = skyTemperature < -20
-        humidity_limit =humidity < 85
-        rain_limit = True # Rain Rate <= 0.001
-        wx_is_ok = dew_point_gap and temp_bounds and wind_limit and sky_amb_limit and \
-                        humidity_limit and rain_limit
+        try:
+            calc_HSI_lux = illum
+            calc_HSI_lux = calc_HSI_lux
+            # NOte criterian below can now vary with the site config file.
+            dew_point_gap = not (temperature  - dewpoint) < 2
+            temp_bounds = not (temperature < -10) or (temperature > 40)
+            # NB NB NB Thiseeds to go into a config entry.
+            wind_limit = windspeed < 60/2.235   #sky_monitor reports m/s, Clarity may report in MPH
+            sky_amb_limit  = skyTemperature < -20
+            humidity_limit =humidity < 85
+            rain_limit = True # Rain Rate <= 0.001
+            wx_is_ok = dew_point_gap and temp_bounds and wind_limit and sky_amb_limit and \
+                            humidity_limit and rain_limit
+        except:
+            print ("cannot set weather limits")
         #  NB  wx_is_ok does not include ambient light or altitude of the Sun
         try:
             enc_stat =g_dev['enc'].stat_string
@@ -728,13 +740,16 @@ def get_ocn_status(g_dev=None):
                 wx_str = 'No'
                 wx_is_ok = False
         except:
-
-            if wx_is_ok:
-                wx_str = "Yes"
-            else:
-                wx_str = "No"   #Ideally we add the dominant reason in priority order.
+            try:
+                if wx_is_ok:
+                    wx_str = "Yes"
+                else:
+                    wx_str = "No"   #Ideally we add the dominant reason in priority order.
+            except:
+                print ("wx_is_ok variable yet to be intiialised")
         # Now assemble the status dictionary.
-        status = {"temperature_C": round(temperature, 2),
+        try:
+            status = {"temperature_C": round(temperature, 2),
                       "pressure_mbar": pressure,
                       "humidity_%": humidity,
                       "dewpoint_C": dewpoint,
@@ -754,6 +769,8 @@ def get_ocn_status(g_dev=None):
                       'meas_sky_mpsas': 22   # THis is a plug.  NB NB NB
                       #"image_ok": str(self.sky_monitor_oktoimage.IsSafe)
                       }
+        except:
+            status = None
         return status
     else:
         pass#breakpoint()       #  Debug bad place.
