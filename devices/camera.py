@@ -2006,6 +2006,15 @@ class Camera:
                         except Exception as e:
                             print ("debias/darking focus image failed: ", e)
 
+                        try:
+                            #try loading a flat file for the current filter
+                            print (self.flatFiles[self.current_filter])
+                            tempFlatFrame=np.load(self.flatFiles[self.current_filter])
+                            hdu.data=hdu.data/tempFlatFrame
+                            del tempFlatFrame
+                        except Exception as e:
+                            print ("flatting light frame failed",e)
+
                     if focus_image and not solve_it:
                         #Note we do not reduce focus images, except above in focus processing.
                         cal_name = cal_name[:-9] + 'F012' + cal_name[-7:]  # remove 'EX' add 'FO'   Could add seq to this
