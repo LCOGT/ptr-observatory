@@ -26,3 +26,4 @@ processing/__pycache__/calibration.cpython-39.pyc
 *.pyc
 *.pyc
 configs/sro/__pycache__/site_config.cpython-39.pyc
+*.pyc

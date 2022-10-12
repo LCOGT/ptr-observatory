@@ -538,6 +538,11 @@ site_config = {
             'file_mode_path':  'D:/archive/sq01/maxim/',
 
             'settings': {
+                'crop_preview': False,
+                'crop_preview_ybottom': 1,
+                'crop_preview_ytop': 1,
+                'crop_preview_xleft': 1,
+                'crop_preview_xright': 1,
                 'temp_setpoint': -25,
                 'calib_setpoints': [-25, -22.5,- 20, -17.5 ],  #  Picked by day-of-year mod len(list)
                 'day_warm': False,

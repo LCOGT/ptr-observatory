@@ -506,6 +506,11 @@ site_config = {
 
 
             'settings': {
+                'crop_preview': False,
+                'crop_preview_ybottom': 1,
+                'crop_preview_ytop': 1,
+                'crop_preview_xleft': 1,
+                'crop_preview_xright': 1,
                 'temp_setpoint': -12.5,
                 'calib_setpoints': [-12.5, -10, -7.5, -5],  # Should vary with season? by day-of-year mod len(list)
                 'day_warm': False,

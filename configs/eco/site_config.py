@@ -457,6 +457,11 @@ site_config = {
             'file_mode_path':  'G:/000ptr_saf/archive/sq01/autosaves/',   #NB Incorrect site, etc. Not used at SRO.  Please clean up.
 
             'settings': {
+                'crop_preview': False,
+                'crop_preview_ybottom': 1,
+                'crop_preview_ytop': 1,
+                'crop_preview_xleft': 1,
+                'crop_preview_xright': 1,
                 'temp_setpoint': -22,   #Updated from -18 WER 20220914 Afternoon
                 'calib_setpoints': [-35,-30, -25, -20, -15, -10 ],  #  Should vary with season?
                 'day_warm': False,

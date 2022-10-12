@@ -2101,10 +2101,20 @@ class Camera:
                         except Exception as e:
                             print ("flatting light frame failed",e)
 
+                        # Crop unnecessary rough edges off preview images that unnecessarily skew the scaling
+                        if self.config['camera'][self.name]['settings']['crop_preview'] == True:
+                            yb=self.config['camera'][self.name]['settings']['crop_preview_ybottom']
+                            yt=self.config['camera'][self.name]['settings']['crop_preview_ytop']
+                            xl=self.config['camera'][self.name]['settings']['crop_preview_xleft']
+                            xr=self.config['camera'][self.name]['settings']['crop_preview_xright']
+                            hdusmall.data=hdusmall.data[yb:-yt,xl:-xr]
+                            hdusmall.header['NAXIS1']=hdusmall.data.shape[0]
+                            hdusmall.header['NAXIS2']=hdusmall.data.shape[1]
+                            print ("cropped")
 
 
 
-                        hdusmall.data = hdusmall.data.astype('int16')
+                        #hdusmall.data = hdusmall.data.astype('int16')
                         hduraw=copy.deepcopy(hdusmall) # This is the holder for the local raw file
 
                         inputData=np.asarray(hdusmall.data)
@@ -2112,11 +2122,14 @@ class Camera:
                         inputData[inputData > self.config['camera'][self.name]['settings']['saturate']] = self.config['camera'][self.name]['settings']['saturate']
                         inputData[inputData < -100] = -100
                         inputData=inputData-np.min(inputData)
+
+
+
+
                         #inputData=np.nan_to_num(inputData)
                         hdusmall.data=inputData
                         # saving memory
                         del inputData
-
 
                         # Getting the mode of the image.
                         #modeData =np.rint(inputData) # To do the mode properly it needs to be in integer steps - a float has too many potential values
