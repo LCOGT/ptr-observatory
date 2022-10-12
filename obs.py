@@ -1,57 +1,35 @@
-
-"""
-
+""""
 IMPORTANT TODOs:
-
 
 WER 20211211
 
-IMPORTANT TODOs:
-
-
-Simplify.  No site specific if statements in main code if possible.
+Simplify. No site specific if statements in main code if possible.
 Sort out when rotator is not installed and focus temp when no probe
 is in the Gemini.
 
 Abstract away Redis, Memurai, and local shares for IPC.
-
-
-
 """
 
-import time
-import threading
-import queue
-import requests
-import os
-import redis  #  Client, can work with Memurai
-import json
-import numpy as np
-import math
-import shelve
-#import datetime
-#import sys
-#import argparse
-from pprint import pprint
-from api_calls import API_calls
-from skimage.transform import resize
-#from skimage import data, io, filters
-#from skimage import img_as_float
-#from skimage import exposure
-#from PIL import Image
-from skimage.io import imsave
-#import matplotlib.pyplot as plt
-import sep
-from astropy.io import fits
-from planewave import platesolve
 import bz2
-import httplib2
-from auto_stretch.stretch import Stretch
-
-import ptr_events
+import json
+import math
+import os
+import threading
+import time
+import queue
+import shelve
 import socket
 
-# import PTR related classes:
+from astropy.io import fits
+import numpy as np
+import redis  # Client, can work with Memurai
+import requests
+import sep
+from skimage.io import imsave
+from skimage.transform import resize
+
+from api_calls import API_calls
+from auto_stretch.stretch import Stretch
 import config
 from devices.camera import Camera
 from devices.filter_wheel import FilterWheel
@@ -61,229 +39,162 @@ from devices.mount import Mount
 from devices.telescope import Telescope
 from devices.observing_conditions import ObservingConditions
 from devices.rotator import Rotator
-#from devices.switch import Switch    #Nothing implemented yet 20200511
 from devices.selector import Selector
 from devices.screen import Screen
 from devices.sequencer import Sequencer
+from global_yard import g_dev
+from planewave import platesolve
 from processing.calibration import calibrate
-from global_yard import g_dev  # g-dev is a place where it is easy to
-                               # monkey-patch whole devices.
-
-#import ssl
-
-#  THIS code flushes the SSL Certificate cache which sometimes fouls up updating
-#  the astropy time scales.
-
-# try:
-#     _create_unverified_https_context = ssl._create_unverified_context
-# except AttributeError:
-# # Legacy Python that doesn't verify HTTPS certificates by default
-#     pass
-# else:
-#     # Handle target environment that doesn't support HTTPS verification
-#     ssl._create_default_https_context = _create_unverified_https_context
+import ptr_events
 
 
-# move this function to a better location
+# TODO: move this and the next function to a better location and add to fz
 def to_bz2(filename, delete=False):
+    """Compresses a FITS file to bz2."""
+
     try:
-        uncomp = open(filename, 'rb')
+        uncomp = open(filename, "rb")
         comp = bz2.compress(uncomp.read())
         uncomp.close()
         if delete:
-            try:
-                os.remove(filename)
-            except:
-                pass
-        target = open(filename + '.bz2', 'wb')
+            os.remove(filename)
+        target = open(filename + ".bz2", "wb")
         target.write(comp)
         target.close()
         return True
-    except:
-        pass
-        print('to_bz2 failed.')
+    except OSError:
+        print("to_bz2 failed.")
         return False
 
 
-# def to_fz(filename, delete=False):
-#     print ("Making an fz file")
-#     tempFZ=fits.open(filename)
-#     #print (tempFZ)
-#     #print (tempFZ[0])
-#     hdu=fits.CompImageHDU(tempFZ[0].data, tempFZ[0].header)
-#     hdu.writeto(filename+'.fz')
-#     return True
-
-# move this function to a better location
+# Move this function to a better location
 def from_bz2(filename, delete=False):
+    """Decompresses a bz2 file."""
+
     try:
-        comp = open(filename, 'rb')
+        comp = open(filename, "rb")
         uncomp = bz2.decompress(comp.read())
         comp.close()
         if delete:
             os.remove(filename)
-        target = open(filename[0:-4], 'wb')
+        target = open(filename[0:-4], "wb")
         target.write(uncomp)
         target.close()
         return True
-    except:
-        print('from_bz2 failed.')
+    except OSError:
+        print("from_bz2 failed.")
         return False
 
 
-# move this function to a better location
-# The following function is a monkey patch to speed up outgoing large files.
-# NB does not appear to work. 20200408 WER
-def patch_httplib(bsize=400000):
-    """ Update httplib block size for faster upload (Default if bsize=None) """
-    if bsize is None:
-        bsize = 8192
-
-    def send(self, p_data, sblocks=bsize):
-        """Send `p_data' to the server."""
-        if self.sock is None:
-            if self.auto_open:
-                self.connect()
-            else:
-                raise httplib2.NotConnected()
-        # if self.debuglevel > 0:
-        #     print("send:", repr(p_data))
-        if hasattr(p_data, 'read') and not isinstance(p_data, list):
-            if self.debuglevel > 0:
-                print("sendIng a read()able")
-            datablock = p_data.read(sblocks)
-            while datablock:
-                self.sock.sendall(datablock)
-                datablock = p_data.read(sblocks)
-        else:
-            self.sock.sendall(p_data)
-    httplib2.httplib.HTTPConnection.send = send
-
 def send_status(obsy, column, status_to_send):
+    """Sends an update to the status endpoint."""
+
     uri_status = f"https://status.photonranch.org/status/{obsy}/status/"
-    # NB None of the strings can be empty.  Otherwise this put faults.
-    try:    # 20190926  tHIS STARTED THROWING EXCEPTIONS OCCASIONALLY
-        #print("AWS uri:  ", uri)
-        #print('Status to be sent:  \n', status, '\n')
+    # None of the strings can be empty. Otherwise this put faults.
+    payload = {"statusType": str(column), "status": status_to_send}
+    data = json.dumps(payload)
+    response = requests.post(uri_status, data=data)
 
-        payload ={
-            "statusType": str(column),
-            "status":  status_to_send
-            }
-        #print("Payload:  ", payload)
-        data = json.dumps(payload)
-        response = requests.post(uri_status, data=data)
-        #self.api.authenticated_request("PUT", uri_status, status)   # response = is not  used
-        #print("AWS Response:  ",response)
-        # NB should qualify acceptance and type '.' at that point.
+    if response.ok:
+        print("Status sent successfully.")
+    else:
+        print(
+            'self.api.authenticated_request("PUT", uri, status):  Failed! ',
+            response.status_code,
+        )
 
-    except:
-        print('self.api.authenticated_request("PUT", uri, status):   Failed!')
 
 class Observatory:
+    """Docstring here"""
 
     def __init__(self, name, config):
         # This is the ayneclass through which we can make authenticated api calls.
         self.api = API_calls()
 
-        self.command_interval = 3   # seconds between polls for new commands
-        self.status_interval = 4    # NOTE THESE IMPLEMENTED AS A DELTA NOT A RATE.
+        self.command_interval = 3  # Seconds between polls for new commands
+        self.status_interval = 4  # NOTE THESE ARE IMPLEMENTED AS A DELTA NOT A RATE.
 
-        self.name = name      # NB NB NB Names needs a once-over.
+        self.name = name  # NB NB NB Names needs a once-over.
         self.site_name = name
         self.config = config
+        self.site = config["site"]
 
-        self.site = config['site']
-        if self.config['wema_is_active']:
-            self.hostname = self.hostname = socket.gethostname()
-            if self.hostname in self.config['wema_hostname']:
+        if self.config["wema_is_active"]:
+            self.hostname = socket.gethostname()
+            if self.hostname in self.config["wema_hostname"]:
                 self.is_wema = True
-                g_dev['wema_share_path'] = config['wema_write_share_path']
-                self.wema_path = g_dev['wema_share_path']
+                g_dev["wema_share_path"] = config["wema_write_share_path"]
+                self.wema_path = g_dev["wema_share_path"]
             else:
-                #This host is a client
-                self.is_wema = False  #This is a client.
-                self.site_path = config['client_path']
-                g_dev['site_path'] = self.site_path
-                g_dev['wema_share_path'] = config['client_write_share_path']    # Just to be safe.
-                self.wema_path = g_dev['wema_share_path']
+                # This host is a client
+                self.is_wema = False  # This is a client.
+                self.site_path = config["client_path"]
+                g_dev["site_path"] = self.site_path
+                g_dev["wema_share_path"] = config[
+                    "client_write_share_path"
+                ]  # Just to be safe.
+                self.wema_path = g_dev["wema_share_path"]
         else:
-            self.is_wema = False  #This is a client.
-            self.site_path = config['client_path']
-            g_dev['site_path'] = self.site_path
-            g_dev['wema_share_path']  = self.site_path  # Just to be safe.
-            self.wema_path = g_dev['wema_share_path']
-        if self.config['site_is_specific']:
-             self.site_is_specific = True
+            self.is_wema = False  # This is a client.
+            self.site_path = config["client_path"]
+            g_dev["site_path"] = self.site_path
+            g_dev["wema_share_path"] = self.site_path  # Just to be safe.
+            self.wema_path = g_dev["wema_share_path"]
+
+        if self.config["site_is_specific"]:
+            self.site_is_specific = True
         else:
             self.site_is_specific = False
+
         self.last_request = None
         self.stopped = False
         self.status_count = 0
         self.stop_all_activity = False
-        self.site_message = '-'
-        self.all_device_types = config['device_types']  #May not be needed
-        self.device_types = config['device_types']  #config['short_status_devices']
-        self.wema_types = config['wema_types']
-        self.enc_types = None #config['enc_types']
-        self.short_status_devices = None #config['short_status_devices']  #May not be needed for no wema obsy
+        self.site_message = "-"
+        self.all_device_types = config["device_types"]  # May not be needed
+        self.device_types = config["device_types"]
+        self.wema_types = config["wema_types"]
+        self.enc_types = None  # config['enc_types']
+        self.short_status_devices = None  # May not be needed for no wema obsy
+
         # Instantiate the helper class for astronomical events
-        #Soon the primary event / time values come from AWS>
+        # Soon the primary event / time values can come from AWS.
         self.astro_events = ptr_events.Events(self.config)
         self.astro_events.compute_day_directory()
         self.astro_events.display_events()
 
-
-        if self.site in ['simulate',  'dht']:  #DEH: added just for testing purposes with ASCOM simulators.
-            self.observing_conditions_connected = True
-            self.site_is_proxy = False
-            print("observing_conditions: Simulator drivers connected True")
-        # elif self.config['site_is_specific']:
-        #     self.site_is_specific = True
-        #     #  Note OCN has no associated commands.
-        #     #  Here we monkey patch
-
-        #     self.get_status = config.get_ocn_status
-        #     # Get current ocn status just as a test.
-        #     self.status = self.get_status(g_dev)
-        #     # breakpoint()  # All test code
-        #     # quick = []
-        #     # self.get_quick_status(quick)
-        #     # print(quick)
-        #Define a redis server if needed.
-        redis_ip = config['redis_ip']
+        # Define a redis server if needed.
+        redis_ip = config["redis_ip"]
         if redis_ip is not None:
-            self.redis_server = redis.StrictRedis(host=redis_ip, port=6379, db=0,
-                                              decode_responses=True)
+            self.redis_server = redis.StrictRedis(
+                host=redis_ip, port=6379, db=0, decode_responses=True
+            )
             self.redis_wx_enabled = True
-            g_dev['redis'] = self.redis_server  #I think IPC needs to be a class.
+            g_dev["redis"] = self.redis_server  # I think IPC needs to be a class.
         else:
             self.redis_wx_enabled = False
-            g_dev['redis'] = None    #a  placeholder.
-        # Send the config to aws   # NB NB NB This has faulted.
+            g_dev["redis"] = None  # a placeholder.
+
+        # Send the config to AWS. TODO This has faulted.
         self.update_config()
-        
-               
-        
+
         # Use the configuration to instantiate objects for all devices.
-        self.create_devices(config)
+        self.create_devices()
         self.loud_status = False
-        #g_dev['obs']: self
-        g_dev['obs'] = self
-        site_str = config['site']
-        g_dev['site']:  site_str
+        g_dev["obs"] = self
+        site_str = config["site"]
+        g_dev["site"]: site_str
         self.g_dev = g_dev
 
-        # Check directory system has been constructed (for new sites or changed directories in configs) - MTF
-        if not os.path.exists(g_dev['cam'].site_path + 'ptr_night_shelf'):
-            os.makedirs(g_dev['cam'].site_path + 'ptr_night_shelf')
-        if not os.path.exists(g_dev['cam'].site_path + 'archive'):
-            os.makedirs(g_dev['cam'].site_path + 'archive')
-
+        # Check directory system has been constructed
+        # for new sites or changed directories in configs.
+        if not os.path.exists(g_dev["cam"].site_path + "ptr_night_shelf"):
+            os.makedirs(g_dev["cam"].site_path + "ptr_night_shelf")
+        if not os.path.exists(g_dev["cam"].site_path + "archive"):
+            os.makedirs(g_dev["cam"].site_path + "archive")
 
         self.time_last_status = time.time() - 3
-        # Build the to-AWS Try again, reboot, verify dome nad tel and start a thread.
-
+        # Build the to-AWS Try again, reboot, verify dome and tel and start a thread.
         self.aws_queue = queue.PriorityQueue()
         self.aws_queue_thread = threading.Thread(target=self.send_to_AWS, args=())
         self.aws_queue_thread.start()
@@ -291,8 +202,9 @@ class Observatory:
         # =============================================================================
         # Here we set up the reduction Queue and Thread:
         # =============================================================================
-        #self.reduce_queue = queue.Queue(maxsize=50)
-        self.reduce_queue = queue.Queue() # Why do we want a maximum size and lose files?
+
+        # Don't set a maximum size or we will lose files.
+        self.reduce_queue = queue.Queue()
         self.reduce_queue_thread = threading.Thread(target=self.reduce_image, args=())
         self.reduce_queue_thread.start()
         self.blocks = None
@@ -300,64 +212,58 @@ class Observatory:
         self.events_new = None
         self.reset_last_reference()
 
-
-
-        # Build the site (from-AWS) Queue and start a thread.
-        # self.site_queue = queue.SimpleQueue()
-        # self.site_queue_thread = threading.Thread(target=self.get_from_AWS, args=())
-        # self.site_queue_thread.start()
-
-
-
-    def set_last_reference(self,  delta_ra, delta_dec, last_time):
-        mnt_shelf = shelve.open(self.site_path + 'ptr_night_shelf/' + 'last')
-        mnt_shelf['ra_cal_offset'] = delta_ra
-        mnt_shelf['dec_cal_offset'] = delta_dec
-        mnt_shelf['time_offset']= last_time
+    def set_last_reference(self, delta_ra, delta_dec, last_time):
+        mnt_shelf = shelve.open(self.site_path + "ptr_night_shelf/" + "last")
+        mnt_shelf["ra_cal_offset"] = delta_ra
+        mnt_shelf["dec_cal_offset"] = delta_dec
+        mnt_shelf["time_offset"] = last_time
         mnt_shelf.close()
         return
 
     def get_last_reference(self):
-        mnt_shelf = shelve.open(self.site_path + 'ptr_night_shelf/' + 'last')
-        delta_ra = mnt_shelf['ra_cal_offset']
-        delta_dec = mnt_shelf['dec_cal_offset']
-        last_time = mnt_shelf['time_offset']
+        mnt_shelf = shelve.open(self.site_path + "ptr_night_shelf/" + "last")
+        delta_ra = mnt_shelf["ra_cal_offset"]
+        delta_dec = mnt_shelf["dec_cal_offset"]
+        last_time = mnt_shelf["time_offset"]
         mnt_shelf.close()
         return delta_ra, delta_dec, last_time
 
     def reset_last_reference(self):
-        mnt_shelf = shelve.open(self.site_path + 'ptr_night_shelf/' + 'last')
-        mnt_shelf['ra_cal_offset'] = None
-        mnt_shelf['dec_cal_offset'] = None
-        mnt_shelf['time_offset'] = None
+        mnt_shelf = shelve.open(self.site_path + "ptr_night_shelf/" + "last")
+        mnt_shelf["ra_cal_offset"] = None
+        mnt_shelf["dec_cal_offset"] = None
+        mnt_shelf["time_offset"] = None
         mnt_shelf.close()
         return
 
-    def create_devices(self, config: dict):
-        # This dict will store all created devices, subcategorized by dev_type.
+    def create_devices(self):
+        """Dictionary to store created devices, subcategorized by device type."""
+
         self.all_devices = {}
         # Create device objects by type, going through the config by type.
         for dev_type in self.all_device_types:
             self.all_devices[dev_type] = {}
             # Get the names of all the devices from each dev_type.
-            # if dev_type == 'camera':
-
-            devices_of_type = config.get(dev_type, {})
+            devices_of_type = self.config.get(dev_type, {})
             device_names = devices_of_type.keys()
-            # Instantiate each device object from based on its type
+
+            # Instantiate each device object based on its type
             for name in device_names:
-                print (name)
+                print(name)
                 driver = devices_of_type[name]["driver"]
                 settings = devices_of_type[name].get("settings", {})
-                # print('looking for dev-types:  ', dev_type)
-                if dev_type == "observing_conditions":
 
-                    device = ObservingConditions(driver, name, self.config, self.astro_events)
-                elif dev_type == 'enclosure':
+                if dev_type == "observing_conditions":
+                    device = ObservingConditions(
+                        driver, name, self.config, self.astro_events
+                    )
+                elif dev_type == "enclosure":
                     device = Enclosure(driver, name, self.config, self.astro_events)
                 elif dev_type == "mount":
-                    device = Mount(driver, name, settings, self.config, self.astro_events, tel=True) #NB this needs to be straightened out.
-                elif dev_type == "telescope":   # order of attaching is sensitive
+                    device = Mount(
+                        driver, name, settings, self.config, self.astro_events, tel=True
+                    )  # NB this needs to be straightened out.
+                elif dev_type == "telescope":  # order of attaching is sensitive
                     device = Telescope(driver, name, settings, self.config, tel=True)
                 elif dev_type == "rotator":
                     device = Rotator(driver, name, self.config)
@@ -373,178 +279,162 @@ class Observatory:
                     device = Camera(driver, name, self.config)
                 elif dev_type == "sequencer":
                     device = Sequencer(driver, name, self.config, self.astro_events)
-                # elif dev_type == "camera_1":
-                #     device = Camera(driver, name, self.config)
-                # elif dev_type == "camera_1_2":
-                #     device = Camera(driver, name, self.config)
-                # elif dev_type == "camera_1_4":
-                #     device = Camera(driver, name, self.config)
-                else:
                     print(f"Unknown device: {name}")
                 # Add the instantiated device to the collection of all devices.
                 self.all_devices[dev_type][name] = device
-                # NB 20200410 This dropped out of the code: self.all_devices[dev_type][name] = [device]
         print("Finished creating devices.")
 
-
     def update_config(self):
-        '''
-        Send the config to aws.
-        '''
-        uri = f"{self.name}/config/"
-        self.config['events'] = g_dev['events']
-        # breakpoint()
-        # pprint(self.config)
+        """Sends the config to AWS."""
+
+        uri = f"https://api.photonranch.org/dev/{self.name}/config/"
+        self.config["events"] = g_dev["events"]
         response = self.api.authenticated_request("PUT", uri, self.config)
-        if response:
+        if response.ok:
             print("Config uploaded successfully.")
 
-    def scan_requests(self, mount):
-        '''
-        Outline of change 20200323 WER
-        Get commands from AWS, and post a STOP/Cancel flag
-        This function will be a Thread. we will limit the
+    def scan_requests(self):
+        """Gets commands from AWS, and post a STOP/Cancel flag.
+
+        This function will be a Thread. We limit the
         polling to once every 2.5 - 3 seconds because AWS does not
-        appear to respond any faster.  When we do poll we parse
+        appear to respond any faster. When we poll, we parse
         the action keyword for 'stop' or 'cancel' and post the
         existence of the timestamp of that command to the
-        respective device attribute   <self>.cancel_at.  Then we
-        also enqueue the incoming command as well.
+        respective device attribute <self>.cancel_at. Then we
+        enqueue the incoming command as well.
 
-        when a device is status scanned, if .cancel_at is not
+        When a device is status scanned, if .cancel_at is not
         None, the device takes appropriate action and sets
         cancel_at back to None.
 
         NB at this time we are preserving one command queue
-        for all devices at a site.  This may need to change when we
+        for all devices at a site. This may need to change when we
         have parallel mountings or independently controlled cameras.
-        '''
+        """
 
         # This stopping mechanism allows for threads to close cleanly.
         while not self.stopped:
             # Wait a bit before polling for new commands
             time.sleep(self.command_interval)
-           #  t1 = time.time()
-            if not g_dev['seq'].sequencer_hold:
+
+            if not g_dev["seq"].sequencer_hold:
                 url_job = "https://jobs.photonranch.org/jobs/getnewjobs"
                 body = {"site": self.name}
-                # uri = f"{self.name}/{mount}/command/"
                 cmd = {}
                 # Get a list of new jobs to complete (this request
                 # marks the commands as "RECEIVED")
-                unread_commands = requests.request('POST', url_job, \
-                                                   data=json.dumps(body)).json()
+                unread_commands = requests.request(
+                    "POST", url_job, data=json.dumps(body)
+                ).json()
                 # Make sure the list is sorted in the order the jobs were issued
-                # Note: the ulid for a job is a unique lexicographically-sortable id
+                # Note: the ulid for a job is a unique lexicographically-sortable id.
                 if len(unread_commands) > 0:
-                    #print(unread_commands)
                     unread_commands.sort(key=lambda x: x["ulid"])
                     # Process each job one at a time
                     print("# of incomming commands:  ", len(unread_commands))
                     for cmd in unread_commands:
-                        if self.config['selector']['selector1']['driver'] is None:
-                            port = cmd['optional_params']['instrument_selector_position']
-                            g_dev['mnt'].instrument_port = port
-                            cam_name = self.config['selector']['selector1']['cameras'][port]
-                            if cmd['deviceType'][:6] == 'camera':
-                                #  Note camelCase is teh format of command keys
-                                cmd['required_params']['deviceInstance'] = cam_name
-                                cmd['deviceInstance'] = cam_name
+                        if self.config["selector"]["selector1"]["driver"] is None:
+                            port = cmd["optional_params"][
+                                "instrument_selector_position"
+                            ]
+                            g_dev["mnt"].instrument_port = port
+                            cam_name = self.config["selector"]["selector1"]["cameras"][
+                                port
+                            ]
+                            if cmd["deviceType"][:6] == "camera":
+                                # Note camelCase is the format of command keys
+                                cmd["required_params"]["deviceInstance"] = cam_name
+                                cmd["deviceInstance"] = cam_name
                                 device_instance = cam_name
                             else:
                                 try:
-                                    try:
-                                        device_instance = cmd['deviceInstance']
-                                    except:
-                                        device_instance = cmd['required_params']['deviceInstance']
+                                    device_instance = cmd["deviceInstance"]
                                 except:
-                                    #breakpoint()
-                                    pass
+                                    device_instance = cmd["required_params"][
+                                        "deviceInstance"
+                                    ]
                         else:
-                            device_instance = cmd['deviceInstance']
-                        print('obs.scan_request: ', cmd)
+                            device_instance = cmd["deviceInstance"]
 
-                        device_type = cmd['deviceType']
+                        print("obs.scan_request: ", cmd)
+                        device_type = cmd["deviceType"]
                         device = self.all_devices[device_type][device_instance]
                         try:
-
                             device.parse_command(cmd)
                         except Exception as e:
-                            print( 'Exception in obs.scan_requests:  ', e)
-               # print('scan_requests finished in:  ', round(time.time() - t1, 3), '  seconds')
-                ## Test Tim's code
+                            print("Exception in obs.scan_requests:  ", e)
+
                 url_blk = "https://calendar.photonranch.org/dev/siteevents"
-                body = json.dumps({
-                    'site':  self.config['site'],
-                    'start':  g_dev['d-a-y'] + 'T00:00:00Z',
-                    'end':    g_dev['next_day'] + 'T23:59:59Z',
-                    'full_project_details:':  False})
-                if True: #self.blocks is None:   #This currently prevents pick up of calendar changes.
+                body = json.dumps(
+                    {
+                        "site": self.config["site"],
+                        "start": g_dev["d-a-y"] + "T00:00:00Z",
+                        "end": g_dev["next_day"] + "T23:59:59Z",
+                        "full_project_details:": False,
+                    }
+                )
+                if (
+                    True
+                ):  # self.blocks is None: # This currently prevents pick up of calendar changes.
                     blocks = requests.post(url_blk, body).json()
-                    if len(blocks) > 0:   #   is not None:
+                    if len(blocks) > 0:
                         self.blocks = blocks
 
                 url_proj = "https://projects.photonranch.org/dev/get-all-projects"
-                if True: #self.projects is None:
+                if True:
                     all_projects = requests.post(url_proj).json()
                     self.projects = []
-                    if len(all_projects) > 0 and len(blocks)> 0:   #   is not None:
-                        self.projects = all_projects   #.append(all_projects)  #NOTE creating a list with a dict entry as item 0
-                        #self.projects.append(all_projects[1])
-                    #  Note the above does not load projects if there are no blocks scheduled. A sched block may or may not have
-                    #    an associated project.
-                    ###self.observable = self.project_sort(self.projects)
+                    if len(all_projects) > 0 and len(blocks) > 0:
+                        self.projects = all_projects  # NOTE creating a list with a dict entry as item 0
+                    # Note the above does not load projects if there are no blocks scheduled.
+                    # A sched block may or may not havean associated project.
 
-                '''
-                Design Note.  blocks relate to scheduled time at a site so we expect AWS to mediate block
-                assignments.  Priority of blocks is determined by the owner and a 'equipment match' for
-                background projects.
+                # Design Note. Blocks relate to scheduled time at a site so we expect AWS to mediate block
+                # assignments. Priority of blocks is determined by the owner and a 'equipment match' for
+                # background projects.
 
-                Projects on the other hand can be a very large pool so how to manage becomes an issue.
-                TO the extent a project is not visible at a site, aws should not present it.  If it is
-                visible and passes the owners priority it should then be presented to the site.
-
-                '''
+                # Projects on the other hand can be a very large pool so how to manage becomes an issue.
+                # To the extent a project is not visible at a site, aws should not present it. If it is
+                # visible and passes the owners priority it should then be presented to the site.
 
                 if self.events_new is None:
-                    #url = 'https://api.photonranch.org/api/events?site=SAF'
-                    url = 'https://api.photonranch.org/api/events?site='+self.site_name.upper()
+                    url = (
+                        "https://api.photonranch.org/api/events?site="
+                        + self.site_name.upper()
+                    )
                     self.events_new = requests.get(url).json()
-                return   # Continue   #This creates an infinite loop
+                return  # This creates an infinite loop
 
             else:
-                print('Sequencer Hold asserted.')    #What we really want here is looking for a Cancel/Stop.
+                # What we really want here is looking for a Cancel/Stop.
+                print("Sequencer Hold asserted.")
                 continue
 
     def update_status(self):
-        ''' Collect status from all devices and send an update to aws.
+        """Collects status from all devices and sends an update to AWS.
+
         Each device class is responsible for implementing the method
-        `get_status` which returns a dictionary.
-        '''
+        `get_status`, which returns a dictionary.
+        """
 
         # This stopping mechanism allows for threads to close cleanly.
         loud = False
-        # if g_dev['cam_retry_doit']:
-        #     #breakpoint()   #THis should be obsolete.
-        #     del g_dev['cam']
-        #     device = Camera(g_dev['cam_retry_driver'], g_dev['cam_retry_name'], g_dev['cam_retry_config'])
-        #     print("Deleted and re-created:  ,", device)
+
         # Wait a bit between status updates
         while time.time() < self.time_last_status + self.status_interval:
-            # time.sleep(self.st)atus_interval  #This was prior code
-            # print("Staus send skipped.")
-            return   # Note we are just not sending status, too soon.
+            return  # Note we are just not sending status, too soon.
 
         t1 = time.time()
         status = {}
         # Loop through all types of devices.
         # For each type, we get and save the status of each device.
 
-        if not self.config['wema_is_active']:
+        if not self.config["wema_is_active"]:
             device_list = self.device_types
             remove_enc = False
         else:
-            device_list = self.device_types  # self.short_status_devices
+            device_list = self.device_types
             remove_enc = True
         for dev_type in device_list:
             # The status that we will send is grouped into lists of
@@ -560,281 +450,79 @@ class Observatory:
                 # Get the actual device object...
                 device = devices_of_type[device_name]
                 # ...and add it to main status dict.
-                if device_name in self.config['wema_types'] and (self.is_wema or self.site_is_specific):
+                if device_name in self.config["wema_types"] and (
+                    self.is_wema or self.site_is_specific
+                ):
                     result = device.get_status(g_dev=g_dev)
                     if self.site_is_specific:
-                            remove_enc = False
+                        remove_enc = False
                 else:
 
                     result = device.get_status()
                 if result is not None:
                     status[dev_type][device_name] = result
-                    # if device_name == 'enclosure1':
-                    #     g_dev['enc'].status = result   #NB NB NB A big HACK!
-                    #print(device_name, result, '\n')
-        # Include the time that the status was assembled and sent.
-        #if remove_enc:
-            #breakpoint()
-            #status.pop('enclosure', None)
-            #status.pop('observing_conditions', None)
-            #status['observing_conditions'] = None
-            #status['enclosure'] = None
 
-        status["timestamp"] = round((time.time() + t1)/2., 3)
-        status['send_heartbeat'] = False
+        status["timestamp"] = round((time.time() + t1) / 2.0, 3)
+        status["send_heartbeat"] = False
         try:
-            ocn_status = {'observing_conditions': status.pop('observing_conditions')}
-            enc_status = {'enclosure':  status.pop('enclosure')}
+            ocn_status = {"observing_conditions": status.pop("observing_conditions")}
+            enc_status = {"enclosure": status.pop("enclosure")}
             device_status = status
         except:
             pass
         loud = False
         if loud:
-            print('\n\nStatus Sent:  \n', status)   # from Update:  ', status))
+            print("\n\nStatus Sent:  \n", status)  # from Update:  ', status))
         else:
-            print('.') #, status)   # We print this to stay informed of process on the console.
-            # breakpoint()
-            # self.send_log_to_frontend("WARN cam1 just fell on the floor!")
-            # self.send_log_to_frontend("ERROR enc1 dome just collapsed.")
-            #  Consider inhibity unless status rate is low
+            print(".")  # We print this to stay informed of process on the console.
+
+        # Consider inhibity unless status rate is low
         obsy = self.name
         if ocn_status is not None:
-            lane = 'weather'
-            send_status(obsy, lane, ocn_status)  #NB NB Do not remove this sed for SAF!
+            lane = "weather"
+            send_status(obsy, lane, ocn_status)  # NB Do not remove this send for SAF!
         if enc_status is not None:
-            lane = 'enclosure'
+            lane = "enclosure"
             send_status(obsy, lane, enc_status)
-        if  device_status is not None:
-            lane = 'device'
-            #final_send = status
+        if device_status is not None:
+            lane = "device"
             send_status(obsy, lane, device_status)
-# =============================================================================
-#         uri_status = f"https://status.photonranch.org/status/{self.name}/status/"
-#         # NB None of the strings can be empty.  Otherwise this put faults.
-#         try:    # 20190926  tHIS STARTED THROWING EXCEPTIONS OCCASIONALLY
-#             #print("AWS uri:  ", uri)
-#             #print('Status to be sent:  \n', status, '\n')
-#
-#             payload ={
-#                 "statusType": "device",
-#                 "status":  status
-#                 }
-#             print("device Payload:  ", payload)
-#             data = json.dumps(payload)
-#             response = requests.post(uri_status, data=data)
-# =============================================================================
 
-        #print("AWS Response:  ",response)
         # NB should qualify acceptance and type '.' at that point.
         self.time_last_status = time.time()
-        #self.redis_server.set('obs_time', self.time_last_status, ex=120 )
-        self.status_count +=1
-# =============================================================================
-#         except:
-#             print('self.api.authenticated_request("PUT", uri, status):   Failed!')
-
-#         status = {}
-#         # Loop through all types of devices.
-#         # For each type, we get and save the status of each device.
-#
-#         if not self.config['wema_is_active']:
-#             device_list = self.device_types
-#             remove_enc = False
-#         else:
-#             device_list = self.wema_types  # self.short_status_devices
-#             remove_enc = True
-#         for dev_type in device_list:
-#             # The status that we will send is grouped into lists of
-#             # devices by dev_type.
-#             status[dev_type] = {}
-#             # Names of all devices of the current type.
-#             # Recall that self.all_devices[type] is a dictionary of all
-#             # `type` devices, with key=name and val=device object itself.
-#             devices_of_type = self.all_devices.get(dev_type, {})
-#             device_names = devices_of_type.keys()
-#
-#             for device_name in device_names:
-#                 # Get the actual device object...
-#                 device = devices_of_type[device_name]
-#                 # ...and add it to main status dict.
-#
-#                 if device_name in self.config['wema_types'] and (self.is_wema or self.site_is_specific):
-#                     result = device.get_status(g_dev)
-#                     if self.site_is_specific:
-#                         remove_enc = False
-#                 else:
-#
-#                     result = device.get_status()
-#                 if result is not None:
-#                     status[dev_type][device_name] = result
-#                     # if device_name == 'enclosure1':
-#                     #     g_dev['enc'].status = result   #NB NB NB A big HACK!
-#                     #print(device_name, result, '\n')
-#         # Include the time that the status was assembled and sent.
-#         #if remove_enc:
-#             #breakpoint()
-#             #status.pop('enclosure', None)
-#             #status.pop('observing_conditions', None)
-#             #status['observing_conditions'] = None
-#             #status['enclosure'] = None
-#
-#         status["timestamp"] = round((time.time() + t1)/2., 3)
-#         status['send_heartbeat'] = False
-#         loud = False
-#         if loud:
-#             print('\n\nStatus Sent:  \n', status)   # from Update:  ', status))
-#         else:
-#             print('.') #, status)   # We print this to stay informed of process on the console.
-#             # breakpoint()
-#             # self.send_log_to_frontend("WARN cam1 just fell on the floor!")
-#             # self.send_log_to_frontend("ERROR enc1 dome just collapsed.")
-#             #  Consider inhibity unless status rate is low
-#         uri_status = f"https://status.photonranch.org/status/{self.name}/status/"
-#         # NB None of the strings can be empty.  Otherwise this put faults.
-#         try:    # 20190926  tHIS STARTED THROWING EXCEPTIONS OCCASIONALLY
-#             #print("AWS uri:  ", uri)
-#             #print('Status to be sent:  \n', status, '\n')
-#
-#             payload ={
-#                 "statusType": "weather",
-#                 "status":  status
-#                 }
-#             #print("device Payload:  ", payload)
-#             data = json.dumps(payload)
-#             response = requests.post(uri_status, data=data)
-#             #self.api.authenticated_request("PUT", uri_status, status)   # response = is not  used
-#             #print("AWS Response:  ",response)
-#             # NB should qualify acceptance and type '.' at that point.
-#             self.time_last_status = time.time()
-#             #self.redis_server.set('obs_time', self.time_last_status, ex=120 )
-#             self.status_count +=1
-#         except:
-#             print('self.api.authenticated_request("PUT", uri, status):   Failed!')
-#
-#
-#         if not self.config['wema_is_active']:
-#             device_list = self.enc_types
-#             remove_enc = False
-#         else:
-#             #device_list = self.enc_types  # self.short_status_devices
-#             remove_enc = True
-#         for dev_type in device_list:
-#             # The status that we will send is grouped into lists of
-#             # devices by dev_type.
-#             status[dev_type] = {}
-#             # Names of all devices of the current type.
-#             # Recall that self.all_devices[type] is a dictionary of all
-#             # `type` devices, with key=name and val=device object itself.
-#             devices_of_type = self.all_devices.get(dev_type, {})
-#             device_names = devices_of_type.keys()
-#
-#             for device_name in device_names:
-#                 # Get the actual device object...
-#                 device = devices_of_type[device_name]
-#                 # ...and add it to main status dict.
-#
-#                 if device_name in self.config['wema_types'] and (self.is_wema or self.site_is_specific):
-#                     result = device.get_status(g_dev)
-#                     if self.site_is_specific:
-#                         remove_enc = False
-#                 else:
-#
-#                     result = device.get_status()
-#                 if result is not None:
-#                     status[dev_type][device_name] = result
-#                     # if device_name == 'enclosure1':
-#                     #     g_dev['enc'].status = result   #NB NB NB A big HACK!
-#                     #print(device_name, result, '\n')
-#         # Include the time that the status was assembled and sent.
-#         if remove_enc:
-#             #breakpoint()
-#             #status.pop('enclosure', None)
-#             #status.pop('observing_conditions', None)
-#             status['observing_conditions'] = None
-#
-#             if g_dev['enc'].dome_on_wema:
-#                 status['enclosure'] = None
-#
-#         status["timestamp"] = round((time.time() + t1)/2., 3)
-#         status['send_heartbeat'] = False
-#         loud = False
-#         if loud:
-#             print('\n\nStatus Sent:  \n', status)   # from Update:  ', status))
-#         else:
-#             print('.') #, status)   # We print this to stay informed of process on the console.
-#             # breakpoint()
-#             # self.send_log_to_frontend("WARN cam1 just fell on the floor!")
-#             # self.send_log_to_frontend("ERROR enc1 dome just collapsed.")
-#             #  Consider inhibity unless status rate is low
-#         uri_status = f"https://status.photonranch.org/status/{self.name}/status/"
-#         # NB None of the strings can be empty.  Otherwise this put faults.
-#         try:    # 20190926  tHIS STARTED THROWING EXCEPTIONS OCCASIONALLY
-#             #print("AWS uri:  ", uri)
-#             #print('Status to be sent:  \n', status, '\n')
-#
-#             payload ={
-#                 "statusType": "enclosure",
-#                 "status":  status
-#                 }
-#             #print("device Payload:  ", payload)
-#             data = json.dumps(payload)
-#             response = requests.post(uri_status, data=data)
-#             #self.api.authenticated_request("PUT", uri_status, status)   # response = is not  used
-#             #print("AWS Response:  ",response)
-#             # NB should qualify acceptance and type '.' at that point.
-#             self.time_last_status = time.time()
-#             #self.redis_server.set('obs_time', self.time_last_status, ex=120 )
-#             self.status_count +=1
-#         except:
-#             print('self.api.authenticated_request("PUT", uri, status):   Failed!')
-#
-# =============================================================================
+        # self.redis_server.set('obs_time', self.time_last_status, ex=120 )
+        self.status_count += 1
 
     def update(self):
         """
 
-        20200411 WER
         This compact little function is the heart of the code in the sense this is repeatedly
-        called.  It first SENDS status for all devices to AWS, then it checks for any new
-        commands from AWS.  Then it calls sequencer.monitor() were jobs may get launched. A
-        flaw here is we do not have a Ulid for the 'Job number.'
+        called. It first SENDS status for all devices to AWS, then it checks for any new
+        commands from AWS. Then it calls sequencer.monitor() were jobs may get launched. A
+        flaw here is we do not have a Ulid for the 'Job number'.
 
-        With a Maxim based camera is it possible for the owner to push buttons in parallel
-        with commands coming from AWS.  This is useful during the debugging phase.
+        With a Maxim based camera, is it possible for the owner to push buttons in parallel
+        with commands coming from AWS. This is useful during the debugging phase.
 
-        Sequences that are self-dispatched primarily relate to Bias darks, screen and sky
-        flats, opening and closing.  Status for these jobs is reported via the normal
+        Sequences that are self-dispatched primarily relate to biases, darks, screen and sky
+        flats, opening and closing. Status for these jobs is reported via the normal
         sequencer status mechanism. Guard flags to prevent careless interrupts will be
         implemented as well as Cancel of a sequence if emitted by the Cancel botton on
         the AWS Sequence tab.
 
         Flat acquisition will include automatic rejection of any image that has a mean
-        intensity > camera saturate.  The camera will return without further processing and
-        no image will be returned to AWS or stored locally.  We should log the Unihedron and
-        calc_illum values where filters first enter non-saturation.  Once we know those values
+        intensity > camera saturate. The camera will return without further processing and
+        no image will be returned to AWS or stored locally. We should log the Unihedron and
+        calc_illum values where filters first enter non-saturation. Once we know those values
         we can spend much less effort taking frames that are saturated. Save The Shutter!
-
         """
 
         self.update_status()
-        try:
-            self.scan_requests('mount1')   #NBNBNB THis has faulted, usually empty input lists.
-        except:
-            pass
-            #print("self.scan_requests('mount1') threw an exception, probably empty input queues.")
-        if self.status_count > 2:   # Give time for status to form
-            g_dev['seq'].manager()  #  Go see if there is something new to do.
+        if self.status_count > 2:  # Give time for status to form
+            g_dev["seq"].manager()  # Go see if there is something new to do.
 
-    def run(self):   # run is a poor name for this function.
+    def run(self):  # run is a poor name for this function.
         try:
-            # self.update_thread = threading.Thread(target=self.update_status).start()
-            # Each mount operates async and has its own command queue to scan.
-            # is it better to use just one command queue per site?
-            # for mount in self.all_devices['mount'].keys():
-            #     self.scan_thre/ad = threading.Thread(
-            #         target=self.scan_requests,
-            #         args=(mount,)
-            #     ).start()
             # Keep the main thread alive, otherwise signals are ignored
             while True:
                 self.update()
@@ -846,37 +534,45 @@ class Observatory:
 
     # Note this is a thread!
     def send_to_AWS(self):  # pri_image is a tuple, smaller first item has priority.
-                            # second item is also a tuple containing im_path and name.
+        # second item is also a tuple containing im_path and name.
 
         # This stopping mechanism allows for threads to close cleanly.
         while True:
             if not self.aws_queue.empty():
                 pri_image = self.aws_queue.get(block=False)
                 if pri_image is None:
-                    print ("got an empty entry in aws_queue???")
+                    print("got an empty entry in aws_queue???")
                     self.aws_queue.task_done()
                     time.sleep(0.2)
                     continue
                 # Here we parse the file, set up and send to AWS
                 im_path = pri_image[1][0]
                 name = pri_image[1][1]
-                if not (name[-3:] == 'jpg' or name[-3:] == 'txt' or name[-3:] == 'token' or '.fits.fz' in name):
+                if not (
+                    name[-3:] == "jpg"
+                    or name[-3:] == "txt"
+                    or name[-3:] == "token"
+                    or ".fits.fz" in name
+                ):
                     # compress first
                     to_bz2(im_path + name)
-                    name = name + '.bz2'
+                    name = name + ".bz2"
                 aws_req = {"object_name": name}
-                aws_resp = g_dev['obs'].api.authenticated_request('POST', '/upload/', aws_req)
-                with open(im_path + name, 'rb') as f:
-                    files = {'file': (im_path + name, f)}
-                    #if name[-3:] == 'jpg':
-                    print('--> To AWS -->', str(im_path + name))
-                    requests.post(aws_resp['url'], data=aws_resp['fields'],
-                                  files=files)
+                aws_resp = g_dev["obs"].api.authenticated_request(
+                    "POST", "/upload/", aws_req
+                )
+                with open(im_path + name, "rb") as f:
+                    files = {"file": (im_path + name, f)}
+                    # if name[-3:] == 'jpg':
+                    print("--> To AWS -->", str(im_path + name))
+                    requests.post(aws_resp["url"], data=aws_resp["fields"], files=files)
 
-
-
-                if name[-3:] == 'bz2' or name[-3:] == 'jpg' or \
-                        name[-3:] == 'txt' or '.fits.fz' in name:
+                if (
+                    name[-3:] == "bz2"
+                    or name[-3:] == "jpg"
+                    or name[-3:] == "txt"
+                    or ".fits.fz" in name
+                ):
                     os.remove(im_path + name)
 
                 self.aws_queue.task_done()
@@ -884,217 +580,186 @@ class Observatory:
             else:
                 time.sleep(0.2)
 
-    def send_to_user(self, p_log, p_level='INFO'):
+    def send_to_user(self, p_log, p_level="INFO"):
         url_log = "https://logs.photonranch.org/logs/newlog"
-        body = json.dumps({
-            'site': self.config['site'],
-            'log_message':  str(p_log),
-            'log_level': str(p_level),
-            'timestamp':  time.time()
-            })
-        try:
-            resp = requests.post(url_log, body)
-        except:
+        body = json.dumps(
+            {
+                "site": self.config["site"],
+                "log_message": str(p_log),
+                "log_level": str(p_level),
+                "timestamp": time.time(),
+            }
+        )
+        response = requests.post(url_log, body)
+        if not response.ok:
             print("Log did not send, usually not fatal.")
-
 
     # Note this is another thread!
     def reduce_image(self):
-        '''
-        The incoming object is typically a large fits HDU. Found in its        header will be both standard image parameters and destination filenames
+        """
 
-        '''
+        The incoming object is typically a large fits HDU.
+        Found in its header will be both standard image parameters
+        and destination filenames.
+
+        Before saving reduced or generating postage,
+        we flip the images so East is left and North is up.
+        The header keyword PIERSIDE defines the orientation.
+        """
         while True:
             if not self.reduce_queue.empty():
-                # print(self)
-                # print(self.reduce_queue)
-                # print(self.reduce_queue.empty)
-
                 pri_image = self.reduce_queue.get(block=False)
-                #print(pri_image)
-                if pri_image is None:
-                    time.sleep(.5)
-                    continue
-                # Here we parse the input and calibrate it.
 
+                if pri_image is None:
+                    time.sleep(0.5)
+                    continue
+
+                # Here we parse the input and calibrate it.
                 paths = pri_image[0]
                 hdu = pri_image[1]
-                backup = pri_image[0].copy()   #NB NB Should this be a deepcopy?
+                backup = pri_image[0].copy()  # NB NB Should this be a deepcopy?
 
-                lng_path =  g_dev['cam'].lng_path
-                #NB Important decision here, do we flash calibrate screen and sky flats?  For now, Yes.
+                lng_path = g_dev["cam"].lng_path
+                # NB Important decision here, do we flash calibrate screen and sky flats? For now, Yes.
 
-                #cal_result =
-                calibrate(hdu, lng_path, paths['frame_type'], quick=False)
-                #print("Calibrate returned:  ", hdu.data, cal_result)
-                #Before saving reduced or generating postage, we flip
-                #the images so East is left and North is up based on
-                #The keyword PIERSIDE defines the orientation.
-                #Note the raw ibmage is not flipped/
+                calibrate(hdu, lng_path, paths["frame_type"], quick=False)
+
+                # Note the raw ibmage is not flipped/
 
                 # NB NB NB I do not think we should be flipping ALt_Az images.
-                #NB NB NB I think ever raw images should be flipped so that at
-                #PA = 0.0. that N is up and East is to the left.  SInce LCO only
-                #has fork telescopes all LCO instruments have the same native alignment
-                #in the archive.   WER  0220703
-# =============================================================================
-#                 if hdu.header['PIERSIDE'] == "Look West":
-#                     hdu.data = np.flip(hdu.data)
-#                     hdu.header['IMGFLIP'] = True
-# =============================================================================
+                # NB NB NB I think ever raw images should be flipped so that at
+                # PA = 0.0. that N is up and East is to the left. Since LCO only
+                # has fork telescopes all LCO instruments have the same native alignment
+                # in the archive. WER 20220703
 
-                # NB BAD 20220717 print('Reduced Mean:  ', round(hdu.data.mean() + hdu.header['PEDASTAL'], 2))
-                #wpath = paths['im_path'] + paths['red_name01']
-                #hdu.writeto(wpath, overwrite=True)  # NB overwrite == True is dangerous in production code.  This is big fits to AWS
-                #print ("original path")
-                #print (paths)
-                reduced_data_size = hdu.data.size
+                wpath = (
+                    paths["red_path"] + paths["red_name01_lcl"]
+                )  # This name is convienent for local sorting
 
-                #print('***** Reduced data size, dtype:  ', reduced_data_size, hdu.data.dtype, hdu.header['BITPIX'], hdu.header['NAXIS1'])
+                hdu.writeto(wpath, overwrite=True)  # Bigfit reduced
+                # This was in camera after reduce and it had a race condition.
 
-                wpath = paths['red_path'] + paths['red_name01_lcl']    #This name is convienent for local sorting
+                if hdu.header["OBSTYPE"].lower() in (
+                    "bias",
+                    "dark",
+                    "screenflat",
+                    "skyflat",
+                ):
+                    hdu.writeto(paths["cal_path"] + paths["cal_name"], overwrite=True)
 
-                hdu.writeto(wpath, overwrite=True) #Bigfit reduced
-                #This was in camera after reduce and it had a race condition.
-
-                if hdu.header['OBSTYPE'].lower() in ('bias', 'dark', 'screenflat', 'skyflat'):
-                    hdu.writeto(paths['cal_path'] + paths['cal_name'], overwrite=True)
-
-                #Will try here to solve
-                if not paths['frame_type'] in ['bias', 'dark', 'flat', 'solar', 'lunar', 'skyflat', 'screen', 'spectrum', 'auto_focus']:
+                # Will try here to solve
+                if not paths["frame_type"] in [
+                    "bias",
+                    "dark",
+                    "flat",
+                    "solar",
+                    "lunar",
+                    "skyflat",
+                    "screen",
+                    "spectrum",
+                    "auto_focus",
+                ]:
                     try:
-                        #hdu_save = hdu
-                        #wpath = 'C:/000ptr_saf/archive/sq01/20210528/reduced/saf-sq01-20210528-00019785-le-w-EX01.fits'
-                        #time_now = time.time()  #This should be more accurately defined earlier in the header
-                        #NB NB The following needs better bin management
-                        #solve = platesolve.platesolve(wpath, 1.067)     #0.5478)
-                        solve = platesolve.platesolve(wpath, float(hdu.header['PIXSCALE']))     #0.5478)
-                        print("PW Solves: " ,solve['ra_j2000_hours'], solve['dec_j2000_degrees'])
-                        #img = fits.open(wpath, mode='update', ignore_missing_end=True)
-                        #hdr = img[0].header
-                        #hdr=hdu.header
-                        #  Update the NEW header for a 'Reduced" fits. The Raw fits has not been changed.
-                        hdu.header['RA-J20PW'] = solve['ra_j2000_hours']
-                        hdu.header['DECJ20PW'] = solve['dec_j2000_degrees']
-                        hdu.header['RAHRS'] = float(solve['ra_j2000_hours'])
-                        hdu.header['RA'] = float(solve['ra_j2000_hours']*15)
-                        hdu.header['DEC'] = float(solve['dec_j2000_degrees'])
+                        # NB NB The following needs better bin management
+                        solve = platesolve.platesolve(
+                            wpath, float(hdu.header["PIXSCALE"])
+                        )
+                        print(
+                            "PW Solves: ",
+                            solve["ra_j2000_hours"],
+                            solve["dec_j2000_degrees"],
+                        )
 
-                        hdu.header['MEAS-SPW'] = solve['arcsec_per_pixel']
-                        hdu.header['MEAS-RPW'] = solve['rot_angle_degs']
+                        # Update the NEW header for a "Reduced" fits. The Raw fits has not been changed.
+                        hdu.header["RA-J20PW"] = solve["ra_j2000_hours"]
+                        hdu.header["DECJ20PW"] = solve["dec_j2000_degrees"]
+                        hdu.header["RAHRS"] = float(solve["ra_j2000_hours"])
+                        hdu.header["RA"] = float(solve["ra_j2000_hours"] * 15)
+                        hdu.header["DEC"] = float(solve["dec_j2000_degrees"])
+                        hdu.header["MEAS-SPW"] = solve["arcsec_per_pixel"]
+                        hdu.header["MEAS-RPW"] = solve["rot_angle_degs"]
 
-                        #MTF woz ere - This updates the RA and Dec in the raw file header if a solution is found
-                        with fits.open(paths['raw_path'] + paths['raw_name00'], 'update') as f:
+                        # This updates the RA and Dec in the raw file header if a solution is found
+                        with fits.open(
+                            paths["raw_path"] + paths["raw_name00"], "update"
+                        ) as f:
                             for hdbf in f:
-                                hdbf.header['RA-J20PW'] = solve['ra_j2000_hours']
-                                hdbf.header['DECJ20PW'] = solve['dec_j2000_degrees']
-                                hdbf.header['RAHRS'] = float(solve['ra_j2000_hours'])
-                                hdbf.header['RA'] = float(solve['ra_j2000_hours']*15)
-                                hdbf.header['DEC'] = float(solve['dec_j2000_degrees'])
-                                hdbf.header['MEAS-SPW'] = solve['arcsec_per_pixel']
-                                hdbf.header['MEAS-RPW'] = solve['rot_angle_degs']
+                                hdbf.header["RA-J20PW"] = solve["ra_j2000_hours"]
+                                hdbf.header["DECJ20PW"] = solve["dec_j2000_degrees"]
+                                hdbf.header["RAHRS"] = float(solve["ra_j2000_hours"])
+                                hdbf.header["RA"] = float(solve["ra_j2000_hours"] * 15)
+                                hdbf.header["DEC"] = float(solve["dec_j2000_degrees"])
+                                hdbf.header["MEAS-SPW"] = solve["arcsec_per_pixel"]
+                                hdbf.header["MEAS-RPW"] = solve["rot_angle_degs"]
 
-                        target_ra  = g_dev['mnt'].current_icrs_ra
-                        target_dec = g_dev['mnt'].current_icrs_dec
-                        solved_ra = solve['ra_j2000_hours']
-                        solved_dec = solve['dec_j2000_degrees']
-                        #breakpoint()
+                        target_ra = g_dev["mnt"].current_icrs_ra
+                        target_dec = g_dev["mnt"].current_icrs_dec
+                        solved_ra = solve["ra_j2000_hours"]
+                        solved_dec = solve["dec_j2000_degrees"]
                         err_ha = target_ra - solved_ra
                         err_dec = target_dec - solved_dec
                         print("err ra, dec:  ", err_ha, err_dec)
-                        #NB NB NB Need to add Pierside as a parameter to this cacc 20220214 WER
+                        # NB NB NB Need to add Pierside as a parameter to this cacc 20220214 WER
 
-                        if g_dev['mnt'].pier_side_str == 'Looking West':
-                            g_dev['mnt'].adjust_mount_reference(err_ha, err_dec)
+                        if g_dev["mnt"].pier_side_str == "Looking West":
+                            g_dev["mnt"].adjust_mount_reference(err_ha, err_dec)
                         else:
-                            g_dev['mnt'].adjust_flip_reference(err_ha, err_dec)   #Need to verify signs
-                        #img.flush()
-                        #img.close
-                        #img = fits.open(wpath, ignore_missing_end=True)
-                        #hdr = img[0].header
-                        # prior_ra_h, prior_dec, prior_time = g_dev['mnt'].get_last_reference()
-
-                        # if prior_time is not None:
-                        #     print("time base is:  ", time_now - prior_time)
-
-                        # g_dev['mnt'].set_last_reference( solve['ra_j2000_Second phase of AF now.hours'], solve['dec_j2000_degrees'], time_now)
+                            g_dev["mnt"].adjust_flip_reference(
+                                err_ha, err_dec
+                            )  # Need to verify signs
                     except:
-                       print('Image:  ',wpath[-24:-5], " did not solve; this is usually OK.")
-                       #img = fits.open(wpath, mode='update', ignore_missing_end=True)
-                       #hdr = img[0].header
-                       hdu.header['RA-J20PW'] = False
-                       hdu.header['DECJ20PW'] = False
-                       hdu.header['MEAS-SPW'] = False
-                       hdu.header['MEAS-RPW'] = False
-                       #hdu.header['NO-SOLVE'] = True
-                       #img.close()
-                    #hdu = hdu_save
-                    #Return to classic processing
+                        print(
+                            "Image:  ",
+                            wpath[-24:-5],
+                            " did not solve; this is usually OK.",
+                        )
+                        hdu.header["RA-J20PW"] = False
+                        hdu.header["DECJ20PW"] = False
+                        hdu.header["MEAS-SPW"] = False
+                        hdu.header["MEAS-RPW"] = False
+                # Return to classic processing
 
-                # if self.site_name == 'saf':
-                #     wpath = paths['red_path_aux'] + paths['red_name01_lcl']
-                #     hdu.writeto(wpath, overwrite=True) #big fits to other computer in Neyle's office
-                #patch to test Midtone Contrast
+                # Here we need to consider just what local reductions and calibrations really make sense to
+                # process in-line vs doing them in another process. For all practical purposes everything
+                # below can be done in a different process, the exception perhaps has to do with autofocus
+                # processing.
 
-                # image = 'Q:/000ptr_saf/archive/sq01/20201212 ans HH/reduced/HH--SigClip.fits'
-                # hdu_new = fits.open(image)
-                # hdu =hdu_new[0]
-
-
-
-
-                '''
-                Here we need to consider just what local reductions and calibrations really make sense to
-                process in-line vs doing them in another process.  For all practical purposes everything
-                below can be done in a different process, the exception perhaps has to do with autofocus
-                processing.
-
-
-                '''
                 # Note we may be using different files if calibrate is null.
-                # NB  We should only write this if calibrate actually succeeded to return a result ??
-
-                #  if frame_type == 'sky flat':
-                #      hdu.header['SKYSENSE'] = int(g_dev['scr'].bright_setting)
-                #
-                # if not quick:
-                #     hdu1.writeto(im_path + raw_name01, overwrite=True)
-                # raw_data_size = hdu1[0].data.size
-
-
-
-                #  NB Should this step be part of calibrate?  Second should we form and send a
-                #  CSV file to AWS and possibly overlay key star detections?
-                #  Possibly even astro solve and align a series or dither batch?
-                #  This might want to be yet another thread queue, esp if we want to do Aperture Photometry.
+                # NB We should only write this if calibrate actually succeeded to return a result ??
+                # This might want to be yet another thread queue, esp if we want to do Aperture Photometry.
                 no_AWS = False
                 quick = False
                 do_sep = False
                 spot = None
-                #Note this was turned off because very rarely it hangs internally.
-                if do_sep:    #WE have already ran this code when focusing, but we should not ever get here when doing that.
+                # Note this was turned off because very rarely it hangs internally.
+                if (
+                    do_sep
+                ):  # We have already ran this code when focusing, but we should not ever get here when doing that.
                     try:
-                        img = hdu.data.copy().astype('float')
+                        img = hdu.data.copy().astype("float")
                         bkg = sep.Background(img)
-                        #breakpoint()
-                        #bkg_rms = bkg.rms()
                         img = img - bkg
-                        sources = sep.extract(img, 4.5, err=bkg.globalrms, minarea=9)#, filter_kernel=kern)
-                        sources.sort(order = 'cflux')
-                        #print('No. of detections:  ', len(sources))
+                        sources = sep.extract(img, 4.5, err=bkg.globalrms, minarea=9)
+                        sources.sort(order="cflux")
                         sep_result = []
                         spots = []
                         for source in sources:
-                            a0 = source['a']
-                            b0 =  source['b']
-                            r0 = 2*round(math.sqrt(a0**2 + b0**2), 2)
-                            sep_result.append((round((source['x']), 2), round((source['y']), 2), round((source['cflux']), 2), \
-                                           round(r0), 3))
+                            a0 = source["a"]
+                            b0 = source["b"]
+                            r0 = 2 * round(math.sqrt(a0**2 + b0**2), 2)
+                            sep_result.append(
+                                (
+                                    round((source["x"]), 2),
+                                    round((source["y"]), 2),
+                                    round((source["cflux"]), 2),
+                                    round(r0),
+                                    3,
+                                )
+                            )
                             spots.append(round((r0), 2))
                         spot = np.array(spots)
                         try:
-                            spot = np.median(spot[-9:-2])   #  This grabs seven spots.
-                            #print(sep_result, '\n', 'Spot ,flux, #_sources, avg_focus:  ', spot, source['cflux'], len(sources), avg_foc[1], '\n')
+                            spot = np.median(spot[-9:-2])  #  This grabs seven spots.
                             if len(sep_result) < 5:
                                 spot = None
                         except:
@@ -1102,106 +767,75 @@ class Observatory:
                     except:
                         spot = None
 
-                reduced_data_size = hdu.data.size
-
                 # =============================================================================
                 # x = 2      From Numpy: a way to quickly embed an array in a larger one
                 # y = 3
                 # wall[x:x+block.shape[0], y:y+block.shape[1]] = block
                 # =============================================================================
 
-                hdu.data = hdu.data.astype('uint16')
+                hdu.data = hdu.data.astype("uint16")
                 iy, ix = hdu.data.shape
                 if iy == ix:
                     resized_a = resize(hdu.data, (1280, 1280), preserve_range=True)
                 else:
-                    resized_a = resize(hdu.data, (int(1536*iy/ix), 1536), preserve_range=True)  #  We should trim chips so ratio is exact.
-                #print('New small fits size:  ', resized_a.shape)
-                hdu.data = resized_a.astype('uint16')
+                    resized_a = resize(
+                        hdu.data, (int(1536 * iy / ix), 1536), preserve_range=True
+                    )  # We should trim chips so ratio is exact.
+                hdu.data = resized_a.astype("uint16")
 
                 i768sq_data_size = hdu.data.size
-                # print('ABOUT to print paths.')
-                # print('Sending to:  ', paths['im_path'])
-                # print('Also to:     ', paths['i768sq_name10'])
 
-                hdu.writeto(paths['im_path'] + paths['i768sq_name10'], overwrite=True)
-                hdu.data = resized_a.astype('float')
+                hdu.writeto(paths["im_path"] + paths["i768sq_name10"], overwrite=True)
+                hdu.data = resized_a.astype("float")
 
                 # New contrast scaling code:
                 stretched_data_float = Stretch().stretch(hdu.data)
-                stretched_256 = 255*stretched_data_float
+                stretched_256 = 255 * stretched_data_float
                 hot = np.where(stretched_256 > 255)
                 cold = np.where(stretched_256 < 0)
                 stretched_256[hot] = 255
                 stretched_256[cold] = 0
-                #print("pre-unit8< hot, cold:  ", len(hot[0]), len(cold[0]))
-                stretched_data_uint8 = stretched_256.astype('uint8')  # Eliminates a user warning
+                stretched_data_uint8 = stretched_256.astype(
+                    "uint8"
+                )  # Eliminates a user warning
                 hot = np.where(stretched_data_uint8 > 255)
                 cold = np.where(stretched_data_uint8 < 0)
                 stretched_data_uint8[hot] = 255
                 stretched_data_uint8[cold] = 0
-                #print("post-unit8< hot, cold:  ", len(hot[0]), len(cold[0]))
-                imsave(paths['im_path'] + paths['jpeg_name10'], stretched_data_uint8)
-                #img4 = stretched_data_uint8  # keep old name for compatibility
+                imsave(paths["im_path"] + paths["jpeg_name10"], stretched_data_uint8)
 
-                jpeg_data_size = abs(stretched_data_uint8.size - 1024)                # istd = np.std(hdu.data)
+                jpeg_data_size = abs(
+                    stretched_data_uint8.size - 1024
+                )  # istd = np.std(hdu.data)
 
-                #
-                # MTF - a temporary routine to create fz for BANZAI testing for Darren
-                #
-                #print (name)
-                #print (name[-3:])
-                #if (name[-3:] == 'bz2'):
-                #  print ("Making test fz file for Darren")
-                #  to_fz(im_path + name.replace('.bz2',''))
-                #  aws_req = {"object_name": name.replace('.bz2','.fz')}
-                #  aws_resp = g_dev['obs'].api.authenticated_request('POST', '/upload/', aws_req)
-                ##  with open(im_path + name, 'rb') as f:
-                 #     files = {'file': (im_path + name.replace('.bz2','.fz'), f)}
-                  #    print('--> To AWS -->', str(im_path + name))
-                   #   requests.post(aws_resp['url'], data=aws_resp['fields'],
-                   #                 files=files)
+                if (
+                    not no_AWS
+                ):  # In the no_AWS case should we skip more of the above processing?
+                    g_dev["cam"].enqueue_for_AWS(
+                        jpeg_data_size, paths["im_path"], paths["jpeg_name10"]
+                    )
+                    g_dev["cam"].enqueue_for_AWS(
+                        i768sq_data_size, paths["im_path"], paths["i768sq_name10"]
+                    )
+                    g_dev["cam"].enqueue_for_AWS(
+                        13000000, paths["raw_path"], paths["raw_name00"]
+                    )  # NB need to chunkify 25% larger then small fits.
+                    g_dev["cam"].enqueue_for_AWS(
+                        26000000, paths["raw_path"], paths["raw_name00"] + ".fz"
+                    )
 
-
-
-
-
-
-
-
-
-                ########################################################################
-
-
-                if not no_AWS:  #IN the no+AWS case should we skip more of the above processing?
-                    #g_dev['cam'].enqueue_for_AWS(text_data_size, paths['im_path'], paths['text_name'])
-                    g_dev['cam'].enqueue_for_AWS(jpeg_data_size, paths['im_path'], paths['jpeg_name10'])
-                    g_dev['cam'].enqueue_for_AWS(i768sq_data_size, paths['im_path'], paths['i768sq_name10'])
-                    #print('File size to AWS:', reduced_data_size)
-                    g_dev['cam'].enqueue_for_AWS(13000000, paths['raw_path'], paths['raw_name00'])    #NB need to chunkify 25% larger then small fits.
-                    #if not quick:
-                    g_dev['cam'].enqueue_for_AWS(26000000, paths['raw_path'], paths['raw_name00'] +'.fz')    #NB need to chunkify 25% larger then small fits.
-                    #if not quick:
-                #print('Sent to AWS Queue.')
                 time.sleep(0.5)
-                self.img = None   #Clean up all big objects.
+                img = None  # Clean up all big objects.
                 try:
                     hdu = None
                 except:
                     pass
-                # try:
-                #     hdu1 = None
-                # except:
-                #     pass
-                #print("\nReduction completed.")
-                g_dev['obs'].send_to_user("An image reduction has completed.", p_level='INFO')
+                g_dev["obs"].send_to_user(
+                    "An image reduction has completed.", p_level="INFO"
+                )
                 self.reduce_queue.task_done()
             else:
-                time.sleep(.5)
-    # def project_sort(self, projects):
-    #     pprint(projects)
-
-
+                time.sleep(0.5)
 
 
 if __name__ == "__main__":
@@ -1218,10 +852,7 @@ if __name__ == "__main__":
     #     config_file_name = f"config_files.config_{options.config}"
     # config = importlib.import_module(config_file_name)
     # print(f"Starting up {config.site_name}.")
+
     # Start up the observatory
-
-    import config
-
-
     o = Observatory(config.site_name, config.site_config)
     o.run()
