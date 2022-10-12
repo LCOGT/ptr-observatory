@@ -1159,6 +1159,7 @@ class Observatory:
                         #Return to classic processing
                     else:
                         print ("skipping solve as not enough time or images have passed")
+                        self.images_since_last_solve = self.images_since_last_solve + 1
                 # if self.site_name == 'saf':
                 #     wpath = paths['red_path_aux'] + paths['red_name01_lcl']
                 #     hdu.writeto(wpath, overwrite=True) #big fits to other computer in Neyle's office

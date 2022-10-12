@@ -393,7 +393,7 @@ class Mount:
                 if self.mount.sideOfPier == look_west:
                     ra_cal_offset, dec_cal_offset = self.get_mount_reference()
                 else:
-                    ra_cal_offset, dec_cal_offset = self.get_flip_reference() 
+                    ra_cal_offset, dec_cal_offset = self.get_flip_reference()
             except:
                 ra_cal_offset=0
                 dec_cal_offset=0
@@ -418,7 +418,7 @@ class Mount:
             #breakpoint()   #20201230 WE should not get here.
 
             try:
-                ra_cal_offset, dec_cal_offset = self.get_mount_reference() 
+                ra_cal_offset, dec_cal_offset = self.get_mount_reference()
             except:
                 ra_cal_offset=0
                 dec_cal_offset=0
@@ -964,6 +964,10 @@ class Mount:
             #print("Going to:  ", self.object)   #NB Needs cleaning up.
             g_dev['obs'].send_to_user("Going to:  " + str( self.object),  p_level="INFO")
 
+        # On successful movement of telescope reset the solving timer
+        g_dev['obs'].last_solve_time = datetime.datetime.now() - datetime.timedelta(days=1)
+        g_dev['obs'].images_since_last_solve = 10000
+
     def re_seek(self, dither):
         if dither == 0:
             self.go_coord(self.last_ra, self.last_dec, self.last_tracking_rate_ra, self.last_tracking_rate_dec)
@@ -973,7 +977,7 @@ class Mount:
 
 
 
-    def go_coord(self, ra, dec, tracking_rate_ra=0, tracking_rate_dec=0):  #Note these rates need a system specification
+    def go_coord(self, ra, dec, tracking_rate_ra=0, tracking_rate_dec=0, reset_solve=True):  #Note these rates need a system specification
         '''
         Slew to the given ra/dec coordinates, supplied in ICRS
         Note no dependency on current position.
@@ -999,7 +1003,7 @@ class Mount:
 
         try:
             new_pierside =  self.mount.DestinationSideOfPier(ra, dec) #  A tuple gets returned: (pierside, Ra.h and dec.d)
-        
+
 
             try:
                                                                  #  NB NB Might be good to log is flipping on a re-seek.
@@ -1017,7 +1021,7 @@ class Mount:
                 else:
                     delta_ra, delta_dec = self.get_flip_reference()
                     pier_east = 0
-    
+
             #Update incoming ra and dec with mounting offsets.
             ra += delta_ra #NB it takes a restart to pick up a new correction which is also J.now.
             dec += delta_dec
@@ -1048,7 +1052,7 @@ class Mount:
         self.ra_mech, self.dec_mech = ptr_utility.transform_haDec_to_raDec_r(self.ha_mech, self.dec_mech, self.sid_now_r)
         self.ha_corr = ptr_utility.reduce_ha_r(self.ha_mech -self. ha_obs_r)*RTOS
         self.dec_corr = ptr_utility.reduce_dec_r(self.dec_mech - self.dec_obs_r)*RTOS
-        
+
         try:
             self.mount.Tracking = True
         except:
@@ -1108,13 +1112,23 @@ class Mount:
         #self.current_icrs_ra = icrs_coord.ra.hour   #NB this assignment is incorrect
         #self.current_icrs_dec = icrs_coord.dec.degree
 
+        # On successful movement of telescope reset the solving timer
+        if reset_solve == True:
+            g_dev['obs'].last_solve_time = datetime.datetime.now() - datetime.timedelta(days=1)
+            g_dev['obs'].images_since_last_solve = 10000
+
     def slewToSkyFlatAsync(self):
         az, alt = self.astro_events.flat_spot_now()
         self.unpark_command()
         self.mount.Tracking = False
         self.move_time = time.time()
-        try: 
+        try:
             self.mount.SlewToAltAzAsync(az, alt)
+
+            # On successful movement of telescope reset the solving timer
+            g_dev['obs'].last_solve_time = datetime.datetime.now() - datetime.timedelta(days=1)
+            g_dev['obs'].images_since_last_solve = 10000
+
         except:
             print ("NEED TO POINT TELESCOPE TO RA AND DEC, MOUNT DOES NOT HAVE AN ALTAZ request in the driver")
 

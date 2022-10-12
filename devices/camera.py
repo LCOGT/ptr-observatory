@@ -42,6 +42,7 @@ from os import getcwd
 from pathlib import Path
 import astropy
 
+import sys
 
 #string  = \\HOUSE-COMPUTER\saf_archive_2\archive
 
@@ -225,6 +226,19 @@ class Camera:
         except:
             print ("Dark frame not available")
             self.darkframe = [0]
+
+
+
+        print ("Arranging dictionary of flat frames if available")
+        fileList = glob.glob(self.config['archive_path'] + 'calibmasters/' + self.alias +'/masterFlat*.npy')
+        #print (fileList)
+        self.flatFiles={}
+        for file in fileList:
+            #print (file.split('_')[1])
+            self.flatFiles.update({file.split('_')[1] : file })
+
+        #print (self.flatFiles)
+        #sys.exit()
 
         #self.camera = win32com.client.Dispatch('ASCOM.FLI.Kepler.Camera')
         #Need logic here if camera denies connection.
@@ -2056,6 +2070,7 @@ class Camera:
                         # Make a version of hdu to use as jpg and small fits as well as a local raw used file for planewave solves
                         hdusmall=copy.deepcopy(hdu)
                         hdusmall.data = hdusmall.data.astype('float32')
+                        # Quick flash bias and dark frame
                         try:
                             if len(self.biasframe) > 10:
                                 hdusmall.data=hdusmall.data-self.biasframe
@@ -2067,6 +2082,18 @@ class Camera:
                                 hdusmall.data=hdusmall.data-(self.darkframe*exposure_time)
                         except Exception as e:
                             print ("debias/darking light frame failed: ", e)
+                        # Quick flat flat frame
+                        try:
+                            #try loading a flat file for the current filter
+                            print (self.flatFiles[self.current_filter])
+                            tempFlatFrame=np.load(self.flatFiles[self.current_filter])
+                            hdusmall.data=hdusmall.data/tempFlatFrame
+                            del tempFlatFrame
+                        except Exception as e:
+                            print ("flatting light frame failed",e)
+
+
+
 
                         hdusmall.data = hdusmall.data.astype('int16')
                         hduraw=copy.deepcopy(hdusmall) # This is the holder for the local raw file

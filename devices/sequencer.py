@@ -803,7 +803,8 @@ class Sequencer:
 
 
 
-
+                # A flag to make sure the first image after a slew in an exposure set is solved, but then onto the normal solve timer
+                reset_solve = True
 
 
                 #cycle through exposures decrementing counts    MAY want to double check left-to do but do nut remultiply by 4
@@ -938,7 +939,8 @@ class Sequencer:
                         # new_ra = moon_ra
                         # new_dec = moon_dec
                         print('Seeking to:  ', new_ra, new_dec)
-                        g_dev['mnt'].go_coord(new_ra, new_dec)  # This needs full angle checks
+                        g_dev['mnt'].go_coord(new_ra, new_dec, reset_solve=reset_solve)  # This needs full angle checks
+                        reset_solve=False # make sure slews after the first slew do not reset the PW Solve timer.
                         if not just_focused:
                             g_dev['foc'].adjust_focus()
                         just_focused = False
@@ -2835,7 +2837,7 @@ IF sweep
         #print('Completes contains:  ', seq_shelf['completed_blocks'])
         if check_block_id in seq_shelf['completed_blocks']:
             seq_shelf.close()
-            print("Block ID in completed blocks:  ",  check_block_id)
+            #print("Block ID in completed blocks:  ",  check_block_id)
             return True
         else:
             seq_shelf.close()
