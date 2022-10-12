@@ -11,6 +11,7 @@ Created on Fri Feb 07,  11:57:41 2020
 #234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678
 #import json
 import time
+import traceback
 #import ptr_events
 #from pprint import pprint
 
@@ -25,7 +26,7 @@ site_name = 'sro'
 
                     #\\192.168.1.57\SRO10-Roof  r:
                     #SRO-Weather (\\192.168.1.57) w:
-                    #Username: wayne_rosingPW: 29yzpe
+                    #Username: wayne_rosing  PW: 29yzpe
 
 site_config = {
     'site': str(site_name.lower()),
@@ -82,6 +83,9 @@ site_config = {
     'site_roof_control': 'no', #MTF entered this in to remove sro specific code.... Basically do we have control of the roof or not see line 338 sequencer.py
     'site_in_automatic_default': "Automatic",   #  ["Manual", "Shutdown", "Automatic"]
     'automatic_detail_default': "Enclosure is initially set to Automatic mode.",
+    'observing_check_period' : 5,    # How many minutes between weather checks
+    'enclosure_check_period' : 5,    # How many minutes between enclosure checks
+
     'auto_eve_bias_dark': True,
     'auto_eve_sky_flat': True,
     'auto_morn_sky_flat': True,
@@ -600,82 +604,86 @@ def get_ocn_status(g_dev=None):
             #g_dev['o.redis_sever.set("focus_temp", temperature, ex=1200)
             #self.focus_temp = temperature
             last_good_wx_fields = wx_fields
-        except:
-            time.sleep(5)
-            try:
+        except Exception as e:
+            print ("failed to open sroweather.txt: ",e)
+            print(traceback.format_exc())
+            pass
+            # time.sleep(5)
+            # try:
 
-                wx = open('W:/sroweather.txt', 'r')
-                wx_line = wx.readline()
-                wx.close
-                #print(wx_line)
-                wx_fields = wx_line.split()
-                skyTemperature = f_to_c(float( wx_fields[4]))
-                temperature = f_to_c(float(wx_fields[5]))
-                windspeed = round(float(wx_fields[7])/2.237, 2)
-                humidity =  float(wx_fields[8])
-                dewpoint = f_to_c(float(wx_fields[9]))
-                #timeSinceLastUpdate = wx_fields[13]
-                open_ok = wx_fields[19]
-                #g_dev['o.redis_sever.set("focus_temp", temperature, ex=1200)
-                #self.focus_temp = temperature
-                last_good_wx_fields = wx_fields
-            except:
-                print('SRO Weather source problem, 2nd try.')
-                time.sleep(5)
-                try:
-                    wx = open('W:/sroweather.txt', 'r')
-                    wx_line = wx.readline()
-                    wx.close
-                    #print(wx_line)
-                    wx_fields = wx_line.split()
-                    skyTemperature = f_to_c(float( wx_fields[4]))
-                    temperature = f_to_c(float(wx_fields[5]))
-                    windspeed = round(float(wx_fields[7])/2.237, 2)
-                    humidity =  float(wx_fields[8])
-                    dewpoint = f_to_c(float(wx_fields[9]))
-                    #timeSinceLastUpdate = wx_fields[13]
-                    open_ok = wx_fields[19]
-                    #g_dev['o.redis_sever.set("focus_temp", temperature, ex=1200)
-                    #self.focus_temp = temperature
-                    last_good_wx_fields = wx_fields
-                except:
-                    try:
+            #     wx = open('W:/sroweather.txt', 'r')
+            #     wx_line = wx.readline()
+            #     wx.close
+            #     #print(wx_line)
+            #     wx_fields = wx_line.split()
+            #     skyTemperature = f_to_c(float( wx_fields[4]))
+            #     temperature = f_to_c(float(wx_fields[5]))
+            #     windspeed = round(float(wx_fields[7])/2.237, 2)
+            #     humidity =  float(wx_fields[8])
+            #     dewpoint = f_to_c(float(wx_fields[9]))
+            #     #timeSinceLastUpdate = wx_fields[13]
+            #     open_ok = wx_fields[19]
+            #     #g_dev['o.redis_sever.set("focus_temp", temperature, ex=1200)
+            #     #self.focus_temp = temperature
+            #     last_good_wx_fields = wx_fields
+            # except:
+            #     print('SRO Weather source problem, 2nd try.')
+            #     time.sleep(5)
+            #     try:
+            #         wx = open('W:/sroweather.txt', 'r')
+            #         wx_line = wx.readline()
+            #         wx.close
+            #         #print(wx_line)
+            #         wx_fields = wx_line.split()
+            #         skyTemperature = f_to_c(float( wx_fields[4]))
+            #         temperature = f_to_c(float(wx_fields[5]))
+            #         windspeed = round(float(wx_fields[7])/2.237, 2)
+            #         humidity =  float(wx_fields[8])
+            #         dewpoint = f_to_c(float(wx_fields[9]))
+            #         #timeSinceLastUpdate = wx_fields[13]
+            #         open_ok = wx_fields[19]
+            #         #g_dev['o.redis_sever.set("focus_temp", temperature, ex=1200)
+            #         #self.focus_temp = temperature
+            #         last_good_wx_fields = wx_fields
+            #     except:
+            #         try:
 
-                        wx = open('W:/sroweather.txt', 'r')
-                        wx_line = wx.readline()
-                        wx.close
-                        #print(wx_line)
-                        wx_fields = wx_line.split()
-                        skyTemperature = f_to_c(float( wx_fields[4]))
-                        temperature = f_to_c(float(wx_fields[5]))
-                        windspeed = round(float(wx_fields[7])/2.237, 2)
-                        humidity =  float(wx_fields[8])
-                        dewpoint = f_to_c(float(wx_fields[9]))
-                        #timeSinceLastUpdate = wx_fields[13]
-                        open_ok = wx_fields[19]
-                        #g_dev['o.redis_sever.set("focus_temp", temperature, ex=1200)
-                        #self.focus_temp = temperature
-                        last_good_wx_fields = wx_fields
-                    except:
-                        try:
-                            print('SRO Weather source problem, using last known good report.')
-                            # NB NB NB we need to shelve the last know good so this does not fail on startup.
-                            wx_fields = last_good_wx_fields
-                            #wx_fields = wx_line.split()   This cause a fault. Wx line not available.
-                            skyTemperature = f_to_c(float( wx_fields[4]))
-                            temperature = f_to_c(float(wx_fields[5]))
-                            windspeed = round(float(wx_fields[7])/2.237, 2)
-                            humidity =  float(wx_fields[8])
-                            dewpoint = f_to_c(float(wx_fields[9]))
-                            #timeSinceLastUpdate = wx_fields[13]
-                            open_ok = wx_fields[19]
-                        except:
-                            print ("cannot open last known good report")
+            #             wx = open('W:/sroweather.txt', 'r')
+            #             wx_line = wx.readline()
+            #             wx.close
+            #             #print(wx_line)
+            #             wx_fields = wx_line.split()
+            #             skyTemperature = f_to_c(float( wx_fields[4]))
+            #             temperature = f_to_c(float(wx_fields[5]))
+            #             windspeed = round(float(wx_fields[7])/2.237, 2)
+            #             humidity =  float(wx_fields[8])
+            #             dewpoint = f_to_c(float(wx_fields[9]))
+            #             #timeSinceLastUpdate = wx_fields[13]
+            #             open_ok = wx_fields[19]
+            #             #g_dev['o.redis_sever.set("focus_temp", temperature, ex=1200)
+            #             #self.focus_temp = temperature
+            #             last_good_wx_fields = wx_fields
+            #         except:
+            #             try:
+            #                 print('SRO Weather source problem, using last known good report.')
+            #                 # NB NB NB we need to shelve the last know good so this does not fail on startup.
+            #                 wx_fields = last_good_wx_fields
+            #                 #wx_fields = wx_line.split()   This cause a fault. Wx line not available.
+            #                 skyTemperature = f_to_c(float( wx_fields[4]))
+            #                 temperature = f_to_c(float(wx_fields[5]))
+            #                 windspeed = round(float(wx_fields[7])/2.237, 2)
+            #                 humidity =  float(wx_fields[8])
+            #                 dewpoint = f_to_c(float(wx_fields[9]))
+            #                 #timeSinceLastUpdate = wx_fields[13]
+            #                 open_ok = wx_fields[19]
+            #             except:
+            #                 print ("cannot open last known good report")
         #self.last_weather =   NB found this fragment
         try:
             open_ok = open_ok
         except:
             open_ok = False
+
         try:
             daily= open('W:/daily.txt', 'r')
             daily_lines = daily.readlines()
@@ -685,32 +693,35 @@ def get_ocn_status(g_dev=None):
             #bright_percent_string = daily_lines[-4].split()[1]  #NB needs to be incorporated
             last_good_daily_lines = daily_lines
         except:
-            time.sleep(5)
-            try:
-                daily= open('W:/daily.txt', 'r')
-                daily_lines = daily.readlines()
-                daily.close()
-                pressure = round(33.846*float(daily_lines[-3].split()[1]), 2)
-                last_good_daily_lines = daily_lines
-            except:
-                try:
-                    daily= open('W:/daily.txt', 'r')
-                    daily_lines = daily.readlines()
-                    daily.close()
-                    pressure = round(33.846*float(daily_lines[-3].split()[1]), 2)
-                    last_good_daily_lines = daily_lines
-                except:
-                    try:
-                        print('SRO Daily source problem, using last known good pressure.')
-                        daily_lines = last_good_daily_lines
-                        pressure = round(33.846*float(daily_lines[-3].split()[1]), 2)
-                    except:
-                        print ("problem getting last known good pressure")
+            print ("problem opening daily.txt")
+            pass
+            # time.sleep(5)
+            # try:
+            #     daily= open('W:/daily.txt', 'r')
+            #     daily_lines = daily.readlines()
+            #     daily.close()
+            #     pressure = round(33.846*float(daily_lines[-3].split()[1]), 2)
+            #     last_good_daily_lines = daily_lines
+            # except:
+            #     try:
+            #         daily= open('W:/daily.txt', 'r')
+            #         daily_lines = daily.readlines()
+            #         daily.close()
+            #         pressure = round(33.846*float(daily_lines[-3].split()[1]), 2)
+            #         last_good_daily_lines = daily_lines
+            #     except:
+            #         try:
+            #             print('SRO Daily source problem, using last known good pressure.')
+            #             daily_lines = last_good_daily_lines
+            #             pressure = round(33.846*float(daily_lines[-3].split()[1]), 2)
+            #         except:
+            #             print ("problem getting last known good pressure")
                    # pressure = round(33.846*float(self.last_good_daily_lines[-3].split()[1]), 2)
         try:   # 20220105 Experienced a glitch, probably the first try faulted in the code above.
             pressure = float(pressure)
         except:
             pressure = site_config['reference_pressure']
+
         illum, mag = g_dev['evnt'].illuminationNow()
 
         if illum > 100:
@@ -783,56 +794,71 @@ def get_enc_status(g_dev=None):
             enc.close
             enc_list = enc_text.split()
 
-        except:
-            try:
-                enc = open('R:/Roof_Status.txt')
-                enc_text = enc.readline()
-                enc.close
-                enc_list = enc_text.split()
-            except:
-                print("Second read of roof status file failed")
-                try:
-                    enc = open('R:/Roof_Status.txt')
-                    enc_text = enc.readline()
-                    enc.close
-                    enc_list = enc_text.split()
-                except:
-                    print("Third read of roof status file failed")
-                    enc_list = [1, 2, 3, 4, 'Error']
-        if len(enc_list) == 5:
-            if enc_list[4] in ['OPEN', 'Open', 'open', 'OPEN\n']:
-                shutter_status = 0  #Numbering is correct
-                stat_string = "Open"
-            elif enc_list[4] in ['OPENING']:  #SRO Does not report this.
-                shutter_status = 2
-                stat_string = "Open"
-            elif enc_list[4] in ['CLOSED', 'Closed', 'closed', "CLOSED\n"]:
-                shutter_status = 1
-                stat_string = "Closed"
-            elif enc_list[4] in ['CLOSING']:  # SRO Does not report this.
-                shutter_status = 3
-                stat_string = "Closed"
-            elif enc_list[4] in ['Error']:  # SRO Does not report this.
+            if len(enc_list) == 5:
+                if enc_list[4] in ['OPEN', 'Open', 'open', 'OPEN\n']:
+                    shutter_status = 0  #Numbering is correct
+                    stat_string = "Open"
+                elif enc_list[4] in ['OPENING']:  #SRO Does not report this.
+                    shutter_status = 2
+                    stat_string = "Open"
+                elif enc_list[4] in ['CLOSED', 'Closed', 'closed', "CLOSED\n"]:
+                    shutter_status = 1
+                    stat_string = "Closed"
+                elif enc_list[4] in ['CLOSING']:  # SRO Does not report this.
+                    shutter_status = 3
+                    stat_string = "Closed"
+                elif enc_list[4] in ['Error']:  # SRO Does not report this.
+                    shutter_status = 4
+                    stat_string = "Fault"  #Do not know if SRO supports this.
+            else:
                 shutter_status = 4
-                stat_string = "Fault"  #Do not know if SRO supports this.
-        else:
-            shutter_status = 4
-            stat_string = "Fault"
-        #g_dev['enc'].status = shutter_status   # NB NB THIS was a nasty bug
-        g_dev['enc'].stat_string = stat_string
-        if shutter_status in [2, 3]:
-            g_dev['enc'].moving = True
-        else:
-            g_dev['enc'].moving = False
-        if g_dev['enc'].mode == 'Automatic':
-            e_mode = "Autonomous!"
-        else:
-            e_mode = g_dev['enc'].mode
-        status = {'shutter_status': stat_string,   # NB NB NB "Roof is open|closed' is more inforative for FAT, but we make boolean decsions on 'Open'
+                stat_string = "Fault"
+            #g_dev['enc'].status = shutter_status   # NB NB THIS was a nasty bug
+            try:
+                g_dev['enc'].stat_string = stat_string
+                if shutter_status in [2, 3]:
+                    g_dev['enc'].moving = True
+                else:
+                    g_dev['enc'].moving = False
+                if g_dev['enc'].mode == 'Automatic':
+                    e_mode = "Autonomous!"
+                else:
+                    e_mode = g_dev['enc'].mode
+            except:
+                print ("just examining how important this bit is. ")
+
+        except Exception as e:
+            print ("Problem opening Roof Status: ", e)
+            print(traceback.format_exc())
+            # try:
+            #     enc = open('R:/Roof_Status.txt')
+            #     enc_text = enc.readline()
+            #     enc.close
+            #     enc_list = enc_text.split()
+            # except:
+            #     print("Second read of roof status file failed")
+            #     try:
+            #         enc = open('R:/Roof_Status.txt')
+            #         enc_text = enc.readline()
+            #         enc.close
+            #         enc_list = enc_text.split()
+            #     except:
+            #         print("Third read of roof status file failed")
+            #         enc_list = [1, 2, 3, 4, 'Error']
+        try:
+            status = {'shutter_status': stat_string,   # NB NB NB "Roof is open|closed' is more inforative for FAT, but we make boolean decsions on 'Open'
                   'enclosure_synchronized': True,
                   'dome_azimuth': 0.0,
                   'dome_slewing': False,
                   'enclosure_mode': e_mode,
+                  'enclosure_message':  ''
+                 }
+        except:
+            status = {'shutter_status':  "Unknown",   # NB NB NB "Roof is open|closed' is more inforative for FAT, but we make boolean decsions on 'Open'
+                  'enclosure_synchronized': False,
+                  'dome_azimuth': 0.0,
+                  'dome_slewing': False,
+                  'enclosure_mode': "Autonomous!",
                   'enclosure_message':  ''
                  }
         return status

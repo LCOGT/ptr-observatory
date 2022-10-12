@@ -230,6 +230,11 @@ class Observatory:
         self.wema_types = config['wema_types']
         self.enc_types = None #config['enc_types']
         self.short_status_devices = None #config['short_status_devices']  #May not be needed for no wema obsy
+        self.observing_status_timer= datetime.datetime.now() - datetime.timedelta(days=1)
+        self.observing_check_period = self.config['observing_check_period'] # How many minutes between observing conditions check
+        self.enclosure_status_timer= datetime.datetime.now() - datetime.timedelta(days=1)
+        self.enclosure_check_period = self.config['enclosure_check_period'] # How many minutes between enclosure check
+
         # Instantiate the helper class for astronomical events
         #Soon the primary event / time values come from AWS>
         self.astro_events = ptr_events.Events(self.config)
@@ -586,12 +591,38 @@ class Observatory:
             device_names = devices_of_type.keys()
 
             for device_name in device_names:
+
                 # Get the actual device object...
                 device = devices_of_type[device_name]
                 # ...and add it to main status dict.
-                if device_name in self.config['wema_types'] and (self.is_wema or self.site_is_specific):
-                    result = device.get_status(g_dev=g_dev)
-                    if self.site_is_specific:
+                if 'enclosure' in device_name  and device_name in self.config['wema_types'] and (self.is_wema or self.site_is_specific):
+                    #print ("site specific enclosure code")
+                    #print (datetime.datetime.now() - self.enclosure_status_timer)
+                    #print (datetime.timedelta(minutes=self.enclosure_check_period))
+                    if (datetime.datetime.now() - self.enclosure_status_timer) < datetime.timedelta(minutes=self.enclosure_check_period):
+
+                        result=None
+                        #return self.status
+                    else:
+                        print ("Running enclosure status check at")
+                        print ((datetime.datetime.now() - self.enclosure_status_timer))
+                        self.enclosure_status_timer = datetime.datetime.now()
+                        result = device.get_status()
+
+                elif 'observing_conditions' in device_name  and device_name in self.config['wema_types'] and (self.is_wema or self.site_is_specific):
+                    # Here is where the weather config gets updated.
+                    #print (datetime.datetime.now() - self.observing_status_timer)
+                    #print (datetime.timedelta(minutes=self.observing_check_period))
+                    if (datetime.datetime.now() - self.observing_status_timer) < datetime.timedelta(minutes=self.observing_check_period):
+
+                        result=None
+                        #return self.status
+                    else:
+                        print ("Running weather status check at")
+                        print ((datetime.datetime.now() - self.observing_status_timer))
+                        self.observing_status_timer = datetime.datetime.now()
+                        result = device.get_status(g_dev=g_dev)
+                        if self.site_is_specific:
                             remove_enc = False
                 else:
 
@@ -1139,59 +1170,60 @@ class Observatory:
 
                 ###MTF inclusion here - this is a pretty blatant exact copy of the bit in finish_exposure in camera.py
                 ### It is SEP for focus tracking
-                img = fits.open(paths['raw_path'] + paths['raw_name00'], mode='update', ignore_missing_end=True)
+                if not paths['frame_type'] in ['bias', 'dark', 'flat', 'solar', 'lunar', 'skyflat', 'screen', 'spectrum', 'auto_focus']:
+                    img = fits.open(paths['raw_path'] + paths['raw_name00'], mode='update', ignore_missing_end=True)
 
 
-                #img = self.img #+ 100   #maintain a + pedestal for sep  THIS SHOULD not be needed for a raw input file.
-                img = img[0].data.astype("float")
-                #print(self.img.flags)
-                img = img.copy(order='C')   #  NB Should we move this up to where we read the array?
-                bkg = sep.Background(img)
-                img -= bkg
-                sources = sep.extract(img, 4.5, err=bkg.globalrms, minarea=15)  # Minarea should deal with hot pixels.
-                sources.sort(order = 'cflux')
-                print('No. of detections:  ', len(sources))
+                    #img = self.img #+ 100   #maintain a + pedestal for sep  THIS SHOULD not be needed for a raw input file.
+                    img = img[0].data.astype("float")
+                    #print(self.img.flags)
+                    img = img.copy(order='C')   #  NB Should we move this up to where we read the array?
+                    bkg = sep.Background(img)
+                    img -= bkg
+                    sources = sep.extract(img, 4.5, err=bkg.globalrms, minarea=15)  # Minarea should deal with hot pixels.
+                    sources.sort(order = 'cflux')
+                    print('No. of detections:  ', len(sources))
 
-                ix, iy = img.shape
-                r0 = 0
-                """
-                ToDo here:  1) do not deal with a source nearer than 5% to an edge.
-                2) do not pick any saturated sources.
-                3) form a histogram and then pick the median winner
-                4) generate data for a report.
-                5) save data and image for engineering runs.
-                """
-                border_x = int(ix*0.05)
-                border_y = int(iy*0.05)
-                r0 = []
-                for sourcef in sources:
-                    if border_x < sourcef['x'] < ix - border_x and \
-                        border_y < sourcef['y'] < iy - border_y and \
-                        sourcef['peak']  < 35000 and sourcef['cpeak'] < 35000:  #Consider a lower bound
-                        a0 = sourcef['a']
-                        b0 = sourcef['b']
-                        r0.append(round(math.sqrt(a0*a0 + b0*b0), 2))
+                    ix, iy = img.shape
+                    r0 = 0
+                    """
+                    ToDo here:  1) do not deal with a source nearer than 5% to an edge.
+                    2) do not pick any saturated sources.
+                    3) form a histogram and then pick the median winner
+                    4) generate data for a report.
+                    5) save data and image for engineering runs.
+                    """
+                    border_x = int(ix*0.05)
+                    border_y = int(iy*0.05)
+                    r0 = []
+                    for sourcef in sources:
+                        if border_x < sourcef['x'] < ix - border_x and \
+                            border_y < sourcef['y'] < iy - border_y and \
+                            sourcef['peak']  < 35000 and sourcef['cpeak'] < 35000:  #Consider a lower bound
+                            a0 = sourcef['a']
+                            b0 = sourcef['b']
+                            r0.append(round(math.sqrt(a0*a0 + b0*b0), 2))
 
-                #scale = self.config['camera'][self.name]['settings']['pix_scale'][self.camera.BinX -1]
-                FWHM = round(np.median(r0)*pixscale, 3)   #@0210524 was 2x larger but a and b are diameters not radii
-                print ("This image has a FWHM of " + str(FWHM))
+                    #scale = self.config['camera'][self.name]['settings']['pix_scale'][self.camera.BinX -1]
+                    FWHM = round(np.median(r0)*pixscale, 3)   #@0210524 was 2x larger but a and b are diameters not radii
+                    print ("This image has a FWHM of " + str(FWHM))
 
-                g_dev['foc'].focus_tracker.pop(0)
-                g_dev['foc'].focus_tracker.append(FWHM)
-                print ("Last ten FWHM : ")
-                print (g_dev['foc'].focus_tracker)
-                print ("Median last ten FWHM")
-                print (np.nanmedian(g_dev['foc'].focus_tracker))
-                print ("Last solved focus FWHM")
-                print(g_dev['foc'].last_focus_fwhm)
-                #result['mean_focus'] =  avg_foc[1]
-                #try:
-                #    valid =  0.0 <= result['FWHM']<= 20. and 100 < result['mean_focus'] < 12600
-                #    result['error'] = False
-                #except:
-                #    result['error'] = True    # NB NB NB These are quick placeholders and need to be changed
-                #    result['FWHM']  = 3.456
-                #    result['mean_focus'] =  6543
+                    g_dev['foc'].focus_tracker.pop(0)
+                    g_dev['foc'].focus_tracker.append(FWHM)
+                    print ("Last ten FWHM : ")
+                    print (g_dev['foc'].focus_tracker)
+                    print ("Median last ten FWHM")
+                    print (np.nanmedian(g_dev['foc'].focus_tracker))
+                    print ("Last solved focus FWHM")
+                    print(g_dev['foc'].last_focus_fwhm)
+                    #result['mean_focus'] =  avg_foc[1]
+                    #try:
+                    #    valid =  0.0 <= result['FWHM']<= 20. and 100 < result['mean_focus'] < 12600
+                    #    result['error'] = False
+                    #except:
+                    #    result['error'] = True    # NB NB NB These are quick placeholders and need to be changed
+                    #    result['FWHM']  = 3.456
+                    #    result['mean_focus'] =  6543
 
 
                 '''

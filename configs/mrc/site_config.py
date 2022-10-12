@@ -110,6 +110,8 @@ site_config = {
     'site_roof_control': 'no', #MTF entered this in to remove sro specific code
     'site_in_automatic_default': "Automatic",   #"Manual", "Shutdown"
     'automatic_detail_default': "Enclosure is initially set to Automatic mode.",
+    'observing_check_period' : 2,    # How many minutes between weather checks
+    'enclosure_check_period' : 2,    # How many minutes between enclosure checks
 
     'auto_eve_bias_dark': True,
     'auto_eve_sky_flat': True,

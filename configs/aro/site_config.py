@@ -92,6 +92,8 @@ site_config = {
     'site_roof_control': 'yes', #MTF entered this in to remove sro specific code.... Basically do we have control of the roof or not see line 338 sequencer.py
     'site_in_automatic_default': "Automatic",   # ["Manual", "Shutdown", "Automatic"]
     'automatic_detail_default': "Enclosure is initially set to Automatic by ARO site_config.",
+    'observing_check_period' : 2,    # How many minutes between weather checks
+    'enclosure_check_period' : 2,    # How many minutes between enclosure checks
     'auto_eve_bias_dark': True,
     'auto_eve_sky_flat': True,
     'eve_sky_flat_sunset_offset': -60.0,  # Minutes  neg means before, + after.
