@@ -47,7 +47,7 @@ from astropy.io import fits
 from planewave import platesolve
 import bz2
 import httplib2
-from auto_stretch.stretch import Stretch
+#from auto_stretch.stretch import Stretch
 
 import ptr_events
 import socket
@@ -67,7 +67,7 @@ from devices.rotator import Rotator
 from devices.selector import Selector
 from devices.screen import Screen
 from devices.sequencer import Sequencer
-from processing.calibration import calibrate
+#from processing.calibration import calibrate
 from global_yard import g_dev  # g-dev is a place where it is easy to
                                # monkey-patch whole devices.
 

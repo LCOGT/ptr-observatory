@@ -22,7 +22,7 @@ from astropy.time import Time
 import glob
 import shelve
 from pprint import pprint
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 
 import traceback
 
@@ -36,7 +36,7 @@ from devices.darkslide import Darkslide
 import ptr_utility
 from planewave import platesolve
 from global_yard import g_dev
-from processing.calibration import calibrate
+#from processing.calibration import calibrate
 import copy
 from os import getcwd
 from pathlib import Path
@@ -2157,6 +2157,7 @@ class Camera:
                                 g_dev['cam'].enqueue_for_AWS(1000, paths['im_path'], paths['i768sq_name10'] +'.fz')
                         except:
                             print ("there was an issue saving the small fits. Pushing on though")
+                        del hdusmallfits
 
 
 
@@ -2219,21 +2220,22 @@ class Camera:
 
                     # Similarly to the above. This saves the REDUCED file to disk
                     # it works 99.9999% of the time.
-                    saver=0
-                    saverretries=0
-                    while saver == 0 and saverretries < 10:
-                        try:
-                            hdureduced.writeto(red_path + red_name01, overwrite=True)   #Save full reduced file locally
-                            saver = 1
-                        except Exception as e:
-                            print('Failed to write raw file: ', e)
-                            if 'requested' in e and 'written' in e:
+                    if 'hdureduced' in locals():
+                        saver=0
+                        saverretries=0
+                        while saver == 0 and saverretries < 10:
+                            try:
+                                hdureduced.writeto(red_path + red_name01, overwrite=True)   #Save flash reduced file locally
+                                saver = 1
+                            except Exception as e:
+                                print('Failed to write raw file: ', e)
+                                if 'requested' in e and 'written' in e:
 
-                                print (astropy.utils.data.check_download_cache())
-                                #astropy.utils.data.clear_download_cache()
-                            print(traceback.format_exc())
-                            time.sleep(10)
-                            saverretries=saverretries+1
+                                    print (astropy.utils.data.check_download_cache())
+                                    #astropy.utils.data.clear_download_cache()
+                                print(traceback.format_exc())
+                                time.sleep(10)
+                                saverretries=saverretries+1
 
 
                     # For sites that have "save_to_alt_path" enabled, this routine
@@ -2243,7 +2245,8 @@ class Camera:
                         os.makedirs(self.alt_path +  g_dev['day'] + '/reduced/', exist_ok=True)
                         try:
                             hduraw.writeto(self.alt_path +  g_dev['day'] + '/raw/' + raw_name00, overwrite=True)   #Save full raw file locally
-                            hdureduced.writeto(self.alt_path +  g_dev['day'] + '/reduced/' + red_name01, overwrite=True)   #Save full raw file locally
+                            if 'hdureduced' in locals():
+                                hdureduced.writeto(self.alt_path +  g_dev['day'] + '/reduced/' + red_name01, overwrite=True)   #Save full raw file locally
                             saver = 1
                         except Exception as e:
                             print('Failed to write raw file: ', e)
@@ -2257,7 +2260,8 @@ class Camera:
 
                     # remove file from memory
                     del hduraw
-                    del hdureduced
+                    if 'hdureduced' in locals():
+                        del hdureduced
 
 
                     # The paths to these saved files and the pixelscale are sent to the reduce queue
