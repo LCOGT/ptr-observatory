@@ -1028,7 +1028,8 @@ class Observatory:
                 ### Recorded. In the future this is intended to trigger an auto_focus if the
                 ### Focus gets wildly worse..
                 if not paths['frame_type'] in ['bias', 'dark', 'flat', 'solar', 'lunar', 'skyflat', 'screen', 'spectrum', 'auto_focus']:
-                    img = fits.open(paths['raw_path'] + paths['raw_name00'], mode='update', ignore_missing_end=True)
+                    img = fits.open(paths['red_path'] + paths['red_name01'], mode='update', ignore_missing_end=True)
+                    img[0].data = (img[0].data - np.min(img[0].data)) + 100 # Add an artifical pedestal to background.
                     img = img[0].data.astype("float")
                     img = img.copy(order='C')   #  NB Should we move this up to where we read the array?
                     bkg = sep.Background(img)
