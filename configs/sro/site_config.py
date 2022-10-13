@@ -830,7 +830,8 @@ def get_enc_status(g_dev=None):
                 else:
                     e_mode = g_dev['enc'].mode
             except:
-                print ("just examining how important this bit is. ")
+                #print ("just examining how important this bit is. ")
+                pass
 
         except Exception as e:
             print ("Problem opening Roof Status: ", e)

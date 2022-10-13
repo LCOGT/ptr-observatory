@@ -1997,18 +1997,12 @@ class Camera:
                         try:
                             if len(self.biasframe) > 10:
                                 hdu.data=hdu.data-self.biasframe
-                            #if self.darkframe == None:
-                            #    print ("Skipping Bias Frame")
-                            #else:
-                                # Dark frame quick flash
                             if len(self.darkframe) > 10:
                                 hdu.data=hdu.data-(self.darkframe*exposure_time)
                         except Exception as e:
                             print ("debias/darking focus image failed: ", e)
 
                         try:
-                            #try loading a flat file for the current filter
-                            #print (self.flatFiles[self.current_filter])
                             tempFlatFrame=np.load(self.flatFiles[self.current_filter])
                             hdu.data=hdu.data/tempFlatFrame
                             del tempFlatFrame
@@ -2062,39 +2056,31 @@ class Camera:
 
 
 
-                    # if  not script in ('True', 'true', 'On', 'on'):   #  not quick and    #Was moved 20201022 for grid
-                    #     if not quick:
+                    # This command uploads the text file information at high priority to AWS
                     self.enqueue_for_AWS(10, im_path, text_name)
-                    #### MTF - moving jpeg right up here so it gets sent as soon as humanly possible.
 
-                    #
+                    # Make a copy of the raw file to hold onto while the flash reductions are happening.
+                    # It will be saved once the jpg has been quickly created.
+                    hduraw=copy.deepcopy(hdu) # This is realistically just a name change to help understand which hdu is which
+                    del hdu
 
-
-                    #if self.biasframe == None :
-                    #    print ("Skipping Bias Frame")
-                    #else:
-                        # Bias frame quick flash
+                    # If the file isn't a calibration frame, then undertake a flash reduction quickly
+                    # To make a palatable jpg AS SOON AS POSSIBLE to send to AWS
                     if not frame_type.lower() in ('bias', 'dark', 'flat', 'screenflat', 'skyflat'): # Don't process jpgs or small fits for biases and darks
 
-                        # Make a version of hdu to use as jpg and small fits as well as a local raw used file for planewave solves
-                        hdusmall=copy.deepcopy(hdu)
+                        # Make a copy of hdu to use as jpg and small fits as well as a local raw used file for planewave solves
+                        hdusmall=copy.deepcopy(hduraw)
                         hdusmall.data = hdusmall.data.astype('float32')
                         # Quick flash bias and dark frame
                         try:
                             if len(self.biasframe) > 10:
                                 hdusmall.data=hdusmall.data-self.biasframe
-                            #if self.darkframe == None:
-                            #    print ("Skipping Bias Frame")
-                            #else:
-                                # Dark frame quick flash
                             if len(self.darkframe) > 10:
                                 hdusmall.data=hdusmall.data-(self.darkframe*exposure_time)
                         except Exception as e:
                             print ("debias/darking light frame failed: ", e)
                         # Quick flat flat frame
                         try:
-                            #try loading a flat file for the current filter
-                            #print (self.flatFiles[self.current_filter])
                             tempFlatFrame=np.load(self.flatFiles[self.current_filter])
                             hdusmall.data=hdusmall.data/tempFlatFrame
                             del tempFlatFrame
@@ -2102,6 +2088,8 @@ class Camera:
                             print ("flatting light frame failed",e)
 
                         # Crop unnecessary rough edges off preview images that unnecessarily skew the scaling
+                        # This is particularly necessary for SRO, but I've seen many cameras where cropping
+                        # Needs to happen.
                         if self.config['camera'][self.name]['settings']['crop_preview'] == True:
                             yb=self.config['camera'][self.name]['settings']['crop_preview_ybottom']
                             yt=self.config['camera'][self.name]['settings']['crop_preview_ytop']
@@ -2111,111 +2099,85 @@ class Camera:
                             hdusmall.header['NAXIS1']=hdusmall.data.shape[0]
                             hdusmall.header['NAXIS2']=hdusmall.data.shape[1]
 
-
-
-                        #hdusmall.data = hdusmall.data.astype('int16')
-                        hduraw=copy.deepcopy(hdusmall) # This is the holder for the local raw file
-
-                        inputData=np.asarray(hdusmall.data)
-
-                        inputData[inputData > self.config['camera'][self.name]['settings']['saturate']] = self.config['camera'][self.name]['settings']['saturate']
-                        inputData[inputData < -100] = -100
-                        inputData=inputData-np.min(inputData)
+                        # This is holding the flash reduced fits file waiting to be saved
+                        # AFTER the jpeg has been sent up to AWS.
+                        hdureduced=copy.deepcopy(hdusmall)
 
 
 
+                        # Making cosmetic adjustments to the image array ready for jpg stretching
+                        hdusmall.data=np.asarray(hdusmall.data)
+                        hdusmall.data[hdusmall.data > self.config['camera'][self.name]['settings']['saturate']] = self.config['camera'][self.name]['settings']['saturate']
+                        hdusmall.data[hdusmall.data < -100] = -100
+                        hdusmall.data=hdusmall.data-np.min(hdusmall.data)
 
-                        #inputData=np.nan_to_num(inputData)
-                        hdusmall.data=inputData
-                        # saving memory
-                        #del inputData
-
-                        # Getting the mode of the image.
-                        #modeData =np.rint(inputData) # To do the mode properly it needs to be in integer steps - a float has too many potential values
-                        #modeElement = np.argmax(mode(modeData[~np.isnan(modeData)])[1])
-                        #imageMode = mode(modeData)[0][modeElement]
-
-
+                        # Resizing the array to an appropriate shape for the jpg and the small fits
                         iy, ix = hdusmall.data.shape
                         if iy == ix:
-                            resized_a = resize(hdusmall.data, (1280, 1280), preserve_range=True)
+                            hdusmall.data = resize(hdusmall.data, (1280, 1280), preserve_range=True)
                         else:
-                            resized_a = resize(hdusmall.data, (int(1536*iy/ix), 1536), preserve_range=True)  #  We should trim chips so ratio is exact.
-                        #print('New small fits size:  ', resized_a.shape)
+                            hdusmall.data = resize(hdusmall.data, (int(1536*iy/ix), 1536), preserve_range=True)  #  We should trim chips so ratio is exact.
 
-                        #hdusmall.data = resized_a.astype('int16')
-                        #del resized_a
 
-                        # JPEG CODE
-                        # New contrast scaling code:
-                        stretched_data_float = Stretch().stretch(resized_a)
+                        # At this stage, the small fits is created ready to be saved, but not saved
+                        # until after the jpg has gone up.
+                        hdusmallfits=fits.CompImageHDU(np.asarray(resize(hdureduced.data, (int(1536*iy/ix), 1536), preserve_range=True), dtype=np.float32), hdusmall.header)
+
+                        # Code to stretch the image to fit into the 256 levels of grey for a jpeg
+                        stretched_data_float = Stretch().stretch(hdusmall.data)
+                        del hdusmall # Done with this fits image, so delete
                         stretched_256 = 255*stretched_data_float
                         hot = np.where(stretched_256 > 255)
                         cold = np.where(stretched_256 < 0)
                         stretched_256[hot] = 255
                         stretched_256[cold] = 0
-                        #print("pre-unit8< hot, cold:  ", len(hot[0]), len(cold[0]))
-                        stretched_data_uint8 = stretched_256.astype('uint8')  # Eliminates a user warning
+                        stretched_data_uint8 = stretched_256.astype('uint8')
                         hot = np.where(stretched_data_uint8 > 255)
                         cold = np.where(stretched_data_uint8 < 0)
                         stretched_data_uint8[hot] = 255
                         stretched_data_uint8[cold] = 0
-                        #print("post-unit8< hot, cold:  ", len(hot[0]), len(cold[0]))
 
-                        #breakpoint()
-
+                        # Try saving the jpeg to disk and quickly send up to AWS to present for the user
+                        # GUI
                         try:
                             imsave(paths['im_path'] + paths['jpeg_name10'], stretched_data_uint8)
-                        #img4 = stretched_data_uint8  # keep old name for compatibility
-
-                        #jpeg_data_size = abs(stretched_data_uint8.size - 1024)                # istd = np.std(hdu.data)
-                        # JPEG CODE
-
-                        # enqueue the jpeg quickly up.
                             if not no_AWS:
                                 g_dev['cam'].enqueue_for_AWS(100, paths['im_path'], paths['jpeg_name10'])
+                                g_dev['obs'].send_to_user("A preview image has been sent to the GUI.", p_level='INFO') ## MTF says that this isn't actuallytrue and isn't actually informative! Will comment out and see if anyone notices.....
                         except:
                             print ("there was an issue saving the preview jpg. Pushing on though")
 
-                        # assemble the small fits and send that up quickly.
-                        #i768sq_data_size = hdusmall.data.size
-                        # print('ABOUT to print paths.')
-                        # print('Sending to:  ', paths['im_path'])
-                        # print('Also to:     ', paths['i768sq_name10'])
 
-                        #hdu.writeto(paths['im_path'] + paths['i768sq_name10'], overwrite=True)
-                        # This is the new fz file for the small fits, the above thing that gets bz2'ed will be deleted
-                        hdufz=fits.CompImageHDU(np.asarray(hdusmall.data, dtype=np.float32), hdusmall.header)
-                        # remove file from memory
-                        del hdusmall
-                        hdufz.verify('fix')
+
+                        # Save the small fits to disk and to AWS
+                        hdusmallfits.verify('fix')
                         try:
-                            hdufz.writeto(paths['im_path'] + paths['i768sq_name10'] +'.fz')
+                            hdusmallfits.writeto(paths['im_path'] + paths['i768sq_name10'] +'.fz')
                             if not no_AWS:
                                 g_dev['cam'].enqueue_for_AWS(1000, paths['im_path'], paths['i768sq_name10'] +'.fz')
-
                         except:
                             print ("there was an issue saving the small fits. Pushing on though")
 
-                        #hdu.data = resized_a.astype('float')
-                        if not no_AWS:
-                            #g_dev['cam'].enqueue_for_AWS(i768sq_data_size, paths['im_path'], paths['i768sq_name10'] +'.fz')
-
-                            g_dev['obs'].send_to_user("A preview image has been sent to the GUI.", p_level='INFO') ## MTF says that this isn't actuallytrue and isn't actually informative! Will comment out and see if anyone notices.....
-                    else:
-                        hduraw=copy.deepcopy(hdu)
 
 
-                    ## Need to make an FZ file here before things get changed below
-                    print ("Making an fz file")
-                    hdufz=fits.CompImageHDU(np.asarray(hdu.data, dtype=np.float32), hdu.header)
-                    # remove file from memory
-                    del hdu
-                    #hdufz.header['FILENAME']=raw_path + raw_name00 +'.fz'
+                    ## Now that the jpeg has been sent up pronto,
+                    ## We turn back to getting the bigger raw, reduced and fz files dealt with
+
+                    ## Create the fz file ready for BANZAI and the AWS/UI
+                    ## Note that even though the raw file is int16,
+                    ## The compression and a few pieces of software require float32
+                    ## BUT it actually compresses to the same size either way
+                    hdufz=fits.CompImageHDU(np.asarray(hduraw.data, dtype=np.float32), hduraw.header)
                     hdufz.verify('fix')
-                    hdufz.header['BZERO']=0 # Somewhere along the line, this hasn't been changed
-                    hdufz.header['BSCALE']=1 # Somewhere along the line, this hasn't been changed
+                    hdufz.header['BZERO']=0 # Make sure there is no integer scaling left over
+                    hdufz.header['BSCALE']=1 # Make sure there is no integer scaling left over
 
+
+                    # This routine saves the file ready for uploading to AWS
+                    # It usually works perfectly 99.9999% of the time except
+                    # when there is an astropy cache error. It is likely that
+                    # the cache will need to be cleared when it fails, but
+                    # I am still waiting for it to fail again (rare)
                     saver=0
                     saverretries=0
                     while saver == 0  and saverretries < 10:
@@ -2231,15 +2193,14 @@ class Camera:
                             print(traceback.format_exc())
                             time.sleep(10)
                             saverretries=saverretries+1
-                    # remove file from memory
-                    del hdufz
-
-
+                    del hdufz # remove file from memory now that we are doing with it
+                    # Send this file up to AWS (THIS WILL BE SENT TO BANZAI INSTEAD, SO THIS IS THE INGESTER POSITION)
                     if not no_AWS:
                         self.enqueue_for_AWS(26000000, paths['raw_path'], paths['raw_name00'] +'.fz')
                         g_dev['obs'].send_to_user("An image has been readout from the camera and sent to the cloud.", p_level='INFO')
 
-
+                    # Similarly to the above. This saves the RAW file to disk
+                    # it works 99.9999% of the time.
                     saver=0
                     saverretries=0
                     while saver == 0 and saverretries < 10:
@@ -2256,12 +2217,13 @@ class Camera:
                             time.sleep(10)
                             saverretries=saverretries+1
 
-
-                    # Save to alt_path routine
-                    if self.config['save_to_alt_path'] == 'yes':    #ADD an owner specified request to do this save
-                        os.makedirs(self.alt_path +  g_dev['day'] + '/reduced/', exist_ok=True)
+                    # Similarly to the above. This saves the REDUCED file to disk
+                    # it works 99.9999% of the time.
+                    saver=0
+                    saverretries=0
+                    while saver == 0 and saverretries < 10:
                         try:
-                            hduraw.writeto(raw_path + raw_name00, overwrite=True)   #Save full raw file locally
+                            hdureduced.writeto(red_path + red_name01, overwrite=True)   #Save full reduced file locally
                             saver = 1
                         except Exception as e:
                             print('Failed to write raw file: ', e)
@@ -2272,33 +2234,41 @@ class Camera:
                             print(traceback.format_exc())
                             time.sleep(10)
                             saverretries=saverretries+1
-                        #red_path_aux = self.alt_path +  g_dev['day'] + '/reduced/'
-                        #paths['red_path_aux'] = red_path_aux
+
+
+                    # For sites that have "save_to_alt_path" enabled, this routine
+                    # Saves the raw and reduced fits files out to the provided directories
+                    if self.config['save_to_alt_path'] == 'yes':    #ADD an owner specified request to do this save
+                        os.makedirs(self.alt_path +  g_dev['day'] + '/raw/', exist_ok=True)
+                        os.makedirs(self.alt_path +  g_dev['day'] + '/reduced/', exist_ok=True)
+                        try:
+                            hduraw.writeto(self.alt_path +  g_dev['day'] + '/raw/' + raw_name00, overwrite=True)   #Save full raw file locally
+                            hdureduced.writeto(self.alt_path +  g_dev['day'] + '/reduced/' + red_name01, overwrite=True)   #Save full raw file locally
+                            saver = 1
+                        except Exception as e:
+                            print('Failed to write raw file: ', e)
+                            if 'requested' in e and 'written' in e:
+
+                                print (astropy.utils.data.check_download_cache())
+                                #astropy.utils.data.clear_download_cache()
+                            print(traceback.format_exc())
+                            time.sleep(10)
+                            saverretries=saverretries+1
+
                     # remove file from memory
                     del hduraw
+                    del hdureduced
 
+
+                    # The paths to these saved files and the pixelscale are sent to the reduce queue
+                    # Currently the reduce queue platesolves the images and monitors the focus.
                     self.to_reduce((paths, pixscale))
-                    #Here we should decimate and send big fits
 
-                    #g_dev['obs'].send_to_user("Raw image saved at the observatory. ", p_level='INFO')
-                    #Moved into Calibrate to eliminate race conditon is saving this.
-                    # if frame_type in ('bias', 'dark', 'screenflat', 'skyflat'):
-                    #     if not self.hint[0:54] == 'Flush':
-                    #         hdu.writeto(cal_path + cal_name, overwrite=True)
-                    #     else:
-                    #         pass
-                    #     try:
-                    #         os.remove(self.camera_path + 'newest.fits')
-                    #     except:
-                    #         pass    #  print ("File newest.fits not found, this is probably OK")
-                    #     result = {'patch': bi_mean,
-                    #             'calc_sky': 0}  #avg_ocn[7]}
-                    #     self.exposure_busy = False
-                    #     return result #  Note we are not calibrating. Just saving the file.
-                    # elif frame_type in ['light']:
-                    #     self.enqueue_for_AWS(reduced_data_size, im_path, red_name01)
 
-                   #print("\n\Finish-Exposure is complete, saved:  " + raw_name00)#, raw_data_size, '\n')
+
+
+
+
                     g_dev['obs'].update_status()
                     result['mean_focus'] = avg_foc[1]
                     try:
@@ -2325,6 +2295,8 @@ class Camera:
                     return result
                 except Exception as e:
                     print('Header assembly block failed: ', e)
+                    print(traceback.format_exc())
+
 
 
                     try:

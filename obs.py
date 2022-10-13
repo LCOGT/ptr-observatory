@@ -604,8 +604,8 @@ class Observatory:
                         result=None
                         #return self.status
                     else:
-                        print ("Running enclosure status check at")
-                        print ((datetime.datetime.now() - self.enclosure_status_timer))
+                        print ("Running enclosure status check")
+                        #print ((datetime.datetime.now() - self.enclosure_status_timer))
                         self.enclosure_status_timer = datetime.datetime.now()
                         result = device.get_status()
 
@@ -618,8 +618,8 @@ class Observatory:
                         result=None
                         #return self.status
                     else:
-                        print ("Running weather status check at")
-                        print ((datetime.datetime.now() - self.observing_status_timer))
+                        print ("Running weather status check")
+                        #print ((datetime.datetime.now() - self.observing_status_timer))
                         self.observing_status_timer = datetime.datetime.now()
                         result = device.get_status(g_dev=g_dev)
                         if self.site_is_specific:
@@ -967,139 +967,28 @@ class Observatory:
 
     # Note this is another thread!
     def reduce_image(self):
-        '''
-        The incoming object is typically a large fits HDU. Found in its        header will be both standard image parameters and destination filenames
 
-        '''
         while True:
             if not self.reduce_queue.empty():
-                # print(self)
-                # print(self.reduce_queue)
-                # print(self.reduce_queue.empty)
 
                 (paths, pixscale) = self.reduce_queue.get(block=False)
-                #print (paths)
-                #print(pri_image)
+
                 if paths is None:
                     time.sleep(.5)
                     continue
-                # Here we parse the input and calibrate it.
 
-                #paths = pri_image[0]
-                #hdu = pri_image[1]
-                #backup = pri_image[0].copy()   #NB NB Should this be a deepcopy? MTF never used commmented out 5 Oct 22
-
-                #lng_path =  g_dev['cam'].lng_path # MTF never used commmented out 5 Oct 22
-                #NB Important decision here, do we flash calibrate screen and sky flats?  For now, Yes.
-
-                #cal_result =
-
-                ####################################################################################################
-                #### MTF trying out a thing. Commenting out "calibrate" and just doing the small things from there here - 3 Oct 22
-                # MOTIVATION === a lot of hard-coded stuff for specific cameras making life hard at ECO....
-                #calibrate(hdu, lng_path, paths['frame_type'], quick=False)
-
-                # MTF commented out 5 Oct 22 - happens to a file that never gets saved
-                #pedastal = 100
-                #hdu.data += pedastal
-                #hdu.header['PEDESTAL'] = (-pedastal,  'Add to get zero ADU based image')
-
-                #fix_neg_pix = np.where(hdu.data < 0)
-                #print('# of < 0  pixels:  ', len(fix_neg_pix[0]))  #  Do not change values here.
-                #hdu.data[fix_neg_pix] = 0
-                #fix_max_pix = np.where(hdu.data > 65535)
-                #print("Max data value is:  ", fix_max_pix, len(fix_max_pix[0]))
-                #hdu.data[fix_max_pix] = 65535.
-
-                ####################################################################################################
-
-
-                #print("Calibrate returned:  ", hdu.data, cal_result)
-                #Before saving reduced or generating postage, we flip
-                #the images so East is left and North is up based on
-                #The keyword PIERSIDE defines the orientation.
-                #Note the raw ibmage is not flipped/
-
-                # NB NB NB I do not think we should be flipping ALt_Az images.
-                #NB NB NB I think ever raw images should be flipped so that at
-                #PA = 0.0. that N is up and East is to the left.  SInce LCO only
-                #has fork telescopes all LCO instruments have the same native alignment
-                #in the archive.   WER  0220703
-# =============================================================================
-#                 if hdu.header['PIERSIDE'] == "Look West":
-#                     hdu.data = np.flip(hdu.data)
-#                     hdu.header['IMGFLIP'] = True
-# =============================================================================
-
-                # NB BAD 20220717 print('Reduced Mean:  ', round(hdu.data.mean() + hdu.header['PEDASTAL'], 2))
-                #wpath = paths['im_path'] + paths['red_name01']
-                #hdu.writeto(wpath, overwrite=True)  # NB overwrite == True is dangerous in production code.  This is big fits to AWS
-                #print ("original path")
-                #print (paths)
-                #reduced_data_size = hdu.data.size
-
-                #print('***** Reduced data size, dtype:  ', reduced_data_size, hdu.data.dtype, hdu.header['BITPIX'], hdu.header['NAXIS1'])
-
-
-                # MTF - this file is never used but takes up diskspace, so MTF commented out 5 Oct 22
-                #wpath = paths['red_path'] + paths['red_name01_lcl']    #This name is convienent for local sorting
-                #hdu.writeto(wpath, overwrite=True) #Bigfit reduced
-
-                #This was in camera after reduce and it had a race condition.
-
-
-                # MTF commented out 5 Oct 22 - creates files that will never be used
-                #if hdu.header['OBSTYPE'].lower() in ('bias', 'dark', 'screenflat', 'skyflat'):
-                #    hdu.writeto(paths['cal_path'] + paths['cal_name'], overwrite=True)
-
-                #Will try here to solve
-                #'solve_nth_image' : 10, # Only solve every nth image
-                #'solve_timer' : 5, # Only solve every X minutes
-
-
+                # Solve for pointing. Note: as the raw and reduced file are already saved and an fz file
+                # has already been sent up, this is purely for pointing purposes.
                 if not paths['frame_type'] in ['bias', 'dark', 'flat', 'solar', 'lunar', 'skyflat', 'screen', 'spectrum', 'auto_focus']:
                     # check that both enough time and images have past between last solve
                     if self.images_since_last_solve > self.config['solve_nth_image'] and (datetime.datetime.now() - self.last_solve_time) > datetime.timedelta(minutes=self.config['solve_timer']):
                         try:
-                            #hdu_save = hdu
-                            #wpath = 'C:/000ptr_saf/archive/sq01/20210528/reduced/saf-sq01-20210528-00019785-le-w-EX01.fits'
-                            #time_now = time.time()  #This should be more accurately defined earlier in the header
-                            #NB NB The following needs better bin management
-                            #solve = platesolve.platesolve(wpath, 1.067)     #0.5478)
-                            #solve = platesolve.platesolve(wpath, float(hdu.header['PIXSCALE']))     #0.5478)
-                            # MTF - changed to using the debiased, dedarked image for solving in PW 5 Oct 22
-                            solve = platesolve.platesolve(paths['raw_path'] + paths['raw_name00'], pixscale)     #0.5478)
+                            solve = platesolve.platesolve(paths['red_path'] + paths['red_name01'], pixscale)     #0.5478)
                             print("PW Solves: " ,solve['ra_j2000_hours'], solve['dec_j2000_degrees'])
-                            #img = fits.open(wpath, mode='update', ignore_missing_end=True)
-                            #hdr = img[0].header
-                            #hdr=hdu.header
-                            ##  Update the NEW header for a 'Reduced" fits. The Raw fits has not been changed.
-                            #hdu.header['RA-J20PW'] = solve['ra_j2000_hours']
-                            #hdu.header['DECJ20PW'] = solve['dec_j2000_degrees']
-                            #hdu.header['RAHRS'] = float(solve['ra_j2000_hours'])
-                            #hdu.header['RA'] = float(solve['ra_j2000_hours']*15)
-                            #hdu.header['DEC'] = float(solve['dec_j2000_degrees'])
-
-                            #hdu.header['MEAS-SPW'] = solve['arcsec_per_pixel']
-                            #hdu.header['MEAS-RPW'] = solve['rot_angle_degs']
-
-                            # What MTF created, MTF taketh away - 5 Oct 22 - unnecessary header update
-                            # #MTF woz ere - This updates the RA and Dec in the raw file header if a solution is found
-                            # with fits.open(paths['raw_path'] + paths['raw_name00'], 'update') as f:
-                            #     for hdbf in f:
-                            #         hdbf.header['RA-J20PW'] = solve['ra_j2000_hours']
-                            #         hdbf.header['DECJ20PW'] = solve['dec_j2000_degrees']
-                            #         hdbf.header['RAHRS'] = float(solve['ra_j2000_hours'])
-                            #         hdbf.header['RA'] = float(solve['ra_j2000_hours']*15)
-                            #         hdbf.header['DEC'] = float(solve['dec_j2000_degrees'])
-                            #         hdbf.header['MEAS-SPW'] = solve['arcsec_per_pixel']
-                            #         hdbf.header['MEAS-RPW'] = solve['rot_angle_degs']
-
                             target_ra  = g_dev['mnt'].current_icrs_ra
                             target_dec = g_dev['mnt'].current_icrs_dec
                             solved_ra = solve['ra_j2000_hours']
                             solved_dec = solve['dec_j2000_degrees']
-                            #breakpoint()
                             err_ha = target_ra - solved_ra
                             err_dec = target_dec - solved_dec
                             print(" coordinate error in ra, dec:  (asec) ", round(err_ha*15*3600, 2), round(err_dec*3600, 2))  #NB WER changed units 20221012
@@ -1115,14 +1004,7 @@ class Observatory:
                                 g_dev['mnt'].current_icrs_dec = solve['dec_j2000_hours']
                                 err_ha = 0
                                 err_dec = 0
-                            #elif g_dev['mnt'].pier_side_str == 'Looking West':
-                            #    g_dev['mnt'].adjust_mount_reference(err_ha, err_dec)
-                            #    print ("I've been inhibited from reset the mount_reference 2")
-                            #    pass
-                            #else:
-                            #    g_dev['mnt'].adjust_flip_reference(err_ha, err_dec)
-                            #    print ("I've been inhibited from reset the mount_reference 3")
-                            #    pass
+
                             if err_ha*15*3600 > self.config['threshold_mount_update'] or err_dec*3600 > self.config['threshold_mount_update']:
                                 try:
                                     if g_dev['mnt'].pier_side_str == 'Looking West':
@@ -1133,51 +1015,21 @@ class Observatory:
                                     print ("This mount doesn't report pierside")
 
 
-
-                            #img.flush()
-                            #img.close
-                            #img = fits.open(wpath, ignore_missing_end=True)
-                            #hdr = img[0].header
-                            # prior_ra_h, prior_dec, prior_time = g_dev['mnt'].get_last_reference()
-
-                            # if prior_time is not None:
-                            #     print("time base is:  ", time_now - prior_time)
-
-                            # g_dev['mnt'].set_last_reference( solve['ra_j2000_Second phase of AF now.hours'], solve['dec_j2000_degrees'], time_now)
                         except Exception as e:
                            print("Image:  did not platesolve; this is usually OK. ", e)
                            #print(traceback.format_exc())
-                           #img = fits.open(wpath, mode='update', ignore_missing_end=True)
-                           #hdr = img[0].header
-                           #hdu.header['RA-J20PW'] = False
-                           #hdu.header['DECJ20PW'] = False
-                           #hdu.header['MEAS-SPW'] = False
-                           #hdu.header['MEAS-RPW'] = False
-                           #hdu.header['NO-SOLVE'] = True
-                           #img.close()
-                        #hdu = hdu_save
-                        #Return to classic processing
+
                     else:
                         print ("skipping solve as not enough time or images have passed")
                         self.images_since_last_solve = self.images_since_last_solve + 1
-                # if self.site_name == 'saf':
-                #     wpath = paths['red_path_aux'] + paths['red_name01_lcl']
-                #     hdu.writeto(wpath, overwrite=True) #big fits to other computer in Neyle's office
-                #patch to test Midtone Contrast
 
-                # image = 'Q:/000ptr_saf/archive/sq01/20201212 ans HH/reduced/HH--SigClip.fits'
-                # hdu_new = fits.open(image)
-                # hdu =hdu_new[0]
 
-                ###MTF inclusion here - this is a pretty blatant exact copy of the bit in finish_exposure in camera.py
-                ### It is SEP for focus tracking
+                ### Each image that is not a calibration frame gets it's focus examined and
+                ### Recorded. In the future this is intended to trigger an auto_focus if the
+                ### Focus gets wildly worse..
                 if not paths['frame_type'] in ['bias', 'dark', 'flat', 'solar', 'lunar', 'skyflat', 'screen', 'spectrum', 'auto_focus']:
                     img = fits.open(paths['raw_path'] + paths['raw_name00'], mode='update', ignore_missing_end=True)
-
-
-                    #img = self.img #+ 100   #maintain a + pedestal for sep  THIS SHOULD not be needed for a raw input file.
                     img = img[0].data.astype("float")
-                    #print(self.img.flags)
                     img = img.copy(order='C')   #  NB Should we move this up to where we read the array?
                     bkg = sep.Background(img)
                     img -= bkg
@@ -1205,7 +1057,6 @@ class Observatory:
                             b0 = sourcef['b']
                             r0.append(round(math.sqrt(a0*a0 + b0*b0), 2))
 
-                    #scale = self.config['camera'][self.name]['settings']['pix_scale'][self.camera.BinX -1]
                     FWHM = round(np.median(r0)*pixscale, 3)   #@0210524 was 2x larger but a and b are diameters not radii
                     print ("This image has a FWHM of " + str(FWHM))
 
@@ -1217,149 +1068,9 @@ class Observatory:
                     print (np.nanmedian(g_dev['foc'].focus_tracker))
                     print ("Last solved focus FWHM")
                     print(g_dev['foc'].last_focus_fwhm)
-                    #result['mean_focus'] =  avg_foc[1]
-                    #try:
-                    #    valid =  0.0 <= result['FWHM']<= 20. and 100 < result['mean_focus'] < 12600
-                    #    result['error'] = False
-                    #except:
-                    #    result['error'] = True    # NB NB NB These are quick placeholders and need to be changed
-                    #    result['FWHM']  = 3.456
-                    #    result['mean_focus'] =  6543
 
-
-                '''
-                Here we need to consider just what local reductions and calibrations really make sense to
-                process in-line vs doing them in another process.  For all practical purposes everything
-                below can be done in a different process, the exception perhaps has to do with autofocus
-                processing.
-
-
-                '''
-                # Note we may be using different files if calibrate is null.
-                # NB  We should only write this if calibrate actually succeeded to return a result ??
-
-                #  if frame_type == 'sky flat':
-                #      hdu.header['SKYSENSE'] = int(g_dev['scr'].bright_setting)
-                #
-                # if not quick:
-                #     hdu1.writeto(im_path + raw_name01, overwrite=True)
-                # raw_data_size = hdu1[0].data.size
-
-
-
-                #  NB Should this step be part of calibrate?  Second should we form and send a
-                #  CSV file to AWS and possibly overlay key star detections?
-                #  Possibly even astro solve and align a series or dither batch?
-                #  This might want to be yet another thread queue, esp if we want to do Aperture Photometry.
-
-                # MTF commented this out 5 oCt 22 - hdus are no longer sent to the reduce queue and this sep code is never run. We can move that to the official
-                # normal queue at some point in the future.
-                # no_AWS = False
-                # quick = False
-                # do_sep = False
-                # spot = None
-                # #Note this was turned off because very rarely it hangs internally.
-                # if do_sep:    #WE have already ran this code when focusing, but we should not ever get here when doing that.
-                #     try:
-                #         img = hdu.data.copy().astype('float')
-                #         bkg = sep.Background(img)
-                #         #breakpoint()
-                #         #bkg_rms = bkg.rms()
-                #         img = img - bkg
-                #         sources = sep.extract(img, 4.5, err=bkg.globalrms, minarea=9)#, filter_kernel=kern)
-                #         sources.sort(order = 'cflux')
-
-                #         #print('No. of detections:  ', len(sources))
-                #         sep_result = []
-                #         spots = []
-                #         for source in sources:
-                #             a0 = source['a']
-                #             b0 =  source['b']
-                #             r0 = 2*round(math.sqrt(a0**2 + b0**2), 2)
-                #             sep_result.append((round((source['x']), 2), round((source['y']), 2), round((source['cflux']), 2), \
-                #                            round(r0), 3))
-                #             spots.append(round((r0), 2))
-                #         spot = np.array(spots)
-                #         try:
-                #             spot = np.median(spot[-9:-2])   #  This grabs seven spots.
-                #             #print(sep_result, '\n', 'Spot ,flux, #_sources, avg_focus:  ', spot, source['cflux'], len(sources), avg_foc[1], '\n')
-                #             if len(sep_result) < 5:
-                #                 spot = None
-                #         except:
-                #             spot = None
-                #     except:
-                #         spot = None
-
-                #reduced_data_size = hdu.data.size
-
-                # =============================================================================
-                # x = 2      From Numpy: a way to quickly embed an array in a larger one
-                # y = 3
-                # wall[x:x+block.shape[0], y:y+block.shape[1]] = block
-                # =============================================================================
-
-                #hdu.data = hdu.data.astype('uint16')
-                #iy, ix = hdu.data.shape
-                #if iy == ix:
-                #    resized_a = resize(hdu.data, (1280, 1280), preserve_range=True)
-                #else:
-                #    resized_a = resize(hdu.data, (int(1536*iy/ix), 1536), preserve_range=True)  #  We should trim chips so ratio is exact.
-                #print('New small fits size:  ', resized_a.shape)
-                #hdu.data = resized_a.astype('uint16')
-
-                #SMALL FITS CODE WENT HERE
-
-                #JPEG CODE WENT HERE
-
-                #
-                # MTF - a temporary routine to create fz for BANZAI testing for Darren
-                #
-                #print (name)
-                #print (name[-3:])
-                #if (name[-3:] == 'bz2'):
-                #  print ("Making test fz file for Darren")
-                #  to_fz(im_path + name.replace('.bz2',''))
-                #  aws_req = {"object_name": name.replace('.bz2','.fz')}
-                #  aws_resp = g_dev['obs'].api.authenticated_request('POST', '/upload/', aws_req)
-                ##  with open(im_path + name, 'rb') as f:
-                 #     files = {'file': (im_path + name.replace('.bz2','.fz'), f)}
-                  #    print('--> To AWS -->', str(im_path + name))
-                   #   requests.post(aws_resp['url'], data=aws_resp['fields'],
-                   #                 files=files)
-
-
-
-
-
-
-
-
-
-                ########################################################################
-
-
-                #if not no_AWS:  #IN the no+AWS case should we skip more of the above processing?
-                    #g_dev['cam'].enqueue_for_AWS(text_data_size, paths['im_path'], paths['text_name'])
-                    #g_dev['cam'].enqueue_for_AWS(jpeg_data_size, paths['im_path'], paths['jpeg_name10'])
-                    #g_dev['cam'].enqueue_for_AWS(i768sq_data_size, paths['im_path'], paths['i768sq_name10'] +'.fz')
-                    #print('File size to AWS:', reduced_data_size)
-                    #g_dev['cam'].enqueue_for_AWS(13000000, paths['raw_path'], paths['raw_name00'])    #NB need to chunkify 25% larger then small fits.
-                    #if not quick:
-                    #g_dev['cam'].enqueue_for_AWS(26000000, paths['raw_path'], paths['raw_name00'] +'.fz')    #NB need to chunkify 25% larger then small fits.
-                    #if not quick:
-                #print('Sent to AWS Queue.')
                 time.sleep(0.5)
                 self.img = None   #Clean up all big objects.
-                #try:
-                #    hdu = None
-                #except:
-                #    pass
-                # try:
-                #     hdu1 = None
-                # except:
-                #     pass
-                #print("\nReduction completed.")
-                #g_dev['obs'].send_to_user("An image has been readout from the camera and sent to the cloud.", p_level='INFO') ## MTF says that this isn't actuallytrue and isn't actually informative! Will comment out and see if anyone notices.....
 
                 self.reduce_queue.task_done()
             else:
