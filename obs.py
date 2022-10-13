@@ -1146,7 +1146,7 @@ class Observatory:
                             # g_dev['mnt'].set_last_reference( solve['ra_j2000_Second phase of AF now.hours'], solve['dec_j2000_degrees'], time_now)
                         except Exception as e:
                            print("Image:  did not platesolve; this is usually OK. ", e)
-                           print(traceback.format_exc())
+                           #print(traceback.format_exc())
                            #img = fits.open(wpath, mode='update', ignore_missing_end=True)
                            #hdr = img[0].header
                            #hdu.header['RA-J20PW'] = False

@@ -611,7 +611,7 @@ def get_ocn_status(g_dev=None):
             last_good_wx_fields = wx_fields
         except Exception as e:
             print ("failed to open sroweather.txt: ",e)
-            print(traceback.format_exc())
+            #print(traceback.format_exc())
             pass
             # time.sleep(5)
             # try:
@@ -834,7 +834,7 @@ def get_enc_status(g_dev=None):
 
         except Exception as e:
             print ("Problem opening Roof Status: ", e)
-            print(traceback.format_exc())
+            #print(traceback.format_exc())
             # try:
             #     enc = open('R:/Roof_Status.txt')
             #     enc_text = enc.readline()

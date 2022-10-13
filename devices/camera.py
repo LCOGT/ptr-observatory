@@ -2008,7 +2008,7 @@ class Camera:
 
                         try:
                             #try loading a flat file for the current filter
-                            print (self.flatFiles[self.current_filter])
+                            #print (self.flatFiles[self.current_filter])
                             tempFlatFrame=np.load(self.flatFiles[self.current_filter])
                             hdu.data=hdu.data/tempFlatFrame
                             del tempFlatFrame
@@ -2094,7 +2094,7 @@ class Camera:
                         # Quick flat flat frame
                         try:
                             #try loading a flat file for the current filter
-                            print (self.flatFiles[self.current_filter])
+                            #print (self.flatFiles[self.current_filter])
                             tempFlatFrame=np.load(self.flatFiles[self.current_filter])
                             hdusmall.data=hdusmall.data/tempFlatFrame
                             del tempFlatFrame
@@ -2110,7 +2110,6 @@ class Camera:
                             hdusmall.data=hdusmall.data[yb:-yt,xl:-xr]
                             hdusmall.header['NAXIS1']=hdusmall.data.shape[0]
                             hdusmall.header['NAXIS2']=hdusmall.data.shape[1]
-                            print ("cropped")
 
 
 
@@ -2129,7 +2128,7 @@ class Camera:
                         #inputData=np.nan_to_num(inputData)
                         hdusmall.data=inputData
                         # saving memory
-                        del inputData
+                        #del inputData
 
                         # Getting the mode of the image.
                         #modeData =np.rint(inputData) # To do the mode properly it needs to be in integer steps - a float has too many potential values
@@ -2144,12 +2143,12 @@ class Camera:
                             resized_a = resize(hdusmall.data, (int(1536*iy/ix), 1536), preserve_range=True)  #  We should trim chips so ratio is exact.
                         #print('New small fits size:  ', resized_a.shape)
 
-                        hdusmall.data = resized_a.astype('int16')
-                        del resized_a
+                        #hdusmall.data = resized_a.astype('int16')
+                        #del resized_a
 
                         # JPEG CODE
                         # New contrast scaling code:
-                        stretched_data_float = Stretch().stretch(hdusmall.data)
+                        stretched_data_float = Stretch().stretch(resized_a)
                         stretched_256 = 255*stretched_data_float
                         hot = np.where(stretched_256 > 255)
                         cold = np.where(stretched_256 < 0)
@@ -2162,6 +2161,9 @@ class Camera:
                         stretched_data_uint8[hot] = 255
                         stretched_data_uint8[cold] = 0
                         #print("post-unit8< hot, cold:  ", len(hot[0]), len(cold[0]))
+
+                        #breakpoint()
+
                         try:
                             imsave(paths['im_path'] + paths['jpeg_name10'], stretched_data_uint8)
                         #img4 = stretched_data_uint8  # keep old name for compatibility
@@ -2211,6 +2213,8 @@ class Camera:
                     del hdu
                     #hdufz.header['FILENAME']=raw_path + raw_name00 +'.fz'
                     hdufz.verify('fix')
+                    hdufz.header['BZERO']=0 # Somewhere along the line, this hasn't been changed
+                    hdufz.header['BSCALE']=1 # Somewhere along the line, this hasn't been changed
 
                     saver=0
                     saverretries=0
