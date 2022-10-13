@@ -47,7 +47,7 @@ from astropy.io import fits
 from planewave import platesolve
 import bz2
 import httplib2
-#from auto_stretch.stretch import Stretch
+from auto_stretch.stretch import Stretch
 
 import ptr_events
 import socket
