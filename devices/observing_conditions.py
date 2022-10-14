@@ -168,8 +168,8 @@ class ObservingConditions:
             DESCRIPTION.
 
         '''
-
-        if not self.is_wema and self.site_has_proxy:
+        breakpoint()
+        if not self.is_wema and self.site_has_proxy:   #This code is meant for SRO
             if self.config['site_IPC_mechanism'] == 'shares':
                 try:
                     weather = open(g_dev['wema_share_path'] + 'weather.txt', 'r')

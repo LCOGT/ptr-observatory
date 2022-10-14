@@ -45,7 +45,7 @@ site_config = {
                                  # Intention it is found in this file.
                                  # Fat is intended to be simple since
                                  # there is so little to control.
-    'client_hostname':"ARO-WEMA",     # Generic place for this host to stash.
+    'client_hostname':"ARO-0m30",     # Generic place for this host to stash.
     'client_path': 'F:/ptr/',
     'alt_path': '//house-computer/saf_archive_2/archive/sq01/',
     'archive_path': 'F:/ptr/',       # Where images are kept.
@@ -56,7 +56,7 @@ site_config = {
     'dome_on_wema':  True,       #NB NB NB CHange this confusing name. 'dome_controlled_by_wema'
     'site_IPC_mechanism':  'shares',   # ['None', shares', 'shelves', 'redis']
     'wema_write_share_path':  'C:/ptr/wema_transfer/',  # Meant to be where Wema puts status data.
-    'client_write_share_path':  '//aro-wema/wema_transfer/',
+    'client_write_share_path':  '//aro-wema/wema_transfer/', #Meant to be a share written to by the TCS computer
     'redis_ip': None,   # None if no redis path present, localhost if redis iself-contained
     'site_is_generic':  False,   # A simple single computer ASCOM site.
     'site_is_specific':  False,  #  Meaning like SRO with site specific methods to read weatehr and roof status
