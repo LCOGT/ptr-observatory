@@ -451,9 +451,9 @@ site_config = {
 
             'settings': {
                 'crop_preview': True,
-                'crop_preview_ybottom': 40,  #### IMPORTANT: CROPS NEED TO BE SYMMETRICAL FOR POINTING SOLVES TO WORK.
+                'crop_preview_ybottom': 1,  #### IMPORTANT: CROPS NEED TO BE SYMMETRICAL FOR POINTING SOLVES TO WORK.
                 'crop_preview_ytop': 40,
-                'crop_preview_xleft': 50,
+                'crop_preview_xleft': 1,
                 'crop_preview_xright': 50,
                 'temp_setpoint': -25,   #Updated from -18 WER 20220914 Afternoon
                 'calib_setpoints': [-35,-30, -25, -20, -15, -10 ],  #  Should vary with season?

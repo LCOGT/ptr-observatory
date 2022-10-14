@@ -1273,7 +1273,7 @@ class Camera:
                             try:
                                 g_dev['ocn'].get_quick_status(self.pre_ocn)   #NB NB WEMA must be running or this may fault.
                             except:
-                                print ("ECO aint got ocn line 1087")
+                                print ("Failed to collect quick status on observing conditions")
                             g_dev['foc'].get_quick_status(self.pre_foc)
                             try:
                                 g_dev['rot'].get_quick_status(self.pre_rot)
@@ -1531,54 +1531,7 @@ class Camera:
                 except:
                     print ("no ocn")
 
-                if frame_type[-5:] in ['focus', 'probe', "ental"]:
 
-                    self.img = self.img #+ 100   #maintain a + pedestal for sep  THIS SHOULD not be needed for a raw input file.
-                    self.img = self.img.astype("float")
-                    #print(self.img.flags)
-                    self.img = self.img.copy(order='C')   #  NB Should we move this up to where we read the array?
-                    bkg = sep.Background(self.img)
-                    self.img -= bkg
-                    sources = sep.extract(self.img, 4.5, err=bkg.globalrms, minarea=15)  # Minarea should deal with hot pixels.
-                    sources.sort(order = 'cflux')
-                    print('No. of detections:  ', len(sources))
-
-                    ix, iy = self.img.shape
-                    r0 = 0
-                    """
-                    ToDo here:  1) do not deal with a source nearer than 5% to an edge.
-                    2) do not pick any saturated sources.
-                    3) form a histogram and then pick the median winner
-                    4) generate data for a report.
-                    5) save data and image for engineering runs.
-                    """
-                    border_x = int(ix*0.05)
-                    border_y = int(iy*0.05)
-                    r0 = []
-                    for sourcef in sources:
-                        if border_x < sourcef['x'] < ix - border_x and \
-                            border_y < sourcef['y'] < iy - border_y and \
-                            sourcef['peak']  < 35000 and sourcef['cpeak'] < 35000:  #Consider a lower bound
-                            a0 = sourcef['a']
-                            b0 = sourcef['b']
-                            r0.append(round(math.sqrt(a0*a0 + b0*b0), 2))
-
-                    scale = self.config['camera'][self.name]['settings']['pix_scale'][self.camera.BinX -1]
-                    result['FWHM'] = round(np.median(r0)*scale, 3)   #@0210524 was 2x larger but a and b are diameters not radii
-                    result['mean_focus'] =  avg_foc[1]
-                    try:
-                        valid =  0.0 <= result['FWHM']<= 20. and 100 < result['mean_focus'] < 12600
-                        result['error'] = False
-                    except:
-                        result['error'] = True    # NB NB NB These are quick placeholders and need to be changed
-                        result['FWHM']  = 3.456
-                        result['mean_focus'] =  6543
-
-                    focus_image = True
-                else:
-                    focus_image = False
-
-                    #return result   #Used if focus not saved in calibs.
 
                 try:
                     #breakpoint()
@@ -1984,75 +1937,95 @@ class Camera:
                     #    red_path_aux = self.alt_path +  g_dev['day'] + '/reduced/'
                     #    paths['red_path_aux'] = red_path_aux
                     #script = None
-                    '''
-                    self.enqueue_image(text_data_size, im_path, text_name)
-                    self.enqueue_image(jpeg_data_size, im_path, jpeg_name)
-                    if not quick:
-                        self.enqueue_image(db_data_size, im_path, db_name)
-                        self.enqueue_image(raw_data_size, im_path, raw_name01)
-                    '''
+                    # '''
+                    # self.enqueue_image(text_data_size, im_path, text_name)
+                    # self.enqueue_image(jpeg_data_size, im_path, jpeg_name)
+                    # if not quick:
+                    #     self.enqueue_image(db_data_size, im_path, db_name)
+                    #     self.enqueue_image(raw_data_size, im_path, raw_name01)
+                    # '''
 
 
-                    if focus_image:
-                        try:
-                            if len(self.biasframe) > 10:
-                                hdu.data=hdu.data-self.biasframe
-                            if len(self.darkframe) > 10:
-                                hdu.data=hdu.data-(self.darkframe*exposure_time)
-                        except Exception as e:
-                            print ("debias/darking focus image failed: ", e)
 
-                        try:
-                            tempFlatFrame=np.load(self.flatFiles[self.current_filter])
-                            hdu.data=hdu.data/tempFlatFrame
-                            del tempFlatFrame
-                        except Exception as e:
-                            print ("flatting light frame failed",e)
 
-                    if focus_image and not solve_it:
-                        #Note we do not reduce focus images, except above in focus processing.
-                        cal_name = cal_name[:-9] + 'F012' + cal_name[-7:]  # remove 'EX' add 'FO'   Could add seq to this
 
-                        hdu.data=hdu.data.astype('float32')
-                        hdu.writeto(cal_path + cal_name, overwrite=True)
+                    ## MOVING ALL THE FOCUS FRAME STUFF INTO ONE PLACE
+                    # Identifying whether it is a focus frame
+                    if frame_type[-5:] in ['focus', 'probe', "ental"]:
+                        focus_image = True
+                    else:
                         focus_image = False
-                        return result
-                    if focus_image and solve_it :
 
-                        cal_name = cal_name[:-9] + 'FS' + cal_name[-7:]  # remove 'EX' add 'FO'   Could add seq to this
-                        hdu.data=hdu.data.astype('float32')
-                        hdu.writeto(cal_path + cal_name, overwrite=True)
-                        focus_image = False
-                        try:
-                            #wpath = 'C:/000ptr_saf/archive/sq01/20210528/reduced/saf-sq01-20210528-00019785-le-w-EX01.fits'
-                            time_now = time.time()
-                            solve = platesolve.platesolve(cal_path + cal_name, 1.10) #hdu.header['PIXSCALE'])
-                            print (solve)
-                            print("PW Solves: " +str(solve['ra_j2000_hours']) +str(solve['dec_j2000_degrees']))
-                            TARGRA  = g_dev['mnt'].current_icrs_ra
-                            TARGDEC = g_dev['mnt'].current_icrs_dec
-                            RAJ2000 = solve['ra_j2000_hours']
-                            DECJ2000 = solve['dec_j2000_degrees']
-                            err_ha = round((TARGRA - RAJ2000)*15*3600, 1)
-                            err_dec = round((TARGDEC - DECJ2000)*3600, 1)
-                            print("Focus images error in ra, dec, asec:  ", err_ha, err_dec)
-                            #g_dev['mnt'].set_last_reference(err_ha, err_dec, time_now)
-                            if (err_ha > 1200 or err_dec > 1200 or err_ha < -1200 or err_dec < -1200) and self.config['mount']['mount1']['permissive_mount_reset'] == 'yes':
-                                g_dev['mnt'].reset_mount_reference()
-                                print ("I've reset the mount_reference")
-                                g_dev['mnt'].current_icrs_ra = solve['ra_j2000_hours']
-                                g_dev['mnt'].current_icrs_dec = solve['dec_j2000_hours']
-                            elif g_dev['mnt'].pier_side_str == 'Looking West':
-                                g_dev['mnt'].adjust_mount_reference(err_ha, err_dec)
-                            else:
-                                g_dev['mnt'].adjust_flip_reference(err_ha, err_dec)
-                            #return result
-                        except:
-                            print(cal_path + cal_name, "  was not solved, sorry!")
-                            print(traceback.format_exc())
-                        ##    #g_dev['mnt'].reset_last_reference()
-                            #return result
-                           #Return to classic processing
+
+
+
+
+
+                        #return result   #Used if focus not saved in calibs.
+
+
+
+
+                    # if focus_image:
+                    #     try:
+                    #         if len(self.biasframe) > 10:
+                    #             hdu.data=hdu.data-self.biasframe
+                    #         if len(self.darkframe) > 10:
+                    #             hdu.data=hdu.data-(self.darkframe*exposure_time)
+                    #     except Exception as e:
+                    #         print ("debias/darking focus image failed: ", e)
+
+                    #     try:
+                    #         tempFlatFrame=np.load(self.flatFiles[self.current_filter])
+                    #         hdu.data=hdu.data/tempFlatFrame
+                    #         del tempFlatFrame
+                    #     except Exception as e:
+                    #         print ("flatting light frame failed",e)
+
+                    # if focus_image and not solve_it:
+                    #     #Note we do not reduce focus images, except above in focus processing.
+                    #     cal_name = cal_name[:-9] + 'F012' + cal_name[-7:]  # remove 'EX' add 'FO'   Could add seq to this
+
+                    #     hdu.data=hdu.data.astype('float32')
+                    #     hdu.writeto(cal_path + cal_name, overwrite=True)
+                    #     focus_image = False
+                    #     return result
+                    # if focus_image and solve_it :
+
+                    #     cal_name = cal_name[:-9] + 'FS' + cal_name[-7:]  # remove 'EX' add 'FO'   Could add seq to this
+                    #     hdu.data=hdu.data.astype('float32')
+                    #     hdu.writeto(cal_path + cal_name, overwrite=True)
+                    #     focus_image = False
+                    #     try:
+                    #         #wpath = 'C:/000ptr_saf/archive/sq01/20210528/reduced/saf-sq01-20210528-00019785-le-w-EX01.fits'
+                    #         time_now = time.time()
+                    #         solve = platesolve.platesolve(cal_path + cal_name, 1.10) #hdu.header['PIXSCALE'])
+                    #         print (solve)
+                    #         print("PW Solves: " +str(solve['ra_j2000_hours']) +str(solve['dec_j2000_degrees']))
+                    #         TARGRA  = g_dev['mnt'].current_icrs_ra
+                    #         TARGDEC = g_dev['mnt'].current_icrs_dec
+                    #         RAJ2000 = solve['ra_j2000_hours']
+                    #         DECJ2000 = solve['dec_j2000_degrees']
+                    #         err_ha = round((TARGRA - RAJ2000)*15*3600, 1)
+                    #         err_dec = round((TARGDEC - DECJ2000)*3600, 1)
+                    #         print("Focus images error in ra, dec, asec:  ", err_ha, err_dec)
+                    #         #g_dev['mnt'].set_last_reference(err_ha, err_dec, time_now)
+                    #         if (err_ha > 1200 or err_dec > 1200 or err_ha < -1200 or err_dec < -1200) and self.config['mount']['mount1']['permissive_mount_reset'] == 'yes':
+                    #             g_dev['mnt'].reset_mount_reference()
+                    #             print ("I've reset the mount_reference")
+                    #             g_dev['mnt'].current_icrs_ra = solve['ra_j2000_hours']
+                    #             g_dev['mnt'].current_icrs_dec = solve['dec_j2000_hours']
+                    #         elif g_dev['mnt'].pier_side_str == 'Looking West':
+                    #             g_dev['mnt'].adjust_mount_reference(err_ha, err_dec)
+                    #         else:
+                    #             g_dev['mnt'].adjust_flip_reference(err_ha, err_dec)
+                    #         #return result
+                    #     except:
+                    #         print(cal_path + cal_name, "  was not solved, sorry!")
+                    #         print(traceback.format_exc())
+                    #     ##    #g_dev['mnt'].reset_last_reference()
+                    #         #return result
+                    #        #Return to classic processing
 
 
 
@@ -2099,11 +2072,68 @@ class Camera:
                             hdusmall.header['NAXIS1']=hdusmall.data.shape[0]
                             hdusmall.header['NAXIS2']=hdusmall.data.shape[1]
 
+                        # At this stage of the proceedings, if the image is just a focus image, then it wants
+                        # the FWHM and then it wants to get out back to the focus script. So lets let it do
+                        # that here. In future, we can make other interesteding jpg products showing a
+                        # graphical representation of the focus or something... but for now, it just sends back the FWHM
+
+                        if focus_image and not solve_it:
+                            #Note we do not reduce focus images, except above in focus processing.
+                            cal_name = cal_name[:-9] + 'F012' + cal_name[-7:]  # remove 'EX' add 'FO'   Could add seq to this
+                            hdufocus=copy.deepcopy(hdusmall)
+                            hdufocus.data=hdufocus.data.astype('float32')
+
+                            focusimg = np.asarray(hdufocus.data) #+ 100   #maintain a + pedestal for sep  THIS SHOULD not be needed for a raw input file.
+                            focusimg  = focusimg .astype("float")
+                            #print(self.img.flags)
+                            focusimg  = focusimg .copy(order='C')   #  NB Should we move this up to where we read the array?
+                            bkg = sep.Background(focusimg)
+                            focusimg  -= bkg
+                            sources = sep.extract(focusimg , 4.5, err=bkg.globalrms, minarea=15)  # Minarea should deal with hot pixels.
+                            sources.sort(order = 'cflux')
+                            print('No. of detections:  ', len(sources))
+
+                            ix, iy = focusimg.shape
+                            r0 = 0
+                            """
+                            ToDo here:  1) do not deal with a source nearer than 5% to an edge.
+                            2) do not pick any saturated sources.
+                            3) form a histogram and then pick the median winner
+                            4) generate data for a report.
+                            5) save data and image for engineering runs.
+                            """
+                            border_x = int(ix*0.05)
+                            border_y = int(iy*0.05)
+                            r0 = []
+                            for sourcef in sources:
+                                if border_x < sourcef['x'] < ix - border_x and \
+                                    border_y < sourcef['y'] < iy - border_y and \
+                                    sourcef['peak']  < 35000 and sourcef['cpeak'] < 35000:  #Consider a lower bound
+                                    a0 = sourcef['a']
+                                    b0 = sourcef['b']
+                                    r0.append(round(math.sqrt(a0*a0 + b0*b0), 2))
+
+                            scale = self.config['camera'][self.name]['settings']['pix_scale'][self.camera.BinX -1]
+                            result['FWHM'] = round(np.median(r0)*scale, 3)   #@0210524 was 2x larger but a and b are diameters not radii
+                            result['mean_focus'] =  avg_foc[1]
+                            try:
+                                valid =  0.0 <= result['FWHM']<= 20. and 100 < result['mean_focus'] < 12600
+                                result['error'] = False
+                            except:
+                                result['error'] = True    # NB NB NB These are quick placeholders and need to be changed
+                                result['FWHM']  = 3.456
+                                result['mean_focus'] =  6543
+
+
+
+                            # write the focus image out
+                            hdufocus.writeto(cal_path + cal_name, overwrite=True)
+                            focus_image = False
+                            return result
+
                         # This is holding the flash reduced fits file waiting to be saved
                         # AFTER the jpeg has been sent up to AWS.
                         hdureduced=copy.deepcopy(hdusmall)
-
-
 
                         # Making cosmetic adjustments to the image array ready for jpg stretching
                         hdusmall.data=np.asarray(hdusmall.data)
