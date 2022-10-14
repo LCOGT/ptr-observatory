@@ -30,6 +30,7 @@ import socket
 #import struct
 import os
 import shelve
+import config
 from collections import namedtuple
 from astropy.time import Time
 from astropy import units as u
@@ -43,6 +44,9 @@ from astroquery.simbad import Simbad
 #from ptr_config import *
 import ephem
 #from ptr_astrometrics import *
+
+
+siteLatitude=config['latitude']
 
 '''
 Obs List
@@ -2401,5 +2405,3 @@ print('Local system Sidereal time is:  ', sidTime)
 #SEQ_Counter = '000000'  #Should this be longer and persistently increasing?
 if __name__ == '__main__':
     print('Welcome to the utility module.')
-
-

@@ -254,7 +254,9 @@ class Enclosure:
         self.last_current_az = 315.
         self.last_slewing = False
         self.prior_status = {'enclosure_mode': 'Manual'}    #Just to initialze this rarely used variable.
-
+        print('\n&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& \n') 
+        print('      20221014  Close commands are blocked,  System defaults to manual. \n ')
+        print('&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& \n')
     def get_status(self) -> dict:
         if not self.is_wema and self.site_has_proxy and self.dome_on_wema:
             if self.config['site_IPC_mechanism'] == 'shares':
@@ -447,7 +449,7 @@ class Enclosure:
                 enc_status = json.loads(enc_cmd.readline())
                 enc_cmd.close()
                 os.remove(self.config['wema_write_share_path'] + 'enc_cmd.txt')
-                redis_command = enc_status
+                redis_command = enc_status   #NB NB bad practice to name this a redis command
             except:
                 try:
                     time.sleep(1)
@@ -517,7 +519,7 @@ class Enclosure:
                 pass
             self.dome_open = True
             self.dome_home = True
-        elif redis_command == 'close':
+        elif redis_command == 'close':   #NB NB this is confusing.  Command not always from redis.
             if _redis:  g_dev['redis'].delete('enc_cmd')
             print("enclosure remote cmd: close.")
             self.manager(close_cmd=True, open_cmd=False)

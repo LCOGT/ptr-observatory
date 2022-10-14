@@ -22,7 +22,10 @@ import os
 import imp
 import ptr_events
 from glob import glob
-
+from astropy.coordinates import EarthLocation
+from astropy.coordinates import SkyCoord, AltAz
+from astropy.time import Time
+import astropy.units as u
 
 '''
 Autofocus NOTE 20200122
@@ -164,8 +167,8 @@ class Sequencer:
         self.sky_flat_latch = True
         self.morn_sky_flat_latch = True
         self.morn_bias_dark_latch = True   #NB NB NB Should these initially be defined this way?
-        #breakpoint()
-        self.reset_completes()
+
+        self.reset_completes()  # NB NB Note this is reset each time sequencer is restarted.
 
         try:
             self.is_in_completes(None)
@@ -457,7 +460,7 @@ class Sequencer:
                     and (block['start'] <= now_date_timeZ < block['end']) \
                     and not self.is_in_completes(block['event_id']):
                     if block['project_id'] in ['none', 'real_time_slot', 'real_time_block']:
-                        self.block_guard = True
+                        self.block_guard = False   # Changed from True WER on 20221011@2:24 UTC
                         return   # Do not try to execute an empty block.
                     self.block_guard = True
 
@@ -602,7 +605,7 @@ class Sequencer:
         #enc_status = eval(self.redis_server.get('enc_status'))
         print('|n|n Staring a new project!  \n')
         print(block_specification, ' \n\n\n')
-        
+
         self.block_guard = True
         # NB we assume the dome is open and already slaving.
         block = copy.deepcopy(block_specification)
@@ -731,15 +734,62 @@ class Sequencer:
             print("Left to do initial value:  ", left_to_do)
             req = {'target': 'near_tycho_star'}
             initial_focus = True
+            initial_pointing = True
             af_delay = 45*60  #This must be a big number!
 
             while left_to_do > 0 and not ended:
+
+                #MTF - It was very often that the start of a project, the pointing would be far off... so I am instituting a pre-project point shot
+                #This is also important because it needs to slew to a tycho star to focus... so...... if the pointing is off, it won't get there!
+                #IT is a little buggy so far! But it will get there soon.
+                # if initial_pointing:
+
+
+                #     # Figure out rough RA and Dec
+                #     #location = EarthLocation.from_geodetic(self.config['longitude']*u.deg, self.config['latitude']*u.deg, self.config['elevation'])
+                #     #newAltAzcoordiantes = SkyCoord(alt = 75*u.deg, az = 90*u.deg , obstime = Time(datetime.datetime.utcnow(), scale='utc'), frame = 'altaz', location = location)
+                #     #print (newAltAzcoordiantes.icrs)
+
+
+
+
+
+
+                #     for run in range(2):
+                #         if run ==0:
+                #             # First point at a generic alt/az
+                #             print ("Slewing to a generic alt/az for a pointing calibration")
+                #             g_dev['obs'].send_to_user("Slewing to a generic alt/az for a pointing calibration")
+                #             g_dev['mnt'].mount.SlewToAltAzAsync(90, 75) # Move around to non-objectionable point on the sky
+                #             g_dev['mnt'].mount.Tracking = True
+                #             time.sleep(30)
+                #         elif run ==1:
+                #             print ("Slewing to the target ra and dec for a pointing check")
+                #             g_dev['obs'].send_to_user("Slewing to the target ra and dec for a pointing check")
+                #             print ("ra:  " +str(dest_ra))
+                #             print ("dec: " +str(dest_dec))
+                #             g_dev['mnt'].go_coord(dest_ra, dest_dec)
+                #             time.sleep(30)
+
+                #         g_dev['obs'].send_to_user("Running a Pointing Calibration Exposure. " + str(run+1) +" of 2.")
+                #         print ("Pointing Run " + str(run))
+                #         req = {'time': 20,  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'auto_focus'}   #  NB Should pick up filter and constats from config
+                #         #opt = {'area': 150, 'count': 1, 'bin': '2, 2', 'filter': 'focus'}
+                #         opt = {'area': 150, 'count': 1, 'bin': 'default', 'filter': 'Lum'}
+                #         result = g_dev['cam'].expose_command(req, opt, no_AWS=True, solve_it=True)
+                #         print ("Waiting for solve")
+                #         time.sleep(15)
+                #     initial_pointing = False
+
+
+
+
 
                 #just_focused = True      ###DEBUG
                 if initial_focus: # and False:
                     #print("Enc Status:  ", g_dev['enc'].get_status())
 
-
+                    g_dev['obs'].send_to_user("Running an initial autofocus run.")
                     # if not g_dev['enc'].shutter_is_closed:
                     self.auto_focus_script(req2, opt, throw = 600)
                     #     pass
@@ -749,6 +799,13 @@ class Sequencer:
                     initial_focus = False    #  Make above on-time event per block
                     timer = time.time() + af_delay  # 45 minutes
                     #at block startup this should mean two AF cycles. Cosider using 5-point for the first.
+
+
+
+
+                # A flag to make sure the first image after a slew in an exposure set is solved, but then onto the normal solve timer
+                reset_solve = True
+
 
                 #cycle through exposures decrementing counts    MAY want to double check left-to do but do nut remultiply by 4
                 for exposure in block['project']['exposures']:
@@ -882,7 +939,8 @@ class Sequencer:
                         # new_ra = moon_ra
                         # new_dec = moon_dec
                         print('Seeking to:  ', new_ra, new_dec)
-                        g_dev['mnt'].go_coord(new_ra, new_dec)  # This needs full angle checks
+                        g_dev['mnt'].go_coord(new_ra, new_dec, reset_solve=reset_solve)  # This needs full angle checks
+                        reset_solve=False # make sure slews after the first slew do not reset the PW Solve timer.
                         if not just_focused:
                             g_dev['foc'].adjust_focus()
                         just_focused = False
@@ -1119,56 +1177,89 @@ class Sequencer:
         print("Bias/Dark Phase has passed.")
 
 
-
+        time.sleep(300) # Wait for telescope to park
         if morn:
             # UNDERTAKING END OF NIGHT ROUTINES
 
-            print ("sending end of night token to AWS")
-            #g_dev['cam'].enqueue_for_AWS(jpeg_data_size, paths['im_path'], paths['jpeg_name10'])
+
+            # Setting runnight for mop up scripts
             yesterday = datetime.datetime.now() - timedelta(1)
             #print (datetime.datetime.strftime(yesterday, '%Y%m%d'))
             runNight=datetime.datetime.strftime(yesterday, '%Y%m%d')
+
+            # Check the archive directory and upload any big fits that haven't been uploaded
+            # wait until the queue is empty before mopping up
+            while True:
+                if (not g_dev['obs'].aws_queue.empty()):
+                    print ("Waiting for aws queue to empty at the end of the night")
+                    time.sleep(60)
+                else:
+                    break
+
+            # Go through and add any remaining fz files to the aws queue .... hopefully that is enough? If not, I will make it keep going until it is sure.
+            while True:
+                dir_path=self.config['client_path'] + 'archive/'
+                cameras=glob(dir_path + "*/")
+                print (cameras)
+                for camera in cameras:
+                    bigfzs=glob(camera + "/" + runNight + "/raw/*.fz")
+
+                    for fzneglect in bigfzs:
+                        print ("Reattempting upload of " + str(os.path.basename(fzneglect)))
+                        #breakpoint()
+                        g_dev['cam'].enqueue_for_AWS(26000000, camera + runNight + "/raw/" + str(os.path.basename(fzneglect)))
+                time.sleep(300)
+                if (g_dev['obs'].aws_queue.empty()):
+                    break
+
+
+            # Sending token to AWS to inform it that all files have been uploaded
+            print ("sending end of night token to AWS")
+            #g_dev['cam'].enqueue_for_AWS(jpeg_data_size, paths['im_path'], paths['jpeg_name10'])
+
             isExist = os.path.exists(g_dev['cam'].site_path + 'tokens')
             if not isExist:
                 os.makedirs(g_dev['cam'].site_path + 'tokens')
             runNightToken= g_dev['cam'].site_path + 'tokens/' + self.config['site'] + runNight + '.token'
             with open(runNightToken, 'w') as f:
                 f.write('Night Completed')
-            g_dev['obs'].aws_queue.put((30000000, runNightToken), block=False)
+            image = (g_dev['cam'].site_path + 'tokens/', self.config['site'] + runNight + '.token')
+            g_dev['obs'].aws_queue.put((30000000000, image), block=False)
             g_dev['obs'].send_to_user("End of Night Token sent to AWS.", p_level='INFO')
 
             # Culling the archive
-            FORTNIGHT=60*60*24*7*2
-            print (self.config['client_path'] + 'archive/')
-            dir_path=self.config['client_path'] + 'archive/'
-            #cameras=[d for d in os.listdir(dir_path) if os.path.isdir(d)]
-            cameras=glob(dir_path + "*/")
-            print (cameras)
-            for camera in cameras:  # Go through each camera directory
-                print ("*****************************************")
-                print ("Camera: " + str(camera))
-                timenow_cull=time.time()
-                #cameradir=camera
-                #directories=[d for d in os.listdir(cameradir) if os.path.isdir(d)]
-                directories=glob(camera + "*/")
-                deleteDirectories=[]
-                deleteTimes=[]
-                #print (directories)
-                for q in range(len(directories)):
-                    print
-                    if ((timenow_cull)-os.path.getmtime(directories[q])) > FORTNIGHT:
-                        deleteDirectories.append(directories[q])
-                        deleteTimes.append(((timenow_cull)-os.path.getmtime(directories[q])) /60/60/24/7)
+            #FORTNIGHT=60*60*24*7*2
+            if self.config['archive_age'] > 0 :
+                print (self.config['client_path'] + 'archive/')
+                dir_path=self.config['client_path'] + 'archive/'
+                #cameras=[d for d in os.listdir(dir_path) if os.path.isdir(d)]
+                cameras=glob(dir_path + "*/")
+                print (cameras)
+                for camera in cameras:  # Go through each camera directory
+                    print ("*****************************************")
+                    print ("Camera: " + str(camera))
+                    timenow_cull=time.time()
+                    #cameradir=camera
+                    #directories=[d for d in os.listdir(cameradir) if os.path.isdir(d)]
+                    directories=glob(camera + "*/")
+                    deleteDirectories=[]
+                    deleteTimes=[]
+                    #print (directories)
+                    for q in range(len(directories)):
+
+                        if ((timenow_cull)-os.path.getmtime(directories[q])) > (self.config['archive_age'] * 24* 60 * 60) :
+                            deleteDirectories.append(directories[q])
+                            deleteTimes.append(((timenow_cull)-os.path.getmtime(directories[q])) /60/60/24/7)
 
 
 
-                print ("These are the directories earmarked for  ")
-                print ("Eternal destruction. And how old they are")
-                print ("in weeks\n")
-                g_dev['obs'].send_to_user("Culling " + str(len(deleteDirectories)) +" from the local archive.", p_level='INFO')
-                for entry in range(len(deleteDirectories)):
-                    print (deleteDirectories[entry] + ' ' + str(deleteTimes[entry]) + ' weeks old.')
-                    #shutil.rmtree(cameradir + deleteDirectories[entry]) # THIS IS THE DELETER WHEN WE ARE READY!
+                    print ("These are the directories earmarked for  ")
+                    print ("Eternal destruction. And how old they are")
+                    print ("in weeks\n")
+                    g_dev['obs'].send_to_user("Culling " + str(len(deleteDirectories)) +" from the local archive.", p_level='INFO')
+                    for entry in range(len(deleteDirectories)):
+                        print (deleteDirectories[entry] + ' ' + str(deleteTimes[entry]) + ' weeks old.')
+                        shutil.rmtree(deleteDirectories[entry]) # THIS IS THE DELETER WHEN WE ARE READY!
 
             # Reopening config
             #imp.reload(config)
@@ -1188,6 +1279,23 @@ class Sequencer:
             response = g_dev['obs'].api.authenticated_request("PUT", uri, self.config)
             if response:
                 print("Config uploaded successfully.")
+
+            # If you are using TheSkyX, then update the autosave path
+            if self.config['camera']['camera_1_1']['driver'] == "CCDSoft2XAdaptor.ccdsoft5Camera":
+                g_dev['cam'].camera.AutoSavePath = self.config['archive_path'] +'archive/' + datetime.datetime.strftime(datetime.datetime.now(), '%Y%m%d')
+                try:
+                    os.mkdir(self.config['archive_path'] +'archive/' + datetime.datetime.strftime(datetime.datetime.now(), '%Y%m%d'))
+                except:
+                    print ("Couldn't make autosave directory")
+
+            # Resetting complete projects
+            print ("Nightly reset of complete projects")
+            self.reset_completes()
+
+            g_dev['obs'].blocks = None
+            g_dev['obs'].projects = None
+            g_dev['obs'].events_new = None
+            g_dev['obs'].reset_last_reference()
 
         return
 
@@ -1549,6 +1657,26 @@ class Sequencer:
         #    throw = 250
         #if self.config['site'] in ['saf']:  #  NB NB f4.9 this belongs in config, not in the code body!!!!
         #    throw = 400
+
+
+        # First check how long it has been since the last focus
+        print ("Time of last focus")
+        print (g_dev['foc'].time_of_last_focus)
+        print ("Time since last focus")
+        print (datetime.datetime.now() - g_dev['foc'].time_of_last_focus)
+
+
+        print ("Threshold time between auto focus routines (hours)")
+        print (self.config['periodic_focus_time'])
+
+        if ((datetime.datetime.now() - g_dev['foc'].time_of_last_focus)) > datetime.timedelta(hours=self.config['periodic_focus_time']):
+            print ("Sufficient time has passed since last focus to do auto_focus")
+            g_dev['foc'].time_of_last_focus = datetime.datetime.now()
+        else:
+            print ("too soon since last autofacus")
+            return
+
+
         throw = g_dev['foc'].throw
         self.sequencer_hold = False   #Allow comand checks.
         self.guard = False
@@ -1591,6 +1719,8 @@ class Sequencer:
 # ============================================================================= Save AFTER mount has settled down.
 # =============================================================================
 # =============================================================================
+        #  NB NB NB PLEASE NOTE WE ARE GETTING THE START POSITIONS WE EXPECT TO RETURN TO FROM THE MOUNT AND FOCUSER
+        #  SO this may reult in drift if the return does not go to the mecahnical Ra and DEC.
         start_ra = g_dev['mnt'].mount.RightAscension   #Read these to go back.  NB NB Need to cleanly pass these on so we can return to proper target.
         start_dec = g_dev['mnt'].mount.Declination
         focus_start = g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron
@@ -1605,14 +1735,19 @@ class Sequencer:
 
             focus_star = tycho.dist_sort_targets(g_dev['mnt'].current_icrs_ra, g_dev['mnt'].current_icrs_dec, \
                                     g_dev['mnt'].current_sidereal)
-            print("Going to near focus star " + str(focus_star[0][0]) + "  degrees away.")
-            g_dev['mnt'].go_coord(focus_star[0][1][1], focus_star[0][1][0])
-            req = {'time': 12.5,  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'auto_focus'}   #  NB Should pick up filter and constats from config
-            opt = {'area': 150, 'count': 1, 'bin': '2, 2', 'filter': 'focus'}
+            try:
+                print("Going to near focus star " + str(focus_star[0][0]) + "  degrees away.")
+                g_dev['mnt'].go_coord(focus_star[0][1][1], focus_star[0][1][0])
+            except:
+                print ("Issues pointing to a tycho star. Focussing at the current pointing.")
+            req = {'time': self.config['focus_exposure_time'],  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'focus'}   #  NB Should pick up filter and constats from config
+            #opt = {'area': 150, 'count': 1, 'bin': '2, 2', 'filter': 'focus'}
+            opt = {'area': 150, 'count': 1, 'bin': 'default', 'filter': 'focus'}
         else:
             pass   #Just take an image where currently pointed.
-            req = {'time': 15,  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'auto_focus'}   #  NB Should pick up filter and constats from config
-            opt = {'area': 150, 'count': 1, 'bin': '2, 2', 'filter': 'focus'}
+            req = {'time': self.config['focus_exposure_time'],  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'focus'}   #  NB Should pick up filter and constats from config
+            #opt = {'area': 150, 'count': 1, 'bin': '2, 2', 'filter': 'focus'}
+            opt = {'area': 150, 'count': 1, 'bin': 'default', 'filter': 'focus'}
         foc_pos0 = focus_start
         result = {}
         #print("temporary patch in Sim values")
@@ -1687,14 +1822,14 @@ class Sequencer:
         x = [foc_pos2, foc_pos1, foc_pos3]
         y = [spot2, spot1, spot3]
         print('X, Y:  ', x, y, 'Desire center to be smallest.')
-  
+
         if spot1 is None or spot2 is None or spot3 is None or spot1 == False or spot2 == False or spot3 == False:  #New additon to stop crash when no spots
             print("No stars detected. Returning to original focus setting and pointing.")
 
-            g_dev['foc'].guarded_move((focus_start)*g_dev['foc'].micron_to_steps)
+            g_dev['foc'].guarded_move((focus_start)*g_dev['foc'].micron_to_steps)  #NB NB 20221002 THis unit fix shoudl be in the routine. WER
             self.sequencer_hold = False   #Allow comand checks.
             self.af_guard = False
-            g_dev['mnt'].mount.SlewToCoordinatesAsync(start_ra, start_dec)
+            g_dev['mnt'].mount.SlewToCoordinatesAsync(start_ra, start_dec)  #MAKE sure same style coordinates.
             self.sequencer_hold = False
             self.guard = False
             self.af_guard = False
@@ -1759,6 +1894,7 @@ class Sequencer:
             self.sequencer_hold = False
             self.guard = False
             self.af_guard = False
+            g_dev['foc'].last_focus_fwhm = round(spot4, 2)
             return
         elif spot2  <= spot1 < spot3:      #Add to the inside
             pass
@@ -1838,6 +1974,7 @@ class Sequencer:
             self.sequencer_hold = False
             self.guard = False
             self.af_guard = False
+            g_dev['foc'].last_focus_fwhm = round(spot4, 2)
             return
 
         elif spot2 > spot1 >= spot3:       #Add to the outside
@@ -1919,6 +2056,8 @@ class Sequencer:
             self.sequencer_hold = False
             self.guard = False
             self.af_guard = False
+
+            g_dev['foc'].last_focus_fwhm = round(spot4, 2)
             return
         elif spot2 <= spot1 or spot3 <= spot1:
             if spot2 <= spot3:
@@ -1951,6 +2090,10 @@ class Sequencer:
         self.sequencer_hold = False
         self.guard = False
         self.af_guard = False
+
+
+
+
         return
 
 
@@ -2694,6 +2837,7 @@ IF sweep
         #print('Completes contains:  ', seq_shelf['completed_blocks'])
         if check_block_id in seq_shelf['completed_blocks']:
             seq_shelf.close()
+            #print("Block ID in completed blocks:  ",  check_block_id)
             return True
         else:
             seq_shelf.close()

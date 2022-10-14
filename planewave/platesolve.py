@@ -65,13 +65,17 @@ def platesolve(image_file, arcsec_per_pixel):
             stderr=PIPE
             )
 
-    (stdout, stderr) = process.communicate()  # Obtain stdout and stderr output from the wcs tool
+    (stdout, stderr) = process.communicate(timeout=20)  # Obtain stdout and stderr output from the wcs tool
     exit_code = process.wait() # Wait for process to complete and obtain the exit code
 
     if exit_code != 0:
-        raise Exception("Error finding solution.\n" +
-                        "Exit code: " + str(exit_code) + "\n" +
-                        "Error output: " + stderr)
+        print ("Exit code: ")
+        print (exit_code)
+        print ("Error output: ")
+        print (stderr)
+        raise Exception("Error finding solution.\n")
+                        #"Exit code: " + str(exit_code) + "\n" +
+                        #"Error output: " + stderr)
 
     return parse_platesolve_output(output_file_path)
 
@@ -96,20 +100,20 @@ def parse_platesolve_output(output_file):
 
     return results
 
-if __name__ == '__main__':
+#if __name__ == '__main__':
 
-    file_list = glob.glob('C:/000ptr_saf/archive/sq01/20210502/reduced/*.f*t*')
-    file_list.sort()
+#    file_list = glob.glob('C:/000ptr_saf/archive/sq01/20210502/reduced/*.f*t*')
+#    file_list.sort()
 
-    for item in file_list:
-        try:
-            solve= platesolve(item, 0.5478)
-            img = fits.open(item)
-            hdr = img[0].header
-            breakpoint()
-            print(hdr['MNT-RA  '], hdr['MNT-DEC '], solve['ra_j2000_hours'], solve['dec_j2000_degrees'], hdr['MNT-SIDT'])
-        except:
-           print("Item did not solve:  ", item)
+#    for item in file_list:
+#        try:
+#            solve= platesolve(item, 0.5478)
+#            img = fits.open(item)
+#            hdr = img[0].header
+#            breakpoint()
+#            print(hdr['MNT-RA  '], hdr['MNT-DEC '], solve['ra_j2000_hours'], solve['dec_j2000_degrees'], hdr['MNT-SIDT'])
+#        except:
+#           print("Item did not solve:  ", item)
 
 
 # Traceback (most recent call last):
