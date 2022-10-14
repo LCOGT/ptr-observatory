@@ -73,16 +73,16 @@ MOUNTRATE = 15*APPTOSID  #15.0410717859
 KINGRATE = 15.029
 
 try:
-    RefrOn = site_config['mount']['mount1']['settings']['refraction_on'] 
-    ModelOn = site_config['mount']['mount1']['settings']['model_on'] 
-    RatesOn = site_config['mount']['mount1']['settings']['rates_on'] 
+    RefrOn = site_config['mount']['mount1']['settings']['refraction_on']
+    ModelOn = site_config['mount']['mount1']['settings']['model_on']
+    RatesOn = site_config['mount']['mount1']['settings']['rates_on']
 
 except:
     RefrOn = False
     ModelOn = False
     RatesOn = False
-    
-    
+
+
 
 HORIZON = 9.999   #Lower than actual mrc values.
 
@@ -98,7 +98,7 @@ else:
 
 model = {}    #Note model starts out zero, need to persist actual model.
 wmodel = {}
-  
+
 #NB Currently this is where the working model is stored.
 model['IH'] =0
 model['ID'] = 0
@@ -111,22 +111,22 @@ model['NP'] = 0
 model['TF'] = 0
 model['TX'] = 0
 model['HCES'] = 0
-model['HCEC'] = 0 
+model['HCEC'] = 0
 model['DCES'] = 0.
 model['DCEC'] = 0.
 
-wmodel['IH'] = 0. 
-wmodel['ID'] = 0. 
+wmodel['IH'] = 0.
+wmodel['ID'] = 0.
 wmodel['WH'] = 0.
 wmodel['WD'] = 0.
-wmodel['MA'] = 0. 
+wmodel['MA'] = 0.
 wmodel['ME'] = 0.
-wmodel['CH'] = 0. 
+wmodel['CH'] = 0.
 wmodel['NP'] = 0.
 wmodel['TF'] =  0.
-wmodel['TX'] =  -0. 
+wmodel['TX'] =  -0.
 wmodel['HCES'] = 0.
-wmodel['HCEC'] = 0. 
+wmodel['HCEC'] = 0.
 wmodel['DCES'] = 0.
 wmodel['DCEC'] = 0.
 
@@ -1606,6 +1606,38 @@ def transform_haDec_to_azAlt_r(pLocal_hour_angle, pDec, latr):
     altitude = reduce_alt_r(altitude)
     return (azimuth, altitude)#, local_hour_angle)
 
+def transform_haDec_to_azAlt(pLocal_hour_angle, pDec, lat):
+    latr = math.radians(lat)
+    sinLat = math.sin(latr)
+    cosLat = math.cos(latr)
+    decr = math.radians(pDec)
+    sinDec = math.sin(decr)
+    cosDec = math.cos(decr)
+    mHar = math.radians(15.*pLocal_hour_angle)
+    sinHa = math.sin(mHar)
+    cosHa = math.cos(mHar)
+    altitude = math.degrees(math.asin(sinLat*sinDec + cosLat*cosDec*cosHa))
+    y = sinHa
+    x = cosHa*sinLat - math.tan(decr)*cosLat
+    azimuth = math.degrees(math.atan2(y, x)) + 180
+    #azimuth = reduceAz(azimuth)
+    #altitude = reduceAlt(altitude)
+    return (azimuth, altitude)#, local_hour_angle)
+
+def reduceAlt(pAlt):
+    if pAlt > 90.0:
+        pAlt = 90.0
+    if pAlt < -90.0:
+        pAlt = -90.0
+    return pAlt
+
+def reduceAz(pAz):
+    while pAz < 0.0:
+        pAz += 360
+    while pAz >= 360.0:
+        pAz -= 360.0
+    return pAz
+
 def transform_azAlt_to_haDec_r(pAz, pAlt, latr):
     sinLat = math.sin(latr)
     cosLat = math.cos(latr)
@@ -1803,7 +1835,7 @@ def transform_observed_to_mount_r(pRoll, pPitch, pPierSide, loud=False, enable=F
         return (pRoll, pPitch)
     else:
         if True:
-         
+
             ih = model['IH']
             idec = model['ID']
             Wh = model['WH']
@@ -1851,10 +1883,10 @@ def transform_observed_to_mount_r(pRoll, pPitch, pPierSide, loud=False, enable=F
         rPitch = math.radians(pPitch - idec /3600.)
         siteLatitude = site_config['latitude']
         if not ALTAZ:
-           
+
             if pPierSide == 0:
                 ch = -ch/3600.      #Trying this 20210612
-                np = -np/3600.      
+                np = -np/3600.
                 rRoll += math.radians(Wh/3600.)
                 rPitch -= math.radians(Wd/3600.)  #NB Adjust signs to normal EWNS view
                 #print("PIERSIDE IS BEING APPLIED:  ", pPierSide, Wh, Wd)
@@ -2317,8 +2349,8 @@ def test_icrs_mount_icrs():
 #     model['CH'] = 0.0
 #     modelChanged = True
 #     print("E's reset")
-    
-    
+
+
 #def test_misAlign():
 #    stars = open('TPOINT\\perfct34.dat', 'r')
 #    out = open('TPOINT\\misalign.dat', 'w')
@@ -2439,15 +2471,13 @@ def test_icrs_mount_icrs():
 
 ut_now, sid_now, equinox_now, day_of_year = get_current_times()
 sidTime = round(sid_now.hour , 7)
-print('Ut, Sid, Jnow:  ',  ut_now, sid_now, equinox_now)
-press = 970*u.hPa
-temp = 10*u.deg_C
-hum = 0.5           #50%
+print('Ut, Sid, Jnow, DoY:  ',  ut_now, sid_now, equinox_now, day_of_year)
+# press = 970*u.hPa
+# temp = 10*u.deg_C
+# hum = 0.5           #50%
 
-print('Utility module loaded at: ', ephem.now(), round((ephem.now()), 4))
+print('UPTR utility module loaded at: ', ephem.now(), round((ephem.now()), 4))
 print('Local system Sidereal time is:  ', sidTime)
 #SEQ_Counter = '000000'  #Should this be longer and persistently increasing?
 if __name__ == '__main__':
     print('Welcome to the utility module.')
-
-

@@ -8,6 +8,8 @@ import socket
 from global_yard import g_dev
 #breakpoint()
 
+import datetime
+
 from site_config import get_ocn_status
 
 from pprint import pprint
@@ -95,6 +97,10 @@ class ObservingConditions:
         self.unihedron_connected = True  # NB NB NB His needs improving, driving from config
         self.hostname = socket.gethostname()
         self.site_is_specific = False
+
+
+
+
         # =============================================================================
         #         Note site_in_automatic found in the Enclosure object.
         # =============================================================================
@@ -168,6 +174,10 @@ class ObservingConditions:
             DESCRIPTION.
 
         '''
+
+
+
+
 
         if not self.is_wema and self.site_has_proxy:
             if self.config['site_IPC_mechanism'] == 'shares':

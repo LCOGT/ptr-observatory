@@ -11,7 +11,7 @@ import json
 '''
 Ports.txt
 Tested 202009
-25  
+25
 COM8    SkyRoof
 COM9    PWI4
 COM10   PWI4
@@ -56,14 +56,16 @@ site_config = {
     'site_id': 'mrc',
     'debug_site_mode': False,
     'owner':  ['google-oauth2|112401903840371673242'],  # Wayne
-    
+
     'owner_alias': ['WER', 'TELOPS'],
     'admin_aliases': ["ANS", "WER", "TELOPS", "TB", "DH", "KVH", "KC"],
-    
+
     'client_hostname':  'MRC-0m35',
     'client_path':  'Q:/ptr/',  # Generic place for client host to stash misc stuff
     'alt_path':  'q:/ptr/',  # Generic place for this host to stash misc stuff
+    'save_to_alt_path' : 'no',
     'archive_path':  'Q:/ptr/',
+    'archive_age' : -99.9, # Number of days to keep files in the local archive before deletion. Negative means never delete
     'aux_archive_path':  None,
     'wema_is_active':  True,          # True if the split computers used at a site.
     'wema_hostname': 'MRC-WMS-ENC',   # Prefer the shorter version
@@ -73,10 +75,10 @@ site_config = {
     'wema_write_share_path': 'Q:/ptr/',  # Meant to be where Wema puts status data.
     'client_read_share_path':  'Q:/ptr/',
     'client_write_share_path': 'Q:/ptr/',
-    'redis_ip': '10.15.0.109',  #'127.0.0.1', None if no redis path present, 
+    'redis_ip': '10.15.0.109',  #'127.0.0.1', None if no redis path present,
     'site_is_generic':  False,   # A simply  single computer ASCOM site.
     'site_is_specific':  False,  # Indicates some special code for this site, found at end of config.
-     
+
 
     'host_wema_site_name':  'SRO',  #  The umbrella header for obsys in close geographic proximity.
     'name': 'Mountain Ranch Camp Observatory 0m35f7.2',
@@ -89,33 +91,42 @@ site_config = {
                     Now is the time for all good persons
                     to get out and vote early and often lest
                     we lose charge of our democracy.
-                    ''',    #i.e, a multi-line text block supplied by the owner.  Must be careful about the contents for now.                 
+                    ''',    #i.e, a multi-line text block supplied by the owner.  Must be careful about the contents for now.
      'location_day_allsky':  None,  #  Thus ultimately should be a URL, probably a color camera.
     'location_night_allsky':  None,  #  Thus ultimately should be a URL, usually Mono camera with filters.
     'location _pole_monitor': None,  #This probably gets us to some sort of image (Polaris in the North)
     'location_seeing_report': None,  # Probably a path to a jpeg or png graph.
-    
+
     'TZ_database_name':  'America/Los_Angeles',
     'mpc_code':  'ZZ23',    #This is made up for now.
     'time_offset':  -7,
-    'timezone': 'PDT',      
+    'timezone': 'PDT',
     'latitude': 34.459375,     #Decimal degrees, North is Positive
     'longitude': -119.681172,   #Decimal degrees, West is negative
     'elevation': 317.75,    # meters above sea level
     'reference_ambient':  10.0,  #Degrees Celsius.  Alternately 12 entries, one for every - mid month.
     'reference_pressure':  977.83,  #mbar Alternately 12 entries, one for every - mid month.
-    
+
     'site_roof_control': 'no', #MTF entered this in to remove sro specific code
     'site_in_automatic_default': "Automatic",   #"Manual", "Shutdown"
     'automatic_detail_default': "Enclosure is initially set to Automatic mode.",
-   
+    'observing_check_period' : 2,    # How many minutes between weather checks
+    'enclosure_check_period' : 2,    # How many minutes between enclosure checks
+
     'auto_eve_bias_dark': True,
     'auto_eve_sky_flat': True,
     'eve_sky_flat_sunset_offset': -60.,  #  Minutes  neg means before, + after.
     'auto_morn_sky_flat': True,
     'auto_morn_bias_dark': True,
     're-calibrate_on_solve': True,
-    
+    'pointing_calibration_on_startup': False,
+    'periodic_focus_time' : 0.5, # This is a time, in hours, over which to bypass automated focussing (e.g. at the start of a project it will not refocus if a new project starts X hours after the last focus)
+    'stdev_fwhm' : 0.5, # This is the expected variation in FWHM at a given telescope/camera/site combination. This is used to check if a fwhm is within normal range or the focus has shifted
+    'focus_exposure_time': 15, # Exposure time in seconds for exposure image
+    'solve_nth_image' : 10, # Only solve every nth image
+    'solve_timer' : 5, # Only solve every X minutes
+    'threshold_mount_update' : 10, # only update mount when X arcseconds away
+
     'defaults': {
         'observing_conditions': 'observing_conditions1',
         'enclosure': 'enclosure1',
@@ -140,12 +151,12 @@ site_config = {
             'selector',
             'filter_wheel',
             'camera',
-    
+
             'sequencer',
             ],
      'wema_types': [
             'observing_conditions',
-            'enclosure',    
+            'enclosure',
             ],
      'enc_types': [
             'enclosure'
@@ -161,10 +172,10 @@ site_config = {
             'selector',
             'filter_wheel',
             'camera',
-       
+
             'sequencer',
             ],
-     
+
     'observing_conditions': {
         'observing_conditions1': {
             'parent': 'site',
@@ -190,7 +201,7 @@ site_config = {
         'enclosure1': {
             'parent': 'site',
             'enc_is_specific':  False,  # Indicates some special site code.
-            'name': 'Megawan',       
+            'name': 'Megawan',
             'hostIP':  '10.15.0.65',
             'driver': 'ASCOM.SkyRoofHub.Dome',    #  Not really a dome for Skyroof.
             'redis_ip': '10.15.0.109',   #None if no redis path present
@@ -205,14 +216,14 @@ site_config = {
             'cool_down': -65,    #  Minutes prior to sunset.
             'settings': {
                 'lights':  ['Auto', 'White', 'Red', 'IR', 'Off'],
-                
+
                 'roof_shutter':  ['Auto', 'Open', 'Close', 'Lock Closed', 'Unlock'],
             },
             'eve_bias_dark_dur':  2.0,   #hours Duration, prior to next.
             'eve_screen_flat_dur': 1.0,   #hours Duration, prior to next.
             'operations_begin':  -1.0,   #  - hours from Sunset
             'eve_cooldown_offset': -.99,   #  - hours beforeSunset
-            'eve_sky_flat_offset':  0.5,   #  - hours beforeSunset 
+            'eve_sky_flat_offset':  0.5,   #  - hours beforeSunset
             'morn_sky_flat_offset':  0.4,   #  + hours after Sunrise
             'morning_close_offset':  0.41,   #  + hours after Sunrise
             'operations_end':  0.42,
@@ -232,13 +243,14 @@ site_config = {
             'driver': 'ASCOM.PWI4.Telescope',  # Was 'ASCOM.AltAzDS.Telescope' prior to 20210417 WER
             'startup_script':  None,
             'recover_script':  None,
-            'shutdown_script':  None,  
+            'shutdown_script':  None,
             'alignment': 'Alt-Az',
             'default_zenith_avoid': 7.0,   #degrees floating
             'west_clutch_ra_correction': 0.0,
             'west_clutch_dec_correction': 0.0,
             'east_flip_ra_correction': 0.0,
-            'east_flip_dec_correction': 0.0,
+            'east_flip_dec_correction': 0.0,  #
+            'permissive_mount_reset' : 'no', # if this is set to yes, it will reset the mount at startup and when coordinates are out significantly
             'has_paddle': False,
             'pointing_tel': 'tel1',
             'Selector':{
@@ -251,7 +263,7 @@ site_config = {
                 },
             'settings': {
 			    'latitude_offset': 0.0,     #Decimal degrees, North is Positive. These *could* be slightly different than site.
-			    'longitude_offset': 0.0,    #Decimal degrees, West is negative  
+			    'longitude_offset': 0.0,    #Decimal degrees, West is negative
 			    'elevation_offset': 0.0,    # meters above sea level
                 'home_park_altitude': 0,    #Having these settings is important for PWI4 where it can easily be messed up.
                 'home_park_azimuth': 180,
@@ -290,18 +302,18 @@ site_config = {
                      '360': 32,
                      },
                 'model': {
-                    'IH': 0, 
-                    'ID': 0., 
+                    'IH': 0,
+                    'ID': 0.,
                     'WH': 0.,
                     'WD': 0.,
-                    'MA': 0., 
+                    'MA': 0.,
                     'ME': 0.,
-                    'CH': 0., 
+                    'CH': 0.,
                     'NP': 0.,
                     'TF': 0.,
-                    'TX': 0., 
+                    'TX': 0.,
                     'HCES': 0.,
-                    'HCEC': 0., 
+                    'HCEC': 0.,
                     'DCES': 0.,
                     'DCEC': 0.,
                     'IA': 0.0,
@@ -330,7 +342,7 @@ site_config = {
             'driver': 'None',                     #Essentially this device is informational.  It is mostly about the optics.
             'startup_script':  None,
             'recover_script':  None,
-            'shutdown_script':  None,  
+            'shutdown_script':  None,
             'collecting_area':  76147,    #178*178*math.pi*0.765
             'obscuration':  23.5,
             'aperture': 356,
@@ -379,19 +391,19 @@ site_config = {
             },
 
     },
-    
+
     'screen': {
         'screen1': {
             'parent': 'telescope1',
             'name': 'screen',
             'desc':  'Optec Alnitak 24"',
             'driver': 'COM13',  #This needs to be a four or 5 character string as in 'COM8' or 'COM22'
-            'com_port': 'COM10', 
+            'com_port': 'COM10',
             'minimum': 5.0,   #This is the % of light emitted when Screen is on and nominally at 0% bright.
             'saturate': 170,  #Out of 0.0 - 255, this is the last value where the screen is linear with output.
                                 #These values have a minor temperature sensitivity yet to quantify.
             },
-    
+
     },
 
     'focuser': {
@@ -406,6 +418,8 @@ site_config = {
             'coef_c': 7.895,    # Negative means focus moves out (larger numerically) as Primary gets colder
             'coef_0': 6850,  #20210710# Nominal intercept when Primary is at 0.0 C.
             'coef_date':  '20210710',   #A Guess as to coef_c
+            'z_compression': 0.0, #  microns per degree of zenith distance
+            'z_coef_date':  '20221002',   # 'reference': 4375,    #   Guess 20210904  Nominal at 10C Primary temperature
             'use_local_temp':  True,
             'minimum': 0,    # NB this needs clarifying, we are mixing steps and microns.
             'maximum': 12700,
@@ -417,7 +431,7 @@ site_config = {
             'has_dial_indicator': False
             },
 
-       
+
     },
     'selector': {
         'selector1': {
@@ -484,7 +498,7 @@ site_config = {
                                         14, 15, 4, 16],   #  9, 21],  # 5, 17], #Most to least throughput, \
                                 #so screen brightens, skipping u and zs which really need sky.
                 'filter_sky_sort':     [15, 3, 14,  8, 13, 11, 12, \
-                                         6,  7, 10, 2, 1, 0]  #Least to most throughput  5, 9, 4, 16, 
+                                         6,  7, 10, 2, 1, 0]  #Least to most throughput  5, 9, 4, 16,
 
             },
         },
@@ -524,6 +538,11 @@ site_config = {
             'file_mode_path':  'D:/archive/sq01/maxim/',
 
             'settings': {
+                'crop_preview': False,
+                'crop_preview_ybottom': 1,
+                'crop_preview_ytop': 1,
+                'crop_preview_xleft': 1,
+                'crop_preview_xright': 1,
                 'temp_setpoint': -25,
                 'calib_setpoints': [-25, -22.5,- 20, -17.5 ],  #  Picked by day-of-year mod len(list)
                 'day_warm': False,
@@ -558,7 +577,16 @@ site_config = {
                 'x_pixel':  3.76,
                 'y_pixel':  3.76,
                 'pix_scale': [0.302597, 0.605194, 0.907791, 1.210388],    #   bin-2  2* math.degrees(math.atan(3.76/2563000))*3600
-                'x_field_deg': round(4784*0.605194/3600, 4),   #48 X 32 AMIN  3MIN X 0.5 DEG  
+
+                'CameraXSize' : 4784,
+                'CameraYSize' : 3194,
+                'MaxBinX' : 2,
+                'MaxBinY' : 2,
+                'StartX' : 1,
+                'StartY' : 1,
+
+
+                'x_field_deg': round(4784*0.605194/3600, 4),   #48 X 32 AMIN  3MIN X 0.5 DEG
                 'y_field_deg': round(3194*0.605194/3600, 4),
                 'overscan_x': 24,
                 'overscan_y': 34,
@@ -578,7 +606,7 @@ site_config = {
                 'is_color': False,
                 'can_set_gain':  True,
                 'ref_dark': 360,
-                'long_dark': 600,   #  s.  
+                'long_dark': 600,   #  s.
                 'reference_gain': [1.3, 2.6, 3.9, 5.2],     #  One val for each binning. Assumed digitalsumming in camera???
                 'reference_noise': [6, 6, 6, 6],    #  NB Guess
                 'reference_dark': [.2, .8, 1.8, 3.2],  #  Guess
@@ -606,10 +634,10 @@ site_config = {
                     'screen_x0':  8.683
                 },
             },
-        
+
         },
 
-        
+
     },
 
     'sequencer': {
@@ -620,7 +648,7 @@ site_config = {
             'driver': None,
             'startup_script':  None,
             'recover_script':  None,
-            'shutdown_script':  None, 
+            'shutdown_script':  None,
         },
     },
     #As aboove, need to get this sensibly suported on GUI and in fits headers.
@@ -639,7 +667,7 @@ site_config = {
             'redis':  '(host=10.15.0.15, port=6379, db=0, decode_responses=True)',
             'startup_script':  None,
             'recover_script':  None,
-            'shutdown_script':  None,  
+            'shutdown_script':  None,
         },
     },
 }    #This brace closes the while configuration dictionary. Match found up top at:  site_config = {
@@ -659,4 +687,3 @@ if __name__ == '__main__':
         print('Strings matched.')
     if site_config == site_unjasoned:
         print('Dictionaries matched.')
-
