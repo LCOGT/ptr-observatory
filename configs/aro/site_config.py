@@ -45,7 +45,7 @@ site_config = {
                                  # Intention it is found in this file.
                                  # Fat is intended to be simple since
                                  # there is so little to control.
-    'client_hostname':"ARO-WEMA",     # Generic place for this host to stash.
+    'client_hostname':"ARO-0m30",     # Generic place for this host to stash.
     'client_path': 'F:/ptr/',
     'alt_path': '//house-computer/saf_archive_2/archive/sq01/',
     'archive_path': 'F:/ptr/',       # Where images are kept.
