@@ -90,8 +90,8 @@ site_config = {
     'reference_pressure':  794.0,    #mbar   A rough guess 20200315
 
     'site_roof_control': 'yes', #MTF entered this in to remove sro specific code.... Basically do we have control of the roof or not see line 338 sequencer.py
-    'site_in_automatic_default': "Automatic",   # ["Manual", "Shutdown", "Automatic"]
-    'automatic_detail_default': "Enclosure is initially set to Automatic by ARO site_config.",
+    'site_in_automatic_default': "Manual",   # ["Manual", "Shutdown", "Automatic"]
+    'automatic_detail_default': "Enclosure is initially set to Manual by ARO site_config.",
     'observing_check_period' : 2,    # How many minutes between weather checks
     'enclosure_check_period' : 2,    # How many minutes between enclosure checks
     'auto_eve_bias_dark': True,

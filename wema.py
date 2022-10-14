@@ -31,7 +31,7 @@ from api_calls import API_calls
 import ptr_events
 from devices.observing_conditions import ObservingConditions
 from devices.enclosure import Enclosure
-from pprint import pprint
+#from pprint import pprint
 
 from global_yard import g_dev
 
