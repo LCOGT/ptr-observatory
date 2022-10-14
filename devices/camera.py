@@ -236,7 +236,8 @@ class Camera:
         for file in fileList:
             #print (file.split('_')[1])
             self.flatFiles.update({file.split('_')[1] : file })
-
+        # To supress occasional flatfield div errors
+        np.seterr(divide='ignore')
         #print (self.flatFiles)
         #sys.exit()
 
@@ -2055,7 +2056,8 @@ class Camera:
                         # Quick flat flat frame
                         try:
                             tempFlatFrame=np.load(self.flatFiles[self.current_filter])
-                            hdusmall.data=hdusmall.data/tempFlatFrame
+
+                            hdusmall.data=np.divide(hdusmall.data,tempFlatFrame)
                             del tempFlatFrame
                         except Exception as e:
                             print ("flatting light frame failed",e)
@@ -2076,6 +2078,7 @@ class Camera:
                         # the FWHM and then it wants to get out back to the focus script. So lets let it do
                         # that here. In future, we can make other interesteding jpg products showing a
                         # graphical representation of the focus or something... but for now, it just sends back the FWHM
+                        # Most of this could be in it's own function, but it is here for now
 
                         if focus_image and not solve_it:
                             #Note we do not reduce focus images, except above in focus processing.
