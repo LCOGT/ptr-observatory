@@ -65,7 +65,7 @@ def platesolve(image_file, arcsec_per_pixel):
             stderr=PIPE
             )
 
-    (stdout, stderr) = process.communicate(timeout=20)  # Obtain stdout and stderr output from the wcs tool
+    (stdout, stderr) = process.communicate(timeout=60)  # Obtain stdout and stderr output from the wcs tool
     exit_code = process.wait() # Wait for process to complete and obtain the exit code
 
     if exit_code != 0:

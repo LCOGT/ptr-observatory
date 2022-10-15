@@ -338,7 +338,6 @@ class Sequencer:
         events = g_dev['events']
         #g_dev['obs'].update_status()  #NB NEED to be sure we have current enclosure status.  Blows recursive limit
         self.current_script = "No current script"    #NB this is an unused remnant I think.
-        #if True or     #Note this runs in Manual Mode as well.
 
         if self.bias_dark_latch and ((events['Eve Bias Dark'] <= ephem_now < events['End Eve Bias Dark']) and \
              self.config['auto_eve_bias_dark'] and g_dev['enc'].mode == 'Automatic' ):
@@ -826,7 +825,7 @@ class Sequencer:
                     color = exposure['filter']
                     exp_time =  float(exposure['exposure'])
                     #dither = exposure['dither']
-                    if exposure['bin'] in[0, '0', '0,0', '0 0']:
+                    if exposure['bin'] in[0, '0', '0,0', '0, 0', '0 0']:
                         #if g_dev['cam'].config['camera']['camera_1_1']['settings']['default_bin'][0] == 1: # WER
                         #    binning = '1 1'
                         tempBinString=str(g_dev['cam'].config['camera']['camera_1_1']['settings']['default_bin'][0])
@@ -1989,7 +1988,7 @@ class Sequencer:
                 result['mean_focus'] = g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron
             try:
                 spot4 = result['FWHM']
-                foc_pos3 = result['mean_focus']
+                foc_pos4 = result['mean_focus']
             except:
                 spot4 = False
                 foc_pos4 = False
