@@ -1820,7 +1820,8 @@ class Camera:
 
                     self.pix_ang = (self.config['camera'][self.name]['settings']['x_pixel']*self.camera.BinX/(float(self.config['telescope'] \
                                               ['telescope1']['focal_length'])*1000.))
-                    hdu.header['PIXSCALE'] = (round(math.degrees(math.atan(self.pix_ang))*3600., 4), '[arcsec/pixel] Nominal pixel scale on sky')
+                    #hdu.header['PIXSCALE'] = (round(math.degrees(math.atan(self.pix_ang))*3600., 4), '[arcsec/pixel] Nominal pixel scale on sky')
+                    hdu.header['PIXSCALE'] = (self.config['camera'][self.name]['settings']['pix_scale'][self.camera.BinX -1], '[arcsec/pixel] Nominal pixel scale on sky')
                     pixscale=float(hdu.header['PIXSCALE'])
                     hdu.header['REQNUM']   = ('00000001', 'Request number')
                     hdu.header['ISMASTER'] = (False, 'Is master image')

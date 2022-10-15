@@ -90,8 +90,8 @@ site_config = {
     'reference_pressure':  794.0,    #mbar   A rough guess 20200315
 
     'site_roof_control': 'yes', #MTF entered this in to remove sro specific code.... Basically do we have control of the roof or not see line 338 sequencer.py
-    'site_in_automatic_default': "Manual",   # ["Manual", "Shutdown", "Automatic"]
-    'automatic_detail_default': "Enclosure is initially set to Manual by ARO site_config.",
+    'site_in_automatic_default': "Automatic",   # ["Manual", "Shutdown", "Automatic"]
+    'automatic_detail_default': "Enclosure is initially set to Automatic by ARO site_config.",
     'observing_check_period' : 2,    # How many minutes between weather checks
     'enclosure_check_period' : 2,    # How many minutes between enclosure checks
     'auto_eve_bias_dark': True,
@@ -104,8 +104,8 @@ site_config = {
     'periodic_focus_time' : 0.5, # This is a time, in hours, over which to bypass automated focussing (e.g. at the start of a project it will not refocus if a new project starts X hours after the last focus)
     'stdev_fwhm' : 0.5, # This is the expected variation in FWHM at a given telescope/camera/site combination. This is used to check if a fwhm is within normal range or the focus has shifted
     'focus_exposure_time': 15, # Exposure time in seconds for exposure image
-    'solve_nth_image' : 10, # Only solve every nth image
-    'solve_timer' : 5, # Only solve every X minutes
+    'solve_nth_image' : 6, # Only solve every nth image
+    'solve_timer' : 4, # Only solve every X minutes
     'threshold_mount_update' : 10, # only update mount when X arcseconds away
     'get_ocn_status': None,
     'get_enc_status': None,
@@ -529,7 +529,7 @@ site_config = {
                 'y_active': 3194,
                 'x_pixel':  3.76,
                 'y_pixel':  3.76,
-                'pix_scale': [0.528, 1.055, 1.583, 2.110],  # VErified for saf 20220903 WER [0.2876, 0.575, 0.863, 1.15], #F9        [0.528, 1.055, 1.583, 2.110] F4.9
+                'pix_scale': [0.2876, 0.575, 0.863, 1.15],  # VErified for saf 20220903 WER [0.2876, 0.575, 0.863, 1.15], #F9        [0.528, 1.055, 1.583, 2.110] F4.9
 
                 'CameraXSize' : 9600,
                 'CameraYSize' : 6422,
@@ -555,8 +555,8 @@ site_config = {
                 'max_exposure': 360.0,
                 'can_subframe':  True,
                 'min_subframe':  [128, 128],
-                'bin_modes':  [[1, 1, 0.53], [2, 2, 1.06], [3, 3, 1.58], [4, 4, 2.11]],   #Meaning no binning choice if list has only one entry, default should be first.
-                'default_bin':  ['2 2'],
+                'bin_modes':  [[1, 1, 0.2876], [2, 2, 0.575], [3, 3, 0.863], [4, 4, 1.15]],   #Meaning no binning choice if list has only one entry, default should be first.
+                'default_bin':  [2, 2, 0.575], 
                 'bin_enable':['2 2'],
                 'cycle_time':  [18, 15, 15, 12],  # 3x3 requires a 1, 1 reaout then a software bin, so slower.
                 'rbi_delay':  0.,      # This being zero says RBI is not available, eg. for SBIG.
