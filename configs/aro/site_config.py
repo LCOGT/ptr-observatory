@@ -196,8 +196,8 @@ site_config = {
                                                                         #First Entry is always default condition.
                 'roof_shutter':  ['Auto', 'Open', 'Close', 'Lock Closed', 'Unlock'],
             },
-            'eve_bias_dark_dur':  2.0,   # hours Duration, prior to next.
-            'eve_screen_flat_dur': 1.0,   # hours Duration, prior to next.
+            'eve_bias_dark_dur':  1.5,   # hours Duration, prior to next.
+            'eve_screen_flat_dur': 0.0,   # hours Duration, prior to next.
             'operations_begin':  -1.0,   # - hours from Sunset
             'eve_cooldown_offset': -.99,   # - hours beforeSunset
             'eve_sky_flat_offset':  0.5,   # - hours beforeSunset
@@ -232,7 +232,7 @@ site_config = {
                 'longitude_offset': 0.0,   # Decimal degrees, West is negative  #NB This could be an eval( <<site config data>>))
                 'elevation_offset': 0.0,  # meters above sea level
                 'home_park_altitude': 0.0,
-                'home_park_azimuth': 180.,
+                'home_park_azimuth': 0.0,
                 'horizon':  20.,    # Meant to be a circular horizon. Or set to None if below is filled in.
                 'horizon_detail': {  # Meant to be something to draw on the Skymap with a spline fit.
                     '0.0': 10,
@@ -354,7 +354,7 @@ site_config = {
             'name': 'focuser',
             'desc':  'Optec Gemini',
             'driver': 'ASCOM.OptecGemini.Focuser',
-		    'com_port': 'COM13',    #AP 'COM5'  No Temp Probe.
+		    'com_port': 'COM13',    #AP 'COM5'  No Temp Probe on SRO AO Honders
             # # F4.9 setup
             # 'reference': 5800,    # 20210313  Nominal at 10C Primary temperature
             # 'ref_temp':  5.1,    # Update when pinning reference
