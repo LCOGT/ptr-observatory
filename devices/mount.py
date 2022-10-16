@@ -361,7 +361,7 @@ class Mount:
                     pierside = 0   #East side so Looking West
             except:
                 pierside=0
-                print ("Mount does not report pier side.")
+                #print ("Mount does not report pier side.")
             self.current_sidereal = self.mount.SiderealTime
             uncorr_mech_ra_h = self.mount.RightAscension
             uncorr_mech_dec_d = self.mount.Declination
@@ -397,7 +397,7 @@ class Mount:
             except:
                 ra_cal_offset=0
                 dec_cal_offset=0
-                print ("Mount does not report pier side")
+                #print ("Mount does not report pier side")
 
 
             #if self.mount.sideOfPier == look_west:
@@ -422,7 +422,7 @@ class Mount:
             except:
                 ra_cal_offset=0
                 dec_cal_offset=0
-                print ("Mount does not report pier side")
+                #print ("Mount does not report pier side")
 
             #ra_cal_offset, dec_cal_offset = self.get_mount_reference()
 
@@ -615,7 +615,7 @@ class Mount:
         try:
             ra_off, dec_off = self.get_mount_reference()
         except:
-            print ("get_quick_status offset... is zero")
+            #print ("get_quick_status offset... is zero")
             ra_off = 0
             dec_off = 0
         # NB NB THis code would be safer as a dict or other explicity named structure
