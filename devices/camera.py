@@ -675,7 +675,7 @@ class Camera:
 
 
     def parse_command(self, command):
-        #print("Camera Command incoming:  ", command)
+        print("Camera Command incoming:  ", command)
         req = command['required_params']
         opt = command['optional_params']
         action = command['action']
@@ -1163,7 +1163,12 @@ class Camera:
             self.retry_camera_start_time = time.time()
 
             while self.retry_camera > 0:
-
+                if g_dev['obs'].stop_all_activity:
+                    if result['stopped'] is True:
+                        g_dev['obs'].stop_all_activity = False
+                        print("Camera retry loop stopped by Cancel Exposure")
+                        self.exposure_busy = False
+                    return
                 #NB Here we enter Phase 2
                 try:
                     self.t1 = time.time()
