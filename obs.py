@@ -43,6 +43,7 @@ from skimage.transform import resize
 from skimage.io import imsave
 #import matplotlib.pyplot as plt
 import sep
+from astropy import wcs
 from astropy.io import fits
 from planewave import platesolve
 import bz2
@@ -989,30 +990,59 @@ class Observatory:
                             target_dec = g_dev['mnt'].current_icrs_dec
                             solved_ra = solve['ra_j2000_hours']
                             solved_dec = solve['dec_j2000_degrees']
+                            solved_arcsecperpixel = solve['arcsec_per_pixel']
+                            solved_rotangledegs= solve['rot_angle_degs']
                             err_ha = target_ra - solved_ra
                             err_dec = target_dec - solved_dec
                             print(" coordinate error in ra, dec:  (asec) ", round(err_ha*15*3600, 2), round(err_dec*3600, 2))  #NB WER changed units 20221012
-                            #NB NB NB Need to add Pierside as a parameter to this cacc 20220214 WER
-                            self.last_solve_time = datetime.datetime.now()
-                            self.images_since_last_solve = 0
 
-                            #NB NB NB this needs rethinking, the incoming units are hours in HA or degrees of dec
-                            if (err_ha*15*3600 > 1200 or err_dec*3600 > 1200 or err_ha*15*3600 < -1200 or err_dec*3600 < -1200) and   self.config['mount']['mount1']['permissive_mount_reset'] == 'yes':
-                                g_dev['mnt'].reset_mount_reference()
-                                print ("I've  reset the mount_reference 1")
-                                g_dev['mnt'].current_icrs_ra = solve['ra_j2000_hours']
-                                g_dev['mnt'].current_icrs_dec = solve['dec_j2000_hours']
-                                err_ha = 0
-                                err_dec = 0
+                            # IS IMAGE PART OF A SMARTSTACK? 1=YES
+                            smartStack=0
 
-                            if err_ha*15*3600 > self.config['threshold_mount_update'] or err_dec*3600 > self.config['threshold_mount_update']:
-                                try:
-                                    if g_dev['mnt'].pier_side_str == 'Looking West':
-                                        g_dev['mnt'].adjust_mount_reference(err_ha, err_dec)
-                                    else:
-                                        g_dev['mnt'].adjust_flip_reference(err_ha, err_dec)   #Need to verify signs
-                                except:
-                                    print ("This mount doesn't report pierside")
+                            if smartStack !=1: # We do not want to reset solve timers during a smartStack
+                                self.last_solve_time = datetime.datetime.now()
+                                self.images_since_last_solve = 0
+
+
+                            # IF IMAGE IS PART OF A SMARTSTACK
+                            # THEN OPEN THE REDUCED FILE AND PROVIDE A WCS READY FOR STACKING
+                            if smartStack ==1:
+                                img = fits.open(paths['red_path'] + paths['red_name01'], mode='update', ignore_missing_end=True)
+                                img[0].header['CTYPE1']= 'RA---TAN'
+                                img[0].header['CTYPE2']= 'DEC--TAN'
+                                img[0].header['CRVAL1']= solved_ra*15
+                                img[0].header['CRVAL2']= solved_dec
+                                img[0].header['CRPIX1'] = float(img[0].header['NAXIS1']/2)
+                                img[0].header['CRPIX2']= float(img[0].header['NAXIS2']/2)
+                                img[0].header['CUNIT1']= 'deg'
+                                img[0].header['CUNIT2']= 'deg'
+                                img[0].header['CROTA2']= 180-solved_rotangledegs
+                                img[0].header['CDELT1']= solved_arcsecperpixel / 3600
+                                img[0].header['CDELT2']= solved_arcsecperpixel / 3600
+                                img.writeto( paths['red_path']+ 'SOLVED_' + paths['red_name01'])
+
+
+
+                            # IF IMAGE IS PART OF A SMARTSTACK
+                            # DO NOT UPDATE THE POINTING!
+                            if smartStack !=1:
+                                #NB NB NB this needs rethinking, the incoming units are hours in HA or degrees of dec
+                                if (err_ha*15*3600 > 1200 or err_dec*3600 > 1200 or err_ha*15*3600 < -1200 or err_dec*3600 < -1200) and   self.config['mount']['mount1']['permissive_mount_reset'] == 'yes':
+                                    g_dev['mnt'].reset_mount_reference()
+                                    print ("I've  reset the mount_reference 1")
+                                    g_dev['mnt'].current_icrs_ra = solve['ra_j2000_hours']
+                                    g_dev['mnt'].current_icrs_dec = solve['dec_j2000_hours']
+                                    err_ha = 0
+                                    err_dec = 0
+
+                                if err_ha*15*3600 > self.config['threshold_mount_update'] or err_dec*3600 > self.config['threshold_mount_update']:
+                                    try:
+                                        if g_dev['mnt'].pier_side_str == 'Looking West':
+                                            g_dev['mnt'].adjust_mount_reference(err_ha, err_dec)
+                                        else:
+                                            g_dev['mnt'].adjust_flip_reference(err_ha, err_dec)   #Need to verify signs
+                                    except:
+                                        print ("This mount doesn't report pierside")
 
 
                         except Exception as e:
