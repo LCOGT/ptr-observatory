@@ -94,11 +94,11 @@ site_config = {
     'automatic_detail_default': "Enclosure is initially set to Automatic by ARO site_config.",
     'observing_check_period' : 2,    # How many minutes between weather checks
     'enclosure_check_period' : 2,    # How many minutes between enclosure checks
-    'auto_eve_bias_dark': True,
-    'auto_eve_sky_flat': True,
+    'auto_eve_bias_dark': False,
+    'auto_eve_sky_flat': False,
     'eve_sky_flat_sunset_offset': -60.0,  # Minutes  neg means before, + after.
-    'auto_morn_sky_flat': True,
-    'auto_morn_bias_dark': True,
+    'auto_morn_sky_flat': False,
+    'auto_morn_bias_dark': False,
     're-calibrate_on_solve': True,
     'pointing_calibration_on_startup': False,
     'periodic_focus_time' : 0.5, # This is a time, in hours, over which to bypass automated focussing (e.g. at the start of a project it will not refocus if a new project starts X hours after the last focus)
@@ -200,7 +200,7 @@ site_config = {
             'eve_screen_flat_dur': 0.0,   # hours Duration, prior to next.
             'operations_begin':  -1.0,   # - hours from Sunset
             'eve_cooldown_offset': -.99,   # - hours beforeSunset
-            'eve_sky_flat_offset':  0.5,   # - hours beforeSunset
+            'eve_sky_flat_offset':  1,   # - hours beforeSunset   Only THis is used in PTR events
             'morn_sky_flat_offset':  0.4,   # + hours after Sunrise
             'morning_close_offset':  0.41,   # + hours after Sunrise
             'operations_end':  0.42,
@@ -364,11 +364,11 @@ site_config = {
             #F9 setup
             'reference': 4573, #5743,    #  Meas   Nominal at 10C Primary temperature
             'ref_temp':  20,    # Update when pinning reference
-            'coef_c': -55.9946,  #-77.57,   # negative means focus moves out/in as Primary gets colder/warmer.
-            'coef_0': 5333.0, #6155,   #5675,  20220502 Nominal intercept when Primary is at 0.0 C. f4.9 cONFIGURATION
-            'coef_date':  '20220920',    # TEMP RANGE 12 TO 19, 6 MEASUREMENTS
+            'coef_c': -62.708,  #-77.57,   # negative means focus moves out/in as Primary gets colder/warmer.
+            'coef_0': 5634, #6155,   #5675,  20220502 Nominal intercept when Primary is at 0.0 C. f4.9 cONFIGURATION
+            'coef_date':  '20220408',    # TEMP RANGE 12 TO 19, 6 MEASUREMENTS
             'z_compression': 0.0, #  microns per degree of zenith distance
-            'z_coef_date':  '20221002',   # 'reference': 4375,    #   Guess 20210904  Nominal at 10C Primary temperature
+            'z_coef_date':  '20221002',
             'minimum': 0,     # NB this area is confusing steps and microns, and need fixing.
             'maximum': 12600,   #12672 actually
             'step_size': 1,

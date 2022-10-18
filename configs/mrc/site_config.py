@@ -61,20 +61,26 @@ site_config = {
     'admin_aliases': ["ANS", "WER", "TELOPS", "TB", "DH", "KVH", "KC"],
 
     'client_hostname':  'MRC-0m35',
+<<<<<<< Updated upstream
     'client_path':  'Q:/ptr/',  # Generic place for client host to stash misc stuff
     'alt_path':  'q:/ptr/',  # Generic place for this host to stash misc stuff
     'save_to_alt_path' : 'no',
     'archive_path':  'Q:/ptr/',
+=======
+    'client_path':  'D:/ptr/',  # Generic place for client host to stash misc stuff
+    'alt_path':  'D:/ptr/',  # Generic place for this host to stash misc stuff
+    'archive_path':  'D:/ptr/',
+>>>>>>> Stashed changes
     'archive_age' : -99.9, # Number of days to keep files in the local archive before deletion. Negative means never delete
     'aux_archive_path':  None,
     'wema_is_active':  True,          # True if the split computers used at a site.
     'wema_hostname': 'MRC-WMS-ENC',   # Prefer the shorter version
-    'wema_path':  'Q:/ptr/',  # '/wema_transfer/',
+    'wema_path':  'D:/ptr/',  # '/wema_transfer/',
     'dome_on_wema':   True,
     'site_IPC_mechanism':  'redis',   # ['None', shares', 'shelves', 'redis']  Pick One
-    'wema_write_share_path': 'Q:/ptr/',  # Meant to be where Wema puts status data.
-    'client_read_share_path':  'Q:/ptr/',
-    'client_write_share_path': 'Q:/ptr/',
+    'wema_write_share_path': 'D:/ptr/',  # Meant to be where Wema puts status data.
+    'client_read_share_path':  'D:/ptr/',
+    'client_write_share_path': 'D:/ptr/',
     'redis_ip': '10.15.0.109',  #'127.0.0.1', None if no redis path present,
     'site_is_generic':  False,   # A simply  single computer ASCOM site.
     'site_is_specific':  False,  # Indicates some special code for this site, found at end of config.
@@ -339,6 +345,7 @@ site_config = {
             'name': 'Main OTA',
             'desc':  'Planewave CDK 14 F7.2',
             'telescop': 'mrc1',
+            'ptrtel': 'mrc1',
             'driver': 'None',                     #Essentially this device is informational.  It is mostly about the optics.
             'startup_script':  None,
             'recover_script':  None,
@@ -470,6 +477,8 @@ site_config = {
                 'home_filter':  2,
                 'default_filter':  'w',
                 'filter_reference': 2,
+                
+                'filter_list': ['PL','PR','PG','PB','HA','O3','S2', 'air','dif','w','CR','N2','up','gp','rp','ip','z', 'difup','difgp','difrp','difip','dark'], # A list of actual physical filters for the substitution function
                 'filter_data': [['filter', 'filter_index', 'filter_offset', 'sky_gain', 'screen_gain', 'abbreviation'],
                                 ['air',     [0, 0], -1000,  280,  [2, 17], 'ai'], # 0
                                 ['dif',     [4, 0],     0,  260,  [2, 17], 'df'], # 1

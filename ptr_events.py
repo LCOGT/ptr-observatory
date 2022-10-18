@@ -545,7 +545,7 @@ class Events:
                 ('Naut Dawn          ', nauticalDawn),
                 ('Morn Sky Flats     ', ephem.Date(nauticalDawn + 10/1440.)),
                 ('Civil Dawn         ', civilDawn),
-                ('End Morn Sky Flats ', ephem.Date(sunrise + 15/1440.)),
+                ('End Morn Sky Flats ', ephem.Date(sunrise + 15/1440.)),    #SRO drving this
                 ('Ops Window Closes  ', ephem.Date(sunrise + 15/1440.)),   #Enclosure must close 5 min after sunrise
                 ('Close and Park     ', ephem.Date(sunrise + 15/1440.)),
                 ('Sun Rise           ', sunrise),
