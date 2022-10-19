@@ -212,8 +212,10 @@ def remove_overscan (hdu):
     else:
         print("UNSUPPORTED Camera or Bin mode!!", ix, iy)
         trimmed = img
- 
-    meta['OVERSCAN'] = overscan
+    try:
+        meta['OVERSCAN'] = overscan
+    except:
+        print ("No identified overscan")
     meta['PEDASTAL'] = -pedastal
 
     hdu.header = meta

@@ -197,6 +197,15 @@ class FilterWheel:
             except:
                 print("QHY Filter not connected.")
 
+        # This controls the filter wheel through TheSkyX
+        elif driver == "CCDSoft2XAdaptor.ccdsoft5Camera":
+            self.maxim = False
+            self.dual = False
+            self.custom = False
+            self.theskyx = True
+            win32com.client.pythoncom.CoInitialize()
+            com_object = win32com.client.Dispatch(driver)
+
         else:
             # We default here to setting up a single wheel ASCOM driver.
             # We need to distinguish here between an independent ASCOM filter wheel

@@ -39,7 +39,9 @@ site_config = {
     'client_hostname':  'ECO-0m40',
     'client_path':  'C:/ptr/',  # Generic place for this host to stash misc stuff
     'alt_path':  'C:/ptr/',  # Generic place for this host to stash misc stuff
+    'save_to_alt_path' : 'no',
     'archive_path':  'C:/ptr/',  # Meant to be where /archive/<camera_id> is added by camera.
+    'archive_age' : 14.0, # Number of days to keep files in the local archive before deletion. Negative means never delete
     'aux_archive_path':  None, # '//house-computer/saf_archive_2/archive/',  #  Path to auxillary backup disk.
     'wema_is_active':  False,    #True if split computers used at a site.
     'wema_hostname':  [],  #  Prefer the shorter version
@@ -52,7 +54,7 @@ site_config = {
     'site_is_specific':  True,  # Indicates some special code for this site, found at end of config.
 
 
-    'host_wema_site_name':  'SRO',  #  The umbrella header for obsys in close geographic proximity.
+    'host_wema_site_name':  'ECO',  #  The umbrella header for obsys in close geographic proximity.
     'name': 'Eltham College Observatory, 0m4f6.8',
     'airport_code':  'MEL: Melbourne Airport',
     'location': 'Eltham, Victoria, Australia',
@@ -79,12 +81,21 @@ site_config = {
     'site_roof_control': 'no', #MTF entered this in to remove sro specific code.... Basically do we have control of the roof or not see line 338 sequencer.py
     'site_in_automatic_default': "Automatic",   #  ["Manual", "Shutdown", "Automatic"]
     'automatic_detail_default': "Enclosure is initially set to Automatic mode.",
+    'observing_check_period' : 5,    # How many minutes between weather checks
+    'enclosure_check_period' : 5,    # How many minutes between enclosure checks
     'auto_eve_bias_dark': True,
     'auto_eve_sky_flat': True,
     'eve_sky_flat_sunset_offset': -32.5,  #  Minutes  neg means before, + after.
     'auto_morn_sky_flat': True,
     'auto_morn_bias_dark': True,
     're-calibrate_on_solve': True,
+    'pointing_calibration_on_startup': False,
+    'periodic_focus_time' : 0.5, # This is a time, in hours, over which to bypass automated focussing (e.g. at the start of a project it will not refocus if a new project starts X hours after the last focus)
+    'stdev_fwhm' : 0.5, # This is the expected variation in FWHM at a given telescope/camera/site combination. This is used to check if a fwhm is within normal range or the focus has shifted
+    'focus_exposure_time': 15, # Exposure time in seconds for exposure image
+    'solve_nth_image' : 10, # Only solve every nth image
+    'solve_timer' : 5, # Only solve every X minutes
+    'threshold_mount_update' : 10, # only update mount when X arcseconds away
 
     'defaults': {
         'observing_conditions': 'observing_conditions1',  #  These are used as keys, may go away.
@@ -196,7 +207,8 @@ site_config = {
             'west_clutch_ra_correction':  0.0, #
             'west_clutch_dec_correction': 0.0, #
             'east_flip_ra_correction':  0.0, #
-            'east_flip_dec_correction': 0.0,  #
+            'east_flip_dec_correction': 0.0,  #  #
+            'permissive_mount_reset' : 'yes', # if this is set to yes, it will reset the mount at startup and when coordinates are out significantly
             'settings': {
 			    'latitude_offset': 0.0,     #Decimal degrees, North is Positive   These *could* be slightly different than site.
 			    'longitude_offset': 0.0,   #Decimal degrees, West is negative  #NB This could be an eval( <<site config data>>))
@@ -307,7 +319,7 @@ site_config = {
             'unit':  'degree'    #  'steps'
         },
     },
-    
+
     'screen': {
         'screen1': {
             'parent': 'telescope1',
@@ -378,7 +390,7 @@ site_config = {
             "parent": "telescope1",
             "name": "SBIG 8-position wheel" ,  #"LCO filter wheel FW50_001d",
             'service_date': '20180101',
-            "driver":   "Maxim.CCDCamera",   #"LCO.dual",  #  'ASCOM.FLI.FilterWheel',
+            "driver":   "CCDSoft2XAdaptor.ccdsoft5Camera",   #"LCO.dual",  #  'ASCOM.FLI.FilterWheel',
             #"driver":   "Maxim.Image",   #"LCO.dual",  #  'ASCOM.FLI.FilterWheel',
             'ip_string': None,
             "dual_wheel": False,
@@ -438,13 +450,18 @@ site_config = {
             'name': 'ec001ms',      #  Important because this points to a server file structure by that name.
             'desc':  'SBIG16803',
             'service_date': '20211111',
-            'driver': "Maxim.CCDCamera",  # "ASCOM.QHYCCD.Camera", ##  'ASCOM.FLI.Kepler.Camera',
+            'driver': "CCDSoft2XAdaptor.ccdsoft5Camera",  # "ASCOM.QHYCCD.Camera", ##  'ASCOM.FLI.Kepler.Camera',
             'detector':  'KAF16803',
             'manufacturer':  'On-Semi',
             'use_file_mode':  False,
             'file_mode_path':  'G:/000ptr_saf/archive/sq01/autosaves/',   #NB Incorrect site, etc. Not used at SRO.  Please clean up.
 
             'settings': {
+                'crop_preview': False,
+                'crop_preview_ybottom': 1,
+                'crop_preview_ytop': 1,
+                'crop_preview_xleft': 1,
+                'crop_preview_xright': 1,
                 'temp_setpoint': -22,   #Updated from -18 WER 20220914 Afternoon
                 'calib_setpoints': [-35,-30, -25, -20, -15, -10 ],  #  Should vary with season?
                 'day_warm': False,
@@ -481,6 +498,13 @@ site_config = {
                 'x_pixel':  6,
                 'y_pixel':  6,
                 'pix_scale': [1.067, 2.134, 3.201, 4.268],
+                'CameraXSize' : 4096,
+                'CameraYSize' : 4096,
+                'MaxBinX' : 2,
+                'MaxBinY' : 2,
+                'StartX' : 1,
+                'StartY' : 1,
+
                 'x_field_deg': 1.3333,   #   round(4784*1.0481/3600, 4),
                 'y_field_deg': 1.0665,   #  round(3194*1.0481/3600, 4),
                 'overscan_x': 24,
@@ -823,6 +847,13 @@ site_config = {
 
 #get_ocn_status = None   # NB these are placeholders for site specific routines for in a config file
 def get_enc_status(g_dev=None):
-    print ("no encolsure control")
+    status = {'shutter_status': "bluib",   # NB NB NB "Roof is open|closed' is more inforative for FAT, but we make boolean decsions on 'Open'
+              'enclosure_synchronized': True,
+              'dome_azimuth': 0.0,
+              'dome_slewing': False,
+              'enclosure_mode': "Autonomous!",
+              'enclosure_message':  ''
+             }
+    return status
 def get_ocn_status(g_dev=None):
     print ("no encolsure control")

@@ -3,6 +3,7 @@ import json
 import shelve
 import time
 
+import numpy as np
 import requests
 import serial
 import win32com.client
@@ -47,11 +48,24 @@ class Focuser:
         self.last_known_focus = None
         self.last_temperature = None
         self.last_source = None
+        self.time_of_last_focus = datetime.datetime.now() - datetime.timedelta(
+            days=1
+        )  # Initialise last focus as yesterday
+        self.images_since_last_focus = (
+            10000  # Set images since last focus as sillyvalue
+        )
+        self.last_focus_fwhm = None
+        self.focus_tracker = np.array(10 * [np.nan])
 
         try:
             self.get_af_log()
         except:
             self.set_focal_ref_reset_log(config["focuser"]["focuser1"]["reference"])
+
+        try:
+            self.z_compression = config["focuser"]["focuser1"]["z_compression"]
+        except:
+            self.z_compression = 0.0
 
         try:  #  NB NB NB This mess neads cleaning up.
             try:
@@ -237,6 +251,10 @@ class Focuser:
         This uses te most recent focus procedure that used last_temperature
         to focus. Functionally dependent of temp, coef_c, and filter thickness."""
 
+        # NB NB NB this routine may build up a rounding error so consider making it more
+        # absolute.  However if the user adjusted the focus then appling just a delta to their setpoint
+        # makes more sense than a full recalcutatin of ax + b...
+
         try:
             if self.site != "sro":
                 temp_delta = self.focuser.Temperature - self.last_temperature
@@ -252,6 +270,7 @@ class Focuser:
             if abs(temp_delta) > 0.1 and self.last_temperature is not None:
                 adjust = round(temp_delta * float(self.config["coef_c"]), 1)
             adjust += g_dev["fil"].filter_offset
+
             try:
                 self.last_temperature = g_dev["ocn"].status[
                     "temperature_C"

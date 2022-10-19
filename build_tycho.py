@@ -6,7 +6,7 @@ Created on Mon May 18 15:47:06 2020
 """
 
 import os
-import datetime as datetime
+import datetime
 import math
 from pathlib import Path
 from astropy import units as u
@@ -161,7 +161,7 @@ def bootup_tycho():
 
     # Run and set tpt_tuple to a grid.
     try:
-        tpt_perfect = open(str(parentPath) + "\support_info\\perfect.dat", "r")
+        tpt_perfect = open(str(parentPath) + "\\support_info\\perfect.dat", "r")
     except:
         print("TPoint catalogue failed to open.")
 

@@ -297,7 +297,7 @@ class ObservingConditions:
                     "wind_m/s": abs(round(self.sky_monitor.WindSpeed, 2)),
                     "rain_rate": self.sky_monitor.RainRate,
                     "solar_flux_w/m^2": None,
-                    "cloud_cover_%": "unknown",  # str(self.sky_monitor.CloudCover), # Soetimes faults.
+                    "cloud_cover_%": "unknown",  # str(self.sky_monitor.CloudCover), # Sometimes faults.
                     "calc_HSI_lux": illum,
                     "calc_sky_mpsas": round(
                         uni_measure, 2
@@ -330,7 +330,7 @@ class ObservingConditions:
                 and humidity_limit
                 and rain_limit
             )
-            #  NB  wx_is_ok does not include ambient light or altitude of the Sun
+            #  NB wx_is_ok does not include ambient light or altitude of the Sun
             if self.wx_is_ok:
                 wx_str = "Yes"
                 status["wx_ok"] = "Yes"

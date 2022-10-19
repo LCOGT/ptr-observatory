@@ -60,16 +60,12 @@ try:
     RefrOn = site_config["mount"]["mount1"]["settings"]["refraction_on"]
     ModelOn = site_config["mount"]["mount1"]["settings"]["model_on"]
     RatesOn = site_config["mount"]["mount1"]["settings"]["rates_on"]
-
 except:
     RefrOn = False
     ModelOn = False
     RatesOn = False
 
-
 HORIZON = 9.999  # Lower than actual mrc values.
-
-
 ALTAZ = False
 
 if ALTAZ:
@@ -220,7 +216,7 @@ def updateGui():  # What to call from non-GUI modules.
 
 
 def sleepEvents(pTime):  # Updates GUI often but still returns the required
-    st = time.time()  # delay to caller.  Essentially a non-blocking sleep.
+    st = time.time()  # delay to caller. Essentially a non-blocking sleep.
     try:
         updateGui()
     except:
@@ -240,9 +236,8 @@ def sleepEvents(pTime):  # Updates GUI often but still returns the required
 
 
 # the init>>> below take a list, query Simbad and assemble currently accurate
-# are discarded becuase they are never visible.  The point of these lists
+# are discarded becuase they are never visible. The point of these lists
 # to to chache the Simbad lookup for speed.
-
 
 targetList = []
 typeList = []
@@ -255,9 +250,6 @@ def initNavStars():
     low to be visible.
 
     Also obtain official Simbad star name
-
-
-
     """
     global targetList
     targetList = []
@@ -342,8 +334,6 @@ def initSky2000():
             print("Err:  ", line)
         if vmag[0] == "-":
             pass
-        #        if -15000 <= int(dec) <= 15000:
-        #            print(line)#+1)
         inList = False
         if -0.2 <= int(dec) <= 0.2 and fvmag <= 6:
 
@@ -1733,6 +1723,41 @@ def transform_haDec_to_azAlt_r(pLocal_hour_angle, pDec, latr):
     return (azimuth, altitude)
 
 
+def transform_haDec_to_azAlt(pLocal_hour_angle, pDec, lat):
+    latr = math.radians(lat)
+    sinLat = math.sin(latr)
+    cosLat = math.cos(latr)
+    decr = math.radians(pDec)
+    sinDec = math.sin(decr)
+    cosDec = math.cos(decr)
+    mHar = math.radians(15.0 * pLocal_hour_angle)
+    sinHa = math.sin(mHar)
+    cosHa = math.cos(mHar)
+    altitude = math.degrees(math.asin(sinLat * sinDec + cosLat * cosDec * cosHa))
+    y = sinHa
+    x = cosHa * sinLat - math.tan(decr) * cosLat
+    azimuth = math.degrees(math.atan2(y, x)) + 180
+    # azimuth = reduceAz(azimuth)
+    # altitude = reduceAlt(altitude)
+    return (azimuth, altitude)  # , local_hour_angle)
+
+
+def reduceAlt(pAlt):
+    if pAlt > 90.0:
+        pAlt = 90.0
+    if pAlt < -90.0:
+        pAlt = -90.0
+    return pAlt
+
+
+def reduceAz(pAz):
+    while pAz < 0.0:
+        pAz += 360
+    while pAz >= 360.0:
+        pAz -= 360.0
+    return pAz
+
+
 def transform_azAlt_to_haDec_r(pAz, pAlt, latr):
     sinLat = math.sin(latr)
     cosLat = math.cos(latr)
@@ -1948,21 +1973,36 @@ def transform_observed_to_mount_r(pRoll, pPitch, pPierSide, loud=False, enable=F
     if not ModelOn:
         return (pRoll, pPitch)
     else:
-        ih = model["IH"]
-        idec = model["ID"]
-        Wh = model["WH"]
-        Wd = model["WD"]
-        ma = model["MA"]
-        me = model["ME"]
-        ch = model["CH"]
-        np = model["NP"]
-        tf = model["TF"]
-        tx = model["TX"]
-        hces = model["HCES"]
-        hcec = model["HCEC"]
-        dces = model["DCES"]
-        dcec = model["DCEC"]
-
+        if True:  # TODO needs to specify, else statement unreachable.
+            ih = model["IH"]
+            idec = model["ID"]
+            Wh = model["WH"]
+            Wd = model["WD"]
+            ma = model["MA"]
+            me = model["ME"]
+            ch = model["CH"]
+            np = model["NP"]
+            tf = model["TF"]
+            tx = model["TX"]
+            hces = model["HCES"]
+            hcec = model["HCEC"]
+            dces = model["DCES"]
+            dcec = model["DCEC"]
+        else:
+            ih = wmodel["IH"]
+            idec = wmodel["ID"]
+            Wh = wmodel["WH"]
+            Wd = wmodel["WD"]
+            ma = wmodel["MA"]
+            me = wmodel["ME"]
+            ch = wmodel["CH"]
+            np = wmodel["NP"]
+            tf = wmodel["TF"]
+            tx = wmodel["TX"]
+            hces = wmodel["HCES"]
+            hcec = wmodel["HCEC"]
+            dces = wmodel["DCES"]
+            dcec = wmodel["DCEC"]
         ia = model["IA"]
         ie = model["IE"]
         an = model["AN"]
@@ -1982,9 +2022,8 @@ def transform_observed_to_mount_r(pRoll, pPitch, pPierSide, loud=False, enable=F
         siteLatitude = site_config["latitude"]
 
         if not ALTAZ:
-
             if pPierSide == 0:
-                ch = -ch / 3600.0  # Trying this 20210612
+                ch = -ch / 3600.0
                 np = -np / 3600.0
                 rRoll += math.radians(Wh / 3600.0)
                 rPitch -= math.radians(
@@ -2423,7 +2462,7 @@ def transform_mount_to_Icrs(pCoord, pCurrentPierSide, pLST=None, loud=False):
     if pLST is not None:
         lclSid = pLST
     else:
-        lclSid = sidTime  # @)@!)#@*  Wild gloable refernce here.
+        lclSid = sidTime  # @)@!)#@*  Wild global refernce here.
     if loud:
         print("Pcoord:  ", pCoord)
     roll, pitch = transform_raDec_to_haDec_r(pCoord[0], pCoord[1], sidTime)
@@ -2477,6 +2516,6 @@ hum = 0.5  # 50%
 
 print("Utility module loaded at: ", ephem.now(), round((ephem.now()), 4))
 print("Local system Sidereal time is:  ", sidTime)
-# SEQ_Counter = '000000'  #Should this be longer and persistently increasing?
+
 if __name__ == "__main__":
     print("Welcome to the utility module.")
