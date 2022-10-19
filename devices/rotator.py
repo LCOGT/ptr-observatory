@@ -1,23 +1,22 @@
-
-import win32com.client
 import time
+import win32com.client
+
 from global_yard import g_dev
 
-class Rotator:
 
+class Rotator:
     def __init__(self, driver: str, name: str, config: dict):
         self.name = name
-        g_dev['rot'] = self
+        g_dev["rot"] = self
         win32com.client.pythoncom.CoInitialize()
         self.rotator = win32com.client.Dispatch(driver)
         time.sleep(3)
         self.rotator.Connected = True
-        self.rotator_message = '-'
+        self.rotator_message = "-"
         print("Rotator connected,  at:  ", round(self.rotator.TargetPosition, 4))
-        #print(self.rotator.Description)
 
     def get_status(self):
-        '''
+        """
         The position is expressed as an angle from 0 up to but not including
         360 degrees, counter-clockwise against the sky. This is the standard
         definition of Position Angle. However, the rotator does not need to
@@ -26,8 +25,8 @@ class Rotator:
         indexing. It is up to the client to determine any offset between
         mechanical rotator position angle and the true Equatorial Position
         Angle of the imager, and compensate for any difference.
-        '''
-        #NB we had an exception here with Target position.  mORE THAN ONE OF THESE! 220210709
+        """
+        # NB we had an exception here with Target position.  mORE THAN ONE OF THESE! 220210709
         try:
             status = {
                 "position_angle": round(self.rotator.TargetPosition, 4),
@@ -35,33 +34,32 @@ class Rotator:
             }
         except:
             try:
-                 status = {
+                status = {
                     "position_angle": round(self.rotator.TargetPosition, 4),
                     "rotator_moving": self.rotator.IsMoving,
-                 }                   
+                }
             except:
-                  status = {
+                status = {
                     "position_angle": round(0.0, 4),
                     "rotator_moving": False,
-                 }                     
-            
-        #print(self.rotator.TargetPosition)
+                }
+
         return status
 
-    def get_quick_status(self, quick):   #Added the kludge fix 20120709
+    def get_quick_status(self, quick):
         quick.append(time.time())
         try:
             quick.append(self.rotator.Position)
             quick.append(self.rotator.IsMoving)
         except:
             quick.append(0.0)
-            quick.append(False)            
+            quick.append(False)
         return quick
 
     def get_average_status(self, pre, post):
         average = []
-        average.append(round((pre[0] + post[0])/2, 3))
-        average.append(round((pre[1] + post[1])/2, 3))
+        average.append(round((pre[0] + post[0]) / 2, 3))
+        average.append(round((pre[1] + post[1]) / 2, 3))
         if pre[2] or post[2]:
             average.append(True)
         else:
@@ -69,9 +67,9 @@ class Rotator:
         return average
 
     def parse_command(self, command):
-        req = command['required_params']
-        opt = command['optional_params']
-        action = command['action']
+        req = command["required_params"]
+        opt = command["optional_params"]
+        action = command["action"]
 
         if action == "move_relative":
             self.move_relative_command(req, opt)
@@ -84,29 +82,28 @@ class Rotator:
         else:
             print(f"Command <{action}> not recognized.")
 
-
     ###############################
     #       Rotator Commands      #
     ###############################
 
     def move_relative_command(self, req: dict, opt: dict):
-        ''' set the rotators position by moving relative to current position '''
-        print(f"rotator cmd: move_relative")
-        position = float(req['position'])
+        """Sets the rotator position by moving relative to current position."""
+        print("rotator cmd: move_relative")
+        position = float(req["position"])
         self.rotator.Move(position)
 
     def move_absolute_command(self, req: dict, opt: dict):
-        ''' set the rotator position by moving to an absolute position '''
-        print(f"rotator cmd: move_absolute")
-        position = float(req['position'])
+        """Sets the rotator position by moving to an absolute position."""
+        print("rotator cmd: move_absolute")
+        position = float(req["position"])
         self.rotator.MoveAbsolute(position)
 
     def stop_command(self, req: dict, opt: dict):
-        ''' stop rotator movement immediately '''
-        print(f"rotator cmd: stop")
+        """Stops rotator movement immediately."""
+        print("rotator cmd: stop")
         self.rotator.Halt()
 
     def home_command(self, req: dict, opt: dict):
-        ''' set the rotator to the home position'''
-        print(f"rotator cmd: home")
+        """Sets the rotator to the home position."""
+        print("rotator cmd: home")
         pass

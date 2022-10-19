@@ -22,7 +22,7 @@ from global_yard import g_dev
 class FilterWheel:
     """A filter wheel instrument."""
 
-    def __init__(self, driver: str, name: str, config: dict):
+    def __init__(self, driver, name: str, config: dict):
         self.name = name
         g_dev["fil"] = self
         self.config = config["filter_wheel"]
