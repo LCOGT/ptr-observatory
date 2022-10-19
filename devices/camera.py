@@ -1414,7 +1414,7 @@ class Camera:
             except:
                 print ("Mount doesn't use pierside")
 
-            if (not self.use_file_mode and self._imageavailable) or (self.use_file_mode and len(incoming_image_list) >= 1):   #   self.camera.ImageReady:
+            if (not self.use_file_mode and self._imageavailable()) or (self.use_file_mode and len(incoming_image_list) >= 1):   #   self.camera.ImageReady:
                 #print("reading out camera, takes ~6 seconds.")
 
 
@@ -1426,9 +1426,6 @@ class Camera:
                         print ("Retried 8 times and didn't get an image, giving up.")
                         return result
 
-                    print (self._imageavailable)
-
-
                     try:
                         self.img = np.array(self._getImageArray()).astype('uint16')
                         imageCollected=1
@@ -1437,8 +1434,8 @@ class Camera:
                         if 'Image Not Available' in str(e):
                             print('Still waiting for file to arrive: ', e)
                             #print(traceback.format_exc())
-                            time.sleep(3)
-                            retrycounter=retrycounter+1
+                        time.sleep(3)
+                        retrycounter=retrycounter+1
 
                 time.sleep(0.1)   #  This delay appears to be necessary. 20200804 WER
                 self.t4p4 = time.time()
