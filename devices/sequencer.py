@@ -1206,7 +1206,7 @@ class Sequencer:
                     for fzneglect in bigfzs:
                         print ("Reattempting upload of " + str(os.path.basename(fzneglect)))
                         #breakpoint()
-                        g_dev['cam'].enqueue_for_AWS(26000000, camera + runNight + "/raw/" + str(os.path.basename(fzneglect)))
+                        g_dev['cam'].enqueue_for_AWS(26000000, camera + runNight + "/raw/", str(os.path.basename(fzneglect)))
                 time.sleep(300)
                 if (g_dev['obs'].aws_queue.empty()):
                     break
@@ -1265,8 +1265,10 @@ class Sequencer:
             #self.config = config
             # Getting new times for the new day
             #self.astro_events = ptr_events.Events(self.config)
+            #self.astro_events = ptr_events.Events(self.config)
             self.astro_events.compute_day_directory()
             self.astro_events.display_events()
+            g_dev['obs'].astro_events = self.astro_events
             # sending this up to AWS
             '''
             Send the config to aws.
@@ -1295,6 +1297,29 @@ class Sequencer:
             g_dev['obs'].projects = None
             g_dev['obs'].events_new = None
             g_dev['obs'].reset_last_reference()
+
+            if self.config['mount']['mount1']['permissive_mount_reset'] == 'yes':
+               g_dev['mnt'].reset_mount_reference()
+            g_dev['obs'].last_solve_time = datetime.datetime.now() - datetime.timedelta(days=1)
+            g_dev['obs'].images_since_last_solve = 10000
+
+            # Resetting sequencer stuff
+            self.connected = True
+            self.description = "Sequencer for script execution."
+            self.sequencer_hold = False
+            self.sequencer_message = '-'
+            print("sequencer reconnected.")
+            print(self.description)
+
+            self.sky_guard = False
+            self.af_guard = False
+            self.block_guard = False
+            self.time_of_next_slew = time.time()
+            #NB NB These should be set up from config once a day at Noon/Startup time
+            self.bias_dark_latch = True   #NB NB NB Should these initially be defined this way?
+            self.sky_flat_latch = True
+            self.morn_sky_flat_latch = True
+            self.morn_bias_dark_latch = True   #NB NB NB Should these initially be defined this way?
 
         return
 

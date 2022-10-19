@@ -1347,11 +1347,15 @@ class Camera:
         self.post_foc = []
         self.post_ocn = []
         counter = 0
-        if self.bin == 1:
-            cycle_time = exposure_time + 15
-        else:
-            cycle_time = exposure_time + 12
-        self.completion_time = self.t2 + cycle_time + 12
+        #if self.bin == 1:
+        #    cycle_time = exposure_time + 15
+        #else:
+        #    cycle_time = exposure_time + 12
+
+        cycle_time = float(self.config['camera'][self.name]['settings']['readout_seconds']) + exposure_time
+
+        #self.completion_time = self.t2 + cycle_time + 12   .... I think the 12 is there for historical reasons....
+        self.completion_time = self.t2 + cycle_time
         result = {'error': False}
         notifyReadOutOnlyOnce=0
         quartileExposureReport=0
@@ -1406,6 +1410,29 @@ class Camera:
 
             if (not self.use_file_mode and self._imageavailable) or (self.use_file_mode and len(incoming_image_list) >= 1):   #   self.camera.ImageReady:
                 #print("reading out camera, takes ~6 seconds.")
+
+
+                imageCollected=0
+                retrycounter=0
+                while imageCollected!=1:
+                    if retrycounter==8:
+                        result = {'error': True}
+                        print ("Retried 8 times and didn't get an image, giving up.")
+                        return result
+
+                    print (self._imageavailable)
+
+
+                    try:
+                        self.img = np.array(self._getImageArray()).astype('uint16')
+                        imageCollected=1
+                    except Exception as e:
+                        print (e)
+                        if 'Image Not Available' in str(e):
+                            print('Still waiting for file to arrive: ', e)
+                            #print(traceback.format_exc())
+                            time.sleep(3)
+                            retrycounter=retrycounter+1
 
                 time.sleep(0.1)   #  This delay appears to be necessary. 20200804 WER
                 self.t4p4 = time.time()

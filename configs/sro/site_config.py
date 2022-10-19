@@ -490,7 +490,7 @@ site_config = {
                 'trim_sec': ['[1:9576, 1:6388]', '[1:4788, 1:3194]', '[1:3192, 1:2129]', '[1:2394, 1:1597]'],
                 'x_pixel':  6,
                 'y_pixel':  6,
-                'pix_scale': [1.067, 2.134, 3.201, 4.268],
+                'pix_scale': [1.103, 2.134, 3.201, 4.268],
 
                 'CameraXSize' : 4556,
                 'CameraYSize' : 3656,
@@ -529,6 +529,7 @@ site_config = {
                 'read_mode':  'Normal',
                 'readout_mode':  'Normal',
                 'readout_speed': 0.4,
+                'readout_seconds': 12,
                 'saturate':  42000,    # e-.  This is a close guess, not measured, but taken from data sheet.
                 'max_linearity': 40000,
                 'fullwell_capacity': [45000, 45000, 45000, 45000],  #e-.   We need to sort out the units properly NB NB NB
