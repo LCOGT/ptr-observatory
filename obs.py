@@ -306,7 +306,7 @@ class Observatory:
         self.aws_queue = queue.PriorityQueue(maxsize=0)
         self.aws_queue_thread = threading.Thread(target=self.send_to_AWS, args=())
         self.aws_queue_thread.start()
-        
+
         # Set up command_queue for incoming jobs
         self.cmd_queue = queue.Queue(maxsize = 30)  #Note this is not a thread but a FIFO buffer
         self.stop_all_activity = False   #  THis is used to stop the camera or sequencer
@@ -503,22 +503,22 @@ class Observatory:
                             self.cmd_queue.put(cmd)  #SAVE THE COMMAND FOR LATER
                             #print("Appending job:  ")  # Kilroy was here)
                             self.send_to_user("Queueing up a new command... Hint:  " + cmd['action'])
-                            
+
                     if cancel_check:
                         return   #Note we do not process any commands.
-                    
+
                 while self.cmd_queue.qsize() > 0:#print(unread_commands)
-        
+
                     #print(unread_commands)
-            
+
                     #unread_commands.sort(key=lambda x: x["ulid"])
                     # Process each job one at a time
                     #print("# of queued commands:  ", self.cmd_queue.qsize())
                     self.send_to_user("Number of queued commands:  " + str(self.cmd_queue.qsize()))
-                    cmd = self.cmd_queue.get() 
+                    cmd = self.cmd_queue.get()
                     #This code is redundant
                     if self.config['selector']['selector1']['driver'] is None:
-                        port = cmd['optional_params']['instrument_selector_position'] 
+                        port = cmd['optional_params']['instrument_selector_position']
                         g_dev['mnt'].instrument_port = port
                         cam_name = self.config['selector']['selector1']['cameras'][port]
                         if cmd['deviceType'][:6] == 'camera':
@@ -538,7 +538,7 @@ class Observatory:
                     else:
                         device_instance = cmd['deviceInstance']
                     print('obs.scan_request: ', cmd)
-        
+
                     device_type = cmd['deviceType']
                     device = self.all_devices[device_type][device_instance]
                     try:
@@ -568,21 +568,21 @@ class Observatory:
             #                     self.projects = all_projects   #.append(all_projects)  #NOTE creating a list with a dict entry as item 0
             #                     #self.projects.append(all_projects[1])
             #             '''
-            #             Design Note.  blocks relate to scheduled time at a site so we expect AWS to mediate block 
+            #             Design Note.  blocks relate to scheduled time at a site so we expect AWS to mediate block
             #             assignments.  Priority of blocks is determined by the owner and a 'equipment match' for
             #             background projects.
-                        
+
             #             Projects on the other hand can be a very large pool so how to manage becomes an issue.
             #             TO the extent a project is not visible at a site, aws should not present it.  If it is
             #             visible and passes the owners priority it should then be presented to the site.
-                        
+
             #             '''
             #             if self.events_new is None:
             #                 url = 'https://api.photonranch.org/api/events?site=SAF'
-            
+
             #                 self.events_new = requests.get(url).json()
             #         return   # Continue   #Note this creates an infinite loop, and that is OK
-                    
+
             #     else:
             #         print('Sequencer Hold asserted.')    #What we really want here is looking for a Cancel/Stop.
             #         continue
@@ -679,7 +679,7 @@ class Observatory:
                 return   # Continue   #This creates an infinite loop
 
             else:
-                print('Sequencer Hold asserted.')    #What we really want here is looking for a Cancel/Stop.
+                #print('Sequencer Hold asserted.')    #What we really want here is looking for a Cancel/Stop.
                 continue
 
     def update_status(self):
@@ -807,7 +807,7 @@ class Observatory:
         #self.redis_server.set('obs_time', self.time_last_status, ex=120 )
         self.status_count +=1
         try:
-    
+
             self.scan_requests('mount1', cancel_check=True)   #NBNBNB THis has faulted, usually empty input lists.
         except:
             pass
@@ -841,7 +841,7 @@ class Observatory:
 
         self.update_status()
         try:
- 
+
             self.scan_requests('mount1')   #NBNBNB THis has faulted, usually empty input lists.
         except:
             pass
@@ -944,164 +944,10 @@ class Observatory:
                 # Solve for pointing. Note: as the raw and reduced file are already saved and an fz file
                 # has already been sent up, this is purely for pointing purposes.
                 if not paths['frame_type'] in ['bias', 'dark', 'flat', 'solar', 'lunar', 'skyflat', 'screen', 'spectrum', 'auto_focus']:
-<<<<<<< Updated upstream
+
                     # check that both enough time and images have past between last solve
                     if self.images_since_last_solve > self.config['solve_nth_image'] and (datetime.datetime.now() - self.last_solve_time) > datetime.timedelta(minutes=self.config['solve_timer']):
-=======
-                    try:
-                        #hdu_save = hdu
-                        #wpath = 'C:/000ptr_saf/archive/sq01/20210528/reduced/saf-sq01-20210528-00019785-le-w-EX01.fits'
-                        #time_now = time.time()  #This should be more accurately defined earlier in the header
-                        #NB NB The following needs better bin management
-                        #solve = platesolve.platesolve(wpath, 1.067)     #0.5478)
-                        solve = platesolve.platesolve(wpath, float(hdu.header['PIXSCALE']))     #0.5478)
-                        print("PW Solves: " ,solve['ra_j2000_hours'], solve['dec_j2000_degrees'])
-                        #img = fits.open(wpath, mode='update', ignore_missing_end=True)
-                        #hdr = img[0].header
-                        #hdr=hdu.header
-                        #  Update the NEW header for a 'Reduced" fits. The Raw fits has not been changed.
-                        hdu.header['RA-J20PW'] = solve['ra_j2000_hours']
-                        hdu.header['DECJ20PW'] = solve['dec_j2000_degrees']
-                        hdu.header['RAHRS'] = float(solve['ra_j2000_hours'])
-                        hdu.header['RA'] = float(solve['ra_j2000_hours']*15)
-                        hdu.header['DEC'] = float(solve['dec_j2000_degrees'])
 
-                        hdu.header['MEAS-SPW'] = solve['arcsec_per_pixel']
-                        hdu.header['MEAS-RPW'] = solve['rot_angle_degs']
-
-                        #MTF woz ere - This updates the RA and Dec in the raw file header if a solution is found
-                        with fits.open(paths['raw_path'] + paths['raw_name00'], 'update') as f:
-                            for hdbf in f:
-                                hdbf.header['RA-J20PW'] = solve['ra_j2000_hours']
-                                hdbf.header['DECJ20PW'] = solve['dec_j2000_degrees']
-                                hdbf.header['RAHRS'] = float(solve['ra_j2000_hours'])
-                                hdbf.header['RA'] = float(solve['ra_j2000_hours']*15)
-                                hdbf.header['DEC'] = float(solve['dec_j2000_degrees'])
-                                hdbf.header['MEAS-SPW'] = solve['arcsec_per_pixel']
-                                hdbf.header['MEAS-RPW'] = solve['rot_angle_degs']
-
-                        target_ra  = g_dev['mnt'].current_icrs_ra
-                        target_dec = g_dev['mnt'].current_icrs_dec
-                        solved_ra = solve['ra_j2000_hours']
-                        solved_dec = solve['dec_j2000_degrees']
-                        #breakpoint()
-                        err_ha = target_ra - solved_ra
-                        err_dec = target_dec - solved_dec
-                        print(" coordinate error in ra, dec:  (asec) ", round(err_ha*15*3600, 2), round(err_dec*3600, 2))  #NB WER changed units 20221012
-                        #NB NB NB Need to add Pierside as a parameter to this cacc 20220214 WER
-                        #breakpoint()
-                        #NB NB NB this needs rethinking, the incoming units are hours in HA or degrees of dec
-                        if (err_ha*15*3600 > 1200 or err_dec*3600 > 1200 or err_ha*15*3600 < -1200 or err_dec*3600 < -1200) and self.config['mount']['mount1']['permissive_mount_reset'] == 'yes':
-                            g_dev['mnt'].reset_mount_reference()
-                            print ("I've  reset the mount_reference 1")
-                            g_dev['mnt'].current_icrs_ra = solve['ra_j2000_hours']
-                            g_dev['mnt'].current_icrs_dec = solve['dec_j2000_hours']
-                            err_ha = 0
-                            err_dec = 0
-                        #elif g_dev['mnt'].pier_side_str == 'Looking West':
-                        #    g_dev['mnt'].adjust_mount_reference(err_ha, err_dec)
-                        #    print ("I've been inhibited from reset the mount_reference 2")
-                        #    pass
-                        else:
-                        #    g_dev['mnt'].adjust_flip_reference(err_ha, err_dec)
-                        #    print ("I've been inhibited from reset the mount_reference 3")
-                        #    pass
-
-                            try:
-                                if g_dev['mnt'].pier_side_str == 'Looking West':
-                                    g_dev['mnt'].adjust_mount_reference(err_ha, err_dec)
-                                else:
-                                    g_dev['mnt'].adjust_flip_reference(err_ha, err_dec)   #Need to verify signs
-                            except:
-                                print ("This mount doesn't report pierside")
-
-
-
-                        #img.flush()
-                        #img.close
-                        #img = fits.open(wpath, ignore_missing_end=True)
-                        #hdr = img[0].header
-                        # prior_ra_h, prior_dec, prior_time = g_dev['mnt'].get_last_reference()
-
-                        # if prior_time is not None:
-                        #     print("time base is:  ", time_now - prior_time)
-
-                        # g_dev['mnt'].set_last_reference( solve['ra_j2000_Second phase of AF now.hours'], solve['dec_j2000_degrees'], time_now)
-                    except:
-                       print('Image:  ',wpath[-24:-5], " did not solve; this is usually OK.")
-                       #img = fits.open(wpath, mode='update', ignore_missing_end=True)
-                       #hdr = img[0].header
-                       hdu.header['RA-J20PW'] = False
-                       hdu.header['DECJ20PW'] = False
-                       hdu.header['MEAS-SPW'] = False
-                       hdu.header['MEAS-RPW'] = False
-                       #hdu.header['NO-SOLVE'] = True
-                       #img.close()
-                    #hdu = hdu_save
-                    #Return to classic processing
-
-                # if self.site_name == 'saf':
-                #     wpath = paths['red_path_aux'] + paths['red_name01_lcl']
-                #     hdu.writeto(wpath, overwrite=True) #big fits to other computer in Neyle's office
-                #patch to test Midtone Contrast
-
-                # image = 'Q:/000ptr_saf/archive/sq01/20201212 ans HH/reduced/HH--SigClip.fits'
-                # hdu_new = fits.open(image)
-                # hdu =hdu_new[0]
-
-
-
-
-                '''
-                Here we need to consider just what local reductions and calibrations really make sense to
-                process in-line vs doing them in another process.  For all practical purposes everything
-                below can be done in a different process, the exception perhaps has to do with autofocus
-                processing.
-
-
-                '''
-                # Note we may be using different files if calibrate is null.
-                # NB  We should only write this if calibrate actually succeeded to return a result ??
-
-                #  if frame_type == 'sky flat':
-                #      hdu.header['SKYSENSE'] = int(g_dev['scr'].bright_setting)
-                #
-                # if not quick:
-                #     hdu1.writeto(im_path + raw_name01, overwrite=True)
-                # raw_data_size = hdu1[0].data.size
-
-
-
-                #  NB Should this step be part of calibrate?  Second should we form and send a
-                #  CSV file to AWS and possibly overlay key star detections?
-                #  Possibly even astro solve and align a series or dither batch?
-                #  This might want to be yet another thread queue, esp if we want to do Aperture Photometry.
-                no_AWS = False
-                quick = False
-                do_sep = False
-                spot = None
-                #Note this was turned off because very rarely it hangs internally.
-                if do_sep:    #WE have already ran this code when focusing, but we should not ever get here when doing that.
-                    try:
-                        img = hdu.data.copy().astype('float')
-                        bkg = sep.Background(img)
-                        #breakpoint()
-                        #bkg_rms = bkg.rms()
-                        img = img - bkg
-                        sources = sep.extract(img, 4.5, err=bkg.globalrms, minarea=9)#, filter_kernel=kern)
-                        sources.sort(order = 'cflux')
-                        #print('No. of detections:  ', len(sources))
-                        sep_result = []
-                        spots = []
-                        for source in sources:
-                            a0 = source['a']
-                            b0 =  source['b']
-                            r0 = 2*round(math.sqrt(a0**2 + b0**2), 2)
-                            sep_result.append((round((source['x']), 2), round((source['y']), 2), round((source['cflux']), 2), \
-                                           round(r0), 3))
-                            spots.append(round((r0), 2))
-                        spot = np.array(spots)
->>>>>>> Stashed changes
                         try:
                             solve = platesolve.platesolve(paths['red_path'] + paths['red_name01'], pixscale)     #0.5478)
                             print("PW Solves: " ,solve['ra_j2000_hours'], solve['dec_j2000_degrees'])
