@@ -61,6 +61,7 @@ site_config = {
     'admin_aliases': ["ANS", "WER", "TELOPS", "TB", "DH", "KVH", "KC"],
 
     'client_hostname':  'MRC-0m35',
+
     'client_path':  'D:/ptr/',  # Generic place for client host to stash misc stuff
     'alt_path':  'D:/ptr/',  # Generic place for this host to stash misc stuff
     'archive_path':  'D:/ptr/',

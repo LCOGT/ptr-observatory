@@ -505,11 +505,15 @@ class FilterWheel:
         #     filter_name = 'up'
         filterIDed=0
         for match in range(int(self.config['filter_wheel1']['settings']['filter_count'])):  #NB Filter count MUST be correct in Config.
-            if filter_name in self.filter_data[match][0]:
-
-                filt_pointer = match
-                filterIDed=1
-                break
+            try:
+                if filter_name in self.filter_data[match][0]:
+    
+                    filt_pointer = match
+                    filterIDed=1
+                    break
+            except:
+                #"issue with self.filter_data[match] in config file? - ask MTF."
+                pass
         # If filter was not identified, find a substitute filter
         if filterIDed==0:
             print ("Requested filter: " +str(filter_name) + " does not exist on this filter wheel")
@@ -663,7 +667,7 @@ class FilterWheel:
             priorityOrder = ['zp', 'zs', 'z']
 
         # white clear filter
-        if requestedFilter == 'w' or requestedFilter == 'Lum' or requestedFilter == 'PL' or requestedFilter == 'clear' or requestedFilter == 'L' or requestedFilter == 'W':
+        if requestedFilter == 'w' or requestedFilter == 'Lum' or requestedFilter == 'PL' or requestedFilter == 'clear' or requestedFilter == 'L' or requestedFilter == 'W' or requestedFilter == 'focus':
             priorityOrder = ['w', 'Lum', 'PL', 'clear']
 
         #Generic H

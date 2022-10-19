@@ -258,7 +258,7 @@ class Sequencer:
                     time.sleep(10)
                 print("Open and slew Dome to azimuth opposite the Sun:  ", round(flat_spot, 1))
 
-                if enc_status['shutter_status'] in ['Closed', 'closed'] \
+                if enc_status['shutter_status'] in ['Closed', 'closed'] and g_dev['enc'].mode == 'Automatic' \
                     and ocn_status['hold_duration'] <= 0.1:   #NB
                     #breakpoint()
                     g_dev['enc'].open_command({}, {})
@@ -279,7 +279,7 @@ class Sequencer:
         except:
             print("Park not executed during Park and Close" )
         try:
-            if enc_status['shutter_status'] in ['open', ]:
+            if enc_status['shutter_status'] in ['open', ] and g_dev['enc'].mode == 'Automatic':
                 g_dev['enc'].close_command( {}, {})
         except:
             print('Dome close not executed during Park and Close.')
@@ -336,8 +336,8 @@ class Sequencer:
         ocn_status = g_dev['ocn'].status
         enc_status = g_dev['enc'].status
         events = g_dev['events']
-        #g_dev['obs'].update_status()  #NB NEED to be sure we have current enclosure status.  Blows recursive limit
-        self.current_script = "No current script"    #NB this is an unused remnant I think.
+
+        #breakpoint()      #  THis is a very common debug point.
 
         if self.bias_dark_latch and ((events['Eve Bias Dark'] <= ephem_now < events['End Eve Bias Dark']) and \
              self.config['auto_eve_bias_dark'] and g_dev['enc'].mode == 'Automatic' ):
@@ -1206,7 +1206,11 @@ class Sequencer:
                     for fzneglect in bigfzs:
                         print ("Reattempting upload of " + str(os.path.basename(fzneglect)))
                         #breakpoint()
+
                         g_dev['cam'].enqueue_for_AWS(26000000, camera + runNight + "/raw/", str(os.path.basename(fzneglect)))
+
+                        g_dev['cam'].enqueue_for_AWS(26000000, camera + runNight + "/raw/",  str(os.path.basename(fzneglect))) #WER added last comma 20221015
+
                 time.sleep(300)
                 if (g_dev['obs'].aws_queue.empty()):
                     break
@@ -1265,7 +1269,9 @@ class Sequencer:
             #self.config = config
             # Getting new times for the new day
             #self.astro_events = ptr_events.Events(self.config)
+
             #self.astro_events = ptr_events.Events(self.config)
+
             self.astro_events.compute_day_directory()
             self.astro_events.display_events()
             g_dev['obs'].astro_events = self.astro_events

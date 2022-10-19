@@ -198,7 +198,6 @@ class Camera:
         g_dev[name + '_cam_retry_config'] = config
         g_dev[name + '_cam_retry_doit'] = False
         g_dev[name] = self
-
         if name == 'camera_1_1':     #NBDefaults sets up Selected 'cam'
             g_dev['cam'] = self
         self.config = config
@@ -675,7 +674,7 @@ class Camera:
 
 
     def parse_command(self, command):
-        #print("Camera Command incoming:  ", command)
+        print("Camera Command incoming:  ", command)
         req = command['required_params']
         opt = command['optional_params']
         action = command['action']
@@ -856,6 +855,7 @@ class Camera:
             #requested_filter_name = str(optional_params.get('filter', 'w'))   #Default should come from config.
             requested_filter_name = str(optional_params.get('filter', self.config['filter_wheel']['filter_wheel1']['settings']['default_filter']))   #Default DOES come from config.
 
+
             self.current_filter = requested_filter_name
             self.current_filter = g_dev['fil'].set_name_command({'filter': requested_filter_name}, {})
             if self.current_filter == 'none':
@@ -863,6 +863,7 @@ class Camera:
                 return
         except Exception as e:
             print("Camera filter setup:  ", e)
+            print(traceback.format_exc())
             #breakpoint()
         #  NBNB Changing filter may cause a need to shift focus
         self.current_offset = g_dev['fil'].filter_offset  #TEMP   NBNBNB This needs fixing
@@ -1163,7 +1164,12 @@ class Camera:
             self.retry_camera_start_time = time.time()
 
             while self.retry_camera > 0:
-
+                if g_dev['obs'].stop_all_activity:
+                    if result['stopped'] is True:
+                        g_dev['obs'].stop_all_activity = False
+                        print("Camera retry loop stopped by Cancel Exposure")
+                        self.exposure_busy = False
+                    return
                 #NB Here we enter Phase 2
                 try:
                     self.t1 = time.time()
@@ -1956,23 +1962,6 @@ class Camera:
                              'text_name11': text_name,
                              'frame_type':  frame_type
                              }
-                    # Some unnecessary saf specific site code commented out here - MTF 5 October 22
-
-
-
-
-                    #if  False and self.config['site'] == 'saf':    #ADD an owner specified request to do this save
-                    #    os.makedirs(self.alt_path +  g_dev['day'] + '/reduced/', exist_ok=True)
-                    #    red_path_aux = self.alt_path +  g_dev['day'] + '/reduced/'
-                    #    paths['red_path_aux'] = red_path_aux
-                    #script = None
-                    # '''
-                    # self.enqueue_image(text_data_size, im_path, text_name)
-                    # self.enqueue_image(jpeg_data_size, im_path, jpeg_name)
-                    # if not quick:
-                    #     self.enqueue_image(db_data_size, im_path, db_name)
-                    #     self.enqueue_image(raw_data_size, im_path, raw_name01)
-                    # '''
 
 
 
@@ -1984,79 +1973,6 @@ class Camera:
                         focus_image = True
                     else:
                         focus_image = False
-
-
-
-
-
-
-                        #return result   #Used if focus not saved in calibs.
-
-
-
-
-                    # if focus_image:
-                    #     try:
-                    #         if len(self.biasframe) > 10:
-                    #             hdu.data=hdu.data-self.biasframe
-                    #         if len(self.darkframe) > 10:
-                    #             hdu.data=hdu.data-(self.darkframe*exposure_time)
-                    #     except Exception as e:
-                    #         print ("debias/darking focus image failed: ", e)
-
-                    #     try:
-                    #         tempFlatFrame=np.load(self.flatFiles[self.current_filter])
-                    #         hdu.data=hdu.data/tempFlatFrame
-                    #         del tempFlatFrame
-                    #     except Exception as e:
-                    #         print ("flatting light frame failed",e)
-
-                    # if focus_image and not solve_it:
-                    #     #Note we do not reduce focus images, except above in focus processing.
-                    #     cal_name = cal_name[:-9] + 'F012' + cal_name[-7:]  # remove 'EX' add 'FO'   Could add seq to this
-
-                    #     hdu.data=hdu.data.astype('float32')
-                    #     hdu.writeto(cal_path + cal_name, overwrite=True)
-                    #     focus_image = False
-                    #     return result
-                    # if focus_image and solve_it :
-
-                    #     cal_name = cal_name[:-9] + 'FS' + cal_name[-7:]  # remove 'EX' add 'FO'   Could add seq to this
-                    #     hdu.data=hdu.data.astype('float32')
-                    #     hdu.writeto(cal_path + cal_name, overwrite=True)
-                    #     focus_image = False
-                    #     try:
-                    #         #wpath = 'C:/000ptr_saf/archive/sq01/20210528/reduced/saf-sq01-20210528-00019785-le-w-EX01.fits'
-                    #         time_now = time.time()
-                    #         solve = platesolve.platesolve(cal_path + cal_name, 1.10) #hdu.header['PIXSCALE'])
-                    #         print (solve)
-                    #         print("PW Solves: " +str(solve['ra_j2000_hours']) +str(solve['dec_j2000_degrees']))
-                    #         TARGRA  = g_dev['mnt'].current_icrs_ra
-                    #         TARGDEC = g_dev['mnt'].current_icrs_dec
-                    #         RAJ2000 = solve['ra_j2000_hours']
-                    #         DECJ2000 = solve['dec_j2000_degrees']
-                    #         err_ha = round((TARGRA - RAJ2000)*15*3600, 1)
-                    #         err_dec = round((TARGDEC - DECJ2000)*3600, 1)
-                    #         print("Focus images error in ra, dec, asec:  ", err_ha, err_dec)
-                    #         #g_dev['mnt'].set_last_reference(err_ha, err_dec, time_now)
-                    #         if (err_ha > 1200 or err_dec > 1200 or err_ha < -1200 or err_dec < -1200) and self.config['mount']['mount1']['permissive_mount_reset'] == 'yes':
-                    #             g_dev['mnt'].reset_mount_reference()
-                    #             print ("I've reset the mount_reference")
-                    #             g_dev['mnt'].current_icrs_ra = solve['ra_j2000_hours']
-                    #             g_dev['mnt'].current_icrs_dec = solve['dec_j2000_hours']
-                    #         elif g_dev['mnt'].pier_side_str == 'Looking West':
-                    #             g_dev['mnt'].adjust_mount_reference(err_ha, err_dec)
-                    #         else:
-                    #             g_dev['mnt'].adjust_flip_reference(err_ha, err_dec)
-                    #         #return result
-                    #     except:
-                    #         print(cal_path + cal_name, "  was not solved, sorry!")
-                    #         print(traceback.format_exc())
-                    #     ##    #g_dev['mnt'].reset_last_reference()
-                    #         #return result
-                    #        #Return to classic processing
-
-
 
                     # This command uploads the text file information at high priority to AWS
                     self.enqueue_for_AWS(10, im_path, text_name)
@@ -2396,15 +2312,6 @@ class Camera:
                     return result
 
 
-                #it takes about 15 seconds from AWS to get here for a bias.
-        # except Exception as e:
-
-        #     counter += 1
-        #     time.sleep(.01)
-        #     print('Was waiting for exposure end, arriving here is bad news:  ', e)
-
-        # result = {'error': True}
-        # return  result
     def enqueue_for_AWS(self, priority, im_path, name):
         image = (im_path, name)
         g_dev['obs'].aws_queue.put((priority, image), block=False)
