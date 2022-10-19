@@ -11,7 +11,8 @@ Abstract away Redis, Memurai, and local shares for IPC.
 """
 
 import bz2
-from datetime import datetime, timedelta
+import datetime
+from datetime import timedelta
 import json
 import math
 import os
@@ -95,9 +96,7 @@ def send_status(obsy, column, status_to_send):
     data = json.dumps(payload)
     response = requests.post(uri_status, data=data)
 
-    if response.ok:
-        print("Status sent successfully.")
-    else:
+    if not response.ok:
         print(
             'self.api.authenticated_request("PUT", uri, status):  Failed! ',
             response.status_code,
@@ -312,8 +311,7 @@ class Observatory:
         uri = f"https://api.photonranch.org/dev/{self.name}/config/"
         self.config["events"] = g_dev["events"]
         response = self.api.authenticated_request("PUT", uri, self.config)
-        if response.ok:
-            print("Config uploaded successfully.")
+        print("Config uploaded successfully.")
 
     def scan_requests(self, cancel_check=False):
         """Gets commands from AWS, and post a STOP/Cancel flag.

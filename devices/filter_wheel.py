@@ -468,7 +468,7 @@ class FilterWheel:
 
         return filter_name
 
-    def home_command(self, opt: dict, opt: dict):
+    def home_command(self, opt: dict):
         """Sets the filter to the home position."""
 
         # NB TODO this is setting to default not Home.

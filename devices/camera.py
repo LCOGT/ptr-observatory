@@ -869,7 +869,7 @@ class Camera:
         self.current_offset = g_dev['fil'].filter_offset  #TEMP   NBNBNB This needs fixing
         # Here we adjust for focus temp and filter offset
         if not imtype.lower() in ['auto_focus', 'focus', 'autofocus probe']:
-            g_dev['foc'].adjust_focus(loud=True)
+            g_dev['foc'].adjust_focus()
         sub_frame_fraction = optional_params.get('subframe', None)
 
         #  The following bit of code is convoluted.  Presumably when we get Autofocus working this will get cleaned up.

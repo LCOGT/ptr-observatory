@@ -11,7 +11,7 @@ Conversion constants could be CAP-case as in R2D, R2AS, H2S, etc.
 """
 
 from collections import namedtuple
-from datetime import datetime
+from datetime import datetime, date
 import math
 import os
 import shelve
@@ -1588,7 +1588,7 @@ def get_current_times():
     # =============================================================================
     #     THIS NEEDS FIXING! Sloppy
     # =============================================================================
-    iso_day = datetime.date.today().isocalendar()
+    iso_day = date.today().isocalendar()
     doy = (iso_day[1] - 1) * 7 + (iso_day[2])
     equinox_now = "J" + str(
         round((iso_day[0] + ((iso_day[1] - 1) * 7 + (iso_day[2])) / 365), 2)
@@ -1872,7 +1872,6 @@ def correct_refraction_inEl_r(pObsEl, pSiteRefTemp, pSiteRefPress):  # Deg, C. ,
             trial -= error
             count += 1
             if count > 25:  # count about 12 at-0.5 deg. 3 at 45deg.
-                print("correct_refraction_inEl() FAILED!")
                 return reduce_dec_r(pObsEl)
         return reduce_dec_r(trial), reduce_dec_r(pObsEl - trial) * RTOD * 3600.0
 
