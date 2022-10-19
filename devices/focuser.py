@@ -255,6 +255,10 @@ class Focuser:
         # absolute.  However if the user adjusted the focus then appling just a delta to their setpoint
         # makes more sense than a full recalcutatin of ax + b...
 
+        # NB NB NB this routine may build up a rounding error so consider making it more
+        #absolute.  However if the user adjusted the focus then appling just a delta to their setpoint
+        # makes more sense than a full recalcutatin of ax + b...
+
         try:
             if self.site != "sro":
                 temp_delta = self.focuser.Temperature - self.last_temperature

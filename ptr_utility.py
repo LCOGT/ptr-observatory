@@ -1758,6 +1758,41 @@ def reduceAz(pAz):
     return pAz
 
 
+def transform_haDec_to_azAlt(pLocal_hour_angle, pDec, lat):
+    latr = math.radians(lat)
+    sinLat = math.sin(latr)
+    cosLat = math.cos(latr)
+    decr = math.radians(pDec)
+    sinDec = math.sin(decr)
+    cosDec = math.cos(decr)
+    mHar = math.radians(15.0 * pLocal_hour_angle)
+    sinHa = math.sin(mHar)
+    cosHa = math.cos(mHar)
+    altitude = math.degrees(math.asin(sinLat * sinDec + cosLat * cosDec * cosHa))
+    y = sinHa
+    x = cosHa * sinLat - math.tan(decr) * cosLat
+    azimuth = math.degrees(math.atan2(y, x)) + 180
+    # azimuth = reduceAz(azimuth)
+    # altitude = reduceAlt(altitude)
+    return (azimuth, altitude)  # , local_hour_angle)
+
+
+def reduceAlt(pAlt):
+    if pAlt > 90.0:
+        pAlt = 90.0
+    if pAlt < -90.0:
+        pAlt = -90.0
+    return pAlt
+
+
+def reduceAz(pAz):
+    while pAz < 0.0:
+        pAz += 360
+    while pAz >= 360.0:
+        pAz -= 360.0
+    return pAz
+
+
 def transform_azAlt_to_haDec_r(pAz, pAlt, latr):
     sinLat = math.sin(latr)
     cosLat = math.cos(latr)

@@ -45,7 +45,6 @@ from devices.screen import Screen
 from devices.sequencer import Sequencer
 from global_yard import g_dev
 from planewave import platesolve
-from processing.calibration import calibrate
 import ptr_events
 
 
@@ -176,6 +175,7 @@ class Observatory:
         # Soon the primary event / time values can come from AWS.
         self.astro_events = ptr_events.Events(self.config)
         self.astro_events.compute_day_directory()
+
         self.astro_events.display_events()
 
         # Define a redis server if needed.
@@ -504,6 +504,7 @@ class Observatory:
             device_names = devices_of_type.keys()
 
             for device_name in device_names:
+
                 # Get the actual device object...
                 device = devices_of_type[device_name]
                 # ...and add it to main status dict.
@@ -630,6 +631,7 @@ class Observatory:
 
         oneAtATime = 0
         # This stopping mechanism allows for threads to close cleanly.
+        # print ("One " +str(oneAtATime))
         while True:
             if (not self.aws_queue.empty()) and oneAtATime == 0:
                 oneAtATime = 1
