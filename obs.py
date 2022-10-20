@@ -10,9 +10,7 @@ is in the Gemini.
 Abstract away Redis, Memurai, and local shares for IPC.
 """
 
-
 import datetime
-#from datetime import timedelta
 import json
 import math
 import os
@@ -27,11 +25,8 @@ import numpy as np
 import redis  # Client, can work with Memurai
 import requests
 import sep
-#from skimage.io import imsave
-#from skimage.transform import resize
 
 from api_calls import API_calls
-#from auto_stretch.stretch import Stretch
 import config
 from devices.camera import Camera
 from devices.filter_wheel import FilterWheel
@@ -617,9 +612,7 @@ class Observatory:
                 with open(im_path + name, "rb") as f:
                     files = {"file": (im_path + name, f)}
                     print("--> To AWS -->", str(im_path + name))
-                    requests.post(
-                        aws_resp["url"], data=aws_resp["fields"], files=files
-                    )
+                    requests.post(aws_resp["url"], data=aws_resp["fields"], files=files)
 
                 if (
                     name[-3:] == "jpg"

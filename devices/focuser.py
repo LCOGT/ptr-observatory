@@ -55,7 +55,7 @@ class Focuser:
             10000  # Set images since last focus as sillyvalue
         )
         self.last_focus_fwhm = None
-        self.focus_tracker=[np.nan,np.nan,np.nan,np.nan,np.nan,np.nan,np.nan,np.nan,np.nan,np.nan]
+        self.focus_tracker = [np.nan] * 10
 
         try:
             self.get_af_log()
@@ -256,7 +256,7 @@ class Focuser:
         # makes more sense than a full recalcutatin of ax + b...
 
         # NB NB NB this routine may build up a rounding error so consider making it more
-        #absolute.  However if the user adjusted the focus then appling just a delta to their setpoint
+        # absolute.  However if the user adjusted the focus then appling just a delta to their setpoint
         # makes more sense than a full recalcutatin of ax + b...
 
         try:
