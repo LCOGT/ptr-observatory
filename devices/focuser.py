@@ -55,7 +55,7 @@ class Focuser:
             10000  # Set images since last focus as sillyvalue
         )
         self.last_focus_fwhm = None
-        self.focus_tracker = np.array(10 * [np.nan])
+        self.focus_tracker=[np.nan,np.nan,np.nan,np.nan,np.nan,np.nan,np.nan,np.nan,np.nan,np.nan]
 
         try:
             self.get_af_log()

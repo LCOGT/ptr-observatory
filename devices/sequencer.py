@@ -26,6 +26,7 @@ from astropy.coordinates import EarthLocation
 from astropy.coordinates import SkyCoord, AltAz
 from astropy.time import Time
 import astropy.units as u
+import traceback
 
 '''
 Autofocus NOTE 20200122
@@ -1534,7 +1535,9 @@ class Sequencer:
 
                     bright = fred['patch']    #  Patch should be circular and 20% of Chip area. ToDo project
                     print('Returned:  ', bright)
-                except:
+                except Exception as e:
+                    print('Failed to get a flat image: ', e)
+                    print(traceback.format_exc())
                     print("*****NO result returned*****  Will need to restart Camera")  #NB NB  NB this is drastic action needed.
                     g_dev['obs'].update_status()
                     continue
