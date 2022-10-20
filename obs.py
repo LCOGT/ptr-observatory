@@ -52,15 +52,10 @@ def send_status(obsy, column, status_to_send):
     payload = {"statusType": str(column), "status": status_to_send}
     data = json.dumps(payload)
     try:
-        response = requests.post(uri_status, data=data)
+        requests.post(uri_status, data=data)
     except ConnectionError as e:
         print ("Failed to send_status. usually not fatal:  ", e)
 
-    if not response.ok:
-        print(
-            'self.api.authenticated_request("PUT", uri, status):  Failed! ',
-            response.status_code,
-        )
 
 
 class Observatory:
