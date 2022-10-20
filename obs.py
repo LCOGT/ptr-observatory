@@ -56,7 +56,10 @@ def send_status(obsy, column, status_to_send):
     # None of the strings can be empty. Otherwise this put faults.
     payload = {"statusType": str(column), "status": status_to_send}
     data = json.dumps(payload)
-    response = requests.post(uri_status, data=data)
+    try:
+        response = requests.post(uri_status, data=data)
+    except ConnectionError as e:
+        print ("Failed to send_status. usually not fatal:  ", e)
 
     if not response.ok:
         print(
