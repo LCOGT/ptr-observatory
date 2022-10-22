@@ -69,7 +69,8 @@ def send_status(obsy, column, status_to_send):
     response = requests.post(uri_status, data=data)
 
     if response.ok:
-        print("Status sent successfully.")
+        pass
+    #print("Status sent successfully.")
     else:
         print(
             'self.api.authenticated_request("PUT", uri, status):  Failed! ',

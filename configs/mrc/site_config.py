@@ -62,20 +62,20 @@ site_config = {
 
     'client_hostname':  'MRC-0m35',
 
-    'client_path':  'D:/ptr/',  # Generic place for client host to stash misc stuff
-    'alt_path':  'D:/ptr/',  # Generic place for this host to stash misc stuff
-    'archive_path':  'D:/ptr/',
+    'client_path':  'Q:/ptr/',  # Generic place for client host to stash misc stuff
+    'alt_path':  'Q:/ptr/',  # Generic place for this host to stash misc stuff
+    'archive_path':  'Q:/ptr/',
 
     'archive_age' : -99.9, # Number of days to keep files in the local archive before deletion. Negative means never delete
     'aux_archive_path':  None,
     'wema_is_active':  True,          # True if the split computers used at a site.
     'wema_hostname': 'MRC-WMS-ENC',   # Prefer the shorter version
-    'wema_path':  'D:/ptr/',  # '/wema_transfer/',
+    'wema_path':  'Q:/ptr/',  # '/wema_transfer/',
     'dome_on_wema':   True,
     'site_IPC_mechanism':  'redis',   # ['None', shares', 'shelves', 'redis']  Pick One
-    'wema_write_share_path': 'D:/ptr/',  # Meant to be where Wema puts status data.
-    'client_read_share_path':  'D:/ptr/',
-    'client_write_share_path': 'D:/ptr/',
+    'wema_write_share_path': 'Q:/ptr/',  # Meant to be where Wema puts status data.
+    'client_read_share_path':  'Q:/ptr/',
+    'client_write_share_path': 'Q:/ptr/',
     'redis_ip': '10.15.0.109',  #'127.0.0.1', None if no redis path present,
     'site_is_generic':  False,   # A simply  single computer ASCOM site.
     'site_is_specific':  False,  # Indicates some special code for this site, found at end of config.
@@ -539,7 +539,7 @@ site_config = {
             'detector':  'Sony IMX455',
             'manufacturer':  'QHY',
             'use_file_mode':  False,
-            'file_mode_path':  'D:/archive/sq01/maxim/',
+            'file_mode_path':  'Q:/archive/sq01/maxim/',
 
             'settings': {
                 'crop_preview': False,
