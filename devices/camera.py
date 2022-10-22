@@ -2214,6 +2214,7 @@ class Camera:
 
                     # For sites that have "save_to_alt_path" enabled, this routine
                     # Saves the raw and reduced fits files out to the provided directories
+
                     if self.config['save_to_alt_path'] == 'yes':    #ADD an owner specified request to do this save
                         os.makedirs(self.alt_path +  g_dev['day'] + '/raw/', exist_ok=True)
                         os.makedirs(self.alt_path +  g_dev['day'] + '/reduced/', exist_ok=True)

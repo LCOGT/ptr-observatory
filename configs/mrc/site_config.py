@@ -65,6 +65,7 @@ site_config = {
 
     'client_path':  'Q:/ptr/',  # Generic place for client host to stash misc stuff
     'alt_path':  'Q:/ptr/',  # Generic place for this host to stash misc stuff
+    'save_to_alt_path':  'no',
     'archive_path':  'Q:/ptr/',
 
     'archive_age' : -99.9, # Number of days to keep files in the local archive before deletion. Negative means never delete
@@ -541,7 +542,6 @@ site_config = {
             'manufacturer':  'QHY',
             'use_file_mode':  False,
             'file_mode_path':  'Q:/archive/sq01/maxim/',
-
             'settings': {
                 'crop_preview': False,
                 'crop_preview_ybottom': 1,
@@ -681,7 +681,6 @@ site_config = {
 def get_ocn_status():
     pass
 def get_enc_status():
-    breakpoint()
     return redis.get('enc_status') 
 if __name__ == '__main__':
     '''
