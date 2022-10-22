@@ -586,7 +586,7 @@ class Enclosure:
             if self.is_dome and self.status is not None:   #First time around, stauts is None.
                 if mnt_command['is_slewing'] and not self.slew_latch:   # NB NB NB THIS should have a timeout
                     self.enclosure.SlewToAzimuth(float(target_az))
-                    self.slew_latch = True   #Isuing multiple Slews causes jerky Dome motion.
+                    self.slew_latch = True   #Issuing multiple Slews causes jerky Dome motion.
                 elif self.slew_latch and not mnt_command['is_slewing']:
                     self.slew_latch = False   #  Return to Dpme following.
                     self.enclosure.SlewToAzimuth(float(track_az))

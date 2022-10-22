@@ -6,6 +6,7 @@ Updates 20220107 20:01 WER
 @author: wrosing
 '''
 import json
+import redis
 
 
 '''
@@ -680,7 +681,8 @@ site_config = {
 def get_ocn_status():
     pass
 def get_enc_status():
-    pass
+    breakpoint()
+    return redis.get('enc_status') 
 if __name__ == '__main__':
     '''
     This is a simple test to send and receive via json.
