@@ -8,24 +8,25 @@ import copy
 from global_yard import g_dev
 import ephem
 import build_tycho as tycho
-import config
+#import config
 import shelve
 #from pprint import pprint
-from api_calls import API_calls
+#from api_calls import API_calls
 import ptr_utility
 import redis
 import math
-import ephem
-from pprint import pprint
+#import ephem
+#from pprint import pprint
 import shutil
 import os
-import imp
-import ptr_events
+#import imp
+#import ptr_events
 from glob import glob
-from astropy.coordinates import EarthLocation
-from astropy.coordinates import SkyCoord, AltAz
-from astropy.time import Time
-import astropy.units as u
+#from astropy.coordinates import EarthLocation
+#from astropy.coordinates import SkyCoord, AltAz
+#from astropy.time import Time
+#import astropy.units as u
+import traceback
 
 '''
 Autofocus NOTE 20200122
@@ -284,36 +285,7 @@ class Sequencer:
         except:
             print('Dome close not executed during Park and Close.')
 
-    # def archive_cull(self):
-    #     FORTNIGHT=60*60*24*7*2
-    #     #dir_path='D:/PTRMFO/'
 
-    #     dir_path=self.config['client_path'] + '\\' + 'archive'
-    #     cameras=[d for d in os.listdir(dir_path) if os.path.isdir(d)]
-    #     for camera in cameras:  # Go through each camera directory
-    #         print ("*****************************************")
-    #         print ("Camera: " + str(camera))
-    #         timenow_cull=time.time()
-    #         cameradir=dir_path + '\\' + camera + '\\'
-    #         directories=[d for d in os.listdir(cameradir) if os.path.isdir(d)]
-    #         deleteDirectories=[]
-    #         deleteTimes=[]
-    #         for q in range(len(directories)):
-    #             if ((timenow_cull)-os.path.getmtime(cameradir + directories[q])) > FORTNIGHT:
-    #                 deleteDirectories.append(directories[q])
-    #                 deleteTimes.append(((timenow_cull)-os.path.getmtime(cameradir +directories[q])) /60/60/24/7)
-
-
-
-    #         print ("These are the directories earmarked for  ")
-    #         print ("Eternal destruction. And how old they are")
-    #         print ("in weeks\n")
-    #         g_dev['obs'].send_to_user("Culling " + str(len(deleteDirectories)) +" from the local archive.", p_level='INFO')
-    #         for entry in range(len(deleteDirectories)):
-    #             print (deleteDirectories[entry] + ' ' + str(deleteTimes[entry]) + ' weeks old.')
-    #             #shutil.rmtree(cameradir + deleteDirectories[entry]) # THIS IS THE DELETER WHEN WE ARE READY!
-
-    #     return
 
     ###############################
     #       Sequencer Commands and Scripts
@@ -841,32 +813,7 @@ class Sequencer:
                     count = int(exposure['count'])
                     #  We should add a frame repeat count
                     imtype = exposure['imtype']
-                    #defocus = exposure['defocus']
-#                    if g_dev['site'] == 'saf':   #THis should be in config.
-                    # if color[0] == 'B':
-                    #     color = 'PB'   #Map generic filters to site specific ones.   NB this does no tbelong here, it should be central with Cameras setup.
-                    # if color[0] == 'G':
-                    #     color = 'PG'   # NB NB THis needs a clean up, these mappings should be in config
-                    # if color[0] == 'R':
-                    #     color = 'PR'
-                    # if color[0] == 'L':
-                    #     color = 'PL'
-                    # if color[0] == 'W':
-                    #     color = 'w'
-                    # if color[0] == 'g':
-                    #     color = 'gp'
-                    # if color[0] == 'r':    #NB This is redundant for Sloans when small cap.
-                    #     color = 'rp'
-                    # if color[0] == 'i':     #NB NB THIS IS WRONG For Johnson and Bessell
-                    #     color = 'ip'
-                    # if color[0] == 'H':
-                    #     color = 'HA'
-                    # if color[0] == 'O':
-                    #     color = 'O3'
-                    # if color[0] == 'S':
-                    #     color = 'S2'
-                    # if color[0] == 'C':
-                    #     color = 'CR'
+
                     if count <= 0:
                          continue
                     #At this point we have 1 to 9 exposures to make in this filter.  Note different areas can be defined.
@@ -1188,12 +1135,7 @@ class Sequencer:
 
             # Check the archive directory and upload any big fits that haven't been uploaded
             # wait until the queue is empty before mopping up
-            while True:
-                if (not g_dev['obs'].aws_queue.empty()):
-                    print ("Waiting for aws queue to empty at the end of the night")
-                    time.sleep(60)
-                else:
-                    break
+
 
             # Go through and add any remaining fz files to the aws queue .... hopefully that is enough? If not, I will make it keep going until it is sure.
             while True:
@@ -1216,6 +1158,8 @@ class Sequencer:
                     break
 
 
+
+
             # Sending token to AWS to inform it that all files have been uploaded
             print ("sending end of night token to AWS")
             #g_dev['cam'].enqueue_for_AWS(jpeg_data_size, paths['im_path'], paths['jpeg_name10'])
@@ -1229,6 +1173,14 @@ class Sequencer:
             image = (g_dev['cam'].site_path + 'tokens/', self.config['site'] + runNight + '.token')
             g_dev['obs'].aws_queue.put((30000000000, image), block=False)
             g_dev['obs'].send_to_user("End of Night Token sent to AWS.", p_level='INFO')
+
+            while True:
+                if (not g_dev['obs'].aws_queue.empty()):
+                    g_dev['obs'].send_to_AWS()
+                    print ("Emptying AWS queue at the end of the night")
+                    time.sleep(1)
+                else:
+                    break
 
             # Culling the archive
             #FORTNIGHT=60*60*24*7*2
@@ -1326,6 +1278,13 @@ class Sequencer:
             self.sky_flat_latch = True
             self.morn_sky_flat_latch = True
             self.morn_bias_dark_latch = True   #NB NB NB Should these initially be defined this way?
+
+            self.reset_completes()
+
+            # Totally reboot sequencer
+            name = 'sequencer1'
+            driver = None
+            g_dev['seq']=g_dev['obs'].Sequencer(driver, name, g_dev['obs'].config, g_dev['obs'].astro_events)
 
         return
 
@@ -1534,7 +1493,9 @@ class Sequencer:
 
                     bright = fred['patch']    #  Patch should be circular and 20% of Chip area. ToDo project
                     print('Returned:  ', bright)
-                except:
+                except Exception as e:
+                    print('Failed to get a flat image: ', e)
+                    print(traceback.format_exc())
                     print("*****NO result returned*****  Will need to restart Camera")  #NB NB  NB this is drastic action needed.
                     g_dev['obs'].update_status()
                     continue
@@ -2883,40 +2844,3 @@ IF sweep
         except:
             print('Found an empty shelf.  Reset_(block)completes for:  ', camera)
         return
-
-    # import math
-    # chip_x =1.4022
-    # chip_y = 0.9362
-    # def tile_field(field_x, field_y, chip_x, chip_y, overlap=12.5):
-    #     trial_x = field_x/(chip_x* (100 - abs(overlap))/100)
-    #     trial_y = field_y/(chip_y* (100 - abs(overlap))/100)
-    #     proposed_x = round(trial_x + 0.25, 0)
-    #     proposed_y = round(trial_y + 0.25, 0)
-    #     span_x = chip_x*proposed_x
-    #     span_y = chip_y*proposed_y
-    #     over_span_x = span_x - field_x
-    #     over_span_y = span_y - field_y
-    #     span_y = chip_y*proposed_y
-    #     if proposed_x - 1 >= 1:
-    #         x_overlap = over_span_x/(proposed_x - 1)
-    #     else:
-    #         x_overlap =(field_x - span_x)/2
-    #     if proposed_y - 1 >=  1:
-    #         y_overlap = over_span_y/(proposed_y - 1)
-    #     else:
-    #         y_overlap =(field_y - span_y)/2
-    #     if 0 <= x_overlap  < overlap/100:
-    #         proposed_x += 1
-    #         span_x = chip_x*proposed_x
-    #         over_span_x = span_x - field_x
-    #         x_overlap = over_span_x/(proposed_x - 1)
-    #     if 0 <= y_overlap < overlap/100:
-    #         proposed_y += 1
-    #         span_y = chip_y*proposed_y
-    #         over_span_y = span_y - field_y
-    #         y_overlap = over_span_y/(proposed_y - 1)
-    #     return(proposed_x, proposed_y, x_overlap, y_overlap)
-    # for side in range(0,7):
-    #     area = math.sqrt(2)**side
-    #     print(side, round(area, 3))
-    #     print(tile_field(side, side, chip_x, chip_y))

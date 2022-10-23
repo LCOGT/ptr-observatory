@@ -10,9 +10,7 @@ is in the Gemini.
 Abstract away Redis, Memurai, and local shares for IPC.
 """
 
-import bz2
 import datetime
-from datetime import timedelta
 import json
 import math
 import os
@@ -27,11 +25,8 @@ import numpy as np
 import redis  # Client, can work with Memurai
 import requests
 import sep
-from skimage.io import imsave
-from skimage.transform import resize
 
 from api_calls import API_calls
-from auto_stretch.stretch import Stretch
 import config
 from devices.camera import Camera
 from devices.filter_wheel import FilterWheel
@@ -49,44 +44,6 @@ from planewave import platesolve
 import ptr_events
 
 
-# TODO: move this and the next function to a better location and add to fz
-def to_bz2(filename, delete=False):
-    """Compresses a FITS file to bz2."""
-
-    try:
-        uncomp = open(filename, "rb")
-        comp = bz2.compress(uncomp.read())
-        uncomp.close()
-        if delete:
-            os.remove(filename)
-        target = open(filename + ".bz2", "wb")
-        target.write(comp)
-        target.close()
-        return True
-    except OSError:
-        print("to_bz2 failed.")
-        return False
-
-
-# Move this function to a better location
-def from_bz2(filename, delete=False):
-    """Decompresses a bz2 file."""
-
-    try:
-        comp = open(filename, "rb")
-        uncomp = bz2.decompress(comp.read())
-        comp.close()
-        if delete:
-            os.remove(filename)
-        target = open(filename[0:-4], "wb")
-        target.write(uncomp)
-        target.close()
-        return True
-    except OSError:
-        print("from_bz2 failed.")
-        return False
-
-
 def send_status(obsy, column, status_to_send):
     """Sends an update to the status endpoint."""
 
@@ -94,13 +51,11 @@ def send_status(obsy, column, status_to_send):
     # None of the strings can be empty. Otherwise this put faults.
     payload = {"statusType": str(column), "status": status_to_send}
     data = json.dumps(payload)
-    response = requests.post(uri_status, data=data)
+    try:
+        requests.post(uri_status, data=data)
+    except ConnectionError as e:
+        print ("Failed to send_status. usually not fatal:  ", e)
 
-    if not response.ok:
-        print(
-            'self.api.authenticated_request("PUT", uri, status):  Failed! ',
-            response.status_code,
-        )
 
 
 class Observatory:
@@ -207,6 +162,9 @@ class Observatory:
         if not os.path.exists(g_dev["cam"].site_path + "archive"):
             os.makedirs(g_dev["cam"].site_path + "archive")
 
+        self.last_solve_time = datetime.datetime.now() - datetime.timedelta(days=1)
+        self.images_since_last_solve = 10000
+
         self.time_last_status = time.time() - 3
         # Build the to-AWS Try again, reboot, verify dome nad tel and start a thread.
 
@@ -300,6 +258,7 @@ class Observatory:
                     device = Camera(driver, name, self.config)
                 elif dev_type == "sequencer":
                     device = Sequencer(driver, name, self.config, self.astro_events)
+                else:
                     print(f"Unknown device: {name}")
                 # Add the instantiated device to the collection of all devices.
                 self.all_devices[dev_type][name] = device
@@ -310,7 +269,7 @@ class Observatory:
 
         uri = f"https://api.photonranch.org/dev/{self.name}/config/"
         self.config["events"] = g_dev["events"]
-        response = self.api.authenticated_request("PUT", uri, self.config)
+        self.api.authenticated_request("PUT", uri, self.config)
         print("Config uploaded successfully.")
 
     def scan_requests(self, cancel_check=False):
@@ -647,22 +606,19 @@ class Observatory:
                 aws_resp = g_dev["obs"].api.authenticated_request(
                     "POST", "/upload/", aws_req
                 )
-                if ":.bz2" not in im_path + name:
-                    with open(im_path + name, "rb") as f:
-                        files = {"file": (im_path + name, f)}
-                        print("--> To AWS -->", str(im_path + name))
-                        requests.post(
-                            aws_resp["url"], data=aws_resp["fields"], files=files
-                        )
 
-                    if (
-                        name[-3:] == "bz2"
-                        or name[-3:] == "jpg"
-                        or name[-3:] == "txt"
-                        or ".fits.fz" in name
-                        or ".token" in name
-                    ):
-                        os.remove(im_path + name)
+                with open(im_path + name, "rb") as f:
+                    files = {"file": (im_path + name, f)}
+                    print("--> To AWS -->", str(im_path + name))
+                    requests.post(aws_resp["url"], data=aws_resp["fields"], files=files)
+
+                if (
+                    name[-3:] == "jpg"
+                    or name[-3:] == "txt"
+                    or ".fits.fz" in name
+                    or ".token" in name
+                ):
+                    os.remove(im_path + name)
 
                 self.aws_queue.task_done()
                 oneAtATime = 0
@@ -863,12 +819,6 @@ class Observatory:
 
                     ix, iy = img.shape
                     r0 = 0
-
-                    # TODO here :1) do not deal with a source nearer than 5% to an edge.
-                    # 2) do not pick any saturated sources.
-                    # 3) form a histogram and then pick the median winner
-                    # 4) generate data for a report.
-                    # 5) save data and image for engineering runs.
 
                     border_x = int(ix * 0.05)
                     border_y = int(iy * 0.05)
