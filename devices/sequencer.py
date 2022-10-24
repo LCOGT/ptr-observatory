@@ -12,7 +12,7 @@ import build_tycho as tycho
 import shelve
 #from pprint import pprint
 #from api_calls import API_calls
-import ptr_utility
+#import ptr_utility
 import redis
 import math
 #import ephem
@@ -314,10 +314,6 @@ class Sequencer:
         if self.bias_dark_latch and ((events['Eve Bias Dark'] <= ephem_now < events['End Eve Bias Dark']) and \
              self.config['auto_eve_bias_dark'] and g_dev['enc'].mode == 'Automatic' ):
             self.bias_dark_latch = False
-            # MTF - this was just to interject a focus call early in the night for testing. If it is later than Oct 2022, delete this.
-            #focus_star = tycho.dist_sort_targets(g_dev['mnt'].current_icrs_ra, g_dev['mnt'].current_icrs_dec, \
-            #                        g_dev['mnt'].current_sidereal)
-            #print (focus_star)
             req = {'bin1': False, 'bin2': True, 'bin3': False, 'bin4': False, 'numOfBias': 45, \
                    'numOfDark': 15, 'darkTime': 180, 'numOfDark2': 3, 'dark2Time': 360, \
                    'hotMap': True, 'coldMap': True, 'script': 'genBiasDarkMaster', }
@@ -327,12 +323,6 @@ class Sequencer:
             #NB The above put dome closed and telescope at Park, Which is where it should have been upon entry.
             self.bias_dark_script(req, opt, morn=False)
             self.bias_dark_latch = False
-
-        #elif ( (events['End Morn Bias Dark'] + 60 * ephem.minute) <= ephem_now <  events['Midday archive Cull']):
-        #    self.midday_cull()
-        #    g_dev['obs'].send_to_user("Culling the local archive.", p_level='INFO')
-        #    print ("Cull routine")
-
 
         elif ((g_dev['events']['Cool Down, Open']  <= ephem_now < g_dev['events']['Eve Sky Flats']) and \
                g_dev['enc'].mode == 'Automatic') and not g_dev['ocn'].wx_hold:
@@ -392,7 +382,7 @@ class Sequencer:
             #print('Background:  ', len(projects), '\n\n', projects)
 
 
-            house = []
+            #house = []
             for project in projects:
                 if block['project_id']  != 'none':
                     try:
@@ -607,16 +597,9 @@ class Sequencer:
 
 
         '''
-        # if bock['project'] is None:
-            #user controlled block...
-        #NB NB NB  if no project found, need to say so not fault. 20210624
-        #breakpoint()
 
 
-        # Remove None entries before running through list
-        #print (block['project']['project_targets'])
         for target in block['project']['project_targets']:   #  NB NB NB Do multi-target projects make sense???
-
             try:
                 dest_ra = float(target['ra']) - \
                     float(block_specification['project']['project_constraints']['ra_offset'])/15.
@@ -662,7 +645,7 @@ class Sequencer:
             except:
                 pass
             g_dev['mnt'].go_coord(dest_ra, dest_dec)
-           #self.redis_server.set('sync_enc', True, ex=1200)   #Should be redundant
+
             print("CAUTION:  rotator may block")
             pa = float(block_specification['project']['project_constraints']['position_angle'])
             if abs(pa) > 0.01:
@@ -705,74 +688,20 @@ class Sequencer:
             print("Left to do initial value:  ", left_to_do)
             req = {'target': 'near_tycho_star'}
             initial_focus = True
-            initial_pointing = True
-            af_delay = 45*60  #This must be a big number!
+            #af_delay = 45*60  #This must be a big number!
 
             while left_to_do > 0 and not ended:
 
-                #MTF - It was very often that the start of a project, the pointing would be far off... so I am instituting a pre-project point shot
-                #This is also important because it needs to slew to a tycho star to focus... so...... if the pointing is off, it won't get there!
-                #IT is a little buggy so far! But it will get there soon.
-                # if initial_pointing:
 
-
-                #     # Figure out rough RA and Dec
-                #     #location = EarthLocation.from_geodetic(self.config['longitude']*u.deg, self.config['latitude']*u.deg, self.config['elevation'])
-                #     #newAltAzcoordiantes = SkyCoord(alt = 75*u.deg, az = 90*u.deg , obstime = Time(datetime.datetime.utcnow(), scale='utc'), frame = 'altaz', location = location)
-                #     #print (newAltAzcoordiantes.icrs)
-
-
-
-
-
-
-                #     for run in range(2):
-                #         if run ==0:
-                #             # First point at a generic alt/az
-                #             print ("Slewing to a generic alt/az for a pointing calibration")
-                #             g_dev['obs'].send_to_user("Slewing to a generic alt/az for a pointing calibration")
-                #             g_dev['mnt'].mount.SlewToAltAzAsync(90, 75) # Move around to non-objectionable point on the sky
-                #             g_dev['mnt'].mount.Tracking = True
-                #             time.sleep(30)
-                #         elif run ==1:
-                #             print ("Slewing to the target ra and dec for a pointing check")
-                #             g_dev['obs'].send_to_user("Slewing to the target ra and dec for a pointing check")
-                #             print ("ra:  " +str(dest_ra))
-                #             print ("dec: " +str(dest_dec))
-                #             g_dev['mnt'].go_coord(dest_ra, dest_dec)
-                #             time.sleep(30)
-
-                #         g_dev['obs'].send_to_user("Running a Pointing Calibration Exposure. " + str(run+1) +" of 2.")
-                #         print ("Pointing Run " + str(run))
-                #         req = {'time': 20,  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'auto_focus'}   #  NB Should pick up filter and constats from config
-                #         #opt = {'area': 150, 'count': 1, 'bin': '2, 2', 'filter': 'focus'}
-                #         opt = {'area': 150, 'count': 1, 'bin': 'default', 'filter': 'Lum'}
-                #         result = g_dev['cam'].expose_command(req, opt, no_AWS=True, solve_it=True)
-                #         print ("Waiting for solve")
-                #         time.sleep(15)
-                #     initial_pointing = False
-
-
-
-
-
-                #just_focused = True      ###DEBUG
-                if initial_focus: # and False:
-                    #print("Enc Status:  ", g_dev['enc'].get_status())
+                if initial_focus:
 
                     g_dev['obs'].send_to_user("Running an initial autofocus run.")
-                    # if not g_dev['enc'].shutter_is_closed:
+
                     self.auto_focus_script(req2, opt, throw = 600)
-                    #     pass
-                    # else:
-                    #     print('Shutter closed, skipping AF cycle.0')  #coarse_focus_script can be used here
+
                     just_focused = True
                     initial_focus = False    #  Make above on-time event per block
-                    timer = time.time() + af_delay  # 45 minutes
-                    #at block startup this should mean two AF cycles. Cosider using 5-point for the first.
-
-
-
+                    #timer = time.time() + af_delay  # 45 minutes
 
                 # A flag to make sure the first image after a slew in an exposure set is solved, but then onto the normal solve timer
                 reset_solve = True
@@ -780,26 +709,18 @@ class Sequencer:
 
                 #cycle through exposures decrementing counts    MAY want to double check left-to do but do nut remultiply by 4
                 for exposure in block['project']['exposures']:
-                    # if block_specification['project']['project_constraints']['frequent_autofocus'] == True and (time.time() - timer) >= 0:
-                    #     #What purpose does this code serve, it appears to be a debug remnant? WER 20200206
-                    #     if not g_dev['enc'].shutter_is_closed:
-                    #         self.auto_focus_script(req2, opt, throw = 500)   # Should need less throw.
-                    #     else:
-                    #         print('Shutter closed, skipping AF cycle.0')
+
                     initial_focus = False
                     just_focused = True
-                    timer = time.time() + af_delay  #40 minutes to refocus
-                    #print (block['project']['project_name'])
-                    # MTF - Allocate the project target name to object name
+                    #timer = time.time() + af_delay  #40 minutes to refocus
+
                     print ("Observing " + str(block['project']['project_targets'][0]['name']))
-                    #opt['object_name']=block['project']['project_targets'][0]['name']
+
                     print("Executing: ", exposure, left_to_do)
                     color = exposure['filter']
                     exp_time =  float(exposure['exposure'])
-                    #dither = exposure['dither']
+
                     if exposure['bin'] in[0, '0', '0,0', '0, 0', '0 0']:
-                        #if g_dev['cam'].config['camera']['camera_1_1']['settings']['default_bin'][0] == 1: # WER
-                        #    binning = '1 1'
                         tempBinString=str(g_dev['cam'].config['camera']['camera_1_1']['settings']['default_bin'][0])
                         binning = tempBinString + ' ' + tempBinString
                     elif exposure['bin'] in [2, '2,2', '2, 2', '2 2']:
@@ -855,7 +776,7 @@ class Sequencer:
                     #         pane = 1
                     #     pitch = .375
                     elif exposure['area'] in ['+SQ', '133%']:  # 2 exposures.  SQUARE
-                        step = 1
+                        #step = 1
                         offset = [(0, -1), (0, 1)] #Two mosaic steps 36 x 24mm chip  Square
                         pane = 1
                         pitch = 0.25#*2   #Try this out for small overlap and tall field. 20220218 04:12 WER
@@ -863,6 +784,7 @@ class Sequencer:
                         offset = [(0., 0.)] #Zero(no) mosaic offset
                         pitch = 0.
                         pane = 0
+
                     for displacement in offset:
 
                         x_field_deg = g_dev['cam'].config['camera']['camera_1_1']['settings']['x_field_deg']
@@ -878,20 +800,17 @@ class Sequencer:
                         new_ra = dest_ra + d_ra
                         new_dec= dest_dec + d_dec
                         new_ra, new_dec = ra_dec_fix_hd(new_ra, new_dec)
-                        # offset = 44514.552766203706
-                        # moon_time = ephem.now() - offset + 78/1440
-                        # moon_ra = 0.787166667*moon_time + 1.0219444 + 0.01 - t*0.00025
-                        # moon_dec = 8.3001964784*math.pow(moon_time, 0.6719299333) - 0.125 + t*0.002
-                        # new_ra = moon_ra
-                        # new_dec = moon_dec
-                        print('Seeking to:  ', new_ra, new_dec)
-                        g_dev['mnt'].go_coord(new_ra, new_dec, reset_solve=reset_solve)  # This needs full angle checks
+
+                        if offset != [(0., 0.)]: # only move if you need to move to another position in the mosaic.
+                            print('Seeking to:  ', new_ra, new_dec)
+                            g_dev['mnt'].go_coord(new_ra, new_dec, reset_solve=reset_solve)  # This needs full angle checks
+                            time.sleep(5) # Give scope time to settle.
                         reset_solve=False # make sure slews after the first slew do not reset the PW Solve timer.
                         if not just_focused:
                             g_dev['foc'].adjust_focus()
                         just_focused = False
                         if imtype in ['light'] and count > 0:
-                            req = {'time': exp_time,  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': imtype}   #  NB Should pick up filter and constants from config
+                            req = {'time': exp_time,  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': imtype, 'smartstack' : 'yes'}   #  NB Should pick up filter and constants from config
                             opt = {'area': 150, 'count': 1, 'bin': binning, 'filter': color, \
                                    'hint': block['project_id'] + "##" + dest_name, 'object_name': block['project']['project_targets'][0]['name'], 'pane': pane}
                             print('Seq Blk sent to camera:  ', req, opt)
@@ -912,16 +831,10 @@ class Sequencer:
                             exposure['count'] = count
                             left_to_do -= 1
                             print("Left to do:  ", left_to_do)
-                            # offset = 44514.552766203706
-                            # moon_time = ephem.now() - offset + 78/1440
-                            # moon_ra = 0.787166667*moon_time + 1.0219444 + 0.01 + t*0.0001
-                            # moon_dec = 8.3001964784*math.pow(moon_time, 0.6719299333) - 0.125 - t*0.01
-                            # new_ra = moon_ra
-                            # new_dec = moon_dec
                         pane += 1
 
                     now_date_timeZ = datetime.datetime.now().isoformat().split('.')[0] +'Z'
-                    ephem_now = ephem.now()
+
                     events = g_dev['events']
 
                     ended = left_to_do <= 0 or now_date_timeZ >= block['end'] \
@@ -1041,74 +954,6 @@ class Sequencer:
                                             do_sep=False, quick=False)
 
                         g_dev['obs'].update_status()
-                                # if ephem.now() + 210/86400 > ending:
-                #     break
-                # print("Expose Biases: b_2")
-                # #dark_time =600
-                # #for bias in range(9):
-                # req = {'time': 0.0,  'script': 'True', 'image_type': 'bias'}
-                # opt = {'area': "Full", 'count': 7, 'bin': '2 2', \
-                #        'filter': 'dark'}
-                # result = g_dev['cam'].expose_command(req, opt, no_AWS=True, \
-                #                 do_sep=False, quick=False)
-
-                # g_dev['obs'].update_status()
-                # dark_time = 300
-                # if ephem.now() >=  (dark_time + 30)/86400 > ending:
-                #     break
-                # print("Expose d_2 using exposure:  ", dark_time )
-                # req = {'time':dark_time ,  'script': 'True', 'image_type': 'dark'}
-                # opt = {'area': "Full", 'count':1, 'bin': '2 2', \
-                #         'filter': 'dark'}
-                # result = g_dev['cam'].expose_command(req, opt, no_AWS=True, \
-                #                     do_sep=False, quick=False)
-
-                # g_dev['obs'].update_status()
-                # if ephem.now() + 210/86400 > ending:
-                #     break
-
-                # if self.config['site'] != 'mrc2':   #NB Please implement in the site config not in-line.
-
-                #     print("Expose Biases: b_3")
-                #     dark_time = 300
-                #     #for bias in range(9):
-                #     req = {'time': 0.0,  'script': 'True', 'image_type': 'bias'}
-                #     opt = {'area': "Full", 'count': 7, 'bin':'3 3', \
-                #             'filter': 'dark'}
-                #     result = g_dev['cam'].expose_command(req, opt, no_AWS=True, \
-                #                     do_sep=False, quick=False)
-                #     g_dev['obs'].update_status()
-                #     if ephem.now() >=  (dark_time + 30)/86400 > ending:
-                #         break
-                #     print("Expose d_3 using exposure:  ", dark_time )
-                #     req = {'time':dark_time,  'script': 'True', 'image_type': 'dark'}
-                #     opt = {'area': "Full", 'count':1, 'bin':'3 3', \
-                #             'filter': 'dark'}
-                #     result = g_dev['cam'].expose_command(req, opt, no_AWS=True, \
-                #                         do_sep=False, quick=False)
-                #     print('Last dark result:  ', result)
-                #     g_dev['obs'].update_status()
-
-                # if ephem.now() + 210/86400 > ending:
-                #     break
-                # print("Expose Biases: b_4")
-                # dark_time = 240
-                # #for bias in range(9):
-                # req = {'time': 0.0,  'script': 'True', 'image_type': 'bias'}
-                # opt = {'area': "Full", 'count': 7, 'bin':'4 4', \
-                #         'filter': 'dark'}
-                # result = g_dev['cam'].expose_command(req, opt, no_AWS=True, \
-                #                 do_sep=False, quick=False)
-
-                # g_dev['obs'].update_status()
-                # if ephem.now() + (dark_time + 30)/86400 > ending:
-                #     break
-                # print("Expose d_4 using exposure:  ", dark_time )
-                # req = {'time':dark_time ,  'script': 'True', 'image_type': 'dark'}
-                # opt = {'area': "Full", 'count':1, 'bin': '4 4', \
-                #         'filter': 'dark'}
-                # result = g_dev['cam'].expose_command(req, opt, no_AWS=True, \
-                #                     do_sep=False, quick=False)
 
                 g_dev['obs'].update_status()
                 if ephem.now() + 30/86400 >= ending:
@@ -1644,11 +1489,6 @@ class Sequencer:
                         result['patch'] = cal_result
                         result['temperature'] = avg_foc[2]  This is probably tube not reported by Gemini.
         '''
-        #if self.config['site'] in ['sro']:   #NB this should be a site config key in the focuser or computed from f-ratio.
-        #    throw = 250
-        #if self.config['site'] in ['saf']:  #  NB NB f4.9 this belongs in config, not in the code body!!!!
-        #    throw = 400
-
 
         # First check how long it has been since the last focus
         print ("Time of last focus")
@@ -2287,529 +2127,6 @@ class Sequencer:
         self.guard = False
         self.af_guard = False
         return result
-
-
-    def equatorial_pointing_run(self, req, opt, spacing=10, vertical=False, grid=False, alt_minimum=25):
-        '''
-        unpark telescope
-        if not open, open dome
-        go to zenith & expose (Consider using Nearest mag 7 grid star.)
-        verify reasonable transparency
-            Ultimately, check focus, find a good exposure level
-        go to -72.5 degrees of ha, 0  expose
-        ha += 10; repeat to Ha = 67.5
-        += 5, expose
-        -= 10 until -67.5
-
-        if vertical go ha = -0.25 and step dec 85 -= 10 to -30 then
-        flip and go other way with offset 5 deg.
-
-        For Grid use Patrick Wallace's Mag 7 Tyco star grid it covers
-        sky equal-area, has a bright star as target and wraps around
-        both axes to better sample the encoders. Choose and load the
-        grid coarseness.
-        '''
-        '''
-        Prompt for ACCP model to be turned off
-        if closed:
-           If WxOk: open
-        if parked:
-             unpark
-
-         pick grid star near zenith in west (no flip)
-              expose 10 s
-              solve
-              Is there a bright object in field?
-              adjust exposure if needed.
-        Go to (-72.5deg HA, dec = 0),
-             Expose, calibrate, save file.  Consider
-             if we can real time solve or just gather.
-        step 10 degrees forward untl ha is 77.5
-        at 77.5 adjust target to (72.5, 0) and step
-        backward.  Stop when you get to -77.5.
-        park
-        Launch reduction
-
-A variant on this is cover a grid, cover a + sign shape.
-IF sweep
-        '''
-       # ptr_utility.ModelOn = False
-
-        self. sky_guard = True
-        ha_deg_steps = (-72.5, -62.5, -52.5, -42.5, -32.5, -22.5, -12.5, -2.5, \
-                         -7.5, -17.5, -27.5, -37.5, -47.5, -57.5, -67.5, \
-                         2.5,  12.5, 22.5, 32.5, 42.5, 52.5, 62.5, 72.5, \
-                         67.5, 57.5, 47.5, 37.5, 27.5, 17.5, 7.5)
-        length = len(ha_deg_steps)
-        count = 0
-        print("Starting equatorial sweep.")
-        g_dev['mnt'].unpark_command()
-        #cam_name = str(self.config['camera']['camera_1_1']['name'])
-        for ha_degree_value in ha_deg_steps:
-            target_ra = ra_fix(g_dev['mnt'].mount.SiderealTime - ha_degree_value/15.)
-            target_dec = 0
-            #     #  Go to closest Mag 7.5 Tycho * with no flip
-            # focus_star = tycho.dist_sort_targets(target_ra, target_dec, \
-            #                    g_dev['mnt'].mount.SiderealTime)
-            # if focus_star is None:
-            #     print("No near star, skipping.")   #This should not happen.
-            #     continue
-            #print("Going to near focus star " + str(focus_star[0]) + "  degrees away.")
-            #req = {'ra':  focus_star[1][1],
-            #       'dec': focus_star[1][0]     #Note order in important (dec, ra)
-            req = {'ra':  target_ra,
-                   'dec': target_dec     #Note order in important (dec, ra)
-                   }
-            opt = {}
-            g_dev['mnt'].go_command(req, opt)
-            st = ''
-            enc_status = eval(self.redis_server.get('enc_status'))  #NB Is this current?
-            while g_dev['mnt'].mount.Slewing or enc_status['dome_slewing']:
-                if g_dev['mnt'].mount.Slewing: st += 'm>'
-                if g_dev['enc'].status['dome_slewing']: st += 'd>'
-                print(st)
-                st = ''
-                g_dev['obs'].update_status()
-                time.sleep(0.5)
-            time.sleep(3)
-            g_dev['obs'].update_status()
-            req = {'time': 10,  'alias': 'sq01', 'image_type': 'experimental'}
-            opt = {'area': 150, 'count': 1, 'bin': '2,2', 'filter': g_dev['fil'].filter_data[0][0], 'hint': 'Equator Run'}
-            result = g_dev['cam'].expose_command(req, opt)
-            g_dev['obs'].update_status()
-            result = 'simulated result.'
-            count += 1
-            print('\n\nResult:  ', result,   'To go count:  ', length - count,  '\n\n')
-        g_dev['mnt'].mount.Tracking = False
-        print("Equatorial sweep completed. Happy reducing.")
-        ptr_utility.ModelOn = True
-        self.sky_guard = False
-        return
-
-    def cross_pointing_run(self, req, opt, spacing=30, vertical=False, grid=False, alt_minimum=25):
-        '''
-        unpark telescope
-        if not open, open dome
-        go to zenith & expose (Consider using Nearest mag 7 grid star.)
-        verify reasonable transparency
-            Ultimately, check focus, find a good exposure level
-        go to -72.5 degrees of ha, 0  expose
-        ha += 10; repeat to Ha = 67.5
-        += 5, expose
-        -= 10 until -67.5
-
-        if vertical go ha = -0.25 and step dec 85 -= 10 to -30 then
-        flip and go other way with offset 5 deg.
-
-        For Grid use Patrick Wallace's Mag 7 Tyco star grid it covers
-        sky equal-area, has a bright star as target and wraps around
-        both axes to better sample the encoders. Choose and load the
-        grid coarseness.
-        '''
-        '''
-        Prompt for ACCP model to be turned off
-        if closed:
-           If WxOk: open
-        if parked:
-             unpark
-
-         pick grid star near zenith in west (no flip)
-              expose 10 s
-              solve
-              Is there a bright object in field?
-              adjust exposure if needed.
-        Go to (-72.5deg HA, dec = 0),
-             Expose, calibrate, save file.  Consider
-             if we can real time solve or just gather.
-        step 10 degrees forward untl ha is 77.5
-        at 77.5 adjust target to (72.5, 0) and step
-        backward.  Stop when you get to -77.5.
-        park
-        Launch reduction
-
-A variant on this is cover a grid, cover a + sign shape.
-IF sweep
-        '''
-       # ptr_utility.ModelOn = False
-
-        self. sky_guard = True
-        points = [(-2.5, 0), (-2.5, -30), (-30, 0), (-60, 0), (2.5, 75), (0.5, 45), \
-                  (0.5, 0), (30, 0), (60, 0)]
-        ha_deg_steps = (-72.5, -62.5, -52.5, -42.5, -32.5, -22.5, -12.5, -2.5, \
-                         -7.5, -17.5, -27.5, -37.5, -47.5, -57.5, -67.5, \
-                         2.5,  12.5, 22.5, 32.5, 42.5, 52.5, 62.5, 72.5, \
-                         67.5, 57.5, 47.5, 37.5, 27.5, 17.5, 7.5)
-        length = len(points)
-        count = 0
-        print("Starting cross, # of points:  ", length)
-        g_dev['mnt'].unpark_command()
-        #cam_name = str(self.config['camera']['camera_1_1']['name'])
-        for point_value in points:
-            target_ra = ra_fix(g_dev['mnt'].mount.SiderealTime - point_value[0]/15.)
-            target_dec = point_value[1]
-            #     #  Go to closest Mag 7.5 Tycho * with no flip
-            # focus_star = tycho.dist_sort_targets(target_ra, target_dec, \
-            #                    g_dev['mnt'].mount.SiderealTime)
-            # if focus_star is None:
-            #     print("No near star, skipping.")   #This should not happen.
-            #     continue
-            #print("Going to near focus star " + str(focus_star[0]) + "  degrees away.")
-            #req = {'ra':  focus_star[1][1],
-            #       'dec': focus_star[1][0]     #Note order in important (dec, ra)
-            req = {'ra':  target_ra,
-                   'dec': target_dec     #Note order in important (dec, ra)
-                   }
-            opt = {}
-            g_dev['mnt'].go_command(req, opt)
-            st = ''
-            while g_dev['mnt'].mount.Slewing or g_dev['enc'].status['dome_slewing']:
-                if g_dev['mnt'].mount.Slewing: st += 'm>'
-                if g_dev['enc'].status['dome_slewing']: st += 'd>'
-                print(st)
-                st = ''
-                g_dev['obs'].update_status()
-                time.sleep(0.5)
-            time.sleep(3)
-            g_dev['obs'].update_status()
-            req = {'time': 30,  'alias': 'sq01', 'image_type': 'experimental'}
-            opt = {'area': 150, 'count': 1, 'bin': '2,2', 'filter': g_dev['fil'].filter_data[0][0], 'hint': 'Equator Run'}
-            result = g_dev['cam'].expose_command(req, opt)
-            g_dev['obs'].update_status()
-            result = 'simulated result.'
-            count += 1
-            print('\n\nResult:  ', result,   'To go count:  ', length - count,  '\n\n')
-        g_dev['mnt'].mount.Tracking = False
-        print("Equatorial sweep completed. Happy reducing.")
-        ptr_utility.ModelOn = True
-        self.sky_guard = False
-        return
-
-    def sky_grid_pointing_run(self, req, opt, spacing=10, vertical=False, grid=False, alt_minimum=25):
-        #camera_name = str(self.config['camera']['camera_1_1']['name'])
-        '''
-        unpark telescope
-        if not open, open dome
-        go to zenith & expose (Consider using Nearest mag 7 grid star.)
-        verify reasonable transparency
-            Ultimately, check focus, find a good exposure level
-        go to -72.5 degrees of ha, 0  expose
-        ha += 10; repeat to Ha = 67.5
-        += 5, expose
-        -= 10 until -67.5
-
-        if vertical go ha = -0.25 and step dec 85 -= 10 to -30 then
-        flip and go other way with offset 5 deg.
-
-        For Grid use Patrick Wallace's Mag 7 Tyco star grid it covers
-        sky equal-area, has a bright star as target and wraps around
-        both axes to better sample the encoders. Choose and load the
-        grid coarseness.
-        '''
-        '''
-        Prompt for ACCP model to be turned off
-        if closed:
-           If WxOk: open
-        if parked:
-             unpark
-
-         pick grid star near zenith in west (no flip)
-              expose 10 s
-              solve
-              Is there a bright object in field?
-              adjust exposure if needed.
-        Go to (-72.5deg HA, dec = 0),
-             Expose, calibrate, save file.  Consider
-             if we can real time solve or just gather.
-        step 10 degrees forward untl ha is 77.5
-        at 77.5 adjust target to (72.5, 0) and step
-        backward.  Stop when you get to -77.5.
-        park
-        Launch reduction
-
-A variant on this is cover a grid, cover a + sign shape.
-IF sweep
-        '''
-        self.sky_guard = True
-        #ptr_utility.ModelOn = False
-        print("Starting sky sweep. ")
-        g_dev['mnt'].unpark_command({}, {})
-        if g_dev['enc'].is_dome:
-            g_dev['enc'].Slaved = True  #Bring the dome into the picture.
-        g_dev['obs'].update_status()
-        try:
-            g_dev['scr'].screen_dark()
-        except:
-            pass
-        g_dev['obs'].update_status()
-        g_dev['mnt'].unpark_command()
-        #cam_name = str(self.config['camera']['camera_1_1']['name'])
-
-        sid = g_dev['mnt'].mount.SiderealTime
-        if req['gridType'] == 'medium':  # ~50
-            grid = 4
-        if req['gridType'] == 'coarse':  # ~30
-            grid = 7
-        if req['gridType'] == 'fine':    # ~100
-            grid = 2
-
-        grid_stars = tycho.az_sort_targets(sid, grid)  #4 produces about 50 targets.
-        length = len(grid_stars)
-        print(length, "Targets chosen for grid.")
-        last_az = 0.25
-        count = 0
-        for grid_star in grid_stars:
-            if grid_star is None:
-                print("No near star, skipping.")   #This should not happen.
-                count += 1
-                continue
-            if grid_star[0] < last_az:   #Consider also insisting on a reasonable HA, eg., >= altitude of the Pole.
-               count += 1
-               continue
-            last_az = grid_star[0] + 0.01
-            print("Going to near grid star " + str(grid_star) + " (az, (dec, ra)")
-            req = {'ra':  grid_star[1][1],
-                   'dec': grid_star[1][0]     #Note order is important (dec, ra)
-                   }
-            opt = {}
-            g_dev['mnt'].go_command(req, opt)
-            time.sleep(0.5)
-            st = ''
-            while g_dev['mnt'].mount.Slewing or g_dev['enc'].status['dome_slewing']:
-                if g_dev['mnt'].mount.Slewing: st += 'm>'
-                if g_dev['enc'].status['dome_slewing']: st += 'd>'
-                print(st)
-                st = ''
-                g_dev['obs'].update_status()
-                time.sleep(0.5)
-
-            time.sleep(1)  #Give a little extra time for mount to settle.
-            g_dev['obs'].update_status()
-            req = {'time': 30,  'alias': 'sq01', 'image_type': 'experimental'}
-            opt = {'area': 150, 'count': 1, 'bin': '2,2', 'filter': g_dev['fil'].filter_data[0][0], 'hint': 'Tycho grid.'}
-            result = g_dev['cam'].expose_command(req, opt)
-            g_dev['obs'].update_status()
-            result = 'simulated result.'
-            count += 1
-            print('\n\nResult:  ', result,   'To go count:  ', length - count,  '\n\n')
-
-        #g_dev['mnt'].park()
-        print("Equatorial sweep completed. Happy reducing.")
-        ptr_utility.ModelOn = True
-        self.sky_guard = False
-        return
-
-    def rel_sky_grid_pointing_run(self, req, opt, spacing=10, vertical=False, grid=False, alt_minimum=25):
-        #camera_name = str(self.config['camera']['camera_1_1']['name'])
-        '''
-        unpark telescope
-        if not open, open dome
-        go to zenith & expose (Consider using Nearest mag 7 grid star.)
-        verify reasonable transparency
-            Ultimately, check focus, find a good exposure level
-        go to -72.5 degrees of ha, 0  expose
-        ha += 10; repeat to Ha = 67.5
-        += 5, expose
-        -= 10 until -67.5
-
-        if vertical go ha = -0.25 and step dec 85 -= 10 to -30 then
-        flip and go other way with offset 5 deg.
-
-        For Grid use Patrick Wallace's Mag 7 Tyco star grid it covers
-        sky equal-area, has a bright star as target and wraps around
-        both axes to better sample the encoders. Choose and load the
-        grid coarseness.
-        '''
-        '''
-        Prompt for ACCP model to be turned off
-        if closed:
-           If WxOk: open
-        if parked:
-             unpark
-
-         pick grid star near zenith in west (no flip)
-              expose 10 s
-              solve
-              Is there a bright object in field?
-              adjust exposure if needed.
-        Go to (-72.5deg HA, dec = 0),
-             Expose, calibrate, save file.  Consider
-             if we can real time solve or just gather.
-        step 10 degrees forward untl ha is 77.5
-        at 77.5 adjust target to (72.5, 0) and step
-        backward.  Stop when you get to -77.5.
-        park
-        Launch reduction
-
-A variant on this is cover a grid, cover a + sign shape.
-IF sweep
-        '''
-        #breakpoint()
-        self.sky_guard = True
-        ptr_utility.ModelOn = False
-        print("Starting sky sweep.")
-        g_dev['mnt'].unpark_command({}, {})
-        if g_dev['enc'].is_dome:
-            g_dev['enc'].Slaved = True  #Bring the dome into the picture.
-        g_dev['obs'].update_status()
-        g_dev['scr'].screen_dark()
-        g_dev['obs'].update_status()
-        g_dev['mnt'].unpark_command()
-        #cam_name = str(self.config['camera']['camera_1_1']['name'])
-
-        sid = g_dev['mnt'].mount.SiderealTime
-        if req['gridType'] == 'medium':  # ~50
-            grid = 4
-        if req['gridType'] == 'coarse':  # ~30
-            grid = 7
-        if req['gridType'] == 'fine':    # ~100
-            grid = 2
-        grid_stars = tycho.tpt_grid
-        length = len(grid_stars)
-        print(length, "Targets chosen for grid.")
-        last_az = 0.25
-        count = 0
-        for grid_star in grid_stars:
-            if grid_star is None:
-                print("No near star, skipping.")   #This should not happen.
-                count += 1
-                continue
-            if grid_star[0] < last_az:   #Consider also insisting on a reasonable HA
-               count += 1
-               continue
-            last_az = grid_star[0] + 0.001
-            print("Going to near grid star " + str(grid_star) + " (az, (dec, ra)")
-            req = {'ra':  grid_star[1][1],
-                   'dec': grid_star[1][0]     #Note order is important (dec, ra)
-                   }
-            opt = {}
-            g_dev['mnt'].go_command(req, opt)
-            time.sleep(0.5)
-            st = ''
-            while g_dev['mnt'].mount.Slewing or g_dev['enc'].status['dome_slewing']:
-                if g_dev['mnt'].mount.Slewing: st += 'm>'
-                if g_dev['enc'].status['dome_slewing']: st += 'd>'
-                print(st)
-                st = ''
-                g_dev['obs'].update_status()
-                time.sleep(0.5)
-
-            time.sleep(3)
-            g_dev['obs'].update_status()
-            req = {'time': 15,  'alias': 'sq01', 'image_type': 'experimental'}
-            opt = {'area': 150, 'count': 1, 'bin': '2,2', 'filter': g_dev['fil'].filter_data[0][0], 'hint': 'Tycho grid.'}
-            result = g_dev['cam'].expose_command(req, opt)
-            g_dev['obs'].update_status()
-            result = 'simulated result.'
-            count += 1
-            print('\n\nResult:  ', result,   'To go count:  ', length - count,  '\n\n')
-
-        g_dev['mnt'].mount.Tracking = False
-        print("Equatorial sweep completed. Happy reducing.")
-        ptr_utility.ModelOn = True
-        self.sky_guard = False
-        return
-
-    def vertical_pointing_run(self, req, opt, spacing=10, vertical=False, grid=False, alt_minimum=25):
-        '''
-        unpark telescope
-        if not open, open dome
-        go to zenith & expose (Consider using Nearest mag 7 grid star.)
-        verify reasonable transparency
-            Ultimately, check focus, find a good exposure level
-        go to -72.5 degrees of ha, 0  expose
-        ha += 10; repeat to Ha = 67.5
-        += 5, expose
-        -= 10 until -67.5
-
-        if vertical go ha = -0.25 and step dec 85 -= 10 to -30 then
-        flip and go other way with offset 5 deg.
-
-        For Grid use Patrick Wallace's Mag 7 Tyco star grid it covers
-        sky equal-area, has a bright star as target and wraps around
-        both axes to better sample the encoders. Choose and load the
-        grid coarseness.
-        '''
-        '''
-        Prompt for ACCP model to be turned off
-        if closed:
-           If WxOk: open
-        if parked:
-             unpark
-
-         pick grid star near zenith in west (no flip)
-              expose 10 s
-              solve
-              Is there a bright object in field?
-              adjust exposure if needed.
-        Go to (-72.5deg HA, dec = 0),
-             Expose, calibrate, save file.  Consider
-             if we can real time solve or just gather.
-        step 10 degrees forward untl ha is 77.5
-        at 77.5 adjust target to (72.5, 0) and step
-        backward.  Stop when you get to -77.5.
-        park
-        Launch reduction
-
-A variant on this is cover a grid, cover a + sign shape.
-IF sweep
-        '''
-        self.sky_guard = True
-        #ptr_utility.ModelOn = False
-        # dec_steps = [-30, -25, -20, -15, -10, -5, 0, 5, 10, 15, 20, 25, 30, \
-        #              35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85]
-        dec_steps = [-30, -20, -10, 0, 10, 20, 30, 40, 50, 55, 60, 65, 70, 75, 80, 82.5, \
-                     77.5, 72.5, 67.5, 62.5, 57.5, 50, 45, 35, 25, 15, 5, -5, -15, -25]
-        # dec_copy = dec_steps[:-1].copy()
-        # dec_copy.reverse()
-        # dec_steps += dec_copy
-        length = len(dec_steps)*2
-        count = 0
-        print("Starting West dec sweep, ha = 0.1")
-        g_dev['mnt'].unpark_command()
-        #cam_name = str(self.config['camera']['camera_1_1']['name'])
-        for ha in [0.1, -0.1]:
-            for degree_value in dec_steps:
-                target_ra =  ra_fix(g_dev['mnt'].mount.SiderealTime - ha)
-
-
-                #     #  Go to closest Mag 7.5 Tycho * with no flip
-                # focus_star = tycho.dist_sort_targets(target_ra, target_dec, \
-                #                    g_dev['mnt'].mount.SiderealTime)
-                # if focus_star is None:
-                #     print("No near star, skipping.")   #This should not happen.
-                #     continue
-                # print("Going to near focus star " + str(focus_star[0]) + "  degrees away.")
-                req = {'ra':  target_ra,
-                       'dec': degree_value}
-                opt = {}
-                #Should have an Alt limit check here
-                g_dev['mnt'].go_command(req, opt)
-                st = ''
-                while g_dev['mnt'].mount.Slewing or g_dev['enc'].status['dome_slewing']:
-                    if g_dev['mnt'].mount.Slewing: st += 'm>'
-                    if g_dev['enc'].status['dome_slewing']: st += 'd>'
-                    print(st)
-                    st = ''
-                    g_dev['obs'].update_status()
-                    time.sleep(0.5)
-                time.sleep(3)
-                g_dev['obs'].update_status()
-                req = {'time': 15,  'alias': 'sq01', 'image_type': 'experimental'}
-                opt = {'area': 150, 'count': 1, 'bin': '2,2', 'filter': g_dev['fil'].filter_data[0][0], 'hint': 'Tycho grid.'}
-                result = g_dev['cam'].expose_command(req, opt)
-                g_dev['obs'].update_status()
-                result = 'simulated result.'
-                count += 1
-                print('\n\nResult:  ', result,   'To go count:  ', length - count,  '\n\n')
-                g_dev['obs'].update_status()
-                result = 'simulated'
-                print('Result:  ', result)
-        g_dev['mnt'].stop_command()
-        print("Vertical sweep completed. Happy reducing.")
-        self.equitorial_pointing_run({},{})
-        ptr_utility.ModelOn = True
-        self.sky_guard = False
-        return
 
     def append_completes(self, block_id):
         camera = self.config['camera']['camera_1_1']['name']

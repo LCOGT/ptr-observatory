@@ -25,6 +25,11 @@ import numpy as np
 import redis  # Client, can work with Memurai
 import requests
 import sep
+import astroalign as aa
+
+from skimage.io import imsave
+from skimage.transform import resize
+from auto_stretch.stretch import Stretch
 
 from api_calls import API_calls
 import config
@@ -53,7 +58,7 @@ def send_status(obsy, column, status_to_send):
     data = json.dumps(payload)
     try:
         requests.post(uri_status, data=data)
-    except ConnectionError as e:
+    except Exception as e:
         print ("Failed to send_status. usually not fatal:  ", e)
 
 
@@ -161,6 +166,12 @@ class Observatory:
             os.makedirs(g_dev["cam"].site_path + "ptr_night_shelf")
         if not os.path.exists(g_dev["cam"].site_path + "archive"):
             os.makedirs(g_dev["cam"].site_path + "archive")
+        if not os.path.exists(g_dev['cam'].site_path + 'tokens'):
+                os.makedirs(g_dev['cam'].site_path + 'tokens')
+        if not os.path.exists(g_dev['cam'].site_path + 'astropycache'):
+                os.makedirs(g_dev['cam'].site_path + 'astropycache')
+        if not os.path.exists(g_dev['cam'].site_path + 'smartstacks'):
+                os.makedirs(g_dev['cam'].site_path + 'smartstacks')
 
         self.last_solve_time = datetime.datetime.now() - datetime.timedelta(days=1)
         self.images_since_last_solve = 10000
@@ -646,11 +657,118 @@ class Observatory:
         while True:
 
             if not self.reduce_queue.empty():
-                (paths, pixscale) = self.reduce_queue.get(block=False)
+                (paths, pixscale, smartstackid, sskcounter, Nsmartstack) = self.reduce_queue.get(block=False)
 
                 if paths is None:
                     time.sleep(0.5)
                     continue
+
+
+
+                # SmartStack Section
+                if smartstackid != 'no':
+                    img = fits.open(paths["red_path"] + paths["red_name01"]) # Pick up reduced fits file
+
+                    print (img[0].header['FILTER'])
+                    ssfilter = img[0].header['FILTER']
+                    ssobject = img[0].header['OBJECT']
+                    ssexptime = img[0].header['EXPTIME']
+
+                    ssframenumber = img[0].header['FRAMENUM']
+                    stackHoldheader = img[0].header
+                    print (g_dev['cam'].site_path + 'smartstacks')
+                    smartStackFilename= str(ssobject) + '_' + str(ssfilter) +'_' + str(ssexptime) + '_' + str(smartstackid) + '.npy'
+                    print (smartStackFilename)
+                    img=np.asarray(img[0].data)
+
+                    # IF SMARSTACK NPY FILE EXISTS DO STUFF, OTHERWISE THIS IMAGE IS THE START OF A SMARTSTACK
+                    if not os.path.exists(g_dev['cam'].site_path + 'smartstacks/' + smartStackFilename):
+                        # Store original image
+                        print ("Storing First smartstack image")
+                        #storedsStack=np.nan_to_num(img)
+                        #backgroundLevel =(np.nanmedian(sep.Background(storedsStack.byteswap().newbyteorder())))
+                        #print (backgroundLevel)
+                        #storedsStack= storedsStack - backgroundLevel
+                        np.save(g_dev['cam'].site_path + 'smartstacks/' + smartStackFilename, img)
+                    else:
+                        # Collect stored SmartStack
+                        storedsStack=np.load(g_dev['cam'].site_path + 'smartstacks/' + smartStackFilename)
+                        # Prep new image
+                        print ("Pasting Next smartstack image")
+                        #img=np.nan_to_num(img)
+                        #backgroundLevel =(np.nanmedian(sep.Background(img.byteswap().newbyteorder())))
+                        #print (" Background Level : " + str(backgroundLevel))
+                        #img= img - backgroundLevel
+                        # Reproject new image onto footprint of old image.
+                        reprojectedimage, footprint = aa.register(img, storedsStack, detection_sigma=3, min_area=9)
+                        #scalingFactor= np.nanmedian(reprojectedimage / storedsStack)
+                        #print (" Scaling Factor : " +str(scalingFactor))
+                        #reprojectedimage=(scalingFactor) * reprojectedimage # Insert a scaling factor
+                        storedsStack=np.asarray((reprojectedimage+storedsStack), dtype='<f4')
+                        # Save new stack to disk
+                        np.save(g_dev['cam'].site_path + 'smartstacks/' + smartStackFilename, storedsStack)
+                    del img
+
+                    # Save out a fits for testing purposes only
+                    firstimage=fits.PrimaryHDU()
+                    firstimage.scale('float32')
+                    firstimage.data=np.asarray(storedsStack).astype(np.float32)
+                    firstimage.header=stackHoldheader
+                    firstimage.writeto(g_dev['cam'].site_path + 'smartstacks/' + smartStackFilename.replace('.npy', str(ssframenumber)+'.fits'), overwrite=True)
+                    del firstimage
+
+                    # Resizing the array to an appropriate shape for the jpg and the small fits
+                    iy, ix = storedsStack.shape
+                    if iy == ix:
+                        storedsStack = resize(
+                            storedsStack, (1280, 1280), preserve_range=True
+                        )
+                    else:
+                        storedsStack = resize(
+                            storedsStack,
+                            (int(1536 * iy / ix), 1536),
+                            preserve_range=True,
+                        )  #  We should trim chips so ratio is exact.
+
+                    # Code to stretch the image to fit into the 256 levels of grey for a jpeg
+                    stretched_data_float = Stretch().stretch(storedsStack)
+                    stretched_256 = 255 * stretched_data_float
+                    hot = np.where(stretched_256 > 255)
+                    cold = np.where(stretched_256 < 0)
+                    stretched_256[hot] = 255
+                    stretched_256[cold] = 0
+                    stretched_data_uint8 = stretched_256.astype("uint8")
+                    hot = np.where(stretched_data_uint8 > 255)
+                    cold = np.where(stretched_data_uint8 < 0)
+                    stretched_data_uint8[hot] = 255
+                    stretched_data_uint8[cold] = 0
+
+                    # Try saving the jpeg to disk and quickly send up to AWS to present for the user
+                    # GUI
+
+                    imsave(
+                        g_dev['cam'].site_path + 'smartstacks/' + smartStackFilename.replace('.npy', '_' + str(ssframenumber)+'.jpg'),stretched_data_uint8)
+
+                    g_dev["cam"].enqueue_for_AWS(100, paths["im_path"], paths["jpeg_name10"])
+
+                    g_dev["obs"].send_to_user("A preview SmartStack, " + str(sskcounter+1) + " out of " + str(Nsmartstack) + ", has been sent to the GUI.",p_level="INFO")
+                    #    )
+
+
+
+
+                # OBJECT, FILTER, EXPOSURETIME
+
+                # Align new image to old image, stack and save
+
+
+
+
+
+
+
+
+
 
                 # Solve for pointing. Note: as the raw and reduced file are already saved and an fz file
                 # has already been sent up, this is purely for pointing purposes.
@@ -700,17 +818,16 @@ class Observatory:
                                 round(err_dec * 3600, 2),
                             )  # NB WER changed units 20221012
 
-                            # IS IMAGE PART OF A SMARTSTACK? 1=YES
-                            smartStack = 0
-                            if (
-                                smartStack != 1
-                            ):  # We do not want to reset solve timers during a smartStack
-                                self.last_solve_time = datetime.datetime.now()
-                                self.images_since_last_solve = 0
+
+                            #if (
+                            #    smartStack != 1
+                            #):  # We do not want to reset solve timers during a smartStack
+                            self.last_solve_time = datetime.datetime.now()
+                            self.images_since_last_solve = 0
 
                             # IF IMAGE IS PART OF A SMARTSTACK
                             # THEN OPEN THE REDUCED FILE AND PROVIDE A WCS READY FOR STACKING
-                            if smartStack == 1:
+                            if smartStack == 70000080: # This is currently a silly value... we may not be using WCS for smartstacks
                                 img = fits.open(
                                     paths["red_path"] + paths["red_name01"],
                                     mode="update",

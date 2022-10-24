@@ -530,6 +530,7 @@ site_config = {
                 'readout_mode':  'Normal',
                 'readout_speed': 0.4,
                 'readout_seconds': 12,
+                'smart_stack_exposure_time' : 30,
                 'saturate':  42000,    # e-.  This is a close guess, not measured, but taken from data sheet.
                 'max_linearity': 40000,
                 'fullwell_capacity': [45000, 45000, 45000, 45000],  #e-.   We need to sort out the units properly NB NB NB
