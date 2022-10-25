@@ -12,6 +12,7 @@ import math
 import shelve
 import time
 import traceback
+import ephem
 
 from astropy.io import fits
 from astropy.time import Time
@@ -804,6 +805,10 @@ class Camera:
         self.hint = optional_params.get("hint", "")
         self.script = required_params.get("script", "None")
         self.smartstack = required_params.get('smartstack', "yes")
+
+        self.blockend = required_params.get('block_end', "yes")
+
+
         self.pane = optional_params.get("pane", None)
         bin_x = optional_params.get(
             "bin", self.config["camera"][self.name]["settings"]["default_bin"]
@@ -1099,6 +1104,14 @@ class Camera:
                             g_dev["obs"].stop_all_activity = False
                             print("Camera retry loop stopped by Cancel Exposure")
                             self.exposure_busy = False
+                        return
+                    # Check that the exposure doesn't go over the end of a block
+                    endOfExposure = datetime.datetime.now() + datetime.timedelta(seconds=exposure_time)
+                    now_date_timeZ = endOfExposure.isoformat().split('.')[0] +'Z'
+                    blockend = now_date_timeZ >= self.blockend \
+                            or ephem.now() + exposure_time >= g_dev['events']['Observing Ends']
+                    if blockend:
+                        print ("Exposure overlays the end of a block or the end of observing. Skipping Exposure.")
                         return
                     # NB Here we enter Phase 2
                     try:

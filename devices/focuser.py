@@ -56,7 +56,7 @@ class Focuser:
         )
         self.last_focus_fwhm = None
         self.focus_tracker = [np.nan] * 10
-
+        self.focus_needed = False # A variable that if the code detects that the focus has worsened it can trigger an autofocus
         try:
             self.get_af_log()
         except:

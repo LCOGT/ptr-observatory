@@ -677,6 +677,7 @@ class Observatory:
                     ssframenumber = img[0].header['FRAMENUM']
                     stackHoldheader = img[0].header
                     print (g_dev['cam'].site_path + 'smartstacks')
+
                     smartStackFilename= str(ssobject) + '_' + str(ssfilter) +'_' + str(ssexptime) + '_' + str(smartstackid) + '.npy'
                     print (smartStackFilename)
                     img=np.asarray(img[0].data)
@@ -1021,6 +1022,12 @@ class Observatory:
                     print(np.nanmedian(g_dev["foc"].focus_tracker))
                     print("Last solved focus FWHM")
                     print(g_dev["foc"].last_focus_fwhm)
+
+                    # Very dumb focus slip deteector
+                    if np.nanmedian(g_dev["foc"].focus_tracker) > g_dev["foc"].last_focus_fwhm + self.config['focus_trigger']:
+                        g_dev["foc"].focus_needed = True
+                        g_dev["obs"].send_to_user("Focus has drifted to " +str(np.nanmedian(g_dev["foc"].focus_tracker)) + " from " + str(g_dev["foc"].last_focus_fwhm) +". Autofocus triggered for next exposures.",p_level="INFO")
+
 
                 time.sleep(0.5)
                 self.img = None  # Clean up all big objects.

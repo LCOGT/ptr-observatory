@@ -693,7 +693,7 @@ class Sequencer:
             while left_to_do > 0 and not ended:
 
 
-                if initial_focus:
+                if initial_focus or g_dev["foc"].focus_needed == True:
 
                     g_dev['obs'].send_to_user("Running an initial autofocus run.")
 
@@ -701,6 +701,7 @@ class Sequencer:
 
                     just_focused = True
                     initial_focus = False    #  Make above on-time event per block
+                    g_dev["foc"].focus_needed = False
                     #timer = time.time() + af_delay  # 45 minutes
 
                 # A flag to make sure the first image after a slew in an exposure set is solved, but then onto the normal solve timer
@@ -801,16 +802,16 @@ class Sequencer:
                         new_dec= dest_dec + d_dec
                         new_ra, new_dec = ra_dec_fix_hd(new_ra, new_dec)
 
-                        if offset != [(0., 0.)]: # only move if you need to move to another position in the mosaic.
-                            print('Seeking to:  ', new_ra, new_dec)
-                            g_dev['mnt'].go_coord(new_ra, new_dec, reset_solve=reset_solve)  # This needs full angle checks
-                            time.sleep(5) # Give scope time to settle.
+                        #if offset != [(0., 0.)]: # only move if you need to move to another position in the mosaic.
+                        print('Seeking to:  ', new_ra, new_dec)
+                        g_dev['mnt'].go_coord(new_ra, new_dec, reset_solve=reset_solve)  # This needs full angle checks
+                            #time.sleep(5) # Give scope time to settle.
                         reset_solve=False # make sure slews after the first slew do not reset the PW Solve timer.
                         if not just_focused:
                             g_dev['foc'].adjust_focus()
                         just_focused = False
                         if imtype in ['light'] and count > 0:
-                            req = {'time': exp_time,  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': imtype, 'smartstack' : 'yes'}   #  NB Should pick up filter and constants from config
+                            req = {'time': exp_time,  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': imtype, 'smartstack' : 'yes', 'block_end' : block['end']}   #  NB Should pick up filter and constants from config
                             opt = {'area': 150, 'count': 1, 'bin': binning, 'filter': color, \
                                    'hint': block['project_id'] + "##" + dest_name, 'object_name': block['project']['project_targets'][0]['name'], 'pane': pane}
                             print('Seq Blk sent to camera:  ', req, opt)
@@ -993,14 +994,15 @@ class Sequencer:
                     for fzneglect in bigfzs:
                         print ("Reattempting upload of " + str(os.path.basename(fzneglect)))
                         #breakpoint()
+                        #image = (im_path, name)
+                        #g_dev["obs"].aws_queue.put((priority, image), block=False)
 
                         g_dev['cam'].enqueue_for_AWS(26000000, camera + runNight + "/raw/", str(os.path.basename(fzneglect)))
+                        #g_dev['obs'].send_to_aws()
 
-                        g_dev['cam'].enqueue_for_AWS(26000000, camera + runNight + "/raw/",  str(os.path.basename(fzneglect))) #WER added last comma 20221015
-
-                time.sleep(300)
-                if (g_dev['obs'].aws_queue.empty()):
-                    break
+                #time.sleep(300)
+                #if (g_dev['obs'].aws_queue.empty()):
+                break
 
 
 
