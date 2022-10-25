@@ -1019,10 +1019,10 @@ class Camera:
                 print ("skipping smartstack as not a lightframe")
                 Nsmartstack=1
                 SmartStackID='no'
-            elif self.smartstack == True and (exposure_time > 3*ssExp):
+            elif self.smartstack == 'yes' and (exposure_time > 3*ssExp):
                 Nsmartstack=np.ceil(exposure_time / ssExp)
                 exposure_time=ssExp
-                SmartStackID=(datetime.now().strftime("%d%m%y%H%M%S"))
+                SmartStackID=(datetime.datetime.now().strftime("%d%m%y%H%M%S"))
                 print (SmartStackID)
             else:
                 print ("Not attempting SmartStack")
@@ -1089,8 +1089,10 @@ class Camera:
             #Repeat camera acquisition loop to collect all smartstacks necessary
             #The variable Nsmartstacks defaults to 1 - e.g. normal functioning
             #When a smartstack is not requested.
-            for sskcounter in range(Nsmartstack):
+            for sskcounter in range(int(Nsmartstack)):
                 print ("Smartstack " + str(sskcounter+1) + " out of " + str(Nsmartstack))
+                self.retry_camera = 3
+                self.retry_camera_start_time = time.time()
                 while self.retry_camera > 0:
                     if g_dev["obs"].stop_all_activity:
                         if result["stopped"] is True:
@@ -2332,7 +2334,8 @@ class Camera:
                     else:
                         focus_image = False
 
-                    # This command uploads the text file information at high priority to AWS
+                    # This command uploads the text file information at high priority to AWS. No point sending if part of a smartstack
+
                     self.enqueue_for_AWS(10, im_path, text_name)
 
                     # Make a copy of the raw file to hold onto while the flash reductions are happening.

@@ -680,6 +680,7 @@ class Observatory:
                     smartStackFilename= str(ssobject) + '_' + str(ssfilter) +'_' + str(ssexptime) + '_' + str(smartstackid) + '.npy'
                     print (smartStackFilename)
                     img=np.asarray(img[0].data)
+                    img = img.byteswap().newbyteorder()
 
                     # IF SMARSTACK NPY FILE EXISTS DO STUFF, OTHERWISE THIS IMAGE IS THE START OF A SMARTSTACK
                     if not os.path.exists(g_dev['cam'].site_path + 'smartstacks/' + smartStackFilename):
@@ -689,7 +690,9 @@ class Observatory:
                         #backgroundLevel =(np.nanmedian(sep.Background(storedsStack.byteswap().newbyteorder())))
                         #print (backgroundLevel)
                         #storedsStack= storedsStack - backgroundLevel
+
                         np.save(g_dev['cam'].site_path + 'smartstacks/' + smartStackFilename, img)
+                        storedsStack=img
                     else:
                         # Collect stored SmartStack
                         storedsStack=np.load(g_dev['cam'].site_path + 'smartstacks/' + smartStackFilename)
@@ -700,11 +703,11 @@ class Observatory:
                         #print (" Background Level : " + str(backgroundLevel))
                         #img= img - backgroundLevel
                         # Reproject new image onto footprint of old image.
-                        reprojectedimage, footprint = aa.register(img, storedsStack, detection_sigma=3, min_area=9)
+                        reprojectedimage, _ = aa.register(img, storedsStack, detection_sigma=3, min_area=9)
                         #scalingFactor= np.nanmedian(reprojectedimage / storedsStack)
                         #print (" Scaling Factor : " +str(scalingFactor))
                         #reprojectedimage=(scalingFactor) * reprojectedimage # Insert a scaling factor
-                        storedsStack=np.asarray((reprojectedimage+storedsStack), dtype='<f4')
+                        storedsStack=np.asarray((reprojectedimage+storedsStack))
                         # Save new stack to disk
                         np.save(g_dev['cam'].site_path + 'smartstacks/' + smartStackFilename, storedsStack)
                     del img
@@ -732,6 +735,7 @@ class Observatory:
 
                     # Code to stretch the image to fit into the 256 levels of grey for a jpeg
                     stretched_data_float = Stretch().stretch(storedsStack)
+                    del storedsStack
                     stretched_256 = 255 * stretched_data_float
                     hot = np.where(stretched_256 > 255)
                     cold = np.where(stretched_256 < 0)
@@ -743,13 +747,66 @@ class Observatory:
                     stretched_data_uint8[hot] = 255
                     stretched_data_uint8[cold] = 0
 
+
+
+                    # jpeg_name = (
+                    #     g_dev['cam'].config["site"]
+                    #     + "-"
+                    #     + g_dev['cam'].alias
+                    #     + "-"
+                    #     + g_dev["day"]
+                    #     + "-"
+                    #     + str(smartstackid)
+                    #     + str(sskcounter)
+                    #     + "-"
+                    #     + "EX"
+                    #     + "10.jpg"
+                    # )
+                    # text_name = (
+                    #     g_dev['cam'].config["site"]
+                    #     + "-"
+                    #     + g_dev['cam'].alias
+                    #     + "-"
+                    #     + g_dev["day"]
+                    #     + "-"
+                    #     + str(smartstackid)
+                    #     + str(sskcounter)
+                    #     + "-"
+                    #     + "EX"
+                    #     + "00.txt"
+                    # )
+
+                    # print (text_name)
+                    # print (jpeg_name)
+
                     # Try saving the jpeg to disk and quickly send up to AWS to present for the user
                     # GUI
 
                     imsave(
                         g_dev['cam'].site_path + 'smartstacks/' + smartStackFilename.replace('.npy', '_' + str(ssframenumber)+'.jpg'),stretched_data_uint8)
 
-                    g_dev["cam"].enqueue_for_AWS(100, paths["im_path"], paths["jpeg_name10"])
+
+                    # Send info text and jpg up to UI
+                    #text = open(
+                        #paths["im_path"] + paths["text_name00"].replace('.txt', str(Nsmartstack) +'.txt'), "w"
+                    #    paths["im_path"] + text_name, "w"
+                    #)  # This is needed by AWS to set up database.
+                    #stackHoldheader['FILENAME']=jpeg_name.replace('EX00.jpg','EX00.fits.fz')
+                    #print(stackHoldheader['FILENAME'])
+                    #text.write(str(stackHoldheader))
+                    #text.close()
+
+                    #g_dev["cam"].enqueue_for_AWS(10, paths["im_path"], text_name)
+
+                    imsave(
+                        paths["im_path"] + paths["jpeg_name10"],
+                        stretched_data_uint8,
+                    )
+
+                    #g_dev["cam"].enqueue_for_AWS(100, paths["im_path"], jpeg_name)
+                    g_dev["cam"].enqueue_for_AWS(
+                        100, paths["im_path"], paths["jpeg_name10"]
+                    )
 
                     g_dev["obs"].send_to_user("A preview SmartStack, " + str(sskcounter+1) + " out of " + str(Nsmartstack) + ", has been sent to the GUI.",p_level="INFO")
                     #    )
@@ -792,69 +849,69 @@ class Observatory:
                     ) > datetime.timedelta(
                         minutes=self.config["solve_timer"]
                     ):
-
-                        try:
-                            solve = platesolve.platesolve(
-                                paths["red_path"] + paths["red_name01"], pixscale
-                            )  # 0.5478)
-                            print(
-                                "PW Solves: ",
-                                solve["ra_j2000_hours"],
-                                solve["dec_j2000_degrees"],
-                            )
-                            target_ra = g_dev["mnt"].current_icrs_ra
-                            target_dec = g_dev["mnt"].current_icrs_dec
-                            solved_ra = solve["ra_j2000_hours"]
-                            solved_dec = solve["dec_j2000_degrees"]
-                            solved_arcsecperpixel = solve["arcsec_per_pixel"]
-                            solved_rotangledegs = solve["rot_angle_degs"]
-                            err_ha = target_ra - solved_ra
-                            err_dec = target_dec - solved_dec
-                            solved_arcsecperpixel = solve["arcsec_per_pixel"]
-                            solved_rotangledegs = solve["rot_angle_degs"]
-                            print(
-                                " coordinate error in ra, dec:  (asec) ",
-                                round(err_ha * 15 * 3600, 2),
-                                round(err_dec * 3600, 2),
-                            )  # NB WER changed units 20221012
-
-
-                            #if (
-                            #    smartStack != 1
-                            #):  # We do not want to reset solve timers during a smartStack
-                            self.last_solve_time = datetime.datetime.now()
-                            self.images_since_last_solve = 0
-
-                            # IF IMAGE IS PART OF A SMARTSTACK
-                            # THEN OPEN THE REDUCED FILE AND PROVIDE A WCS READY FOR STACKING
-                            if smartStack == 70000080: # This is currently a silly value... we may not be using WCS for smartstacks
-                                img = fits.open(
-                                    paths["red_path"] + paths["red_name01"],
-                                    mode="update",
-                                    ignore_missing_end=True,
+                        if smartstackid == 'no':
+                            try:
+                                solve = platesolve.platesolve(
+                                    paths["red_path"] + paths["red_name01"], pixscale
+                                )  # 0.5478)
+                                print(
+                                    "PW Solves: ",
+                                    solve["ra_j2000_hours"],
+                                    solve["dec_j2000_degrees"],
                                 )
-                                img[0].header["CTYPE1"] = "RA---TAN"
-                                img[0].header["CTYPE2"] = "DEC--TAN"
-                                img[0].header["CRVAL1"] = solved_ra * 15
-                                img[0].header["CRVAL2"] = solved_dec
-                                img[0].header["CRPIX1"] = float(
-                                    img[0].header["NAXIS1"] / 2
-                                )
-                                img[0].header["CRPIX2"] = float(
-                                    img[0].header["NAXIS2"] / 2
-                                )
-                                img[0].header["CUNIT1"] = "deg"
-                                img[0].header["CUNIT2"] = "deg"
-                                img[0].header["CROTA2"] = 180 - solved_rotangledegs
-                                img[0].header["CDELT1"] = solved_arcsecperpixel / 3600
-                                img[0].header["CDELT2"] = solved_arcsecperpixel / 3600
-                                img.writeto(
-                                    paths["red_path"] + "SOLVED_" + paths["red_name01"]
-                                )
+                                target_ra = g_dev["mnt"].current_icrs_ra
+                                target_dec = g_dev["mnt"].current_icrs_dec
+                                solved_ra = solve["ra_j2000_hours"]
+                                solved_dec = solve["dec_j2000_degrees"]
+                                solved_arcsecperpixel = solve["arcsec_per_pixel"]
+                                solved_rotangledegs = solve["rot_angle_degs"]
+                                err_ha = target_ra - solved_ra
+                                err_dec = target_dec - solved_dec
+                                solved_arcsecperpixel = solve["arcsec_per_pixel"]
+                                solved_rotangledegs = solve["rot_angle_degs"]
+                                print(
+                                    " coordinate error in ra, dec:  (asec) ",
+                                    round(err_ha * 15 * 3600, 2),
+                                    round(err_dec * 3600, 2),
+                                )  # NB WER changed units 20221012
 
-                            # IF IMAGE IS PART OF A SMARTSTACK
-                            # DO NOT UPDATE THE POINTING!
-                            if smartStack != 1:
+
+                                #if (
+                                #    smartStack != 1
+                                #):  # We do not want to reset solve timers during a smartStack
+                                self.last_solve_time = datetime.datetime.now()
+                                self.images_since_last_solve = 0
+
+                                # IF IMAGE IS PART OF A SMARTSTACK
+                                # THEN OPEN THE REDUCED FILE AND PROVIDE A WCS READY FOR STACKING
+                                # if smartStack == 70000080: # This is currently a silly value... we may not be using WCS for smartstacks
+                                #     img = fits.open(
+                                #         paths["red_path"] + paths["red_name01"],
+                                #         mode="update",
+                                #         ignore_missing_end=True,
+                                #     )
+                                #     img[0].header["CTYPE1"] = "RA---TAN"
+                                #     img[0].header["CTYPE2"] = "DEC--TAN"
+                                #     img[0].header["CRVAL1"] = solved_ra * 15
+                                #     img[0].header["CRVAL2"] = solved_dec
+                                #     img[0].header["CRPIX1"] = float(
+                                #         img[0].header["NAXIS1"] / 2
+                                #     )
+                                #     img[0].header["CRPIX2"] = float(
+                                #         img[0].header["NAXIS2"] / 2
+                                #     )
+                                #     img[0].header["CUNIT1"] = "deg"
+                                #     img[0].header["CUNIT2"] = "deg"
+                                #     img[0].header["CROTA2"] = 180 - solved_rotangledegs
+                                #     img[0].header["CDELT1"] = solved_arcsecperpixel / 3600
+                                #     img[0].header["CDELT2"] = solved_arcsecperpixel / 3600
+                                #     img.writeto(
+                                #         paths["red_path"] + "SOLVED_" + paths["red_name01"]
+                                #     )
+
+                                # IF IMAGE IS PART OF A SMARTSTACK
+                                # DO NOT UPDATE THE POINTING!
+
                                 # NB NB NB this needs rethinking, the incoming units are hours in HA or degrees of dec
                                 if (
                                     err_ha * 15 * 3600 > 1200
@@ -893,8 +950,8 @@ class Observatory:
                                     except:
                                         print("This mount doesn't report pierside")
 
-                        except Exception as e:
-                            print("Image: did not platesolve; this is usually OK. ", e)
+                            except Exception as e:
+                                print("Image: did not platesolve; this is usually OK. ", e)
 
                     else:
                         print("skipping solve as not enough time or images have passed")
