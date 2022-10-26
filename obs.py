@@ -735,7 +735,7 @@ class Observatory:
                         )  #  We should trim chips so ratio is exact.
 
                     # Code to stretch the image to fit into the 256 levels of grey for a jpeg
-                    stretched_data_float = Stretch().stretch(storedsStack)
+                    stretched_data_float = Stretch().stretch(storedsStack +1000)
                     del storedsStack
                     stretched_256 = 255 * stretched_data_float
                     hot = np.where(stretched_256 > 255)
@@ -1023,10 +1023,17 @@ class Observatory:
                     print("Last solved focus FWHM")
                     print(g_dev["foc"].last_focus_fwhm)
 
-                    # Very dumb focus slip deteector
-                    if np.nanmedian(g_dev["foc"].focus_tracker) > g_dev["foc"].last_focus_fwhm + self.config['focus_trigger']:
-                        g_dev["foc"].focus_needed = True
-                        g_dev["obs"].send_to_user("Focus has drifted to " +str(np.nanmedian(g_dev["foc"].focus_tracker)) + " from " + str(g_dev["foc"].last_focus_fwhm) +". Autofocus triggered for next exposures.",p_level="INFO")
+
+                    #If there hasn't been a focus yet, then it can't check it, so make this image the last solved focus.
+                    if g_dev["foc"].last_focus_fwhm == None:
+                        g_dev["foc"].last_focus_fwhm = FWHM
+                    else:
+                        # Very dumb focus slip deteector
+                        if np.nanmedian(g_dev["foc"].focus_tracker) > g_dev["foc"].last_focus_fwhm + self.config['focus_trigger']:
+                            g_dev["foc"].focus_needed = True
+                            g_dev["obs"].send_to_user("Focus has drifted to " +str(np.nanmedian(g_dev["foc"].focus_tracker)) + " from " + str(g_dev["foc"].last_focus_fwhm) +". Autofocus triggered for next exposures.",p_level="INFO")
+
+
 
 
                 time.sleep(0.5)

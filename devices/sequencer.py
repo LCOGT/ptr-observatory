@@ -1,31 +1,17 @@
-
-
 import time
 import datetime
 from datetime import timedelta
-#from random import shuffle
 import copy
 from global_yard import g_dev
 import ephem
 import build_tycho as tycho
-#import config
 import shelve
-#from pprint import pprint
-#from api_calls import API_calls
-#import ptr_utility
 import redis
 import math
-#import ephem
-#from pprint import pprint
 import shutil
+import numpy as np
 import os
-#import imp
-#import ptr_events
 from glob import glob
-#from astropy.coordinates import EarthLocation
-#from astropy.coordinates import SkyCoord, AltAz
-#from astropy.time import Time
-#import astropy.units as u
 import traceback
 
 '''
@@ -177,10 +163,6 @@ class Sequencer:
             self.reset_completes()
 
 
-
-
-
-
     def get_status(self):
         status = {
             "active_script": None,
@@ -191,9 +173,6 @@ class Sequencer:
         #     if g_dev['obs'].status_count > 3:   #Gove syste time to settle.
         #         self.manager()      #  There be dragons here!  <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
         return status
-
-
-
 
 
     def parse_command(self, command):
@@ -554,11 +533,6 @@ class Sequencer:
 
         return control.
 
-
-
-
-
-
         '''
 
     def execute_block(self, block_specification):
@@ -594,8 +568,6 @@ class Sequencer:
         The the first thing to do is figure out how many exposures
         in the series.  If enhance AF is true they need to be injected
         at some point, but it does not decrement. This is still left to do
-
-
         '''
 
 
@@ -687,20 +659,19 @@ class Sequencer:
 
             print("Left to do initial value:  ", left_to_do)
             req = {'target': 'near_tycho_star'}
-            initial_focus = True
-            #af_delay = 45*60  #This must be a big number!
+            #initial_focus = True
 
             while left_to_do > 0 and not ended:
 
 
-                if initial_focus or g_dev["foc"].focus_needed == True:
+                if g_dev["foc"].last_focus_fwhm == None or g_dev["foc"].focus_needed == True:
 
                     g_dev['obs'].send_to_user("Running an initial autofocus run.")
 
                     self.auto_focus_script(req2, opt, throw = 600)
 
                     just_focused = True
-                    initial_focus = False    #  Make above on-time event per block
+                    #initial_focus = False    #  Make above on-time event per block
                     g_dev["foc"].focus_needed = False
                     #timer = time.time() + af_delay  # 45 minutes
 
@@ -711,7 +682,7 @@ class Sequencer:
                 #cycle through exposures decrementing counts    MAY want to double check left-to do but do nut remultiply by 4
                 for exposure in block['project']['exposures']:
 
-                    initial_focus = False
+                    #initial_focus = False
                     just_focused = True
                     #timer = time.time() + af_delay  #40 minutes to refocus
 
@@ -883,9 +854,6 @@ class Sequencer:
 
             print("Expose Biases: by configured binning;  normal and long darks.")
 
-                # 'bin_enable': ['1 1'],
-                # 'ref_dak': 360.0,
-                # 'long_dark': 600.0,
             dark_time = self.config['camera']['camera_1_1']['settings']['ref_dark']
             long_dark_time = self.config['camera']['camera_1_1']['settings']['long_dark']
 
@@ -962,8 +930,6 @@ class Sequencer:
 
             print(" Bias/Dark acquisition is finished normally.")
 
-
-
         self.sequencer_hold = False
         g_dev['mnt'].park_command({}, {}) # Get there early
         print("Bias/Dark Phase has passed.")
@@ -973,15 +939,12 @@ class Sequencer:
         if morn:
             # UNDERTAKING END OF NIGHT ROUTINES
 
-
             # Setting runnight for mop up scripts
             yesterday = datetime.datetime.now() - timedelta(1)
-            #print (datetime.datetime.strftime(yesterday, '%Y%m%d'))
             runNight=datetime.datetime.strftime(yesterday, '%Y%m%d')
 
             # Check the archive directory and upload any big fits that haven't been uploaded
             # wait until the queue is empty before mopping up
-
 
             # Go through and add any remaining fz files to the aws queue .... hopefully that is enough? If not, I will make it keep going until it is sure.
             while True:
@@ -1003,9 +966,6 @@ class Sequencer:
                 #time.sleep(300)
                 #if (g_dev['obs'].aws_queue.empty()):
                 break
-
-
-
 
             # Sending token to AWS to inform it that all files have been uploaded
             print ("sending end of night token to AWS")
@@ -1041,36 +1001,22 @@ class Sequencer:
                     print ("*****************************************")
                     print ("Camera: " + str(camera))
                     timenow_cull=time.time()
-                    #cameradir=camera
-                    #directories=[d for d in os.listdir(cameradir) if os.path.isdir(d)]
                     directories=glob(camera + "*/")
                     deleteDirectories=[]
                     deleteTimes=[]
-                    #print (directories)
                     for q in range(len(directories)):
-
                         if ((timenow_cull)-os.path.getmtime(directories[q])) > (self.config['archive_age'] * 24* 60 * 60) :
                             deleteDirectories.append(directories[q])
                             deleteTimes.append(((timenow_cull)-os.path.getmtime(directories[q])) /60/60/24/7)
-
-
-
                     print ("These are the directories earmarked for  ")
                     print ("Eternal destruction. And how old they are")
                     print ("in weeks\n")
                     g_dev['obs'].send_to_user("Culling " + str(len(deleteDirectories)) +" from the local archive.", p_level='INFO')
                     for entry in range(len(deleteDirectories)):
                         print (deleteDirectories[entry] + ' ' + str(deleteTimes[entry]) + ' weeks old.')
-                        shutil.rmtree(deleteDirectories[entry]) # THIS IS THE DELETER WHEN WE ARE READY!
+                        shutil.rmtree(deleteDirectories[entry])
 
-            # Reopening config
-            #imp.reload(config)
-            #self.config = config
-            # Getting new times for the new day
-            #self.astro_events = ptr_events.Events(self.config)
-
-            #self.astro_events = ptr_events.Events(self.config)
-
+            # Reopening config and resetting all the things.
             self.astro_events.compute_day_directory()
             self.astro_events.display_events()
             g_dev['obs'].astro_events = self.astro_events
@@ -1080,8 +1026,6 @@ class Sequencer:
             '''
             uri = f"{self.name}/config/"
             self.config['events'] = g_dev['events']
-            # breakpoint()
-            # pprint(self.config)
             response = g_dev['obs'].api.authenticated_request("PUT", uri, self.config)
             if response:
                 print("Config uploaded successfully.")
@@ -1097,12 +1041,10 @@ class Sequencer:
             # Resetting complete projects
             print ("Nightly reset of complete projects")
             self.reset_completes()
-
             g_dev['obs'].blocks = None
             g_dev['obs'].projects = None
             g_dev['obs'].events_new = None
             g_dev['obs'].reset_last_reference()
-
             if self.config['mount']['mount1']['permissive_mount_reset'] == 'yes':
                g_dev['mnt'].reset_mount_reference()
             g_dev['obs'].last_solve_time = datetime.datetime.now() - datetime.timedelta(days=1)
@@ -1115,23 +1057,27 @@ class Sequencer:
             self.sequencer_message = '-'
             print("sequencer reconnected.")
             print(self.description)
-
             self.sky_guard = False
             self.af_guard = False
             self.block_guard = False
             self.time_of_next_slew = time.time()
-            #NB NB These should be set up from config once a day at Noon/Startup time
-            self.bias_dark_latch = True   #NB NB NB Should these initially be defined this way?
+            self.bias_dark_latch = True
             self.sky_flat_latch = True
             self.morn_sky_flat_latch = True
-            self.morn_bias_dark_latch = True   #NB NB NB Should these initially be defined this way?
-
+            self.morn_bias_dark_latch = True
             self.reset_completes()
 
-            # Totally reboot sequencer
-            name = 'sequencer1'
-            driver = None
-            g_dev['seq']=g_dev['obs'].Sequencer(driver, name, g_dev['obs'].config, g_dev['obs'].astro_events)
+            # Reset focus tracker
+            g_dev["foc"].focus_needed = True
+            g_dev["foc"].time_of_last_focus = datetime.datetime.now() - datetime.timedelta(
+                days=1
+            )  # Initialise last focus as yesterday
+            g_dev["foc"].images_since_last_focus = (
+                10000  # Set images since last focus as sillyvalue
+            )
+            g_dev["foc"].last_focus_fwhm = None
+            g_dev["foc"].focus_tracker = [np.nan] * 10
+
 
         return
 
@@ -1223,13 +1169,6 @@ class Sequencer:
 
                         I am going to push this to Git right now so MFitz can comment. Then i will get back to the pseudo code.
 
-
-
-
-
-
-
-
         """
 
         self.sky_guard = True   #20220409 I think this is obsolete or unused.
@@ -1270,15 +1209,9 @@ class Sequencer:
 
             current_filter = int(pop_list[0])
             acquired_count = 0
-            #req = {'filter': current_filter}
-            #opt =  {'filter': current_filter}
-
             g_dev['fil'].set_number_command(current_filter)  #  20220825  NB NB NB Change this to using a list of filter names.
             g_dev['mnt'].slewToSkyFlatAsync()
             target_flat = 30000
-            #scale = 1.0    #1.15   #20201121 adjustment
-
-
 
             # if not g_dev['enc'].status['shutter_status'] in ['Open', 'open']:
             #     g_dev['obs'].send_to_user("Wait for roof to be open to take skyflats. 60 sec delay loop.", p_level='INFO')
@@ -1923,9 +1856,6 @@ class Sequencer:
         self.sequencer_hold = False
         self.guard = False
         self.af_guard = False
-
-
-
 
         return
 

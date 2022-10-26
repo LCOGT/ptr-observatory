@@ -806,7 +806,7 @@ class Camera:
         self.script = required_params.get("script", "None")
         self.smartstack = required_params.get('smartstack', "yes")
 
-        self.blockend = required_params.get('block_end', "yes")
+        self.blockend = required_params.get('block_end', "None")
 
 
         self.pane = optional_params.get("pane", None)
@@ -1020,6 +1020,8 @@ class Camera:
             # Within each count - which is a single requested exposure, IF it is a smartstack
             # Then we divide each count up into individual smartstack exposures.
             ssExp=self.config["camera"][self.name]["settings"]['smart_stack_exposure_time']
+            if self.current_filter in ['HA', 'O3', 'S2', 'N2', 'y', 'up', 'U']:
+                ssExp = ssExp * 3 # For narrowband and low throughput filters, increase base exposure time.
             if not imtype.lower() in ["light"]:
                 print ("skipping smartstack as not a lightframe")
                 Nsmartstack=1
@@ -1105,14 +1107,25 @@ class Camera:
                             print("Camera retry loop stopped by Cancel Exposure")
                             self.exposure_busy = False
                         return
-                    # Check that the exposure doesn't go over the end of a block
-                    endOfExposure = datetime.datetime.now() + datetime.timedelta(seconds=exposure_time)
-                    now_date_timeZ = endOfExposure.isoformat().split('.')[0] +'Z'
-                    blockend = now_date_timeZ >= self.blockend \
-                            or ephem.now() + exposure_time >= g_dev['events']['Observing Ends']
-                    if blockend:
-                        print ("Exposure overlays the end of a block or the end of observing. Skipping Exposure.")
-                        return
+
+
+                    # Check that the block isn't ending during normal observing time (don't check while biasing, flats etc.)
+                    if not 'None' in self.blockend: # Only do this check if a block end was provided.
+                        # Check that the exposure doesn't go over the end of a block
+                        endOfExposure = datetime.datetime.now() - datetime.timedelta(seconds=exposure_time)
+                        now_date_timeZ = endOfExposure.isoformat().split('.')[0] +'Z'
+                        blockended = now_date_timeZ >= self.blockend
+
+                        #print (endOfExposure)
+                        #print (now_date_timeZ)
+                        #print (self.blockend)
+                        #print (ephem.now() + exposure_time)
+                        #print (g_dev['events']['Observing Ends'])
+                        #print (ephem.Date(ephem.now()+ (exposure_time *ephem.second)))
+
+                        if blockended and ephem.Date(ephem.now()+ (exposure_time *ephem.second)) >= g_dev['events']['Observing Begins']:
+                            print ("Exposure overlays the end of a block or the end of observing. Skipping Exposure.")
+                            return
                     # NB Here we enter Phase 2
                     try:
                         self.t1 = time.time()
@@ -2531,7 +2544,7 @@ class Camera:
                         )
 
                         # Code to stretch the image to fit into the 256 levels of grey for a jpeg
-                        stretched_data_float = Stretch().stretch(hdusmall.data)
+                        stretched_data_float = Stretch().stretch(hdusmall.data+1000)
                         del hdusmall  # Done with this fits image, so delete
                         stretched_256 = 255 * stretched_data_float
                         hot = np.where(stretched_256 > 255)
