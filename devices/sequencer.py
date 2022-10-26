@@ -947,25 +947,25 @@ class Sequencer:
             # wait until the queue is empty before mopping up
 
             # Go through and add any remaining fz files to the aws queue .... hopefully that is enough? If not, I will make it keep going until it is sure.
-            while True:
-                dir_path=self.config['client_path'] + 'archive/'
-                cameras=glob(dir_path + "*/")
-                print (cameras)
-                for camera in cameras:
-                    bigfzs=glob(camera + "/" + runNight + "/raw/*.fz")
+            #while True:
+            dir_path=self.config['client_path'] + 'archive/'
+            cameras=glob(dir_path + "*/")
+            print (cameras)
+            for camera in cameras:
+                bigfzs=glob(camera + "/" + runNight + "/raw/*.fz")
 
-                    for fzneglect in bigfzs:
-                        print ("Reattempting upload of " + str(os.path.basename(fzneglect)))
-                        #breakpoint()
-                        #image = (im_path, name)
-                        #g_dev["obs"].aws_queue.put((priority, image), block=False)
+                for fzneglect in bigfzs:
+                    print ("Reattempting upload of " + str(os.path.basename(fzneglect)))
+                    #breakpoint()
+                    #image = (im_path, name)
+                    #g_dev["obs"].aws_queue.put((priority, image), block=False)
 
-                        g_dev['cam'].enqueue_for_AWS(26000000, camera + runNight + "/raw/", str(os.path.basename(fzneglect)))
-                        #g_dev['obs'].send_to_aws()
+                    g_dev['cam'].enqueue_for_AWS(26000000, camera + runNight + "/raw/", str(os.path.basename(fzneglect)))
+                    #g_dev['obs'].send_to_aws()
 
-                #time.sleep(300)
-                #if (g_dev['obs'].aws_queue.empty()):
-                break
+            #time.sleep(300)
+            #if (g_dev['obs'].aws_queue.empty()):
+            #break
 
             # Sending token to AWS to inform it that all files have been uploaded
             print ("sending end of night token to AWS")
@@ -981,13 +981,13 @@ class Sequencer:
             g_dev['obs'].aws_queue.put((30000000000, image), block=False)
             g_dev['obs'].send_to_user("End of Night Token sent to AWS.", p_level='INFO')
 
-            while True:
-                if (not g_dev['obs'].aws_queue.empty()):
-                    g_dev['obs'].send_to_AWS()
-                    print ("Emptying AWS queue at the end of the night")
-                    time.sleep(1)
-                else:
-                    break
+            # while True:
+            #     if (not g_dev['obs'].aws_queue.empty()):
+            #         g_dev['obs'].send_to_AWS()
+            #         print ("Emptying AWS queue at the end of the night")
+            #         time.sleep(1)
+            #     else:
+            #         break
 
             # Culling the archive
             #FORTNIGHT=60*60*24*7*2
@@ -1066,6 +1066,11 @@ class Sequencer:
             self.morn_sky_flat_latch = True
             self.morn_bias_dark_latch = True
             self.reset_completes()
+
+            # Totally reboot sequencer
+            name = 'sequencer1'
+            driver = None
+            g_dev['seq']=g_dev['obs'].Sequencer(driver, name, g_dev['obs'].config, g_dev['obs'].astro_events)
 
             # Reset focus tracker
             g_dev["foc"].focus_needed = True
