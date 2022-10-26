@@ -93,6 +93,8 @@ site_config = {
     'periodic_focus_time' : 0.5, # This is a time, in hours, over which to bypass automated focussing (e.g. at the start of a project it will not refocus if a new project starts X hours after the last focus)
     'stdev_fwhm' : 0.5, # This is the expected variation in FWHM at a given telescope/camera/site combination. This is used to check if a fwhm is within normal range or the focus has shifted
     'focus_exposure_time': 15, # Exposure time in seconds for exposure image
+
+    'focus_trigger' : 0.5, # What FWHM increase is needed to trigger an autofocus
     'solve_nth_image' : 10, # Only solve every nth image
     'solve_timer' : 5, # Only solve every X minutes
     'threshold_mount_update' : 10, # only update mount when X arcseconds away
@@ -535,6 +537,8 @@ site_config = {
                 'read_mode':  'Normal',
                 'readout_mode':  'Normal',
                 'readout_speed': 0.4,
+                'readout_seconds': 12,
+                'smart_stack_exposure_time' : 3000,
                 'saturate':  42000,    # e-.  This is a close guess, not measured, but taken from data sheet.
                 'max_linearity': 40000,
                 'fullwell_capacity': [45000, 45000, 45000, 45000],  #e-.   We need to sort out the units properly NB NB NB
