@@ -14,24 +14,24 @@ import datetime
 import json
 import math
 import os
-import threading
-import time
 import queue
 import shelve
 import socket
+import threading
+import time
 
+import astroalign as aa
 from astropy.io import fits
 import numpy as np
+from ocs_ingester.ingester import frame_exists, upload_file_and_ingest_to_archive
 import redis  # Client, can work with Memurai
 import requests
 import sep
-import astroalign as aa
-
 from skimage.io import imsave
 from skimage.transform import resize
-from auto_stretch.stretch import Stretch
 
 from api_calls import API_calls
+from auto_stretch.stretch import Stretch
 import config
 from devices.camera import Camera
 from devices.filter_wheel import FilterWheel
@@ -599,7 +599,6 @@ class Observatory:
 
         oneAtATime = 0
         # This stopping mechanism allows for threads to close cleanly.
-        # print ("One " +str(oneAtATime))
         while True:
             if (not self.aws_queue.empty()) and oneAtATime == 0:
                 oneAtATime = 1
@@ -610,26 +609,31 @@ class Observatory:
                     oneAtATime = 0
                     time.sleep(0.2)
                     continue
+                
                 # Here we parse the file, set up and send to AWS
                 im_path = pri_image[1][0]
-                name = pri_image[1][1]
-                aws_req = {"object_name": name}
-                aws_resp = g_dev["obs"].api.authenticated_request(
-                    "POST", "/upload/", aws_req
-                )
+                filename = pri_image[1][1]
+                #aws_req = {"object_name": filename}
+                #aws_resp = g_dev["obs"].api.authenticated_request(
+                #    "POST", "/upload/", aws_req
+                #)
 
-                with open(im_path + name, "rb") as f:
-                    files = {"file": (im_path + name, f)}
-                    print("--> To AWS -->", str(im_path + name))
-                    requests.post(aws_resp["url"], data=aws_resp["fields"], files=files)
-
+                with open(im_path + filename, "rb") as fileobj:
+                    if not frame_exists(fileobj):
+                        print(f"--> To AWS --> {str(im_path + filename)}")
+                        upload_file_and_ingest_to_archive(fileobj)
+                    else:
+                        print(f"File {filename} already exists in the archive, nothing uploaded.")
+                    #requests.post(aws_resp["url"], data=aws_resp["fields"], files=files)
+                    #files = {"file": (im_path + filename, f)}
+                
                 if (
-                    name[-3:] == "jpg"
-                    or name[-3:] == "txt"
-                    or ".fits.fz" in name
-                    or ".token" in name
+                    filename[-3:] == "jpg"
+                    or filename[-3:] == "txt"
+                    or ".fits.fz" in filename
+                    or ".token" in filename
                 ):
-                    os.remove(im_path + name)
+                    os.remove(im_path + filename)
 
                 self.aws_queue.task_done()
                 oneAtATime = 0
@@ -662,8 +666,6 @@ class Observatory:
                 if paths is None:
                     time.sleep(0.5)
                     continue
-
-
 
                 # SmartStack Section
                 if smartstackid != 'no':
@@ -812,21 +814,8 @@ class Observatory:
                     g_dev["obs"].send_to_user("A preview SmartStack, " + str(sskcounter+1) + " out of " + str(Nsmartstack) + ", has been sent to the GUI.",p_level="INFO")
                     #    )
 
-
-
-
                 # OBJECT, FILTER, EXPOSURETIME
-
                 # Align new image to old image, stack and save
-
-
-
-
-
-
-
-
-
 
                 # Solve for pointing. Note: as the raw and reduced file are already saved and an fz file
                 # has already been sent up, this is purely for pointing purposes.
