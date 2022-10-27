@@ -30,6 +30,7 @@ import sep
 from skimage.io import imsave
 from skimage.transform import resize
 
+
 from api_calls import API_calls
 from auto_stretch.stretch import Stretch
 import config
@@ -204,6 +205,8 @@ class Observatory:
         self.projects = None
         self.events_new = None
         self.reset_last_reference()
+        self.env_exists = os.path.exists(os.getcwd() + '\.env')  # Boolean, check if .env present
+
 
     def set_last_reference(self, delta_ra, delta_dec, last_time):
         mnt_shelf = shelve.open(self.site_path + "ptr_night_shelf/" + "last")
@@ -611,6 +614,7 @@ class Observatory:
         one_at_a_time = 0
         # This stopping mechanism allows for threads to close cleanly.
         while True:
+
             if (not self.aws_queue.empty()) and one_at_a_time == 0:
                 one_at_a_time = 1
                 pri_image = self.aws_queue.get(block=False)
@@ -622,30 +626,28 @@ class Observatory:
                     continue
 
                 # Here we parse the file, set up and send to AWS
-                im_path = pri_image[1][0]
                 filename = pri_image[1][1]
+                filepath = pri_image[1][0] + filename  # Full path to file on disk
                 aws_resp = g_dev["obs"].api.authenticated_request(
-                    "POST", "/upload/", {"object_name": filename}
-                )
-
-                with open(im_path + filename, "rb") as fileobj:
-                    print(f"--> To AWS --> {str(im_path + filename)}")
-                    files = {"file": (im_path + filename, fileobj)}
-
-                    # Only ingest new large fits.fz files to the PTR archive.
-                    if filename.endswith("-EX00.fits.fz") and not frame_exists(fileobj):
+                    "POST", "/upload/", {"object_name": filename})
+                # Only ingest new large fits.fz files to the PTR archive.
+                if self.env_exists == True and filename.endswith("-EX00.fits.fz"):
+                    with open(filepath, "rb") as fileobj:
                         try:
-                            upload_file_and_ingest_to_archive(fileobj)
-                        except Exception:
-                            # Send to default S3 bucket if archive ingestion fails.
-                            requests.post(
-                                aws_resp["url"], data=aws_resp["fields"], files=files
-                            )
-                    # Send all other files to S3 directly to another bucket.
-                    else:
-                        requests.post(
-                            aws_resp["url"], data=aws_resp["fields"], files=files
-                        )
+                            if not frame_exists(fileobj):
+                                upload_file_and_ingest_to_archive(fileobj)
+                                print(f"--> To PTR ARCHIVE --> {str(filepath)}")
+                            # If ingester fails, send to default S3 bucket.
+                        except:
+                            files = {"file": (filepath, fileobj)}
+                            requests.post(aws_resp["url"], data=aws_resp["fields"], files=files)
+                            print(f"--> To AWS --> {str(filepath)}")
+                # Send all other files to S3.
+                else:
+                    with open(filepath, "rb") as fileobj:
+                        files = {"file": (filepath, fileobj)}
+                        requests.post(aws_resp["url"], data=aws_resp["fields"], files=files)
+                        print(f"--> To AWS --> {str(filepath)}")
 
                 if (
                     filename[-3:] == "jpg"
@@ -653,7 +655,7 @@ class Observatory:
                     or ".fits.fz" in filename
                     or ".token" in filename
                 ):
-                    os.remove(im_path + filename)
+                    os.remove(filepath)
 
                 self.aws_queue.task_done()
                 one_at_a_time = 0
