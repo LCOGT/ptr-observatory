@@ -22,8 +22,8 @@ import time
 
 import astroalign as aa
 from astropy.io import fits
+from dotenv import load_dotenv, dotenv_values
 import numpy as np
-from ocs_ingester.ingester import frame_exists, upload_file_and_ingest_to_archive
 import redis  # Client, can work with Memurai
 import requests
 import sep
@@ -47,6 +47,10 @@ from devices.sequencer import Sequencer
 from global_yard import g_dev
 from planewave import platesolve
 import ptr_events
+
+# The ingester should only be imported after environment variables are loaded in.
+load_dotenv(".env")
+from ocs_ingester.ingester import frame_exists, upload_file_and_ingest_to_archive
 
 
 def send_status(obsy, column, status_to_send):
@@ -609,24 +613,28 @@ class Observatory:
                     oneAtATime = 0
                     time.sleep(0.2)
                     continue
-                
+
                 # Here we parse the file, set up and send to AWS
                 im_path = pri_image[1][0]
                 filename = pri_image[1][1]
-                #aws_req = {"object_name": filename}
-                #aws_resp = g_dev["obs"].api.authenticated_request(
-                #    "POST", "/upload/", aws_req
-                #)
 
                 with open(im_path + filename, "rb") as fileobj:
-                    if not frame_exists(fileobj):
-                        print(f"--> To AWS --> {str(im_path + filename)}")
-                        upload_file_and_ingest_to_archive(fileobj)
-                    else:
-                        print(f"File {filename} already exists in the archive, nothing uploaded.")
-                    #requests.post(aws_resp["url"], data=aws_resp["fields"], files=files)
-                    #files = {"file": (im_path + filename, f)}
-                
+                    print(f"--> To AWS --> {str(im_path + filename)}")
+                    if filename.endswith("-EX00.fits.fz"):  # Only ingest .fz files to the archive.
+                        if not frame_exists(fileobj):
+                            upload_file_and_ingest_to_archive(fileobj)
+                        else:
+                            print(f"File {filename} already exists in the archive, nothing uploaded.")
+
+                    else:  # All other files
+                        aws_req = {"object_name": filename}
+                        files = {"file": (im_path + filename, fileobj)}
+                        aws_resp = g_dev["obs"].api.authenticated_request(
+                            "POST", "/upload/", aws_req
+                        )
+                        requests.post(aws_resp["url"], data=aws_resp["fields"], files=files)
+
+
                 if (
                     filename[-3:] == "jpg"
                     or filename[-3:] == "txt"
