@@ -22,7 +22,7 @@ import time
 
 import astroalign as aa
 from astropy.io import fits
-from dotenv import load_dotenv, dotenv_values
+from dotenv import load_dotenv
 import numpy as np
 import redis  # Client, can work with Memurai
 import requests
@@ -626,14 +626,13 @@ class Observatory:
                         else:
                             print(f"File {filename} already exists in the archive, nothing uploaded.")
 
-                    else:  # All other files
+                    else:  # Send all other files to S3 directly.
                         aws_req = {"object_name": filename}
                         files = {"file": (im_path + filename, fileobj)}
                         aws_resp = g_dev["obs"].api.authenticated_request(
                             "POST", "/upload/", aws_req
                         )
                         requests.post(aws_resp["url"], data=aws_resp["fields"], files=files)
-
 
                 if (
                     filename[-3:] == "jpg"
@@ -1043,3 +1042,4 @@ class Observatory:
 if __name__ == "__main__":
     o = Observatory(config.site_name, config.site_config)
     o.run()
+    
