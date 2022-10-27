@@ -580,7 +580,7 @@ site_config = {
                 'readout_mode':  'Normal',
                 'readout_speed': 0.6,
                 'readout_seconds': 12,
-                'smart_stack_exposure_time' : 30,
+                'smart_stack_exposure_time': 30,
                 'areas_implemented': ["Full", '2x2', '4x4',"600%", "500%", "450%", "300%", "220%", "150%", "133%", "100%", "Sqr", '71%', '50%',  '35%', '25%', '12%'],
                 'default_area':  "Full",
                 'has_darkslide':  True,
