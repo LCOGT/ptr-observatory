@@ -372,10 +372,16 @@ class FilterWheel:
                     double-check the filter name dictionary."
                 )
 
+
+
+        #print (len(self.filter_data)
+
+        #breakpoint()
+
         filter_identified = 0
         for match in range(
             #int(self.config["filter_wheel1"]["settings"]["filter_count"])
-            len(self.filter_data[:][0]) + 3
+            len(self.filter_data)
         ):  # NB Filter count MUST be correct in Config.
             if filter_name in str(self.filter_data[match][0]).lower():
                 filt_pointer = match
@@ -394,7 +400,7 @@ class FilterWheel:
                 return "none"
             for match in range(
                 #int(self.config["filter_wheel1"]["settings"]["filter_count"])
-                len(self.filter_data[:][0]) +3
+                len(self.filter_data)
             ):  # NB Filter count MUST be correct in Config.
                 if filter_name in str(self.filter_data[match][0]).lower():
 
