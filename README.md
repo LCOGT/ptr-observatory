@@ -29,5 +29,5 @@ Modify `config.py` as appropriate. Make sure to specify the correct ASCOM driver
 
 Run `obs.py`. Credentials will be verified with aws, ASCOM devices will connect, and finally the infinite loop of checking for commands to run and updating status.
 
-This code is designed to take commands sent through the client web interface at (www.photonranch.org)[www.photonranch.org]. Alternatively, you can send commands directly to api.photonranch.org. See the (photonranch-api)[https://github.com/LCOGT/photonranch-api] repository README for details.
+This code is designed to take commands sent through the client web interface at [www.photonranch.org](www.photonranch.org). Alternatively, you can send commands directly to api.photonranch.org. See the [photonranch-api](https://github.com/LCOGT/photonranch-api) repository README for details.
 

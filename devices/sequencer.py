@@ -1067,11 +1067,6 @@ class Sequencer:
             self.morn_bias_dark_latch = True
             self.reset_completes()
 
-            # Totally reboot sequencer
-            name = 'sequencer1'
-            driver = None
-            g_dev['seq']=g_dev['obs'].Sequencer(driver, name, g_dev['obs'].config, g_dev['obs'].astro_events)
-
             # Reset focus tracker
             g_dev["foc"].focus_needed = True
             g_dev["foc"].time_of_last_focus = datetime.datetime.now() - datetime.timedelta(

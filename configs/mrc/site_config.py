@@ -628,7 +628,7 @@ site_config = {
                 'readout_mode': 'Normal',
                 'readout_speed':  50,
                 'readout_seconds': 12,
-                'smart_stack_exposure_time' : 3000,
+                'smart_stack_exposure_time': 30,
                 'square_detector': False,
                 'square_pixels': True,
                 'areas_implemented': ["600%", '4x4d', "450%", "300%", "250%", "150%", "133%", "Full", "Sqr", '71%', '50%',  '35%', '25%', '12%'],

@@ -362,37 +362,47 @@ class FilterWheel:
         """Sets the filter position by filter name."""
 
         try:
-            filter_name = req["filter_name"]
+            filter_name = str(req["filter_name"]).lower()
         except:
             try:
-                filter_name = req["filter"]
+                filter_name = str(req["filter"]).lower()
             except:
                 print(
                     "Unable to set filter position using filter name,\
                     double-check the filter name dictionary."
                 )
 
+
+
+        #print (len(self.filter_data)
+
+        #breakpoint()
+
         filter_identified = 0
         for match in range(
-            int(self.config["filter_wheel1"]["settings"]["filter_count"])
+            #int(self.config["filter_wheel1"]["settings"]["filter_count"])
+            len(self.filter_data)
         ):  # NB Filter count MUST be correct in Config.
-            if filter_name in self.filter_data[match][0]:
+            if filter_name in str(self.filter_data[match][0]).lower():
                 filt_pointer = match
                 filter_identified = 1
                 break
+
+
 
         # If filter was not identified, find a substitute filter
         if filter_identified == 0:
             print(
                 f"Requested filter: {str(filter_name)} does not exist on this filter wheel."
             )
-            filter_name = self.substitute_filter(filter_name)
+            filter_name = str(self.substitute_filter(filter_name)).lower()
             if filter_name == "none":
                 return "none"
             for match in range(
-                int(self.config["filter_wheel1"]["settings"]["filter_count"])
+                #int(self.config["filter_wheel1"]["settings"]["filter_count"])
+                len(self.filter_data)
             ):  # NB Filter count MUST be correct in Config.
-                if filter_name in self.filter_data[match][0]:
+                if filter_name in str(self.filter_data[match][0]).lower():
 
                     filt_pointer = match
                     filter_identified = 1
@@ -401,7 +411,7 @@ class FilterWheel:
         print("Filter name is:  ", self.filter_data[match][0])
         g_dev["obs"].send_to_user("Filter set to:  " + str(self.filter_data[match][0]))
         self.filter_number = filt_pointer
-        self.filter_selected = filter_name
+        self.filter_selected = str(filter_name).lower()
         filter_selections = self.filter_data[filt_pointer][1]
         self.filter_offset = float(self.filter_data[filt_pointer][2])
 
@@ -511,6 +521,7 @@ class FilterWheel:
             (["O3", "O"], ["O3"]),  # generic O
             (["S2", "S"], ["S2"]),  # generic S
             (["CR", "C"], ["CR"]),  # generic C
+            (["dark"], ["S2", "O3", "HA", "up", "U", "JU"]),  # generic C
             (
                 ["EXO"],
                 ["EXO", "ip", "Ic", "rp", "Rc", "PR", "w", "Lum", "clear"],
@@ -531,7 +542,7 @@ class FilterWheel:
                 print(
                     f"Found substitute {str(sub)} matching requested {str(requested_filter)}"
                 )
-                return sub
+                return str(sub).lower()
 
         print("No substitute filter found, skipping exposure.")
         return "none"
