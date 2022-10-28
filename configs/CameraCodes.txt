@@ -3,3 +3,4 @@ Remember to keep things to four characters! two letters, two numbers
 sq02 - QHY600Pro on SAF
 sq03 - QHY600M Pro on MRC
 kb01 - SBIG16200 on SRO
+kf01 - Finger Lakes 16803 on MR2
