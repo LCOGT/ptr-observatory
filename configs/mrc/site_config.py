@@ -473,9 +473,9 @@ site_config = {
             'ip_string': "",
             'settings': {
                 'filter_count': 23,
-                'home_filter':  2,
+                'home_filter':  3,
                 'default_filter':  'w',
-                'filter_reference': 2,
+                'filter_reference': 3,
 
                 'filter_list': ['air','focus', 'dark', 'w', 'up','gp','rp','ip','z','PL','PR','PG','PB','O3', 'HA', 'CR', 'N2', 'S2', 'dif' 'difup','difgp','difrp','difip'], # A list of actual physical filters for the substitution function
                 'filter_data': [['filter', 'filter_index', 'filter_offset', 'sky_gain', 'screen_gain', 'abbreviation'],
