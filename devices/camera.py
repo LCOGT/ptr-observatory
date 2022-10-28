@@ -392,17 +392,21 @@ class Camera:
         #self.camera.NumY = int(self.camera_y_size/self.camera.BinY)
         #self.camera_num_x = self.camera.NumX    #These are affected binned values.
         #self.camera_num_y = self.camera.NumY
-        self.camera_x_size = self.config['camera'][self.name]['settings']['CameraXSize']  #unbinned values. QHY returns 2
-        self.camera_y_size = self.config['camera'][self.name]['settings']['CameraYSize']  #unbinned
+        try:
+            self.camera_x_size = self.camera.CameraXSize  #unbinned values. QHY returns 2
+            self.camera_y_size = self.camera.CameraYSize  #unbinned
+        except:
+            self.camera_x_size = self.config['camera'][self.name]['settings']['CameraXSize']  #unbinned values. QHY returns 2
+            self.camera_y_size = self.config['camera'][self.name]['settings']['CameraYSize']  #unbinned
         self.camera_max_x_bin = self.config['camera'][self.name]['settings']['MaxBinX']
         self.camera_max_y_bin = self.config['camera'][self.name]['settings']['MaxBinY']   #NB NB Overriding 511 for FLI cam
         self.camera_start_x = self.config['camera'][self.name]['settings']['StartX']
         self.camera_start_y = self.config['camera'][self.name]['settings']['StartY']
-        try:
-            self.camera.NumX = int(self.camera_x_size/self.camera.BinX)
-            self.camera.NumY = int(self.camera_y_size/self.camera.BinY)
-        except:
-            print ("cannot set NumX with this camera")
+        #try:
+        #    self.camera.NumX = int(self.camera_x_size/self.camera.BinX)
+        #    self.camera.NumY = int(self.camera_y_size/self.camera.BinY)
+        #except:
+        #    print ("cannot set NumX with this camera")
         self.camera_num_x = int(self.camera_x_size/self.camera.BinX)    #These are affected binned values.
         self.camera_num_y = int(self.camera_y_size/self.camera.BinY)
         self.previous_start_fraction_x = 0.   #These are the subframe **fraction** values for the previous exposure.
@@ -495,7 +499,7 @@ class Camera:
     def _theskyx_setpoint(self):
         return self.camera.TemperatureSetpoint
 
-    def _theskyx_expose(self, exposure_time, imtypeb):
+    def _theskyx_expose(self, exposure_time, imtypeb, binning):
         self.camera.ExposureTime = exposure_time
         self.camera.TakeImage()
 
@@ -544,7 +548,7 @@ class Camera:
     def _maxim_setpoint(self):
         return self.camera.TemperatureSetpoint
 
-    def _maxim_expose(self, exposure_time, imtypeb):
+    def _maxim_expose(self, exposure_time, imtypeb, binning):
         self.camera.Expose(exposure_time, imtypeb)
 
     def _maxim_stop_expose(self):
@@ -595,7 +599,9 @@ class Camera:
             print ("Camera cannot set cooling temperature: Using 10.0C")
             return 10.0
 
-    def _ascom_expose(self, exposure_time, imtypeb):
+    def _ascom_expose(self, exposure_time, imtypeb, binning):
+            self.camera.BinX = binning
+            self.camera.BinY = binning
             self.camera.StartExposure(exposure_time, imtypeb)
 
     def _ascom_stop_expose(self):
@@ -769,7 +775,7 @@ class Camera:
             self.user_name
         except:
             self.user_name = "kilroy_was_here"
-        self.t0 = time.time()
+        #self.t0 = time.time()
         #Force a reseek //eventually dither//
         try:
             if g_dev['mnt'].last_seek_time < self.t0 - 180:   #NB Consider upping this to 300 to 600 sec.
@@ -822,8 +828,8 @@ class Camera:
             bin_x = self.config['camera'][self.name]['settings']['default_bin'][0]
             self.ccd_sum = str(bin_x) + ' ' + str(bin_x)
         else:
-            bin_x = 1
-            self.ccd_sum = '1 1'
+            bin_x = self.config['camera'][self.name]['settings']['default_bin'][0]
+            self.ccd_sum = str(bin_x) + ' ' + str(bin_x)
 
         bin_y = bin_x   #NB This needs fixing someday!
         self.bin = bin_x
@@ -869,8 +875,10 @@ class Camera:
         self.current_offset = g_dev['fil'].filter_offset  #TEMP   NBNBNB This needs fixing
         # Here we adjust for focus temp and filter offset
         if not imtype.lower() in ['auto_focus', 'focus', 'autofocus probe']:
-            g_dev['foc'].adjust_focus()
-        sub_frame_fraction = optional_params.get('subframe', None)
+            # NB NB NB 20221027 WER temporary block
+            #g_dev['foc'].adjust_focus()
+            print("Focus adjust temporarily blocked by WER 20221027")
+        #sub_frame_fraction = optional_params.get('subframe', None)
 
         #  The following bit of code is convoluted.  Presumably when we get Autofocus working this will get cleaned up.
         # self.toss = False
@@ -967,139 +975,139 @@ class Camera:
                 frame_type = 'experimental'
             else: frame_type = 'expose'
 
-        area = optional_params.get('area', 150)
+        #area = optional_params.get('area', 150)
         # if area is None or area in['Full', 'full', 'chip', 'Chip']:   #  Temporary patch to deal with 'chip'
         #     area = 150
-        sub_frame_fraction = optional_params.get('subframe', None)
-        # Need to put in support for chip mode once we have implmented in-line bias correct and trim.
-        try:
-            if type(area) == str and area[-1] == '%':  #NB NB NB Re-use of variable is crappy coding
-                #The whole area implementation needs rework for anything specified larger that the full chip.
-                #Subframes are more logical to specify as fractionals of the base chip.
-                area = int(area[0:-1])
-            elif area in ('Sqr', 'sqr', '100%', 100):
-                area = 100
-            elif area in ('Full', 'full', '150%', 'Chip', 'chip', 150):
-                area = 150
-        except:
-            area = 150     #was 100 in ancient times.
+        # sub_frame_fraction = optional_params.get('subframe', None)
+        # # Need to put in support for chip mode once we have implmented in-line bias correct and trim.
+        # try:
+        #     if type(area) == str and area[-1] == '%':  #NB NB NB Re-use of variable is crappy coding
+        #         #The whole area implementation needs rework for anything specified larger that the full chip.
+        #         #Subframes are more logical to specify as fractionals of the base chip.
+        #         area = int(area[0:-1])
+        #     elif area in ('Sqr', 'sqr', '100%', 100):
+        #         area = 100
+        #     elif area in ('Full', 'full', '150%', 'Chip', 'chip', 150):
+        #         area = 150
+        # except:
+        #     area = 150     #was 100 in ancient times.
 
-        if bin_y == 0 or self.camera_max_x_bin != self.camera_max_y_bin:
-            self.bin_x = min(bin_x, self.camera_max_x_bin)
-            self.cameraBinY = self.bin_y
-        else:
-            self.bin_x = min(bin_x, self.camera_max_x_bin)
-            self.camera.BinX = self.bin_x
-            self.bin_y = min(bin_y, self.camera_max_y_bin)
-            self.camera.BinY = self.bin_y
+        # if bin_y == 0 or self.camera_max_x_bin != self.camera_max_y_bin:
+        #     self.bin_x = min(bin_x, self.camera_max_x_bin)
+        #     self.cameraBinY = self.bin_y
+        # else:
+        #     self.bin_x = min(bin_x, self.camera_max_x_bin)
+        #     self.camera.BinX = self.bin_x
+        #     self.bin_y = min(bin_y, self.camera_max_y_bin)
+        #     self.camera.BinY = self.bin_y
 
-        self.len_x = self.camera_x_size//self.bin_x
-        self.len_y = self.camera_y_size//self.bin_y    #Unit is binned pixels.
-        self.len_xs = 0  # THIS IS A HACK, indicating no overscan.
-        # print(self.len_x, self.len_y)
-        #  NB Area is just a series of subframes centered on the chip.
-        # "area": ['100%', '71%', '50%',  '35%', '25%', '12%']
+        # self.len_x = self.camera_x_size//self.bin_x
+        # self.len_y = self.camera_y_size//self.bin_y    #Unit is binned pixels.
+        # self.len_xs = 0  # THIS IS A HACK, indicating no overscan.
+        # # print(self.len_x, self.len_y)
+        # #  NB Area is just a series of subframes centered on the chip.
+        # # "area": ['100%', '71%', '50%',  '35%', '25%', '12%']
 
-        if 72 < area <= 100:  #  This is completely incorrect, this section needs a total re-think 20201021 WER
-            self.camera_num_x = self.len_x
-            self.camera_start_x = 0
-            self.camera_num_y = self.len_y
-            self.camera_start_y = 0
-            self.area = 100
-        elif 70 <= area <= 72:  # This needs complete rework.
-            self.camera_num_x = int(self.len_xs/1.4142)
-            self.camera_start_x = int(self.len_xs/6.827)
-            self.camera_num_y = int(self.len_y/1.4142)
-            self.camera_start_y = int(self.len_y/6.827)
-            self.area = 71
-        elif area == 50:
-            self.camera_num_x = self.len_x//2
-            self.camera_start_x = self.len_x//4
-            self.camera_num_y = self.len_y//2
-            self.camera_start_y = self.len_y//4
-            self.area = 50
-        elif 33 <= area <= 37:
-            self.camera_num_x = int(self.len_/2.829)
-            self.camera_start_x = int(self.len_xx/3.093)
-            self.camera_num_y = int(self.len_y/2.829)
-            self.camera_start_y = int(self.len_y/3.093)
-            self.area = 35
-        elif area == 25:
-            self.camera_num_x = self.len_xs//4
-            self.camera_start_x = int(self.len_xs/2.667)
-            self.camera_num_y = self.len_y//4
-            self.camera_start_y = int(self.len_y/2.667)
-            self.area = 25
-        elif 11 <= area <= 13:
-            self.camera_num_x = self.len_xs//4
-            self.camera_start_x = int(self.len_xs/2.667)
-            self.camera_num_y = self.len_y//4
-            self.camera_start_y = int(self.len_y/2.667)
-            self.area = 12
-        else:
-            self.camera_num_x = self.len_x
-            self.camera_start_x = 0
-            self.camera_num_y = self.len_y
-            self.camera_start_y = 0
-            self.area = 150
-           #print("Default area used = 100%, ie. the full chip:  ", self.len_x,self.len_y )
+        # if 72 < area <= 100:  #  This is completely incorrect, this section needs a total re-think 20201021 WER
+        #     self.camera_num_x = self.len_x
+        #     self.camera_start_x = 0
+        #     self.camera_num_y = self.len_y
+        #     self.camera_start_y = 0
+        #     self.area = 100
+        # elif 70 <= area <= 72:  # This needs complete rework.
+        #     self.camera_num_x = int(self.len_xs/1.4142)
+        #     self.camera_start_x = int(self.len_xs/6.827)
+        #     self.camera_num_y = int(self.len_y/1.4142)
+        #     self.camera_start_y = int(self.len_y/6.827)
+        #     self.area = 71
+        # elif area == 50:
+        #     self.camera_num_x = self.len_x//2
+        #     self.camera_start_x = self.len_x//4
+        #     self.camera_num_y = self.len_y//2
+        #     self.camera_start_y = self.len_y//4
+        #     self.area = 50
+        # elif 33 <= area <= 37:
+        #     self.camera_num_x = int(self.len_/2.829)
+        #     self.camera_start_x = int(self.len_xx/3.093)
+        #     self.camera_num_y = int(self.len_y/2.829)
+        #     self.camera_start_y = int(self.len_y/3.093)
+        #     self.area = 35
+        # elif area == 25:
+        #     self.camera_num_x = self.len_xs//4
+        #     self.camera_start_x = int(self.len_xs/2.667)
+        #     self.camera_num_y = self.len_y//4
+        #     self.camera_start_y = int(self.len_y/2.667)
+        #     self.area = 25
+        # elif 11 <= area <= 13:
+        #     self.camera_num_x = self.len_xs//4
+        #     self.camera_start_x = int(self.len_xs/2.667)
+        #     self.camera_num_y = self.len_y//4
+        #     self.camera_start_y = int(self.len_y/2.667)
+        #     self.area = 12
+        # else:
+        #     self.camera_num_x = self.len_x
+        #     self.camera_start_x = 0
+        #     self.camera_num_y = self.len_y
+        #     self.camera_start_y = 0
+        #     self.area = 150
+        #    #print("Default area used = 100%, ie. the full chip:  ", self.len_x,self.len_y )
 
-        #Next apply any subframe setting here.  Be very careful to keep fractional specs and pixel values disinguished.
-        if self.area == self.previous_area and sub_frame_fraction is not None and \
-                        (sub_frame_fraction != self.previous_image_name):
-            sub_frame_fraction_xw = abs(float(sub_frame_fraction['x1']) -float( sub_frame_fraction['x0']))
-            if sub_frame_fraction_xw < 1/32.:
-                sub_frame_fraction_xw = 1/32.
-            else:
-                pass   #Adjust to center position of sub-size frame
-            sub_frame_fraction_yw = abs(float(sub_frame_fraction['y1']) - float(sub_frame_fraction['y0']))
-            if sub_frame_fraction_yw < 1/32.:
-                sub_frame_fraction_yw = 1/32.
-            else:
-                pass
-            sub_frame_fraction_x = min(sub_frame_fraction['x0'], sub_frame_fraction['x1'])
-            sub_frame_fraction_y = min(sub_frame_fraction['y0'], sub_frame_fraction['y1'])
-            num_x = int(self.previous_num_fraction_x*sub_frame_fraction_xw*self.previous_num_x)
-            num_y = int(self.previous_num_fraction_y*sub_frame_fraction_yw*self.previous_num_y)
-            #Clamp subframes to a minimum size
-            if num_x < 32:
-                num_x = 32
-            if num_y < 32:
-                num_y = 32
-            dist_x = int(self.previous_start_x + self.previous_num_x*float(sub_frame_fraction_x))
-            dist_y = int(self.previous_start_y +self.previous_num_y*float(sub_frame_fraction_y))
-            self.camera_start_x= dist_x
-            self.camera_start_y= dist_y
-            self.camera_num_x= num_x
-            self.camera_num_y= num_y
-            self.previous_image_name = sub_frame_fraction['definedOnThisFile']
-            self.previous_start_x = dist_x
-            self.previous_start_y = dist_y
-            self.previous_num_x = num_x
-            self.previous_num_y = num_y
-            self.bpt_flag = False
-        elif self.area == self.previous_area and sub_frame_fraction is not None and \
-                          (sub_frame_fraction['definedOnThisFile'] == self.previous_image_name):
-            #Here we repeat the previous subframe and do not re-enter and make smaller
-            self.camera_start_x = self.previous_start_x
-            self.camera_start_y = self.previous_start_y
-            dist_x = self.previous_start_x
-            dist_y = self.previous_start_y
-            self.camera_num_x= self.previous_num_x
-            self.cameraNumY= self.previous_num_y
-            self.bpt_flag  = True
+        # #Next apply any subframe setting here.  Be very careful to keep fractional specs and pixel values disinguished.
+        # if self.area == self.previous_area and sub_frame_fraction is not None and \
+        #                 (sub_frame_fraction != self.previous_image_name):
+        #     sub_frame_fraction_xw = abs(float(sub_frame_fraction['x1']) -float( sub_frame_fraction['x0']))
+        #     if sub_frame_fraction_xw < 1/32.:
+        #         sub_frame_fraction_xw = 1/32.
+        #     else:
+        #         pass   #Adjust to center position of sub-size frame
+        #     sub_frame_fraction_yw = abs(float(sub_frame_fraction['y1']) - float(sub_frame_fraction['y0']))
+        #     if sub_frame_fraction_yw < 1/32.:
+        #         sub_frame_fraction_yw = 1/32.
+        #     else:
+        #         pass
+        #     sub_frame_fraction_x = min(sub_frame_fraction['x0'], sub_frame_fraction['x1'])
+        #     sub_frame_fraction_y = min(sub_frame_fraction['y0'], sub_frame_fraction['y1'])
+        #     num_x = int(self.previous_num_fraction_x*sub_frame_fraction_xw*self.previous_num_x)
+        #     num_y = int(self.previous_num_fraction_y*sub_frame_fraction_yw*self.previous_num_y)
+        #     #Clamp subframes to a minimum size
+        #     if num_x < 32:
+        #         num_x = 32
+        #     if num_y < 32:
+        #         num_y = 32
+        #     dist_x = int(self.previous_start_x + self.previous_num_x*float(sub_frame_fraction_x))
+        #     dist_y = int(self.previous_start_y +self.previous_num_y*float(sub_frame_fraction_y))
+        #     self.camera_start_x= dist_x
+        #     self.camera_start_y= dist_y
+        #     self.camera_num_x= num_x
+        #     self.camera_num_y= num_y
+        #     self.previous_image_name = sub_frame_fraction['definedOnThisFile']
+        #     self.previous_start_x = dist_x
+        #     self.previous_start_y = dist_y
+        #     self.previous_num_x = num_x
+        #     self.previous_num_y = num_y
+        #     self.bpt_flag = False
+        # elif self.area == self.previous_area and sub_frame_fraction is not None and \
+        #                   (sub_frame_fraction['definedOnThisFile'] == self.previous_image_name):
+        #     #Here we repeat the previous subframe and do not re-enter and make smaller
+        #     self.camera_start_x = self.previous_start_x
+        #     self.camera_start_y = self.previous_start_y
+        #     dist_x = self.previous_start_x
+        #     dist_y = self.previous_start_y
+        #     self.camera_num_x= self.previous_num_x
+        #     self.cameraNumY= self.previous_num_y
+        #     self.bpt_flag  = True
 
-        elif sub_frame_fraction is None:
-            self.previous_start_x = self.camera_start_x  #These are the subframe values for the new area exposure.
-            self.previous_start_y = self.camera_start_y
-            dist_x = self.previous_start_x
-            dist_y = self.previous_start_y
-            self.previous_num_x = self.camera_num_x
-            self.previous_num_y = self.camera_num_y
-            self.previous_num_fraction_x = 1.0
-            self.previous_num_fraction_y = 1.0
-            self.previous_area = self.area
-            self.bpt_flag = False
+        # elif sub_frame_fraction is None:
+        #     self.previous_start_x = self.camera_start_x  #These are the subframe values for the new area exposure.
+        #     self.previous_start_y = self.camera_start_y
+        #     dist_x = self.previous_start_x
+        #     dist_y = self.previous_start_y
+        #     self.previous_num_x = self.camera_num_x
+        #     self.previous_num_y = self.camera_num_y
+        #     self.previous_num_fraction_x = 1.0
+        #     self.previous_num_fraction_y = 1.0
+        #     self.previous_area = self.area
+        #     self.bpt_flag = False
         #  NB Important: None of above code talks to the camera!
         result = {}  #  This is a default return just in case
         num_retries = 0
@@ -1298,7 +1306,7 @@ class Camera:
 
 
 
-                            self._expose (exposure_time, imtypeb)
+                            self._expose (exposure_time, imtypeb, bin_x)
                     else :
                         print("Something terribly wrong, driver not recognized.!")
                         result = {}
@@ -1308,7 +1316,7 @@ class Camera:
                     #We go here to keep this subroutine a reasonable length, Basically still in Phase 2
 
                     result = self.finish_exposure(exposure_time,  frame_type, count - seq, \
-                                         gather_status, do_sep, no_AWS, dist_x, dist_y, \
+                                         gather_status, do_sep, no_AWS, None, None, \
                                          quick=quick, low=ldr_handle_time, \
                                          high=ldr_handle_high_time, \
                                          script=self.script, opt=opt, solve_it=solve_it)  #  NB all these parameters are crazy!
@@ -1510,7 +1518,7 @@ class Camera:
                 ix, iy = self.img.shape
                 #breakpoint()
 
-                trimmed = self.img
+                #trimmed = self.img
                 #This may need a re-think:   Maybe kill neg and anything really hot if there are only a few.
                 #smin = np.where(square < 0)    # finds negative pixels  NB <0 where pedastal is 200. Useless!
 
@@ -1848,8 +1856,8 @@ class Camera:
                     except:
                         print ("have to not have ocn header items when no ocn")
 
-                    self.pix_ang = (self.config['camera'][self.name]['settings']['x_pixel']*self.camera.BinX/(float(self.config['telescope'] \
-                                              ['telescope1']['focal_length'])*1000.))
+                    #self.pix_ang = (self.config['camera'][self.name]['settings']['x_pixel']*self.camera.BinX/(float(self.config['telescope'] \
+                    #                          ['telescope1']['focal_length'])*1000.))
                     #hdu.header['PIXSCALE'] = (round(math.degrees(math.atan(self.pix_ang))*3600., 4), '[arcsec/pixel] Nominal pixel scale on sky')
                     hdu.header['PIXSCALE'] = (self.config['camera'][self.name]['settings']['pix_scale'][self.camera.BinX -1], '[arcsec/pixel] Nominal pixel scale on sky')
                     pixscale=float(hdu.header['PIXSCALE'])
