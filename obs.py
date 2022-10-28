@@ -14,24 +14,25 @@ import datetime
 import json
 import math
 import os
-import threading
-import time
 import queue
 import shelve
 import socket
+import threading
+import time
 
+import astroalign as aa
 from astropy.io import fits
+from dotenv import load_dotenv
 import numpy as np
 import redis  # Client, can work with Memurai
 import requests
 import sep
-import astroalign as aa
-
 from skimage.io import imsave
 from skimage.transform import resize
-from auto_stretch.stretch import Stretch
+
 
 from api_calls import API_calls
+from auto_stretch.stretch import Stretch
 import config
 from devices.camera import Camera
 from devices.filter_wheel import FilterWheel
@@ -48,6 +49,10 @@ from global_yard import g_dev
 from planewave import platesolve
 import ptr_events
 
+# The ingester should only be imported after environment variables are loaded in.
+load_dotenv(".env")
+from ocs_ingester.ingester import frame_exists, upload_file_and_ingest_to_archive
+
 
 def send_status(obsy, column, status_to_send):
     """Sends an update to the status endpoint."""
@@ -59,8 +64,7 @@ def send_status(obsy, column, status_to_send):
     try:
         requests.post(uri_status, data=data)
     except Exception as e:
-        print ("Failed to send_status. usually not fatal:  ", e)
-
+        print("Failed to send_status. usually not fatal:  ", e)
 
 
 class Observatory:
@@ -166,12 +170,12 @@ class Observatory:
             os.makedirs(g_dev["cam"].site_path + "ptr_night_shelf")
         if not os.path.exists(g_dev["cam"].site_path + "archive"):
             os.makedirs(g_dev["cam"].site_path + "archive")
-        if not os.path.exists(g_dev['cam'].site_path + 'tokens'):
-                os.makedirs(g_dev['cam'].site_path + 'tokens')
-        if not os.path.exists(g_dev['cam'].site_path + 'astropycache'):
-                os.makedirs(g_dev['cam'].site_path + 'astropycache')
-        if not os.path.exists(g_dev['cam'].site_path + 'smartstacks'):
-                os.makedirs(g_dev['cam'].site_path + 'smartstacks')
+        if not os.path.exists(g_dev["cam"].site_path + "tokens"):
+            os.makedirs(g_dev["cam"].site_path + "tokens")
+        if not os.path.exists(g_dev["cam"].site_path + "astropycache"):
+            os.makedirs(g_dev["cam"].site_path + "astropycache")
+        if not os.path.exists(g_dev["cam"].site_path + "smartstacks"):
+            os.makedirs(g_dev["cam"].site_path + "smartstacks")
 
         self.last_solve_time = datetime.datetime.now() - datetime.timedelta(days=1)
         self.images_since_last_solve = 10000
@@ -180,7 +184,7 @@ class Observatory:
         # Build the to-AWS Try again, reboot, verify dome nad tel and start a thread.
 
         self.aws_queue = queue.PriorityQueue(maxsize=0)
-        self.aws_queue_thread = threading.Thread(target=self.send_to_AWS, args=())
+        self.aws_queue_thread = threading.Thread(target=self.send_to_aws, args=())
         self.aws_queue_thread.start()
 
         # Set up command_queue for incoming jobs
@@ -201,6 +205,8 @@ class Observatory:
         self.projects = None
         self.events_new = None
         self.reset_last_reference()
+        self.env_exists = os.path.exists(os.getcwd() + '\.env')  # Boolean, check if .env present
+
 
     def set_last_reference(self, delta_ra, delta_dec, last_time):
         mnt_shelf = shelve.open(self.site_path + "ptr_night_shelf/" + "last")
@@ -593,46 +599,66 @@ class Observatory:
             return
 
     # Note this is a thread!
-    def send_to_AWS(self):
-        # pri_image is a tuple, smaller first item has priority.
-        # second item is also a tuple containing im_path and name.
+    def send_to_aws(self):
+        """Sends queued files to AWS.
 
-        oneAtATime = 0
+        Large fpacked fits are uploaded using the ocs-ingester, which
+        adds the image to a dedicated S3 bucket along with a record in
+        the PTR archive database. All other files, including large fpacked
+        fits if archive ingestion fails, will upload to a second S3 bucket.
+
+        The pri_image is a tuple, smaller first item has priority.
+        The second item is also a tuple containing im_path and name.
+        """
+
+        one_at_a_time = 0
         # This stopping mechanism allows for threads to close cleanly.
-        # print ("One " +str(oneAtATime))
         while True:
-            if (not self.aws_queue.empty()) and oneAtATime == 0:
-                oneAtATime = 1
+
+            if (not self.aws_queue.empty()) and one_at_a_time == 0:
+                one_at_a_time = 1
                 pri_image = self.aws_queue.get(block=False)
                 if pri_image is None:
-                    print("got an empty entry in aws_queue???")
+                    print("Got an empty entry in aws_queue.")
                     self.aws_queue.task_done()
-                    oneAtATime = 0
+                    one_at_a_time = 0
                     time.sleep(0.2)
                     continue
-                # Here we parse the file, set up and send to AWS
-                im_path = pri_image[1][0]
-                name = pri_image[1][1]
-                aws_req = {"object_name": name}
-                aws_resp = g_dev["obs"].api.authenticated_request(
-                    "POST", "/upload/", aws_req
-                )
 
-                with open(im_path + name, "rb") as f:
-                    files = {"file": (im_path + name, f)}
-                    print("--> To AWS -->", str(im_path + name))
-                    requests.post(aws_resp["url"], data=aws_resp["fields"], files=files)
+                # Here we parse the file, set up and send to AWS
+                filename = pri_image[1][1]
+                filepath = pri_image[1][0] + filename  # Full path to file on disk
+                aws_resp = g_dev["obs"].api.authenticated_request(
+                    "POST", "/upload/", {"object_name": filename})
+                # Only ingest new large fits.fz files to the PTR archive.
+                if self.env_exists == True and filename.endswith("-EX00.fits.fz"):
+                    with open(filepath, "rb") as fileobj:
+                        try:
+                            if not frame_exists(fileobj):
+                                upload_file_and_ingest_to_archive(fileobj)
+                                print(f"--> To PTR ARCHIVE --> {str(filepath)}")
+                            # If ingester fails, send to default S3 bucket.
+                        except:
+                            files = {"file": (filepath, fileobj)}
+                            requests.post(aws_resp["url"], data=aws_resp["fields"], files=files)
+                            print(f"--> To AWS --> {str(filepath)}")
+                # Send all other files to S3.
+                else:
+                    with open(filepath, "rb") as fileobj:
+                        files = {"file": (filepath, fileobj)}
+                        requests.post(aws_resp["url"], data=aws_resp["fields"], files=files)
+                        print(f"--> To AWS --> {str(filepath)}")
 
                 if (
-                    name[-3:] == "jpg"
-                    or name[-3:] == "txt"
-                    or ".fits.fz" in name
-                    or ".token" in name
+                    filename[-3:] == "jpg"
+                    or filename[-3:] == "txt"
+                    or ".fits.fz" in filename
+                    or ".token" in filename
                 ):
-                    os.remove(im_path + name)
+                    os.remove(filepath)
 
                 self.aws_queue.task_done()
-                oneAtATime = 0
+                one_at_a_time = 0
                 time.sleep(0.1)
             else:
                 time.sleep(0.2)
@@ -657,68 +683,106 @@ class Observatory:
         while True:
 
             if not self.reduce_queue.empty():
-                (paths, pixscale, smartstackid, sskcounter, Nsmartstack) = self.reduce_queue.get(block=False)
+                (
+                    paths,
+                    pixscale,
+                    smartstackid,
+                    sskcounter,
+                    Nsmartstack,
+                ) = self.reduce_queue.get(block=False)
 
                 if paths is None:
                     time.sleep(0.5)
                     continue
 
-
-
                 # SmartStack Section
-                if smartstackid != 'no':
-                    img = fits.open(paths["red_path"] + paths["red_name01"]) # Pick up reduced fits file
+                if smartstackid != "no":
+                    img = fits.open(
+                        paths["red_path"] + paths["red_name01"]
+                    )  # Pick up reduced fits file
 
-                    print (img[0].header['FILTER'])
-                    ssfilter = img[0].header['FILTER']
-                    ssobject = img[0].header['OBJECT']
-                    ssexptime = img[0].header['EXPTIME']
+                    print(img[0].header["FILTER"])
+                    ssfilter = img[0].header["FILTER"]
+                    ssobject = img[0].header["OBJECT"]
+                    ssexptime = img[0].header["EXPTIME"]
 
-                    ssframenumber = img[0].header['FRAMENUM']
+                    ssframenumber = img[0].header["FRAMENUM"]
                     stackHoldheader = img[0].header
-                    print (g_dev['cam'].site_path + 'smartstacks')
+                    print(g_dev["cam"].site_path + "smartstacks")
 
-                    smartStackFilename= str(ssobject) + '_' + str(ssfilter) +'_' + str(ssexptime) + '_' + str(smartstackid) + '.npy'
-                    print (smartStackFilename)
-                    img=np.asarray(img[0].data)
+                    smartStackFilename = (
+                        str(ssobject)
+                        + "_"
+                        + str(ssfilter)
+                        + "_"
+                        + str(ssexptime)
+                        + "_"
+                        + str(smartstackid)
+                        + ".npy"
+                    )
+                    print(smartStackFilename)
+                    img = np.asarray(img[0].data)
                     img = img.byteswap().newbyteorder()
 
                     # IF SMARSTACK NPY FILE EXISTS DO STUFF, OTHERWISE THIS IMAGE IS THE START OF A SMARTSTACK
-                    if not os.path.exists(g_dev['cam'].site_path + 'smartstacks/' + smartStackFilename):
+                    if not os.path.exists(
+                        g_dev["cam"].site_path + "smartstacks/" + smartStackFilename
+                    ):
                         # Store original image
-                        print ("Storing First smartstack image")
-                        #storedsStack=np.nan_to_num(img)
-                        #backgroundLevel =(np.nanmedian(sep.Background(storedsStack.byteswap().newbyteorder())))
-                        #print (backgroundLevel)
-                        #storedsStack= storedsStack - backgroundLevel
+                        print("Storing First smartstack image")
+                        # storedsStack=np.nan_to_num(img)
+                        # backgroundLevel =(np.nanmedian(sep.Background(storedsStack.byteswap().newbyteorder())))
+                        # print (backgroundLevel)
+                        # storedsStack= storedsStack - backgroundLevel
 
-                        np.save(g_dev['cam'].site_path + 'smartstacks/' + smartStackFilename, img)
-                        storedsStack=img
+                        np.save(
+                            g_dev["cam"].site_path
+                            + "smartstacks/"
+                            + smartStackFilename,
+                            img,
+                        )
+                        storedsStack = img
                     else:
                         # Collect stored SmartStack
-                        storedsStack=np.load(g_dev['cam'].site_path + 'smartstacks/' + smartStackFilename)
+                        storedsStack = np.load(
+                            g_dev["cam"].site_path + "smartstacks/" + smartStackFilename
+                        )
                         # Prep new image
-                        print ("Pasting Next smartstack image")
-                        #img=np.nan_to_num(img)
-                        #backgroundLevel =(np.nanmedian(sep.Background(img.byteswap().newbyteorder())))
-                        #print (" Background Level : " + str(backgroundLevel))
-                        #img= img - backgroundLevel
+                        print("Pasting Next smartstack image")
+                        # img=np.nan_to_num(img)
+                        # backgroundLevel =(np.nanmedian(sep.Background(img.byteswap().newbyteorder())))
+                        # print (" Background Level : " + str(backgroundLevel))
+                        # img= img - backgroundLevel
                         # Reproject new image onto footprint of old image.
-                        reprojectedimage, _ = aa.register(img, storedsStack, detection_sigma=3, min_area=9)
-                        #scalingFactor= np.nanmedian(reprojectedimage / storedsStack)
-                        #print (" Scaling Factor : " +str(scalingFactor))
-                        #reprojectedimage=(scalingFactor) * reprojectedimage # Insert a scaling factor
-                        storedsStack=np.asarray((reprojectedimage+storedsStack))
+                        reprojectedimage, _ = aa.register(
+                            img, storedsStack, detection_sigma=3, min_area=9
+                        )
+                        # scalingFactor= np.nanmedian(reprojectedimage / storedsStack)
+                        # print (" Scaling Factor : " +str(scalingFactor))
+                        # reprojectedimage=(scalingFactor) * reprojectedimage # Insert a scaling factor
+                        storedsStack = np.asarray((reprojectedimage + storedsStack))
                         # Save new stack to disk
-                        np.save(g_dev['cam'].site_path + 'smartstacks/' + smartStackFilename, storedsStack)
+                        np.save(
+                            g_dev["cam"].site_path
+                            + "smartstacks/"
+                            + smartStackFilename,
+                            storedsStack,
+                        )
                     del img
 
                     # Save out a fits for testing purposes only
-                    firstimage=fits.PrimaryHDU()
-                    firstimage.scale('float32')
-                    firstimage.data=np.asarray(storedsStack).astype(np.float32)
-                    firstimage.header=stackHoldheader
-                    firstimage.writeto(g_dev['cam'].site_path + 'smartstacks/' + smartStackFilename.replace('.npy', str(ssframenumber)+'.fits'), overwrite=True)
+                    firstimage = fits.PrimaryHDU()
+                    firstimage.scale("float32")
+                    firstimage.data = np.asarray(storedsStack).astype(np.float32)
+                    firstimage.header = stackHoldheader
+                    firstimage.writeto(
+                        g_dev["cam"].site_path
+                        + "smartstacks/"
+                        + smartStackFilename.replace(
+                            ".npy", str(ssframenumber) + ".fits"
+                        ),
+                        overwrite=True,
+                    )
                     del firstimage
 
                     # Resizing the array to an appropriate shape for the jpg and the small fits
@@ -735,7 +799,7 @@ class Observatory:
                         )  #  We should trim chips so ratio is exact.
 
                     # Code to stretch the image to fit into the 256 levels of grey for a jpeg
-                    stretched_data_float = Stretch().stretch(storedsStack +1000)
+                    stretched_data_float = Stretch().stretch(storedsStack + 1000)
                     del storedsStack
                     stretched_256 = 255 * stretched_data_float
                     hot = np.where(stretched_256 > 255)
@@ -747,8 +811,6 @@ class Observatory:
                     cold = np.where(stretched_data_uint8 < 0)
                     stretched_data_uint8[hot] = 255
                     stretched_data_uint8[cold] = 0
-
-
 
                     # jpeg_name = (
                     #     g_dev['cam'].config["site"]
@@ -784,49 +846,45 @@ class Observatory:
                     # GUI
 
                     imsave(
-                        g_dev['cam'].site_path + 'smartstacks/' + smartStackFilename.replace('.npy', '_' + str(ssframenumber)+'.jpg'),stretched_data_uint8)
-
+                        g_dev["cam"].site_path
+                        + "smartstacks/"
+                        + smartStackFilename.replace(
+                            ".npy", "_" + str(ssframenumber) + ".jpg"
+                        ),
+                        stretched_data_uint8,
+                    )
 
                     # Send info text and jpg up to UI
-                    #text = open(
-                        #paths["im_path"] + paths["text_name00"].replace('.txt', str(Nsmartstack) +'.txt'), "w"
+                    # text = open(
+                    # paths["im_path"] + paths["text_name00"].replace('.txt', str(Nsmartstack) +'.txt'), "w"
                     #    paths["im_path"] + text_name, "w"
-                    #)  # This is needed by AWS to set up database.
-                    #stackHoldheader['FILENAME']=jpeg_name.replace('EX00.jpg','EX00.fits.fz')
-                    #print(stackHoldheader['FILENAME'])
-                    #text.write(str(stackHoldheader))
-                    #text.close()
-
-                    #g_dev["cam"].enqueue_for_AWS(10, paths["im_path"], text_name)
+                    # )  # This is needed by AWS to set up database.
+                    # stackHoldheader['FILENAME']=jpeg_name.replace('EX00.jpg','EX00.fits.fz')
+                    # print(stackHoldheader['FILENAME'])
+                    # text.write(str(stackHoldheader))
+                    # text.close()
 
                     imsave(
                         paths["im_path"] + paths["jpeg_name10"],
                         stretched_data_uint8,
                     )
 
-                    #g_dev["cam"].enqueue_for_AWS(100, paths["im_path"], jpeg_name)
                     g_dev["cam"].enqueue_for_AWS(
                         100, paths["im_path"], paths["jpeg_name10"]
                     )
 
-                    g_dev["obs"].send_to_user("A preview SmartStack, " + str(sskcounter+1) + " out of " + str(Nsmartstack) + ", has been sent to the GUI.",p_level="INFO")
+                    g_dev["obs"].send_to_user(
+                        "A preview SmartStack, "
+                        + str(sskcounter + 1)
+                        + " out of "
+                        + str(Nsmartstack)
+                        + ", has been sent to the GUI.",
+                        p_level="INFO",
+                    )
                     #    )
 
-
-
-
                 # OBJECT, FILTER, EXPOSURETIME
-
                 # Align new image to old image, stack and save
-
-
-
-
-
-
-
-
-
 
                 # Solve for pointing. Note: as the raw and reduced file are already saved and an fz file
                 # has already been sent up, this is purely for pointing purposes.
@@ -850,7 +908,7 @@ class Observatory:
                     ) > datetime.timedelta(
                         minutes=self.config["solve_timer"]
                     ):
-                        if smartstackid == 'no':
+                        if smartstackid == "no":
                             try:
                                 solve = platesolve.platesolve(
                                     paths["red_path"] + paths["red_name01"], pixscale
@@ -876,10 +934,7 @@ class Observatory:
                                     round(err_dec * 3600, 2),
                                 )  # NB WER changed units 20221012
 
-
-                                #if (
-                                #    smartStack != 1
-                                #):  # We do not want to reset solve timers during a smartStack
+                                # We do not want to reset solve timers during a smartStack
                                 self.last_solve_time = datetime.datetime.now()
                                 self.images_since_last_solve = 0
 
@@ -952,7 +1007,9 @@ class Observatory:
                                         print("This mount doesn't report pierside")
 
                             except Exception as e:
-                                print("Image: did not platesolve; this is usually OK. ", e)
+                                print(
+                                    "Image: did not platesolve; this is usually OK. ", e
+                                )
 
                     else:
                         print("skipping solve as not enough time or images have passed")
@@ -1023,18 +1080,25 @@ class Observatory:
                     print("Last solved focus FWHM")
                     print(g_dev["foc"].last_focus_fwhm)
 
-
-                    #If there hasn't been a focus yet, then it can't check it, so make this image the last solved focus.
+                    # If there hasn't been a focus yet, then it can't check it, so make this image the last solved focus.
                     if g_dev["foc"].last_focus_fwhm == None:
                         g_dev["foc"].last_focus_fwhm = FWHM
                     else:
                         # Very dumb focus slip deteector
-                        if np.nanmedian(g_dev["foc"].focus_tracker) > g_dev["foc"].last_focus_fwhm + self.config['focus_trigger']:
+                        if (
+                            np.nanmedian(g_dev["foc"].focus_tracker)
+                            > g_dev["foc"].last_focus_fwhm
+                            + self.config["focus_trigger"]
+                        ):
                             g_dev["foc"].focus_needed = True
-                            g_dev["obs"].send_to_user("Focus has drifted to " +str(np.nanmedian(g_dev["foc"].focus_tracker)) + " from " + str(g_dev["foc"].last_focus_fwhm) +". Autofocus triggered for next exposures.",p_level="INFO")
-
-
-
+                            g_dev["obs"].send_to_user(
+                                "Focus has drifted to "
+                                + str(np.nanmedian(g_dev["foc"].focus_tracker))
+                                + " from "
+                                + str(g_dev["foc"].last_focus_fwhm)
+                                + ". Autofocus triggered for next exposures.",
+                                p_level="INFO",
+                            )
 
                 time.sleep(0.5)
                 self.img = None  # Clean up all big objects.
