@@ -83,7 +83,7 @@ site_config = {
     'site_is_specific':  False,  # Indicates some special code for this site, found at end of config.
 
 
-    'host_wema_site_name':  'SRO',  #  The umbrella header for obsys in close geographic proximity.
+    'host_wema_site_name':  'MRC',  #  The umbrella header for obsys in close geographic proximity.
     'name': 'Mountain Ranch Camp Observatory 0m35f7.2',
     'airport_code': 'SBA',
     'location': 'Near Santa Barbara CA,  USA',
