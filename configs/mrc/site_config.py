@@ -81,7 +81,7 @@ site_config = {
     'site_is_specific':  False,  # Indicates some special code for this site, found at end of config.
 
 
-    'host_wema_site_name':  'SRO',  #  The umbrella header for obsys in close geographic proximity.
+    'host_wema_site_name':  'MRC',  #  The umbrella header for obsys in close geographic proximity.
     'name': 'Mountain Ranch Camp Observatory 0m35f7.2',
     'airport_code': 'SBA',
     'location': 'Near Santa Barbara CA,  USA',
@@ -540,7 +540,7 @@ site_config = {
             'detector':  'Sony IMX455',
             'manufacturer':  'QHY',
             'use_file_mode':  False,
-            'file_mode_path':  'D:/archive/sq01/maxim/',
+            'file_mode_path':  'Q:/archive/sq01/maxim/',
 
             'settings': {
                 'crop_preview': False,
@@ -583,8 +583,8 @@ site_config = {
                 'y_pixel':  3.76,
                 'pix_scale': [0.302597, 0.605194, 0.907791, 1.210388],    #   bin-2  2* math.degrees(math.atan(3.76/2563000))*3600
 
-                'CameraXSize' : 4784,
-                'CameraYSize' : 3194,
+                'CameraXSize' : 9600,
+                'CameraYSize' : 6422,
                 'MaxBinX' : 2,
                 'MaxBinY' : 2,
                 'StartX' : 1,
