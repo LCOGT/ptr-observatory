@@ -386,23 +386,18 @@ class Camera:
         self.overscan_y = int(
             self.config["camera"][self.name]["settings"]["overscan_y"]
         )
-        self.camera_x_size = self.config["camera"][self.name]["settings"][
-            "CameraXSize"
-        ]  # unbinned values. QHY returns 2
-        self.camera_y_size = self.config["camera"][self.name]["settings"][
-            "CameraYSize"
-        ]  # unbinned
+        try:
+            self.camera_x_size = self.camera.CameraXSize  #unbinned values. QHY returns 2
+            self.camera_y_size = self.camera.CameraYSize  #unbinned
+        except:
+            self.camera_x_size = self.config['camera'][self.name]['settings']['CameraXSize']  #unbinned values. QHY returns 2
+            self.camera_y_size = self.config['camera'][self.name]['settings']['CameraYSize']  #unbinned
         self.camera_max_x_bin = self.config["camera"][self.name]["settings"]["MaxBinX"]
         self.camera_max_y_bin = self.config["camera"][self.name]["settings"][
             "MaxBinY"
         ]  # NB NB Overriding 511 for FLI cam
         self.camera_start_x = self.config["camera"][self.name]["settings"]["StartX"]
         self.camera_start_y = self.config["camera"][self.name]["settings"]["StartY"]
-        try:
-            self.camera.NumX = int(self.camera_x_size / self.camera.BinX)
-            self.camera.NumY = int(self.camera_y_size / self.camera.BinY)
-        except:
-            print("cannot set NumX with this camera")
         self.camera_num_x = int(
             self.camera_x_size / self.camera.BinX
         )  # These are affected binned values.
@@ -855,8 +850,8 @@ class Camera:
             bin_x = self.config["camera"][self.name]["settings"]["default_bin"][0]
             self.ccd_sum = str(bin_x) + " " + str(bin_x)
         else:
-            bin_x = 1
-            self.ccd_sum = "1 1"
+            bin_x = self.config['camera'][self.name]['settings']['default_bin'][0]
+            self.ccd_sum = str(bin_x) + ' ' + str(bin_x)
 
         bin_y = bin_x  # NB This needs fixing someday!
         self.bin = bin_x
@@ -968,7 +963,7 @@ class Camera:
             else:
                 frame_type = "expose"
 
-        area = optional_params.get("area", 150)
+        #area = optional_params.get("area", 150)
         # if area is None or area in['Full', 'full', 'chip', 'Chip']:   #  Temporary patch to deal with 'chip'
         #     area = 150
 
@@ -2127,16 +2122,6 @@ class Camera:
                     except:
                         print("have to not have ocn header items when no ocn")
 
-                    self.pix_ang = (
-                        self.config["camera"][self.name]["settings"]["x_pixel"]
-                        * self.camera.BinX
-                        / (
-                            float(
-                                self.config["telescope"]["telescope1"]["focal_length"]
-                            )
-                            * 1000.0
-                        )
-                    )
                     hdu.header["PIXSCALE"] = (
                         self.config["camera"][self.name]["settings"]["pix_scale"][
                             self.camera.BinX - 1
