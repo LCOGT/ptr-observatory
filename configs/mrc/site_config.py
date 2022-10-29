@@ -49,6 +49,9 @@ QHY600         AstroImaging Equipment
 
 #NB NB NB json is not bi-directional with tuples (), instead, use lists [], nested if tuples are needed.
 
+#  This entry first made in wer-mrc branch on 20221029:21:16 by wer, them committed to the local branch.
+
+
 site_name = 'mrc'    #NB These must be unique across all of PTR. Pre-pend with airport code if needed: 'sba_wmdo'
 
 site_config = {
