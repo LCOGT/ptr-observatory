@@ -29,7 +29,7 @@ import requests
 import sep
 from skimage.io import imsave
 from skimage.transform import resize
-
+import func_timeout
 
 from api_calls import API_calls
 from auto_stretch.stretch import Stretch
@@ -850,20 +850,26 @@ class Observatory:
                         # print (" Background Level : " + str(backgroundLevel))
                         # img= img - backgroundLevel
                         # Reproject new image onto footprint of old image.
-                        reprojectedimage, _ = aa.register(
-                            img, storedsStack, detection_sigma=3, min_area=9
-                        )
-                        # scalingFactor= np.nanmedian(reprojectedimage / storedsStack)
-                        # print (" Scaling Factor : " +str(scalingFactor))
-                        # reprojectedimage=(scalingFactor) * reprojectedimage # Insert a scaling factor
-                        storedsStack = np.asarray((reprojectedimage + storedsStack))
-                        # Save new stack to disk
-                        np.save(
-                            g_dev["cam"].site_path
-                            + "smartstacks/"
-                            + smartStackFilename,
-                            storedsStack,
-                        )
+                        print(datetime.datetime.now())
+                        try:
+                            reprojectedimage, _ = func_timeout.func_timeout (40, aa.register, args=(img, storedsStack), kwargs={"detection_sigma":3, "min_area":9})
+                            #(20, aa.register, args=(img, storedsStack, detection_sigma=3, min_area=9)
+
+                            # scalingFactor= np.nanmedian(reprojectedimage / storedsStack)
+                            # print (" Scaling Factor : " +str(scalingFactor))
+                            # reprojectedimage=(scalingFactor) * reprojectedimage # Insert a scaling factor
+                            storedsStack = np.asarray((reprojectedimage + storedsStack))
+                            # Save new stack to disk
+                            np.save(
+                                g_dev["cam"].site_path
+                                + "smartstacks/"
+                                + smartStackFilename,
+                                storedsStack,
+                            )
+                        except func_timeout.FunctionTimedOut:
+                            print ("astroalign Timed Out")
+                        print(datetime.datetime.now())
+
                     del img
 
                     # Save out a fits for testing purposes only

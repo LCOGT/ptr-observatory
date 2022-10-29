@@ -1016,9 +1016,8 @@ class Camera:
             # Then we divide each count up into individual smartstack exposures.
             ssExp=self.config["camera"][self.name]["settings"]['smart_stack_exposure_time']
             if self.current_filter.lower() in ['ha', 'o3', 's2', 'n2', 'y', 'up', 'u']:
-                ssExp = ssExp * 3 # For narrowband and low throughput filters, increase base exposure time.
+                ssExp = ssExp * 3.0 # For narrowband and low throughput filters, increase base exposure time.
             if not imtype.lower() in ["light"]:
-                print ("skipping smartstack as not a lightframe")
                 Nsmartstack=1
                 SmartStackID='no'
             elif self.smartstack == 'yes' and (exposure_time > 3*ssExp):
@@ -1027,7 +1026,6 @@ class Camera:
                 SmartStackID=(datetime.datetime.now().strftime("%d%m%y%H%M%S"))
                 print (SmartStackID)
             else:
-                print ("Not attempting SmartStack")
                 Nsmartstack=1
                 SmartStackID='no'
 
@@ -1092,7 +1090,8 @@ class Camera:
             #The variable Nsmartstacks defaults to 1 - e.g. normal functioning
             #When a smartstack is not requested.
             for sskcounter in range(int(Nsmartstack)):
-                print ("Smartstack " + str(sskcounter+1) + " out of " + str(Nsmartstack))
+                if Nsmartstack > 1 :
+                    print ("Smartstack " + str(sskcounter+1) + " out of " + str(Nsmartstack))
                 self.retry_camera = 3
                 self.retry_camera_start_time = time.time()
                 while self.retry_camera > 0:
