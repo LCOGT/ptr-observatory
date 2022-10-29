@@ -386,23 +386,18 @@ class Camera:
         self.overscan_y = int(
             self.config["camera"][self.name]["settings"]["overscan_y"]
         )
-        self.camera_x_size = self.config["camera"][self.name]["settings"][
-            "CameraXSize"
-        ]  # unbinned values. QHY returns 2
-        self.camera_y_size = self.config["camera"][self.name]["settings"][
-            "CameraYSize"
-        ]  # unbinned
+        try:
+            self.camera_x_size = self.camera.CameraXSize  #unbinned values. QHY returns 2
+            self.camera_y_size = self.camera.CameraYSize  #unbinned
+        except:
+            self.camera_x_size = self.config['camera'][self.name]['settings']['CameraXSize']  #unbinned values. QHY returns 2
+            self.camera_y_size = self.config['camera'][self.name]['settings']['CameraYSize']  #unbinned
         self.camera_max_x_bin = self.config["camera"][self.name]["settings"]["MaxBinX"]
         self.camera_max_y_bin = self.config["camera"][self.name]["settings"][
             "MaxBinY"
         ]  # NB NB Overriding 511 for FLI cam
         self.camera_start_x = self.config["camera"][self.name]["settings"]["StartX"]
         self.camera_start_y = self.config["camera"][self.name]["settings"]["StartY"]
-        try:
-            self.camera.NumX = int(self.camera_x_size / self.camera.BinX)
-            self.camera.NumY = int(self.camera_y_size / self.camera.BinY)
-        except:
-            print("cannot set NumX with this camera")
         self.camera_num_x = int(
             self.camera_x_size / self.camera.BinX
         )  # These are affected binned values.
@@ -855,8 +850,8 @@ class Camera:
             bin_x = self.config["camera"][self.name]["settings"]["default_bin"][0]
             self.ccd_sum = str(bin_x) + " " + str(bin_x)
         else:
-            bin_x = 1
-            self.ccd_sum = "1 1"
+            bin_x = self.config['camera'][self.name]['settings']['default_bin'][0]
+            self.ccd_sum = str(bin_x) + ' ' + str(bin_x)
 
         bin_y = bin_x  # NB This needs fixing someday!
         self.bin = bin_x
@@ -968,7 +963,7 @@ class Camera:
             else:
                 frame_type = "expose"
 
-        area = optional_params.get("area", 150)
+        #area = optional_params.get("area", 150)
         # if area is None or area in['Full', 'full', 'chip', 'Chip']:   #  Temporary patch to deal with 'chip'
         #     area = 150
 
@@ -1020,10 +1015,9 @@ class Camera:
             # Within each count - which is a single requested exposure, IF it is a smartstack
             # Then we divide each count up into individual smartstack exposures.
             ssExp=self.config["camera"][self.name]["settings"]['smart_stack_exposure_time']
-            if self.current_filter in ['HA', 'O3', 'S2', 'N2', 'y', 'up', 'U']:
-                ssExp = ssExp * 3 # For narrowband and low throughput filters, increase base exposure time.
+            if self.current_filter.lower() in ['ha', 'o3', 's2', 'n2', 'y', 'up', 'u']:
+                ssExp = ssExp * 3.0 # For narrowband and low throughput filters, increase base exposure time.
             if not imtype.lower() in ["light"]:
-                print ("skipping smartstack as not a lightframe")
                 Nsmartstack=1
                 SmartStackID='no'
             elif self.smartstack == 'yes' and (exposure_time > 3*ssExp):
@@ -1032,7 +1026,6 @@ class Camera:
                 SmartStackID=(datetime.datetime.now().strftime("%d%m%y%H%M%S"))
                 print (SmartStackID)
             else:
-                print ("Not attempting SmartStack")
                 Nsmartstack=1
                 SmartStackID='no'
 
@@ -1097,7 +1090,8 @@ class Camera:
             #The variable Nsmartstacks defaults to 1 - e.g. normal functioning
             #When a smartstack is not requested.
             for sskcounter in range(int(Nsmartstack)):
-                print ("Smartstack " + str(sskcounter+1) + " out of " + str(Nsmartstack))
+                if Nsmartstack > 1 :
+                    print ("Smartstack " + str(sskcounter+1) + " out of " + str(Nsmartstack))
                 self.retry_camera = 3
                 self.retry_camera_start_time = time.time()
                 while self.retry_camera > 0:
@@ -2127,16 +2121,6 @@ class Camera:
                     except:
                         print("have to not have ocn header items when no ocn")
 
-                    self.pix_ang = (
-                        self.config["camera"][self.name]["settings"]["x_pixel"]
-                        * self.camera.BinX
-                        / (
-                            float(
-                                self.config["telescope"]["telescope1"]["focal_length"]
-                            )
-                            * 1000.0
-                        )
-                    )
                     hdu.header["PIXSCALE"] = (
                         self.config["camera"][self.name]["settings"]["pix_scale"][
                             self.camera.BinX - 1

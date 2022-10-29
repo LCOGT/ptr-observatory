@@ -29,7 +29,7 @@ import requests
 import sep
 from skimage.io import imsave
 from skimage.transform import resize
-
+import func_timeout
 
 from api_calls import API_calls
 from auto_stretch.stretch import Stretch
@@ -176,6 +176,9 @@ class Observatory:
             os.makedirs(g_dev["cam"].site_path + "astropycache")
         if not os.path.exists(g_dev["cam"].site_path + "smartstacks"):
             os.makedirs(g_dev["cam"].site_path + "smartstacks")
+            if not os.path.exists(g_dev["cam"].site_path + "calibmasters"):
+                os.makedirs(g_dev["cam"].site_path + "calibmasters")
+
 
         self.last_solve_time = datetime.datetime.now() - datetime.timedelta(days=1)
         self.images_since_last_solve = 10000
@@ -695,8 +698,101 @@ class Observatory:
                     time.sleep(0.5)
                     continue
 
+
+                # Each image that is not a calibration frame gets it's focus examined and
+                # Recorded. In the future this is intended to trigger an auto_focus if the
+                # Focus gets wildly worse..
+                # Also the number of sources indicates whether astroalign should run.
+                if not paths["frame_type"] in [
+                    "bias",
+                    "dark",
+                    "flat",
+                    "solar",
+                    "lunar",
+                    "skyflat",
+                    "screen",
+                    "spectrum",
+                    "auto_focus",
+                ]:
+                    img = fits.open(
+                        paths["red_path"] + paths["red_name01"],
+                        mode="update",
+                        ignore_missing_end=True,
+                    )
+                    img[0].data = (
+                        img[0].data - np.min(img[0].data)
+                    ) + 100  # Add an artifical pedestal to background.
+                    img = img[0].data.astype("float")
+                    img = img.copy(
+                        order="C"
+                    )  # NB Should we move this up to where we read the array?
+                    bkg = sep.Background(img)
+                    img -= bkg
+                    sources = sep.extract(
+                        img, 4.5, err=bkg.globalrms, minarea=15
+                    )  # Minarea should deal with hot pixels.
+                    sources.sort(order="cflux")
+                    print("No. of detections:  ", len(sources))
+
+                    ix, iy = img.shape
+                    r0 = 0
+
+                    border_x = int(ix * 0.05)
+                    border_y = int(iy * 0.05)
+                    r0 = []
+                    for sourcef in sources:
+                        if (
+                            border_x < sourcef["x"] < ix - border_x
+                            and border_y < sourcef["y"] < iy - border_y
+                            and sourcef["peak"] < 35000
+                            and sourcef["cpeak"] < 35000
+                        ):  # Consider a lower bound
+                            a0 = sourcef["a"]
+                            b0 = sourcef["b"]
+                            r0.append(round(math.sqrt(a0 * a0 + b0 * b0), 2))
+
+                    FWHM = round(
+                        np.median(r0) * pixscale, 3
+                    )  # was 2x larger but a and b are diameters not radii
+                    print("This image has a FWHM of " + str(FWHM))
+
+                    g_dev["foc"].focus_tracker.pop(0)
+                    g_dev["foc"].focus_tracker.append(FWHM)
+                    print("Last ten FWHM : ")
+                    print(g_dev["foc"].focus_tracker)
+                    print("Median last ten FWHM")
+                    print(np.nanmedian(g_dev["foc"].focus_tracker))
+                    print("Last solved focus FWHM")
+                    print(g_dev["foc"].last_focus_fwhm)
+
+                    # If there hasn't been a focus yet, then it can't check it, so make this image the last solved focus.
+                    if g_dev["foc"].last_focus_fwhm == None:
+                        g_dev["foc"].last_focus_fwhm = FWHM
+                    else:
+                        # Very dumb focus slip deteector
+                        if (
+                            np.nanmedian(g_dev["foc"].focus_tracker)
+                            > g_dev["foc"].last_focus_fwhm
+                            + self.config["focus_trigger"]
+                        ):
+                            g_dev["foc"].focus_needed = True
+                            g_dev["obs"].send_to_user(
+                                "Focus has drifted to "
+                                + str(np.nanmedian(g_dev["foc"].focus_tracker))
+                                + " from "
+                                + str(g_dev["foc"].last_focus_fwhm)
+                                + ". Autofocus triggered for next exposures.",
+                                p_level="INFO",
+                            )
+
+
+
+                print ("Number of sources just prior to smartstacks: " + str(len(sources)))
+                if len(sources) < 30:
+                    print ("skipping smartstack as there is not enough sources " + str(len(sources)) +" in this image")
+
                 # SmartStack Section
-                if smartstackid != "no":
+                if smartstackid != "no" and len(sources) > 30:
                     img = fits.open(
                         paths["red_path"] + paths["red_name01"]
                     )  # Pick up reduced fits file
@@ -754,137 +850,97 @@ class Observatory:
                         # print (" Background Level : " + str(backgroundLevel))
                         # img= img - backgroundLevel
                         # Reproject new image onto footprint of old image.
-                        reprojectedimage, _ = aa.register(
-                            img, storedsStack, detection_sigma=3, min_area=9
-                        )
-                        # scalingFactor= np.nanmedian(reprojectedimage / storedsStack)
-                        # print (" Scaling Factor : " +str(scalingFactor))
-                        # reprojectedimage=(scalingFactor) * reprojectedimage # Insert a scaling factor
-                        storedsStack = np.asarray((reprojectedimage + storedsStack))
-                        # Save new stack to disk
-                        np.save(
-                            g_dev["cam"].site_path
-                            + "smartstacks/"
-                            + smartStackFilename,
-                            storedsStack,
-                        )
+                        print(datetime.datetime.now())
+                        try:
+                            reprojectedimage, _ = func_timeout.func_timeout (60, aa.register, args=(img, storedsStack), kwargs={"detection_sigma":3, "min_area":9})
+                            #(20, aa.register, args=(img, storedsStack, detection_sigma=3, min_area=9)
+
+                            # scalingFactor= np.nanmedian(reprojectedimage / storedsStack)
+                            # print (" Scaling Factor : " +str(scalingFactor))
+                            # reprojectedimage=(scalingFactor) * reprojectedimage # Insert a scaling factor
+                            storedsStack = np.asarray((reprojectedimage + storedsStack))
+                            # Save new stack to disk
+                            np.save(
+                                g_dev["cam"].site_path
+                                + "smartstacks/"
+                                + smartStackFilename,
+                                storedsStack,
+                            )
+
+                            # Resizing the array to an appropriate shape for the jpg and the small fits
+                            iy, ix = storedsStack.shape
+                            if iy == ix:
+                                storedsStack = resize(
+                                    storedsStack, (1280, 1280), preserve_range=True
+                                )
+                            else:
+                                storedsStack = resize(
+                                    storedsStack,
+                                    (int(1536 * iy / ix), 1536),
+                                    preserve_range=True,
+                                )  #  We should trim chips so ratio is exact.
+
+                            # Code to stretch the image to fit into the 256 levels of grey for a jpeg
+                            stretched_data_float = Stretch().stretch(storedsStack + 1000)
+                            del storedsStack
+                            stretched_256 = 255 * stretched_data_float
+                            hot = np.where(stretched_256 > 255)
+                            cold = np.where(stretched_256 < 0)
+                            stretched_256[hot] = 255
+                            stretched_256[cold] = 0
+                            stretched_data_uint8 = stretched_256.astype("uint8")
+                            hot = np.where(stretched_data_uint8 > 255)
+                            cold = np.where(stretched_data_uint8 < 0)
+                            stretched_data_uint8[hot] = 255
+                            stretched_data_uint8[cold] = 0
+
+                            imsave(
+                                g_dev["cam"].site_path
+                                + "smartstacks/"
+                                + smartStackFilename.replace(
+                                    ".npy", "_" + str(ssframenumber) + ".jpg"
+                                ),
+                                stretched_data_uint8,
+                            )
+
+                            imsave(
+                                paths["im_path"] + paths["jpeg_name10"],
+                                stretched_data_uint8,
+                            )
+
+                            g_dev["cam"].enqueue_for_AWS(
+                                100, paths["im_path"], paths["jpeg_name10"]
+                            )
+
+                            g_dev["obs"].send_to_user(
+                                "A preview SmartStack, "
+                                + str(sskcounter + 1)
+                                + " out of "
+                                + str(Nsmartstack)
+                                + ", has been sent to the GUI.",
+                                p_level="INFO",
+                            )
+                            #    )
+                        except func_timeout.FunctionTimedOut:
+                            print ("astroalign Timed Out")
+                        print(datetime.datetime.now())
+
                     del img
 
-                    # Save out a fits for testing purposes only
-                    firstimage = fits.PrimaryHDU()
-                    firstimage.scale("float32")
-                    firstimage.data = np.asarray(storedsStack).astype(np.float32)
-                    firstimage.header = stackHoldheader
-                    firstimage.writeto(
-                        g_dev["cam"].site_path
-                        + "smartstacks/"
-                        + smartStackFilename.replace(
-                            ".npy", str(ssframenumber) + ".fits"
-                        ),
-                        overwrite=True,
-                    )
-                    del firstimage
-
-                    # Resizing the array to an appropriate shape for the jpg and the small fits
-                    iy, ix = storedsStack.shape
-                    if iy == ix:
-                        storedsStack = resize(
-                            storedsStack, (1280, 1280), preserve_range=True
-                        )
-                    else:
-                        storedsStack = resize(
-                            storedsStack,
-                            (int(1536 * iy / ix), 1536),
-                            preserve_range=True,
-                        )  #  We should trim chips so ratio is exact.
-
-                    # Code to stretch the image to fit into the 256 levels of grey for a jpeg
-                    stretched_data_float = Stretch().stretch(storedsStack + 1000)
-                    del storedsStack
-                    stretched_256 = 255 * stretched_data_float
-                    hot = np.where(stretched_256 > 255)
-                    cold = np.where(stretched_256 < 0)
-                    stretched_256[hot] = 255
-                    stretched_256[cold] = 0
-                    stretched_data_uint8 = stretched_256.astype("uint8")
-                    hot = np.where(stretched_data_uint8 > 255)
-                    cold = np.where(stretched_data_uint8 < 0)
-                    stretched_data_uint8[hot] = 255
-                    stretched_data_uint8[cold] = 0
-
-                    # jpeg_name = (
-                    #     g_dev['cam'].config["site"]
-                    #     + "-"
-                    #     + g_dev['cam'].alias
-                    #     + "-"
-                    #     + g_dev["day"]
-                    #     + "-"
-                    #     + str(smartstackid)
-                    #     + str(sskcounter)
-                    #     + "-"
-                    #     + "EX"
-                    #     + "10.jpg"
+                    # # Save out a fits for testing purposes only
+                    # firstimage = fits.PrimaryHDU()
+                    # firstimage.scale("float32")
+                    # firstimage.data = np.asarray(storedsStack).astype(np.float32)
+                    # firstimage.header = stackHoldheader
+                    # firstimage.writeto(
+                    #     g_dev["cam"].site_path
+                    #     + "smartstacks/"
+                    #     + smartStackFilename.replace(
+                    #         ".npy", str(ssframenumber) + ".fits"
+                    #     ),
+                    #     overwrite=True,
                     # )
-                    # text_name = (
-                    #     g_dev['cam'].config["site"]
-                    #     + "-"
-                    #     + g_dev['cam'].alias
-                    #     + "-"
-                    #     + g_dev["day"]
-                    #     + "-"
-                    #     + str(smartstackid)
-                    #     + str(sskcounter)
-                    #     + "-"
-                    #     + "EX"
-                    #     + "00.txt"
-                    # )
-
-                    # print (text_name)
-                    # print (jpeg_name)
-
-                    # Try saving the jpeg to disk and quickly send up to AWS to present for the user
-                    # GUI
-
-                    imsave(
-                        g_dev["cam"].site_path
-                        + "smartstacks/"
-                        + smartStackFilename.replace(
-                            ".npy", "_" + str(ssframenumber) + ".jpg"
-                        ),
-                        stretched_data_uint8,
-                    )
-
-                    # Send info text and jpg up to UI
-                    # text = open(
-                    # paths["im_path"] + paths["text_name00"].replace('.txt', str(Nsmartstack) +'.txt'), "w"
-                    #    paths["im_path"] + text_name, "w"
-                    # )  # This is needed by AWS to set up database.
-                    # stackHoldheader['FILENAME']=jpeg_name.replace('EX00.jpg','EX00.fits.fz')
-                    # print(stackHoldheader['FILENAME'])
-                    # text.write(str(stackHoldheader))
-                    # text.close()
-
-                    imsave(
-                        paths["im_path"] + paths["jpeg_name10"],
-                        stretched_data_uint8,
-                    )
-
-                    g_dev["cam"].enqueue_for_AWS(
-                        100, paths["im_path"], paths["jpeg_name10"]
-                    )
-
-                    g_dev["obs"].send_to_user(
-                        "A preview SmartStack, "
-                        + str(sskcounter + 1)
-                        + " out of "
-                        + str(Nsmartstack)
-                        + ", has been sent to the GUI.",
-                        p_level="INFO",
-                    )
-                    #    )
-
-                # OBJECT, FILTER, EXPOSURETIME
-                # Align new image to old image, stack and save
+                    # del firstimage
 
                 # Solve for pointing. Note: as the raw and reduced file are already saved and an fz file
                 # has already been sent up, this is purely for pointing purposes.
@@ -1015,90 +1071,6 @@ class Observatory:
                         print("skipping solve as not enough time or images have passed")
                         self.images_since_last_solve = self.images_since_last_solve + 1
 
-                # Each image that is not a calibration frame gets it's focus examined and
-                # Recorded. In the future this is intended to trigger an auto_focus if the
-                # Focus gets wildly worse..
-                if not paths["frame_type"] in [
-                    "bias",
-                    "dark",
-                    "flat",
-                    "solar",
-                    "lunar",
-                    "skyflat",
-                    "screen",
-                    "spectrum",
-                    "auto_focus",
-                ]:
-                    img = fits.open(
-                        paths["red_path"] + paths["red_name01"],
-                        mode="update",
-                        ignore_missing_end=True,
-                    )
-                    img[0].data = (
-                        img[0].data - np.min(img[0].data)
-                    ) + 100  # Add an artifical pedestal to background.
-                    img = img[0].data.astype("float")
-                    img = img.copy(
-                        order="C"
-                    )  # NB Should we move this up to where we read the array?
-                    bkg = sep.Background(img)
-                    img -= bkg
-                    sources = sep.extract(
-                        img, 4.5, err=bkg.globalrms, minarea=15
-                    )  # Minarea should deal with hot pixels.
-                    sources.sort(order="cflux")
-                    print("No. of detections:  ", len(sources))
-
-                    ix, iy = img.shape
-                    r0 = 0
-
-                    border_x = int(ix * 0.05)
-                    border_y = int(iy * 0.05)
-                    r0 = []
-                    for sourcef in sources:
-                        if (
-                            border_x < sourcef["x"] < ix - border_x
-                            and border_y < sourcef["y"] < iy - border_y
-                            and sourcef["peak"] < 35000
-                            and sourcef["cpeak"] < 35000
-                        ):  # Consider a lower bound
-                            a0 = sourcef["a"]
-                            b0 = sourcef["b"]
-                            r0.append(round(math.sqrt(a0 * a0 + b0 * b0), 2))
-
-                    FWHM = round(
-                        np.median(r0) * pixscale, 3
-                    )  # was 2x larger but a and b are diameters not radii
-                    print("This image has a FWHM of " + str(FWHM))
-
-                    g_dev["foc"].focus_tracker.pop(0)
-                    g_dev["foc"].focus_tracker.append(FWHM)
-                    print("Last ten FWHM : ")
-                    print(g_dev["foc"].focus_tracker)
-                    print("Median last ten FWHM")
-                    print(np.nanmedian(g_dev["foc"].focus_tracker))
-                    print("Last solved focus FWHM")
-                    print(g_dev["foc"].last_focus_fwhm)
-
-                    # If there hasn't been a focus yet, then it can't check it, so make this image the last solved focus.
-                    if g_dev["foc"].last_focus_fwhm == None:
-                        g_dev["foc"].last_focus_fwhm = FWHM
-                    else:
-                        # Very dumb focus slip deteector
-                        if (
-                            np.nanmedian(g_dev["foc"].focus_tracker)
-                            > g_dev["foc"].last_focus_fwhm
-                            + self.config["focus_trigger"]
-                        ):
-                            g_dev["foc"].focus_needed = True
-                            g_dev["obs"].send_to_user(
-                                "Focus has drifted to "
-                                + str(np.nanmedian(g_dev["foc"].focus_tracker))
-                                + " from "
-                                + str(g_dev["foc"].last_focus_fwhm)
-                                + ". Autofocus triggered for next exposures.",
-                                p_level="INFO",
-                            )
 
                 time.sleep(0.5)
                 self.img = None  # Clean up all big objects.
