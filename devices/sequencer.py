@@ -404,6 +404,12 @@ class Sequencer:
                         return   # Do not try to execute an empty block.
                     self.block_guard = True
 
+                    if block['project'] == None:
+                        print (block)
+                        print ("Skipping a block that contains an empty project")
+                        return
+
+
                     completed_block = self.execute_block(block)  #In this we need to ultimately watch for weather holds.
                     self.append_completes(completed_block['event_id'])
                     #block['project_id'] in ['none', 'real_time_slot', 'real_time_block']
@@ -1077,6 +1083,19 @@ class Sequencer:
             )
             g_dev["foc"].last_focus_fwhm = None
             g_dev["foc"].focus_tracker = [np.nan] * 10
+
+            # Trying to figure out why sequencer isn't restarting.
+            events = g_dev['events']
+            obs_win_begin, sunZ88Op, sunZ88Cl, ephem_now = self.astro_events.getSunEvents()
+            print (events['Eve Bias Dark'] <= ephem_now < events['End Eve Bias Dark'])
+            print (events['Eve Bias Dark'] )
+            print (events['End Eve Bias Dark'])
+            print (ephem.now)
+
+            # Reopening config and resetting all the things.
+            self.astro_events.compute_day_directory()
+            self.astro_events.display_events()
+            g_dev['obs'].astro_events = self.astro_events
 
 
         return
