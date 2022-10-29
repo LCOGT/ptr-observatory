@@ -9,21 +9,19 @@ Updated 20220914 WER   This version does not support color camera channel.
 NB NB NB  If we have one config file then paths need to change depending upon which host does what job.
 '''
 
-#                                                                                        1         1         1       1
-#        1         2         3         4         6         7         8         9         0         1         2       2
-#234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678
+#                                                                                                  1         1         1
+#        1         2         3         4         5         6         7         8         9         0         1         2
+#23456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890
 import json
 import time
 #import ptr_events
 from pprint import pprint
 
-#  NB NB  Json is not bi-directional with tuples (), use lists [], nested if tuples as needed, instead.
-#  NB NB  My convention is if a value is naturally a float I add a decimal point even to 0.
+
 g_dev = None
 
- # bolt = ['u', 'g', 'r', 'i', 'zs', 'B', 'V', 'EXO', 'w', 'O3', 'Ha', 'S', 'Cr', 'NIR']
- # print(len(bolt))
 
+#THis is branch wer-mrc first entered here 20221029:21:40 on WEMA
 site_name = 'aro'
 
 site_config = {
@@ -90,12 +88,12 @@ site_config = {
     'reference_pressure':  794.0,    #mbar   A rough guess 20200315
 
     'site_roof_control': 'yes', #MTF entered this in to remove sro specific code.... Basically do we have control of the roof or not see line 338 sequencer.py
-    'site_in_automatic_default': "Automatic",   # ["Manual", "Shutdown", "Automatic"]
-    'automatic_detail_default': "Enclosure is initially set to Automatic by ARO site_config.",
+    'site_in_automatic_default': "Manual",   # ["Manual", "Shutdown", "Automatic"]
+    'automatic_detail_default': "Enclosure is initially set to Manual by ARO site_config.",
     'observing_check_period' : 2,    # How many minutes between weather checks
     'enclosure_check_period' : 2,    # How many minutes between enclosure checks
-    'auto_eve_bias_dark': False,
-    'auto_eve_sky_flat': False,
+    'auto_eve_bias_dark': True,
+    'auto_eve_sky_flat': True,
     'eve_sky_flat_sunset_offset': -60.0,  # Minutes  neg means before, + after.
     'auto_morn_sky_flat': False,
     'auto_morn_bias_dark': False,
@@ -412,7 +410,7 @@ site_config = {
             'ip_string': 'http://10.0.0.110',
             "dual_wheel": True,
             'settings': {
-                'filter_count': 42,
+                'filter_count': 43,
                 'home_filter':  1,
                 'default_filter': "w",
                 'filter_list': ['PL','PR','PG','PB','HA','O3','S2', 'N2', 'NIR', 'up','gp', 'rp','ip','z','zp','y','EXO','JB','JV','Rc','Ic', 'air','w'], # A list of actual physical filters for the substitution function
@@ -438,34 +436,31 @@ site_config = {
                         ['JV',   [10, 0],    0, 24.4, [.32 ,  20], 'BV'],    #16.
                         ['Rc',   [11, 0],    0, 17.2, [10  , 170], 'BR'],    #17.
                         ['Ic',   [12, 0],    0, 3.66, [360 , 170], 'BI'],    #18.
-                        #['PL (Lum)',[7,  0], 0, 74.34,[360 , 170], 'PL'],    #19.   # MTF to WER - I am removing the brackets because they will
-                        #['PR (Red)',[0,  8], 0, 13.7, [.32 ,  20], 'PB'],    #20.   # cause problems in a few areas in the future.
-                        #['PG (Grn)',[0,  7], 0, 24.0, [30  , 170], 'PG'],    #21.
-                        #['PB (Blu)',[0,  6], 0, 37.4, [360 , 170], 'PR'],    #22.
-                        ['PL',[7,  0], 0, 74.34,[360 , 170], 'PL'],    #19.
-                        ['PR',[0,  8], 0, 13.7, [.32 ,  20], 'PB'],    #20.
-                        ['PG',[0,  7], 0, 24.0, [30  , 170], 'PG'],    #21.
-                        ['PB',[0,  6], 0, 37.4, [360 , 170], 'PR'],    #22.
+                        ['PL',   [7,  0],    0, 74.34,[360 , 170], 'PL'],    #19.
+                        ['PR',   [0,  8],    0, 13.7, [.32 ,  20], 'PB'],    #20.
+                        ['PG',   [0,  7],    0, 24.0, [30  , 170], 'PG'],    #21.
+                        ['PB',   [0,  6],    0, 37.4, [360 , 170], 'PR'],    #22.
                         ['NIR',  [0, 10],    0, 5.11, [0.65,  20], 'ni'],    #23.
                         ['O3',   [0,  2],    0, 1.79, [360 , 170], 'O3'],    #24.
                         ['HA',   [0,  3],    0, .537, [360 , 170], 'HA'],    #25.
                         ['N2',   [13, 0],    0, 0.32, [360 , 170], 'N2'],    #26.
                         ['S2',   [0,  4],    0, .302, [0.65,  20], 'S2'],    #27.
                         ['CR',   [0,  5],    0, .556, [360 , 170], 'Rc'],    #28.
-                        ['dark', [5,  6],    0, 0.20, [360 , 170], 'dk'],    #29                       ['dif',  [0,  1],    0, 0.21, [360 , 170], 'df'],    #25
-                        ['difw',   [7,  1],  0, 72.6, [0.65,  20], 'dw'],    #30.
-                        ['difup',  [1,  1],  0, 10.5, [0.65,  20], 'du'],    #31.   #NONE OF THESE OR BELOW ARE ACCURATE.
-                        ['difgp',  [2,  1],  0, 234,  [0.65,  20], 'dg'],    #32.
-                        ['difrp',  [3,  1],  0, 70.0, [0.65,  20], 'dr'],    #33.
-                        ['difip',  [4,  1],  0, 150., [0.65,  20], 'di'],    #34.
+                        ['dark', [5,  6],    0, 0.20, [360 , 170], 'dk'],    #29.
+                        ['dif',  [0,  1],    0, 75.0, [360 , 170], 'df'],    #30. #NONE OF THESE OR BELOW have accurate gains.
+                        ['difw',   [7,  1],  0, 72.6, [0.65,  20], 'dw'],    #31.
+                        ['difup',  [1,  1],  0, 10.5, [0.65,  20], 'du'],    #31.
+                        ['difgp',  [2,  1],  0, 234,  [0.65,  20], 'dg'],    #33.
+                        ['difrp',  [3,  1],  0, 70.0, [0.65,  20], 'dr'],    #34.
+                        ['difip',  [4,  1],  0, 150., [0.65,  20], 'di'],    #35.
                         ['difz',   [5,  1],  0, 0.73, [0.65,  20], 'ds'],    #35.
-                        ['dify',   [6,  1],  0, 0.15, [0.65,  20], 'dY'],    #36.
-                        ['difEXO', [8,  1],  0, 161., [0.65,  20], 'dx'],    #37.
-                        ['difJB',  [9,  1],  0, 42.5, [0.65,  20], 'dB'],    #38.
-                        ['difJV',  [10, 1],  0, 33.0, [0.65,  20], 'dV'],    #39.
-                        ['difRc',  [11, 1],  0, 22.2, [0.65,  20], 'dR'],    #40.
-                        ['difIc',  [12, 1],  0, 10. , [0.65,  20], 'dI']],   #41.
-                        #['LRGB',   [7,  0],  0, 72.8, [360 , 170], 'LRGB']],#42. valid entries, only 36 useable.
+                        ['dify',   [6,  1],  0, 0.15, [0.65,  20], 'dY'],    #37.
+                        ['difEXO', [8,  1],  0, 161., [0.65,  20], 'dx'],    #38.
+                        ['difJB',  [9,  1],  0, 42.5, [0.65,  20], 'dB'],    #39.
+                        ['difJV',  [10, 1],  0, 33.0, [0.65,  20], 'dV'],    #40.
+                        ['difRc',  [11, 1],  0, 22.2, [0.65,  20], 'dR'],    #41.
+                        ['difIc',  [12, 1],  0, 10. , [0.65,  20], 'dI']],   #42.
+
                 'filter_screen_sort':  [12, 0, 11, 2, 3, 5, 4, 1, 6],   # don't use narrow yet,  8, 10, 9], useless to try.
 
 
