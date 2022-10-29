@@ -502,8 +502,8 @@ site_config = {
                 'filter_screen_sort':  [0, 1, 2, 10, 7, 19, 6, 18, 12, 11, 13, 8, 20, 3, \
                                         14, 15, 4, 16],   #  9, 21],  # 5, 17], #Most to least throughput, \
                                 #so screen brightens, skipping u and zs which really need sky.
-                'filter_sky_sort':     [15, 3, 14,  8, 13, 11, 12, \
-                                         6,  7, 10, 2, 1, 0]  #Least to most throughput  5, 9, 4, 16,
+                'filter_sky_sort':     [17, 14, 16, 15, 4, 13, 8, 7, 11, 10, 6, 12, 5, 9, \
+                                        3, 18, 0]  #Least to most throughput  5, 9, 4, 16,
 
             },
         },
