@@ -1,5 +1,11 @@
 """
-WER 20210624
+WER 20221021:
+    
+    NB NB NB this is a trailing copy of obs with a different status send
+    routine. So there is a lot of duplicated code to track.  Better maybe
+    to condition Status_send()  with self.is_wema or something equivalent.
+    
+wer 202106??:
 
 First attempt at having a parallel dedicated agent for weather and enclosure.
 This code should be as simple and reliable as possible, no hanging variables,
@@ -69,7 +75,8 @@ def send_status(obsy, column, status_to_send):
     response = requests.post(uri_status, data=data)
 
     if response.ok:
-        print("Status sent successfully.")
+        pass
+    #print("Status sent successfully.")
     else:
         print(
             'self.api.authenticated_request("PUT", uri, status):  Failed! ',

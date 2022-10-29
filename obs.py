@@ -159,6 +159,7 @@ class Observatory:
         # Use the configuration to instantiate objects for all devices.
         self.create_devices()
         self.loud_status = False
+        self.images_since_last_solve = 0   #20221022 WER added to fix no attribute defined fault.
         g_dev["obs"] = self
         site_str = config["site"]
         g_dev["site"]: site_str

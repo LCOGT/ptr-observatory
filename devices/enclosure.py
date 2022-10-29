@@ -254,9 +254,11 @@ class Enclosure:
         self.last_current_az = 315.
         self.last_slewing = False
         self.prior_status = {'enclosure_mode': 'Manual'}    #Just to initialze this rarely used variable.
-        print('\n&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& \n') 
-        print('      20221014  Close commands are blocked,  System defaults to manual. \n ')
-        print('&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& \n')
+
+        if self.site in ('aro'):
+            print('\n&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& \n') 
+            print('      20221014  Close commands are blocked,  System defaults to manual. \n ')
+            print('&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& \n')
     def get_status(self) -> dict:
         if not self.is_wema and self.site_has_proxy and self.dome_on_wema:
             if self.config['site_IPC_mechanism'] == 'shares':
@@ -584,7 +586,7 @@ class Enclosure:
             if self.is_dome and self.status is not None:   #First time around, stauts is None.
                 if mnt_command['is_slewing'] and not self.slew_latch:   # NB NB NB THIS should have a timeout
                     self.enclosure.SlewToAzimuth(float(target_az))
-                    self.slew_latch = True   #Isuing multiple Slews causes jerky Dome motion.
+                    self.slew_latch = True   #Issuing multiple Slews causes jerky Dome motion.
                 elif self.slew_latch and not mnt_command['is_slewing']:
                     self.slew_latch = False   #  Return to Dpme following.
                     self.enclosure.SlewToAzimuth(float(track_az))
