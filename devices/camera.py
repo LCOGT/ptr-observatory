@@ -1015,7 +1015,7 @@ class Camera:
             # Within each count - which is a single requested exposure, IF it is a smartstack
             # Then we divide each count up into individual smartstack exposures.
             ssExp=self.config["camera"][self.name]["settings"]['smart_stack_exposure_time']
-            if self.current_filter in ['HA', 'O3', 'S2', 'N2', 'y', 'up', 'U']:
+            if self.current_filter.lower() in ['ha', 'o3', 's2', 'n2', 'y', 'up', 'u']:
                 ssExp = ssExp * 3 # For narrowband and low throughput filters, increase base exposure time.
             if not imtype.lower() in ["light"]:
                 print ("skipping smartstack as not a lightframe")
