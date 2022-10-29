@@ -58,7 +58,6 @@ def terminate_restart_observer(site_path, no_restart=False):
     return
 
 
-# NOTE: We can eventually fold this back into obs.
 def send_status(obsy, column, status_to_send):
     """Sends a status update to AWS."""
 
@@ -69,13 +68,13 @@ def send_status(obsy, column, status_to_send):
     response = requests.post(uri_status, data=data)
 
     if response.ok:
-        print("Status sent successfully.")
+        pass
+        #print("Status sent successfully.")
     else:
         print(
             'self.api.authenticated_request("PUT", uri, status):  Failed! ',
             response.status_code,
         )
-
 
 class WxEncAgent:
     """A class for weather enclosure functionality."""
