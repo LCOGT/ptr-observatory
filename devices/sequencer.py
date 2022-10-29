@@ -911,7 +911,7 @@ class Sequencer:
                         break
                     print("Expose ref_dark using exposure:  ", dark_time )
                     req = {'time':dark_time ,  'script': 'True', 'image_type': 'dark'}
-                    opt = {'area': "Full", 'count': 1, 'bin': '2 2', \
+                    opt = {'area': "Full", 'count':1, 'bin': '2 2', \
                             'filter': 'dark'}
                     result = g_dev['cam'].expose_command(req, opt, no_AWS=True, \
                                         do_sep=False, quick=False)
@@ -923,7 +923,7 @@ class Sequencer:
                             break
                         print("Expose long dark using exposure:  ", long_dark_time)
                         req = {'time':long_dark_time ,  'script': 'True', 'image_type': 'dark'}
-                        opt = {'area': "Full", 'count': 1, 'bin': '2 2', \
+                        opt = {'area': "Full", 'count':1, 'bin': '2 2', \
                                 'filter': 'dark'}
                         result = g_dev['cam'].expose_command(req, opt, no_AWS=True, \
                                             do_sep=False, quick=False)

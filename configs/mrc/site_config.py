@@ -6,7 +6,6 @@ Updates 20220107 20:01 WER
 @author: wrosing
 '''
 import json
-import redis
 
 
 '''
@@ -63,28 +62,26 @@ site_config = {
 
     'client_hostname':  'MRC-0m35',
 
-    'client_path':  'Q:/ptr/',  # Generic place for client host to stash misc stuff
-    'alt_path':  'Q:/ptr/',  # Generic place for this host to stash misc stuff
-    'save_to_alt_path':  'no',
-    'archive_path':  'Q:/ptr/',
+    'client_path':  'D:/ptr/',  # Generic place for client host to stash misc stuff
+    'alt_path':  'D:/ptr/',  # Generic place for this host to stash misc stuff
+    'archive_path':  'D:/ptr/',
 
     'archive_age' : -99.9, # Number of days to keep files in the local archive before deletion. Negative means never delete
     'aux_archive_path':  None,
     'wema_is_active':  True,          # True if the split computers used at a site.
     'wema_hostname': 'MRC-WMS-ENC',   # Prefer the shorter version
-    'wema_path':  'Q:/ptr/',  # '/wema_transfer/',
+    'wema_path':  'D:/ptr/',  # '/wema_transfer/',
     'dome_on_wema':   True,
     'site_IPC_mechanism':  'redis',   # ['None', shares', 'shelves', 'redis']  Pick One
-    'wema_write_share_path': 'Q:/ptr/',  # Meant to be where Wema puts status data.
-    'client_read_share_path':  'Q:/ptr/',
-    'client_write_share_path': 'Q:/ptr/',
+    'wema_write_share_path': 'D:/ptr/',  # Meant to be where Wema puts status data.
+    'client_read_share_path':  'D:/ptr/',
+    'client_write_share_path': 'D:/ptr/',
     'redis_ip': '10.15.0.109',  #'127.0.0.1', None if no redis path present,
     'site_is_generic':  False,   # A simply  single computer ASCOM site.
     'site_is_specific':  False,  # Indicates some special code for this site, found at end of config.
 
 
-
-    'host_wema_site_name':  'MRC',  #  The umbrella header for obsys in close geographic proximity.
+    'host_wema_site_name':  'SRO',  #  The umbrella header for obsys in close geographic proximity.
     'name': 'Mountain Ranch Camp Observatory 0m35f7.2',
     'airport_code': 'SBA',
     'location': 'Near Santa Barbara CA,  USA',
@@ -419,11 +416,11 @@ site_config = {
             'desc':  'Optec Gemini',
             'driver': 'ASCOM.OptecGemini.Focuser',
             #*********Guesses   7379@10 7457@20  7497 @ 25
-            'reference': 6721, #20221027    #7418,    # Nominal at 15C Primary temperature, in microns not steps. Guess
+            'reference': 6850, #20210710    #7418,    # Nominal at 15C Primary temperature, in microns not steps. Guess
             'ref_temp':  15,      # Update when pinning reference  Larger at lower temperatures.
             'coef_c': 7.895,    # Negative means focus moves out (larger numerically) as Primary gets colder
-            'coef_0': 6721,  #20210710# Nominal intercept when Primary is at 0.0 C.
-            'coef_date':  '20221027',   #A Guess as to coef_c
+            'coef_0': 6850,  #20210710# Nominal intercept when Primary is at 0.0 C.
+            'coef_date':  '20210710',   #A Guess as to coef_c
             'z_compression': 0.0, #  microns per degree of zenith distance
             'z_coef_date':  '20221002',   # 'reference': 4375,    #   Guess 20210904  Nominal at 10C Primary temperature
             'use_local_temp':  True,
@@ -473,36 +470,34 @@ site_config = {
             'ip_string': "",
             'settings': {
                 'filter_count': 23,
-                'home_filter':  3,
+                'home_filter':  2,
                 'default_filter':  'w',
-                'filter_reference': 3,
+                'filter_reference': 2,
 
-                'filter_list': ['air','focus', 'dark', 'w', 'up','gp','rp','ip','z','PL','PR','PG','PB','O3', 'HA', 'CR', 'N2', 'S2', 'dif' 'difup','difgp','difrp','difip'], # A list of actual physical filters for the substitution function
+                'filter_list': ['PL','PR','PG','PB','HA','O3','S2', 'air','dif','w','CR','N2','up','gp','rp','ip','z', 'difup','difgp','difrp','difip','dark'], # A list of actual physical filters for the substitution function
                 'filter_data': [['filter', 'filter_index', 'filter_offset', 'sky_gain', 'screen_gain', 'abbreviation'],
                                 ['air',     [0, 0], -1000,  280,  [2, 17], 'ai'], # 0
-                                ['focus',   [2, 0],     0,  0.01, [2, 17], 'dk'], # 1
-                                ['dark',    [1, 5],     0,  0.01, [2, 17], 'dk'], # 2
-                                ['w',       [2, 0],     0,  249,  [2, 17], 'w '], # 3
-                                ['up',      [0, 5],     0,  .1,   [1, 17], 'up'], # 4
-                                ['gp',      [0, 6],     0,  130,  [2, 17], 'gp'], # 5
-                                ['rp',      [0, 7],     0,  45,   [2, 17], 'rp'], # 6
-                                ['ip',      [0, 8],     0,  12,   [2, 17], 'ip'], # 7
-                                ['z',       [5, 0],     0,  8,    [2, 17], 'ip'], # 8
-                                ['PL',      [0, 4],     0,  250,  [2, 17], "PL"], # 9
-                                ['PR',      [0, 3],     0,  45,   [2, 17], 'PR'], # 10
-                                ['PG',      [0, 2],     0,  40,   [2, 17], 'PG'], # 11
-                                ['PB',      [0, 1],     0,  60,   [2, 17], 'PB'], # 12
-                                ['O3',      [7, 0],     0,  2.6,  [2, 17], '03'], # 13
-                                ['HA',      [6, 0],     0,  0.6,  [2, 17], 'HA'], # 14
-                                ['CR',      [1, 0],     0,  .8,   [2, 17], 'CR'], # 15
-                                ['N2',      [3, 0],     0,  .7,   [2, 17], 'N2'], # 16
-                                ['S2',      [8, 0],     0,  0.6,  [2, 17], 'S2'], # 17
-                                ['dif',     [4, 0],     0,  260,  [2, 17], 'df'], # 18
-                                ['difup',   [4, 5],     0,  0.01, [2, 17], 'du'], # 19
-                                ['difgp',   [4, 6],     0,  0.01, [2, 17], 'dg'], # 20
-                                ['difrp',   [4, 7],     0,  0.01, [2, 17], 'dr'], # 21
-                                ['difip',   [4, 8],     0,  0.01, [2, 17], 'di']], # 22
-
+                                ['dif',     [4, 0],     0,  260,  [2, 17], 'df'], # 1
+                                ['w',       [2, 0],     0,  249,  [2, 17], 'w '], # 2
+                                ['CR',      [1, 0],     0,  .8,   [2, 17], 'CR'], # 3
+                                ['N2',      [3, 0],     0,  .7,   [2, 17], 'N2'], # 4
+                                ['up',      [0, 5],     0,  .1,   [1, 17], 'up'], # 5
+                                ['gp',      [0, 6],     0,  130,  [2, 17], 'gp'], # 6
+                                ['rp',      [0, 7],     0,  45,   [2, 17], 'rp'], # 7
+                                ['ip',      [0, 8],     0,  12,   [2, 17], 'ip'], # 8
+                                ['z',       [5, 0],     0,  4,    [2, 17], 'z'], # 9
+                                ['PL',      [0, 4],     0,  250,  [2, 17], "PL"], # 10
+                                ['PR',      [0, 3],     0,  45,   [2, 17], 'PR'], # 11
+                                ['PG',      [0, 2],     0,  40,   [2, 17], 'PG'], # 12
+                                ['PB',      [0, 1],     0,  60,   [2, 17], 'PB'], # 13
+                                ['O3',      [7, 0],     0,  2.6,  [2, 17], '03'], # 14
+                                ['HA',      [6, 0],     0,  0.6,  [2, 17], 'HA'], # 15
+                                ['S2',      [8, 0],     0,  0.6,  [2, 17], 'S2'], # 16
+                                ['difup',   [4, 5],     0,  0.01, [2, 17], 'du'], # 17
+                                ['difgp',   [4, 6],     0,  0.01, [2, 17], 'dg'], # 18
+                                ['difrp',   [4, 7],     0,  0.01, [2, 17], 'dr'], # 19
+                                ['difip',   [4, 8],     0,  0.01, [2, 17], 'di'], # 20
+                                ['dark',   [10, 9],     0,  0.01, [2, 17], 'dk']],# 21
                                 #Screen = 100; QHY400 ~ 92% DQE   HDR Mode    Screen = 160 sat  20190825 measured.
                 'filter_screen_sort':  [0, 1, 2, 10, 7, 19, 6, 18, 12, 11, 13, 8, 20, 3, \
                                         14, 15, 4, 16],   #  9, 21],  # 5, 17], #Most to least throughput, \
@@ -545,7 +540,8 @@ site_config = {
             'detector':  'Sony IMX455',
             'manufacturer':  'QHY',
             'use_file_mode':  False,
-            'file_mode_path':  'Q:/archive/sq01/maxim/',
+            'file_mode_path':  'D:/archive/sq01/maxim/',
+
             'settings': {
                 'crop_preview': False,
                 'crop_preview_ybottom': 1,
@@ -587,10 +583,8 @@ site_config = {
                 'y_pixel':  3.76,
                 'pix_scale': [0.302597, 0.605194, 0.907791, 1.210388],    #   bin-2  2* math.degrees(math.atan(3.76/2563000))*3600
 
-                #'CameraXSize' : 4784,
-                #'CameraYSize' : 3194,
-                'CameraXSize' : 9600,
-                'CameraYSize' : 6422,
+                'CameraXSize' : 4784,
+                'CameraYSize' : 3194,
                 'MaxBinX' : 2,
                 'MaxBinY' : 2,
                 'StartX' : 1,
@@ -688,7 +682,7 @@ site_config = {
 def get_ocn_status():
     pass
 def get_enc_status():
-    return redis.get('enc_status') 
+    pass
 if __name__ == '__main__':
     '''
     This is a simple test to send and receive via json.
