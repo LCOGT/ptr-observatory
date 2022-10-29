@@ -852,7 +852,7 @@ class Observatory:
                         # Reproject new image onto footprint of old image.
                         print(datetime.datetime.now())
                         try:
-                            reprojectedimage, _ = func_timeout.func_timeout (40, aa.register, args=(img, storedsStack), kwargs={"detection_sigma":3, "min_area":9})
+                            reprojectedimage, _ = func_timeout.func_timeout (60, aa.register, args=(img, storedsStack), kwargs={"detection_sigma":3, "min_area":9})
                             #(20, aa.register, args=(img, storedsStack, detection_sigma=3, min_area=9)
 
                             # scalingFactor= np.nanmedian(reprojectedimage / storedsStack)
@@ -866,127 +866,81 @@ class Observatory:
                                 + smartStackFilename,
                                 storedsStack,
                             )
+
+                            # Resizing the array to an appropriate shape for the jpg and the small fits
+                            iy, ix = storedsStack.shape
+                            if iy == ix:
+                                storedsStack = resize(
+                                    storedsStack, (1280, 1280), preserve_range=True
+                                )
+                            else:
+                                storedsStack = resize(
+                                    storedsStack,
+                                    (int(1536 * iy / ix), 1536),
+                                    preserve_range=True,
+                                )  #  We should trim chips so ratio is exact.
+
+                            # Code to stretch the image to fit into the 256 levels of grey for a jpeg
+                            stretched_data_float = Stretch().stretch(storedsStack + 1000)
+                            del storedsStack
+                            stretched_256 = 255 * stretched_data_float
+                            hot = np.where(stretched_256 > 255)
+                            cold = np.where(stretched_256 < 0)
+                            stretched_256[hot] = 255
+                            stretched_256[cold] = 0
+                            stretched_data_uint8 = stretched_256.astype("uint8")
+                            hot = np.where(stretched_data_uint8 > 255)
+                            cold = np.where(stretched_data_uint8 < 0)
+                            stretched_data_uint8[hot] = 255
+                            stretched_data_uint8[cold] = 0
+
+                            imsave(
+                                g_dev["cam"].site_path
+                                + "smartstacks/"
+                                + smartStackFilename.replace(
+                                    ".npy", "_" + str(ssframenumber) + ".jpg"
+                                ),
+                                stretched_data_uint8,
+                            )
+
+                            imsave(
+                                paths["im_path"] + paths["jpeg_name10"],
+                                stretched_data_uint8,
+                            )
+
+                            g_dev["cam"].enqueue_for_AWS(
+                                100, paths["im_path"], paths["jpeg_name10"]
+                            )
+
+                            g_dev["obs"].send_to_user(
+                                "A preview SmartStack, "
+                                + str(sskcounter + 1)
+                                + " out of "
+                                + str(Nsmartstack)
+                                + ", has been sent to the GUI.",
+                                p_level="INFO",
+                            )
+                            #    )
                         except func_timeout.FunctionTimedOut:
                             print ("astroalign Timed Out")
                         print(datetime.datetime.now())
 
                     del img
 
-                    # Save out a fits for testing purposes only
-                    firstimage = fits.PrimaryHDU()
-                    firstimage.scale("float32")
-                    firstimage.data = np.asarray(storedsStack).astype(np.float32)
-                    firstimage.header = stackHoldheader
-                    firstimage.writeto(
-                        g_dev["cam"].site_path
-                        + "smartstacks/"
-                        + smartStackFilename.replace(
-                            ".npy", str(ssframenumber) + ".fits"
-                        ),
-                        overwrite=True,
-                    )
-                    del firstimage
-
-                    # Resizing the array to an appropriate shape for the jpg and the small fits
-                    iy, ix = storedsStack.shape
-                    if iy == ix:
-                        storedsStack = resize(
-                            storedsStack, (1280, 1280), preserve_range=True
-                        )
-                    else:
-                        storedsStack = resize(
-                            storedsStack,
-                            (int(1536 * iy / ix), 1536),
-                            preserve_range=True,
-                        )  #  We should trim chips so ratio is exact.
-
-                    # Code to stretch the image to fit into the 256 levels of grey for a jpeg
-                    stretched_data_float = Stretch().stretch(storedsStack + 1000)
-                    del storedsStack
-                    stretched_256 = 255 * stretched_data_float
-                    hot = np.where(stretched_256 > 255)
-                    cold = np.where(stretched_256 < 0)
-                    stretched_256[hot] = 255
-                    stretched_256[cold] = 0
-                    stretched_data_uint8 = stretched_256.astype("uint8")
-                    hot = np.where(stretched_data_uint8 > 255)
-                    cold = np.where(stretched_data_uint8 < 0)
-                    stretched_data_uint8[hot] = 255
-                    stretched_data_uint8[cold] = 0
-
-                    # jpeg_name = (
-                    #     g_dev['cam'].config["site"]
-                    #     + "-"
-                    #     + g_dev['cam'].alias
-                    #     + "-"
-                    #     + g_dev["day"]
-                    #     + "-"
-                    #     + str(smartstackid)
-                    #     + str(sskcounter)
-                    #     + "-"
-                    #     + "EX"
-                    #     + "10.jpg"
+                    # # Save out a fits for testing purposes only
+                    # firstimage = fits.PrimaryHDU()
+                    # firstimage.scale("float32")
+                    # firstimage.data = np.asarray(storedsStack).astype(np.float32)
+                    # firstimage.header = stackHoldheader
+                    # firstimage.writeto(
+                    #     g_dev["cam"].site_path
+                    #     + "smartstacks/"
+                    #     + smartStackFilename.replace(
+                    #         ".npy", str(ssframenumber) + ".fits"
+                    #     ),
+                    #     overwrite=True,
                     # )
-                    # text_name = (
-                    #     g_dev['cam'].config["site"]
-                    #     + "-"
-                    #     + g_dev['cam'].alias
-                    #     + "-"
-                    #     + g_dev["day"]
-                    #     + "-"
-                    #     + str(smartstackid)
-                    #     + str(sskcounter)
-                    #     + "-"
-                    #     + "EX"
-                    #     + "00.txt"
-                    # )
-
-                    # print (text_name)
-                    # print (jpeg_name)
-
-                    # Try saving the jpeg to disk and quickly send up to AWS to present for the user
-                    # GUI
-
-                    imsave(
-                        g_dev["cam"].site_path
-                        + "smartstacks/"
-                        + smartStackFilename.replace(
-                            ".npy", "_" + str(ssframenumber) + ".jpg"
-                        ),
-                        stretched_data_uint8,
-                    )
-
-                    # Send info text and jpg up to UI
-                    # text = open(
-                    # paths["im_path"] + paths["text_name00"].replace('.txt', str(Nsmartstack) +'.txt'), "w"
-                    #    paths["im_path"] + text_name, "w"
-                    # )  # This is needed by AWS to set up database.
-                    # stackHoldheader['FILENAME']=jpeg_name.replace('EX00.jpg','EX00.fits.fz')
-                    # print(stackHoldheader['FILENAME'])
-                    # text.write(str(stackHoldheader))
-                    # text.close()
-
-                    imsave(
-                        paths["im_path"] + paths["jpeg_name10"],
-                        stretched_data_uint8,
-                    )
-
-                    g_dev["cam"].enqueue_for_AWS(
-                        100, paths["im_path"], paths["jpeg_name10"]
-                    )
-
-                    g_dev["obs"].send_to_user(
-                        "A preview SmartStack, "
-                        + str(sskcounter + 1)
-                        + " out of "
-                        + str(Nsmartstack)
-                        + ", has been sent to the GUI.",
-                        p_level="INFO",
-                    )
-                    #    )
-
-                # OBJECT, FILTER, EXPOSURETIME
-                # Align new image to old image, stack and save
+                    # del firstimage
 
                 # Solve for pointing. Note: as the raw and reduced file are already saved and an fz file
                 # has already been sent up, this is purely for pointing purposes.
