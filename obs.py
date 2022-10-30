@@ -176,8 +176,8 @@ class Observatory:
             os.makedirs(g_dev["cam"].site_path + "astropycache")
         if not os.path.exists(g_dev["cam"].site_path + "smartstacks"):
             os.makedirs(g_dev["cam"].site_path + "smartstacks")
-            if not os.path.exists(g_dev["cam"].site_path + "calibmasters"):
-                os.makedirs(g_dev["cam"].site_path + "calibmasters")
+        if not os.path.exists(g_dev["cam"].site_path + "calibmasters"):
+            os.makedirs(g_dev["cam"].site_path + "calibmasters")
 
 
         self.last_solve_time = datetime.datetime.now() - datetime.timedelta(days=1)

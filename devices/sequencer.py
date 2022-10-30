@@ -327,7 +327,7 @@ class Sequencer:
             debug = False
 
             if self.config['site_roof_control'] != 'no' and  enc_status['shutter_status'] in ['Closed', 'closed'] \
-                and float(ocn_status['hold_duration']) <= 0.1:   
+                and float(ocn_status['hold_duration']) <= 0.1:
                 #breakpoint()
                 g_dev['enc'].open_command({}, {})
                 print("Opening dome, will set Synchronize in 10 seconds.")
@@ -1022,6 +1022,13 @@ class Sequencer:
                     for entry in range(len(deleteDirectories)):
                         print (deleteDirectories[entry] + ' ' + str(deleteTimes[entry]) + ' weeks old.')
                         shutil.rmtree(deleteDirectories[entry])
+
+            # Clear out smartstacks directory
+            print ("removing and reconstituting smartstacks directory")
+            shutil.rmtree(g_dev["cam"].site_path + "smartstacks")
+            time.sleep(20)
+            if not os.path.exists(g_dev["cam"].site_path + "smartstacks"):
+                os.makedirs(g_dev["cam"].site_path + "smartstacks")
 
             # Reopening config and resetting all the things.
             self.astro_events.compute_day_directory()
