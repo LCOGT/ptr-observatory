@@ -14,7 +14,8 @@ This is also very old code just grafted on. Needs variable renaming, and a good 
 from math import *
 #import shelve
 import ephem
-from datetime import datetime
+from datetime import datetime, timezone
+from dateutil import tz
 import time
 #import pytz
 from math import degrees
@@ -365,14 +366,28 @@ class Events:
 
         '''
         global DAY_Directory, dayNow, Day_tomorrow
-        intDay = int(ephem.now())
-        dayFrac = ephem.now() - intDay
-        if dayFrac < 0.20833:
-            dayNow = intDay - 0.55
+        #intDay = int(ephem.now())
+        #dayFrac = ephem.now() - intDay
+        #breakpoint()
+        #if dayFrac < 0.20833:
+        #    dayNow = intDay - 0.55
+        #else:
+        #    dayNow = intDay + 0.45
+
+        # Checking the local time to check if it is setting up for tonight or tomorrow night.
+        now_utc = datetime.now(timezone.utc) # timezone aware UTC, shouldn't depend on clock time.
+        to_zone = tz.gettz(self.config['TZ_database_name'])
+        if int(now_utc.astimezone(to_zone).hour) < 4:
+            #dayNow= int(ephem.now() - 24*ephem.hour)
+            dayNow= (ephem.now() - 24*ephem.hour)
+            ephem.date = ephem.Date(ephem.now() - 24*ephem.hour)
         else:
-            dayNow = intDay + 0.45
-        ephem.date = ephem.Date(dayNow)
-        ephem.tomorrow = ephem.Date(dayNow + 1)
+            dayNow= (ephem.now())
+            ephem.date = ephem.Date(ephem.now())
+
+
+
+        ephem.tomorrow = ephem.Date(ephem.date + (24*ephem.hour))
         dayStr = str(ephem.date).split()[0]
         dayStr = dayStr.split('/')
         day_str = dayStr
@@ -391,6 +406,7 @@ class Events:
         dayStr = str(ephem.tomorrow).split()[0]
         dayStr = dayStr.split('/')
         #print('Day String', dayStr)
+        #breakpoint()
         if len(dayStr[1]) == 1:
             dayStr[1] = '0' + dayStr[1]
         if len(dayStr[2]) == 1:

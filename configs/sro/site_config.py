@@ -34,8 +34,11 @@ site_config = {
     'debug_site_mode': False,
     'owner':  ['google-oauth2|112401903840371673242'],  # WER,  Or this can be
                                                         # some aws handle.
+
+
     'owner_alias': ['WER', 'TELOPS'],
     'admin_aliases': ["ANS", "WER", "KVH", "TELOPS", "TB", "DH", 'KC'],
+
 
     'client_hostname':  'SRO-0m30',
     'client_path':  'F:/ptr/',  # Generic place for this host to stash misc stuff
