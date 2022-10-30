@@ -1462,7 +1462,9 @@ class Sequencer:
             print ("too soon since last autofacus")
             return
 
+        # Reset focus tracker
         g_dev['foc'].focus_tracker = [np.nan] * 10
+
         throw = g_dev['foc'].throw
         self.sequencer_hold = False   #Allow comand checks.
         self.guard = False
@@ -1894,6 +1896,8 @@ class Sequencer:
         self.sequencer_hold = False
         self.guard = False
         self.af_guard = True
+        # Reset focus tracker
+        g_dev['foc'].focus_tracker = [np.nan] * 10
         sim = False #g_dev['enc'].status['shutter_status'] in ['Closed', 'closed', 'Closing', 'closing']
         print('AF entered with:  ', req, opt, '\n .. and sim =  ', sim)
         #self.sequencer_hold = True  #Blocks command checks.
