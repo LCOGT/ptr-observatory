@@ -288,10 +288,10 @@ class Sequencer:
         enc_status = g_dev['enc'].status
         events = g_dev['events']
 
-        #breakpoint()      #  THis is a very common debug point.
+        g_dev['enc'].mode = 'Automatic'     #  THis is a very common debug point.
 
         if self.bias_dark_latch and ((events['Eve Bias Dark'] <= ephem_now < events['End Eve Bias Dark']) and \
-             self.config['auto_eve_bias_dark'] and g_dev['enc'].mode == 'Automatic' ):
+             self.config['auto_eve_bias_dark'] and g_dev['enc'].mode in ['Automatic', 'Autonomous', 'Manual'] ):
             self.bias_dark_latch = False
             req = {'bin1': False, 'bin2': True, 'bin3': False, 'bin4': False, 'numOfBias': 45, \
                    'numOfDark': 15, 'darkTime': 180, 'numOfDark2': 3, 'dark2Time': 360, \
@@ -325,8 +325,9 @@ class Sequencer:
             blocks = g_dev['obs'].blocks
             projects = g_dev['obs'].projects
             debug = False
+
             if self.config['site_roof_control'] != 'no' and  enc_status['shutter_status'] in ['Closed', 'closed'] \
-                and float(ocn_status['hold_duration']) <= 0.1:   #NB   this blockes SR from running 20220826
+                and float(ocn_status['hold_duration']) <= 0.1:   
                 #breakpoint()
                 g_dev['enc'].open_command({}, {})
                 print("Opening dome, will set Synchronize in 10 seconds.")

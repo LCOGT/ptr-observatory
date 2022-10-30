@@ -687,10 +687,10 @@ class Camera:
         ):  # this is the worlds laziest bit of code... it is just until some javascript is updated. remove try except >Oct22
             if opt["object_name"] == "":
                 opt["object_name"] = "Unspecified"
-            print(opt["object_name"])
+            print("Target Name:  ", opt["object_name"])
         else:
             opt["object_name"] = "Unspecified"
-            print(opt["object_name"])
+            print("Target Name:  ", opt["object_name"])
         if self.user_name != self.last_user_name:
             self.last_user_name = self.user_name
         if action == "expose" and not self.exposure_busy:
