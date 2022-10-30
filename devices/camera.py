@@ -2709,7 +2709,18 @@ class Camera:
                     # The paths to these saved files and the pixelscale are sent to the reduce queue
                     # Currently the reduce queue platesolves the images and monitors the focus.
                     # Soon it will also smartstack
-                    self.to_reduce((paths, pixscale, smartstackid, sskcounter, Nsmartstack))
+                    if not frame_type.lower() in [
+                        "bias",
+                        "dark",
+                        "flat",
+                        "solar",
+                        "lunar",
+                        "skyflat",
+                        "screen",
+                        "spectrum",
+                        "auto_focus",
+                    ]:
+                        self.to_reduce((paths, pixscale, smartstackid, sskcounter, Nsmartstack))
 
                     g_dev["obs"].update_status()
                     result["mean_focus"] = avg_foc[1]
