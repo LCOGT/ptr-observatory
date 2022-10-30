@@ -136,7 +136,7 @@ class Sequencer:
         self.sequencer_hold = False
         self.sequencer_message = '-'
         print("sequencer connected.")
-        print(self.description)
+        #print(self.description)
         redis_ip = config['redis_ip']
 
         if redis_ip is not None:

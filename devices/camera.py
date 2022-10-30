@@ -875,11 +875,11 @@ class Camera:
         )  #  3 is the outer retry loop maximum.
 
         imtype = required_params.get("image_type", "light")
-        if imtype.lower() in ["experimental"]:
-            g_dev["enc"].wx_test = not g_dev[
-                "enc"
-            ].wx_test  # NB NB NB What is this for?
-            return
+        # if imtype.lower() in ["experimental"]:
+        #     g_dev["enc"].wx_test = not g_dev[
+        #         "enc"
+        #     ].wx_test  # NB NB NB What is this for?
+        #     return
         count = int(
             optional_params.get("count", 1)
         )  # For now Repeats are external to full expose command.
