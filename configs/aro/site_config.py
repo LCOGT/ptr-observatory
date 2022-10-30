@@ -361,11 +361,11 @@ site_config = {
             # 'coef_0': 5800,  # Nominal intercept when Primary is at 0.0 C.
             # 'coef_date':  '20220301',    # This appears to be sensible result 44 points -13 to 3C'reference':  6431,    # Nominal at 10C Primary temperature
             #F9 setup
-            'reference': 4573, #5743,    #  Meas   Nominal at 10C Primary temperature
-            'ref_temp':  20,    # Update when pinning reference
+            'reference': 5327, #5743,    #  Meas   Nominal at 10C Primary temperature
+            'ref_temp':  1.6,    # Update when pinning reference
             'coef_c': -62.708,  #-77.57,   # negative means focus moves out/in as Primary gets colder/warmer.
-            'coef_0': 5634, #6155,   #5675,  20220502 Nominal intercept when Primary is at 0.0 C. f4.9 cONFIGURATION
-            'coef_date':  '20220408',    # TEMP RANGE 12 TO 19, 6 MEASUREMENTS
+            'coef_0': 5427, #6155,   #5675,  20220502 Nominal intercept when Primary is at 0.0 C. f4.9 cONFIGURATION
+            'coef_date':  '20221030',    # TEMP RANGE 12 TO 19, 6 MEASUREMENTS
             'z_compression': 0.0, #  microns per degree of zenith distance
             'z_coef_date':  '20221002',
             'minimum': 0,     # NB this area is confusing steps and microns, and need fixing.
@@ -444,7 +444,7 @@ site_config = {
                         ['O3',   [0,  2],    0, 1.79, [360 , 170], 'O3'],    #24.
                         ['HA',   [0,  3],    0, .537, [360 , 170], 'HA'],    #25.
                         ['N2',   [13, 0],    0, 0.32, [360 , 170], 'N2'],    #26.
-                        ['S2',   [0,  4],    0, .302, [0.65,  20], 'S2'],    #27.
+                        ['S2',   [0,  4],    0, .847, [0.65,  20], 'S2'],    #27.
                         ['CR',   [0,  5],    0, .556, [360 , 170], 'Rc'],    #28.
                         ['dark', [5,  6],    0, 0.20, [360 , 170], 'dk'],    #29.
                         ['dif',  [0,  1],    0, 75.0, [360 , 170], 'df'],    #30. #NONE OF THESE OR BELOW have accurate gains.
