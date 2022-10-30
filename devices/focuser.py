@@ -106,6 +106,7 @@ class Focuser:
             # The config reference should be a table of value
         self.focuser.Move(int(float(self.reference) * self.micron_to_steps))
 
+
     def calculate_compensation(self, temp_primary):
 
         if -20 <= temp_primary <= 45:
