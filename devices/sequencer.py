@@ -1025,7 +1025,10 @@ class Sequencer:
 
             # Clear out smartstacks directory
             print ("removing and reconstituting smartstacks directory")
-            shutil.rmtree(g_dev["cam"].site_path + "smartstacks")
+            try:
+                shutil.rmtree(g_dev["cam"].site_path + "smartstacks")
+            except:
+                print ("problems with removing the smartstacks directory... usually a file is open elsewhere")
             time.sleep(20)
             if not os.path.exists(g_dev["cam"].site_path + "smartstacks"):
                 os.makedirs(g_dev["cam"].site_path + "smartstacks")
