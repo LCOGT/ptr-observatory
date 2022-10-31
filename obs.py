@@ -190,6 +190,11 @@ class Observatory:
         self.aws_queue_thread = threading.Thread(target=self.send_to_aws, args=())
         self.aws_queue_thread.start()
 
+        self.fast_queue = queue.PriorityQueue(maxsize=0)
+        self.fast_queue_thread = threading.Thread(target=self.fast_to_aws, args=())
+        self.fast_queue_thread.start()
+
+
         # Set up command_queue for incoming jobs
         self.cmd_queue = queue.Queue(
             maxsize=30
@@ -666,6 +671,71 @@ class Observatory:
             else:
                 time.sleep(0.2)
 
+    # Note this is a thread!
+    def fast_to_aws(self):
+        """Sends queued files to AWS.
+
+        Large fpacked fits are uploaded using the ocs-ingester, which
+        adds the image to a dedicated S3 bucket along with a record in
+        the PTR archive database. All other files, including large fpacked
+        fits if archive ingestion fails, will upload to a second S3 bucket.
+
+        The pri_image is a tuple, smaller first item has priority.
+        The second item is also a tuple containing im_path and name.
+        """
+
+        one_at_a_time = 0
+        # This stopping mechanism allows for threads to close cleanly.
+        while True:
+
+            if (not self.aws_queue.empty()) and one_at_a_time == 0:
+                one_at_a_time = 1
+                pri_image = self.aws_queue.get(block=False)
+                if pri_image is None:
+                    print("Got an empty entry in aws_queue.")
+                    self.aws_queue.task_done()
+                    one_at_a_time = 0
+                    time.sleep(0.2)
+                    continue
+
+                # Here we parse the file, set up and send to AWS
+                filename = pri_image[1][1]
+                filepath = pri_image[1][0] + filename  # Full path to file on disk
+                aws_resp = g_dev["obs"].api.authenticated_request(
+                    "POST", "/upload/", {"object_name": filename})
+                # Only ingest new large fits.fz files to the PTR archive.
+                if self.env_exists == True and filename.endswith("-EX00.fits.fz"):
+                    with open(filepath, "rb") as fileobj:
+                        try:
+                            if not frame_exists(fileobj):
+                                upload_file_and_ingest_to_archive(fileobj)
+                                print(f"--> To PTR ARCHIVE --> {str(filepath)}")
+                            # If ingester fails, send to default S3 bucket.
+                        except:
+                            files = {"file": (filepath, fileobj)}
+                            requests.post(aws_resp["url"], data=aws_resp["fields"], files=files)
+                            print(f"--> To AWS --> {str(filepath)}")
+                # Send all other files to S3.
+                else:
+                    with open(filepath, "rb") as fileobj:
+                        files = {"file": (filepath, fileobj)}
+                        requests.post(aws_resp["url"], data=aws_resp["fields"], files=files)
+                        print(f"--> To AWS --> {str(filepath)}")
+
+                if (
+                    filename[-3:] == "jpg"
+                    or filename[-3:] == "txt"
+                    or ".fits.fz" in filename
+                    or ".token" in filename
+                ):
+                    os.remove(filepath)
+
+                self.aws_queue.task_done()
+                one_at_a_time = 0
+                time.sleep(0.1)
+            else:
+                time.sleep(0.2)
+
     def send_to_user(self, p_log, p_level="INFO"):
         url_log = "https://logs.photonranch.org/logs/newlog"
         body = json.dumps(
@@ -908,7 +978,7 @@ class Observatory:
                                 stretched_data_uint8,
                             )
 
-                            g_dev["cam"].enqueue_for_AWS(
+                            g_dev["cam"].enqueue_for_fastAWS(
                                 100, paths["im_path"], paths["jpeg_name10"]
                             )
 
