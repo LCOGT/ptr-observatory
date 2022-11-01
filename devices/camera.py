@@ -2570,7 +2570,7 @@ class Camera:
                             hdusmallfits.writeto(
                                 paths["im_path"] + paths["i768sq_name10"] + ".fz"
                             )
-                            if not no_AWS and self.config["camera"][self.name]["settings"]['send_files_at_end_of_night'] == 'no':
+                            if not no_AWS and self.config['send_files_at_end_of_night'] == 'no':
                                 g_dev["cam"].enqueue_for_fastAWS(
                                     1000,
                                     paths["im_path"],
@@ -2622,7 +2622,7 @@ class Camera:
                             saverretries = saverretries + 1
                     del hdufz  # remove file from memory now that we are doing with it
                     # Send this file up to AWS (THIS WILL BE SENT TO BANZAI INSTEAD, SO THIS IS THE INGESTER POSITION)
-                    if not no_AWS and self.config["camera"][self.name]["settings"]['send_files_at_end_of_night'] == 'no':
+                    if not no_AWS and self.config['send_files_at_end_of_night'] == 'no':
                         self.enqueue_for_AWS(
                             26000000, paths["raw_path"], paths["raw_name00"] + ".fz"
                         )
