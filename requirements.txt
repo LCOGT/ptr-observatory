@@ -22,7 +22,7 @@ imageio==2.22.0
 iso8601==1.0.2
 jmespath==1.0.1
 kiwisolver==1.4.4
-lco-ingester==2.1.15
+lcogt-logging
 matplotlib==3.6.0
 multidict==6.0.2
 networkx==2.8.6
