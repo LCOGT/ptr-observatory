@@ -617,6 +617,8 @@ class Observatory:
         the PTR archive database. All other files, including large fpacked
         fits if archive ingestion fails, will upload to a second S3 bucket.
 
+        This is intended to transfer slower files not needed for UI responsiveness
+
         The pri_image is a tuple, smaller first item has priority.
         The second item is also a tuple containing im_path and name.
         """
@@ -675,12 +677,11 @@ class Observatory:
 
     # Note this is a thread!
     def fast_to_aws(self):
-        """Sends queued files to AWS.
+        """Sends small files specifically focussed on UI responsiveness to AWS.
 
-        Large fpacked fits are uploaded using the ocs-ingester, which
-        adds the image to a dedicated S3 bucket along with a record in
-        the PTR archive database. All other files, including large fpacked
-        fits if archive ingestion fails, will upload to a second S3 bucket.
+        This is primarily a queue for files that need to get to the UI fast and
+        skip the queue. This allows small files to be uploaded simultaneously
+        with bigger files being processed by the ordinary queue.
 
         The pri_image is a tuple, smaller first item has priority.
         The second item is also a tuple containing im_path and name.
