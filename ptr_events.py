@@ -55,6 +55,7 @@ class Events:
         self.siteRefTemp =  round(float(self.config['reference_ambient']), 2)       #These should be a monthly average data.
         self.siteRefPress =  round(float(self.config['reference_pressure']), 2)
         self.flat_offset = self.config['eve_sky_flat_sunset_offset']    # -35 min for SRO
+
     ###############################
     ###    Internal Methods    ####
     ###############################
@@ -422,7 +423,7 @@ class Events:
         print('Now is:  ', ephem.now(), g_dev['d-a-y'], '\n')
         return DAY_Directory
 
-    def display_events(self):   # Routine above needs to be called first.
+    def display_events(self, endofnightoverride='no'):   # Routine above needs to be called first.
         global dayNow
         # print('Events module loaded at: ', ephem.now(), round((ephem.now()), 4))
         loud = True
@@ -543,30 +544,32 @@ class Events:
         # then needs to be pulled back a day. Primarily because it sometimes does weird things.....
         endNightTime = ephem.Date(sunrise + 120/1440.)
 
-        if ephem.Date(eve_skyFlatBegin) > endNightTime:
-            eve_skyFlatBegin=eve_skyFlatBegin - 24*ephem.hour
-        if ephem.Date(sunset) > endNightTime:
-            sunset=sunset - 24*ephem.hour
-        if ephem.Date(civilDusk) > endNightTime:
-            civilDusk=civilDusk - 24*ephem.hour
-        if ephem.Date(nauticalDusk) > endNightTime:
-            nauticalDusk=nauticalDusk - 24*ephem.hour
-        if ephem.Date(nautDusk_plus_half) > endNightTime:
-            nautDusk_plus_half=nautDusk_plus_half - 24*ephem.hour
-        if ephem.Date(astroDark) > endNightTime:
-            astroDark=astroDark - 24*ephem.hour
-        if ephem.Date(middleNight) > endNightTime:
-            middleNight=middleNight - 24*ephem.hour
-        if ephem.Date(astroEnd) > endNightTime:
-            astroEnd=astroEnd - 24*ephem.hour
-        if ephem.Date(nautDawn_minus_half) > endNightTime:
-            nautDawn_minus_half=nautDawn_minus_half - 24*ephem.hour
-        if ephem.Date(nauticalDawn) > endNightTime:
-            nauticalDawn=nauticalDawn - 24*ephem.hour
-        if ephem.Date(civilDawn) > endNightTime:
-            civilDawn=civilDawn- 24*ephem.hour
-        if ephem.Date(sunrise) > endNightTime:
-            sunrise=sunrise - 24*ephem.hour
+
+        if endofnightoverride == 'no':
+            if ephem.Date(eve_skyFlatBegin) > endNightTime:
+                eve_skyFlatBegin=eve_skyFlatBegin - 24*ephem.hour
+            if ephem.Date(sunset) > endNightTime:
+                sunset=sunset - 24*ephem.hour
+            if ephem.Date(civilDusk) > endNightTime:
+                civilDusk=civilDusk - 24*ephem.hour
+            if ephem.Date(nauticalDusk) > endNightTime:
+                nauticalDusk=nauticalDusk - 24*ephem.hour
+            if ephem.Date(nautDusk_plus_half) > endNightTime:
+                nautDusk_plus_half=nautDusk_plus_half - 24*ephem.hour
+            if ephem.Date(astroDark) > endNightTime:
+                astroDark=astroDark - 24*ephem.hour
+            if ephem.Date(middleNight) > endNightTime:
+                middleNight=middleNight - 24*ephem.hour
+            if ephem.Date(astroEnd) > endNightTime:
+                astroEnd=astroEnd - 24*ephem.hour
+            if ephem.Date(nautDawn_minus_half) > endNightTime:
+                nautDawn_minus_half=nautDawn_minus_half - 24*ephem.hour
+            if ephem.Date(nauticalDawn) > endNightTime:
+                nauticalDawn=nauticalDawn - 24*ephem.hour
+            if ephem.Date(civilDawn) > endNightTime:
+                civilDawn=civilDawn- 24*ephem.hour
+            if ephem.Date(sunrise) > endNightTime:
+                sunrise=sunrise - 24*ephem.hour
 
 
         print('Events module reporting for duty. \n')

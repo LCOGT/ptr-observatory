@@ -109,6 +109,8 @@ class Observatory:
         else:
             self.site_is_specific = False
 
+
+
         self.last_request = None
         self.stopped = False
         self.status_count = 0
@@ -1032,9 +1034,9 @@ class Observatory:
                     ] and (
                         datetime.datetime.now() - self.last_solve_time
                     ) > datetime.timedelta(
-                        minutes=self.config["solve_timer"] and len(sources) > 30
+                        minutes=self.config["solve_timer"]
                     ):
-                        if smartstackid == "no":
+                        if smartstackid == "no" and len(sources) > 30:
                             try:
                                 solve = platesolve.platesolve(
                                     paths["red_path"] + paths["red_name01"], pixscale
