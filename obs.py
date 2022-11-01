@@ -1032,7 +1032,7 @@ class Observatory:
                     ] and (
                         datetime.datetime.now() - self.last_solve_time
                     ) > datetime.timedelta(
-                        minutes=self.config["solve_timer"]
+                        minutes=self.config["solve_timer"] and len(sources) > 30
                     ):
                         if smartstackid == "no":
                             try:
