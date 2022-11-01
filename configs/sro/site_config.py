@@ -46,6 +46,7 @@ site_config = {
     'save_to_alt_path' : 'no',
     'archive_path':  'F:/ptr/',  # Meant to be where /archive/<camera_id> is added by camera.
     'archive_age' : 14.0, # Number of days to keep files in the local archive before deletion. Negative means never delete
+    'send_files_at_end_of_night' : 'yes', # For low bandwidth sites, do not send up large files until the end of the night. set to 'no' to disable
     'aux_archive_path':  None, # '//house-computer/saf_archive_2/archive/',  #  Path to auxillary backup disk.
     'wema_is_active':  False,    #True if split computers used at a site.
     'wema_hostname':  [],  #  Prefer the shorter version

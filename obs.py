@@ -690,10 +690,10 @@ class Observatory:
 
             if (not self.aws_queue.empty()) and one_at_a_time == 0:
                 one_at_a_time = 1
-                pri_image = self.aws_queue.get(block=False)
+                pri_image = self.fast_queue.get(block=False)
                 if pri_image is None:
-                    print("Got an empty entry in aws_queue.")
-                    self.aws_queue.task_done()
+                    print("Got an empty entry in fast_queue.")
+                    self.fast_queue.task_done()
                     one_at_a_time = 0
                     time.sleep(0.2)
                     continue
@@ -730,7 +730,7 @@ class Observatory:
                 ):
                     os.remove(filepath)
 
-                self.aws_queue.task_done()
+                self.fast_queue.task_done()
                 one_at_a_time = 0
                 time.sleep(0.1)
             else:
