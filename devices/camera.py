@@ -2550,7 +2550,7 @@ class Camera:
                                     stretched_data_uint8,
                                 )
                                 if not no_AWS:
-                                    g_dev["cam"].enqueue_for_AWS(
+                                    g_dev["cam"].enqueue_for_fastAWS(
                                         100, paths["im_path"], paths["jpeg_name10"]
                                     )
                                     g_dev["obs"].send_to_user(
@@ -2570,12 +2570,13 @@ class Camera:
                             hdusmallfits.writeto(
                                 paths["im_path"] + paths["i768sq_name10"] + ".fz"
                             )
-                            if not no_AWS and self.config['send_files_at_end_of_night'] == 'no':
-                                g_dev["cam"].enqueue_for_fastAWS(
-                                    1000,
-                                    paths["im_path"],
-                                    paths["i768sq_name10"] + ".fz",
-                                )
+                            # TEMPORARILY DISABLE SSMALL FITS - MTF 2nd Nov 22
+                            #if not no_AWS and self.config['send_files_at_end_of_night'] == 'no':
+                            #    g_dev["cam"].enqueue_for_AWS(
+                            #        1000,
+                            #        paths["im_path"],
+                            #        paths["i768sq_name10"] + ".fz",
+                            #    )
                         except:
                             print(
                                 "there was an issue saving the small fits. Pushing on though"

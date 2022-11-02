@@ -691,7 +691,7 @@ class Observatory:
         # This stopping mechanism allows for threads to close cleanly.
         while True:
 
-            if (not self.aws_queue.empty()) and one_at_a_time == 0:
+            if (not self.fast_queue.empty()) and one_at_a_time == 0:
                 one_at_a_time = 1
                 pri_image = self.fast_queue.get(block=False)
                 if pri_image is None:
@@ -792,10 +792,12 @@ class Observatory:
                         mode="update",
                         ignore_missing_end=True,
                     )
+                    sstackimghold=img.copy()
                     img[0].data = (
                         img[0].data - np.min(img[0].data)
                     ) + 100  # Add an artifical pedestal to background.
                     img = img[0].data.astype("float")
+
                     img = img.copy(
                         order="C"
                     )  # NB Should we move this up to where we read the array?
@@ -860,24 +862,31 @@ class Observatory:
 
 
 
-                print ("Number of sources just prior to smartstacks: " + str(len(sources)))
-                if len(sources) < 30:
-                    print ("skipping smartstack as there is not enough sources " + str(len(sources)) +" in this image")
+                print (smartstackid)
 
                 # SmartStack Section
-                if smartstackid != "no" and len(sources) > 30:
-                    img = fits.open(
-                        paths["red_path"] + paths["red_name01"]
-                    )  # Pick up reduced fits file
+                if smartstackid != "no" :
 
-                    print(img[0].header["FILTER"])
+                    print ("Number of sources just prior to smartstacks: " + str(len(sources)))
+                    if len(sources) < 30:
+                        print ("skipping stacking as there are not enough sources " + str(len(sources)) +" in this image")
+
+
+                    #img = fits.open(
+                    #    paths["red_path"] + paths["red_name01"]
+                    #)  # Pick up reduced fits file
+                    # No need to open the same image twice, just using the same one as SEP.
+                    img = sstackimghold.copy()
+                    del sstackimghold
+
+                    #print(img[0].header["FILTER"])
                     ssfilter = img[0].header["FILTER"]
                     ssobject = img[0].header["OBJECT"]
                     ssexptime = img[0].header["EXPTIME"]
 
                     ssframenumber = img[0].header["FRAMENUM"]
-                    stackHoldheader = img[0].header
-                    print(g_dev["cam"].site_path + "smartstacks")
+                    #stackHoldheader = img[0].header
+                    #print(g_dev["cam"].site_path + "smartstacks")
 
                     smartStackFilename = (
                         str(ssobject)
@@ -889,27 +898,32 @@ class Observatory:
                         + str(smartstackid)
                         + ".npy"
                     )
-                    print(smartStackFilename)
+                    #print(smartStackFilename)
                     img = np.asarray(img[0].data)
                     img = img.byteswap().newbyteorder()
 
                     # IF SMARSTACK NPY FILE EXISTS DO STUFF, OTHERWISE THIS IMAGE IS THE START OF A SMARTSTACK
+                    reprojection_failed=False
                     if not os.path.exists(
                         g_dev["cam"].site_path + "smartstacks/" + smartStackFilename
                     ):
-                        # Store original image
-                        print("Storing First smartstack image")
-                        # storedsStack=np.nan_to_num(img)
-                        # backgroundLevel =(np.nanmedian(sep.Background(storedsStack.byteswap().newbyteorder())))
-                        # print (backgroundLevel)
-                        # storedsStack= storedsStack - backgroundLevel
+                        if len(sources) >= 30:
+                            # Store original image
+                            print("Storing First smartstack image")
+                            # storedsStack=np.nan_to_num(img)
+                            # backgroundLevel =(np.nanmedian(sep.Background(storedsStack.byteswap().newbyteorder())))
+                            # print (backgroundLevel)
+                            # storedsStack= storedsStack - backgroundLevel
 
-                        np.save(
-                            g_dev["cam"].site_path
-                            + "smartstacks/"
-                            + smartStackFilename,
-                            img,
-                        )
+                            np.save(
+                                g_dev["cam"].site_path
+                                + "smartstacks/"
+                                + smartStackFilename,
+                                img,
+                            )
+                        else:
+                            print ("Not storing first smartstack image as not enough sources")
+                            reprojection_failed=True
                         storedsStack = img
                     else:
                         # Collect stored SmartStack
@@ -924,81 +938,104 @@ class Observatory:
                         # img= img - backgroundLevel
                         # Reproject new image onto footprint of old image.
                         print(datetime.datetime.now())
-                        try:
-                            reprojectedimage, _ = func_timeout.func_timeout (60, aa.register, args=(img, storedsStack), kwargs={"detection_sigma":3, "min_area":9})
-                            #(20, aa.register, args=(img, storedsStack, detection_sigma=3, min_area=9)
+                        if len(sources) > 30:
+                            try:
+                                reprojectedimage, _ = func_timeout.func_timeout (60, aa.register, args=(img, storedsStack), kwargs={"detection_sigma":3, "min_area":9})
+                                #(20, aa.register, args=(img, storedsStack, detection_sigma=3, min_area=9)
 
-                            # scalingFactor= np.nanmedian(reprojectedimage / storedsStack)
-                            # print (" Scaling Factor : " +str(scalingFactor))
-                            # reprojectedimage=(scalingFactor) * reprojectedimage # Insert a scaling factor
-                            storedsStack = np.asarray((reprojectedimage + storedsStack))
-                            # Save new stack to disk
-                            np.save(
-                                g_dev["cam"].site_path
-                                + "smartstacks/"
-                                + smartStackFilename,
-                                storedsStack,
-                            )
-
-                            # Resizing the array to an appropriate shape for the jpg and the small fits
-                            iy, ix = storedsStack.shape
-                            if iy == ix:
-                                storedsStack = resize(
-                                    storedsStack, (1280, 1280), preserve_range=True
-                                )
-                            else:
-                                storedsStack = resize(
+                                # scalingFactor= np.nanmedian(reprojectedimage / storedsStack)
+                                # print (" Scaling Factor : " +str(scalingFactor))
+                                # reprojectedimage=(scalingFactor) * reprojectedimage # Insert a scaling factor
+                                storedsStack = np.asarray((reprojectedimage + storedsStack))
+                                # Save new stack to disk
+                                np.save(
+                                    g_dev["cam"].site_path
+                                    + "smartstacks/"
+                                    + smartStackFilename,
                                     storedsStack,
-                                    (int(1536 * iy / ix), 1536),
-                                    preserve_range=True,
-                                )  #  We should trim chips so ratio is exact.
+                                )
+                                reprojection_failed=False
+                            except:
+                                reprojection_failed=True
+                            #except func_timeout.FunctionTimedOut:
+                            #    print ("astroalign Timed Out")
+                        else:
+                            reprojection_failed=True
 
-                            # Code to stretch the image to fit into the 256 levels of grey for a jpeg
-                            stretched_data_float = Stretch().stretch(storedsStack + 1000)
-                            del storedsStack
-                            stretched_256 = 255 * stretched_data_float
-                            hot = np.where(stretched_256 > 255)
-                            cold = np.where(stretched_256 < 0)
-                            stretched_256[hot] = 255
-                            stretched_256[cold] = 0
-                            stretched_data_uint8 = stretched_256.astype("uint8")
-                            hot = np.where(stretched_data_uint8 > 255)
-                            cold = np.where(stretched_data_uint8 < 0)
-                            stretched_data_uint8[hot] = 255
-                            stretched_data_uint8[cold] = 0
 
-                            imsave(
-                                g_dev["cam"].site_path
-                                + "smartstacks/"
-                                + smartStackFilename.replace(
-                                    ".npy", "_" + str(ssframenumber) + ".jpg"
-                                ),
-                                stretched_data_uint8,
-                            )
+                    if reprojection_failed == True: # If we couldn't make a stack send a jpeg of the original image.
+                        storedsStack=img
 
-                            imsave(
-                                paths["im_path"] + paths["jpeg_name10"],
-                                stretched_data_uint8,
-                            )
 
-                            g_dev["cam"].enqueue_for_fastAWS(
-                                100, paths["im_path"], paths["jpeg_name10"]
-                            )
+                    # Resizing the array to an appropriate shape for the jpg and the small fits
+                    iy, ix = storedsStack.shape
+                    if iy == ix:
+                        storedsStack = resize(
+                            storedsStack, (1280, 1280), preserve_range=True
+                        )
+                    else:
+                        storedsStack = resize(
+                            storedsStack,
+                            (int(1536 * iy / ix), 1536),
+                            preserve_range=True,
+                        )  #  We should trim chips so ratio is exact.
 
-                            g_dev["obs"].send_to_user(
-                                "A preview SmartStack, "
-                                + str(sskcounter + 1)
-                                + " out of "
-                                + str(Nsmartstack)
-                                + ", has been sent to the GUI.",
-                                p_level="INFO",
-                            )
-                            #    )
-                        except func_timeout.FunctionTimedOut:
-                            print ("astroalign Timed Out")
-                        print(datetime.datetime.now())
+                    # Code to stretch the image to fit into the 256 levels of grey for a jpeg
+                    stretched_data_float = Stretch().stretch(storedsStack + 1000)
+                    del storedsStack
+                    stretched_256 = 255 * stretched_data_float
+                    hot = np.where(stretched_256 > 255)
+                    cold = np.where(stretched_256 < 0)
+                    stretched_256[hot] = 255
+                    stretched_256[cold] = 0
+                    stretched_data_uint8 = stretched_256.astype("uint8")
+                    hot = np.where(stretched_data_uint8 > 255)
+                    cold = np.where(stretched_data_uint8 < 0)
+                    stretched_data_uint8[hot] = 255
+                    stretched_data_uint8[cold] = 0
+
+                    imsave(
+                        g_dev["cam"].site_path
+                        + "smartstacks/"
+                        + smartStackFilename.replace(
+                            ".npy", "_" + str(ssframenumber) + ".jpg"
+                        ),
+                        stretched_data_uint8,
+                    )
+
+                    imsave(
+                        paths["im_path"] + paths["jpeg_name10"],
+                        stretched_data_uint8,
+                    )
+
+                    #g_dev["cam"].enqueue_for_fastAWS(
+                    #    100, paths["im_path"], paths["jpeg_name10"]
+                    #)
+
+                    #image = (paths["im_path"], paths["jpeg_name10"])
+                    self.fast_queue.put((15, (paths["im_path"], paths["jpeg_name10"])), block=False)
+
+                    if reprojection_failed == True:
+                        g_dev["obs"].send_to_user(
+                            "A smartstack failed to stack, the single image has been sent to the GUI.",
+                            p_level="INFO",
+                        )
+
+                    else:
+                        g_dev["obs"].send_to_user(
+                            "A preview SmartStack, "
+                            + str(sskcounter + 1)
+                            + " out of "
+                            + str(Nsmartstack)
+                            + ", has been sent to the GUI.",
+                            p_level="INFO",
+                        )
+                    #    )
+
+                    print(datetime.datetime.now())
 
                     del img
+
 
                     # # Save out a fits for testing purposes only
                     # firstimage = fits.PrimaryHDU()
