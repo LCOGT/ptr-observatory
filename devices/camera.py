@@ -2346,7 +2346,7 @@ class Camera:
 
                     # This command uploads the text file information at high priority to AWS. No point sending if part of a smartstack
 
-                    self.enqueue_for_AWS(10, im_path, text_name)
+                    self.enqueue_for_fastAWS(10, im_path, text_name)
 
                     # Make a copy of the raw file to hold onto while the flash reductions are happening.
                     # It will be saved once the jpg has been quickly created.
@@ -2570,8 +2570,8 @@ class Camera:
                             hdusmallfits.writeto(
                                 paths["im_path"] + paths["i768sq_name10"] + ".fz"
                             )
-                            if not no_AWS:
-                                g_dev["cam"].enqueue_for_AWS(
+                            if not no_AWS and self.config['send_files_at_end_of_night'] == 'no':
+                                g_dev["cam"].enqueue_for_fastAWS(
                                     1000,
                                     paths["im_path"],
                                     paths["i768sq_name10"] + ".fz",
@@ -2622,7 +2622,7 @@ class Camera:
                             saverretries = saverretries + 1
                     del hdufz  # remove file from memory now that we are doing with it
                     # Send this file up to AWS (THIS WILL BE SENT TO BANZAI INSTEAD, SO THIS IS THE INGESTER POSITION)
-                    if not no_AWS:
+                    if not no_AWS and self.config['send_files_at_end_of_night'] == 'no':
                         self.enqueue_for_AWS(
                             26000000, paths["raw_path"], paths["raw_name00"] + ".fz"
                         )
@@ -2783,6 +2783,10 @@ class Camera:
     def enqueue_for_AWS(self, priority, im_path, name):
         image = (im_path, name)
         g_dev["obs"].aws_queue.put((priority, image), block=False)
+
+    def enqueue_for_fastAWS(self, priority, im_path, name):
+        image = (im_path, name)
+        g_dev["obs"].fast_queue.put((priority, image), block=False)
 
     def to_reduce(self, to_red):
         g_dev["obs"].reduce_queue.put(to_red, block=False)

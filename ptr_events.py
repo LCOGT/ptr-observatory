@@ -25,6 +25,8 @@ from math import degrees
 # print('ObsImports:  ', config, '\n\'', config.site_config['site'])
 from global_yard import *
 
+import sys
+
 from astropy.time import Time
 #from pprint import pprint
 
@@ -53,6 +55,7 @@ class Events:
         self.siteRefTemp =  round(float(self.config['reference_ambient']), 2)       #These should be a monthly average data.
         self.siteRefPress =  round(float(self.config['reference_pressure']), 2)
         self.flat_offset = self.config['eve_sky_flat_sunset_offset']    # -35 min for SRO
+
     ###############################
     ###    Internal Methods    ####
     ###############################
@@ -420,7 +423,7 @@ class Events:
         print('Now is:  ', ephem.now(), g_dev['d-a-y'], '\n')
         return DAY_Directory
 
-    def display_events(self):   # Routine above needs to be called first.
+    def display_events(self, endofnightoverride='no'):   # Routine above needs to be called first.
         global dayNow
         # print('Events module loaded at: ', ephem.now(), round((ephem.now()), 4))
         loud = True
@@ -531,6 +534,44 @@ class Events:
         #     pass
         #eve_skyFlatBegin = sunset +  -32.5/1440  #  NB NB this should come from sro.jscon
         #  NB NB Should add sit time to this report.
+
+
+        eve_skyFlatBegin = sunset +  self.config['eve_sky_flat_sunset_offset']/1440  #  NB NB this should come from config
+
+
+        # The end of the night is when "End Morn Bias Dark" occurs. All timings must end with that
+        # as this is when the night ends and the schedule gets reconfigured. So anything scheduled AFTER
+        # then needs to be pulled back a day. Primarily because it sometimes does weird things.....
+        endNightTime = ephem.Date(sunrise + 120/1440.)
+
+
+        if endofnightoverride == 'no':
+            if ephem.Date(eve_skyFlatBegin) > endNightTime:
+                eve_skyFlatBegin=eve_skyFlatBegin - 24*ephem.hour
+            if ephem.Date(sunset) > endNightTime:
+                sunset=sunset - 24*ephem.hour
+            if ephem.Date(civilDusk) > endNightTime:
+                civilDusk=civilDusk - 24*ephem.hour
+            if ephem.Date(nauticalDusk) > endNightTime:
+                nauticalDusk=nauticalDusk - 24*ephem.hour
+            if ephem.Date(nautDusk_plus_half) > endNightTime:
+                nautDusk_plus_half=nautDusk_plus_half - 24*ephem.hour
+            if ephem.Date(astroDark) > endNightTime:
+                astroDark=astroDark - 24*ephem.hour
+            if ephem.Date(middleNight) > endNightTime:
+                middleNight=middleNight - 24*ephem.hour
+            if ephem.Date(astroEnd) > endNightTime:
+                astroEnd=astroEnd - 24*ephem.hour
+            if ephem.Date(nautDawn_minus_half) > endNightTime:
+                nautDawn_minus_half=nautDawn_minus_half - 24*ephem.hour
+            if ephem.Date(nauticalDawn) > endNightTime:
+                nauticalDawn=nauticalDawn - 24*ephem.hour
+            if ephem.Date(civilDawn) > endNightTime:
+                civilDawn=civilDawn- 24*ephem.hour
+            if ephem.Date(sunrise) > endNightTime:
+                sunrise=sunrise - 24*ephem.hour
+
+
         print('Events module reporting for duty. \n')
         print('Ephem date     :    ', dayNow)
         print("Julian Day     :    ")
@@ -542,19 +583,19 @@ class Events:
         print('Moon phase %   :    ', round(mid_moon_phase, 1), '%\n')
         print("Key events for the evening, presented by the Solar System: \n")
         #if self.config['site'] == 'sro':
-        eve_skyFlatBegin = sunset +  self.config['eve_sky_flat_sunset_offset']/1440  #  NB NB this should come from config
+
         evnt = [('Eve Bias Dark      ', ephem.Date(eve_skyFlatBegin -125/1440)),
                 ('End Eve Bias Dark  ', ephem.Date(eve_skyFlatBegin - 5/1440)),
                 ('Ops Window Start   ', ephem.Date(eve_skyFlatBegin)),  #Enclosure may open.
                 ('Cool Down, Open    ', ephem.Date(eve_skyFlatBegin)),
                 ('Eve Sky Flats      ', ephem.Date(eve_skyFlatBegin)),   #  Nominally -35 for SRO
-                ('Sun Set            ', sunset),
-                ('Civil Dusk         ', civilDusk),
-                ('Naut Dusk          ', nauticalDusk),
+                ('Sun Set            ', ephem.Date(sunset)),
+                ('Civil Dusk         ', ephem.Date(civilDusk)),
+                ('Naut Dusk          ', ephem.Date(nauticalDusk)),
                 ('End Eve Sky Flats  ', ephem.Date(nauticalDusk - 10/1440)),
                 ('Clock & Auto Focus ', ephem.Date(nautDusk_plus_half -12/1440.)),
                 ('Observing Begins   ', ephem.Date(nautDusk_plus_half)),
-                ('Astro Dark         ', astroDark),
+                ('Astro Dark         ', ephem.Date(astroDark)),
                 ('Middle of Night    ', middleNight),
                 ('End Astro Dark     ', astroEnd),
                 ('Observing Ends     ', ephem.Date(nautDawn_minus_half )),
@@ -608,23 +649,45 @@ class Events:
         #             ('Moon Transit       ', next_moontransit),
         #             ('Moon Set           ', next_moonset)]
 
+
+
         #print("No report of post-close events is available yet. \n\n")
         evnt_sort = self._sortTuple(evnt)
         day_dir = self.compute_day_directory()
+
+
+
+
+        # timezone = "  " + self.config['timezone'] + ": "
+        # offset = self.config['time_offset']
+        # for evnt in evnt_sort:
+
+        #     print(evnt[0], 'UTC: ', evnt[1], timezone, ephem.Date(evnt[1] + float(offset)/24.))
+
+        #sys.exit()
+
         #Edit out rise and sets prior to or after operations.
-        while evnt_sort[0][0] != 'Eve Bias Dark      ':
-            evnt_sort.pop(0)
+
+        #while evnt_sort[0][0] != 'Eve Bias Dark      ':
+        #    evnt_sort.pop(0)
         # while evnt_sort[-1][0] != 'Morn Sun >2 deg':  # Ditto, see above.
         #     evnt_sort.pop(-1)
 
-        while evnt_sort[-1][0] in ['Moon Rise          ', 'Moon Transit       ', ]:
-             evnt_sort.pop(-1)
-        evnt_sort
+        #while evnt_sort[-1][0] in ['Moon Rise          ', 'Moon Transit       ', ]:
+        #     evnt_sort.pop(-1)
+        #evnt_sort
         timezone = "  " + self.config['timezone'] + ": "
         offset = self.config['time_offset']
+
         for evnt in evnt_sort:
 
+
             print(evnt[0], 'UTC: ', evnt[1], timezone, ephem.Date(evnt[1] + float(offset)/24.))    # NB Additon of local times would be handy here.
+
+
+
+
+
         event_dict = {}
         for item in evnt_sort:
             event_dict[item[0].strip()]= item[1]

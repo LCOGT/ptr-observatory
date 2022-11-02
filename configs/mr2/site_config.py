@@ -28,7 +28,7 @@ COM24  Planewave Mount Axis 2  USB-1 Shared *
 COM25  Planewave Mount Axis 1  USB-1 Shared *
 
 COM26  Ultimate Backplate      USB-6*
-  
+
    COM  PW Mirror Cover
    COM29  PW Dew Heater*
    COM28  Optec Gemini*
@@ -36,7 +36,7 @@ COM26  Ultimate Backplate      USB-6*
 
 COM27  Ultimate Instrument     USB-4*
 
-   COM31  Optec Perseus*        
+   COM31  Optec Perseus*
    Not COM    Apogee Wheel Front*
    Not COM   Apogee Wheel Back*
    COM
@@ -56,7 +56,7 @@ Park 207.3, 5.285.
 #@@@@
 
 
-site_name = 'mrc2'    #NB These must be unique across all of PTR.  
+site_name = 'mrc2'    #NB These must be unique across all of PTR.
 
 site_config = {
     'site': site_name.lower(), #TIM this may no longer be needed.
@@ -75,6 +75,7 @@ site_config = {
     'archive_path':  'Q:/ptr/',
 
     'archive_age' : -99.9, # Number of days to keep files in the local archive before deletion. Negative means never delete
+    'send_files_at_end_of_night' : 'no', # For low bandwidth sites, do not send up large files until the end of the night. set to 'no' to disable
     'aux_archive_path':  None,
     'wema_is_active':  True,          # True if the split computers used at a site.
     'wema_hostname': 'MRC-WMS-ENC',   # Prefer the shorter version
@@ -90,7 +91,7 @@ site_config = {
 
 
     'host_wema_site_name':  'mrc',  #  The umbrella header for obsys in close geographic proximity.
-     
+
     'name': 'Mountain Ranch Camp Observatory 0m6f6.8',
     'location': 'Santa Barbara, California,  USA',
     'airport_code': 'SBA',
@@ -106,7 +107,7 @@ site_config = {
     'mpc_code':  'ZZ23',    #This is made up for now.
     'time_offset':  -7,
     'TZ_database_name':  'America/Los_Angeles',
-    'timezone': 'PDT',      
+    'timezone': 'PDT',
     'latitude': 34.34595969,     #Decimal degrees, North is Positive
     'longitude': -119.6811323955,   #Decimal degrees, West is negative
     'elevation': 317.75,    # meters above sea level
@@ -129,8 +130,8 @@ site_config = {
     'focus_exposure_time': 15, # Exposure time in seconds for exposure image
     'solve_nth_image' : 10, # Only solve every nth image
     'solve_timer' : 5, # Only solve every X minutes
-    'threshold_mount_update' : 10, # only update mount when X arcseconds away 
-    
+    'threshold_mount_update' : 10, # only update mount when X arcseconds away
+
     'defaults': {
         'observing_conditions': 'observing_conditions1',
         'enclosure': 'enclosure1',
@@ -159,7 +160,7 @@ site_config = {
         ],
      'wema_types': [
         'observing_conditions',
-        'enclosure',    
+        'enclosure',
         ],
      'short_status_devices':  [
         # 'observing_conditions',
@@ -174,11 +175,11 @@ site_config = {
         'camera',
         'sequencer',
         ],
-     
+
     'observing_conditions' : {
         'observing_conditions1': {
             'parent': 'site',
-            'ocn_is_specific':  True,  # Indicates some special site code. 
+            'ocn_is_specific':  True,  # Indicates some special site code.
             # Intention it is found in this file.
             'name': 'SRO File',
             'driver': 'Windows.Share',  # Could be redis, ASCOM, ...
@@ -199,7 +200,7 @@ site_config = {
             'name': 'Megawan',
             'hostIP':  '10.15.0.30',
             'driver': 'Windows_share',
-            'shutdown_script':  None,     
+            'shutdown_script':  None,
             'has_lights':  True,
             'controlled_by':  ['mount1', 'mount2'],
             'is_dome': False,
@@ -211,7 +212,7 @@ site_config = {
             'eve_screen_flat_dur': 1.0,   #hours Duration, prior to next.
             'operations_begin':  -1.0,   #  - hours from Sunset
             'eve_cooldown_offset': -.99,   #  - hours beforeSunset
-            'eve_sky_flat_offset':  0.5,   #  - hours beforeSunset 
+            'eve_sky_flat_offset':  0.5,   #  - hours beforeSunset
             'morn_sky_flat_offset':  0.4,   #  + hours after Sunrise
             'morning_close_offset':  0.41,   #  + hours after Sunrise
             'operations_end':  0.42,
@@ -227,7 +228,7 @@ site_config = {
             'driver': 'ASCOM.PWI4.Telescope',  #This picks up signals to the rotator from the mount.
             'startup_script':  None,
             'recover_script':  None,
-            'shutdown_script':  None,  
+            'shutdown_script':  None,
             'alignment': 'Alt-Az',
             'default_zenith_avoid': 7.0,   #degrees floating
             'east_flip_ra_correction': 0.0,
@@ -253,7 +254,7 @@ site_config = {
                 'home_park_azimuth': 195.0,
                 'fixed_screen _altitude': 0.54,
                 'horizon':  15.,    #  Meant to be a circular horizon. Or set to None if below is filled in.
-                'horizon_detail': { 
+                'horizon_detail': {
                       '0': 32,
                       '30': 35,
                       '36.5': 39,
@@ -281,22 +282,22 @@ site_config = {
                       '315': 32,
                       '360': 32,  #  We use a dict because of fragmented azimuth mesurements.
                       },
-                'refraction_on': True, 
-                'model_on': True, 
+                'refraction_on': True,
+                'model_on': True,
                 'rates_on': True,
                 'model': {
-                    'IH': 0, 
-                    'ID': 0., 
+                    'IH': 0,
+                    'ID': 0.,
                     'WH': 0.,
                     'WD': 0.,
-                    'MA': 0., 
+                    'MA': 0.,
                     'ME': 0.,
-                    'CH': 0., 
+                    'CH': 0.,
                     'NP': 0.,
                     'TF': 0.,
-                    'TX': 0., 
+                    'TX': 0.,
                     'HCES': 0.,
-                    'HCEC': 0., 
+                    'HCEC': 0.,
                     'DCES': 0.,
                     'DCEC': 0.,
                     'IA': 0.0,
@@ -326,7 +327,7 @@ site_config = {
             'driver': None,                     #Essentially this device is informational.  It is mostly about the optics.
             'startup_script':  None,
             'recover_script':  None,
-            'shutdown_script':  None,  
+            'shutdown_script':  None,
             'collecting_area':  128039.0,
             'obscuration':  47,
             'aperture': 610,
@@ -347,7 +348,7 @@ site_config = {
                  },
             'camera_name':  'camera_1_1',
             'filter_wheel_name':  'filter_wheel1',
-            
+
             'has_fans':  True,
             'has_cover':  True,
             'settings': {
@@ -386,7 +387,7 @@ site_config = {
 			'com_port':  'COM9',
             'startup_script':  'None',
             'recover_script':  'None',
-            'shutdown_script':  'None' , 
+            'shutdown_script':  'None' ,
             'minimum': -180.,
             'maximum': 360.0,
             'step_size':  0.0001,     #Is this correct?
@@ -403,7 +404,7 @@ site_config = {
             'driver': 'COM6',  #This needs to be a four or 5 character string as in 'COM8' or 'COM22'
             'startup_script':  None,
             'recover_script':  None,
-            'shutdown_script':  None,  
+            'shutdown_script':  None,
             'minimum': 5.0,   #This is the % of light emitted when Screen is on and nominally at 0% bright.
             'saturate': 170,  #Out of 0.0 - 255, this is the last value where the screen is linear with output.
                                 #These values have a minor temperature sensitivity yet to quantify.
@@ -419,7 +420,7 @@ site_config = {
             'driver': 'ASCOM.OptecGemini.Focuser',
             'startup_script':  None,
             'recover_script':  None,
-            'shutdown_script':  None, 
+            'shutdown_script':  None,
             'reference':  6500,    #Nominal at 20C Primary temperature, in microns not steps.
             'ref_temp':   22.5,      #Update when pinning reference  Larger at lower temperatures.
             'coef_c': -0.0,   #negative means focus moves out as Primary gets colder
@@ -459,7 +460,7 @@ site_config = {
     },
 
 
-        
+
     'lamp_box': {
         'lamp_box1': {
             'parent': 'camera_1',  # Parent is camera for the spectrograph
@@ -470,11 +471,11 @@ site_config = {
             'switches': "None"  # A string of switches/lamps the box has for the FITS header. # 'None'; "Off,Mirr,Tung,NeAr" for UVEX
         },
     },
-    
+
 
 
     #Add CWL, BW and DQE to filter and detector specs.   HA3, HA6 for nm or BW.
-    #FW's may need selector-like treatment 
+    #FW's may need selector-like treatment
     'filter_wheel': {
         "filter_wheel1": {
             "parent": "tel1",
@@ -485,7 +486,7 @@ site_config = {
             #"driver": ['ASCOM.Apogee.FilterWheel', 'ASCOM.Apogee2.FilterWheel'],
             'driver': 'Maxim.CCDcamera',  #'startup_script':  None,
             'recover_script':  None,
-            'shutdown_script':  None, 
+            'shutdown_script':  None,
 
             'settings': {
                 'filter_count': '24',
@@ -493,7 +494,7 @@ site_config = {
                 'filter_reference': 1,
                 'default_filter':  'w',
                 'filter_data': [['filter', 'filter_index', 'filter_offset', 'sky_gain', 'screen_gain', 'abbreviation'],
-                                ['air',     [0, 0], -1000, 0.01, [2, 17], 'ai'],   # 0   
+                                ['air',     [0, 0], -1000, 0.01, [2, 17], 'ai'],   # 0
                                 ['Lum',     [1, 0],     0, 0.01, [2, 17], 'w '],   # 20
                                 ['Red',     [0, 4],     0, 0.01, [2, 17], 'r '],  # 21                                ['JV (Grn)',      [0, 3],     0, 0.01, [2, 17], 'V '],   # 9
                                 ['Green',   [0, 3],     0, 0.01, [2, 17], 'V '],   # 22
@@ -533,7 +534,7 @@ site_config = {
     # there can be overlap of camera names.  LCO convention is letter of cam manuf, letter of chip manuf, then 00, 01, 02, ...
     # However this code will treat the camera name/alias as a string of arbitrary length:  "saf_Neyle's favorite_camera" is
     # perfectly valid as an alias.
-    
+
     #Ultimately every camera needs a specific configuration file, and associated with each camera or guider there may be a
     #darslide, filter wheel, and aux_focus.
     #We preseve the idea camera_1 refers to the first camera on the first ota so camera_2 is first camera on OTA 2
@@ -549,7 +550,7 @@ site_config = {
             'driver':  'ASCOM.FLI.Camera',   #  Maxim.CCDCamera',   #"Maxim.CCDCamera",   #'ASCOM.FLI.Kepler.Camera',  #Code must work withall three
             'startup_script':  None,
             'recover_script':  None,
-            'shutdown_script':  None,  
+            'shutdown_script':  None,
             'detector':  'OnSemi 162803',
             'manufacturer':  'FLI -- Finger Lakes Instrumentation',
             'use_file_mode':  False,
@@ -588,7 +589,7 @@ site_config = {
                 'data_sec': ['[25:9600, 1:6388]', '[13:4800, 1:3194]', '[9:3200, 1:2129]', '[7:2400, 1:1597]'],
                 'trim_sec': ['[1:9576, 1:6388]', '[1:4788, 1:3194]', '[1:3192, 1:2129]', '[1:2394, 1:1597]'],
                 'pix_scale': [0.4685, 0.9371, 1.8742],    #  1.4506,  bin-2  2* math.degrees(math.atan(9/3962000))*3600
-                'x_field_deg': 0.5331,  # round(4096*0.468547/3600, 4),   #32_0 X 32 AMIN  3MIN X 0.5 DEG  
+                'x_field_deg': 0.5331,  # round(4096*0.468547/3600, 4),   #32_0 X 32 AMIN  3MIN X 0.5 DEG
                 'y_field_deg': 0.5331,  # round(4096*0.468547/3600, 4),
                 'field_area_sq_amin': 1023,
                 'overscan_x': 0,
@@ -640,7 +641,7 @@ site_config = {
                     'screen_x0':  8.683,
                     },
                 },
-                
+
             },
         },
 
@@ -652,7 +653,7 @@ site_config = {
         #     'driver':  'ASCOM.QHYCCD.Camera',   #"Maxim.CCDCamera",   #'ASCOM.FLI.Kepler.Camera',  #Code must work withall three
         #     'startup_script':  None,
         #     'recover_script':  None,
-        #     'shutdown_script':  None,  
+        #     'shutdown_script':  None,
         #     'detector':  'Sony IMX571',
         #     'manufacturer':  'QHY -- http://QHYCCD.COM',
         #     'use_file_mode':  False,
@@ -660,7 +661,7 @@ site_config = {
         #     'settings': {    #NB Need to add specification for chiller and its control
         #         'temp_setpoint': -10,
         #         'cooler_on': True,
-        #         'darkslide_com': None, 
+        #         'darkslide_com': None,
         #         'x_start':  0,
         #         'y_start':  0,
         #         'x_width':  6252,
@@ -717,7 +718,7 @@ site_config = {
         #     'driver':  'ASCOM.FLI.Camera',   #"Maxim.CCDCamera",   #'ASCOM.FLI.Kepler.Camera',  #Code must work withall three
         #     'startup_script':  None,
         #     'recover_script':  None,
-        #     'shutdown_script':  None,  
+        #     'shutdown_script':  None,
         #     'detector':  'OSemi 162803Sonyn',
         #     'manufacturer':  'ATIK -- Zwo',
         #     'use_file_mode':  False,
@@ -780,7 +781,7 @@ site_config = {
         #     'driver':  'ASCOM.QHYCCD_GUIDER.Camera',   #'OM.FLI.Camera',   #"Maxim.CCDCamera",   #'ASCOM.FLI.Kepler.Camera',  #Code must work withall three
         #     'startup_script':  None,
         #     'recover_script':  None,
-        #     'shutdown_script':  None,  
+        #     'shutdown_script':  None,
         #     'detector':  'Sony',
         #     'manufacturer':  'QHY -- Finger Lakes Instrumentation',
         #     'use_file_mode':  False,
@@ -835,7 +836,7 @@ site_config = {
         #         },
         #     },
         # },
-        
+
         # 'ag_1_4': {
         #     'parent': 'telescope1',
         #     'name': 'ag04',      #Important because this points to a server file structure by that name.
@@ -843,7 +844,7 @@ site_config = {
         #     'driver':  'ASCOM.QHYCCD_CAM2.Camera',   #"Maxim.CCDCamera",   #'ASCOM.FLI.Kepler.Camera',  #Code must work withall three
         #     'startup_script':  None,
         #     'recover_script':  None,
-        #     'shutdown_script':  None,  
+        #     'shutdown_script':  None,
         #     'detector':  'Sony',
         #     'manufacturer':  'QHY --  ',
         #     'use_file_mode':  False,
@@ -922,7 +923,7 @@ site_config = {
             'redis':  '(host=10.15.0.15, port=6379, db=0, decode_responses=True)',
             'startup_script':  None,
             'recover_script':  None,
-            'shutdown_script':  None,  
+            'shutdown_script':  None,
         },
     },
 }  #This brace closes the while configuration dictionary. Match found up top at:  site_config = {
@@ -941,5 +942,3 @@ if __name__ == '__main__':
         print('Strings matched.')
     if site_config == site_unjasoned:
         print('Dictionaries matched.')
-
-

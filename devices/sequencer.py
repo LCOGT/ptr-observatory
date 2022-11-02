@@ -1033,10 +1033,15 @@ class Sequencer:
             if not os.path.exists(g_dev["cam"].site_path + "smartstacks"):
                 os.makedirs(g_dev["cam"].site_path + "smartstacks")
 
+
+
+
             # Reopening config and resetting all the things.
             self.astro_events.compute_day_directory()
-            self.astro_events.display_events()
+            self.astro_events.display_events(endofnightoverride='yes')
             g_dev['obs'].astro_events = self.astro_events
+
+
             # sending this up to AWS
             '''
             Send the config to aws.
