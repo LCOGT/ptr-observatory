@@ -809,60 +809,60 @@ class Observatory:
                     sources.sort(order="cflux")
                     print("No. of detections:  ", len(sources))
 
-                    ix, iy = img.shape
-                    r0 = 0
 
-                    border_x = int(ix * 0.05)
-                    border_y = int(iy * 0.05)
-                    r0 = []
-                    for sourcef in sources:
-                        if (
-                            border_x < sourcef["x"] < ix - border_x
-                            and border_y < sourcef["y"] < iy - border_y
-                            and sourcef["peak"] < 35000
-                            and sourcef["cpeak"] < 35000
-                        ):  # Consider a lower bound
-                            a0 = sourcef["a"]
-                            b0 = sourcef["b"]
-                            r0.append(round(math.sqrt(a0 * a0 + b0 * b0), 2))
-
-                    FWHM = round(
-                        np.median(r0) * pixscale, 3
-                    )  # was 2x larger but a and b are diameters not radii
-                    print("This image has a FWHM of " + str(FWHM))
-
-                    g_dev["foc"].focus_tracker.pop(0)
-                    g_dev["foc"].focus_tracker.append(FWHM)
-                    print("Last ten FWHM : ")
-                    print(g_dev["foc"].focus_tracker)
-                    print("Median last ten FWHM")
-                    print(np.nanmedian(g_dev["foc"].focus_tracker))
-                    print("Last solved focus FWHM")
-                    print(g_dev["foc"].last_focus_fwhm)
-
-                    # If there hasn't been a focus yet, then it can't check it, so make this image the last solved focus.
-                    if g_dev["foc"].last_focus_fwhm == None:
-                        g_dev["foc"].last_focus_fwhm = FWHM
+                    if len(sources) < 20:
+                        print ("skipping focus estimate as not enough sources in this image")
                     else:
-                        # Very dumb focus slip deteector
-                        if (
-                            np.nanmedian(g_dev["foc"].focus_tracker)
-                            > g_dev["foc"].last_focus_fwhm
-                            + self.config["focus_trigger"]
-                        ):
-                            g_dev["foc"].focus_needed = True
-                            g_dev["obs"].send_to_user(
-                                "Focus has drifted to "
-                                + str(np.nanmedian(g_dev["foc"].focus_tracker))
-                                + " from "
-                                + str(g_dev["foc"].last_focus_fwhm)
-                                + ". Autofocus triggered for next exposures.",
-                                p_level="INFO",
-                            )
+                        ix, iy = img.shape
+                        #r0 = 0
 
+                        border_x = int(ix * 0.05)
+                        border_y = int(iy * 0.05)
+                        r0 = []
+                        for sourcef in sources:
+                            if (
+                                border_x < sourcef["x"] < ix - border_x
+                                and border_y < sourcef["y"] < iy - border_y
+                                and sourcef["peak"] < 35000
+                                and sourcef["cpeak"] < 35000
+                            ):  # Consider a lower bound
+                                a0 = sourcef["a"]
+                                b0 = sourcef["b"]
+                                r0.append(round(math.sqrt(a0 * a0 + b0 * b0), 2))
 
+                        FWHM = round(
+                            np.median(r0) * pixscale, 3
+                        )  # was 2x larger but a and b are diameters not radii
+                        print("This image has a FWHM of " + str(FWHM))
 
-                print (smartstackid)
+                        g_dev["foc"].focus_tracker.pop(0)
+                        g_dev["foc"].focus_tracker.append(FWHM)
+                        print("Last ten FWHM : ")
+                        print(g_dev["foc"].focus_tracker)
+                        print("Median last ten FWHM")
+                        print(np.nanmedian(g_dev["foc"].focus_tracker))
+                        print("Last solved focus FWHM")
+                        print(g_dev["foc"].last_focus_fwhm)
+
+                        # If there hasn't been a focus yet, then it can't check it, so make this image the last solved focus.
+                        if g_dev["foc"].last_focus_fwhm == None:
+                            g_dev["foc"].last_focus_fwhm = FWHM
+                        else:
+                            # Very dumb focus slip deteector
+                            if (
+                                np.nanmedian(g_dev["foc"].focus_tracker)
+                                > g_dev["foc"].last_focus_fwhm
+                                + self.config["focus_trigger"]
+                            ):
+                                g_dev["foc"].focus_needed = True
+                                g_dev["obs"].send_to_user(
+                                    "Focus has drifted to "
+                                    + str(np.nanmedian(g_dev["foc"].focus_tracker))
+                                    + " from "
+                                    + str(g_dev["foc"].last_focus_fwhm)
+                                    + ". Autofocus triggered for next exposures.",
+                                    p_level="INFO",
+                                )
 
                 # SmartStack Section
                 if smartstackid != "no" :
