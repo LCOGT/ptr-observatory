@@ -1103,10 +1103,6 @@ class Sequencer:
             # Trying to figure out why sequencer isn't restarting.
             events = g_dev['events']
             obs_win_begin, sunZ88Op, sunZ88Cl, ephem_now = self.astro_events.getSunEvents()
-            print (events['Eve Bias Dark'] <= ephem_now < events['End Eve Bias Dark'])
-            print (events['Eve Bias Dark'] )
-            print (events['End Eve Bias Dark'])
-            print (ephem.now)
 
             # Reopening config and resetting all the things.
             self.astro_events.compute_day_directory()
