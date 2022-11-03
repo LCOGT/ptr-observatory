@@ -308,6 +308,20 @@ class Sequencer:
 
             self.enc_to_skyflat_and_open(enc_status, ocn_status)
 
+        elif ((g_dev['events']['Clock & Auto Focus']  <= ephem_now < g_dev['events']['Observing Begins']) and \
+               g_dev['enc'].mode == 'Automatic') and not g_dev['ocn'].wx_hold:
+
+            # Autofocus
+            req2 = {'target': 'near_tycho_star', 'area': 150}
+            opt = {}
+            self.auto_focus_script(req2, opt, throw = g_dev['foc'].throw)
+
+            # Pointing
+            req = {'time': self.config['focus_exposure_time'],  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'focus'}   #  NB Should pick up filter and constats from config
+            #opt = {'area': 150, 'count': 1, 'bin': '2, 2', 'filter': 'focus'}
+            opt = {'area': 150, 'count': 1, 'bin': 'default', 'filter': 'focus'}
+            result = g_dev['cam'].expose_command(req, opt, no_AWS=False, solve_it=True)
+
         elif self.sky_flat_latch and ((events['Eve Sky Flats'] <= ephem_now < events['End Eve Sky Flats'])  \
                and g_dev['enc'].mode in [ 'Automatic', 'Autonomous'] and not g_dev['ocn'].wx_hold and \
                self.config['auto_eve_sky_flat']):
@@ -675,7 +689,7 @@ class Sequencer:
 
                     g_dev['obs'].send_to_user("Running an initial autofocus run.")
 
-                    self.auto_focus_script(req2, opt, throw = 600)
+                    self.auto_focus_script(req2, opt, throw = g_dev['foc'].throw)
 
                     just_focused = True
                     #initial_focus = False    #  Make above on-time event per block
