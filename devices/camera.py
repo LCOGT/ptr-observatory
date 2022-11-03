@@ -913,8 +913,8 @@ class Camera:
         ].filter_offset  # TEMP   NBNBNB This needs fixing
 
         # Here we adjust for focus temp and filter offset
-        if not imtype.lower() in ["auto_focus", "focus", "autofocus probe"]:
-            g_dev["foc"].adjust_focus()
+        #if not imtype.lower() in ["auto_focus", "focus", "autofocus probe"]:
+        #    g_dev["foc"].adjust_focus()
 
         no_AWS, self.toss = True if imtype.lower() == "test image" else False, False
         quick = True if imtype.lower() == "quick" else False
