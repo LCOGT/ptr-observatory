@@ -19,6 +19,7 @@ import shelve
 import socket
 import threading
 import time
+import sys
 
 import astroalign as aa
 from astropy.io import fits
@@ -898,10 +899,14 @@ class Observatory:
                         + str(smartstackid)
                         + ".npy"
                     )
-                    #print(smartStackFilename)
+                    print(smartStackFilename)
                     img = np.asarray(img[0].data)
-                    img = img.byteswap().newbyteorder()
-
+                    # Detect and swap img to the correct endianness - needed for the smartstack jpg
+                    if sys.byteorder=='little':
+                        img=img.newbyteorder('little')
+                    else:
+                        img=img.newbyteorder('big')
+                        
                     # IF SMARSTACK NPY FILE EXISTS DO STUFF, OTHERWISE THIS IMAGE IS THE START OF A SMARTSTACK
                     reprojection_failed=False
                     if not os.path.exists(
@@ -930,6 +935,7 @@ class Observatory:
                         storedsStack = np.load(
                             g_dev["cam"].site_path + "smartstacks/" + smartStackFilename
                         )
+                        print (storedsStack.dtype.byteorder)
                         # Prep new image
                         print("Pasting Next smartstack image")
                         # img=np.nan_to_num(img)
@@ -955,7 +961,8 @@ class Observatory:
                                     storedsStack,
                                 )
                                 reprojection_failed=False
-                            except:
+                            except func_timeout.FunctionTimedOut:
+                                print ("astroalign timed out")
                                 reprojection_failed=True
                             #except func_timeout.FunctionTimedOut:
                             #    print ("astroalign Timed Out")
