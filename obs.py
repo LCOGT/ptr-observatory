@@ -899,7 +899,7 @@ class Observatory:
                         + str(smartstackid)
                         + ".npy"
                     )
-                    print(smartStackFilename)
+                    #print(smartStackFilename)
                     img = np.asarray(img[0].data)
                     # Detect and swap img to the correct endianness - needed for the smartstack jpg
                     if sys.byteorder=='little':
@@ -935,7 +935,7 @@ class Observatory:
                         storedsStack = np.load(
                             g_dev["cam"].site_path + "smartstacks/" + smartStackFilename
                         )
-                        print (storedsStack.dtype.byteorder)
+                        #print (storedsStack.dtype.byteorder)
                         # Prep new image
                         print("Pasting Next smartstack image")
                         # img=np.nan_to_num(img)
@@ -963,6 +963,9 @@ class Observatory:
                                 reprojection_failed=False
                             except func_timeout.FunctionTimedOut:
                                 print ("astroalign timed out")
+                                reprojection_failed=True
+                            except aa.MaxIterError:
+                                print ("astroalign could not find a solution in this image")
                                 reprojection_failed=True
                             #except func_timeout.FunctionTimedOut:
                             #    print ("astroalign Timed Out")
