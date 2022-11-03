@@ -447,8 +447,8 @@ class Sequencer:
             self.sky_flat_script({}, {}, morn=True)   #Null command dictionaries
             self.morn_sky_flat_latch = False
             #self.park_and_close(enc_status)
-        elif self.morn_bias_dark_latch and ((events['Morn Bias Dark'] <= ephem_now < events['End Morn Bias Dark']) and \
-                  self.config['auto_morn_bias_dark'] and g_dev['enc'].mode == 'Automatic' ):
+        elif self.morn_bias_dark_latch and (events['Morn Bias Dark'] <= ephem_now < events['End Morn Bias Dark']) and \
+                  self.config['auto_morn_bias_dark']: # and g_dev['enc'].mode == 'Automatic' ):
             #breakpoint()
             self.morn_bias_dark_latch = False
             req = {'bin1': False, 'bin2': True, 'bin3': False, 'bin4': False, 'numOfBias': 45, \
@@ -785,8 +785,8 @@ class Sequencer:
                         g_dev['mnt'].go_coord(new_ra, new_dec, reset_solve=reset_solve)  # This needs full angle checks
                             #time.sleep(5) # Give scope time to settle.
                         reset_solve=False # make sure slews after the first slew do not reset the PW Solve timer.
-                        if not just_focused:
-                            g_dev['foc'].adjust_focus()
+                        #if not just_focused:
+                        #    g_dev['foc'].adjust_focus()
                         just_focused = False
                         if imtype in ['light'] and count > 0:
                             req = {'time': exp_time,  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': imtype, 'smartstack' : 'yes', 'block_end' : block['end']}   #  NB Should pick up filter and constants from config
@@ -848,7 +848,7 @@ class Sequencer:
         May still have a bug where it latches up only outputting 2x2 frames.
 
         """
-
+        print (morn)
         self.sequencer_hold = True
         self.current_script = 'Bias Dark'
         if morn:
@@ -1088,6 +1088,7 @@ class Sequencer:
             self.morn_sky_flat_latch = True
             self.morn_bias_dark_latch = True
             self.reset_completes()
+
 
             # Reset focus tracker
             g_dev["foc"].focus_needed = True
