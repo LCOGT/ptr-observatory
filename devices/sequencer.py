@@ -311,6 +311,8 @@ class Sequencer:
         elif ((g_dev['events']['Clock & Auto Focus']  <= ephem_now < g_dev['events']['Observing Begins']) and \
                g_dev['enc'].mode == 'Automatic') and not g_dev['ocn'].wx_hold:
 
+            g_dev['obs'].send_to_user("Beginning start of night Focus and Pointing Run", p_level='INFO')
+
             # Autofocus
             req2 = {'target': 'near_tycho_star', 'area': 150}
             opt = {}
@@ -473,7 +475,7 @@ class Sequencer:
             self.park_and_close(enc_status)
             #NB The above put dome closed and telescope at Park, Which is where it should have been upon entry.
             self.bias_dark_script(req, opt, morn=True)
-            self.morn_bias_dark_latch = False
+            self.morn_bias_dark_latch = True
             self.park_and_close(enc_status)
         else:
             self.current_script = "No current script, or site not in Automatic."
