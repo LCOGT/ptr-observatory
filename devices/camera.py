@@ -1096,7 +1096,7 @@ class Camera:
                 self.retry_camera_start_time = time.time()
                 while self.retry_camera > 0:
                     if g_dev["obs"].stop_all_activity:
-                        if result != None:
+                        if result != None and result != {}:
                             if result["stopped"] is True:
                                 g_dev["obs"].stop_all_activity = False
                                 print("Camera retry loop stopped by Cancel Exposure")
