@@ -1096,10 +1096,11 @@ class Camera:
                 self.retry_camera_start_time = time.time()
                 while self.retry_camera > 0:
                     if g_dev["obs"].stop_all_activity:
-                        if result["stopped"] is True:
-                            g_dev["obs"].stop_all_activity = False
-                            print("Camera retry loop stopped by Cancel Exposure")
-                            self.exposure_busy = False
+                        if result != None:
+                            if result["stopped"] is True:
+                                g_dev["obs"].stop_all_activity = False
+                                print("Camera retry loop stopped by Cancel Exposure")
+                                self.exposure_busy = False
                         return
 
 
@@ -1108,7 +1109,8 @@ class Camera:
                         # Check that the exposure doesn't go over the end of a block
                         endOfExposure = datetime.datetime.now() - datetime.timedelta(seconds=exposure_time)
                         now_date_timeZ = endOfExposure.isoformat().split('.')[0] +'Z'
-                        blockended = now_date_timeZ >= self.blockend
+                        blockended = now_date_timeZ  >= self.blockend
+                        blockendedafterexposure  = now_date_timeZ + (exposure_time *ephem.second) >= self.blockend
 
                         #print (endOfExposure)
                         #print (now_date_timeZ)
@@ -1117,8 +1119,11 @@ class Camera:
                         #print (g_dev['events']['Observing Ends'])
                         #print (ephem.Date(ephem.now()+ (exposure_time *ephem.second)))
 
-                        if blockended and ephem.Date(ephem.now()+ (exposure_time *ephem.second)) >= g_dev['events']['Observing Begins']:
+                        if blockended  or blockendedafterexposure or ephem.Date(ephem.now()+ (exposure_time *ephem.second)) >= g_dev['events']['End Morn Bias Dark']:
                             print ("Exposure overlays the end of a block or the end of observing. Skipping Exposure.")
+                            if not blockended and blockendedafterexposure:
+                                print ("Waiting until block ended.")
+                                time.sleep(exposure_time - 10.0)
                             return
                     # NB Here we enter Phase 2
                     try:

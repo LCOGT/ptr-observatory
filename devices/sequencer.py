@@ -475,8 +475,9 @@ class Sequencer:
             self.park_and_close(enc_status)
             #NB The above put dome closed and telescope at Park, Which is where it should have been upon entry.
             self.bias_dark_script(req, opt, morn=True)
-            self.morn_bias_dark_latch = True
+
             self.park_and_close(enc_status)
+            self.morn_bias_dark_latch = True
         else:
             self.current_script = "No current script, or site not in Automatic."
             try:
