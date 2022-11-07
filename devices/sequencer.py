@@ -314,9 +314,10 @@ class Sequencer:
             g_dev['obs'].send_to_user("Beginning start of night Focus and Pointing Run", p_level='INFO')
 
             # Autofocus
-            req2 = {'target': 'near_tycho_star', 'area': 150}
-            opt = {}
-            self.auto_focus_script(req2, opt, throw = g_dev['foc'].throw)
+            if ((datetime.datetime.now() - g_dev['foc'].time_of_last_focus)) > datetime.timedelta(hours=self.config['periodic_focus_time']):
+                req2 = {'target': 'near_tycho_star', 'area': 150}
+                opt = {}
+                self.auto_focus_script(req2, opt, throw = g_dev['foc'].throw)
 
             # Pointing
             req = {'time': self.config['focus_exposure_time'],  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'focus'}   #  NB Should pick up filter and constats from config
@@ -691,6 +692,7 @@ class Sequencer:
                 if g_dev["foc"].last_focus_fwhm == None or g_dev["foc"].focus_needed == True:
 
                     g_dev['obs'].send_to_user("Running an initial autofocus run.")
+
 
                     self.auto_focus_script(req2, opt, throw = g_dev['foc'].throw)
 
