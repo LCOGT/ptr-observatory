@@ -606,6 +606,9 @@ site_config = {
                 'min_subframe': [128,128],
                 'bin_modes':  [[1, 1, 0.303], [2, 2, 0.605],  [3, 3, 0.908], [4, 4, 1.21]],     #Meaning fixed binning if list has only one entry
                 'default_bin':  [2, 2, 0.605],
+                'maximum_bin': [1, 1, 0.303],
+                'cosmics_at_default' : 'yes',
+                'cosmics_at_maximum' : 'yes',
                 'bin_enable':  ['2 2'],  #  Always square and matched to seeing situation by owner
                 'cycle_time':  [18, 15, 15, 12],
                 'rbi_delay':  0,      #  This being zero says RBI is not available, eg. for SBIG.

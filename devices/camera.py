@@ -1107,10 +1107,10 @@ class Camera:
                     # Check that the block isn't ending during normal observing time (don't check while biasing, flats etc.)
                     if not 'None' in self.blockend: # Only do this check if a block end was provided.
                         # Check that the exposure doesn't go over the end of a block
-                        endOfExposure = datetime.datetime.now() - datetime.timedelta(seconds=exposure_time)
+                        endOfExposure = datetime.datetime.now() + datetime.timedelta(seconds=exposure_time)
                         now_date_timeZ = endOfExposure.isoformat().split('.')[0] +'Z'
                         blockended = now_date_timeZ  >= self.blockend
-                        blockendedafterexposure  = now_date_timeZ + (exposure_time *ephem.second) >= self.blockend
+                        #blockendedafterexposure  = now_date_timeZ + (exposure_time *ephem.second) >= self.blockend
 
                         #print (endOfExposure)
                         #print (now_date_timeZ)
@@ -1119,11 +1119,11 @@ class Camera:
                         #print (g_dev['events']['Observing Ends'])
                         #print (ephem.Date(ephem.now()+ (exposure_time *ephem.second)))
 
-                        if blockended  or blockendedafterexposure or ephem.Date(ephem.now()+ (exposure_time *ephem.second)) >= g_dev['events']['End Morn Bias Dark']:
+                        if blockended or ephem.Date(ephem.now()+ (exposure_time *ephem.second)) >= g_dev['events']['End Morn Bias Dark']:
                             print ("Exposure overlays the end of a block or the end of observing. Skipping Exposure.")
-                            if not blockended and blockendedafterexposure:
-                                print ("Waiting until block ended.")
-                                time.sleep(exposure_time - 10.0)
+
+                            print ("Waiting until block ended.")
+
                             return
                     # NB Here we enter Phase 2
                     try:
@@ -1606,6 +1606,12 @@ class Camera:
                     except:
                         hdu.header["XBINING"] = (1, "Pixel binning in x direction")
                         hdu.header["YBINING"] = (1, "Pixel binning in y direction")
+
+                    hdu.header["DOCOSMIC"] = (
+                        self.config["camera"][self.name]["settings"]["cosmics_at_default"],
+                        "Header item to indicate whether to do cosmic ray removal",
+                    )
+
                     hdu.header["CCDSUM"] = (self.ccd_sum, "Sum of chip binning")
 
                     hdu.header["RDMODE"] = (
@@ -2462,6 +2468,8 @@ class Camera:
                                     and border_y < sourcef["y"] < iy - border_y
                                     and sourcef["peak"] < 35000
                                     and sourcef["cpeak"] < 35000
+                                    and sourcef["peak"] > 1000
+                                    and sourcef["cpeak"] > 1000
                                 ):  # Consider a lower bound
                                     a0 = sourcef["a"]
                                     b0 = sourcef["b"]
@@ -2483,9 +2491,14 @@ class Camera:
                             except:
                                 result[
                                     "error"
-                                ] = True  # NB NB NB These are quick placeholders and need to be changed
-                                result["FWHM"] = 3.456
-                                result["mean_focus"] = 6543
+                                ] = True
+                                result["FWHM"] = np.nan
+                                result["mean_focus"] = np.nan
+
+                            if len(sources) < 25:
+                                print ("not enough sources to estimate a reliable focus")
+                                result["error"]=True
+                                result["FWHM"] = np.nan
 
                             # write the focus image out
                             hdufocus.writeto(cal_path + cal_name, overwrite=True)
