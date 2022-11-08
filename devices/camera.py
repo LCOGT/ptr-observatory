@@ -1322,6 +1322,7 @@ class Camera:
                             opt=opt,
                             solve_it=solve_it,
                             smartstackid=SmartStackID,
+                            longstackid=LongStackID,
                             sskcounter=sskcounter,
                             Nsmartstack=Nsmartstack
                         )  # NB all these parameters are crazy!
@@ -1365,6 +1366,7 @@ class Camera:
         opt=None,
         solve_it=False,
         smartstackid='no',
+        longstackid='no',
         sskcounter=0,
         Nsmartstack=1
     ):

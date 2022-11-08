@@ -718,7 +718,16 @@ class Sequencer:
                     color = exposure['filter']
                     exp_time =  float(exposure['exposure'])
 
-                    if exposure['bin'] in[0, '0', '0,0', '0, 0', '0 0']:
+
+
+
+                    if exposure['bin'] == '"optimal"':
+                        tempBinString=str(g_dev['cam'].config['camera']['camera_1_1']['settings']['default_bin'][0])
+                        binning = tempBinString + ' ' + tempBinString
+                    elif exposure['bin'] == '"maximum"' :
+                        tempBinString=str(g_dev['cam'].config['camera']['camera_1_1']['settings']['maximum_bin'][0])
+                        binning = tempBinString + ' ' + tempBinString
+                    elif exposure['bin'] in[0, '0', '0,0', '0, 0', '0 0']:
                         tempBinString=str(g_dev['cam'].config['camera']['camera_1_1']['settings']['default_bin'][0])
                         binning = tempBinString + ' ' + tempBinString
                     elif exposure['bin'] in [2, '2,2', '2, 2', '2 2']:
@@ -728,7 +737,8 @@ class Sequencer:
                     elif exposure['bin'] in [4, '4,4', '4, 4', '4 4']:
                         binning = '4 4'
                     else:
-                        binning = '1 1'
+                        tempBinString=str(g_dev['cam'].config['camera']['camera_1_1']['settings']['default_bin'][0])
+                        binning = tempBinString + ' ' + tempBinString
                     count = int(exposure['count'])
                     #  We should add a frame repeat count
                     imtype = exposure['imtype']
