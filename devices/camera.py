@@ -814,9 +814,10 @@ class Camera:
             "bin", self.config["camera"][self.name]["settings"]["default_bin"]
         )  # NB this should pick up config default.
 
-        if bin_x == 'optimal':
+        if bin_x == '"optimal"':
             bin_x = self.config["camera"][self.name]["settings"]["default_bin"]
-        if bin_x == 'maximum':
+
+        if bin_x == '"maximum"':
             bin_x = self.config["camera"][self.name]["settings"]["maximum_bin"]
 
         if bin_x in [
