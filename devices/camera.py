@@ -799,15 +799,25 @@ class Camera:
         opt = optional_params
         self.hint = optional_params.get("hint", "")
         self.script = required_params.get("script", "None")
-        self.smartstack = required_params.get('smartstack', "yes")
+        self.smartstack = required_params.get('smartstack', True)
+        self.longstack = required_params.get('longstack', True)
+        print (self.smartstack)
+        print (self.longstack)
 
         self.blockend = required_params.get('block_end', "None")
 
 
         self.pane = optional_params.get("pane", None)
+
+
         bin_x = optional_params.get(
             "bin", self.config["camera"][self.name]["settings"]["default_bin"]
         )  # NB this should pick up config default.
+
+        if bin_x == 'optimal':
+            bin_x = self.config["camera"][self.name]["settings"]["default_bin"]
+        if bin_x == 'maximum':
+            bin_x = self.config["camera"][self.name]["settings"]["maximum_bin"]
 
         if bin_x in [
             "4 4",
@@ -1020,7 +1030,7 @@ class Camera:
             if not imtype.lower() in ["light"]:
                 Nsmartstack=1
                 SmartStackID='no'
-            elif self.smartstack == 'yes' and (exposure_time > 3*ssExp):
+            elif self.smartstack == True and (exposure_time > 3*ssExp):
                 Nsmartstack=np.ceil(exposure_time / ssExp)
                 exposure_time=ssExp
                 SmartStackID=(datetime.datetime.now().strftime("%d%m%y%H%M%S"))
@@ -2145,7 +2155,10 @@ class Camera:
                     next_seq = next_sequence(current_camera_name)
                     hdu.header["FRAMENUM"] = (int(next_seq), "Running frame number")
                     hdu.header["SMARTSTK"] = smartstackid # ID code for an individual smart stack group
-                    hdu.header["LONGSTK"] = "yes" # Is this a member of a longer stack - to be replaced by longstack code soon
+                    if self.longstack == True:
+                        hdu.header["LONGSTK"] = "yes" # Is this a member of a longer stack - to be replaced by longstack code soon
+                    else:
+                        hdu.header["LONGSTK"] = "no"
 
                     if pedastal is not None:
                         hdu.header["PEDESTAL"] = (
