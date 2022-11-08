@@ -2356,8 +2356,8 @@ class Camera:
                         focus_image = False
 
                     # This command uploads the text file information at high priority to AWS. No point sending if part of a smartstack
-
-                    self.enqueue_for_fastAWS(10, im_path, text_name)
+                    if focus_image == False:
+                        self.enqueue_for_fastAWS(10, im_path, text_name)
 
                     # Make a copy of the raw file to hold onto while the flash reductions are happening.
                     # It will be saved once the jpg has been quickly created.
