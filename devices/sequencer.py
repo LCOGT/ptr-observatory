@@ -603,6 +603,9 @@ class Sequencer:
                 dest_dec = float(target['dec']) - float(block_specification['project']['project_constraints']['dec_offset'])
                 dest_ra, dest_dec = ra_dec_fix_hd(dest_ra,dest_dec)
                 dest_name =target['name']
+                breakpoint()
+                g_dev['cam'].user_name = opt['username']
+                g_dev['cam'].user_id = req['user_id']
             except:
                 print ("Could not execute project due to poorly formatted or corrupt RA or Dec in project_targets")
                 g_dev['obs'].send_to_user("Could not execute project due to poorly formatted or corrupt RA or Dec in project_targets", p_level='INFO')

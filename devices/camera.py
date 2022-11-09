@@ -800,9 +800,14 @@ class Camera:
         self.hint = optional_params.get("hint", "")
         self.script = required_params.get("script", "None")
         self.smartstack = required_params.get('smartstack', True)
-        self.longstack = required_params.get('longstack', True)
+        self.longstack = required_params.get('longstack', False)
         print (self.smartstack)
         print (self.longstack)
+        if self.longstack == False:
+            LongStackID ='no'
+        else:
+            LongStackID = 'tobeimplemented'
+
 
         self.blockend = required_params.get('block_end', "None")
 
