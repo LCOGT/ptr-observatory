@@ -603,9 +603,19 @@ class Sequencer:
                 dest_dec = float(target['dec']) - float(block_specification['project']['project_constraints']['dec_offset'])
                 dest_ra, dest_dec = ra_dec_fix_hd(dest_ra,dest_dec)
                 dest_name =target['name']
-                breakpoint()
-                g_dev['cam'].user_name = opt['username']
-                g_dev['cam'].user_id = req['user_id']
+
+                g_dev['cam'].user_name = block_specification['creator']
+                g_dev['cam'].user_id = block_specification['creator_id']
+                if block_specification['project']['longstack'] == True:
+                    longstackswitch='yes'
+                    longstackname=block_specification['project']['created_at'].replace('-','').replace(':','')
+                else:
+                    longstackswitch='no'
+                if block_specification['project']['smartstack'] == True:
+                    smartstackswitch='yes'
+                else:
+                    smartstackswitch='no'
+
             except:
                 print ("Could not execute project due to poorly formatted or corrupt RA or Dec in project_targets")
                 g_dev['obs'].send_to_user("Could not execute project due to poorly formatted or corrupt RA or Dec in project_targets", p_level='INFO')
@@ -821,7 +831,7 @@ class Sequencer:
                         #    g_dev['foc'].adjust_focus()
                         just_focused = False
                         if imtype in ['light'] and count > 0:
-                            req = {'time': exp_time,  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': imtype, 'smartstack' : 'yes', 'block_end' : block['end']}   #  NB Should pick up filter and constants from config
+                            req = {'time': exp_time,  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': imtype, 'smartstack' : smartstackswitch, 'longstackswitch' : longstackswitch, 'longstackname' : longstackname, 'block_end' : block['end']}   #  NB Should pick up filter and constants from config
                             opt = {'area': 150, 'count': 1, 'bin': binning, 'filter': color, \
                                    'hint': block['project_id'] + "##" + dest_name, 'object_name': block['project']['project_targets'][0]['name'], 'pane': pane}
                             print('Seq Blk sent to camera:  ', req, opt)

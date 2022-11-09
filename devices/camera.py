@@ -805,8 +805,10 @@ class Camera:
         print (self.longstack)
         if self.longstack == False:
             LongStackID ='no'
+        elif not 'longstackname' in required_params:
+            LongStackID=(datetime.datetime.now().strftime("%d%m%y%H%M%S"))
         else:
-            LongStackID = 'tobeimplemented'
+            LongStackID = required_params['longstackname']
 
 
         self.blockend = required_params.get('block_end', "None")
