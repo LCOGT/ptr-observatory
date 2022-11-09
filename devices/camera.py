@@ -799,11 +799,11 @@ class Camera:
         opt = optional_params
         self.hint = optional_params.get("hint", "")
         self.script = required_params.get("script", "None")
-        self.smartstack = required_params.get('smartstack', True)
-        self.longstack = required_params.get('longstack', False)
+        self.smartstack = required_params.get('smartstack', 'yes')
+        self.longstack = required_params.get('longstackswitch', 'no')
         print (self.smartstack)
         print (self.longstack)
-        if self.longstack == False:
+        if self.longstack == 'no':
             LongStackID ='no'
         elif not 'longstackname' in required_params:
             LongStackID=(datetime.datetime.now().strftime("%d%m%y%H%M%S"))
@@ -1038,7 +1038,7 @@ class Camera:
             if not imtype.lower() in ["light"]:
                 Nsmartstack=1
                 SmartStackID='no'
-            elif self.smartstack == True and (exposure_time > 3*ssExp):
+            elif self.smartstack == 'yes' and (exposure_time > 3*ssExp):
                 Nsmartstack=np.ceil(exposure_time / ssExp)
                 exposure_time=ssExp
                 SmartStackID=(datetime.datetime.now().strftime("%d%m%y%H%M%S"))
@@ -1313,6 +1313,8 @@ class Camera:
                         self.t9 = time.time()
                         # We go here to keep this subroutine a reasonable length, Basically still in Phase 2
                         # None used to be dist_x and dist_y but they are only used for subframes that we are no longer supporting
+                        print (SmartStackID)
+                        print (LongStackID)
                         result = self.finish_exposure(
                             exposure_time,
                             frame_type,
@@ -1383,6 +1385,9 @@ class Camera:
             "to go: ",
             counter,
         )
+
+        print (longstackid)
+        print (smartstackid)
 
         print ("Smart Stack ID: " + smartstackid)
         g_dev["obs"].send_to_user(
@@ -2165,10 +2170,8 @@ class Camera:
                     next_seq = next_sequence(current_camera_name)
                     hdu.header["FRAMENUM"] = (int(next_seq), "Running frame number")
                     hdu.header["SMARTSTK"] = smartstackid # ID code for an individual smart stack group
-                    if self.longstack == True:
-                        hdu.header["LONGSTK"] = "yes" # Is this a member of a longer stack - to be replaced by longstack code soon
-                    else:
-                        hdu.header["LONGSTK"] = "no"
+
+                    hdu.header["LONGSTK"] = longstackid # Is this a member of a longer stack - to be replaced by longstack code soon
 
                     if pedastal is not None:
                         hdu.header["PEDESTAL"] = (
