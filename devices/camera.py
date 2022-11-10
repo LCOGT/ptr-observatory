@@ -1042,7 +1042,7 @@ class Camera:
                 Nsmartstack=np.ceil(exposure_time / ssExp)
                 exposure_time=ssExp
                 SmartStackID=(datetime.datetime.now().strftime("%d%m%y%H%M%S"))
-                print (SmartStackID)
+
             else:
                 Nsmartstack=1
                 SmartStackID='no'
@@ -1313,8 +1313,8 @@ class Camera:
                         self.t9 = time.time()
                         # We go here to keep this subroutine a reasonable length, Basically still in Phase 2
                         # None used to be dist_x and dist_y but they are only used for subframes that we are no longer supporting
-                        print (SmartStackID)
-                        print (LongStackID)
+
+
                         result = self.finish_exposure(
                             exposure_time,
                             frame_type,
@@ -1386,8 +1386,7 @@ class Camera:
             counter,
         )
 
-        print (longstackid)
-        print (smartstackid)
+
 
         print ("Smart Stack ID: " + smartstackid)
         g_dev["obs"].send_to_user(
@@ -2501,9 +2500,10 @@ class Camera:
                                     b0 = sourcef["b"]
                                     r0.append(round(math.sqrt(a0 * a0 + b0 * b0), 2))
 
-                            scale = self.config["camera"][self.name]["settings"][
-                                "pix_scale"
-                            ][self.camera.BinX - 1]
+                            #scale = self.config["camera"][self.name]["settings"][
+                            #    "pix_scale"
+                            #][self.camera.BinX - 1]
+                            scale=pixscale
                             result["FWHM"] = round(
                                 np.median(r0) * scale, 3
                             )  # was 2x larger but a and b are diameters not radii
