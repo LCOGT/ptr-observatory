@@ -750,8 +750,10 @@ class Observatory:
                 "timestamp": time.time(),
             }
         )
-        response = requests.post(url_log, body)
-        if not response.ok:
+        try:
+            requests.post(url_log, body)
+        #if not response.ok:
+        except:
             print("Log did not send, usually not fatal.")
 
     # Note this is another thread!
@@ -824,8 +826,8 @@ class Observatory:
                             if (
                                 border_x < sourcef["x"] < ix - border_x
                                 and border_y < sourcef["y"] < iy - border_y
-                                and sourcef["peak"] < 35000
-                                and sourcef["cpeak"] < 35000
+                                and 1000 < sourcef["peak"] < 35000
+                                and 1000 < sourcef["cpeak"] < 35000
                             ):  # Consider a lower bound
                                 a0 = sourcef["a"]
                                 b0 = sourcef["b"]
@@ -906,7 +908,7 @@ class Observatory:
                         img=img.newbyteorder('little')
                     else:
                         img=img.newbyteorder('big')
-                        
+
                     # IF SMARSTACK NPY FILE EXISTS DO STUFF, OTHERWISE THIS IMAGE IS THE START OF A SMARTSTACK
                     reprojection_failed=False
                     if not os.path.exists(

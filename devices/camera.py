@@ -799,15 +799,33 @@ class Camera:
         opt = optional_params
         self.hint = optional_params.get("hint", "")
         self.script = required_params.get("script", "None")
-        self.smartstack = required_params.get('smartstack', "yes")
+        self.smartstack = required_params.get('smartstack', 'yes')
+        self.longstack = required_params.get('longstackswitch', 'no')
+        print (self.smartstack)
+        print (self.longstack)
+        if self.longstack == 'no':
+            LongStackID ='no'
+        elif not 'longstackname' in required_params:
+            LongStackID=(datetime.datetime.now().strftime("%d%m%y%H%M%S"))
+        else:
+            LongStackID = required_params['longstackname']
+
 
         self.blockend = required_params.get('block_end', "None")
 
 
         self.pane = optional_params.get("pane", None)
+
+
         bin_x = optional_params.get(
             "bin", self.config["camera"][self.name]["settings"]["default_bin"]
         )  # NB this should pick up config default.
+
+        if bin_x == '"optimal"':
+            bin_x = self.config["camera"][self.name]["settings"]["default_bin"]
+
+        if bin_x == '"maximum"':
+            bin_x = self.config["camera"][self.name]["settings"]["maximum_bin"]
 
         if bin_x in [
             "4 4",
@@ -1024,7 +1042,7 @@ class Camera:
                 Nsmartstack=np.ceil(exposure_time / ssExp)
                 exposure_time=ssExp
                 SmartStackID=(datetime.datetime.now().strftime("%d%m%y%H%M%S"))
-                print (SmartStackID)
+
             else:
                 Nsmartstack=1
                 SmartStackID='no'
@@ -1096,19 +1114,21 @@ class Camera:
                 self.retry_camera_start_time = time.time()
                 while self.retry_camera > 0:
                     if g_dev["obs"].stop_all_activity:
-                        if result["stopped"] is True:
-                            g_dev["obs"].stop_all_activity = False
-                            print("Camera retry loop stopped by Cancel Exposure")
-                            self.exposure_busy = False
+                        if result != None and result != {}:
+                            if result["stopped"] is True:
+                                g_dev["obs"].stop_all_activity = False
+                                print("Camera retry loop stopped by Cancel Exposure")
+                                self.exposure_busy = False
                         return
 
 
                     # Check that the block isn't ending during normal observing time (don't check while biasing, flats etc.)
                     if not 'None' in self.blockend: # Only do this check if a block end was provided.
                         # Check that the exposure doesn't go over the end of a block
-                        endOfExposure = datetime.datetime.now() - datetime.timedelta(seconds=exposure_time)
+                        endOfExposure = datetime.datetime.now() + datetime.timedelta(seconds=exposure_time)
                         now_date_timeZ = endOfExposure.isoformat().split('.')[0] +'Z'
-                        blockended = now_date_timeZ >= self.blockend
+                        blockended = now_date_timeZ  >= self.blockend
+                        #blockendedafterexposure  = now_date_timeZ + (exposure_time *ephem.second) >= self.blockend
 
                         #print (endOfExposure)
                         #print (now_date_timeZ)
@@ -1117,8 +1137,11 @@ class Camera:
                         #print (g_dev['events']['Observing Ends'])
                         #print (ephem.Date(ephem.now()+ (exposure_time *ephem.second)))
 
-                        if blockended and ephem.Date(ephem.now()+ (exposure_time *ephem.second)) >= g_dev['events']['Observing Begins']:
+                        if blockended or ephem.Date(ephem.now()+ (exposure_time *ephem.second)) >= g_dev['events']['End Morn Bias Dark']:
                             print ("Exposure overlays the end of a block or the end of observing. Skipping Exposure.")
+
+                            print ("Waiting until block ended.")
+
                             return
                     # NB Here we enter Phase 2
                     try:
@@ -1290,6 +1313,8 @@ class Camera:
                         self.t9 = time.time()
                         # We go here to keep this subroutine a reasonable length, Basically still in Phase 2
                         # None used to be dist_x and dist_y but they are only used for subframes that we are no longer supporting
+
+
                         result = self.finish_exposure(
                             exposure_time,
                             frame_type,
@@ -1306,6 +1331,7 @@ class Camera:
                             opt=opt,
                             solve_it=solve_it,
                             smartstackid=SmartStackID,
+                            longstackid=LongStackID,
                             sskcounter=sskcounter,
                             Nsmartstack=Nsmartstack
                         )  # NB all these parameters are crazy!
@@ -1349,6 +1375,7 @@ class Camera:
         opt=None,
         solve_it=False,
         smartstackid='no',
+        longstackid='no',
         sskcounter=0,
         Nsmartstack=1
     ):
@@ -1358,6 +1385,8 @@ class Camera:
             "to go: ",
             counter,
         )
+
+
 
         print ("Smart Stack ID: " + smartstackid)
         g_dev["obs"].send_to_user(
@@ -1601,6 +1630,12 @@ class Camera:
                     except:
                         hdu.header["XBINING"] = (1, "Pixel binning in x direction")
                         hdu.header["YBINING"] = (1, "Pixel binning in y direction")
+
+                    hdu.header["DOCOSMIC"] = (
+                        self.config["camera"][self.name]["settings"]["cosmics_at_default"],
+                        "Header item to indicate whether to do cosmic ray removal",
+                    )
+
                     hdu.header["CCDSUM"] = (self.ccd_sum, "Sum of chip binning")
 
                     hdu.header["RDMODE"] = (
@@ -2134,7 +2169,8 @@ class Camera:
                     next_seq = next_sequence(current_camera_name)
                     hdu.header["FRAMENUM"] = (int(next_seq), "Running frame number")
                     hdu.header["SMARTSTK"] = smartstackid # ID code for an individual smart stack group
-                    hdu.header["LONGSTK"] = "yes" # Is this a member of a longer stack - to be replaced by longstack code soon
+
+                    hdu.header["LONGSTK"] = longstackid # Is this a member of a longer stack - to be replaced by longstack code soon
 
                     if pedastal is not None:
                         hdu.header["PEDESTAL"] = (
@@ -2345,8 +2381,8 @@ class Camera:
                         focus_image = False
 
                     # This command uploads the text file information at high priority to AWS. No point sending if part of a smartstack
-
-                    self.enqueue_for_fastAWS(10, im_path, text_name)
+                    if focus_image == False:
+                        self.enqueue_for_fastAWS(10, im_path, text_name)
 
                     # Make a copy of the raw file to hold onto while the flash reductions are happening.
                     # It will be saved once the jpg has been quickly created.
@@ -2455,16 +2491,17 @@ class Camera:
                                 if (
                                     border_x < sourcef["x"] < ix - border_x
                                     and border_y < sourcef["y"] < iy - border_y
-                                    and sourcef["peak"] < 35000
-                                    and sourcef["cpeak"] < 35000
+                                    and 1000 < sourcef["peak"] < 35000
+                                    and 1000 < sourcef["cpeak"] < 35000
                                 ):  # Consider a lower bound
                                     a0 = sourcef["a"]
                                     b0 = sourcef["b"]
                                     r0.append(round(math.sqrt(a0 * a0 + b0 * b0), 2))
 
-                            scale = self.config["camera"][self.name]["settings"][
-                                "pix_scale"
-                            ][self.camera.BinX - 1]
+                            #scale = self.config["camera"][self.name]["settings"][
+                            #    "pix_scale"
+                            #][self.camera.BinX - 1]
+                            scale=pixscale
                             result["FWHM"] = round(
                                 np.median(r0) * scale, 3
                             )  # was 2x larger but a and b are diameters not radii
@@ -2478,9 +2515,14 @@ class Camera:
                             except:
                                 result[
                                     "error"
-                                ] = True  # NB NB NB These are quick placeholders and need to be changed
-                                result["FWHM"] = 3.456
-                                result["mean_focus"] = 6543
+                                ] = True
+                                result["FWHM"] = np.nan
+                                result["mean_focus"] = np.nan
+
+                            if len(sources) < 25:
+                                print ("not enough sources to estimate a reliable focus")
+                                result["error"]=True
+                                result["FWHM"] = np.nan
 
                             # write the focus image out
                             hdufocus.writeto(cal_path + cal_name, overwrite=True)

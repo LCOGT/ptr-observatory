@@ -554,6 +554,9 @@ site_config = {
                 'min_subframe':  [128, 128],
                 'bin_modes':  [[1, 1, 0.2876], [2, 2, 0.575], [3, 3, 0.863], [4, 4, 1.15]],   #Meaning no binning choice if list has only one entry, default should be first.
                 'default_bin':  [2, 2, 0.575],
+                'maximum_bin':  [1, 1, 0.2876],
+                'cosmics_at_default' : 'yes',
+                'cosmics_at_maximum' : 'yes',
                 'bin_enable':['2 2'],
                 'cycle_time':  [18, 15, 15, 12],  # 3x3 requires a 1, 1 reaout then a software bin, so slower.
                 'rbi_delay':  0.,      # This being zero says RBI is not available, eg. for SBIG.
