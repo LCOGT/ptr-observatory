@@ -826,10 +826,8 @@ class Observatory:
                             if (
                                 border_x < sourcef["x"] < ix - border_x
                                 and border_y < sourcef["y"] < iy - border_y
-                                and sourcef["peak"] < 35000
-                                and sourcef["cpeak"] < 35000
-                                and sourcef["peak"] > 1000
-                                and sourcef["cpeak"] > 1000
+                                and 1000 < sourcef["peak"] < 35000
+                                and 1000 < sourcef["cpeak"] < 35000
                             ):  # Consider a lower bound
                                 a0 = sourcef["a"]
                                 b0 = sourcef["b"]
