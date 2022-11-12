@@ -31,6 +31,7 @@ import sep
 from skimage.io import imsave
 from skimage.transform import resize
 import func_timeout
+import traceback
 
 from api_calls import API_calls
 from auto_stretch.stretch import Stretch
@@ -49,6 +50,7 @@ from devices.sequencer import Sequencer
 from global_yard import g_dev
 from planewave import platesolve
 import ptr_events
+from ptr_utility import plog
 
 # The ingester should only be imported after environment variables are loaded in.
 load_dotenv(".env")
@@ -65,7 +67,7 @@ def send_status(obsy, column, status_to_send):
     try:
         requests.post(uri_status, data=data)
     except Exception as e:
-        print("Failed to send_status. usually not fatal:  ", e)
+        plog("Failed to send_status. usually not fatal:  ", e)
 
 
 class Observatory:
@@ -182,7 +184,6 @@ class Observatory:
         if not os.path.exists(g_dev["cam"].site_path + "calibmasters"):
             os.makedirs(g_dev["cam"].site_path + "calibmasters")
 
-
         self.last_solve_time = datetime.datetime.now() - datetime.timedelta(days=1)
         self.images_since_last_solve = 10000
 
@@ -256,7 +257,7 @@ class Observatory:
 
             # Instantiate each device object based on its type
             for name in device_names:
-                print(name)
+                plog(name)
                 driver = devices_of_type[name]["driver"]
                 settings = devices_of_type[name].get("settings", {})
 
@@ -287,10 +288,10 @@ class Observatory:
                 elif dev_type == "sequencer":
                     device = Sequencer(driver, name, self.config, self.astro_events)
                 else:
-                    print(f"Unknown device: {name}")
+                    plog(f"Unknown device: {name}")
                 # Add the instantiated device to the collection of all devices.
                 self.all_devices[dev_type][name] = device
-        print("Finished creating devices.")
+        plog("Finished creating devices.")
 
     def update_config(self):
         """Sends the config to AWS."""
@@ -298,7 +299,7 @@ class Observatory:
         uri = f"https://api.photonranch.org/dev/{self.name}/config/"
         self.config["events"] = g_dev["events"]
         self.api.authenticated_request("PUT", uri, self.config)
-        print("Config uploaded successfully.")
+        plog("Config uploaded successfully.")
 
     def scan_requests(self, cancel_check=False):
         """Gets commands from AWS, and post a STOP/Cancel flag.
@@ -337,7 +338,7 @@ class Observatory:
                 if len(unread_commands) > 0:
                     unread_commands.sort(key=lambda x: x["timestamp_ms"])
                     # Process each job one at a time
-                    print(
+                    plog(
                         "# of incomming commands:  ",
                         len(unread_commands),
                         unread_commands,
@@ -357,11 +358,11 @@ class Observatory:
                                     g_dev["cam"]._stop_expose()
                                     g_dev["obs"].stop_all_activity = True
                                 else:
-                                    print("Camera is not busy.")
+                                    plog("Camera is not busy.")
                             except:
-                                print("Camera stop faulted.")
+                                plog("Camera stop faulted.")
                             while self.cmd_queue.qsize() > 0:
-                                print("Deleting Job:  ", self.cmd_queue.get())
+                                plog("Deleting Job:  ", self.cmd_queue.get())
                             return  # Note we basically do nothing and let camera, etc settle down.
                         else:
                             self.cmd_queue.put(cmd)  # SAVE THE COMMAND FOR LATER
@@ -399,15 +400,15 @@ class Observatory:
                                 pass
                     else:
                         device_instance = cmd["deviceInstance"]
-                    print("obs.scan_request: ", cmd)
+                    plog("obs.scan_request: ", cmd)
 
                     device_type = cmd["deviceType"]
                     device = self.all_devices[device_type][device_instance]
                     try:
-                        print("Trying to parse:  ", cmd)
+                        #plog("Trying to parse:  ", cmd)
                         device.parse_command(cmd)
                     except Exception as e:
-                        print("Exception in obs.scan_requests:  ", e)
+                        plog("Exception in obs.scan_requests:  ", e)
                 url_blk = "https://calendar.photonranch.org/dev/siteevents"
                 body = json.dumps(
                     {
@@ -503,7 +504,7 @@ class Observatory:
                     ) < datetime.timedelta(minutes=self.enclosure_check_period):
                         result = None
                     else:
-                        print("Running enclosure status check")
+                        plog("Running enclosure status check")
                         self.enclosure_status_timer = datetime.datetime.now()
                         result = device.get_status()
 
@@ -518,7 +519,7 @@ class Observatory:
                     ) < datetime.timedelta(minutes=self.observing_check_period):
                         result = None
                     else:
-                        print("Running weather status check.")
+                        plog("Running weather status check.")
                         self.observing_status_timer = datetime.datetime.now()
                         result = device.get_status(g_dev=g_dev)
                         if self.site_is_specific:
@@ -539,9 +540,9 @@ class Observatory:
             pass
         loud = False
         if loud:
-            print("\n\nStatus Sent:  \n", status)
+            plog("\n\nStatus Sent:  \n", status)
         else:
-            print(".")  # We print this to stay informed of process on the console.
+            plog(".")  # We print this to stay informed of process on the console.
 
         # Consider inhibity unless status rate is low
         obsy = self.name
@@ -605,7 +606,7 @@ class Observatory:
                 self.update()
                 # `Ctrl-C` will exit the program.
         except KeyboardInterrupt:
-            print("Finishing loops and exiting...")
+            plog("Finishing loops and exiting...")
             self.stopped = True
             return
 
@@ -632,7 +633,7 @@ class Observatory:
                 one_at_a_time = 1
                 pri_image = self.aws_queue.get(block=False)
                 if pri_image is None:
-                    print("Got an empty entry in aws_queue.")
+                    plog("Got an empty entry in aws_queue.")
                     self.aws_queue.task_done()
                     one_at_a_time = 0
                     time.sleep(0.2)
@@ -649,18 +650,18 @@ class Observatory:
                         try:
                             if not frame_exists(fileobj):
                                 upload_file_and_ingest_to_archive(fileobj)
-                                print(f"--> To PTR ARCHIVE --> {str(filepath)}")
+                                plog(f"--> To PTR ARCHIVE --> {str(filepath)}")
                             # If ingester fails, send to default S3 bucket.
                         except:
                             files = {"file": (filepath, fileobj)}
                             requests.post(aws_resp["url"], data=aws_resp["fields"], files=files)
-                            print(f"--> To AWS --> {str(filepath)}")
+                            plog(f"--> To AWS --> {str(filepath)}")
                 # Send all other files to S3.
                 else:
                     with open(filepath, "rb") as fileobj:
                         files = {"file": (filepath, fileobj)}
                         requests.post(aws_resp["url"], data=aws_resp["fields"], files=files)
-                        print(f"--> To AWS --> {str(filepath)}")
+                        plog(f"--> To AWS --> {str(filepath)}")
 
                 if (
                     filename[-3:] == "jpg"
@@ -696,7 +697,7 @@ class Observatory:
                 one_at_a_time = 1
                 pri_image = self.fast_queue.get(block=False)
                 if pri_image is None:
-                    print("Got an empty entry in fast_queue.")
+                    plog("Got an empty entry in fast_queue.")
                     self.fast_queue.task_done()
                     one_at_a_time = 0
                     time.sleep(0.2)
@@ -713,18 +714,18 @@ class Observatory:
                         try:
                             if not frame_exists(fileobj):
                                 upload_file_and_ingest_to_archive(fileobj)
-                                print(f"--> To PTR ARCHIVE --> {str(filepath)}")
+                                plog(f"--> To PTR ARCHIVE --> {str(filepath)}")
                             # If ingester fails, send to default S3 bucket.
                         except:
                             files = {"file": (filepath, fileobj)}
                             requests.post(aws_resp["url"], data=aws_resp["fields"], files=files)
-                            print(f"--> To AWS --> {str(filepath)}")
+                            plog(f"--> To AWS --> {str(filepath)}")
                 # Send all other files to S3.
                 else:
                     with open(filepath, "rb") as fileobj:
                         files = {"file": (filepath, fileobj)}
                         requests.post(aws_resp["url"], data=aws_resp["fields"], files=files)
-                        print(f"--> To AWS --> {str(filepath)}")
+                        plog(f"--> To AWS --> {str(filepath)}")
 
                 if (
                     filename[-3:] == "jpg"
@@ -752,7 +753,7 @@ class Observatory:
         )
         response = requests.post(url_log, body)
         if not response.ok:
-            print("Log did not send, usually not fatal.")
+            plog("Log did not send, usually not fatal.")
 
     # Note this is another thread!
     def reduce_image(self):
@@ -804,67 +805,73 @@ class Observatory:
                     )  # NB Should we move this up to where we read the array?
                     bkg = sep.Background(img)
                     img -= bkg
-                    sources = sep.extract(
-                        img, 4.5, err=bkg.globalrms, minarea=15
-                    )  # Minarea should deal with hot pixels.
-                    sources.sort(order="cflux")
-                    print("No. of detections:  ", len(sources))
-
-
-                    if len(sources) < 20:
-                        print ("skipping focus estimate as not enough sources in this image")
-                    else:
-                        ix, iy = img.shape
-                        #r0 = 0
-
-                        border_x = int(ix * 0.05)
-                        border_y = int(iy * 0.05)
-                        r0 = []
-                        for sourcef in sources:
-                            if (
-                                border_x < sourcef["x"] < ix - border_x
-                                and border_y < sourcef["y"] < iy - border_y
-                                and sourcef["peak"] < 35000
-                                and sourcef["cpeak"] < 35000
-                            ):  # Consider a lower bound
-                                a0 = sourcef["a"]
-                                b0 = sourcef["b"]
-                                r0.append(round(math.sqrt(a0 * a0 + b0 * b0), 2))
-
-                        FWHM = round(
-                            np.median(r0) * pixscale, 3
-                        )  # was 2x larger but a and b are diameters not radii
-                        print("This image has a FWHM of " + str(FWHM))
-
-                        g_dev["foc"].focus_tracker.pop(0)
-                        g_dev["foc"].focus_tracker.append(FWHM)
-                        print("Last ten FWHM : ")
-                        print(g_dev["foc"].focus_tracker)
-                        print("Median last ten FWHM")
-                        print(np.nanmedian(g_dev["foc"].focus_tracker))
-                        print("Last solved focus FWHM")
-                        print(g_dev["foc"].last_focus_fwhm)
-
-                        # If there hasn't been a focus yet, then it can't check it, so make this image the last solved focus.
-                        if g_dev["foc"].last_focus_fwhm == None:
-                            g_dev["foc"].last_focus_fwhm = FWHM
+                    try:
+                        sep.set_extract_pixstack(1000000)
+                        sources = sep.extract(
+                            img, 4.5, err=bkg.globalrms, minarea=15
+                        )  # Minarea should deal with hot pixels.
+                        sources.sort(order="cflux")
+                        plog("No. of detections:  ", len(sources))
+    
+    
+                        if len(sources) < 20:
+                            print ("skipping focus estimate as not enough sources in this image")
                         else:
-                            # Very dumb focus slip deteector
-                            if (
-                                np.nanmedian(g_dev["foc"].focus_tracker)
-                                > g_dev["foc"].last_focus_fwhm
-                                + self.config["focus_trigger"]
-                            ):
-                                g_dev["foc"].focus_needed = True
-                                g_dev["obs"].send_to_user(
-                                    "Focus has drifted to "
-                                    + str(np.nanmedian(g_dev["foc"].focus_tracker))
-                                    + " from "
-                                    + str(g_dev["foc"].last_focus_fwhm)
-                                    + ". Autofocus triggered for next exposures.",
-                                    p_level="INFO",
-                                )
-
+                            ix, iy = img.shape
+                            #r0 = 0
+    
+                            border_x = int(ix * 0.05)
+                            border_y = int(iy * 0.05)
+                            r0 = []
+                            for sourcef in sources:
+                                if (
+                                    border_x < sourcef["x"] < ix - border_x
+                                    and border_y < sourcef["y"] < iy - border_y
+                                    and sourcef["peak"] < 35000
+                                    and sourcef["cpeak"] < 35000
+                                ):  # Consider a lower bound
+                                    a0 = sourcef["a"]
+                                    b0 = sourcef["b"]
+                                    r0.append(round(math.sqrt(a0 * a0 + b0 * b0)*2, 3))
+    
+                            FWHM = round(
+                                np.median(r0) * pixscale, 2
+                            )  # was 2x larger but a and b are diameters not radii
+                            plog("This image has a FWHM of " + str(FWHM))
+    
+                            g_dev["foc"].focus_tracker.pop(0)
+                            g_dev["foc"].focus_tracker.append(FWHM)
+                            plog("Last ten FWHM : ")
+                            plog(g_dev["foc"].focus_tracker)
+                            plog("Median last ten FWHM")
+                            plog(np.nanmedian(g_dev["foc"].focus_tracker))
+                            plog("Last solved focus FWHM")
+                            plog(g_dev["foc"].last_focus_fwhm)
+    
+                            # If there hasn't been a focus yet, then it can't check it, so make this image the last solved focus.
+                            if g_dev["foc"].last_focus_fwhm == None:
+                                g_dev["foc"].last_focus_fwhm = FWHM
+                            else:
+                                # Very dumb focus slip deteector
+                                if (
+                                    np.nanmedian(g_dev["foc"].focus_tracker)
+                                    > g_dev["foc"].last_focus_fwhm
+                                    + self.config["focus_trigger"]
+                                ):
+                                    g_dev["foc"].focus_needed = True
+                                    g_dev["obs"].send_to_user(
+                                        "Focus has drifted to "
+                                        + str(np.nanmedian(g_dev["foc"].focus_tracker))
+                                        + " from "
+                                        + str(g_dev["foc"].last_focus_fwhm)
+                                        + ". Autofocus triggered for next exposures.",
+                                        p_level="INFO",
+                                    )
+                    except:
+                        print ("something failed in the SEP calculations for exposure. This could be an overexposed image")
+                        print (traceback.format_exc())
+                        sources = [0]
+                        
                 # SmartStack Section
                 if smartstackid != "no" :
 
@@ -880,14 +887,14 @@ class Observatory:
                     img = sstackimghold.copy()
                     del sstackimghold
 
-                    #print(img[0].header["FILTER"])
+                    #plog(img[0].header["FILTER"])
                     ssfilter = img[0].header["FILTER"]
                     ssobject = img[0].header["OBJECT"]
                     ssexptime = img[0].header["EXPTIME"]
 
                     ssframenumber = img[0].header["FRAMENUM"]
                     #stackHoldheader = img[0].header
-                    #print(g_dev["cam"].site_path + "smartstacks")
+                    #plog(g_dev["cam"].site_path + "smartstacks")
 
                     smartStackFilename = (
                         str(ssobject)
@@ -899,7 +906,7 @@ class Observatory:
                         + str(smartstackid)
                         + ".npy"
                     )
-                    #print(smartStackFilename)
+                    #plog(smartStackFilename)
                     img = np.asarray(img[0].data)
                     # Detect and swap img to the correct endianness - needed for the smartstack jpg
                     if sys.byteorder=='little':
@@ -914,7 +921,7 @@ class Observatory:
                     ):
                         if len(sources) >= 30:
                             # Store original image
-                            print("Storing First smartstack image")
+                            plog("Storing First smartstack image")
                             # storedsStack=np.nan_to_num(img)
                             # backgroundLevel =(np.nanmedian(sep.Background(storedsStack.byteswap().newbyteorder())))
                             # print (backgroundLevel)
@@ -937,13 +944,13 @@ class Observatory:
                         )
                         #print (storedsStack.dtype.byteorder)
                         # Prep new image
-                        print("Pasting Next smartstack image")
+                        plog("Pasting Next smartstack image")
                         # img=np.nan_to_num(img)
                         # backgroundLevel =(np.nanmedian(sep.Background(img.byteswap().newbyteorder())))
                         # print (" Background Level : " + str(backgroundLevel))
                         # img= img - backgroundLevel
                         # Reproject new image onto footprint of old image.
-                        print(datetime.datetime.now())
+                        plog(datetime.datetime.now())
                         if len(sources) > 30:
                             try:
                                 reprojectedimage, _ = func_timeout.func_timeout (60, aa.register, args=(img, storedsStack), kwargs={"detection_sigma":3, "min_area":9})
@@ -966,6 +973,10 @@ class Observatory:
                                 reprojection_failed=True
                             except aa.MaxIterError:
                                 print ("astroalign could not find a solution in this image")
+                                reprojection_failed=True
+                            except Exception:
+                                print ("astrolign failed")
+                                print (traceback.format_exc())
                                 reprojection_failed=True
                             #except func_timeout.FunctionTimedOut:
                             #    print ("astroalign Timed Out")
@@ -1042,7 +1053,7 @@ class Observatory:
                         )
                     #    )
 
-                    print(datetime.datetime.now())
+                    plog(datetime.datetime.now())
 
                     del img
 
@@ -1089,7 +1100,7 @@ class Observatory:
                                 solve = platesolve.platesolve(
                                     paths["red_path"] + paths["red_name01"], pixscale
                                 )  # 0.5478)
-                                print(
+                                plog(
                                     "PW Solves: ",
                                     solve["ra_j2000_hours"],
                                     solve["dec_j2000_degrees"],
@@ -1104,7 +1115,7 @@ class Observatory:
                                 err_dec = target_dec - solved_dec
                                 solved_arcsecperpixel = solve["arcsec_per_pixel"]
                                 solved_rotangledegs = solve["rot_angle_degs"]
-                                print(
+                                plog(
                                     " coordinate error in ra, dec:  (asec) ",
                                     round(err_ha * 15 * 3600, 2),
                                     round(err_dec * 3600, 2),
@@ -1154,7 +1165,7 @@ class Observatory:
                                     "permissive_mount_reset"
                                 ] == "yes":
                                     g_dev["mnt"].reset_mount_reference()
-                                    print("I've  reset the mount_reference 1")
+                                    plog("I've  reset the mount_reference 1")
                                     g_dev["mnt"].current_icrs_ra = solve[
                                         "ra_j2000_hours"
                                     ]
@@ -1180,15 +1191,15 @@ class Observatory:
                                                 err_ha, err_dec
                                             )  # Need to verify signs
                                     except:
-                                        print("This mount doesn't report pierside")
+                                        plog("This mount doesn't report pierside")
 
                             except Exception as e:
-                                print(
+                                plog(
                                     "Image: did not platesolve; this is usually OK. ", e
                                 )
 
                     else:
-                        print("skipping solve as not enough time or images have passed")
+                        plog("skipping solve as not enough time or images have passed")
                         self.images_since_last_solve = self.images_since_last_solve + 1
 
 

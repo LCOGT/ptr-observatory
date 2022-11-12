@@ -56,6 +56,7 @@ from config import site_config
 import math
 from pprint import pprint
 import ephem
+from ptr_utility import plog
 #import utility
 
 # =============================================================================
@@ -190,7 +191,7 @@ class Mount:
         self.mount = win32com.client.Dispatch(driver)
         self.mount.Connected = True
 
-#       print('Can Asynch:  ', self.mount.CanSlewAltAzAsync)
+#       plog('Can Asynch:  ', self.mount.CanSlewAltAzAsync)
 
         #hould put config Lat, lon, etc into mount, or at least check it is correct.
 
@@ -229,14 +230,14 @@ class Mount:
         self.seek_commanded = False
         if abs(self.east_flip_ra_correction) > 0 or abs(self.east_flip_dec_correction) > 0:
             self.flip_correction_needed = True
-            print("Flip correction may be needed.")
+            plog("Flip correction may be needed.")
         else:
             self.flip_correction_needed = False
         if not tel:
-            print("Mount connected.")
+            plog("Mount connected.")
         else:
-            print("Auxillary Tel/OTA connected.")
-        print(self.mount.Description)
+            plog("Auxillary Tel/OTA connected.")
+        plog(self.mount.Description)
         self.ra_offset = 0.0
         self.dec_offset = 0.0   #NB these should always start off at zero.
         if not self.mount.AtPark or self.mount.Tracking:
@@ -252,26 +253,26 @@ class Mount:
         try:
             ra1, dec1 = self.get_mount_reference()
             ra2, dec2 = self.get_flip_reference()
-            print("Mount references clutch, flip (Look East):  ", ra1, dec1, ra2, dec2 )
+            plog("Mount references clutch, flip (Look East):  ", ra1, dec1, ra2, dec2 )
         except:
-            print("No mount ref found.")
+            plog("No mount ref found.")
             pass
-        #print("Reset Mount Reference.")
+        #plog("Reset Mount Reference.")
 
         #self.reset_mount_reference()
         #NB THe paddle needs a re-think and needs to be cast into its own thread. 20200310 WER
         if self.has_paddle:
             self._paddle = serial.Serial('COM28', timeout=0.1)
             self._paddle.write(b'ver\n')
-            print(self._paddle.read(13).decode()[-8:])
+            plog(self._paddle.read(13).decode()[-8:])
 
     #        self._paddle.write(b"gpio iodir 00ff\n")
     #        self._paddle.write(b"gpio readall\n")
             self.paddleing = True
-    #        print('a:',self._paddle.read(20).decode())
-    #        print('b:',self._paddle.read(20).decode())
-    #        print('c:',self._paddle.read(20).decode())
-    #        print("Paddle  not operational??")
+    #        plog('a:',self._paddle.read(20).decode())
+    #        plog('b:',self._paddle.read(20).decode())
+    #        plog('c:',self._paddle.read(20).decode())
+    #        plog("Paddle  not operational??")
             self._paddle.close()
         else:
             self.paddeling = False
@@ -281,7 +282,7 @@ class Mount:
         self.obs.long = config['longitude']*DTOR
         self.obs.lat = config['latitude']*DTOR
 
-        print("exiting mount _init")
+        plog("exiting mount _init")
 
 
 
@@ -316,11 +317,11 @@ class Mount:
             if self.mount.Connected:
                 return
             else:
-                print('Found mount not connected, reconnecting.')
+                plog('Found mount not connected, reconnecting.')
                 self.mount.Connected = True
                 return
         except:
-            print('Found mount not connected via try: block fail, reconnecting.')
+            plog('Found mount not connected via try: block fail, reconnecting.')
             self.mount.Connected = True
             return
 
@@ -385,9 +386,9 @@ class Mount:
             #             self.mount.RightAscensionRate =self.prior_roll_rate
             #         if self.mount.CanSetDeclinationRate and self.prior_pitch_rate != 0:
             #             self.mount.DeclinationRate = self.prior_pitch_rate
-            #             #print("Rate found:  ", self.prior_roll_rate, self.prior_pitch_rate, self.ha_corr, self.dec_corr)
+            #             #plog("Rate found:  ", self.prior_roll_rate, self.prior_pitch_rate, self.ha_corr, self.dec_corr)
             # except:
-            #     print("mount status rate adjust exception.")
+            #     plog("mount status rate adjust exception.")
 
             try:
                 if self.mount.sideOfPier == look_west:
@@ -448,7 +449,7 @@ class Mount:
         if airmass > 10: airmass = 10.0   # We should caution the user if AM > 2, and alert them if >3
         airmass = round(airmass, 4)
         #Be careful to preserve order
-        #print(self.device_name, self.name)
+        #plog(self.device_name, self.name)
         # if self.site_is_proxy:
         #     self.site_is_proxy = True
 
@@ -480,8 +481,8 @@ class Mount:
             self.current_sidereal = self.mount.SiderealTime
             icrs_ra, icrs_dec = self.get_mount_coordinates()  #20210430  Looks like thie faulted during a slew.
             if self.seek_commanded:
-                #print('In Status:  ', self.prior_roll_rate, self.prior_pitch_rate)
-                #print('From Mnt :  ', self.mount.RightAscensionRate, self.mount.DeclinationRate)
+                #plog('In Status:  ', self.prior_roll_rate, self.prior_pitch_rate)
+                #plog('From Mnt :  ', self.mount.RightAscensionRate, self.mount.DeclinationRate)
                 icrs_ra, icrs_dec = self.get_mount_coordinates()  #20210430  Looks like this faulted during a slew.
             if self.prior_roll_rate == 0:
                 pass
@@ -492,7 +493,7 @@ class Mount:
                 ha -= 24
             try:
                 self.pier_side = self.mount.SideOfPier  #DID not work early on with PW Alt Az mounts
-                #print('ASCOM SideOfPier ==  ', self.pier_side)
+                #plog('ASCOM SideOfPier ==  ', self.pier_side)
             except:
                 self.pier_side = 0.   # This explicitly defines alt-az (Planewave) as Looking West (tel on East side)
             if self.pier_side == 0:
@@ -562,11 +563,11 @@ class Mount:
                                 mount = open(g_dev['wema_share_path']+'mnt_cmd.txt', 'w')
                                 mount.write(json.dumps(status))
                                 mount.close()
-                                print("3rd try to append to enc-cmd  list.")
+                                plog("3rd try to append to enc-cmd  list.")
             except:
                 pass
         else:
-            print('Proper device_name is missing, or tel == None')
+            plog('Proper device_name is missing, or tel == None')
             status = {'defective':  'status'}
 
         return status  #json.dumps(status)
@@ -579,18 +580,18 @@ class Mount:
 #         lclSid = pLST
 #     else:
 #         lclSid =sidTime
-#     if loud: print('Pcoord:  ', pCoord)
+#     if loud: plog('Pcoord:  ', pCoord)
 #     roll, pitch = transform_raDec_to_haDec(pCoord[0], pCoord[1], sidTime)
-#     if loud: print('MountToICRS1')
+#     if loud: plog('MountToICRS1')
 #     obsHa, obsDec = transform_mount_to_observed(roll, pitch, pCurrentPierSide)
-#     if loud: print('MountToICRS2')
+#     if loud: plog('MountToICRS2')
 #     appRa, appDec = obsToAppHaRa(obsHa, obsDec, sidTime)
-#     if loud: print('Out:  ', appRa, appDec, jYear)
+#     if loud: plog('Out:  ', appRa, appDec, jYear)
 #     pCoordJnow = SkyCoord(appRa*u.hour, appDec*u.degree, frame='fk5', \
 #                           equinox=equinox_now)
-#     if loud: print('pCoord:  ', pCoordJnow)
+#     if loud: plog('pCoord:  ', pCoordJnow)
 #     t = pCoordJnow.transform_to(ICRS)
-#     if loud: print('returning ICRS:  ', t)
+#     if loud: plog('returning ICRS:  ', t)
 #     return (reduceRa(fromHMS(str(t.ra.to_string(u.hour)))),  \
 #             reduceDec(fromDMS(str(t.dec.to_string(u.degree)))))
 # =============================================================================
@@ -633,7 +634,7 @@ class Mount:
         pre.append(self.mount.AtPark)
         pre.append(self.mount.Tracking)
         pre.append(self.mount.Slewing)
-        #print(pre)
+        #plog(pre)
         return pre
 
     @classmethod
@@ -657,7 +658,7 @@ class Mount:
 
         self.check_connect()
         t_avg = round((pre[0] + post[0])/2, 3)
-        #print(t_avg)
+        #plog(t_avg)
         ra_avg = round(Mount.two_pi_avg(pre[1],  post[1], 12), 6)
         dec_avg = round((pre[2] + post[2])/2, 4)
         sid_avg = round(Mount.two_pi_avg(pre[3],  post[3], 12), 5)
@@ -742,7 +743,7 @@ class Mount:
         elif action == 'sky_flat_position':
             self.slewToSkyFlatAsync()
         else:
-            print(f"Command <{action}> not recognized.")
+            plog(f"Command <{action}> not recognized.")
 
 
     def get_current_times(self):
@@ -768,7 +769,7 @@ class Mount:
 
     def go_command(self, req, opt,  offset=False, calibrate=False, auto_center=False):
         ''' Slew to the given ra/dec coordinates. '''
-        print("mount cmd. slewing mount, req, opt:  ", req, opt)
+        plog("mount cmd. slewing mount, req, opt:  ", req, opt)
 
         ''' unpark the telescope mount '''  #  NB can we check if unparked and save time?
 
@@ -777,7 +778,7 @@ class Mount:
         except:
             self.object = 'unspecified'    #NB could possibly augment with "Near --blah--"
         if self.mount.CanPark:
-            #print("mount cmd: unparking mount")
+            #plog("mount cmd: unparking mount")
             if self.mount.AtPark:
                 self.mount.Unpark()   #  Note we do not open the dome since we may be mount testing in the daytime.
         try:
@@ -807,7 +808,7 @@ class Mount:
                 #note it is based on mount coordinates.
                 #Note we never look up the req dictionary ra or dec.
                 if self.offset_received:
-                    print("This is a second offset, are you sure you want to do this?")
+                    plog("This is a second offset, are you sure you want to do this?")
                 #
                 offset_x = float(req['image_x']) - 0.5   #Fraction of field.
                 offset_y = float(req['image_y']) - 0.5
@@ -818,8 +819,8 @@ class Mount:
                 #20210317 Changed signs fron Neyle.  NEEDS CONFIG File level or support.
 
                 self.ra_offset = -offset_x*field_x/2  #/4   #NB NB 20201230 Signs needs to be verified. 20210904 used to be +=, which did not work.
-                self.dec_offset = offset_y*field_y/2 #/4    #NB where the 4 come from?                print("Offsets:  ", round(self.ra_offset, 5), round(self.dec_offset, 4))
-                print('Offsets:  ', offset_x, self.ra_offset, offset_y, self.dec_offset)
+                self.dec_offset = offset_y*field_y/2 #/4    #NB where the 4 come from?                plog("Offsets:  ", round(self.ra_offset, 5), round(self.dec_offset, 4))
+                plog('Offsets:  ', offset_x, self.ra_offset, offset_y, self.dec_offset)
 
                 if not self.offset_received:
                     self.ra_prior, self.dec_prior = icrs_ra, icrs_dec #Do not let this change.
@@ -835,7 +836,7 @@ class Mount:
                 #breakpoint()
                 if self.offset_received:
                     ra_cal_offset, dec_cal_offset = self.get_mount_reference()
-                    print("Stored calibration offsets:  ",round(ra_cal_offset, 5), round(dec_cal_offset, 4))
+                    plog("Stored calibration offsets:  ",round(ra_cal_offset, 5), round(dec_cal_offset, 4))
                     icrs_ra, icrs_dec = self.get_mount_coordinates()
                     accum_ra_offset = icrs_ra - self.ra_prior
                     accum_dec_offset = icrs_dec - self.dec_prior
@@ -850,7 +851,7 @@ class Mount:
                     dec = self.dec_prior #icrs_dec
                     #We could just return but will seek just to be safe
                 else:
-                    print("No outstanding offset available for calibration, reset existing calibration.")
+                    plog("No outstanding offset available for calibration, reset existing calibration.")
                     # NB We currently use this path to clear a calibration.  But should be ad explicit Command instead. 20201230
                     # breakpoint()
                     self.reset_mount_reference()
@@ -867,7 +868,7 @@ class Mount:
                 if self.offset_received:
                     ra, dec, time_of_last = g_dev['obs'].get_last_reference()
                     ra_cal_offset, dec_cal_offset = self.get_mount_reference()
-                    print("Stored calibration offsets:  ",round(ra_cal_offset, 5), round(dec_cal_offset, 4))
+                    plog("Stored calibration offsets:  ",round(ra_cal_offset, 5), round(dec_cal_offset, 4))
                     icrs_ra, icrs_dec = self.get_mount_coordinates()
                     accum_ra_offset = icrs_ra - self.ra_prior
                     accum_dec_offset = icrs_dec - self.dec_prior
@@ -882,7 +883,7 @@ class Mount:
                     dec = self.dec_prior #icrs_dec
                     #We could just return but will seek just to be safe
                 else:
-                    print("No outstanding offset available for calibration, reset existing calibration.")
+                    plog("No outstanding offset available for calibration, reset existing calibration.")
                     # NB We currently use this path to clear a calibration.  But should be ad explicit Command instead. 20201230
                     # breakpoint()
                     self.reset_mount_reference()
@@ -933,7 +934,7 @@ class Mount:
                         alt_az = True
 
         except:
-            print("Bad coordinates supplied.")
+            plog("Bad coordinates supplied.")
             g_dev['obs'].send_to_user("Bad coordinates supplied! ",  p_level="WARN")
             self.message = "Bad coordinates supplied, try again."
             self.offset_received = False
@@ -958,10 +959,10 @@ class Mount:
             self.go_coord(ra, dec, tracking_rate_ra=tracking_rate_ra, tracking_rate_dec = tracking_rate_dec)
         self.object = opt.get("object", "")
         if self.object == "":
-           # print("Go to unamed target.")
+           # plog("Go to unamed target.")
             g_dev['obs'].send_to_user("Going to un-named target!  ",  p_level="INFO")
         else:
-            #print("Going to:  ", self.object)   #NB Needs cleaning up.
+            #plog("Going to:  ", self.object)   #NB Needs cleaning up.
             g_dev['obs'].send_to_user("Going to:  " + str( self.object),  p_level="INFO")
 
         # On successful movement of telescope reset the solving timer
@@ -990,7 +991,7 @@ class Mount:
         self.last_seek_time = time.time()
 
         if self.mount.CanPark:
-            #print("mount cmd: unparking mount")
+            #plog("mount cmd: unparking mount")
             if self.mount.AtPark:
                 self.mount.Unpark()   #  Note we do not open the dome since we may be mount testing in the daytime.
         #Note this initiates a mount move.  WE should Evaluate if the destination is on the flip side and pick up the
@@ -1059,7 +1060,7 @@ class Mount:
             print ("this mount may not accept tracking commands")
         self.move_time = time.time()
         az, alt = ptr_utility.transform_haDec_to_azAlt_r(self.ha_mech, self.dec_mech, self.latitude_r)
-        print('MODEL HA, DEC, AZ, Refraction:  (asec)  ', self.ha_corr, self.dec_corr, az*RTOD, self.refr_asec)
+        plog('MODEL HA, DEC, AZ, Refraction:  (asec)  ', self.ha_corr, self.dec_corr, az*RTOD, self.refr_asec)
         self.target_az = az*RTOD
 
 
@@ -1091,10 +1092,10 @@ class Mount:
         if self.mount.CanSetDeclinationRate:
            self.prior_pitch_rate = -(self.dec_mech_adv - self.dec_mech)*RTOS/self.delta_t_s    #20210329 OK 1 hour from zenith.  No Appsid correction per ASCOM spec.
            self.mount.DeclinationRate = self.prior_pitch_rate  #Neg sign makes Dec decrease
-           #print("Rates, refr are:  ", self.prior_roll_rate, self.prior_pitch_rate, self.refr_asec)
+           #plog("Rates, refr are:  ", self.prior_roll_rate, self.prior_pitch_rate, self.refr_asec)
         else:
             self.prior_pitch_rate = 0.0
-        #print(self.prior_roll_rate, self.prior_pitch_rate, refr_asec)
+        #plog(self.prior_roll_rate, self.prior_pitch_rate, refr_asec)
         # time.sleep(.5)
         # self.mount.SlewToCoordinatesAsync(ra_mech*RTOH, dec_mech*RTOD)
         time.sleep(1)   #fOR SOME REASON REPEATING THIS HELPS!
@@ -1104,7 +1105,7 @@ class Mount:
         if self.mount.CanSetDeclinationRate:
             self.mount.DeclinationRate = self.prior_pitch_rate
 
-        print("Rates set:  ", self.prior_roll_rate, self.prior_pitch_rate, self.refr_adv)
+        plog("Rates set:  ", self.prior_roll_rate, self.prior_pitch_rate, self.refr_adv)
         self.seek_commanded = True
         #I think to reliable establish rates, set them before the slew.
         #self.mount.Tracking = True
@@ -1135,16 +1136,16 @@ class Mount:
 
 
     def stop_command(self, req, opt):
-        print("mount cmd: stopping mount")
+        plog("mount cmd: stopping mount")
         self.mount.AbortSlew()
 
     def home_command(self, req, opt):
         ''' slew to the home position '''
-        print("mount cmd: homing mount")
+        plog("mount cmd: homing mount")
         if self.mount.AtHome:
-            print("Mount is at home.")
+            plog("Mount is at home.")
         elif False: #self.mount.CanFindHome:    # NB what is this all about?
-            print(f"can find home: {self.mount.CanFindHome}")
+            plog(f"can find home: {self.mount.CanFindHome}")
             self.mount.Unpark()
             #home_alt = self.settings["home_altitude"]
             #home_az = self.settings["home_azimuth"]
@@ -1152,32 +1153,32 @@ class Mount:
             self.move_time = time.time()
             self.mount.FindHome()
         else:
-            print("Mount is not capable of finding home. Slewing to zenith.")
+            plog("Mount is not capable of finding home. Slewing to zenith.")
             self.move_time = time.time()
             self.mount.SlewToAltAzAsync(0, 80)
 
     def flat_panel_command(self, req, opt):
         ''' slew to the flat panel if it exists '''
-        print("mount cmd: slewing to flat panel")
+        plog("mount cmd: slewing to flat panel")
         pass
 
     def tracking_command(self, req, opt):
         ''' set the tracking rates, or turn tracking off '''
-        print("mount cmd: tracking changed")
+        plog("mount cmd: tracking changed")
         pass
 
     def park_command(self, req=None, opt=None):
         ''' park the telescope mount '''
-        print(self.mount.CanPark)
+        plog(self.mount.CanPark)
         if self.mount.CanPark:
-            print("mount cmd: parking mount")
+            plog("mount cmd: parking mount")
             self.move_time = time.time()
             self.mount.Park()
 
     def unpark_command(self, req=None, opt=None):
         ''' unpark the telescope mount '''
         if self.mount.CanPark:
-            print("mount cmd: unparking mount")
+            plog("mount cmd: unparking mount")
             self.mount.Unpark()
 
     def paddle(self):
@@ -1196,14 +1197,14 @@ class Mount:
 #         self._paddle.write(b"gpio readall\n")     #  returns 13
 #         temp_0 = self._paddle.read(21).decode()   #  This is a restate of read, a toss
 #         temp_1 = self._paddle.read(21).decode()
-#         print(len(temp_1))
+#         plog(len(temp_1))
 #         self._paddle.close()
 #         #print ('|' + temp[16:18] +'|')
 #         button = temp_1[14]
 #         spd= temp_1[13]
 #         direc = ''
 #         speed = 0.0
-#         print("Btn:  ", button, "Spd:  ", speed, "Dir:  ", direc)
+#         plog("Btn:  ", button, "Spd:  ", speed, "Dir:  ", direc)
 #         if button == 'E': direc = 'N'
 #         if button == 'B': direc = 'S'
 #         if button == 'D': direc = 'E'
@@ -1277,9 +1278,9 @@ class Mount:
 #             EW = -1
 #             NS = -1
 
-#         print(button, spd, direc, speed)
+#         plog(button, spd, direc, speed)
 # #            if direc != '':
-#         #print(direc, speed)
+#         #plog(direc, speed)
 #         _mount = self.mount
 #         #Need to add diagonal moves
 #         if direc == 'N':
@@ -1288,34 +1289,34 @@ class Mount:
 #                 self.paddleing = True
 #             except:
 #                 pass
-#             print('cmd:  ', direc,  NS*speed)
+#             plog('cmd:  ', direc,  NS*speed)
 #         if direc == 'S':
 #             try:
 #                 _mount.DeclinationRate = -NS*speed
 #                 self.paddleing = True
 #             except:
 #                 pass
-#             print('cmd:  ',direc,  -NS*speed)
+#             plog('cmd:  ',direc,  -NS*speed)
 #         if direc == 'E':
 #             try:
 #                 _mount.RightAscensionRate = EW*speed/15.   #Not quite the correct divisor.
 #                 self.paddleing = True
 #             except:
 #                 pass
-#             print('cmd:  ',direc, EW*speed/15.)
+#             plog('cmd:  ',direc, EW*speed/15.)
 #         if direc == 'W':
 #             try:
 #                 _mount.RightAscensionRate = -EW*speed/15.
 #                 self.paddleing = True
 #             except:
 #                 pass
-#             print('cmd:  ',direc, -EW*speed/15.)
+#             plog('cmd:  ',direc, -EW*speed/15.)
 #         if direc == '':
 #             try:
 #                 _mount.DeclinationRate = 0.0
 #                 _mount.RightAscensionRate = 0.0
 #             except:
-#                 print("Rate set excepetion.")
+#                 plog("Rate set excepetion.")
 #             self.paddleing = False
 #         self._paddle.close()
 #         return
@@ -1325,10 +1326,10 @@ class Mount:
         mnt_shelf = shelve.open(self.site_path + 'ptr_night_shelf/' + 'mount1')
         init_ra = mnt_shelf['ra_cal_offset']
         init_dec = mnt_shelf['dec_cal_offset']     # NB NB THese need to be modulo corrected, maybe limited
-        print("initial:  ", init_ra, init_dec)
+        plog("initial:  ", init_ra, init_dec)
         mnt_shelf['ra_cal_offset'] = init_ra + err_ha
         mnt_shelf['dec_cal_offset'] = init_dec + err_dec
-        print("final:  ", mnt_shelf['ra_cal_offset'], mnt_shelf['dec_cal_offset'])
+        plog("final:  ", mnt_shelf['ra_cal_offset'], mnt_shelf['dec_cal_offset'])
         mnt_shelf.close()
         return
 
@@ -1338,10 +1339,10 @@ class Mount:
         init_ra = mnt_shelf['flip_ra_cal_offset']
         init_dec = mnt_shelf['flip_dec_cal_offset']     # NB NB THese need to be modulo corrected, maybe limited
 
-        print("initial:  ", init_ra, init_dec)
+        plog("initial:  ", init_ra, init_dec)
         mnt_shelf['flip_ra_cal_offset'] = init_ra + err_ha    #NB NB NB maybe best to reverse signs here??
         mnt_shelf['flip_dec_cal_offset'] = init_dec + err_dec
-        print("final:  ", mnt_shelf['flip_ra_cal_offset'], mnt_shelf['flip_dec_cal_offset'])
+        plog("final:  ", mnt_shelf['flip_ra_cal_offset'], mnt_shelf['flip_dec_cal_offset'])
         mnt_shelf.close()
         return
 
@@ -1410,7 +1411,7 @@ class Mount:
 
             def __init__(self, pCom):
                 self.probePosition = None
-                print('Probe class called with:  ', pCom)
+                plog('Probe class called with:  ', pCom)
                 self.commPort = pCom
 
             def probeRead(self):
@@ -1418,7 +1419,7 @@ class Mount:
                    com.write(b'R1\n')
                    self.probePosition = float(com.read(6).decode())
                    com.close()
-                   print(self.probePosition)
+                   plog(self.probePosition)
         '''
 
 
@@ -1432,5 +1433,5 @@ if __name__ == '__main__':
 #    m.get_quick_status(pre)
 #    time.sleep(2)
 #    m.get_quick_status(post)
-#    print(m.get_average_status(pre, post))
-    #print(c.get_ascom_description())
+#    plog(m.get_average_status(pre, post))
+    #plog(c.get_ascom_description())

@@ -33,10 +33,10 @@ hostname_file = glob.glob(hwd + "hostname*")
 
 try:
     site_name = hostname_file[0].split("hostname")[1]
-    print(
-        "Adding new config path: "
-        + str(os.path.join(pathlib.Path().resolve(), "configs", site_name))
-    )
+    # print(
+    #     "Adding new config path: "
+    #     + str(os.path.join(pathlib.Path().resolve(), "configs", site_name))
+    # )
     sys.path.append(os.path.join(pathlib.Path().resolve(), "configs", site_name))
     pathdone = 1
 except OSError:
@@ -52,10 +52,10 @@ if pathdone == 0:
     host_site = socket.gethostname()[:3].lower()
     if host_site == "saf":
         host_site == "aro"  # NB NB THIS is a blatant hack. TODO Remove this
-    print(
-        "Adding new config path: "
-        + str(os.path.join(pathlib.Path().resolve(), "configs", host_site))
-    )
+    # print(
+    #     "Adding new config path: "
+    #     + str(os.path.join(pathlib.Path().resolve(), "configs", host_site))
+    # )
     sys.path.append(os.path.join(pathlib.Path().resolve(), "configs", host_site))
 
 try:
