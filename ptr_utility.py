@@ -158,9 +158,12 @@ if len(dayStr[2]) == 1:
     dayStr[2] = "0" + dayStr[2]
 
 DAY_Directory = dayStr[0] + dayStr[1] + dayStr[2]
-plog_path = site_config['plog_path'] + DAY_Directory + '/'
+try:
+    plog_path = site_config['plog_path'] + DAY_Directory + '/'
+except KeyError:
+    plog_path = site_config['archive_path'] + DAY_Directory + '/'
 os.makedirs(plog_path, exist_ok=True)
-
+print (plog_path)
 
 
 # Here is the key code to update a parallel GUI module. These are
@@ -196,10 +199,10 @@ def plog(*args, loud = True):
             d_t = str(datetime.utcnow()) + ' '
             with open(plog_path + 'nightlog.txt', 'a') as file:
                 file.write(d_t + " " + args_to_str +'\n')
-            
+
     except:
         print("plog failed to convert to string:  ", args)
-    
+
     #Add logging here.
 
     return
