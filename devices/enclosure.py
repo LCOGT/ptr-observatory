@@ -296,8 +296,10 @@ class Enclosure:
             elif self.config['site_IPC_mechanism'] == 'redis':
                 try:
                     status = eval(g_dev['redis'].get('enc_status'))
+                    breakpoint()
                 except:
                     status =  g_dev['redis'].get('enc_status')
+                    breakpoint()
                 self.status = status
                 self.prior_status = status
                 g_dev['enc'].status = status
@@ -497,13 +499,15 @@ class Enclosure:
                         #plog("Finding enc_cmd failed after 3 tries, no harm done.")
                         mnt_command = ['none']
 
-        elif self.dome_on_wema and self.is_wema and self.site_has_proxy and self.config['site_IPC_mechanism'] == 'redis':
+        elif self.dome_on_wema and self.is_wema and self.site_has_proxy and \
+            self.config['site_IPC_mechanism'] == 'redis':
             redis_command = g_dev['redis'].get('enc_cmd')  #It is presumed there is an expiration date on open command at least.
             #NB NB NB Need to prevent executing stale commands.  Note Redis_command is overloaded.
             _redis = True
         if redis_command is not None:
+            
+            breakpoint()
             pass
-
             #plog(redis_command)
         try:
             redis_command = redis_command[0]  # it can come in as ['setManual']
