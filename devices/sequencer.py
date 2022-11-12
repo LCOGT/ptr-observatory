@@ -403,7 +403,7 @@ class Sequencer:
             unobservable projects.  Projects may be "site" projects or 'ptr' (network wide:
             All, Owner, PTR-network, North, South.)
                 The westernmost project is offered to run unless there is a runnable scheduled block.
-                for any given time, are the constraints met? Airmass < x, Moon Phaze < y, moon dist > z,
+                for any given time, are the constraints met? Airmass < x, Moon Phase < y, moon dist > z,
                 flip rules
 
             '''
