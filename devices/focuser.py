@@ -9,7 +9,7 @@ import serial
 import win32com.client
 
 from global_yard import g_dev
-
+from ptr_utility import plog
 
 # Unused except for WMD
 def probeRead(com_port):
@@ -18,7 +18,7 @@ def probeRead(com_port):
         probePosition = (
             float(com.read(7).decode()) * 994.96 - 137
         )  # Corrects Probe to Stage. Up and down, lash = 5000 enc.
-        print(round(probePosition, 1))
+        plog(round(probePosition, 1))
 
 
 class Focuser:
@@ -40,7 +40,7 @@ class Focuser:
         )  #  Note this can be a bogus value
         self.steps_to_micron = 1 / self.micron_to_steps
         self.focuser_message = "-"
-        print(
+        plog(
             "Focuser connected, at:  ",
             round(self.focuser.Position * self.steps_to_micron, 1),
         )
@@ -81,7 +81,7 @@ class Focuser:
                         g_dev["ocn"].temperature
                     )
 
-                print(
+                plog(
                     "Focus position set from temp compensated value:  ",
                     self.reference,
                     ".  Temp used:  ",
@@ -94,12 +94,12 @@ class Focuser:
                     self.get_focal_ref()
                 )  # need to change to config supplied
                 self.last_known_focus = self.reference
-                print("Focus reference updated from Night Shelf:  ", self.reference)
+                plog("Focus reference updated from Night Shelf:  ", self.reference)
                 # Is this of any real value except to persist self.last_known...?
         except:
             self.reference = int(self.config["reference"])
             self.last_known_focus = self.reference
-            print(
+            plog(
                 "Focus reference derived from supplied config file for 10C:  ",
                 self.reference,
             )
@@ -120,7 +120,7 @@ class Focuser:
             trial = min(trial, 12150)
             # NB NB Numbers should all come from site config.
             return int(trial)
-        print("Primary out of range -20C to 45C, using reference focus.")
+        plog("Primary out of range -20C to 45C, using reference focus.")
         return float(self.config["reference"])
 
     def get_status(self):
@@ -191,7 +191,7 @@ class Focuser:
         }
         response = requests.request("POST", url, data=json.dumps(body))
         if response:
-            print(response.status_code)
+            plog(response.status_code)
         return response
 
     def parse_command(self, command):
@@ -221,7 +221,7 @@ class Focuser:
             time.sleep(0.1)
             while self.focuser.IsMoving:
                 time.sleep(0.5)
-                print(">")
+                plog(">")
             self.update_job_status(command["ulid"], "COMPLETE")
         elif action == "go_to_compensated":
             reference = self.calculate_compensation(self.focuser.Temperature)
@@ -229,14 +229,14 @@ class Focuser:
             time.sleep(0.1)
             while self.focuser.IsMoving:
                 time.sleep(0.5)
-                print(">")
+                plog(">")
         elif action == "save_as_reference":
             self.set_focal_ref(
                 self.focuser.Position * self.steps_to_micron
             )  # Need to get the alias properly
             # NB NB NB This needs to remove filter offset and save the temperature to be of any value.
         else:
-            print(f"Command <{action}> not recognized:", command)
+            plog(f"Command <{action}> not recognized:", command)
 
     ###############################
     #       Focuser Commands      #
@@ -286,7 +286,7 @@ class Focuser:
             opt = {}
             self.move_absolute_command(req, opt)
         except:
-            print("Focus-adjust: no changes made.")
+            plog("Focus-adjust: no changes made.")
 
     def guarded_move(self, to_focus):
         try:
@@ -294,9 +294,9 @@ class Focuser:
             time.sleep(0.1)
             while self.focuser.IsMoving:
                 time.sleep(0.3)
-                print(">f")
+                plog(">f")
         except:
-            print("AF Guarded move failed.")
+            plog("AF Guarded move failed.")
 
     def move_relative_command(self, req: dict, opt: dict):
         """Sets the focus position by moving relative to current position."""
@@ -311,7 +311,7 @@ class Focuser:
             time.sleep(0.1)
             while self.focuser.IsMoving:
                 time.sleep(0.5)
-                print(">f++")
+                plog(">f++")
         elif position_string[0] == "-":
             relative = int(position_string[1:])
             position -= relative
@@ -319,9 +319,9 @@ class Focuser:
             time.sleep(0.1)
             while self.focuser.IsMoving:
                 time.sleep(0.5)
-                print(">f rel")
+                plog(">f rel")
         else:
-            print("Supplied relative move is lacking a sign; ignoring.")
+            plog("Supplied relative move is lacking a sign; ignoring.")
 
     def move_absolute_command(self, req: dict, opt: dict):
         """Sets the focus position by moving to an absolute position."""
@@ -333,11 +333,11 @@ class Focuser:
         else:
             tag = "<f abs"
         self.focuser.Move(int(position * self.micron_to_steps))
-        print(tag)
+        plog(tag)
         time.sleep(0.3)
         while self.focuser.IsMoving:
             time.sleep(0.3)
-            print(tag)
+            plog(tag)
 
         # Here we could spin until the move is completed, simplifying other devices.
         # Since normally these are short moves,
@@ -348,15 +348,15 @@ class Focuser:
 
     def stop_command(self, req: dict, opt: dict):
         """stop focuser movement"""
-        print(f"focuser cmd: stop")
+        plog(f"focuser cmd: stop")
 
     def home_command(self, req: dict, opt: dict):
         """set the focuser to the home position"""
-        print(f"focuser cmd: home")
+        plog(f"focuser cmd: home")
 
     def auto_command(self, req: dict, opt: dict):
         """autofocus"""
-        print(f"focuser cmd: auto")
+        plog(f"focuser cmd: auto")
 
     def set_focal_ref(self, ref):
         cam_shelf = shelve.open(self.site_path + "ptr_night_shelf/" + self.camera_name)
@@ -400,9 +400,9 @@ class Focuser:
                 self.site_path + "ptr_night_shelf/" + self.camera_name, writeback=True
             )
             for item in cam_shelf["af_log"]:
-                print(str(item))
+                plog(str(item))
         except:
-            print("There is no focus log on the night shelf.")
+            plog("There is no focus log on the night shelf.")
 
     def get_focal_ref(self):
         cam_shelf = shelve.open(self.site_path + "ptr_night_shelf/" + self.camera_name)

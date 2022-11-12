@@ -27,6 +27,7 @@ from config import site_config
 from global_yard import g_dev
 
 
+
 siteCoordinates = EarthLocation(
     lat=site_config["latitude"] * u.deg,
     lon=site_config["longitude"] * u.deg,
@@ -150,13 +151,17 @@ else:
 ephem.date = ephem.Date(dayNow)
 dayStr = str(ephem.date).split()[0]
 dayStr = dayStr.split("/")
-print("Day String", dayStr)
+#print("Day String", dayStr)
 if len(dayStr[1]) == 1:
     dayStr[1] = "0" + dayStr[1]
 if len(dayStr[2]) == 1:
     dayStr[2] = "0" + dayStr[2]
-print("Day String", dayStr)
+
 DAY_Directory = dayStr[0] + dayStr[1] + dayStr[2]
+plog_path = site_config['plog_path'] + DAY_Directory + '/'
+os.makedirs(plog_path, exist_ok=True)
+
+
 
 # Here is the key code to update a parallel GUI module. These are
 # referenced via GUI module via a dedicated import of utility as _ptr_utility.
@@ -165,7 +170,39 @@ DAY_Directory = dayStr[0] + dayStr[1] + dayStr[2]
 ui = None  # for reference to GUI elements
 doEvents = None  # path to QApplication.updateEvent function.
 modelChanged = False
+last_args = ()
 
+def plog(*args, loud = True):
+
+    try:
+        if len(args) == 1 and args[0] in ['.', '>']:
+            print(args[0])
+            return
+        args_to_str = ''
+        exposure_report = False
+        for item in args:
+            item_to_string = str(item)
+            if item_to_string[-1] == ' ':
+                args_to_str += str(item)
+            else:
+                args_to_str += str(item) + ' '  #  Add space between fields
+        args_to_str = args_to_str.strip()   #Eliminate trailing space.
+        # ToDo  Need to strip unnecessary line feeds  '\n'
+        if args_to_str[:4] == '||  ':
+            exposure_report = True
+            args_to_str = args_to_str[4:]
+        print(args_to_str)
+        if not exposure_report:
+            d_t = str(datetime.utcnow()) + ' '
+            with open(plog_path + 'nightlog.txt', 'a') as file:
+                file.write(d_t + " " + args_to_str +'\n')
+            
+    except:
+        print("plog failed to convert to string:  ", args)
+    
+    #Add logging here.
+
+    return
 
 def zeroModel():
     global modelChanged
@@ -2540,16 +2577,17 @@ def test_icrs_mount_icrs():
                 if abs(ra_err) > 0.1 or abs(dec_err) > 0.1:
                     print(pRa, pDec, lst, ra_err, dec_err)
 
-
+plog('day_directory:  ', '20221105', '\n')
 ut_now, sid_now, equinox_now, day_of_year = get_current_times()
 sidTime = round(sid_now.hour, 7)
-print("Ut, Sid, Jnow:  ", ut_now, sid_now, equinox_now)
+
+plog("Ut, Sid, Jnow:  ", ut_now, sid_now, equinox_now)
 press = 970 * u.hPa
 temp = 10 * u.deg_C
 hum = 0.5  # 50%
 
-print("Utility module loaded at: ", ephem.now(), round((ephem.now()), 4))
-print("Local system Sidereal time is:  ", sidTime)
+plog("Utility module loaded at: ", ephem.now(), round((ephem.now()), 4))
+plog("Local system Sidereal time is:  ", sidTime)
 
 if __name__ == "__main__":
     print("Welcome to the utility module.")

@@ -17,7 +17,7 @@ import win32com.client
 
 import config
 from global_yard import g_dev
-
+from ptr_utility import plog
 
 class FilterWheel:
     """A filter wheel instrument."""
@@ -42,7 +42,7 @@ class FilterWheel:
         # NOTE: THIS CODE DOES NOT implement a filter via the Maxim application
         # which is passed in as a valid instance of class camera.
         self.filter_message = "-"
-        print(
+        plog(
             "Please NOTE: Filter wheel may block for many seconds while first connecting & homing."
         )
         if driver == "LCO.dual":
@@ -52,7 +52,7 @@ class FilterWheel:
             r0 = requests.get(self.ip + "/filterwheel/0/position")
             r1 = requests.get(self.ip + "/filterwheel/1/position")
             if str(r0) == str(r1) == "<Response [200]>":
-                print("LCO Wheel present and connected.")
+                plog("LCO Wheel present and connected.")
 
             r0 = json.loads(r0.text)
             r1 = json.loads(r1.text)
@@ -63,7 +63,7 @@ class FilterWheel:
             r0_pr = requests.put(self.ip + "/filterwheel/0/position", json=r0)
             r1_pr = requests.put(self.ip + "/filterwheel/1/position", json=r1)
             if str(r0_pr) == str(r1_pr) == "<Response [200]>":
-                print("Set up default filter configuration.")
+                plog("Set up default filter configuration.")
             self.maxim = False
             self.ascom = False
             self.dual = True
@@ -95,44 +95,44 @@ class FilterWheel:
                 time.sleep(0.2)
             self.filter_back.Position = self.filter_data[self.filter_reference][1][0]
             time.sleep(1)
-            print(self.filter_selected, self.filter_offset)
+            plog(self.filter_selected, self.filter_offset)
         elif driver == "ASCOM.FLI.FilterWheel" and self.dual_filter:
             self.maxim = False
             self.dual = True
 
             fw0 = win32com.client.Dispatch(driver)  # Closest to Camera
             fw1 = win32com.client.Dispatch(driver)  # Closest to Telescope
-            print(fw0, fw1)
+            plog(fw0, fw1)
 
             actions0 = fw0.SupportedActions
             actions1 = fw1.SupportedActions
             for action in actions0:
-                print("action0:   " + action)
+                plog("action0:   " + action)
             for action in actions1:
-                print("action1:   " + action)
+                plog("action1:   " + action)
             device_names0 = fw0.Action("GetDeviceNames", "")
-            print("action0:    " + device_names0)
+            plog("action0:    " + device_names0)
             devices0 = device_names0.split(";")
             device_names1 = fw1.Action("GetDeviceNames", "")
-            print("action1:    " + device_names1)
+            plog("action1:    " + device_names1)
             devices1 = device_names1.split(";")
             fw0.Action("SetDeviceName", devices0[0])
             fw1.Action("SetDeviceName", devices1[1])
             fw0.Connected = True
             fw1.Connected = True
-            print("Conn 1,2:  ", fw0.Connected, fw1.Connected)
-            print("Pos  1,2:  ", fw0.Position, fw1.Position)
+            plog("Conn 1,2:  ", fw0.Connected, fw1.Connected)
+            plog("Pos  1,2:  ", fw0.Position, fw1.Position)
 
             self.filter_back = fw1  # Closest to Camera
             self.filter_front = fw0  # Closest to Telescope
             self.filter_back.Connected = True
             self.filter_front.Connected = True
-            print(
+            plog(
                 "filters are connected:  ",
                 self.filter_front.Connected,
                 self.filter_back.Connected,
             )
-            print(
+            plog(
                 "filter positions:  ",
                 self.filter_front.Position,
                 self.filter_back.Position,
@@ -154,7 +154,7 @@ class FilterWheel:
                 time.sleep(0.2)
             self.filter_back.Position = self.filter_data[self.filter_reference][1][0]
             time.sleep(1)
-            print(self.filter_selected, self.filter_offset)
+            plog(self.filter_selected, self.filter_offset)
 
         elif driver.lower() in ["maxim.ccdcamera", "maxim", "maximdl", "maximdlpro"]:
             # NOTE: Changed since FLI Dual code is failing.
@@ -167,9 +167,9 @@ class FilterWheel:
             self._connected = self._maxim_connected
             self._connect = self._maxim_connect
             self.description = "Maxim is Filter Controller."
-            print("Maxim is connected:  ", self._connect(True))
-            print("Filter control is via Maxim filter interface.")
-            print(
+            plog("Maxim is connected:  ", self._connect(True))
+            plog("Filter control is via Maxim filter interface.")
+            plog(
                 "Initial filters reported are:  ",
                 self.filter.Filter,
                 self.filter.GuiderFilter,
@@ -191,11 +191,11 @@ class FilterWheel:
             try:
                 ser = serial.Serial(str(driver), timeout=12)
                 filter_pos = str(ser.read().decode())
-                print("QHY filter is Home", filter_pos)
+                plog("QHY filter is Home", filter_pos)
                 self.filter_number = 0
                 self.filter_name = "lpr"
             except:
-                print("QHY Filter not connected.")
+                plog("QHY Filter not connected.")
 
         # This controls the filter wheel through TheSkyX
         elif driver == "CCDSoft2XAdaptor.ccdsoft5Camera":
@@ -222,7 +222,7 @@ class FilterWheel:
             win32com.client.pythoncom.CoInitialize()
             self.filter_front = win32com.client.Dispatch(driver)
             self.filter_front.Connected = True
-            print("Currently QHY RS232 FW")
+            plog("Currently QHY RS232 FW")
 
     # The patches. Note these are essentially a getter-setter/property constructs.
     # NB we are here talking to Maxim acting only as a filter controller.
@@ -267,7 +267,7 @@ class FilterWheel:
         if self.maxim:  # NB Annoying but Maxim sometimes disconnects.
             is_connected = self._maxim_connected()
             if not is_connected:
-                print("Found filter disconnected, reconnecting!")
+                plog("Found filter disconnected, reconnecting!")
                 self.maxim_connect(True)
         if action == "set_position":
             self.set_position_command(req, opt)
@@ -276,7 +276,7 @@ class FilterWheel:
         elif action == "home":
             self.home_command(req, opt)
         else:
-            print("Command <{action}> not recognized.")
+            plog("Command <{action}> not recognized.")
 
     ###############################
     #        Filter Commands      #
@@ -297,7 +297,7 @@ class FilterWheel:
             r0_pr = requests.put(self.ip + "/filterwheel/0/position", json=r0)
             r1_pr = requests.put(self.ip + "/filterwheel/1/position", json=r1)
             if str(r0_pr) == str(r1_pr) == "<Response [200]>":
-                print("Set up filter configuration;  ", filter_selections)
+                plog("Set up filter configuration;  ", filter_selections)
 
         elif self.dual and not self.custom:  # Dual FLI
             # NB the order of the filter_selected [1] may be incorrect
@@ -335,7 +335,7 @@ class FilterWheel:
             r0_pr = requests.put(self.ip + "/filterwheel/0/position", json=r0)
             r1_pr = requests.put(self.ip + "/filterwheel/1/position", json=r1)
             if str(r0_pr) == str(r1_pr) == "<Response [200]>":
-                print("Set up filter configuration;  ", filter_selections)
+                plog("Set up filter configuration;  ", filter_selections)
 
         elif self.dual and not self.custom:
             try:
@@ -367,7 +367,7 @@ class FilterWheel:
             try:
                 filter_name = str(req["filter"]).lower()
             except:
-                print(
+                plog(
                     "Unable to set filter position using filter name,\
                     double-check the filter name dictionary."
                 )
@@ -392,7 +392,7 @@ class FilterWheel:
 
         # If filter was not identified, find a substitute filter
         if filter_identified == 0:
-            print(
+            plog(
                 f"Requested filter: {str(filter_name)} does not exist on this filter wheel."
             )
             filter_name = str(self.substitute_filter(filter_name)).lower()
@@ -408,7 +408,7 @@ class FilterWheel:
                     filter_identified = 1
                     break
 
-        print("Filter name is:  ", self.filter_data[match][0])
+        plog("Filter name is:  ", self.filter_data[match][0])
         g_dev["obs"].send_to_user("Filter set to:  " + str(self.filter_data[match][0]))
         self.filter_number = filt_pointer
         self.filter_selected = str(filter_name).lower()
@@ -423,8 +423,8 @@ class FilterWheel:
             r0_pr = requests.put(self.ip + "/filterwheel/0/position", json=r0)
             r1_pr = requests.put(self.ip + "/filterwheel/1/position", json=r1)
             if str(r0_pr) == str(r1_pr) == "<Response [200]>":
-                print("Set up filter configuration;  ", filter_selections)
-                print("Status:  ", r0_pr.text, r1_pr.text)
+                plog("Set up filter configuration;  ", filter_selections)
+                plog("Status:  ", r0_pr.text, r1_pr.text)
             while True:
                 r0_t = int(
                     requests.get(self.ip + "/filterwheel/0/position")
@@ -436,12 +436,12 @@ class FilterWheel:
                     .text.split('"position":')[1]
                     .split("}")[0]
                 )
-                print(r0_t, r1_t)
+                plog(r0_t, r1_t)
                 if r0_t == 808 or r1_t == 808:
                     time.sleep(1)
                     continue
                 else:
-                    print("Filters:  ", r0_t, r1_t)
+                    plog("Filters:  ", r0_t, r1_t)
                     break
 
         elif self.dual and not self.maxim:
@@ -461,11 +461,14 @@ class FilterWheel:
                 pass
             self.filter_offset = float(self.filter_data[filt_pointer][2])
         elif self.maxim and self.dual:
-            self.filter.Filter = filter_selections[0]
-            time.sleep(0.1)
-            if self.dual_filter:
-                self.filter.GuiderFilter = filter_selections[1]
+            try:
+                self.filter.Filter = filter_selections[0]
                 time.sleep(0.1)
+                if self.dual_filter:
+                    self.filter.GuiderFilter = filter_selections[1]
+                    time.sleep(0.1)
+            except:
+                plog("Filter RPC error, Maxim not responding. Reset Maxim needed.")
         else:
             try:
                 while self.filter_front.Position == -1:
@@ -499,16 +502,20 @@ class FilterWheel:
         Skips the requested exposure if no substitute filter can be found.
         """
 
-        print(f"Finding substitute for {requested_filter}...")
+        plog(f"Finding substitute for {requested_filter}...")
         filter_names = self.config["filter_wheel1"]["settings"]["filter_list"]
         available_filters = list(map(lambda x: x.lower(), filter_names))
-        print(
+        plog(
             f"Available Filters: {str(available_filters)} \
                 \nRequested Filter: {str(requested_filter)}"
         )
 
         # List of tuples containing ([requested filter groups], [priority order]).
         # If this list continues to grow, consider putting it in a separate file.
+        # This is going to get messy when we add Stromgrens, so I suggest
+        # Su, Sv, Sy, Sr, Hb and Hbc    -- WER
+        # next we need to purge for out sites and set them up with the correct defaults.
+        #other filters in the offing:  Duo, Quad, LPR and NEB.
         filter_groups = [
             (["U", "JU", "up"], ["up", "U", "JU"]),  # U broadband
             (["Blue", "B", "JB", "PB"], ["JB", "PB"]),  # B broadband
@@ -517,7 +524,7 @@ class FilterWheel:
             (["i", "Ic", "ip"], ["ip", "Ic"]),  # infrared broadband
             (["z", "zs", "zp"], ["zp", "zs", "z"]),  # z broadband
             (["gp", "g"], ["gp"]),  # generic sdss-g
-            (["HA", "H"], ["HA"]),  # generic H
+            (["HA", "H", 'Ha'], ["HA"]),  # generic H
             (["O3", "O"], ["O3"]),  # generic O
             (["S2", "S"], ["S2"]),  # generic S
             (["CR", "C"], ["CR"]),  # generic C
@@ -527,8 +534,8 @@ class FilterWheel:
                 ["EXO", "ip", "Ic", "rp", "Rc", "PR", "w", "Lum", "clear"],
             ),  # exoplanet
             (
-                ["w", "W", "L", "Lum", "PL", "clear", "focus"],
-                ["w", "Lum", "PL", "clear"],
+                ["w", "W", "L", "Lum", "LUM", "PL", "clear", "focus", 'silica'],
+                ["w", "Lum", "PL", "clear", 'silica'],
             ),  # white clear
         ]
 
@@ -539,12 +546,12 @@ class FilterWheel:
 
         for sub in priority_order:
             if sub.lower() in available_filters:
-                print(
+                plog(
                     f"Found substitute {str(sub)} matching requested {str(requested_filter)}"
                 )
                 return str(sub).lower()
 
-        print("No substitute filter found, skipping exposure.")
+        plog("No substitute filter found, skipping exposure.")
         return "none"
 
 

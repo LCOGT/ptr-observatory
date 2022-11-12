@@ -48,7 +48,7 @@ QHY600         AstroImaging Equipment
 '''
 
 #NB NB NB json is not bi-directional with tuples (), instead, use lists [], nested if tuples are needed.
-
+degree_symbol = "°"
 site_name = 'mrc'    #NB These must be unique across all of PTR. Pre-pend with airport code if needed: 'sba_wmdo'
 
 site_config = {
@@ -64,6 +64,7 @@ site_config = {
 
     'client_path':  'Q:/ptr/',  # Generic place for client host to stash misc stuff
     'alt_path':  'Q:/ptr/',  # Generic place for this host to stash misc stuff
+    'plog_path':  'Q:/ptr/plogs/',  #place where night logs can be found.
     'save_to_alt_path' : 'no',
     'archive_path':  'Q:/ptr/',
 
@@ -418,11 +419,11 @@ site_config = {
             'desc':  'Optec Gemini',
             'driver': 'ASCOM.OptecGemini.Focuser',
             #*********Guesses   7379@10 7457@20  7497 @ 25
-            'reference': 6850, #20210710    #7418,    # Nominal at 15C Primary temperature, in microns not steps. Guess
+            'reference': 6900, #20221103    #7418,    # Nominal at 15C Primary temperature, in microns not steps. Guess
             'ref_temp':  15,      # Update when pinning reference  Larger at lower temperatures.
-            'coef_c': 7.895,    # Negative means focus moves out (larger numerically) as Primary gets colder
-            'coef_0': 6850,  #20210710# Nominal intercept when Primary is at 0.0 C.
-            'coef_date':  '20210710',   #A Guess as to coef_c
+            'coef_c': 11.892,    # Negative means focus moves out (larger numerically) as Primary gets colder
+            'coef_0': 6782,  #20221103# Nominal intercept when Primary is at 0.0 C.
+            'coef_date':  '20221103',   #A Guess as to coef_c
             'z_compression': 0.0, #  microns per degree of zenith distance
             'z_coef_date':  '20221002',   # 'reference': 4375,    #   Guess 20210904  Nominal at 10C Primary temperature
             'use_local_temp':  True,
@@ -593,8 +594,9 @@ site_config = {
                 'StartY' : 1,
 
 
-                'x_field_deg': round(4784*0.605194/3600, 4),   #48 X 32 AMIN  3MIN X 0.5 DEG
-                'y_field_deg': round(3194*0.605194/3600, 4),
+                'x_field_deg': 0.8042,  #  round(4784*0.605194/3600, 4),   #48 X 32 AMIN  3MIN X 0.5 DEG
+                'y_field_deg': 0.5369,  #  round(3194*0.605194/3600, 4),
+                'area_sq_deg':  0.4318, 
                 'overscan_x': 24,
                 'overscan_y': 34,
                 'north_offset': 0.0,    #  These three are normally 0.0 for the primary telescope
@@ -630,7 +632,7 @@ site_config = {
                 'smart_stack_exposure_time': 30,
                 'square_detector': False,
                 'square_pixels': True,
-                'areas_implemented': ["600%", '4x4d', "450%", "300%", "250%", "150%", "133%", "Full", "Sqr", '71%', '50%',  '35%', '25%', '12%'],
+                'areas_implemented': ['Full', '0.5sq°',  '0.7sq°', '1x1°', '1.4sq°', '2x2°', '2.8xsq°', '4x4°', '5.6sq°'],
                 'default_area':  "Full",
                 'default_rotation': 0.0000,
                 'flat_bin_spec': '1,1',    #Default binning for flats

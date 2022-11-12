@@ -28,6 +28,7 @@ from global_yard import *
 import sys
 
 from astropy.time import Time
+from ptr_utility import plog
 #from pprint import pprint
 
 # NB Change these to hours not fractions of a day.  Should come from site config not be in code here.
@@ -380,15 +381,17 @@ class Events:
         # Checking the local time to check if it is setting up for tonight or tomorrow night.
         now_utc = datetime.now(timezone.utc) # timezone aware UTC, shouldn't depend on clock time.
         to_zone = tz.gettz(self.config['TZ_database_name'])
-        if int(now_utc.astimezone(to_zone).hour) < 4:
-            #dayNow= int(ephem.now() - 24*ephem.hour)
-            dayNow= (ephem.now() - 24*ephem.hour)
-            ephem.date = ephem.Date(ephem.now() - 24*ephem.hour)
-        else:
-            dayNow= (ephem.now())
-            ephem.date = ephem.Date(ephem.now())
+        #if int(now_utc.astimezone(to_zone).hour) < 4:
+        #    #dayNow= int(ephem.now() - 24*ephem.hour)
+        #    dayNow= (ephem.now() - 24*ephem.hour)
+        #    ephem.date = ephem.Date(ephem.now() - 24*ephem.hour)
+        #else:
+        #    dayNow= (ephem.now())
+        #    ephem.date = ephem.Date(ephem.now())
+        dayNow= (ephem.now())
+        ephem.date = ephem.Date(ephem.now())
 
-
+        #breakpoint()
 
         ephem.tomorrow = ephem.Date(ephem.date + (24*ephem.hour))
         dayStr = str(ephem.date).split()[0]
@@ -419,8 +422,8 @@ class Events:
         next_day = Day_tomorrow
         g_dev['next_day'] = f"{next_day[0:4]}-{next_day[4:6]}-{next_day[6:]}"
         if loud: print('Day_Directory:  ', DAY_Directory)
-        print('\nNext Day is:  ', g_dev['next_day'])
-        print('Now is:  ', ephem.now(), g_dev['d-a-y'], '\n')
+        plog('\nNext Day is:  ', g_dev['next_day'])
+        plog('Now is:  ', ephem.now(), g_dev['d-a-y'], '\n')
         return DAY_Directory
 
     def display_events(self, endofnightoverride='no'):   # Routine above needs to be called first.
@@ -433,6 +436,8 @@ class Events:
         #moon.compute(dayNow)
         #if loud: print('Sun: ', sun.ra, sun.dec, 'Moon: ', moon.ra, moon.dec)
         ptr = ephem.Observer()     #Photon Ranch
+        
+        #breakpoint()
         ptr.date = dayNow
         ptr.lat = str(self.siteLatitude)
         ptr.lon = str(self.siteLongitude)
@@ -464,6 +469,12 @@ class Events:
         nauticalDusk = ptr.next_setting(sun)    #Can start clocking and autofocus.
         nauticalDawn = ptr.next_rising(sun)
 
+        ptr.horizon = '-15'
+        sun.compute(ptr)
+        #if loud: print('Sun -12: ', sun.ra, sun.dec, sun.az, sun.alt)
+        observing_begins = ptr.next_setting(sun)    #Can start clocking and autofocus.
+        observing_ends = ptr.next_rising(sun)
+        
         ptr.horizon = '-18'
         sun.compute(ptr)
         #if loud: print('Sun -18: ', sun.ra, sun.dec, sun.az, sun.alt)
@@ -480,10 +491,11 @@ class Events:
         sun=ephem.Sun()
         sun.compute(ptr)
         #if loud: print('Middle night  Sun:  ', sun.ra, sun.dec, sun.az, sun.alt)
-        if loud: print('Middle night Moon:  ', moon.ra, moon.dec)#, moon.az, moon.alt)
         mid_moon_ra = moon.ra
         mid_moon_dec = moon.dec
         mid_moon_phase = moon.phase
+        if loud: plog('Middle night Moon Ra Dec Phase:  ', moon.ra, moon.dec, moon.phase)#, moon.az, moon.alt)
+
 
         ptr.horizon = '2'
         sun.compute(ptr)
@@ -572,16 +584,16 @@ class Events:
                 sunrise=sunrise - 24*ephem.hour
 
 
-        print('Events module reporting for duty. \n')
-        print('Ephem date     :    ', dayNow)
-        print("Julian Day     :    ")
-        print("MJD            :    ")
-        print('Day_Directory  :    ', DAY_Directory)
-        print('Next day       :    ', Day_tomorrow)
-        print('Night Duration :    ', str(round(duration, 2)) + ' hr')
-        print('Moon Ra; Dec   :    ', round(mid_moon_ra, 2), ";  ", round(mid_moon_dec, 1))
-        print('Moon phase %   :    ', round(mid_moon_phase, 1), '%\n')
-        print("Key events for the evening, presented by the Solar System: \n")
+        plog('Events module reporting for duty. \n')
+        plog('Ephem date     :    ', dayNow)
+        plog("Julian Day     :    ")
+        plog("MJD            :    ")
+        plog('Day_Directory  :    ', DAY_Directory)
+        plog('Next day       :    ', Day_tomorrow)
+        plog('Night Duration :    ', str(round(duration, 2)) + ' hr')
+        plog('Moon Ra; Dec   :    ', round(mid_moon_ra, 2), ";  ", round(mid_moon_dec, 1))
+        plog('Moon phase %   :    ', round(mid_moon_phase, 1), '%\n')
+        plog("Key events for the evening, presented by the Solar System: \n")
         #if self.config['site'] == 'sro':
 
         evnt = [('Eve Bias Dark      ', ephem.Date(eve_skyFlatBegin -125/1440)),
@@ -596,7 +608,7 @@ class Events:
                 ('Clock & Auto Focus ', ephem.Date(nautDusk_plus_half -12/1440.)),
                 ('Observing Begins   ', ephem.Date(nautDusk_plus_half)),
                 ('Astro Dark         ', ephem.Date(astroDark)),
-                ('Middle of Night    ', middleNight),
+                ('Middle of Night    ', ephem.Date(middleNight)),
                 ('End Astro Dark     ', astroEnd),
                 ('Observing Ends     ', ephem.Date(nautDawn_minus_half )),
                 ('Naut Dawn          ', nauticalDawn),
@@ -651,7 +663,7 @@ class Events:
 
 
 
-        #print("No report of post-close events is available yet. \n\n")
+        #plog("No report of post-close events is available yet. \n\n")
         evnt_sort = self._sortTuple(evnt)
         day_dir = self.compute_day_directory()
 
@@ -662,7 +674,7 @@ class Events:
         # offset = self.config['time_offset']
         # for evnt in evnt_sort:
 
-        #     print(evnt[0], 'UTC: ', evnt[1], timezone, ephem.Date(evnt[1] + float(offset)/24.))
+        #     plog(evnt[0], 'UTC: ', evnt[1], timezone, ephem.Date(evnt[1] + float(offset)/24.))
 
         #sys.exit()
 
@@ -682,7 +694,7 @@ class Events:
         for evnt in evnt_sort:
 
 
-            print(evnt[0], 'UTC: ', evnt[1], timezone, ephem.Date(evnt[1] + float(offset)/24.))    # NB Additon of local times would be handy here.
+            plog(evnt[0], 'UTC: ', evnt[1], timezone, ephem.Date(evnt[1] + float(offset)/24.))    # NB Additon of local times would be handy here.
 
 
 
@@ -697,6 +709,6 @@ class Events:
 
 
 
-        # print("g_dev['events']:  ", g_dev['events'])
+        # plog("g_dev['events']:  ", g_dev['events'])
 
         #NB I notice some minor discrepancies in lunar timing. Should re-check all the dates and times wer 20200408

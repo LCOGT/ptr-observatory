@@ -29,6 +29,7 @@ import win32com.client
 from devices.darkslide import Darkslide
 import ptr_utility
 from global_yard import g_dev
+from ptr_utility import plog
 
 
 """
@@ -100,7 +101,7 @@ NOTES   	= '        '
 ROWORDER	= 'TOP-DOWN' /          Image write order, BOTTOM-UP or TOP-DOWN
 FLIPSTAT	= '        '
 """
-
+dgs = "°"
 # These should eventually be in a utility module
 def next_sequence(pCamera):
     global SEQ_Counter
@@ -134,12 +135,12 @@ def reset_sequence(pCamera):
         seqInt = int(-1)
         seqInt += 1
         seq = ("0000000000" + str(seqInt))[-8:]
-        print("Making new seq: ", pCamera, seq)
+        plog("Making new seq: ", pCamera, seq)
         camShelf["Sequence"] = seq
         camShelf.close()
         return seq
     except:
-        print("Nothing on the cam shelf in reset_sequence")
+        plog("Nothing on the cam shelf in reset_sequence")
         return None
     # seq = camShelf['Sequence']      # a 9 character string
 
@@ -180,10 +181,10 @@ class Camera:
         self.config = config
         self.alias = config["camera"][self.name]["name"]
         win32com.client.pythoncom.CoInitialize()
-        print(driver, name)
+        plog(driver, name)
         self.camera = win32com.client.Dispatch(driver)
 
-        print("loading flash dark frame and bias frame if available")
+        plog("loading flash dark frame and bias frame if available")
 
         try:
             self.biasframe = fits.open(
@@ -194,7 +195,7 @@ class Camera:
             )
             self.biasframe = np.asarray(self.biasframe[0].data, dtype=np.int16)
         except:
-            print("Bias frame not available")
+            plog("Bias frame not available")
             self.biasframe = [0]
         try:
             self.darkframe = fits.open(
@@ -205,11 +206,11 @@ class Camera:
             )
             self.darkframe = np.asarray(self.darkframe[0].data, dtype=np.float32)
         except:
-            print("Dark frame not available")
+            plog("Dark frame not available")
             self.darkframe = [0]
 
         try:
-            print("Arranging dictionary of flat frames if available")
+            plog("Arranging dictionary of flat frames if available")
             fileList = glob.glob(
                 self.config["archive_path"]
                 + "calibmasters/"
@@ -222,12 +223,12 @@ class Camera:
             # To supress occasional flatfield div errors
             np.seterr(divide="ignore")
         except:
-            print("Flat frames not loaded or available")
+            plog("Flat frames not loaded or available")
 
-        print("Connecting to:  ", driver)
+        plog("Connecting to:  ", driver)
 
         if driver[:5].lower() == "ascom":
-            print("ASCOM camera is initializing.")
+            plog("ASCOM camera is initializing.")
             # Monkey patch in ASCOM specific methods.
             self._connected = self._ascom_connected
             self._connect = self._ascom_connect
@@ -244,18 +245,18 @@ class Camera:
             self.maxim = False
             self.ascom = True
             self.theskyx = False
-            print("ASCOM is connected:  ", self._connect(True))
-            print("Control is ASCOM camera driver.")
+            plog("ASCOM is connected:  ", self._connect(True))
+            plog("Control is ASCOM camera driver.")
 
             try:
                 actions = self.camera.SupportedActions
                 if "EnableFullSensor" in actions:
                     self.camera.Action("EnableFullSensor", "enable")
-                    print("Chip size expanded to 4132 x 4117")
+                    plog("Chip size expanded to 4132 x 4117")
             except:
-                print("Chip size not expanded.")
+                plog("Chip size not expanded.")
         elif driver == "CCDSoft2XAdaptor.ccdsoft5Camera":
-            print("Connecting to the Sky")
+            plog("Connecting to the Sky")
             self._connected = self._theskyx_connected
             self._connect = self._theskyx_connect
             self._set_setpoint = self._theskyx_set_setpoint
@@ -273,11 +274,11 @@ class Camera:
             self.maxim = False
             self.ascom = False
             self.theskyx = True
-            print("TheSkyX is connected:  ")
+            plog("TheSkyX is connected:  ")
             self.app = win32com.client.Dispatch("CCDSoft2XAdaptor.ccdsoft5Camera")
 
         else:
-            print("Maxim camera is initializing.")
+            plog("Maxim camera is initializing.")
             # Monkey patch in Maxim specific methods.
             self._connected = self._maxim_connected
             self._connect = self._maxim_connect
@@ -295,28 +296,28 @@ class Camera:
             self.maxim = True
             self.ascom = False
             self.theskyx = False
-            print("Maxim is connected:  ", self._connect(True))
+            plog("Maxim is connected:  ", self._connect(True))
             self.app = win32com.client.Dispatch("Maxim.Application")
-            print(self.camera)
+            plog(self.camera)
             self.camera.SetFullFrame()
             self.camera.SetFullFrame
 
-            print("Control is via Maxim camera interface, not ASCOM.")
-            print("Please note telescope is NOT connected to Maxim.")
+            plog("Control is via Maxim camera interface, not ASCOM.")
+            plog("Please note telescope is NOT connected to Maxim.")
 
         # NB NB Consider starting at low end of cooling and then gradually increasing it
-        print("Cooler started @:  ", self._setpoint())
+        plog("Cooler started @:  ", self._setpoint())
         setpoint = float(self.config["camera"][self.name]["settings"]["temp_setpoint"])
         self._set_setpoint(setpoint)
-        print("Cooler setpoint is now:  ", setpoint)
+        plog("Cooler setpoint is now:  ", setpoint)
         if self.config["camera"][self.name]["settings"][
             "cooler_on"
         ]:  # NB NB why this logic, do we mean if not cooler found on, then turn it on and take the delay?
             self._set_cooler_on()
-        print("Cooler Cooling beginning @:  ", self._temperature())
+        plog("Cooler Cooling beginning @:  ", self._temperature())
         time.sleep(5)
         if self.maxim == True:
-            print("TEC  % load:  ", self._maxim_cooler_power())
+            plog("TEC  % load:  ", self._maxim_cooler_power())
         self.use_file_mode = (
             False  # NB NB NB this is obsolte, clear out file mode from code
         )
@@ -353,13 +354,13 @@ class Camera:
                     + datetime.datetime.strftime(datetime.datetime.now(), "%Y%m%d")
                 )
             except:
-                print("Couldn't make autosave directory")
+                plog("Couldn't make autosave directory")
 
         try:
             for file_path in glob.glob(self.file_mode_path + "*.f*t*"):
                 os.remove(file_path)
         except:
-            print("Temporary *.fits files not found, this is normally OK.")
+            plog("Temporary *.fits files not found, this is normally OK.")
         if self.config["camera"][self.name]["settings"]["is_cmos"] == True:
             self.is_cmos = True
         else:
@@ -377,7 +378,7 @@ class Camera:
             )  # = 1
             # NB we need to be sure AWS picks up this default.config.site_config['camera'][self.name]['settings']['default_bin'])
         except:
-            print("Camera only accepts Bins = 1.")
+            plog("Camera only accepts Bins = 1.")
             self.camera.BinX = 1
             self.camera.BinY = 1
         self.overscan_x = int(
@@ -433,7 +434,7 @@ class Camera:
             )  #  NB eventually default after reboot should be closed.
             # self.darkslide_instance.closeDarkslide()   #  Consider turing off IR Obsy light at same time..
             # self.darkslide_open = False
-            print("Darkslide unknown on camera startup.")
+            plog("Darkslide unknown on camera startup.")
         self.last_user_name = "Tobor"
         self.last_user_id = "Tobor"
         try:
@@ -443,21 +444,21 @@ class Camera:
 
     # Patchable methods   NB These could be default ASCOM
     def _connected(self):
-        print("This is un-patched _connected method")
+        plog("This is un-patched _connected method")
         return False
 
     def _connect(self, p_connect):
-        print("This is un-patched _connect method:  ", p_connect)
+        plog("This is un-patched _connect method:  ", p_connect)
         return False
 
     def _setpoint(self):
-        print("This is un-patched cooler _setpoint method")
+        plog("This is un-patched cooler _setpoint method")
         return
 
     # The patches. Note these are essentially getter-setter/property constructs.
 
     def _theskyx_set_setpoint(self, p_temp):
-        print("NOT SURE HOW TO SET TEMP POINT IN THE SKY YET")
+        plog("NOT SURE HOW TO SET TEMP POINT IN THE SKY YET")
         self.camera.TemperatureSetPoint = float(p_temp)
         return self.camera.TemperatureSetPoint
 
@@ -478,12 +479,12 @@ class Camera:
         return self.camera.HeatSinkTemperature
 
     def _theskyx_cooler_on(self):
-        print("I am not sure what this function is asking for")
+        plog("I am not sure what this function is asking for")
         return True  # NB NB NB This would be a good place to put a warming protector
 
     def _theskyx_set_cooler_on(self):
         self.camera.RegulateTemperature = True
-        print("3s wait for cooler to start up.")
+        plog("3s wait for cooler to start up.")
         time.sleep(3)
         return (
             self.camera.RegulateTemperature
@@ -504,7 +505,7 @@ class Camera:
         self.camera.AbortExposure()
 
     def _theskyx_imageavailable(self):
-        print(self.camera.IsExposureComplete)
+        plog(self.camera.IsExposureComplete)
         return self.camera.IsExposureComplete
 
     def _theskyx_getImageArray(self):
@@ -533,7 +534,7 @@ class Camera:
 
     def _maxim_set_cooler_on(self):
         self.camera.CoolerOn = True
-        print("3s wait for cooler to start up.")
+        plog("3s wait for cooler to start up.")
         time.sleep(3)
         return (
             self.camera.CoolerOn
@@ -585,14 +586,14 @@ class Camera:
             self.camera.SetCCDTemperature = float(p_temp)
             return self.camera.SetCCDTemperature
         else:
-            print("Camera cannot set cooling temperature.")
+            plog("Camera cannot set cooling temperature.")
             return p_temp
 
     def _ascom_setpoint(self):
         if self.camera.CanSetCCDTemperature:
             return self.camera.SetCCDTemperature
         else:
-            print("Camera cannot set cooling temperature: Using 10.0C")
+            plog("Camera cannot set cooling temperature: Using 10.0C")
             return 10.0
 
     def _ascom_expose(self, exposure_time, imtypeb):
@@ -672,7 +673,7 @@ class Camera:
         return status
 
     def parse_command(self, command):
-        print("Camera Command incoming:  ", command)
+        #plog("Camera Command incoming:  ", command)
         req = command["required_params"]
         opt = command["optional_params"]
         action = command["action"]
@@ -681,16 +682,16 @@ class Camera:
             self.last_user_id = self.user_id
         self.user_name = command["user_name"]
 
-        print(opt)
+        #plog(opt)
         if (
             "object_name" in opt
         ):  # this is the worlds laziest bit of code... it is just until some javascript is updated. remove try except >Oct22
             if opt["object_name"] == "":
                 opt["object_name"] = "Unspecified"
-            print("Target Name:  ", opt["object_name"])
+            plog("Target Name:  ", opt["object_name"])
         else:
             opt["object_name"] = "Unspecified"
-            print("Target Name:  ", opt["object_name"])
+            plog("Target Name:  ", opt["object_name"])
         if self.user_name != self.last_user_name:
             self.last_user_name = self.user_name
         if action == "expose" and not self.exposure_busy:
@@ -699,23 +700,23 @@ class Camera:
             self.active_script = None
 
         elif action == "expose" and self.exposure_busy:
-            print("Cannot expose, camera is currently busy")
+            plog("Cannot expose, camera is currently busy")
 
         elif action == "darkslide_close":
 
             g_dev["drk"].closeDarkslide()
-            print("Closing the darkslide.")
+            plog("Closing the darkslide.")
         elif action == "darkslide_open":
 
             g_dev["drk"].openDarkslide()
-            print("Opening the darkslide.")
+            plog("Opening the darkslide.")
         elif action == "stop":
             self.stop_command(req, opt)
             self.exposure_busy = False
-            print("STOP  STOP  STOP received.")
+            plog("STOP  STOP  STOP received.")
         else:
 
-            print(f"Command <{action}> not recognized.")
+            plog(f"Command <{action}> not recognized.")
 
     ###############################
     #       Camera Commands       #
@@ -769,7 +770,7 @@ class Camera:
             if (
                 g_dev["mnt"].last_seek_time < self.t0 - 180
             ):  # NB Consider upping this to 300 to 600 sec.
-                print("re_seeking")
+                plog("re_seeking")
                 g_dev["mnt"].re_seek(
                     0
                 )  # is a placeholder for a dither value being passed.
@@ -780,21 +781,21 @@ class Camera:
             probe = self._cooler_on()
             if not probe:
                 self._set_cooler_on()
-                print("Found cooler off.")
+                plog("Found cooler off.")
                 try:
                     self._connect(False)
                     self._connect(True)
                     self._set_cooler_on()
                 except:
-                    print("Camera reconnect failed @ expose entry.")
+                    plog("Camera reconnect failed @ expose entry.")
         except Exception as e:
-            print("\n\nCamera was not connected @ expose entry:  ", e, "\n\n")
+            plog("\n\nCamera was not connected @ expose entry:  ", e, "\n\n")
             try:
                 self._connect(False)
                 self._connect(True)
                 self._set_cooler_on()
             except:
-                print("Camera reconnect failed 2nd time @ expose entry.")
+                plog("Camera reconnect failed 2nd time @ expose entry.")
 
         opt = optional_params
         self.hint = optional_params.get("hint", "")
@@ -879,7 +880,7 @@ class Camera:
             self.camera.NumX = int(self.camera_x_size / self.camera.BinX)
             self.camera.NumY = int(self.camera_y_size / self.camera.BinY)
         except:
-            print("this camera cannot set NumX")
+            plog("this camera cannot set NumX")
 
         readout_time = float(
             self.config["camera"][self.name]["settings"]["cycle_time"][bin_x - 1]
@@ -920,11 +921,11 @@ class Camera:
                 {"filter": requested_filter_name}, {}
             )
             if self.current_filter == "none":
-                print("skipping exposure as no adequate filter match found")
+                plog("skipping exposure as no adequate filter match found")
                 return
         except Exception as e:
-            print("Camera filter setup:  ", e)
-            print(traceback.format_exc())
+            plog("Camera filter setup:  ", e)
+            plog(traceback.format_exc())
 
         self.current_offset = g_dev[
             "fil"
@@ -1057,7 +1058,7 @@ class Camera:
                     try:
                         enc_slewing = g_dev["enc"].status["dome_slewing"]
                     except:
-                        print("enclosure SLEWING threw an exception.")
+                        plog("enclosure SLEWING threw an exception.")
                 else:
                     enc_slewing = False
 
@@ -1076,9 +1077,9 @@ class Camera:
                         )
                     # if enc_slewing:
                     # st += 'd>' + str(round(time.time() - g_dev['mnt'].move_time, 1))
-                    print(st)
+                    plog(st)
                     if round(time.time() - g_dev["mnt"].move_time, 1) >= 75:
-                        print("|n\n DOME OR MOUNT HAS TIMED OUT!|n|n")
+                        plog("|n\n DOME OR MOUNT HAS TIMED OUT!|n|n")
                         break
 
                     st = ""
@@ -1090,7 +1091,7 @@ class Camera:
                         try:
                             enc_slewing = g_dev["enc"].status["dome_slewing"]
                         except:
-                            print("enclosure SLEWING threw an exception.")
+                            plog("enclosure SLEWING threw an exception.")
                     else:
                         enc_slewing = False
 
@@ -1114,11 +1115,13 @@ class Camera:
                 self.retry_camera_start_time = time.time()
                 while self.retry_camera > 0:
                     if g_dev["obs"].stop_all_activity:
+
                         if result != None and result != {}:
                             if result["stopped"] is True:
                                 g_dev["obs"].stop_all_activity = False
                                 print("Camera retry loop stopped by Cancel Exposure")
                                 self.exposure_busy = False
+
                         return
 
 
@@ -1153,17 +1156,17 @@ class Camera:
                         try:
                             probe = self._cooler_on()
                             if not probe:
-                                print("Found cooler off.")
+                                plog("Found cooler off.")
                                 try:
                                     self._connect(False)
                                     self._connect(True)
                                     self._set_cooler_on()
                                 except:
-                                    print("Camera reconnect failed @ expose camera entry.")
+                                    plog("Camera reconnect failed @ expose camera entry.")
 
                                     g_dev["cam_retry_doit"] = True
                         except Exception as e:
-                            print(
+                            plog(
                                 "\n\nCamera was not connected @ expose camera retry:  ",
                                 e,
                                 "\n\n",
@@ -1174,7 +1177,7 @@ class Camera:
                                 self._connect(True)
                                 self._set_cooler_on()
                             except:
-                                print("Camera reconnect failed @ expose camera retry.")
+                                plog("Camera reconnect failed @ expose camera retry.")
 
                                 g_dev["cam_retry_doit"] = True
                         # At this point we really should be connected!!
@@ -1184,16 +1187,16 @@ class Camera:
                             try:
                                 g_dev["ocn"].get_quick_status(self.pre_ocn)
                             except:
-                                print("Enclosure quick status failed")
+                                plog("Enclosure quick status failed")
                             g_dev["foc"].get_quick_status(self.pre_foc)
                             try:
                                 g_dev["rot"].get_quick_status(self.pre_rot)
                             except:
-                                print("Rotator quick status failed")
+                                plog("Rotator quick status failed")
                             try:
                                 g_dev["mnt"].get_quick_status(self.pre_mnt)
                             except:
-                                print("ra_cal_offset is an issue")
+                                plog("ra_cal_offset is an issue")
                             ldr_handle_time = None
                             ldr_handle_high_time = None  #  This is not maxim-specific
 
@@ -1232,7 +1235,7 @@ class Camera:
                                 self.camera.StartSequence(
                                     self.camera_path + "seq/ptr_mrc.seq"
                                 )
-                                print("Starting autosave  at:  ", self.t2)
+                                plog("Starting autosave  at:  ", self.t2)
                             else:
                                 # This is the standard call to Maxim
                                 self.pre_mnt = []
@@ -1285,14 +1288,14 @@ class Camera:
                                         self.pre_ocn
                                     )  # NB NB WEMA must be running or this may fault.
                                 except:
-                                    print(
+                                    plog(
                                         "Failed to collect quick status on observing conditions"
                                     )
                                 g_dev["foc"].get_quick_status(self.pre_foc)
                                 try:
                                     g_dev["rot"].get_quick_status(self.pre_rot)
                                 except:
-                                    print("There is perhaps no rotator")
+                                    plog("There is perhaps no rotator")
 
                                 g_dev["mnt"].get_quick_status(
                                     self.pre_mnt
@@ -1306,7 +1309,7 @@ class Camera:
 
                                 self._expose(exposure_time, imtypeb)
                         else:
-                            print("Something terribly wrong, driver not recognized.!")
+                            plog("Something terribly wrong, driver not recognized.!")
                             result = {}
                             result["error":True]
                             return result
@@ -1341,8 +1344,8 @@ class Camera:
                         self.retry_camera = 0
                         break
                     except Exception as e:
-                        print("Exception in camera retry loop:  ", e)
-                        print(traceback.format_exc())
+                        plog("Exception in camera retry loop:  ", e)
+                        plog(traceback.format_exc())
                         self.retry_camera -= 1
                         num_retries += 1
                         self.exposure_busy = False
@@ -1379,7 +1382,7 @@ class Camera:
         sskcounter=0,
         Nsmartstack=1
     ):
-        print(
+        plog(
             "Finish exposure Entered:  " + str(exposure_time) + "sec.;   # of ",
             frame_type,
             "to go: ",
@@ -1425,16 +1428,16 @@ class Camera:
                     self.post_mnt
                 )  # Need to pick which pass was closest to image completion
             except:
-                print("need to get this mount status done")
+                plog("need to get this mount status done")
             try:
                 g_dev["rot"].get_quick_status(self.post_rot)
             except:
-                print("There is no rotator?")
+                plog("There is no rotator?")
             g_dev["foc"].get_quick_status(self.post_foc)
             try:
                 g_dev["ocn"].get_quick_status(self.post_ocn)
             except:
-                print("OCN status not quick updated")
+                plog("OCN status not quick updated")
             if time.time() > self.status_time:
                 g_dev["obs"].update_status()
                 self.status_time = time.time() + 10
@@ -1445,10 +1448,10 @@ class Camera:
                 self.t7b = time.time()
                 remaining = round(self.completion_time - self.t7b, 1)
                 if remaining > 0:
-                    print(
-                        str(round(remaining, 1)) + "sec.",
+                    plog(
+                        '||  ' + str(round(remaining, 1)) + "sec.",
                         str(round(100 * remaining / cycle_time, 1)) + "%",
-                    )
+                    )  #|| used to flag this line in plog().
                     if (
                         quartileExposureReport == 0
                     ):  # Silly daft but workable exposure time reporting by MTF
@@ -1497,7 +1500,7 @@ class Camera:
             try:
                 pier_side = g_dev["mnt"].mount.sideOfPier
             except:
-                print("Mount doesn't use pierside")
+                plog("Mount doesn't use pierside")
 
             if (not self.use_file_mode and self._imageavailable()) or (
                 self.use_file_mode and len(incoming_image_list) >= 1
@@ -1507,16 +1510,16 @@ class Camera:
                 while imageCollected != 1:
                     if retrycounter == 8:
                         result = {"error": True}
-                        print("Retried 8 times and didn't get an image, giving up.")
+                        plog("Retried 8 times and didn't get an image, giving up.")
                         return result
 
                     try:
                         self.img = np.array(self._getImageArray()).astype("uint16")
                         imageCollected = 1
                     except Exception as e:
-                        print(e)
+                        plog(e)
                         if "Image Not Available" in str(e):
-                            print("Still waiting for file to arrive: ", e)
+                            plog("Still waiting for file to arrive: ", e)
                         time.sleep(3)
                         retrycounter = retrycounter + 1
 
@@ -1528,7 +1531,7 @@ class Camera:
                     time.time()
                 )  # As read, this is a Windows Safe Array of Longs
                 if frame_type in ["bias", "dark"]:
-                    print(
+                    plog(
                         "Median of full area bias or dark  image:  ",
                         np.median(self.img),
                     )
@@ -1543,18 +1546,18 @@ class Camera:
                         "mnt"
                     ].mount.sideOfPier  # 0 == Tel Looking West, is flipped.
                 except:
-                    print("This mount doesn't report sideofpier")
+                    plog("This mount doesn't report sideofpier")
 
                 ix, iy = self.img.shape
                 self.t77 = time.time()
 
                 neg_pix = np.where(self.img < 0)
                 if len(neg_pix[0]) > 0:
-                    print("No. of negative pixels fixed:  ", len(neg_pix[0]))
+                    plog("No. of negative pixels fixed:  ", len(neg_pix[0]))
                 self.img[neg_pix] = 0
                 pos_pix = np.where(self.img > 65535)
                 if len(pos_pix[0]) > 0:
-                    print("No. of overflow pixels fixed:  ", len(pos_pix[0]))
+                    plog("No. of overflow pixels fixed:  ", len(pos_pix[0]))
                 self.img[pos_pix] = 65535
                 test_saturated = np.array(
                     self.img[ix // 3 : ix * 2 // 3, iy // 3 : iy * 2 // 3]
@@ -1567,7 +1570,7 @@ class Camera:
                         bi_mean
                         >= self.config["camera"][self.name]["settings"]["saturate"]
                     ):
-                        print("Flat rejected, center is too bright:  ", bi_mean)
+                        plog("Flat rejected, center is too bright:  ", bi_mean)
                         g_dev["obs"].send_to_user(
                             "Flat rejected, too bright.", p_level="INFO"
                         )
@@ -1584,13 +1587,13 @@ class Camera:
                         self.pre_rot, self.post_rot
                     )
                 except:
-                    print("No Rotator")
+                    plog("No Rotator")
                 try:
                     avg_ocn = g_dev["ocn"].get_average_status(
                         self.pre_ocn, self.post_ocn
                     )
                 except:
-                    print("no ocn")
+                    plog("no ocn")
 
                 try:
 
@@ -1987,7 +1990,7 @@ class Camera:
                         )
                         hdu.header["OBJCTDEC"] = (self.pre_mnt[2], "[deg] Object dec")
                     except:
-                        print("problem with the premount?")
+                        plog("problem with the premount?")
 
                     try:
                         hdu.header["OBSERVER"] = (
@@ -2116,7 +2119,7 @@ class Camera:
                         hdu.header["ROTANGLE"] = (avg_rot[1], "[deg] Rotator angle")
                         hdu.header["ROTMOVNG"] = (avg_rot[2], "Rotator is moving")
                     except:
-                        print("have to have no rotator header itesm when no rotator")
+                        plog("have to have no rotator header itesm when no rotator")
 
                     try:
                         hdu.header["FOCUS"] = (
@@ -2127,7 +2130,7 @@ class Camera:
                         hdu.header["FOCUSTMP"] = (avg_foc[2], "[C] Focuser temperature")
                         hdu.header["FOCUSMOV"] = (avg_foc[3], "Focuser is moving")
                     except:
-                        print("There is something fishy in the focuser routine")
+                        plog("There is something fishy in the focuser routine")
                     try:
                         hdu.header["WXSTATE"] = (
                             g_dev["ocn"].wx_is_ok,
@@ -2154,7 +2157,7 @@ class Camera:
                             "[mag/arcsec^2] Measured sky brightness",
                         )
                     except:
-                        print("have to not have ocn header items when no ocn")
+                        plog("have to not have ocn header items when no ocn")
 
                     hdu.header["PIXSCALE"] = (
                         self.config["camera"][self.name]["settings"]["pix_scale"][
@@ -2413,7 +2416,7 @@ class Camera:
                                     self.darkframe * exposure_time
                                 )
                         except Exception as e:
-                            print("debias/darking light frame failed: ", e)
+                            plog("debias/darking light frame failed: ", e)
                         # Quick flat flat frame
                         try:
                             tempFlatFrame = np.load(self.flatFiles[self.current_filter])
@@ -2421,7 +2424,7 @@ class Camera:
                             hdusmall.data = np.divide(hdusmall.data, tempFlatFrame)
                             del tempFlatFrame
                         except Exception as e:
-                            print("flatting light frame failed", e)
+                            plog("flatting light frame failed", e)
 
                         # Crop unnecessary rough edges off preview images that unnecessarily skew the scaling
                         # This is particularly necessary for SRO, but I've seen many cameras where cropping
@@ -2473,7 +2476,7 @@ class Camera:
                                 focusimg, 4.5, err=bkg.globalrms, minarea=15
                             )  # Minarea should deal with hot pixels.
                             sources.sort(order="cflux")
-                            print("No. of detections:  ", len(sources))
+                            plog("No. of detections:  ", len(sources))
 
                             ix, iy = focusimg.shape
                             r0 = 0
@@ -2496,15 +2499,15 @@ class Camera:
                                 ):  # Consider a lower bound
                                     a0 = sourcef["a"]
                                     b0 = sourcef["b"]
-                                    r0.append(round(math.sqrt(a0 * a0 + b0 * b0), 2))
+                                    r0.append(round(math.sqrt(a0 * a0 + b0 * b0)*2, 3))
 
                             #scale = self.config["camera"][self.name]["settings"][
                             #    "pix_scale"
                             #][self.camera.BinX - 1]
                             scale=pixscale
                             result["FWHM"] = round(
-                                np.median(r0) * scale, 3
-                            )  # was 2x larger but a and b are diameters not radii
+                                np.median(r0) * scale, 2
+                            )  # was 2x larger but a and b are diameters not radii -20221111   Duh Homer!, Wrong.
                             result["mean_focus"] = avg_foc[1]
                             try:
                                 valid = (
@@ -2515,6 +2518,7 @@ class Camera:
                             except:
                                 result[
                                     "error"
+
                                 ] = True
                                 result["FWHM"] = np.nan
                                 result["mean_focus"] = np.nan
@@ -2600,7 +2604,7 @@ class Camera:
                                         p_level="INFO",
                                     )
                             except:
-                                print(
+                                plog(
                                     "there was an issue saving the preview jpg. Pushing on though"
                                 )
                         else:
@@ -2620,7 +2624,7 @@ class Camera:
                             #        paths["i768sq_name10"] + ".fz",
                             #    )
                         except:
-                            print(
+                            plog(
                                 "there was an issue saving the small fits. Pushing on though"
                             )
                         del hdusmallfits
@@ -2657,10 +2661,10 @@ class Camera:
                             )  # Save full fz file locally
                             saver = 1
                         except Exception as e:
-                            print("Failed to write raw fz file: ", e)
+                            plog("Failed to write raw fz file: ", e)
                             if "requested" in e and "written" in e:
-                                print(check_download_cache())
-                            print(traceback.format_exc())
+                                plog(check_download_cache())
+                            plog(traceback.format_exc())
                             time.sleep(10)
                             saverretries = saverretries + 1
                     del hdufz  # remove file from memory now that we are doing with it
@@ -2685,10 +2689,10 @@ class Camera:
                             )  # Save full raw file locally
                             saver = 1
                         except Exception as e:
-                            print("Failed to write raw file: ", e)
+                            plog("Failed to write raw file: ", e)
                             if "requested" in e and "written" in e:
-                                print(check_download_cache())
-                            print(traceback.format_exc())
+                                plog(check_download_cache())
+                            plog(traceback.format_exc())
                             time.sleep(10)
                             saverretries = saverretries + 1
 
@@ -2704,11 +2708,11 @@ class Camera:
                                 )  # Save flash reduced file locally
                                 saver = 1
                             except Exception as e:
-                                print("Failed to write raw file: ", e)
+                                plog("Failed to write raw file: ", e)
                                 if "requested" in e and "written" in e:
 
-                                    print(check_download_cache())
-                                print(traceback.format_exc())
+                                    plog(check_download_cache())
+                                plog(traceback.format_exc())
                                 time.sleep(10)
                                 saverretries = saverretries + 1
 
@@ -2736,11 +2740,11 @@ class Camera:
                                 )  # Save full raw file locally
                             saver = 1
                         except Exception as e:
-                            print("Failed to write raw file: ", e)
+                            plog("Failed to write raw file: ", e)
                             if "requested" in e and "written" in e:
 
-                                print(check_download_cache())
-                            print(traceback.format_exc())
+                                plog(check_download_cache())
+                            plog(traceback.format_exc())
                             time.sleep(10)
                             saverretries = saverretries + 1
 
@@ -2770,7 +2774,7 @@ class Camera:
                     try:
                         result["mean_rotation"] = avg_rot[1]
                     except:
-                        print("we ain't got no rotator matey")
+                        plog("we ain't got no rotator matey")
                     if not focus_image:
                         result["FWHM"] = None
                     result["half_FD"] = None
@@ -2786,8 +2790,8 @@ class Camera:
                     self.exposure_busy = False
                     return result
                 except Exception as e:
-                    print("Header assembly block failed: ", e)
-                    print(traceback.format_exc())
+                    plog("Header assembly block failed: ", e)
+                    plog(traceback.format_exc())
                     self.t7 = time.time()
                     result = {"error": True}
                 self.exposure_busy = False
@@ -2799,7 +2803,7 @@ class Camera:
                 remaining = round(self.completion_time - self.t7, 1)
 
                 if remaining < 0 and notifyReadOutOnlyOnce == 0:
-                    print(
+                    plog(
                         "Reading out image. Time remaining: "
                         + str(round(13 + remaining, 1)),
                         " sec",
@@ -2812,7 +2816,7 @@ class Camera:
                     )
                     notifyReadOutOnlyOnce = 1
                 if remaining < -30:
-                    print(
+                    plog(
                         "Camera timed out; probably is no longer connected, resetting it now."
                     )
                     g_dev["obs"].send_to_user(
