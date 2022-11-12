@@ -1039,7 +1039,7 @@ class Camera:
             if not imtype.lower() in ["light"]:
                 Nsmartstack=1
                 SmartStackID='no'
-            elif self.smartstack == 'yes' and (exposure_time > 3*ssExp):
+            elif (self.smartstack == 'yes' or self.smartstack == True) and (exposure_time > 3*ssExp):
                 Nsmartstack=np.ceil(exposure_time / ssExp)
                 exposure_time=ssExp
                 SmartStackID=(datetime.datetime.now().strftime("%d%m%y%H%M%S"))
@@ -1047,6 +1047,7 @@ class Camera:
             else:
                 Nsmartstack=1
                 SmartStackID='no'
+
 
             try:
                 # Check here for filter, guider, still moving  THIS IS A CLASSIC

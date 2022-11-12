@@ -288,7 +288,7 @@ class Sequencer:
         ocn_status = g_dev['ocn'].status
         enc_status = g_dev['enc'].status
         events = g_dev['events']
-         
+
         g_dev['enc'].mode = 'Automatic'     #  THis is a very common debug point.
 
         if self.bias_dark_latch and ((events['Eve Bias Dark'] <= ephem_now < events['End Eve Bias Dark']) and \
@@ -612,6 +612,7 @@ class Sequencer:
                     longstackname=block_specification['project']['created_at'].replace('-','').replace(':','')
                 else:
                     longstackswitch='no'
+                    longstackname='no'
                 if block_specification['project']['smartstack'] == True:
                     smartstackswitch='yes'
                 else:
