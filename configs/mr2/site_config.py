@@ -117,7 +117,6 @@ site_config = {
     'automatic_detail_default': "Enclosure is set to Automatic mode.",
     'observing_check_period' : 2,    # How many minutes between weather checks
     'enclosure_check_period' : 2,    # How many minutes between enclosure checks
-    'auto_eve_bias_dark': False,
     'auto_eve_bias_dark': True,
     'auto_eve_sky_flat': True,
     'eve_sky_flat_sunset_offset': -60.,  #  Minutes  neg means before, + after.
@@ -126,7 +125,7 @@ site_config = {
     're-calibrate_on_solve': True,
     'pointing_calibration_on_startup': False,
     'periodic_focus_time' : 0.5, # This is a time, in hours, over which to bypass automated focussing (e.g. at the start of a project it will not refocus if a new project starts X hours after the last focus)
-    'stdev_fwhm' : 0.5, # This is the expected variation in FWHM at a given telescope/camera/site combination. This is used to check if a fwhm is within normal range or the focus has shifted
+    'stdev_fwhm' : 1.0, # This is the expected variation in FWHM at a given telescope/camera/site combination. This is used to check if a fwhm is within normal range or the focus has shifted
     'focus_exposure_time': 15, # Exposure time in seconds for exposure image
     'solve_nth_image' : 10, # Only solve every nth image
     'solve_timer' : 5, # Only solve every X minutes
@@ -605,6 +604,9 @@ site_config = {
                 'min_subframe':  [128,128],
                 'bin_modes':  [[2, 2, 0.937], [1, 1, 0.469], [4, 4, 1.87]],   # [3, 3, 1.45],Meaning no binning choice if list has only one entry, default should be first.
                 'default_bin':  [2, 2, 0.937],    # Matched to seeing situation by owner
+                'maximum_bin':  [1, 1, 0.469],    # Matched to seeing situation by owner
+                'cosmics_at_default' : 'no',
+                'cosmics_at_maximum' : 'yes',
                 'bin_enable':  ['2 2'],
                 'cycle_time':  [10, 12, 8, 6],  # 3x3 requires a 1, 1 reaout then a software bin, so slower.
                 'rbi_delay':  0.,      # This being zero says RBI is not available, eg. for SBIG.

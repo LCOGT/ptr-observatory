@@ -127,7 +127,7 @@ site_config = {
     'periodic_focus_time' : 0.5, # This is a time, in hours, over which to bypass automated focussing (e.g. at the start of a project it will not refocus if a new project starts X hours after the last focus)
     'stdev_fwhm' : 0.5, # This is the expected variation in FWHM at a given telescope/camera/site combination. This is used to check if a fwhm is within normal range or the focus has shifted
     'focus_exposure_time': 15, # Exposure time in seconds for exposure image
-    'focus_trigger' : 0.5, # What FWHM increase is needed to trigger an autofocus
+    'focus_trigger' : 1.0, # What FWHM increase is needed to trigger an autofocus
     'solve_nth_image' : 10, # Only solve every nth image
     'solve_timer' : 5, # Only solve every X minutes
     'threshold_mount_update' : 10, # only update mount when X arcseconds away
@@ -608,6 +608,9 @@ site_config = {
                 'min_subframe': [128,128],
                 'bin_modes':  [[1, 1, 0.303], [2, 2, 0.605],  [3, 3, 0.908], [4, 4, 1.21]],     #Meaning fixed binning if list has only one entry
                 'default_bin':  [2, 2, 0.605],
+                'maximum_bin': [1, 1, 0.303],
+                'cosmics_at_default' : 'yes',
+                'cosmics_at_maximum' : 'yes',
                 'bin_enable':  ['2 2'],  #  Always square and matched to seeing situation by owner
                 'cycle_time':  [18, 15, 15, 12],
                 'rbi_delay':  0,      #  This being zero says RBI is not available, eg. for SBIG.

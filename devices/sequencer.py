@@ -312,10 +312,13 @@ class Sequencer:
         elif ((g_dev['events']['Clock & Auto Focus']  <= ephem_now < g_dev['events']['Observing Begins']) and \
                g_dev['enc'].mode == 'Automatic') and not g_dev['ocn'].wx_hold:
 
+            g_dev['obs'].send_to_user("Beginning start of night Focus and Pointing Run", p_level='INFO')
+
             # Autofocus
-            req2 = {'target': 'near_tycho_star', 'area': 150}
-            opt = {}
-            self.auto_focus_script(req2, opt, throw = g_dev['foc'].throw)
+            if ((datetime.datetime.now() - g_dev['foc'].time_of_last_focus)) > datetime.timedelta(hours=self.config['periodic_focus_time']):
+                req2 = {'target': 'near_tycho_star', 'area': 150}
+                opt = {}
+                self.auto_focus_script(req2, opt, throw = g_dev['foc'].throw)
 
             # Pointing
             req = {'time': self.config['focus_exposure_time'],  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'focus'}   #  NB Should pick up filter and constats from config
@@ -474,8 +477,9 @@ class Sequencer:
             self.park_and_close(enc_status)
             #NB The above put dome closed and telescope at Park, Which is where it should have been upon entry.
             self.bias_dark_script(req, opt, morn=True)
-            self.morn_bias_dark_latch = False
+
             self.park_and_close(enc_status)
+            self.morn_bias_dark_latch = True
         else:
             self.current_script = "No current script, or site not in Automatic."
             try:
@@ -600,6 +604,19 @@ class Sequencer:
                 dest_dec = float(target['dec']) - float(block_specification['project']['project_constraints']['dec_offset'])
                 dest_ra, dest_dec = ra_dec_fix_hd(dest_ra, dest_dec)
                 dest_name =target['name']
+
+                g_dev['cam'].user_name = block_specification['creator']
+                g_dev['cam'].user_id = block_specification['creator_id']
+                if block_specification['project']['longstack'] == True:
+                    longstackswitch='yes'
+                    longstackname=block_specification['project']['created_at'].replace('-','').replace(':','')
+                else:
+                    longstackswitch='no'
+                if block_specification['project']['smartstack'] == True:
+                    smartstackswitch='yes'
+                else:
+                    smartstackswitch='no'
+
             except:
                 print ("Could not execute project due to poorly formatted or corrupt RA or Dec in project_targets")
                 g_dev['obs'].send_to_user("Could not execute project due to poorly formatted or corrupt RA or Dec in project_targets", p_level='INFO')
@@ -690,6 +707,7 @@ class Sequencer:
 
                     g_dev['obs'].send_to_user("Running an initial autofocus run.")
 
+
                     self.auto_focus_script(req2, opt, throw = g_dev['foc'].throw)
 
                     just_focused = True
@@ -714,7 +732,16 @@ class Sequencer:
                     color = exposure['filter']
                     exp_time =  float(exposure['exposure'])
 
-                    if exposure['bin'] in[0, '0', '0,0', '0, 0', '0 0']:
+
+
+
+                    if exposure['bin'] == '"optimal"':
+                        tempBinString=str(g_dev['cam'].config['camera']['camera_1_1']['settings']['default_bin'][0])
+                        binning = tempBinString + ' ' + tempBinString
+                    elif exposure['bin'] == '"maximum"' :
+                        tempBinString=str(g_dev['cam'].config['camera']['camera_1_1']['settings']['maximum_bin'][0])
+                        binning = tempBinString + ' ' + tempBinString
+                    elif exposure['bin'] in[0, '0', '0,0', '0, 0', '0 0']:
                         tempBinString=str(g_dev['cam'].config['camera']['camera_1_1']['settings']['default_bin'][0])
                         binning = tempBinString + ' ' + tempBinString
                     elif exposure['bin'] in [2, '2,2', '2, 2', '2 2']:
@@ -724,7 +751,8 @@ class Sequencer:
                     elif exposure['bin'] in [4, '4,4', '4, 4', '4 4']:
                         binning = '4 4'
                     else:
-                        binning = '1 1'
+                        tempBinString=str(g_dev['cam'].config['camera']['camera_1_1']['settings']['default_bin'][0])
+                        binning = tempBinString + ' ' + tempBinString
                     count = int(exposure['count'])
                     #  We should add a frame repeat count
                     imtype = exposure['imtype']
@@ -804,7 +832,7 @@ class Sequencer:
                         #    g_dev['foc'].adjust_focus()
                         just_focused = False
                         if imtype in ['light'] and count > 0:
-                            req = {'time': exp_time,  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': imtype, 'smartstack' : 'yes', 'block_end' : block['end']}   #  NB Should pick up filter and constants from config
+                            req = {'time': exp_time,  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': imtype, 'smartstack' : smartstackswitch, 'longstackswitch' : longstackswitch, 'longstackname' : longstackname, 'block_end' : block['end']}   #  NB Should pick up filter and constants from config
                             opt = {'area': 150, 'count': 1, 'bin': binning, 'filter': color, \
                                    'hint': block['project_id'] + "##" + dest_name, 'object_name': block['project']['project_targets'][0]['name'], 'pane': pane}
                             plog('Seq Blk sent to camera:  ', req, opt)
