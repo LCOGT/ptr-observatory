@@ -296,10 +296,8 @@ class Enclosure:
             elif self.config['site_IPC_mechanism'] == 'redis':
                 try:
                     status = eval(g_dev['redis'].get('enc_status'))
-                    breakpoint()
                 except:
                     status =  g_dev['redis'].get('enc_status')
-                    breakpoint()
                 self.status = status
                 self.prior_status = status
                 g_dev['enc'].status = status
