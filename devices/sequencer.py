@@ -292,8 +292,9 @@ class Sequencer:
             return
         obs_win_begin, sunZ88Op, sunZ88Cl, ephem_now = self.astro_events.getSunEvents()
         #just to be safe:  Should fix Line 344 Exception.
-        g_dev['ocn'].get_status()
-        g_dev['enc'].get_status()
+        breakpoint()
+        g_dev['ocn'].status = g_dev['ocn'].get_status()
+        g_dev['enc'].status = g_dev['enc'].get_status()
         ocn_status = g_dev['ocn'].status
         enc_status = g_dev['enc'].status
         events = g_dev['events']
