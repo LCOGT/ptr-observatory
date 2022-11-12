@@ -643,7 +643,7 @@ class Enclosure:
                 self.open_command(req, opt)
         elif action == "close":
             if _redis:
-                g_dev['redis'].set('enc_cmd', 'close', ex=300)
+                g_dev['redis'].set('enc_cmd', 'close', ex=600)
             if shares:
                 cmd_list.append('close')
             if generic:
@@ -659,23 +659,26 @@ class Enclosure:
             g_dev['enc'].automatic_detail =  "Night Automatic"
             plog("Site and Enclosure set to Automatic.")
         elif action == "setManual":
+
             if _redis:
-                g_dev['redis'].set('enc_cmd', 'setManual', ex=300)
+                g_dev['redis'].set('enc_cmd', 'setManual', ex=600)
             if shares:
                 cmd_list.append('set_manual')
             if generic:
                 self.mode = 'Manual'
             g_dev['enc'].site_in_automatic = False
             g_dev['enc'].automatic_detail =  "Manual Only"
+            plog("Site and Enclosure set to Manual.")
         elif action in ["setStayClosed", 'setShutdown', 'shutDown']:
             if _redis:
-                g_dev['redis'].set('enc_cmd', 'setShutdown', ex=300)
+                g_dev['redis'].set('enc_cmd', 'setShutdown', ex=600)
             if shares:
                 cmd_list.append('set_shutdown')
             if generic:
                 self.mode = 'Shutdown'
             g_dev['enc'].site_in_automatic = False
             g_dev['enc'].automatic_detail =  "Site Shutdown"
+            plog("Site and Enclosure set to Site Shutdown.")
         elif action == "home_dome":
             if shares:
                 cmd_list.append('go_home')
