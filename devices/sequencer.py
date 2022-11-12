@@ -336,6 +336,11 @@ class Sequencer:
             self.sky_flat_script({}, {}, morn=False)   #Null command dictionaries
             self.sky_flat_latch = False
 
+# =============================================================================
+#         NB NB Note below often faults, should be in a try except instead of this
+#         complex nested if construct.  Enc_status can be None if Wema is not  operating.
+#         Perhaps we should default set enc_status['enclosure_mode'] = 'Shutdown' as a default?
+# =============================================================================
         elif enc_status['enclosure_mode'] in ['Autonomous!', 'Automatic'] and (events['Observing Begins'] <= ephem_now \
                                    < events['Observing Ends']) and not g_dev['ocn'].wx_hold \
                                    and  g_dev['obs'].blocks is not None and g_dev['obs'].projects \
@@ -397,7 +402,7 @@ class Sequencer:
             unobservable projects.  Projects may be "site" projects or 'ptr' (network wide:
             All, Owner, PTR-network, North, South.)
                 The westernmost project is offered to run unless there is a runnable scheduled block.
-                for any given time, are the constraints met? Airmass < x, Moon Phase < y, moon dist > z,
+                for any given time, are the constraints met? Airmass < x, Moon Phaze < y, moon dist > z,
                 flip rules
 
             '''
