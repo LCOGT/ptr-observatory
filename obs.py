@@ -858,7 +858,7 @@ class Observatory:
                         if g_dev["foc"].last_focus_fwhm == None:
                             g_dev["foc"].last_focus_fwhm = FWHM
                         else:
-                            # Very dumb focus slip deteector
+                            # Very dumb focus slip detector
                             if (
                                 np.nanmedian(g_dev["foc"].focus_tracker)
                                 > g_dev["foc"].last_focus_fwhm
