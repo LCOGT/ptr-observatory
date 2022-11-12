@@ -286,14 +286,13 @@ class Sequencer:
             return
         obs_win_begin, sunZ88Op, sunZ88Cl, ephem_now = self.astro_events.getSunEvents()
         #just to be safe:  Should fix Line 344 Exception.
-        breakpoint()
         g_dev['ocn'].status = g_dev['ocn'].get_status()
         g_dev['enc'].status = g_dev['enc'].get_status()
         ocn_status = g_dev['ocn'].status
         enc_status = g_dev['enc'].status
         events = g_dev['events']
          
-        g_dev['enc'].mode = 'Automatic'     #  THis is a very common debug point.
+        #This is is a very common debug point. This should be re-done with try excepts.
 
         if self.bias_dark_latch and ((events['Eve Bias Dark'] <= ephem_now < events['End Eve Bias Dark']) and \
              self.config['auto_eve_bias_dark'] and g_dev['enc'].mode in ['Automatic', 'Autonomous', 'Manual'] ):
@@ -345,125 +344,129 @@ class Sequencer:
 #         complex nested if construct.  Enc_status can be None if Wema is not  operating.
 #         Perhaps we should default set enc_status['enclosure_mode'] = 'Shutdown' as a default?
 # =============================================================================
-        elif enc_status['enclosure_mode'] in ['Autonomous!', 'Automatic'] and (events['Observing Begins'] <= ephem_now \
+        elif (events['Observing Begins'] <= ephem_now \
                                    < events['Observing Ends']) and not g_dev['ocn'].wx_hold \
                                    and  g_dev['obs'].blocks is not None and g_dev['obs'].projects \
                                    is not None:
-            blocks = g_dev['obs'].blocks
-            projects = g_dev['obs'].projects
-            debug = False
-
-            if self.config['site_roof_control'] != 'no' and  enc_status['shutter_status'] in ['Closed', 'closed'] \
-                and float(ocn_status['hold_duration']) <= 0.1:
-                #breakpoint()
-                g_dev['enc'].open_command({}, {})
-                plog("Opening dome, will set Synchronize in 10 seconds.")
-                time.sleep(10)
-            g_dev['enc'].sync_mount_command({}, {})
-
-            if debug:
-                plog("# of Blocks, projects:  ", len(g_dev['obs'].blocks),  len(g_dev['obs'].projects))
-
-            #Note here we could evaluate projects to see which meet observability constraints and place them
-            #In an observables list, then we could pick one to start.  IF there is no pre-sheduled observing block
-            #it would just run.  Voila an Opportunistic scheduler.  An observing block may be empty or point to
-            #a project and if the project is runnable any way, it runs or is marked completed.
-            # NB without deepcopy decrementing counts in blocks will be local to the machine an subject
-            # to over_write as the respons from AWS updates. This is particularly important for owner
-            # and background blocks.
-
-            #First, sort blocks to be in ascending order, just to promote clarity. Remove expired projects.
-            for block in blocks:  #  This merges project spec into the blocks.
-                for project in projects:
-
-                    try:
-                        if block['project_id'] == project['project_name'] + '#' + project['created_at']:
-                            block['project'] = project
-                    except:
-                        block['project'] = None  #nb nb nb 20220920   this faults with 'string indices must be integers". WER
-
-                        #plog('Scheduled so removing:  ', project['project_name'])
-                        #projects.remove(project)
-
-            #The residual in projects can be treated as background.
-            #plog('Background:  ', len(projects), '\n\n', projects)
-
-
-            #house = []
-            for project in projects:
-                if block['project_id']  != 'none':
-                    try:
-
-                        if block['project_id'] == project['project_name'] + '#' + project['created_at']:
-                            block['project'] = project
-                    except:
-                        block['project'] = None
-                else:
-                    pass
-                #plog("Reservation asserting at this time.   ", )
-            '''
-            evaluate supplied projects for observable and mark as same. Discard
-            unobservable projects.  Projects may be "site" projects or 'ptr' (network wide:
-            All, Owner, PTR-network, North, South.)
-                The westernmost project is offered to run unless there is a runnable scheduled block.
-                for any given time, are the constraints met? Airmass < x, Moon Phaze < y, moon dist > z,
-                flip rules
-
-            '''
-            # breakpoint()
-            # #Figure out which are observable.  Currently only supports one target/proj
-            # NB Observing events without a project are "observable."
-            # observable = []
-            # for projects in projects:
-            #     ra = projects['project_targets']['ra']
-            #     dec = projects['project_targets']['dec']
-            #     sid = g_dev['mnt'].mount.SiderealTime
-            #     ha = tycho.reduceHA(sid - ra)
-            #     az, alt = transform_haDec_to_azAlt(ha, dec)
-            #     # Do not start a block within 15 min of end time???
-            #plog("Initial length:  ", len(blocks))
-            for block in blocks:
-                now_date_timeZ = datetime.datetime.now().isoformat().split('.')[0] +'Z'
-                if not self.block_guard \
-                    and (block['start'] <= now_date_timeZ < block['end']) \
-                    and not self.is_in_completes(block['event_id']):
-                    if block['project_id'] in ['none', 'real_time_slot', 'real_time_block']:
-                        self.block_guard = False   # Changed from True WER on 20221011@2:24 UTC
-                        return   # Do not try to execute an empty block.
-                    self.block_guard = True
-
-                    if block['project'] == None:
-                        print (block)
-                        print ("Skipping a block that contains an empty project")
-                        return
-
-
-                    completed_block = self.execute_block(block)  #In this we need to ultimately watch for weather holds.
-                    self.append_completes(completed_block['event_id'])
-                    #block['project_id'] in ['none', 'real_time_slot', 'real_time_block']
+            try:
+                breakpoint()
+                if enc_status['enclosure_mode'] in ['Autonomous!', 'Automatic']:
+                    blocks = g_dev['obs'].blocks
+                    projects = g_dev['obs'].projects
+                    debug = False
+        
+                    if self.config['site_roof_control'] != 'no' and  enc_status['shutter_status'] in ['Closed', 'closed'] \
+                        and float(ocn_status['hold_duration']) <= 0.1:
+                        #breakpoint()
+                        g_dev['enc'].open_command({}, {})
+                        plog("Opening dome, will set Synchronize in 10 seconds.")
+                        time.sleep(10)
+                    g_dev['enc'].sync_mount_command({}, {})
+        
+                    if debug:
+                        plog("# of Blocks, projects:  ", len(g_dev['obs'].blocks),  len(g_dev['obs'].projects))
+        
+                    #Note here we could evaluate projects to see which meet observability constraints and place them
+                    #In an observables list, then we could pick one to start.  IF there is no pre-sheduled observing block
+                    #it would just run.  Voila an Opportunistic scheduler.  An observing block may be empty or point to
+                    #a project and if the project is runnable any way, it runs or is marked completed.
+                    # NB without deepcopy decrementing counts in blocks will be local to the machine an subject
+                    # to over_write as the respons from AWS updates. This is particularly important for owner
+                    # and background blocks.
+        
+                    #First, sort blocks to be in ascending order, just to promote clarity. Remove expired projects.
+                    for block in blocks:  #  This merges project spec into the blocks.
+                        for project in projects:
+        
+                            try:
+                                if block['project_id'] == project['project_name'] + '#' + project['created_at']:
+                                    block['project'] = project
+                            except:
+                                block['project'] = None  #nb nb nb 20220920   this faults with 'string indices must be integers". WER
+        
+                                #plog('Scheduled so removing:  ', project['project_name'])
+                                #projects.remove(project)
+        
+                    #The residual in projects can be treated as background.
+                    #plog('Background:  ', len(projects), '\n\n', projects)
+        
+        
+                    #house = []
+                    for project in projects:
+                        if block['project_id']  != 'none':
+                            try:
+        
+                                if block['project_id'] == project['project_name'] + '#' + project['created_at']:
+                                    block['project'] = project
+                            except:
+                                block['project'] = None
+                        else:
+                            pass
+                        #plog("Reservation asserting at this time.   ", )
                     '''
-                    When a scheduled block is completed it is not re-entered or the block needs to
-                    be restored.  IN the execute block we need to make a deepcopy of the input block
-                    so it does not get modified.
+                    evaluate supplied projects for observable and mark as same. Discard
+                    unobservable projects.  Projects may be "site" projects or 'ptr' (network wide:
+                    All, Owner, PTR-network, North, South.)
+                        The westernmost project is offered to run unless there is a runnable scheduled block.
+                        for any given time, are the constraints met? Airmass < x, Moon Phaze < y, moon dist > z,
+                        flip rules
+        
                     '''
-            #plog('block list exhausted')
-            #return  Commented out 20220409 WER
-
-
-                # plog("Here we would enter an observing block:  ",
-                #       block)
-                # breakpoint()
-            #OK here we go to a generalized block execution routine that runs
-            #until exhaustion of the observing window.
-            # else:
-            #     pass
-            #plog("Block tested for observatility")
-
-        # #System hangs on this state
-        # elif ((g_dev['events']['Observing Ends']  < ephem_now < g_dev['events']['End Morn Sky Flats']) and \
-        #        g_dev['enc'].mode == 'Automatic') and not g_dev['ocn'].wx_hold and self.config['auto_morn_sky_flat']:
-        #     self.enc_to_skyflat_and_open(enc_status, ocn_status)
-        # #*********NB NB system hangs here
+                    # breakpoint()
+                    # #Figure out which are observable.  Currently only supports one target/proj
+                    # NB Observing events without a project are "observable."
+                    # observable = []
+                    # for projects in projects:
+                    #     ra = projects['project_targets']['ra']
+                    #     dec = projects['project_targets']['dec']
+                    #     sid = g_dev['mnt'].mount.SiderealTime
+                    #     ha = tycho.reduceHA(sid - ra)
+                    #     az, alt = transform_haDec_to_azAlt(ha, dec)
+                    #     # Do not start a block within 15 min of end time???
+                    #plog("Initial length:  ", len(blocks))
+                    for block in blocks:
+                        now_date_timeZ = datetime.datetime.now().isoformat().split('.')[0] +'Z'
+                        if not self.block_guard \
+                            and (block['start'] <= now_date_timeZ < block['end']) \
+                            and not self.is_in_completes(block['event_id']):
+                            if block['project_id'] in ['none', 'real_time_slot', 'real_time_block']:
+                                self.block_guard = False   # Changed from True WER on 20221011@2:24 UTC
+                                return   # Do not try to execute an empty block.
+                            self.block_guard = True
+        
+                            if block['project'] == None:
+                                print (block)
+                                print ("Skipping a block that contains an empty project")
+                                return
+        
+        
+                            completed_block = self.execute_block(block)  #In this we need to ultimately watch for weather holds.
+                            self.append_completes(completed_block['event_id'])
+                            #block['project_id'] in ['none', 'real_time_slot', 'real_time_block']
+                            '''
+                            When a scheduled block is completed it is not re-entered or the block needs to
+                            be restored.  IN the execute block we need to make a deepcopy of the input block
+                            so it does not get modified.
+                            '''
+                    #plog('block list exhausted')
+                    #return  Commented out 20220409 WER
+        
+        
+                        # plog("Here we would enter an observing block:  ",
+                        #       block)
+                        # breakpoint()
+                    #OK here we go to a generalized block execution routine that runs
+                    #until exhaustion of the observing window.
+                    # else:
+                    #     pass
+                    #plog("Block tested for observatility")
+        
+                # #System hangs on this state
+                # elif ((g_dev['events']['Observing Ends']  < ephem_now < g_dev['events']['End Morn Sky Flats']) and \
+                #        g_dev['enc'].mode == 'Automatic') and not g_dev['ocn'].wx_hold and self.config['auto_morn_sky_flat']:
+                #     self.enc_to_skyflat_and_open(enc_status, ocn_status)
+            except:
+                 plog("Hang up in sequencer.")
         elif self.morn_sky_flat_latch and ((events['Morn Sky Flats'] <= ephem_now < events['End Morn Sky Flats'])  \
                and g_dev['enc'].mode == 'Automatic' and not g_dev['ocn'].wx_hold and \
                self.config['auto_morn_sky_flat']):
