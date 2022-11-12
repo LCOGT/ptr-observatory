@@ -25,7 +25,7 @@ from math import degrees
 # print('ObsImports:  ', config, '\n\'', config.site_config['site'])
 from global_yard import *
 
-import sys
+#import sys
 
 from astropy.time import Time
 from ptr_utility import plog
