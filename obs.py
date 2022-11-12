@@ -31,6 +31,7 @@ import sep
 from skimage.io import imsave
 from skimage.transform import resize
 import func_timeout
+import traceback
 
 from api_calls import API_calls
 from auto_stretch.stretch import Stretch
@@ -969,6 +970,11 @@ class Observatory:
                             except aa.MaxIterError:
                                 print ("astroalign could not find a solution in this image")
                                 reprojection_failed=True
+                            except Exception:
+                                print ("astroalign failed")
+                                print (traceback.format_exc())
+                                reprojection_failed=True
+
                             #except func_timeout.FunctionTimedOut:
                             #    print ("astroalign Timed Out")
                         else:
