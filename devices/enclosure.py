@@ -506,7 +506,7 @@ class Enclosure:
             _redis = True
         if redis_command is not None:
             
-            breakpoint()
+
             pass
             #plog(redis_command)
         try:
@@ -535,17 +535,17 @@ class Enclosure:
                 pass
             self.dome_open = False
             self.dome_home = True
-        elif redis_command == 'set_auto':
+        elif redis_command in ['set_auto', 'setAuto', 'setauto']:
             if _redis: g_dev['redis'].delete('enc_cmd')
             plog("Change to Automatic.")
             self.site_in_automatic = True
             self.mode = 'Automatic'
-        elif redis_command == 'set_manual':
+        elif redis_command in ['set_manual', 'setManual']:
             if _redis: g_dev['redis'].delete('enc_cmd')
             plog("Change to Manual.")
             self.site_in_automatic = False
             self.mode = 'Manual'
-        elif redis_command == 'set_shutdown':
+        elif redis_command in ['set_shutdown',' setShutdown']:
             if _redis: g_dev['redis'].delete('enc_cmd')
             plog("Change to Shutdown & Close")
             self.manager(close_cmd=True, open_cmd=False)
@@ -643,7 +643,7 @@ class Enclosure:
                 self.open_command(req, opt)
         elif action == "close":
             if _redis:
-                g_dev['redis'].set('enc_cmd', 'close', ex=600)
+                g_dev['redis'].set('enc_cmd', 'close', ex=300)
             if shares:
                 cmd_list.append('close')
             if generic:
@@ -659,26 +659,23 @@ class Enclosure:
             g_dev['enc'].automatic_detail =  "Night Automatic"
             plog("Site and Enclosure set to Automatic.")
         elif action == "setManual":
-
             if _redis:
-                g_dev['redis'].set('enc_cmd', 'setManual', ex=600)
+                g_dev['redis'].set('enc_cmd', 'setManual', ex=300)
             if shares:
                 cmd_list.append('set_manual')
             if generic:
                 self.mode = 'Manual'
             g_dev['enc'].site_in_automatic = False
             g_dev['enc'].automatic_detail =  "Manual Only"
-            plog("Site and Enclosure set to Manual.")
         elif action in ["setStayClosed", 'setShutdown', 'shutDown']:
             if _redis:
-                g_dev['redis'].set('enc_cmd', 'setShutdown', ex=600)
+                g_dev['redis'].set('enc_cmd', 'setShutdown', ex=300)
             if shares:
                 cmd_list.append('set_shutdown')
             if generic:
                 self.mode = 'Shutdown'
             g_dev['enc'].site_in_automatic = False
             g_dev['enc'].automatic_detail =  "Site Shutdown"
-            plog("Site and Enclosure set to Site Shutdown.")
         elif action == "home_dome":
             if shares:
                 cmd_list.append('go_home')

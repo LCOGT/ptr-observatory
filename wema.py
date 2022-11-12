@@ -53,7 +53,7 @@ def terminate_restart_observer(site_path, no_restart=False):
         print("No observer process was found, starting a new one.")
     # The above routine does not return but does start a process.
     parentPath = Path.cwd()
-    os.system("cmd /c " + str(parentPath) + "\rrestart_obs.bat")
+    os.system("cmd /c " + str(parentPath) + "\restart_obs.bat")
 
     return
 
