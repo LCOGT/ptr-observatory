@@ -1115,13 +1115,9 @@ class Camera:
                 self.retry_camera_start_time = time.time()
                 while self.retry_camera > 0:
                     if g_dev["obs"].stop_all_activity:
-
-                        if result != None and result != {}:
-                            if result["stopped"] is True:
-                                g_dev["obs"].stop_all_activity = False
-                                print("Camera retry loop stopped by Cancel Exposure")
-                                self.exposure_busy = False
-
+                        print("Camera retry loop stopped by Cancel Exposure")
+                        self.exposure_busy = False
+                        g_dev["obs"].stop_all_activity = False
                         return
 
 
@@ -1357,8 +1353,9 @@ class Camera:
 
     def stop_command(self, required_params, optional_params):
         """Stop the current exposure and return the camera to Idle state."""
-        self.exposure_busy = False
-        self.exposure_halted = True
+        #self.exposure_busy = False  #These shouuld not be needed
+        #self.exposure_halted = True
+        pass
 
     def finish_exposure(
         self,
@@ -1448,6 +1445,12 @@ class Camera:
                 self.t7b = time.time()
                 remaining = round(self.completion_time - self.t7b, 1)
                 if remaining > 0:
+                    if g_dev['obs'].stop_all_activity:
+                        self. camera.AbortExposure()
+                        result['stopped'] = True
+                        result['error'] = False
+                        self.exposure_busy = False
+                        return result
                     plog(
                         '||  ' + str(round(remaining, 1)) + "sec.",
                         str(round(100 * remaining / cycle_time, 1)) + "%",
@@ -1507,6 +1510,13 @@ class Camera:
             ):
                 imageCollected = 0
                 retrycounter = 0
+                if g_dev['obs'].stop_all_activity:
+                    self. camera.AbortExposure()
+                    result['stopped'] = True
+                    result['error'] = False
+                    self.exposure_busy = False
+                    return result
+                    
                 while imageCollected != 1:
                     if retrycounter == 8:
                         result = {"error": True}
@@ -2787,13 +2797,15 @@ class Camera:
                     result["gain"] = 0
                     result["filter"] = self.current_filter
                     result["error"] == False
+
                     self.exposure_busy = False
                     return result
                 except Exception as e:
                     plog("Header assembly block failed: ", e)
                     plog(traceback.format_exc())
                     self.t7 = time.time()
-                    result = {"error": True}
+                    result = {"error": True,
+                              "stopped": False}
                 self.exposure_busy = False
                 return result
             else:
@@ -2815,7 +2827,7 @@ class Camera:
                         p_level="INFO",
                     )
                     notifyReadOutOnlyOnce = 1
-                if remaining < -30:
+                if remaining < -30 and not g_dev["obs"].stop_all_activity:
                     plog(
                         "Camera timed out; probably is no longer connected, resetting it now."
                     )
@@ -2824,7 +2836,13 @@ class Camera:
                         p_level="INFO",
                     )
                     result = {"error": True}
+                    result = {'stopped': False}
                     self.exposure_busy = False
+                    return result
+                if g_dev["obs"].stop_all_activity == True:
+                    plog("Simple stop_all in camera loop.")
+                    result = {'stopped': True}
+                    result = {"error": False}
                     return result
 
     def enqueue_for_AWS(self, priority, im_path, name):
