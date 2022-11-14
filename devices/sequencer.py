@@ -349,7 +349,7 @@ class Sequencer:
                                    and  g_dev['obs'].blocks is not None and g_dev['obs'].projects \
                                    is not None:
             try:
-                breakpoint()
+                
                 if enc_status['enclosure_mode'] in ['Autonomous!', 'Automatic']:
                     blocks = g_dev['obs'].blocks
                     projects = g_dev['obs'].projects
@@ -624,6 +624,7 @@ class Sequencer:
                     longstackname=block_specification['project']['created_at'].replace('-','').replace(':','')
                 else:
                     longstackswitch='no'
+                    longstackname='no'
                 if block_specification['project']['smartstack'] == True:
                     smartstackswitch='yes'
                 else:

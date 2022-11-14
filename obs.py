@@ -408,7 +408,7 @@ class Observatory:
                     device = self.all_devices[device_type][device_instance]
                     try:
                         #plog("Trying to parse:  ", cmd)
-                        breakpoint()
+
                         device.parse_command(cmd)
                     except Exception as e:
                         plog("Exception in obs.scan_requests:  ", e, 'cmd:  ', cmd)
@@ -853,25 +853,25 @@ class Observatory:
                             print("Last solved focus FWHM")
                             print(g_dev["foc"].last_focus_fwhm)
 
-                        # If there hasn't been a focus yet, then it can't check it, so make this image the last solved focus.
-                        if g_dev["foc"].last_focus_fwhm == None:
-                            g_dev["foc"].last_focus_fwhm = FWHM
-                        else:
-                            # Very dumb focus slip detector
-                            if (
-                                np.nanmedian(g_dev["foc"].focus_tracker)
-                                > g_dev["foc"].last_focus_fwhm
-                                + self.config["focus_trigger"]
-                            ):
-                                g_dev["foc"].focus_needed = True
-                                g_dev["obs"].send_to_user(
-                                    "Focus has drifted to "
-                                    + str(np.nanmedian(g_dev["foc"].focus_tracker))
-                                    + " from "
-                                    + str(g_dev["foc"].last_focus_fwhm)
-                                    + ". Autofocus triggered for next exposures.",
-                                    p_level="INFO",
-                                )
+                            # If there hasn't been a focus yet, then it can't check it, so make this image the last solved focus.
+                            if g_dev["foc"].last_focus_fwhm == None:
+                                g_dev["foc"].last_focus_fwhm = FWHM
+                            else:
+                                # Very dumb focus slip detector
+                                if (
+                                    np.nanmedian(g_dev["foc"].focus_tracker)
+                                    > g_dev["foc"].last_focus_fwhm
+                                    + self.config["focus_trigger"]
+                                ):
+                                    g_dev["foc"].focus_needed = True
+                                    g_dev["obs"].send_to_user(
+                                        "Focus has drifted to "
+                                        + str(np.nanmedian(g_dev["foc"].focus_tracker))
+                                        + " from "
+                                        + str(g_dev["foc"].last_focus_fwhm)
+                                        + ". Autofocus triggered for next exposures.",
+                                        p_level="INFO",
+                                    )
                     except:
                         print ("something failed in the SEP calculations for exposure. This could be an overexposed image")
                         print (traceback.format_exc())
