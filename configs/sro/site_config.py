@@ -76,8 +76,8 @@ site_config = {
 
     'TZ_database_name':  'America/Los_Angeles',
     'mpc_code':  'ZZ23',    #  This is made up for now.
-    'time_offset':  -7.0,   #  These two keys may be obsolete given the new TZ stuff
-    'timezone': 'PDT',      #  This was meant to be coloquial Time zone abbreviation, alternate for "TX_data..."
+    'time_offset':  -8.0,   #  These two keys may be obsolete given the new TZ stuff
+    'timezone': 'PST',      #  This was meant to be coloquial Time zone abbreviation, alternate for "TZ_database..."
     'latitude': 37.0701111,     #  Decimal degrees, North is Positive
     'longitude': -119.412417,   #  Decimal degrees, West is negative
     'elevation': 1405,    #  meters above sea level
