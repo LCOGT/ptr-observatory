@@ -1102,6 +1102,8 @@ class Observatory:
                     ):
                         if smartstackid == "no" and len(sources) > 30:
                             try:
+                                print (pixscale)
+                                print (paths["red_path"] + paths["red_name01"])
                                 solve = platesolve.platesolve(
                                     paths["red_path"] + paths["red_name01"], pixscale
                                 )  # 0.5478)
