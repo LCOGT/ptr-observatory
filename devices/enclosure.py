@@ -193,9 +193,7 @@ class Enclosure:
         self.site = config['site']
         self.config = config
         g_dev['enc'] = self
- 
         self.slew_latch = False
-
         if self.config['site_in_automatic_default'] == "Automatic":
             self.site_in_automatic = True
             self.mode = 'Automatic'
