@@ -613,24 +613,34 @@ class Sequencer:
             try:
                 dest_ra = float(target['ra']) - \
                     float(block_specification['project']['project_constraints']['ra_offset'])/15.
+
                 dest_dec = float(target['dec']) - float(block_specification['project']['project_constraints']['dec_offset'])
                 dest_ra, dest_dec = ra_dec_fix_hd(dest_ra, dest_dec)
                 dest_name =target['name']
 
                 g_dev['cam'].user_name = block_specification['creator']
                 g_dev['cam'].user_id = block_specification['creator_id']
-                if block_specification['project']['longstack'] == True:
+                #breakpoint()
+                if ('longstack' in block_specification['project']) == False:
+                    longstackswitch='no'
+                    longstackname='no'
+                elif block_specification['project']['longstack'] == True:
                     longstackswitch='yes'
                     longstackname=block_specification['project']['created_at'].replace('-','').replace(':','')
                 else:
                     longstackswitch='no'
                     longstackname='no'
-                if block_specification['project']['smartstack'] == True:
+                if ('smartstack' in block_specification['project']) == False:
+                    smartstackswitch='no'
+                elif block_specification['project']['smartstack'] == True:
                     smartstackswitch='yes'
                 else:
                     smartstackswitch='no'
 
-            except:
+            except Exception as e:
+                print (e)
+                plog(traceback.format_exc())
+                breakpoint()
                 print ("Could not execute project due to poorly formatted or corrupt RA or Dec in project_targets")
                 g_dev['obs'].send_to_user("Could not execute project due to poorly formatted or corrupt RA or Dec in project_targets", p_level='INFO')
                 continue
