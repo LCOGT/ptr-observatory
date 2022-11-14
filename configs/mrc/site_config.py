@@ -103,8 +103,8 @@ site_config = {
 
     'TZ_database_name':  'America/Los_Angeles',
     'mpc_code':  'ZZ23',    #This is made up for now.
-    'time_offset':  -7,
-    'timezone': 'PDT',
+    'time_offset':  -8,
+    'timezone': 'PST',
     'latitude': 34.459375,     #Decimal degrees, North is Positive
     'longitude': -119.681172,   #Decimal degrees, West is negative
     'elevation': 317.75,    # meters above sea level
@@ -117,7 +117,7 @@ site_config = {
     'observing_check_period' : 2,    # How many minutes between weather checks
     'enclosure_check_period' : 2,    # How many minutes between enclosure checks
 
-    'auto_eve_bias_dark': False,
+    'auto_eve_bias_dark': True,
     'auto_eve_sky_flat': True,
     'eve_sky_flat_sunset_offset': -60.,  #  Minutes  neg means before, + after.
     'auto_morn_sky_flat': True,
