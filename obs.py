@@ -795,26 +795,34 @@ class Observatory:
                 ]:
                     img = fits.open(
                         paths["red_path"] + paths["red_name01"],
-                        mode="update",
                         ignore_missing_end=True,
                     )
-                    sstackimghold=img.copy()
-                    img[0].data = (
-                        img[0].data - np.min(img[0].data)
+                    imgdata=img[0].data
+                    # Pick up some header items for smartstacking later
+                    ssfilter = img[0].header["FILTER"]
+                    ssobject = img[0].header["OBJECT"]
+                    ssexptime = img[0].header["EXPTIME"]
+                    ssframenumber = img[0].header["FRAMENUM"]
+                    del img
+                    sstackimghold=imgdata.copy()
+                    imgdata = (
+                        imgdata - np.min(imgdata)
                     ) + 100  # Add an artifical pedestal to background.
-                    img = img[0].data.astype("float")
+                    imgdata = imgdata.astype("float")
 
-                    img = img.copy(
+                    imgdata = imgdata.copy(
                         order="C"
                     )  # NB Should we move this up to where we read the array?
-                    bkg = sep.Background(img)
-                    img -= bkg
+                    bkg = sep.Background(imgdata)
+                    imgdata -= bkg
 
                     try:
                         sep.set_extract_pixstack(1000000)
                         sources = sep.extract(
-                            img, 4.5, err=bkg.globalrms, minarea=15
+                            imgdata, 4.5, err=bkg.globalrms, minarea=15
                         )  # Minarea should deal with hot pixels.
+                        ix, iy = imgdata.shape
+                        del imgdata
                         sources.sort(order="cflux")
                         plog("No. of detections:  ", len(sources))
 
@@ -823,7 +831,7 @@ class Observatory:
                             print ("skipping focus estimate as not enough sources in this image")
 
                         else:
-                            ix, iy = img.shape
+
                             #r0 = 0
 
                             border_x = int(ix * 0.05)
@@ -894,11 +902,7 @@ class Observatory:
                     del sstackimghold
 
                     #plog(img[0].header["FILTER"])
-                    ssfilter = img[0].header["FILTER"]
-                    ssobject = img[0].header["OBJECT"]
-                    ssexptime = img[0].header["EXPTIME"]
 
-                    ssframenumber = img[0].header["FRAMENUM"]
                     #stackHoldheader = img[0].header
                     #plog(g_dev["cam"].site_path + "smartstacks")
 
@@ -1081,6 +1085,8 @@ class Observatory:
                     # )
                     # del firstimage
 
+
+
                 # Solve for pointing. Note: as the raw and reduced file are already saved and an fz file
                 # has already been sent up, this is purely for pointing purposes.
                 if not paths["frame_type"] in [
@@ -1105,6 +1111,7 @@ class Observatory:
                     ):
                         if smartstackid == "no" and len(sources) > 30:
                             try:
+                                time.sleep(1) # A simple wait to make sure file is saved
                                 solve = platesolve.platesolve(
                                     paths["red_path"] + paths["red_name01"], pixscale
                                 )  # 0.5478)

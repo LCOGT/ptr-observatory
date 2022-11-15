@@ -185,6 +185,8 @@ class Sequencer:
         script = command['required_params']['script']
         if action == "run" and script == 'focusAuto':
             self.auto_focus_script(req, opt)
+        elif action == "autofocus":
+            self.auto_focus_script(req, opt)
         elif action == "run" and script == 'focusFine':
             self.coarse_focus_script(req, opt)
         elif action == "run" and script == 'genScreenFlatMasters':
@@ -1077,6 +1079,15 @@ class Sequencer:
             if not os.path.exists(g_dev["cam"].site_path + "smartstacks"):
                 os.makedirs(g_dev["cam"].site_path + "smartstacks")
 
+
+            # Totally kill and restore night shelf
+            try:
+                shutil.rmtree(g_dev["cam"].site_path + "ptr_night_shelf")
+            except:
+                print ("problems with removing the nightshelf directory... usually a file is open elsewhere")
+            time.sleep(20)
+            if not os.path.exists(g_dev["cam"].site_path + "ptr_night_shelf"):
+                os.makedirs(g_dev["cam"].site_path + "ptr_night_shelf")
 
 
 

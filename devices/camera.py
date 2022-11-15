@@ -24,6 +24,7 @@ from skimage.io import imsave
 from skimage.transform import resize
 from auto_stretch.stretch import Stretch
 import win32com.client
+from planewave import platesolve
 
 
 from devices.darkslide import Darkslide
@@ -1025,6 +1026,23 @@ class Camera:
             # retry-3-times framework with an additional timeout included in it.
             if seq > 0:
                 g_dev["obs"].update_status()
+
+            ## Vital Check : Has end of observing occured???
+            ## Need to do this, SRO kept taking shots til midday without this
+            #print (g_dev['events']['Observing Begins'])
+            #print (ephem.Date(ephem.now()+ (exposure_time *ephem.second)))
+            #loadingprint (g_dev['events']['Observing Ends'])
+            if imtype.lower() in ["light"] or imtype.lower() in ["expose"]:
+                if g_dev['events']['Observing Ends'] < ephem.Date(ephem.now()+ (exposure_time *ephem.second)):
+                    print ("Sorry, exposures are outside of night time.")
+                    break
+
+            #print (endOfExposure)
+            #print (now_date_timeZ)
+            #print (self.blockend)
+            #print (ephem.now() + exposure_time)
+            #print (g_dev['events']['Observing Ends'])
+            #print (ephem.Date(ephem.now()+ (exposure_time *ephem.second)))
 
             self.pre_mnt = []
             self.pre_rot = []
@@ -2516,6 +2534,7 @@ class Camera:
                                     and 100 < result["mean_focus"] < 12600
                                 )
                                 result["error"] = False
+
                             except:
                                 result[
                                     "error"
@@ -2529,9 +2548,88 @@ class Camera:
                                 result["error"]=True
                                 result["FWHM"] = np.nan
 
+                            print ("This image has a FWHM of " + str(result["FWHM"]))
                             # write the focus image out
                             hdufocus.writeto(cal_path + cal_name, overwrite=True)
+                            pixscale=hdufocus.header['PIXSCALE']
+                            del hdufocus
                             focus_image = False
+
+
+                            # Use the focus image for pointing purposes
+                            try:
+                                time.sleep(1) # A simple wait to make sure file is saved
+                                solve = platesolve.platesolve(
+                                    cal_path + cal_name, pixscale
+                                )  # 0.5478)
+                                plog(
+                                    "PW Solves: ",
+                                    solve["ra_j2000_hours"],
+                                    solve["dec_j2000_degrees"],
+                                )
+                                target_ra = g_dev["mnt"].current_icrs_ra
+                                target_dec = g_dev["mnt"].current_icrs_dec
+                                solved_ra = solve["ra_j2000_hours"]
+                                solved_dec = solve["dec_j2000_degrees"]
+                                solved_arcsecperpixel = solve["arcsec_per_pixel"]
+                                solved_rotangledegs = solve["rot_angle_degs"]
+                                err_ha = target_ra - solved_ra
+                                err_dec = target_dec - solved_dec
+                                solved_arcsecperpixel = solve["arcsec_per_pixel"]
+                                solved_rotangledegs = solve["rot_angle_degs"]
+                                plog(
+                                    " coordinate error in ra, dec:  (asec) ",
+                                    round(err_ha * 15 * 3600, 2),
+                                    round(err_dec * 3600, 2),
+                                )  # NB WER changed units 20221012
+
+                                # We do not want to reset solve timers during a smartStack
+                                self.last_solve_time = datetime.datetime.now()
+                                self.images_since_last_solve = 0
+
+                                # NB NB NB this needs rethinking, the incoming units are hours in HA or degrees of dec
+                                if (
+                                    err_ha * 15 * 3600 > 1200
+                                    or err_dec * 3600 > 1200
+                                    or err_ha * 15 * 3600 < -1200
+                                    or err_dec * 3600 < -1200
+                                ) and self.config["mount"]["mount1"][
+                                    "permissive_mount_reset"
+                                ] == "yes":
+                                    g_dev["mnt"].reset_mount_reference()
+                                    plog("I've  reset the mount_reference 1")
+                                    g_dev["mnt"].current_icrs_ra = solve[
+                                        "ra_j2000_hours"
+                                    ]
+                                    g_dev["mnt"].current_icrs_dec = solve[
+                                        "dec_j2000_hours"
+                                    ]
+                                    err_ha = 0
+                                    err_dec = 0
+
+                                if (
+                                    err_ha * 15 * 3600
+                                    > self.config["threshold_mount_update"]
+                                    or err_dec * 3600
+                                    > self.config["threshold_mount_update"]
+                                ):
+                                    try:
+                                        if g_dev["mnt"].pier_side_str == "Looking West":
+                                            g_dev["mnt"].adjust_mount_reference(
+                                                err_ha, err_dec
+                                            )
+                                        else:
+                                            g_dev["mnt"].adjust_flip_reference(
+                                                err_ha, err_dec
+                                            )  # Need to verify signs
+                                    except:
+                                        plog("This mount doesn't report pierside")
+
+                            except Exception as e:
+                                plog(
+                                    "Image: did not platesolve; this is usually OK. ", e
+                                )
+
                             return result
 
                         # This is holding the flash reduced fits file waiting to be saved
