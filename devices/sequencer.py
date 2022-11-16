@@ -182,10 +182,14 @@ class Sequencer:
         g_dev['cam'].user_id = command['user_id']
         g_dev['cam'].user_name = command['user_name']
         action = command['action']
-        script = command['required_params']['script']
+        if 'script' in command['required_params']:
+            script = command['required_params']['script']
+        else:
+            script = None
         if action == "run" and script == 'focusAuto':
             self.auto_focus_script(req, opt)
-        elif action == "autofocus":
+        elif action == "autofocus": # this action is the front button on Camera, so FORCES an autofocus
+            g_dev['foc'].time_of_last_focus = datetime.datetime.now()
             self.auto_focus_script(req, opt)
         elif action == "run" and script == 'focusFine':
             self.coarse_focus_script(req, opt)
@@ -1583,6 +1587,9 @@ class Sequencer:
 # =============================================================================
 # =============================================================================
         plog("Saved  *mounting* ra, dec, focus:  ", start_ra, start_dec, focus_start)
+
+        if not 'target' in req2:
+            req2['target'] = 'near_tycho_star'
 
         if req2['target'] == 'near_tycho_star':   ## 'bin', 'area'  Other parameters
 

@@ -433,6 +433,7 @@ class Observatory:
                         #plog("Trying to parse:  ", cmd)
                         device.parse_command(cmd)
                     except Exception as e:
+                        plog(traceback.format_exc())
                         plog("Exception in obs.scan_requests:  ", e)
                 url_blk = "https://calendar.photonranch.org/dev/siteevents"
                 body = json.dumps(
