@@ -242,7 +242,7 @@ class Observatory:
         self.env_exists = os.path.exists(os.getcwd() + '\.env')  # Boolean, check if .env present
 
         # Need to set this for the night log
-        g_dev['foc'].set_focal_ref_reset_log(self.config["focuser"]["focuser1"]["reference"])
+        #g_dev['foc'].set_focal_ref_reset_log(self.config["focuser"]["focuser1"]["reference"])
 
 
     def set_last_reference(self, delta_ra, delta_dec, last_time):
@@ -843,12 +843,13 @@ class Observatory:
                         paths["red_path"] + paths["red_name01"],
                         ignore_missing_end=True,
                     )
-                    imgdata=img[0].data
+                    imgdata=img[0].data.copy()
                     # Pick up some header items for smartstacking later
-                    ssfilter = img[0].header["FILTER"]
-                    ssobject = img[0].header["OBJECT"]
-                    ssexptime = img[0].header["EXPTIME"]
-                    ssframenumber = img[0].header["FRAMENUM"]
+                    ssfilter = str(img[0].header["FILTER"])
+                    ssobject = str(img[0].header["OBJECT"])
+                    ssexptime = str(img[0].header["EXPTIME"])
+                    ssframenumber = str(img[0].header["FRAMENUM"])
+                    img.close()
                     del img
                     sstackimghold=np.asarray(imgdata)
                     imgdata = (
