@@ -963,19 +963,19 @@ class Observatory:
                         + ".npy"
                     )
 
-                    cleanhdu=fits.PrimaryHDU()
-                    cleanhdu.data=img
+                    #cleanhdu=fits.PrimaryHDU()
+                    #cleanhdu.data=img
 
                     #cleanhdr=cleanhdu.header
-                    cleanhdu.writeto(g_dev["cam"].site_path + "smartstacks/" + smartStackFilename.replace('.npy','.fit'))
+                    #cleanhdu.writeto(g_dev["cam"].site_path + "smartstacks/" + smartStackFilename.replace('.npy','.fit'))
 
                     #plog(smartStackFilename)
                     #img = np.asarray(img[0].data)
                     # Detect and swap img to the correct endianness - needed for the smartstack jpg
-                    #if sys.byteorder=='little':
-                    #    img=img.newbyteorder('little')
-                    #else:
-                    #    img=img.newbyteorder('big')
+                    if sys.byteorder=='little':
+                        img=img.newbyteorder('little').byteswap()
+                    else:
+                        img=img.newbyteorder('big').byteswap()
 
 
                     # IF SMARSTACK NPY FILE EXISTS DO STUFF, OTHERWISE THIS IMAGE IS THE START OF A SMARTSTACK
