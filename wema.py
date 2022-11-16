@@ -65,12 +65,13 @@ def send_status(obsy, column, status_to_send):
     # NB None of the strings can be empty. Otherwise this put faults.
     payload = {"statusType": str(column), "status": status_to_send}
     data = json.dumps(payload)
-    response = requests.post(uri_status, data=data)
+    try:
+        response = requests.post(uri_status, data=data)
 
-    if response.ok:
-        pass
-        #print("Status sent successfully.")
-    else:
+    #if response.ok:
+       # pass
+        print("Status sent successfully.")
+    except:
         print(
             'self.api.authenticated_request("PUT", uri, status):  Failed! ',
             response.status_code,
@@ -86,7 +87,7 @@ class WxEncAgent:
         # Not relevent for SAF... No commands to Wx are sent by AWS.
         self.command_interval = 5
 
-        self.status_interval = 5
+        self.status_interval = 10
         self.name = name
         self.site_name = name
         self.config = config
