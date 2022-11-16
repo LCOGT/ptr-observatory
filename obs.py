@@ -20,13 +20,25 @@ import socket
 import threading
 import time
 import sys
+import shutil
 
 import astroalign as aa
 from astropy.io import fits
 from dotenv import load_dotenv
 import numpy as np
 import redis  # Client, can work with Memurai
+
 import requests
+# from requests.adapters import HTTPAdapter
+# from requests.packages.urllib3.util.retry import Retry
+# retry_strategy = Retry(
+#     total=10, backoff_factor=0.1
+# )
+# adapter = HTTPAdapter(max_retries=retry_strategy)
+# requests = requests.Session()
+
+
+
 import sep
 from skimage.io import imsave
 from skimage.transform import resize
@@ -169,6 +181,16 @@ class Observatory:
         g_dev["site"]: site_str
         self.g_dev = g_dev
 
+        # Clear out smartstacks directory
+        #print ("removing and reconstituting smartstacks directory")
+        try:
+            shutil.rmtree(g_dev["cam"].site_path + "smartstacks")
+        except:
+            print ("problems with removing the smartstacks directory... usually a file is open elsewhere")
+        time.sleep(20)
+        if not os.path.exists(g_dev["cam"].site_path + "smartstacks"):
+            os.makedirs(g_dev["cam"].site_path + "smartstacks")
+
         # Check directory system has been constructed
         # for new sites or changed directories in configs.
         if not os.path.exists(g_dev["cam"].site_path + "ptr_night_shelf"):
@@ -218,6 +240,9 @@ class Observatory:
         self.events_new = None
         self.reset_last_reference()
         self.env_exists = os.path.exists(os.getcwd() + '\.env')  # Boolean, check if .env present
+
+        # Need to set this for the night log
+        g_dev['foc'].set_focal_ref_reset_log(self.config["focuser"]["focuser1"]["reference"])
 
 
     def set_last_reference(self, delta_ra, delta_dec, last_time):
@@ -654,13 +679,23 @@ class Observatory:
                             # If ingester fails, send to default S3 bucket.
                         except:
                             files = {"file": (filepath, fileobj)}
-                            requests.post(aws_resp["url"], data=aws_resp["fields"], files=files)
+                            try:
+                                requests.post(aws_resp["url"], data=aws_resp["fields"], files=files)
+                                break
+                            except:
+                                print ("Connection glitch for the request post, waiting a moment and trying again")
+                                time.sleep(5)
                             plog(f"--> To AWS --> {str(filepath)}")
                 # Send all other files to S3.
                 else:
                     with open(filepath, "rb") as fileobj:
                         files = {"file": (filepath, fileobj)}
-                        requests.post(aws_resp["url"], data=aws_resp["fields"], files=files)
+                        try:
+                            requests.post(aws_resp["url"], data=aws_resp["fields"], files=files)
+                            break
+                        except:
+                            print ("Connection glitch for the request post, waiting a moment and trying again")
+                            time.sleep(5)
                         plog(f"--> To AWS --> {str(filepath)}")
 
                 if (
@@ -718,13 +753,24 @@ class Observatory:
                             # If ingester fails, send to default S3 bucket.
                         except:
                             files = {"file": (filepath, fileobj)}
-                            requests.post(aws_resp["url"], data=aws_resp["fields"], files=files)
+                            try:
+                                requests.post(aws_resp["url"], data=aws_resp["fields"], files=files)
+                                break
+                            except:
+                                print ("Connection glitch for the request post, waiting a moment and trying again")
+                                time.sleep(5)
                             plog(f"--> To AWS --> {str(filepath)}")
                 # Send all other files to S3.
                 else:
                     with open(filepath, "rb") as fileobj:
                         files = {"file": (filepath, fileobj)}
-                        requests.post(aws_resp["url"], data=aws_resp["fields"], files=files)
+                        while True:
+                            try:
+                                requests.post(aws_resp["url"], data=aws_resp["fields"], files=files)
+                                break
+                            except:
+                                print ("Connection glitch for the request post, waiting a moment and trying again")
+                                time.sleep(5)
                         plog(f"--> To AWS --> {str(filepath)}")
 
                 if (
@@ -804,7 +850,7 @@ class Observatory:
                     ssexptime = img[0].header["EXPTIME"]
                     ssframenumber = img[0].header["FRAMENUM"]
                     del img
-                    sstackimghold=imgdata.copy()
+                    sstackimghold=np.asarray(imgdata)
                     imgdata = (
                         imgdata - np.min(imgdata)
                     ) + 100  # Add an artifical pedestal to background.
@@ -916,13 +962,21 @@ class Observatory:
                         + str(smartstackid)
                         + ".npy"
                     )
+
+                    cleanhdu=fits.PrimaryHDU()
+                    cleanhdu.data=img
+
+                    #cleanhdr=cleanhdu.header
+                    cleanhdu.writeto(g_dev["cam"].site_path + "smartstacks/" + smartStackFilename.replace('.npy','.fit'))
+
                     #plog(smartStackFilename)
-                    img = np.asarray(img[0].data)
+                    #img = np.asarray(img[0].data)
                     # Detect and swap img to the correct endianness - needed for the smartstack jpg
-                    if sys.byteorder=='little':
-                        img=img.newbyteorder('little')
-                    else:
-                        img=img.newbyteorder('big')
+                    #if sys.byteorder=='little':
+                    #    img=img.newbyteorder('little')
+                    #else:
+                    #    img=img.newbyteorder('big')
+
 
                     # IF SMARSTACK NPY FILE EXISTS DO STUFF, OTHERWISE THIS IMAGE IS THE START OF A SMARTSTACK
                     reprojection_failed=False
@@ -943,6 +997,13 @@ class Observatory:
                                 + smartStackFilename,
                                 img,
                             )
+
+                            #cleanhdu=fits.PrimaryHDU()
+                            #cleanhdu.data=img
+
+                            #cleanhdr=cleanhdu.header
+                            #cleanhdu.writeto(g_dev["cam"].site_path + "smartstacks/" + smartStackFilename.replace('.npy','.fit'))
+
                         else:
                             print ("Not storing first smartstack image as not enough sources")
                             reprojection_failed=True

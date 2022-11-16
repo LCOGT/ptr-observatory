@@ -1089,7 +1089,7 @@ class Sequencer:
             if not os.path.exists(g_dev["cam"].site_path + "ptr_night_shelf"):
                 os.makedirs(g_dev["cam"].site_path + "ptr_night_shelf")
 
-
+            g_dev['foc'].set_focal_ref_reset_log(self.config["focuser"]["focuser1"]["reference"])
 
             # Reopening config and resetting all the things.
             self.astro_events.compute_day_directory()
