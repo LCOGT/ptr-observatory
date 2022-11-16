@@ -17,6 +17,7 @@ import ephem
 from astropy.io import fits
 from astropy.time import Time
 from astropy.utils.data import check_download_cache
+from astropy.coordinates import SkyCoord
 import glob
 import numpy as np
 import sep
@@ -1960,13 +1961,24 @@ class Camera:
                         hdu.header["OBJECT"] = RAstring + "ra" + DECstring + "dec"
                         hdu.header["OBJSPECF"] = "no"
 
+
+                    # Set up RA and DEC headers for BANZAI
+
+                    tempRAdeg = float(g_dev["mnt"].current_icrs_ra) * 15
+                    tempDECdeg = g_dev["mnt"].current_icrs_dec
+
+
+
+                    tempointing = SkyCoord(tempRAdeg, tempDECdeg, unit='deg')
+                    tempointing=tempointing.to_string("hmsdms").split(' ')
+
                     hdu.header["RA"] = (
-                        float(g_dev["mnt"].current_icrs_ra) * 15,
-                        "[deg] Telescope right ascension",
+                        tempointing[0],
+                        "[hms] Telescope right ascension",
                     )
                     hdu.header["DEC"] = (
-                        g_dev["mnt"].current_icrs_dec,
-                        "[deg] Telescope declination",
+                        tempointing[1],
+                        "[dms] Telescope declination",
                     )
                     hdu.header["ORIGRA"] = hdu.header["RA"]
                     hdu.header["ORIGDEC"] = hdu.header["DEC"]
@@ -1974,14 +1986,9 @@ class Camera:
                         g_dev["mnt"].current_icrs_ra,
                         "[hrs] Telescope right ascension",
                     )
-                    hdu.header["RA-HMS"] = (
-                        ptr_utility.hToH_MS(g_dev["mnt"].current_icrs_ra),
-                        "[HH MM SS sss] Telescope right ascension",
-                    )
-                    hdu.header["DEC-DMS"] = (
-                        ptr_utility.dToD_MS(g_dev["mnt"].current_icrs_dec),
-                        "[sDD MM SS ss] Telescope declination",
-                    )
+                    hdu.header["RA-deg"] = tempRAdeg
+                    hdu.header["DEC-deg"] = tempDECdeg
+
                     hdu.header["TARG-CHK"] = (
                         (g_dev["mnt"].current_icrs_ra * 15)
                         + g_dev["mnt"].current_icrs_dec,
@@ -1989,13 +1996,37 @@ class Camera:
                     )
                     hdu.header["CATNAME"] = (g_dev["mnt"].object, "Catalog object name")
                     hdu.header["CAT-RA"] = (
-                        float(g_dev["mnt"].current_icrs_ra) * 15,
-                        "[deg] Catalog RA of object",
+                        tempointing[0],
+                        "[hms] Catalog RA of object",
                     )
                     hdu.header["CAT-DEC"] = (
-                        g_dev["mnt"].current_icrs_dec,
-                        "[deg] Catalog Dec of object",
+                        tempointing[1],
+                        "[dms] Catalog Dec of object",
                     )
+                    hdu.header["OFST-RA"] = (
+                        tempointing[0],
+                        "[hms] Catalog RA of object (for BANZAI only)",
+                    )
+                    hdu.header["OFST-DEC"] = (
+                        tempointing[1],
+                        "[dms] Catalog Dec of object",
+                    )
+
+
+                    hdu.header["TPT-RA"] = (
+                        tempointing[0],
+                        "[hms] Catalog RA of object (for BANZAI only",
+                    )
+                    hdu.header["TPT-DEC"] = (
+                        tempointing[1],
+                        "[dms] Catalog Dec of object",
+                    )
+
+                    hdu.header["CRVAL1"] = tempRAdeg
+                    hdu.header["CRVAL2"] = tempDECdeg
+                    hdu.header["CRPIX1"] = float(hdu.header["NAXIS1"])/2
+                    hdu.header["CRPIX2"] = float(hdu.header["NAXIS2"])/2
+
                     hdu.header["TARGRA"] = float(g_dev["mnt"].current_icrs_ra) * 15
                     hdu.header["TARGDEC"] = g_dev["mnt"].current_icrs_dec
                     try:
