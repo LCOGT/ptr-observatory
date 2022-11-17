@@ -29,6 +29,7 @@ def get_default_catalog_location():
         return os.path.expanduser("~/Kepler")
     else:
         return os.path.expanduser("~\\Documents\\Kepler")
+    
 
 
 def platesolve(image_file, arcsec_per_pixel):
@@ -46,6 +47,7 @@ def platesolve(image_file, arcsec_per_pixel):
     #       str(arcsec_per_pixel),
     #       output_file_path,
     #       catalog_path)
+    #print (image_file)
     args = [
         PS3CLI_EXE,
         image_file,

@@ -457,13 +457,14 @@ class Observatory:
                 # What we really want here is looking for a Cancel/Stop.
                 continue
 
-    def update_status(self):
+    def update_status(self, bpt=False):
         """Collects status from all devices and sends an update to AWS.
 
         Each device class is responsible for implementing the method
         `get_status`, which returns a dictionary.
         """
-
+        if bpt:
+            breakpoint()
         # This stopping mechanism allows for threads to close cleanly.
         loud = False
 
@@ -1060,7 +1061,7 @@ class Observatory:
 
                     plog(datetime.datetime.now())
 
-                    del img
+                del img
 
 
                     # # Save out a fits for testing purposes only
@@ -1100,10 +1101,13 @@ class Observatory:
                     ) > datetime.timedelta(
                         minutes=self.config["solve_timer"]
                     ):
+
                         if smartstackid == "no" and len(sources) > 30:
                             try:
+
                                 print (pixscale)
                                 print (paths["red_path"] + paths["red_name01"])
+                                time.sleep(3)
                                 solve = platesolve.platesolve(
                                     paths["red_path"] + paths["red_name01"], pixscale
                                 )  # 0.5478)
@@ -1120,8 +1124,8 @@ class Observatory:
                                 solved_rotangledegs = solve["rot_angle_degs"]
                                 err_ha = target_ra - solved_ra
                                 err_dec = target_dec - solved_dec
-                                solved_arcsecperpixel = solve["arcsec_per_pixel"]
-                                solved_rotangledegs = solve["rot_angle_degs"]
+                                #solved_arcsecperpixel = solve["arcsec_per_pixel"]
+                                #solved_rotangledegs = solve["rot_angle_degs"]
                                 plog(
                                     " coordinate error in ra, dec:  (asec) ",
                                     round(err_ha * 15 * 3600, 2),
