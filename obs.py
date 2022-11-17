@@ -480,7 +480,7 @@ class Observatory:
                 # What we really want here is looking for a Cancel/Stop.
                 continue
 
-    def update_status(self):
+    def update_status(self, bpt=False):
         """Collects status from all devices and sends an update to AWS.
 
         Each device class is responsible for implementing the method
@@ -489,6 +489,8 @@ class Observatory:
 
         # This stopping mechanism allows for threads to close cleanly.
         loud = False
+        if bpt:
+            breakpoint()
 
         # Wait a bit between status updates
         while time.time() < self.time_last_status + self.status_interval:
