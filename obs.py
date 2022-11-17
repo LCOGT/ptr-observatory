@@ -371,13 +371,15 @@ class Observatory:
                     for cmd in unread_commands:
                         if cmd["action"] in ["cancel_all_commands", "stop"]:
                             g_dev["obs"].stop_all_activity = True
+                            plog("Stop_all_activity is now set True.")
                             self.send_to_user(
-                                "Cancel/Stop received. Exposure stopped, will begin readout then discard image."
+                                "Cancel/Stop received. Exposure stopped, camera may begin readout, then will discard image."
                             )
                             self.send_to_user(
                                 "Pending reductions and transfers to the PTR Archive are not affected."
                             )
                             # Empty the queue
+
                             try:
                                 if g_dev["cam"].exposure_busy:
                                     g_dev["cam"]._stop_expose()
@@ -431,10 +433,14 @@ class Observatory:
                     device = self.all_devices[device_type][device_instance]
                     try:
                         #plog("Trying to parse:  ", cmd)
+
                         device.parse_command(cmd)
                     except Exception as e:
+
                         plog(traceback.format_exc())
-                        plog("Exception in obs.scan_requests:  ", e)
+
+                        plog("Exception in obs.scan_requests:  ", e, 'cmd:  ', cmd)
+
                 url_blk = "https://calendar.photonranch.org/dev/siteevents"
                 body = json.dumps(
                     {
@@ -486,7 +492,8 @@ class Observatory:
         Each device class is responsible for implementing the method
         `get_status`, which returns a dictionary.
         """
-
+        if bpt:
+            breakpoint()
         # This stopping mechanism allows for threads to close cleanly.
         loud = False
         if bpt:
@@ -588,8 +595,7 @@ class Observatory:
         self.time_last_status = time.time()
         self.status_count += 1
         try:
-            self.scan_requests(
-                "mount1", cancel_check=True
+            self.scan_requests(cancel_check=True
             )  # NB THis has faulted, usually empty input lists.
         except:
             pass
@@ -600,9 +606,6 @@ class Observatory:
         called. It first SENDS status for all devices to AWS, then it checks for any new
         commands from AWS. Then it calls sequencer.monitor() were jobs may get launched. A
         flaw here is we do not have a Ulid for the 'Job number'.
-
-        With a Maxim based camera, is it possible for the owner to push buttons in parallel
-        with commands coming from AWS. This is useful during the debugging phase.
 
         Sequences that are self-dispatched primarily relate to biases, darks, screen and sky
         flats, opening and closing. Status for these jobs is reported via the normal
@@ -916,7 +919,9 @@ class Observatory:
                             if g_dev["foc"].last_focus_fwhm == None:
                                 g_dev["foc"].last_focus_fwhm = FWHM
                             else:
+
                                 # Very dumb focus slip deteector
+
                                 if (
                                     np.nanmedian(g_dev["foc"].focus_tracker)
                                     > g_dev["foc"].last_focus_fwhm
@@ -1132,7 +1137,7 @@ class Observatory:
 
                     plog(datetime.datetime.now())
 
-                    del img
+                del img
 
 
                     # # Save out a fits for testing purposes only
@@ -1174,9 +1179,11 @@ class Observatory:
                     ) > datetime.timedelta(
                         minutes=self.config["solve_timer"]
                     ):
+
                         if smartstackid == "no" and len(sources) > 30:
                             try:
-                                time.sleep(1) # A simple wait to make sure file is saved
+
+
                                 solve = platesolve.platesolve(
                                     paths["red_path"] + paths["red_name01"], pixscale
                                 )  # 0.5478)
@@ -1193,8 +1200,8 @@ class Observatory:
                                 solved_rotangledegs = solve["rot_angle_degs"]
                                 err_ha = target_ra - solved_ra
                                 err_dec = target_dec - solved_dec
-                                solved_arcsecperpixel = solve["arcsec_per_pixel"]
-                                solved_rotangledegs = solve["rot_angle_degs"]
+                                #solved_arcsecperpixel = solve["arcsec_per_pixel"]
+                                #solved_rotangledegs = solve["rot_angle_degs"]
                                 plog(
                                     " coordinate error in ra, dec:  (asec) ",
                                     round(err_ha * 15 * 3600, 2),
