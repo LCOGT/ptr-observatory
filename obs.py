@@ -688,7 +688,7 @@ class Observatory:
                                 print ("did ingester")
                                 plog(f"--> To PTR ARCHIVE --> {str(filepath)}")
                                 self.aws_queue.task_done()
-                                os.remove(filepath)
+                                
                                 tempPTR=1
                             except Exception as e:
                                 print ("couldn't send to PTR archive for some reason")
@@ -704,7 +704,7 @@ class Observatory:
                                 print ("did aws")
                                 plog(f"--> To AWS --> {str(filepath)}")
                                 self.aws_queue.task_done()
-                                os.remove(filepath)
+                                
                                 #break
                             except:
                                 print ("Connection glitch for the request post, waiting a moment and trying again")
@@ -718,13 +718,13 @@ class Observatory:
                             requests.post(aws_resp["url"], data=aws_resp["fields"], files=files)
                             plog(f"--> To AWS --> {str(filepath)}")
                             self.aws_queue.task_done()
-                            os.remove(filepath)
+                            
                             #break
                         except:
                             print ("Connection glitch for the request post, waiting a moment and trying again")
                             time.sleep(5)
-                        
-
+                     
+                os.remove(filepath)
                 # if (
                 #     filename[-3:] == "jpg"
                 #     or filename[-3:] == "txt"
