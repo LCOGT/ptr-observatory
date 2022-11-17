@@ -1456,7 +1456,7 @@ class Camera:
             except:
                 plog("OCN status not quick updated")
             if time.time() > self.status_time:
-                g_dev["obs"].update_status()
+                g_dev["obs"].update_status(bpt=False)
                 self.status_time = time.time() + 10
             if (
                 time.time() < self.completion_time
@@ -1525,9 +1525,7 @@ class Camera:
             except:
                 plog("Mount doesn't use pierside")
 
-            if (not self.use_file_mode and self._imageavailable()) or (
-                self.use_file_mode and len(incoming_image_list) >= 1
-            ):
+            if (not self.use_file_mode and self._imageavailable()):  # orself.use_file_mode and len(incoming_image_list) >= 1):
                 imageCollected = 0
                 retrycounter = 0
                 if g_dev['obs'].stop_all_activity:
@@ -2483,7 +2481,9 @@ class Camera:
                             hdusmall.data = hdusmall.data[yb:-yt, xl:-xr]
                             hdusmall.header["NAXIS1"] = hdusmall.data.shape[0]
                             hdusmall.header["NAXIS2"] = hdusmall.data.shape[1]
-
+                        
+                        
+                        
                         # At this stage of the proceedings, if the image is just a focus image, then it wants
                         # the FWHM and then it wants to get out back to the focus script. So lets let it do
                         # that here. In future, we can make other interesteding jpg products showing a
@@ -2837,7 +2837,7 @@ class Camera:
                     while saver == 0 and saverretries < 10:
                         try:
                             hdufz.writeto(
-                                raw_path + raw_name00 + ".fz", overwrite=True
+                                raw_path + raw_name00 + ".fz", output_verify='fix', overwrite=True
                             )  # Save full fz file locally
                             saver = 1
                         except Exception as e:
@@ -2883,8 +2883,11 @@ class Camera:
                         saverretries = 0
                         while saver == 0 and saverretries < 10:
                             try:
+                                #hdureduced.data=np.asarray(hdureduced.data).astype(np.int16)
+                                #hdureduced.header["BZERO"] = 0
+                                #hdureduced.header["BSCALE"] = 1
                                 hdureduced.writeto(
-                                    red_path + red_name01, overwrite=True
+                                    red_path + red_name01, output_verify='fix', overwrite=True
                                 )  # Save flash reduced file locally
                                 saver = 1
                             except Exception as e:
