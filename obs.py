@@ -676,43 +676,64 @@ class Observatory:
                 aws_resp = g_dev["obs"].api.authenticated_request(
                     "POST", "/upload/", {"object_name": filename})
                 # Only ingest new large fits.fz files to the PTR archive.
-                if self.env_exists == True and filename.endswith("-EX00.fits.fz"):
+                print (self.env_exists)
+                if filename.endswith("-EX00.fits.fz"):
                     with open(filepath, "rb") as fileobj:
-                        try:
-                            if not frame_exists(fileobj):
+                        print (frame_exists(fileobj))
+                        tempPTR=0
+                        if self.env_exists == True and (not frame_exists(fileobj)):
+                            print ("attempting ingester")
+                            try:
                                 upload_file_and_ingest_to_archive(fileobj)
+                                print ("did ingester")
                                 plog(f"--> To PTR ARCHIVE --> {str(filepath)}")
-                            # If ingester fails, send to default S3 bucket.
-                        except:
+                                self.aws_queue.task_done()
+                                os.remove(filepath)
+                                tempPTR=1
+                            except Exception as e:
+                                print ("couldn't send to PTR archive for some reason")
+                                #print (e)
+                                #print (print (traceback.format_exc()))
+                                tempPTR=0
+                        # If ingester fails, send to default S3 bucket.
+                        if tempPTR ==0:
                             files = {"file": (filepath, fileobj)}
                             try:
+                                print ("attempting aws")
                                 requests.post(aws_resp["url"], data=aws_resp["fields"], files=files)
-                                break
+                                print ("did aws")
+                                plog(f"--> To AWS --> {str(filepath)}")
+                                self.aws_queue.task_done()
+                                os.remove(filepath)
+                                #break
                             except:
                                 print ("Connection glitch for the request post, waiting a moment and trying again")
                                 time.sleep(5)
-                            plog(f"--> To AWS --> {str(filepath)}")
+                            
                 # Send all other files to S3.
                 else:
                     with open(filepath, "rb") as fileobj:
                         files = {"file": (filepath, fileobj)}
                         try:
                             requests.post(aws_resp["url"], data=aws_resp["fields"], files=files)
-                            break
+                            plog(f"--> To AWS --> {str(filepath)}")
+                            self.aws_queue.task_done()
+                            os.remove(filepath)
+                            #break
                         except:
                             print ("Connection glitch for the request post, waiting a moment and trying again")
                             time.sleep(5)
-                        plog(f"--> To AWS --> {str(filepath)}")
+                        
 
-                if (
-                    filename[-3:] == "jpg"
-                    or filename[-3:] == "txt"
-                    or ".fits.fz" in filename
-                    or ".token" in filename
-                ):
-                    os.remove(filepath)
+                # if (
+                #     filename[-3:] == "jpg"
+                #     or filename[-3:] == "txt"
+                #     or ".fits.fz" in filename
+                #     or ".token" in filename
+                # ):
+                #     os.remove(filepath)
 
-                self.aws_queue.task_done()
+                #self.aws_queue.task_done()
                 one_at_a_time = 0
                 time.sleep(0.1)
             else:
@@ -750,34 +771,19 @@ class Observatory:
                 aws_resp = g_dev["obs"].api.authenticated_request(
                     "POST", "/upload/", {"object_name": filename})
                 # Only ingest new large fits.fz files to the PTR archive.
-                if self.env_exists == True and filename.endswith("-EX00.fits.fz"):
-                    with open(filepath, "rb") as fileobj:
-                        try:
-                            if not frame_exists(fileobj):
-                                upload_file_and_ingest_to_archive(fileobj)
-                                plog(f"--> To PTR ARCHIVE --> {str(filepath)}")
-                            # If ingester fails, send to default S3 bucket.
-                        except:
-                            files = {"file": (filepath, fileobj)}
-                            try:
-                                requests.post(aws_resp["url"], data=aws_resp["fields"], files=files)
-                                break
-                            except:
-                                print ("Connection glitch for the request post, waiting a moment and trying again")
-                                time.sleep(5)
-                            plog(f"--> To AWS --> {str(filepath)}")
+                
                 # Send all other files to S3.
-                else:
-                    with open(filepath, "rb") as fileobj:
-                        files = {"file": (filepath, fileobj)}
-                        while True:
-                            try:
-                                requests.post(aws_resp["url"], data=aws_resp["fields"], files=files)
-                                break
-                            except:
-                                print ("Connection glitch for the request post, waiting a moment and trying again")
-                                time.sleep(5)
-                        plog(f"--> To AWS --> {str(filepath)}")
+                
+                with open(filepath, "rb") as fileobj:
+                    files = {"file": (filepath, fileobj)}
+                    while True:
+                        try:
+                            requests.post(aws_resp["url"], data=aws_resp["fields"], files=files)
+                            break
+                        except:
+                            print ("Connection glitch for the request post, waiting a moment and trying again")
+                            time.sleep(5)
+                    plog(f"--> To AWS --> {str(filepath)}")
 
                 if (
                     filename[-3:] == "jpg"
@@ -1137,7 +1143,7 @@ class Observatory:
 
                     plog(datetime.datetime.now())
 
-                del img
+                    del img
 
 
                     # # Save out a fits for testing purposes only
