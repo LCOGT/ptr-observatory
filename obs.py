@@ -20,13 +20,25 @@ import socket
 import threading
 import time
 import sys
+import shutil
 
 import astroalign as aa
 from astropy.io import fits
 from dotenv import load_dotenv
 import numpy as np
 import redis  # Client, can work with Memurai
+
 import requests
+# from requests.adapters import HTTPAdapter
+# from requests.packages.urllib3.util.retry import Retry
+# retry_strategy = Retry(
+#     total=10, backoff_factor=0.1
+# )
+# adapter = HTTPAdapter(max_retries=retry_strategy)
+# requests = requests.Session()
+
+
+
 import sep
 from skimage.io import imsave
 from skimage.transform import resize
@@ -169,6 +181,16 @@ class Observatory:
         g_dev["site"]: site_str
         self.g_dev = g_dev
 
+        # Clear out smartstacks directory
+        #print ("removing and reconstituting smartstacks directory")
+        try:
+            shutil.rmtree(g_dev["cam"].site_path + "smartstacks")
+        except:
+            print ("problems with removing the smartstacks directory... usually a file is open elsewhere")
+        time.sleep(20)
+        if not os.path.exists(g_dev["cam"].site_path + "smartstacks"):
+            os.makedirs(g_dev["cam"].site_path + "smartstacks")
+
         # Check directory system has been constructed
         # for new sites or changed directories in configs.
         if not os.path.exists(g_dev["cam"].site_path + "ptr_night_shelf"):
@@ -218,6 +240,9 @@ class Observatory:
         self.events_new = None
         self.reset_last_reference()
         self.env_exists = os.path.exists(os.getcwd() + '\.env')  # Boolean, check if .env present
+
+        # Need to set this for the night log
+        #g_dev['foc'].set_focal_ref_reset_log(self.config["focuser"]["focuser1"]["reference"])
 
 
     def set_last_reference(self, delta_ra, delta_dec, last_time):
@@ -408,6 +433,7 @@ class Observatory:
                         #plog("Trying to parse:  ", cmd)
                         device.parse_command(cmd)
                     except Exception as e:
+                        plog(traceback.format_exc())
                         plog("Exception in obs.scan_requests:  ", e)
                 url_blk = "https://calendar.photonranch.org/dev/siteevents"
                 body = json.dumps(
@@ -654,13 +680,23 @@ class Observatory:
                             # If ingester fails, send to default S3 bucket.
                         except:
                             files = {"file": (filepath, fileobj)}
-                            requests.post(aws_resp["url"], data=aws_resp["fields"], files=files)
+                            try:
+                                requests.post(aws_resp["url"], data=aws_resp["fields"], files=files)
+                                break
+                            except:
+                                print ("Connection glitch for the request post, waiting a moment and trying again")
+                                time.sleep(5)
                             plog(f"--> To AWS --> {str(filepath)}")
                 # Send all other files to S3.
                 else:
                     with open(filepath, "rb") as fileobj:
                         files = {"file": (filepath, fileobj)}
-                        requests.post(aws_resp["url"], data=aws_resp["fields"], files=files)
+                        try:
+                            requests.post(aws_resp["url"], data=aws_resp["fields"], files=files)
+                            break
+                        except:
+                            print ("Connection glitch for the request post, waiting a moment and trying again")
+                            time.sleep(5)
                         plog(f"--> To AWS --> {str(filepath)}")
 
                 if (
@@ -718,13 +754,24 @@ class Observatory:
                             # If ingester fails, send to default S3 bucket.
                         except:
                             files = {"file": (filepath, fileobj)}
-                            requests.post(aws_resp["url"], data=aws_resp["fields"], files=files)
+                            try:
+                                requests.post(aws_resp["url"], data=aws_resp["fields"], files=files)
+                                break
+                            except:
+                                print ("Connection glitch for the request post, waiting a moment and trying again")
+                                time.sleep(5)
                             plog(f"--> To AWS --> {str(filepath)}")
                 # Send all other files to S3.
                 else:
                     with open(filepath, "rb") as fileobj:
                         files = {"file": (filepath, fileobj)}
-                        requests.post(aws_resp["url"], data=aws_resp["fields"], files=files)
+                        while True:
+                            try:
+                                requests.post(aws_resp["url"], data=aws_resp["fields"], files=files)
+                                break
+                            except:
+                                print ("Connection glitch for the request post, waiting a moment and trying again")
+                                time.sleep(5)
                         plog(f"--> To AWS --> {str(filepath)}")
 
                 if (
@@ -795,26 +842,35 @@ class Observatory:
                 ]:
                     img = fits.open(
                         paths["red_path"] + paths["red_name01"],
-                        mode="update",
                         ignore_missing_end=True,
                     )
-                    sstackimghold=img.copy()
-                    img[0].data = (
-                        img[0].data - np.min(img[0].data)
+                    imgdata=img[0].data.copy()
+                    # Pick up some header items for smartstacking later
+                    ssfilter = str(img[0].header["FILTER"])
+                    ssobject = str(img[0].header["OBJECT"])
+                    ssexptime = str(img[0].header["EXPTIME"])
+                    ssframenumber = str(img[0].header["FRAMENUM"])
+                    img.close()
+                    del img
+                    sstackimghold=np.asarray(imgdata)
+                    imgdata = (
+                        imgdata - np.min(imgdata)
                     ) + 100  # Add an artifical pedestal to background.
-                    img = img[0].data.astype("float")
+                    imgdata = imgdata.astype("float")
 
-                    img = img.copy(
+                    imgdata = imgdata.copy(
                         order="C"
                     )  # NB Should we move this up to where we read the array?
-                    bkg = sep.Background(img)
-                    img -= bkg
+                    bkg = sep.Background(imgdata)
+                    imgdata -= bkg
 
                     try:
                         sep.set_extract_pixstack(1000000)
                         sources = sep.extract(
-                            img, 4.5, err=bkg.globalrms, minarea=15
+                            imgdata, 4.5, err=bkg.globalrms, minarea=15
                         )  # Minarea should deal with hot pixels.
+                        ix, iy = imgdata.shape
+                        del imgdata
                         sources.sort(order="cflux")
                         plog("No. of detections:  ", len(sources))
 
@@ -823,7 +879,7 @@ class Observatory:
                             print ("skipping focus estimate as not enough sources in this image")
 
                         else:
-                            ix, iy = img.shape
+
                             #r0 = 0
 
                             border_x = int(ix * 0.05)
@@ -854,25 +910,25 @@ class Observatory:
                             print("Last solved focus FWHM")
                             print(g_dev["foc"].last_focus_fwhm)
 
-                        # If there hasn't been a focus yet, then it can't check it, so make this image the last solved focus.
-                        if g_dev["foc"].last_focus_fwhm == None:
-                            g_dev["foc"].last_focus_fwhm = FWHM
-                        else:
-                            # Very dumb focus slip deteector
-                            if (
-                                np.nanmedian(g_dev["foc"].focus_tracker)
-                                > g_dev["foc"].last_focus_fwhm
-                                + self.config["focus_trigger"]
-                            ):
-                                g_dev["foc"].focus_needed = True
-                                g_dev["obs"].send_to_user(
-                                    "Focus has drifted to "
-                                    + str(np.nanmedian(g_dev["foc"].focus_tracker))
-                                    + " from "
-                                    + str(g_dev["foc"].last_focus_fwhm)
-                                    + ". Autofocus triggered for next exposures.",
-                                    p_level="INFO",
-                                )
+                            # If there hasn't been a focus yet, then it can't check it, so make this image the last solved focus.
+                            if g_dev["foc"].last_focus_fwhm == None:
+                                g_dev["foc"].last_focus_fwhm = FWHM
+                            else:
+                                # Very dumb focus slip deteector
+                                if (
+                                    np.nanmedian(g_dev["foc"].focus_tracker)
+                                    > g_dev["foc"].last_focus_fwhm
+                                    + self.config["focus_trigger"]
+                                ):
+                                    g_dev["foc"].focus_needed = True
+                                    g_dev["obs"].send_to_user(
+                                        "Focus has drifted to "
+                                        + str(np.nanmedian(g_dev["foc"].focus_tracker))
+                                        + " from "
+                                        + str(g_dev["foc"].last_focus_fwhm)
+                                        + ". Autofocus triggered for next exposures.",
+                                        p_level="INFO",
+                                    )
                     except:
                         print ("something failed in the SEP calculations for exposure. This could be an overexposed image")
                         print (traceback.format_exc())
@@ -894,11 +950,7 @@ class Observatory:
                     del sstackimghold
 
                     #plog(img[0].header["FILTER"])
-                    ssfilter = img[0].header["FILTER"]
-                    ssobject = img[0].header["OBJECT"]
-                    ssexptime = img[0].header["EXPTIME"]
 
-                    ssframenumber = img[0].header["FRAMENUM"]
                     #stackHoldheader = img[0].header
                     #plog(g_dev["cam"].site_path + "smartstacks")
 
@@ -912,13 +964,21 @@ class Observatory:
                         + str(smartstackid)
                         + ".npy"
                     )
+
+                    #cleanhdu=fits.PrimaryHDU()
+                    #cleanhdu.data=img
+
+                    #cleanhdr=cleanhdu.header
+                    #cleanhdu.writeto(g_dev["cam"].site_path + "smartstacks/" + smartStackFilename.replace('.npy','.fit'))
+
                     #plog(smartStackFilename)
-                    img = np.asarray(img[0].data)
+                    #img = np.asarray(img[0].data)
                     # Detect and swap img to the correct endianness - needed for the smartstack jpg
                     if sys.byteorder=='little':
-                        img=img.newbyteorder('little')
+                        img=img.newbyteorder('little').byteswap()
                     else:
-                        img=img.newbyteorder('big')
+                        img=img.newbyteorder('big').byteswap()
+
 
                     # IF SMARSTACK NPY FILE EXISTS DO STUFF, OTHERWISE THIS IMAGE IS THE START OF A SMARTSTACK
                     reprojection_failed=False
@@ -939,6 +999,13 @@ class Observatory:
                                 + smartStackFilename,
                                 img,
                             )
+
+                            #cleanhdu=fits.PrimaryHDU()
+                            #cleanhdu.data=img
+
+                            #cleanhdr=cleanhdu.header
+                            #cleanhdu.writeto(g_dev["cam"].site_path + "smartstacks/" + smartStackFilename.replace('.npy','.fit'))
+
                         else:
                             print ("Not storing first smartstack image as not enough sources")
                             reprojection_failed=True
@@ -1081,6 +1148,8 @@ class Observatory:
                     # )
                     # del firstimage
 
+
+
                 # Solve for pointing. Note: as the raw and reduced file are already saved and an fz file
                 # has already been sent up, this is purely for pointing purposes.
                 if not paths["frame_type"] in [
@@ -1105,6 +1174,7 @@ class Observatory:
                     ):
                         if smartstackid == "no" and len(sources) > 30:
                             try:
+                                time.sleep(1) # A simple wait to make sure file is saved
                                 solve = platesolve.platesolve(
                                     paths["red_path"] + paths["red_name01"], pixscale
                                 )  # 0.5478)

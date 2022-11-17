@@ -182,8 +182,14 @@ class Sequencer:
         g_dev['cam'].user_id = command['user_id']
         g_dev['cam'].user_name = command['user_name']
         action = command['action']
-        script = command['required_params']['script']
+        if 'script' in command['required_params']:
+            script = command['required_params']['script']
+        else:
+            script = None
         if action == "run" and script == 'focusAuto':
+            self.auto_focus_script(req, opt)
+        elif action == "autofocus": # this action is the front button on Camera, so FORCES an autofocus
+            g_dev['foc'].time_of_last_focus = datetime.datetime.now()
             self.auto_focus_script(req, opt)
         elif action == "run" and script == 'focusFine':
             self.coarse_focus_script(req, opt)
@@ -288,7 +294,7 @@ class Sequencer:
         ocn_status = g_dev['ocn'].status
         enc_status = g_dev['enc'].status
         events = g_dev['events']
-         
+
         g_dev['enc'].mode = 'Automatic'     #  THis is a very common debug point.
 
         if self.bias_dark_latch and ((events['Eve Bias Dark'] <= ephem_now < events['End Eve Bias Dark']) and \
@@ -612,6 +618,7 @@ class Sequencer:
                     longstackname=block_specification['project']['created_at'].replace('-','').replace(':','')
                 else:
                     longstackswitch='no'
+                    longstackname='no'
                 if block_specification['project']['smartstack'] == True:
                     smartstackswitch='yes'
                 else:
@@ -1077,7 +1084,16 @@ class Sequencer:
                 os.makedirs(g_dev["cam"].site_path + "smartstacks")
 
 
+            # Totally kill and restore night shelf
+            try:
+                shutil.rmtree(g_dev["cam"].site_path + "ptr_night_shelf")
+            except:
+                print ("problems with removing the nightshelf directory... usually a file is open elsewhere")
+            time.sleep(20)
+            if not os.path.exists(g_dev["cam"].site_path + "ptr_night_shelf"):
+                os.makedirs(g_dev["cam"].site_path + "ptr_night_shelf")
 
+            g_dev['foc'].set_focal_ref_reset_log(self.config["focuser"]["focuser1"]["reference"])
 
             # Reopening config and resetting all the things.
             self.astro_events.compute_day_directory()
@@ -1571,6 +1587,9 @@ class Sequencer:
 # =============================================================================
 # =============================================================================
         plog("Saved  *mounting* ra, dec, focus:  ", start_ra, start_dec, focus_start)
+
+        if not 'target' in req2:
+            req2['target'] = 'near_tycho_star'
 
         if req2['target'] == 'near_tycho_star':   ## 'bin', 'area'  Other parameters
 

@@ -17,6 +17,7 @@ import ephem
 from astropy.io import fits
 from astropy.time import Time
 from astropy.utils.data import check_download_cache
+from astropy.coordinates import SkyCoord
 import glob
 import numpy as np
 import sep
@@ -24,6 +25,7 @@ from skimage.io import imsave
 from skimage.transform import resize
 from auto_stretch.stretch import Stretch
 import win32com.client
+from planewave import platesolve
 
 
 from devices.darkslide import Darkslide
@@ -1026,6 +1028,23 @@ class Camera:
             if seq > 0:
                 g_dev["obs"].update_status()
 
+            ## Vital Check : Has end of observing occured???
+            ## Need to do this, SRO kept taking shots til midday without this
+            #print (g_dev['events']['Observing Begins'])
+            #print (ephem.Date(ephem.now()+ (exposure_time *ephem.second)))
+            #loadingprint (g_dev['events']['Observing Ends'])
+            if imtype.lower() in ["light"] or imtype.lower() in ["expose"]:
+                if g_dev['events']['Observing Ends'] < ephem.Date(ephem.now()+ (exposure_time *ephem.second)):
+                    print ("Sorry, exposures are outside of night time.")
+                    break
+
+            #print (endOfExposure)
+            #print (now_date_timeZ)
+            #print (self.blockend)
+            #print (ephem.now() + exposure_time)
+            #print (g_dev['events']['Observing Ends'])
+            #print (ephem.Date(ephem.now()+ (exposure_time *ephem.second)))
+
             self.pre_mnt = []
             self.pre_rot = []
             self.pre_foc = []
@@ -1039,7 +1058,7 @@ class Camera:
             if not imtype.lower() in ["light"]:
                 Nsmartstack=1
                 SmartStackID='no'
-            elif self.smartstack == 'yes' and (exposure_time > 3*ssExp):
+            elif (self.smartstack == 'yes' or self.smartstack == True) and (exposure_time > 3*ssExp):
                 Nsmartstack=np.ceil(exposure_time / ssExp)
                 exposure_time=ssExp
                 SmartStackID=(datetime.datetime.now().strftime("%d%m%y%H%M%S"))
@@ -1047,6 +1066,7 @@ class Camera:
             else:
                 Nsmartstack=1
                 SmartStackID='no'
+
 
             try:
                 # Check here for filter, guider, still moving  THIS IS A CLASSIC
@@ -1941,12 +1961,21 @@ class Camera:
                         hdu.header["OBJECT"] = RAstring + "ra" + DECstring + "dec"
                         hdu.header["OBJSPECF"] = "no"
 
+
+                    tempRAdeg = float(g_dev["mnt"].current_icrs_ra) * 15
+                    tempDECdeg = g_dev["mnt"].current_icrs_dec
+
+
+
+                    tempointing = SkyCoord(tempRAdeg, tempDECdeg, unit='deg')
+                    tempointing=tempointing.to_string("hmsdms").split(' ')
+
                     hdu.header["RA"] = (
-                        float(g_dev["mnt"].current_icrs_ra) * 15,
+                        tempRAdeg,
                         "[deg] Telescope right ascension",
                     )
                     hdu.header["DEC"] = (
-                        g_dev["mnt"].current_icrs_dec,
+                        tempDECdeg,
                         "[deg] Telescope declination",
                     )
                     hdu.header["ORIGRA"] = hdu.header["RA"]
@@ -1955,14 +1984,9 @@ class Camera:
                         g_dev["mnt"].current_icrs_ra,
                         "[hrs] Telescope right ascension",
                     )
-                    hdu.header["RA-HMS"] = (
-                        ptr_utility.hToH_MS(g_dev["mnt"].current_icrs_ra),
-                        "[HH MM SS sss] Telescope right ascension",
-                    )
-                    hdu.header["DEC-DMS"] = (
-                        ptr_utility.dToD_MS(g_dev["mnt"].current_icrs_dec),
-                        "[sDD MM SS ss] Telescope declination",
-                    )
+                    hdu.header["RA-hms"] = tempointing[0]
+                    hdu.header["DEC-dms"] = tempointing[1]
+
                     hdu.header["TARG-CHK"] = (
                         (g_dev["mnt"].current_icrs_ra * 15)
                         + g_dev["mnt"].current_icrs_dec,
@@ -1970,13 +1994,14 @@ class Camera:
                     )
                     hdu.header["CATNAME"] = (g_dev["mnt"].object, "Catalog object name")
                     hdu.header["CAT-RA"] = (
-                        float(g_dev["mnt"].current_icrs_ra) * 15,
-                        "[deg] Catalog RA of object",
+                        tempointing[0],
+                        "[hms] Catalog RA of object",
                     )
                     hdu.header["CAT-DEC"] = (
-                        g_dev["mnt"].current_icrs_dec,
-                        "[deg] Catalog Dec of object",
+                        tempointing[1],
+                        "[dms] Catalog Dec of object",
                     )
+
                     hdu.header["TARGRA"] = float(g_dev["mnt"].current_icrs_ra) * 15
                     hdu.header["TARGDEC"] = g_dev["mnt"].current_icrs_dec
                     try:
@@ -2515,6 +2540,7 @@ class Camera:
                                     and 100 < result["mean_focus"] < 12600
                                 )
                                 result["error"] = False
+
                             except:
                                 result[
                                     "error"
@@ -2528,9 +2554,88 @@ class Camera:
                                 result["error"]=True
                                 result["FWHM"] = np.nan
 
+                            print ("This image has a FWHM of " + str(result["FWHM"]))
                             # write the focus image out
                             hdufocus.writeto(cal_path + cal_name, overwrite=True)
+                            pixscale=hdufocus.header['PIXSCALE']
+                            del hdufocus
                             focus_image = False
+
+
+                            # Use the focus image for pointing purposes
+                            try:
+                                time.sleep(1) # A simple wait to make sure file is saved
+                                solve = platesolve.platesolve(
+                                    cal_path + cal_name, pixscale
+                                )  # 0.5478)
+                                plog(
+                                    "PW Solves: ",
+                                    solve["ra_j2000_hours"],
+                                    solve["dec_j2000_degrees"],
+                                )
+                                target_ra = g_dev["mnt"].current_icrs_ra
+                                target_dec = g_dev["mnt"].current_icrs_dec
+                                solved_ra = solve["ra_j2000_hours"]
+                                solved_dec = solve["dec_j2000_degrees"]
+                                solved_arcsecperpixel = solve["arcsec_per_pixel"]
+                                solved_rotangledegs = solve["rot_angle_degs"]
+                                err_ha = target_ra - solved_ra
+                                err_dec = target_dec - solved_dec
+                                solved_arcsecperpixel = solve["arcsec_per_pixel"]
+                                solved_rotangledegs = solve["rot_angle_degs"]
+                                plog(
+                                    " coordinate error in ra, dec:  (asec) ",
+                                    round(err_ha * 15 * 3600, 2),
+                                    round(err_dec * 3600, 2),
+                                )  # NB WER changed units 20221012
+
+                                # We do not want to reset solve timers during a smartStack
+                                self.last_solve_time = datetime.datetime.now()
+                                self.images_since_last_solve = 0
+
+                                # NB NB NB this needs rethinking, the incoming units are hours in HA or degrees of dec
+                                if (
+                                    err_ha * 15 * 3600 > 1200
+                                    or err_dec * 3600 > 1200
+                                    or err_ha * 15 * 3600 < -1200
+                                    or err_dec * 3600 < -1200
+                                ) and self.config["mount"]["mount1"][
+                                    "permissive_mount_reset"
+                                ] == "yes":
+                                    g_dev["mnt"].reset_mount_reference()
+                                    plog("I've  reset the mount_reference 1")
+                                    g_dev["mnt"].current_icrs_ra = solve[
+                                        "ra_j2000_hours"
+                                    ]
+                                    g_dev["mnt"].current_icrs_dec = solve[
+                                        "dec_j2000_hours"
+                                    ]
+                                    err_ha = 0
+                                    err_dec = 0
+
+                                if (
+                                    err_ha * 15 * 3600
+                                    > self.config["threshold_mount_update"]
+                                    or err_dec * 3600
+                                    > self.config["threshold_mount_update"]
+                                ):
+                                    try:
+                                        if g_dev["mnt"].pier_side_str == "Looking West":
+                                            g_dev["mnt"].adjust_mount_reference(
+                                                err_ha, err_dec
+                                            )
+                                        else:
+                                            g_dev["mnt"].adjust_flip_reference(
+                                                err_ha, err_dec
+                                            )  # Need to verify signs
+                                    except:
+                                        plog("This mount doesn't report pierside")
+
+                            except Exception as e:
+                                plog(
+                                    "Image: did not platesolve; this is usually OK. ", e
+                                )
+
                             return result
 
                         # This is holding the flash reduced fits file waiting to be saved
@@ -2646,6 +2751,71 @@ class Camera:
                     hdufz.header[
                         "BSCALE"
                     ] = 1  # Make sure there is no integer scaling left over
+
+                    # Set up RA and DEC headers for BANZAI
+
+                    tempRAdeg = float(g_dev["mnt"].current_icrs_ra) * 15
+                    tempDECdeg = g_dev["mnt"].current_icrs_dec
+
+
+
+                    tempointing = SkyCoord(tempRAdeg, tempDECdeg, unit='deg')
+                    tempointing=tempointing.to_string("hmsdms").split(' ')
+
+                    hdufz.header["RA"] = (
+                        tempointing[0],
+                        "[hms] Telescope right ascension",
+                    )
+                    hdufz.header["DEC"] = (
+                        tempointing[1],
+                        "[dms] Telescope declination",
+                    )
+                    hdufz.header["ORIGRA"] = hdufz.header["RA"]
+                    hdufz.header["ORIGDEC"] = hdufz.header["DEC"]
+                    hdufz.header["RAhrs"] = (
+                        g_dev["mnt"].current_icrs_ra,
+                        "[hrs] Telescope right ascension",
+                    )
+                    hdufz.header["RA-deg"] = tempRAdeg
+                    hdufz.header["DEC-deg"] = tempDECdeg
+
+                    hdufz.header["TARG-CHK"] = (
+                        (g_dev["mnt"].current_icrs_ra * 15)
+                        + g_dev["mnt"].current_icrs_dec,
+                        "[deg] Sum of RA and dec",
+                    )
+                    hdufz.header["CATNAME"] = (g_dev["mnt"].object, "Catalog object name")
+                    hdufz.header["CAT-RA"] = (
+                        tempointing[0],
+                        "[hms] Catalog RA of object",
+                    )
+                    hdufz.header["CAT-DEC"] = (
+                        tempointing[1],
+                        "[dms] Catalog Dec of object",
+                    )
+                    hdufz.header["OFST-RA"] = (
+                        tempointing[0],
+                        "[hms] Catalog RA of object (for BANZAI only)",
+                    )
+                    hdufz.header["OFST-DEC"] = (
+                        tempointing[1],
+                        "[dms] Catalog Dec of object",
+                    )
+
+
+                    hdufz.header["TPT-RA"] = (
+                        tempointing[0],
+                        "[hms] Catalog RA of object (for BANZAI only",
+                    )
+                    hdufz.header["TPT-DEC"] = (
+                        tempointing[1],
+                        "[dms] Catalog Dec of object",
+                    )
+
+                    hdufz.header["CRVAL1"] = tempRAdeg
+                    hdufz.header["CRVAL2"] = tempDECdeg
+                    hdufz.header["CRPIX1"] = float(hdufz.header["NAXIS1"])/2
+                    hdufz.header["CRPIX2"] = float(hdufz.header["NAXIS2"])/2
 
                     # This routine saves the file ready for uploading to AWS
                     # It usually works perfectly 99.9999% of the time except
