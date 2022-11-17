@@ -1962,8 +1962,6 @@ class Camera:
                         hdu.header["OBJSPECF"] = "no"
 
 
-                    # Set up RA and DEC headers for BANZAI
-
                     tempRAdeg = float(g_dev["mnt"].current_icrs_ra) * 15
                     tempDECdeg = g_dev["mnt"].current_icrs_dec
 
@@ -1973,12 +1971,12 @@ class Camera:
                     tempointing=tempointing.to_string("hmsdms").split(' ')
 
                     hdu.header["RA"] = (
-                        tempointing[0],
-                        "[hms] Telescope right ascension",
+                        tempRAdeg,
+                        "[deg] Telescope right ascension",
                     )
                     hdu.header["DEC"] = (
-                        tempointing[1],
-                        "[dms] Telescope declination",
+                        tempDECdeg,
+                        "[deg] Telescope declination",
                     )
                     hdu.header["ORIGRA"] = hdu.header["RA"]
                     hdu.header["ORIGDEC"] = hdu.header["DEC"]
@@ -1986,8 +1984,8 @@ class Camera:
                         g_dev["mnt"].current_icrs_ra,
                         "[hrs] Telescope right ascension",
                     )
-                    hdu.header["RA-deg"] = tempRAdeg
-                    hdu.header["DEC-deg"] = tempDECdeg
+                    hdu.header["RA-hms"] = tempointing[0]
+                    hdu.header["DEC-dms"] = tempointing[1]
 
                     hdu.header["TARG-CHK"] = (
                         (g_dev["mnt"].current_icrs_ra * 15)
@@ -2003,29 +2001,6 @@ class Camera:
                         tempointing[1],
                         "[dms] Catalog Dec of object",
                     )
-                    hdu.header["OFST-RA"] = (
-                        tempointing[0],
-                        "[hms] Catalog RA of object (for BANZAI only)",
-                    )
-                    hdu.header["OFST-DEC"] = (
-                        tempointing[1],
-                        "[dms] Catalog Dec of object",
-                    )
-
-
-                    hdu.header["TPT-RA"] = (
-                        tempointing[0],
-                        "[hms] Catalog RA of object (for BANZAI only",
-                    )
-                    hdu.header["TPT-DEC"] = (
-                        tempointing[1],
-                        "[dms] Catalog Dec of object",
-                    )
-
-                    hdu.header["CRVAL1"] = tempRAdeg
-                    hdu.header["CRVAL2"] = tempDECdeg
-                    hdu.header["CRPIX1"] = float(hdu.header["NAXIS1"])/2
-                    hdu.header["CRPIX2"] = float(hdu.header["NAXIS2"])/2
 
                     hdu.header["TARGRA"] = float(g_dev["mnt"].current_icrs_ra) * 15
                     hdu.header["TARGDEC"] = g_dev["mnt"].current_icrs_dec
@@ -2776,6 +2751,71 @@ class Camera:
                     hdufz.header[
                         "BSCALE"
                     ] = 1  # Make sure there is no integer scaling left over
+
+                    # Set up RA and DEC headers for BANZAI
+
+                    tempRAdeg = float(g_dev["mnt"].current_icrs_ra) * 15
+                    tempDECdeg = g_dev["mnt"].current_icrs_dec
+
+
+
+                    tempointing = SkyCoord(tempRAdeg, tempDECdeg, unit='deg')
+                    tempointing=tempointing.to_string("hmsdms").split(' ')
+
+                    hdufz.header["RA"] = (
+                        tempointing[0],
+                        "[hms] Telescope right ascension",
+                    )
+                    hdufz.header["DEC"] = (
+                        tempointing[1],
+                        "[dms] Telescope declination",
+                    )
+                    hdufz.header["ORIGRA"] = hdufz.header["RA"]
+                    hdufz.header["ORIGDEC"] = hdufz.header["DEC"]
+                    hdufz.header["RAhrs"] = (
+                        g_dev["mnt"].current_icrs_ra,
+                        "[hrs] Telescope right ascension",
+                    )
+                    hdufz.header["RA-deg"] = tempRAdeg
+                    hdufz.header["DEC-deg"] = tempDECdeg
+
+                    hdufz.header["TARG-CHK"] = (
+                        (g_dev["mnt"].current_icrs_ra * 15)
+                        + g_dev["mnt"].current_icrs_dec,
+                        "[deg] Sum of RA and dec",
+                    )
+                    hdufz.header["CATNAME"] = (g_dev["mnt"].object, "Catalog object name")
+                    hdufz.header["CAT-RA"] = (
+                        tempointing[0],
+                        "[hms] Catalog RA of object",
+                    )
+                    hdufz.header["CAT-DEC"] = (
+                        tempointing[1],
+                        "[dms] Catalog Dec of object",
+                    )
+                    hdufz.header["OFST-RA"] = (
+                        tempointing[0],
+                        "[hms] Catalog RA of object (for BANZAI only)",
+                    )
+                    hdufz.header["OFST-DEC"] = (
+                        tempointing[1],
+                        "[dms] Catalog Dec of object",
+                    )
+
+
+                    hdufz.header["TPT-RA"] = (
+                        tempointing[0],
+                        "[hms] Catalog RA of object (for BANZAI only",
+                    )
+                    hdufz.header["TPT-DEC"] = (
+                        tempointing[1],
+                        "[dms] Catalog Dec of object",
+                    )
+
+                    hdufz.header["CRVAL1"] = tempRAdeg
+                    hdufz.header["CRVAL2"] = tempDECdeg
+                    hdufz.header["CRPIX1"] = float(hdufz.header["NAXIS1"])/2
+                    hdufz.header["CRPIX2"] = float(hdufz.header["NAXIS2"])/2
 
                     # This routine saves the file ready for uploading to AWS
                     # It usually works perfectly 99.9999% of the time except

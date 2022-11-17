@@ -475,10 +475,10 @@ site_config = {
                 'y_trim_offset':  0,
                 'pre_bias_available': False,  #if so need to specify as below for post_bias.
                 'post_bias_available': True,  #if so need to specify as below for post_bias.
-                'x_bias_start':  4520,
+                'x_bias_start':  4520,      #These numbers are right for the SRO SBIG
                 'y_bias_start': 3620,
                 'x_bias_end':  4556,       # Vert band self.img[-38:-18, 0]
-                'y_bias_send': 3643,
+                'y_bias_end': 3643,
                 'corner_everlap': True,
                 'x_bias_line': True,
                 'y_bias_line': True,
@@ -487,7 +487,7 @@ site_config = {
                 'x_active': 4500,
                 'y_active': 3600,
                 #THIS IS ALL WRONG!
-                'det_size': '[1:4556, 1:3656]',  # Physical chip data size as returned from driver
+                'det_size': '[1:4556, 1:3656]',  # Physical chip data size as returned from driver, 1 based indexing.
                 'ccd_sec': '[1:4556, 1:3656]',
                 'bias_sec': ['[1:22, 1:6388]', '[1:11, 1:3194]', '[1:7, 1:2129]', '[1:5, 1:1597]'],
                 'det_sec': ['[25:9600, 1:6388]', '[13:4800, 1:3194]', '[9:3200, 1:2129]', '[7:2400, 1:1597]'],
