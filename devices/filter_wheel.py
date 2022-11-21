@@ -360,7 +360,7 @@ class FilterWheel:
 
     def set_name_command(self, req: dict, opt: dict):
         """Sets the filter position by filter name."""
-        breakpoint()
+
         try:
             filter_name = str(req["filter_name"]).lower()
             if filter_name[-5:] in ['(lum)']:
