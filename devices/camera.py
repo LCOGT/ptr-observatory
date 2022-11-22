@@ -2507,8 +2507,8 @@ class Camera:
                             )
                             sources = Table(sources)
                             sources = sources[sources['flag'] < 8]
-                            sources = sources[sources["peak"] < 35000]
-                            sources = sources[sources["cpeak"] < 35000]
+                            sources = sources[sources["peak"] < 0.9* float(self.config["camera"][self.name]["settings"]["saturate"])]
+                            sources = sources[sources["cpeak"] < 0.9 * float(self.config["camera"][self.name]["settings"]["saturate"])]
                             sources = sources[sources["peak"] > 500]
                             sources = sources[sources["cpeak"] > 500]
                             sources = sources[sources["x"] < ix - border_x]
