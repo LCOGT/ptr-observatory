@@ -950,7 +950,7 @@ class Observatory:
                 if smartstackid != "no" :
 
                     print ("Number of sources just prior to smartstacks: " + str(len(sources)))
-                    if len(sources) < 30:
+                    if len(sources) < 12:
                         print ("skipping stacking as there are not enough sources " + str(len(sources)) +" in this image")
 
 

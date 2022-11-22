@@ -2509,8 +2509,8 @@ class Camera:
                             sources = sources[sources['flag'] < 8]
                             sources = sources[sources["peak"] < 35000]
                             sources = sources[sources["cpeak"] < 35000]
-                            sources = sources[sources["peak"] > 1000]
-                            sources = sources[sources["cpeak"] > 1000]
+                            sources = sources[sources["peak"] > 500]
+                            sources = sources[sources["cpeak"] > 500]
                             sources = sources[sources["x"] < ix - border_x]
                             sources = sources[sources["x"] > border_x]
                             sources = sources[sources["y"] < iy - border_y]
@@ -2533,7 +2533,7 @@ class Camera:
                             sources['kronrad'] = kronrad
 
                             # Calculate uncertainty of image (thanks BANZAI)
-                            uncertainty = float(hdu.header["RDNOISE"]) * np.ones(focusimg.shape, dtype=focusimg.dtype) / float(hdu.header["RDNOISE"])
+                            uncertainty = float(hdufocus.header["RDNOISE"]) * np.ones(hdufocus.data.shape, dtype=hdufocus.data.dtype) / float(hdufocus.header["RDNOISE"])
 
                             # Calcuate the equivilent of flux_auto (Thanks BANZAI)
                             # This is the preferred best photometry SEP can do.
@@ -2553,7 +2553,7 @@ class Camera:
 
 
 
-                            if len(sources) < 25:
+                            if len(sources) < 12:
                                 print ("not enough sources to estimate a reliable focus")
                                 result["error"]=True
                                 result["FWHM"] = np.nan
@@ -2620,17 +2620,19 @@ class Camera:
                             print (traceback.format_exc())
                             sources = [0]
                         source_delete=['thresh','npix','tnpix','xmin','xmax','ymin','ymax','x2','y2','xy','errx2','erry2','errxy','a','b','theta','cxx','cyy','cxy','cflux','cpeak','xcpeak','ycpeak']
-                        for sourcedel in source_delete:
-                            del sources[sourcedel]
+                        #for sourcedel in source_delete:
+                        #    breakpoint()
+                        sources.remove_columns(source_delete)
 
                         sources.write(im_path + text_name.replace('.txt', '.sep'), format='csv')
                         plog("Saved SEP catalogue")
+                        if focus_image == False:
 
-                        try:
-                            self.enqueue_for_fastAWS(200, im_path, text_name.replace('.txt', '.sep'))
-                            plog("Sent SEP up")
-                        except:
-                            plog("Failed to send SEP up for some reason")
+                            try:
+                                self.enqueue_for_fastAWS(200, im_path, text_name.replace('.txt', '.sep'))
+                                plog("Sent SEP up")
+                            except:
+                                plog("Failed to send SEP up for some reason")
 
                         # If this is a focus image, save focus image, estimate pointing, and estimate pointing
                         # We want to estimate pointing in the main thread so it has enough time to correct the
