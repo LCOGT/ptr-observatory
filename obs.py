@@ -997,7 +997,7 @@ class Observatory:
                     if not os.path.exists(
                         g_dev["cam"].site_path + "smartstacks/" + smartStackFilename
                     ):
-                        if len(sources) >= 30:
+                        if len(sources) >= 12:
                             # Store original image
                             plog("Storing First smartstack image")
                             # storedsStack=np.nan_to_num(img)
@@ -1036,7 +1036,7 @@ class Observatory:
                         # img= img - backgroundLevel
                         # Reproject new image onto footprint of old image.
                         plog(datetime.datetime.now())
-                        if len(sources) > 30:
+                        if len(sources) > 12:
                             try:
                                 reprojectedimage, _ = func_timeout.func_timeout (60, aa.register, args=(img, storedsStack), kwargs={"detection_sigma":3, "min_area":9})
                                 #(20, aa.register, args=(img, storedsStack, detection_sigma=3, min_area=9)
