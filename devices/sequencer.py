@@ -1399,6 +1399,11 @@ class Sequencer:
                 except:
                     scale = 1.0
 
+                if 'sky_lux' not in locals():
+                    sky_lux=1000
+                plog ("sky lux: " + str(sky_lux))
+
+
                 plog('\n\n', "Patch/Bright:  ", bright, g_dev['fil'].filter_data[current_filter][0], \
                       'New Gain value: ', round(bright/(sky_lux*collecting_area*exp_time), 3), '\n\n')
 
