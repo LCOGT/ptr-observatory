@@ -384,11 +384,18 @@ class Focuser:
                 self.focuser.Temperature
             )  # NB refering a quantity possibly from WEMA if no focus temp available.
         except:  # Note above in temp comp, sro has no temp probe on gemini
-            f_temp = g_dev["ocn"].status["temperature_C"]
+            try:
+                f_temp = g_dev["ocn"].status["temperature_C"]
+            except:
+                f_temp = None
 
-        cam_shelf["af_log"].append(
-            (f_temp, ref, fwhm, solved, datetime.datetime.now().isoformat())
-        )
+        if not f_temp == None:
+            cam_shelf["af_log"].append(
+                (f_temp, ref, fwhm, solved, datetime.datetime.now().isoformat())
+            )
+        else:
+            f_temp=15.0
+            print ("getting f_temp failed, using 15 degrees C")
         cam_shelf.close()
         return
 
