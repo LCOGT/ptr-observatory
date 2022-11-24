@@ -436,6 +436,7 @@ class Observatory:
                         plog(traceback.format_exc())
                         plog("Exception in obs.scan_requests:  ", e)
                 url_blk = "https://calendar.photonranch.org/dev/siteevents"
+                #breakpoint()
                 body = json.dumps(
                     {
                         "site": self.config["site"],

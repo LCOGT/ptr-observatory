@@ -2624,7 +2624,7 @@ class Camera:
                         #    breakpoint()
                         sources.remove_columns(source_delete)
 
-                        sources.write(im_path + text_name.replace('.txt', '.sep'), format='csv')
+                        sources.write(im_path + text_name.replace('.txt', '.sep'), format='csv', overwrite=True)
                         plog("Saved SEP catalogue")
                         if focus_image == False:
 

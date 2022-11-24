@@ -14,7 +14,7 @@ This is also very old code just grafted on. Needs variable renaming, and a good 
 from math import *
 #import shelve
 import ephem
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from dateutil import tz
 import time
 #import pytz
@@ -369,7 +369,8 @@ class Events:
         night's  final reductions and the upcoming local Noon.
 
         '''
-        global DAY_Directory, dayNow, Day_tomorrow
+        #global DAY_Directory, dayNow, Day_tomorrow
+        global dayNow
         #intDay = int(ephem.now())
         #dayFrac = ephem.now() - intDay
         #breakpoint()
@@ -381,49 +382,82 @@ class Events:
         # Checking the local time to check if it is setting up for tonight or tomorrow night.
         now_utc = datetime.now(timezone.utc) # timezone aware UTC, shouldn't depend on clock time.
         to_zone = tz.gettz(self.config['TZ_database_name'])
-        #if int(now_utc.astimezone(to_zone).hour) < 4:
-        #    #dayNow= int(ephem.now() - 24*ephem.hour)
-        #    dayNow= (ephem.now() - 24*ephem.hour)
-        #    ephem.date = ephem.Date(ephem.now() - 24*ephem.hour)
+        now_here = now_utc.astimezone(to_zone)
+        int_sunrise_hour=ephem.Observer().next_rising(ephem.Sun()).datetime().hour + 1
+        if int(now_here.hour) < int_sunrise_hour:
+            now_here = now_here - timedelta(days=1)
+            #dayNow= int(ephem.now() - 24*ephem.hour)
+            #dayNow= (ephem.now() - 24*ephem.hour)
+            #ephem.date = ephem.Date(ephem.now() - 24*ephem.hour)
         #else:
-        #    dayNow= (ephem.now())
-        #    ephem.date = ephem.Date(ephem.now())
         dayNow= (ephem.now())
-        ephem.date = ephem.Date(ephem.now())
+        DAY_Directory = str(now_here.year) + str(now_here.month) + str(now_here.day)
+
+        #else:
+            #dayNow= (ephem.now())
+            #ephem.date = ephem.Date(ephem.now())
+        #dayNow= (ephem.now())
+        #ephem.date = ephem.Date(ephem.now())
 
         #breakpoint()
 
-        ephem.tomorrow = ephem.Date(ephem.date + (24*ephem.hour))
-        dayStr = str(ephem.date).split()[0]
-        dayStr = dayStr.split('/')
-        day_str = dayStr
-        #print('Day String', dayStr)
-        if len(dayStr[1]) == 1:
-            dayStr[1] = '0' + dayStr[1]
-        if len(dayStr[2]) == 1:
-            dayStr[2] = '0' + dayStr[2]
-        #print('Day String', dayStr)
-        DAY_Directory = dayStr[0] + dayStr[1] + dayStr[2]
-        day_str = DAY_Directory
+       # ephem.tomorrow = ephem.Date(ephem.date + (24*ephem.hour))
+        # dayStr = str(ephem.date).split()[0]
+        # dayStr = dayStr.split('/')
+        # day_str = dayStr
+        # #print('Day String', dayStr)
+        # if len(dayStr[1]) == 1:
+        #     dayStr[1] = '0' + dayStr[1]
+        # if len(dayStr[2]) == 1:
+        #     dayStr[2] = '0' + dayStr[2]
+        # #print('Day String', dayStr)
+        # DAY_Directory = dayStr[0] + dayStr[1] + dayStr[2]
+        # day_str = DAY_Directory
+        # g_dev['day'] = DAY_Directory
+        # g_dev['d-a-y'] = f"{day_str[0:4]}-{day_str[4:6]}-{day_str[6:]}"
+        # if loud: print('DAY_Directory:  ', DAY_Directory)
+
+        # dayStr = str(ephem.tomorrow).split()[0]
+        # dayStr = dayStr.split('/')
+        # #print('Day String', dayStr)
+        # #breakpoint()
+        # if len(dayStr[1]) == 1:
+        #     dayStr[1] = '0' + dayStr[1]
+        # if len(dayStr[2]) == 1:
+        #     dayStr[2] = '0' + dayStr[2]
+        # #print('Day String', dayStr)
+        # Day_tomorrow = dayStr[0] + dayStr[1] + dayStr[2]
+        # next_day = Day_tomorrow
+        # g_dev['next_day'] = f"{next_day[0:4]}-{next_day[4:6]}-{next_day[6:]}"
+        #Day_tomorrow = dayStr[0] + dayStr[1] + dayStr[2]
+        #next_day = Day_tomorrow
+        #g_dev['next_day'] = f"{next_day[0:4]}-{next_day[4:6]}-{next_day[6:]}"
+
+
+        #breakpoint()
+        # Day Directory is based on the LOCAL TIME DAY of the observatory
+        print('Day_Directory:  ', DAY_Directory)
         g_dev['day'] = DAY_Directory
-        g_dev['d-a-y'] = f"{day_str[0:4]}-{day_str[4:6]}-{day_str[6:]}"
-        if loud: print('DAY_Directory:  ', DAY_Directory)
 
-        dayStr = str(ephem.tomorrow).split()[0]
-        dayStr = dayStr.split('/')
-        #print('Day String', dayStr)
-        #breakpoint()
-        if len(dayStr[1]) == 1:
-            dayStr[1] = '0' + dayStr[1]
-        if len(dayStr[2]) == 1:
-            dayStr[2] = '0' + dayStr[2]
-        #print('Day String', dayStr)
-        Day_tomorrow = dayStr[0] + dayStr[1] + dayStr[2]
+
+        # These two g_devs are used to make a call to grab projects and blocks.
+        # They need to be in UTC time.
+        DAY_Directory = str(now_utc.year) + str(now_utc.month) + str(now_utc.day)
+        day_str = DAY_Directory
+        Day_tomorrow = now_utc + timedelta(days=1)
+        Day_tomorrow = str(Day_tomorrow.year) + str(Day_tomorrow.month) + str(Day_tomorrow.day)
         next_day = Day_tomorrow
+        g_dev['d-a-y'] = f"{day_str[0:4]}-{day_str[4:6]}-{day_str[6:]}"
         g_dev['next_day'] = f"{next_day[0:4]}-{next_day[4:6]}-{next_day[6:]}"
-        if loud: print('Day_Directory:  ', DAY_Directory)
-        plog('\nNext Day is:  ', g_dev['next_day'])
-        plog('Now is:  ', ephem.now(), g_dev['d-a-y'], '\n')
+
+        #breakpoint()
+
+        #plog('\nNext Day is:  ', g_dev['next_day'])
+        #plog('Now is:  ', ephem.now(), g_dev['d-a-y'], '\n')
+
+
+        #breakpoint()
+
         return DAY_Directory
 
     def display_events(self, endofnightoverride='no'):   # Routine above needs to be called first.
@@ -484,9 +518,9 @@ class Events:
 
 
 
-        print (nauticalDusk)
-        print (dayNow)
-        print (astroDark)
+        #print (nauticalDusk)
+        #print (dayNow)
+        #print (astroDark)
 
 
         if (nauticalDusk - astroDark) > 0.5:

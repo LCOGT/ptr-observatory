@@ -294,9 +294,16 @@ class Sequencer:
         if g_dev['obs'].status_count < 3:
             return
         obs_win_begin, sunZ88Op, sunZ88Cl, ephem_now = self.astro_events.getSunEvents()
+        #breakpoint()
         ocn_status = g_dev['ocn'].status
         enc_status = g_dev['enc'].status
         events = g_dev['events']
+
+        #print ("Blocks and Projects")
+        #print(g_dev['obs'].blocks)
+        #print(g_dev['obs'].projects)
+
+        #breakpoint()
 
         g_dev['enc'].mode = 'Automatic'     #  THis is a very common debug point.
 

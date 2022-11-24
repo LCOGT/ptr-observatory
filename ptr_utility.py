@@ -22,11 +22,12 @@ from astropy import units as u
 from astropy.coordinates import SkyCoord, ICRS, EarthLocation
 from astroquery.simbad import Simbad
 import ephem
-
+#from ptr_events import compute_day_directory
 from config import site_config
 from global_yard import g_dev
 
-
+from datetime import datetime, timezone, timedelta
+from dateutil import tz
 
 siteCoordinates = EarthLocation(
     lat=site_config["latitude"] * u.deg,
@@ -142,26 +143,43 @@ gSimulationOffset = 0
 gSimulationFlag = False
 gSimulationStep = 120  # seconds.
 
-intDay = int(ephem.now())
-dayFrac = ephem.now() - intDay
-if dayFrac < 0.20833:
-    dayNow = intDay - 0.55
-else:
-    dayNow = intDay + 0.45
-ephem.date = ephem.Date(dayNow)
-dayStr = str(ephem.date).split()[0]
-dayStr = dayStr.split("/")
-#print("Day String", dayStr)
-if len(dayStr[1]) == 1:
-    dayStr[1] = "0" + dayStr[1]
-if len(dayStr[2]) == 1:
-    dayStr[2] = "0" + dayStr[2]
 
-DAY_Directory = dayStr[0] + dayStr[1] + dayStr[2]
+
+# intDay = int(ephem.now())
+# dayFrac = ephem.now() - intDay
+# if dayFrac < 0.20833:
+#     dayNow = intDay - 0.55
+# else:
+#     dayNow = intDay + 0.45
+# ephem.date = ephem.Date(dayNow)
+# dayStr = str(ephem.date).split()[0]
+# dayStr = dayStr.split("/")
+# #print("Day String", dayStr)
+# if len(dayStr[1]) == 1:
+#     dayStr[1] = "0" + dayStr[1]
+# if len(dayStr[2]) == 1:
+#     dayStr[2] = "0" + dayStr[2]
+
+#DAY_Directory = dayStr[0] + dayStr[1] + dayStr[2]
+
+
+
+DAY_Directory= g_dev['day']
+
+
+now_utc = datetime.now(timezone.utc) # timezone aware UTC, shouldn't depend on clock time.
+to_zone = tz.gettz(site_config['TZ_database_name'])
+now_here = now_utc.astimezone(to_zone)
+int_sunrise_hour=ephem.Observer().next_rising(ephem.Sun()).datetime().hour + 1
+if int(now_here.hour) < int_sunrise_hour:
+    now_here = now_here - timedelta(days=1)
+DAY_Directory = str(now_here.year) + str(now_here.month) + str(now_here.day)
+
 try:
     plog_path = site_config['plog_path'] + DAY_Directory + '/'
 except KeyError:
     plog_path = site_config['archive_path'] + DAY_Directory + '/'
+
 os.makedirs(plog_path, exist_ok=True)
 print (plog_path)
 
@@ -2580,7 +2598,7 @@ def test_icrs_mount_icrs():
                 if abs(ra_err) > 0.1 or abs(dec_err) > 0.1:
                     print(pRa, pDec, lst, ra_err, dec_err)
 
-plog('day_directory:  ', '20221105', '\n')
+#plog('day_directory:  ', '20221105', '\n')
 ut_now, sid_now, equinox_now, day_of_year = get_current_times()
 sidTime = round(sid_now.hour, 7)
 
