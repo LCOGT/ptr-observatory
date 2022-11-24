@@ -14,10 +14,11 @@ import time
 import traceback
 import ephem
 
-from astropy.io import fits
+from astropy.io import fits, ascii
 from astropy.time import Time
 from astropy.utils.data import check_download_cache
 from astropy.coordinates import SkyCoord
+from astropy.table import Table
 import glob
 import numpy as np
 import sep
@@ -109,7 +110,11 @@ def next_sequence(pCamera):
     global SEQ_Counter
     camShelf = shelve.open(g_dev["cam"].site_path + "ptr_night_shelf/" + pCamera)
     sKey = "Sequence"
-    seq = camShelf[sKey]  # get an 8 character string
+    try:
+        seq = camShelf[sKey]  # get an 8 character string
+    except:
+        print ("Failed to get seq key, starting from zero again")
+        seq=1
     seqInt = int(seq)
     seqInt += 1
     seq = ("0000000000" + str(seqInt))[-8:]
@@ -2194,6 +2199,7 @@ class Camera:
                     hdu.header["REQNUM"] = ("00000001", "Request number")
                     hdu.header["ISMASTER"] = (False, "Is master image")
                     current_camera_name = self.alias
+
                     next_seq = next_sequence(current_camera_name)
                     hdu.header["FRAMENUM"] = (int(next_seq), "Running frame number")
                     hdu.header["SMARTSTK"] = smartstackid # ID code for an individual smart stack group
@@ -2474,90 +2480,175 @@ class Camera:
                             hdusmall.header["NAXIS1"] = hdusmall.data.shape[0]
                             hdusmall.header["NAXIS2"] = hdusmall.data.shape[1]
 
-                        # At this stage of the proceedings, if the image is just a focus image, then it wants
-                        # the FWHM and then it wants to get out back to the focus script. So lets let it do
-                        # that here. In future, we can make other interesteding jpg products showing a
-                        # graphical representation of the focus or something... but for now, it just sends back the FWHM
-                        # Most of this could be in it's own function, but it is here for now
+                        # Every Image gets SEP'd and gets it's catalogue sent up pronto ahead of the big fits
+                        # Focus images use it for focus, Normal images also report their focus.
 
-                        if frame_type[-5:] in ["focus", "probe", "ental"]:
-                            # Note we do not reduce focus images, except above in focus processing.
-                            cal_name = (
-                                cal_name[:-9] + "F012" + cal_name[-7:]
-                            )  # remove 'EX' add 'FO'   Could add seq to this
-                            hdufocus = copy.deepcopy(hdusmall)
-                            hdufocus.data = hdufocus.data.astype("float32")
+                        hdufocus = copy.deepcopy(hdusmall)
+                        hdufocus.data = hdufocus.data.astype("float32")
 
-                            focusimg = np.asarray(
-                                hdufocus.data
-                            )  # + 100   #maintain a + pedestal for sep  THIS SHOULD not be needed for a raw input file.
-                            focusimg = focusimg.astype("float")
-                            focusimg = focusimg.copy(
-                                order="C"
-                            )  # NB Should we move this up to where we read the array?
+                        focusimg = np.asarray(
+                            hdufocus.data
+                        )  # + 100   #maintain a + pedestal for sep  THIS SHOULD not be needed for a raw input file.
+                        focusimg = focusimg.astype("float")
+                        focusimg = focusimg.copy(
+                            order="C"
+                        )  # NB Should we move this up to where we read the array?
+
+                        try:
+                            # Some of these are liberated from BANZAI
                             bkg = sep.Background(focusimg)
                             focusimg -= bkg
-                            sources = sep.extract(
-                                focusimg, 4.5, err=bkg.globalrms, minarea=15
-                            )  # Minarea should deal with hot pixels.
-                            sources.sort(order="cflux")
-                            plog("No. of detections:  ", len(sources))
-
                             ix, iy = focusimg.shape
-                            r0 = 0
-                            """
-                            ToDo here:  1) do not deal with a source nearer than 5% to an edge.
-                            2) do not pick any saturated sources.
-                            3) form a histogram and then pick the median winner
-                            4) generate data for a report.
-                            5) save data and image for engineering runs.
-                            """
                             border_x = int(ix * 0.05)
                             border_y = int(iy * 0.05)
-                            r0 = []
-                            for sourcef in sources:
-                                if (
-                                    border_x < sourcef["x"] < ix - border_x
-                                    and border_y < sourcef["y"] < iy - border_y
-                                    and 1000 < sourcef["peak"] < 35000
-                                    and 1000 < sourcef["cpeak"] < 35000
-                                ):  # Consider a lower bound
-                                    a0 = sourcef["a"]
-                                    b0 = sourcef["b"]
-                                    r0.append(round(math.sqrt(a0 * a0 + b0 * b0)*2, 3))
+                            sep.set_extract_pixstack(int(ix*iy -1))
+                            sources = sep.extract(
+                                focusimg, 4.5, err=bkg.globalrms, minarea=15
+                            )
+                            sources = Table(sources)
+                            sources = sources[sources['flag'] < 8]
+                            sources = sources[sources["peak"] < 0.9* float(self.config["camera"][self.name]["settings"]["saturate"])]
+                            sources = sources[sources["cpeak"] < 0.9 * float(self.config["camera"][self.name]["settings"]["saturate"])]
+                            sources = sources[sources["peak"] > 500]
+                            sources = sources[sources["cpeak"] > 500]
+                            sources = sources[sources["x"] < ix - border_x]
+                            sources = sources[sources["x"] > border_x]
+                            sources = sources[sources["y"] < iy - border_y]
+                            sources = sources[sources["y"] > border_y]
 
-                            #scale = self.config["camera"][self.name]["settings"][
-                            #    "pix_scale"
-                            #][self.camera.BinX - 1]
-                            scale=pixscale
-                            result["FWHM"] = round(
-                                np.median(r0) * scale, 2
-                            )  # was 2x larger but a and b are diameters not radii -20221111   Duh Homer!, Wrong.
-                            result["mean_focus"] = avg_foc[1]
-                            try:
-                                valid = (
-                                    0.0 <= result["FWHM"] <= 20.0
-                                    and 100 < result["mean_focus"] < 12600
-                                )
-                                result["error"] = False
+                            # BANZAI prune nans from table
+                            nan_in_row = np.zeros(len(sources), dtype=bool)
+                            for col in sources.colnames:
+                                nan_in_row |= np.isnan(sources[col])
+                            sources = sources[~nan_in_row]
 
-                            except:
-                                result[
-                                    "error"
+                            # Calculate the ellipticity (Thanks BANZAI)
+                            sources['ellipticity'] = 1.0 - (sources['b'] / sources['a'])
 
-                                ] = True
-                                result["FWHM"] = np.nan
-                                result["mean_focus"] = np.nan
+                            # Calculate the kron radius (Thanks BANZAI)
+                            kronrad, krflag = sep.kron_radius(focusimg, sources['x'], sources['y'],
+                                                              sources['a'], sources['b'],
+                                                              sources['theta'], 6.0)
+                            sources['flag'] |= krflag
+                            sources['kronrad'] = kronrad
 
-                            if len(sources) < 25:
+                            # Calculate uncertainty of image (thanks BANZAI)
+                            uncertainty = float(hdufocus.header["RDNOISE"]) * np.ones(hdufocus.data.shape, dtype=hdufocus.data.dtype) / float(hdufocus.header["RDNOISE"])
+
+                            # Calcuate the equivilent of flux_auto (Thanks BANZAI)
+                            # This is the preferred best photometry SEP can do.
+                            flux, fluxerr, flag = sep.sum_ellipse(focusimg, sources['x'], sources['y'],
+                                                                  sources['a'], sources['b'],
+                                                                  np.pi / 2.0, 2.5 * kronrad,
+                                                                  subpix=1, err=uncertainty)
+                            sources['flux'] = flux
+                            sources['fluxerr'] = fluxerr
+                            sources['flag'] |= flag
+
+                            plog("No. of detections:  ", len(sources))
+
+
+                            #ascii.write(sources, im_path + text_name.replace('.txt', '.sep'), format='csv')
+
+
+
+
+                            if len(sources) < 12:
                                 print ("not enough sources to estimate a reliable focus")
                                 result["error"]=True
                                 result["FWHM"] = np.nan
+                                sources['FWHM'] = [np.nan] * len(sources)
 
-                            print ("This image has a FWHM of " + str(result["FWHM"]))
-                            # write the focus image out
+                            else:
+                                # Get halflight radii
+                                sources['FWHM'], _ = sep.flux_radius(focusimg, sources['x'], sources['y'], sources['a'], 0.5, subpix=5)
+                                sources['FWHM'] = sources['FWHM'] * 2
+                                rfr = np.median(sources['FWHM']) * pixscale
+                                print("This image has a FWHM of " + str(rfr))
+
+                                result["FWHM"] = rfr
+                                result["mean_focus"] = avg_foc[1]
+                                try:
+                                    valid = (
+                                        0.0 <= result["FWHM"] <= 20.0
+                                        and 100 < result["mean_focus"] < 12600
+                                    )
+                                    result["error"] = False
+
+                                except:
+                                    result[
+                                        "error"
+
+                                    ] = True
+                                    result["FWHM"] = np.nan
+                                    result["mean_focus"] = np.nan
+
+
+                                if focus_image != True :
+                                    # Focus tracker code. This keeps track of the focus and if it drifts
+                                    # Then it triggers an autofocus.
+                                    g_dev["foc"].focus_tracker.pop(0)
+                                    g_dev["foc"].focus_tracker.append(rfr)
+                                    print("Last ten FWHM : ")
+                                    print(g_dev["foc"].focus_tracker)
+                                    print("Median last ten FWHM")
+                                    print(np.nanmedian(g_dev["foc"].focus_tracker))
+                                    print("Last solved focus FWHM")
+                                    print(g_dev["foc"].last_focus_fwhm)
+
+                                    # If there hasn't been a focus yet, then it can't check it, so make this image the last solved focus.
+                                    if g_dev["foc"].last_focus_fwhm == None:
+                                        g_dev["foc"].last_focus_fwhm = rfr
+                                    else:
+                                        # Very dumb focus slip deteector
+                                        if (
+                                            np.nanmedian(g_dev["foc"].focus_tracker)
+                                            > g_dev["foc"].last_focus_fwhm
+                                            + self.config["focus_trigger"]
+                                        ):
+                                            g_dev["foc"].focus_needed = True
+                                            g_dev["obs"].send_to_user(
+                                                "Focus has drifted to "
+                                                + str(np.nanmedian(g_dev["foc"].focus_tracker))
+                                                + " from "
+                                                + str(g_dev["foc"].last_focus_fwhm)
+                                                + ". Autofocus triggered for next exposures.",
+                                                p_level="INFO",
+                                            )
+                        except:
+                            print ("something failed in the SEP calculations for exposure. This could be an overexposed image")
+                            print (traceback.format_exc())
+                            sources = [0]
+                        source_delete=['thresh','npix','tnpix','xmin','xmax','ymin','ymax','x2','y2','xy','errx2','erry2','errxy','a','b','theta','cxx','cyy','cxy','cflux','cpeak','xcpeak','ycpeak']
+                        #for sourcedel in source_delete:
+                        #    breakpoint()
+                        sources.remove_columns(source_delete)
+
+                        sources.write(im_path + text_name.replace('.txt', '.sep'), format='csv', overwrite=True)
+                        plog("Saved SEP catalogue")
+                        if focus_image == False:
+
+                            try:
+                                self.enqueue_for_fastAWS(200, im_path, text_name.replace('.txt', '.sep'))
+                                plog("Sent SEP up")
+                            except:
+                                plog("Failed to send SEP up for some reason")
+
+                        # If this is a focus image, save focus image, estimate pointing, and estimate pointing
+                        # We want to estimate pointing in the main thread so it has enough time to correct the
+                        # pointing during focus, not when it quickly moves back to the target. Takes longer
+                        # during focussing, but reduces the need for pointing nudges and bounces on
+                        # target images.
+                        if focus_image == True :
+                            cal_name = (
+                                cal_name[:-9] + "F012" + cal_name[-7:]
+                            )
                             hdufocus.writeto(cal_path + cal_name, overwrite=True)
                             pixscale=hdufocus.header['PIXSCALE']
+                            try:
+                                hdufocus.close()
+                            except:
+                                pass
                             del hdufocus
                             focus_image = False
 
@@ -2567,7 +2658,7 @@ class Camera:
                                 time.sleep(1) # A simple wait to make sure file is saved
                                 solve = platesolve.platesolve(
                                     cal_path + cal_name, pixscale
-                                )  # 0.5478)
+                                )
                                 plog(
                                     "PW Solves: ",
                                     solve["ra_j2000_hours"],
@@ -2666,17 +2757,17 @@ class Camera:
 
                         # At this stage, the small fits is created ready to be saved, but not saved
                         # until after the jpg has gone up.
-                        hdusmallfits = fits.CompImageHDU(
-                            np.asarray(
-                                resize(
-                                    hdureduced.data,
-                                    (int(1536 * iy / ix), 1536),
-                                    preserve_range=True,
-                                ),
-                                dtype=np.float32,
-                            ),
-                            hdusmall.header,
-                        )
+                        #hdusmallfits = fits.CompImageHDU(
+                        #    np.asarray(
+                        #        resize(
+                        #            hdureduced.data,
+                        #            (int(1536 * iy / ix), 1536),
+                        #            preserve_range=True,
+                        #        ),
+                        #        dtype=np.float32,
+                        #    ),
+                        #    hdusmall.header,
+                        #)
 
                         # Code to stretch the image to fit into the 256 levels of grey for a jpeg
                         stretched_data_float = Stretch().stretch(hdusmall.data+1000)
@@ -2715,24 +2806,24 @@ class Camera:
                         else:
                             print ("Jpg uploaded delayed due to smartstack.")
 
-                        # Save the small fits to disk and to AWS
-                        hdusmallfits.verify("fix")
-                        try:
-                            hdusmallfits.writeto(
-                                paths["im_path"] + paths["i768sq_name10"] + ".fz"
-                            )
-                            # TEMPORARILY DISABLE SSMALL FITS - MTF 2nd Nov 22
-                            #if not no_AWS and self.config['send_files_at_end_of_night'] == 'no':
-                            #    g_dev["cam"].enqueue_for_AWS(
-                            #        1000,
-                            #        paths["im_path"],
-                            #        paths["i768sq_name10"] + ".fz",
-                            #    )
-                        except:
-                            plog(
-                                "there was an issue saving the small fits. Pushing on though"
-                            )
-                        del hdusmallfits
+                        # # Save the small fits to disk and to AWS
+                        # hdusmallfits.verify("fix")
+                        # try:
+                        #     hdusmallfits.writeto(
+                        #         paths["im_path"] + paths["i768sq_name10"] + ".fz"
+                        #     )
+                        #     # TEMPORARILY DISABLE SSMALL FITS - MTF 2nd Nov 22
+                        #     #if not no_AWS and self.config['send_files_at_end_of_night'] == 'no':
+                        #     #    g_dev["cam"].enqueue_for_AWS(
+                        #     #        1000,
+                        #     #        paths["im_path"],
+                        #     #        paths["i768sq_name10"] + ".fz",
+                        #     #    )
+                        # except:
+                        #     plog(
+                        #         "there was an issue saving the small fits. Pushing on though"
+                        #     )
+                        # del hdusmallfits
 
                     # Now that the jpeg has been sent up pronto,
                     # We turn back to getting the bigger raw, reduced and fz files dealt with
@@ -2937,7 +3028,7 @@ class Camera:
                         "spectrum",
                         "auto_focus",
                     ]:
-                        self.to_reduce((paths, pixscale, smartstackid, sskcounter, Nsmartstack))
+                        self.to_reduce((paths, pixscale, smartstackid, sskcounter, Nsmartstack, sources))
 
                     g_dev["obs"].update_status()
                     result["mean_focus"] = avg_foc[1]
