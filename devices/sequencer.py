@@ -1667,6 +1667,8 @@ class Sequencer:
                 foc_pos1 = False
                 print ("spot1 failed in autofocus script")
 
+            print (spot1)
+
             if math.isnan(spot1) or spot1 ==False:
                 retry += 1
                 plog("Retry of central focus star)")

@@ -2383,11 +2383,7 @@ class Camera:
                     except:
                         pass
 
-                    text = open(
-                        im_path + text_name, "w"
-                    )  # This is needed by AWS to set up database.
-                    text.write(str(hdu.header))
-                    text.close()
+
                     paths = {
                         "im_path": im_path,
                         "raw_path": raw_path,
@@ -2415,8 +2411,7 @@ class Camera:
                         focus_image = False
 
                     # This command uploads the text file information at high priority to AWS. No point sending if part of a smartstack
-                    if focus_image == False:
-                        self.enqueue_for_fastAWS(10, im_path, text_name)
+
 
                     # Make a copy of the raw file to hold onto while the flash reductions are happening.
                     # It will be saved once the jpg has been quickly created.
@@ -2620,6 +2615,83 @@ class Camera:
                             print ("something failed in the SEP calculations for exposure. This could be an overexposed image")
                             print (traceback.format_exc())
                             sources = [0]
+
+                        # Set up RA and DEC headers for BANZAI
+
+                        tempRAdeg = float(g_dev["mnt"].current_icrs_ra) * 15
+                        tempDECdeg = g_dev["mnt"].current_icrs_dec
+                        tempointing = SkyCoord(tempRAdeg, tempDECdeg, unit='deg')
+                        tempointing=tempointing.to_string("hmsdms").split(' ')
+
+                        hduraw.header["RA"] = (
+                            tempointing[0],
+                            "[hms] Telescope right ascension",
+                        )
+                        hduraw.header["DEC"] = (
+                            tempointing[1],
+                            "[dms] Telescope declination",
+                        )
+                        hduraw.header["ORIGRA"] = hduraw.header["RA"]
+                        hduraw.header["ORIGDEC"] = hduraw.header["DEC"]
+                        hduraw.header["RAhrs"] = (
+                            g_dev["mnt"].current_icrs_ra,
+                            "[hrs] Telescope right ascension",
+                        )
+                        hduraw.header["RA-deg"] = tempRAdeg
+                        hduraw.header["DEC-deg"] = tempDECdeg
+
+                        hduraw.header["TARG-CHK"] = (
+                            (g_dev["mnt"].current_icrs_ra * 15)
+                            + g_dev["mnt"].current_icrs_dec,
+                            "[deg] Sum of RA and dec",
+                        )
+                        hduraw.header["CATNAME"] = (g_dev["mnt"].object, "Catalog object name")
+                        hduraw.header["CAT-RA"] = (
+                            tempointing[0],
+                            "[hms] Catalog RA of object",
+                        )
+                        hduraw.header["CAT-DEC"] = (
+                            tempointing[1],
+                            "[dms] Catalog Dec of object",
+                        )
+                        hduraw.header["OFST-RA"] = (
+                            tempointing[0],
+                            "[hms] Catalog RA of object (for BANZAI only)",
+                        )
+                        hduraw.header["OFST-DEC"] = (
+                            tempointing[1],
+                            "[dms] Catalog Dec of object",
+                        )
+
+
+                        hduraw.header["TPT-RA"] = (
+                            tempointing[0],
+                            "[hms] Catalog RA of object (for BANZAI only",
+                        )
+                        hduraw.header["TPT-DEC"] = (
+                            tempointing[1],
+                            "[dms] Catalog Dec of object",
+                        )
+
+                        hduraw.header["CRVAL1"] = tempRAdeg
+                        hduraw.header["CRVAL2"] = tempDECdeg
+                        hduraw.header["CRPIX1"] = float(hduraw.header["NAXIS1"])/2
+                        hduraw.header["CRPIX2"] = float(hduraw.header["NAXIS2"])/2
+
+                        if 'rfr' in locals():
+
+                            hduraw.header["FWHM"] = ( rfp, 'FWHM in pixels')
+                            hduraw.header["FWHMpix"] = ( rfp, 'FWHM in pixels')
+                            hduraw.header["FWHMasec"] = ( rfr, 'FWHM in arcseconds')
+
+                        if focus_image == False:
+                            text = open(
+                                im_path + text_name, "w"
+                            )  # This is needed by AWS to set up database.
+                            text.write(str(hduraw.header))
+                            text.close()
+                            self.enqueue_for_fastAWS(10, im_path, text_name)
+
                         source_delete=['thresh','npix','tnpix','xmin','xmax','ymin','ymax','x2','y2','xy','errx2','erry2','errxy','a','b','theta','cxx','cyy','cxy','cflux','cpeak','xcpeak','ycpeak']
                         #for sourcedel in source_delete:
                         #    breakpoint()
@@ -2627,20 +2699,19 @@ class Camera:
 
                         sources.write(im_path + text_name.replace('.txt', '.sep'), format='csv', overwrite=True)
                         plog("Saved SEP catalogue")
-                        if focus_image == False:
 
-                            try:
-                                self.enqueue_for_fastAWS(200, im_path, text_name.replace('.txt', '.sep'))
-                                plog("Sent SEP up")
-                            except:
-                                plog("Failed to send SEP up for some reason")
 
                         # If this is a focus image, save focus image, estimate pointing, and estimate pointing
                         # We want to estimate pointing in the main thread so it has enough time to correct the
                         # pointing during focus, not when it quickly moves back to the target. Takes longer
                         # during focussing, but reduces the need for pointing nudges and bounces on
                         # target images.
-                        if focus_image == True :
+                        # It will also do a pointing check at the end of a smartstack
+                        # This is outside the reduce queue to guarantee the pointing check is done
+                        # prior to the next exposure
+                        print (Nsmartstack)
+                        print (sskcounter)
+                        if focus_image == True or ((Nsmartstack == sskcounter+1) and Nsmartstack > 1):
                             cal_name = (
                                 cal_name[:-9] + "F012" + cal_name[-7:]
                             )
@@ -2651,9 +2722,9 @@ class Camera:
                             except:
                                 pass
                             del hdufocus
-                            focus_image = False
 
 
+                        #if focus_image == True :
                             # Use the focus image for pointing purposes
                             try:
                                 time.sleep(1) # A simple wait to make sure file is saved
@@ -2727,8 +2798,9 @@ class Camera:
                                 plog(
                                     "Image: did not platesolve; this is usually OK. ", e
                                 )
-
-                            return result
+                            if focus_image == True :
+                                focus_image = False
+                                return result
 
                         # This is holding the flash reduced fits file waiting to be saved
                         # AFTER the jpeg has been sent up to AWS.
@@ -2784,6 +2856,8 @@ class Camera:
                         stretched_data_uint8[hot] = 255
                         stretched_data_uint8[cold] = 0
 
+
+
                         # Try saving the jpeg to disk and quickly send up to AWS to present for the user
                         # GUI
                         if smartstackid == 'no':
@@ -2806,6 +2880,13 @@ class Camera:
                                 )
                         else:
                             print ("Jpg uploaded delayed due to smartstack.")
+
+                        if focus_image == False:
+                            try:
+                                self.enqueue_for_fastAWS(200, im_path, text_name.replace('.txt', '.sep'))
+                                plog("Sent SEP up")
+                            except:
+                                plog("Failed to send SEP up for some reason")
 
                         # # Save the small fits to disk and to AWS
                         # hdusmallfits.verify("fix")
@@ -2830,76 +2911,7 @@ class Camera:
                     # We turn back to getting the bigger raw, reduced and fz files dealt with
 
 
-                    # Set up RA and DEC headers for BANZAI
 
-                    tempRAdeg = float(g_dev["mnt"].current_icrs_ra) * 15
-                    tempDECdeg = g_dev["mnt"].current_icrs_dec
-
-
-
-                    tempointing = SkyCoord(tempRAdeg, tempDECdeg, unit='deg')
-                    tempointing=tempointing.to_string("hmsdms").split(' ')
-
-                    hduraw.header["RA"] = (
-                        tempointing[0],
-                        "[hms] Telescope right ascension",
-                    )
-                    hduraw.header["DEC"] = (
-                        tempointing[1],
-                        "[dms] Telescope declination",
-                    )
-                    hduraw.header["ORIGRA"] = hduraw.header["RA"]
-                    hduraw.header["ORIGDEC"] = hduraw.header["DEC"]
-                    hduraw.header["RAhrs"] = (
-                        g_dev["mnt"].current_icrs_ra,
-                        "[hrs] Telescope right ascension",
-                    )
-                    hduraw.header["RA-deg"] = tempRAdeg
-                    hduraw.header["DEC-deg"] = tempDECdeg
-
-                    hduraw.header["TARG-CHK"] = (
-                        (g_dev["mnt"].current_icrs_ra * 15)
-                        + g_dev["mnt"].current_icrs_dec,
-                        "[deg] Sum of RA and dec",
-                    )
-                    hduraw.header["CATNAME"] = (g_dev["mnt"].object, "Catalog object name")
-                    hduraw.header["CAT-RA"] = (
-                        tempointing[0],
-                        "[hms] Catalog RA of object",
-                    )
-                    hduraw.header["CAT-DEC"] = (
-                        tempointing[1],
-                        "[dms] Catalog Dec of object",
-                    )
-                    hduraw.header["OFST-RA"] = (
-                        tempointing[0],
-                        "[hms] Catalog RA of object (for BANZAI only)",
-                    )
-                    hduraw.header["OFST-DEC"] = (
-                        tempointing[1],
-                        "[dms] Catalog Dec of object",
-                    )
-
-
-                    hduraw.header["TPT-RA"] = (
-                        tempointing[0],
-                        "[hms] Catalog RA of object (for BANZAI only",
-                    )
-                    hduraw.header["TPT-DEC"] = (
-                        tempointing[1],
-                        "[dms] Catalog Dec of object",
-                    )
-
-                    hduraw.header["CRVAL1"] = tempRAdeg
-                    hduraw.header["CRVAL2"] = tempDECdeg
-                    hduraw.header["CRPIX1"] = float(hduraw.header["NAXIS1"])/2
-                    hduraw.header["CRPIX2"] = float(hduraw.header["NAXIS2"])/2
-
-                    if 'rfr' in locals():
-
-                        hduraw.header["FWHM"] = ( rfp, 'FWHM in pixels')
-                        hduraw.header["FWHMpix"] = ( rfp, 'FWHM in pixels')
-                        hduraw.header["FWHMasec"] = ( rfr, 'FWHM in arcseconds')
 
                     # Create the fz file ready for BANZAI and the AWS/UI
                     # Note that even though the raw file is int16,
