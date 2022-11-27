@@ -440,8 +440,8 @@ class Observatory:
                         plog(traceback.format_exc())
 
                         plog("Exception in obs.scan_requests:  ", e, 'cmd:  ', cmd)
-
-                url_blk = "https://calendar.photonranch.org/dev/siteevents"
+                 url_blk = "https://calendar.photonranch.org/dev/siteevents"
+                #breakpoint()
                 body = json.dumps(
                     {
                         "site": self.config["site"],
@@ -838,6 +838,7 @@ class Observatory:
                     smartstackid,
                     sskcounter,
                     Nsmartstack,
+                    sources,
                 ) = self.reduce_queue.get(block=False)
 
                 if paths is None:
@@ -890,25 +891,25 @@ class Observatory:
                             imgdata, 4.5, err=bkg.globalrms, minarea=15
                         )  # Minarea should deal with hot pixels.
                         ix, iy = imgdata.shape
-                        
-                        
+                        del imgdata
                         sources.sort(order="cflux")
                         plog("No. of detections:  ", len(sources))
 
+                    # imgdata = imgdata.copy(
+                    #     order="C"
+                    # )  # NB Should we move this up to where we read the array?
+                    # bkg = sep.Background(imgdata)
+                    # imgdata -= bkg
 
                         if len(sources) < 20:
                             print ("skipping focus estimate as not enough sources in this image")
-                            del imgdata
+
                         else:
 
-                            #r0 = 0
 
                             border_x = int(ix * 0.05)
                             border_y = int(iy * 0.05)
                             r0 = []
-                            xcoords=[]
-                            ycoords=[]
-                            acoords=[]
                             for sourcef in sources:
                                 if (
                                     border_x < sourcef["x"] < ix - border_x
@@ -919,20 +920,14 @@ class Observatory:
                                     a0 = sourcef["a"]
                                     b0 = sourcef["b"]
                                     r0.append(round(math.sqrt(a0 * a0 + b0 * b0)*2, 2))
-                                    xcoords.append(sourcef["x"])
-                                    ycoords.append(sourcef["y"])
-                                    acoords.append(sourcef["a"])
-                            
-                            rfr, _ = sep.flux_radius(imgdata, xcoords, ycoords, acoords, 0.5, subpix=5)
-                            rfr = np.median(rfr * 2) * pixscale
 
-                            del imgdata
                             FWHM = round(
                                 np.median(r0) * pixscale, 3
-                            )  # a and b are RADII not diameters
-                            print("This image has a FWHM of " + str(rfr))
+                            )  # was 2x larger but a and b are diameters not radii
+                            print("This image has a FWHM of " + str(FWHM))
+
                             g_dev["foc"].focus_tracker.pop(0)
-                            g_dev["foc"].focus_tracker.append(rfr)
+                            g_dev["foc"].focus_tracker.append(FWHM)
                             print("Last ten FWHM : ")
                             print(g_dev["foc"].focus_tracker)
                             print("Median last ten FWHM")
@@ -942,11 +937,9 @@ class Observatory:
 
                             # If there hasn't been a focus yet, then it can't check it, so make this image the last solved focus.
                             if g_dev["foc"].last_focus_fwhm == None:
-                                g_dev["foc"].last_focus_fwhm = rfr
+                                g_dev["foc"].last_focus_fwhm = FWHM
                             else:
-
                                 # Very dumb focus slip deteector
-
                                 if (
                                     np.nanmedian(g_dev["foc"].focus_tracker)
                                     > g_dev["foc"].last_focus_fwhm
@@ -966,11 +959,35 @@ class Observatory:
                         print (traceback.format_exc())
                         sources = [0]
 
+                    #         # If there hasn't been a focus yet, then it can't check it, so make this image the last solved focus.
+                    #         if g_dev["foc"].last_focus_fwhm == None:
+                    #             g_dev["foc"].last_focus_fwhm = rfr
+                    #         else:
+                    #             # Very dumb focus slip deteector
+                    #             if (
+                    #                 np.nanmedian(g_dev["foc"].focus_tracker)
+                    #                 > g_dev["foc"].last_focus_fwhm
+                    #                 + self.config["focus_trigger"]
+                    #             ):
+                    #                 g_dev["foc"].focus_needed = True
+                    #                 g_dev["obs"].send_to_user(
+                    #                     "Focus has drifted to "
+                    #                     + str(np.nanmedian(g_dev["foc"].focus_tracker))
+                    #                     + " from "
+                    #                     + str(g_dev["foc"].last_focus_fwhm)
+                    #                     + ". Autofocus triggered for next exposures.",
+                    #                     p_level="INFO",
+                    #                 )
+                    # except:
+                    #     print ("something failed in the SEP calculations for exposure. This could be an overexposed image")
+                    #     print (traceback.format_exc())
+                    #     sources = [0]
+
                 # SmartStack Section
                 if smartstackid != "no" :
 
                     print ("Number of sources just prior to smartstacks: " + str(len(sources)))
-                    if len(sources) < 30:
+                    if len(sources) < 12:
                         print ("skipping stacking as there are not enough sources " + str(len(sources)) +" in this image")
 
 
@@ -978,8 +995,8 @@ class Observatory:
                     #    paths["red_path"] + paths["red_name01"]
                     #)  # Pick up reduced fits file
                     # No need to open the same image twice, just using the same one as SEP.
-                    img = sstackimghold.copy()
-                    del sstackimghold
+                    #img = sstackimghold.copy()
+                    #del sstackimghold
 
                     #plog(img[0].header["FILTER"])
 
@@ -1017,7 +1034,7 @@ class Observatory:
                     if not os.path.exists(
                         g_dev["cam"].site_path + "smartstacks/" + smartStackFilename
                     ):
-                        if len(sources) >= 30:
+                        if len(sources) >= 12:
                             # Store original image
                             plog("Storing First smartstack image")
                             # storedsStack=np.nan_to_num(img)
@@ -1056,7 +1073,7 @@ class Observatory:
                         # img= img - backgroundLevel
                         # Reproject new image onto footprint of old image.
                         plog(datetime.datetime.now())
-                        if len(sources) > 30:
+                        if len(sources) > 12:
                             try:
                                 reprojectedimage, _ = func_timeout.func_timeout (60, aa.register, args=(img, storedsStack), kwargs={"detection_sigma":3, "min_area":9})
                                 #(20, aa.register, args=(img, storedsStack, detection_sigma=3, min_area=9)

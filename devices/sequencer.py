@@ -155,6 +155,7 @@ class Sequencer:
         self.sky_flat_latch = True
         self.morn_sky_flat_latch = True
         self.morn_bias_dark_latch = True   #NB NB NB Should these initially be defined this way?
+        self.night_focus_ready=True
 
         self.reset_completes()  # NB NB Note this is reset each time sequencer is restarted.
 
@@ -184,6 +185,11 @@ class Sequencer:
         action = command['action']
         script = command['required_params']['script']
         if action == "run" and script == 'focusAuto':
+            self.auto_focus_script(req, opt)
+        elif action == "autofocus": # this action is the front button on Camera, so FORCES an autofocus
+            g_dev['foc'].time_of_last_focus = datetime.datetime.now() - datetime.timedelta(
+                days=1
+            )  # Initialise last focus as yesterday
             self.auto_focus_script(req, opt)
         elif action == "run" and script == 'focusFine':
             self.coarse_focus_script(req, opt)
@@ -291,8 +297,8 @@ class Sequencer:
         ocn_status = g_dev['ocn'].status
         enc_status = g_dev['enc'].status
         events = g_dev['events']
-         
-        #This is is a very common debug point. This should be re-done with try excepts.
+
+        g_dev['enc'].mode = 'Automatic'     #  THis is a very common debug point.
 
         if self.bias_dark_latch and ((events['Eve Bias Dark'] <= ephem_now < events['End Eve Bias Dark']) and \
              self.config['auto_eve_bias_dark'] and g_dev['enc'].mode in ['Automatic', 'Autonomous', 'Manual'] ):
@@ -311,23 +317,33 @@ class Sequencer:
                g_dev['enc'].mode == 'Automatic') and not g_dev['ocn'].wx_hold:
 
             self.enc_to_skyflat_and_open(enc_status, ocn_status)
+            self.night_focus_ready=True
 
         elif ((g_dev['events']['Clock & Auto Focus']  <= ephem_now < g_dev['events']['Observing Begins']) and \
                g_dev['enc'].mode == 'Automatic') and not g_dev['ocn'].wx_hold:
 
-            g_dev['obs'].send_to_user("Beginning start of night Focus and Pointing Run", p_level='INFO')
+            if self.night_focus_ready==True:
+                g_dev['obs'].send_to_user("Beginning start of night Focus and Pointing Run", p_level='INFO')
 
-            # Autofocus
-            if ((datetime.datetime.now() - g_dev['foc'].time_of_last_focus)) > datetime.timedelta(hours=self.config['periodic_focus_time']):
+                # Move to reasonable spot
+                g_dev['mnt'].mount.Tracking = True
+
+                g_dev['mnt'].mount.SlewToAltAzAsync(90, 70)
+                g_dev['foc'].time_of_last_focus = datetime.datetime.now() - datetime.timedelta(
+                    days=1
+                )  # Initialise last focus as yesterday
+
+                # Autofocus
                 req2 = {'target': 'near_tycho_star', 'area': 150}
                 opt = {}
                 self.auto_focus_script(req2, opt, throw = g_dev['foc'].throw)
 
-            # Pointing
-            req = {'time': self.config['focus_exposure_time'],  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'focus'}   #  NB Should pick up filter and constats from config
-            #opt = {'area': 150, 'count': 1, 'bin': '2, 2', 'filter': 'focus'}
-            opt = {'area': 150, 'count': 1, 'bin': 'default', 'filter': 'focus'}
-            result = g_dev['cam'].expose_command(req, opt, no_AWS=False, solve_it=True)
+                # Pointing
+                req = {'time': self.config['focus_exposure_time'],  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'focus'}   #  NB Should pick up filter and constats from config
+                #opt = {'area': 150, 'count': 1, 'bin': '2, 2', 'filter': 'focus'}
+                opt = {'area': 150, 'count': 1, 'bin': 'default', 'filter': 'focus'}
+                result = g_dev['cam'].expose_command(req, opt, no_AWS=False, solve_it=True)
+            self.night_focus_ready=False
 
         elif self.sky_flat_latch and ((events['Eve Sky Flats'] <= ephem_now < events['End Eve Sky Flats'])  \
                and g_dev['enc'].mode in [ 'Automatic', 'Autonomous'] and not g_dev['ocn'].wx_hold and \
@@ -338,6 +354,7 @@ class Sequencer:
             #plog('Skipping Eve Sky Flats')
             self.sky_flat_script({}, {}, morn=False)   #Null command dictionaries
             self.sky_flat_latch = False
+            g_dev['mnt'].mount.Tracking = True
 
 # =============================================================================
 #         NB NB Note below often faults, should be in a try except instead of this
@@ -1176,6 +1193,9 @@ class Sequencer:
             self.astro_events.display_events()
             g_dev['obs'].astro_events = self.astro_events
 
+            # Allow early night focus
+            self.night_focus_ready==True
+
 
         return
 
@@ -1388,6 +1408,11 @@ class Sequencer:
                         scale = 0.01
                 except:
                     scale = 1.0
+
+                if 'sky_lux' not in locals():
+                    sky_lux=1000
+                plog ("sky lux: " + str(sky_lux))
+
 
                 plog('\n\n', "Patch/Bright:  ", bright, g_dev['fil'].filter_data[current_filter][0], \
                       'New Gain value: ', round(bright/(sky_lux*collecting_area*exp_time), 3), '\n\n')
