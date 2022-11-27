@@ -1331,5 +1331,6 @@ class Observatory:
 
 
 if __name__ == "__main__":
+
     o = Observatory(config.site_name, config.site_config)
     o.run()

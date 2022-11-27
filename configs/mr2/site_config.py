@@ -105,9 +105,9 @@ site_config = {
                     ''',    #  i.e, a multi-line text block supplied and formatted by the owner.
 
     'mpc_code':  'ZZ23',    #This is made up for now.
-    'time_offset':  -7,
+    'time_offset':  -8,
     'TZ_database_name':  'America/Los_Angeles',
-    'timezone': 'PDT',
+    'timezone': 'PST',
     'latitude': 34.34595969,     #Decimal degrees, North is Positive
     'longitude': -119.6811323955,   #Decimal degrees, West is negative
     'elevation': 317.75,    # meters above sea level
@@ -117,10 +117,11 @@ site_config = {
     'automatic_detail_default': "Enclosure is set to Automatic mode.",
     'observing_check_period' : 2,    # How many minutes between weather checks
     'enclosure_check_period' : 2,    # How many minutes between enclosure checks
-    'auto_eve_bias_dark': True,
-    'auto_eve_sky_flat': True,
+
+    'auto_eve_bias_dark': False,
+    'auto_eve_sky_flat': False,
     'eve_sky_flat_sunset_offset': -60.,  #  Minutes  neg means before, + after.
-    'auto_morn_sky_flat': True,
+    'auto_morn_sky_flat': False,
     'auto_morn_bias_dark': True,
     're-calibrate_on_solve': True,
     'pointing_calibration_on_startup': False,
@@ -498,16 +499,16 @@ site_config = {
                                 ['Red',     [0, 4],     0, 0.01, [2, 17], 'r '],  # 21                                ['JV (Grn)',      [0, 3],     0, 0.01, [2, 17], 'V '],   # 9
                                 ['Green',   [0, 3],     0, 0.01, [2, 17], 'V '],   # 22
                                 ['Blue',    [0, 1],     0, 0.01, [2, 17], 'B '],   # 23
-                                ['w (Lum)', [1, 0],     0, 0.01, [2, 17], 'w '],   # 1
+                                ['w',       [1, 0],     0, 0.01, [2, 17], 'w '],   # 1
                                 ['dif',     [2, 0],     0, 0.01, [2, 17], 'df'],   # 2
                                 ['O3',      [3, 0],     0, 0.01, [2, 17], 'O3'],   # 3
                                 ['HA',      [4, 0],     0, 0.01, [2, 17], 'HA'],   # 4
                                 ['N2',      [5, 5],     0, 0.01, [2, 17], 'S2'],   # 5
                                 ['S2',      [6, 6],     0, 0.01, [2, 17], 'N2'],   # 6
-                                ['JB (Blu)',[0, 1],     0, 0.01, [2, 17], 'B '],   # 7
+                                ['JB',      [0, 1],     0, 0.01, [2, 17], 'B '],   # 7
                                 ['g',       [0, 2],     0, 0.01, [2, 17], 'g '],   # 8
-                                ['JV (Grn)',[0, 3],     0, 0.01, [2, 17], 'V '],   # 9
-                                ['r (Red)', [0, 4],     0, 0.01, [2, 17], 'r '],  # 10
+                                ['JV',      [0, 3],     0, 0.01, [2, 17], 'V '],   # 9
+                                ['r',       [0, 4],     0, 0.01, [2, 17], 'r '],  # 10
                                 ['i',       [0, 5],     0, 0.01, [2, 17], 'i '],  # 11
                                 ['EXO',     [0, 6],     0, 0.01, [2, 17], 'EX'],  # 12
                                 ['dif-JB',  [2, 1],     0, 0.01, [2, 17], 'Ha'],  # 13
@@ -628,6 +629,7 @@ site_config = {
                 'default_area':  "Full",
                 'default_rotation': 0.0000,
                 'flat_bin_spec': '1,1',    #Default binning for flats
+                'smart_stack_exposure_time': 30,
                 #'bin_modes':  [[2, 2, 0.9371], [1, 1, 0.4685], [3, 3, 1.4056], [4, 4, 1.8742]],     #Meaning no binning if list has only one entry
                 #'default_bin':  [2, 2],    #Always square and matched to seeing situation by owner
                 #'cycle_time':  [18, 15, 12, 9],  # 3x3 requires a 1, 1 reaout then a software bin, so slower.
