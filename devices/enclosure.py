@@ -504,7 +504,7 @@ class Enclosure:
 
         if redis_command is not None:
 
-
+            plog(redis_command)
             pass
             #plog(redis_command)
         #Note this is very bogus, some remant from long ago.    
