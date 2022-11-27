@@ -15,6 +15,7 @@ import glob
 
 # This routine here removes all mention of previous configs from the path...
 # for safety and local computer got clogged with all manner of configs in the path
+
 path_removals = []
 for q in range(len(sys.path)):
     if "ptr-observatory" in sys.path[q] and "configs" in sys.path[q]:

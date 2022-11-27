@@ -363,9 +363,17 @@ class FilterWheel:
 
         try:
             filter_name = str(req["filter_name"]).lower()
+            if filter_name[-5:] in ['(lum)']:
+                filter_name = filter_name[0:-5]  #See below
+            if filter_name[-6:] in [' (lum)', ' (red)', ' (grn)', ' (blu)']:
+
+                filter_name = filter_name[0:-6]  #Patch until old configs are flushed 20221120 WER
         except:
             try:
+                
                 filter_name = str(req["filter"]).lower()
+                if filter_name[-6:] in [' (lum)', ' (red)', ' (grn)', ' (blu)']:
+                    filter_name = filter_name[0:-6]   # See above
             except:
                 plog(
                     "Unable to set filter position using filter name,\
@@ -379,10 +387,13 @@ class FilterWheel:
         #breakpoint()
 
         filter_identified = 0
+        
         for match in range(
             #int(self.config["filter_wheel1"]["settings"]["filter_count"])
             len(self.filter_data)
         ):  # NB Filter count MUST be correct in Config.
+            breakpoint()
+            print(self.filter_data[match][0].lower())
             if filter_name in str(self.filter_data[match][0]).lower():
                 filt_pointer = match
                 filter_identified = 1

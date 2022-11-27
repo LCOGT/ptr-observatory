@@ -436,7 +436,7 @@ class Events:
         #moon.compute(dayNow)
         #if loud: print('Sun: ', sun.ra, sun.dec, 'Moon: ', moon.ra, moon.dec)
         ptr = ephem.Observer()     #Photon Ranch
-        
+
         #breakpoint()
         ptr.date = dayNow
         ptr.lat = str(self.siteLatitude)
@@ -474,7 +474,7 @@ class Events:
         #if loud: print('Sun -12: ', sun.ra, sun.dec, sun.az, sun.alt)
         observing_begins = ptr.next_setting(sun)    #Can start clocking and autofocus.
         observing_ends = ptr.next_rising(sun)
-        
+
         ptr.horizon = '-18'
         sun.compute(ptr)
         #if loud: print('Sun -18: ', sun.ra, sun.dec, sun.az, sun.alt)
@@ -482,8 +482,21 @@ class Events:
         astroDark = ptr.next_setting(sun)
         astroEnd = ptr.next_rising(sun)
 
-        nautDusk_plus_half = (nauticalDusk + astroDark)/2     #observing starts
-        nautDawn_minus_half = (nauticalDawn + astroEnd)/2     #Observing ends.
+
+
+        print (nauticalDusk)
+        print (dayNow)
+        print (astroDark)
+
+
+        if (nauticalDusk - astroDark) > 0.5:
+            nautDusk_plus_half = dayNow
+        else:
+            nautDusk_plus_half = (nauticalDusk + astroDark)/2     #observing starts
+        if (nauticalDawn - astroEnd) > 0.5:
+            nautDawn_minus_half = dayNow
+        else:
+            nautDawn_minus_half = (nauticalDawn + astroEnd)/2     #Observing ends.
 
         duration = (astroEnd - astroDark)*24
         ptr.date = middleNight
