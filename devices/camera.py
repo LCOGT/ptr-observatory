@@ -1456,6 +1456,7 @@ class Camera:
             except:
                 plog("OCN status not quick updated")
             if time.time() > self.status_time:
+                # NB NB THis call causes a hang for the first bias of a bias dark sequence 20221119 WER
                 g_dev["obs"].update_status(bpt=False)
                 self.status_time = time.time() + 10
             if (
@@ -1526,6 +1527,7 @@ class Camera:
                 plog("Mount doesn't use pierside")
 
             if (not self.use_file_mode and self._imageavailable()):  # orself.use_file_mode and len(incoming_image_list) >= 1):
+
                 imageCollected = 0
                 retrycounter = 0
                 if g_dev['obs'].stop_all_activity:
@@ -2525,6 +2527,9 @@ class Camera:
                             border_x = int(ix * 0.05)
                             border_y = int(iy * 0.05)
                             r0 = []
+                            xcoords=[]
+                            ycoords=[]
+                            acoords=[]
                             for sourcef in sources:
                                 if (
                                     border_x < sourcef["x"] < ix - border_x
@@ -2535,14 +2540,23 @@ class Camera:
                                     a0 = sourcef["a"]
                                     b0 = sourcef["b"]
                                     r0.append(round(math.sqrt(a0 * a0 + b0 * b0)*2, 3))
+                                    xcoords.append(sourcef["x"])
+                                    ycoords.append(sourcef["y"])
+                                    acoords.append(sourcef["a"])
+
+                            rfr, _ = sep.flux_radius(focusimg, xcoords, ycoords, acoords, 0.5, subpix=5)
+                            rfr = np.median(rfr * 2) * pixscale
+                            print("This image has a FWHM of " + str(rfr))
 
                             #scale = self.config["camera"][self.name]["settings"][
                             #    "pix_scale"
                             #][self.camera.BinX - 1]
-                            scale=pixscale
-                            result["FWHM"] = round(
-                                np.median(r0) * scale, 2
-                            )  # was 2x larger but a and b are diameters not radii -20221111   Duh Homer!, Wrong.
+                            #scale=pixscale
+                            #result["FWHM"] = round(
+                            #    np.median(r0) * scale, 2
+                            #)  # was 2x larger but a and b are diameters not radii -20221111   Duh Homer!, Wrong.
+
+                            result["FWHM"] = rfr
                             result["mean_focus"] = avg_foc[1]
                             try:
                                 valid = (
@@ -2566,8 +2580,9 @@ class Camera:
 
                             print ("This image has a FWHM of " + str(result["FWHM"]))
                             # write the focus image out
-                            hdufocus.writeto(cal_path + cal_name, overwrite=True)
+                            hdufocus.writeto(cal_path + cal_name, overwrite=True)                            
                             pixscale=hdufocus.header['PIXSCALE']
+                            #hdufocus.close()  #NB NB faulted. we do not close a header
                             del hdufocus
                             focus_image = False
 

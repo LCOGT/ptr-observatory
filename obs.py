@@ -89,7 +89,7 @@ class Observatory:
         # This is the ayneclass through which we can make authenticated api calls.
         self.api = API_calls()
 
-        self.command_interval = 0  # seconds between polls for new commands
+        self.command_interval = 0 # seconds between polls for new commands
         self.status_interval = 0  # NOTE THESE IMPLEMENTED AS A DELTA NOT A RATE.
 
         self.name = name  # NB NB NB Names needs a once-over.
@@ -349,7 +349,7 @@ class Observatory:
         # This stopping mechanism allows for threads to close cleanly.
         while not self.stopped:
 
-            if not g_dev["seq"].sequencer_hold:
+            if  True:  #not g_dev["seq"].sequencer_hold:  THis causes an infinte loope witht he above while
                 url_job = "https://jobs.photonranch.org/jobs/getnewjobs"
                 body = {"site": self.name}
                 cmd = {}
@@ -492,11 +492,11 @@ class Observatory:
         Each device class is responsible for implementing the method
         `get_status`, which returns a dictionary.
         """
-        if bpt:
-            breakpoint()
+
         # This stopping mechanism allows for threads to close cleanly.
         loud = False
         if bpt:
+            print('UpdateStatus bpt was invoked.')
             breakpoint()
 
         # Wait a bit between status updates
@@ -574,11 +574,6 @@ class Observatory:
         except:
             pass
         loud = False
-        if loud:
-            plog("\n\nStatus Sent:  \n", status)
-        else:
-            plog(".")  # We print this to stay informed of process on the console.
-
         # Consider inhibity unless status rate is low
         obsy = self.name
         if ocn_status is not None:
@@ -590,11 +585,15 @@ class Observatory:
         if device_status is not None:
             lane = "device"
             send_status(obsy, lane, device_status)
-
+        if loud:
+            plog("\n\nStatus Sent:  \n", status)
+        else:
+            plog(".")  # We print this to stay informed of process on the console.
         # NB should qualify acceptance and type '.' at that point.
         self.time_last_status = time.time()
         self.status_count += 1
         try:
+
             self.scan_requests(cancel_check=True
             )  # NB THis has faulted, usually empty input lists.
         except:
@@ -673,8 +672,13 @@ class Observatory:
                 # Here we parse the file, set up and send to AWS
                 filename = pri_image[1][1]
                 filepath = pri_image[1][0] + filename  # Full path to file on disk
+                #  NB NB NB This looks like a redundant send
+                tt = time.time()
+                
                 aws_resp = g_dev["obs"].api.authenticated_request(
                     "POST", "/upload/", {"object_name": filename})
+                plog('The first phase took:  ', round(time.time() - tt, 1), ' sec.')
+
                 # Only ingest new large fits.fz files to the PTR archive.
                 print (self.env_exists)
                 if filename.endswith("-EX00.fits.fz"):
@@ -684,9 +688,12 @@ class Observatory:
                         if self.env_exists == True and (not frame_exists(fileobj)):
                             print ("attempting ingester")
                             try:
+                                #tt = time.time()
+                                print ("attempting ingest to aws@  ", tt)
                                 upload_file_and_ingest_to_archive(fileobj)
                                 print ("did ingester")
                                 plog(f"--> To PTR ARCHIVE --> {str(filepath)}")
+                                plog('*.fz ingestion took:  ', round(time.time() - tt, 1), ' sec.')
                                 self.aws_queue.task_done()
                                 
                                 tempPTR=1
@@ -699,10 +706,12 @@ class Observatory:
                         if tempPTR ==0:
                             files = {"file": (filepath, fileobj)}
                             try:
-                                print ("attempting aws")
-                                requests.post(aws_resp["url"], data=aws_resp["fields"], files=files)
-                                print ("did aws")
+                                #tt = time.time()
+                                print ("attempting aws@  ", tt)
+                                req_resp = requests.post(aws_resp["url"], data=aws_resp["fields"], files=files)
+                                print ("did aws", req_resp)
                                 plog(f"--> To AWS --> {str(filepath)}")
+                                plog('*.fz transfer took:  ', round(time.time() - tt, 1), ' sec.')
                                 self.aws_queue.task_done()
                                 
                                 #break
@@ -881,14 +890,15 @@ class Observatory:
                             imgdata, 4.5, err=bkg.globalrms, minarea=15
                         )  # Minarea should deal with hot pixels.
                         ix, iy = imgdata.shape
-                        del imgdata
+                        
+                        
                         sources.sort(order="cflux")
                         plog("No. of detections:  ", len(sources))
 
 
                         if len(sources) < 20:
                             print ("skipping focus estimate as not enough sources in this image")
-
+                            del imgdata
                         else:
 
                             #r0 = 0
@@ -896,6 +906,9 @@ class Observatory:
                             border_x = int(ix * 0.05)
                             border_y = int(iy * 0.05)
                             r0 = []
+                            xcoords=[]
+                            ycoords=[]
+                            acoords=[]
                             for sourcef in sources:
                                 if (
                                     border_x < sourcef["x"] < ix - border_x
@@ -906,14 +919,20 @@ class Observatory:
                                     a0 = sourcef["a"]
                                     b0 = sourcef["b"]
                                     r0.append(round(math.sqrt(a0 * a0 + b0 * b0)*2, 2))
+                                    xcoords.append(sourcef["x"])
+                                    ycoords.append(sourcef["y"])
+                                    acoords.append(sourcef["a"])
+                            
+                            rfr, _ = sep.flux_radius(imgdata, xcoords, ycoords, acoords, 0.5, subpix=5)
+                            rfr = np.median(rfr * 2) * pixscale
 
+                            del imgdata
                             FWHM = round(
                                 np.median(r0) * pixscale, 3
-                            )  # was 2x larger but a and b are diameters not radii
-                            print("This image has a FWHM of " + str(FWHM))
-
+                            )  # a and b are RADII not diameters
+                            print("This image has a FWHM of " + str(rfr))
                             g_dev["foc"].focus_tracker.pop(0)
-                            g_dev["foc"].focus_tracker.append(FWHM)
+                            g_dev["foc"].focus_tracker.append(rfr)
                             print("Last ten FWHM : ")
                             print(g_dev["foc"].focus_tracker)
                             print("Median last ten FWHM")
@@ -923,7 +942,7 @@ class Observatory:
 
                             # If there hasn't been a focus yet, then it can't check it, so make this image the last solved focus.
                             if g_dev["foc"].last_focus_fwhm == None:
-                                g_dev["foc"].last_focus_fwhm = FWHM
+                                g_dev["foc"].last_focus_fwhm = rfr
                             else:
 
                                 # Very dumb focus slip deteector
@@ -1213,7 +1232,15 @@ class Observatory:
                                     round(err_ha * 15 * 3600, 2),
                                     round(err_dec * 3600, 2),
                                 )  # NB WER changed units 20221012
-
+                                try:
+                                    f_err_dec = err_dec*math.cos(math.radians(solved_dec))
+                                    plog(
+                                        " **field** error in ra, dec:  (asec) ",      
+                                        round(err_ha * 15 * 3600, 2),
+                                        round(f_err_dec * 3600, 2),
+                                    )  # NB WER changed units 20221012
+                                except:
+                                        pass
                                 # We do not want to reset solve timers during a smartStack
                                 self.last_solve_time = datetime.datetime.now()
                                 self.images_since_last_solve = 0
