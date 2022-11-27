@@ -2492,6 +2492,7 @@ class Camera:
                         try:
                             # Some of these are liberated from BANZAI
                             bkg = sep.Background(focusimg)
+                            hduraw.header["SEPSKY"] = ( np.nanmedian(bkg), "Sky background estimated by SEP" )
                             focusimg -= bkg
                             ix, iy = focusimg.shape
                             border_x = int(ix * 0.05)
@@ -2616,7 +2617,26 @@ class Camera:
                             print (traceback.format_exc())
                             sources = [0]
 
-                        # Set up RA and DEC headers for BANZAI
+
+
+                        if 'rfr' in locals():
+
+                            hduraw.header["FWHM"] = ( rfp, 'FWHM in pixels')
+                            hduraw.header["FWHMpix"] = ( rfp, 'FWHM in pixels')
+                            hduraw.header["FWHMasec"] = ( rfr, 'FWHM in arcseconds')
+
+                        if focus_image == False:
+                            text = open(
+                                im_path + text_name, "w"
+                            )  # This is needed by AWS to set up database.
+                            text.write(str(hduraw.header))
+                            text.close()
+                            self.enqueue_for_fastAWS(10, im_path, text_name)
+
+
+                         # Set up RA and DEC headers for BANZAI
+                         # needs to be done AFTER text file is sent up.
+                         # Text file RA and Dec and BANZAI RA and Dec are gormatted different
 
                         tempRAdeg = float(g_dev["mnt"].current_icrs_ra) * 15
                         tempDECdeg = g_dev["mnt"].current_icrs_dec
@@ -2678,19 +2698,6 @@ class Camera:
                         hduraw.header["CRPIX1"] = float(hduraw.header["NAXIS1"])/2
                         hduraw.header["CRPIX2"] = float(hduraw.header["NAXIS2"])/2
 
-                        if 'rfr' in locals():
-
-                            hduraw.header["FWHM"] = ( rfp, 'FWHM in pixels')
-                            hduraw.header["FWHMpix"] = ( rfp, 'FWHM in pixels')
-                            hduraw.header["FWHMasec"] = ( rfr, 'FWHM in arcseconds')
-
-                        if focus_image == False:
-                            text = open(
-                                im_path + text_name, "w"
-                            )  # This is needed by AWS to set up database.
-                            text.write(str(hduraw.header))
-                            text.close()
-                            self.enqueue_for_fastAWS(10, im_path, text_name)
 
                         source_delete=['thresh','npix','tnpix','xmin','xmax','ymin','ymax','x2','y2','xy','errx2','erry2','errxy','a','b','theta','cxx','cyy','cxy','cflux','cpeak','xcpeak','ycpeak']
                         #for sourcedel in source_delete:

@@ -12,12 +12,13 @@ Created on Fri Feb 07,  11:57:41 2020
 #import json
 import time
 import traceback
+from global_yard import g_dev
 #import ptr_events
 #from pprint import pprint
 
 #  NB NB  Json is not bi-directional with tuples (), use lists [], nested if tuples as needed, instead.
 #  NB NB  My convention is if a value is naturally a float I add a decimal point even to 0.
-g_dev = None
+#g_dev = None
 
  # bolt = ['u', 'g', 'r', 'i', 'zs', 'B', 'V', 'EXO', 'w', 'O3', 'Ha', 'S', 'Cr', 'NIR']
  # print(len(bolt))
@@ -27,6 +28,8 @@ site_name = 'sro'
                     #\\192.168.1.57\SRO10-Roof  r:
                     #SRO-Weather (\\192.168.1.57) w:
                     #Username: wayne_rosing  PW: 29yzpe
+
+prior_status = None
 
 site_config = {
     'site': str(site_name.lower()),
@@ -86,9 +89,9 @@ site_config = {
 
     'site_roof_control': 'no', #MTF entered this in to remove sro specific code.... Basically do we have control of the roof or not see line 338 sequencer.py
     'site_in_automatic_default': "Automatic",   #  ["Manual", "Shutdown", "Automatic"]
-    'automatic_detail_default': "Enclosure is initially set to Automatic mode.",
-    'observing_check_period' : 5,    # How many minutes between weather checks
-    'enclosure_check_period' : 5,    # How many minutes between enclosure checks
+    'automatic_detail_default': "Enclosure is Autonmous, under Owner control.",
+    'observing_check_period' : 1,    # How many minutes between weather checks
+    'enclosure_check_period' : 1,    # How many minutes between enclosure checks
 
     'auto_eve_bias_dark': True,
     'auto_eve_sky_flat': True,
@@ -808,10 +811,10 @@ def get_enc_status(g_dev=None):
             enc_text = enc.readline()
             enc.close
             enc_list = enc_text.split()
-
+            e_mode = 'Autonomous!'
             if len(enc_list) == 5:
                 if enc_list[4] in ['OPEN', 'Open', 'open', 'OPEN\n']:
-                    shutter_status = 0  #Numbering is correct
+                    shutter_status = 0  #Numbering is correct   CONVERTING to a # makes no sense, use 'Open' instead.
                     stat_string = "Open"
                 elif enc_list[4] in ['OPENING']:  #SRO Does not report this.
                     shutter_status = 2
@@ -829,22 +832,28 @@ def get_enc_status(g_dev=None):
                 shutter_status = 4
                 stat_string = "Fault"
             #g_dev['enc'].status = shutter_status   # NB NB THIS was a nasty bug
-            try:
-                g_dev['enc'].stat_string = stat_string
-                if shutter_status in [2, 3]:
-                    g_dev['enc'].moving = True
-                else:
-                    g_dev['enc'].moving = False
-                if g_dev['enc'].mode == 'Automatic':
-                    e_mode = "Autonomous!"
-                else:
-                    e_mode = g_dev['enc'].mode
-            except:
-                #print ("just examining how important this bit is. ")
-                pass
+            # try:
+            #     g_dev['enc'].stat_string = stat_string
+            #     if shutter_status in [2, 3] and site_config['enclosure']['enclosure1']['is_dome']:
+            #         g_dev['enc'].moving = True
+            #     else:
+            #         shutter_status = False
+
+            #     if g_dev['enc'].mode in ['Automatic', 'Autonomous!']:
+            #         e_mode = "Autonomous!"
+            #     else:
+            #         e_mode = 'Autonomous!'    #g_dev['enc'].mode  THis is the only value for SRO
+            # except:
+            #     #print ("just examining how important this bit is. ")
+            #     breakpoint()
+            #     pass
 
         except Exception as e:
-            print ("Problem opening Roof Status: ", e)
+            print ("Problem opening SRO Roof Status share: ", e)
+            print("Using previously reported status.")
+            if prior_status is not None:
+                return status
+
             #print(traceback.format_exc())
             # try:
             #     enc = open('R:/Roof_Status.txt')
@@ -864,7 +873,7 @@ def get_enc_status(g_dev=None):
         try:
             status = {'shutter_status': stat_string,   # NB NB NB "Roof is open|closed' is more inforative for FAT, but we make boolean decsions on 'Open'
                   'enclosure_synchronized': True,
-                  'dome_azimuth': 0.0,
+                  'dome_azimuth':'n.a.',
                   'dome_slewing': False,
                   'enclosure_mode': e_mode,
                   'enclosure_message':  ''
@@ -872,11 +881,12 @@ def get_enc_status(g_dev=None):
         except:
             status = {'shutter_status':  "Unknown",   # NB NB NB "Roof is open|closed' is more inforative for FAT, but we make boolean decsions on 'Open'
                   'enclosure_synchronized': False,
-                  'dome_azimuth': 0.0,
+                  'dome_azimuth': 'n.a',
                   'dome_slewing': False,
                   'enclosure_mode': "Autonomous!",
                   'enclosure_message':  ''
                  }
+        prior_status = status
         return status
     else:
         pass

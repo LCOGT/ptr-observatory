@@ -488,6 +488,7 @@ class Observatory:
         `get_status`, which returns a dictionary.
         """
 
+
         # This stopping mechanism allows for threads to close cleanly.
         loud = False
 
@@ -533,6 +534,8 @@ class Observatory:
                     else:
                         plog("Running enclosure status check")
                         self.enclosure_status_timer = datetime.datetime.now()
+
+
                         result = device.get_status()
 
                 elif (
