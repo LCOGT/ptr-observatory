@@ -335,7 +335,7 @@ class Sequencer:
                 # Move to reasonable spot
                 g_dev['mnt'].mount.Tracking = True
 
-                g_dev['mnt'].mount.SlewToAltAzAsync(90, 70)
+                g_dev['mnt'].move_to_altaz(90, 70)
                 g_dev['foc'].time_of_last_focus = datetime.datetime.now() - datetime.timedelta(
                     days=1
                 )  # Initialise last focus as yesterday

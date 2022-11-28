@@ -526,7 +526,7 @@ class Mount:
                 'pointing_instrument': str(self.inst),  # needs fixing
                 'is_parked': self.mount.AtPark,     #  Send strings to AWS so JSON does not change case  Wrong. 20211202 'False' evaluates to True
                 'is_tracking': self.mount.Tracking,
-                #'is_slewing': self.mount.Slewing,
+                'is_slewing': self.mount.Slewing,
                 'message': str(self.mount_message[:54]),
                 #'site_in_automatic': self.site_in_automatic,
                 #'automatic_detail': str(self.automatic_detail),
@@ -953,7 +953,7 @@ class Mount:
         if object_is_moon:
             self.go_coord(ra1, dec1, tracking_rate_ra=dra_moon, tracking_rate_dec = ddec_moon)
         elif alt_az == True:
-            self.mount.SlewToAltAzAsync(az, alt)
+            self.move_to_altaz(az, alt)
 
         elif ra_dec == True:
             self.go_coord(ra, dec, tracking_rate_ra=tracking_rate_ra, tracking_rate_dec = tracking_rate_dec)
@@ -1067,7 +1067,7 @@ class Mount:
         #if self.site == 'sro':   #NB NB NB why this bypass?
         #    self.mount.SlewToCoordinatesAsync(ra_app_h, dec_app_d)
         #else:
-        breakpoint()
+
         self.mount.SlewToCoordinatesAsync(self.ra_mech*RTOH, self.dec_mech*RTOD)  #Is this needed?
         
         ###  figure out velocity  Apparent place is unchanged.
@@ -1126,7 +1126,7 @@ class Mount:
         self.mount.Tracking = False
         self.move_time = time.time()
         try:
-            self.mount.SlewToAltAzAsync(az, alt)
+            self.move_to_altaz(az, alt)
 
             # On successful movement of telescope reset the solving timer
             g_dev['obs'].last_solve_time = datetime.datetime.now() - datetime.timedelta(days=1)
@@ -1151,13 +1151,13 @@ class Mount:
             self.mount.Unpark()
             #home_alt = self.settings["home_altitude"]
             #home_az = self.settings["home_azimuth"]
-            #self.mount.SlewToAltAzAsync(home_alt, home_az)
+            #self.move_to_altaz(home_alt, home_az)
             self.move_time = time.time()
             self.mount.FindHome()
         else:
             plog("Mount is not capable of finding home. Slewing to zenith.")
             self.move_time = time.time()
-            self.mount.SlewToAltAzAsync(0, 80)
+            self.move_to_altaz(0, 80)
 
     def flat_panel_command(self, req, opt):
         ''' slew to the flat panel if it exists '''
@@ -1386,6 +1386,24 @@ class Mount:
         mnt_shelf['flip_dec_cal_offset'] = 0.000
         mnt_shelf.close()
         return
+    
+    def move_to_altaz(self, az, alt):
+        print ("Moving to Alt " + str(alt) + " Az " + str(az))
+        if self.config['mount']['mount1']['has_ascom_altaz'] == True:
+            self.mount.SlewToAltAzAsync(az, alt)
+        else:
+            plog("Recaclulating RA and DEC for Alt Az move")
+            aa = AltAz (location=self.site_coordinates, obstime=Time.now())
+            #breakpoint()
+            tempcoord= SkyCoord(az=az*u.deg, alt=alt*u.deg, frame=aa)
+            tempcoord=tempcoord.transform_to(frame='icrs')
+            tempRA=tempcoord.ra.deg / 15
+            tempDEC=tempcoord.dec.deg
+            print (tempRA)
+            print (tempDEC)
+            #self.site_coordinates
+            self.mount.SlewToCoordinatesAsync(tempRA, tempDEC)
+        
 
         '''
          class Darkslide(object):
