@@ -1659,6 +1659,7 @@ class Camera:
                         hdu.header["XBINING"] = (1, "Pixel binning in x direction")
                         hdu.header["YBINING"] = (1, "Pixel binning in y direction")
 
+                    hdu.header['CONFMODE'] = (True,  "WAG as to what value shoudl be. WER")
                     hdu.header["DOCOSMIC"] = (
                         self.config["camera"][self.name]["settings"]["cosmics_at_default"],
                         "Header item to indicate whether to do cosmic ray removal",
@@ -2363,7 +2364,7 @@ class Camera:
                     im_path_r = self.camera_path
 
                     hdu.header["FILEPATH"] = str(im_path_r) + "to_AWS/"
-                    hdu.header["FILENAME"] = str(raw_name00 + ".fz")
+                    hdu.header["ORIGNAME"] = str(raw_name00 + ".fz")
 
                     try:  #  NB relocate this to Expose entry area.  Fill out except.  Might want to check on available space.
                         im_path_r = self.camera_path
