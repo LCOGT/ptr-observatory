@@ -500,7 +500,7 @@ class Mount:
                 self.pier_side_str ="Looking West"
             else:
                 self.pier_side_str = "Looking East"
-
+            #breakpoint()
             status = {
                 'timestamp': round(time.time(), 3),
                 'right_ascension': round(icrs_ra, 5),
@@ -526,7 +526,7 @@ class Mount:
                 'pointing_instrument': str(self.inst),  # needs fixing
                 'is_parked': self.mount.AtPark,     #  Send strings to AWS so JSON does not change case  Wrong. 20211202 'False' evaluates to True
                 'is_tracking': self.mount.Tracking,
-                'is_slewing': self.mount.Slewing,
+                #'is_slewing': self.mount.Slewing,
                 'message': str(self.mount_message[:54]),
                 #'site_in_automatic': self.site_in_automatic,
                 #'automatic_detail': str(self.automatic_detail),
@@ -1067,7 +1067,9 @@ class Mount:
         #if self.site == 'sro':   #NB NB NB why this bypass?
         #    self.mount.SlewToCoordinatesAsync(ra_app_h, dec_app_d)
         #else:
+        breakpoint()
         self.mount.SlewToCoordinatesAsync(self.ra_mech*RTOH, self.dec_mech*RTOD)  #Is this needed?
+        
         ###  figure out velocity  Apparent place is unchanged.
         self.sid_next_r = (self.sid_now_h + self.delta_t_s*STOH)*HTOR    #delta_t_s is five minutes
         self.ha_obs_adv, self.dec_obs_adv, self.refr_adv = ptr_utility.appToObsRaHa(ra_app_h*HTOR, dec_app_d*DTOR, self.sid_next_r)   #% minute advance

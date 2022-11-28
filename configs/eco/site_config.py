@@ -41,7 +41,7 @@ site_config = {
     'alt_path':  'C:/ptr/',  # Generic place for this host to stash misc stuff
     'save_to_alt_path' : 'no',
     'archive_path':  'C:/ptr/',  # Meant to be where /archive/<camera_id> is added by camera.
-    'archive_age' : 14.0, # Number of days to keep files in the local archive before deletion. Negative means never delete
+    'archive_age' : 2.0, # Number of days to keep files in the local archive before deletion. Negative means never delete
     'send_files_at_end_of_night' : 'no', # For low bandwidth sites, do not send up large files until the end of the night. set to 'no' to disable
     'aux_archive_path':  None, # '//house-computer/saf_archive_2/archive/',  #  Path to auxillary backup disk.
     'wema_is_active':  False,    #True if split computers used at a site.
@@ -84,11 +84,11 @@ site_config = {
     'automatic_detail_default': "Enclosure is initially set to Automatic mode.",
     'observing_check_period' : 5,    # How many minutes between weather checks
     'enclosure_check_period' : 5,    # How many minutes between enclosure checks
-    'auto_eve_bias_dark': True,
-    'auto_eve_sky_flat': True,
+    'auto_eve_bias_dark': False,
+    'auto_eve_sky_flat': False,
     'eve_sky_flat_sunset_offset': -32.5,  #  Minutes  neg means before, + after.
-    'auto_morn_sky_flat': True,
-    'auto_morn_bias_dark': True,
+    'auto_morn_sky_flat': False,
+    'auto_morn_bias_dark': False,
     're-calibrate_on_solve': True,
     'pointing_calibration_on_startup': False,
     'periodic_focus_time' : 0.5, # This is a time, in hours, over which to bypass automated focussing (e.g. at the start of a project it will not refocus if a new project starts X hours after the last focus)
