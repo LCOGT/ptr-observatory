@@ -90,8 +90,8 @@ site_config = {
     'site_roof_control': 'no', #MTF entered this in to remove sro specific code.... Basically do we have control of the roof or not see line 338 sequencer.py
     'site_in_automatic_default': "Automatic",   #  ["Manual", "Shutdown", "Automatic"]
     'automatic_detail_default': "Enclosure is Autonmous, under Owner control.",
-    'observing_check_period' : 1,    # How many minutes between weather checks
-    'enclosure_check_period' : 1,    # How many minutes between enclosure checks
+    'observing_check_period' : 3,    # How many minutes between weather checks
+    'enclosure_check_period' : 3,    # How many minutes between enclosure checks
 
     'auto_eve_bias_dark': True,
     'auto_eve_sky_flat': True,
