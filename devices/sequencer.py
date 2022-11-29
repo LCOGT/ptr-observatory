@@ -335,7 +335,7 @@ class Sequencer:
                 # Move to reasonable spot
                 g_dev['mnt'].mount.Tracking = True
 
-                g_dev['mnt'].mount.SlewToAltAzAsync(90, 70)
+                g_dev['mnt'].move_to_altaz(90, 70)
                 g_dev['foc'].time_of_last_focus = datetime.datetime.now() - datetime.timedelta(
                     days=1
                 )  # Initialise last focus as yesterday
@@ -645,9 +645,10 @@ class Sequencer:
                 else:
                     smartstackswitch='no'
 
-            except:
-                print ("Could not execute project due to poorly formatted or corrupt RA or Dec in project_targets")
-                g_dev['obs'].send_to_user("Could not execute project due to poorly formatted or corrupt RA or Dec in project_targets", p_level='INFO')
+            except Exception as e:                
+                print ("Could not execute project due to poorly formatted or corrupt project")
+                print (e)
+                g_dev['obs'].send_to_user("Could not execute project due to poorly formatted or corrupt project", p_level='INFO')
                 continue
 
             if enc_status['shutter_status'] in ['Closed', 'closed'] and ocn_status['hold_duration'] <= 0.1:   #NB  # \  NB NB 20220901 WER fix this!
