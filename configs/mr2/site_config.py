@@ -117,13 +117,10 @@ site_config = {
     'automatic_detail_default': "Enclosure is set to Automatic mode.",
     'observing_check_period' : 2,    # How many minutes between weather checks
     'enclosure_check_period' : 2,    # How many minutes between enclosure checks
-<<<<<<< Updated upstream
-    'auto_eve_bias_dark': True,
-    'auto_eve_sky_flat': True,
-=======
+
     'auto_eve_bias_dark': False,
     'auto_eve_sky_flat': False,
->>>>>>> Stashed changes
+
     'eve_sky_flat_sunset_offset': -60.,  #  Minutes  neg means before, + after.
     'auto_morn_sky_flat': False,
     'auto_morn_bias_dark': True,
@@ -240,6 +237,7 @@ site_config = {
             'west_clutch_ra_correction': 0.0,
             'west_clutch_dec_correction': 0.0,
             'has_paddle': False,    #or a string that permits proper configuration.
+            'has_ascom_altaz': True,
             'pointing_tel': 'tel1',     #This can be changed to 'tel2' by user.  This establishes a default.
             'Selector':{
                 'available': False,         #If True add these lines;

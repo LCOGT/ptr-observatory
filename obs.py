@@ -325,7 +325,6 @@ class Observatory:
         self.config["events"] = g_dev["events"]
         
         response = g_dev["obs"].api.authenticated_request("PUT", uri, self.config)
-        
         if 'message' in response:
             if response['message'] == "Missing Authentication Token":
                 print ("Missing Authentication Token. Config unable to be uploaded. Please fix this now.")
@@ -333,8 +332,16 @@ class Observatory:
             else:
                 print ("There may be a problem in the config upload? Here is the response.")
                 print (response)
-        else:            
-            plog("Config uploaded successfully.")
+        elif 'ResponseMetadata' in response:
+            #print(response['ResponseMetadata']['HTTPStatusCode'])
+            if response['ResponseMetadata']['HTTPStatusCode'] == 200:
+                plog("Config uploaded successfully.")
+            else:
+                print ("Response to site config upload unclear. Here is the response")
+                print (response)
+        else:
+            print ("Response to site config upload unclear. Here is the response")
+            print (response)
 
     def scan_requests(self, cancel_check=False):
         """Gets commands from AWS, and post a STOP/Cancel flag.
