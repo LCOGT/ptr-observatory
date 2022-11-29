@@ -170,8 +170,7 @@ class Observatory:
             self.redis_wx_enabled = False
             g_dev["redis"] = None  # a placeholder.
 
-        # Send the config to AWS. TODO This has faulted.
-        self.update_config()
+        
 
         # Use the configuration to instantiate objects for all devices.
         self.create_devices()
@@ -243,7 +242,8 @@ class Observatory:
 
         # Need to set this for the night log
         #g_dev['foc'].set_focal_ref_reset_log(self.config["focuser"]["focuser1"]["reference"])
-
+        # Send the config to AWS. TODO This has faulted.
+        self.update_config()
 
     def set_last_reference(self, delta_ra, delta_dec, last_time):
         mnt_shelf = shelve.open(self.site_path + "ptr_night_shelf/" + "last")
@@ -321,10 +321,16 @@ class Observatory:
     def update_config(self):
         """Sends the config to AWS."""
 
-        uri = f"https://api.photonranch.org/dev/{self.name}/config/"
+        uri = f"{self.name}/config/"
         self.config["events"] = g_dev["events"]
-        self.api.authenticated_request("PUT", uri, self.config)
-        plog("Config uploaded successfully.")
+
+        response = g_dev["obs"].api.authenticated_request("PUT", uri, self.config)
+        
+        if response['message'] == "Missing Authentication Token":
+            print ("Missing Authentication Token. Config unable to be uploaded. Please fix this now.")
+            sys.exit()
+        else:            
+            plog("Config uploaded successfully.")
 
     def scan_requests(self, cancel_check=False):
         """Gets commands from AWS, and post a STOP/Cancel flag.
