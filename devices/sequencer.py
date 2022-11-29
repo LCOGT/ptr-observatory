@@ -441,6 +441,7 @@ class Sequencer:
                     #     az, alt = transform_haDec_to_azAlt(ha, dec)
                     #     # Do not start a block within 15 min of end time???
                     #plog("Initial length:  ", len(blocks))
+
                     for block in blocks:
                         now_date_timeZ = datetime.datetime.now().isoformat().split('.')[0] +'Z'
                         if not self.block_guard \

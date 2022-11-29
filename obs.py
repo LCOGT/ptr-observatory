@@ -440,8 +440,8 @@ class Observatory:
                         plog(traceback.format_exc())
 
                         plog("Exception in obs.scan_requests:  ", e, 'cmd:  ', cmd)
-                 url_blk = "https://calendar.photonranch.org/dev/siteevents"
-                #breakpoint()
+                url_blk = "https://calendar.photonranch.org/dev/siteevents"
+
                 body = json.dumps(
                     {
                         "site": self.config["site"],
@@ -674,10 +674,9 @@ class Observatory:
                 filepath = pri_image[1][0] + filename  # Full path to file on disk
                 #  NB NB NB This looks like a redundant send
                 tt = time.time()
-                
                 aws_resp = g_dev["obs"].api.authenticated_request(
                     "POST", "/upload/", {"object_name": filename})
-                plog('The first phase took:  ', round(time.time() - tt, 1), ' sec.')
+                plog('The setup phase took:  ', round(time.time() - tt, 1), ' sec.')
 
                 # Only ingest new large fits.fz files to the PTR archive.
                 print (self.env_exists)
@@ -1250,12 +1249,12 @@ class Observatory:
                                     round(err_dec * 3600, 2),
                                 )  # NB WER changed units 20221012
                                 try:
-                                    f_err_dec = err_dec*math.cos(math.radians(solved_dec))
+                                    f_err_ha = err_ha*math.cos(math.radians(solved_dec))
                                     plog(
-                                        " **field** error in ra, dec:  (asec) ",      
-                                        round(err_ha * 15 * 3600, 2),
-                                        round(f_err_dec * 3600, 2),
-                                    )  # NB WER changed units 20221012
+                                        " *field* error in ra, dec:  (asec) ",      
+                                        round(f_err_ha * 15 * 3600, 2),
+                                        round(err_dec * 3600, 2),
+                                    )  # NB WER changed to apply to err_ha
                                 except:
                                         pass
                                 # We do not want to reset solve timers during a smartStack
