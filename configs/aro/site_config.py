@@ -219,7 +219,8 @@ site_config = {
             'driver': 'AstroPhysicsV2.Telescope',
             'alignment': 'Equatorial',
             'default_zenith_avoid': 0.0,   # degrees floating, 0.0 means do not apply this constraint.
-            'has_paddle': False,       # paddle refers to something supported by the Python code, not the AP paddle.
+            'has_paddle': False,      #paddle refers to something supported by the Python code, not the AP paddle.
+            'has_ascom_altaz': True,
             'pointing_tel': 'tel1',     # This can be changed to 'tel2'... by user.  This establishes a default.
   #
             'permissive_mount_reset' : 'no', # if this is set to yes, it will reset the mount at startup and when coordinates are out significantly

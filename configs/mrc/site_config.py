@@ -257,6 +257,7 @@ site_config = {
             'east_flip_dec_correction': 0.0,  #
             'permissive_mount_reset' : 'no', # if this is set to yes, it will reset the mount at startup and when coordinates are out significantly
             'has_paddle': False,
+            'has_ascom_altaz': True,
             'pointing_tel': 'tel1',
             'Selector':{
                 'available': False,         #If True add these lines;

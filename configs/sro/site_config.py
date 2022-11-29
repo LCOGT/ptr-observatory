@@ -217,6 +217,7 @@ site_config = {
             'alignment': 'Equatorial',
             'default_zenith_avoid': 0.0,   #degrees floating, 0.0 means do not apply this constraint.
             'has_paddle': False,      #paddle refers to something supported by the Python code, not the AP paddle.
+            'has_ascom_altaz': True,
             'pointing_tel': 'tel1',     #This can be changed to 'tel2'... by user.  This establishes a default.
             'west_clutch_ra_correction':  0.0, #
             'west_clutch_dec_correction': 0.0, #

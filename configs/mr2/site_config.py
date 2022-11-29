@@ -236,6 +236,7 @@ site_config = {
             'west_clutch_ra_correction': 0.0,
             'west_clutch_dec_correction': 0.0,
             'has_paddle': False,    #or a string that permits proper configuration.
+            'has_ascom_altaz': True,
             'pointing_tel': 'tel1',     #This can be changed to 'tel2' by user.  This establishes a default.
             'Selector':{
                 'available': False,         #If True add these lines;
