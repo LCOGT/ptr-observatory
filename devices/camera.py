@@ -1659,7 +1659,7 @@ class Camera:
                         hdu.header["XBINING"] = (1, "Pixel binning in x direction")
                         hdu.header["YBINING"] = (1, "Pixel binning in y direction")
 
-                    hdu.header['CONFMODE'] = (True,  "WAG as to what value shoudl be. WER")
+                    hdu.header['CONFMODE'] = ('default',  'LCO Configuration Mode')
                     hdu.header["DOCOSMIC"] = (
                         self.config["camera"][self.name]["settings"]["cosmics_at_default"],
                         "Header item to indicate whether to do cosmic ray removal",
