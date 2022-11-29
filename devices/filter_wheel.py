@@ -393,7 +393,7 @@ class FilterWheel:
             len(self.filter_data)
         ):  # NB Filter count MUST be correct in Config.
 
-            print(self.filter_data[match][0].lower())
+            #print(self.filter_data[match][0].lower())
             if filter_name in str(self.filter_data[match][0]).lower():
                 filt_pointer = match
                 filter_identified = 1
