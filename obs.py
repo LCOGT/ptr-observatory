@@ -323,12 +323,16 @@ class Observatory:
 
         uri = f"{self.name}/config/"
         self.config["events"] = g_dev["events"]
-
+        
         response = g_dev["obs"].api.authenticated_request("PUT", uri, self.config)
         
-        if response['message'] == "Missing Authentication Token":
-            print ("Missing Authentication Token. Config unable to be uploaded. Please fix this now.")
-            sys.exit()
+        if 'message' in response:
+            if response['message'] == "Missing Authentication Token":
+                print ("Missing Authentication Token. Config unable to be uploaded. Please fix this now.")
+                sys.exit()
+            else:
+                print ("There may be a problem in the config upload? Here is the response.")
+                print (response)
         else:            
             plog("Config uploaded successfully.")
 
