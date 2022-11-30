@@ -2835,16 +2835,16 @@ class Camera:
 
                         # Resizing the array to an appropriate shape for the jpg and the small fits
                         iy, ix = hdusmall.data.shape
-                        if iy == ix:
-                            hdusmall.data = resize(
-                                hdusmall.data, (1280, 1280), preserve_range=True
-                            )
-                        else:
-                            hdusmall.data = resize(
-                                hdusmall.data,
-                                (int(1536 * iy / ix), 1536),
-                                preserve_range=True,
-                            )  #  We should trim chips so ratio is exact.
+                        # if iy == ix:
+                        #     hdusmall.data = resize(
+                        #         hdusmall.data, (1280, 1280), preserve_range=True
+                        #     )
+                        # else:
+                        #     hdusmall.data = resize(
+                        #         hdusmall.data,
+                        #         (int(1536 * iy / ix), 1536),
+                        #         preserve_range=True,
+                        #     )  #  We should trim chips so ratio is exact.
 
                         # At this stage, the small fits is created ready to be saved, but not saved
                         # until after the jpg has gone up.
