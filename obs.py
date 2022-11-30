@@ -731,8 +731,8 @@ class Observatory:
                             try:
                                 aws_resp = g_dev["obs"].api.authenticated_request(
                                     "POST", "/upload/", {"object_name": filename})
-                                requests.post(aws_resp["url"], data=aws_resp["fields"], files=files)
-                                break
+                                #requests.post(aws_resp["url"], data=aws_resp["fields"], files=files)
+                                #break
 
                                 #tt = time.time()
                                 print ("attempting aws@  ", tt)
@@ -765,15 +765,14 @@ class Observatory:
                             time.sleep(5)
                      
                 os.remove(filepath)
-                # if (
-                #     filename[-3:] == "jpg"
-                #     or filename[-3:] == "txt"
-                #     or ".fits.fz" in filename
-                #     or ".token" in filename
-                # ):
-                #     os.remove(filepath)
+                if (
+                    filename[-3:] == "jpg"
+                    or filename[-3:] == "txt"
+                    or ".fits.fz" in filename
+                    or ".token" in filename
+                ):
+                    os.remove(filepath)
 
-                #self.aws_queue.task_done()
                 one_at_a_time = 0
                 time.sleep(0.1)
             else:
