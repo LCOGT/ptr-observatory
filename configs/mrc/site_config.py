@@ -103,8 +103,8 @@ site_config = {
 
     'TZ_database_name':  'America/Los_Angeles',
     'mpc_code':  'ZZ23',    #This is made up for now.
-    'time_offset':  -7,
-    'timezone': 'PDT',
+    'time_offset':  -8,
+    'timezone': 'PST',
     'latitude': 34.459375,     #Decimal degrees, North is Positive
     'longitude': -119.681172,   #Decimal degrees, West is negative
     'elevation': 317.75,    # meters above sea level
@@ -118,7 +118,7 @@ site_config = {
     'enclosure_check_period' : 2,    # How many minutes between enclosure checks
 
     'auto_eve_bias_dark': True,
-    'auto_eve_sky_flat': True,
+    'auto_eve_sky_flat': False,
     'eve_sky_flat_sunset_offset': -60.,  #  Minutes  neg means before, + after.
     'auto_morn_sky_flat': True,
     'auto_morn_bias_dark': True,
@@ -257,6 +257,7 @@ site_config = {
             'east_flip_dec_correction': 0.0,  #
             'permissive_mount_reset' : 'no', # if this is set to yes, it will reset the mount at startup and when coordinates are out significantly
             'has_paddle': False,
+            'has_ascom_altaz': True,
             'pointing_tel': 'tel1',
             'Selector':{
                 'available': False,         #If True add these lines;

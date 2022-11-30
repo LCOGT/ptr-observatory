@@ -194,6 +194,10 @@ modelChanged = False
 last_args = ()
 
 def plog(*args, loud = True):
+    '''
+    loud not used, consider adding an optional incoming module
+    and error level, also make file format compatible with csv.
+    '''
 
     try:
         if len(args) == 1 and args[0] in ['.', '>']:

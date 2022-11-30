@@ -1320,7 +1320,8 @@ class Camera:
                                 try:
                                     g_dev["rot"].get_quick_status(self.pre_rot)
                                 except:
-                                    plog("There is perhaps no rotator")
+                                    #plog("There is perhaps no rotator")
+                                    pass
 
                                 g_dev["mnt"].get_quick_status(
                                     self.pre_mnt
@@ -1525,7 +1526,8 @@ class Camera:
             try:
                 pier_side = g_dev["mnt"].mount.sideOfPier
             except:
-                plog("Mount doesn't use pierside")
+                pass
+                #plog("Mount doesn't use pierside")
 
             if (not self.use_file_mode and self._imageavailable()) or (
                 self.use_file_mode and len(incoming_image_list) >= 1
@@ -1612,13 +1614,15 @@ class Camera:
                         self.pre_rot, self.post_rot
                     )
                 except:
-                    plog("No Rotator")
+                    pass
+                    #plog("No Rotator")
                 try:
                     avg_ocn = g_dev["ocn"].get_average_status(
                         self.pre_ocn, self.post_ocn
                     )
                 except:
-                    plog("no ocn")
+                    pass
+                    #plog("no ocn")
 
                 try:
 
@@ -2385,6 +2389,12 @@ class Camera:
                         pass
 
 
+                    text = open(
+                        im_path + text_name, "w"
+                    )  # This is needed by AWS to set up database.
+                    text.write(str(hdu.header))   #This causes the Warning output. 
+                    text.close()
+
                     paths = {
                         "im_path": im_path,
                         "raw_path": raw_path,
@@ -3066,7 +3076,8 @@ class Camera:
                     try:
                         result["mean_rotation"] = avg_rot[1]
                     except:
-                        plog("we ain't got no rotator matey")
+                        pass
+                        #plog("we ain't got no rotator matey")
                     if not focus_image:
                         result["FWHM"] = None
                     result["half_FD"] = None

@@ -89,7 +89,7 @@ class Observatory:
         # This is the ayneclass through which we can make authenticated api calls.
         self.api = API_calls()
 
-        self.command_interval = 0  # seconds between polls for new commands
+        self.command_interval = 0 # seconds between polls for new commands
         self.status_interval = 0  # NOTE THESE IMPLEMENTED AS A DELTA NOT A RATE.
 
         self.name = name  # NB NB NB Names needs a once-over.
@@ -170,8 +170,7 @@ class Observatory:
             self.redis_wx_enabled = False
             g_dev["redis"] = None  # a placeholder.
 
-        # Send the config to AWS. TODO This has faulted.
-        self.update_config()
+        
 
         # Use the configuration to instantiate objects for all devices.
         self.create_devices()
@@ -243,7 +242,8 @@ class Observatory:
 
         # Need to set this for the night log
         #g_dev['foc'].set_focal_ref_reset_log(self.config["focuser"]["focuser1"]["reference"])
-
+        # Send the config to AWS. TODO This has faulted.
+        self.update_config()
 
     def set_last_reference(self, delta_ra, delta_dec, last_time):
         mnt_shelf = shelve.open(self.site_path + "ptr_night_shelf/" + "last")
@@ -321,10 +321,27 @@ class Observatory:
     def update_config(self):
         """Sends the config to AWS."""
 
-        uri = f"https://api.photonranch.org/dev/{self.name}/config/"
+        uri = f"{self.name}/config/"
         self.config["events"] = g_dev["events"]
-        self.api.authenticated_request("PUT", uri, self.config)
-        plog("Config uploaded successfully.")
+        
+        response = g_dev["obs"].api.authenticated_request("PUT", uri, self.config)
+        if 'message' in response:
+            if response['message'] == "Missing Authentication Token":
+                print ("Missing Authentication Token. Config unable to be uploaded. Please fix this now.")
+                sys.exit()
+            else:
+                print ("There may be a problem in the config upload? Here is the response.")
+                print (response)
+        elif 'ResponseMetadata' in response:
+            #print(response['ResponseMetadata']['HTTPStatusCode'])
+            if response['ResponseMetadata']['HTTPStatusCode'] == 200:
+                plog("Config uploaded successfully.")
+            else:
+                print ("Response to site config upload unclear. Here is the response")
+                print (response)
+        else:
+            print ("Response to site config upload unclear. Here is the response")
+            print (response)
 
     def scan_requests(self, cancel_check=False):
         """Gets commands from AWS, and post a STOP/Cancel flag.
@@ -349,7 +366,7 @@ class Observatory:
         # This stopping mechanism allows for threads to close cleanly.
         while not self.stopped:
 
-            if not g_dev["seq"].sequencer_hold:
+            if  True:  #not g_dev["seq"].sequencer_hold:  THis causes an infinte loope witht he above while
                 url_job = "https://jobs.photonranch.org/jobs/getnewjobs"
                 body = {"site": self.name}
                 cmd = {}
@@ -371,13 +388,15 @@ class Observatory:
                     for cmd in unread_commands:
                         if cmd["action"] in ["cancel_all_commands", "stop"]:
                             g_dev["obs"].stop_all_activity = True
+                            plog("Stop_all_activity is now set True.")
                             self.send_to_user(
-                                "Cancel/Stop received. Exposure stopped, will begin readout then discard image."
+                                "Cancel/Stop received. Exposure stopped, camera may begin readout, then will discard image."
                             )
                             self.send_to_user(
                                 "Pending reductions and transfers to the PTR Archive are not affected."
                             )
                             # Empty the queue
+
                             try:
                                 if g_dev["cam"].exposure_busy:
                                     g_dev["cam"]._stop_expose()
@@ -431,20 +450,25 @@ class Observatory:
                     device = self.all_devices[device_type][device_instance]
                     try:
                         #plog("Trying to parse:  ", cmd)
+
                         device.parse_command(cmd)
                     except Exception as e:
+
                         plog(traceback.format_exc())
-                        plog("Exception in obs.scan_requests:  ", e)
+
+                        plog("Exception in obs.scan_requests:  ", e, 'cmd:  ', cmd)
                 url_blk = "https://calendar.photonranch.org/dev/siteevents"
-                #breakpoint()
+                start_aperture = str(g_dev['events']['Eve Sky Flats']).split()
+                close_aperture = str(g_dev['events']['End Morn Sky Flats']).split()
                 body = json.dumps(
                     {
                         "site": self.config["site"],
-                        "start": g_dev["d-a-y"] + "T00:00:00Z",
-                        "end": g_dev["next_day"] + "T23:59:59Z",
+                        "start": start_aperture[0] +'T' + start_aperture[1] +'Z',
+                        "end": close_aperture[0] +'T' + close_aperture[1] +'Z',
                         "full_project_details:": False,
                     }
                 )
+
                 if (
                     True
                 ):  # self.blocks is None: # This currently prevents pick up of calendar changes.
@@ -478,10 +502,10 @@ class Observatory:
                 return  # This creates an infinite loop
 
             else:
-                # What we really want here is looking for a Cancel/Stop.
+                
                 continue
 
-    def update_status(self):
+    def update_status(self, bpt=False):
         """Collects status from all devices and sends an update to AWS.
 
         Each device class is responsible for implementing the method
@@ -491,6 +515,9 @@ class Observatory:
 
         # This stopping mechanism allows for threads to close cleanly.
         loud = False
+        if bpt:
+            print('UpdateStatus bpt was invoked.')
+            breakpoint()
 
         # Wait a bit between status updates
         while time.time() < self.time_last_status + self.status_interval:
@@ -569,11 +596,6 @@ class Observatory:
         except:
             pass
         loud = False
-        if loud:
-            plog("\n\nStatus Sent:  \n", status)
-        else:
-            plog(".")  # We print this to stay informed of process on the console.
-
         # Consider inhibity unless status rate is low
         obsy = self.name
         if ocn_status is not None:
@@ -585,13 +607,16 @@ class Observatory:
         if device_status is not None:
             lane = "device"
             send_status(obsy, lane, device_status)
-
+        if loud:
+            plog("\n\nStatus Sent:  \n", status)
+        else:
+            plog(".")  # We print this to stay informed of process on the console.
         # NB should qualify acceptance and type '.' at that point.
         self.time_last_status = time.time()
         self.status_count += 1
         try:
-            self.scan_requests(
-                "mount1", cancel_check=True
+
+            self.scan_requests(cancel_check=True
             )  # NB THis has faulted, usually empty input lists.
         except:
             pass
@@ -602,9 +627,6 @@ class Observatory:
         called. It first SENDS status for all devices to AWS, then it checks for any new
         commands from AWS. Then it calls sequencer.monitor() were jobs may get launched. A
         flaw here is we do not have a Ulid for the 'Job number'.
-
-        With a Maxim based camera, is it possible for the owner to push buttons in parallel
-        with commands coming from AWS. This is useful during the debugging phase.
 
         Sequences that are self-dispatched primarily relate to biases, darks, screen and sky
         flats, opening and closing. Status for these jobs is reported via the normal
@@ -673,25 +695,59 @@ class Observatory:
                 filename = pri_image[1][1]
                 filepath = pri_image[1][0] + filename  # Full path to file on disk
 
+                #  NB NB NB This looks like a redundant send
+                tt = time.time()
+                #aws_resp = g_dev["obs"].api.authenticated_request(
+                #    "POST", "/upload/", {"object_name": filename})
+                #plog('The setup phase took:  ', round(time.time() - tt, 1), ' sec.')
+
+
                 # Only ingest new large fits.fz files to the PTR archive.
-                if self.env_exists == True and filename.endswith("-EX00.fits.fz"):
+                print (self.env_exists)
+                if filename.endswith("-EX00.fits.fz"):
                     with open(filepath, "rb") as fileobj:
-                        try:
-                            if not frame_exists(fileobj):
+                        print (frame_exists(fileobj))
+                        tempPTR=0
+                        if self.env_exists == True and (not frame_exists(fileobj)):
+                            print ("attempting ingester")
+                            try:
+                                #tt = time.time()
+                                print ("attempting ingest to aws@  ", tt)
                                 upload_file_and_ingest_to_archive(fileobj)
+                                print ("did ingester")
                                 plog(f"--> To PTR ARCHIVE --> {str(filepath)}")
-                            # If ingester fails, send to default S3 bucket.
-                        except:
+                                plog('*.fz ingestion took:  ', round(time.time() - tt, 1), ' sec.')
+                                self.aws_queue.task_done()
+                                
+                                tempPTR=1
+                            except Exception as e:
+                                print ("couldn't send to PTR archive for some reason")
+                                #print (e)
+                                #print (print (traceback.format_exc()))
+                                tempPTR=0
+                        # If ingester fails, send to default S3 bucket.
+                        if tempPTR ==0:
                             files = {"file": (filepath, fileobj)}
                             try:
                                 aws_resp = g_dev["obs"].api.authenticated_request(
                                     "POST", "/upload/", {"object_name": filename})
                                 requests.post(aws_resp["url"], data=aws_resp["fields"], files=files)
                                 break
+
+                                #tt = time.time()
+                                print ("attempting aws@  ", tt)
+                                req_resp = requests.post(aws_resp["url"], data=aws_resp["fields"], files=files)
+                                print ("did aws", req_resp)
+                                plog(f"--> To AWS --> {str(filepath)}")
+                                plog('*.fz transfer took:  ', round(time.time() - tt, 1), ' sec.')
+                                self.aws_queue.task_done()
+                                
+                                #break
+
                             except:
                                 print ("Connection glitch for the request post, waiting a moment and trying again")
                                 time.sleep(5)
-                            plog(f"--> To AWS --> {str(filepath)}")
+                            
                 # Send all other files to S3.
                 else:
                     with open(filepath, "rb") as fileobj:
@@ -700,21 +756,24 @@ class Observatory:
                             aws_resp = g_dev["obs"].api.authenticated_request(
                                 "POST", "/upload/", {"object_name": filename})
                             requests.post(aws_resp["url"], data=aws_resp["fields"], files=files)
-                            break
+                            plog(f"--> To AWS --> {str(filepath)}")
+                            self.aws_queue.task_done()
+                            
+                            #break
                         except:
                             print ("Connection glitch for the request post, waiting a moment and trying again")
                             time.sleep(5)
-                        plog(f"--> To AWS --> {str(filepath)}")
+                     
+                os.remove(filepath)
+                # if (
+                #     filename[-3:] == "jpg"
+                #     or filename[-3:] == "txt"
+                #     or ".fits.fz" in filename
+                #     or ".token" in filename
+                # ):
+                #     os.remove(filepath)
 
-                if (
-                    filename[-3:] == "jpg"
-                    or filename[-3:] == "txt"
-                    or ".fits.fz" in filename
-                    or ".token" in filename
-                ):
-                    os.remove(filepath)
-
-                self.aws_queue.task_done()
+                #self.aws_queue.task_done()
                 one_at_a_time = 0
                 time.sleep(0.1)
             else:
@@ -752,34 +811,19 @@ class Observatory:
                 aws_resp = g_dev["obs"].api.authenticated_request(
                     "POST", "/upload/", {"object_name": filename})
                 # Only ingest new large fits.fz files to the PTR archive.
-                if self.env_exists == True and filename.endswith("-EX00.fits.fz"):
-                    with open(filepath, "rb") as fileobj:
-                        try:
-                            if not frame_exists(fileobj):
-                                upload_file_and_ingest_to_archive(fileobj)
-                                plog(f"--> To PTR ARCHIVE --> {str(filepath)}")
-                            # If ingester fails, send to default S3 bucket.
-                        except:
-                            files = {"file": (filepath, fileobj)}
-                            try:
-                                requests.post(aws_resp["url"], data=aws_resp["fields"], files=files)
-                                break
-                            except:
-                                print ("Connection glitch for the request post, waiting a moment and trying again")
-                                time.sleep(5)
-                            plog(f"--> To AWS --> {str(filepath)}")
+                
                 # Send all other files to S3.
-                else:
-                    with open(filepath, "rb") as fileobj:
-                        files = {"file": (filepath, fileobj)}
-                        while True:
-                            try:
-                                requests.post(aws_resp["url"], data=aws_resp["fields"], files=files)
-                                break
-                            except:
-                                print ("Connection glitch for the request post, waiting a moment and trying again")
-                                time.sleep(5)
-                        plog(f"--> To AWS --> {str(filepath)}")
+                
+                with open(filepath, "rb") as fileobj:
+                    files = {"file": (filepath, fileobj)}
+                    while True:
+                        try:
+                            requests.post(aws_resp["url"], data=aws_resp["fields"], files=files)
+                            break
+                        except:
+                            print ("Connection glitch for the request post, waiting a moment and trying again")
+                            time.sleep(5)
+                    plog(f"--> To AWS --> {str(filepath)}")
 
                 if (
                     filename[-3:] == "jpg"
@@ -860,12 +904,27 @@ class Observatory:
                     ssframenumber = str(img[0].header["FRAMENUM"])
                     img.close()
                     del img
-                    img=np.asarray(imgdata)
-                    del imgdata
-                    # imgdata = (
-                    #     imgdata - np.min(imgdata)
-                    # ) + 100  # Add an artifical pedestal to background.
-                    # imgdata = imgdata.astype("float")
+                    sstackimghold=np.asarray(imgdata)
+                    imgdata = (
+                        imgdata - np.min(imgdata)
+                    ) + 100  # Add an artifical pedestal to background.
+                    imgdata = imgdata.astype("float")
+
+                    imgdata = imgdata.copy(
+                        order="C"
+                    )  # NB Should we move this up to where we read the array?
+                    bkg = sep.Background(imgdata)
+                    imgdata -= bkg
+
+                    try:
+                        sep.set_extract_pixstack(1000000)
+                        sources = sep.extract(
+                            imgdata, 4.5, err=bkg.globalrms, minarea=15
+                        )  # Minarea should deal with hot pixels.
+                        ix, iy = imgdata.shape
+                        del imgdata
+                        sources.sort(order="cflux")
+                        plog("No. of detections:  ", len(sources))
 
                     # imgdata = imgdata.copy(
                     #     order="C"
@@ -873,61 +932,63 @@ class Observatory:
                     # bkg = sep.Background(imgdata)
                     # imgdata -= bkg
 
-                    # try:
-                    #     sep.set_extract_pixstack(1000000)
-                    #     sources = sep.extract(
-                    #         imgdata, 4.5, err=bkg.globalrms, minarea=15
-                    #     )  # Minarea should deal with hot pixels.
-                    #     ix, iy = imgdata.shape
+                        if len(sources) < 20:
+                            print ("skipping focus estimate as not enough sources in this image")
 
-                    #     sources.sort(order="cflux")
-                    #     plog("No. of detections:  ", len(sources))
+                        else:
 
 
-                    #     if len(sources) < 20:
-                    #         print ("skipping focus estimate as not enough sources in this image")
-                    #         del imgdata
-                    #     else:
+                            border_x = int(ix * 0.05)
+                            border_y = int(iy * 0.05)
+                            r0 = []
+                            for sourcef in sources:
+                                if (
+                                    border_x < sourcef["x"] < ix - border_x
+                                    and border_y < sourcef["y"] < iy - border_y
+                                    and 1000 < sourcef["peak"] < 35000
+                                    and 1000 < sourcef["cpeak"] < 35000
+                                ):  # Consider a lower bound
+                                    a0 = sourcef["a"]
+                                    b0 = sourcef["b"]
+                                    r0.append(round(math.sqrt(a0 * a0 + b0 * b0)*2, 2))
 
-                    #         #r0 = 0
+                            FWHM = round(
+                                np.median(r0) * pixscale, 3
+                            )  # was 2x larger but a and b are diameters not radii
+                            print("This image has a FWHM of " + str(FWHM))
 
-                    #         border_x = int(ix * 0.05)
-                    #         border_y = int(iy * 0.05)
-                    #         r0 = []
-                    #         xcoords=[]
-                    #         ycoords=[]
-                    #         acoords=[]
-                    #         for sourcef in sources:
-                    #             if (
-                    #                 border_x < sourcef["x"] < ix - border_x
-                    #                 and border_y < sourcef["y"] < iy - border_y
-                    #                 and 1000 < sourcef["peak"] < 35000
-                    #                 and 1000 < sourcef["cpeak"] < 35000
-                    #             ):  # Consider a lower bound
-                    #                 a0 = sourcef["a"]
-                    #                 b0 = sourcef["b"]
-                    #                 r0.append(round(math.sqrt(a0 * a0 + b0 * b0)*2, 2))
-                    #                 xcoords.append(sourcef["x"])
-                    #                 ycoords.append(sourcef["y"])
-                    #                 acoords.append(sourcef["a"])
+                            g_dev["foc"].focus_tracker.pop(0)
+                            g_dev["foc"].focus_tracker.append(FWHM)
+                            print("Last ten FWHM : ")
+                            print(g_dev["foc"].focus_tracker)
+                            print("Median last ten FWHM")
+                            print(np.nanmedian(g_dev["foc"].focus_tracker))
+                            print("Last solved focus FWHM")
+                            print(g_dev["foc"].last_focus_fwhm)
 
-                    #         rfr, _ = sep.flux_radius(imgdata, xcoords, ycoords, acoords, 0.5, subpix=5)
-                    #         rfr = np.median(rfr * 2) * pixscale
-                    #         #print ("flux radius = " + sep.flux_radius(imgdata, xcoords, ycoords, acoords, 0.5, subpix=5))
-                    #         del imgdata
-                    #         FWHM = round(
-                    #             np.median(r0) * pixscale, 3
-                    #         )  # was 2x larger but a and b are diameters not radii
-                    #         #print("This image has a FWHM of " + str(FWHM))
-                    #         print("This image has a FWHM of " + str(rfr))
-                    #         g_dev["foc"].focus_tracker.pop(0)
-                    #         g_dev["foc"].focus_tracker.append(rfr)
-                    #         print("Last ten FWHM : ")
-                    #         print(g_dev["foc"].focus_tracker)
-                    #         print("Median last ten FWHM")
-                    #         print(np.nanmedian(g_dev["foc"].focus_tracker))
-                    #         print("Last solved focus FWHM")
-                    #         print(g_dev["foc"].last_focus_fwhm)
+                            # If there hasn't been a focus yet, then it can't check it, so make this image the last solved focus.
+                            if g_dev["foc"].last_focus_fwhm == None:
+                                g_dev["foc"].last_focus_fwhm = FWHM
+                            else:
+                                # Very dumb focus slip deteector
+                                if (
+                                    np.nanmedian(g_dev["foc"].focus_tracker)
+                                    > g_dev["foc"].last_focus_fwhm
+                                    + self.config["focus_trigger"]
+                                ):
+                                    g_dev["foc"].focus_needed = True
+                                    g_dev["obs"].send_to_user(
+                                        "Focus has drifted to "
+                                        + str(np.nanmedian(g_dev["foc"].focus_tracker))
+                                        + " from "
+                                        + str(g_dev["foc"].last_focus_fwhm)
+                                        + ". Autofocus triggered for next exposures.",
+                                        p_level="INFO",
+                                    )
+                    except:
+                        print ("something failed in the SEP calculations for exposure. This could be an overexposed image")
+                        print (traceback.format_exc())
+                        sources = [0]
 
                     #         # If there hasn't been a focus yet, then it can't check it, so make this image the last solved focus.
                     #         if g_dev["foc"].last_focus_fwhm == None:
@@ -1191,9 +1252,11 @@ class Observatory:
                     ) > datetime.timedelta(
                         minutes=self.config["solve_timer"]
                     ):
+
                         if smartstackid == "no" and len(sources) > 30:
                             try:
-                                time.sleep(1) # A simple wait to make sure file is saved
+
+
                                 solve = platesolve.platesolve(
                                     paths["red_path"] + paths["red_name01"], pixscale
                                 )  # 0.5478)
@@ -1210,14 +1273,22 @@ class Observatory:
                                 solved_rotangledegs = solve["rot_angle_degs"]
                                 err_ha = target_ra - solved_ra
                                 err_dec = target_dec - solved_dec
-                                solved_arcsecperpixel = solve["arcsec_per_pixel"]
-                                solved_rotangledegs = solve["rot_angle_degs"]
+                                #solved_arcsecperpixel = solve["arcsec_per_pixel"]
+                                #solved_rotangledegs = solve["rot_angle_degs"]
                                 plog(
                                     " coordinate error in ra, dec:  (asec) ",
                                     round(err_ha * 15 * 3600, 2),
                                     round(err_dec * 3600, 2),
                                 )  # NB WER changed units 20221012
-
+                                try:
+                                    f_err_ha = err_ha*math.cos(math.radians(solved_dec))
+                                    plog(
+                                        " *field* error in ra, dec:  (asec) ",      
+                                        round(f_err_ha * 15 * 3600, 2),
+                                        round(err_dec * 3600, 2),
+                                    )  # NB WER changed to apply to err_ha
+                                except:
+                                        pass
                                 # We do not want to reset solve timers during a smartStack
                                 self.last_solve_time = datetime.datetime.now()
                                 self.images_since_last_solve = 0

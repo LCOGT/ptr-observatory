@@ -35,6 +35,7 @@ import ptr_events
 from devices.observing_conditions import ObservingConditions
 from devices.enclosure import Enclosure
 from global_yard import g_dev
+from ptr_utility import plog
 
 
 # FIXME: This needs attention once we figure out the restart_obs script.
@@ -53,7 +54,7 @@ def terminate_restart_observer(site_path, no_restart=False):
         print("No observer process was found, starting a new one.")
     # The above routine does not return but does start a process.
     parentPath = Path.cwd()
-    os.system("cmd /c " + str(parentPath) + "\rrestart_obs.bat")
+    os.system("cmd /c " + str(parentPath) + "\restart_obs.bat")
 
     return
 
@@ -65,12 +66,13 @@ def send_status(obsy, column, status_to_send):
     # NB None of the strings can be empty. Otherwise this put faults.
     payload = {"statusType": str(column), "status": status_to_send}
     data = json.dumps(payload)
-    response = requests.post(uri_status, data=data)
+    try:
+        response = requests.post(uri_status, data=data)
 
-    if response.ok:
-        pass
-        #print("Status sent successfully.")
-    else:
+    #if response.ok:
+       # pass
+        print("Status sent successfully.")
+    except:
         print(
             'self.api.authenticated_request("PUT", uri, status):  Failed! ',
             response.status_code,
@@ -84,10 +86,11 @@ class WxEncAgent:
         self.api = API_calls()
 
         # Not relevent for SAF... No commands to Wx are sent by AWS.
-        self.command_interval = 5
+        self.command_interval = 20
 
-        self.status_interval = 5
+        self.status_interval = 45
         self.name = name
+        breakpoint()
         self.site_name = name
         self.config = config
         g_dev["obs"] = self
@@ -177,7 +180,7 @@ class WxEncAgent:
         camShelf.close()
         self.update_config()
         self.create_devices(config)
-        self.time_last_status = time.time()
+        self.time_last_status = time.time() - 60  #forces early status on startup.
         self.loud_status = False
         self.blocks = None
         self.projects = None
@@ -273,20 +276,73 @@ class WxEncAgent:
         obsy = self.name
         if ocn_status is not None:
             lane = "weather"
-            send_status(obsy, lane, ocn_status)  # Do not remove this send for SAF!
-        if enc_status is not None:
-            lane = "enclosure"
-            send_status(obsy, lane, enc_status)
-        if self.name == "mrc":
-            self.name = "mrc2"
-            obsy = self.name
+            #send_status(obsy, lane, ocn_status)  # Do not remove this send for SAF!
             if ocn_status is not None:
                 lane = "weather"
-                send_status(obsy, lane, ocn_status)
+                
+                try:
+                    send_status(obsy, lane, ocn_status)
+                except:
+                    time.sleep(10)
+                    try:
+                        send_status(obsy, lane, ocn_status)
+                    except:
+                        time.sleep(10)
+                        try:
+                            send_status(obsy, lane, ocn_status)
+                        except:
+                            plog("Three Tries to send Wx status for MRC failed.")
+        if enc_status is not None:
+            lane = "enclosure"
+            #send_status(obsy, lane, enc_status)
+            try:
+                time.sleep(2)
+                send_status(obsy, lane, enc_status)
+            except:
+                time.sleep(10)
+                try:
+                    send_status(obsy, lane, enc_status)
+                except:
+                    time.sleep(10)
+                    try:
+                        send_status(obsy, lane, enc_status)
+                    except:
+                        plog("Three Tries to send Enc status for MRC2 failed.")
+            if self.name == "mrc":   #NB  This does not scale, Wema config should has a list of sub-sites.
+                obsy = 'mrc2'        #  or have AWS pick up status from the wema only.
+            if ocn_status is not None:
+                lane = "weather"
+                
+                try:
+                    time.sleep(2)
+                    send_status(obsy, lane, ocn_status)
+                except:
+                    time.sleep(10)
+                    try:
+                        send_status(obsy, lane, ocn_status)
+                    except:
+                        time.sleep(10)
+                        try:
+                            send_status(obsy, lane, ocn_status)
+                        except:
+                            plog("Three Tries to send Wx status for MRC2 failed.")
+                    
 
             if enc_status is not None:
                 lane = "enclosure"
-                send_status(obsy, lane, enc_status)
+                try:
+                    time.sleep(2)
+                    send_status(obsy, lane, enc_status)
+                except:
+                    time.sleep(10)
+                    try:
+                        send_status(obsy, lane, enc_status)
+                    except:
+                        time.sleep(10)
+                        try:
+                            send_status(obsy, lane, enc_status)
+                        except:
+                            plog("Three Tries to send Enc status for MRC2 failed.")
 
         loud = False
         if loud:
@@ -308,7 +364,7 @@ class WxEncAgent:
 
     def update(self):
         self.update_status()
-        time.sleep(1)
+        time.sleep(15)
 
     def run(self):  # run is a poor name for this function.
         """Runs the continuous WEMA process.
