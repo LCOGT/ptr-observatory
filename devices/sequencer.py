@@ -629,6 +629,7 @@ class Sequencer:
 
         for target in block['project']['project_targets']:   #  NB NB NB Do multi-target projects make sense???
             try:
+                #breakpoint()
                 dest_ra = float(target['ra']) - \
                     float(block_specification['project']['project_constraints']['ra_offset'])/15.
 
@@ -1665,6 +1666,8 @@ class Sequencer:
                 spot1 = False
                 foc_pos1 = False
                 print ("spot1 failed in autofocus script")
+
+            print (spot1)
 
             if math.isnan(spot1) or spot1 ==False:
                 retry += 1

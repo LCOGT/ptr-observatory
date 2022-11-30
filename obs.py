@@ -512,6 +512,7 @@ class Observatory:
         `get_status`, which returns a dictionary.
         """
 
+
         # This stopping mechanism allows for threads to close cleanly.
         loud = False
         if bpt:
@@ -560,6 +561,8 @@ class Observatory:
                     else:
                         plog("Running enclosure status check")
                         self.enclosure_status_timer = datetime.datetime.now()
+
+
                         result = device.get_status()
 
                 elif (
@@ -691,11 +694,13 @@ class Observatory:
                 # Here we parse the file, set up and send to AWS
                 filename = pri_image[1][1]
                 filepath = pri_image[1][0] + filename  # Full path to file on disk
+
                 #  NB NB NB This looks like a redundant send
                 tt = time.time()
-                aws_resp = g_dev["obs"].api.authenticated_request(
-                    "POST", "/upload/", {"object_name": filename})
-                plog('The setup phase took:  ', round(time.time() - tt, 1), ' sec.')
+                #aws_resp = g_dev["obs"].api.authenticated_request(
+                #    "POST", "/upload/", {"object_name": filename})
+                #plog('The setup phase took:  ', round(time.time() - tt, 1), ' sec.')
+
 
                 # Only ingest new large fits.fz files to the PTR archive.
                 print (self.env_exists)
@@ -724,6 +729,11 @@ class Observatory:
                         if tempPTR ==0:
                             files = {"file": (filepath, fileobj)}
                             try:
+                                aws_resp = g_dev["obs"].api.authenticated_request(
+                                    "POST", "/upload/", {"object_name": filename})
+                                requests.post(aws_resp["url"], data=aws_resp["fields"], files=files)
+                                break
+
                                 #tt = time.time()
                                 print ("attempting aws@  ", tt)
                                 req_resp = requests.post(aws_resp["url"], data=aws_resp["fields"], files=files)
@@ -733,6 +743,7 @@ class Observatory:
                                 self.aws_queue.task_done()
                                 
                                 #break
+
                             except:
                                 print ("Connection glitch for the request post, waiting a moment and trying again")
                                 time.sleep(5)
@@ -742,6 +753,8 @@ class Observatory:
                     with open(filepath, "rb") as fileobj:
                         files = {"file": (filepath, fileobj)}
                         try:
+                            aws_resp = g_dev["obs"].api.authenticated_request(
+                                "POST", "/upload/", {"object_name": filename})
                             requests.post(aws_resp["url"], data=aws_resp["fields"], files=files)
                             plog(f"--> To AWS --> {str(filepath)}")
                             self.aws_queue.task_done()

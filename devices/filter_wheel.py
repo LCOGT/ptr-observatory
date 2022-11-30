@@ -361,26 +361,26 @@ class FilterWheel:
     def set_name_command(self, req: dict, opt: dict):
         """Sets the filter position by filter name."""
 
-        try:
-            filter_name = str(req["filter_name"]).lower()
-            if filter_name[-5:] in ['(lum)']:
-                filter_name = filter_name[0:-5]  #See below
-            if filter_name[-6:] in [' (lum)', ' (red)', ' (grn)', ' (blu)']:
+        # try:
+        #     filter_name = str(req["filter_name"]).lower()
+        #     if filter_name[-5:] in ['(lum)']:
+        #         filter_name = filter_name[0:-5]  #See below
+        #     if filter_name[-6:] in [' (lum)', ' (red)', ' (grn)', ' (blu)']:
 
-                filter_name = filter_name[0:-6]  #Patch until old configs are flushed 20221120 WER
-        except:
-            try:
+        #         filter_name = filter_name[0:-6]  #Patch until old configs are flushed 20221120 WER
+        # except:
+        #     try:
 
-                filter_name = str(req["filter"]).lower()
-                if filter_name[-6:] in [' (lum)', ' (red)', ' (grn)', ' (blu)']:
-                    filter_name = filter_name[0:-6]   # See above
-            except:
-                plog(
-                    "Unable to set filter position using filter name,\
-                    double-check the filter name dictionary."
-                )
+        #         filter_name = str(req["filter"]).lower()
+        #         if filter_name[-6:] in [' (lum)', ' (red)', ' (grn)', ' (blu)']:
+        #             filter_name = filter_name[0:-6]   # See above
+        #     except:
+        #         plog(
+        #             "Unable to set filter position using filter name,\
+        #             double-check the filter name dictionary."
+        #         )
 
-
+        filter_name = str(req["filter"]).lower()
 
         #print (len(self.filter_data)
 
