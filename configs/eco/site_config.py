@@ -407,23 +407,24 @@ site_config = {
                 'filter_data': [['filter', 'filter_index', 'filter_offset', 'sky_gain', 'screen_gain', 'alias'],  #NB NB NB add cwl & bw in nm.
 
                         #['w',     [0,  0],     0, 72.7, [1.00 ,  72], 'PL'],    #0.   For sequencer autofocus  consider foc or f filter
-                        ['focus', [0,  0],     0, 72.7, [1.00 ,  72], 'focus'],    #0.
+                        #['focus', [0,  0],     0, 72.7, [1.00 ,  72], 'focus'],    #0.
                         ['PL',    [0,  0],     0, 620, [1.00 ,  72], 'PhLum'],    #1.
-                        ['PR',    [1,  1],     0, 170, [1.00 , 119], 'PhRed'],    #2.
-                        ['PG',    [2,  2],     0, 220, [1.00 , 113], 'PhGreen'],    #3.
-                        ['PB',    [3,  3],     0, 300, [0.80 ,  97], 'PhBlue'],    #4.
+                        ['dark',    [1,  1],     0, 170, [1.00 , 119], 'PhRed'],    #2.
+                        ['PB',    [2,  2],     0, 220, [1.00 , 113], 'PhGreen'],    #3.
+                        ['PG',    [3,  3],     0, 300, [0.80 ,  97], 'PhBlue'],    #4.
+                        ['PR',    [4,  4],     0, 300, [0.80 ,  97], 'PhBlue'],    #4.
                         #['PR',    [1,  1],     0, 170, [1.00 , 119], 'PhBlue'],    #2.
                         #['PG',    [2,  2],     0, 220, [1.00 , 113], 'PhGreen'],    #3.
                         #['PB',    [3,  3],     0, 300, [0.80 ,  97], 'PhRed'],    #4.
-                        ['HA',    [4,  4],     0, .400, [5.00 , 200], 'Halpha'],    #5.
-                        ['O3',    [5,  5],     0, 6, [4.00 , 200], 'OIII'],    #6.
-                        ['S2',    [6,  6],     0, .221, [10.0,  200], 'SII'],    #7.
-                        ['air',   [7,  7], -1000, 100., [1.00,   70], 'air'],    #8.
-                        ['dark',  [6,  6],     0, .221, [   0,    0], 'dark'],   #9.
-                        ['LRGB',  [0,  0],     0, .221, [   0,    0], 'LRGB']],   #10.
+                        ['HA',    [5,  5],     0, .400, [5.00 , 200], 'Halpha'],    #5.
+                        ['O3',    [6,  6],     0, 6, [4.00 , 200], 'OIII'],    #6.
+                        ['S2',    [7,  7],     0, .221, [10.0,  200], 'SII']],    #7.
+                        #['air',   [7,  7], -1000, 100., [1.00,   70], 'air'],    #8.
+                        #['gooble',  [6,  6],     0, .221, [   0,    0], 'dark'],   #9.
+                        #['LRGB',  [0,  0],     0, .221, [   0,    0], 'LRGB']],   #10.
 
 
-                'filter_screen_sort':  [8, 1, 4, 3, 2, 6, 5, 7],   #  don't use narrow yet,  8, 10, 9], useless to try.
+                'filter_screen_sort':  [1, 4, 3, 2, 6, 5, 7],   #  don't use narrow yet,  8, 10, 9], useless to try.
 
 
                 'filter_sky_sort': [6, 4, 5, 1, 2, 3,  0]    #No diffuser based filters
@@ -865,4 +866,5 @@ def get_enc_status(g_dev=None):
              }
     return status
 def get_ocn_status(g_dev=None):
-    print ("no encolsure control")
+    #print ("no encolsure control")
+    pass
