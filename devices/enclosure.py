@@ -1,9 +1,9 @@
 import win32com.client
 from global_yard import g_dev
-import redis
+#import redis
 import time
 import math as math
-import shelve
+#import shelve
 import json
 import socket
 import os
@@ -89,49 +89,49 @@ def centration_r (theta, a, b):
     # = math.radians(theta)
     return (math.atan2(math.sin(theta) - STOR*b, math.cos(theta) - STOR*a))
 
-def transform_raDec_to_haDec_r(pRa, pDec, pSidTime):
+# def transform_raDec_to_haDec_r(pRa, pDec, pSidTime):
 
-    return (reduce_ha_r(pSidTime - pRa), reduce_dec_r(pDec))
+#     return (reduce_ha_r(pSidTime - pRa), reduce_dec_r(pDec))
 
-def transform_haDec_to_raDec_r(pHa, pDec, pSidTime):
-    return (reduce_ra_r(pSidTime - pHa), reduce_dec_r(pDec))
+# def transform_haDec_to_raDec_r(pHa, pDec, pSidTime):
+#     return (reduce_ra_r(pSidTime - pHa), reduce_dec_r(pDec))
 
-def transform_haDec_to_azAlt_r(pLocal_hour_angle, pDec, latr):
-    sinLat = math.sin(latr)
-    cosLat = math.cos(latr)
-    decr = pDec
-    sinDec = math.sin(decr)
-    cosDec = math.cos(decr)
-    mHar = pLocal_hour_angle
-    sinHa = math.sin(mHar)
-    cosHa = math.cos(mHar)
-    altitude = math.asin(sinLat*sinDec + cosLat*cosDec*cosHa)
-    y = sinHa
-    x = cosHa*sinLat - math.tan(decr)*cosLat
-    azimuth = math.atan2(y, x) + PI
-    azimuth = reduce_az_r(azimuth)
-    altitude = reduce_alt_r(altitude)
-    return (azimuth, altitude)#, local_hour_angle)
+# def transform_haDec_to_azAlt_r(pLocal_hour_angle, pDec, latr):
+#     sinLat = math.sin(latr)
+#     cosLat = math.cos(latr)
+#     decr = pDec
+#     sinDec = math.sin(decr)
+#     cosDec = math.cos(decr)
+#     mHar = pLocal_hour_angle
+#     sinHa = math.sin(mHar)
+#     cosHa = math.cos(mHar)
+#     altitude = math.asin(sinLat*sinDec + cosLat*cosDec*cosHa)
+#     y = sinHa
+#     x = cosHa*sinLat - math.tan(decr)*cosLat
+#     azimuth = math.atan2(y, x) + PI
+#     azimuth = reduce_az_r(azimuth)
+#     altitude = reduce_alt_r(altitude)
+#     return (azimuth, altitude)#, local_hour_angle)
 
-def transform_azAlt_to_haDec_r(pAz, pAlt, latr):
-    sinLat = math.sin(latr)
-    cosLat = math.cos(latr)
-    alt = pAlt
-    sinAlt = math.sin(alt)
-    cosAlt = math.cos(alt)
-    az = pAz - PI
-    sinAz = math.sin(az)
-    cosAz = math.cos(az)
-    if abs(abs(alt) - PIOVER2) < 1.0*STOR:
-        return (0.0, reduce_dec_r(latr))     #by convention azimuth points South at local zenith
-    else:
-        dec = math.asin(sinAlt*sinLat - cosAlt*cosAz*cosLat)
-        ha = math.atan2(sinAz, (cosAz*sinLat + math.tan(alt)*cosLat))
-        return (reduce_ha_r(ha), reduce_dec_r(dec))
+# def transform_azAlt_to_haDec_r(pAz, pAlt, latr):
+#     sinLat = math.sin(latr)
+#     cosLat = math.cos(latr)
+#     alt = pAlt
+#     sinAlt = math.sin(alt)
+#     cosAlt = math.cos(alt)
+#     az = pAz - PI
+#     sinAz = math.sin(az)
+#     cosAz = math.cos(az)
+#     if abs(abs(alt) - PIOVER2) < 1.0*STOR:
+#         return (0.0, reduce_dec_r(latr))     #by convention azimuth points South at local zenith
+#     else:
+#         dec = math.asin(sinAlt*sinLat - cosAlt*cosAz*cosLat)
+#         ha = math.atan2(sinAz, (cosAz*sinLat + math.tan(alt)*cosLat))
+#         return (reduce_ha_r(ha), reduce_dec_r(dec))
 
-def transform_azAlt_to_raDec_r(pAz, pAlt, pLatitude, pSidTime):
-    ha, dec = transform_azAlt_to_haDec_r(pAz, pAlt, pLatitude)
-    return transform_haDec_to_raDec_r(ha, dec, pSidTime)
+# def transform_azAlt_to_raDec_r(pAz, pAlt, pLatitude, pSidTime):
+#     ha, dec = transform_azAlt_to_haDec_r(pAz, pAlt, pLatitude)
+#     return transform_haDec_to_raDec_r(ha, dec, pSidTime)
 
 # =============================================================================
 #
@@ -194,7 +194,6 @@ class Enclosure:
         self.config = config
         g_dev['enc'] = self
         self.slew_latch = False
-
         if self.config['site_in_automatic_default'] == "Automatic":
             self.site_in_automatic = True
             self.mode = 'Automatic'
@@ -497,18 +496,22 @@ class Enclosure:
                         #plog("Finding enc_cmd failed after 3 tries, no harm done.")
                         mnt_command = ['none']
 
-        elif self.dome_on_wema and self.is_wema and self.site_has_proxy and self.config['site_IPC_mechanism'] == 'redis':
+        elif self.dome_on_wema and self.is_wema and self.site_has_proxy and \
+            self.config['site_IPC_mechanism'] == 'redis':
             redis_command = g_dev['redis'].get('enc_cmd')  #It is presumed there is an expiration date on open command at least.
             #NB NB NB Need to prevent executing stale commands.  Note Redis_command is overloaded.
             _redis = True
-        if redis_command is not None:
-            pass
 
-            #plog(redis_command)
-        try:
-            redis_command = redis_command[0]  # it can come in as ['setManual']
-        except:
+        if redis_command is not None:
+
+            plog(redis_command)
             pass
+            #plog(redis_command)
+        #Note this is very bogus, some remant from long ago.    
+        # try:
+        #     redis_command = redis_command[0]  # it can come in as ['setManual']
+        # except:
+        #     pass
 
         if redis_command == 'open':
             if _redis: g_dev['redis'].delete('enc_cmd')
@@ -531,17 +534,17 @@ class Enclosure:
                 pass
             self.dome_open = False
             self.dome_home = True
-        elif redis_command == 'set_auto':
+        elif redis_command in ['set_auto', 'setAuto', 'setauto']:
             if _redis: g_dev['redis'].delete('enc_cmd')
             plog("Change to Automatic.")
             self.site_in_automatic = True
             self.mode = 'Automatic'
-        elif redis_command == 'set_manual':
+        elif redis_command in ['set_manual', 'setManual']:
             if _redis: g_dev['redis'].delete('enc_cmd')
             plog("Change to Manual.")
             self.site_in_automatic = False
             self.mode = 'Manual'
-        elif redis_command == 'set_shutdown':
+        elif redis_command in ['set_shutdown', 'setShutdown']:
             if _redis: g_dev['redis'].delete('enc_cmd')
             plog("Change to Shutdown & Close")
             self.manager(close_cmd=True, open_cmd=False)
@@ -594,7 +597,7 @@ class Enclosure:
                     #This is normal dome following.
 
                     try:
-                        if shutter_status not in [2,3]:    #THis should end annoying report.
+                        if shutter_status not in [2,3]:    #THis should end annoying report. [2,3] not very readable!
                             self.enclosure.SlewToAzimuth(float(track_az))
                     except:
                         plog("Dome refused slew, probably updating, closing or opening; usually a harmless situation:  ", shutter_status)
@@ -831,6 +834,7 @@ class Enclosure:
         #     redis_hold = eval(self.redis_server.get('wx_hold'))
         # except:
         #     redis_hold =False
+
         wx_hold = g_dev['ocn'].wx_hold #or redis_hold  #TWO PATHS to pick up wx-hold.
         if self.mode == "Automatic" and (open_cmd or close_cmd):
             g_dev['obs'].send_to_user("User enclosure requests not honored in Automatic mode.", p_level='INFO')

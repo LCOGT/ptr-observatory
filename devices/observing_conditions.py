@@ -374,8 +374,9 @@ class ObservingConditions:
             if (sunZ88Op - two_hours < ephemNow < sunZ88Cl + two_hours) and (
                 time.time() >= self.sample_time + 60
             ):  #  Once a minute.
+
                 try:
-                    wl = open("C:/ptr/unihedron/wx_log.txt", "a")
+                    wl = open("Q:/ptr/unihedron/wx_log.txt", "a")
                     wl.write(
                         str(time.time())
                         + ", "
@@ -404,6 +405,7 @@ class ObservingConditions:
 
             obs_win_begin, sunset, sunrise, ephemNow = self.astro_events.getSunEvents()
             wx_delay_time = 900
+
             if (
                 self.wx_is_ok and self.wx_system_enable
             ) and not self.wx_hold:  # Normal condition, possibly nothing to do.

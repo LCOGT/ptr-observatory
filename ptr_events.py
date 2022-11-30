@@ -25,7 +25,7 @@ from math import degrees
 # print('ObsImports:  ', config, '\n\'', config.site_config['site'])
 from global_yard import *
 
-import sys
+#import sys
 
 from astropy.time import Time
 from ptr_utility import plog
@@ -737,7 +737,6 @@ class Events:
         #evnt_sort
         timezone = "  " + self.config['timezone'] + ": "
         offset = self.config['time_offset']
-
         for evnt in evnt_sort:
 
 
