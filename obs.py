@@ -672,8 +672,7 @@ class Observatory:
                 # Here we parse the file, set up and send to AWS
                 filename = pri_image[1][1]
                 filepath = pri_image[1][0] + filename  # Full path to file on disk
-                aws_resp = g_dev["obs"].api.authenticated_request(
-                    "POST", "/upload/", {"object_name": filename})
+
                 # Only ingest new large fits.fz files to the PTR archive.
                 if self.env_exists == True and filename.endswith("-EX00.fits.fz"):
                     with open(filepath, "rb") as fileobj:
@@ -685,6 +684,8 @@ class Observatory:
                         except:
                             files = {"file": (filepath, fileobj)}
                             try:
+                                aws_resp = g_dev["obs"].api.authenticated_request(
+                                    "POST", "/upload/", {"object_name": filename})
                                 requests.post(aws_resp["url"], data=aws_resp["fields"], files=files)
                                 break
                             except:
@@ -696,6 +697,8 @@ class Observatory:
                     with open(filepath, "rb") as fileobj:
                         files = {"file": (filepath, fileobj)}
                         try:
+                            aws_resp = g_dev["obs"].api.authenticated_request(
+                                "POST", "/upload/", {"object_name": filename})
                             requests.post(aws_resp["url"], data=aws_resp["fields"], files=files)
                             break
                         except:

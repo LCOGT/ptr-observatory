@@ -626,6 +626,7 @@ class Sequencer:
 
         for target in block['project']['project_targets']:   #  NB NB NB Do multi-target projects make sense???
             try:
+                #breakpoint()
                 dest_ra = float(target['ra']) - \
                     float(block_specification['project']['project_constraints']['ra_offset'])/15.
                 dest_dec = float(target['dec']) - float(block_specification['project']['project_constraints']['dec_offset'])
