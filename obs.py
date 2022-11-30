@@ -170,7 +170,7 @@ class Observatory:
             self.redis_wx_enabled = False
             g_dev["redis"] = None  # a placeholder.
 
-        
+
 
         # Use the configuration to instantiate objects for all devices.
         self.create_devices()
@@ -323,7 +323,7 @@ class Observatory:
 
         uri = f"{self.name}/config/"
         self.config["events"] = g_dev["events"]
-        
+
         response = g_dev["obs"].api.authenticated_request("PUT", uri, self.config)
         if 'message' in response:
             if response['message'] == "Missing Authentication Token":
@@ -502,7 +502,7 @@ class Observatory:
                 return  # This creates an infinite loop
 
             else:
-                
+
                 continue
 
     def update_status(self, bpt=False):
@@ -718,7 +718,7 @@ class Observatory:
                                 plog(f"--> To PTR ARCHIVE --> {str(filepath)}")
                                 plog('*.fz ingestion took:  ', round(time.time() - tt, 1), ' sec.')
                                 self.aws_queue.task_done()
-                                
+
                                 tempPTR=1
                             except Exception as e:
                                 print ("couldn't send to PTR archive for some reason")
@@ -741,13 +741,13 @@ class Observatory:
                                 plog(f"--> To AWS --> {str(filepath)}")
                                 plog('*.fz transfer took:  ', round(time.time() - tt, 1), ' sec.')
                                 self.aws_queue.task_done()
-                                
+
                                 #break
 
                             except:
                                 print ("Connection glitch for the request post, waiting a moment and trying again")
                                 time.sleep(5)
-                            
+
                 # Send all other files to S3.
                 else:
                     with open(filepath, "rb") as fileobj:
@@ -758,12 +758,12 @@ class Observatory:
                             requests.post(aws_resp["url"], data=aws_resp["fields"], files=files)
                             plog(f"--> To AWS --> {str(filepath)}")
                             self.aws_queue.task_done()
-                            
+
                             #break
                         except:
                             print ("Connection glitch for the request post, waiting a moment and trying again")
                             time.sleep(5)
-                     
+
                 os.remove(filepath)
                 if (
                     filename[-3:] == "jpg"
@@ -810,9 +810,9 @@ class Observatory:
                 aws_resp = g_dev["obs"].api.authenticated_request(
                     "POST", "/upload/", {"object_name": filename})
                 # Only ingest new large fits.fz files to the PTR archive.
-                
+
                 # Send all other files to S3.
-                
+
                 with open(filepath, "rb") as fileobj:
                     files = {"file": (filepath, fileobj)}
                     while True:
@@ -1025,8 +1025,8 @@ class Observatory:
                     #    paths["red_path"] + paths["red_name01"]
                     #)  # Pick up reduced fits file
                     # No need to open the same image twice, just using the same one as SEP.
-                    #img = sstackimghold.copy()
-                    #del sstackimghold
+                    img = sstackimghold.copy()
+                    del sstackimghold
 
                     #plog(img[0].header["FILTER"])
 
@@ -1282,7 +1282,7 @@ class Observatory:
                                 try:
                                     f_err_ha = err_ha*math.cos(math.radians(solved_dec))
                                     plog(
-                                        " *field* error in ra, dec:  (asec) ",      
+                                        " *field* error in ra, dec:  (asec) ",
                                         round(f_err_ha * 15 * 3600, 2),
                                         round(err_dec * 3600, 2),
                                     )  # NB WER changed to apply to err_ha
