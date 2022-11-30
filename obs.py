@@ -458,15 +458,17 @@ class Observatory:
 
                         plog("Exception in obs.scan_requests:  ", e, 'cmd:  ', cmd)
                 url_blk = "https://calendar.photonranch.org/dev/siteevents"
-
+                start_aperture = str(g_dev['events']['Eve Sky Flats']).split()
+                close_aperture = str(g_dev['events']['End Morn Sky Flats']).split()
                 body = json.dumps(
                     {
                         "site": self.config["site"],
-                        "start": g_dev["d-a-y"] + "T00:00:00Z",
-                        "end": g_dev["next_day"] + "T23:59:59Z",
+                        "start": start_aperture[0] +'T' + start_aperture[1] +'Z',
+                        "end": close_aperture[0] +'T' + close_aperture[1] +'Z',
                         "full_project_details:": False,
                     }
                 )
+
                 if (
                     True
                 ):  # self.blocks is None: # This currently prevents pick up of calendar changes.
@@ -500,7 +502,7 @@ class Observatory:
                 return  # This creates an infinite loop
 
             else:
-                # What we really want here is looking for a Cancel/Stop.
+                
                 continue
 
     def update_status(self, bpt=False):

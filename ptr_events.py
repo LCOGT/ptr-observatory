@@ -737,7 +737,6 @@ class Events:
         #evnt_sort
         timezone = "  " + self.config['timezone'] + ": "
         offset = self.config['time_offset']
-
         for evnt in evnt_sort:
 
 
