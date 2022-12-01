@@ -460,6 +460,31 @@ class Observatory:
                 url_blk = "https://calendar.photonranch.org/dev/siteevents"
                 start_aperture = str(g_dev['events']['Eve Sky Flats']).split()
                 close_aperture = str(g_dev['events']['End Morn Sky Flats']).split()
+                
+                # Reformat ephem.Date into format required by the UI
+                startapyear=start_aperture[0].split('/')[0]
+                startapmonth=start_aperture[0].split('/')[1]
+                startapday=start_aperture[0].split('/')[2]
+                closeapyear=close_aperture[0].split('/')[0]
+                closeapmonth=close_aperture[0].split('/')[1]
+                closeapday=close_aperture[0].split('/')[2]                
+                
+                if len(str(startapmonth)) == 1:
+                    startapmonth='0' + startapmonth
+                if len(str(startapday)) == 1:
+                    startapday='0' + str(startapday)
+                if len(str(closeapmonth)) == 1:
+                    closeapmonth='0' + closeapmonth
+                if len(str(closeapday)) == 1:
+                    closeapday='0' + str(closeapday)
+
+                start_aperture_date = startapyear + '-' + startapmonth + '-' + startapday
+                close_aperture_date = closeapyear + '-' + closeapmonth + '-' + closeapday
+
+                start_aperture[0] =start_aperture_date 
+                close_aperture[0] =close_aperture_date 
+
+                
                 body = json.dumps(
                     {
                         "site": self.config["site"],
