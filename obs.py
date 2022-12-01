@@ -460,6 +460,31 @@ class Observatory:
                 url_blk = "https://calendar.photonranch.org/dev/siteevents"
                 start_aperture = str(g_dev['events']['Eve Sky Flats']).split()
                 close_aperture = str(g_dev['events']['End Morn Sky Flats']).split()
+                
+                # Reformat ephem.Date into format required by the UI
+                startapyear=start_aperture[0].split('/')[0]
+                startapmonth=start_aperture[0].split('/')[1]
+                startapday=start_aperture[0].split('/')[2]
+                closeapyear=close_aperture[0].split('/')[0]
+                closeapmonth=close_aperture[0].split('/')[1]
+                closeapday=close_aperture[0].split('/')[2]                
+                
+                if len(str(startapmonth)) == 1:
+                    startapmonth='0' + startapmonth
+                if len(str(startapday)) == 1:
+                    startapday='0' + str(startapday)
+                if len(str(closeapmonth)) == 1:
+                    closeapmonth='0' + closeapmonth
+                if len(str(closeapday)) == 1:
+                    closeapday='0' + str(closeapday)
+
+                start_aperture_date = startapyear + '-' + startapmonth + '-' + startapday
+                close_aperture_date = closeapyear + '-' + closeapmonth + '-' + closeapday
+
+                start_aperture[0] =start_aperture_date 
+                close_aperture[0] =close_aperture_date 
+
+                
                 body = json.dumps(
                     {
                         "site": self.config["site"],
@@ -899,115 +924,7 @@ class Observatory:
                     ssframenumber = str(img[0].header["FRAMENUM"])
                     img.close()
                     del img
-                    sstackimghold=np.asarray(imgdata)
-                    imgdata = (
-                        imgdata - np.min(imgdata)
-                    ) + 100  # Add an artifical pedestal to background.
-                    imgdata = imgdata.astype("float")
-
-                    imgdata = imgdata.copy(
-                        order="C"
-                    )  # NB Should we move this up to where we read the array?
-                    bkg = sep.Background(imgdata)
-                    imgdata -= bkg
-
-                    try:
-                        sep.set_extract_pixstack(1000000)
-                        sources = sep.extract(
-                            imgdata, 4.5, err=bkg.globalrms, minarea=15
-                        )  # Minarea should deal with hot pixels.
-                        ix, iy = imgdata.shape
-                        del imgdata
-                        sources.sort(order="cflux")
-                        plog("No. of detections:  ", len(sources))
-
-                    # imgdata = imgdata.copy(
-                    #     order="C"
-                    # )  # NB Should we move this up to where we read the array?
-                    # bkg = sep.Background(imgdata)
-                    # imgdata -= bkg
-
-                        if len(sources) < 20:
-                            print ("skipping focus estimate as not enough sources in this image")
-
-                        else:
-
-
-                            border_x = int(ix * 0.05)
-                            border_y = int(iy * 0.05)
-                            r0 = []
-                            for sourcef in sources:
-                                if (
-                                    border_x < sourcef["x"] < ix - border_x
-                                    and border_y < sourcef["y"] < iy - border_y
-                                    and 1000 < sourcef["peak"] < 35000
-                                    and 1000 < sourcef["cpeak"] < 35000
-                                ):  # Consider a lower bound
-                                    a0 = sourcef["a"]
-                                    b0 = sourcef["b"]
-                                    r0.append(round(math.sqrt(a0 * a0 + b0 * b0)*2, 2))
-
-                            FWHM = round(
-                                np.median(r0) * pixscale, 3
-                            )  # was 2x larger but a and b are diameters not radii
-                            print("This image has a FWHM of " + str(FWHM))
-
-                            g_dev["foc"].focus_tracker.pop(0)
-                            g_dev["foc"].focus_tracker.append(FWHM)
-                            print("Last ten FWHM : ")
-                            print(g_dev["foc"].focus_tracker)
-                            print("Median last ten FWHM")
-                            print(np.nanmedian(g_dev["foc"].focus_tracker))
-                            print("Last solved focus FWHM")
-                            print(g_dev["foc"].last_focus_fwhm)
-
-                            # If there hasn't been a focus yet, then it can't check it, so make this image the last solved focus.
-                            if g_dev["foc"].last_focus_fwhm == None:
-                                g_dev["foc"].last_focus_fwhm = FWHM
-                            else:
-                                # Very dumb focus slip deteector
-                                if (
-                                    np.nanmedian(g_dev["foc"].focus_tracker)
-                                    > g_dev["foc"].last_focus_fwhm
-                                    + self.config["focus_trigger"]
-                                ):
-                                    g_dev["foc"].focus_needed = True
-                                    g_dev["obs"].send_to_user(
-                                        "Focus has drifted to "
-                                        + str(np.nanmedian(g_dev["foc"].focus_tracker))
-                                        + " from "
-                                        + str(g_dev["foc"].last_focus_fwhm)
-                                        + ". Autofocus triggered for next exposures.",
-                                        p_level="INFO",
-                                    )
-                    except:
-                        print ("something failed in the SEP calculations for exposure. This could be an overexposed image")
-                        print (traceback.format_exc())
-                        sources = [0]
-
-                    #         # If there hasn't been a focus yet, then it can't check it, so make this image the last solved focus.
-                    #         if g_dev["foc"].last_focus_fwhm == None:
-                    #             g_dev["foc"].last_focus_fwhm = rfr
-                    #         else:
-                    #             # Very dumb focus slip deteector
-                    #             if (
-                    #                 np.nanmedian(g_dev["foc"].focus_tracker)
-                    #                 > g_dev["foc"].last_focus_fwhm
-                    #                 + self.config["focus_trigger"]
-                    #             ):
-                    #                 g_dev["foc"].focus_needed = True
-                    #                 g_dev["obs"].send_to_user(
-                    #                     "Focus has drifted to "
-                    #                     + str(np.nanmedian(g_dev["foc"].focus_tracker))
-                    #                     + " from "
-                    #                     + str(g_dev["foc"].last_focus_fwhm)
-                    #                     + ". Autofocus triggered for next exposures.",
-                    #                     p_level="INFO",
-                    #                 )
-                    # except:
-                    #     print ("something failed in the SEP calculations for exposure. This could be an overexposed image")
-                    #     print (traceback.format_exc())
-                    #     sources = [0]
+                    sstackimghold=np.asarray(imgdata)                    
 
                 # SmartStack Section
                 if smartstackid != "no" :
@@ -1017,9 +934,6 @@ class Observatory:
                         print ("skipping stacking as there are not enough sources " + str(len(sources)) +" in this image")
 
 
-                    #img = fits.open(
-                    #    paths["red_path"] + paths["red_name01"]
-                    #)  # Pick up reduced fits file
                     # No need to open the same image twice, just using the same one as SEP.
                     img = sstackimghold.copy()
                     del sstackimghold
@@ -1205,6 +1119,11 @@ class Observatory:
 
                     plog(datetime.datetime.now())
 
+                    try:
+                        img.close()
+                        print ("just in case")
+                    except:
+                        print ("irir")
                     del img
 
 

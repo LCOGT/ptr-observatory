@@ -40,6 +40,7 @@ import pythoncom
 import serial
 import time, json
 import datetime
+import traceback
 import shelve
 from math import cos, radians    #"What plan do we have for making some imports be done this way, elg, import numpy as np...?"
 from global_yard import g_dev    #"Ditto guestion we are importing a single object instance."
@@ -191,6 +192,11 @@ class Mount:
         self.mount = win32com.client.Dispatch(driver)
         self.mount.Connected = True
 
+        if "ASCOM.SoftwareBisque.Telescope" in config['mount']['mount1']['driver']:
+            self.theskyx = True
+        else:
+            self.theskyx = False
+
 #       plog('Can Asynch:  ', self.mount.CanSlewAltAzAsync)
 
         #hould put config Lat, lon, etc into mount, or at least check it is correct.
@@ -211,6 +217,8 @@ class Mount:
             self.has_paddle = config['mount']['mount2']['has_paddle']
         else:
             self.has_paddle = config['mount']['mount1']['has_paddle']
+            
+        
         self.object = "Unspecified"
         self.current_sidereal = self.mount.SiderealTime
         self.current_icrs_ra = "Unspecified_Ra"
@@ -1123,7 +1131,10 @@ class Mount:
     def slewToSkyFlatAsync(self):
         az, alt = self.astro_events.flat_spot_now()
         self.unpark_command()
+        
+        #if not self.theskyx:
         self.mount.Tracking = False
+
         self.move_time = time.time()
         try:
             self.move_to_altaz(az, alt)
@@ -1133,7 +1144,8 @@ class Mount:
             g_dev['obs'].images_since_last_solve = 10000
 
         except:
-            print ("NEED TO POINT TELESCOPE TO RA AND DEC, MOUNT DOES NOT HAVE AN ALTAZ request in the driver")
+            print (traceback.format_exc())
+            #print ("NEED TO POINT TELESCOPE TO RA AND DEC, MOUNT DOES NOT HAVE AN ALTAZ request in the driver")
 
 
 

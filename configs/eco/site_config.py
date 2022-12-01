@@ -85,15 +85,15 @@ site_config = {
     'observing_check_period' : 5,    # How many minutes between weather checks
     'enclosure_check_period' : 5,    # How many minutes between enclosure checks
     'auto_eve_bias_dark': False,
-    'auto_eve_sky_flat': False,
+    'auto_eve_sky_flat': True,
     'eve_sky_flat_sunset_offset': -32.5,  #  Minutes  neg means before, + after.
-    'auto_morn_sky_flat': False,
+    'auto_morn_sky_flat': True,
     'auto_morn_bias_dark': False,
     're-calibrate_on_solve': True,
     'pointing_calibration_on_startup': False,
     'periodic_focus_time' : 0.5, # This is a time, in hours, over which to bypass automated focussing (e.g. at the start of a project it will not refocus if a new project starts X hours after the last focus)
     'stdev_fwhm' : 0.5, # This is the expected variation in FWHM at a given telescope/camera/site combination. This is used to check if a fwhm is within normal range or the focus has shifted
-    'focus_exposure_time': 30, # Exposure time in seconds for exposure image
+    'focus_exposure_time': 60, # Exposure time in seconds for exposure image
 
     'focus_trigger' : 5.0, # What FWHM increase is needed to trigger an autofocus
     'solve_nth_image' : 10, # Only solve every nth image
@@ -349,10 +349,10 @@ site_config = {
             #F4.9 setup
             'start_at_config_reference': True,
             'use_focuser_temperature': True,
-            'reference':22900,    #  20210313  Nominal at 10C Primary temperature
+            'reference':24200,    #  20210313  Nominal at 10C Primary temperature
             'ref_temp':  6265.0,    #  Update when pinning reference
             'coef_c': 0,   #  Negative means focus moves out as Primary gets colder
-            'coef_0': 22900,  #  Nominal intercept when Primary is at 0.0 C.
+            'coef_0': 24200,  #  Nominal intercept when Primary is at 0.0 C.
             'coef_date':  '20220914',    #This appears to be sensible result 44 points -13 to 3C'reference':  6431,    #  Nominal at 10C Primary temperature
             # #F9 setup
             # 'reference': 4375,    #   Guess 20210904  Nominal at 10C Primary temperature
@@ -405,13 +405,13 @@ site_config = {
                 'filter_count': 11,   #  This must be correct as to the number of filters
                 'home_filter':  0,
                 'default_filter': "PL",
-                'filter_list': ['PL','PR','PG','PB','HA','O3','S2', 'air'], # A list of actual physical filters for the substitution function
+                'filter_list': ['focus','PL','PR','PG','PB','HA','O3','S2', 'air'], # A list of actual physical filters for the substitution function
                 'filter_reference': 0,   #  We choose to use W as the default filter.  Gains taken at F9, Ceravolo 300mm
                 'filter_data': [['filter', 'filter_index', 'filter_offset', 'sky_gain', 'screen_gain', 'alias'],  #NB NB NB add cwl & bw in nm.
 
                         #['w',     [0,  0],     0, 72.7, [1.00 ,  72], 'PL'],    #0.   For sequencer autofocus  consider foc or f filter
-                        #['focus', [0,  0],     0, 72.7, [1.00 ,  72], 'focus'],    #0.
-                        ['PL',    [0,  0],     0, 620, [1.00 ,  72], 'PhLum'],    #1.
+                        ['focus', [3,  3],     0, 72.7, [1.00 ,  72], 'focus'],    #0.
+                        ['air',    [0,  0],     0, 620, [1.00 ,  72], 'PhLum'],    #1.
                         ['dark',    [1,  1],     0, 170, [1.00 , 119], 'PhRed'],    #2.
                         ['PB',    [2,  2],     0, 220, [1.00 , 113], 'PhGreen'],    #3.
                         ['PG',    [3,  3],     0, 300, [0.80 ,  97], 'PhBlue'],    #4.
@@ -505,7 +505,7 @@ site_config = {
                 'trim_sec': ['[1:9576, 1:6388]', '[1:4788, 1:3194]', '[1:3192, 1:2129]', '[1:2394, 1:1597]'],
                 'x_pixel':  6,
                 'y_pixel':  6,
-                'pix_scale': [1.067, 2.134, 3.201, 4.268],
+                'pix_scale': [0.269],
                 'CameraXSize' : 4096,
                 'CameraYSize' : 4096,
                 'MaxBinX' : 2,
@@ -547,10 +547,10 @@ site_config = {
                 'readout_mode':  'Normal',
                 'readout_speed': 0.4,
                 'readout_seconds': 2,
-                'smart_stack_exposure_time' : 30,
-                'saturate':  42000,    # e-.  This is a close guess, not measured, but taken from data sheet.
-                'max_linearity': 40000,
-                'fullwell_capacity': [45000, 45000, 45000, 45000],  #e-.   We need to sort out the units properly NB NB NB
+                'smart_stack_exposure_time' : 60,
+                'saturate':  65000,    # e-.  This is a close guess, not measured, but taken from data sheet.
+                'max_linearity': 65000,
+                'fullwell_capacity': [65000, 65000, 65000, 65000],  #e-.   We need to sort out the units properly NB NB NB
                 'areas_implemented': ["Full",'4x4d', "600%", "500%", "450%", "300%", "220%", "150%", "133%", "Full", "Sqr", '71%', '50%',  '35%', '25%', '12%'],
                 'default_area':  "Full",
                 'default_rotation': 0.0000,
