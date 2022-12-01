@@ -40,6 +40,7 @@ import pythoncom
 import serial
 import time, json
 import datetime
+import traceback
 import shelve
 from math import cos, radians    #"What plan do we have for making some imports be done this way, elg, import numpy as np...?"
 from global_yard import g_dev    #"Ditto guestion we are importing a single object instance."
@@ -1131,10 +1132,9 @@ class Mount:
         az, alt = self.astro_events.flat_spot_now()
         self.unpark_command()
         
-        if not self.theskyx:
-            self.mount.Tracking = False
-        else:
-            print ("Currently tracking isn't available in theskyx driver???")
+        #if not self.theskyx:
+        self.mount.Tracking = False
+
         self.move_time = time.time()
         try:
             self.move_to_altaz(az, alt)
@@ -1144,7 +1144,8 @@ class Mount:
             g_dev['obs'].images_since_last_solve = 10000
 
         except:
-            print ("NEED TO POINT TELESCOPE TO RA AND DEC, MOUNT DOES NOT HAVE AN ALTAZ request in the driver")
+            print (traceback.format_exc())
+            #print ("NEED TO POINT TELESCOPE TO RA AND DEC, MOUNT DOES NOT HAVE AN ALTAZ request in the driver")
 
 
 
