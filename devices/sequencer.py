@@ -1587,25 +1587,7 @@ class Sequencer:
         #self.sequencer_hold = True  #Blocks command checks.
         #Here we jump in too  fast and need for mount to settle
 
-        try:
-            #Check here for filter, guider, still moving  THIS IS A CLASSIC
-            #case where a timeout is a smart idea.
-            #Wait for external motion to cease before exposing.  Note this precludes satellite tracking.
-            st = ""
-
-            #20210817  g_dev['enc'] does not exist,  so this faults. Cascade problem with user_id...
-            while g_dev['foc'].focuser.IsMoving or g_dev['rot'].rotator.IsMoving or \
-                  g_dev['mnt'].mount.Slewing: #or g_dev['enc'].status['dome_slewing']:   #Filter is moving??
-                if g_dev['foc'].focuser.IsMoving: st += 'f>'
-                if g_dev['rot'].rotator.IsMoving: st += 'r>'
-                if g_dev['mnt'].mount.Slewing: st += 'm>'
-                #if g_dev['enc'].status['dome_slewing']: st += 'd>'
-                plog(st)
-                st = ""
-                time.sleep(0.2)
-                g_dev['obs'].update_status()
-        except:
-            plog("Motion check faulted.")
+        
 
 # ============================================================================= Save AFTER mount has settled down.
 # =============================================================================
@@ -1643,6 +1625,43 @@ class Sequencer:
         foc_pos0 = focus_start
         result = {}
         #plog("temporary patch in Sim values")
+        
+        
+        try:
+            #Check here for filter, guider, still moving  THIS IS A CLASSIC
+            #case where a timeout is a smart idea.
+            #Wait for external motion to cease before exposing.  Note this precludes satellite tracking.
+            st = ""
+            
+            #breakpoint()
+            #20210817  g_dev['enc'] does not exist,  so this faults. Cascade problem with user_id...
+            while g_dev['foc'].focuser.IsMoving or \
+                  g_dev['mnt'].mount.Slewing: #or g_dev['enc'].status['dome_slewing']:   #Filter is moving??
+                if g_dev['foc'].focuser.IsMoving: st += 'f>'
+                if g_dev['mnt'].mount.Slewing: st += 'm>'
+                #if g_dev['enc'].status['dome_slewing']: st += 'd>'
+                plog(st)
+                st = ""
+                time.sleep(0.2)
+                g_dev['obs'].update_status()
+            
+            st = ""
+            if g_dev['rot']!=None:                
+                while g_dev['rot'].rotator.IsMoving:                    
+                    if g_dev['rot'].rotator.IsMoving: st += 'r>'                    
+                    #if g_dev['enc'].status['dome_slewing']: st += 'd>'
+                    plog(st)
+                    st = ""
+                    time.sleep(0.2)
+                    g_dev['obs'].update_status()
+                
+        except:
+            plog("Motion check faulted.")
+            plog(traceback.format_exc())
+            breakpoint()
+        
+        
+        
         plog('Autofocus Starting at:  ', foc_pos0, '\n\n')
 
 

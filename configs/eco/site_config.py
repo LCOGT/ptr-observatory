@@ -93,7 +93,7 @@ site_config = {
     'pointing_calibration_on_startup': False,
     'periodic_focus_time' : 0.5, # This is a time, in hours, over which to bypass automated focussing (e.g. at the start of a project it will not refocus if a new project starts X hours after the last focus)
     'stdev_fwhm' : 0.5, # This is the expected variation in FWHM at a given telescope/camera/site combination. This is used to check if a fwhm is within normal range or the focus has shifted
-    'focus_exposure_time': 30, # Exposure time in seconds for exposure image
+    'focus_exposure_time': 60, # Exposure time in seconds for exposure image
 
     'focus_trigger' : 5.0, # What FWHM increase is needed to trigger an autofocus
     'solve_nth_image' : 10, # Only solve every nth image
@@ -410,7 +410,7 @@ site_config = {
                 'filter_data': [['filter', 'filter_index', 'filter_offset', 'sky_gain', 'screen_gain', 'alias'],  #NB NB NB add cwl & bw in nm.
 
                         #['w',     [0,  0],     0, 72.7, [1.00 ,  72], 'PL'],    #0.   For sequencer autofocus  consider foc or f filter
-                        ['focus', [4,  4],     0, 72.7, [1.00 ,  72], 'focus'],    #0.
+                        ['focus', [3,  3],     0, 72.7, [1.00 ,  72], 'focus'],    #0.
                         ['air',    [0,  0],     0, 620, [1.00 ,  72], 'PhLum'],    #1.
                         ['dark',    [1,  1],     0, 170, [1.00 , 119], 'PhRed'],    #2.
                         ['PB',    [2,  2],     0, 220, [1.00 , 113], 'PhGreen'],    #3.
@@ -547,10 +547,10 @@ site_config = {
                 'readout_mode':  'Normal',
                 'readout_speed': 0.4,
                 'readout_seconds': 2,
-                'smart_stack_exposure_time' : 30,
-                'saturate':  42000,    # e-.  This is a close guess, not measured, but taken from data sheet.
-                'max_linearity': 40000,
-                'fullwell_capacity': [45000, 45000, 45000, 45000],  #e-.   We need to sort out the units properly NB NB NB
+                'smart_stack_exposure_time' : 60,
+                'saturate':  65000,    # e-.  This is a close guess, not measured, but taken from data sheet.
+                'max_linearity': 65000,
+                'fullwell_capacity': [65000, 65000, 65000, 65000],  #e-.   We need to sort out the units properly NB NB NB
                 'areas_implemented': ["Full",'4x4d', "600%", "500%", "450%", "300%", "220%", "150%", "133%", "Full", "Sqr", '71%', '50%',  '35%', '25%', '12%'],
                 'default_area':  "Full",
                 'default_rotation': 0.0000,
