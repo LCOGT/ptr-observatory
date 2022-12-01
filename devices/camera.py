@@ -409,7 +409,7 @@ class Camera:
         self.camera_num_x = int(
             self.camera_x_size / self.camera.BinX
         )  # These are affected binned values.
-        self.camera_num_y = int(self.camera_y_size / self.camera.BinY)
+        #self.camera_num_y = int(self.camera_y_size / self.camera.BinY)
         self.previous_start_fraction_x = (
             0.0  # These are the subframe **fraction** values for the previous exposure.
         )
@@ -2565,7 +2565,7 @@ class Camera:
 
 
 
-                            if len(sources) < 12:
+                            if len(sources) < 5:
                                 print ("not enough sources to estimate a reliable focus")
                                 result["error"]=True
                                 result["FWHM"] = np.nan

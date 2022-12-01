@@ -391,7 +391,16 @@ class Events:
             #ephem.date = ephem.Date(ephem.now() - 24*ephem.hour)
         #else:
         dayNow= (ephem.now())
-        DAY_Directory = str(now_here.year) + str(now_here.month) + str(now_here.day)
+        if len(str(now_here.day)) == 1:
+            nowhereday='0' + str(now_here.day)
+        else:
+            nowhereday=str(now_here.day)
+        if len(str(now_here.month)) == 1:
+            nowheremonth='0' + str(now_here.month)
+        else:
+            nowheremonth=str(now_here.month)
+        
+        DAY_Directory = str(now_here.year) + str(nowheremonth) + str(nowhereday)
 
         #else:
             #dayNow= (ephem.now())
@@ -436,6 +445,7 @@ class Events:
 
         #breakpoint()
         # Day Directory is based on the LOCAL TIME DAY of the observatory
+
         print('Day_Directory:  ', DAY_Directory)
         g_dev['day'] = DAY_Directory
 

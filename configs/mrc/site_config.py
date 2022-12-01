@@ -419,6 +419,8 @@ site_config = {
             'name': 'focuser',
             'desc':  'Optec Gemini',
             'driver': 'ASCOM.OptecGemini.Focuser',
+            'start_at_config_reference': False,
+            'use_focuser_temperature': True,
             #*********Guesses   7379@10 7457@20  7497 @ 25
             'reference': 6900, #20221103    #7418,    # Nominal at 15C Primary temperature, in microns not steps. Guess
             'ref_temp':  15,      # Update when pinning reference  Larger at lower temperatures.

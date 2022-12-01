@@ -93,9 +93,9 @@ site_config = {
     'pointing_calibration_on_startup': False,
     'periodic_focus_time' : 0.5, # This is a time, in hours, over which to bypass automated focussing (e.g. at the start of a project it will not refocus if a new project starts X hours after the last focus)
     'stdev_fwhm' : 0.5, # This is the expected variation in FWHM at a given telescope/camera/site combination. This is used to check if a fwhm is within normal range or the focus has shifted
-    'focus_exposure_time': 15, # Exposure time in seconds for exposure image
+    'focus_exposure_time': 30, # Exposure time in seconds for exposure image
 
-    'focus_trigger' : 0.5, # What FWHM increase is needed to trigger an autofocus
+    'focus_trigger' : 5.0, # What FWHM increase is needed to trigger an autofocus
     'solve_nth_image' : 10, # Only solve every nth image
     'solve_timer' : 5, # Only solve every X minutes
     'threshold_mount_update' : 10, # only update mount when X arcseconds away
@@ -347,10 +347,12 @@ site_config = {
             'driver': 'ASCOM.PWI3.Focuser',
 			'com_port':  'COM9',
             #F4.9 setup
-            'reference':7650,    #  20210313  Nominal at 10C Primary temperature
+            'start_at_config_reference': True,
+            'use_focuser_temperature': True,
+            'reference':22900,    #  20210313  Nominal at 10C Primary temperature
             'ref_temp':  6265.0,    #  Update when pinning reference
-            'coef_c': -8.529,   #  Negative means focus moves out as Primary gets colder
-            'coef_0': 7853.86,  #  Nominal intercept when Primary is at 0.0 C.
+            'coef_c': 0,   #  Negative means focus moves out as Primary gets colder
+            'coef_0': 22900,  #  Nominal intercept when Primary is at 0.0 C.
             'coef_date':  '20220914',    #This appears to be sensible result 44 points -13 to 3C'reference':  6431,    #  Nominal at 10C Primary temperature
             # #F9 setup
             # 'reference': 4375,    #   Guess 20210904  Nominal at 10C Primary temperature
@@ -359,12 +361,13 @@ site_config = {
             # 'coef_0': 5969,  #  Nominal intercept when Primary is at 0.0 C.
             # 'coef_date':  '20210903',    #  SWAG  OLD: This appears to be sensible result 44 points -13 to 3C
             'minimum': 0,     #  NB this area is confusing steps and microns, and need fixing.
-            'maximum': 12600,   #12672 actually
+            'maximum': 18000,   #12672 actually
             'step_size': 1,
             'backlash': 0,
-            'throw' : 250,
+            'throw' : 500,
             'unit': 'micron',
-            'unit_conversion': 9.09090909091,
+            #'unit_conversion': 9.09090909091,
+            'unit_conversion': 1.0,
             'has_dial_indicator': False
         },
 
@@ -489,7 +492,7 @@ site_config = {
                 'corner_everlap': True,
                 'x_bias_line': True,
                 'y_bias_line': True,
-                'ref_dark': 360.0,
+                'ref_dark': 60.0,
                 'long_dark': 600.0,
                 'x_active': 4500,
                 'y_active': 3600,
@@ -521,13 +524,13 @@ site_config = {
                 'max_exposure': 3600,
                 'can_subframe':  True,
                 'min_subframe':  [128, 128],
-                'bin_modes':  [[1, 1, 1.07]], #  , [2, 2, 2.13], [3, 3, 3.21], [4, 4, 4.27]],   #Meaning no binning choice if list has only one entry, default should be first.
-                'default_bin':  [1, 1, 1.07],    #  Matched to seeing situation by owner
-                'maximum_bin':  [1, 1, 1.07],    #  Matched to seeing situation by owner
+                'bin_modes':  [[1, 1, 0.269]], #  , [2, 2, 2.13], [3, 3, 3.21], [4, 4, 4.27]],   #Meaning no binning choice if list has only one entry, default should be first.
+                'default_bin':  [1, 1, 0.269],    #  Matched to seeing situation by owner
+                'maximum_bin':  [1, 1, 0.269],    #  Matched to seeing situation by owner
                 'cosmics_at_default' : 'yes',
                 'cosmics_at_maximum' : 'yes',
                 'bin_enable': ['1 1'],
-                'cycle_time':  [30, 20, 15, 12],  # 3x3 requires a 1, 1 reaout then a software bin, so slower.
+                'cycle_time':  [2, 2, 2, 2],  # 3x3 requires a 1, 1 reaout then a software bin, so slower.
                 'rbi_delay':  0.,      #  This being zero says RBI is not available, eg. for SBIG.
                 'is_cmos':  False,
                 'is_color':  False,
@@ -535,7 +538,7 @@ site_config = {
                 'can_set_gain':  True,
                 'reference_gain': [2., 4., 18., 32.],     #  One val for each binning. SWAG!
                 'reference_noise': [10, 10, 10, 10],    #  All SWAGs right now!
-                'ref_dark': 360.,
+
                 'reference_dark': [0.0, 0.0, 0.0, 0.0],     #  Might these best be pedastal values?  NO!
                                     #hdu.header['RDMODE'] = (self.config['camera'][self.name]['settings']['read_mode'], 'Camera read mode')
                     #hdu.header['RDOUTM'] = (self.config['camera'][self.name]['readout_mode'], 'Camera readout mode')
@@ -543,8 +546,8 @@ site_config = {
                 'read_mode':  'Normal',
                 'readout_mode':  'Normal',
                 'readout_speed': 0.4,
-                'readout_seconds': 12,
-                'smart_stack_exposure_time' : 3000,
+                'readout_seconds': 2,
+                'smart_stack_exposure_time' : 30,
                 'saturate':  42000,    # e-.  This is a close guess, not measured, but taken from data sheet.
                 'max_linearity': 40000,
                 'fullwell_capacity': [45000, 45000, 45000, 45000],  #e-.   We need to sort out the units properly NB NB NB

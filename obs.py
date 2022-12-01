@@ -820,13 +820,13 @@ class Observatory:
                             time.sleep(5)
                     plog(f"--> To AWS --> {str(filepath)}")
 
-                if (
-                    filename[-3:] == "jpg"
-                    or filename[-3:] == "txt"
-                    or ".fits.fz" in filename
-                    or ".token" in filename
-                ):
-                    os.remove(filepath)
+                # if (
+                #     filename[-3:] == "jpg"
+                #     or filename[-3:] == "txt"
+                #     or ".fits.fz" in filename
+                #     or ".token" in filename
+                # ):
+                #     os.remove(filepath)
 
                 self.fast_queue.task_done()
                 one_at_a_time = 0
