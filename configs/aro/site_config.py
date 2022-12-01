@@ -356,6 +356,8 @@ site_config = {
             'desc':  'Optec Gemini',
             'driver': 'ASCOM.OptecGemini.Focuser',
 		    'com_port': 'COM13',    #AP 'COM5'  No Temp Probe on SRO AO Honders
+            'start_at_config_reference': False,
+            'use_focuser_temperature': True,
             # # F4.9 setup
             # 'reference': 5800,    # 20210313  Nominal at 10C Primary temperature
             # 'ref_temp':  5.1,    # Update when pinning reference

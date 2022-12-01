@@ -409,7 +409,7 @@ class Camera:
         self.camera_num_x = int(
             self.camera_x_size / self.camera.BinX
         )  # These are affected binned values.
-        self.camera_num_y = int(self.camera_y_size / self.camera.BinY)
+        #self.camera_num_y = int(self.camera_y_size / self.camera.BinY)
         self.previous_start_fraction_x = (
             0.0  # These are the subframe **fraction** values for the previous exposure.
         )
@@ -486,7 +486,7 @@ class Camera:
         return self.camera.HeatSinkTemperature
 
     def _theskyx_cooler_on(self):
-        plog("I am not sure what this function is asking for")
+        #plog("I am not sure what this function is asking for")
         return True  # NB NB NB This would be a good place to put a warming protector
 
     def _theskyx_set_cooler_on(self):
@@ -887,7 +887,8 @@ class Camera:
             self.camera.NumX = int(self.camera_x_size / self.camera.BinX)
             self.camera.NumY = int(self.camera_y_size / self.camera.BinY)
         except:
-            plog("this camera cannot set NumX")
+            pass
+            #plog("this camera cannot set NumX")
 
         readout_time = float(
             self.config["camera"][self.name]["settings"]["cycle_time"][bin_x - 1]
@@ -1454,16 +1455,19 @@ class Camera:
                     self.post_mnt
                 )  # Need to pick which pass was closest to image completion
             except:
-                plog("need to get this mount status done")
+                #plog("need to get this mount status done")
+                pass
             try:
                 g_dev["rot"].get_quick_status(self.post_rot)
             except:
-                plog("There is no rotator?")
+                #plog("There is no rotator?")
+                pass
             g_dev["foc"].get_quick_status(self.post_foc)
             try:
                 g_dev["ocn"].get_quick_status(self.post_ocn)
             except:
-                plog("OCN status not quick updated")
+                #plog("OCN status not quick updated")
+                pass
             if time.time() > self.status_time:
                 g_dev["obs"].update_status()
                 self.status_time = time.time() + 10
@@ -2192,7 +2196,8 @@ class Camera:
                             "[mag/arcsec^2] Measured sky brightness",
                         )
                     except:
-                        plog("have to not have ocn header items when no ocn")
+                        #plog("have to not have ocn header items when no ocn")
+                        pass
 
                     hdu.header["PIXSCALE"] = (
                         self.config["camera"][self.name]["settings"]["pix_scale"][
@@ -2560,7 +2565,7 @@ class Camera:
 
 
 
-                            if len(sources) < 12:
+                            if len(sources) < 5:
                                 print ("not enough sources to estimate a reliable focus")
                                 result["error"]=True
                                 result["FWHM"] = np.nan

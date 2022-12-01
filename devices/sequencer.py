@@ -1615,6 +1615,7 @@ class Sequencer:
         start_ra = g_dev['mnt'].mount.RightAscension   #Read these to go back.  NB NB Need to cleanly pass these on so we can return to proper target.
         start_dec = g_dev['mnt'].mount.Declination
         focus_start = g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron
+        #breakpoint()
 # =============================================================================
 # =============================================================================
 # =============================================================================

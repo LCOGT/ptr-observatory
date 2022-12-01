@@ -391,7 +391,16 @@ class Events:
             #ephem.date = ephem.Date(ephem.now() - 24*ephem.hour)
         #else:
         dayNow= (ephem.now())
-        DAY_Directory = str(now_here.year) + str(now_here.month) + str(now_here.day)
+        if len(str(now_here.day)) == 1:
+            nowhereday='0' + str(now_here.day)
+        else:
+            nowhereday=str(now_here.day)
+        if len(str(now_here.month)) == 1:
+            nowheremonth='0' + str(now_here.month)
+        else:
+            nowheremonth=str(now_here.month)
+        
+        DAY_Directory = str(now_here.year) + str(nowheremonth) + str(nowhereday)
 
         #else:
             #dayNow= (ephem.now())
@@ -436,19 +445,20 @@ class Events:
 
         #breakpoint()
         # Day Directory is based on the LOCAL TIME DAY of the observatory
+
         print('Day_Directory:  ', DAY_Directory)
         g_dev['day'] = DAY_Directory
 
 
         # These two g_devs are used to make a call to grab projects and blocks.
         # They need to be in UTC time.
-        DAY_Directory = str(now_utc.year) + str(now_utc.month) + str(now_utc.day)
-        day_str = DAY_Directory
-        Day_tomorrow = now_utc + timedelta(days=1)
-        Day_tomorrow = str(Day_tomorrow.year) + str(Day_tomorrow.month) + str(Day_tomorrow.day)
-        next_day = Day_tomorrow
-        g_dev['d-a-y'] = f"{day_str[0:4]}-{day_str[4:6]}-{day_str[6:]}"
-        g_dev['next_day'] = f"{next_day[0:4]}-{next_day[4:6]}-{next_day[6:]}"
+        #DAY_Directory = str(now_utc.year) + str(now_utc.month) + str(now_utc.day)
+        #day_str = DAY_Directory
+        #Day_tomorrow = now_utc + timedelta(days=1)
+        #Day_tomorrow = str(Day_tomorrow.year) + str(Day_tomorrow.month) + str(Day_tomorrow.day)
+        #next_day = Day_tomorrow
+        #g_dev['d-a-y'] = f"{day_str[0:4]}-{day_str[4:6]}-{day_str[6:]}"
+        #g_dev['next_day'] = f"{next_day[0:4]}-{next_day[4:6]}-{next_day[6:]}"
 
         #breakpoint()
 

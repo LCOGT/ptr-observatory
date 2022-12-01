@@ -65,6 +65,7 @@ class FilterWheel:
             if str(r0_pr) == str(r1_pr) == "<Response [200]>":
                 plog("Set up default filter configuration.")
             self.maxim = False
+            self.theskyx = False
             self.ascom = False
             self.dual = True
             self.custom = True
@@ -204,7 +205,9 @@ class FilterWheel:
             self.custom = False
             self.theskyx = True
             win32com.client.pythoncom.CoInitialize()
-            com_object = win32com.client.Dispatch(driver)
+            self.filter = win32com.client.Dispatch(driver)
+            self.filter.Connect()
+            #com_object = win32com.client.Dispatch(driver)
 
         else:
             # We default here to setting up a single wheel ASCOM driver.
@@ -379,8 +382,10 @@ class FilterWheel:
         #             "Unable to set filter position using filter name,\
         #             double-check the filter name dictionary."
         #         )
-
-        filter_name = str(req["filter"]).lower()
+        try:
+            filter_name = str(req["filter"]).lower()
+        except:
+            filter_name = str(req["filter_name"]).lower()
 
         #print (len(self.filter_data)
 
@@ -480,12 +485,25 @@ class FilterWheel:
                     time.sleep(0.1)
             except:
                 plog("Filter RPC error, Maxim not responding. Reset Maxim needed.")
+        elif self.theskyx:
+            #TSXSend("ccdsoftCamera.TemperatureSetPoint = -10")
+            #TSXSend("ccdsoftCamera.RegulateTemperature = true")
+            # self.filter.FilterIndexZeroBased <---- prints number of current filter
+            print ("Before Filter")            
+            print (self.filter.FilterIndexZeroBased)
+            print ("Requesto Filter")
+            print (self.filter_number)
+            self.filter.FilterIndexZeroBased = self.filter_number
+            print ("After Filter")
+            print (self.filter.FilterIndexZeroBased)
+            #breakpoint()
         else:
             try:
                 while self.filter_front.Position == -1:
                     time.sleep(0.4)
                 self.filter_front.Position = filter_selections[0]
             except:
+                print ("Failed to change filter")
                 pass
 
             self.filter_offset = float(self.filter_data[filt_pointer][2])

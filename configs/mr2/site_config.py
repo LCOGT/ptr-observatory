@@ -419,6 +419,8 @@ site_config = {
             'name': 'focuser',
             'desc':  'Optec Gemini',
             'driver': 'ASCOM.OptecGemini.Focuser',
+            'start_at_config_reference': False,
+            'use_focuser_temperature': True,
             'startup_script':  None,
             'recover_script':  None,
             'shutdown_script':  None,

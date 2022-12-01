@@ -463,8 +463,8 @@ class Observatory:
                 body = json.dumps(
                     {
                         "site": self.config["site"],
-                        "start": start_aperture[0] +'T' + start_aperture[1] +'Z',
-                        "end": close_aperture[0] +'T' + close_aperture[1] +'Z',
+                        "start": start_aperture[0].replace('/','-') +'T' + start_aperture[1] +'Z',
+                        "end": close_aperture[0].replace('/','-') +'T' + close_aperture[1] +'Z',
                         "full_project_details:": False,
                     }
                 )
@@ -718,12 +718,13 @@ class Observatory:
                                 plog(f"--> To PTR ARCHIVE --> {str(filepath)}")
                                 plog('*.fz ingestion took:  ', round(time.time() - tt, 1), ' sec.')
                                 self.aws_queue.task_done()
+                                #os.remove(filepath)
                                 
                                 tempPTR=1
                             except Exception as e:
                                 print ("couldn't send to PTR archive for some reason")
-                                #print (e)
-                                #print (print (traceback.format_exc()))
+                                print (e)
+                                print (print (traceback.format_exc()))
                                 tempPTR=0
                         # If ingester fails, send to default S3 bucket.
                         if tempPTR ==0:
@@ -741,6 +742,7 @@ class Observatory:
                                 plog(f"--> To AWS --> {str(filepath)}")
                                 plog('*.fz transfer took:  ', round(time.time() - tt, 1), ' sec.')
                                 self.aws_queue.task_done()
+                                #os.remove(filepath)
                                 
                                 #break
 
@@ -758,21 +760,15 @@ class Observatory:
                             requests.post(aws_resp["url"], data=aws_resp["fields"], files=files)
                             plog(f"--> To AWS --> {str(filepath)}")
                             self.aws_queue.task_done()
+                            #os.remove(filepath)
                             
                             #break
                         except:
                             print ("Connection glitch for the request post, waiting a moment and trying again")
                             time.sleep(5)
                      
-                os.remove(filepath)
-                if (
-                    filename[-3:] == "jpg"
-                    or filename[-3:] == "txt"
-                    or ".fits.fz" in filename
-                    or ".token" in filename
-                ):
-                    os.remove(filepath)
-
+                
+                
                 one_at_a_time = 0
                 time.sleep(0.1)
             else:
@@ -824,13 +820,13 @@ class Observatory:
                             time.sleep(5)
                     plog(f"--> To AWS --> {str(filepath)}")
 
-                if (
-                    filename[-3:] == "jpg"
-                    or filename[-3:] == "txt"
-                    or ".fits.fz" in filename
-                    or ".token" in filename
-                ):
-                    os.remove(filepath)
+                # if (
+                #     filename[-3:] == "jpg"
+                #     or filename[-3:] == "txt"
+                #     or ".fits.fz" in filename
+                #     or ".token" in filename
+                # ):
+                #     os.remove(filepath)
 
                 self.fast_queue.task_done()
                 one_at_a_time = 0
@@ -1025,8 +1021,8 @@ class Observatory:
                     #    paths["red_path"] + paths["red_name01"]
                     #)  # Pick up reduced fits file
                     # No need to open the same image twice, just using the same one as SEP.
-                    #img = sstackimghold.copy()
-                    #del sstackimghold
+                    img = sstackimghold.copy()
+                    del sstackimghold
 
                     #plog(img[0].header["FILTER"])
 
