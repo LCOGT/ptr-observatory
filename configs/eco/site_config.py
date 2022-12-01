@@ -85,9 +85,9 @@ site_config = {
     'observing_check_period' : 5,    # How many minutes between weather checks
     'enclosure_check_period' : 5,    # How many minutes between enclosure checks
     'auto_eve_bias_dark': False,
-    'auto_eve_sky_flat': False,
+    'auto_eve_sky_flat': True,
     'eve_sky_flat_sunset_offset': -32.5,  #  Minutes  neg means before, + after.
-    'auto_morn_sky_flat': False,
+    'auto_morn_sky_flat': True,
     'auto_morn_bias_dark': False,
     're-calibrate_on_solve': True,
     'pointing_calibration_on_startup': False,
@@ -349,10 +349,10 @@ site_config = {
             #F4.9 setup
             'start_at_config_reference': True,
             'use_focuser_temperature': True,
-            'reference':22900,    #  20210313  Nominal at 10C Primary temperature
+            'reference':24200,    #  20210313  Nominal at 10C Primary temperature
             'ref_temp':  6265.0,    #  Update when pinning reference
             'coef_c': 0,   #  Negative means focus moves out as Primary gets colder
-            'coef_0': 22900,  #  Nominal intercept when Primary is at 0.0 C.
+            'coef_0': 24200,  #  Nominal intercept when Primary is at 0.0 C.
             'coef_date':  '20220914',    #This appears to be sensible result 44 points -13 to 3C'reference':  6431,    #  Nominal at 10C Primary temperature
             # #F9 setup
             # 'reference': 4375,    #   Guess 20210904  Nominal at 10C Primary temperature
@@ -410,8 +410,8 @@ site_config = {
                 'filter_data': [['filter', 'filter_index', 'filter_offset', 'sky_gain', 'screen_gain', 'alias'],  #NB NB NB add cwl & bw in nm.
 
                         #['w',     [0,  0],     0, 72.7, [1.00 ,  72], 'PL'],    #0.   For sequencer autofocus  consider foc or f filter
-                        #['focus', [0,  0],     0, 72.7, [1.00 ,  72], 'focus'],    #0.
-                        ['PL',    [0,  0],     0, 620, [1.00 ,  72], 'PhLum'],    #1.
+                        ['focus', [4,  4],     0, 72.7, [1.00 ,  72], 'focus'],    #0.
+                        ['air',    [0,  0],     0, 620, [1.00 ,  72], 'PhLum'],    #1.
                         ['dark',    [1,  1],     0, 170, [1.00 , 119], 'PhRed'],    #2.
                         ['PB',    [2,  2],     0, 220, [1.00 , 113], 'PhGreen'],    #3.
                         ['PG',    [3,  3],     0, 300, [0.80 ,  97], 'PhBlue'],    #4.
@@ -505,7 +505,7 @@ site_config = {
                 'trim_sec': ['[1:9576, 1:6388]', '[1:4788, 1:3194]', '[1:3192, 1:2129]', '[1:2394, 1:1597]'],
                 'x_pixel':  6,
                 'y_pixel':  6,
-                'pix_scale': [1.067, 2.134, 3.201, 4.268],
+                'pix_scale': [0.269],
                 'CameraXSize' : 4096,
                 'CameraYSize' : 4096,
                 'MaxBinX' : 2,

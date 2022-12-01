@@ -191,6 +191,11 @@ class Mount:
         self.mount = win32com.client.Dispatch(driver)
         self.mount.Connected = True
 
+        if "ASCOM.SoftwareBisque.Telescope" in config['mount']['mount1']['driver']:
+            self.theskyx = True
+        else:
+            self.theskyx = False
+
 #       plog('Can Asynch:  ', self.mount.CanSlewAltAzAsync)
 
         #hould put config Lat, lon, etc into mount, or at least check it is correct.
@@ -211,6 +216,8 @@ class Mount:
             self.has_paddle = config['mount']['mount2']['has_paddle']
         else:
             self.has_paddle = config['mount']['mount1']['has_paddle']
+            
+        
         self.object = "Unspecified"
         self.current_sidereal = self.mount.SiderealTime
         self.current_icrs_ra = "Unspecified_Ra"
@@ -1123,7 +1130,11 @@ class Mount:
     def slewToSkyFlatAsync(self):
         az, alt = self.astro_events.flat_spot_now()
         self.unpark_command()
-        self.mount.Tracking = False
+        
+        if not self.theskyx:
+            self.mount.Tracking = False
+        else:
+            print ("Currently tracking isn't available in theskyx driver???")
         self.move_time = time.time()
         try:
             self.move_to_altaz(az, alt)
