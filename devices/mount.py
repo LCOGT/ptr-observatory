@@ -58,29 +58,8 @@ import math
 from pprint import pprint
 import ephem
 from ptr_utility import plog
-#import utility
-
-# =============================================================================
-# from astropy.utils.iers import conf
-# #conf.auto_max_age = None
-# =============================================================================
-#from astroquery.vizier import Vizier
-#from astroquery.simbad import Simbad
-#from devices.pywinusb_paddle import *
 
 
-
-# siteLatitude = 34.342930277777775    #  34 20 34.569   #34 + (20 + 34.549/60.)/60.
-# siteLongitude = -119.68112805555556  #-(119 + (40 + 52.061/60.)/60.) 119 40 52.061 W
-# siteElevation = 317.75
-# siteRefTemp = 15.0         #These should be a monthly average data.
-# siteRefPress = 973.0       #mbar
-# siteName = "Photon Ranch"
-# siteAbbreviation = "PTR"
-# siteCoordinates = EarthLocation(lat=siteLatitude*u.deg, \
-#                                 lon=siteLongitude*u.deg,
-#                                 height=siteElevation*u.m)
-#ptr = EarthLocation(lat=siteLatitude*u.deg, lon=siteLongitude*u.deg, height=siteElevation*u.m)
 DEG_SYM = '°'
 PI = math.pi
 TWOPI = PI*2
@@ -110,10 +89,6 @@ loop_count = 0
 mountOne = "PW_L600"
 mountOneAscom = None
 
-# siteCoordinates = EarthLocation(lat=site_config['latitude']*u.deg, \
-#                                  lon=site_config['longitude']*u.deg,
-#                                  height=site_config['elevation']*u.m)
-    #The mount is not threaded and uses non-blocking seek.
 
 def ra_fix_r(ra):
     while ra >= TWOPI:
@@ -155,7 +130,6 @@ def ra_fix_h(ra):
         ra = 24
     return ra
 
-
 def wait_for_slew():
     try:                
         while g_dev['mnt'].mount.Slewing: #or g_dev['enc'].status['dome_slewing']:   #Filter is moving??
@@ -171,22 +145,6 @@ def wait_for_slew():
         breakpoint()
     
     return 
-
-#cv 19.5 East, 5.5 South AP 8.5 North, 14.5  redcat 30' e but on axis
-
-# def dome_adjust (alt, az, ha):  This is done at thedome
-
-#     s = -1
-#     if az <= 90 or az >=270:
-#         s = 1
-#     x = s*(90*math.cos(alt*DTOR) - 5.5*math.sin(alt*DTOR))
-#     y = -19.5*math.cos(ha*DTOR) + 90*math.sin(ha*DTOR)
-#     theta = math.atan2(y,x)
-#     if theta < 0:
-#         theta = 360 - theta
-
-#     return theta
-
 
 class Mount:
     '''
@@ -343,8 +301,6 @@ class Mount:
         if self.seek_commanded:    #Used for debugging.
             pass
 
-
-
         look_west = 0    #  NO NO NO!self.flip_correction_needed
         look_east = 1    #  This in not the stow side so flip needed.
         if self. mount.EquatorialSystem == 1:
@@ -398,12 +354,6 @@ class Mount:
                 dec_cal_offset=0
                 #print ("Mount does not report pier side")
 
-
-            #if self.mount.sideOfPier == look_west:
-            ##    ra_cal_offset, dec_cal_offset = self.get_mount_reference()
-            #else:
-            #    ra_cal_offset, dec_cal_offset = self.get_flip_reference()
-
             jnow_ra_r = ptr_utility.reduce_ra_r(app_ra_r - ra_cal_offset*HTOR)    # NB the mnt_refs are subtracted here.  Units are correct.
             jnow_dec_r = ptr_utility.reduce_dec_r( app_dec_r - dec_cal_offset*DTOR)
             jnow_ra_r, jnow_dec_r = ra_dec_fix_r(jnow_ra_r, jnow_dec_r)
@@ -412,18 +362,12 @@ class Mount:
             self.current_icrs_ra = icrs_coord.ra.hour
             self.current_icrs_dec = icrs_coord.dec.degree
         else:
-            #breakpoint()
-            #NB This is an unused and not completely implemented path, or does Planwave PWI-4 use it?
-            #breakpoint()   #20201230 WE should not get here.
 
             try:
                 ra_cal_offset, dec_cal_offset = self.get_mount_reference()
             except:
                 ra_cal_offset=0
                 dec_cal_offset=0
-                #print ("Mount does not report pier side")
-
-            #ra_cal_offset, dec_cal_offset = self.get_mount_reference()
 
             self.current_icrs_ra = ra_fix_r(self.mount.RightAscension - ra_cal_offset)    #May not be applied in positioning
             self.current_icrs_dec = self.mount.Declination - dec_cal_offset
@@ -570,32 +514,6 @@ class Mount:
 
         return status  #json.dumps(status)
 
-# =============================================================================
-# #20160316 OK
-# def transform_mount_to_Icrs(pCoord, pCurrentPierSide, pLST=None, loud=False):
-#
-#     if pLST is not None:
-#         lclSid = pLST
-#     else:
-#         lclSid =sidTime
-#     if loud: plog('Pcoord:  ', pCoord)
-#     roll, pitch = transform_raDec_to_haDec(pCoord[0], pCoord[1], sidTime)
-#     if loud: plog('MountToICRS1')
-#     obsHa, obsDec = transform_mount_to_observed(roll, pitch, pCurrentPierSide)
-#     if loud: plog('MountToICRS2')
-#     appRa, appDec = obsToAppHaRa(obsHa, obsDec, sidTime)
-#     if loud: plog('Out:  ', appRa, appDec, jYear)
-#     pCoordJnow = SkyCoord(appRa*u.hour, appDec*u.degree, frame='fk5', \
-#                           equinox=equinox_now)
-#     if loud: plog('pCoord:  ', pCoordJnow)
-#     t = pCoordJnow.transform_to(ICRS)
-#     if loud: plog('returning ICRS:  ', t)
-#     return (reduceRa(fromHMS(str(t.ra.to_string(u.hour)))),  \
-#             reduceDec(fromDMS(str(t.dec.to_string(u.degree)))))
-# =============================================================================
-
-
-
     def get_quick_status(self, pre):
 
         self.check_connect()
@@ -649,8 +567,6 @@ class Mount:
         while avg >= 2*half:
             avg = avg - 2*half
         return avg
-
-
 
     def get_average_status(self, pre, post):    #Add HA to this calculation.
 
@@ -753,6 +669,7 @@ class Mount:
         self.day = ((iso_day[1]-1)*7 + (iso_day[2] ))
         self.equinox_now = 'J' +str(round((iso_day[0] + ((iso_day[1]-1)*7 + (iso_day[2] ))/365), 2))
         return
+    
     ###############################
     #        Mount Commands       #
     ###############################
@@ -973,9 +890,6 @@ class Mount:
         else:
             pass#breakpoint()
 
-
-
-
     def go_coord(self, ra, dec, tracking_rate_ra=0, tracking_rate_dec=0, reset_solve=True):  #Note these rates need a system specification
         '''
         Slew to the given ra/dec coordinates, supplied in ICRS
@@ -996,16 +910,9 @@ class Mount:
         #flip offset.  So a GEM could track into positive HA territory without a problem but the next reseek should
         #result in a flip.  So first figure out if there will be a flip:
 
-
-
-        #new_pierside =  self.mount.DestinationSideOfPier(ra, dec) #  A tuple gets returned: (pierside, Ra.h and dec.d)
-
         try:
             new_pierside =  self.mount.DestinationSideOfPier(ra, dec) #  A tuple gets returned: (pierside, Ra.h and dec.d)
-
-
-            try:
-                                                                 #  NB NB Might be good to log is flipping on a re-seek.
+            try:                          #  NB NB Might be good to log is flipping on a re-seek.
                 if len(new_pierside) > 1:
                     if new_pierside[0] == 0:
                         delta_ra, delta_dec = self.get_mount_reference()
@@ -1062,13 +969,8 @@ class Mount:
         self.target_az = az*RTOD
 
 
-        #if self.site == 'sro':   #NB NB NB why this bypass?
-        #    self.mount.SlewToCoordinatesAsync(ra_app_h, dec_app_d)
-        #else:
-
         self.mount.SlewToCoordinatesAsync(self.ra_mech*RTOH, self.dec_mech*RTOD)  #Is this needed?
-        wait_for_slew()
-    
+        wait_for_slew()    
         
         
         ###  figure out velocity  Apparent place is unchanged.
@@ -1123,8 +1025,7 @@ class Mount:
 
     def slewToSkyFlatAsync(self):
         az, alt = self.astro_events.flat_spot_now()
-        self.unpark_command()
-        
+        self.unpark_command()        
 
         if self.mount.Tracking == True:
             if not self.theskyx:   
@@ -1135,9 +1036,6 @@ class Mount:
         self.move_time = time.time()
         try:
             self.move_to_altaz(az, alt)
-            
-            
-
             # On successful movement of telescope reset the solving timer
             g_dev['obs'].last_solve_time = datetime.datetime.now() - datetime.timedelta(days=1)
             g_dev['obs'].images_since_last_solve = 10000
