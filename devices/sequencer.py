@@ -490,8 +490,8 @@ class Sequencer:
                 # If it hasn't already been done tonight.
                 # if self.midnight_calibration_done == False:
                 #     if self.config['auto_midnight_moonless_bias_dark']:
-                #         # If the moon is not up
-                #         if (events['Prior Moon Set'] <= ephem_now < events['Moon Rise']):
+                #         # If the moon is way below the horizon
+                #         if (ephem.Moon().alt < -15):
                 #             # It is somewhere around midnight
                 #             if  (events['Middle of Night'] <= ephem_now < events['End Astro Dark']):
                 #                 print ("It is dark and the moon isn't up! Lets do some biases")                                

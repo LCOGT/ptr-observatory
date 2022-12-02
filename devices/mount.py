@@ -964,7 +964,7 @@ class Mount:
         plog('MODEL HA, DEC, AZ, Refraction:  (asec)  ', self.ha_corr, self.dec_corr, az*RTOD, self.refr_asec)
         self.target_az = az*RTOD
 
-
+        wait_for_slew() 
         self.mount.SlewToCoordinatesAsync(self.ra_mech*RTOH, self.dec_mech*RTOD)  #Is this needed?
         wait_for_slew()    
         
@@ -1297,6 +1297,7 @@ class Mount:
     def move_to_altaz(self, az, alt):
         print ("Moving to Alt " + str(alt) + " Az " + str(az))
         if self.config['mount']['mount1']['has_ascom_altaz'] == True:
+            wait_for_slew() 
             self.mount.SlewToAltAzAsync(az, alt)
             wait_for_slew()
         else:
@@ -1310,6 +1311,7 @@ class Mount:
             print (tempRA)
             print (tempDEC)
             #self.site_coordinates
+            wait_for_slew() 
             self.mount.SlewToCoordinatesAsync(tempRA, tempDEC)
             wait_for_slew()
         
