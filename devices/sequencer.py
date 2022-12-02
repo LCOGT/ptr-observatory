@@ -156,6 +156,7 @@ class Sequencer:
         self.morn_sky_flat_latch = True
         self.morn_bias_dark_latch = True   #NB NB NB Should these initially be defined this way?
         self.night_focus_ready=True
+        self.midnight_calibration_done = False
 
         self.reset_completes()  # NB NB Note this is reset each time sequencer is restarted.
 
@@ -354,7 +355,12 @@ class Sequencer:
             #plog('Skipping Eve Sky Flats')
             self.sky_flat_script({}, {}, morn=False)   #Null command dictionaries
             self.sky_flat_latch = False
-            g_dev['mnt'].mount.Tracking = True
+            if self.mount.Tracking == False:
+                if self.mount.CanSetTracking:   
+                    g_dev['mnt'].mount.Tracking = True
+                else:
+                    plog("mount is not tracking but this mount doesn't support ASCOM changing tracking")
+            
 
 # =============================================================================
 #         NB NB Note below often faults, should be in a try except instead of this
@@ -478,13 +484,34 @@ class Sequencer:
                     # else:
                     #     pass
                     #plog("Block tested for observatility")
-        
+                
+                
+                # Here is where observatories who do their biases at night... well.... do their biases!
+                # If it hasn't already been done tonight.
+                # if self.midnight_calibration_done == False:
+                #     if self.config['auto_midnight_moonless_bias_dark']:
+                #         # If the moon is not up
+                #         if (events['Prior Moon Set'] <= ephem_now < events['Moon Rise']):
+                #             # It is somewhere around midnight
+                #             if  (events['Middle of Night'] <= ephem_now < events['End Astro Dark']):
+                #                 print ("It is dark and the moon isn't up! Lets do some biases")                                
+                #                 g_dev['mnt'].park_command({}, {})
+                #                 self.bias_dark_script(req, opt, morn=False)
+                #                 self.midnight_calibration_done = True
+                                
+                                
+
+                    
+                
+                
+                
                 # #System hangs on this state
                 # elif ((g_dev['events']['Observing Ends']  < ephem_now < g_dev['events']['End Morn Sky Flats']) and \
                 #        g_dev['enc'].mode == 'Automatic') and not g_dev['ocn'].wx_hold and self.config['auto_morn_sky_flat']:
                 #     self.enc_to_skyflat_and_open(enc_status, ocn_status)
             except:
-                 plog("Hang up in sequencer.")
+                print(traceback.format_exc())
+                plog("Hang up in sequencer.")
         elif self.morn_sky_flat_latch and ((events['Morn Sky Flats'] <= ephem_now < events['End Morn Sky Flats'])  \
                and g_dev['enc'].mode == 'Automatic' and not g_dev['ocn'].wx_hold and \
                self.config['auto_morn_sky_flat']):
@@ -1195,6 +1222,9 @@ class Sequencer:
 
             # Allow early night focus
             self.night_focus_ready==True
+            
+            # Allow midnight calibrations
+            self.midnight_calibration_done = False
 
 
         return

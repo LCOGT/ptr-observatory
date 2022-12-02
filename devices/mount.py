@@ -173,10 +173,6 @@ class Mount:
         else:
             self.theskyx = False
 
-#       plog('Can Asynch:  ', self.mount.CanSlewAltAzAsync)
-
-        #hould put config Lat, lon, etc into mount, or at least check it is correct.
-
         self.site_coordinates = EarthLocation(lat=float(config['latitude'])*u.deg, \
                                 lon=float(config['longitude'])*u.deg,
                                 height=float(config['elevation'])*u.m)
@@ -1086,6 +1082,7 @@ class Mount:
             plog("mount cmd: parking mount")
             self.move_time = time.time()
             self.mount.Park()
+            wait_for_slew()
 
     def unpark_command(self, req=None, opt=None):
         ''' unpark the telescope mount '''
