@@ -1077,6 +1077,21 @@ class Mount:
         #else:
 
         self.mount.SlewToCoordinatesAsync(self.ra_mech*RTOH, self.dec_mech*RTOD)  #Is this needed?
+        # Wait for slew to finish!!
+        try:                
+            while g_dev['mnt'].mount.Slewing: #or g_dev['enc'].status['dome_slewing']:   #Filter is moving??
+                if g_dev['mnt'].mount.Slewing: plog( 'm>')
+                #if g_dev['enc'].status['dome_slewing']: st += 'd>'
+
+                time.sleep(0.2)
+                g_dev['obs'].update_status()            
+                
+        except:
+            plog("Motion check faulted.")
+            plog(traceback.format_exc())
+            breakpoint()
+    
+        
         
         ###  figure out velocity  Apparent place is unchanged.
         self.sid_next_r = (self.sid_now_h + self.delta_t_s*STOH)*HTOR    #delta_t_s is five minutes
@@ -1176,6 +1191,19 @@ class Mount:
             plog("Mount is not capable of finding home. Slewing to zenith.")
             self.move_time = time.time()
             self.move_to_altaz(0, 80)
+        # Wait for slew to finish!!
+        try:                
+            while g_dev['mnt'].mount.Slewing: #or g_dev['enc'].status['dome_slewing']:   #Filter is moving??
+                if g_dev['mnt'].mount.Slewing: plog( 'm>')
+                #if g_dev['enc'].status['dome_slewing']: st += 'd>'
+
+                time.sleep(0.2)
+                g_dev['obs'].update_status()            
+                
+        except:
+            plog("Motion check faulted.")
+            plog(traceback.format_exc())
+            breakpoint()
 
     def flat_panel_command(self, req, opt):
         ''' slew to the flat panel if it exists '''
@@ -1409,6 +1437,19 @@ class Mount:
         print ("Moving to Alt " + str(alt) + " Az " + str(az))
         if self.config['mount']['mount1']['has_ascom_altaz'] == True:
             self.mount.SlewToAltAzAsync(az, alt)
+            # Wait for slew to finish!!
+            try:                
+                while g_dev['mnt'].mount.Slewing: #or g_dev['enc'].status['dome_slewing']:   #Filter is moving??
+                    if g_dev['mnt'].mount.Slewing: plog( 'm>')
+                    #if g_dev['enc'].status['dome_slewing']: st += 'd>'
+
+                    time.sleep(0.2)
+                    g_dev['obs'].update_status()            
+                    
+            except:
+                plog("Motion check faulted.")
+                plog(traceback.format_exc())
+                breakpoint()
         else:
             plog("Recaclulating RA and DEC for Alt Az move")
             aa = AltAz (location=self.site_coordinates, obstime=Time.now())
