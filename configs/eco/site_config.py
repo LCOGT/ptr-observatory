@@ -86,7 +86,7 @@ site_config = {
     'enclosure_check_period' : 5,    # How many minutes between enclosure checks
     'auto_eve_bias_dark': False,
     'auto_eve_sky_flat': True,
-    'eve_sky_flat_sunset_offset': -32.5,  #  Minutes  neg means before, + after.
+    'eve_sky_flat_sunset_offset': 10.5,  #  Minutes  neg means before, + after.
     'auto_morn_sky_flat': True,
     'auto_morn_bias_dark': False,
     're-calibrate_on_solve': True,
