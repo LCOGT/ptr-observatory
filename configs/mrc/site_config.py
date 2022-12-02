@@ -185,7 +185,7 @@ site_config = {
         'observing_conditions1': {
             'parent': 'site',
             'ocn_is_specific':  False,  # Indicates some special site code.
-            # Intention it is found in this file.
+            # Intention it is found near bottom of this file.
             'name': 'Weather Station #1',
             'driver': 'ASCOM.SkyAlert.ObservingConditions',
             'share_path_name': None,
@@ -481,8 +481,7 @@ site_config = {
                 'filter_reference': 2,
 
                 'filter_list': ['PL','PR','PG','PB','HA','O3','S2', 'air','dif','w','CR','N2','up','gp','rp','ip','z', 'difup','difgp','difrp','difip','dark'], # A list of actual physical filters for the substitution function
-                'filter_data': [['filter', 'filter_index', 'filter_offset', 'sky_gain', 'screen_gain', 'abbreviation'],
-                                ['air',     [0, 0], -1000,  118.6,   [2, 17], 'ai'], #  0
+                'filter_data': [['air',     [0, 0], -1000,  118.6, [2, 17], 'ai'], #  0
                                 ['dif',     [4, 0],     0,  104.8, [2, 17], 'df'], #  1
                                 ['w',       [2, 0],     0,  133.7, [2, 17], 'w '], #  2
                                 ['CR',      [1, 0],     0,  0.706, [2, 17], 'CR'], #  3
