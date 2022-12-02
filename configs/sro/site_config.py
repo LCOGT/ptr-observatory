@@ -102,6 +102,7 @@ site_config = {
     'eve_screen_flat_dur': 0.0,   #  hours Duration, prior to next.
     'operations_begin':  -1.0,   #  - hours from Sunset
     'eve_sky_flat_sunset_offset': -35,  #  Minutes  neg means before, + after.  OPENING TIME
+    'eve_cool_down_open' : -60.0,
     'morn_sky_flat_sunrise_offset' : +15.0,  #  Minutes  neg means before, + after.  CLOSING TIME
 
     'eve_cooldown_offset': -.99,   #  - hours beforeSunset

@@ -1132,12 +1132,18 @@ class Mount:
         az, alt = self.astro_events.flat_spot_now()
         self.unpark_command()
         
-        #if not self.theskyx:
-        self.mount.Tracking = False
+
+        if self.mount.Tracking == True:
+            if not self.theskyx:   
+                self.mount.Tracking = False
+            else:
+                plog("mount tracking but it is theskyx and I haven't figure out how to turn it off yet. ")
 
         self.move_time = time.time()
         try:
             self.move_to_altaz(az, alt)
+            
+            
 
             # On successful movement of telescope reset the solving timer
             g_dev['obs'].last_solve_time = datetime.datetime.now() - datetime.timedelta(days=1)
@@ -1415,6 +1421,18 @@ class Mount:
             print (tempDEC)
             #self.site_coordinates
             self.mount.SlewToCoordinatesAsync(tempRA, tempDEC)
+            try:                
+                while g_dev['mnt'].mount.Slewing: #or g_dev['enc'].status['dome_slewing']:   #Filter is moving??
+                    if g_dev['mnt'].mount.Slewing: plog( 'm>')
+                    #if g_dev['enc'].status['dome_slewing']: st += 'd>'
+
+                    time.sleep(0.2)
+                    g_dev['obs'].update_status()            
+                    
+            except:
+                plog("Motion check faulted.")
+                plog(traceback.format_exc())
+                breakpoint()
         
 
         '''

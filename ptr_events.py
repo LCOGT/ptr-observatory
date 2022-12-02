@@ -465,7 +465,9 @@ class Events:
         # as this is when the night ends and the schedule gets reconfigured. So anything scheduled AFTER
         # then needs to be pulled back a day. Primarily because it sometimes does weird things.....
         endNightTime = ephem.Date(sunrise + 120/1440.)
+        cool_down_open = sunset + self.config['eve_cool_down_open']/1440
         eve_skyFlatBegin = sunset +  self.config['eve_sky_flat_sunset_offset']/1440
+        
 
         if endofnightoverride == 'no':
             if ephem.Date(eve_skyFlatBegin) > endNightTime:
@@ -507,7 +509,7 @@ class Events:
         evnt = [('Eve Bias Dark      ', ephem.Date(eve_skyFlatBegin -125/1440)),
                 ('End Eve Bias Dark  ', ephem.Date(eve_skyFlatBegin - 5/1440)),
                 ('Ops Window Start   ', ephem.Date(eve_skyFlatBegin)),  #Enclosure may open.
-                ('Cool Down, Open    ', ephem.Date(eve_skyFlatBegin)),
+                ('Cool Down, Open    ', ephem.Date(cool_down_open)),
                 ('Eve Sky Flats      ', ephem.Date(eve_skyFlatBegin)),   #  Nominally -35 for SRO
                 ('Sun Set            ', ephem.Date(sunset)),
                 ('Civil Dusk         ', ephem.Date(civilDusk)),
