@@ -188,7 +188,7 @@ site_config = {
         'observing_conditions1': {
             'parent': 'site',
             'ocn_is_specific':  False,  # Indicates some special site code.
-            # Intention it is found in this file.
+            # Intention it is found near bottom of this file.
             'name': 'Weather Station #1',
             'driver': 'ASCOM.SkyAlert.ObservingConditions',
             'share_path_name': None,
@@ -346,9 +346,11 @@ site_config = {
         'telescope1': {
             'parent': 'mount1',
             'name': 'Main OTA',
-            'desc':  'Planewave CDK 14 F7.2',
-            'telescop': 'mrc1',
-            'ptrtel': 'mrc1',
+            #'desc':  'Planewave_CDK_14_F7.2',
+            'telescop': 'mrc1',   #  The tenth telescope at mrc will be 'mrc10'. mrc2 already exists.
+                                  # the important thing is sites contain only a to z, but the string may get longer.
+                                  #  From the BZ perspective TELESCOP must be unique
+            'ptrtel': 'Planewave CDK 0.35m f7.2',
             'driver': 'None',                     #Essentially this device is informational.  It is mostly about the optics.
             'startup_script':  None,
             'recover_script':  None,
@@ -484,8 +486,7 @@ site_config = {
                 'filter_reference': 2,
 
                 'filter_list': ['PL','PR','PG','PB','HA','O3','S2', 'air','dif','w','CR','N2','up','gp','rp','ip','z', 'difup','difgp','difrp','difip','dark'], # A list of actual physical filters for the substitution function
-                'filter_data': [['filter', 'filter_index', 'filter_offset', 'sky_gain', 'screen_gain', 'abbreviation'],
-                                ['air',     [0, 0], -1000,  118.6,   [2, 17], 'ai'], #  0
+                'filter_data': [['air',     [0, 0], -1000,  118.6, [2, 17], 'ai'], #  0
                                 ['dif',     [4, 0],     0,  104.8, [2, 17], 'df'], #  1
                                 ['w',       [2, 0],     0,  133.7, [2, 17], 'w '], #  2
                                 ['CR',      [1, 0],     0,  0.706, [2, 17], 'CR'], #  3
@@ -623,8 +624,8 @@ site_config = {
                 'is_cmos':  True,
                 'is_color': False,
                 'can_set_gain':  True,
-                'ref_dark': 360,
-                'long_dark': 600,   #  s.
+                'ref_dark': 600,
+                'long_dark': None,   #  s.
                 'reference_gain': [1.3, 2.6, 3.9, 5.2],     #  One val for each binning. Assumed digitalsumming in camera???
                 'reference_noise': [6, 6, 6, 6],    #  NB Guess
                 'reference_dark': [.2, .8, 1.8, 3.2],  #  Guess
@@ -644,6 +645,7 @@ site_config = {
                 'flat_bin_spec': '1,1',    #Default binning for flats
                 'has_darkslide':  True,
                 'darkslide_com':  'COM15',
+                'shutter_type': "Electronic",
                 'has_screen': True,
                 'screen_settings':  {
                     'screen_saturation':  157.0,

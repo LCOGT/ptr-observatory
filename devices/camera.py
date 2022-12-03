@@ -433,14 +433,17 @@ class Camera:
         self.hint = None
         self.focus_cache = None
         self.darkslide = False
+        self.darkslide_state = "N.A."   #Not Available.
         if self.config["camera"][self.name]["settings"]["has_darkslide"]:
             self.darkslide = True
+            self.darkslide_state = 'Unknown'
             com_port = self.config["camera"][self.name]["settings"]["darkslide_com"]
             self.darkslide_instance = Darkslide(
                 com_port
             )  #  NB eventually default after reboot should be closed.
             # self.darkslide_instance.closeDarkslide()   #  Consider turing off IR Obsy light at same time..
             # self.darkslide_open = False
+            self.darkslide_state =  'Unknown'
             plog("Darkslide unknown on camera startup.")
         self.last_user_name = "Tobor"
         self.last_user_id = "Tobor"
@@ -713,10 +716,12 @@ class Camera:
 
             g_dev["drk"].closeDarkslide()
             plog("Closing the darkslide.")
+            self.darkslide_state = 'Closed'
         elif action == "darkslide_open":
 
             g_dev["drk"].openDarkslide()
             plog("Opening the darkslide.")
+            self.darkslide_state = 'Open'
         elif action == "stop":
             self.stop_command(req, opt)
             self.exposure_busy = False
@@ -1229,10 +1234,12 @@ class Camera:
                             if self.darkslide and imtypeb:
                                 self.darkslide_instance.openDarkslide()
                                 self.darkslide_open = True
+                                self.darkslide_state = 'Open'
                                 time.sleep(0.1)
                             elif self.darkslide and not imtypeb:
                                 self.darkslide_instance.closeDarkslide()
                                 self.darkslide_open = False
+                                self.darkslide_state = 'Closed'
                                 time.sleep(0.1)
                             else:
                                 pass
@@ -1728,13 +1735,12 @@ class Camera:
                     hdu.header["TELID"] = self.config["telescope"]["telescope1"][
                         "telescop"
                     ][:4]
+                    hdu.header["TELESCOP"] = self.config["telescope"]["telescope1"][
+                        "telescop"
+                    ][:4]
                     hdu.header["PTRTEL"] = self.config["telescope"]["telescope1"][
                         "ptrtel"
                     ]
-                    hdu.header["TELESCOP"] = (
-                        self.config["telescope"]["telescope1"]["desc"],
-                        "Name of the telescope",
-                    )  # 20220901 Deleted ['desc'] WER
                     hdu.header["PROPID"] = "ptr-" + self.config["site_id"] + "-001-0001"
                     hdu.header["BLKUID"] = (
                         "1234567890",
@@ -1750,6 +1756,9 @@ class Camera:
                         self.config["camera"][self.name]["manufacturer"],
                         "Name of camera manufacturer",
                     )
+                    hdu.header["DARKSLID"] = (self.darkslide_state, "Darkslide state")
+                    hdu.header['SHUTTYPE'] = (self.config["camera"][self.name]["settings"]["shutter_type"], 
+                                              'Type of shutter')
                     hdu.header["GAIN"] = (
                         self.config["camera"][self.name]["settings"]["reference_gain"][
                             self.camera.BinX - 1
