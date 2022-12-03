@@ -355,8 +355,8 @@ class Sequencer:
             #plog('Skipping Eve Sky Flats')
             self.sky_flat_script({}, {}, morn=False)   #Null command dictionaries
             self.sky_flat_latch = False
-            if self.mount.Tracking == False:
-                if self.mount.CanSetTracking:   
+            if g_dev['mnt'].mount.Tracking == False:
+                if g_dev['mnt'].mount.CanSetTracking:   
                     g_dev['mnt'].mount.Tracking = True
                 else:
                     plog("mount is not tracking but this mount doesn't support ASCOM changing tracking")
