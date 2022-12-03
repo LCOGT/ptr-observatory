@@ -93,7 +93,8 @@ site_config = {
     'observing_check_period' : 3,    # How many minutes between weather checks
     'enclosure_check_period' : 3,    # How many minutes between enclosure checks
 
-    'auto_eve_bias_dark': True,
+    'auto_eve_bias_dark': True,    
+    'auto_midnight_moonless_bias_dark': False,
     'auto_eve_sky_flat': True,
     'auto_morn_sky_flat': True,
     'auto_morn_bias_dark': True,
@@ -102,6 +103,7 @@ site_config = {
     'eve_screen_flat_dur': 0.0,   #  hours Duration, prior to next.
     'operations_begin':  -1.0,   #  - hours from Sunset
     'eve_sky_flat_sunset_offset': -35,  #  Minutes  neg means before, + after.  OPENING TIME
+    'eve_cool_down_open' : -60.0,
     'morn_sky_flat_sunrise_offset' : +15.0,  #  Minutes  neg means before, + after.  CLOSING TIME
 
     'eve_cooldown_offset': -.99,   #  - hours beforeSunset

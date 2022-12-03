@@ -1606,7 +1606,7 @@ class Camera:
                 if frame_type[-4:] == "flat":  # NB use in operator
                     if (
                         bi_mean
-                        >= self.config["camera"][self.name]["settings"]["saturate"]
+                        >= 0.75* self.config["camera"][self.name]["settings"]["saturate"]
                     ):
                         plog("Flat rejected, center is too bright:  ", bi_mean)
                         g_dev["obs"].send_to_user(
@@ -1615,6 +1615,20 @@ class Camera:
                         result["error"] = True
                         result["patch"] = bi_mean
                         return result  # signals to flat routine image was rejected, prompt return
+                    
+                    if (
+                        bi_mean
+                        <= 0.25 * self.config["camera"][self.name]["settings"]["saturate"]
+                    ):
+                        plog("Flat rejected, center is too dim:  ", bi_mean)
+                        g_dev["obs"].send_to_user(
+                            "Flat rejected, too dim.", p_level="INFO"
+                        )
+                        result["error"] = True
+                        result["patch"] = bi_mean
+                        return result  # signals to flat routine image was rejected, prompt return
+                    
+                    
                 g_dev["obs"].update_status()
                 counter = 0
 
