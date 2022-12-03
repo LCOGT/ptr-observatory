@@ -343,9 +343,11 @@ site_config = {
         'telescope1': {
             'parent': 'mount1',
             'name': 'Main OTA',
-            'desc':  'Planewave CDK 14 F7.2',
-            'telescop': 'mrc1',
-            'ptrtel': 'mrc1',
+            #'desc':  'Planewave_CDK_14_F7.2',
+            'telescop': 'mrc1',   #  The tenth telescope at mrc will be 'mrc10'. mrc2 already exists.
+                                  # the important thing is sites contain only a to z, but the string may get longer.
+                                  #  From the BZ perspective TELESCOP must be unique
+            'ptrtel': 'Planewave CDK 0.35m f7.2',
             'driver': 'None',                     #Essentially this device is informational.  It is mostly about the optics.
             'startup_script':  None,
             'recover_script':  None,
@@ -619,8 +621,8 @@ site_config = {
                 'is_cmos':  True,
                 'is_color': False,
                 'can_set_gain':  True,
-                'ref_dark': 360,
-                'long_dark': 600,   #  s.
+                'ref_dark': 600,
+                'long_dark': None,   #  s.
                 'reference_gain': [1.3, 2.6, 3.9, 5.2],     #  One val for each binning. Assumed digitalsumming in camera???
                 'reference_noise': [6, 6, 6, 6],    #  NB Guess
                 'reference_dark': [.2, .8, 1.8, 3.2],  #  Guess
@@ -640,6 +642,7 @@ site_config = {
                 'flat_bin_spec': '1,1',    #Default binning for flats
                 'has_darkslide':  True,
                 'darkslide_com':  'COM15',
+                'shutter_type': "Electronic",
                 'has_screen': True,
                 'screen_settings':  {
                     'screen_saturation':  157.0,

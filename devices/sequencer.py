@@ -499,9 +499,9 @@ class Sequencer:
                   self.config['auto_morn_bias_dark']: # and g_dev['enc'].mode == 'Automatic' ):
             #breakpoint()
             self.morn_bias_dark_latch = False
-            req = {'bin1': False, 'bin2': True, 'bin3': False, 'bin4': False, 'numOfBias': 45, \
-                    'numOfDark': 15, 'darkTime': 180, 'numOfDark2': 3, 'dark2Time': 360, \
-                    'hotMap': True, 'coldMap': True, 'script': 'genBiasDarkMaster', }
+            req = {'bin1': False, 'bin2': True, 'bin3': False, 'bin4': False, 'numOfBias': 63, \
+                    'numOfDark': 31, 'darkTime': 600, 'numOfDark2': 31, 'dark2Time': 600, \
+                    'hotMap': True, 'coldMap': True, 'script': 'genBiasDarkMaster', }  #This specificatin is obsolete
             opt = {}
             #No action needed on  the enclosure at this level
             self.park_and_close(enc_status)
@@ -942,31 +942,31 @@ class Sequencer:
 
             g_dev['mnt'].park_command({}, {}) # Get there early
 
-            plog("Expose Biases: by configured binning;  normal and long darks.")
+            plog("Expose Biases and normal darks by configured binning.")
 
-            dark_time = self.config['camera']['camera_1_1']['settings']['ref_dark']
+            short_dark_time = self.config['camera']['camera_1_1']['settings']['ref_dark']
             long_dark_time = self.config['camera']['camera_1_1']['settings']['long_dark']
+            bias_count = 7
 
-
-            for bias in range(9):   #9*(9 +1) per cycle.
+            for bias in range(bias_count):   #9*(9 +1) per cycle.
                 if ephem.now() + 210/86400 > ending:
                     break
                 if "1 1" in self.config['camera']['camera_1_1']['settings']['bin_enable']:
                     req = {'time': 0.0,  'script': 'True', 'image_type': 'bias'}
-                    opt = {'area': "Full", 'count': 9, 'bin':'1 1', \
+                    opt = {'area': "Full", 'count': bias_count, 'bin':'1 1', \
                             'filter': 'dark'}
                     plog("Expose b_1")
-                    result = g_dev['cam'].expose_command(req, opt, no_AWS=True, \
+                    result = g_dev['cam'].expose_command(req, opt, no_AWS=False, \
                                     do_sep=False, quick=False)
                     g_dev['obs'].update_status()
-                    dark_time = 360
+                    dark_time = short_dark_time
                     if ephem.now() + (dark_time + 30)/86400 > ending:
                         break
                     plog("Expose ref_dark using exposure:  ", dark_time )
                     req = {'time':dark_time ,  'script': 'True', 'image_type': 'dark'}
                     opt = {'area': "Full", 'count':1, 'bin': '1 1', \
                             'filter': 'dark'}
-                    result = g_dev['cam'].expose_command(req, opt, no_AWS=True, \
+                    result = g_dev['cam'].expose_command(req, opt, no_AWS=False, \
                                         do_sep=False, quick=False)
 
                     g_dev['obs'].update_status()
@@ -978,26 +978,26 @@ class Sequencer:
                         req = {'time':long_dark_time ,  'script': 'True', 'image_type': 'dark'}
                         opt = {'area': "Full", 'count':1, 'bin': '1 1', \
                                 'filter': 'dark'}
-                        result = g_dev['cam'].expose_command(req, opt, no_AWS=True, \
+                        result = g_dev['cam'].expose_command(req, opt, no_AWS=False, \
                                             do_sep=False, quick=False)
 
                         g_dev['obs'].update_status()
                 if "2 2" in self.config['camera']['camera_1_1']['settings']['bin_enable']:
                     req = {'time': 0.0,  'script': 'True', 'image_type': 'bias'}
-                    opt = {'area': "Full", 'count': 9, 'bin':'2 2', \
+                    opt = {'area': "Full", 'count': bias_count, 'bin':'2 2', \
                             'filter': 'dark'}
-                    plog("Expose b_1")
-                    result = g_dev['cam'].expose_command(req, opt, no_AWS=True, \
+                    plog("Expose b_2")
+                    result = g_dev['cam'].expose_command(req, opt, no_AWS=False, \
                                     do_sep=False, quick=False)
                     g_dev['obs'].update_status()
-                    dark_time = 360
+                    dark_time = short_dark_time
                     if ephem.now() + (dark_time + 30)/86400 > ending:
                         break
                     plog("Expose ref_dark using exposure:  ", dark_time )
                     req = {'time':dark_time ,  'script': 'True', 'image_type': 'dark'}
                     opt = {'area': "Full", 'count':1, 'bin': '2 2', \
                             'filter': 'dark'}
-                    result = g_dev['cam'].expose_command(req, opt, no_AWS=True, \
+                    result = g_dev['cam'].expose_command(req, opt, no_AWS=False, \
                                         do_sep=False, quick=False)
 
                     g_dev['obs'].update_status()
