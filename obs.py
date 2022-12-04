@@ -136,7 +136,7 @@ class Observatory:
         self.wema_types = config["wema_types"]
         self.enc_types = None  # config['enc_types']
         self.short_status_devices = (
-            None  # config['short_status_devices']  # May not be needed for no wema obsy
+             config['short_status_devices']  # May not be needed for no wema obsy
         )
         self.observing_status_timer = datetime.datetime.now() - datetime.timedelta(
             days=1
@@ -243,7 +243,7 @@ class Observatory:
         # Need to set this for the night log
         #g_dev['foc'].set_focal_ref_reset_log(self.config["focuser"]["focuser1"]["reference"])
         # Send the config to AWS. TODO This has faulted.
-        self.update_config()
+        self.update_config()   #This is the never-ending control loop
 
     def set_last_reference(self, delta_ra, delta_dec, last_time):
         mnt_shelf = shelve.open(self.site_path + "ptr_night_shelf/" + "last")
@@ -365,7 +365,7 @@ class Observatory:
 
         # This stopping mechanism allows for threads to close cleanly.
 
-        while not self.stopped:
+        while not self.stopped:    #This variable is not used.
 
             if  True:  #not g_dev["seq"].sequencer_hold:  THis causes an infinte loope witht he above while
                 url_job = "https://jobs.photonranch.org/jobs/getnewjobs"
@@ -396,27 +396,34 @@ class Observatory:
                             self.send_to_user(
                                 "Pending reductions and transfers to the PTR Archive are not affected."
                             )
-                            # Empty the queue
-
+                            # Now we need to cancel possibly a pending camera cycle or a
+                            # script running in the sequencer.  NOTE a stop or cancel empties outgoing queue at AWS side and only
+                            # a Cancel/Stop action is sent.  But we need to same any subsequent commands.
                             try:
                                 if g_dev["cam"].exposure_busy:
+                                    
                                     g_dev["cam"]._stop_expose()
+                                    # Should we try to flush the image array?
                                     g_dev["obs"].stop_all_activity = True
+                                    g_dev["cam"].exposure_busy = False
                                 else:
                                     plog("Camera is not busy.")
                             except:
                                 plog("Camera stop faulted.")
                             while self.cmd_queue.qsize() > 0:
                                 plog("Deleting Job:  ", self.cmd_queue.get())
-                            return  # Note we basically do nothing and let camera, etc settle down.
+                            
+                            #return  # Note we basically do nothing and let camera, etc settle down.
                         else:
                             self.cmd_queue.put(cmd)  # SAVE THE COMMAND FOR LATER
+                            g_dev["obs"].stop_all_activity = False
                             self.send_to_user(
                                 "Queueing up a new command... Hint:  " + cmd["action"]
                             )
 
-                    if cancel_check:
-                        return  # Note we do not process any commands.
+                        if cancel_check:
+                            result={'stopped': True}
+                            return  # Note we do not process any commands.
 
                 while self.cmd_queue.qsize() > 0:
                     self.send_to_user(
@@ -534,15 +541,13 @@ class Observatory:
                 
                 continue
 
-    def update_status(self, bpt=False):
+    def update_status(self, bpt=False, cancel_check=False):
         """Collects status from all devices and sends an update to AWS.
 
         Each device class is responsible for implementing the method
         `get_status`, which returns a dictionary.
         """
-
-
-        # This stopping mechanism allows for threads to close cleanly.
+        
         loud = False
         if bpt:
             print('UpdateStatus bpt was invoked.')
@@ -556,16 +561,16 @@ class Observatory:
         status = {}
         # Loop through all types of devices.
         # For each type, we get and save the status of each device.
-        
-        if not self.config["wema_is_active"]:
-            device_list = self.short_status_devices()
-            remove_enc = False
+
+        if self.config["wema_is_active"]:
+            device_list = self.short_status_devices  #  used when wema is sending ocn and enc status via a different stream.
+            remove_enc = False   
         else:
-            device_list = self.device_types
+            device_list = self.device_types  #  used when one computer is doing everything for a site.
             remove_enc = True
         for dev_type in device_list:
-            # The status that we will send is grouped into lists of
-            # devices by dev_type.
+            #  The status that we will send is grouped into lists of
+            #  devices by dev_type.
             status[dev_type] = {}
             # Names of all devices of the current type.
             # Recall that self.all_devices[type] is a dictionary of all
@@ -619,13 +624,15 @@ class Observatory:
         status["timestamp"] = round((time.time() + t1) / 2.0, 3)
         status["send_heartbeat"] = False
         try:
+            ocn_status = None
+            enc_status = None
             ocn_status = {"observing_conditions": status.pop("observing_conditions")}
             enc_status = {"enclosure": status.pop("enclosure")}
             device_status = status
         except:
             pass
         loud = False
-        # Consider inhibity unless status rate is low
+        # Consider inhibiting unless status rate is low
         obsy = self.name
         if ocn_status is not None:
             lane = "weather"
@@ -633,9 +640,9 @@ class Observatory:
         if enc_status is not None:
             lane = "enclosure"
             send_status(obsy, lane, enc_status)
-        if device_status is not None:
+        if status is not None:
             lane = "device"
-            send_status(obsy, lane, device_status)
+            send_status(obsy, lane, status)
         if loud:
             plog("\n\nStatus Sent:  \n", status)
         else:
@@ -644,7 +651,6 @@ class Observatory:
         self.time_last_status = time.time()
         self.status_count += 1
         try:
-
             self.scan_requests(cancel_check=True
             )  # NB THis has faulted, usually empty input lists.
         except:
@@ -677,8 +683,9 @@ class Observatory:
             )  # NBNBNB THis has faulted, usually empty input lists.
         except:
             pass
-        if self.status_count > 2:  # Give time for status to form
+        if self.status_count > 1:  # Give time for status to form
             g_dev["seq"].manager()  # Go see if there is something new to do.
+        
 
     def run(self):  # run is a poor name for this function.
         try:
@@ -1313,4 +1320,4 @@ class Observatory:
 if __name__ == "__main__":
 
     o = Observatory(config.site_name, config.site_config)
-    o.run()
+    o.run()   #This is meant to be a never ending loop.
