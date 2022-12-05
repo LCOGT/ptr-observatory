@@ -834,7 +834,7 @@ class Enclosure:
         #     redis_hold = eval(self.redis_server.get('wx_hold'))
         # except:
         #     redis_hold =False
-        breakpoint()
+
         wx_hold = g_dev['ocn'].wx_hold #or redis_hold  #TWO PATHS to pick up wx-hold.
         if self.mode == "Automatic" and (open_cmd or close_cmd):
             g_dev['obs'].send_to_user("User enclosure requests not honored in Automatic mode.", p_level='INFO')
