@@ -121,7 +121,7 @@ site_config = {
     
     'auto_midnight_moonless_bias_dark': False,
     'auto_eve_sky_flat': False,
-    'eve_sky_flat_sunset_offset': -60.,  #  Minutes  neg means before, + after.
+    'eve_sky_flat_sunset_offset': -180.,  #  Minutes  neg means before, + after.
     'eve_cool_down_open' : -60.0,
     'auto_morn_sky_flat': False,
     'auto_morn_bias_dark': True,
