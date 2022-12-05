@@ -1037,7 +1037,11 @@ class Camera:
             # SEQ is the outer repeat loop and takes count images; those individual exposures are wrapped in a
             # retry-3-times framework with an additional timeout included in it.
             if seq > 0:
-                g_dev["obs"].update_status()
+                g_dev["obs"].update_status(cancel_check=False)
+                # breakpoint()
+                # if not g_dev["cam"].exposure_busy:
+                #     result = {"stopped": True}
+                #     return result
 
             ## Vital Check : Has end of observing occured???
             ## Need to do this, SRO kept taking shots til midday without this
@@ -1116,7 +1120,10 @@ class Camera:
                     st = ""
                     time.sleep(0.2)
                     if seq > 0:
-                        g_dev["obs"].update_status()
+                        g_dev["obs"].update_status(cancel_check=True)
+                        if not g_dev["cam"].exposure_busy:
+                            result = {"stopped": True}
+                            return result
                     # Refresh the probe of the dome status
                     if g_dev["enc"].is_dome:
                         try:
@@ -1476,8 +1483,13 @@ class Camera:
                 #plog("OCN status not quick updated")
                 pass
             if time.time() > self.status_time:
-                g_dev["obs"].update_status()
+                g_dev["obs"].update_status(cancel_check=False)
+                # if not g_dev["cam"].exposure_busy:
+                #     result = {"stopped": True}
+                #     return result
+                    
                 self.status_time = time.time() + 10
+                
             if (
                 time.time() < self.completion_time
             ):  # NB Testing here if glob too early is delaying readout.
@@ -1568,9 +1580,9 @@ class Camera:
                 self.t4p5 = (
                     time.time()
                 )  # As read, this is a Windows Safe Array of Longs
-                if frame_type in ["bias", "dark"]:
+                if frame_type in ["bias", "dark"] or frame_type[-4:] == ['flat']:
                     plog(
-                        "Median of full area bias or dark  image:  ",
+                        "Median of full area bias, dark or flat image:  ",
                         np.median(self.img),
                     )
 
@@ -1616,7 +1628,7 @@ class Camera:
                         result["patch"] = bi_mean
                         return result  # signals to flat routine image was rejected, prompt return
                     
-                    if (
+                    elif (
                         bi_mean
                         <= 0.25 * self.config["camera"][self.name]["settings"]["saturate"]
                     ):
@@ -1627,9 +1639,15 @@ class Camera:
                         result["error"] = True
                         result["patch"] = bi_mean
                         return result  # signals to flat routine image was rejected, prompt return
+                    else:
+                        plog('Flat value is:  ', bi_mean)
                     
-                    
-                g_dev["obs"].update_status()
+                g_dev["obs"].update_status(cancel_check=True)
+                if not g_dev["cam"].exposure_busy:
+                    result = {"stopped": True}
+                    return result
+                
+
                 counter = 0
 
                 avg_mnt = g_dev["mnt"].get_average_status(self.pre_mnt, self.post_mnt)
@@ -1816,6 +1834,8 @@ class Camera:
                         frame_type.upper(),
                         "Observation type",
                     )  # This report is fixed and it should vary...NEEDS FIXING!
+                    if frame_type.upper() == "SKY FLAT":
+                       frame_type =="SKYFLAT" 
                     hdu.header["IMAGETYP"] = (frame_type.upper(), "Observation type")
                     hdu.header["EXPTIME"] = (
                         exposure_time,
@@ -3099,7 +3119,10 @@ class Camera:
                     ]:
                         self.to_reduce((paths, pixscale, smartstackid, sskcounter, Nsmartstack, sources))
 
-                    g_dev["obs"].update_status()
+                    g_dev["obs"].update_status(cancel_check=True)
+                    if not g_dev["cam"].exposure_busy:
+                        result = {"stopped": True}
+                        return result
                     result["mean_focus"] = avg_foc[1]
                     try:
                         result["mean_rotation"] = avg_rot[1]
