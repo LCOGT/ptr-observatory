@@ -206,6 +206,18 @@ class ObservingConditions:
                 self.status = status
                 self.prior_status = status
                 g_dev["ocn"].status = status
+                if status['wx_ok'] in ['no', 'No', False]:
+                    self.wx_is_ok = False
+                if status['wx_ok'] in ['yes', 'Yes', True]:
+                    self.wx_is_ok = True
+                if status['open_ok'] in ['no', 'No', False]:
+                    self.ok_to_open = False
+                if status['open_ok'] in ['yes', 'Yes', True]:
+                    self.ok_to_open = True
+                if status['wx_hold'] in ['no', 'No', False]:
+                    self.wx_hold = False
+                if status['wx_hold'] in ['yes', 'Yes', True]:
+                    self.wx_hold = True
                 try:
                     self.current_ambient = self.status["temperature_C"]
                 except:
