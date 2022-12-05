@@ -1393,12 +1393,19 @@ class Sequencer:
                     # MF SHIFTING EXPOSURE TIME CALCULATOR EQUATION TO BE MORE GENERAL FOR ALL TELESCOPES
                 if sky_lux != None:
                     exp_time = prior_scale*scale*target_flat/(collecting_area*sky_lux*float(g_dev['fil'].filter_data[current_filter][3]))  #g_dev['ocn'].calc_HSI_lux)  #meas_sky_lux)
-                    
-                else:
-                    exp_time = prior_scale*scale*target_flat/float(g_dev['fil'].filter_data[current_filter][3])  #g_dev['ocn'].calc_HSI_lux)  #meas_sky_lux)
-    
-                plog('Ex:  ', exp_time, scale, prior_scale, sky_lux, float(g_dev['fil'].filter_data[current_filter][3]))
+                    plog('Ex:  ', exp_time, scale, prior_scale, sky_lux, float(g_dev['fil'].filter_data[current_filter][3]))
 
+                else:
+                    if g_dev["fil"].null_filterwheel == False:
+                        exp_time = prior_scale*scale*target_flat/float(g_dev['fil'].filter_data[current_filter][3])  #g_dev['ocn'].calc_HSI_lux)  #meas_sky_lux)
+                        plog('Ex:  ', exp_time, scale, prior_scale, float(g_dev['fil'].filter_data[current_filter][3]))
+
+                    else:
+                        exp_time = prior_scale*scale*target_flat
+                        plog('Ex:  ', exp_time, scale, prior_scale)
+
+    
+                
                 if evening and exp_time > 120:
                      #exp_time = 60    #Live with this limit.  Basically started too late
                      plog('Break because proposed evening exposure > 180 seconds:  ', exp_time)
