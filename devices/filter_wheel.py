@@ -26,206 +26,211 @@ class FilterWheel:
         self.name = name
         g_dev["fil"] = self
         self.config = config["filter_wheel"]
-
-        self.dual_filter = self.config["filter_wheel1"]["dual_wheel"]
-        self.ip = str(self.config["filter_wheel1"]["ip_string"])
-        self.filter_data = self.config["filter_wheel1"]["settings"]["filter_data"][
-            1:
-        ]  # Strips off column heading entry
-        self.filter_screen_sort = self.config["filter_wheel1"]["settings"][
-            "filter_screen_sort"
-        ]
-        self.filter_reference = int(
-            self.config["filter_wheel1"]["settings"]["filter_reference"]
-        )
-
-        # NOTE: THIS CODE DOES NOT implement a filter via the Maxim application
-        # which is passed in as a valid instance of class camera.
-        self.filter_message = "-"
-        plog(
-            "Please NOTE: Filter wheel may block for many seconds while first connecting & homing."
-        )
-        if driver == "LCO.dual":
-            # home the wheel and get responses, which indicates it is connected.
-            # set current_0 and _1 to [0, 0] position to default of w/L filter.
-
-            r0 = requests.get(self.ip + "/filterwheel/0/position")
-            r1 = requests.get(self.ip + "/filterwheel/1/position")
-            if str(r0) == str(r1) == "<Response [200]>":
-                plog("LCO Wheel present and connected.")
-
-            r0 = json.loads(r0.text)
-            r1 = json.loads(r1.text)
-            self.r0 = r0
-            self.r1 = r1
-            r0["filterwheel"]["position"] = 0
-            r1["filterwheel"]["position"] = 7
-            r0_pr = requests.put(self.ip + "/filterwheel/0/position", json=r0)
-            r1_pr = requests.put(self.ip + "/filterwheel/1/position", json=r1)
-            if str(r0_pr) == str(r1_pr) == "<Response [200]>":
-                plog("Set up default filter configuration.")
-            self.maxim = False
-            self.theskyx = False
-            self.ascom = False
-            self.dual = True
-            self.custom = True
-            self.filter_selected = self.filter_data[self.filter_reference][0]
-            self.filter_number = self.filter_reference
-            self.filter_offset = self.filter_data[self.filter_reference][2]
-        elif isinstance(driver, list) and self.dual_filter:
-            # TODO: Fix this, THIS IS A FAST KLUDGE TO GET MRC WORKING, NEED TO VERIFY THE FILTER ORDERING
-            self.filter_back = win32com.client.Dispatch(driver[0])  # Closest to Camera
-            self.filter_front = win32com.client.Dispatch(driver[1])  # Closest to Tel
-            self.filter_back.Connected = True
-            self.filter_front.Connected = True
-
-            self.filter_front.Position = 0
-            self.filter_back.Position = 0
-            self.dual = True
-            self.custom = False
-            self.filter_selected = self.filter_data[self.filter_reference][0]
-            self.filter_number = self.filter_reference
-            self.filter_offset = self.filter_data[self.filter_reference][2]
-            # First setup:
-            time.sleep(1)
-            while self.filter_front.Position == -1:
-                time.sleep(0.2)
-            self.filter_front.Position = self.filter_data[self.filter_reference][1][1]
-            time.sleep(1)
-            while self.filter_back.Position == -1:
-                time.sleep(0.2)
-            self.filter_back.Position = self.filter_data[self.filter_reference][1][0]
-            time.sleep(1)
-            plog(self.filter_selected, self.filter_offset)
-        elif driver == "ASCOM.FLI.FilterWheel" and self.dual_filter:
-            self.maxim = False
-            self.dual = True
-
-            fw0 = win32com.client.Dispatch(driver)  # Closest to Camera
-            fw1 = win32com.client.Dispatch(driver)  # Closest to Telescope
-            plog(fw0, fw1)
-
-            actions0 = fw0.SupportedActions
-            actions1 = fw1.SupportedActions
-            for action in actions0:
-                plog("action0:   " + action)
-            for action in actions1:
-                plog("action1:   " + action)
-            device_names0 = fw0.Action("GetDeviceNames", "")
-            plog("action0:    " + device_names0)
-            devices0 = device_names0.split(";")
-            device_names1 = fw1.Action("GetDeviceNames", "")
-            plog("action1:    " + device_names1)
-            devices1 = device_names1.split(";")
-            fw0.Action("SetDeviceName", devices0[0])
-            fw1.Action("SetDeviceName", devices1[1])
-            fw0.Connected = True
-            fw1.Connected = True
-            plog("Conn 1,2:  ", fw0.Connected, fw1.Connected)
-            plog("Pos  1,2:  ", fw0.Position, fw1.Position)
-
-            self.filter_back = fw1  # Closest to Camera
-            self.filter_front = fw0  # Closest to Telescope
-            self.filter_back.Connected = True
-            self.filter_front.Connected = True
-            plog(
-                "filters are connected:  ",
-                self.filter_front.Connected,
-                self.filter_back.Connected,
+        
+        if driver is not None:
+            self.null_filterwheel = False
+            self.dual_filter = self.config["filter_wheel1"]["dual_wheel"]
+            self.ip = str(self.config["filter_wheel1"]["ip_string"])
+            self.filter_data = self.config["filter_wheel1"]["settings"]["filter_data"][
+                1:
+            ]  # Strips off column heading entry
+            self.filter_screen_sort = self.config["filter_wheel1"]["settings"][
+                "filter_screen_sort"
+            ]
+            self.filter_reference = int(
+                self.config["filter_wheel1"]["settings"]["filter_reference"]
             )
+    
+            # NOTE: THIS CODE DOES NOT implement a filter via the Maxim application
+            # which is passed in as a valid instance of class camera.
+            self.filter_message = "-"
             plog(
-                "filter positions:  ",
-                self.filter_front.Position,
-                self.filter_back.Position,
+                "Please NOTE: Filter wheel may block for many seconds while first connecting & homing."
             )
-
-            self.dual = True
-            self.custom = False
-            self.filter_selected = self.filter_data[self.filter_reference][0]
-            self.filter_number = self.filter_reference
-            self.filter_offset = self.filter_data[self.filter_reference][2]
-
-            # First setup:
-            time.sleep(1)
-            while self.filter_front.Position == -1:
-                time.sleep(0.2)
-            self.filter_front.Position = self.filter_data[self.filter_reference][1][1]
-            time.sleep(1)
-            while self.filter_back.Position == -1:
-                time.sleep(0.2)
-            self.filter_back.Position = self.filter_data[self.filter_reference][1][0]
-            time.sleep(1)
-            plog(self.filter_selected, self.filter_offset)
-
-        elif driver.lower() in ["maxim.ccdcamera", "maxim", "maximdl", "maximdlpro"]:
-            # NOTE: Changed since FLI Dual code is failing.
-            # This presumes Maxim is filter wheel controller and
-            # it may be the Aux-camera controller as well.
-            win32com.client.pythoncom.CoInitialize()
-            self.filter = win32com.client.Dispatch(driver)
-
-            # Monkey patch in Maxim specific methods.
-            self._connected = self._maxim_connected
-            self._connect = self._maxim_connect
-            self.description = "Maxim is Filter Controller."
-            plog("Maxim is connected:  ", self._connect(True))
-            plog("Filter control is via Maxim filter interface.")
-            plog(
-                "Initial filters reported are:  ",
-                self.filter.Filter,
-                self.filter.GuiderFilter,
-            )
-            self.maxim = True
-            self.ascom = False
-            self.dual = True
-            self.custom = False
-            # This is the default expected after a home or power-up cycle.
-            self.filter_selected = self.filter_data[self.filter_reference][0]
-
-            self.filter_number = self.filter_reference
-            self.filter_offset = self.filter_data[self.filter_reference][2]
-            # We assume camera object has been created before the filter object.
-            # Note filter may be commanded directly by AWS or provided in an expose
-            # command as an optional parameter.
-        elif "com" in driver.lower():
-            self.custom = True
-            try:
-                ser = serial.Serial(str(driver), timeout=12)
-                filter_pos = str(ser.read().decode())
-                plog("QHY filter is Home", filter_pos)
-                self.filter_number = 0
-                self.filter_name = "lpr"
-            except:
-                plog("QHY Filter not connected.")
-
-        # This controls the filter wheel through TheSkyX
-        elif driver == "CCDSoft2XAdaptor.ccdsoft5Camera":
-            self.maxim = False
-            self.dual = False
-            self.custom = False
-            self.theskyx = True
-            win32com.client.pythoncom.CoInitialize()
-            self.filter = win32com.client.Dispatch(driver)
-            self.filter.Connect()
-            #com_object = win32com.client.Dispatch(driver)
-
+            if driver == "LCO.dual":
+                # home the wheel and get responses, which indicates it is connected.
+                # set current_0 and _1 to [0, 0] position to default of w/L filter.
+    
+                r0 = requests.get(self.ip + "/filterwheel/0/position")
+                r1 = requests.get(self.ip + "/filterwheel/1/position")
+                if str(r0) == str(r1) == "<Response [200]>":
+                    plog("LCO Wheel present and connected.")
+    
+                r0 = json.loads(r0.text)
+                r1 = json.loads(r1.text)
+                self.r0 = r0
+                self.r1 = r1
+                r0["filterwheel"]["position"] = 0
+                r1["filterwheel"]["position"] = 7
+                r0_pr = requests.put(self.ip + "/filterwheel/0/position", json=r0)
+                r1_pr = requests.put(self.ip + "/filterwheel/1/position", json=r1)
+                if str(r0_pr) == str(r1_pr) == "<Response [200]>":
+                    plog("Set up default filter configuration.")
+                self.maxim = False
+                self.theskyx = False
+                self.ascom = False
+                self.dual = True
+                self.custom = True
+                self.filter_selected = self.filter_data[self.filter_reference][0]
+                self.filter_number = self.filter_reference
+                self.filter_offset = self.filter_data[self.filter_reference][2]
+            elif isinstance(driver, list) and self.dual_filter:
+                # TODO: Fix this, THIS IS A FAST KLUDGE TO GET MRC WORKING, NEED TO VERIFY THE FILTER ORDERING
+                self.filter_back = win32com.client.Dispatch(driver[0])  # Closest to Camera
+                self.filter_front = win32com.client.Dispatch(driver[1])  # Closest to Tel
+                self.filter_back.Connected = True
+                self.filter_front.Connected = True
+    
+                self.filter_front.Position = 0
+                self.filter_back.Position = 0
+                self.dual = True
+                self.custom = False
+                self.filter_selected = self.filter_data[self.filter_reference][0]
+                self.filter_number = self.filter_reference
+                self.filter_offset = self.filter_data[self.filter_reference][2]
+                # First setup:
+                time.sleep(1)
+                while self.filter_front.Position == -1:
+                    time.sleep(0.2)
+                self.filter_front.Position = self.filter_data[self.filter_reference][1][1]
+                time.sleep(1)
+                while self.filter_back.Position == -1:
+                    time.sleep(0.2)
+                self.filter_back.Position = self.filter_data[self.filter_reference][1][0]
+                time.sleep(1)
+                plog(self.filter_selected, self.filter_offset)
+            elif driver == "ASCOM.FLI.FilterWheel" and self.dual_filter:
+                self.maxim = False
+                self.dual = True
+    
+                fw0 = win32com.client.Dispatch(driver)  # Closest to Camera
+                fw1 = win32com.client.Dispatch(driver)  # Closest to Telescope
+                plog(fw0, fw1)
+    
+                actions0 = fw0.SupportedActions
+                actions1 = fw1.SupportedActions
+                for action in actions0:
+                    plog("action0:   " + action)
+                for action in actions1:
+                    plog("action1:   " + action)
+                device_names0 = fw0.Action("GetDeviceNames", "")
+                plog("action0:    " + device_names0)
+                devices0 = device_names0.split(";")
+                device_names1 = fw1.Action("GetDeviceNames", "")
+                plog("action1:    " + device_names1)
+                devices1 = device_names1.split(";")
+                fw0.Action("SetDeviceName", devices0[0])
+                fw1.Action("SetDeviceName", devices1[1])
+                fw0.Connected = True
+                fw1.Connected = True
+                plog("Conn 1,2:  ", fw0.Connected, fw1.Connected)
+                plog("Pos  1,2:  ", fw0.Position, fw1.Position)
+    
+                self.filter_back = fw1  # Closest to Camera
+                self.filter_front = fw0  # Closest to Telescope
+                self.filter_back.Connected = True
+                self.filter_front.Connected = True
+                plog(
+                    "filters are connected:  ",
+                    self.filter_front.Connected,
+                    self.filter_back.Connected,
+                )
+                plog(
+                    "filter positions:  ",
+                    self.filter_front.Position,
+                    self.filter_back.Position,
+                )
+    
+                self.dual = True
+                self.custom = False
+                self.filter_selected = self.filter_data[self.filter_reference][0]
+                self.filter_number = self.filter_reference
+                self.filter_offset = self.filter_data[self.filter_reference][2]
+    
+                # First setup:
+                time.sleep(1)
+                while self.filter_front.Position == -1:
+                    time.sleep(0.2)
+                self.filter_front.Position = self.filter_data[self.filter_reference][1][1]
+                time.sleep(1)
+                while self.filter_back.Position == -1:
+                    time.sleep(0.2)
+                self.filter_back.Position = self.filter_data[self.filter_reference][1][0]
+                time.sleep(1)
+                plog(self.filter_selected, self.filter_offset)
+    
+            elif driver.lower() in ["maxim.ccdcamera", "maxim", "maximdl", "maximdlpro"]:
+                # NOTE: Changed since FLI Dual code is failing.
+                # This presumes Maxim is filter wheel controller and
+                # it may be the Aux-camera controller as well.
+                win32com.client.pythoncom.CoInitialize()
+                self.filter = win32com.client.Dispatch(driver)
+    
+                # Monkey patch in Maxim specific methods.
+                self._connected = self._maxim_connected
+                self._connect = self._maxim_connect
+                self.description = "Maxim is Filter Controller."
+                plog("Maxim is connected:  ", self._connect(True))
+                plog("Filter control is via Maxim filter interface.")
+                plog(
+                    "Initial filters reported are:  ",
+                    self.filter.Filter,
+                    self.filter.GuiderFilter,
+                )
+                self.maxim = True
+                self.ascom = False
+                self.dual = True
+                self.custom = False
+                # This is the default expected after a home or power-up cycle.
+                self.filter_selected = self.filter_data[self.filter_reference][0]
+    
+                self.filter_number = self.filter_reference
+                self.filter_offset = self.filter_data[self.filter_reference][2]
+                # We assume camera object has been created before the filter object.
+                # Note filter may be commanded directly by AWS or provided in an expose
+                # command as an optional parameter.
+            elif "com" in driver.lower():
+                self.custom = True
+                try:
+                    ser = serial.Serial(str(driver), timeout=12)
+                    filter_pos = str(ser.read().decode())
+                    plog("QHY filter is Home", filter_pos)
+                    self.filter_number = 0
+                    self.filter_name = "lpr"
+                except:
+                    plog("QHY Filter not connected.")
+    
+            # This controls the filter wheel through TheSkyX
+            elif driver == "CCDSoft2XAdaptor.ccdsoft5Camera":
+                self.maxim = False
+                self.dual = False
+                self.custom = False
+                self.theskyx = True
+                win32com.client.pythoncom.CoInitialize()
+                self.filter = win32com.client.Dispatch(driver)
+                self.filter.Connect()
+                #com_object = win32com.client.Dispatch(driver)
+    
+            else:
+                # We default here to setting up a single wheel ASCOM driver.
+                # We need to distinguish here between an independent ASCOM filter wheel
+                # and a filter that is supported by Maxim. That is specified if a Maxim
+                # based driver is supplied. IF so it is NOT actually Dispatched, instead
+                # we assume access is via the Maxim camera application. So basically we
+                # fake having an independnet filter wheel. IF the filter supplied is
+                # an ASCOM.filter then we set this device up normally. Eg., SAF is an
+                # example of this version of the setup.
+    
+                self.maxim = False
+                self.dual = False
+                self.custom = False
+                win32com.client.pythoncom.CoInitialize()
+                self.filter_front = win32com.client.Dispatch(driver)
+                self.filter_front.Connected = True
+                plog("Currently QHY RS232 FW")
         else:
-            # We default here to setting up a single wheel ASCOM driver.
-            # We need to distinguish here between an independent ASCOM filter wheel
-            # and a filter that is supported by Maxim. That is specified if a Maxim
-            # based driver is supplied. IF so it is NOT actually Dispatched, instead
-            # we assume access is via the Maxim camera application. So basically we
-            # fake having an independnet filter wheel. IF the filter supplied is
-            # an ASCOM.filter then we set this device up normally. Eg., SAF is an
-            # example of this version of the setup.
-
-            self.maxim = False
-            self.dual = False
-            self.custom = False
-            win32com.client.pythoncom.CoInitialize()
-            self.filter_front = win32com.client.Dispatch(driver)
-            self.filter_front.Connected = True
-            plog("Currently QHY RS232 FW")
+            self.null_filterwheel = True
+            
 
     # The patches. Note these are essentially a getter-setter/property constructs.
     # NB we are here talking to Maxim acting only as a filter controller.
@@ -421,7 +426,7 @@ class FilterWheel:
             ):  # NB Filter count MUST be correct in Config.
                 if filter_name in str(self.filter_data[match][0]).lower():
 
-                    filt_pointer = match
+                    filt_pointer = self.filter_data[match][1][0]
                     filter_identified = 1
                     break
 
