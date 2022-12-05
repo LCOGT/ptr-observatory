@@ -34,7 +34,21 @@ class Focuser:
         self.focuser = win32com.client.Dispatch(driver)
         time.sleep(4)
 
-        self.focuser.Connected = True
+        #breakpoint()
+
+        try:        
+            self.focuser.Connected = True
+        except:
+            if self.focuser.Link == True:
+                print ("focuser doesn't have ASCOM Connected keyword, but reports a positive link")
+            else:
+                try:
+                    self.focuser.Link = True
+                    print ("focuser doesn't have ASCOM Connected keyword, attempted to send a positive Link")
+                except:
+                    print ("focuser doesn't have ASCOM Connected keyword, also crashed on focuser.Link")
+                    breakpoint()
+        
         self.micron_to_steps = float(
             config["focuser"]["focuser1"]["unit_conversion"]
         )  #  Note this can be a bogus value

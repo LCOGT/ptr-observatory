@@ -19,6 +19,7 @@ from astropy.time import Time
 from astropy.utils.data import check_download_cache
 from astropy.coordinates import SkyCoord
 from astropy.table import Table
+from astropy.nddata import block_reduce
 import glob
 import numpy as np
 import sep
@@ -28,6 +29,14 @@ from auto_stretch.stretch import Stretch
 import win32com.client
 from planewave import platesolve
 
+import colour
+from colour_demosaicing import (
+    demosaicing_CFA_Bayer_bilinear,
+    demosaicing_CFA_Bayer_Malvar2004,
+    demosaicing_CFA_Bayer_Menon2007,
+    mosaicing_CFA_Bayer)
+
+from PIL import Image
 
 from devices.darkslide import Darkslide
 import ptr_utility
@@ -921,28 +930,36 @@ class Camera:
 
         # Here we set up the filter, and later on possibly rotational composition.
         try:
-            requested_filter_name = str(
-                optional_params.get(
-                    "filter",
-                    self.config["filter_wheel"]["filter_wheel1"]["settings"][
-                        "default_filter"
-                    ],
+            
+            if g_dev["fil"].null_filterwheel == False:
+                requested_filter_name = str(
+                    optional_params.get(
+                        "filter",
+                        self.config["filter_wheel"]["filter_wheel1"]["settings"][
+                            "default_filter"
+                        ],
+                    )
+                )  # Default DOES come from config.
+                self.current_filter = requested_filter_name
+                self.current_filter = g_dev["fil"].set_name_command(
+                    {"filter": requested_filter_name}, {}
                 )
-            )  # Default DOES come from config.
-            self.current_filter = requested_filter_name
-            self.current_filter = g_dev["fil"].set_name_command(
-                {"filter": requested_filter_name}, {}
-            )
-            if self.current_filter == "none":
-                plog("skipping exposure as no adequate filter match found")
-                return
+                
+                self.current_offset = g_dev[
+                    "fil"
+                ].filter_offset  # TEMP   NBNBNB This needs fixing
+                
+                if self.current_filter == "none":
+                    plog("skipping exposure as no adequate filter match found")
+                    return
+            else:
+                print ("No filter wheel, not selecting a filter")
+                self.current_filter = "None"
         except Exception as e:
             plog("Camera filter setup:  ", e)
             plog(traceback.format_exc())
 
-        self.current_offset = g_dev[
-            "fil"
-        ].filter_offset  # TEMP   NBNBNB This needs fixing
+        
 
         # Here we adjust for focus temp and filter offset
         #if not imtype.lower() in ["auto_focus", "focus", "autofocus probe"]:
@@ -1001,19 +1018,19 @@ class Camera:
 
         # Need to put in support for chip mode once we have implmented in-line bias correct and trim.
 
-        try:
-            if (
-                type(area) == str and area[-1] == "%"
-            ):  # NB NB NB Re-use of variable is crappy coding
-                # The whole area implementation needs rework for anything specified larger that the full chip.
-                # Subframes are more logical to specify as fractionals of the base chip.
-                area = int(area[0:-1])
-            elif area in ("Sqr", "sqr", "100%", 100):
-                area = 100
-            elif area in ("Full", "full", "150%", "Chip", "chip", 150):
-                area = 150
-        except:
-            area = 150  # was 100 in ancient times.
+        # try:
+        #     if (
+        #         type(area) == str and area[-1] == "%"
+        #     ):  # NB NB NB Re-use of variable is crappy coding
+        #         # The whole area implementation needs rework for anything specified larger that the full chip.
+        #         # Subframes are more logical to specify as fractionals of the base chip.
+        #         area = int(area[0:-1])
+        #     elif area in ("Sqr", "sqr", "100%", 100):
+        #         area = 100
+        #     elif area in ("Full", "full", "150%", "Chip", "chip", 150):
+        #         area = 150
+        # except:
+        #     area = 150  # was 100 in ancient times.
 
         if bin_y == 0 or self.camera_max_x_bin != self.camera_max_y_bin:
             self.bin_x = min(bin_x, self.camera_max_x_bin)
@@ -1037,7 +1054,11 @@ class Camera:
             # SEQ is the outer repeat loop and takes count images; those individual exposures are wrapped in a
             # retry-3-times framework with an additional timeout included in it.
             if seq > 0:
-                g_dev["obs"].update_status()
+                g_dev["obs"].update_status(cancel_check=False)
+                # breakpoint()
+                # if not g_dev["cam"].exposure_busy:
+                #     result = {"stopped": True}
+                #     return result
 
             ## Vital Check : Has end of observing occured???
             ## Need to do this, SRO kept taking shots til midday without this
@@ -1064,8 +1085,9 @@ class Camera:
             # Within each count - which is a single requested exposure, IF it is a smartstack
             # Then we divide each count up into individual smartstack exposures.
             ssExp=self.config["camera"][self.name]["settings"]['smart_stack_exposure_time']
-            if self.current_filter.lower() in ['ha', 'o3', 's2', 'n2', 'y', 'up', 'u']:
-                ssExp = ssExp * 3.0 # For narrowband and low throughput filters, increase base exposure time.
+            if g_dev["fil"].null_filterwheel == False:
+                if self.current_filter.lower() in ['ha', 'o3', 's2', 'n2', 'y', 'up', 'u']:
+                    ssExp = ssExp * 3.0 # For narrowband and low throughput filters, increase base exposure time.
             if not imtype.lower() in ["light"]:
                 Nsmartstack=1
                 SmartStackID='no'
@@ -1116,7 +1138,10 @@ class Camera:
                     st = ""
                     time.sleep(0.2)
                     if seq > 0:
-                        g_dev["obs"].update_status()
+                        g_dev["obs"].update_status(cancel_check=True)
+                        if not g_dev["cam"].exposure_busy:
+                            result = {"stopped": True}
+                            return result
                     # Refresh the probe of the dome status
                     if g_dev["enc"].is_dome:
                         try:
@@ -1476,8 +1501,13 @@ class Camera:
                 #plog("OCN status not quick updated")
                 pass
             if time.time() > self.status_time:
-                g_dev["obs"].update_status()
+                g_dev["obs"].update_status(cancel_check=False)
+                # if not g_dev["cam"].exposure_busy:
+                #     result = {"stopped": True}
+                #     return result
+                    
                 self.status_time = time.time() + 10
+                
             if (
                 time.time() < self.completion_time
             ):  # NB Testing here if glob too early is delaying readout.
@@ -1568,9 +1598,9 @@ class Camera:
                 self.t4p5 = (
                     time.time()
                 )  # As read, this is a Windows Safe Array of Longs
-                if frame_type in ["bias", "dark"]:
+                if frame_type in ["bias", "dark"] or frame_type[-4:] == ['flat']:
                     plog(
-                        "Median of full area bias or dark  image:  ",
+                        "Median of full area bias, dark or flat image:  ",
                         np.median(self.img),
                     )
 
@@ -1616,7 +1646,7 @@ class Camera:
                         result["patch"] = bi_mean
                         return result  # signals to flat routine image was rejected, prompt return
                     
-                    if (
+                    elif (
                         bi_mean
                         <= 0.25 * self.config["camera"][self.name]["settings"]["saturate"]
                     ):
@@ -1627,9 +1657,15 @@ class Camera:
                         result["error"] = True
                         result["patch"] = bi_mean
                         return result  # signals to flat routine image was rejected, prompt return
+                    else:
+                        plog('Flat value is:  ', bi_mean)
                     
-                    
-                g_dev["obs"].update_status()
+                g_dev["obs"].update_status(cancel_check=True)
+                if not g_dev["cam"].exposure_busy:
+                    result = {"stopped": True}
+                    return result
+                
+
                 counter = 0
 
                 avg_mnt = g_dev["mnt"].get_average_status(self.pre_mnt, self.post_mnt)
@@ -1816,6 +1852,8 @@ class Camera:
                         frame_type.upper(),
                         "Observation type",
                     )  # This report is fixed and it should vary...NEEDS FIXING!
+                    if frame_type.upper() == "SKY FLAT":
+                       frame_type =="SKYFLAT" 
                     hdu.header["IMAGETYP"] = (frame_type.upper(), "Observation type")
                     hdu.header["EXPTIME"] = (
                         exposure_time,
@@ -1835,12 +1873,18 @@ class Camera:
                         self.current_filter,
                         "Filter type",
                     )  # NB this should read from the wheel!
-
-                    hdu.header["FILTEROF"] = (self.current_offset, "Filer offset")
-                    hdu.header["FILTRNUM"] = (
-                        "PTR_ADON_HA_0023",
-                        "An index into a DB",
-                    )  # Get a number from the hardware or via Maxim.  NB NB why not cwl and BW instead, plus P
+                    if g_dev["fil"].null_filterwheel == False:
+                        hdu.header["FILTEROF"] = (self.current_offset, "Filer offset")
+                        hdu.header["FILTRNUM"] = (
+                           "PTR_ADON_HA_0023",
+                           "An index into a DB",
+                           ) 
+                    else:
+                        hdu.header["FILTEROF"] = ("No Filter", "Filer offset")
+                        hdu.header["FILTRNUM"] = (
+                            "No Filter",
+                            "An index into a DB",
+                        )  # Get a number from the hardware or via Maxim.  NB NB why not cwl and BW instead, plus P
                     if g_dev["scr"] is not None and frame_type == "screenflat":
                         hdu.header["SCREEN"] = (
                             int(g_dev["scr"].bright_setting),
@@ -2519,7 +2563,75 @@ class Camera:
 
                         hdufocus = copy.deepcopy(hdusmall)
                         hdufocus.data = hdufocus.data.astype("float32")
+                        
+                        # If this a bayer image, then we need to make an appropriate image that is monochrome
+                        # That gives the best chance of finding a focus AND for pointing while maintaining resolution.
+                        # This is best done by taking the two "real" g pixels and interpolating in-between 
+                        
+                        if self.config["camera"][self.name]["settings"]["is_osc"]:
+                            print ("interpolating bayer grid for focusing purposes.")
+                            if self.config["camera"][self.name]["settings"]["osc_bayer"] == 'RGGB':
+                                # G  Pixels
+                                #xshape=hdufocus.data.shape[0]
+                                #yshape=hdufocus.data.shape[1]
+                                #list_0_1 = np.array([ [0,1], [1,0] ])
+                                #checkerboard=np.tile(list_0_1, (xshape//2, yshape//2))
+                                #checkerboard=np.asarray(checkerboard)
+                                #Gonly=hdufocus.data * checkerboard
+                                
+                                
+                                
+                                # Checkerboard collapse for other colours for temporary jpeg
+                                
+                                # Create indexes for B, G, G, R images
+                                
+                                xshape=hdufocus.data.shape[0]
+                                yshape=hdufocus.data.shape[1]
+                                #print (xshape)
+                                #print (yshape)
+                                
+                                # B pixels
+                                list_0_1 = np.array([ [0,0], [0,1] ])
+                                checkerboard=np.tile(list_0_1, (xshape//2, yshape//2))
+                                checkerboard=np.asarray(checkerboard)
+                                hdublue=(block_reduce(hdufocus.data * checkerboard ,2))
+                                
+                                # R Pixels
+                                list_0_1 = np.array([ [1,0], [0,0] ])
+                                checkerboard=np.tile(list_0_1, (xshape//2, yshape//2))
+                                checkerboard=np.asarray(checkerboard)
+                                hdured=(block_reduce(hdufocus.data * checkerboard ,2))
+                                
+                                # G top right Pixels
+                                list_0_1 = np.array([ [0,1], [0,0] ])
+                                checkerboard=np.tile(list_0_1, (xshape//2, yshape//2))
+                                checkerboard=np.asarray(checkerboard)
+                                GTRonly=(block_reduce(hdufocus.data * checkerboard ,2))
+                                
+                                # G bottom left Pixels
+                                list_0_1 = np.array([ [0,0], [1,0] ])
+                                checkerboard=np.tile(list_0_1, (xshape//2, yshape//2))
+                                checkerboard=np.asarray(checkerboard)
+                                GBLonly=(block_reduce(hdufocus.data * checkerboard ,2))                                
+                                
+                                # Sum two Gs together and half them to be vaguely on the same scale
+                                hdugreen = np.asarray(GTRonly + GBLonly)
+                                del GTRonly
+                                del GBLonly
+                                del checkerboard
+                                
 
+                                
+                                # Interpolate to make a high resolution version for focussing
+                                # and platesolving
+                                hdufocus.data=demosaicing_CFA_Bayer_bilinear(hdufocus.data, 'RGGB')[:,:,1]
+                                
+                                
+
+                            else:
+                                print ("this bayer grid not implemented yet")
+                        
+                        
                         focusimg = np.asarray(
                             hdufocus.data
                         )  # + 100   #maintain a + pedestal for sep  THIS SHOULD not be needed for a raw input file.
@@ -2757,7 +2869,7 @@ class Camera:
                         # prior to the next exposure
                         print (Nsmartstack)
                         print (sskcounter)
-                        if focus_image == True or ((Nsmartstack == sskcounter+1) and Nsmartstack > 1):
+                        if focus_image == True or ((Nsmartstack == sskcounter+1) and Nsmartstack > 1) or True:
                             cal_name = (
                                 cal_name[:-9] + "F012" + cal_name[-7:]
                             )
@@ -2889,29 +3001,70 @@ class Camera:
                         #)
 
                         # Code to stretch the image to fit into the 256 levels of grey for a jpeg
-                        stretched_data_float = Stretch().stretch(hdusmall.data+1000)
-                        del hdusmall  # Done with this fits image, so delete
-                        stretched_256 = 255 * stretched_data_float
-                        hot = np.where(stretched_256 > 255)
-                        cold = np.where(stretched_256 < 0)
-                        stretched_256[hot] = 255
-                        stretched_256[cold] = 0
-                        stretched_data_uint8 = stretched_256.astype("uint8")
-                        hot = np.where(stretched_data_uint8 > 255)
-                        cold = np.where(stretched_data_uint8 < 0)
-                        stretched_data_uint8[hot] = 255
-                        stretched_data_uint8[cold] = 0
+                        
+
+                        if self.config["camera"][self.name]["settings"]["is_osc"]:
+                            blue_stretched_data_float = Stretch().stretch(hdublue+1000)
+                            del hdublue
+                            green_stretched_data_float = Stretch().stretch(hdugreen+1000)
+                            red_stretched_data_float = Stretch().stretch(hdured+1000)
+                            del hdured
+                            xshape=hdugreen.shape[0]
+                            yshape=hdugreen.shape[1]
+                            del hdugreen
+                            rgbArray=np.zeros((xshape,yshape,3), 'uint8')
+                            rgbArray[..., 0] = red_stretched_data_float*256
+                            rgbArray[..., 1] = green_stretched_data_float*256
+                            rgbArray[..., 2] = blue_stretched_data_float*256
+                            stretched_data_uint8 = Image.fromarray(rgbArray)
+                            del red_stretched_data_float
+                            del blue_stretched_data_float
+                            del green_stretched_data_float
+                            colour_img = Image.fromarray(rgbArray)
+                            ## Resizing the array to an appropriate shape for the jpg and the small fits
+                            iy, ix = colour_img.size
+                            if iy == ix:
+                                colour_img.resize((1280, 1280))
+                            else:
+                                colour_img.resize((int(1536 * iy / ix), 1536))
+                            
+                            colour_img.save(
+                                paths["im_path"] + paths["jpeg_name10"]
+                            )
+                            del colour_img
+                        else:
+                            stretched_data_float = Stretch().stretch(hdusmall.data+1000)
+                            stretched_256 = 255 * stretched_data_float
+                            hot = np.where(stretched_256 > 255)
+                            cold = np.where(stretched_256 < 0)
+                            stretched_256[hot] = 255
+                            stretched_256[cold] = 0
+                            stretched_data_uint8 = stretched_256.astype("uint8")
+                            hot = np.where(stretched_data_uint8 > 255)
+                            cold = np.where(stretched_data_uint8 < 0)
+                            stretched_data_uint8[hot] = 255
+                            stretched_data_uint8[cold] = 0
+                            imsave(
+                                paths["im_path"] + paths["jpeg_name10"],
+                                stretched_data_uint8,
+                            )
+                            
 
 
+                        #Remove all image remnants
+                        try: 
+                            hdusmall.close()
+                        except:
+                            print ("couldn't close hdusmall")
+                            pass
+                        del hdusmall
+                            
 
                         # Try saving the jpeg to disk and quickly send up to AWS to present for the user
                         # GUI
                         if smartstackid == 'no':
                             try:
-                                imsave(
-                                    paths["im_path"] + paths["jpeg_name10"],
-                                    stretched_data_uint8,
-                                )
+                                
                                 if not no_AWS:
                                     g_dev["cam"].enqueue_for_fastAWS(
                                         100, paths["im_path"], paths["jpeg_name10"]
@@ -2924,8 +3077,10 @@ class Camera:
                                 plog(
                                     "there was an issue saving the preview jpg. Pushing on though"
                                 )
+
                         else:
                             print ("Jpg uploaded delayed due to smartstack.")
+                        del stretched_data_uint8
 
                         if focus_image == False:
                             try:
@@ -3099,7 +3254,10 @@ class Camera:
                     ]:
                         self.to_reduce((paths, pixscale, smartstackid, sskcounter, Nsmartstack, sources))
 
-                    g_dev["obs"].update_status()
+                    g_dev["obs"].update_status(cancel_check=True)
+                    if not g_dev["cam"].exposure_busy:
+                        result = {"stopped": True}
+                        return result
                     result["mean_focus"] = avg_foc[1]
                     try:
                         result["mean_rotation"] = avg_rot[1]

@@ -1301,15 +1301,15 @@ class Mount:
             self.mount.SlewToAltAzAsync(az, alt)
             wait_for_slew()
         else:
-            plog("Recaclulating RA and DEC for Alt Az move")
+            #plog("Recaclulating RA and DEC for Alt Az move")
             aa = AltAz (location=self.site_coordinates, obstime=Time.now())
             #breakpoint()
             tempcoord= SkyCoord(az=az*u.deg, alt=alt*u.deg, frame=aa)
             tempcoord=tempcoord.transform_to(frame='icrs')
             tempRA=tempcoord.ra.deg / 15
             tempDEC=tempcoord.dec.deg
-            print (tempRA)
-            print (tempDEC)
+            #print (tempRA)
+            #print (tempDEC)
             #self.site_coordinates
             wait_for_slew() 
             self.mount.SlewToCoordinatesAsync(tempRA, tempDEC)

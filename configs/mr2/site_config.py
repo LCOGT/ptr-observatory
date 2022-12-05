@@ -562,6 +562,8 @@ site_config = {
             'use_file_mode':  False,
             'file_mode_path':  'Q:/000ptr_saf/archive/kf01/autosaves/',
             'settings': {
+                'is_osc' : True,
+                'osc_bayer' : 'RGGB',
                 'crop_preview': False,
                 'crop_preview_ybottom': 1,
                 'crop_preview_ytop': 1,
