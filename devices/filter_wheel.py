@@ -421,7 +421,7 @@ class FilterWheel:
             ):  # NB Filter count MUST be correct in Config.
                 if filter_name in str(self.filter_data[match][0]).lower():
 
-                    filt_pointer = match
+                    filt_pointer = self.filter_data[match][1][0]
                     filter_identified = 1
                     break
 

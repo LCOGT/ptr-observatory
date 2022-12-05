@@ -73,6 +73,17 @@ def platesolve(image_file, arcsec_per_pixel):
     if exit_code != 0:
         print ("Exit code: ")
         print (exit_code)
+        if int(exit_code) == 2:
+            print ("Error code 2 usually means the catalogues are not on the computer.")
+            print ("They need to be installed in the users' Documents folder in a ")
+            print ("Directory named Kepler")
+        if int(exit_code) == 4:
+            print ("Error code 4 is an error loading the image. This is usually the coders fault! Please report this!")
+        if int(exit_code) == 1:
+            print ("Error code 1 is an error with the provided command line options. This is usually the coders fault! Please report this!")
+        if int(exit_code) == 3:
+            print ("Error code 3 is a standard failure to get a star match. Usually because there aren't enough stars in the image.")
+        
         print ("Error output: ")
         print (stderr)
         raise Exception("Error finding solution.\n")

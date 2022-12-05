@@ -641,6 +641,7 @@ site_config = {
                 #'cycle_time':  [18, 15, 12, 9],  # 3x3 requires a 1, 1 reaout then a software bin, so slower.
                 'has_darkslide':  False,
                 'darkslide_com':  None,
+                'shutter_type': "Electronic",
                 'has_screen': True,
                 'screen_settings':  {
                     'screen_saturation':  157.0,

@@ -558,7 +558,8 @@ class Observatory:
         # For each type, we get and save the status of each device.
         
         if not self.config["wema_is_active"]:
-            device_list = self.short_status_devices()
+            #device_list = self.short_status_devices()
+            device_list = self.device_types
             remove_enc = False
         else:
             device_list = self.device_types
@@ -1185,9 +1186,8 @@ class Observatory:
                         minutes=self.config["solve_timer"]
                     ):
 
-                        if smartstackid == "no" and len(sources) > 30:
+                        if smartstackid == "no" and len(sources) > 12:
                             try:
-
 
                                 solve = platesolve.platesolve(
                                     paths["red_path"] + paths["red_name01"], pixscale
