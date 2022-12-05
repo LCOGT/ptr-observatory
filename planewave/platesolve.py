@@ -84,8 +84,8 @@ def platesolve(image_file, arcsec_per_pixel):
         if int(exit_code) == 3:
             print ("Error code 3 is a standard failure to get a star match. Usually because there aren't enough stars in the image.")
         
-        print ("Error output: ")
-        print (stderr)
+        #print ("Error output: ")
+        #print (stderr)
         raise Exception("Error finding solution.\n")
                         #"Exit code: " + str(exit_code) + "\n" +
                         #"Error output: " + stderr)
