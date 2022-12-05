@@ -462,7 +462,9 @@ site_config = {
             'use_file_mode':  False,
             'file_mode_path':  'G:/000ptr_saf/archive/sq01/autosaves/',   #NB Incorrect site, etc. Not used at SRO.  Please clean up.
 
-            'settings': {
+            'settings': {                
+                'is_osc' : False,
+                'osc_bayer' : 'RGGB',
                 'crop_preview': True,
                 'crop_preview_ybottom': 1,  #### IMPORTANT: CROPS NEED TO BE SYMMETRICAL FOR POINTING SOLVES TO WORK.
                 'crop_preview_ytop': 40,
