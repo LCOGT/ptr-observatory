@@ -9,7 +9,7 @@ is in the Gemini.
 
 Abstract away Redis, Memurai, and local shares for IPC.
 """
-
+import ephem
 import datetime
 import json
 import math
@@ -364,6 +364,7 @@ class Observatory:
         """
 
         # This stopping mechanism allows for threads to close cleanly.
+
         while not self.stopped:
 
             if  True:  #not g_dev["seq"].sequencer_hold:  THis causes an infinte loope witht he above while
@@ -458,9 +459,11 @@ class Observatory:
 
                         plog("Exception in obs.scan_requests:  ", e, 'cmd:  ', cmd)
                 url_blk = "https://calendar.photonranch.org/dev/siteevents"
+                # UTC VERSION
                 start_aperture = str(g_dev['events']['Eve Sky Flats']).split()
                 close_aperture = str(g_dev['events']['End Morn Sky Flats']).split()
                 
+
                 # Reformat ephem.Date into format required by the UI
                 startapyear=start_aperture[0].split('/')[0]
                 startapmonth=start_aperture[0].split('/')[1]
@@ -483,6 +486,7 @@ class Observatory:
 
                 start_aperture[0] =start_aperture_date 
                 close_aperture[0] =close_aperture_date 
+
 
                 
                 body = json.dumps(
@@ -552,9 +556,9 @@ class Observatory:
         status = {}
         # Loop through all types of devices.
         # For each type, we get and save the status of each device.
-
+        
         if not self.config["wema_is_active"]:
-            device_list = self.device_types
+            device_list = self.short_status_devices()
             remove_enc = False
         else:
             device_list = self.device_types
@@ -791,9 +795,23 @@ class Observatory:
                         except:
                             print ("Connection glitch for the request post, waiting a moment and trying again")
                             time.sleep(5)
-                     
-                
-                
+
+                try:   
+                    os.remove(filepath)
+                except:
+                    pass
+                if (
+                    filename[-3:] == "jpg"
+                    or filename[-3:] == "txt"
+                    or ".fits.fz" in filename
+                    or ".token" in filename
+                ):
+                    try:
+                        os.remove(filepath)
+                    except:
+                        pass
+
+
                 one_at_a_time = 0
                 time.sleep(0.1)
             else:
