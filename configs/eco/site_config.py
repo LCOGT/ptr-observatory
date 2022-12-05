@@ -351,10 +351,10 @@ site_config = {
             #F4.9 setup
             'start_at_config_reference': True,
             'use_focuser_temperature': True,
-            'reference':24200,    #  20210313  Nominal at 10C Primary temperature
+            'reference':24150,    #  20210313  Nominal at 10C Primary temperature
             'ref_temp':  6265.0,    #  Update when pinning reference
             'coef_c': 0,   #  Negative means focus moves out as Primary gets colder
-            'coef_0': 24200,  #  Nominal intercept when Primary is at 0.0 C.
+            'coef_0': 24150,  #  Nominal intercept when Primary is at 0.0 C.
             'coef_date':  '20220914',    #This appears to be sensible result 44 points -13 to 3C'reference':  6431,    #  Nominal at 10C Primary temperature
             # #F9 setup
             # 'reference': 4375,    #   Guess 20210904  Nominal at 10C Primary temperature
@@ -406,8 +406,8 @@ site_config = {
             'settings': {
                 'filter_count': 11,   #  This must be correct as to the number of filters
                 'home_filter':  0,
-                'default_filter': "PL",
-                'filter_list': ['focus','PL','PR','PG','PB','HA','O3','S2', 'air'], # A list of actual physical filters for the substitution function
+                'default_filter': "pr",
+                'filter_list': ['focus','pr','pg','pb','ha','o3','s2', 'air'], # A list of actual physical filters for the substitution function
                 'filter_reference': 0,   #  We choose to use W as the default filter.  Gains taken at F9, Ceravolo 300mm
                 'filter_data': [['filter', 'filter_index', 'filter_offset', 'sky_gain', 'screen_gain', 'alias'],  #NB NB NB add cwl & bw in nm.
 
@@ -415,15 +415,15 @@ site_config = {
                         ['focus', [3,  3],     0, 72.7, [1.00 ,  72], 'focus'],    #0.
                         ['air',    [0,  0],     0, 620, [1.00 ,  72], 'PhLum'],    #1.
                         ['dark',    [1,  1],     0, 170, [1.00 , 119], 'PhRed'],    #2.
-                        ['PB',    [2,  2],     0, 220, [1.00 , 113], 'PhGreen'],    #3.
-                        ['PG',    [3,  3],     0, 300, [0.80 ,  97], 'PhBlue'],    #4.
-                        ['PR',    [4,  4],     0, 300, [0.80 ,  97], 'PhBlue'],    #4.
+                        ['pb',    [2,  2],     0, 220, [1.00 , 113], 'PhGreen'],    #3.
+                        ['pg',    [3,  3],     0, 300, [0.80 ,  97], 'PhBlue'],    #4.
+                        ['pr',    [4,  4],     0, 300, [0.80 ,  97], 'PhBlue'],    #4.
                         #['PR',    [1,  1],     0, 170, [1.00 , 119], 'PhBlue'],    #2.
                         #['PG',    [2,  2],     0, 220, [1.00 , 113], 'PhGreen'],    #3.
                         #['PB',    [3,  3],     0, 300, [0.80 ,  97], 'PhRed'],    #4.
-                        ['HA',    [5,  5],     0, .400, [5.00 , 200], 'Halpha'],    #5.
-                        ['O3',    [6,  6],     0, 6, [4.00 , 200], 'OIII'],    #6.
-                        ['S2',    [7,  7],     0, .221, [10.0,  200], 'SII']],    #7.
+                        ['ha',    [5,  5],     0, .400, [5.00 , 200], 'Halpha'],    #5.
+                        ['o3',    [6,  6],     0, 6, [4.00 , 200], 'OIII'],    #6.
+                        ['s2',    [7,  7],     0, .221, [10.0,  200], 'SII']],    #7.
                         #['air',   [7,  7], -1000, 100., [1.00,   70], 'air'],    #8.
                         #['gooble',  [6,  6],     0, .221, [   0,    0], 'dark'],   #9.
                         #['LRGB',  [0,  0],     0, .221, [   0,    0], 'LRGB']],   #10.
@@ -561,6 +561,7 @@ site_config = {
                 'flat_bin_spec': '1,1',    #Default binning for flats
                 'has_darkslide':  False,
                 'darkslide_com':  None,
+                'shutter_type': "Electronic",
                 'has_screen': True,
                 'screen_settings':  {
                     'screen_saturation':  157.0,   #  This reflects WMD setting and needs proper values.

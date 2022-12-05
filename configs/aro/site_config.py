@@ -591,6 +591,7 @@ site_config = {
                 'areas_implemented': ["Full", '2x2', '4x4',"600%", "500%", "450%", "300%", "220%", "150%", "133%", "100%", "Sqr", '71%', '50%',  '35%', '25%', '12%'],
                 'default_area':  "Full",
                 'has_darkslide':  True,
+                'shutter_type': "Electronic",
                 'darkslide_com':  'COM17',
                 'has_screen': True,
                 'screen_settings':  {

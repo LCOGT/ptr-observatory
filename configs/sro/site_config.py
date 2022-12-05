@@ -558,6 +558,7 @@ site_config = {
                 'flat_bin_spec': '1,1',    #Default binning for flats
                 'has_darkslide':  False,
                 'darkslide_com':  None,
+                'shutter_type': "Electronic",
                 'has_screen': True,
                 'screen_settings':  {
                     'screen_saturation':  157.0,   #  This reflects WMD setting and needs proper values.
