@@ -821,8 +821,12 @@ class Camera:
         opt = optional_params
         self.hint = optional_params.get("hint", "")
         self.script = required_params.get("script", "None")
+        
+        
         self.smartstack = required_params.get('smartstack', 'yes')
         self.longstack = required_params.get('longstackswitch', 'no')
+        
+        
         print (self.smartstack)
         print (self.longstack)
         if self.longstack == 'no':

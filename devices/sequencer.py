@@ -665,22 +665,10 @@ class Sequencer:
 
                 g_dev['cam'].user_name = block_specification['creator']
                 g_dev['cam'].user_id = block_specification['creator_id']
-                #breakpoint()
-                if ('longstack' in block_specification['project']) == False:
-                    longstackswitch='no'
-                    longstackname='no'
-                elif block_specification['project']['longstack'] == True:
-                    longstackswitch='yes'
-                    longstackname=block_specification['project']['created_at'].replace('-','').replace(':','')
-                else:
-                    longstackswitch='no'
-                    longstackname='no'
-                if ('smartstack' in block_specification['project']) == False:
-                    smartstackswitch='no'
-                elif block_specification['project']['smartstack'] == True:
-                    smartstackswitch='yes'
-                else:
-                    smartstackswitch='no'
+                
+                longstackname=block_specification['project']['created_at'].replace('-','').replace(':','') # If longstack is to be used.
+                
+                
 
             except Exception as e:                
                 print ("Could not execute project due to poorly formatted or corrupt project")
@@ -774,7 +762,7 @@ class Sequencer:
                     g_dev['obs'].send_to_user("Running an initial autofocus run.")
 
 
-                    self.auto_focus_script(req2, opt, throw = g_dev['foc'].throw)
+                    #self.auto_focus_script(req2, opt, throw = g_dev['foc'].throw)
 
                     just_focused = True
                     #initial_focus = False    #  Make above on-time event per block
@@ -898,6 +886,26 @@ class Sequencer:
                         #    g_dev['foc'].adjust_focus()
                         just_focused = False
                         if imtype in ['light'] and count > 0:
+                            
+
+                            if exposure['longstack'] == False:
+                                longstackswitch='no'
+                                longstackname='no'
+                            elif exposure['longstack'] == True:
+                                longstackswitch='yes'
+                                longstackname=block_specification['project']['created_at'].replace('-','').replace(':','')
+                            else:
+                                longstackswitch='no'
+                                longstackname='no'
+                            if exposure['smartstack'] == False:
+                                smartstackswitch='no'
+                            elif exposure['smartstack'] == True:
+                                smartstackswitch='yes'
+                            else:
+                                smartstackswitch='no'
+                            
+                            
+
                             req = {'time': exp_time,  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': imtype, 'smartstack' : smartstackswitch, 'longstackswitch' : longstackswitch, 'longstackname' : longstackname, 'block_end' : block['end']}   #  NB Should pick up filter and constants from config
                             opt = {'area': 150, 'count': 1, 'bin': binning, 'filter': color, \
                                    'hint': block['project_id'] + "##" + dest_name, 'object_name': block['project']['project_targets'][0]['name'], 'pane': pane}
