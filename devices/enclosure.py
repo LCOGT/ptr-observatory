@@ -834,7 +834,7 @@ class Enclosure:
         #     redis_hold = eval(self.redis_server.get('wx_hold'))
         # except:
         #     redis_hold =False
-
+       
         wx_hold = g_dev['ocn'].wx_hold #or redis_hold  #TWO PATHS to pick up wx-hold.
         if self.mode == "Automatic" and (open_cmd or close_cmd):
             g_dev['obs'].send_to_user("User enclosure requests not honored in Automatic mode.", p_level='INFO')
@@ -881,10 +881,7 @@ class Enclosure:
 
             #Note we left the telescope alone
 
-        elif open_cmd and self.mode == 'Manual':   #  NB NB NB Ideally Telescope parked away from Sun.
-            self.guarded_open()
-            self.dome_opened = True
-            self.dome_homed = True
+
 
         elif close_cmd and self.mode == 'Manual':
             try:
@@ -950,6 +947,13 @@ class Enclosure:
                 except:
                     plog("Shutter Failed to close at Civil Dawn.")
                 self.mode = 'Manual'
+# =============================================================================
+#         THIS IS DANGEROUS!
+# =============================================================================
+        elif open_cmd and self.mode == 'Manual':   #  NB NB NB Ideally Telescope parked away from Sun.
+            self.guarded_open()
+            self.dome_opened = True
+            self.dome_homed = True
         return
 
 
