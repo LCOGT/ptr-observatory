@@ -326,8 +326,12 @@ class Sequencer:
                 g_dev['obs'].send_to_user("Beginning start of night Focus and Pointing Run", p_level='INFO')
 
                 # Move to reasonable spot
-                g_dev['mnt'].mount.Tracking = True
-
+                if g_dev['mnt'].mount.Tracking == False:
+                    if g_dev['mnt'].mount.CanSetTracking:   
+                        g_dev['mnt'].mount.Tracking = True
+                    else:
+                        plog("mount is not tracking but this mount doesn't support ASCOM changing tracking")
+                    
                 g_dev['mnt'].move_to_altaz(90, 70)
                 g_dev['foc'].time_of_last_focus = datetime.datetime.now() - datetime.timedelta(
                     days=1
