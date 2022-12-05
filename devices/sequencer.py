@@ -299,7 +299,6 @@ class Sequencer:
         enc_status = g_dev['enc'].status
         events = g_dev['events']
 
-        g_dev['enc'].mode = 'Automatic'     #  THis is a very common debug point.
 
         if self.bias_dark_latch and ((events['Eve Bias Dark'] <= ephem_now < events['End Eve Bias Dark']) and \
              self.config['auto_eve_bias_dark'] and g_dev['enc'].mode in ['Automatic', 'Autonomous', 'Manual'] ):
