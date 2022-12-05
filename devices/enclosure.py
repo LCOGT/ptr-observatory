@@ -258,6 +258,7 @@ class Enclosure:
             plog('      20221014  Close commands are blocked,  System defaults to manual. \n ')
             plog('&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& \n')
     def get_status(self) -> dict:
+
         if not self.is_wema and self.site_has_proxy and self.dome_on_wema:
             if self.config['site_IPC_mechanism'] == 'shares':
                 try:
@@ -512,7 +513,6 @@ class Enclosure:
         #     redis_command = redis_command[0]  # it can come in as ['setManual']
         # except:
         #     pass
-
         if redis_command == 'open':
             if _redis: g_dev['redis'].delete('enc_cmd')
             plog("enclosure remote cmd: open.")

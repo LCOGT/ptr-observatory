@@ -21,7 +21,7 @@ g_dev = None
  # bolt = ['u', 'g', 'r', 'i', 'zs', 'B', 'V', 'EXO', 'w', 'O3', 'Ha', 'S', 'Cr', 'NIR']
  # print(len(bolt))
 
-site_name = 'eco'
+site_name = 'ec2'
 
                     #\\192.168.1.57\SRO10-Roof  r:
                     #SRO-Weather (\\192.168.1.57) w:
@@ -29,14 +29,14 @@ site_name = 'eco'
 
 site_config = {
     'site': str(site_name.lower()),
-    'site_id': 'eco',
+    'site_id': 'ec2',
     'debug_site_mode': False,
     'owner':  ['google-oauth2|112401903840371673242'],  # WER,  Or this can be
                                                         # some aws handle.
     'owner_alias': ['WER', 'TELOPS'],
     'admin_aliases': ["ANS", "WER", "KVH", "TELOPS", "TB", "DH", 'KC'],
 
-    'client_hostname':  'ECO-0m40',
+    'client_hostname':  'ECO-0m28-OSC',
     'client_path':  'C:/ptr/',  # Generic place for this host to stash misc stuff
     'alt_path':  'C:/ptr/',  # Generic place for this host to stash misc stuff
     'save_to_alt_path' : 'no',
@@ -55,8 +55,8 @@ site_config = {
     'site_is_specific':  True,  # Indicates some special code for this site, found at end of config.
 
 
-    'host_wema_site_name':  'ECO',  #  The umbrella header for obsys in close geographic proximity.
-    'name': 'Eltham College Observatory, 0m4f6.8',
+    'host_wema_site_name':  'EC2',  #  The umbrella header for obsys in close geographic proximity.
+    'name': 'Eltham College Observatory, 0m28',
     'airport_code':  'MEL: Melbourne Airport',
     'location': 'Eltham, Victoria, Australia',
     'telescope_description': 'n.a.',
@@ -95,7 +95,7 @@ site_config = {
     'pointing_calibration_on_startup': False,
     'periodic_focus_time' : 0.5, # This is a time, in hours, over which to bypass automated focussing (e.g. at the start of a project it will not refocus if a new project starts X hours after the last focus)
     'stdev_fwhm' : 0.5, # This is the expected variation in FWHM at a given telescope/camera/site combination. This is used to check if a fwhm is within normal range or the focus has shifted
-    'focus_exposure_time': 60, # Exposure time in seconds for exposure image
+    'focus_exposure_time': 20, # Exposure time in seconds for exposure image
 
     'focus_trigger' : 5.0, # What FWHM increase is needed to trigger an autofocus
     'solve_nth_image' : 10, # Only solve every nth image
@@ -203,7 +203,7 @@ site_config = {
             'name': 'ecocdkpier',
             'hostIP':  '10.0.0.140',     #Can be a name if local DNS recognizes it.
             'hostname':  'ecocdkpier',
-            'desc':  'Paramount ME II',
+            'desc':  'Paramount MX+',
             'driver': 'ASCOM.SoftwareBisque.Telescope',
             'alignment': 'Equatorial',
             'default_zenith_avoid': 0.0,   #degrees floating, 0.0 means do not apply this constraint.
@@ -257,9 +257,9 @@ site_config = {
         'telescope1': {
             'parent': 'mount1',
             'name': 'Main OTA',
-            'telescop': 'eco1',
-            'ptrtel': 'CDK17',
-            'desc':  'CDK17',
+            'telescop': 'eco2',
+            'ptrtel': 'RASA11',
+            'desc':  'RASA11',
             'driver': None,                     #  Essentially this device is informational.  It is mostly about the optics.
             'collecting_area': 55381,
             'obscuration':  23.7,   #  %
@@ -272,13 +272,14 @@ site_config = {
             'has_instrument_selector': False,   #This is a default for a single instrument system
             'selector_positions': 1,            #Note starts with 1
             'instrument names':  ['camera1'],
-            'instrument aliases':  ['SBIG16803'],
+            'instrument aliases':  ['ASI071MCPro'],
             'configuration': {
                  "position1": ["darkslide1", "filter_wheel1", "camera1"]
                  },
             'camera_name':  'camera1',
-            'filter_wheel_name':  'filter_wheel1',
-            'has_fans':  True,
+            #'filter_wheel_name':  'filter_wheel1',
+            'filter_wheel_name':  None,
+            'has_fans':  False,
             'has_cover':  False,
             'settings': {
                 'fans': ['Auto','High', 'Low', 'Off'],
@@ -296,20 +297,7 @@ site_config = {
         },
     },
 
-#     'rotator': {
-#         'rotator1': {
-#             'parent': 'telescope1',
-#             'name': 'rotator',
-#             'desc':  'Opetc Gemini',
-#             'driver': 'ASCOM.OptecGemini.Rotator',
-# 			'com_port':  'COM9',
-#             'minimum': -180.,
-#             'maximum': 360.0,
-#             'step_size':  0.0001,     #Is this correct?
-#             'backlash':  0.0,
-#             'unit':  'degree'    #  'steps'
-#         },
-#     },
+
 
     'rotator': {
         'rotator1': {
@@ -346,15 +334,16 @@ site_config = {
             'parent': 'telescope1',
             'name': 'focuser',
             'desc':  'Planewave Focuser',
-            'driver': 'ASCOM.PWI3.Focuser',
+            #'driver': 'ASCOM.SeletekFocuser.Focuser',
+            'driver': 'SeletekFocuser.Focuser',
 			'com_port':  'COM9',
             #F4.9 setup
             'start_at_config_reference': True,
             'use_focuser_temperature': True,
-            'reference':24150,    #  20210313  Nominal at 10C Primary temperature
+            'reference':13277,    #  20210313  Nominal at 10C Primary temperature
             'ref_temp':  6265.0,    #  Update when pinning reference
             'coef_c': 0,   #  Negative means focus moves out as Primary gets colder
-            'coef_0': 24150,  #  Nominal intercept when Primary is at 0.0 C.
+            'coef_0': 13277,  #  Nominal intercept when Primary is at 0.0 C.
             'coef_date':  '20220914',    #This appears to be sensible result 44 points -13 to 3C'reference':  6431,    #  Nominal at 10C Primary temperature
             # #F9 setup
             # 'reference': 4375,    #   Guess 20210904  Nominal at 10C Primary temperature
@@ -394,52 +383,63 @@ site_config = {
 
     },
 
-    'filter_wheel': {
+    #'filter_wheel': {        
+        # "filter_wheel1": {
+        #     "parent": "telescope1",
+        #     "name": "SBIG 8-position wheel" ,  #"LCO filter wheel FW50_001d",
+        #     'service_date': '20180101',
+        #     "driver":   "CCDSoft2XAdaptor.ccdsoft5Camera",   #"LCO.dual",  #  'ASCOM.FLI.FilterWheel',
+        #     #"driver":   "Maxim.Image",   #"LCO.dual",  #  'ASCOM.FLI.FilterWheel',
+        #     'ip_string': None,
+        #     "dual_wheel": False,
+        #     'settings': {
+        #         'filter_count': 11,   #  This must be correct as to the number of filters
+        #         'home_filter':  0,
+        #         'default_filter': "PL",
+        #         'filter_list': ['focus','PL','PR','PG','PB','HA','O3','S2', 'air'], # A list of actual physical filters for the substitution function
+        #         'filter_reference': 0,   #  We choose to use W as the default filter.  Gains taken at F9, Ceravolo 300mm
+        #         'filter_data': [['filter', 'filter_index', 'filter_offset', 'sky_gain', 'screen_gain', 'alias'],  #NB NB NB add cwl & bw in nm.
+
+        #                 #['w',     [0,  0],     0, 72.7, [1.00 ,  72], 'PL'],    #0.   For sequencer autofocus  consider foc or f filter
+        #                 ['focus', [3,  3],     0, 72.7, [1.00 ,  72], 'focus'],    #0.
+        #                 ['air',    [0,  0],     0, 620, [1.00 ,  72], 'PhLum'],    #1.
+        #                 ['dark',    [1,  1],     0, 170, [1.00 , 119], 'PhRed'],    #2.
+        #                 ['PB',    [2,  2],     0, 220, [1.00 , 113], 'PhGreen'],    #3.
+        #                 ['PG',    [3,  3],     0, 300, [0.80 ,  97], 'PhBlue'],    #4.
+        #                 ['PR',    [4,  4],     0, 300, [0.80 ,  97], 'PhBlue'],    #4.
+        #                 #['PR',    [1,  1],     0, 170, [1.00 , 119], 'PhBlue'],    #2.
+        #                 #['PG',    [2,  2],     0, 220, [1.00 , 113], 'PhGreen'],    #3.
+        #                 #['PB',    [3,  3],     0, 300, [0.80 ,  97], 'PhRed'],    #4.
+        #                 ['HA',    [5,  5],     0, .400, [5.00 , 200], 'Halpha'],    #5.
+        #                 ['O3',    [6,  6],     0, 6, [4.00 , 200], 'OIII'],    #6.
+        #                 ['S2',    [7,  7],     0, .221, [10.0,  200], 'SII']],    #7.
+        #                 #['air',   [7,  7], -1000, 100., [1.00,   70], 'air'],    #8.
+        #                 #['gooble',  [6,  6],     0, .221, [   0,    0], 'dark'],   #9.
+        #                 #['LRGB',  [0,  0],     0, .221, [   0,    0], 'LRGB']],   #10.
+
+
+        #         'filter_screen_sort':  [1, 4, 3, 2, 6, 5, 7],   #  don't use narrow yet,  8, 10, 9], useless to try.
+
+
+        #         'filter_sky_sort': [6, 4, 5, 1, 2, 3,  0]    #No diffuser based filters
+        #         #'filter_sky_sort': [7, 19, 2, 13, 18, 5, 15,\
+        #         #                    12, 4, 11, 16, 10, 9, 17, 3, 14, 1, 0]    #basically no diffuser based filters
+        #         #[32, 8, 22, 21, 20, 23, 31, 6, 7, 19, 27, 2, 37, 13, 18, 30, 5, 15, 36, 12,\
+        #          #                   29, 4, 35, 34, 11, 16, 10, 33, 9, 17, 28, 3, 26, 14, 1, 0]
+
+
+        #     },
+        #},
+
+    'filter_wheel': {        
         "filter_wheel1": {
             "parent": "telescope1",
             "name": "SBIG 8-position wheel" ,  #"LCO filter wheel FW50_001d",
             'service_date': '20180101',
-            "driver":   "CCDSoft2XAdaptor.ccdsoft5Camera",   #"LCO.dual",  #  'ASCOM.FLI.FilterWheel',
+            "driver":   None,   #"LCO.dual",  #  'ASCOM.FLI.FilterWheel',
             #"driver":   "Maxim.Image",   #"LCO.dual",  #  'ASCOM.FLI.FilterWheel',
             'ip_string': None,
-            "dual_wheel": False,
-            'settings': {
-                'filter_count': 11,   #  This must be correct as to the number of filters
-                'home_filter':  0,
-                'default_filter': "pr",
-                'filter_list': ['focus','pr','pg','pb','ha','o3','s2', 'air'], # A list of actual physical filters for the substitution function
-                'filter_reference': 0,   #  We choose to use W as the default filter.  Gains taken at F9, Ceravolo 300mm
-                'filter_data': [['filter', 'filter_index', 'filter_offset', 'sky_gain', 'screen_gain', 'alias'],  #NB NB NB add cwl & bw in nm.
-
-                        #['w',     [0,  0],     0, 72.7, [1.00 ,  72], 'PL'],    #0.   For sequencer autofocus  consider foc or f filter
-                        ['focus', [3,  3],     0, 72.7, [1.00 ,  72], 'focus'],    #0.
-                        ['air',    [0,  0],     0, 620, [1.00 ,  72], 'PhLum'],    #1.
-                        ['dark',    [1,  1],     0, 170, [1.00 , 119], 'PhRed'],    #2.
-                        ['pb',    [2,  2],     0, 220, [1.00 , 113], 'PhGreen'],    #3.
-                        ['pg',    [3,  3],     0, 300, [0.80 ,  97], 'PhBlue'],    #4.
-                        ['pr',    [4,  4],     0, 300, [0.80 ,  97], 'PhBlue'],    #4.
-                        #['PR',    [1,  1],     0, 170, [1.00 , 119], 'PhBlue'],    #2.
-                        #['PG',    [2,  2],     0, 220, [1.00 , 113], 'PhGreen'],    #3.
-                        #['PB',    [3,  3],     0, 300, [0.80 ,  97], 'PhRed'],    #4.
-                        ['ha',    [5,  5],     0, .400, [5.00 , 200], 'Halpha'],    #5.
-                        ['o3',    [6,  6],     0, 6, [4.00 , 200], 'OIII'],    #6.
-                        ['s2',    [7,  7],     0, .221, [10.0,  200], 'SII']],    #7.
-                        #['air',   [7,  7], -1000, 100., [1.00,   70], 'air'],    #8.
-                        #['gooble',  [6,  6],     0, .221, [   0,    0], 'dark'],   #9.
-                        #['LRGB',  [0,  0],     0, .221, [   0,    0], 'LRGB']],   #10.
-
-
-                'filter_screen_sort':  [1, 4, 3, 2, 6, 5, 7],   #  don't use narrow yet,  8, 10, 9], useless to try.
-
-
-                'filter_sky_sort': [6, 4, 5, 1, 2, 3,  0]    #No diffuser based filters
-                #'filter_sky_sort': [7, 19, 2, 13, 18, 5, 15,\
-                #                    12, 4, 11, 16, 10, 9, 17, 3, 14, 1, 0]    #basically no diffuser based filters
-                #[32, 8, 22, 21, 20, 23, 31, 6, 7, 19, 27, 2, 37, 13, 18, 30, 5, 15, 36, 12,\
-                 #                   29, 4, 35, 34, 11, 16, 10, 33, 9, 17, 28, 3, 26, 14, 1, 0]
-
-
-            },
+            "dual_wheel": False,            
         },
     },
 
@@ -457,24 +457,25 @@ site_config = {
     'camera': {
         'camera_1_1': {
             'parent': 'telescope1',
-            'name': 'ec001ms',      #  Important because this points to a server file structure by that name.
-            'desc':  'SBIG16803',
+            'name': 'ec002ms',      #  Important because this points to a server file structure by that name.
+            'desc':  'ZWOASI071MCPro',
             'service_date': '20211111',
             'driver': "CCDSoft2XAdaptor.ccdsoft5Camera",  # "ASCOM.QHYCCD.Camera", ##  'ASCOM.FLI.Kepler.Camera',
-            'detector':  'KAF16803',
+            'detector':  'ASI',
             'manufacturer':  'On-Semi',
             'use_file_mode':  False,
             'file_mode_path':  'G:/000ptr_saf/archive/sq01/autosaves/',   #NB Incorrect site, etc. Not used at SRO.  Please clean up.
+            
 
-            'settings': {                
-                'is_osc' : False,
+            'settings': {
+                'is_osc' : True,
                 'osc_bayer' : 'RGGB',
                 'crop_preview': False,
                 'crop_preview_ybottom': 1,
                 'crop_preview_ytop': 1,
                 'crop_preview_xleft': 1,
                 'crop_preview_xright': 1,
-                'temp_setpoint': -22,   #Updated from -18 WER 20220914 Afternoon
+                'temp_setpoint': -10,   #Updated from -18 WER 20220914 Afternoon
                 'calib_setpoints': [-35,-30, -25, -20, -15, -10 ],  #  Should vary with season?
                 'day_warm': False,
                 'cooler_on': True,
@@ -551,7 +552,7 @@ site_config = {
                 'readout_mode':  'Normal',
                 'readout_speed': 0.4,
                 'readout_seconds': 2,
-                'smart_stack_exposure_time' : 60,
+                'smart_stack_exposure_time' : 10,
                 'saturate':  65000,    # e-.  This is a close guess, not measured, but taken from data sheet.
                 'max_linearity': 65000,
                 'fullwell_capacity': [65000, 65000, 65000, 65000],  #e-.   We need to sort out the units properly NB NB NB
@@ -561,6 +562,7 @@ site_config = {
                 'flat_bin_spec': '1,1',    #Default binning for flats
                 'has_darkslide':  False,
                 'darkslide_com':  None,
+                
                 'shutter_type': "Electronic",
                 'has_screen': True,
                 'screen_settings':  {

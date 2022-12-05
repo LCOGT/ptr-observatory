@@ -562,6 +562,8 @@ site_config = {
             'use_file_mode':  False,
             'file_mode_path':  'Q:/000ptr_saf/archive/kf01/autosaves/',
             'settings': {
+                'is_osc' : True,
+                'osc_bayer' : 'RGGB',
                 'crop_preview': False,
                 'crop_preview_ybottom': 1,
                 'crop_preview_ytop': 1,
@@ -641,6 +643,7 @@ site_config = {
                 #'cycle_time':  [18, 15, 12, 9],  # 3x3 requires a 1, 1 reaout then a software bin, so slower.
                 'has_darkslide':  False,
                 'darkslide_com':  None,
+                'shutter_type': "Electronic",
                 'has_screen': True,
                 'screen_settings':  {
                     'screen_saturation':  157.0,
