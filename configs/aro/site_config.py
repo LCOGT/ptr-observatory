@@ -509,6 +509,8 @@ site_config = {
 
 
             'settings': {
+                'is_osc' : False,
+                'osc_bayer' : 'RGGB',
                 'crop_preview': False,
                 'crop_preview_ybottom': 1,
                 'crop_preview_ytop': 1,

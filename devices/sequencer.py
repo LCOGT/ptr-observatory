@@ -1336,14 +1336,22 @@ class Sequencer:
 
 
         #  Pick up list of filters is sky flat order of lowest to highest transparency.
-        pop_list = self.config['filter_wheel']['filter_wheel1']['settings']['filter_sky_sort'].copy()
-
-        if morn:
-            pop_list.reverse()
-            plog('filters by high to low transmission:  ', pop_list)
-            ending = g_dev['events']['End Morn Sky Flats']
+        if g_dev["fil"].null_filterwheel == True:
+            print ("No Filter Wheel, just getting non-filtered flats")
+            pop_list = [0]
         else:
-            plog('filters by low to high transmission:  ', pop_list)
+            pop_list = self.config['filter_wheel']['filter_wheel1']['settings']['filter_sky_sort'].copy()
+
+            if morn:
+                pop_list.reverse()
+                plog('filters by high to low transmission:  ', pop_list)                
+            else:
+                plog('filters by low to high transmission:  ', pop_list)
+                
+            
+        if morn:            
+            ending = g_dev['events']['End Morn Sky Flats']
+        else:            
             ending = g_dev['events']['End Eve Sky Flats']
         #length = len(pop_list)
         obs_win_begin, sunset, sunrise, ephem_now = self.astro_events.getSunEvents()
@@ -1355,11 +1363,13 @@ class Sequencer:
 
         while len(pop_list) > 0  and ephem.now() < ending:
 
-            current_filter = int(pop_list[0])
+            if g_dev["fil"].null_filterwheel == False:
+                current_filter = int(pop_list[0])                
+                g_dev['fil'].set_number_command(current_filter)  #  20220825  NB NB NB Change this to using a list of filter names.
+            
             acquired_count = 0
-            g_dev['fil'].set_number_command(current_filter)  #  20220825  NB NB NB Change this to using a list of filter names.
             g_dev['mnt'].slewToSkyFlatAsync()
-            target_flat = 30000
+            target_flat = 0.5 * g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"]
 
             # if not g_dev['enc'].status['shutter_status'] in ['Open', 'open']:
             #     g_dev['obs'].send_to_user("Wait for roof to be open to take skyflats. 60 sec delay loop.", p_level='INFO')
@@ -1377,42 +1387,53 @@ class Sequencer:
                     except:
                         #plog("Redis not running. lux set to 1000.")
                         sky_lux = float(g_dev['ocn'].status['calc_HSI_lux'])
-
-                    exp_time = prior_scale*scale*target_flat/(collecting_area*sky_lux*float(g_dev['fil'].filter_data[current_filter][3]))  #g_dev['ocn'].calc_HSI_lux)  #meas_sky_lux)
-                    plog('Ex:  ', exp_time, scale, prior_scale, sky_lux, float(g_dev['fil'].filter_data[current_filter][3]))
-
-                    if evening and exp_time > 120:
-                        #exp_time = 60    #Live with this limit.  Basically started too late
-                        plog('Break because proposed evening exposure > 180 seconds:  ', exp_time)
-                        g_dev['obs'].send_to_user('Try next filter because proposed  flat exposure > 180 seconds.', p_level='INFO')
-                        pop_list.pop(0)
-                        break
-                    if morn and exp_time < min_exposure:
-                        #exp_time = 60    #Live with this limit.  Basically started too late
-                        plog('Break because proposed evening exposure > 180 seconds:  ', exp_time)
-                        g_dev['obs'].send_to_user('Try next filter because proposed  flat exposure < min_exposure.', p_level='INFO')
-                        pop_list.pop(0)
-                        break
-                    if evening and exp_time < min_exposure:   #NB it is too bright, should consider a delay here.
-                    #**************THIS SHOUD BE A WHILE LOOP! WAITING FOR THE SKY TO GET DARK AND EXP TIME TO BE LONGER********************
-                        plog("Too bright, wating 180 seconds.")
-                        g_dev['obs'].send_to_user('Delay 180 seconds to let it get darker.', p_level='INFO')
-                        time.sleep(180)
-                    if morn and exp_time > 120 :   #NB it is too bright, should consider a delay here.
-                     #**************THIS SHOUD BE A WHILE LOOP! WAITING FOR THE SKY TO GET DARK AND EXP TIME TO BE LONGER********************
-                        plog("Too dim, wating 180 seconds.")
-                        g_dev['obs'].send_to_user('Delay 180 seconds to let it get lighterer.', p_level='INFO')
-                        time.sleep(180)
-                        #*****************NB Recompute exposure or otherwise wait
-                        exp_time = min_exposure
-                    exp_time = round(exp_time, 5)
-                   # prior_scale = prior_scale*scale  #Only update prior scale when changing filters
-                    plog("Sky flat estimated exposure time, scale are:  ", exp_time, scale)
                 except:
-                    exp_time = 0.3
+                    sky_lux = None
+
+                    # MF SHIFTING EXPOSURE TIME CALCULATOR EQUATION TO BE MORE GENERAL FOR ALL TELESCOPES
+                if sky_lux != None:
+                    exp_time = prior_scale*scale*target_flat/(collecting_area*sky_lux*float(g_dev['fil'].filter_data[current_filter][3]))  #g_dev['ocn'].calc_HSI_lux)  #meas_sky_lux)
+                    
+                else:
+                    exp_time = prior_scale*scale*target_flat/float(g_dev['fil'].filter_data[current_filter][3])  #g_dev['ocn'].calc_HSI_lux)  #meas_sky_lux)
+    
+                plog('Ex:  ', exp_time, scale, prior_scale, sky_lux, float(g_dev['fil'].filter_data[current_filter][3]))
+
+                if evening and exp_time > 120:
+                     #exp_time = 60    #Live with this limit.  Basically started too late
+                     plog('Break because proposed evening exposure > 180 seconds:  ', exp_time)
+                     g_dev['obs'].send_to_user('Try next filter because proposed  flat exposure > 180 seconds.', p_level='INFO')
+                     pop_list.pop(0)
+                     break
+                if morn and exp_time < min_exposure:
+                     #exp_time = 60    #Live with this limit.  Basically started too late
+                     plog('Break because proposed evening exposure > 180 seconds:  ', exp_time)
+                     g_dev['obs'].send_to_user('Try next filter because proposed  flat exposure < min_exposure.', p_level='INFO')
+                     pop_list.pop(0)
+                     break
+                if evening and exp_time < min_exposure:   #NB it is too bright, should consider a delay here.
+                 #**************THIS SHOUD BE A WHILE LOOP! WAITING FOR THE SKY TO GET DARK AND EXP TIME TO BE LONGER********************
+                     plog("Too bright, wating 180 seconds.")
+                     g_dev['obs'].send_to_user('Delay 180 seconds to let it get darker.', p_level='INFO')
+                     time.sleep(180)
+                if morn and exp_time > 120 :   #NB it is too bright, should consider a delay here.
+                  #**************THIS SHOUD BE A WHILE LOOP! WAITING FOR THE SKY TO GET DARK AND EXP TIME TO BE LONGER********************
+                     plog("Too dim, wating 180 seconds.")
+                     g_dev['obs'].send_to_user('Delay 180 seconds to let it get lighterer.', p_level='INFO')
+                     time.sleep(180)
+                     #*****************NB Recompute exposure or otherwise wait
+                     exp_time = min_exposure
+                exp_time = round(exp_time, 5)
+                # prior_scale = prior_scale*scale  #Only update prior scale when changing filters
+                plog("Sky flat estimated exposure time, scale are:  ", exp_time, scale)               
+                                
                 req = {'time': float(exp_time),  'alias': camera_name, 'image_type': 'sky flat', 'script': 'On'}
-                opt = { 'count': 1, 'bin':  bin_spec, 'area': 150, 'filter': g_dev['fil'].filter_data[current_filter][0]}   #nb nb nb BIN CHNAGED FROM 2,2 ON 20220618 wer
-                plog("using:  ", g_dev['fil'].filter_data[current_filter][0])
+                if g_dev["fil"].null_filterwheel == False:
+                    opt = { 'count': 1, 'bin':  bin_spec, 'area': 150, 'filter': g_dev['fil'].filter_data[current_filter][0]}   #nb nb nb BIN CHNAGED FROM 2,2 ON 20220618 wer
+                    plog("using:  ", g_dev['fil'].filter_data[current_filter][0])
+                else:
+                    opt = { 'count': 1, 'bin':  bin_spec, 'area': 150}   
+                
                 if ephem.now() >= ending:
                     return
                 try:
@@ -1430,7 +1451,7 @@ class Sequencer:
                 g_dev['obs'].update_status()
                 try:
 
-                    scale *= target_flat /bright           #Note we are scaling the scale
+                    scale *= target_flat / bright           #Note we are scaling the scale
                     plog("New scale is:  ", scale)
                     if scale > 5000:
                         scale = 5000
@@ -1443,14 +1464,17 @@ class Sequencer:
                     sky_lux=1000
                 plog ("sky lux: " + str(sky_lux))
 
-
-                plog('\n\n', "Patch/Bright:  ", bright, g_dev['fil'].filter_data[current_filter][0], \
-                      'New Gain value: ', round(bright/(sky_lux*collecting_area*exp_time), 3), '\n\n')
+                if g_dev["fil"].null_filterwheel == False:
+                    plog('\n\n', "Patch/Bright:  ", bright, g_dev['fil'].filter_data[current_filter][0], \
+                          'New Gain value: ', round(bright/(sky_lux*collecting_area*exp_time), 3), '\n\n')
+                else:
+                    plog('\n\n', "Patch/Bright:  ", bright, \
+                          'New Gain value: ', round(bright/(sky_lux*collecting_area*exp_time), 3), '\n\n')
 
                 obs_win_begin, sunset, sunrise, ephem_now = self.astro_events.getSunEvents()
                 #  THE following code looks like a debug patch gone rogue.
 
-                if bright > 35000 and (ephem.now() < ending):    #NB should gate with end of skyflat window as well.
+                if bright > 0.85 * g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"]  and (ephem.now() < ending):    #NB should gate with end of skyflat window as well.
                     for i in range(1):
                         time.sleep(2)  #  #0 seconds of wait time.  Maybe shorten for wide bands?
                         g_dev['obs'].update_status()

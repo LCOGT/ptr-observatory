@@ -285,7 +285,6 @@ class Observatory:
                 plog(name)
                 driver = devices_of_type[name]["driver"]
                 settings = devices_of_type[name].get("settings", {})
-
                 if dev_type == "observing_conditions":
                     device = ObservingConditions(
                         driver, name, self.config, self.astro_events
@@ -386,6 +385,7 @@ class Observatory:
                         len(unread_commands),
                         unread_commands,
                     )
+
                     for cmd in unread_commands:
                         if cmd["action"] in ["cancel_all_commands", "stop"]:
                             g_dev["obs"].stop_all_activity = True
@@ -417,6 +417,7 @@ class Observatory:
 
                     if cancel_check:
                         return  # Note we do not process any commands.
+
 
                 while self.cmd_queue.qsize() > 0:
                     self.send_to_user(
@@ -558,7 +559,8 @@ class Observatory:
         # For each type, we get and save the status of each device.
         
         if not self.config["wema_is_active"]:
-            device_list = self.short_status_devices()
+            #device_list = self.short_status_devices()
+            device_list = self.device_types
             remove_enc = False
         else:
             device_list = self.device_types
@@ -1185,9 +1187,8 @@ class Observatory:
                         minutes=self.config["solve_timer"]
                     ):
 
-                        if smartstackid == "no" and len(sources) > 30:
+                        if smartstackid == "no" and len(sources) > 12:
                             try:
-
 
                                 solve = platesolve.platesolve(
                                     paths["red_path"] + paths["red_name01"], pixscale
