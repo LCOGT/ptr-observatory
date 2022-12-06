@@ -1479,12 +1479,19 @@ class Sequencer:
                 plog ("sky lux: " + str(sky_lux))
 
                 if g_dev["fil"].null_filterwheel == False:
-                    plog('\n\n', "Patch/Bright:  ", bright, g_dev['fil'].filter_data[current_filter][0], \
-                          'New Gain value: ', round(bright/(sky_lux*collecting_area*exp_time), 3), '\n\n')
+                    if sky_lux != None:
+                        plog('\n\n', "Patch/Bright:  ", bright, g_dev['fil'].filter_data[current_filter][0], \
+                              'New Gain value: ', round(bright/(sky_lux*collecting_area*exp_time), 3), '\n\n')
+                    else:
+                        plog('\n\n', "Patch/Bright:  ", bright, g_dev['fil'].filter_data[current_filter][0], \
+                              'New Gain value: ', round(bright/(collecting_area*exp_time), 3), '\n\n')
                 else:
-                    plog('\n\n', "Patch/Bright:  ", bright, \
-                          'New Gain value: ', round(bright/(sky_lux*collecting_area*exp_time), 3), '\n\n')
-
+                    if sky_lux != None:
+                        plog('\n\n', "Patch/Bright:  ", bright, \
+                              'New Gain value: ', round(bright/(sky_lux*collecting_area*exp_time), 3), '\n\n')
+                    else:
+                        plog('\n\n', "Patch/Bright:  ", bright, \
+                              'New Gain value: ', round(bright/(collecting_area*exp_time), 3), '\n\n')
                 obs_win_begin, sunset, sunrise, ephem_now = self.astro_events.getSunEvents()
                 #  THE following code looks like a debug patch gone rogue.
 
