@@ -415,10 +415,10 @@ class Focuser:
             #breakpoint()
             if "af_log" in cam_shelf:
                 cam_shelf["af_log"].append(
-                    (f_temp, ref, fwhm, solved, datetime.datetime.now().isoformat())
+                    (f_temp, ref, round(fwhm, 2), round(solved, 2), datetime.datetime.now().isoformat())
                 )
             else : # create af log if it doesn't exist
-                cam_shelf["af_log"]=[(f_temp, ref, fwhm, solved, datetime.datetime.now().isoformat())]
+                cam_shelf["af_log"]=[(f_temp, ref, round(fwhm, 2), round(solved, 2), datetime.datetime.now().isoformat())]
         else:
             f_temp=15.0
             print ("getting f_temp failed, using 15 degrees C")

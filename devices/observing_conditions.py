@@ -207,6 +207,7 @@ class ObservingConditions:
                 self.status = status
                 self.prior_status = status
                 g_dev["ocn"].status = status
+
                 if status['wx_ok'] in ['no', 'No', False]:
                     self.wx_is_ok = False
                 if status['wx_ok'] in ['yes', 'Yes', True]:

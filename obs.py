@@ -96,7 +96,7 @@ class Observatory:
         self.site_name = name
         self.config = config
         self.site = config["site"]
-
+   
         if self.config["wema_is_active"]:
             self.hostname = socket.gethostname()
             if self.hostname in self.config["wema_hostname"]:
@@ -322,7 +322,6 @@ class Observatory:
 
         uri = f"{self.name}/config/"
         self.config["events"] = g_dev["events"]
-        
         response = g_dev["obs"].api.authenticated_request("PUT", uri, self.config)
         if 'message' in response:
             if response['message'] == "Missing Authentication Token":
@@ -335,6 +334,7 @@ class Observatory:
             #print(response['ResponseMetadata']['HTTPStatusCode'])
             if response['ResponseMetadata']['HTTPStatusCode'] == 200:
                 plog("Config uploaded successfully.")
+
             else:
                 print ("Response to site config upload unclear. Here is the response")
                 print (response)

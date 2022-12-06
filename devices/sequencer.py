@@ -1332,7 +1332,7 @@ class Sequencer:
         g_dev['obs'].send_to_user('Sky Flat sequence Starting, Enclosure PRESUMED Open. Telescope should be on sky flat spot.', p_level='INFO')
         evening = not morn
         camera_name = str(self.config['camera']['camera_1_1']['name'])
-        flat_count = 5
+        flat_count = 7
         min_exposure = float(self.config['camera']['camera_1_1']['settings']['min_exposure'])
         bin_spec = '1,1'
         try:
@@ -1365,7 +1365,7 @@ class Sequencer:
         exp_time = 0
         scale = 1.0
         prior_scale = 1   #THIS will be inhereted upon completion of the prior filter
-        collecting_area = self.config['telescope']['telescope1']['collecting_area']/31808.   # SAF at F4.9 is the reference
+        collecting_area = self.config['telescope']['telescope1']['collecting_area']/76147.   # mrc 14" at F6.5 is the reference
         #   and (g_dev['events']['Eve Sky Flats'] <
 
         while len(pop_list) > 0  and ephem.now() < ending:
@@ -1452,9 +1452,9 @@ class Sequencer:
                     return
                 try:
 
-                    fred = g_dev['cam'].expose_command(req, opt, no_AWS=True, do_sep = False)
+                    result = g_dev['cam'].expose_command(req, opt, no_AWS=True, do_sep = False)
 
-                    bright = fred['patch']    #  Patch should be circular and 20% of Chip area. ToDo project
+                    bright = result['patch']    #  Patch should be circular and 20% of Chip area. ToDo project
                     plog('Returned:  ', bright)
                 except Exception as e:
                     plog('Failed to get a flat image: ', e)
@@ -1467,8 +1467,8 @@ class Sequencer:
 
                     scale *= target_flat / bright           #Note we are scaling the scale
                     plog("New scale is:  ", scale)
-                    if scale > 5000:
-                        scale = 5000
+                    if scale > 500:   #NB this seems absurdly hight.
+                        scale = 500
                     if scale < 0.01:
                         scale = 0.01
                 except:

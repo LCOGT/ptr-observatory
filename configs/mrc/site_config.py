@@ -43,8 +43,9 @@ Vincent Shutt   COM15   Darkslide
 FlI FW 1     Closest to tel
 FlI FW 2     closest to cam  flifil0
 QHY600         AstroImaging Equipment
-
-
+                                                                                                   1         1         1       1
+         1         2         3         4         5         6         7         8         9         0         1         2       2
+12345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678
 '''
 
 #NB NB NB json is not bi-directional with tuples (), instead, use lists [], nested if tuples are needed.
@@ -117,12 +118,12 @@ site_config = {
     'observing_check_period' : 2,    # How many minutes between weather checks
     'enclosure_check_period' : 2,    # How many minutes between enclosure checks
 
-    'auto_eve_bias_dark': False,
+    'auto_eve_bias_dark': True,
     
     'auto_midnight_moonless_bias_dark': False,
     'auto_eve_sky_flat': True,
     'eve_sky_flat_sunset_offset': -90.,  #  Minutes  neg means before, + after.
-    'eve_cool_down_open' : -92.0,
+    'eve_cool_down_open' : -95.0,
     'auto_morn_sky_flat': True,
     'auto_morn_bias_dark': True,
     're-calibrate_on_solve': True,
@@ -480,12 +481,14 @@ site_config = {
             #"driver": ['ASCOM.FLI.FilterWheel1', 'ASCOM.FLI.FilterWheel2'],   #  'ASCOM.QHYFWRS232.FilterWheel',  #"Maxim",   #['ASCOM.FLI.FilterWheel1', 'ASCOM.FLI.FilterWheel2'],
             'ip_string': "",
             'settings': {
-                'filter_count': 23,
-                'home_filter':  2,
+                #'filter_count': 23,
+                #'home_filter':  2,
                 'default_filter':  'w',
                 'filter_reference': 2,
 
-                'filter_list': ['PL','PR','PG','PB','HA','O3','S2', 'air','dif','w','CR','N2','up','gp','rp','ip','z', 'difup','difgp','difrp','difip','dark'], # A list of actual physical filters for the substitution function
+
+                #'filter_list': ['PL','PR','PG','PB','HA','O3','S2', 'air','dif','w','CR','N2','up','gp','rp','ip','z', 'difup','difgp','difrp','difip','dark'], # A list of actual physical filters for the substitution function
+
                 'filter_data': [['air',     [0, 0], -1000,  357.1, [2, 17], 'ai'], #  0
                                 ['dif',     [4, 0],     0,  330.0, [2, 17], 'df'], #  1  NB NB NB THis in series should change focus about 1mm more.
                                 ['w',       [2, 0],     0,  346.2, [2, 17], 'w '], #  2
@@ -509,11 +512,14 @@ site_config = {
                                 ['difip',   [4, 8],  1000,   44,   [2, 17], 'di'], # 20
                                 ['focus',   [2, 0],     0,  0.0,   [2, 17], 'fo'], # 21
                                 ['dark',    [8, 5],     0,  0.0,   [2, 17], 'dk']],# 22
+
                                 #Screen = 100; QHY400 ~ 92% DQE   HDR Mode    Screen = 160 sat  20190825 measured.
                 'filter_screen_sort':  [0, 1, 2, 10, 7, 19, 6, 18, 12, 11, 13, 8, 20, 3, \
                                         14, 15, 4, 16],   #  9, 21],  # 5, 17], #Most to least throughput, \
                                 #so screen brightens, skipping u and zs which really need sky.
-                'filter_sky_sort':     [16, 15, 14, 13, 12, 11,10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0]  #Least to most throughput  \
+
+                'filter_sky_sort':     [16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 4, 4, 3, 2, 1, 0]  #Least to most throughput  \
+
 
             },
         },
@@ -616,25 +622,32 @@ site_config = {
                 'max_exposure': 180.,
                 'can_subframe':  True,
                 'min_subframe': [128,128],
-                'bin_modes':  [[1, 1, 0.303], [2, 2, 0.605],  [3, 3, 0.908], [4, 4, 1.21]],     #Meaning fixed binning if list has only one entry
+                'bin_modes':  [[1, 1, 0.303], [2, 2, 0.605],  [3, 3, 0.908], [4, 4, 1.210]],     #Meaning fixed binning if list has only one entry
+                'reference_gain': [1.3, 2.6, 3.9, 5.2],     #  NB GUess One val for each binning. Assumed digitalsumming in camera???
+                'reference_noise': [6, 6, 6, 6],    #  NB Guess
+                'reference_dark': [.2, .8, 1.8, 3.2],  #  NB  Guess
+                'reference_offset': [611, 623, 590, 700], #  NB Guess  ADU vaules not times in sec.
+                'fullwell_capacity': [80000, 320000, 720000, 1280000],   #  NB Guess
+                'cycle_time':  [18, 15, 15, 12],   # NB somewhat a Guess.
                 'default_bin':  [2, 2, 0.605],
-                'maximum_bin': [1, 1, 0.303],
+                'bin_enable':  ['2 2'],  #  Always square and matched to seeing situation by owner
+                                         #  NB NB inconsistent use of bin string   '1 1', '1x1' , etc.
+                'maximum_bin': [1, 1, 0.303],   #  NB confusing name, defining a better term next, drop this eventually
+                'minimum_bin': [1, 1, 0.303],
                 'cosmics_at_default' : 'yes',
                 'cosmics_at_maximum' : 'yes',
-                'bin_enable':  ['2 2'],  #  Always square and matched to seeing situation by owner
-                'cycle_time':  [18, 15, 15, 12],
+                
+                
                 'rbi_delay':  0,      #  This being zero says RBI is not available, eg. for SBIG.
                 'is_cmos':  True,
                 'is_color': False,
                 'can_set_gain':  True,
-                'ref_dark': 600,
+                'ref_dark': 600,    #  Time in seconds
                 'long_dark': None,   #  s.
-                'reference_gain': [1.3, 2.6, 3.9, 5.2],     #  One val for each binning. Assumed digitalsumming in camera???
-                'reference_noise': [6, 6, 6, 6],    #  NB Guess
-                'reference_dark': [.2, .8, 1.8, 3.2],  #  Guess
+
                 'max_linearity':  60000,   # Guess
                 'saturate':  65300,
-                'fullwell_capacity': [80000, 320000, 720000, 1280000],
+                
                 'read_mode':  'Normal',
                 'readout_mode': 'Normal',
                 'readout_speed':  50,
@@ -645,7 +658,7 @@ site_config = {
                 'areas_implemented': ['Full', '0.5sq°',  '0.7sq°', '1x1°', '1.4sq°', '2x2°', '2.8xsq°', '4x4°', '5.6sq°'],
                 'default_area':  "Full",
                 'default_rotation': 0.0000,
-                'flat_bin_spec': '1,1',    #Default binning for flats
+                'flat_bin_spec': '1,1',    #Default binning for flats, you can make a 2,2 from a 1,1.  NB NB NB Note inconsistent use of '1 1' and '1x1' and '1,1'
                 'has_darkslide':  True,
                 'darkslide_com':  'COM15',
                 'shutter_type': "Electronic",
