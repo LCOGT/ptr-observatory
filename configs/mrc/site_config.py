@@ -122,7 +122,7 @@ site_config = {
     
     'auto_midnight_moonless_bias_dark': False,
     'auto_eve_sky_flat': True,
-    'eve_sky_flat_sunset_offset': -90,  #  Minutes  neg means before, + after.
+    'eve_sky_flat_sunset_offset': -90.,  #  Minutes  neg means before, + after.
     'eve_cool_down_open' : -95.0,
     'auto_morn_sky_flat': True,
     'auto_morn_bias_dark': True,
@@ -486,7 +486,9 @@ site_config = {
                 'default_filter':  'w',
                 'filter_reference': 2,
 
+
                 #'filter_list': ['PL','PR','PG','PB','HA','O3','S2', 'air','dif','w','CR','N2','up','gp','rp','ip','z', 'difup','difgp','difrp','difip','dark'], # A list of actual physical filters for the substitution function
+
                 'filter_data': [['air',     [0, 0], -1000,  357.1, [2, 17], 'ai'], #  0
                                 ['dif',     [4, 0],     0,  330.0, [2, 17], 'df'], #  1  NB NB NB THis in series should change focus about 1mm more.
                                 ['w',       [2, 0],     0,  346.2, [2, 17], 'w '], #  2
@@ -510,12 +512,14 @@ site_config = {
                                 ['difip',   [4, 8],  1000,   44,   [2, 17], 'di'], # 20
                                 ['focus',   [2, 0],     0,  0.0,   [2, 17], 'fo'], # 21
                                 ['dark',    [8, 5],     0,  0.0,   [2, 17], 'dk']],# 22
-                                
+
                                 #Screen = 100; QHY400 ~ 92% DQE   HDR Mode    Screen = 160 sat  20190825 measured.
                 'filter_screen_sort':  [0, 1, 2, 10, 7, 19, 6, 18, 12, 11, 13, 8, 20, 3, \
                                         14, 15, 4, 16],   #  9, 21],  # 5, 17], #Most to least throughput, \
                                 #so screen brightens, skipping u and zs which really need sky.
+
                 'filter_sky_sort':     [16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 4, 4, 3, 2, 1, 0]  #Least to most throughput  \
+
 
             },
         },

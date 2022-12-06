@@ -838,7 +838,6 @@ class Enclosure:
         wx_hold = g_dev['ocn'].wx_hold #or redis_hold  #TWO PATHS to pick up wx-hold.
         if self.mode == "Automatic" and (open_cmd or close_cmd):
             g_dev['obs'].send_to_user("User enclosure requests not honored in Automatic mode.", p_level='INFO')
-
         if self.mode == 'Shutdown':
             #  NB in this situation we should always Park telescope, rotators, etc.
             #  NB This code is weak
