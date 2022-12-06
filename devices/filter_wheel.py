@@ -426,11 +426,13 @@ class FilterWheel:
             ):  # NB Filter count MUST be correct in Config.
                 if filter_name in str(self.filter_data[match][0]).lower():
 
-                    filt_pointer = self.filter_data[match][1][0]
+                    #filt_pointer = self.filter_data[match][1]
+                    filt_pointer = match
                     filter_identified = 1
                     break
 
         plog("Filter name is:  ", self.filter_data[match][0])
+        #breakpoint()
         g_dev["obs"].send_to_user("Filter set to:  " + str(self.filter_data[match][0]))
         self.filter_number = filt_pointer
         self.filter_selected = str(filter_name).lower()
@@ -546,7 +548,7 @@ class FilterWheel:
         # Construct available filter list
         filter_names=[]
         for ctr in range(len(self.config["filter_wheel1"]["settings"]['filter_data'])):
-            print (self.config["filter_wheel1"]["settings"]['filter_data'][ctr][0])
+            #print (self.config["filter_wheel1"]["settings"]['filter_data'][ctr][0])
             filter_names.append(self.config["filter_wheel1"]["settings"]['filter_data'][ctr][0])
         
         
