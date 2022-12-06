@@ -487,12 +487,14 @@ site_config = {
             "parent": "tel1",
             "alias": "Dual filter wheel",
             'dual_wheel':  True,
+            "default_flat_exposure" : 1.0,
             'ip_string': 'http://127.0.0.1',
             "desc":  'Dual Apogee custom Dual 50mm sq.',
             #"driver": ['ASCOM.Apogee.FilterWheel', 'ASCOM.Apogee2.FilterWheel'],
             'driver': 'Maxim.CCDcamera',  #'startup_script':  None,
             'recover_script':  None,
             'shutdown_script':  None,
+            
 
             'settings': {
                 'filter_count': '24',

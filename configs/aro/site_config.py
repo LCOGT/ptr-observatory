@@ -416,6 +416,7 @@ site_config = {
             "driver": "LCO.dual",  # 'ASCOM.FLI.FilterWheel',   #'MAXIM',
             'ip_string': 'http://10.0.0.110',
             "dual_wheel": True,
+            "default_flat_exposure" : 1.0,
             'settings': {
                 'filter_count': 43,
                 'home_filter':  1,

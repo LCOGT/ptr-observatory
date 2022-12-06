@@ -474,6 +474,7 @@ site_config = {
             "driver": "Maxim.CCDCamera",  #['ASCOM.FLI.FilterWheel1', 'ASCOM.FLI.FilterWheel2'],   #"Maxim",   #
             #"driver":   'ASCOM.FLI.FilterWheel',   #  NB THIS IS THE NEW DRIVER FROM peter.oleynikov@gmail.com  Found in Kepler ASCOM section
             "dual_wheel": True,
+            "default_flat_exposure" : 1.0,
             # "parent": "telescope1",
             # "alias": "CWL2",
             # "desc":  'PTR Custom FLI dual wheel.',

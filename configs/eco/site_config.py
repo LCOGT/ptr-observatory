@@ -403,6 +403,7 @@ site_config = {
             #"driver":   "Maxim.Image",   #"LCO.dual",  #  'ASCOM.FLI.FilterWheel',
             'ip_string': None,
             "dual_wheel": False,
+            "default_flat_exposure" : 1.0,
             'settings': {
                 'filter_count': 11,   #  This must be correct as to the number of filters
                 'home_filter':  0,

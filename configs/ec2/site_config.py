@@ -439,7 +439,8 @@ site_config = {
             "driver":   None,   #"LCO.dual",  #  'ASCOM.FLI.FilterWheel',
             #"driver":   "Maxim.Image",   #"LCO.dual",  #  'ASCOM.FLI.FilterWheel',
             'ip_string': None,
-            "dual_wheel": False,            
+            "dual_wheel": False,
+            "default_flat_exposure" : 1.0,
         },
     },
 
@@ -510,7 +511,7 @@ site_config = {
                 'trim_sec': ['[1:9576, 1:6388]', '[1:4788, 1:3194]', '[1:3192, 1:2129]', '[1:2394, 1:1597]'],
                 'x_pixel':  6,
                 'y_pixel':  6,
-                'pix_scale': [0.269],
+                'pix_scale': [1.569],
                 'CameraXSize' : 4096,
                 'CameraYSize' : 4096,
                 'MaxBinX' : 2,

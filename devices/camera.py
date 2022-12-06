@@ -2629,6 +2629,7 @@ class Camera:
                                 # Interpolate to make a high resolution version for focussing
                                 # and platesolving
                                 hdufocus.data=demosaicing_CFA_Bayer_bilinear(hdufocus.data, 'RGGB')[:,:,1]
+                                hdufocus.data=hdufocus.data.astype("float32")
                                 
                                 
 

@@ -326,7 +326,11 @@ class Sequencer:
                 g_dev['obs'].send_to_user("Beginning start of night Focus and Pointing Run", p_level='INFO')
 
                 # Move to reasonable spot
-                g_dev['mnt'].mount.Tracking = True
+                if g_dev['mnt'].mount.Tracking == False:
+                    if g_dev['mnt'].mount.CanSetTracking:   
+                        g_dev['mnt'].mount.Tracking = True
+                    else:
+                        plog("mount is not tracking but this mount doesn't support ASCOM changing tracking")
 
                 g_dev['mnt'].move_to_altaz(90, 70)
                 g_dev['foc'].time_of_last_focus = datetime.datetime.now() - datetime.timedelta(
@@ -1400,16 +1404,18 @@ class Sequencer:
                     # MF SHIFTING EXPOSURE TIME CALCULATOR EQUATION TO BE MORE GENERAL FOR ALL TELESCOPES
                 if sky_lux != None:
                     exp_time = prior_scale*scale*target_flat/(collecting_area*sky_lux*float(g_dev['fil'].filter_data[current_filter][3]))  #g_dev['ocn'].calc_HSI_lux)  #meas_sky_lux)
-                    plog('Ex:  ', exp_time, scale, prior_scale, sky_lux, float(g_dev['fil'].filter_data[current_filter][3]))
+                    plog('Exposure time:  ', exp_time, scale, prior_scale, sky_lux, float(g_dev['fil'].filter_data[current_filter][3]))
 
                 else:
                     if g_dev["fil"].null_filterwheel == False:
                         exp_time = prior_scale*scale*target_flat/float(g_dev['fil'].filter_data[current_filter][3])  #g_dev['ocn'].calc_HSI_lux)  #meas_sky_lux)
-                        plog('Ex:  ', exp_time, scale, prior_scale, float(g_dev['fil'].filter_data[current_filter][3]))
+                        plog('Exposure time:  ', exp_time, scale, prior_scale, float(g_dev['fil'].filter_data[current_filter][3]))
 
                     else:
-                        exp_time = prior_scale*scale*target_flat
-                        plog('Ex:  ', exp_time, scale, prior_scale)
+
+                        #exp_time = prior_scale*scale*target_flat
+                        exp_time = prior_scale*scale*self.config['filter_wheel']['filter_wheel1']["default_flat_exposure"]
+                        plog('Exposure time:  ', exp_time, scale, prior_scale)
 
     
                 
@@ -1479,11 +1485,19 @@ class Sequencer:
                 plog ("sky lux: " + str(sky_lux))
 
                 if g_dev["fil"].null_filterwheel == False:
-                    plog('\n\n', "Patch/Bright:  ", bright, g_dev['fil'].filter_data[current_filter][0], \
-                          'New Gain value: ', round(bright/(sky_lux*collecting_area*exp_time), 3), '\n\n')
+                    if sky_lux != None:
+                        plog('\n\n', "Patch/Bright:  ", bright, g_dev['fil'].filter_data[current_filter][0], \
+                              'New Gain value: ', round(bright/(sky_lux*collecting_area*exp_time), 3), '\n\n')
+                    else:
+                        plog('\n\n', "Patch/Bright:  ", bright, g_dev['fil'].filter_data[current_filter][0], \
+                              'New Gain value: ', round(bright/(collecting_area*exp_time), 3), '\n\n')
                 else:
-                    plog('\n\n', "Patch/Bright:  ", bright, \
-                          'New Gain value: ', round(bright/(sky_lux*collecting_area*exp_time), 3), '\n\n')
+                    if sky_lux != None:
+                        plog('\n\n', "Patch/Bright:  ", bright, \
+                             'New Gain value: ', round(bright/(sky_lux*collecting_area*exp_time), 3), '\n\n')
+                    else:
+                        plog('\n\n', "Patch/Bright:  ", bright,  \
+                              'New Gain value: ', round(bright/(collecting_area*exp_time), 3), '\n\n')
 
                 obs_win_begin, sunset, sunrise, ephem_now = self.astro_events.getSunEvents()
                 #  THE following code looks like a debug patch gone rogue.
