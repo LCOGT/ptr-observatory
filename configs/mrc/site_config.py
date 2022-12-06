@@ -480,35 +480,35 @@ site_config = {
             #"driver": ['ASCOM.FLI.FilterWheel1', 'ASCOM.FLI.FilterWheel2'],   #  'ASCOM.QHYFWRS232.FilterWheel',  #"Maxim",   #['ASCOM.FLI.FilterWheel1', 'ASCOM.FLI.FilterWheel2'],
             'ip_string': "",
             'settings': {
-                'filter_count': 23,
-                'home_filter':  2,
+                #'filter_count': 23,
+                #'home_filter':  2,
                 'default_filter':  'w',
                 'filter_reference': 2,
 
-                'filter_list': ['PL','PR','PG','PB','HA','O3','S2', 'air','dif','w','CR','N2','up','gp','rp','ip','z', 'difup','difgp','difrp','difip','dark'], # A list of actual physical filters for the substitution function
-                'filter_data': [['air',     [0, 0], -1000,  118.6, [2, 17], 'ai'], #  0
-                                ['dif',     [4, 0],     0,  104.8, [2, 17], 'df'], #  1
-                                ['w',       [2, 0],     0,  133.7, [2, 17], 'w '], #  2
-                                ['CR',      [1, 0],     0,  0.706, [2, 17], 'CR'], #  3
-                                ['N2',      [3, 0],     0,  0.371, [2, 17], 'N2'], #  4
-                                ['up',      [0, 5],     0,  5.129, [1, 17], 'up'], #  5
-                                ['gp',      [0, 6],     0,  81.10, [2, 17], 'gp'], #  6
-                                ['rp',      [0, 7],     0,  15.48, [2, 17], 'rp'], #  7
-                                ['ip',      [0, 8],     0,  11.35, [2, 17], 'ip'], #  8
-                                ['z',       [5, 0],     0,  1.872, [2, 17], 'z' ], #  9
-                                ['PL',      [0, 4],     0,  72.78, [2, 17], "PL"], # 10
+                #'filter_list': ['PL','PR','PG','PB','HA','O3','S2', 'air','dif','w','CR','N2','up','gp','rp','ip','z', 'difup','difgp','difrp','difip','dark'], # A list of actual physical filters for the substitution function
+                'filter_data': [['air',     [0, 0], -1000,  357.1, [2, 17], 'ai'], #  0
+                                ['dif',     [4, 0],  1000,  330.0, [2, 17], 'df'], #  1  NB NB NB THis in series should change focus about 1mm more.
+                                ['w',       [2, 0],     0,  317.5, [2, 17], 'w '], #  2
+                                ['CR',      [1, 0],     0,  2.83,  [2, 17], 'CR'], #  3
+                                ['N2',      [3, 0],     0,  02.0,  [2, 17], 'N2'], #  4
+                                ['up',      [0, 5],     0,  5.06,  [1, 17], 'up'], #  5
+                                ['gp',      [0, 6],     0,  108.7, [2, 17], 'gp'], #  6
+                                ['rp',      [0, 7],     0,  54.1,  [2, 17], 'rp'], #  7
+                                ['ip',      [0, 8],     0,  47.41, [2, 17], 'ip'], #  8
+                                ['z',       [5, 0],     0,  9.95,  [2, 17], 'z' ], #  9
+                                ['PL',      [0, 4],     0,  317.5, [2, 17], "PL"], # 10
                                 ['PR',      [0, 3],     0,  13.89, [2, 17], 'PR'], # 11
-                                ['PG',      [0, 2],     0,  30.24, [2, 17], 'PG'], # 12
-                                ['PB',      [0, 1],     0,  27.52, [2, 17], 'PB'], # 13
-                                ['O3',      [7, 0],     0,  1.742, [2, 17], '03'], # 14
-                                ['HA',      [6, 0],     0,  1.200, [2, 17], 'HA'], # 15   #  20221103 Oddly high result
-                                ['S2',      [8, 0],     0,  1.300, [2, 17], 'S2'], # 16   #  20221103 Oddly high result
-                                ['difup',   [4, 5],     0,  5.129,  [2, 17], 'du'], # 17
-                                ['difgp',   [4, 6],     0,  81.10,  [2, 17], 'dg'], # 18
-                                ['difrp',   [4, 7],     0,  15.48,  [2, 17], 'dr'], # 19
-                                ['difip',   [4, 8],     0,  11.35,  [2, 17], 'di'], # 20
-                                ['focus',   [2, 0],     0,  133.7, [2, 17], 'fo'], # 21
-                                ['dark',    [10, 9],    0,  99999, [2, 17], 'dk']],# 22
+                                ['PG',      [0, 2],     0,  102.4, [2, 17], 'PG'], # 12
+                                ['PB',      [0, 1],     0,  154.7, [2, 17], 'PB'], # 13
+                                ['O3',      [7, 0],     0,  5.35,  [2, 17], '03'], # 14
+                                ['HA',      [6, 0],     0,  1.58,  [2, 17], 'HA'], # 15   
+                                ['S2',      [8, 0],     0,  1.64,  [2, 17], 'S2'], # 16   
+                                ['difup',   [4, 5],     0,  5.0,   [2, 17], 'du'], # 17
+                                ['difgp',   [4, 6],     0,  100,   [2, 17], 'dg'], # 18
+                                ['difrp',   [4, 7],     0,  52,    [2, 17], 'dr'], # 19
+                                ['difip',   [4, 8],     0,  45,    [2, 17], 'di'], # 20
+                                ['focus',   [2, 0],     0,  317.5, [2, 17], 'fo'], # 21
+                                ['dark',    [8, 5],    0,   0.0,   [2, 17], 'dk']],# 22
                                 #Screen = 100; QHY400 ~ 92% DQE   HDR Mode    Screen = 160 sat  20190825 measured.
                 'filter_screen_sort':  [0, 1, 2, 10, 7, 19, 6, 18, 12, 11, 13, 8, 20, 3, \
                                         14, 15, 4, 16],   #  9, 21],  # 5, 17], #Most to least throughput, \

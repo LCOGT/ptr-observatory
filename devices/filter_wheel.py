@@ -525,9 +525,9 @@ class FilterWheel:
         self.filter_back.Position = 2
         while self.filter_back.Position == -1:
             time.sleep(0.1)
-        self.filter_selected = "w"
-        self.filter_reference = 2
-        self.filter_offset = int(self.filter_data[2][2])
+        self.filter_selected = self.config["filter_wheel1"]["settings"]['default_filter']
+        self.filter_reference = self.config["filter_wheel1"]["settings"]['filter_reference']
+        self.filter_offset = int(self.filter_data[self.filter_reference][self.filter_reference])
 
     def substitute_filter(self, requested_filter: str):
         """Returns an alternative filter if requested filter not at site.
@@ -538,7 +538,20 @@ class FilterWheel:
         """
 
         plog(f"Finding substitute for {requested_filter}...")
-        filter_names = self.config["filter_wheel1"]["settings"]["filter_list"]
+        
+        #breakpoint()
+        #filter_names = self.config["filter_wheel1"]["settings"]["filter_list"]
+        
+        # Seriously dumb way to do this..... but quick!
+        # Construct available filter list
+        filter_names=[]
+        for ctr in range(len(self.config["filter_wheel1"]["settings"]['filter_data'])):
+            print (self.config["filter_wheel1"]["settings"]['filter_data'][ctr][0])
+            filter_names.append(self.config["filter_wheel1"]["settings"]['filter_data'][ctr][0])
+        
+        
+        
+        
         available_filters = list(map(lambda x: x.lower(), filter_names))
         plog(
             f"Available Filters: {str(available_filters)} \
