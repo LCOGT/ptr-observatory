@@ -31,22 +31,14 @@ class FilterWheel:
             self.null_filterwheel = False
             self.dual_filter = self.config["filter_wheel1"]["dual_wheel"]
             self.ip = str(self.config["filter_wheel1"]["ip_string"])
-            self.filter_data = self.config["filter_wheel1"]["settings"]["filter_data"][
-                1:
-            ]  # Strips off column heading entry
-            self.filter_screen_sort = self.config["filter_wheel1"]["settings"][
-                "filter_screen_sort"
-            ]
-            self.filter_reference = int(
-                self.config["filter_wheel1"]["settings"]["filter_reference"]
-            )
-    
-            # NOTE: THIS CODE DOES NOT implement a filter via the Maxim application
-            # which is passed in as a valid instance of class camera.
+            self.filter_data = self.config["filter_wheel1"]["settings"]["filter_data"]
+            self.filter_screen_sort = self.config["filter_wheel1"]["settings"] \
+                                                 ["filter_screen_sort"]
+            self.filter_reference = int( self.config["filter_wheel1"]["settings"] \
+                                                    ["filter_reference"])
             self.filter_message = "-"
-            plog(
-                "Please NOTE: Filter wheel may block for many seconds while first connecting & homing."
-            )
+            plog("Please NOTE: Filter wheel may block for many seconds while first connecting \
+                 & homing.")
             if driver == "LCO.dual":
                 # home the wheel and get responses, which indicates it is connected.
                 # set current_0 and _1 to [0, 0] position to default of w/L filter.
@@ -387,6 +379,7 @@ class FilterWheel:
         #             "Unable to set filter position using filter name,\
         #             double-check the filter name dictionary."
         #         )
+
         try:
             filter_name = str(req["filter"]).lower()
         except:
@@ -432,7 +425,7 @@ class FilterWheel:
                     break
 
         plog("Filter name is:  ", self.filter_data[match][0])
-        #breakpoint()
+
         g_dev["obs"].send_to_user("Filter set to:  " + str(self.filter_data[match][0]))
         self.filter_number = filt_pointer
         self.filter_selected = str(filter_name).lower()
@@ -486,6 +479,7 @@ class FilterWheel:
             self.filter_offset = float(self.filter_data[filt_pointer][2])
         elif self.maxim and self.dual:
             try:
+                breakpoint()
                 self.filter.Filter = filter_selections[0]
                 time.sleep(0.1)
                 if self.dual_filter:
@@ -559,7 +553,10 @@ class FilterWheel:
             f"Available Filters: {str(available_filters)} \
                 \nRequested Filter: {str(requested_filter)}"
         )
-
+        #  NB NB NB note any filter string when lower cased needs to be unique. j - Johnson,
+        #  c = Cousins, p or ' implies Sloane, S is for stromgren.  Some of the mappings
+        #  below may not be optimal. WER
+        
         # List of tuples containing ([requested filter groups], [priority order]).
         # If this list continues to grow, consider putting it in a separate file.
         # This is going to get messy when we add Stromgrens, so I suggest
@@ -572,15 +569,20 @@ class FilterWheel:
             (["Green", "JV", "PG"], ["JV", "PG"]),  # G broadband
             (["Red", "R", "r", "PR", "Rc", "rp"], ["rp", "Rc", "PR"]),  # R broadband
             (["i", "Ic", "ip"], ["ip", "Ic"]),  # infrared broadband
-            (["z", "zs", "zp"], ["zp", "zs", "z"]),  # z broadband
+            (["z", "zs", "zp"], ["zp", "zs", "z"]),  # NB z broadband  z and zs are different.  Y?  WER
             (["gp", "g"], ["gp"]),  # generic sdss-g
             (["HA", "H", 'Ha'], ["HA"]),  # generic H
             (["O3", "O"], ["O3"]),  # generic O
             (["S2", "S"], ["S2"]),  # generic S
             (["CR", "C"], ["CR"]),  # generic C
+            (["N2", "N"], ["N2"]),  # generic N
             (["dark"], ["S2", "O3", "HA", "up", "U", "JU"]),  # generic C
             (
-                ["EXO"],
+                ["Air, air, AIR"],
+                ['air', 'clear', "w", "Lum", "PL",  'silica'],
+            ),  # exoplanet
+            (
+                ["EXO",  "Exo", "exo"],
                 ["EXO", "ip", "Ic", "rp", "Rc", "PR", "w", "Lum", "clear"],
             ),  # exoplanet
             (
@@ -600,7 +602,8 @@ class FilterWheel:
                     f"Found substitute {str(sub)} matching requested {str(requested_filter)}"
                 )
                 return str(sub).lower()
-
+        # NB I suggest we pick the default (w) filter instead of skipping. WER
+        
         plog("No substitute filter found, skipping exposure.")
         return "none"
 

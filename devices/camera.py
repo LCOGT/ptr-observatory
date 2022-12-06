@@ -112,6 +112,10 @@ OBSERVER	= '        '
 NOTES   	= '        '
 ROWORDER	= 'TOP-DOWN' /          Image write order, BOTTOM-UP or TOP-DOWN
 FLIPSTAT	= '        '
+
+                                                                                                   1         1         1       1
+         1         2         3         4         5         6         7         8         9         0         1         2       2
+12345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678
 """
 dgs = "°"
 # These should eventually be in a utility module
