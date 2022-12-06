@@ -530,6 +530,8 @@ class Events:
                 ('Sun Rise           ', sunrise),
                 ('Morn Bias Dark     ', ephem.Date(sunrise + 20/1440.)),
                 ('End Morn Bias Dark ', ephem.Date(sunrise + 120/1440.)),
+                ('Nightly Reset      ', ephem.Date(sunrise + 180/1440.)),
+                ('End Nightly Reset  ', ephem.Date(sunrise + 200/1440.)),
                 ('Prior Moon Rise    ', last_moonrise),
                 ('Prior Moon Transit ', last_moontransit),
                 ('Prior Moon Set     ', last_moonset),
