@@ -479,7 +479,6 @@ class FilterWheel:
             self.filter_offset = float(self.filter_data[filt_pointer][2])
         elif self.maxim and self.dual:
             try:
-                breakpoint()
                 self.filter.Filter = filter_selections[0]
                 time.sleep(0.1)
                 if self.dual_filter:
