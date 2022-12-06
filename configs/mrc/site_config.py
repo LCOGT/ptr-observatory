@@ -121,7 +121,7 @@ site_config = {
     
     'auto_midnight_moonless_bias_dark': False,
     'auto_eve_sky_flat': True,
-    'eve_sky_flat_sunset_offset': -180.,  #  Minutes  neg means before, + after.
+    'eve_sky_flat_sunset_offset': -182.,  #  Minutes  neg means before, + after.
     'eve_cool_down_open' : -60.0,
     'auto_morn_sky_flat': True,
     'auto_morn_bias_dark': True,
@@ -513,7 +513,7 @@ site_config = {
                 'filter_screen_sort':  [0, 1, 2, 10, 7, 19, 6, 18, 12, 11, 13, 8, 20, 3, \
                                         14, 15, 4, 16],   #  9, 21],  # 5, 17], #Most to least throughput, \
                                 #so screen brightens, skipping u and zs which really need sky.
-                'filter_sky_sort':     [16, 15, 4, 3, 14, 9, 5, 8, 11, 7, 12, 10, 6, 2, 1, 0]  #Least to most throughput  \
+                'filter_sky_sort':     [15, 14, 3, 2, 13, 8, 4, 7, 10, 6, 11, 9, 5, 1, 0]  #Least to most throughput  \
 
             },
         },
@@ -645,7 +645,7 @@ site_config = {
                 'areas_implemented': ['Full', '0.5sq°',  '0.7sq°', '1x1°', '1.4sq°', '2x2°', '2.8xsq°', '4x4°', '5.6sq°'],
                 'default_area':  "Full",
                 'default_rotation': 0.0000,
-                'flat_bin_spec': '1,1',    #Default binning for flats
+                'flat_bin_spec': '1,1',    #Default binning for flats, you can make a 2,2 from a 1,1.  NB NB NB Note inconsistent use of '1 1' and '1x1' and '1,1'
                 'has_darkslide':  True,
                 'darkslide_com':  'COM15',
                 'shutter_type': "Electronic",
