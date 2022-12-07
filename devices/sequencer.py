@@ -157,7 +157,8 @@ class Sequencer:
         self.morn_bias_dark_latch = True   #NB NB NB Should these initially be defined this way?
         self.night_focus_ready=True
         self.midnight_calibration_done = False
-
+        self.nightly_reset_complete = False
+        
         self.reset_completes()  # NB NB Note this is reset each time sequencer is restarted.
 
         try:
@@ -226,7 +227,7 @@ class Sequencer:
     def enc_to_skyflat_and_open(self ,enc_status, ocn_status, no_sky=False):
         #ocn_status = eval(self.redis_server.get('ocn_status'))
            #NB 120 is enough time to telescope to get pointed to East
-        self.time_of_next_slew = time.time() -1  #Set up so next block executes if unparked.
+        #self.time_of_next_slew = time.time() -1  #Set up so next block executes if unparked.
         if g_dev['mnt'].mount.AtParK:
             g_dev['mnt'].unpark_command({}, {}) # Get there early
             time.sleep(3)
@@ -236,8 +237,8 @@ class Sequencer:
                 #This should run once. Next time this phase is entered in > 120 seconds we
             #flat_spot, flat_alt = g_dev['evnt'].flat_spot_now()
 
-
         if time.time() >= self.time_of_next_slew:
+            self.time_of_next_slew = time.time() + 120  # seconds between slews.
             #We slew to anti-solar Az and reissue this command every 120 seconds
             flat_spot, flat_alt = g_dev['evnt'].flat_spot_now()
             try:
@@ -255,7 +256,7 @@ class Sequencer:
                 g_dev['enc'].sync_mount_command({}, {})
                 #Prior to skyflats no dome following.
                 self.dome_homed = False
-                self.time_of_next_slew = time.time() + 60  # seconds between slews.
+                
             except:
                 pass#
         return
@@ -316,6 +317,7 @@ class Sequencer:
         elif ((g_dev['events']['Cool Down, Open']  <= ephem_now < g_dev['events']['Eve Sky Flats']) and \
                g_dev['enc'].mode == 'Automatic') and not g_dev['ocn'].wx_hold:
 
+            #self.time_of_next_slew = time.time() -1
             self.enc_to_skyflat_and_open(enc_status, ocn_status)
             self.night_focus_ready=True
 
@@ -326,7 +328,11 @@ class Sequencer:
                 g_dev['obs'].send_to_user("Beginning start of night Focus and Pointing Run", p_level='INFO')
 
                 # Move to reasonable spot
-                g_dev['mnt'].mount.Tracking = True
+                if g_dev['mnt'].mount.Tracking == False:
+                    if g_dev['mnt'].mount.CanSetTracking:   
+                        g_dev['mnt'].mount.Tracking = True
+                    else:
+                        plog("mount is not tracking but this mount doesn't support ASCOM changing tracking")
 
                 g_dev['mnt'].move_to_altaz(90, 70)
                 g_dev['foc'].time_of_last_focus = datetime.datetime.now() - datetime.timedelta(
@@ -349,6 +355,7 @@ class Sequencer:
                and g_dev['enc'].mode in [ 'Automatic', 'Autonomous'] and not g_dev['ocn'].wx_hold and \
                self.config['auto_eve_sky_flat']):
 
+            #self.time_of_next_slew = time.time() -1
             self.enc_to_skyflat_and_open(enc_status, ocn_status)   #Just in case a Wx hold stopped opening
             self.current_script = "Eve Sky Flat script starting"
             #plog('Skipping Eve Sky Flats')
@@ -371,6 +378,8 @@ class Sequencer:
                                    and  g_dev['obs'].blocks is not None and g_dev['obs'].projects \
                                    is not None:
             try:
+                
+                self.nightly_reset_complete = False
                 
                 if enc_status['enclosure_mode'] in ['Autonomous!', 'Automatic']:
                     blocks = g_dev['obs'].blocks
@@ -514,6 +523,7 @@ class Sequencer:
         elif self.morn_sky_flat_latch and ((events['Morn Sky Flats'] <= ephem_now < events['End Morn Sky Flats'])  \
                and g_dev['enc'].mode == 'Automatic' and not g_dev['ocn'].wx_hold and \
                self.config['auto_morn_sky_flat']):
+            #self.time_of_next_slew = time.time() -1
             self.enc_to_skyflat_and_open(enc_status, ocn_status)   #Just in case a Wx hold stopped opening
             self.current_script = "Morn Sky Flat script starting"
             #self.morn_sky_flat_latch = False
@@ -536,6 +546,13 @@ class Sequencer:
 
             self.park_and_close(enc_status)
             self.morn_bias_dark_latch = True
+        elif (events['Nightly Reset'] <= ephem_now < events['End Nightly Reset']): # and g_dev['enc'].mode == 'Automatic' ):
+            
+            if self.nightly_reset_complete == False:
+                self.nightly_reset_script(req, opt, morn=True)
+
+            
+        
         else:
             self.current_script = "No current script, or site not in Automatic."
             try:
@@ -1060,178 +1077,181 @@ class Sequencer:
 
 
         time.sleep(300) # Wait for telescope to park
-        if morn:
-            # UNDERTAKING END OF NIGHT ROUTINES
 
-            # Setting runnight for mop up scripts
-            yesterday = datetime.datetime.now() - timedelta(1)
-            runNight=datetime.datetime.strftime(yesterday, '%Y%m%d')
+        
+    def nightly_reset_script(self, req=None, opt=None, morn=False):
+        # UNDERTAKING END OF NIGHT ROUTINES
 
-            # Check the archive directory and upload any big fits that haven't been uploaded
-            # wait until the queue is empty before mopping up
+        # Setting runnight for mop up scripts
+        yesterday = datetime.datetime.now() - timedelta(1)
+        runNight=datetime.datetime.strftime(yesterday, '%Y%m%d')
 
-            # Go through and add any remaining fz files to the aws queue .... hopefully that is enough? If not, I will make it keep going until it is sure.
-            #while True:
+        # Check the archive directory and upload any big fits that haven't been uploaded
+        # wait until the queue is empty before mopping up
+
+        # Go through and add any remaining fz files to the aws queue .... hopefully that is enough? If not, I will make it keep going until it is sure.
+        #while True:
+        dir_path=self.config['client_path'] + 'archive/'
+        cameras=glob(dir_path + "*/")
+        print (cameras)
+        for camera in cameras:
+            bigfzs=glob(camera + "/" + runNight + "/raw/*.fz")
+
+            for fzneglect in bigfzs:
+                print ("Reattempting upload of " + str(os.path.basename(fzneglect)))
+                #breakpoint()
+                #image = (im_path, name)
+                #g_dev["obs"].aws_queue.put((priority, image), block=False)
+
+                g_dev['cam'].enqueue_for_AWS(26000000, camera + runNight + "/raw/", str(os.path.basename(fzneglect)))
+                #g_dev['obs'].send_to_aws()
+
+        #time.sleep(300)
+        #if (g_dev['obs'].aws_queue.empty()):
+        #break
+
+        # Sending token to AWS to inform it that all files have been uploaded
+        print ("sending end of night token to AWS")
+        #g_dev['cam'].enqueue_for_AWS(jpeg_data_size, paths['im_path'], paths['jpeg_name10'])
+
+        isExist = os.path.exists(g_dev['cam'].site_path + 'tokens')
+        if not isExist:
+            os.makedirs(g_dev['cam'].site_path + 'tokens')
+        runNightToken= g_dev['cam'].site_path + 'tokens/' + self.config['site'] + runNight + '.token'
+        with open(runNightToken, 'w') as f:
+            f.write('Night Completed')
+        image = (g_dev['cam'].site_path + 'tokens/', self.config['site'] + runNight + '.token')
+        g_dev['obs'].aws_queue.put((30000000000, image), block=False)
+        g_dev['obs'].send_to_user("End of Night Token sent to AWS.", p_level='INFO')
+
+        # while True:
+        #     if (not g_dev['obs'].aws_queue.empty()):
+        #         g_dev['obs'].send_to_AWS()
+        #         print ("Emptying AWS queue at the end of the night")
+        #         time.sleep(1)
+        #     else:
+        #         break
+
+        # Culling the archive
+        #FORTNIGHT=60*60*24*7*2
+        if self.config['archive_age'] > 0 :
+            print (self.config['client_path'] + 'archive/')
             dir_path=self.config['client_path'] + 'archive/'
+            #cameras=[d for d in os.listdir(dir_path) if os.path.isdir(d)]
             cameras=glob(dir_path + "*/")
             print (cameras)
-            for camera in cameras:
-                bigfzs=glob(camera + "/" + runNight + "/raw/*.fz")
+            for camera in cameras:  # Go through each camera directory
+                print ("*****************************************")
+                print ("Camera: " + str(camera))
+                timenow_cull=time.time()
+                directories=glob(camera + "*/")
+                deleteDirectories=[]
+                deleteTimes=[]
+                for q in range(len(directories)):
+                    if ((timenow_cull)-os.path.getmtime(directories[q])) > (self.config['archive_age'] * 24* 60 * 60) :
+                        deleteDirectories.append(directories[q])
+                        deleteTimes.append(((timenow_cull)-os.path.getmtime(directories[q])) /60/60/24/7)
+                print ("These are the directories earmarked for  ")
+                print ("Eternal destruction. And how old they are")
+                print ("in weeks\n")
+                g_dev['obs'].send_to_user("Culling " + str(len(deleteDirectories)) +" from the local archive.", p_level='INFO')
+                for entry in range(len(deleteDirectories)):
+                    print (deleteDirectories[entry] + ' ' + str(deleteTimes[entry]) + ' weeks old.')
+                    shutil.rmtree(deleteDirectories[entry])
 
-                for fzneglect in bigfzs:
-                    print ("Reattempting upload of " + str(os.path.basename(fzneglect)))
-                    #breakpoint()
-                    #image = (im_path, name)
-                    #g_dev["obs"].aws_queue.put((priority, image), block=False)
+        # Clear out smartstacks directory
+        print ("removing and reconstituting smartstacks directory")
+        try:
+            shutil.rmtree(g_dev["cam"].site_path + "smartstacks")
+        except:
+            print ("problems with removing the smartstacks directory... usually a file is open elsewhere")
+        time.sleep(20)
+        if not os.path.exists(g_dev["cam"].site_path + "smartstacks"):
+            os.makedirs(g_dev["cam"].site_path + "smartstacks")
 
-                    g_dev['cam'].enqueue_for_AWS(26000000, camera + runNight + "/raw/", str(os.path.basename(fzneglect)))
-                    #g_dev['obs'].send_to_aws()
 
-            #time.sleep(300)
-            #if (g_dev['obs'].aws_queue.empty()):
-            #break
 
-            # Sending token to AWS to inform it that all files have been uploaded
-            print ("sending end of night token to AWS")
-            #g_dev['cam'].enqueue_for_AWS(jpeg_data_size, paths['im_path'], paths['jpeg_name10'])
 
-            isExist = os.path.exists(g_dev['cam'].site_path + 'tokens')
-            if not isExist:
-                os.makedirs(g_dev['cam'].site_path + 'tokens')
-            runNightToken= g_dev['cam'].site_path + 'tokens/' + self.config['site'] + runNight + '.token'
-            with open(runNightToken, 'w') as f:
-                f.write('Night Completed')
-            image = (g_dev['cam'].site_path + 'tokens/', self.config['site'] + runNight + '.token')
-            g_dev['obs'].aws_queue.put((30000000000, image), block=False)
-            g_dev['obs'].send_to_user("End of Night Token sent to AWS.", p_level='INFO')
+        # Reopening config and resetting all the things.
+        self.astro_events.compute_day_directory()
+        self.astro_events.display_events(endofnightoverride='yes')
+        g_dev['obs'].astro_events = self.astro_events
 
-            # while True:
-            #     if (not g_dev['obs'].aws_queue.empty()):
-            #         g_dev['obs'].send_to_AWS()
-            #         print ("Emptying AWS queue at the end of the night")
-            #         time.sleep(1)
-            #     else:
-            #         break
 
-            # Culling the archive
-            #FORTNIGHT=60*60*24*7*2
-            if self.config['archive_age'] > 0 :
-                print (self.config['client_path'] + 'archive/')
-                dir_path=self.config['client_path'] + 'archive/'
-                #cameras=[d for d in os.listdir(dir_path) if os.path.isdir(d)]
-                cameras=glob(dir_path + "*/")
-                print (cameras)
-                for camera in cameras:  # Go through each camera directory
-                    print ("*****************************************")
-                    print ("Camera: " + str(camera))
-                    timenow_cull=time.time()
-                    directories=glob(camera + "*/")
-                    deleteDirectories=[]
-                    deleteTimes=[]
-                    for q in range(len(directories)):
-                        if ((timenow_cull)-os.path.getmtime(directories[q])) > (self.config['archive_age'] * 24* 60 * 60) :
-                            deleteDirectories.append(directories[q])
-                            deleteTimes.append(((timenow_cull)-os.path.getmtime(directories[q])) /60/60/24/7)
-                    print ("These are the directories earmarked for  ")
-                    print ("Eternal destruction. And how old they are")
-                    print ("in weeks\n")
-                    g_dev['obs'].send_to_user("Culling " + str(len(deleteDirectories)) +" from the local archive.", p_level='INFO')
-                    for entry in range(len(deleteDirectories)):
-                        print (deleteDirectories[entry] + ' ' + str(deleteTimes[entry]) + ' weeks old.')
-                        shutil.rmtree(deleteDirectories[entry])
+        # sending this up to AWS
+        '''
+        Send the config to aws.
+        '''
+        uri = f"{self.name}/config/"
+        self.config['events'] = g_dev['events']
+        response = g_dev['obs'].api.authenticated_request("PUT", uri, self.config)
+        if response:
+            plog("Config uploaded successfully.")
 
-            # Clear out smartstacks directory
-            print ("removing and reconstituting smartstacks directory")
+        # If you are using TheSkyX, then update the autosave path
+        if self.config['camera']['camera_1_1']['driver'] == "CCDSoft2XAdaptor.ccdsoft5Camera":
+            g_dev['cam'].camera.AutoSavePath = self.config['archive_path'] +'archive/' + datetime.datetime.strftime(datetime.datetime.now(), '%Y%m%d')
             try:
-                shutil.rmtree(g_dev["cam"].site_path + "smartstacks")
+                os.mkdir(self.config['archive_path'] +'archive/' + datetime.datetime.strftime(datetime.datetime.now(), '%Y%m%d'))
             except:
-                print ("problems with removing the smartstacks directory... usually a file is open elsewhere")
-            time.sleep(20)
-            if not os.path.exists(g_dev["cam"].site_path + "smartstacks"):
-                os.makedirs(g_dev["cam"].site_path + "smartstacks")
+                print ("Couldn't make autosave directory")
+
+        # Resetting complete projects
+        print ("Nightly reset of complete projects")
+        self.reset_completes()
+        g_dev['obs'].blocks = None
+        g_dev['obs'].projects = None
+        g_dev['obs'].events_new = None
+        g_dev['obs'].reset_last_reference()
+        if self.config['mount']['mount1']['permissive_mount_reset'] == 'yes':
+           g_dev['mnt'].reset_mount_reference()
+        g_dev['obs'].last_solve_time = datetime.datetime.now() - datetime.timedelta(days=1)
+        g_dev['obs'].images_since_last_solve = 10000
+
+        # Resetting sequencer stuff
+        self.connected = True
+        self.description = "Sequencer for script execution."
+        self.sequencer_hold = False
+        self.sequencer_message = '-'
+        plog("sequencer reconnected.")
+        plog(self.description)
+        self.sky_guard = False
+        self.af_guard = False
+        self.block_guard = False
+        self.time_of_next_slew = time.time()
+        self.bias_dark_latch = True
+        self.sky_flat_latch = True
+        self.morn_sky_flat_latch = True
+        self.morn_bias_dark_latch = True
+        self.reset_completes()
 
 
+        # Reset focus tracker
+        g_dev["foc"].focus_needed = True
+        g_dev["foc"].time_of_last_focus = datetime.datetime.now() - datetime.timedelta(
+            days=1
+        )  # Initialise last focus as yesterday
+        g_dev["foc"].images_since_last_focus = (
+            10000  # Set images since last focus as sillyvalue
+        )
+        g_dev["foc"].last_focus_fwhm = None
+        g_dev["foc"].focus_tracker = [np.nan] * 10
 
+        # Trying to figure out why sequencer isn't restarting.
+        events = g_dev['events']
+        obs_win_begin, sunZ88Op, sunZ88Cl, ephem_now = self.astro_events.getSunEvents()
 
-            # Reopening config and resetting all the things.
-            self.astro_events.compute_day_directory()
-            self.astro_events.display_events(endofnightoverride='yes')
-            g_dev['obs'].astro_events = self.astro_events
+        # Reopening config and resetting all the things.
+        self.astro_events.compute_day_directory()
+        self.astro_events.display_events()
+        g_dev['obs'].astro_events = self.astro_events
 
-
-            # sending this up to AWS
-            '''
-            Send the config to aws.
-            '''
-            uri = f"{self.name}/config/"
-            self.config['events'] = g_dev['events']
-            response = g_dev['obs'].api.authenticated_request("PUT", uri, self.config)
-            if response:
-                plog("Config uploaded successfully.")
-
-            # If you are using TheSkyX, then update the autosave path
-            if self.config['camera']['camera_1_1']['driver'] == "CCDSoft2XAdaptor.ccdsoft5Camera":
-                g_dev['cam'].camera.AutoSavePath = self.config['archive_path'] +'archive/' + datetime.datetime.strftime(datetime.datetime.now(), '%Y%m%d')
-                try:
-                    os.mkdir(self.config['archive_path'] +'archive/' + datetime.datetime.strftime(datetime.datetime.now(), '%Y%m%d'))
-                except:
-                    print ("Couldn't make autosave directory")
-
-            # Resetting complete projects
-            print ("Nightly reset of complete projects")
-            self.reset_completes()
-            g_dev['obs'].blocks = None
-            g_dev['obs'].projects = None
-            g_dev['obs'].events_new = None
-            g_dev['obs'].reset_last_reference()
-            if self.config['mount']['mount1']['permissive_mount_reset'] == 'yes':
-               g_dev['mnt'].reset_mount_reference()
-            g_dev['obs'].last_solve_time = datetime.datetime.now() - datetime.timedelta(days=1)
-            g_dev['obs'].images_since_last_solve = 10000
-
-            # Resetting sequencer stuff
-            self.connected = True
-            self.description = "Sequencer for script execution."
-            self.sequencer_hold = False
-            self.sequencer_message = '-'
-            plog("sequencer reconnected.")
-            plog(self.description)
-            self.sky_guard = False
-            self.af_guard = False
-            self.block_guard = False
-            self.time_of_next_slew = time.time()
-            self.bias_dark_latch = True
-            self.sky_flat_latch = True
-            self.morn_sky_flat_latch = True
-            self.morn_bias_dark_latch = True
-            self.reset_completes()
-
-
-            # Reset focus tracker
-            g_dev["foc"].focus_needed = True
-            g_dev["foc"].time_of_last_focus = datetime.datetime.now() - datetime.timedelta(
-                days=1
-            )  # Initialise last focus as yesterday
-            g_dev["foc"].images_since_last_focus = (
-                10000  # Set images since last focus as sillyvalue
-            )
-            g_dev["foc"].last_focus_fwhm = None
-            g_dev["foc"].focus_tracker = [np.nan] * 10
-
-            # Trying to figure out why sequencer isn't restarting.
-            events = g_dev['events']
-            obs_win_begin, sunZ88Op, sunZ88Cl, ephem_now = self.astro_events.getSunEvents()
-
-            # Reopening config and resetting all the things.
-            self.astro_events.compute_day_directory()
-            self.astro_events.display_events()
-            g_dev['obs'].astro_events = self.astro_events
-
-            # Allow early night focus
-            self.night_focus_ready==True
-            
-            # Allow midnight calibrations
-            self.midnight_calibration_done = False
+        # Allow early night focus
+        self.night_focus_ready==True
+        
+        # Allow midnight calibrations
+        self.midnight_calibration_done = False
+        self.nightly_reset_complete = True
 
 
         return
@@ -1334,11 +1354,15 @@ class Sequencer:
         camera_name = str(self.config['camera']['camera_1_1']['name'])
         flat_count = 5
         min_exposure = float(self.config['camera']['camera_1_1']['settings']['min_exposure'])
-        bin_spec = '1,1'
-        try:
-            bin_spec = self.config['camera']['camera_1_1']['settings']['flat_bin_spec']
-        except:
-            pass
+        #bin_spec = '1,1'
+        #try:
+        #    bin_spec = self.config['camera']['camera_1_1']['settings']['flat_bin_spec']
+        #except:
+        #    pass
+    
+        # Get LIST of binnings to collect with flats
+        bin_spec = self.config['camera']['camera_1_1']['settings']['flat_bin_spec']
+    
         exp_time = min_exposure # added 20220207 WER  0.2 sec for SRO
 
 
@@ -1375,7 +1399,7 @@ class Sequencer:
                 g_dev['fil'].set_number_command(current_filter)  #  20220825  NB NB NB Change this to using a list of filter names.
             
             acquired_count = 0
-            g_dev['mnt'].slewToSkyFlatAsync()
+            #g_dev['mnt'].slewToSkyFlatAsync()
             target_flat = 0.5 * g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"]
 
             # if not g_dev['enc'].status['shutter_status'] in ['Open', 'open']:
@@ -1385,7 +1409,11 @@ class Sequencer:
             #     continue
             while (acquired_count < flat_count):# and g_dev['enc'].status['shutter_status'] in ['Open', 'open']: # NB NB NB and roof is OPEN! and (ephem_now +3/1440) < g_dev['events']['End Eve Sky Flats' ]:
                 #if g_dev['enc'].is_dome:   #Does not apply
-                g_dev['mnt'].slewToSkyFlatAsync()  #FRequently do this to dither.
+                
+                if time.time() >= self.time_of_next_slew:
+                    g_dev['mnt'].slewToSkyFlatAsync()  #FRequently do this to dither.
+                    self.time_of_next_slew = time.time() + 120 # But not everytime you check exposure times!
+                    # This slew timer gets reset each exposure, so it will move each flat image
                 g_dev['obs'].update_status()
 
                 try:
@@ -1400,16 +1428,18 @@ class Sequencer:
                     # MF SHIFTING EXPOSURE TIME CALCULATOR EQUATION TO BE MORE GENERAL FOR ALL TELESCOPES
                 if sky_lux != None:
                     exp_time = prior_scale*scale*target_flat/(collecting_area*sky_lux*float(g_dev['fil'].filter_data[current_filter][3]))  #g_dev['ocn'].calc_HSI_lux)  #meas_sky_lux)
-                    plog('Ex:  ', exp_time, scale, prior_scale, sky_lux, float(g_dev['fil'].filter_data[current_filter][3]))
+                    plog('Exposure time:  ', exp_time, scale, prior_scale, sky_lux, float(g_dev['fil'].filter_data[current_filter][3]))
 
                 else:
                     if g_dev["fil"].null_filterwheel == False:
                         exp_time = prior_scale*scale*target_flat/float(g_dev['fil'].filter_data[current_filter][3])  #g_dev['ocn'].calc_HSI_lux)  #meas_sky_lux)
-                        plog('Ex:  ', exp_time, scale, prior_scale, float(g_dev['fil'].filter_data[current_filter][3]))
+                        plog('Exposure time:  ', exp_time, scale, prior_scale, float(g_dev['fil'].filter_data[current_filter][3]))
 
                     else:
-                        exp_time = prior_scale*scale*target_flat
-                        plog('Ex:  ', exp_time, scale, prior_scale)
+
+                        #exp_time = prior_scale*scale*target_flat
+                        exp_time = prior_scale*scale*min_exposure
+                        plog('Exposure time:  ', exp_time, scale, prior_scale)
 
     
                 
@@ -1442,20 +1472,40 @@ class Sequencer:
                 plog("Sky flat estimated exposure time, scale are:  ", exp_time, scale)               
                                 
                 req = {'time': float(exp_time),  'alias': camera_name, 'image_type': 'sky flat', 'script': 'On'}
+                
+                
+                # FIRST, lets get the highest resolution flat
+
                 if g_dev["fil"].null_filterwheel == False:
-                    opt = { 'count': 1, 'bin':  bin_spec, 'area': 150, 'filter': g_dev['fil'].filter_data[current_filter][0]}   #nb nb nb BIN CHNAGED FROM 2,2 ON 20220618 wer
+                    opt = { 'count': 1, 'bin':  bin_spec[0], 'area': 150, 'filter': g_dev['fil'].filter_data[current_filter][0]}   #nb nb nb BIN CHNAGED FROM 2,2 ON 20220618 wer
                     plog("using:  ", g_dev['fil'].filter_data[current_filter][0])
                 else:
-                    opt = { 'count': 1, 'bin':  bin_spec, 'area': 150}   
+                    opt = { 'count': 1, 'bin':  bin_spec[0], 'area': 150}   
                 
                 if ephem.now() >= ending:
                     return
                 try:
-
+                    self.time_of_next_slew = time.time()
                     fred = g_dev['cam'].expose_command(req, opt, no_AWS=True, do_sep = False)
 
                     bright = fred['patch']    #  Patch should be circular and 20% of Chip area. ToDo project
                     plog('Returned:  ', bright)
+                    
+                    if (bright > 0.25 * g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"] and
+                        bright < 0.75 * g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"]):
+                        if len(bin_spec) > 1:
+                            print ("Good range for a flat, firing off the other flat types")
+                            if g_dev["fil"].null_filterwheel == False:
+                                opt = { 'count': 1, 'bin':  bin_spec[1], 'area': 150, 'filter': g_dev['fil'].filter_data[current_filter][0]}   #nb nb nb BIN CHNAGED FROM 2,2 ON 20220618 wer
+                                plog("using:  ", g_dev['fil'].filter_data[current_filter][0])
+                            else:
+                                opt = { 'count': 1, 'bin':  bin_spec[1], 'area': 150}
+                            
+                            ored = g_dev['cam'].expose_command(req, opt, no_AWS=True, do_sep = False)
+
+                            obright = ored['patch']    #  Patch should be circular and 20% of Chip area. ToDo project
+                            plog('Returned:  ', obright)
+                    
                 except Exception as e:
                     plog('Failed to get a flat image: ', e)
                     plog(traceback.format_exc())
@@ -1479,11 +1529,21 @@ class Sequencer:
                 plog ("sky lux: " + str(sky_lux))
 
                 if g_dev["fil"].null_filterwheel == False:
-                    plog('\n\n', "Patch/Bright:  ", bright, g_dev['fil'].filter_data[current_filter][0], \
-                          'New Gain value: ', round(bright/(sky_lux*collecting_area*exp_time), 3), '\n\n')
+                    if sky_lux != None:
+                        plog('\n\n', "Patch/Bright:  ", bright, g_dev['fil'].filter_data[current_filter][0], \
+                              'New Gain value: ', round(bright/(sky_lux*collecting_area*exp_time), 3), '\n\n')
+                    else:
+                        plog('\n\n', "Patch/Bright:  ", bright, g_dev['fil'].filter_data[current_filter][0], \
+                              'New Gain value: ', round(bright/(collecting_area*exp_time), 3), '\n\n')
                 else:
-                    plog('\n\n', "Patch/Bright:  ", bright, \
-                          'New Gain value: ', round(bright/(sky_lux*collecting_area*exp_time), 3), '\n\n')
+                    if sky_lux != None:
+                        plog('\n\n', "Patch/Bright:  ", bright, \
+
+                             'New Gain value: ', round(bright/(sky_lux*collecting_area*exp_time), 3), '\n\n')
+                    else:
+                        plog('\n\n', "Patch/Bright:  ", bright,  \
+                              'New Gain value: ', round(bright/(collecting_area*exp_time), 3), '\n\n')
+
 
                 obs_win_begin, sunset, sunrise, ephem_now = self.astro_events.getSunEvents()
                 #  THE following code looks like a debug patch gone rogue.
