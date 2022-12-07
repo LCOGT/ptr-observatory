@@ -2968,90 +2968,81 @@ class Camera:
                         # AFTER the jpeg has been sent up to AWS.
                         hdureduced = copy.deepcopy(hdusmall)
 
-                        # Making cosmetic adjustments to the image array ready for jpg stretching
-                        hdusmall.data = np.asarray(hdusmall.data)
-                        hdusmall.data[
-                            hdusmall.data
-                            > self.config["camera"][self.name]["settings"]["saturate"]
-                        ] = self.config["camera"][self.name]["settings"]["saturate"]
-                        hdusmall.data[hdusmall.data < -100] = -100
-                        hdusmall.data = hdusmall.data - np.min(hdusmall.data)
-
-                        # Resizing the array to an appropriate shape for the jpg and the small fits
-                        iy, ix = hdusmall.data.shape
-                        if iy == ix:
-                            hdusmall.data = resize(
-                                hdusmall.data, (1280, 1280), preserve_range=True
-                            )
-                        else:
-                            hdusmall.data = resize(
-                                hdusmall.data,
-                                (int(1536 * iy / ix), 1536),
-                                preserve_range=True,
-                            )  #  We should trim chips so ratio is exact.
-
-                        # At this stage, the small fits is created ready to be saved, but not saved
-                        # until after the jpg has gone up.
-                        #hdusmallfits = fits.CompImageHDU(
-                        #    np.asarray(
-                        #        resize(
-                        #            hdureduced.data,
-                        #            (int(1536 * iy / ix), 1536),
-                        #            preserve_range=True,
-                        #        ),
-                        #        dtype=np.float32,
-                        #    ),
-                        #    hdusmall.header,
-                        #)
-
-                        # Code to stretch the image to fit into the 256 levels of grey for a jpeg
                         
 
-                        if self.config["camera"][self.name]["settings"]["is_osc"]:
-                            blue_stretched_data_float = Stretch().stretch(hdublue+1000)
-                            del hdublue
-                            green_stretched_data_float = Stretch().stretch(hdugreen+1000)
-                            red_stretched_data_float = Stretch().stretch(hdured+1000)
-                            del hdured
-                            xshape=hdugreen.shape[0]
-                            yshape=hdugreen.shape[1]
-                            del hdugreen
-                            rgbArray=np.zeros((xshape,yshape,3), 'uint8')
-                            rgbArray[..., 0] = red_stretched_data_float*256
-                            rgbArray[..., 1] = green_stretched_data_float*256
-                            rgbArray[..., 2] = blue_stretched_data_float*256
-                            stretched_data_uint8 = Image.fromarray(rgbArray)
-                            del red_stretched_data_float
-                            del blue_stretched_data_float
-                            del green_stretched_data_float
-                            colour_img = Image.fromarray(rgbArray)
-                            ## Resizing the array to an appropriate shape for the jpg and the small fits
-                            iy, ix = colour_img.size
-                            if iy == ix:
-                                colour_img.resize((1280, 1280))
-                            else:
-                                colour_img.resize((int(1536 * iy / ix), 1536))
+
+
+                        # Code to stretch the image to fit into the 256 levels of grey for a jpeg
+                        # But only if it isn't a smartstack, if so wait for the reduce queue
+                        if smartstackid == 'no':
                             
-                            colour_img.save(
-                                paths["im_path"] + paths["jpeg_name10"]
-                            )
-                            del colour_img
-                        else:
-                            stretched_data_float = Stretch().stretch(hdusmall.data+1000)
-                            stretched_256 = 255 * stretched_data_float
-                            hot = np.where(stretched_256 > 255)
-                            cold = np.where(stretched_256 < 0)
-                            stretched_256[hot] = 255
-                            stretched_256[cold] = 0
-                            stretched_data_uint8 = stretched_256.astype("uint8")
-                            hot = np.where(stretched_data_uint8 > 255)
-                            cold = np.where(stretched_data_uint8 < 0)
-                            stretched_data_uint8[hot] = 255
-                            stretched_data_uint8[cold] = 0
-                            imsave(
-                                paths["im_path"] + paths["jpeg_name10"],
-                                stretched_data_uint8,
-                            )
+                            if self.config["camera"][self.name]["settings"]["is_osc"]:
+                                blue_stretched_data_float = Stretch().stretch(hdublue+1000)
+                                del hdublue
+                                green_stretched_data_float = Stretch().stretch(hdugreen+1000)
+                                red_stretched_data_float = Stretch().stretch(hdured+1000)
+                                del hdured
+                                xshape=hdugreen.shape[0]
+                                yshape=hdugreen.shape[1]
+                                del hdugreen
+                                rgbArray=np.zeros((xshape,yshape,3), 'uint8')
+                                rgbArray[..., 0] = red_stretched_data_float*256
+                                rgbArray[..., 1] = green_stretched_data_float*256
+                                rgbArray[..., 2] = blue_stretched_data_float*256
+                                stretched_data_uint8 = Image.fromarray(rgbArray)
+                                del red_stretched_data_float
+                                del blue_stretched_data_float
+                                del green_stretched_data_float
+                                colour_img = Image.fromarray(rgbArray)
+                                ## Resizing the array to an appropriate shape for the jpg and the small fits
+                                iy, ix = colour_img.size
+                                if iy == ix:
+                                    colour_img.resize((1280, 1280))
+                                else:
+                                    colour_img.resize((int(1536 * iy / ix), 1536))
+                                
+                                colour_img.save(
+                                    paths["im_path"] + paths["jpeg_name10"]
+                                )
+                                del colour_img
+                            else:
+                                # Making cosmetic adjustments to the image array ready for jpg stretching
+                                hdusmall.data = np.asarray(hdusmall.data)
+                                hdusmall.data[
+                                    hdusmall.data
+                                    > self.config["camera"][self.name]["settings"]["saturate"]
+                                ] = self.config["camera"][self.name]["settings"]["saturate"]
+                                hdusmall.data[hdusmall.data < -100] = -100
+                                hdusmall.data = hdusmall.data - np.min(hdusmall.data)
+
+                                # Resizing the array to an appropriate shape for the jpg and the small fits
+                                iy, ix = hdusmall.data.shape
+                                if iy == ix:
+                                    hdusmall.data = resize(
+                                        hdusmall.data, (1280, 1280), preserve_range=True
+                                    )
+                                else:
+                                    hdusmall.data = resize(
+                                        hdusmall.data,
+                                        (int(1536 * iy / ix), 1536),
+                                        preserve_range=True,
+                                    ) 
+                                stretched_data_float = Stretch().stretch(hdusmall.data+1000)
+                                stretched_256 = 255 * stretched_data_float
+                                hot = np.where(stretched_256 > 255)
+                                cold = np.where(stretched_256 < 0)
+                                stretched_256[hot] = 255
+                                stretched_256[cold] = 0
+                                stretched_data_uint8 = stretched_256.astype("uint8")
+                                hot = np.where(stretched_data_uint8 > 255)
+                                cold = np.where(stretched_data_uint8 < 0)
+                                stretched_data_uint8[hot] = 255
+                                stretched_data_uint8[cold] = 0
+                                imsave(
+                                    paths["im_path"] + paths["jpeg_name10"],
+                                    stretched_data_uint8,
+                                )
+                                del stretched_data_uint8
                             
 
 
@@ -3081,11 +3072,7 @@ class Camera:
                                 plog(
                                     "there was an issue saving the preview jpg. Pushing on though"
                                 )
-
-                        else:
-                            print ("Jpg uploaded delayed due to smartstack.")
-                        del stretched_data_uint8
-
+                       
                         if focus_image == False:
                             try:
                                 self.enqueue_for_fastAWS(200, im_path, text_name.replace('.txt', '.sep'))
@@ -3093,30 +3080,9 @@ class Camera:
                             except:
                                 plog("Failed to send SEP up for some reason")
 
-                        # # Save the small fits to disk and to AWS
-                        # hdusmallfits.verify("fix")
-                        # try:
-                        #     hdusmallfits.writeto(
-                        #         paths["im_path"] + paths["i768sq_name10"] + ".fz"
-                        #     )
-                        #     # TEMPORARILY DISABLE SSMALL FITS - MTF 2nd Nov 22
-                        #     #if not no_AWS and self.config['send_files_at_end_of_night'] == 'no':
-                        #     #    g_dev["cam"].enqueue_for_AWS(
-                        #     #        1000,
-                        #     #        paths["im_path"],
-                        #     #        paths["i768sq_name10"] + ".fz",
-                        #     #    )
-                        # except:
-                        #     plog(
-                        #         "there was an issue saving the small fits. Pushing on though"
-                        #     )
-                        # del hdusmallfits
 
                     # Now that the jpeg has been sent up pronto,
                     # We turn back to getting the bigger raw, reduced and fz files dealt with
-
-
-
 
                     # Create the fz file ready for BANZAI and the AWS/UI
                     # Note that even though the raw file is int16,
@@ -3132,9 +3098,6 @@ class Camera:
                     hdufz.header[
                         "BSCALE"
                     ] = 1  # Make sure there is no integer scaling left over
-
-
-
 
                     # This routine saves the file ready for uploading to AWS
                     # It usually works perfectly 99.9999% of the time except
