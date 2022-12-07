@@ -1399,7 +1399,7 @@ class Sequencer:
                 g_dev['fil'].set_number_command(current_filter)  #  20220825  NB NB NB Change this to using a list of filter names.
             
             acquired_count = 0
-            g_dev['mnt'].slewToSkyFlatAsync()
+            #g_dev['mnt'].slewToSkyFlatAsync()
             target_flat = 0.5 * g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"]
 
             # if not g_dev['enc'].status['shutter_status'] in ['Open', 'open']:
@@ -1409,7 +1409,11 @@ class Sequencer:
             #     continue
             while (acquired_count < flat_count):# and g_dev['enc'].status['shutter_status'] in ['Open', 'open']: # NB NB NB and roof is OPEN! and (ephem_now +3/1440) < g_dev['events']['End Eve Sky Flats' ]:
                 #if g_dev['enc'].is_dome:   #Does not apply
-                g_dev['mnt'].slewToSkyFlatAsync()  #FRequently do this to dither.
+                
+                if time.time() >= self.time_of_next_slew:
+                    g_dev['mnt'].slewToSkyFlatAsync()  #FRequently do this to dither.
+                    self.time_of_next_slew = time.time() + 120 # But not everytime you check exposure times!
+                    # This slew timer gets reset each exposure, so it will move each flat image
                 g_dev['obs'].update_status()
 
                 try:
@@ -1481,7 +1485,7 @@ class Sequencer:
                 if ephem.now() >= ending:
                     return
                 try:
-
+                    self.time_of_next_slew = time.time()
                     fred = g_dev['cam'].expose_command(req, opt, no_AWS=True, do_sep = False)
 
                     bright = fred['patch']    #  Patch should be circular and 20% of Chip area. ToDo project
