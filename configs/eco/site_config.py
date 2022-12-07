@@ -510,7 +510,7 @@ site_config = {
                 'trim_sec': ['[1:9576, 1:6388]', '[1:4788, 1:3194]', '[1:3192, 1:2129]', '[1:2394, 1:1597]'],
                 'x_pixel':  6,
                 'y_pixel':  6,
-                'pix_scale': [0.269],
+                'pix_scale': [0.269,0.538],
                 'CameraXSize' : 4096,
                 'CameraYSize' : 4096,
                 'MaxBinX' : 2,
