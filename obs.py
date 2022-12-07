@@ -24,6 +24,7 @@ import shutil
 
 import astroalign as aa
 from astropy.io import fits
+from astropy.nddata import block_reduce
 from dotenv import load_dotenv
 import numpy as np
 import redis  # Client, can work with Memurai
@@ -63,6 +64,8 @@ from global_yard import g_dev
 from planewave import platesolve
 import ptr_events
 from ptr_utility import plog
+
+from PIL import Image
 
 # The ingester should only be imported after environment variables are loaded in.
 load_dotenv(".env")
@@ -1083,6 +1086,63 @@ class Observatory:
                         storedsStack=img
 
 
+
+                    if self.config["camera"][self.name]["settings"]["is_osc"]:
+                        print ("interpolating bayer grid for focusing purposes.")
+                        if self.config["camera"][self.name]["settings"]["osc_bayer"] == 'RGGB':                           
+                            
+                            # Checkerboard collapse for other colours for temporary jpeg
+                            
+                            # Create indexes for B, G, G, R images
+                            
+                            xshape=storedsStack.shape[0]
+                            yshape=storedsStack.shape[1]
+                            #print (xshape)
+                            #print (yshape)
+                            
+                            # B pixels
+                            list_0_1 = np.array([ [0,0], [0,1] ])
+                            checkerboard=np.tile(list_0_1, (xshape//2, yshape//2))
+                            checkerboard=np.asarray(checkerboard)
+                            hdublue=(block_reduce(storedsStack * checkerboard ,2))
+                            
+                            # R Pixels
+                            list_0_1 = np.array([ [1,0], [0,0] ])
+                            checkerboard=np.tile(list_0_1, (xshape//2, yshape//2))
+                            checkerboard=np.asarray(checkerboard)
+                            hdured=(block_reduce(storedsStack * checkerboard ,2))
+                            
+                            # G top right Pixels
+                            list_0_1 = np.array([ [0,1], [0,0] ])
+                            checkerboard=np.tile(list_0_1, (xshape//2, yshape//2))
+                            checkerboard=np.asarray(checkerboard)
+                            GTRonly=(block_reduce(storedsStack * checkerboard ,2))
+                            
+                            # G bottom left Pixels
+                            list_0_1 = np.array([ [0,0], [1,0] ])
+                            checkerboard=np.tile(list_0_1, (xshape//2, yshape//2))
+                            checkerboard=np.asarray(checkerboard)
+                            GBLonly=(block_reduce(storedsStack * checkerboard ,2))                                
+                            
+                            # Sum two Gs together and half them to be vaguely on the same scale
+                            hdugreen = np.asarray(GTRonly + GBLonly)
+                            del GTRonly
+                            del GBLonly
+                            del checkerboard
+                            
+
+                            
+                            # Interpolate to make a high resolution version for focussing
+                            # and platesolving
+                            hdufocus.data=demosaicing_CFA_Bayer_bilinear(storedsStack, 'RGGB')[:,:,1]
+                            hdufocus.data=hdufocus.data.astype("float32")
+                            
+                            
+
+                        else:
+                            print ("this bayer grid not implemented yet")
+
+            
                     # Resizing the array to an appropriate shape for the jpg and the small fits
                     iy, ix = storedsStack.shape
                     if iy == ix:
@@ -1096,33 +1156,63 @@ class Observatory:
                             preserve_range=True,
                         )  #  We should trim chips so ratio is exact.
 
-                    # Code to stretch the image to fit into the 256 levels of grey for a jpeg
-                    stretched_data_float = Stretch().stretch(storedsStack + 1000)
-                    del storedsStack
-                    stretched_256 = 255 * stretched_data_float
-                    hot = np.where(stretched_256 > 255)
-                    cold = np.where(stretched_256 < 0)
-                    stretched_256[hot] = 255
-                    stretched_256[cold] = 0
-                    stretched_data_uint8 = stretched_256.astype("uint8")
-                    hot = np.where(stretched_data_uint8 > 255)
-                    cold = np.where(stretched_data_uint8 < 0)
-                    stretched_data_uint8[hot] = 255
-                    stretched_data_uint8[cold] = 0
-
-                    imsave(
-                        g_dev["cam"].site_path
-                        + "smartstacks/"
-                        + smartStackFilename.replace(
-                            ".npy", "_" + str(ssframenumber) + ".jpg"
-                        ),
-                        stretched_data_uint8,
-                    )
-
-                    imsave(
-                        paths["im_path"] + paths["jpeg_name10"],
-                        stretched_data_uint8,
-                    )
+                    if self.config["camera"][self.name]["settings"]["is_osc"]:
+                        blue_stretched_data_float = Stretch().stretch(hdublue+1000)
+                        del hdublue
+                        green_stretched_data_float = Stretch().stretch(hdugreen+1000)
+                        red_stretched_data_float = Stretch().stretch(hdured+1000)
+                        del hdured
+                        xshape=hdugreen.shape[0]
+                        yshape=hdugreen.shape[1]
+                        del hdugreen
+                        rgbArray=np.zeros((xshape,yshape,3), 'uint8')
+                        rgbArray[..., 0] = red_stretched_data_float*256
+                        rgbArray[..., 1] = green_stretched_data_float*256
+                        rgbArray[..., 2] = blue_stretched_data_float*256
+                        stretched_data_uint8 = Image.fromarray(rgbArray)
+                        del red_stretched_data_float
+                        del blue_stretched_data_float
+                        del green_stretched_data_float
+                        colour_img = Image.fromarray(rgbArray)
+                        ## Resizing the array to an appropriate shape for the jpg and the small fits
+                        iy, ix = colour_img.size
+                        if iy == ix:
+                            colour_img.resize((1280, 1280))
+                        else:
+                            colour_img.resize((int(1536 * iy / ix), 1536))
+                        
+                        colour_img.save(
+                            paths["im_path"] + paths["jpeg_name10"]
+                        )
+                        del colour_img
+                    else:
+                        # Code to stretch the image to fit into the 256 levels of grey for a jpeg
+                        stretched_data_float = Stretch().stretch(storedsStack + 1000)
+                        del storedsStack
+                        stretched_256 = 255 * stretched_data_float
+                        hot = np.where(stretched_256 > 255)
+                        cold = np.where(stretched_256 < 0)
+                        stretched_256[hot] = 255
+                        stretched_256[cold] = 0
+                        stretched_data_uint8 = stretched_256.astype("uint8")
+                        hot = np.where(stretched_data_uint8 > 255)
+                        cold = np.where(stretched_data_uint8 < 0)
+                        stretched_data_uint8[hot] = 255
+                        stretched_data_uint8[cold] = 0
+    
+                        imsave(
+                            g_dev["cam"].site_path
+                            + "smartstacks/"
+                            + smartStackFilename.replace(
+                                ".npy", "_" + str(ssframenumber) + ".jpg"
+                            ),
+                            stretched_data_uint8,
+                        )
+    
+                        imsave(
+                            paths["im_path"] + paths["jpeg_name10"],
+                            stretched_data_uint8,
+                        )
 
                     #g_dev["cam"].enqueue_for_fastAWS(
                     #    100, paths["im_path"], paths["jpeg_name10"]
@@ -1152,27 +1242,10 @@ class Observatory:
 
                     try:
                         img.close()
-                        print ("just in case")
+                        # Just in case
                     except:
-                        print ("irir")
+                        pass
                     del img
-
-
-                    # # Save out a fits for testing purposes only
-                    # firstimage = fits.PrimaryHDU()
-                    # firstimage.scale("float32")
-                    # firstimage.data = np.asarray(storedsStack).astype(np.float32)
-                    # firstimage.header = stackHoldheader
-                    # firstimage.writeto(
-                    #     g_dev["cam"].site_path
-                    #     + "smartstacks/"
-                    #     + smartStackFilename.replace(
-                    #         ".npy", str(ssframenumber) + ".fits"
-                    #     ),
-                    #     overwrite=True,
-                    # )
-                    # del firstimage
-
 
 
                 # Solve for pointing. Note: as the raw and reduced file are already saved and an fz file

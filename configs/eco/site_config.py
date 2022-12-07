@@ -403,6 +403,7 @@ site_config = {
             #"driver":   "Maxim.Image",   #"LCO.dual",  #  'ASCOM.FLI.FilterWheel',
             'ip_string': None,
             "dual_wheel": False,
+            "default_flat_exposure" : 1.0,
             'settings': {
                 'filter_count': 11,   #  This must be correct as to the number of filters
                 'home_filter':  0,
@@ -509,7 +510,7 @@ site_config = {
                 'trim_sec': ['[1:9576, 1:6388]', '[1:4788, 1:3194]', '[1:3192, 1:2129]', '[1:2394, 1:1597]'],
                 'x_pixel':  6,
                 'y_pixel':  6,
-                'pix_scale': [0.269],
+                'pix_scale': [0.269,0.538],
                 'CameraXSize' : 4096,
                 'CameraYSize' : 4096,
                 'MaxBinX' : 2,
@@ -528,12 +529,12 @@ site_config = {
                 'max_exposure': 3600,
                 'can_subframe':  True,
                 'min_subframe':  [128, 128],
-                'bin_modes':  [[1, 1, 0.269]], #  , [2, 2, 2.13], [3, 3, 3.21], [4, 4, 4.27]],   #Meaning no binning choice if list has only one entry, default should be first.
-                'default_bin':  [1, 1, 0.269],    #  Matched to seeing situation by owner
+                'bin_modes':  [[1, 1, 0.269],[2, 2, 0.538]], #  , [2, 2, 2.13], [3, 3, 3.21], [4, 4, 4.27]],   #Meaning no binning choice if list has only one entry, default should be first.
+                'default_bin':  [2, 2, 0.538],    #  Matched to seeing situation by owner
                 'maximum_bin':  [1, 1, 0.269],    #  Matched to seeing situation by owner
                 'cosmics_at_default' : 'yes',
                 'cosmics_at_maximum' : 'yes',
-                'bin_enable': ['1 1'],
+                'bin_enable': ['1 1', '2 2'],
                 'cycle_time':  [2, 2, 2, 2],  # 3x3 requires a 1, 1 reaout then a software bin, so slower.
                 'rbi_delay':  0.,      #  This being zero says RBI is not available, eg. for SBIG.
                 'is_cmos':  False,
@@ -554,11 +555,11 @@ site_config = {
                 'smart_stack_exposure_time' : 60,
                 'saturate':  65000,    # e-.  This is a close guess, not measured, but taken from data sheet.
                 'max_linearity': 65000,
-                'fullwell_capacity': [65000, 65000, 65000, 65000],  #e-.   We need to sort out the units properly NB NB NB
+                'fullwell_capacity': [65000, 65000],  #e-.   We need to sort out the units properly NB NB NB
                 'areas_implemented': ["Full",'4x4d', "600%", "500%", "450%", "300%", "220%", "150%", "133%", "Full", "Sqr", '71%', '50%',  '35%', '25%', '12%'],
                 'default_area':  "Full",
                 'default_rotation': 0.0000,
-                'flat_bin_spec': '1,1',    #Default binning for flats
+                'flat_bin_spec': ['1,1','2 2'],    #Default binning for flats
                 'has_darkslide':  False,
                 'darkslide_com':  None,
                 'shutter_type': "Electronic",
