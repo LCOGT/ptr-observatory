@@ -237,11 +237,6 @@ class Sequencer:
                 #This should run once. Next time this phase is entered in > 120 seconds we
             #flat_spot, flat_alt = g_dev['evnt'].flat_spot_now()
 
-
-        #breakpoint()
-        print ("***************")
-        print (time.time())
-        print (self.time_of_next_slew)
         if time.time() >= self.time_of_next_slew:
             self.time_of_next_slew = time.time() + 120  # seconds between slews.
             #We slew to anti-solar Az and reissue this command every 120 seconds

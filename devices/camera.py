@@ -2574,55 +2574,44 @@ class Camera:
                         if self.config["camera"][self.name]["settings"]["is_osc"]:
                             print ("interpolating bayer grid for focusing purposes.")
                             if self.config["camera"][self.name]["settings"]["osc_bayer"] == 'RGGB':
-                                # G  Pixels
-                                #xshape=hdufocus.data.shape[0]
-                                #yshape=hdufocus.data.shape[1]
-                                #list_0_1 = np.array([ [0,1], [1,0] ])
-                                #checkerboard=np.tile(list_0_1, (xshape//2, yshape//2))
-                                #checkerboard=np.asarray(checkerboard)
-                                #Gonly=hdufocus.data * checkerboard
                                 
-                                
-                                
-                                # Checkerboard collapse for other colours for temporary jpeg
-                                
-                                # Create indexes for B, G, G, R images
-                                
-                                xshape=hdufocus.data.shape[0]
-                                yshape=hdufocus.data.shape[1]
-                                #print (xshape)
-                                #print (yshape)
-                                
-                                # B pixels
-                                list_0_1 = np.array([ [0,0], [0,1] ])
-                                checkerboard=np.tile(list_0_1, (xshape//2, yshape//2))
-                                checkerboard=np.asarray(checkerboard)
-                                hdublue=(block_reduce(hdufocus.data * checkerboard ,2))
-                                
-                                # R Pixels
-                                list_0_1 = np.array([ [1,0], [0,0] ])
-                                checkerboard=np.tile(list_0_1, (xshape//2, yshape//2))
-                                checkerboard=np.asarray(checkerboard)
-                                hdured=(block_reduce(hdufocus.data * checkerboard ,2))
-                                
-                                # G top right Pixels
-                                list_0_1 = np.array([ [0,1], [0,0] ])
-                                checkerboard=np.tile(list_0_1, (xshape//2, yshape//2))
-                                checkerboard=np.asarray(checkerboard)
-                                GTRonly=(block_reduce(hdufocus.data * checkerboard ,2))
-                                
-                                # G bottom left Pixels
-                                list_0_1 = np.array([ [0,0], [1,0] ])
-                                checkerboard=np.tile(list_0_1, (xshape//2, yshape//2))
-                                checkerboard=np.asarray(checkerboard)
-                                GBLonly=(block_reduce(hdufocus.data * checkerboard ,2))                                
-                                
-                                # Sum two Gs together and half them to be vaguely on the same scale
-                                hdugreen = np.asarray(GTRonly + GBLonly)
-                                del GTRonly
-                                del GBLonly
-                                del checkerboard
-                                
+                                # Only separate colours if needed for colour jpeg
+                                if smartstackid == 'no':
+                                    # Checkerboard collapse for other colours for temporary jpeg                                
+                                    # Create indexes for B, G, G, R images                                
+                                    xshape=hdufocus.data.shape[0]
+                                    yshape=hdufocus.data.shape[1]
+    
+                                    # B pixels
+                                    list_0_1 = np.array([ [0,0], [0,1] ])
+                                    checkerboard=np.tile(list_0_1, (xshape//2, yshape//2))
+                                    checkerboard=np.asarray(checkerboard)
+                                    hdublue=(block_reduce(hdufocus.data * checkerboard ,2))
+                                    
+                                    # R Pixels
+                                    list_0_1 = np.array([ [1,0], [0,0] ])
+                                    checkerboard=np.tile(list_0_1, (xshape//2, yshape//2))
+                                    checkerboard=np.asarray(checkerboard)
+                                    hdured=(block_reduce(hdufocus.data * checkerboard ,2))
+                                    
+                                    # G top right Pixels
+                                    list_0_1 = np.array([ [0,1], [0,0] ])
+                                    checkerboard=np.tile(list_0_1, (xshape//2, yshape//2))
+                                    checkerboard=np.asarray(checkerboard)
+                                    GTRonly=(block_reduce(hdufocus.data * checkerboard ,2))
+                                    
+                                    # G bottom left Pixels
+                                    list_0_1 = np.array([ [0,0], [1,0] ])
+                                    checkerboard=np.tile(list_0_1, (xshape//2, yshape//2))
+                                    checkerboard=np.asarray(checkerboard)
+                                    GBLonly=(block_reduce(hdufocus.data * checkerboard ,2))                                
+                                    
+                                    # Sum two Gs together and half them to be vaguely on the same scale
+                                    hdugreen = np.asarray(GTRonly + GBLonly)
+                                    del GTRonly
+                                    del GBLonly
+                                    del checkerboard
+                                    
 
                                 
                                 # Interpolate to make a high resolution version for focussing
