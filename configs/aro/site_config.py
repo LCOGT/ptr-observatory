@@ -416,7 +416,6 @@ site_config = {
             "driver": "LCO.dual",  # 'ASCOM.FLI.FilterWheel',   #'MAXIM',
             'ip_string': 'http://10.0.0.110',
             "dual_wheel": True,
-            "default_flat_exposure" : 1.0,
             'settings': {
                 'filter_count': 43,
                 'home_filter':  1,
@@ -593,6 +592,8 @@ site_config = {
                 'default_area':  "Full",
                 'has_darkslide':  True,
                 'shutter_type': "Electronic",
+                
+                'flat_bin_spec': ['1,1', '2 2'],    # List of binnings for flats
                 'darkslide_com':  'COM17',
                 'has_screen': True,
                 'screen_settings':  {

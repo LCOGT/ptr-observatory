@@ -487,7 +487,6 @@ site_config = {
             "parent": "tel1",
             "alias": "Dual filter wheel",
             'dual_wheel':  True,
-            "default_flat_exposure" : 1.0,
             'ip_string': 'http://127.0.0.1',
             "desc":  'Dual Apogee custom Dual 50mm sq.',
             #"driver": ['ASCOM.Apogee.FilterWheel', 'ASCOM.Apogee2.FilterWheel'],
@@ -646,6 +645,8 @@ site_config = {
                 'has_darkslide':  False,
                 'darkslide_com':  None,
                 'shutter_type': "Electronic",
+                
+                'flat_bin_spec': ['1,1', '2 2'],    # List of binnings for flats
                 'has_screen': True,
                 'screen_settings':  {
                     'screen_saturation':  157.0,
