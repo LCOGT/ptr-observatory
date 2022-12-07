@@ -434,13 +434,13 @@ site_config = {
     'filter_wheel': {        
         "filter_wheel1": {
             "parent": "telescope1",
-            "name": "SBIG 8-position wheel" ,  #"LCO filter wheel FW50_001d",
+            "name": "RGGB" ,  # When there is no filter wheel, the filter will be named this.
             'service_date': '20180101',
             "driver":   None,   #"LCO.dual",  #  'ASCOM.FLI.FilterWheel',
             #"driver":   "Maxim.Image",   #"LCO.dual",  #  'ASCOM.FLI.FilterWheel',
             'ip_string': None,
             "dual_wheel": False,
-            "default_flat_exposure" : 1.0,
+            #"default_flat_exposure" : 1.0,
         },
     },
 

@@ -235,7 +235,7 @@ class Camera:
             )
             self.flatFiles = {}
             for file in fileList:
-                self.flatFiles.update({file.split("_")[1]: file})
+                self.flatFiles.update({file.split("_")[1].replace ('.npy',''): file})
             # To supress occasional flatfield div errors
             np.seterr(divide="ignore")
         except:
@@ -958,7 +958,7 @@ class Camera:
                     return
             else:
                 print ("No filter wheel, not selecting a filter")
-                self.current_filter = "None"
+                self.current_filter = self.config["filter_wheel"]["filter_wheel1"]["name"]
         except Exception as e:
             plog("Camera filter setup:  ", e)
             plog(traceback.format_exc())
@@ -2538,6 +2538,8 @@ class Camera:
                             del tempFlatFrame
                         except Exception as e:
                             plog("flatting light frame failed", e)
+                            print (traceback.format_exc())
+                            breakpoint()
 
                         # Crop unnecessary rough edges off preview images that unnecessarily skew the scaling
                         # This is particularly necessary for SRO, but I've seen many cameras where cropping
@@ -2874,7 +2876,7 @@ class Camera:
                         # prior to the next exposure
                         print (Nsmartstack)
                         print (sskcounter)
-                        if focus_image == True or ((Nsmartstack == sskcounter+1) and Nsmartstack > 1) or True:
+                        if focus_image == True or ((Nsmartstack == sskcounter+1) and Nsmartstack > 1):
                             cal_name = (
                                 cal_name[:-9] + "F012" + cal_name[-7:]
                             )
