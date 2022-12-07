@@ -1252,7 +1252,10 @@ class Camera:
                                 g_dev["ocn"].get_quick_status(self.pre_ocn)
                             except:
                                 plog("Enclosure quick status failed")
-                            g_dev["foc"].get_quick_status(self.pre_foc)
+                            try:
+                                g_dev["foc"].get_quick_status(self.pre_foc)
+                            except:
+                                plog("Early focus quick status failed line camera 1258")
                             try:
                                 g_dev["rot"].get_quick_status(self.pre_rot)
                             except:
@@ -1490,6 +1493,7 @@ class Camera:
             self.post_rot = []
             self.post_foc = []
             self.post_ocn = []
+
             try:
                 g_dev["mnt"].get_quick_status(
                     self.post_mnt
