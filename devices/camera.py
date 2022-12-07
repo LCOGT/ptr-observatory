@@ -2535,8 +2535,8 @@ class Camera:
                             del tempFlatFrame
                         except Exception as e:
                             plog("flatting light frame failed", e)
-                            print (traceback.format_exc())
-                            breakpoint()
+                            #print (traceback.format_exc())
+                            #breakpoint()
 
                         # Crop unnecessary rough edges off preview images that unnecessarily skew the scaling
                         # This is particularly necessary for SRO, but I've seen many cameras where cropping
