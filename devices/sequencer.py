@@ -1483,6 +1483,11 @@ class Sequencer:
                     opt = { 'count': 1, 'bin':  bin_spec[0], 'area': 150}   
                 
                 if ephem.now() >= ending:
+                    if morn: # This needs to be here because some scopes do not do morning bias and darks
+                        try:
+                            g_dev['mnt'].park_command({}, {})
+                        except:
+                            plog("Mount did not park at end of morning skyflats.")
                     return
                 try:
                     self.time_of_next_slew = time.time()
