@@ -549,7 +549,7 @@ class Sequencer:
         elif (events['Nightly Reset'] <= ephem_now < events['End Nightly Reset']): # and g_dev['enc'].mode == 'Automatic' ):
             
             if self.nightly_reset_complete == False:
-                self.nightly_reset_script(req, opt, morn=True)
+                self.nightly_reset_script()
 
             
         
