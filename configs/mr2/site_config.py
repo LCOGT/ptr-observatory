@@ -493,6 +493,7 @@ site_config = {
             'driver': 'Maxim.CCDcamera',  #'startup_script':  None,
             'recover_script':  None,
             'shutdown_script':  None,
+            
 
             'settings': {
                 'filter_count': '24',
@@ -644,6 +645,8 @@ site_config = {
                 'has_darkslide':  False,
                 'darkslide_com':  None,
                 'shutter_type': "Electronic",
+                
+                'flat_bin_spec': ['1,1', '2 2'],    # List of binnings for flats
                 'has_screen': True,
                 'screen_settings':  {
                     'screen_saturation':  157.0,

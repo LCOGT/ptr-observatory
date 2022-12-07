@@ -192,7 +192,10 @@ class Mount:
             
         
         self.object = "Unspecified"
-        self.current_sidereal = self.mount.SiderealTime
+        try:
+            self.current_sidereal = self.mount.SiderealTime
+        except:
+            print ("Failed to get the current sidereal time from the mount.")
         self.current_icrs_ra = "Unspecified_Ra"
         self.current_icrs_dec = " Unspecified_Dec"
         self.delta_t_s = HTOSec/12   #5 minutes
