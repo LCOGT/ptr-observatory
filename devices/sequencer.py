@@ -158,7 +158,7 @@ class Sequencer:
         self.night_focus_ready=True
         self.midnight_calibration_done = False
         self.nightly_reset_complete = False
-
+        
         self.reset_completes()  # NB NB Note this is reset each time sequencer is restarted.
 
         try:
@@ -227,7 +227,7 @@ class Sequencer:
     def enc_to_skyflat_and_open(self ,enc_status, ocn_status, no_sky=False):
         #ocn_status = eval(self.redis_server.get('ocn_status'))
            #NB 120 is enough time to telescope to get pointed to East
-        self.time_of_next_slew = time.time() -1  #Set up so next block executes if unparked.
+        #self.time_of_next_slew = time.time() -1  #Set up so next block executes if unparked.
         if g_dev['mnt'].mount.AtParK:
             g_dev['mnt'].unpark_command({}, {}) # Get there early
             time.sleep(3)
@@ -238,7 +238,12 @@ class Sequencer:
             #flat_spot, flat_alt = g_dev['evnt'].flat_spot_now()
 
 
+        #breakpoint()
+        print ("***************")
+        print (time.time())
+        print (self.time_of_next_slew)
         if time.time() >= self.time_of_next_slew:
+            self.time_of_next_slew = time.time() + 120  # seconds between slews.
             #We slew to anti-solar Az and reissue this command every 120 seconds
             flat_spot, flat_alt = g_dev['evnt'].flat_spot_now()
             try:
@@ -256,7 +261,7 @@ class Sequencer:
                 g_dev['enc'].sync_mount_command({}, {})
                 #Prior to skyflats no dome following.
                 self.dome_homed = False
-                self.time_of_next_slew = time.time() + 60  # seconds between slews.
+                
             except:
                 pass#
         return
@@ -317,6 +322,7 @@ class Sequencer:
         elif ((g_dev['events']['Cool Down, Open']  <= ephem_now < g_dev['events']['Eve Sky Flats']) and \
                g_dev['enc'].mode == 'Automatic') and not g_dev['ocn'].wx_hold:
 
+            #self.time_of_next_slew = time.time() -1
             self.enc_to_skyflat_and_open(enc_status, ocn_status)
             self.night_focus_ready=True
 
@@ -354,6 +360,7 @@ class Sequencer:
                and g_dev['enc'].mode in [ 'Automatic', 'Autonomous'] and not g_dev['ocn'].wx_hold and \
                self.config['auto_eve_sky_flat']):
 
+            #self.time_of_next_slew = time.time() -1
             self.enc_to_skyflat_and_open(enc_status, ocn_status)   #Just in case a Wx hold stopped opening
             self.current_script = "Eve Sky Flat script starting"
             #plog('Skipping Eve Sky Flats')
@@ -521,6 +528,7 @@ class Sequencer:
         elif self.morn_sky_flat_latch and ((events['Morn Sky Flats'] <= ephem_now < events['End Morn Sky Flats'])  \
                and g_dev['enc'].mode == 'Automatic' and not g_dev['ocn'].wx_hold and \
                self.config['auto_morn_sky_flat']):
+            #self.time_of_next_slew = time.time() -1
             self.enc_to_skyflat_and_open(enc_status, ocn_status)   #Just in case a Wx hold stopped opening
             self.current_script = "Morn Sky Flat script starting"
             #self.morn_sky_flat_latch = False
@@ -1431,7 +1439,7 @@ class Sequencer:
                     else:
 
                         #exp_time = prior_scale*scale*target_flat
-                        exp_time = prior_scale*scale*self.config['filter_wheel']['filter_wheel1']["default_flat_exposure"]
+                        exp_time = prior_scale*scale*min_exposure
                         plog('Exposure time:  ', exp_time, scale, prior_scale)
 
     
