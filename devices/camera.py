@@ -825,10 +825,7 @@ class Camera:
         
         self.smartstack = required_params.get('smartstack', 'yes')
         self.longstack = required_params.get('longstackswitch', 'no')
-        
-        
-        print (self.smartstack)
-        print (self.longstack)
+    
         if self.longstack == 'no':
             LongStackID ='no'
         elif not 'longstackname' in required_params:
