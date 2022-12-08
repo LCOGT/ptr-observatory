@@ -1617,7 +1617,8 @@ class Camera:
                         "mnt"
                     ].mount.sideOfPier  # 0 == Tel Looking West, is flipped.
                 except:
-                    plog("This mount doesn't report sideofpier")
+                    #plog("This mount doesn't report sideofpier")
+                    pass
 
                 ix, iy = self.img.shape
                 self.t77 = time.time()
@@ -2228,7 +2229,8 @@ class Camera:
                         hdu.header["ROTANGLE"] = (avg_rot[1], "[deg] Rotator angle")
                         hdu.header["ROTMOVNG"] = (avg_rot[2], "Rotator is moving")
                     except:
-                        plog("have to have no rotator header itesm when no rotator")
+                        #plog("have to have no rotator header itesm when no rotator")
+                        pass
 
                     try:
                         hdu.header["FOCUS"] = (
@@ -2851,7 +2853,7 @@ class Camera:
                         sources.remove_columns(source_delete)
 
                         sources.write(im_path + text_name.replace('.txt', '.sep'), format='csv', overwrite=True)
-                        plog("Saved SEP catalogue")
+
 
 
                         # If this is a focus image, save focus image, estimate pointing, and estimate pointing
@@ -2862,8 +2864,7 @@ class Camera:
                         # It will also do a pointing check at the end of a smartstack
                         # This is outside the reduce queue to guarantee the pointing check is done
                         # prior to the next exposure
-                        print (Nsmartstack)
-                        print (sskcounter)
+
                         if focus_image == True or ((Nsmartstack == sskcounter+1) and Nsmartstack > 1):
                             cal_name = (
                                 cal_name[:-9] + "F012" + cal_name[-7:]
@@ -3041,7 +3042,7 @@ class Camera:
                         try: 
                             hdusmall.close()
                         except:
-                            print ("couldn't close hdusmall")
+                            #print ("couldn't close hdusmall")
                             pass
                         del hdusmall
                             
@@ -3067,7 +3068,7 @@ class Camera:
                         if focus_image == False:
                             try:
                                 self.enqueue_for_fastAWS(200, im_path, text_name.replace('.txt', '.sep'))
-                                plog("Sent SEP up")
+                                #plog("Sent SEP up")
                             except:
                                 plog("Failed to send SEP up for some reason")
 

@@ -38,7 +38,14 @@ import requests
 # adapter = HTTPAdapter(max_retries=retry_strategy)
 # requests = requests.Session()
 
+# import colour
 
+    
+# from colour_demosaicing import (
+#     demosaicing_CFA_Bayer_bilinear,
+#     demosaicing_CFA_Bayer_Malvar2004,
+#     demosaicing_CFA_Bayer_Menon2007,
+#     mosaicing_CFA_Bayer)
 
 import sep
 from skimage.io import imsave
@@ -751,15 +758,15 @@ class Observatory:
                 print (self.env_exists)
                 if filename.endswith("-EX00.fits.fz"):
                     with open(filepath, "rb") as fileobj:
-                        print (frame_exists(fileobj))
+                        #print (frame_exists(fileobj))
                         tempPTR=0
                         if self.env_exists == True and (not frame_exists(fileobj)):
-                            print ("attempting ingester")
+                            #print ("attempting ingester")
                             try:
                                 #tt = time.time()
                                 print ("attempting ingest to aws@  ", tt)
                                 upload_file_and_ingest_to_archive(fileobj)
-                                print ("did ingester")
+                                #print ("did ingester")
                                 plog(f"--> To PTR ARCHIVE --> {str(filepath)}")
                                 plog('*.fz ingestion took:  ', round(time.time() - tt, 1), ' sec.')
                                 self.aws_queue.task_done()
@@ -1087,9 +1094,9 @@ class Observatory:
 
 
 
-                    if self.config["camera"][self.name]["settings"]["is_osc"]:
-                        print ("interpolating bayer grid for focusing purposes.")
-                        if self.config["camera"][self.name]["settings"]["osc_bayer"] == 'RGGB':                           
+                    if self.config["camera"][g_dev['cam'].name]["settings"]["is_osc"]:
+                        #print ("interpolating bayer grid for focusing purposes.")
+                        if self.config["camera"][g_dev['cam'].name]["settings"]["osc_bayer"] == 'RGGB':                           
                             
                             # Checkerboard collapse for other colours for temporary jpeg
                             
@@ -1134,8 +1141,8 @@ class Observatory:
                             
                             # Interpolate to make a high resolution version for focussing
                             # and platesolving
-                            hdufocus.data=demosaicing_CFA_Bayer_bilinear(storedsStack, 'RGGB')[:,:,1]
-                            hdufocus.data=hdufocus.data.astype("float32")
+                            #hdufocus.data=demosaicing_CFA_Bayer_bilinear(storedsStack, 'RGGB')[:,:,1]
+                            #hdufocus.data=hdufocus.data.astype("float32")
                             
                             
 
@@ -1156,7 +1163,7 @@ class Observatory:
                             preserve_range=True,
                         )  #  We should trim chips so ratio is exact.
 
-                    if self.config["camera"][self.name]["settings"]["is_osc"]:
+                    if self.config["camera"][g_dev['cam'].name]["settings"]["is_osc"]:
                         blue_stretched_data_float = Stretch().stretch(hdublue+1000)
                         del hdublue
                         green_stretched_data_float = Stretch().stretch(hdugreen+1000)
