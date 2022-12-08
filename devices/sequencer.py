@@ -1831,7 +1831,7 @@ class Sequencer:
                 print ("spot1 failed in autofocus script")
 
             print (spot1)
-            g_dev['obs'].send_to_user("Beginning start of night Focus and Pointing Run", p_level='INFO')
+            g_dev['obs'].send_to_user("Central focus FWHM: " + str(spot1), p_level='INFO')
 
             if math.isnan(spot1) or spot1 ==False:
                 retry += 1
@@ -1855,7 +1855,9 @@ class Sequencer:
             spot2 = False
             foc_pos2 = False
             print ("spot2 failed on autofocus moving in")
-
+        
+        g_dev['obs'].send_to_user("Inward focus FWHM: " + str(spot2), p_level='INFO')
+        
         plog('Autofocus Overtaveling Out.\n\n')
         g_dev['foc'].guarded_move((foc_pos0 + 2*throw)*g_dev['foc'].micron_to_steps)
        #time.sleep(10)#It is important to overshoot to overcome any backlash  WE need to be sure Exposure waits.
@@ -1876,9 +1878,14 @@ class Sequencer:
             spot3 = False
             foc_pos3 = False
             print ("spot3 failed on autofocus moving in")
+            
+        g_dev['obs'].send_to_user("Outward focus FWHM: " + str(spot3), p_level='INFO')
+        
         x = [foc_pos2, foc_pos1, foc_pos3]
         y = [spot2, spot1, spot3]
         plog('X, Y:  ', x, y, 'Desire center to be smallest.')
+
+        
 
         if spot1 is None or spot2 is None or spot3 is None or spot1 == False or spot2 == False or spot3 == False:  #New additon to stop crash when no spots
             plog("No stars detected. Returning to original focus setting and pointing.")
@@ -1912,6 +1919,7 @@ class Sequencer:
                 return
             if min(x) <= d1 <= max(x):
                 print ('Moving to Solved focus:  ', round(d1, 2), ' calculated:  ',  new_spot)
+                g_dev['obs'].send_to_user('Moving to Solved focus:  ' +str(round(d1, 2)), p_level='INFO')
                 pos = int(d1*g_dev['foc'].micron_to_steps)
 
 
@@ -1938,6 +1946,7 @@ class Sequencer:
                     foc_pos4 = False
                     print ("spot4 failed ")
                 plog('\nFound best focus at:  ', foc_pos4,' measured is:  ',  round(spot4, 2), '\n')
+                g_dev['obs'].send_to_user('Found best focus at:  ' +str(foc_pos4) +' measured FWHM is:  ' + str(round(spot4, 2)), p_level='INFO')
                 g_dev['foc'].af_log(foc_pos4, spot4, new_spot)
                 plog("Returning to:  ", start_ra, start_dec)
                 g_dev['mnt'].mount.SlewToCoordinatesAsync(start_ra, start_dec)   #Return to pre-focus pointing.
