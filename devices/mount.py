@@ -211,6 +211,7 @@ class Mount:
         self.ha_corr = 0
         self.dec_corr = 0
         self.seek_commanded = False
+        self.home_after_unpark = config['mount']['mount1']['home_after_unpark']
         if abs(self.east_flip_ra_correction) > 0 or abs(self.east_flip_dec_correction) > 0:
             self.flip_correction_needed = True
             plog("Flip correction may be needed.")
@@ -1092,6 +1093,10 @@ class Mount:
         if self.mount.CanPark:
             plog("mount cmd: unparking mount")
             self.mount.Unpark()
+            wait_for_slew()
+        if self.home_after_unpark:
+            self.mount.FindHome()
+            wait_for_slew()
 
     def paddle(self):
         return
