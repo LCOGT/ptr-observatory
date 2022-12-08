@@ -1079,8 +1079,11 @@ class Sequencer:
         time.sleep(300) # Wait for telescope to park
 
         
-    def nightly_reset_script(self, req=None, opt=None, morn=False):
+    def nightly_reset_script(self):
         # UNDERTAKING END OF NIGHT ROUTINES
+
+        # Never hurts to make sure the telescope is parked for the night
+        g_dev['mnt'].park_command({}, {})
 
         # Setting runnight for mop up scripts
         yesterday = datetime.datetime.now() - timedelta(1)
@@ -1382,6 +1385,7 @@ class Sequencer:
             
         if morn:            
             ending = g_dev['events']['End Morn Sky Flats']
+            min_exposure=120
         else:            
             ending = g_dev['events']['End Eve Sky Flats']
         #length = len(pop_list)
@@ -1430,16 +1434,10 @@ class Sequencer:
                     exp_time = prior_scale*scale*target_flat/(collecting_area*sky_lux*float(g_dev['fil'].filter_data[current_filter][3]))  #g_dev['ocn'].calc_HSI_lux)  #meas_sky_lux)
                     plog('Exposure time:  ', exp_time, scale, prior_scale, sky_lux, float(g_dev['fil'].filter_data[current_filter][3]))
 
-                else:
-                    if g_dev["fil"].null_filterwheel == False:
-                        exp_time = prior_scale*scale*target_flat/float(g_dev['fil'].filter_data[current_filter][3])  #g_dev['ocn'].calc_HSI_lux)  #meas_sky_lux)
-                        plog('Exposure time:  ', exp_time, scale, prior_scale, float(g_dev['fil'].filter_data[current_filter][3]))
-
-                    else:
-
-                        #exp_time = prior_scale*scale*target_flat
-                        exp_time = prior_scale*scale*min_exposure
-                        plog('Exposure time:  ', exp_time, scale, prior_scale)
+                else:                    
+                    #exp_time = prior_scale*scale*target_flat
+                    exp_time = prior_scale*scale*min_exposure
+                    plog('Exposure time:  ', exp_time, scale, prior_scale)
 
     
                 
@@ -1821,6 +1819,7 @@ class Sequencer:
                 print ("spot1 failed in autofocus script")
 
             print (spot1)
+            g_dev['obs'].send_to_user("Beginning start of night Focus and Pointing Run", p_level='INFO')
 
             if math.isnan(spot1) or spot1 ==False:
                 retry += 1
