@@ -2709,6 +2709,7 @@ class Camera:
                                 sources['FWHM'] = sources['FWHM'] * 2
                                 rfp = np.median(sources['FWHM'])
                                 rfr = np.median(sources['FWHM']) * pixscale
+                                rfs = np.std(sources['FWHM']) * pixscale
                                 print("This image has a FWHM of " + str(rfr))
 
                                 result["FWHM"] = rfr
@@ -2772,6 +2773,7 @@ class Camera:
                             hduraw.header["FWHM"] = ( rfp, 'FWHM in pixels')
                             hduraw.header["FWHMpix"] = ( rfp, 'FWHM in pixels')
                             hduraw.header["FWHMasec"] = ( rfr, 'FWHM in arcseconds')
+                            hduraw.header["FWHMstd"] = ( rfs, 'FWHM standard deviation in arcseconds')
 
                         if focus_image == False:
                             text = open(
