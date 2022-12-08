@@ -2869,7 +2869,7 @@ class Camera:
                             cal_name = (
                                 cal_name[:-9] + "F012" + cal_name[-7:]
                             )
-                            hdufocus.writeto(cal_path + cal_name, overwrite=True)
+                            hdufocus.writeto(cal_path + cal_name, overwrite=True, output_verify='silentfix')
                             pixscale=hdufocus.header['PIXSCALE']
                             try:
                                 hdufocus.close()
@@ -3101,7 +3101,7 @@ class Camera:
                     while saver == 0 and saverretries < 10:
                         try:
                             hdufz.writeto(
-                                raw_path + raw_name00 + ".fz", overwrite=True
+                                raw_path + raw_name00 + ".fz", overwrite=True, output_verify='silentfix'
                             )  # Save full fz file locally
                             saver = 1
                         except Exception as e:
@@ -3129,7 +3129,7 @@ class Camera:
                     while saver == 0 and saverretries < 10:
                         try:
                             hduraw.writeto(
-                                raw_path + raw_name00, overwrite=True
+                                raw_path + raw_name00, overwrite=True, output_verify='silentfix'
                             )  # Save full raw file locally
                             saver = 1
                         except Exception as e:
@@ -3148,7 +3148,7 @@ class Camera:
                         while saver == 0 and saverretries < 10:
                             try:
                                 hdureduced.writeto(
-                                    red_path + red_name01, overwrite=True
+                                    red_path + red_name01, overwrite=True, output_verify='silentfix'
                                 )  # Save flash reduced file locally
                                 saver = 1
                             except Exception as e:
@@ -3172,7 +3172,7 @@ class Camera:
                         try:
                             hduraw.writeto(
                                 self.alt_path + g_dev["day"] + "/raw/" + raw_name00,
-                                overwrite=True,
+                                overwrite=True, output_verify='silentfix'
                             )  # Save full raw file locally
                             if "hdureduced" in locals():
                                 hdureduced.writeto(
@@ -3180,7 +3180,7 @@ class Camera:
                                     + g_dev["day"]
                                     + "/reduced/"
                                     + red_name01,
-                                    overwrite=True,
+                                    overwrite=True, output_verify='silentfix'
                                 )  # Save full raw file locally
                             saver = 1
                         except Exception as e:
