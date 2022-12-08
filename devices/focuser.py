@@ -34,7 +34,21 @@ class Focuser:
         self.focuser = win32com.client.Dispatch(driver)
         time.sleep(4)
 
-        self.focuser.Connected = True
+        #breakpoint()
+
+        try:        
+            self.focuser.Connected = True
+        except:
+            if self.focuser.Link == True:
+                print ("focuser doesn't have ASCOM Connected keyword, but reports a positive link")
+            else:
+                try:
+                    self.focuser.Link = True
+                    print ("focuser doesn't have ASCOM Connected keyword, attempted to send a positive Link")
+                except:
+                    print ("focuser doesn't have ASCOM Connected keyword, also crashed on focuser.Link")
+                    breakpoint()
+        
         self.micron_to_steps = float(
             config["focuser"]["focuser1"]["unit_conversion"]
         )  #  Note this can be a bogus value
@@ -67,43 +81,51 @@ class Focuser:
         except:
             self.z_compression = 0.0
 
-        try:  #  NB NB NB This mess neads cleaning up.
-            try:
-                # TODO no site-specific code!
-                if not self.site in ["sro"]:
-                    self.last_temperature = self.focuser.Temperature
-                    self.reference = self.calculate_compensation(
-                        self.focuser.Temperature
-                    )  # need to change to config supplied
-                else:
-                    self.last_temperature = g_dev["ocn"].temperature
-                    self.reference = self.calculate_compensation(
-                        g_dev["ocn"].temperature
-                    )
-
-                plog(
-                    "Focus position set from temp compensated value:  ",
-                    self.reference,
-                    ".  Temp used:  ",
-                    self.last_temperature,
-                )
-                self.last_known_focus = self.reference
-                self.last_source = "Focuser__init__  Calculate Comp references Config"
-            except:
-                self.reference = float(
-                    self.get_focal_ref()
-                )  # need to change to config supplied
-                self.last_known_focus = self.reference
-                plog("Focus reference updated from Night Shelf:  ", self.reference)
-                # Is this of any real value except to persist self.last_known...?
-        except:
+        if config["focuser"]["focuser1"]['start_at_config_reference']:
             self.reference = int(self.config["reference"])
             self.last_known_focus = self.reference
             plog(
                 "Focus reference derived from supplied config file for 10C:  ",
                 self.reference,
             )
-            # The config reference should be a table of value
+        else:
+            try:  #  NB NB NB This mess neads cleaning up.
+                try:
+                    # TODO no site-specific code!
+                    if config["focuser"]["focuser1"]["reference"]:
+                        self.last_temperature = self.focuser.Temperature
+                        self.reference = self.calculate_compensation(
+                            self.focuser.Temperature
+                        )  # need to change to config supplied
+                    else:
+                        self.last_temperature = g_dev["ocn"].temperature
+                        self.reference = self.calculate_compensation(
+                            g_dev["ocn"].temperature
+                        )
+    
+                    plog(
+                        "Focus position set from temp compensated value:  ",
+                        self.reference,
+                        ".  Temp used:  ",
+                        self.last_temperature,
+                    )
+                    self.last_known_focus = self.reference
+                    self.last_source = "Focuser__init__  Calculate Comp references Config"
+                except:
+                    self.reference = float(
+                        self.get_focal_ref()
+                    )  # need to change to config supplied
+                    self.last_known_focus = self.reference
+                    plog("Focus reference updated from Night Shelf:  ", self.reference)
+                    # Is this of any real value except to persist self.last_known...?
+            except:
+                self.reference = int(self.config["reference"])
+                self.last_known_focus = self.reference
+                plog(
+                    "Focus reference derived from supplied config file for 10C:  ",
+                    self.reference,
+                )
+                # The config reference should be a table of value
         self.focuser.Move(int(float(self.reference) * self.micron_to_steps))
 
 
@@ -390,9 +412,13 @@ class Focuser:
                 f_temp = None
 
         if not f_temp == None:
-            cam_shelf["af_log"].append(
-                (f_temp, ref, fwhm, solved, datetime.datetime.now().isoformat())
-            )
+            #breakpoint()
+            if "af_log" in cam_shelf:
+                cam_shelf["af_log"].append(
+                    (f_temp, ref, fwhm, solved, datetime.datetime.now().isoformat())
+                )
+            else : # create af log if it doesn't exist
+                cam_shelf["af_log"]=[(f_temp, ref, fwhm, solved, datetime.datetime.now().isoformat())]
         else:
             f_temp=15.0
             print ("getting f_temp failed, using 15 degrees C")

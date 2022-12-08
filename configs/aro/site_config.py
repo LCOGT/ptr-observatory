@@ -94,8 +94,11 @@ site_config = {
     'observing_check_period' : 2,    # How many minutes between weather checks
     'enclosure_check_period' : 2,    # How many minutes between enclosure checks
     'auto_eve_bias_dark': False,
+    
+    'auto_midnight_moonless_bias_dark': False,
     'auto_eve_sky_flat': False,
     'eve_sky_flat_sunset_offset': -60.0,  # Minutes  neg means before, + after.
+    'eve_cool_down_open' : -60.0,
     'auto_morn_sky_flat': False,
     'auto_morn_bias_dark': False,
     're-calibrate_on_solve': True,
@@ -356,6 +359,8 @@ site_config = {
             'desc':  'Optec Gemini',
             'driver': 'ASCOM.OptecGemini.Focuser',
 		    'com_port': 'COM13',    #AP 'COM5'  No Temp Probe on SRO AO Honders
+            'start_at_config_reference': False,
+            'use_focuser_temperature': True,
             # # F4.9 setup
             # 'reference': 5800,    # 20210313  Nominal at 10C Primary temperature
             # 'ref_temp':  5.1,    # Update when pinning reference
@@ -504,6 +509,8 @@ site_config = {
 
 
             'settings': {
+                'is_osc' : False,
+                'osc_bayer' : 'RGGB',
                 'crop_preview': False,
                 'crop_preview_ybottom': 1,
                 'crop_preview_ytop': 1,
@@ -584,6 +591,9 @@ site_config = {
                 'areas_implemented': ["Full", '2x2', '4x4',"600%", "500%", "450%", "300%", "220%", "150%", "133%", "100%", "Sqr", '71%', '50%',  '35%', '25%', '12%'],
                 'default_area':  "Full",
                 'has_darkslide':  True,
+                'shutter_type': "Electronic",
+                
+                'flat_bin_spec': ['1,1', '2 2'],    # List of binnings for flats
                 'darkslide_com':  'COM17',
                 'has_screen': True,
                 'screen_settings':  {

@@ -119,8 +119,11 @@ site_config = {
     'enclosure_check_period' : 2,    # How many minutes between enclosure checks
 
     'auto_eve_bias_dark': False,
+    
+    'auto_midnight_moonless_bias_dark': False,
     'auto_eve_sky_flat': False,
     'eve_sky_flat_sunset_offset': -60.,  #  Minutes  neg means before, + after.
+    'eve_cool_down_open' : -60.0,
     'auto_morn_sky_flat': False,
     'auto_morn_bias_dark': True,
     're-calibrate_on_solve': True,
@@ -419,6 +422,8 @@ site_config = {
             'name': 'focuser',
             'desc':  'Optec Gemini',
             'driver': 'ASCOM.OptecGemini.Focuser',
+            'start_at_config_reference': False,
+            'use_focuser_temperature': True,
             'startup_script':  None,
             'recover_script':  None,
             'shutdown_script':  None,
@@ -488,6 +493,7 @@ site_config = {
             'driver': 'Maxim.CCDcamera',  #'startup_script':  None,
             'recover_script':  None,
             'shutdown_script':  None,
+            
 
             'settings': {
                 'filter_count': '24',
@@ -557,6 +563,8 @@ site_config = {
             'use_file_mode':  False,
             'file_mode_path':  'Q:/000ptr_saf/archive/kf01/autosaves/',
             'settings': {
+                'is_osc' : True,
+                'osc_bayer' : 'RGGB',
                 'crop_preview': False,
                 'crop_preview_ybottom': 1,
                 'crop_preview_ytop': 1,
@@ -636,6 +644,9 @@ site_config = {
                 #'cycle_time':  [18, 15, 12, 9],  # 3x3 requires a 1, 1 reaout then a software bin, so slower.
                 'has_darkslide':  False,
                 'darkslide_com':  None,
+                'shutter_type': "Electronic",
+                
+                'flat_bin_spec': ['1,1', '2 2'],    # List of binnings for flats
                 'has_screen': True,
                 'screen_settings':  {
                     'screen_saturation':  157.0,

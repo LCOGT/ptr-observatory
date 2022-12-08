@@ -93,7 +93,8 @@ site_config = {
     'observing_check_period' : 3,    # How many minutes between weather checks
     'enclosure_check_period' : 3,    # How many minutes between enclosure checks
 
-    'auto_eve_bias_dark': True,
+    'auto_eve_bias_dark': True,    
+    'auto_midnight_moonless_bias_dark': False,
     'auto_eve_sky_flat': True,
     'auto_morn_sky_flat': True,
     'auto_morn_bias_dark': True,
@@ -102,6 +103,7 @@ site_config = {
     'eve_screen_flat_dur': 0.0,   #  hours Duration, prior to next.
     'operations_begin':  -1.0,   #  - hours from Sunset
     'eve_sky_flat_sunset_offset': -35,  #  Minutes  neg means before, + after.  OPENING TIME
+    'eve_cool_down_open' : -60.0,
     'morn_sky_flat_sunrise_offset' : +15.0,  #  Minutes  neg means before, + after.  CLOSING TIME
 
     'eve_cooldown_offset': -.99,   #  - hours beforeSunset
@@ -345,6 +347,8 @@ site_config = {
             'desc':  'Optec Gemini',
             'driver': 'ASCOM.OptecGemini.Focuser',
 			'com_port':  'COM9',
+            'start_at_config_reference': False,
+            'use_focuser_temperature': False,
             #F4.9 setup
             'reference':7650,    #  20210313  Nominal at 10C Primary temperature
             'ref_temp':  6265.0,    #  Update when pinning reference
@@ -458,7 +462,9 @@ site_config = {
             'use_file_mode':  False,
             'file_mode_path':  'G:/000ptr_saf/archive/sq01/autosaves/',   #NB Incorrect site, etc. Not used at SRO.  Please clean up.
 
-            'settings': {
+            'settings': {                
+                'is_osc' : False,
+                'osc_bayer' : 'RGGB',
                 'crop_preview': True,
                 'crop_preview_ybottom': 1,  #### IMPORTANT: CROPS NEED TO BE SYMMETRICAL FOR POINTING SOLVES TO WORK.
                 'crop_preview_ytop': 40,
@@ -552,6 +558,9 @@ site_config = {
                 'flat_bin_spec': '1,1',    #Default binning for flats
                 'has_darkslide':  False,
                 'darkslide_com':  None,
+                'shutter_type': "Electronic",
+                
+                'flat_bin_spec': ['1,1'],    # List of binnings for flats
                 'has_screen': True,
                 'screen_settings':  {
                     'screen_saturation':  157.0,   #  This reflects WMD setting and needs proper values.

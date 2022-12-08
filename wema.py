@@ -90,7 +90,7 @@ class WxEncAgent:
 
         self.status_interval = 45
         self.name = name
-        breakpoint()
+
         self.site_name = name
         self.config = config
         g_dev["obs"] = self

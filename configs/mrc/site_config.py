@@ -117,10 +117,13 @@ site_config = {
     'observing_check_period' : 2,    # How many minutes between weather checks
     'enclosure_check_period' : 2,    # How many minutes between enclosure checks
 
-    'auto_eve_bias_dark': True,
+    'auto_eve_bias_dark': False,
+    
+    'auto_midnight_moonless_bias_dark': False,
     'auto_eve_sky_flat': False,
     'eve_sky_flat_sunset_offset': -60.,  #  Minutes  neg means before, + after.
-    'auto_morn_sky_flat': True,
+    'eve_cool_down_open' : -60.0,
+    'auto_morn_sky_flat': False,
     'auto_morn_bias_dark': True,
     're-calibrate_on_solve': True,
     'pointing_calibration_on_startup': False,
@@ -185,7 +188,7 @@ site_config = {
         'observing_conditions1': {
             'parent': 'site',
             'ocn_is_specific':  False,  # Indicates some special site code.
-            # Intention it is found in this file.
+            # Intention it is found near bottom of this file.
             'name': 'Weather Station #1',
             'driver': 'ASCOM.SkyAlert.ObservingConditions',
             'share_path_name': None,
@@ -343,9 +346,11 @@ site_config = {
         'telescope1': {
             'parent': 'mount1',
             'name': 'Main OTA',
-            'desc':  'Planewave CDK 14 F7.2',
-            'telescop': 'mrc1',
-            'ptrtel': 'mrc1',
+            #'desc':  'Planewave_CDK_14_F7.2',
+            'telescop': 'mrc1',   #  The tenth telescope at mrc will be 'mrc10'. mrc2 already exists.
+                                  # the important thing is sites contain only a to z, but the string may get longer.
+                                  #  From the BZ perspective TELESCOP must be unique
+            'ptrtel': 'Planewave CDK 0.35m f7.2',
             'driver': 'None',                     #Essentially this device is informational.  It is mostly about the optics.
             'startup_script':  None,
             'recover_script':  None,
@@ -419,6 +424,8 @@ site_config = {
             'name': 'focuser',
             'desc':  'Optec Gemini',
             'driver': 'ASCOM.OptecGemini.Focuser',
+            'start_at_config_reference': False,
+            'use_focuser_temperature': True,
             #*********Guesses   7379@10 7457@20  7497 @ 25
             'reference': 6900, #20221103    #7418,    # Nominal at 15C Primary temperature, in microns not steps. Guess
             'ref_temp':  15,      # Update when pinning reference  Larger at lower temperatures.
@@ -479,8 +486,7 @@ site_config = {
                 'filter_reference': 2,
 
                 'filter_list': ['PL','PR','PG','PB','HA','O3','S2', 'air','dif','w','CR','N2','up','gp','rp','ip','z', 'difup','difgp','difrp','difip','dark'], # A list of actual physical filters for the substitution function
-                'filter_data': [['filter', 'filter_index', 'filter_offset', 'sky_gain', 'screen_gain', 'abbreviation'],
-                                ['air',     [0, 0], -1000,  118.6,   [2, 17], 'ai'], #  0
+                'filter_data': [['air',     [0, 0], -1000,  118.6, [2, 17], 'ai'], #  0
                                 ['dif',     [4, 0],     0,  104.8, [2, 17], 'df'], #  1
                                 ['w',       [2, 0],     0,  133.7, [2, 17], 'w '], #  2
                                 ['CR',      [1, 0],     0,  0.706, [2, 17], 'CR'], #  3
@@ -547,6 +553,9 @@ site_config = {
             'file_mode_path':  'Q:/archive/sq01/maxim/',
 
             'settings': {
+                
+                'is_osc' : False,
+                'osc_bayer' : 'RGGB',
                 'crop_preview': False,
                 'crop_preview_ybottom': 1,
                 'crop_preview_ytop': 1,
@@ -618,8 +627,8 @@ site_config = {
                 'is_cmos':  True,
                 'is_color': False,
                 'can_set_gain':  True,
-                'ref_dark': 360,
-                'long_dark': 600,   #  s.
+                'ref_dark': 600,
+                'long_dark': None,   #  s.
                 'reference_gain': [1.3, 2.6, 3.9, 5.2],     #  One val for each binning. Assumed digitalsumming in camera???
                 'reference_noise': [6, 6, 6, 6],    #  NB Guess
                 'reference_dark': [.2, .8, 1.8, 3.2],  #  Guess
@@ -636,9 +645,10 @@ site_config = {
                 'areas_implemented': ['Full', '0.5sq°',  '0.7sq°', '1x1°', '1.4sq°', '2x2°', '2.8xsq°', '4x4°', '5.6sq°'],
                 'default_area':  "Full",
                 'default_rotation': 0.0000,
-                'flat_bin_spec': '1,1',    #Default binning for flats
+                'flat_bin_spec': ['1,1', '2 2'],    # List of binnings for flats
                 'has_darkslide':  True,
                 'darkslide_com':  'COM15',
+                'shutter_type': "Electronic",
                 'has_screen': True,
                 'screen_settings':  {
                     'screen_saturation':  157.0,

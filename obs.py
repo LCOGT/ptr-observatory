@@ -9,7 +9,7 @@ is in the Gemini.
 
 Abstract away Redis, Memurai, and local shares for IPC.
 """
-
+import ephem
 import datetime
 import json
 import math
@@ -24,6 +24,7 @@ import shutil
 
 import astroalign as aa
 from astropy.io import fits
+from astropy.nddata import block_reduce
 from dotenv import load_dotenv
 import numpy as np
 import redis  # Client, can work with Memurai
@@ -63,6 +64,8 @@ from global_yard import g_dev
 from planewave import platesolve
 import ptr_events
 from ptr_utility import plog
+
+from PIL import Image
 
 # The ingester should only be imported after environment variables are loaded in.
 load_dotenv(".env")
@@ -136,7 +139,7 @@ class Observatory:
         self.wema_types = config["wema_types"]
         self.enc_types = None  # config['enc_types']
         self.short_status_devices = (
-            None  # config['short_status_devices']  # May not be needed for no wema obsy
+             config['short_status_devices']  # May not be needed for no wema obsy
         )
         self.observing_status_timer = datetime.datetime.now() - datetime.timedelta(
             days=1
@@ -170,7 +173,7 @@ class Observatory:
             self.redis_wx_enabled = False
             g_dev["redis"] = None  # a placeholder.
 
-
+        
 
         # Use the configuration to instantiate objects for all devices.
         self.create_devices()
@@ -243,7 +246,7 @@ class Observatory:
         # Need to set this for the night log
         #g_dev['foc'].set_focal_ref_reset_log(self.config["focuser"]["focuser1"]["reference"])
         # Send the config to AWS. TODO This has faulted.
-        self.update_config()
+        self.update_config()   #This is the never-ending control loop
 
     def set_last_reference(self, delta_ra, delta_dec, last_time):
         mnt_shelf = shelve.open(self.site_path + "ptr_night_shelf/" + "last")
@@ -285,7 +288,6 @@ class Observatory:
                 plog(name)
                 driver = devices_of_type[name]["driver"]
                 settings = devices_of_type[name].get("settings", {})
-
                 if dev_type == "observing_conditions":
                     device = ObservingConditions(
                         driver, name, self.config, self.astro_events
@@ -323,7 +325,7 @@ class Observatory:
 
         uri = f"{self.name}/config/"
         self.config["events"] = g_dev["events"]
-
+        
         response = g_dev["obs"].api.authenticated_request("PUT", uri, self.config)
         if 'message' in response:
             if response['message'] == "Missing Authentication Token":
@@ -364,7 +366,8 @@ class Observatory:
         """
 
         # This stopping mechanism allows for threads to close cleanly.
-        while not self.stopped:
+
+        while not self.stopped:    #This variable is not used.
 
             if  True:  #not g_dev["seq"].sequencer_hold:  THis causes an infinte loope witht he above while
                 url_job = "https://jobs.photonranch.org/jobs/getnewjobs"
@@ -385,6 +388,7 @@ class Observatory:
                         len(unread_commands),
                         unread_commands,
                     )
+
                     for cmd in unread_commands:
                         if cmd["action"] in ["cancel_all_commands", "stop"]:
                             g_dev["obs"].stop_all_activity = True
@@ -395,27 +399,35 @@ class Observatory:
                             self.send_to_user(
                                 "Pending reductions and transfers to the PTR Archive are not affected."
                             )
-                            # Empty the queue
-
+                            # Now we need to cancel possibly a pending camera cycle or a
+                            # script running in the sequencer.  NOTE a stop or cancel empties outgoing queue at AWS side and only
+                            # a Cancel/Stop action is sent.  But we need to same any subsequent commands.
                             try:
                                 if g_dev["cam"].exposure_busy:
+                                    
                                     g_dev["cam"]._stop_expose()
+                                    # Should we try to flush the image array?
                                     g_dev["obs"].stop_all_activity = True
+                                    g_dev["cam"].exposure_busy = False
                                 else:
                                     plog("Camera is not busy.")
                             except:
                                 plog("Camera stop faulted.")
                             while self.cmd_queue.qsize() > 0:
                                 plog("Deleting Job:  ", self.cmd_queue.get())
-                            return  # Note we basically do nothing and let camera, etc settle down.
+                            
+                            #return  # Note we basically do nothing and let camera, etc settle down.
                         else:
                             self.cmd_queue.put(cmd)  # SAVE THE COMMAND FOR LATER
+                            g_dev["obs"].stop_all_activity = False
                             self.send_to_user(
                                 "Queueing up a new command... Hint:  " + cmd["action"]
                             )
 
-                    if cancel_check:
-                        return  # Note we do not process any commands.
+                        if cancel_check:
+                            result={'stopped': True}
+                            return  # Note we do not process any commands.
+
 
                 while self.cmd_queue.qsize() > 0:
                     self.send_to_user(
@@ -458,13 +470,41 @@ class Observatory:
 
                         plog("Exception in obs.scan_requests:  ", e, 'cmd:  ', cmd)
                 url_blk = "https://calendar.photonranch.org/dev/siteevents"
+                # UTC VERSION
                 start_aperture = str(g_dev['events']['Eve Sky Flats']).split()
                 close_aperture = str(g_dev['events']['End Morn Sky Flats']).split()
+                
+
+                # Reformat ephem.Date into format required by the UI
+                startapyear=start_aperture[0].split('/')[0]
+                startapmonth=start_aperture[0].split('/')[1]
+                startapday=start_aperture[0].split('/')[2]
+                closeapyear=close_aperture[0].split('/')[0]
+                closeapmonth=close_aperture[0].split('/')[1]
+                closeapday=close_aperture[0].split('/')[2]                
+                
+                if len(str(startapmonth)) == 1:
+                    startapmonth='0' + startapmonth
+                if len(str(startapday)) == 1:
+                    startapday='0' + str(startapday)
+                if len(str(closeapmonth)) == 1:
+                    closeapmonth='0' + closeapmonth
+                if len(str(closeapday)) == 1:
+                    closeapday='0' + str(closeapday)
+
+                start_aperture_date = startapyear + '-' + startapmonth + '-' + startapday
+                close_aperture_date = closeapyear + '-' + closeapmonth + '-' + closeapday
+
+                start_aperture[0] =start_aperture_date 
+                close_aperture[0] =close_aperture_date 
+
+
+                
                 body = json.dumps(
                     {
                         "site": self.config["site"],
-                        "start": start_aperture[0] +'T' + start_aperture[1] +'Z',
-                        "end": close_aperture[0] +'T' + close_aperture[1] +'Z',
+                        "start": start_aperture[0].replace('/','-') +'T' + start_aperture[1] +'Z',
+                        "end": close_aperture[0].replace('/','-') +'T' + close_aperture[1] +'Z',
                         "full_project_details:": False,
                     }
                 )
@@ -502,18 +542,16 @@ class Observatory:
                 return  # This creates an infinite loop
 
             else:
-
+                
                 continue
 
-    def update_status(self, bpt=False):
+    def update_status(self, bpt=False, cancel_check=False):
         """Collects status from all devices and sends an update to AWS.
 
         Each device class is responsible for implementing the method
         `get_status`, which returns a dictionary.
         """
-
-
-        # This stopping mechanism allows for threads to close cleanly.
+        
         loud = False
         if bpt:
             print('UpdateStatus bpt was invoked.')
@@ -529,14 +567,19 @@ class Observatory:
         # For each type, we get and save the status of each device.
 
         if not self.config["wema_is_active"]:
+            #device_list = self.short_status_devices()
             device_list = self.device_types
             remove_enc = False
+        if self.config["wema_is_active"]:
+            device_list = self.short_status_devices  #  used when wema is sending ocn and enc status via a different stream.
+            remove_enc = False   
+
         else:
-            device_list = self.device_types
+            device_list = self.device_types  #  used when one computer is doing everything for a site.
             remove_enc = True
         for dev_type in device_list:
-            # The status that we will send is grouped into lists of
-            # devices by dev_type.
+            #  The status that we will send is grouped into lists of
+            #  devices by dev_type.
             status[dev_type] = {}
             # Names of all devices of the current type.
             # Recall that self.all_devices[type] is a dictionary of all
@@ -590,13 +633,15 @@ class Observatory:
         status["timestamp"] = round((time.time() + t1) / 2.0, 3)
         status["send_heartbeat"] = False
         try:
+            ocn_status = None
+            enc_status = None
             ocn_status = {"observing_conditions": status.pop("observing_conditions")}
             enc_status = {"enclosure": status.pop("enclosure")}
             device_status = status
         except:
             pass
         loud = False
-        # Consider inhibity unless status rate is low
+        # Consider inhibiting unless status rate is low
         obsy = self.name
         if ocn_status is not None:
             lane = "weather"
@@ -604,9 +649,9 @@ class Observatory:
         if enc_status is not None:
             lane = "enclosure"
             send_status(obsy, lane, enc_status)
-        if device_status is not None:
+        if status is not None:
             lane = "device"
-            send_status(obsy, lane, device_status)
+            send_status(obsy, lane, status)
         if loud:
             plog("\n\nStatus Sent:  \n", status)
         else:
@@ -615,7 +660,6 @@ class Observatory:
         self.time_last_status = time.time()
         self.status_count += 1
         try:
-
             self.scan_requests(cancel_check=True
             )  # NB THis has faulted, usually empty input lists.
         except:
@@ -648,8 +692,9 @@ class Observatory:
             )  # NBNBNB THis has faulted, usually empty input lists.
         except:
             pass
-        if self.status_count > 2:  # Give time for status to form
+        if self.status_count > 1:  # Give time for status to form
             g_dev["seq"].manager()  # Go see if there is something new to do.
+        
 
     def run(self):  # run is a poor name for this function.
         try:
@@ -718,12 +763,13 @@ class Observatory:
                                 plog(f"--> To PTR ARCHIVE --> {str(filepath)}")
                                 plog('*.fz ingestion took:  ', round(time.time() - tt, 1), ' sec.')
                                 self.aws_queue.task_done()
-
+                                #os.remove(filepath)
+                                
                                 tempPTR=1
                             except Exception as e:
                                 print ("couldn't send to PTR archive for some reason")
-                                #print (e)
-                                #print (print (traceback.format_exc()))
+                                print (e)
+                                print (print (traceback.format_exc()))
                                 tempPTR=0
                         # If ingester fails, send to default S3 bucket.
                         if tempPTR ==0:
@@ -741,13 +787,14 @@ class Observatory:
                                 plog(f"--> To AWS --> {str(filepath)}")
                                 plog('*.fz transfer took:  ', round(time.time() - tt, 1), ' sec.')
                                 self.aws_queue.task_done()
-
+                                #os.remove(filepath)
+                                
                                 #break
 
                             except:
                                 print ("Connection glitch for the request post, waiting a moment and trying again")
                                 time.sleep(5)
-
+                            
                 # Send all other files to S3.
                 else:
                     with open(filepath, "rb") as fileobj:
@@ -758,20 +805,28 @@ class Observatory:
                             requests.post(aws_resp["url"], data=aws_resp["fields"], files=files)
                             plog(f"--> To AWS --> {str(filepath)}")
                             self.aws_queue.task_done()
-
+                            #os.remove(filepath)
+                            
                             #break
                         except:
                             print ("Connection glitch for the request post, waiting a moment and trying again")
                             time.sleep(5)
 
-                os.remove(filepath)
+                try:   
+                    os.remove(filepath)
+                except:
+                    pass
                 if (
                     filename[-3:] == "jpg"
                     or filename[-3:] == "txt"
                     or ".fits.fz" in filename
                     or ".token" in filename
                 ):
-                    os.remove(filepath)
+                    try:
+                        os.remove(filepath)
+                    except:
+                        pass
+
 
                 one_at_a_time = 0
                 time.sleep(0.1)
@@ -810,9 +865,9 @@ class Observatory:
                 aws_resp = g_dev["obs"].api.authenticated_request(
                     "POST", "/upload/", {"object_name": filename})
                 # Only ingest new large fits.fz files to the PTR archive.
-
+                
                 # Send all other files to S3.
-
+                
                 with open(filepath, "rb") as fileobj:
                     files = {"file": (filepath, fileobj)}
                     while True:
@@ -824,13 +879,13 @@ class Observatory:
                             time.sleep(5)
                     plog(f"--> To AWS --> {str(filepath)}")
 
-                if (
-                    filename[-3:] == "jpg"
-                    or filename[-3:] == "txt"
-                    or ".fits.fz" in filename
-                    or ".token" in filename
-                ):
-                    os.remove(filepath)
+                # if (
+                #     filename[-3:] == "jpg"
+                #     or filename[-3:] == "txt"
+                #     or ".fits.fz" in filename
+                #     or ".token" in filename
+                # ):
+                #     os.remove(filepath)
 
                 self.fast_queue.task_done()
                 one_at_a_time = 0
@@ -903,115 +958,7 @@ class Observatory:
                     ssframenumber = str(img[0].header["FRAMENUM"])
                     img.close()
                     del img
-                    sstackimghold=np.asarray(imgdata)
-                    imgdata = (
-                        imgdata - np.min(imgdata)
-                    ) + 100  # Add an artifical pedestal to background.
-                    imgdata = imgdata.astype("float")
-
-                    imgdata = imgdata.copy(
-                        order="C"
-                    )  # NB Should we move this up to where we read the array?
-                    bkg = sep.Background(imgdata)
-                    imgdata -= bkg
-
-                    try:
-                        sep.set_extract_pixstack(1000000)
-                        sources = sep.extract(
-                            imgdata, 4.5, err=bkg.globalrms, minarea=15
-                        )  # Minarea should deal with hot pixels.
-                        ix, iy = imgdata.shape
-                        del imgdata
-                        sources.sort(order="cflux")
-                        plog("No. of detections:  ", len(sources))
-
-                    # imgdata = imgdata.copy(
-                    #     order="C"
-                    # )  # NB Should we move this up to where we read the array?
-                    # bkg = sep.Background(imgdata)
-                    # imgdata -= bkg
-
-                        if len(sources) < 20:
-                            print ("skipping focus estimate as not enough sources in this image")
-
-                        else:
-
-
-                            border_x = int(ix * 0.05)
-                            border_y = int(iy * 0.05)
-                            r0 = []
-                            for sourcef in sources:
-                                if (
-                                    border_x < sourcef["x"] < ix - border_x
-                                    and border_y < sourcef["y"] < iy - border_y
-                                    and 1000 < sourcef["peak"] < 35000
-                                    and 1000 < sourcef["cpeak"] < 35000
-                                ):  # Consider a lower bound
-                                    a0 = sourcef["a"]
-                                    b0 = sourcef["b"]
-                                    r0.append(round(math.sqrt(a0 * a0 + b0 * b0)*2, 2))
-
-                            FWHM = round(
-                                np.median(r0) * pixscale, 3
-                            )  # was 2x larger but a and b are diameters not radii
-                            print("This image has a FWHM of " + str(FWHM))
-
-                            g_dev["foc"].focus_tracker.pop(0)
-                            g_dev["foc"].focus_tracker.append(FWHM)
-                            print("Last ten FWHM : ")
-                            print(g_dev["foc"].focus_tracker)
-                            print("Median last ten FWHM")
-                            print(np.nanmedian(g_dev["foc"].focus_tracker))
-                            print("Last solved focus FWHM")
-                            print(g_dev["foc"].last_focus_fwhm)
-
-                            # If there hasn't been a focus yet, then it can't check it, so make this image the last solved focus.
-                            if g_dev["foc"].last_focus_fwhm == None:
-                                g_dev["foc"].last_focus_fwhm = FWHM
-                            else:
-                                # Very dumb focus slip deteector
-                                if (
-                                    np.nanmedian(g_dev["foc"].focus_tracker)
-                                    > g_dev["foc"].last_focus_fwhm
-                                    + self.config["focus_trigger"]
-                                ):
-                                    g_dev["foc"].focus_needed = True
-                                    g_dev["obs"].send_to_user(
-                                        "Focus has drifted to "
-                                        + str(np.nanmedian(g_dev["foc"].focus_tracker))
-                                        + " from "
-                                        + str(g_dev["foc"].last_focus_fwhm)
-                                        + ". Autofocus triggered for next exposures.",
-                                        p_level="INFO",
-                                    )
-                    except:
-                        print ("something failed in the SEP calculations for exposure. This could be an overexposed image")
-                        print (traceback.format_exc())
-                        sources = [0]
-
-                    #         # If there hasn't been a focus yet, then it can't check it, so make this image the last solved focus.
-                    #         if g_dev["foc"].last_focus_fwhm == None:
-                    #             g_dev["foc"].last_focus_fwhm = rfr
-                    #         else:
-                    #             # Very dumb focus slip deteector
-                    #             if (
-                    #                 np.nanmedian(g_dev["foc"].focus_tracker)
-                    #                 > g_dev["foc"].last_focus_fwhm
-                    #                 + self.config["focus_trigger"]
-                    #             ):
-                    #                 g_dev["foc"].focus_needed = True
-                    #                 g_dev["obs"].send_to_user(
-                    #                     "Focus has drifted to "
-                    #                     + str(np.nanmedian(g_dev["foc"].focus_tracker))
-                    #                     + " from "
-                    #                     + str(g_dev["foc"].last_focus_fwhm)
-                    #                     + ". Autofocus triggered for next exposures.",
-                    #                     p_level="INFO",
-                    #                 )
-                    # except:
-                    #     print ("something failed in the SEP calculations for exposure. This could be an overexposed image")
-                    #     print (traceback.format_exc())
-                    #     sources = [0]
+                    sstackimghold=np.asarray(imgdata)                    
 
                 # SmartStack Section
                 if smartstackid != "no" :
@@ -1021,9 +968,6 @@ class Observatory:
                         print ("skipping stacking as there are not enough sources " + str(len(sources)) +" in this image")
 
 
-                    #img = fits.open(
-                    #    paths["red_path"] + paths["red_name01"]
-                    #)  # Pick up reduced fits file
                     # No need to open the same image twice, just using the same one as SEP.
                     img = sstackimghold.copy()
                     del sstackimghold
@@ -1142,6 +1086,63 @@ class Observatory:
                         storedsStack=img
 
 
+
+                    if self.config["camera"][self.name]["settings"]["is_osc"]:
+                        print ("interpolating bayer grid for focusing purposes.")
+                        if self.config["camera"][self.name]["settings"]["osc_bayer"] == 'RGGB':                           
+                            
+                            # Checkerboard collapse for other colours for temporary jpeg
+                            
+                            # Create indexes for B, G, G, R images
+                            
+                            xshape=storedsStack.shape[0]
+                            yshape=storedsStack.shape[1]
+                            #print (xshape)
+                            #print (yshape)
+                            
+                            # B pixels
+                            list_0_1 = np.array([ [0,0], [0,1] ])
+                            checkerboard=np.tile(list_0_1, (xshape//2, yshape//2))
+                            checkerboard=np.asarray(checkerboard)
+                            hdublue=(block_reduce(storedsStack * checkerboard ,2))
+                            
+                            # R Pixels
+                            list_0_1 = np.array([ [1,0], [0,0] ])
+                            checkerboard=np.tile(list_0_1, (xshape//2, yshape//2))
+                            checkerboard=np.asarray(checkerboard)
+                            hdured=(block_reduce(storedsStack * checkerboard ,2))
+                            
+                            # G top right Pixels
+                            list_0_1 = np.array([ [0,1], [0,0] ])
+                            checkerboard=np.tile(list_0_1, (xshape//2, yshape//2))
+                            checkerboard=np.asarray(checkerboard)
+                            GTRonly=(block_reduce(storedsStack * checkerboard ,2))
+                            
+                            # G bottom left Pixels
+                            list_0_1 = np.array([ [0,0], [1,0] ])
+                            checkerboard=np.tile(list_0_1, (xshape//2, yshape//2))
+                            checkerboard=np.asarray(checkerboard)
+                            GBLonly=(block_reduce(storedsStack * checkerboard ,2))                                
+                            
+                            # Sum two Gs together and half them to be vaguely on the same scale
+                            hdugreen = np.asarray(GTRonly + GBLonly)
+                            del GTRonly
+                            del GBLonly
+                            del checkerboard
+                            
+
+                            
+                            # Interpolate to make a high resolution version for focussing
+                            # and platesolving
+                            hdufocus.data=demosaicing_CFA_Bayer_bilinear(storedsStack, 'RGGB')[:,:,1]
+                            hdufocus.data=hdufocus.data.astype("float32")
+                            
+                            
+
+                        else:
+                            print ("this bayer grid not implemented yet")
+
+            
                     # Resizing the array to an appropriate shape for the jpg and the small fits
                     iy, ix = storedsStack.shape
                     if iy == ix:
@@ -1155,33 +1156,63 @@ class Observatory:
                             preserve_range=True,
                         )  #  We should trim chips so ratio is exact.
 
-                    # Code to stretch the image to fit into the 256 levels of grey for a jpeg
-                    stretched_data_float = Stretch().stretch(storedsStack + 1000)
-                    del storedsStack
-                    stretched_256 = 255 * stretched_data_float
-                    hot = np.where(stretched_256 > 255)
-                    cold = np.where(stretched_256 < 0)
-                    stretched_256[hot] = 255
-                    stretched_256[cold] = 0
-                    stretched_data_uint8 = stretched_256.astype("uint8")
-                    hot = np.where(stretched_data_uint8 > 255)
-                    cold = np.where(stretched_data_uint8 < 0)
-                    stretched_data_uint8[hot] = 255
-                    stretched_data_uint8[cold] = 0
-
-                    imsave(
-                        g_dev["cam"].site_path
-                        + "smartstacks/"
-                        + smartStackFilename.replace(
-                            ".npy", "_" + str(ssframenumber) + ".jpg"
-                        ),
-                        stretched_data_uint8,
-                    )
-
-                    imsave(
-                        paths["im_path"] + paths["jpeg_name10"],
-                        stretched_data_uint8,
-                    )
+                    if self.config["camera"][self.name]["settings"]["is_osc"]:
+                        blue_stretched_data_float = Stretch().stretch(hdublue+1000)
+                        del hdublue
+                        green_stretched_data_float = Stretch().stretch(hdugreen+1000)
+                        red_stretched_data_float = Stretch().stretch(hdured+1000)
+                        del hdured
+                        xshape=hdugreen.shape[0]
+                        yshape=hdugreen.shape[1]
+                        del hdugreen
+                        rgbArray=np.zeros((xshape,yshape,3), 'uint8')
+                        rgbArray[..., 0] = red_stretched_data_float*256
+                        rgbArray[..., 1] = green_stretched_data_float*256
+                        rgbArray[..., 2] = blue_stretched_data_float*256
+                        stretched_data_uint8 = Image.fromarray(rgbArray)
+                        del red_stretched_data_float
+                        del blue_stretched_data_float
+                        del green_stretched_data_float
+                        colour_img = Image.fromarray(rgbArray)
+                        ## Resizing the array to an appropriate shape for the jpg and the small fits
+                        iy, ix = colour_img.size
+                        if iy == ix:
+                            colour_img.resize((1280, 1280))
+                        else:
+                            colour_img.resize((int(1536 * iy / ix), 1536))
+                        
+                        colour_img.save(
+                            paths["im_path"] + paths["jpeg_name10"]
+                        )
+                        del colour_img
+                    else:
+                        # Code to stretch the image to fit into the 256 levels of grey for a jpeg
+                        stretched_data_float = Stretch().stretch(storedsStack + 1000)
+                        del storedsStack
+                        stretched_256 = 255 * stretched_data_float
+                        hot = np.where(stretched_256 > 255)
+                        cold = np.where(stretched_256 < 0)
+                        stretched_256[hot] = 255
+                        stretched_256[cold] = 0
+                        stretched_data_uint8 = stretched_256.astype("uint8")
+                        hot = np.where(stretched_data_uint8 > 255)
+                        cold = np.where(stretched_data_uint8 < 0)
+                        stretched_data_uint8[hot] = 255
+                        stretched_data_uint8[cold] = 0
+    
+                        imsave(
+                            g_dev["cam"].site_path
+                            + "smartstacks/"
+                            + smartStackFilename.replace(
+                                ".npy", "_" + str(ssframenumber) + ".jpg"
+                            ),
+                            stretched_data_uint8,
+                        )
+    
+                        imsave(
+                            paths["im_path"] + paths["jpeg_name10"],
+                            stretched_data_uint8,
+                        )
 
                     #g_dev["cam"].enqueue_for_fastAWS(
                     #    100, paths["im_path"], paths["jpeg_name10"]
@@ -1209,24 +1240,12 @@ class Observatory:
 
                     plog(datetime.datetime.now())
 
+                    try:
+                        img.close()
+                        # Just in case
+                    except:
+                        pass
                     del img
-
-
-                    # # Save out a fits for testing purposes only
-                    # firstimage = fits.PrimaryHDU()
-                    # firstimage.scale("float32")
-                    # firstimage.data = np.asarray(storedsStack).astype(np.float32)
-                    # firstimage.header = stackHoldheader
-                    # firstimage.writeto(
-                    #     g_dev["cam"].site_path
-                    #     + "smartstacks/"
-                    #     + smartStackFilename.replace(
-                    #         ".npy", str(ssframenumber) + ".fits"
-                    #     ),
-                    #     overwrite=True,
-                    # )
-                    # del firstimage
-
 
 
                 # Solve for pointing. Note: as the raw and reduced file are already saved and an fz file
@@ -1252,9 +1271,8 @@ class Observatory:
                         minutes=self.config["solve_timer"]
                     ):
 
-                        if smartstackid == "no" and len(sources) > 30:
+                        if smartstackid == "no" and len(sources) > 12:
                             try:
-
 
                                 solve = platesolve.platesolve(
                                     paths["red_path"] + paths["red_name01"], pixscale
@@ -1282,7 +1300,7 @@ class Observatory:
                                 try:
                                     f_err_ha = err_ha*math.cos(math.radians(solved_dec))
                                     plog(
-                                        " *field* error in ra, dec:  (asec) ",
+                                        " *field* error in ra, dec:  (asec) ",      
                                         round(f_err_ha * 15 * 3600, 2),
                                         round(err_dec * 3600, 2),
                                     )  # NB WER changed to apply to err_ha
@@ -1380,4 +1398,4 @@ class Observatory:
 if __name__ == "__main__":
 
     o = Observatory(config.site_name, config.site_config)
-    o.run()
+    o.run()   #This is meant to be a never ending loop.
