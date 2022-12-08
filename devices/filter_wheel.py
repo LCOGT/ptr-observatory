@@ -539,6 +539,7 @@ class FilterWheel:
 
         plog(f"Finding substitute for {requested_filter}...")
         filter_names = self.config["filter_wheel1"]["settings"]["filter_list"]
+        breakpoint()
         available_filters = list(map(lambda x: x.lower(), filter_names))
         plog(
             f"Available Filters: {str(available_filters)} \
