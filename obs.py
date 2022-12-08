@@ -30,24 +30,8 @@ import numpy as np
 import redis  # Client, can work with Memurai
 
 import requests
-# from requests.adapters import HTTPAdapter
-# from requests.packages.urllib3.util.retry import Retry
-# retry_strategy = Retry(
-#     total=10, backoff_factor=0.1
-# )
-# adapter = HTTPAdapter(max_retries=retry_strategy)
-# requests = requests.Session()
 
-# import colour
-
-    
-# from colour_demosaicing import (
-#     demosaicing_CFA_Bayer_bilinear,
-#     demosaicing_CFA_Bayer_Malvar2004,
-#     demosaicing_CFA_Bayer_Menon2007,
-#     mosaicing_CFA_Bayer)
-
-import sep
+#import sep
 from skimage.io import imsave
 from skimage.transform import resize
 import func_timeout

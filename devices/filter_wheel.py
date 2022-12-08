@@ -31,9 +31,7 @@ class FilterWheel:
             self.null_filterwheel = False
             self.dual_filter = self.config["filter_wheel1"]["dual_wheel"]
             self.ip = str(self.config["filter_wheel1"]["ip_string"])
-            self.filter_data = self.config["filter_wheel1"]["settings"]["filter_data"][
-                1:
-            ]  # Strips off column heading entry
+            self.filter_data = self.config["filter_wheel1"]["settings"]["filter_data"]
             self.filter_screen_sort = self.config["filter_wheel1"]["settings"][
                 "filter_screen_sort"
             ]
@@ -411,7 +409,6 @@ class FilterWheel:
                 break
 
 
-
         # If filter was not identified, find a substitute filter
         if filter_identified == 0:
             plog(
@@ -538,8 +535,11 @@ class FilterWheel:
         """
 
         plog(f"Finding substitute for {requested_filter}...")
-        filter_names = self.config["filter_wheel1"]["settings"]["filter_list"]
-        breakpoint()
+
+        
+        filter_names=[]
+        for ctr in range(len(self.config["filter_wheel1"]["settings"]['filter_data'])):
+            filter_names.append((self.config["filter_wheel1"]["settings"]['filter_data'][ctr][0]))
         available_filters = list(map(lambda x: x.lower(), filter_names))
         plog(
             f"Available Filters: {str(available_filters)} \
