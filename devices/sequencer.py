@@ -1351,7 +1351,7 @@ class Sequencer:
 
         self.sky_guard = True   #20220409 I think this is obsolete or unused.
         plog('Sky Flat sequence Starting, Enclosure PRESUMED Open. Telescope should be on sky flat spot.')
-
+        self.next_flat_observe = time.time()
         g_dev['obs'].send_to_user('Sky Flat sequence Starting, Enclosure PRESUMED Open. Telescope should be on sky flat spot.', p_level='INFO')
         evening = not morn
         camera_name = str(self.config['camera']['camera_1_1']['name'])
@@ -1385,187 +1385,199 @@ class Sequencer:
             
         if morn:            
             ending = g_dev['events']['End Morn Sky Flats']
-            min_exposure=120
+            min_exposure=100 * min_exposure
         else:            
             ending = g_dev['events']['End Eve Sky Flats']
         #length = len(pop_list)
         obs_win_begin, sunset, sunrise, ephem_now = self.astro_events.getSunEvents()
         exp_time = 0
         scale = 1.0
-        prior_scale = 1   #THIS will be inhereted upon completion of the prior filter
+        #prior_scale = 1   #THIS will be inhereted upon completion of the prior filter
         collecting_area = self.config['telescope']['telescope1']['collecting_area']/31808.   # SAF at F4.9 is the reference
         #   and (g_dev['events']['Eve Sky Flats'] <
 
         while len(pop_list) > 0  and ephem.now() < ending:
-
-            if g_dev["fil"].null_filterwheel == False:
-                current_filter = int(pop_list[0])                
-                g_dev['fil'].set_number_command(current_filter)  #  20220825  NB NB NB Change this to using a list of filter names.
             
-            acquired_count = 0
-            #g_dev['mnt'].slewToSkyFlatAsync()
-            target_flat = 0.5 * g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"]
-
-            # if not g_dev['enc'].status['shutter_status'] in ['Open', 'open']:
-            #     g_dev['obs'].send_to_user("Wait for roof to be open to take skyflats. 60 sec delay loop.", p_level='INFO')
-            #     time.sleep(60)
-            #     g_dev['obs'].update_status()
-            #     continue
-            while (acquired_count < flat_count):# and g_dev['enc'].status['shutter_status'] in ['Open', 'open']: # NB NB NB and roof is OPEN! and (ephem_now +3/1440) < g_dev['events']['End Eve Sky Flats' ]:
-                #if g_dev['enc'].is_dome:   #Does not apply
-                
-                if time.time() >= self.time_of_next_slew:
-                    g_dev['mnt'].slewToSkyFlatAsync()  #FRequently do this to dither.
-                    self.time_of_next_slew = time.time() + 120 # But not everytime you check exposure times!
-                    # This slew timer gets reset each exposure, so it will move each flat image
-                g_dev['obs'].update_status()
-
-                try:
-                    try:
-                        sky_lux = eval(self.redis_server.get('ocn_status'))['calc_HSI_lux']     #Why Eval, whould have float?
-                    except:
-                        #plog("Redis not running. lux set to 1000.")
-                        sky_lux = float(g_dev['ocn'].status['calc_HSI_lux'])
-                except:
-                    sky_lux = None
-
-                    # MF SHIFTING EXPOSURE TIME CALCULATOR EQUATION TO BE MORE GENERAL FOR ALL TELESCOPES
-                if sky_lux != None:
-                    exp_time = prior_scale*scale*target_flat/(collecting_area*sky_lux*float(g_dev['fil'].filter_data[current_filter][3]))  #g_dev['ocn'].calc_HSI_lux)  #meas_sky_lux)
-                    plog('Exposure time:  ', exp_time, scale, prior_scale, sky_lux, float(g_dev['fil'].filter_data[current_filter][3]))
-
-                else:                    
-                    #exp_time = prior_scale*scale*target_flat
-                    exp_time = prior_scale*scale*min_exposure
-                    plog('Exposure time:  ', exp_time, scale, prior_scale)
-
-    
-                
-                if evening and exp_time > 120:
-                     #exp_time = 60    #Live with this limit.  Basically started too late
-                     plog('Break because proposed evening exposure > 180 seconds:  ', exp_time)
-                     g_dev['obs'].send_to_user('Try next filter because proposed  flat exposure > 180 seconds.', p_level='INFO')
-                     pop_list.pop(0)
-                     break
-                if morn and exp_time < min_exposure:
-                     #exp_time = 60    #Live with this limit.  Basically started too late
-                     plog('Break because proposed evening exposure > 180 seconds:  ', exp_time)
-                     g_dev['obs'].send_to_user('Try next filter because proposed  flat exposure < min_exposure.', p_level='INFO')
-                     pop_list.pop(0)
-                     break
-                if evening and exp_time < min_exposure:   #NB it is too bright, should consider a delay here.
-                 #**************THIS SHOUD BE A WHILE LOOP! WAITING FOR THE SKY TO GET DARK AND EXP TIME TO BE LONGER********************
-                     plog("Too bright, wating 180 seconds.")
-                     g_dev['obs'].send_to_user('Delay 180 seconds to let it get darker.', p_level='INFO')
-                     time.sleep(180)
-                if morn and exp_time > 120 :   #NB it is too bright, should consider a delay here.
-                  #**************THIS SHOUD BE A WHILE LOOP! WAITING FOR THE SKY TO GET DARK AND EXP TIME TO BE LONGER********************
-                     plog("Too dim, wating 180 seconds.")
-                     g_dev['obs'].send_to_user('Delay 180 seconds to let it get lighterer.', p_level='INFO')
-                     time.sleep(180)
-                     #*****************NB Recompute exposure or otherwise wait
-                     exp_time = min_exposure
-                exp_time = round(exp_time, 5)
-                # prior_scale = prior_scale*scale  #Only update prior scale when changing filters
-                plog("Sky flat estimated exposure time, scale are:  ", exp_time, scale)               
-                                
-                req = {'time': float(exp_time),  'alias': camera_name, 'image_type': 'sky flat', 'script': 'On'}
-                
-                
-                # FIRST, lets get the highest resolution flat
-
                 if g_dev["fil"].null_filterwheel == False:
-                    opt = { 'count': 1, 'bin':  bin_spec[0], 'area': 150, 'filter': g_dev['fil'].filter_data[current_filter][0]}   #nb nb nb BIN CHNAGED FROM 2,2 ON 20220618 wer
-                    plog("using:  ", g_dev['fil'].filter_data[current_filter][0])
-                else:
-                    opt = { 'count': 1, 'bin':  bin_spec[0], 'area': 150}   
+                    current_filter = int(pop_list[0])                
+                    g_dev['fil'].set_number_command(current_filter)  #  20220825  NB NB NB Change this to using a list of filter names.
                 
-                if ephem.now() >= ending:
-                    if morn: # This needs to be here because some scopes do not do morning bias and darks
+                acquired_count = 0
+                #g_dev['mnt'].slewToSkyFlatAsync()
+                target_flat = 0.5 * g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"]
+                # if not g_dev['enc'].status['shutter_status'] in ['Open', 'open']:
+                #     g_dev['obs'].send_to_user("Wait for roof to be open to take skyflats. 60 sec delay loop.", p_level='INFO')
+                #     time.sleep(60)
+                #     g_dev['obs'].update_status()
+                #     continue
+                scale = 1
+                self.estimated_first_flat_exposure = False
+                while (acquired_count < flat_count):# and g_dev['enc'].status['shutter_status'] in ['Open', 'open']: # NB NB NB and roof is OPEN! and (ephem_now +3/1440) < g_dev['events']['End Eve Sky Flats' ]:
+                    #if g_dev['enc'].is_dome:   #Does not apply
+                    if self.next_flat_observe < time.time():                
+                        if time.time() >= self.time_of_next_slew:
+                            g_dev['mnt'].slewToSkyFlatAsync()  #FRequently do this to dither.
+                            self.time_of_next_slew = time.time() + 120 # But not everytime you check exposure times!
+                            # This slew timer gets reset each exposure, so it will move each flat image
+                        g_dev['obs'].update_status()
+                            
                         try:
-                            g_dev['mnt'].park_command({}, {})
+                            try:
+                                sky_lux = eval(self.redis_server.get('ocn_status'))['calc_HSI_lux']     #Why Eval, whould have float?
+                            except:
+                                #plog("Redis not running. lux set to 1000.")
+                                sky_lux = float(g_dev['ocn'].status['calc_HSI_lux'])
                         except:
-                            plog("Mount did not park at end of morning skyflats.")
-                    return
-                try:
-                    self.time_of_next_slew = time.time()
-                    fred = g_dev['cam'].expose_command(req, opt, no_AWS=True, do_sep = False)
-
-                    bright = fred['patch']    #  Patch should be circular and 20% of Chip area. ToDo project
-                    plog('Returned:  ', bright)
-                    
-                    if (bright > 0.25 * g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"] and
-                        bright < 0.75 * g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"]):
-                        if len(bin_spec) > 1:
-                            print ("Good range for a flat, firing off the other flat types")
+                            sky_lux = None
+        
+                        # MF SHIFTING EXPOSURE TIME CALCULATOR EQUATION TO BE MORE GENERAL FOR ALL TELESCOPES
+                        # This bit here estimates the initial exposure time for a telescope given the skylux
+                        # or given no skylux at all!
+                        if self.estimated_first_flat_exposure == False:
+                            self.estimated_first_flat_exposure = True
+                            if sky_lux != None:
+                                exp_time = target_flat/(collecting_area*sky_lux*float(g_dev['fil'].filter_data[current_filter][3]))  #g_dev['ocn'].calc_HSI_lux)  #meas_sky_lux)
+                                plog('Exposure time:  ', exp_time, scale, sky_lux, float(g_dev['fil'].filter_data[current_filter][3]))
+            
+                            else:                    
+                                #exp_time = prior_scale*scale*target_flat
+                                exp_time = scale*min_exposure
+                                plog('Exposure time:  ', exp_time, scale)
+                        else:
+                            exp_time = scale * exp_time
+            
+            
+                        
+                        if evening and exp_time > 120:
+                             #exp_time = 60    #Live with this limit.  Basically started too late
+                             plog('Break because proposed evening exposure > 180 seconds:  ', exp_time)
+                             g_dev['obs'].send_to_user('Try next filter because proposed  flat exposure > 180 seconds.', p_level='INFO')
+                             pop_list.pop(0)
+                             acquired_count = flat_count + 1 # trigger end of loop
+                             #break
+                        elif morn and exp_time < min_exposure:
+                             #exp_time = 60    #Live with this limit.  Basically started too late
+                             plog('Break because proposed morning exposure < minimum exposure time:  ', exp_time)
+                             g_dev['obs'].send_to_user('Try next filter because proposed  flat exposure < min_exposure.', p_level='INFO')
+                             pop_list.pop(0)
+                             min_exposure=min_exposure = float(self.config['camera']['camera_1_1']['settings']['min_exposure'])
+                             acquired_count = flat_count + 1 # trigger end of loop
+                             #break
+                        elif evening and exp_time < min_exposure:   #NB it is too bright, should consider a delay here.
+                         #**************THIS SHOUD BE A WHILE LOOP! WAITING FOR THE SKY TO GET DARK AND EXP TIME TO BE LONGER********************
+                             plog("Too bright, wating 180 seconds.")
+                             g_dev['obs'].send_to_user('Delay 180 seconds to let it get darker.', p_level='INFO')
+                             self.next_flat_observe = time.time() + 180
+                        elif morn and exp_time > 120 :   #NB it is too bright, should consider a delay here.
+                          #**************THIS SHOUD BE A WHILE LOOP! WAITING FOR THE SKY TO GET DARK AND EXP TIME TO BE LONGER********************
+                             plog("Too dim, wating 180 seconds.")
+                             g_dev['obs'].send_to_user('Delay 180 seconds to let it get lighterer.', p_level='INFO')
+                             self.next_flat_observe = time.time() + 180
+                             #*****************NB Recompute exposure or otherwise wait
+                             exp_time = min_exposure
+                        else:
+                            exp_time = round(exp_time, 5)
+                            # prior_scale = prior_scale*scale  #Only update prior scale when changing filters
+                            plog("Sky flat estimated exposure time, scale are:  ", exp_time, scale)               
+                                            
+                            req = {'time': float(exp_time),  'alias': camera_name, 'image_type': 'sky flat', 'script': 'On'}
+                            
+                            
+                            # FIRST, lets get the highest resolution flat
+            
                             if g_dev["fil"].null_filterwheel == False:
-                                opt = { 'count': 1, 'bin':  bin_spec[1], 'area': 150, 'filter': g_dev['fil'].filter_data[current_filter][0]}   #nb nb nb BIN CHNAGED FROM 2,2 ON 20220618 wer
+                                opt = { 'count': 1, 'bin':  bin_spec[0], 'area': 150, 'filter': g_dev['fil'].filter_data[current_filter][0]}   #nb nb nb BIN CHNAGED FROM 2,2 ON 20220618 wer
                                 plog("using:  ", g_dev['fil'].filter_data[current_filter][0])
                             else:
-                                opt = { 'count': 1, 'bin':  bin_spec[1], 'area': 150}
+                                opt = { 'count': 1, 'bin':  bin_spec[0], 'area': 150}   
                             
-                            ored = g_dev['cam'].expose_command(req, opt, no_AWS=True, do_sep = False)
-
-                            obright = ored['patch']    #  Patch should be circular and 20% of Chip area. ToDo project
-                            plog('Returned:  ', obright)
-                    
-                except Exception as e:
-                    plog('Failed to get a flat image: ', e)
-                    plog(traceback.format_exc())
-                    plog("*****NO result returned*****  Will need to restart Camera")  #NB NB  NB this is drastic action needed.
-                    g_dev['obs'].update_status()
-                    continue
-                g_dev['obs'].update_status()
-                try:
-
-                    scale *= target_flat / bright           #Note we are scaling the scale
-                    plog("New scale is:  ", scale)
-                    if scale > 5000:
-                        scale = 5000
-                    if scale < 0.01:
-                        scale = 0.01
-                except:
-                    scale = 1.0
-
-                if 'sky_lux' not in locals():
-                    sky_lux=1000
-                plog ("sky lux: " + str(sky_lux))
-
-                if g_dev["fil"].null_filterwheel == False:
-                    if sky_lux != None:
-                        plog('\n\n', "Patch/Bright:  ", bright, g_dev['fil'].filter_data[current_filter][0], \
-                              'New Gain value: ', round(bright/(sky_lux*collecting_area*exp_time), 3), '\n\n')
-                    else:
-                        plog('\n\n', "Patch/Bright:  ", bright, g_dev['fil'].filter_data[current_filter][0], \
-                              'New Gain value: ', round(bright/(collecting_area*exp_time), 3), '\n\n')
-                else:
-                    if sky_lux != None:
-                        plog('\n\n', "Patch/Bright:  ", bright, \
-
-                             'New Gain value: ', round(bright/(sky_lux*collecting_area*exp_time), 3), '\n\n')
-                    else:
-                        plog('\n\n', "Patch/Bright:  ", bright,  \
-                              'New Gain value: ', round(bright/(collecting_area*exp_time), 3), '\n\n')
-
-
-                obs_win_begin, sunset, sunrise, ephem_now = self.astro_events.getSunEvents()
-                #  THE following code looks like a debug patch gone rogue.
-
-                if bright > 0.85 * g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"]  and (ephem.now() < ending):    #NB should gate with end of skyflat window as well.
-                    for i in range(1):
-                        time.sleep(2)  #  #0 seconds of wait time.  Maybe shorten for wide bands?
-                        g_dev['obs'].update_status()
-                else:
-                    acquired_count += 1
-                    if acquired_count == flat_count:
-                        pop_list.pop(0)
-                        plog("SCALE USED *************************:  ", scale)
-                        prior_scale = scale     #Here is where we pre-scale the next filter. TEMPORARILLY TAKE THIS OUT
-                        scale = 1
-
-                obs_win_begin, sunset, sunrise, ephem_now = self.astro_events.getSunEvents()
-                g_dev['obs'].update_status()
-                continue
+                            if ephem.now() >= ending:
+                                if morn: # This needs to be here because some scopes do not do morning bias and darks
+                                    try:
+                                        g_dev['mnt'].park_command({}, {})
+                                    except:
+                                        plog("Mount did not park at end of morning skyflats.")
+                                return
+                            try:
+                                self.time_of_next_slew = time.time()
+                                fred = g_dev['cam'].expose_command(req, opt, no_AWS=True, do_sep = False)
+            
+                                bright = fred['patch']    #  Patch should be circular and 20% of Chip area. ToDo project
+                                plog('Returned:  ', bright)
+                                
+                                if (bright > 0.25 * g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"] and
+                                    bright < 0.75 * g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"]):
+                                    if len(bin_spec) > 1:
+                                        print ("Good range for a flat, firing off the other flat types")
+                                        if g_dev["fil"].null_filterwheel == False:
+                                            opt = { 'count': 1, 'bin':  bin_spec[1], 'area': 150, 'filter': g_dev['fil'].filter_data[current_filter][0]}   #nb nb nb BIN CHNAGED FROM 2,2 ON 20220618 wer
+                                            plog("using:  ", g_dev['fil'].filter_data[current_filter][0])
+                                        else:
+                                            opt = { 'count': 1, 'bin':  bin_spec[1], 'area': 150}
+                                        
+                                        ored = g_dev['cam'].expose_command(req, opt, no_AWS=True, do_sep = False)
+            
+                                        obright = ored['patch']    #  Patch should be circular and 20% of Chip area. ToDo project
+                                        plog('Returned:  ', obright)
+                                
+                            except Exception as e:
+                                plog('Failed to get a flat image: ', e)
+                                plog(traceback.format_exc())
+                                plog("*****NO result returned*****  Will need to restart Camera")  #NB NB  NB this is drastic action needed.
+                                g_dev['obs'].update_status()
+                                continue
+                            g_dev['obs'].update_status()
+                            try:
+            
+                                #scale *= target_flat / bright           #Note we are scaling the scale
+                                scale = target_flat / bright
+                                plog("New scale is:  ", scale)
+                                #if scale > 5000:
+                                #    scale = 5000
+                                #if scale < 0.01:
+                                #    scale = 0.01
+                            except:
+                                scale = 1.0
+            
+                            #if 'sky_lux' not in locals():
+                            #    sky_lux=1000
+                            #plog ("sky lux: " + str(sky_lux))
+            
+                            if g_dev["fil"].null_filterwheel == False:
+                                if sky_lux != None:
+                                    plog('\n\n', "Patch/Bright:  ", bright, g_dev['fil'].filter_data[current_filter][0], \
+                                          'New Gain value: ', round(bright/(sky_lux*collecting_area*exp_time), 3), '\n\n')
+                                else:
+                                    plog('\n\n', "Patch/Bright:  ", bright, g_dev['fil'].filter_data[current_filter][0], \
+                                          'New Gain value: ', round(bright/(collecting_area*exp_time), 3), '\n\n')
+                            else:
+                                if sky_lux != None:
+                                    plog('\n\n', "Patch/Bright:  ", bright, \
+            
+                                         'New Gain value: ', round(bright/(sky_lux*collecting_area*exp_time), 3), '\n\n')
+                                else:
+                                    plog('\n\n', "Patch/Bright:  ", bright,  \
+                                          'New Gain value: ', round(bright/(collecting_area*exp_time), 3), '\n\n')
+            
+            
+                            #obs_win_begin, sunset, sunrise, ephem_now = self.astro_events.getSunEvents()
+                            #  THE following code looks like a debug patch gone rogue.
+            
+                            #if bright > 0.85 * g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"]  and (ephem.now() < ending):    #NB should gate with end of skyflat window as well.
+                            ##    for i in range(1):
+                             #       time.sleep(2)  #  #0 seconds of wait time.  Maybe shorten for wide bands?
+                            #        g_dev['obs'].update_status()
+                            #else:
+                            acquired_count += 1
+                            if acquired_count == flat_count:
+                                pop_list.pop(0)
+                                plog("SCALE USED *************************:  ", scale)
+                                #prior_scale = scale     #Here is where we pre-scale the next filter. TEMPORARILLY TAKE THIS OUT
+                                scale = 1
+            
+                            #obs_win_begin, sunset, sunrise, ephem_now = self.astro_events.getSunEvents()
+                            #g_dev['obs'].update_status()
+                            continue
         if morn is False:
             g_dev['mnt'].tracking = False   #  park_command({}, {})  #  NB this is provisional, Ok when simulating
             self.eve_sky_flat_latch = False

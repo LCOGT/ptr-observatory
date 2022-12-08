@@ -495,13 +495,13 @@ class FilterWheel:
             #TSXSend("ccdsoftCamera.TemperatureSetPoint = -10")
             #TSXSend("ccdsoftCamera.RegulateTemperature = true")
             # self.filter.FilterIndexZeroBased <---- prints number of current filter
-            print ("Before Filter")            
-            print (self.filter.FilterIndexZeroBased)
-            print ("Requesto Filter")
-            print (self.filter_number)
+            #print ("Before Filter")            
+            #print (self.filter.FilterIndexZeroBased)
+            #print ("Requesto Filter")
+            #print (self.filter_number)
             self.filter.FilterIndexZeroBased = self.filter_number
-            print ("After Filter")
-            print (self.filter.FilterIndexZeroBased)
+            #print ("After Filter")
+            #print (self.filter.FilterIndexZeroBased)
             #breakpoint()
         else:
             try:

@@ -433,7 +433,7 @@ site_config = {
                 'filter_screen_sort':  [1, 4, 3, 2, 6, 5, 7],   #  don't use narrow yet,  8, 10, 9], useless to try.
 
 
-                'filter_sky_sort': [6, 4, 5, 1, 2, 3,  0]    #No diffuser based filters
+                'filter_sky_sort': [7, 6, 5, 2, 3, 4,  0]    #No diffuser based filters
                 #'filter_sky_sort': [7, 19, 2, 13, 18, 5, 15,\
                 #                    12, 4, 11, 16, 10, 9, 17, 3, 14, 1, 0]    #basically no diffuser based filters
                 #[32, 8, 22, 21, 20, 23, 31, 6, 7, 19, 27, 2, 37, 13, 18, 30, 5, 15, 36, 12,\
@@ -525,7 +525,7 @@ site_config = {
                 'north_offset': 0.0,    #  These three are normally 0.0 for the primary telescope
                 'east_offset': 0.0,     #  Not sure why these three are even here.
                 'rotation': 0.0,        #  Probably remove.
-                'min_exposure': 0.2,
+                'min_exposure': 1,
                 'max_exposure': 3600,
                 'can_subframe':  True,
                 'min_subframe':  [128, 128],

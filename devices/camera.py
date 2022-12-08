@@ -1453,7 +1453,7 @@ class Camera:
 
 
 
-        print ("Smart Stack ID: " + smartstackid)
+        #print ("Smart Stack ID: " + smartstackid)
         g_dev["obs"].send_to_user(
             "Starting Exposure: "
             + str(exposure_time)
@@ -2574,7 +2574,7 @@ class Camera:
                         # This is best done by taking the two "real" g pixels and interpolating in-between 
                         
                         if self.config["camera"][self.name]["settings"]["is_osc"]:
-                            print ("interpolating bayer grid for focusing purposes.")
+                            #print ("interpolating bayer grid for focusing purposes.")
                             if self.config["camera"][self.name]["settings"]["osc_bayer"] == 'RGGB':
                                 
                                 # Only separate colours if needed for colour jpeg
