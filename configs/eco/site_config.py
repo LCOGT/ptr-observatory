@@ -406,11 +406,11 @@ site_config = {
             "default_flat_exposure" : 1.0,
             'settings': {
                 'filter_count': 11,   #  This must be correct as to the number of filters
-                'home_filter':  0,
+                'home_filter':  4,
                 'default_filter': "pr",
-                'filter_list': ['focus','pr','pg','pb','ha','o3','s2', 'air'], # A list of actual physical filters for the substitution function
-                'filter_reference': 0,   #  We choose to use W as the default filter.  Gains taken at F9, Ceravolo 300mm
-                'filter_data': [['filter', 'filter_index', 'filter_offset', 'sky_gain', 'screen_gain', 'alias'],  #NB NB NB add cwl & bw in nm.
+                'filter_reference': 4,   #  We choose to use W as the default filter.  Gains taken at F9, Ceravolo 300mm
+                # Columns for filter data are : ['filter', 'filter_index', 'filter_offset', 'sky_gain', 'screen_gain', 'alias']
+                'filter_data': [  
 
                         #['w',     [0,  0],     0, 72.7, [1.00 ,  72], 'PL'],    #0.   For sequencer autofocus  consider foc or f filter
                         ['focus', [3,  3],     0, 72.7, [1.00 ,  72], 'focus'],    #0.

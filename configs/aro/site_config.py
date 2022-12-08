@@ -420,10 +420,9 @@ site_config = {
                 'filter_count': 43,
                 'home_filter':  1,
                 'default_filter': "w",
-                'filter_list': ['PL','PR','PG','PB','HA','O3','S2', 'N2', 'NIR', 'up','gp', 'rp','ip','z','zp','y','EXO','JB','JV','Rc','Ic', 'air','w'], # A list of actual physical filters for the substitution function
                 'filter_reference': 1,   # We choose to use W as the default filter.  Gains taken at F9, Ceravolo 300mm
-                'filter_data': [['filter', 'filter_index', 'filter_offset', 'sky_gain', 'screen_gain', 'generic'],
-
+                # Columns for filter data are : ['filter', 'filter_index', 'filter_offset', 'sky_gain', 'screen_gain', 'alias']
+                'filter_data': [
                         ['air',  [0,  0], -800, 81.6, [2   ,  20], 'ai'],    # 0.  Gains 20211020 Clear NE sky
                         ['focus',[7,  0],    0, 72.8, [360 , 170], 'w '],    # 1.
                         ['Lum',  [7,  0],    0, 72.8, [360 , 170], 'w '],    # 2.

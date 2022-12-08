@@ -485,7 +485,7 @@ site_config = {
                 'default_filter':  'w',
                 'filter_reference': 2,
 
-                'filter_list': ['PL','PR','PG','PB','HA','O3','S2', 'air','dif','w','CR','N2','up','gp','rp','ip','z', 'difup','difgp','difrp','difip','dark'], # A list of actual physical filters for the substitution function
+                # Columns for filter data are : ['filter', 'filter_index', 'filter_offset', 'sky_gain', 'screen_gain', 'alias']
                 'filter_data': [['air',     [0, 0], -1000,  118.6, [2, 17], 'ai'], #  0
                                 ['dif',     [4, 0],     0,  104.8, [2, 17], 'df'], #  1
                                 ['w',       [2, 0],     0,  133.7, [2, 17], 'w '], #  2

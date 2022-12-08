@@ -500,7 +500,7 @@ site_config = {
                 'home_filter': 1,
                 'filter_reference': 1,
                 'default_filter':  'w',
-                'filter_data': [['filter', 'filter_index', 'filter_offset', 'sky_gain', 'screen_gain', 'abbreviation'],
+                'filter_data': [
                                 ['air',     [0, 0], -1000, 0.01, [2, 17], 'ai'],   # 0
                                 ['Lum',     [1, 0],     0, 0.01, [2, 17], 'w '],   # 20
                                 ['Red',     [0, 4],     0, 0.01, [2, 17], 'r '],  # 21                                ['JV (Grn)',      [0, 3],     0, 0.01, [2, 17], 'V '],   # 9
