@@ -1455,7 +1455,7 @@ class Sequencer:
                         else:
                             exp_time = scale * exp_time
             
-            
+                        
                         # Here it makes four tests and if it doesn't match those tests, then it will attempt a flat. 
                         if evening and exp_time > 120:
                              #exp_time = 60    #Live with this limit.  Basically started too late
@@ -1474,12 +1474,12 @@ class Sequencer:
                              #break
                         elif evening and exp_time < min_exposure:   #NB it is too bright, should consider a delay here.
                          #**************THIS SHOUD BE A WHILE LOOP! WAITING FOR THE SKY TO GET DARK AND EXP TIME TO BE LONGER********************
-                             plog("Too bright, wating 180 seconds.")
+                             plog("Too bright, wating 180 seconds. Estimated Exposure time is " + str(exp_time))
                              g_dev['obs'].send_to_user('Delay 180 seconds to let it get darker.', p_level='INFO')
                              self.next_flat_observe = time.time() + 180
                         elif morn and exp_time > 120 :   #NB it is too bright, should consider a delay here.
                           #**************THIS SHOUD BE A WHILE LOOP! WAITING FOR THE SKY TO GET DARK AND EXP TIME TO BE LONGER********************
-                             plog("Too dim, wating 180 seconds.")
+                             plog("Too dim, wating 180 seconds. Estimated Exposure time is " + str(exp_time))
                              g_dev['obs'].send_to_user('Delay 180 seconds to let it get lighterer.', p_level='INFO')
                              self.next_flat_observe = time.time() + 180
                              #*****************NB Recompute exposure or otherwise wait
