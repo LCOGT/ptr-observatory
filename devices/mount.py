@@ -420,7 +420,10 @@ class Mount:
                 'message': self.mount_message[:32]
             }
         elif self.tel == True:
-            self.current_sidereal = self.mount.SiderealTime
+            try:
+                self.current_sidereal = self.mount.SiderealTime
+            except:
+                print ("Mount didn't accept request for sidereal time. Need to make a calculation for this.")
             icrs_ra, icrs_dec = self.get_mount_coordinates()  #20210430  Looks like thie faulted during a slew.
             if self.seek_commanded:
                 #plog('In Status:  ', self.prior_roll_rate, self.prior_pitch_rate)
