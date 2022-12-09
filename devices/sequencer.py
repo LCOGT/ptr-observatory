@@ -1527,7 +1527,9 @@ class Sequencer:
                                         print ("Good range for a flat, firing off the other flat types")
                                         for ctr in range (len(bin_spec)-1):
                                             if g_dev["fil"].null_filterwheel == False:
+                                                
                                                 opt = { 'count': 1, 'bin':  bin_spec[ctr+1], 'area': 150, 'filter': g_dev['fil'].filter_data[current_filter][0]}   #nb nb nb BIN CHNAGED FROM 2,2 ON 20220618 wer
+                                                plog (opt)
                                                 plog("using:  ", g_dev['fil'].filter_data[current_filter][0])
                                             else:
                                                 opt = { 'count': 1, 'bin':  bin_spec[ctr+1], 'area': 150}

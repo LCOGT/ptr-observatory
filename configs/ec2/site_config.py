@@ -187,7 +187,7 @@ site_config = {
             'eve_screen_flat_dur': 1.0,   #  hours Duration, prior to next.
             'operations_begin':  -1.0,   #  - hours from Sunset
             'eve_cooldown_offset': -.99,   #  - hours beforeSunset
-            'eve_sky_flat_offset':  0.5,   #  - hours beforeSunset
+            'eve_sky_flat_offset':  0.25,   #  - hours beforeSunset
             'morn_sky_flat_offset':  0.4,   #  + hours after Sunrise
             'morning_close_offset':  0.41,   #  + hours after Sunrise
             'operations_end':  0.42,
@@ -437,7 +437,7 @@ site_config = {
             "parent": "telescope1",
             "name": "RGGB" ,  # When there is no filter wheel, the filter will be named this.
             'service_date': '20180101',
-            'flat_sky_gain' : 500,
+            'flat_sky_gain' : 1200,
             "driver":   None,   #"LCO.dual",  #  'ASCOM.FLI.FilterWheel',
             #"driver":   "Maxim.Image",   #"LCO.dual",  #  'ASCOM.FLI.FilterWheel',
             'ip_string': None,
@@ -562,7 +562,7 @@ site_config = {
                 'areas_implemented': ["Full",'4x4d', "600%", "500%", "450%", "300%", "220%", "150%", "133%", "Full", "Sqr", '71%', '50%',  '35%', '25%', '12%'],
                 'default_area':  "Full",
                 'default_rotation': 0.0000,
-                'flat_bin_spec': '1,1',    #Default binning for flats
+                'flat_bin_spec': ['1,1'],    #Default binning for flats
                 'has_darkslide':  False,
                 'darkslide_com':  None,
                 

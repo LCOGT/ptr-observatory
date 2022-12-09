@@ -419,7 +419,7 @@ site_config = {
                         ['dark',    [1,  1],     0, 170, [1.00 , 119], 'PhRed'],    #2.
                         ['pb',    [2,  2],     0, 220, [1.00 , 113], 'PhGreen'],    #3.
                         ['pg',    [3,  3],     0, 300, [0.80 ,  97], 'PhBlue'],    #4.
-                        ['pr',    [4,  4],     0, 300, [0.80 ,  97], 'PhBlue'],    #4.
+                        ['pr',    [4,  4],     0, 32, [0.80 ,  97], 'PhBlue'],    #4.
                         #['PR',    [1,  1],     0, 170, [1.00 , 119], 'PhBlue'],    #2.
                         #['PG',    [2,  2],     0, 220, [1.00 , 113], 'PhGreen'],    #3.
                         #['PB',    [3,  3],     0, 300, [0.80 ,  97], 'PhRed'],    #4.
@@ -434,7 +434,7 @@ site_config = {
                 'filter_screen_sort':  [1, 4, 3, 2, 6, 5, 7],   #  don't use narrow yet,  8, 10, 9], useless to try.
 
 
-                'filter_sky_sort': [7, 6, 5, 2, 3, 4,  0]    #No diffuser based filters
+                'filter_sky_sort': [8, 7, 6, 3, 4, 5,  1]    #No diffuser based filters
                 #'filter_sky_sort': [7, 19, 2, 13, 18, 5, 15,\
                 #                    12, 4, 11, 16, 10, 9, 17, 3, 14, 1, 0]    #basically no diffuser based filters
                 #[32, 8, 22, 21, 20, 23, 31, 6, 7, 19, 27, 2, 37, 13, 18, 30, 5, 15, 36, 12,\
