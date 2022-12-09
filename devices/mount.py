@@ -131,13 +131,14 @@ def ra_fix_h(ra):
     return ra
 
 def wait_for_slew():
-    try:                
-        while g_dev['mnt'].mount.Slewing: #or g_dev['enc'].status['dome_slewing']:   #Filter is moving??
-            if g_dev['mnt'].mount.Slewing: plog( 'm>')
-            #if g_dev['enc'].status['dome_slewing']: st += 'd>'
-
-            time.sleep(0.2)
-            g_dev['obs'].update_status()            
+    try:
+        if not g_dev['mnt'].mount.AtPark:              
+            while g_dev['mnt'].mount.Slewing: #or g_dev['enc'].status['dome_slewing']:   #Filter is moving??
+                if g_dev['mnt'].mount.Slewing: plog( 'm>')
+                #if g_dev['enc'].status['dome_slewing']: st += 'd>'
+    
+                time.sleep(0.2)
+                g_dev['obs'].update_status()            
             
     except:
         plog("Motion check faulted.")
