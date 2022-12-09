@@ -1110,12 +1110,14 @@ class Mount:
     def unpark_command(self, req=None, opt=None):
         ''' unpark the telescope mount '''
         if self.mount.CanPark:
-            plog("mount cmd: unparking mount")
-            self.mount.Unpark()
-            wait_for_slew()
-        if self.home_after_unpark:
-            self.mount.FindHome()
-            wait_for_slew()
+            if g_dev['mnt'].mount.AtPark:
+                plog("mount cmd: unparking mount")
+            
+                self.mount.Unpark()
+                wait_for_slew()
+            if self.home_after_unpark:
+                self.mount.FindHome()
+                wait_for_slew()
 
     def paddle(self):
         return
