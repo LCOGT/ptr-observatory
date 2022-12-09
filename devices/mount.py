@@ -194,7 +194,10 @@ class Mount:
         
         self.object = "Unspecified"
         try:
-            self.current_sidereal = self.mount.SiderealTime
+            #self.current_sidereal = self.mount.SiderealTime
+            # Replaced mount call above with much faster more accurate astropy calculation below
+            self.current_sidereal = float((Time(datetime.datetime.utcnow(), scale='utc', location=g_dev['mnt'].site_coordinates).sidereal_time('apparent')*u.deg) / u.deg / u.hourangle)
+            
         except:
             print ("Failed to get the current sidereal time from the mount.")
         self.current_icrs_ra = "Unspecified_Ra"
@@ -225,10 +228,10 @@ class Mount:
         plog(self.mount.Description)
         self.ra_offset = 0.0
         self.dec_offset = 0.0   #NB these should always start off at zero.
-        if not self.mount.AtPark or self.mount.Tracking:
+        #if not self.mount.AtPark or self.mount.Tracking:
             #self.mount.RightAscensionRate = 0.0
             #self.mount.DeclinationRate = 0.0
-            pass
+            #pass
 
         #self.reset_mount_reference()
         #self.site_in_automatic = config['site_in_automatic_default']
@@ -318,7 +321,11 @@ class Mount:
             except:
                 pierside=0
                 #print ("Mount does not report pier side.")
-            self.current_sidereal = self.mount.SiderealTime
+            
+            #self.current_sidereal = self.mount.SiderealTime
+            # Replaced mount call above with much faster more accurate astropy calculation below
+            self.current_sidereal = float((Time(datetime.datetime.utcnow(), scale='utc', location=g_dev['mnt'].site_coordinates).sidereal_time('apparent')*u.deg) / u.deg / u.hourangle)
+
             uncorr_mech_ra_h = self.mount.RightAscension
             uncorr_mech_dec_d = self.mount.Declination
             self.sid_now_r = self.current_sidereal*HTOR   # NB NB NB  Using Mount sidereal time might be problematic. THis this through carefully.
@@ -422,7 +429,10 @@ class Mount:
             }
         elif self.tel == True:
             try:
-                self.current_sidereal = self.mount.SiderealTime
+                #self.current_sidereal = self.mount.SiderealTime
+                # Replaced mount call above with much faster more accurate astropy calculation below
+                self.current_sidereal = float((Time(datetime.datetime.utcnow(), scale='utc', location=g_dev['mnt'].site_coordinates).sidereal_time('apparent')*u.deg) / u.deg / u.hourangle)
+                
             except:
                 print ("Mount didn't accept request for sidereal time. Need to make a calculation for this.")
             icrs_ra, icrs_dec = self.get_mount_coordinates()  #20210430  Looks like thie faulted during a slew.
@@ -544,7 +554,8 @@ class Mount:
         icrs_ra, icrs_dec = self.get_mount_coordinates()
         pre.append(icrs_ra)
         pre.append(icrs_dec)
-        pre.append(self.mount.SiderealTime)
+        # the following command is the sidereal time
+        pre.append((Time(datetime.datetime.utcnow(), scale='utc', location=g_dev['mnt'].site_coordinates).sidereal_time('apparent')*u.deg) / u.deg / u.hourangle)
         pre.append(self.mount.RightAscensionRate)
         pre.append(self.mount.DeclinationRate)
         pre.append(self.mount.Azimuth)
@@ -644,7 +655,8 @@ class Mount:
         elif action == "tracking":
             self.tracking_command(req, opt)
         elif action in ["pivot", 'zero', 'ra=sid, dec=0']:
-            req['ra'] = self.mount.SiderealTime
+            req['ra'] =  (Time(datetime.datetime.utcnow(), scale='utc', location=g_dev['mnt'].site_coordinates).sidereal_time('apparent')*u.deg) / u.deg / u.hourangle
+            
             req['dec'] = 0.0
             self.go_command(req, opt, offset=False)
         elif action == "park":
@@ -953,7 +965,10 @@ class Mount:
         ra_app_h, dec_app_d = ra_dec_fix_h(ra, dec)
         #'This is the "Forward" calculation of pointing.
         #Here we add in refraction and the TPOINT compatible mount model
-        self.sid_now_r = self.mount.SiderealTime*HTOR   #NB NB ADDED THIS FOR SRO, WHY IS THIS NEEDED?
+       
+        self.current_sidereal = float((Time(datetime.datetime.utcnow(), scale='utc', location=g_dev['mnt'].site_coordinates).sidereal_time('apparent')*u.deg) / u.deg / u.hourangle)
+        
+        self.sid_now_r = self.current_sidereal*HTOR   #NB NB ADDED THIS FOR SRO, WHY IS THIS NEEDED?
 
         self.ha_obs_r, self.dec_obs_r, self.refr_asec = ptr_utility.appToObsRaHa(ra_app_h*HTOR, dec_app_d*DTOR, self.sid_now_r)
         #ra_obs_r, dec_obs_r = ptr_utility.transformHatoRaDec(ha_obs_r, dec_obs_r, self.sid_now_r)

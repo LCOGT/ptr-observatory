@@ -310,7 +310,7 @@ class Observatory:
                 # Add the instantiated device to the collection of all devices.
                 self.all_devices[dev_type][name] = device
         plog("Finished creating devices.")
-
+       
 
     def update_config(self):
         """Sends the config to AWS."""
