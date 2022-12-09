@@ -1426,9 +1426,15 @@ class Sequencer:
                                 sky_lux = eval(self.redis_server.get('ocn_status'))['calc_HSI_lux']     #Why Eval, whould have float?
                             except:
                                 #plog("Redis not running. lux set to 1000.")
-                                sky_lux = float(g_dev['ocn'].status['calc_HSI_lux'])
+                                try:
+                                    sky_lux = float(g_dev['ocn'].status['calc_HSI_lux'])
+                                except:
+                                    sky_lux, _ = g_dev['evnt'].illuminationNow()
+                                    
                         except:
                             sky_lux = None
+        
+                        print ("sky lux " + str(sky_lux))
         
                         # MF SHIFTING EXPOSURE TIME CALCULATOR EQUATION TO BE MORE GENERAL FOR ALL TELESCOPES
                         # This bit here estimates the initial exposure time for a telescope given the skylux
@@ -1436,9 +1442,12 @@ class Sequencer:
                         if self.estimated_first_flat_exposure == False:
                             self.estimated_first_flat_exposure = True
                             if sky_lux != None:
-                                exp_time = target_flat/(collecting_area*sky_lux*float(g_dev['fil'].filter_data[current_filter][3]))  #g_dev['ocn'].calc_HSI_lux)  #meas_sky_lux)
-                                plog('Exposure time:  ', exp_time, scale, sky_lux, float(g_dev['fil'].filter_data[current_filter][3]))
-            
+                                if g_dev["fil"].null_filterwheel == False:
+                                    exp_time = target_flat/(collecting_area*sky_lux*float(g_dev['fil'].filter_data[current_filter][3]))  #g_dev['ocn'].calc_HSI_lux)  #meas_sky_lux)
+                                    plog('Exposure time:  ', exp_time, scale, sky_lux, float(g_dev['fil'].filter_data[current_filter][3]))
+                                else:
+                                    exp_time = scale*min_exposure
+                                    plog('Exposure time:  ', exp_time, scale)
                             else:                    
                                 #exp_time = prior_scale*scale*target_flat
                                 exp_time = scale*min_exposure
@@ -1447,7 +1456,7 @@ class Sequencer:
                             exp_time = scale * exp_time
             
             
-                        
+                        # Here it makes four tests and if it doesn't match those tests, then it will attempt a flat. 
                         if evening and exp_time > 120:
                              #exp_time = 60    #Live with this limit.  Basically started too late
                              plog('Break because proposed evening exposure > 180 seconds:  ', exp_time)
@@ -1509,16 +1518,17 @@ class Sequencer:
                                     bright < 0.75 * g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"]):
                                     if len(bin_spec) > 1:
                                         print ("Good range for a flat, firing off the other flat types")
-                                        if g_dev["fil"].null_filterwheel == False:
-                                            opt = { 'count': 1, 'bin':  bin_spec[1], 'area': 150, 'filter': g_dev['fil'].filter_data[current_filter][0]}   #nb nb nb BIN CHNAGED FROM 2,2 ON 20220618 wer
-                                            plog("using:  ", g_dev['fil'].filter_data[current_filter][0])
-                                        else:
-                                            opt = { 'count': 1, 'bin':  bin_spec[1], 'area': 150}
-                                        
-                                        ored = g_dev['cam'].expose_command(req, opt, no_AWS=True, do_sep = False)
-            
-                                        obright = ored['patch']    #  Patch should be circular and 20% of Chip area. ToDo project
-                                        plog('Returned:  ', obright)
+                                        for ctr in range (len(bin_spec)-1):
+                                            if g_dev["fil"].null_filterwheel == False:
+                                                opt = { 'count': 1, 'bin':  bin_spec[ctr+1], 'area': 150, 'filter': g_dev['fil'].filter_data[current_filter][0]}   #nb nb nb BIN CHNAGED FROM 2,2 ON 20220618 wer
+                                                plog("using:  ", g_dev['fil'].filter_data[current_filter][0])
+                                            else:
+                                                opt = { 'count': 1, 'bin':  bin_spec[ctr+1], 'area': 150}
+                                            
+                                            ored = g_dev['cam'].expose_command(req, opt, no_AWS=True, do_sep = False)
+                
+                                            obright = ored['patch']    #  Patch should be circular and 20% of Chip area. ToDo project
+                                            plog('Returned:  ', obright)
                                 
                             except Exception as e:
                                 plog('Failed to get a flat image: ', e)

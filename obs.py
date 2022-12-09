@@ -311,6 +311,7 @@ class Observatory:
                 self.all_devices[dev_type][name] = device
         plog("Finished creating devices.")
 
+
     def update_config(self):
         """Sends the config to AWS."""
 
