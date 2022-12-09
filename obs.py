@@ -1353,20 +1353,26 @@ class Observatory:
                                     err_dec = 0
 
                                 if (
-                                    err_ha * 15 * 3600
+                                    abs(err_ha * 15 * 3600)
                                     > self.config["threshold_mount_update"]
-                                    or err_dec * 3600
+                                    or abs(err_dec * 3600)
                                     > self.config["threshold_mount_update"]
                                 ):
                                     try:
                                         if g_dev["mnt"].pier_side_str == "Looking West":
-                                            g_dev["mnt"].adjust_mount_reference(
-                                                err_ha, err_dec
-                                            )
+                                            try:
+                                                g_dev["mnt"].adjust_mount_reference(
+                                                    err_ha, err_dec
+                                                )
+                                            except Exception as e:
+                                                print ("Something is up in the mount reference adjustment code ", e)
                                         else:
-                                            g_dev["mnt"].adjust_flip_reference(
-                                                err_ha, err_dec
-                                            )  # Need to verify signs
+                                            try:
+                                                g_dev["mnt"].adjust_flip_reference(
+                                                    err_ha, err_dec
+                                                )  # Need to verify signs
+                                            except Exception as e:
+                                                print ("Something is up in the mount reference adjustment code ", e)
                                     except:
                                         plog("This mount doesn't report pierside")
 
