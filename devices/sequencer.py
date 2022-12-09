@@ -1169,7 +1169,10 @@ class Sequencer:
                 g_dev['obs'].send_to_user("Culling " + str(len(deleteDirectories)) +" from the local archive.", p_level='INFO')
                 for entry in range(len(deleteDirectories)):
                     print (deleteDirectories[entry] + ' ' + str(deleteTimes[entry]) + ' weeks old.')
-                    shutil.rmtree(deleteDirectories[entry])
+                    try:
+                        shutil.rmtree(deleteDirectories[entry])
+                    except:
+                        print ("Could not remove: " + str(deleteDirectories[entry]) + ". Usually a file is open in that directory.")
 
         # Clear out smartstacks directory
         print ("removing and reconstituting smartstacks directory")
