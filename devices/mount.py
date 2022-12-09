@@ -1115,9 +1115,9 @@ class Mount:
             
                 self.mount.Unpark()
                 wait_for_slew()
-            if self.home_after_unpark:
-                self.mount.FindHome()
-                wait_for_slew()
+                if self.home_after_unpark:
+                    self.mount.FindHome()
+                    wait_for_slew()
 
     def paddle(self):
         return
