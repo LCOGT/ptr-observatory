@@ -1446,11 +1446,16 @@ class Sequencer:
                                     exp_time = target_flat/(collecting_area*sky_lux*float(g_dev['fil'].filter_data[current_filter][3]))  #g_dev['ocn'].calc_HSI_lux)  #meas_sky_lux)
                                     plog('Exposure time:  ', exp_time, scale, sky_lux, float(g_dev['fil'].filter_data[current_filter][3]))
                                 else:
-                                    exp_time = scale*min_exposure
+                                    #exp_time = scale*min_exposure
+                                    exp_time = target_flat/(collecting_area*sky_lux*self.config['filter_wheel']['filter_wheel1']['flat_sky_gain'])  #g_dev['ocn'].calc_HSI_lux)  #meas_sky_lux)
                                     plog('Exposure time:  ', exp_time, scale)
                             else:                    
                                 #exp_time = prior_scale*scale*target_flat
-                                exp_time = scale*min_exposure
+                                if morn:
+                                
+                                    exp_time = 5.0
+                                else:
+                                    exp_time = min_exposure
                                 plog('Exposure time:  ', exp_time, scale)
                         else:
                             exp_time = scale * exp_time
@@ -1469,18 +1474,20 @@ class Sequencer:
                              plog('Break because proposed morning exposure < minimum exposure time:  ', exp_time)
                              g_dev['obs'].send_to_user('Try next filter because proposed  flat exposure < min_exposure.', p_level='INFO')
                              pop_list.pop(0)
-                             min_exposure=min_exposure = float(self.config['camera']['camera_1_1']['settings']['min_exposure'])
+                             #min_exposure=min_exposure = float(self.config['camera']['camera_1_1']['settings']['min_exposure'])
                              acquired_count = flat_count + 1 # trigger end of loop
                              #break
                         elif evening and exp_time < min_exposure:   #NB it is too bright, should consider a delay here.
                          #**************THIS SHOUD BE A WHILE LOOP! WAITING FOR THE SKY TO GET DARK AND EXP TIME TO BE LONGER********************
                              plog("Too bright, wating 180 seconds. Estimated Exposure time is " + str(exp_time))
                              g_dev['obs'].send_to_user('Delay 180 seconds to let it get darker.', p_level='INFO')
+                             self.estimated_first_flat_exposure = False
                              self.next_flat_observe = time.time() + 180
                         elif morn and exp_time > 120 :   #NB it is too bright, should consider a delay here.
                           #**************THIS SHOUD BE A WHILE LOOP! WAITING FOR THE SKY TO GET DARK AND EXP TIME TO BE LONGER********************
                              plog("Too dim, wating 180 seconds. Estimated Exposure time is " + str(exp_time))
                              g_dev['obs'].send_to_user('Delay 180 seconds to let it get lighterer.', p_level='INFO')
+                             self.estimated_first_flat_exposure = False
                              self.next_flat_observe = time.time() + 180
                              #*****************NB Recompute exposure or otherwise wait
                              exp_time = min_exposure
