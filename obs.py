@@ -740,7 +740,7 @@ class Observatory:
 
 
                 # Only ingest new large fits.fz files to the PTR archive.
-                print (self.env_exists)
+                #print (self.env_exists)
                 if filename.endswith("-EX00.fits.fz"):
                     with open(filepath, "rb") as fileobj:
                         #print (frame_exists(fileobj))

@@ -555,7 +555,7 @@ class Mount:
         pre.append(icrs_ra)
         pre.append(icrs_dec)
         # the following command is the sidereal time
-        pre.append((Time(datetime.datetime.utcnow(), scale='utc', location=g_dev['mnt'].site_coordinates).sidereal_time('apparent')*u.deg) / u.deg / u.hourangle)
+        pre.append(float((Time(datetime.datetime.utcnow(), scale='utc', location=g_dev['mnt'].site_coordinates).sidereal_time('apparent')*u.deg) / u.deg / u.hourangle))
         pre.append(self.mount.RightAscensionRate)
         pre.append(self.mount.DeclinationRate)
         pre.append(self.mount.Azimuth)
