@@ -555,7 +555,7 @@ class Observatory:
         loud = False
         if bpt:
             print('UpdateStatus bpt was invoked.')
-            breakpoint()
+            #breakpoint()
 
         # Wait a bit between status updates
         while time.time() < self.time_last_status + self.status_interval:
@@ -1087,8 +1087,8 @@ class Observatory:
 
 
 
-                    if self.config["camera"][self.name]["settings"]["is_osc"]:
-                        print ("interpolating bayer grid for focusing purposes.")
+                    if self.config["camera"][g_dev['cam'].name]["settings"]["is_osc"]:
+                        #print ("interpolating bayer grid for focusing purposes.")
                         if self.config["camera"][self.name]["settings"]["osc_bayer"] == 'RGGB':                           
                             
                             # Checkerboard collapse for other colours for temporary jpeg

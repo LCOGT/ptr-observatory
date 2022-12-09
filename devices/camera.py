@@ -1602,14 +1602,13 @@ class Camera:
 
                 time.sleep(0.1)
                 self.t4p4 = time.time()
-
+                # As read, this is a Windows Safe Array of Longs
                 self.img = np.array(self._getImageArray()).astype("uint16")
-                self.t4p5 = (
-                    time.time()
-                )  # As read, this is a Windows Safe Array of Longs
-                if frame_type in ["bias", "dark"] or frame_type[-4:] == ['flat']:
+
+                self.t4p5 = (time.time())
+                if True or frame_type in ["bias", "dark"] or frame_type[-4:] == ['flat']:
                     plog(
-                        "Median of full area bias, dark or flat image:  ",
+                        "Median of full area image,  bias, dark or flat image:  ",
                         np.median(self.img),
                     )
 
@@ -3004,6 +3003,7 @@ class Camera:
                                 del colour_img
                             else:
                                 # Making cosmetic adjustments to the image array ready for jpg stretching
+                            #breakpoint()
                                 hdusmall.data = np.asarray(hdusmall.data)
                                 hdusmall.data[
                                     hdusmall.data
@@ -3039,6 +3039,7 @@ class Camera:
                                     paths["im_path"] + paths["jpeg_name10"],
                                     stretched_data_uint8,
                                 )
+                                
                                 del stretched_data_uint8
                             
 

@@ -34,7 +34,8 @@ seeing induced errors.  If either case occurs, go to the projected point and try
 
 A second case is the focus is WAY off, and or pointing.  Make appropriate adjustments and try again.
 
-The third case is we have a minimum.  Inspection of the FWHM may imply seeing is poor.  In that case
+The third case is we have a MAXIMUM, updise down parabola basically.  That can happen is seeing is highly variable.
+Inspection of the FWHM may imply seeing is poor.  In that case
 double the exposure and possibly do a 5-point fit rather than a 3-point.
 
 Note at the last exposure it is reasonable to do a minor recalibrate of the pointing.
