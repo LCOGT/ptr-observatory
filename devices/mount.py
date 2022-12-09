@@ -358,9 +358,13 @@ class Mount:
                 else:
                     ra_cal_offset, dec_cal_offset = self.get_flip_reference()
             except:
-                ra_cal_offset=0
-                dec_cal_offset=0
-                #print ("Mount does not report pier side")
+                try:
+                    ra_cal_offset, dec_cal_offset = self.get_mount_reference()
+                except:
+                    print ("couldn't get offset")
+                    ra_cal_offset=0
+                    dec_cal_offset=0
+                    #print ("Mount does not report pier side")
 
             jnow_ra_r = ptr_utility.reduce_ra_r(app_ra_r - ra_cal_offset*HTOR)    # NB the mnt_refs are subtracted here.  Units are correct.
             jnow_dec_r = ptr_utility.reduce_dec_r( app_dec_r - dec_cal_offset*DTOR)
@@ -374,6 +378,7 @@ class Mount:
             try:
                 ra_cal_offset, dec_cal_offset = self.get_mount_reference()
             except:
+                print ("couldn't get offset")
                 ra_cal_offset=0
                 dec_cal_offset=0
 
@@ -708,10 +713,7 @@ class Mount:
             self.object = opt['object']
         except:
             self.object = 'unspecified'    #NB could possibly augment with "Near --blah--"
-        if self.mount.CanPark:
-            #plog("mount cmd: unparking mount")
-            if self.mount.AtPark:
-                self.mount.Unpark()   #  Note we do not open the dome since we may be mount testing in the daytime.
+        self.unpark_command()  
         try:
             clutch_ra = g_dev['mnt']['mount1']['east_clutch_ra_correction']
             clutch_dec = g_dev['mnt']['mount1']['east_clutch_dec_correction']
@@ -903,8 +905,10 @@ class Mount:
     def re_seek(self, dither):
         if dither == 0:
             self.go_coord(self.last_ra, self.last_dec, self.last_tracking_rate_ra, self.last_tracking_rate_dec)
+            
         else:
             pass#breakpoint()
+        wait_for_slew()   
 
     def go_coord(self, ra, dec, tracking_rate_ra=0, tracking_rate_dec=0, reset_solve=True):  #Note these rates need a system specification
         '''
@@ -918,17 +922,15 @@ class Mount:
         self.last_tracking_rate_dec = tracking_rate_dec
         self.last_seek_time = time.time()
 
-        if self.mount.CanPark:
-            #plog("mount cmd: unparking mount")
-            if self.mount.AtPark:
-                self.mount.Unpark()   #  Note we do not open the dome since we may be mount testing in the daytime.
+        self.unpark_command()  
         #Note this initiates a mount move.  WE should Evaluate if the destination is on the flip side and pick up the
         #flip offset.  So a GEM could track into positive HA territory without a problem but the next reseek should
         #result in a flip.  So first figure out if there will be a flip:
 
         try:
-            new_pierside =  self.mount.DestinationSideOfPier(ra, dec) #  A tuple gets returned: (pierside, Ra.h and dec.d)
+            
             try:                          #  NB NB Might be good to log is flipping on a re-seek.
+                new_pierside =  self.mount.DestinationSideOfPier(ra, dec) #  A tuple gets returned: (pierside, Ra.h and dec.d)    
                 if len(new_pierside) > 1:
                     if new_pierside[0] == 0:
                         delta_ra, delta_dec = self.get_mount_reference()
@@ -937,19 +939,25 @@ class Mount:
                         delta_ra, delta_dec = self.get_flip_reference()
                         pier_east = 0
             except:
-                if new_pierside == 0:
+                try:
+                    new_pierside =  self.mount.DestinationSideOfPier(ra, dec) #  A tuple gets returned: (pierside, Ra.h and dec.d)
+                    if new_pierside == 0:
+                        delta_ra, delta_dec = self.get_mount_reference()
+                        pier_east = 1
+                    else:
+                        delta_ra, delta_dec = self.get_flip_reference()
+                        pier_east = 0
+                except:
                     delta_ra, delta_dec = self.get_mount_reference()
                     pier_east = 1
-                else:
-                    delta_ra, delta_dec = self.get_flip_reference()
-                    pier_east = 0
-
-            #Update incoming ra and dec with mounting offsets.
-            ra += delta_ra #NB it takes a restart to pick up a new correction which is also J.now.
-            dec += delta_dec
-        except:
-            print ("mount really doesn't like pierside calls")
+        except Exception as e:
+            print ("mount really doesn't like pierside calls ", e)
             pier_east = 1
+         #Update incoming ra and dec with mounting offsets.
+        print ("delta")
+        print (delta_ra)
+        ra += delta_ra #NB it takes a restart to pick up a new correction which is also J.now.
+        dec += delta_dec
         ra, dec = ra_dec_fix_h(ra,dec)
         if self.mount.EquatorialSystem == 1:    #equTopocentric
             self.get_current_times()   #  NB We should find a way to refresh this once a day, esp. for status return.
@@ -1041,6 +1049,7 @@ class Mount:
         if reset_solve == True:
             g_dev['obs'].last_solve_time = datetime.datetime.now() - datetime.timedelta(days=1)
             g_dev['obs'].images_since_last_solve = 10000
+        wait_for_slew()   
 
     def slewToSkyFlatAsync(self):
         az, alt = self.astro_events.flat_spot_now()
@@ -1076,7 +1085,7 @@ class Mount:
             plog("Mount is at home.")
         elif False: #self.mount.CanFindHome:    # NB what is this all about?
             plog(f"can find home: {self.mount.CanFindHome}")
-            self.mount.Unpark()
+            self.unpark_command()  
             #home_alt = self.settings["home_altitude"]
             #home_az = self.settings["home_azimuth"]
             #self.move_to_altaz(home_alt, home_az)

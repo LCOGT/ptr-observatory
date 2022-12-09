@@ -253,7 +253,10 @@ class Sequencer:
                     g_dev['enc'].open_command({}, {})
                     plog("Opening dome, will set Synchronize in 10 seconds.")
                     time.sleep(10)
-                g_dev['enc'].sync_mount_command({}, {})
+                try:
+                    g_dev['enc'].sync_mount_command({}, {})
+                except:
+                    pass
                 #Prior to skyflats no dome following.
                 self.dome_homed = False
                 
@@ -392,7 +395,10 @@ class Sequencer:
                         g_dev['enc'].open_command({}, {})
                         plog("Opening dome, will set Synchronize in 10 seconds.")
                         time.sleep(10)
-                    g_dev['enc'].sync_mount_command({}, {})
+                    try:
+                        g_dev['enc'].sync_mount_command({}, {})
+                    except: 
+                        pass
         
                     if debug:
                         plog("# of Blocks, projects:  ", len(g_dev['obs'].blocks),  len(g_dev['obs'].projects))
@@ -699,7 +705,10 @@ class Sequencer:
                 g_dev['enc'].open_command({}, {})
                 plog("Opening dome, will set Synchronize in 10 seconds.")
                 time.sleep(10)
-            g_dev['enc'].sync_mount_command({}, {})
+            try:
+                g_dev['enc'].sync_mount_command({}, {})
+            except: 
+                pass
 
             '''
             We be starting a block:
@@ -2223,6 +2232,9 @@ class Sequencer:
                 g_dev['obs'].update_status()
         except:
             plog("Motion check faulted.")
+            plog(traceback.format_exc())
+            breakpoint()
+        
         if req['target'] == 'near_tycho_star':   ## 'bin', 'area'  Other parameters
             #  Go to closest Mag 7.5 Tycho * with no flip
             focus_star = tycho.dist_sort_targets(g_dev['mnt'].current_icrs_ra, g_dev['mnt'].current_icrs_dec, \

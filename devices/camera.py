@@ -2923,12 +2923,12 @@ class Camera:
                                 ] == "yes":
                                     g_dev["mnt"].reset_mount_reference()
                                     plog("I've  reset the mount_reference 1")
-                                    g_dev["mnt"].current_icrs_ra = solve[
-                                        "ra_j2000_hours"
-                                    ]
-                                    g_dev["mnt"].current_icrs_dec = solve[
-                                        "dec_j2000_hours"
-                                    ]
+                                    g_dev["mnt"].current_icrs_ra = solved_ra
+                                    #    "ra_j2000_hours"
+                                    #]
+                                    g_dev["mnt"].current_icrs_dec = solved_dec
+                                    #    "dec_j2000_hours"
+                                    #]
                                     err_ha = 0
                                     err_dec = 0
 
@@ -2953,6 +2953,10 @@ class Camera:
                                                 )  # Need to verify signs
                                             except Exception as e:
                                                 print ("Something is up in the mount reference adjustment code ", e)
+                                        
+                                        g_dev["mnt"].current_icrs_ra = solved_ra                                    
+                                        g_dev["mnt"].current_icrs_dec = solved_dec
+                                        g_dev['mnt'].re_seek(dither=0)
                                     except:
                                         plog("This mount doesn't report pierside")
 
