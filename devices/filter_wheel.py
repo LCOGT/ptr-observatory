@@ -32,10 +32,15 @@ class FilterWheel:
             self.dual_filter = self.config["filter_wheel1"]["dual_wheel"]
             self.ip = str(self.config["filter_wheel1"]["ip_string"])
             self.filter_data = self.config["filter_wheel1"]["settings"]["filter_data"]
-            self.filter_screen_sort = self.config["filter_wheel1"]["settings"] \
-                                                 ["filter_screen_sort"]
-            self.filter_reference = int( self.config["filter_wheel1"]["settings"] \
-                                                    ["filter_reference"])
+            self.filter_screen_sort = self.config["filter_wheel1"]["settings"][
+                "filter_screen_sort"
+            ]
+            self.filter_reference = int(
+                self.config["filter_wheel1"]["settings"]["filter_reference"]
+            )
+    
+            # NOTE: THIS CODE DOES NOT implement a filter via the Maxim application
+            # which is passed in as a valid instance of class camera.
             self.filter_message = "-"
             plog("Please NOTE: Filter wheel may block for many seconds while first connecting \
                  & homing.")
@@ -404,7 +409,6 @@ class FilterWheel:
                 break
 
 
-
         # If filter was not identified, find a substitute filter
         if filter_identified == 0:
             plog(
@@ -490,13 +494,13 @@ class FilterWheel:
             #TSXSend("ccdsoftCamera.TemperatureSetPoint = -10")
             #TSXSend("ccdsoftCamera.RegulateTemperature = true")
             # self.filter.FilterIndexZeroBased <---- prints number of current filter
-            print ("Before Filter")            
-            print (self.filter.FilterIndexZeroBased)
-            print ("Requesto Filter")
-            print (self.filter_number)
+            #print ("Before Filter")            
+            #print (self.filter.FilterIndexZeroBased)
+            #print ("Requesto Filter")
+            #print (self.filter_number)
             self.filter.FilterIndexZeroBased = self.filter_number
-            print ("After Filter")
-            print (self.filter.FilterIndexZeroBased)
+            #print ("After Filter")
+            #print (self.filter.FilterIndexZeroBased)
             #breakpoint()
         else:
             try:
@@ -533,9 +537,13 @@ class FilterWheel:
         """
 
         plog(f"Finding substitute for {requested_filter}...")
+
+        
         
         #breakpoint()
-        #filter_names = self.config["filter_wheel1"]["settings"]["filter_list"]
+        #filter_names=[]
+        for ctr in range(len(self.config["filter_wheel1"]["settings"]['filter_data'])):
+            filter_names.append((self.config["filter_wheel1"]["settings"]['filter_data'][ctr][0]))
         
         # Seriously dumb way to do this..... but quick!
         # Construct available filter list

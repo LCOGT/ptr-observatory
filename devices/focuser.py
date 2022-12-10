@@ -163,15 +163,19 @@ class Focuser:
                 temp = g_dev["ocn"].current_ambient
             except:
                 temp = 10.0  # NB NB NB this needs to be a proper monthly config file default.
-            status = {
-                "focus_position": round(
-                    self.focuser.Position * self.steps_to_micron, 1
-                ),
-                "focus_temperature": temp,
-                "focus_moving": self.focuser.IsMoving,
-                "comp": self.config["coef_c"],
-                "filter_offset": "n.a",  # g_dev['fil'].filter_offset  # NB A patch
-            }
+            try:     
+                status = {
+                    "focus_position": round(
+                        self.focuser.Position * self.steps_to_micron, 1
+                    ),
+                    "focus_temperature": temp,
+                    "focus_moving": self.focuser.IsMoving,
+                    "comp": self.config["coef_c"],
+                    "filter_offset": "n.a",  # g_dev['fil'].filter_offset  # NB A patch
+                }
+            except:
+                print ("Could not get focusser status")
+                status = {}
         return status
 
     def get_quick_status(self, quick):

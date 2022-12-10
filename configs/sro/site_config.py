@@ -404,9 +404,9 @@ site_config = {
                 'filter_count': 11,   #  This must be correct as to the number of filters
                 'home_filter':  0,
                 'default_filter': "PL",
-                'filter_list': ['PL','PR','PG','PB','HA','O3','S2', 'air'], # A list of actual physical filters for the substitution function
                 'filter_reference': 0,   #  We choose to use W as the default filter.  Gains taken at F9, Ceravolo 300mm
-                'filter_data': [['filter', 'filter_index', 'filter_offset', 'sky_gain', 'screen_gain', 'alias'],  #NB NB NB add cwl & bw in nm.
+                # Columns for filter data are : ['filter', 'filter_index', 'filter_offset', 'sky_gain', 'screen_gain', 'alias']
+                'filter_data': [  #NB NB NB add cwl & bw in nm.
 
                         #['w',     [0,  0],     0, 72.7, [1.00 ,  72], 'PL'],    #0.   For sequencer autofocus  consider foc or f filter
                         ['focus', [0,  0],     0, 72.7, [1.00 ,  72], 'focus'],    #0.
@@ -505,12 +505,12 @@ site_config = {
                 'trim_sec': ['[1:9576, 1:6388]', '[1:4788, 1:3194]', '[1:3192, 1:2129]', '[1:2394, 1:1597]'],
                 'x_pixel':  6,
                 'y_pixel':  6,
-                'pix_scale': [1.104, 2.134, 3.201, 4.268],
+                
 
                 'CameraXSize' : 4556,
                 'CameraYSize' : 3656,
-                'MaxBinX' : 2,
-                'MaxBinY' : 2,
+                #'MaxBinX' : 2,
+                #'MaxBinY' : 2,
                 'StartX' : 1,
                 'StartY' : 1,
 
@@ -530,7 +530,6 @@ site_config = {
                 'maximum_bin':  [1, 1, 1.07],    #  This is the MAXIMUM binning
                 'cosmics_at_default' : 'no',
                 'cosmics_at_maximum' : 'no',
-                'bin_enable': ['1 1'],
                 'cycle_time':  [30, 20, 15, 12],  # 3x3 requires a 1, 1 reaout then a software bin, so slower.
                 'rbi_delay':  0.,      #  This being zero says RBI is not available, eg. for SBIG.
                 'is_cmos':  False,
@@ -555,12 +554,17 @@ site_config = {
                 'areas_implemented': ["Full",'4x4d', "600%", "500%", "450%", "300%", "220%", "150%", "133%", "Full", "Sqr", '71%', '50%',  '35%', '25%', '12%'],
                 'default_area':  "Full",
                 'default_rotation': 0.0000,
-                'flat_bin_spec': '1,1',    #Default binning for flats
                 'has_darkslide':  False,
                 'darkslide_com':  None,
                 'shutter_type': "Electronic",
+                'flat_bin_spec': ['1,1'],    #Default binning for flats
+                'darkbias_bin_spec': ['1,1'],    #Default binning for flats
+                'bin_enable': ['1 1'],
+                'dark_length' : 900,
+                'bias_count' : 10,
+                'dark_count' : 10,
+                'pix_scale': [1.104, 2.134, 3.201, 4.268],
                 
-                'flat_bin_spec': ['1,1'],    # List of binnings for flats
                 'has_screen': True,
                 'screen_settings':  {
                     'screen_saturation':  157.0,   #  This reflects WMD setting and needs proper values.
