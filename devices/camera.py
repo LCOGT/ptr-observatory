@@ -2290,7 +2290,16 @@ class Camera:
                         )
                         pixscale = float(hdu.header["PIXSCALE"])
                     except:
+                        # There really needs to be a pixelscale in the header and the variable, even if it is wrong!
                         print ("pixel scale not set in the site-config for this binning")
+                        #
+                        hdu.header["PIXSCALE"] = (
+                            0.6
+                            ,
+                            "[arcsec/pixel] Nominal pixel scale on sky",
+                        )
+                        pixscale = float(0.6)
+                        
                     hdu.header["REQNUM"] = ("00000001", "Request number")
                     hdu.header["ISMASTER"] = (False, "Is master image")
                     current_camera_name = self.alias
