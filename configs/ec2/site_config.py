@@ -95,7 +95,7 @@ site_config = {
     'pointing_calibration_on_startup': False,
     'periodic_focus_time' : 0.5, # This is a time, in hours, over which to bypass automated focussing (e.g. at the start of a project it will not refocus if a new project starts X hours after the last focus)
     'stdev_fwhm' : 0.5, # This is the expected variation in FWHM at a given telescope/camera/site combination. This is used to check if a fwhm is within normal range or the focus has shifted
-    'focus_exposure_time': 20, # Exposure time in seconds for exposure image
+    'focus_exposure_time': 10, # Exposure time in seconds for exposure image
 
     'focus_trigger' : 5.0, # What FWHM increase is needed to trigger an autofocus
     'solve_nth_image' : 10, # Only solve every nth image
@@ -187,7 +187,7 @@ site_config = {
             'eve_screen_flat_dur': 1.0,   #  hours Duration, prior to next.
             'operations_begin':  -1.0,   #  - hours from Sunset
             'eve_cooldown_offset': -.99,   #  - hours beforeSunset
-            'eve_sky_flat_offset':  0.5,   #  - hours beforeSunset
+            'eve_sky_flat_offset':  0.25,   #  - hours beforeSunset
             'morn_sky_flat_offset':  0.4,   #  + hours after Sunrise
             'morning_close_offset':  0.41,   #  + hours after Sunrise
             'operations_end':  0.42,
@@ -214,6 +214,7 @@ site_config = {
             'west_clutch_dec_correction': 0.0, #
             'east_flip_ra_correction':  0.0, #
             'east_flip_dec_correction': 0.0,  #  #
+            'home_after_unpark' : True,
             'permissive_mount_reset' : 'yes', # if this is set to yes, it will reset the mount at startup and when coordinates are out significantly
             'settings': {
 			    'latitude_offset': 0.0,     #Decimal degrees, North is Positive   These *could* be slightly different than site.
@@ -340,10 +341,10 @@ site_config = {
             #F4.9 setup
             'start_at_config_reference': True,
             'use_focuser_temperature': True,
-            'reference':13277,    #  20210313  Nominal at 10C Primary temperature
+            'reference':12968,    #  20210313  Nominal at 10C Primary temperature
             'ref_temp':  6265.0,    #  Update when pinning reference
             'coef_c': 0,   #  Negative means focus moves out as Primary gets colder
-            'coef_0': 13277,  #  Nominal intercept when Primary is at 0.0 C.
+            'coef_0': 12968,  #  Nominal intercept when Primary is at 0.0 C.
             'coef_date':  '20220914',    #This appears to be sensible result 44 points -13 to 3C'reference':  6431,    #  Nominal at 10C Primary temperature
             # #F9 setup
             # 'reference': 4375,    #   Guess 20210904  Nominal at 10C Primary temperature
@@ -436,6 +437,7 @@ site_config = {
             "parent": "telescope1",
             "name": "RGGB" ,  # When there is no filter wheel, the filter will be named this.
             'service_date': '20180101',
+            'flat_sky_gain' : 1200,
             "driver":   None,   #"LCO.dual",  #  'ASCOM.FLI.FilterWheel',
             #"driver":   "Maxim.Image",   #"LCO.dual",  #  'ASCOM.FLI.FilterWheel',
             'ip_string': None,
@@ -514,8 +516,8 @@ site_config = {
                 'pix_scale': [1.569],
                 'CameraXSize' : 4096,
                 'CameraYSize' : 4096,
-                'MaxBinX' : 2,
-                'MaxBinY' : 2,
+                #'MaxBinX' : 2,
+                #'MaxBinY' : 2,
                 'StartX' : 1,
                 'StartY' : 1,
 
@@ -535,7 +537,7 @@ site_config = {
                 'maximum_bin':  [1, 1, 0.269],    #  Matched to seeing situation by owner
                 'cosmics_at_default' : 'yes',
                 'cosmics_at_maximum' : 'yes',
-                'bin_enable': ['1 1'],
+
                 'cycle_time':  [2, 2, 2, 2],  # 3x3 requires a 1, 1 reaout then a software bin, so slower.
                 'rbi_delay':  0.,      #  This being zero says RBI is not available, eg. for SBIG.
                 'is_cmos':  False,
@@ -560,9 +562,14 @@ site_config = {
                 'areas_implemented': ["Full",'4x4d', "600%", "500%", "450%", "300%", "220%", "150%", "133%", "Full", "Sqr", '71%', '50%',  '35%', '25%', '12%'],
                 'default_area':  "Full",
                 'default_rotation': 0.0000,
-                'flat_bin_spec': '1,1',    #Default binning for flats
                 'has_darkslide':  False,
                 'darkslide_com':  None,
+                'flat_bin_spec': ['1,1'],    #Default binning for flats
+                'darkbias_bin_spec': ['1,1'],    #Default binning for flats
+                'bin_enable': ['1 1'],
+                'dark_length' : 900,
+                'bias_count' : 10,
+                'dark_count' : 10,
                 
                 'shutter_type': "Electronic",
                 'has_screen': True,

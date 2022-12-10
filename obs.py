@@ -30,17 +30,8 @@ import numpy as np
 import redis  # Client, can work with Memurai
 
 import requests
-# from requests.adapters import HTTPAdapter
-# from requests.packages.urllib3.util.retry import Retry
-# retry_strategy = Retry(
-#     total=10, backoff_factor=0.1
-# )
-# adapter = HTTPAdapter(max_retries=retry_strategy)
-# requests = requests.Session()
 
-
-
-import sep
+#import sep
 from skimage.io import imsave
 from skimage.transform import resize
 import func_timeout
@@ -248,6 +239,7 @@ class Observatory:
         # Send the config to AWS. TODO This has faulted.
         self.update_config()   #This is the never-ending control loop
 
+
     def set_last_reference(self, delta_ra, delta_dec, last_time):
         mnt_shelf = shelve.open(self.site_path + "ptr_night_shelf/" + "last")
         mnt_shelf["ra_cal_offset"] = delta_ra
@@ -319,6 +311,9 @@ class Observatory:
                 # Add the instantiated device to the collection of all devices.
                 self.all_devices[dev_type][name] = device
         plog("Finished creating devices.")
+        
+        
+       
 
     def update_config(self):
         """Sends the config to AWS."""
@@ -748,18 +743,18 @@ class Observatory:
 
 
                 # Only ingest new large fits.fz files to the PTR archive.
-                print (self.env_exists)
+                #print (self.env_exists)
                 if filename.endswith("-EX00.fits.fz"):
                     with open(filepath, "rb") as fileobj:
-                        print (frame_exists(fileobj))
+                        #print (frame_exists(fileobj))
                         tempPTR=0
                         if self.env_exists == True and (not frame_exists(fileobj)):
-                            print ("attempting ingester")
+                            #print ("attempting ingester")
                             try:
                                 #tt = time.time()
                                 print ("attempting ingest to aws@  ", tt)
                                 upload_file_and_ingest_to_archive(fileobj)
-                                print ("did ingester")
+                                #print ("did ingester")
                                 plog(f"--> To PTR ARCHIVE --> {str(filepath)}")
                                 plog('*.fz ingestion took:  ', round(time.time() - tt, 1), ' sec.')
                                 self.aws_queue.task_done()
@@ -1087,9 +1082,9 @@ class Observatory:
 
 
 
-                    if self.config["camera"][self.name]["settings"]["is_osc"]:
-                        print ("interpolating bayer grid for focusing purposes.")
-                        if self.config["camera"][self.name]["settings"]["osc_bayer"] == 'RGGB':                           
+                    if self.config["camera"][g_dev['cam'].name]["settings"]["is_osc"]:
+                        #print ("interpolating bayer grid for focusing purposes.")
+                        if self.config["camera"][g_dev['cam'].name]["settings"]["osc_bayer"] == 'RGGB':                           
                             
                             # Checkerboard collapse for other colours for temporary jpeg
                             
@@ -1134,8 +1129,8 @@ class Observatory:
                             
                             # Interpolate to make a high resolution version for focussing
                             # and platesolving
-                            hdufocus.data=demosaicing_CFA_Bayer_bilinear(storedsStack, 'RGGB')[:,:,1]
-                            hdufocus.data=hdufocus.data.astype("float32")
+                            #hdufocus.data=demosaicing_CFA_Bayer_bilinear(storedsStack, 'RGGB')[:,:,1]
+                            #hdufocus.data=hdufocus.data.astype("float32")
                             
                             
 
@@ -1156,7 +1151,7 @@ class Observatory:
                             preserve_range=True,
                         )  #  We should trim chips so ratio is exact.
 
-                    if self.config["camera"][self.name]["settings"]["is_osc"]:
+                    if self.config["camera"][g_dev['cam'].name]["settings"]["is_osc"]:
                         blue_stretched_data_float = Stretch().stretch(hdublue+1000)
                         del hdublue
                         green_stretched_data_float = Stretch().stretch(hdugreen+1000)
@@ -1351,30 +1346,39 @@ class Observatory:
                                 ] == "yes":
                                     g_dev["mnt"].reset_mount_reference()
                                     plog("I've  reset the mount_reference 1")
-                                    g_dev["mnt"].current_icrs_ra = solve[
-                                        "ra_j2000_hours"
-                                    ]
-                                    g_dev["mnt"].current_icrs_dec = solve[
-                                        "dec_j2000_hours"
-                                    ]
+                                    g_dev["mnt"].current_icrs_ra = solved_ra
+                                    #    "ra_j2000_hours"
+                                    #]
+                                    g_dev["mnt"].current_icrs_dec = solved_dec
+                                    #    "dec_j2000_hours"
+                                    #]
                                     err_ha = 0
                                     err_dec = 0
 
                                 if (
-                                    err_ha * 15 * 3600
+                                    abs(err_ha * 15 * 3600)
                                     > self.config["threshold_mount_update"]
-                                    or err_dec * 3600
+                                    or abs(err_dec * 3600)
                                     > self.config["threshold_mount_update"]
                                 ):
                                     try:
                                         if g_dev["mnt"].pier_side_str == "Looking West":
-                                            g_dev["mnt"].adjust_mount_reference(
-                                                err_ha, err_dec
-                                            )
+                                            try:
+                                                g_dev["mnt"].adjust_mount_reference(
+                                                    err_ha, err_dec
+                                                )
+                                            except Exception as e:
+                                                print ("Something is up in the mount reference adjustment code ", e)
                                         else:
-                                            g_dev["mnt"].adjust_flip_reference(
-                                                err_ha, err_dec
-                                            )  # Need to verify signs
+                                            try:
+                                                g_dev["mnt"].adjust_flip_reference(
+                                                    err_ha, err_dec
+                                                )  # Need to verify signs
+                                            except Exception as e:
+                                                print ("Something is up in the mount reference adjustment code ", e)
+                                        g_dev["mnt"].current_icrs_ra = solved_ra                                    
+                                        g_dev["mnt"].current_icrs_dec = solved_dec
+                                        g_dev['mnt'].re_seek(dither=0)
                                     except:
                                         plog("This mount doesn't report pierside")
 

@@ -225,6 +225,7 @@ site_config = {
             'has_paddle': False,      #paddle refers to something supported by the Python code, not the AP paddle.
             'has_ascom_altaz': True,
             'pointing_tel': 'tel1',     # This can be changed to 'tel2'... by user.  This establishes a default.
+            'home_after_unpark' : False,
   #
             'permissive_mount_reset' : 'no', # if this is set to yes, it will reset the mount at startup and when coordinates are out significantly
             'west_clutch_ra_correction': -0.05323724387608619,  #final:   0.0035776615398219747 -0.1450812805892454
@@ -420,10 +421,9 @@ site_config = {
                 'filter_count': 43,
                 'home_filter':  1,
                 'default_filter': "w",
-                'filter_list': ['PL','PR','PG','PB','HA','O3','S2', 'N2', 'NIR', 'up','gp', 'rp','ip','z','zp','y','EXO','JB','JV','Rc','Ic', 'air','w'], # A list of actual physical filters for the substitution function
                 'filter_reference': 1,   # We choose to use W as the default filter.  Gains taken at F9, Ceravolo 300mm
-                'filter_data': [['filter', 'filter_index', 'filter_offset', 'sky_gain', 'screen_gain', 'generic'],
-
+                # Columns for filter data are : ['filter', 'filter_index', 'filter_offset', 'sky_gain', 'screen_gain', 'alias']
+                'filter_data': [
                         ['air',  [0,  0], -800, 81.6, [2   ,  20], 'ai'],    # 0.  Gains 20211020 Clear NE sky
                         ['focus',[7,  0],    0, 72.8, [360 , 170], 'w '],    # 1.
                         ['Lum',  [7,  0],    0, 72.8, [360 , 170], 'w '],    # 2.
@@ -538,8 +538,8 @@ site_config = {
 
                 'CameraXSize' : 9600,
                 'CameraYSize' : 6422,
-                'MaxBinX' : 2,
-                'MaxBinY' : 2,
+                #'MaxBinX' : 2,
+                #'MaxBinY' : 2,
                 'StartX' : 1,
                 'StartY' : 1,
 
@@ -565,7 +565,6 @@ site_config = {
                 'maximum_bin':  [1, 1, 0.2876],
                 'cosmics_at_default' : 'yes',
                 'cosmics_at_maximum' : 'yes',
-                'bin_enable':['2 2'],
                 'cycle_time':  [18, 15, 15, 12],  # 3x3 requires a 1, 1 reaout then a software bin, so slower.
                 'rbi_delay':  0.,      # This being zero says RBI is not available, eg. for SBIG.
                 'is_cmos':  True,
@@ -592,8 +591,12 @@ site_config = {
                 'default_area':  "Full",
                 'has_darkslide':  True,
                 'shutter_type': "Electronic",
-                
-                'flat_bin_spec': ['1,1', '2 2'],    # List of binnings for flats
+                'flat_bin_spec': ['1,1','2,2'],    #Default binning for flats
+                'darkbias_bin_spec': ['1,1','2,2'],    #Default binning for flats
+                'bin_enable': ['1,1', '2,2'],
+                'dark_length' : 900,
+                'bias_count' : 10,
+                'dark_count' : 10,
                 'darkslide_com':  'COM17',
                 'has_screen': True,
                 'screen_settings':  {

@@ -238,6 +238,7 @@ site_config = {
             'east_flip_dec_correction': 0.0,
             'west_clutch_ra_correction': 0.0,
             'west_clutch_dec_correction': 0.0,
+            'home_after_unpark' : False,
             'has_paddle': False,    #or a string that permits proper configuration.
             'has_ascom_altaz': True,
             'pointing_tel': 'tel1',     #This can be changed to 'tel2' by user.  This establishes a default.
@@ -500,7 +501,7 @@ site_config = {
                 'home_filter': 1,
                 'filter_reference': 1,
                 'default_filter':  'w',
-                'filter_data': [['filter', 'filter_index', 'filter_offset', 'sky_gain', 'screen_gain', 'abbreviation'],
+                'filter_data': [
                                 ['air',     [0, 0], -1000, 0.01, [2, 17], 'ai'],   # 0
                                 ['Lum',     [1, 0],     0, 0.01, [2, 17], 'w '],   # 20
                                 ['Red',     [0, 4],     0, 0.01, [2, 17], 'r '],  # 21                                ['JV (Grn)',      [0, 3],     0, 0.01, [2, 17], 'V '],   # 9
@@ -582,8 +583,8 @@ site_config = {
                 'y_chip':   4117,
                 'CameraXSize' : 4132,
                 'CameraYSize' : 4117,
-                'MaxBinX' : 2,
-                'MaxBinY' : 2,
+                #'MaxBinX' : 2,
+                #'MaxBinY' : 2,
                 'StartX' : 1,
                 'StartY' : 1,
                 'x_pixel':  9.0,
@@ -617,7 +618,7 @@ site_config = {
                 'maximum_bin':  [1, 1, 0.469],    # Matched to seeing situation by owner
                 'cosmics_at_default' : 'no',
                 'cosmics_at_maximum' : 'yes',
-                'bin_enable':  ['2 2'],
+
                 'cycle_time':  [10, 12, 8, 6],  # 3x3 requires a 1, 1 reaout then a software bin, so slower.
                 'rbi_delay':  0.,      # This being zero says RBI is not available, eg. for SBIG.
                 'is_cmos':  False,
@@ -637,7 +638,6 @@ site_config = {
                 'areas_implemented': ["600%", "300%", "220%", "150%", "Full", "Sqr", '71%', '50%',  '35%', '25%', '12%'],
                 'default_area':  "Full",
                 'default_rotation': 0.0000,
-                'flat_bin_spec': '1,1',    #Default binning for flats
                 'smart_stack_exposure_time': 30,
                 #'bin_modes':  [[2, 2, 0.9371], [1, 1, 0.4685], [3, 3, 1.4056], [4, 4, 1.8742]],     #Meaning no binning if list has only one entry
                 #'default_bin':  [2, 2],    #Always square and matched to seeing situation by owner
@@ -645,8 +645,14 @@ site_config = {
                 'has_darkslide':  False,
                 'darkslide_com':  None,
                 'shutter_type': "Electronic",
+                'flat_bin_spec': ['1,1','2,2', '3,3','4,4'],    #Default binning for flats
+                'darkbias_bin_spec': ['1,1','2,2', '3,3','4,4'],    #Default binning for flats
+                'bin_enable': ['1,1', '2,2', '3,3','4,4'],
+                'dark_length' : 900,
+                'bias_count' : 10,
+                'dark_count' : 10,
                 
-                'flat_bin_spec': ['1,1', '2 2'],    # List of binnings for flats
+                
                 'has_screen': True,
                 'screen_settings':  {
                     'screen_saturation':  157.0,

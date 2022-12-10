@@ -95,7 +95,7 @@ site_config = {
     'pointing_calibration_on_startup': False,
     'periodic_focus_time' : 0.5, # This is a time, in hours, over which to bypass automated focussing (e.g. at the start of a project it will not refocus if a new project starts X hours after the last focus)
     'stdev_fwhm' : 0.5, # This is the expected variation in FWHM at a given telescope/camera/site combination. This is used to check if a fwhm is within normal range or the focus has shifted
-    'focus_exposure_time': 60, # Exposure time in seconds for exposure image
+    'focus_exposure_time': 120, # Exposure time in seconds for exposure image
 
     'focus_trigger' : 5.0, # What FWHM increase is needed to trigger an autofocus
     'solve_nth_image' : 10, # Only solve every nth image
@@ -214,6 +214,7 @@ site_config = {
             'west_clutch_dec_correction': 0.0, #
             'east_flip_ra_correction':  0.0, #
             'east_flip_dec_correction': 0.0,  #  #
+            'home_after_unpark' : True,
             'permissive_mount_reset' : 'yes', # if this is set to yes, it will reset the mount at startup and when coordinates are out significantly
             'settings': {
 			    'latitude_offset': 0.0,     #Decimal degrees, North is Positive   These *could* be slightly different than site.
@@ -403,14 +404,13 @@ site_config = {
             #"driver":   "Maxim.Image",   #"LCO.dual",  #  'ASCOM.FLI.FilterWheel',
             'ip_string': None,
             "dual_wheel": False,
-            "default_flat_exposure" : 1.0,
             'settings': {
                 'filter_count': 11,   #  This must be correct as to the number of filters
-                'home_filter':  0,
+                'home_filter':  4,
                 'default_filter': "pr",
-                'filter_list': ['focus','pr','pg','pb','ha','o3','s2', 'air'], # A list of actual physical filters for the substitution function
-                'filter_reference': 0,   #  We choose to use W as the default filter.  Gains taken at F9, Ceravolo 300mm
-                'filter_data': [['filter', 'filter_index', 'filter_offset', 'sky_gain', 'screen_gain', 'alias'],  #NB NB NB add cwl & bw in nm.
+                'filter_reference': 4,   #  We choose to use W as the default filter.  Gains taken at F9, Ceravolo 300mm
+                # Columns for filter data are : ['filter', 'filter_index', 'filter_offset', 'sky_gain', 'screen_gain', 'alias']
+                'filter_data': [  
 
                         #['w',     [0,  0],     0, 72.7, [1.00 ,  72], 'PL'],    #0.   For sequencer autofocus  consider foc or f filter
                         ['focus', [3,  3],     0, 72.7, [1.00 ,  72], 'focus'],    #0.
@@ -418,13 +418,13 @@ site_config = {
                         ['dark',    [1,  1],     0, 170, [1.00 , 119], 'PhRed'],    #2.
                         ['pb',    [2,  2],     0, 220, [1.00 , 113], 'PhGreen'],    #3.
                         ['pg',    [3,  3],     0, 300, [0.80 ,  97], 'PhBlue'],    #4.
-                        ['pr',    [4,  4],     0, 300, [0.80 ,  97], 'PhBlue'],    #4.
+                        ['pr',    [4,  4],     0, 32, [0.80 ,  97], 'PhBlue'],    #4.
                         #['PR',    [1,  1],     0, 170, [1.00 , 119], 'PhBlue'],    #2.
                         #['PG',    [2,  2],     0, 220, [1.00 , 113], 'PhGreen'],    #3.
                         #['PB',    [3,  3],     0, 300, [0.80 ,  97], 'PhRed'],    #4.
-                        ['ha',    [5,  5],     0, .400, [5.00 , 200], 'Halpha'],    #5.
+                        ['ha',    [5,  5],     0, .50, [5.00 , 200], 'Halpha'],    #5.
                         ['o3',    [6,  6],     0, 6, [4.00 , 200], 'OIII'],    #6.
-                        ['s2',    [7,  7],     0, .221, [10.0,  200], 'SII']],    #7.
+                        ['s2',    [7,  7],     0, .2, [10.0,  200], 'SII']],    #7.
                         #['air',   [7,  7], -1000, 100., [1.00,   70], 'air'],    #8.
                         #['gooble',  [6,  6],     0, .221, [   0,    0], 'dark'],   #9.
                         #['LRGB',  [0,  0],     0, .221, [   0,    0], 'LRGB']],   #10.
@@ -433,7 +433,7 @@ site_config = {
                 'filter_screen_sort':  [1, 4, 3, 2, 6, 5, 7],   #  don't use narrow yet,  8, 10, 9], useless to try.
 
 
-                'filter_sky_sort': [6, 4, 5, 1, 2, 3,  0]    #No diffuser based filters
+                'filter_sky_sort': [8, 7, 6, 3, 4, 5,  1]    #No diffuser based filters
                 #'filter_sky_sort': [7, 19, 2, 13, 18, 5, 15,\
                 #                    12, 4, 11, 16, 10, 9, 17, 3, 14, 1, 0]    #basically no diffuser based filters
                 #[32, 8, 22, 21, 20, 23, 31, 6, 7, 19, 27, 2, 37, 13, 18, 30, 5, 15, 36, 12,\
@@ -497,8 +497,9 @@ site_config = {
                 'corner_everlap': True,
                 'x_bias_line': True,
                 'y_bias_line': True,
-                'ref_dark': 60.0,
-                'long_dark': 600.0,
+                #'ref_dark': 60.0,
+                #'long_dark': 600.0,
+                
                 'x_active': 4500,
                 'y_active': 3600,
                 #THIS IS ALL WRONG!
@@ -513,8 +514,8 @@ site_config = {
                 'pix_scale': [0.269,0.538],
                 'CameraXSize' : 4096,
                 'CameraYSize' : 4096,
-                'MaxBinX' : 2,
-                'MaxBinY' : 2,
+                #'MaxBinX' : 4,
+                #'MaxBinY' : 4,
                 'StartX' : 1,
                 'StartY' : 1,
 
@@ -525,16 +526,12 @@ site_config = {
                 'north_offset': 0.0,    #  These three are normally 0.0 for the primary telescope
                 'east_offset': 0.0,     #  Not sure why these three are even here.
                 'rotation': 0.0,        #  Probably remove.
-                'min_exposure': 0.2,
+                'min_exposure': 0.1,
                 'max_exposure': 3600,
                 'can_subframe':  True,
                 'min_subframe':  [128, 128],
-                'bin_modes':  [[1, 1, 0.269],[2, 2, 0.538]], #  , [2, 2, 2.13], [3, 3, 3.21], [4, 4, 4.27]],   #Meaning no binning choice if list has only one entry, default should be first.
-                'default_bin':  [2, 2, 0.538],    #  Matched to seeing situation by owner
-                'maximum_bin':  [1, 1, 0.269],    #  Matched to seeing situation by owner
-                'cosmics_at_default' : 'yes',
-                'cosmics_at_maximum' : 'yes',
-                'bin_enable': ['1 1', '2 2'],
+               
+                
                 'cycle_time':  [2, 2, 2, 2],  # 3x3 requires a 1, 1 reaout then a software bin, so slower.
                 'rbi_delay':  0.,      #  This being zero says RBI is not available, eg. for SBIG.
                 'is_cmos':  False,
@@ -559,7 +556,19 @@ site_config = {
                 'areas_implemented': ["Full",'4x4d', "600%", "500%", "450%", "300%", "220%", "150%", "133%", "Full", "Sqr", '71%', '50%',  '35%', '25%', '12%'],
                 'default_area':  "Full",
                 'default_rotation': 0.0000,
-                'flat_bin_spec': ['1,1','2 2'],    #Default binning for flats
+                'flat_bin_spec': ['1,1','2,2', '3,3','4,4'],    #Default binning for flats
+                #'darkbias_bin_spec': ['1,1','2,2', '3,3','4,4'],    #Default binning for flats
+                'darkbias_bin_spec': ['1,1', '2,2','3,3','4,4'],    #Default binning for flats
+                'bin_enable': ['1,1', '2,2', '3,3','4,4'],
+                'default_bin':  [2, 2, 0.538],    #  Matched to seeing situation by owner
+                'maximum_bin':  [1, 1, 0.269],    #  Matched to seeing situation by owner
+                'bin_modes':  [[1, 1, 0.269],[2, 2, 0.538]], #  , [2, 2, 2.13], [3, 3, 3.21], [4, 4, 4.27]],   #Meaning no binning choice if list has only one entry, default should be first.
+                
+                'cosmics_at_default' : 'yes',
+                'cosmics_at_maximum' : 'yes',
+                'dark_length' : 10,
+                'bias_count' : 2,
+                'dark_count' : 2,
                 'has_darkslide':  False,
                 'darkslide_com':  None,
                 'shutter_type': "Electronic",

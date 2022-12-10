@@ -257,7 +257,8 @@ site_config = {
             'west_clutch_ra_correction': 0.0,
             'west_clutch_dec_correction': 0.0,
             'east_flip_ra_correction': 0.0,
-            'east_flip_dec_correction': 0.0,  #
+            'east_flip_dec_correction': 0.0,  #  #  #
+            'home_after_unpark' : False,
             'permissive_mount_reset' : 'no', # if this is set to yes, it will reset the mount at startup and when coordinates are out significantly
             'has_paddle': False,
             'has_ascom_altaz': True,
@@ -485,7 +486,7 @@ site_config = {
                 'default_filter':  'w',
                 'filter_reference': 2,
 
-                'filter_list': ['PL','PR','PG','PB','HA','O3','S2', 'air','dif','w','CR','N2','up','gp','rp','ip','z', 'difup','difgp','difrp','difip','dark'], # A list of actual physical filters for the substitution function
+                # Columns for filter data are : ['filter', 'filter_index', 'filter_offset', 'sky_gain', 'screen_gain', 'alias']
                 'filter_data': [['air',     [0, 0], -1000,  118.6, [2, 17], 'ai'], #  0
                                 ['dif',     [4, 0],     0,  104.8, [2, 17], 'df'], #  1
                                 ['w',       [2, 0],     0,  133.7, [2, 17], 'w '], #  2
@@ -582,8 +583,6 @@ site_config = {
                 'corner_everlap': None,
                 'x_bias_line': True,
                 'y_bias_line': True,
-                'ref_dark': 360.0,
-                'long_dark': 600.0,
                 'x_active': 4784,
                 'y_active': 3194,
                 'det_size': '[1:9600, 1:6422]',  # Physical chip data size as reutrned from driver
@@ -598,8 +597,8 @@ site_config = {
 
                 'CameraXSize' : 9600,
                 'CameraYSize' : 6422,
-                'MaxBinX' : 2,
-                'MaxBinY' : 2,
+                #'MaxBinX' : 2,
+                #'MaxBinY' : 2,
                 'StartX' : 1,
                 'StartY' : 1,
 
@@ -621,14 +620,12 @@ site_config = {
                 'maximum_bin': [1, 1, 0.303],
                 'cosmics_at_default' : 'yes',
                 'cosmics_at_maximum' : 'yes',
-                'bin_enable':  ['2 2'],  #  Always square and matched to seeing situation by owner
                 'cycle_time':  [18, 15, 15, 12],
                 'rbi_delay':  0,      #  This being zero says RBI is not available, eg. for SBIG.
                 'is_cmos':  True,
                 'is_color': False,
                 'can_set_gain':  True,
-                'ref_dark': 600,
-                'long_dark': None,   #  s.
+
                 'reference_gain': [1.3, 2.6, 3.9, 5.2],     #  One val for each binning. Assumed digitalsumming in camera???
                 'reference_noise': [6, 6, 6, 6],    #  NB Guess
                 'reference_dark': [.2, .8, 1.8, 3.2],  #  Guess
@@ -645,10 +642,15 @@ site_config = {
                 'areas_implemented': ['Full', '0.5sq°',  '0.7sq°', '1x1°', '1.4sq°', '2x2°', '2.8xsq°', '4x4°', '5.6sq°'],
                 'default_area':  "Full",
                 'default_rotation': 0.0000,
-                'flat_bin_spec': ['1,1', '2 2'],    # List of binnings for flats
                 'has_darkslide':  True,
                 'darkslide_com':  'COM15',
                 'shutter_type': "Electronic",
+                'flat_bin_spec': ['1,1','2,2', '3,3','4,4'],    #Default binning for flats
+                'darkbias_bin_spec': ['1,1','2,2', '3,3','4,4'],    #Default binning for flats
+                'bin_enable': ['1,1', '2,2', '3,3','4,4'],
+                'dark_length' : 900,
+                'bias_count' : 10,
+                'dark_count' : 10,
                 'has_screen': True,
                 'screen_settings':  {
                     'screen_saturation':  157.0,

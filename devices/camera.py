@@ -30,6 +30,8 @@ import win32com.client
 from planewave import platesolve
 
 import colour
+
+    
 from colour_demosaicing import (
     demosaicing_CFA_Bayer_bilinear,
     demosaicing_CFA_Bayer_Malvar2004,
@@ -200,46 +202,60 @@ class Camera:
         plog(driver, name)
         self.camera = win32com.client.Dispatch(driver)
 
-        plog("loading flash dark frame and bias frame if available")
+        plog("loading flash dark, bias and flat masters frames if available")        
+        plog("For binnings set in bin_enable")
+        bins_enabled=config["camera"][self.name]['settings']["bin_enable"]
+        self.biasFiles = {}
+        self.darkFiles = {}
+        self.flatFiles = {}
+        for ctr in range(len(bins_enabled)):
 
-        try:
-            self.biasframe = fits.open(
-                self.config["archive_path"]
-                + "calibmasters/"
-                + self.alias
-                + "/BIAS_master.fits"
-            )
-            self.biasframe = np.asarray(self.biasframe[0].data, dtype=np.int16)
-        except:
-            plog("Bias frame not available")
-            self.biasframe = [0]
-        try:
-            self.darkframe = fits.open(
-                self.config["archive_path"]
-                + "calibmasters/"
-                + self.alias
-                + "/DARK_master.fits"
-            )
-            self.darkframe = np.asarray(self.darkframe[0].data, dtype=np.float32)
-        except:
-            plog("Dark frame not available")
-            self.darkframe = [0]
-
-        try:
-            plog("Arranging dictionary of flat frames if available")
-            fileList = glob.glob(
-                self.config["archive_path"]
-                + "calibmasters/"
-                + self.alias
-                + "/masterFlat*.npy"
-            )
-            self.flatFiles = {}
-            for file in fileList:
-                self.flatFiles.update({file.split("_")[1].replace ('.npy',''): file})
-            # To supress occasional flatfield div errors
-            np.seterr(divide="ignore")
-        except:
-            plog("Flat frames not loaded or available")
+            tempBinNumber = bins_enabled[ctr].replace(',',' ').split(' ')[0]       
+            
+            try:
+                #self.biasframe = fits.open(
+                tempbiasframe = fits.open(
+                    self.config["archive_path"]
+                    + "calibmasters/"
+                    + self.alias
+                    + "/BIAS_master_bin" + str(tempBinNumber) + ".fits"
+                )
+                tempbiasframe = np.asarray(tempbiasframe[0].data, dtype=np.int16)
+                self.biasFiles.update({tempBinNumber: tempbiasframe})
+                del tempbiasframe
+            except:
+                plog("Bias frame for Binning " + str(tempBinNumber) + "not available")               
+                
+            
+            try:
+                #self.darkframe = fits.open(
+                tempdarkframe = fits.open(
+                    self.config["archive_path"]
+                    + "calibmasters/"
+                    + self.alias
+                    + "/DARK_master_bin" + str(tempBinNumber) + ".fits"
+                )
+                tempdarkframe = np.asarray(tempdarkframe[0].data, dtype=np.float32)
+                self.darkFiles.update({tempBinNumber: tempdarkframe})
+                del tempdarkframe
+            except:
+                plog("Dark frame for Binning " + str(tempBinNumber) + "not available")  
+    
+            try:
+                
+                fileList = glob.glob(
+                    self.config["archive_path"]
+                    + "calibmasters/"
+                    + self.alias
+                    + "/masterFlat*_bin" + str(tempBinNumber) + ".npy"
+                )
+                
+                for file in fileList:
+                    self.flatFiles.update({file.split("_")[1].replace ('.npy','') + '_bin' + str(tempBinNumber): file})
+                # To supress occasional flatfield div errors
+                np.seterr(divide="ignore")
+            except:
+                plog("Flat frames not loaded or available")
 
         plog("Connecting to:  ", driver)
 
@@ -390,11 +406,12 @@ class Camera:
                 self.config["camera"][self.name]["settings"]["default_bin"][0]
             )  # = 1
             self.camera.BinY = int(
-                self.config["camera"][self.name]["settings"]["default_bin"][-1]
+                self.config["camera"][self.name]["settings"]["default_bin"][1]
             )  # = 1
+
             # NB we need to be sure AWS picks up this default.config.site_config['camera'][self.name]['settings']['default_bin'])
         except:
-            plog("Camera only accepts Bins = 1.")
+            plog("Problem setting up default binning at startup.")
             self.camera.BinX = 1
             self.camera.BinY = 1
         self.overscan_x = int(
@@ -409,10 +426,10 @@ class Camera:
         except:
             self.camera_x_size = self.config['camera'][self.name]['settings']['CameraXSize']  #unbinned values. QHY returns 2
             self.camera_y_size = self.config['camera'][self.name]['settings']['CameraYSize']  #unbinned
-        self.camera_max_x_bin = self.config["camera"][self.name]["settings"]["MaxBinX"]
-        self.camera_max_y_bin = self.config["camera"][self.name]["settings"][
-            "MaxBinY"
-        ]  # NB NB Overriding 511 for FLI cam
+        #self.camera_max_x_bin = self.config["camera"][self.name]["settings"]["MaxBinX"]
+        #self.camera_max_y_bin = self.config["camera"][self.name]["settings"][
+        #    "MaxBinY"
+        #]  # NB NB Overriding 511 for FLI cam
         self.camera_start_x = self.config["camera"][self.name]["settings"]["StartX"]
         self.camera_start_y = self.config["camera"][self.name]["settings"]["StartY"]
         self.camera_num_x = int(
@@ -517,7 +534,7 @@ class Camera:
         return self.camera.TemperatureSetpoint
 
     def _theskyx_expose(self, exposure_time, imtypeb):
-        self.camera.ExposureTime = exposure_time
+        self.camera.ExposureTime = exposure_time        
         self.camera.TakeImage()
 
     def _theskyx_stop_expose(self):
@@ -781,11 +798,11 @@ class Camera:
         not the slower File Path.  THe mode used for focusing or other operations where we do not want to save any
         image data.
         """
-        try:
-            self.user_name
-        except:
-            self.user_name = "kilroy_was_here"
-        self.t0 = time.time()
+        #try:
+        #    self.user_name
+        #except:
+        #    self.user_name = "kilroy_was_here"
+        #self.t0 = time.time()
         # Force a reseek //eventually dither//
         try:
             if (
@@ -819,6 +836,7 @@ class Camera:
                 plog("Camera reconnect failed 2nd time @ expose entry.")
 
         opt = optional_params
+        print ("optional params :", opt)
         self.hint = optional_params.get("hint", "")
         self.script = required_params.get("script", "None")
         
@@ -841,14 +859,14 @@ class Camera:
 
 
         bin_x = optional_params.get(
-            "bin", self.config["camera"][self.name]["settings"]["default_bin"]
+            "bin", self.config["camera"][self.name]["settings"]["default_bin"][0]
         )  # NB this should pick up config default.
 
         if bin_x == '"optimal"':
-            bin_x = self.config["camera"][self.name]["settings"]["default_bin"]
+            bin_x = self.config["camera"][self.name]["settings"]["default_bin"][0]
 
         if bin_x == '"maximum"':
-            bin_x = self.config["camera"][self.name]["settings"]["maximum_bin"]
+            bin_x = self.config["camera"][self.name]["settings"]["maximum_bin"][0]
 
         if bin_x in [
             "4 4",
@@ -881,6 +899,16 @@ class Camera:
             bin_x = 2
             self.ccd_sum = "2 2"
         elif bin_x in [
+            "1 1",
+            1,
+            "1, 1",
+            "1,1",
+            [1, 1],
+            (1, 1),
+        ]:  # The bin spec is too convoluted. This needs a deep clean.
+            bin_x = 1
+            self.ccd_sum = "1 1"
+        elif bin_x in [
             "0 0",
             0,
             "0, 0",
@@ -893,6 +921,7 @@ class Camera:
         else:
             bin_x = self.config['camera'][self.name]['settings']['default_bin'][0]
             self.ccd_sum = str(bin_x) + ' ' + str(bin_x)
+
 
         bin_y = bin_x  # NB This needs fixing someday!
         self.bin = bin_x
@@ -958,9 +987,7 @@ class Camera:
                 self.current_filter = self.config["filter_wheel"]["filter_wheel1"]["name"]
         except Exception as e:
             plog("Camera filter setup:  ", e)
-            plog(traceback.format_exc())
-
-        
+            plog(traceback.format_exc())      
 
         # Here we adjust for focus temp and filter offset
         #if not imtype.lower() in ["auto_focus", "focus", "autofocus probe"]:
@@ -1033,17 +1060,17 @@ class Camera:
         # except:
         #     area = 150  # was 100 in ancient times.
 
-        if bin_y == 0 or self.camera_max_x_bin != self.camera_max_y_bin:
-            self.bin_x = min(bin_x, self.camera_max_x_bin)
-            self.cameraBinY = self.bin_y
-        else:
-            self.bin_x = min(bin_x, self.camera_max_x_bin)
-            self.camera.BinX = self.bin_x
-            self.bin_y = min(bin_y, self.camera_max_y_bin)
-            self.camera.BinY = self.bin_y
+        # if bin_y == 0 or self.camera_max_x_bin != self.camera_max_y_bin:
+        #     self.bin_x = min(bin_x, self.camera_max_x_bin)
+        #     self.cameraBinY = self.bin_y
+        # else:
+        #     self.bin_x = min(bin_x, self.camera_max_x_bin)
+        #     self.camera.BinX = self.bin_x
+        #     self.bin_y = min(bin_y, self.camera_max_y_bin)
+        #     self.camera.BinY = self.bin_y
 
-        self.len_x = self.camera_x_size // self.bin_x
-        self.len_y = self.camera_y_size // self.bin_y  # Unit is binned pixels.
+        self.len_x = self.camera_x_size // bin_x
+        self.len_y = self.camera_y_size // bin_y  # Unit is binned pixels.
         self.len_xs = 0  # THIS IS A HACK, indicating no overscan.
 
 
@@ -1063,20 +1090,10 @@ class Camera:
 
             ## Vital Check : Has end of observing occured???
             ## Need to do this, SRO kept taking shots til midday without this
-            #print (g_dev['events']['Observing Begins'])
-            #print (ephem.Date(ephem.now()+ (exposure_time *ephem.second)))
-            #loadingprint (g_dev['events']['Observing Ends'])
             if imtype.lower() in ["light"] or imtype.lower() in ["expose"]:
                 if g_dev['events']['Observing Ends'] < ephem.Date(ephem.now()+ (exposure_time *ephem.second)):
                     print ("Sorry, exposures are outside of night time.")
                     break
-
-            #print (endOfExposure)
-            #print (now_date_timeZ)
-            #print (self.blockend)
-            #print (ephem.now() + exposure_time)
-            #print (g_dev['events']['Observing Ends'])
-            #print (ephem.Date(ephem.now()+ (exposure_time *ephem.second)))
 
             self.pre_mnt = []
             self.pre_rot = []
@@ -1096,11 +1113,9 @@ class Camera:
                 Nsmartstack=np.ceil(exposure_time / ssExp)
                 exposure_time=ssExp
                 SmartStackID=(datetime.datetime.now().strftime("%d%m%y%H%M%S"))
-
             else:
                 Nsmartstack=1
                 SmartStackID='no'
-
 
             try:
                 # Check here for filter, guider, still moving  THIS IS A CLASSIC
@@ -1184,25 +1199,15 @@ class Camera:
 
                     # Check that the block isn't ending during normal observing time (don't check while biasing, flats etc.)
                     if not 'None' in self.blockend: # Only do this check if a block end was provided.
-                        # Check that the exposure doesn't go over the end of a block
+                        
+                    # Check that the exposure doesn't go over the end of a block
                         endOfExposure = datetime.datetime.now() + datetime.timedelta(seconds=exposure_time)
                         now_date_timeZ = endOfExposure.isoformat().split('.')[0] +'Z'
                         blockended = now_date_timeZ  >= self.blockend
-                        #blockendedafterexposure  = now_date_timeZ + (exposure_time *ephem.second) >= self.blockend
-
-                        #print (endOfExposure)
-                        #print (now_date_timeZ)
-                        #print (self.blockend)
-                        #print (ephem.now() + exposure_time)
-                        #print (g_dev['events']['Observing Ends'])
-                        #print (ephem.Date(ephem.now()+ (exposure_time *ephem.second)))
-
                         if blockended or ephem.Date(ephem.now()+ (exposure_time *ephem.second)) >= g_dev['events']['End Morn Bias Dark']:
                             print ("Exposure overlays the end of a block or the end of observing. Skipping Exposure.")
-
-                            print ("Waiting until block ended.")
-
                             return
+                        
                     # NB Here we enter Phase 2
                     try:
                         self.t1 = time.time()
@@ -1366,7 +1371,6 @@ class Camera:
                                 else:
                                     imtypeb = 0
                                 self.t2 = time.time()
-
                                 self._expose(exposure_time, imtypeb)
                         else:
                             plog("Something terribly wrong, driver not recognized.!")
@@ -1451,7 +1455,7 @@ class Camera:
 
 
 
-        print ("Smart Stack ID: " + smartstackid)
+        #print ("Smart Stack ID: " + smartstackid)
         g_dev["obs"].send_to_user(
             "Starting Exposure: "
             + str(exposure_time)
@@ -1564,7 +1568,7 @@ class Camera:
                 continue
 
             incoming_image_list = []
-            self.t4 = time.time()
+            #self.t4 = time.time()
             try:
                 pier_side = g_dev["mnt"].mount.sideOfPier
             except:
@@ -1607,18 +1611,19 @@ class Camera:
 
                 pedastal = 0
                 self.overscan = 0
-                self.t4p4 = time.time()
-                self.t4p5 = time.time()
-                self.t5 = time.time()
+                #self.t4p4 = time.time()
+                #self.t4p5 = time.time()
+                #self.t5 = time.time()
                 try:
                     pier_side = g_dev[
                         "mnt"
                     ].mount.sideOfPier  # 0 == Tel Looking West, is flipped.
                 except:
-                    plog("This mount doesn't report sideofpier")
+                    #plog("This mount doesn't report sideofpier")
+                    pass
 
                 ix, iy = self.img.shape
-                self.t77 = time.time()
+                #self.t77 = time.time()
 
                 neg_pix = np.where(self.img < 0)
                 if len(neg_pix[0]) > 0:
@@ -1693,6 +1698,11 @@ class Camera:
                     )  # THis needs to be done to keep fits "traditional." 0,0 upper left.
                     self.img = None
 
+
+                    # It is faster to store the current binning than keeping on asking ASCOM throughout this
+                    tempBinningCodeX=self.camera.BinX
+                    tempBinningCodeY=self.camera.BinY
+
                     # assign the keyword values and comment of the keyword as a tuple to write both to header.
 
                     hdu.header["BUNIT"] = ("adu", "Unit of array values")
@@ -1705,20 +1715,20 @@ class Camera:
                         "[um] Size of unbinned pixel, in Y",
                     )
                     hdu.header["XPIXSZ"] = (
-                        round(float(hdu.header["CCDXPIXE"] * self.camera.BinX), 3),
+                        round(float(hdu.header["CCDXPIXE"] * tempBinningCodeX), 3),
                         "[um] Size of binned pixel",
                     )
                     hdu.header["YPIXSZ"] = (
-                        round(float(hdu.header["CCDYPIXE"] * self.camera.BinY), 3),
+                        round(float(hdu.header["CCDYPIXE"] * tempBinningCodeY), 3),
                         "[um] Size of binned pixel",
                     )
                     try:
                         hdu.header["XBINING"] = (
-                            self.camera.BinX,
+                            tempBinningCodeX,
                             "Pixel binning in x direction",
                         )
                         hdu.header["YBINING"] = (
-                            self.camera.BinY,
+                            tempBinningCodeY,
                             "Pixel binning in y direction",
                         )
                     except:
@@ -1798,23 +1808,26 @@ class Camera:
                                               'Type of shutter')
                     hdu.header["GAIN"] = (
                         self.config["camera"][self.name]["settings"]["reference_gain"][
-                            self.camera.BinX - 1
+                            tempBinningCodeX - 1
                         ],
                         "[e-/ADU] Pixel gain",
                     )
                     hdu.header["RDNOISE"] = (
                         self.config["camera"][self.name]["settings"]["reference_noise"][
-                            self.camera.BinX - 1
+                            tempBinningCodeX - 1
                         ],
                         "[e-/pixel] Read noise",
                     )
                     hdu.header["CMOSCAM"] = (self.is_cmos, "Is CMOS camera")
-                    hdu.header["FULLWELL"] = (
-                        self.config["camera"][self.name]["settings"][
-                            "fullwell_capacity"
-                        ][self.camera.BinX - 1],
-                        "Full well capacity",
-                    )
+                    try:
+                        hdu.header["FULLWELL"] = (
+                            self.config["camera"][self.name]["settings"][
+                                "fullwell_capacity"
+                            ][tempBinningCodeX-1],
+                            "Full well capacity",
+                        )
+                    except:
+                        print ("Full well capacity not set for this binning in the site-config")
                     hdu.header["CMOSGAIN"] = (0, "CMOS Camera System Gain")
                     hdu.header["CMOSOFFS"] = (10, "CMOS Camera offset")
                     hdu.header["CAMOFFS"] = (10, "Camera offset")
@@ -2226,7 +2239,8 @@ class Camera:
                         hdu.header["ROTANGLE"] = (avg_rot[1], "[deg] Rotator angle")
                         hdu.header["ROTMOVNG"] = (avg_rot[2], "Rotator is moving")
                     except:
-                        plog("have to have no rotator header itesm when no rotator")
+                        #plog("have to have no rotator header itesm when no rotator")
+                        pass
 
                     try:
                         hdu.header["FOCUS"] = (
@@ -2267,13 +2281,16 @@ class Camera:
                         #plog("have to not have ocn header items when no ocn")
                         pass
 
-                    hdu.header["PIXSCALE"] = (
-                        self.config["camera"][self.name]["settings"]["pix_scale"][
-                            self.camera.BinX - 1
-                        ],
-                        "[arcsec/pixel] Nominal pixel scale on sky",
-                    )
-                    pixscale = float(hdu.header["PIXSCALE"])
+                    try:
+                        hdu.header["PIXSCALE"] = (
+                            self.config["camera"][self.name]["settings"]["pix_scale"][
+                                tempBinningCodeX - 1
+                            ],
+                            "[arcsec/pixel] Nominal pixel scale on sky",
+                        )
+                        pixscale = float(hdu.header["PIXSCALE"])
+                    except:
+                        print ("pixel scale not set in the site-config for this binning")
                     hdu.header["REQNUM"] = ("00000001", "Request number")
                     hdu.header["ISMASTER"] = (False, "Is master image")
                     current_camera_name = self.alias
@@ -2333,11 +2350,11 @@ class Camera:
                         if opt["area"] == 150:
                             f_ext += "f"
                         if frame_type[0:4] in ("bias", "dark"):
-                            f_ext += frame_type[0] + "_" + str(self.camera.BinX)
+                            f_ext += frame_type[0] + "_" + str(tempBinningCodeX)
                         if frame_type in (
                             "lampflat",
                             "skyflat",
-                            " screenflat",
+                            "screenflat",
                             "solarflat",
                             "arc",
                             "expose",
@@ -2345,7 +2362,7 @@ class Camera:
                             f_ext += (
                                 frame_type[:2]
                                 + "_"
-                                + str(self.camera.BinX)
+                                + str(tempBinningCodeX)
                                 + "_"
                                 + str(self.current_filter)
                             )
@@ -2518,18 +2535,18 @@ class Camera:
                         hdusmall = copy.deepcopy(hduraw)
                         hdusmall.data = hdusmall.data.astype("float32")
                         # Quick flash bias and dark frame
+                                                
                         try:
-                            if len(self.biasframe) > 10:
-                                hdusmall.data = hdusmall.data - self.biasframe
-                            if len(self.darkframe) > 10:
-                                hdusmall.data = hdusmall.data - (
-                                    self.darkframe * exposure_time
-                                )
+
+                            hdusmall.data = hdusmall.data - self.biasFiles[str(tempBinningCodeX)]
+                            hdusmall.data = hdusmall.data - (self.darkFiles[str(tempBinningCodeX)] * exposure_time)
+                            
                         except Exception as e:
                             plog("debias/darking light frame failed: ", e)
+                            
                         # Quick flat flat frame
                         try:
-                            tempFlatFrame = np.load(self.flatFiles[self.current_filter])
+                            tempFlatFrame = np.load(self.flatFiles[str(self.current_filter + "_bin" + str(tempBinningCodeX))])
 
                             hdusmall.data = np.divide(hdusmall.data, tempFlatFrame)
                             del tempFlatFrame
@@ -2572,8 +2589,13 @@ class Camera:
                         # This is best done by taking the two "real" g pixels and interpolating in-between 
                         
                         if self.config["camera"][self.name]["settings"]["is_osc"]:
-                            print ("interpolating bayer grid for focusing purposes.")
+                            #print ("interpolating bayer grid for focusing purposes.")
                             if self.config["camera"][self.name]["settings"]["osc_bayer"] == 'RGGB':
+                                
+                                # Interpolate to make a high resolution version for focussing
+                                # and platesolving
+                                hdufocus.data=demosaicing_CFA_Bayer_bilinear(hdufocus.data, 'RGGB')[:,:,1]
+                                hdufocus.data=hdufocus.data.astype("float32")
                                 
                                 # Only separate colours if needed for colour jpeg
                                 if smartstackid == 'no':
@@ -2614,10 +2636,7 @@ class Camera:
                                     
 
                                 
-                                # Interpolate to make a high resolution version for focussing
-                                # and platesolving
-                                hdufocus.data=demosaicing_CFA_Bayer_bilinear(hdufocus.data, 'RGGB')[:,:,1]
-                                hdufocus.data=hdufocus.data.astype("float32")
+                                
                                 
                                 
 
@@ -2628,7 +2647,7 @@ class Camera:
                         focusimg = np.asarray(
                             hdufocus.data
                         )  # + 100   #maintain a + pedestal for sep  THIS SHOULD not be needed for a raw input file.
-                        focusimg = focusimg.astype("float")
+                        focusimg = focusimg.astype("float32")
                         focusimg = focusimg.copy(
                             order="C"
                         )  # NB Should we move this up to where we read the array?
@@ -2705,6 +2724,7 @@ class Camera:
                                 sources['FWHM'] = sources['FWHM'] * 2
                                 rfp = np.median(sources['FWHM'])
                                 rfr = np.median(sources['FWHM']) * pixscale
+                                rfs = np.std(sources['FWHM']) * pixscale
                                 print("This image has a FWHM of " + str(rfr))
 
                                 result["FWHM"] = rfr
@@ -2768,6 +2788,7 @@ class Camera:
                             hduraw.header["FWHM"] = ( rfp, 'FWHM in pixels')
                             hduraw.header["FWHMpix"] = ( rfp, 'FWHM in pixels')
                             hduraw.header["FWHMasec"] = ( rfr, 'FWHM in arcseconds')
+                            hduraw.header["FWHMstd"] = ( rfs, 'FWHM standard deviation in arcseconds')
 
                         if focus_image == False:
                             text = open(
@@ -2849,7 +2870,7 @@ class Camera:
                         sources.remove_columns(source_delete)
 
                         sources.write(im_path + text_name.replace('.txt', '.sep'), format='csv', overwrite=True)
-                        plog("Saved SEP catalogue")
+
 
 
                         # If this is a focus image, save focus image, estimate pointing, and estimate pointing
@@ -2860,13 +2881,15 @@ class Camera:
                         # It will also do a pointing check at the end of a smartstack
                         # This is outside the reduce queue to guarantee the pointing check is done
                         # prior to the next exposure
-                        print (Nsmartstack)
-                        print (sskcounter)
+
+
+
                         if focus_image == True or ((Nsmartstack == sskcounter+1) and Nsmartstack > 1):
                             cal_name = (
                                 cal_name[:-9] + "F012" + cal_name[-7:]
                             )
-                            hdufocus.writeto(cal_path + cal_name, overwrite=True)
+                            hdufocus.data=hdufocus.data.astype("float32")
+                            hdufocus.writeto(cal_path + cal_name, overwrite=True, output_verify='silentfix')
                             pixscale=hdufocus.header['PIXSCALE']
                             try:
                                 hdufocus.close()
@@ -2904,8 +2927,8 @@ class Camera:
                                 )  # NB WER changed units 20221012
 
                                 # We do not want to reset solve timers during a smartStack
-                                self.last_solve_time = datetime.datetime.now()
-                                self.images_since_last_solve = 0
+                                g_dev['obs'].last_solve_time = datetime.datetime.now()
+                                g_dev['obs'].images_since_last_solve = 0
 
                                 # NB NB NB this needs rethinking, the incoming units are hours in HA or degrees of dec
                                 if (
@@ -2918,30 +2941,40 @@ class Camera:
                                 ] == "yes":
                                     g_dev["mnt"].reset_mount_reference()
                                     plog("I've  reset the mount_reference 1")
-                                    g_dev["mnt"].current_icrs_ra = solve[
-                                        "ra_j2000_hours"
-                                    ]
-                                    g_dev["mnt"].current_icrs_dec = solve[
-                                        "dec_j2000_hours"
-                                    ]
+                                    g_dev["mnt"].current_icrs_ra = solved_ra
+                                    #    "ra_j2000_hours"
+                                    #]
+                                    g_dev["mnt"].current_icrs_dec = solved_dec
+                                    #    "dec_j2000_hours"
+                                    #]
                                     err_ha = 0
                                     err_dec = 0
 
                                 if (
-                                    err_ha * 15 * 3600
+                                    abs(err_ha * 15 * 3600)
                                     > self.config["threshold_mount_update"]
-                                    or err_dec * 3600
+                                    or abs(err_dec * 3600)
                                     > self.config["threshold_mount_update"]
                                 ):
                                     try:
                                         if g_dev["mnt"].pier_side_str == "Looking West":
-                                            g_dev["mnt"].adjust_mount_reference(
-                                                err_ha, err_dec
-                                            )
+                                            try:
+                                                g_dev["mnt"].adjust_mount_reference(
+                                                    err_ha, err_dec
+                                                )
+                                            except Exception as e:
+                                                print ("Something is up in the mount reference adjustment code ", e)
                                         else:
-                                            g_dev["mnt"].adjust_flip_reference(
-                                                err_ha, err_dec
-                                            )  # Need to verify signs
+                                            try:
+                                                g_dev["mnt"].adjust_flip_reference(
+                                                    err_ha, err_dec
+                                                )  # Need to verify signs
+                                            except Exception as e:
+                                                print ("Something is up in the mount reference adjustment code ", e)
+                                        
+                                        g_dev["mnt"].current_icrs_ra = solved_ra                                    
+                                        g_dev["mnt"].current_icrs_dec = solved_dec
+                                        g_dev['mnt'].re_seek(dither=0)
                                     except:
                                         plog("This mount doesn't report pierside")
 
@@ -3039,7 +3072,7 @@ class Camera:
                         try: 
                             hdusmall.close()
                         except:
-                            print ("couldn't close hdusmall")
+                            #print ("couldn't close hdusmall")
                             pass
                         del hdusmall
                             
@@ -3065,7 +3098,7 @@ class Camera:
                         if focus_image == False:
                             try:
                                 self.enqueue_for_fastAWS(200, im_path, text_name.replace('.txt', '.sep'))
-                                plog("Sent SEP up")
+                                #plog("Sent SEP up")
                             except:
                                 plog("Failed to send SEP up for some reason")
 
@@ -3098,7 +3131,7 @@ class Camera:
                     while saver == 0 and saverretries < 10:
                         try:
                             hdufz.writeto(
-                                raw_path + raw_name00 + ".fz", overwrite=True
+                                raw_path + raw_name00 + ".fz", overwrite=True, output_verify='silentfix'
                             )  # Save full fz file locally
                             saver = 1
                         except Exception as e:
@@ -3126,7 +3159,7 @@ class Camera:
                     while saver == 0 and saverretries < 10:
                         try:
                             hduraw.writeto(
-                                raw_path + raw_name00, overwrite=True
+                                raw_path + raw_name00, overwrite=True, output_verify='silentfix'
                             )  # Save full raw file locally
                             saver = 1
                         except Exception as e:
@@ -3144,8 +3177,9 @@ class Camera:
                         saverretries = 0
                         while saver == 0 and saverretries < 10:
                             try:
+                                hdureduced.data=hdureduced.data.astype("float32")
                                 hdureduced.writeto(
-                                    red_path + red_name01, overwrite=True
+                                    red_path + red_name01, overwrite=True, output_verify='silentfix'
                                 )  # Save flash reduced file locally
                                 saver = 1
                             except Exception as e:
@@ -3169,7 +3203,7 @@ class Camera:
                         try:
                             hduraw.writeto(
                                 self.alt_path + g_dev["day"] + "/raw/" + raw_name00,
-                                overwrite=True,
+                                overwrite=True, output_verify='silentfix'
                             )  # Save full raw file locally
                             if "hdureduced" in locals():
                                 hdureduced.writeto(
@@ -3177,7 +3211,7 @@ class Camera:
                                     + g_dev["day"]
                                     + "/reduced/"
                                     + red_name01,
-                                    overwrite=True,
+                                    overwrite=True, output_verify='silentfix'
                                 )  # Save full raw file locally
                             saver = 1
                         except Exception as e:
