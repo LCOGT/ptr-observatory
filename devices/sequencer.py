@@ -991,22 +991,24 @@ class Sequencer:
             dark_count = self.config['camera']['camera_1_1']['settings']['dark_count']
             dark_exp_time = self.config['camera']['camera_1_1']['settings']['dark_length']
             darkbias_bin_spec=self.config['camera']['camera_1_1']['settings']['darkbias_bin_spec']
-            for n_of_bias in range(bias_count):   #9*(9 +1) per cycle.
+            #for n_of_bias in range(bias_count):   #9*(9 +1) per cycle.
+            if ephem.now() + 210/86400 > ending:
+                break
+            
+            # For each binning in biasdark_bin_spec
+            # Take.... biases and darks
+            for ctr in range(len(darkbias_bin_spec)):
+                #print ("Undertaking binning " + str(darkbias_bin_spec[ctr]) + " biases and darks.")
+                plog("Expose " + str(dark_count) +" " + str(darkbias_bin_spec[ctr]) +  " bias frames.")
+                req = {'time': 0.0,  'script': 'True', 'image_type': 'bias'}
+                opt = {'area': "Full", 'count': bias_count, 'bin': darkbias_bin_spec[ctr] , \
+                       'filter': 'dark'}                    
+                result = g_dev['cam'].expose_command(req, opt, no_AWS=False, \
+                                do_sep=False, quick=False)
+                
+                g_dev['obs'].update_status()
                 if ephem.now() + 210/86400 > ending:
                     break
-                
-                # For each binning in biasdark_bin_spec
-                # Take.... biases and darks
-                for ctr in range(len(darkbias_bin_spec)):
-                    #print ("Undertaking binning " + str(darkbias_bin_spec[ctr]) + " biases and darks.")
-                    plog("Expose " + str(darkbias_bin_spec[ctr]) + ". " + str(n_of_bias+1) + " of " + str(dark_count) + " bias.")
-                    req = {'time': 0.0,  'script': 'True', 'image_type': 'bias'}
-                    opt = {'area': "Full", 'count': bias_count, 'bin': darkbias_bin_spec[ctr] , \
-                           'filter': 'dark'}                    
-                    result = g_dev['cam'].expose_command(req, opt, no_AWS=False, \
-                                    do_sep=False, quick=False)
-                    
-                    g_dev['obs'].update_status()
                     
             for n_of_darks in range(dark_count):
                 if ephem.now() + (dark_exp_time + 30)/86400 > ending:
@@ -1422,6 +1424,14 @@ class Sequencer:
 
         while len(pop_list) > 0  and ephem.now() < ending:
             
+                # This is just a very occasional slew to keep it pointing in the same general vicinity
+                
+                if time.time() >= self.time_of_next_slew:
+                    g_dev['mnt'].slewToSkyFlatAsync()  
+                    self.time_of_next_slew = time.time() + 600
+                    
+                g_dev['obs'].update_status()
+            
                 if g_dev["fil"].null_filterwheel == False:
                     current_filter = int(pop_list[0])                
                     g_dev['fil'].set_number_command(current_filter)  #  20220825  NB NB NB Change this to using a list of filter names.
@@ -1439,11 +1449,7 @@ class Sequencer:
                 while (acquired_count < flat_count):# and g_dev['enc'].status['shutter_status'] in ['Open', 'open']: # NB NB NB and roof is OPEN! and (ephem_now +3/1440) < g_dev['events']['End Eve Sky Flats' ]:
                     #if g_dev['enc'].is_dome:   #Does not apply
                     if self.next_flat_observe < time.time():                
-                        if time.time() >= self.time_of_next_slew:
-                            g_dev['mnt'].slewToSkyFlatAsync()  #FRequently do this to dither.
-                            self.time_of_next_slew = time.time() + 120 # But not everytime you check exposure times!
-                            # This slew timer gets reset each exposure, so it will move each flat image
-                        g_dev['obs'].update_status()
+                        
                             
                         try:
                             try:
@@ -1504,15 +1510,15 @@ class Sequencer:
                         elif evening and exp_time < min_exposure:   #NB it is too bright, should consider a delay here.
                          #**************THIS SHOUD BE A WHILE LOOP! WAITING FOR THE SKY TO GET DARK AND EXP TIME TO BE LONGER********************
                              plog("Too bright, wating 180 seconds. Estimated Exposure time is " + str(exp_time))
-                             g_dev['obs'].send_to_user('Delay 180 seconds to let it get darker.', p_level='INFO')
+                             g_dev['obs'].send_to_user('Delay 60 seconds to let it get darker.', p_level='INFO')
                              self.estimated_first_flat_exposure = False
-                             self.next_flat_observe = time.time() + 180
+                             self.next_flat_observe = time.time() + 60
                         elif morn and exp_time > 120 :   #NB it is too bright, should consider a delay here.
                           #**************THIS SHOUD BE A WHILE LOOP! WAITING FOR THE SKY TO GET DARK AND EXP TIME TO BE LONGER********************
                              plog("Too dim, wating 180 seconds. Estimated Exposure time is " + str(exp_time))
-                             g_dev['obs'].send_to_user('Delay 180 seconds to let it get lighterer.', p_level='INFO')
+                             g_dev['obs'].send_to_user('Delay 60 seconds to let it get lighterer.', p_level='INFO')
                              self.estimated_first_flat_exposure = False
-                             self.next_flat_observe = time.time() + 180
+                             self.next_flat_observe = time.time() + 60
                              #*****************NB Recompute exposure or otherwise wait
                              exp_time = min_exposure
                         else:
@@ -1551,6 +1557,11 @@ class Sequencer:
                                     if len(bin_spec) > 1:
                                         print ("Good range for a flat, firing off the other flat types")
                                         for ctr in range (len(bin_spec)-1):
+                                            if morn:
+                                                exp_time=exp_time * 0.8
+                                            else:
+                                                exp_time=exp_time * 1.2
+                                            req = {'time': float(exp_time),  'alias': camera_name, 'image_type': 'sky flat', 'script': 'On'}
                                             if g_dev["fil"].null_filterwheel == False:
                                                 
                                                 opt = { 'count': 1, 'bin':  bin_spec[ctr+1], 'area': 150, 'filter': g_dev['fil'].filter_data[current_filter][0]}   #nb nb nb BIN CHNAGED FROM 2,2 ON 20220618 wer
@@ -1563,7 +1574,6 @@ class Sequencer:
                 
                                             obright = ored['patch']    #  Patch should be circular and 20% of Chip area. ToDo project
                                             plog('Returned:  ', obright)
-                                            breakpoint()
                                 
                             except Exception as e:
                                 plog('Failed to get a flat image: ', e)
@@ -1583,10 +1593,12 @@ class Sequencer:
                                 #    scale = 0.01
                             except:
                                 scale = 1.0
-            
-                            #if 'sky_lux' not in locals():
-                            #    sky_lux=1000
-                            #plog ("sky lux: " + str(sky_lux))
+                                
+                            # We only want to move after a successful set of independant binning flats
+                            # If we move before we calculate exposure, we are wasting time slewing. 
+                            g_dev['mnt'].slewToSkyFlatAsync()
+                            
+                            
             
                             if g_dev["fil"].null_filterwheel == False:
                                 if sky_lux != None:

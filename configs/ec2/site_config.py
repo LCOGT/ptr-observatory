@@ -516,8 +516,8 @@ site_config = {
                 'pix_scale': [1.569],
                 'CameraXSize' : 4096,
                 'CameraYSize' : 4096,
-                'MaxBinX' : 2,
-                'MaxBinY' : 2,
+                #'MaxBinX' : 2,
+                #'MaxBinY' : 2,
                 'StartX' : 1,
                 'StartY' : 1,
 

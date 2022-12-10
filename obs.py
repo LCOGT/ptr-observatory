@@ -239,6 +239,7 @@ class Observatory:
         # Send the config to AWS. TODO This has faulted.
         self.update_config()   #This is the never-ending control loop
 
+
     def set_last_reference(self, delta_ra, delta_dec, last_time):
         mnt_shelf = shelve.open(self.site_path + "ptr_night_shelf/" + "last")
         mnt_shelf["ra_cal_offset"] = delta_ra

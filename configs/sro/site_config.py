@@ -509,8 +509,8 @@ site_config = {
 
                 'CameraXSize' : 4556,
                 'CameraYSize' : 3656,
-                'MaxBinX' : 2,
-                'MaxBinY' : 2,
+                #'MaxBinX' : 2,
+                #'MaxBinY' : 2,
                 'StartX' : 1,
                 'StartY' : 1,
 

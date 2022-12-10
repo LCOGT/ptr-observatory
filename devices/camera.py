@@ -426,10 +426,10 @@ class Camera:
         except:
             self.camera_x_size = self.config['camera'][self.name]['settings']['CameraXSize']  #unbinned values. QHY returns 2
             self.camera_y_size = self.config['camera'][self.name]['settings']['CameraYSize']  #unbinned
-        self.camera_max_x_bin = self.config["camera"][self.name]["settings"]["MaxBinX"]
-        self.camera_max_y_bin = self.config["camera"][self.name]["settings"][
-            "MaxBinY"
-        ]  # NB NB Overriding 511 for FLI cam
+        #self.camera_max_x_bin = self.config["camera"][self.name]["settings"]["MaxBinX"]
+        #self.camera_max_y_bin = self.config["camera"][self.name]["settings"][
+        #    "MaxBinY"
+        #]  # NB NB Overriding 511 for FLI cam
         self.camera_start_x = self.config["camera"][self.name]["settings"]["StartX"]
         self.camera_start_y = self.config["camera"][self.name]["settings"]["StartY"]
         self.camera_num_x = int(
@@ -798,11 +798,11 @@ class Camera:
         not the slower File Path.  THe mode used for focusing or other operations where we do not want to save any
         image data.
         """
-        try:
-            self.user_name
-        except:
-            self.user_name = "kilroy_was_here"
-        self.t0 = time.time()
+        #try:
+        #    self.user_name
+        #except:
+        #    self.user_name = "kilroy_was_here"
+        #self.t0 = time.time()
         # Force a reseek //eventually dither//
         try:
             if (
@@ -836,6 +836,7 @@ class Camera:
                 plog("Camera reconnect failed 2nd time @ expose entry.")
 
         opt = optional_params
+        print ("optional params :", opt)
         self.hint = optional_params.get("hint", "")
         self.script = required_params.get("script", "None")
         
@@ -855,6 +856,7 @@ class Camera:
 
 
         self.pane = optional_params.get("pane", None)
+
 
         bin_x = optional_params.get(
             "bin", self.config["camera"][self.name]["settings"]["default_bin"][0]
@@ -920,6 +922,7 @@ class Camera:
             bin_x = self.config['camera'][self.name]['settings']['default_bin'][0]
             self.ccd_sum = str(bin_x) + ' ' + str(bin_x)
 
+
         bin_y = bin_x  # NB This needs fixing someday!
         self.bin = bin_x
         self.camera.BinX = bin_x
@@ -984,9 +987,7 @@ class Camera:
                 self.current_filter = self.config["filter_wheel"]["filter_wheel1"]["name"]
         except Exception as e:
             plog("Camera filter setup:  ", e)
-            plog(traceback.format_exc())
-
-        
+            plog(traceback.format_exc())      
 
         # Here we adjust for focus temp and filter offset
         #if not imtype.lower() in ["auto_focus", "focus", "autofocus probe"]:
@@ -1059,17 +1060,17 @@ class Camera:
         # except:
         #     area = 150  # was 100 in ancient times.
 
-        if bin_y == 0 or self.camera_max_x_bin != self.camera_max_y_bin:
-            self.bin_x = min(bin_x, self.camera_max_x_bin)
-            self.cameraBinY = self.bin_y
-        else:
-            self.bin_x = min(bin_x, self.camera_max_x_bin)
-            self.camera.BinX = self.bin_x
-            self.bin_y = min(bin_y, self.camera_max_y_bin)
-            self.camera.BinY = self.bin_y
+        # if bin_y == 0 or self.camera_max_x_bin != self.camera_max_y_bin:
+        #     self.bin_x = min(bin_x, self.camera_max_x_bin)
+        #     self.cameraBinY = self.bin_y
+        # else:
+        #     self.bin_x = min(bin_x, self.camera_max_x_bin)
+        #     self.camera.BinX = self.bin_x
+        #     self.bin_y = min(bin_y, self.camera_max_y_bin)
+        #     self.camera.BinY = self.bin_y
 
-        self.len_x = self.camera_x_size // self.bin_x
-        self.len_y = self.camera_y_size // self.bin_y  # Unit is binned pixels.
+        self.len_x = self.camera_x_size // bin_x
+        self.len_y = self.camera_y_size // bin_y  # Unit is binned pixels.
         self.len_xs = 0  # THIS IS A HACK, indicating no overscan.
 
 
@@ -1370,7 +1371,6 @@ class Camera:
                                 else:
                                     imtypeb = 0
                                 self.t2 = time.time()
-
                                 self._expose(exposure_time, imtypeb)
                         else:
                             plog("Something terribly wrong, driver not recognized.!")
@@ -1819,12 +1819,15 @@ class Camera:
                         "[e-/pixel] Read noise",
                     )
                     hdu.header["CMOSCAM"] = (self.is_cmos, "Is CMOS camera")
-                    hdu.header["FULLWELL"] = (
-                        self.config["camera"][self.name]["settings"][
-                            "fullwell_capacity"
-                        ][tempBinningCodeX - 1],
-                        "Full well capacity",
-                    )
+                    try:
+                        hdu.header["FULLWELL"] = (
+                            self.config["camera"][self.name]["settings"][
+                                "fullwell_capacity"
+                            ][tempBinningCodeX-1],
+                            "Full well capacity",
+                        )
+                    except:
+                        print ("Full well capacity not set for this binning in the site-config")
                     hdu.header["CMOSGAIN"] = (0, "CMOS Camera System Gain")
                     hdu.header["CMOSOFFS"] = (10, "CMOS Camera offset")
                     hdu.header["CAMOFFS"] = (10, "Camera offset")
@@ -2278,13 +2281,16 @@ class Camera:
                         #plog("have to not have ocn header items when no ocn")
                         pass
 
-                    hdu.header["PIXSCALE"] = (
-                        self.config["camera"][self.name]["settings"]["pix_scale"][
-                            tempBinningCodeX - 1
-                        ],
-                        "[arcsec/pixel] Nominal pixel scale on sky",
-                    )
-                    pixscale = float(hdu.header["PIXSCALE"])
+                    try:
+                        hdu.header["PIXSCALE"] = (
+                            self.config["camera"][self.name]["settings"]["pix_scale"][
+                                tempBinningCodeX - 1
+                            ],
+                            "[arcsec/pixel] Nominal pixel scale on sky",
+                        )
+                        pixscale = float(hdu.header["PIXSCALE"])
+                    except:
+                        print ("pixel scale not set in the site-config for this binning")
                     hdu.header["REQNUM"] = ("00000001", "Request number")
                     hdu.header["ISMASTER"] = (False, "Is master image")
                     current_camera_name = self.alias
@@ -2348,7 +2354,7 @@ class Camera:
                         if frame_type in (
                             "lampflat",
                             "skyflat",
-                            " screenflat",
+                            "screenflat",
                             "solarflat",
                             "arc",
                             "expose",

@@ -404,7 +404,6 @@ site_config = {
             #"driver":   "Maxim.Image",   #"LCO.dual",  #  'ASCOM.FLI.FilterWheel',
             'ip_string': None,
             "dual_wheel": False,
-            "default_flat_exposure" : 1.0,
             'settings': {
                 'filter_count': 11,   #  This must be correct as to the number of filters
                 'home_filter':  4,
@@ -515,8 +514,8 @@ site_config = {
                 'pix_scale': [0.269,0.538],
                 'CameraXSize' : 4096,
                 'CameraYSize' : 4096,
-                'MaxBinX' : 2,
-                'MaxBinY' : 2,
+                #'MaxBinX' : 4,
+                #'MaxBinY' : 4,
                 'StartX' : 1,
                 'StartY' : 1,
 
@@ -527,12 +526,11 @@ site_config = {
                 'north_offset': 0.0,    #  These three are normally 0.0 for the primary telescope
                 'east_offset': 0.0,     #  Not sure why these three are even here.
                 'rotation': 0.0,        #  Probably remove.
-                'min_exposure': 1,
+                'min_exposure': 0.1,
                 'max_exposure': 3600,
                 'can_subframe':  True,
                 'min_subframe':  [128, 128],
-                'bin_modes':  [[1, 1, 0.269],[2, 2, 0.538]], #  , [2, 2, 2.13], [3, 3, 3.21], [4, 4, 4.27]],   #Meaning no binning choice if list has only one entry, default should be first.
-                
+               
                 
                 'cycle_time':  [2, 2, 2, 2],  # 3x3 requires a 1, 1 reaout then a software bin, so slower.
                 'rbi_delay':  0.,      #  This being zero says RBI is not available, eg. for SBIG.
@@ -559,15 +557,18 @@ site_config = {
                 'default_area':  "Full",
                 'default_rotation': 0.0000,
                 'flat_bin_spec': ['1,1','2,2', '3,3','4,4'],    #Default binning for flats
-                'darkbias_bin_spec': ['1,1','2,2', '3,3','4,4'],    #Default binning for flats
+                #'darkbias_bin_spec': ['1,1','2,2', '3,3','4,4'],    #Default binning for flats
+                'darkbias_bin_spec': ['1,1', '2,2','3,3','4,4'],    #Default binning for flats
                 'bin_enable': ['1,1', '2,2', '3,3','4,4'],
                 'default_bin':  [2, 2, 0.538],    #  Matched to seeing situation by owner
                 'maximum_bin':  [1, 1, 0.269],    #  Matched to seeing situation by owner
+                'bin_modes':  [[1, 1, 0.269],[2, 2, 0.538]], #  , [2, 2, 2.13], [3, 3, 3.21], [4, 4, 4.27]],   #Meaning no binning choice if list has only one entry, default should be first.
+                
                 'cosmics_at_default' : 'yes',
                 'cosmics_at_maximum' : 'yes',
-                'dark_length' : 900,
-                'bias_count' : 10,
-                'dark_count' : 10,
+                'dark_length' : 10,
+                'bias_count' : 2,
+                'dark_count' : 2,
                 'has_darkslide':  False,
                 'darkslide_com':  None,
                 'shutter_type': "Electronic",
