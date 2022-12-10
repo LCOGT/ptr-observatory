@@ -236,6 +236,8 @@ class Camera:
                     + "/DARK_master_bin" + str(tempBinNumber) + ".fits"
                 )
                 tempdarkframe = np.asarray(tempdarkframe[0].data, dtype=np.float32)
+                self.darkFiles.update({tempBinNumber: tempdarkframe})
+                del tempdarkframe
             except:
                 plog("Dark frame for Binning " + str(tempBinNumber) + "not available")  
     
@@ -2527,30 +2529,23 @@ class Camera:
                         hdusmall = copy.deepcopy(hduraw)
                         hdusmall.data = hdusmall.data.astype("float32")
                         # Quick flash bias and dark frame
-                        
-                        breakpoint()
-                        
-                        tempBinningCode=tempBinningCodeX
-                        
+                                                
                         try:
-                            if len(self.biasframe) > 10:
-                                hdusmall.data = hdusmall.data - self.biasframe
-                            if len(self.darkframe) > 10:
-                                hdusmall.data = hdusmall.data - (
-                                    self.darkframe * exposure_time
-                                )
+
+                            hdusmall.data = hdusmall.data - self.biasFiles[str(tempBinningCodeX)]
+                            hdusmall.data = hdusmall.data - (self.darkFiles[str(tempBinningCodeX)] * exposure_time)
+                            
                         except Exception as e:
                             plog("debias/darking light frame failed: ", e)
                             
                         # Quick flat flat frame
                         try:
-                            tempFlatFrame = np.load(self.flatFiles[self.current_filter])
+                            tempFlatFrame = np.load(self.flatFiles[str(self.current_filter + "_bin" + str(tempBinningCodeX))])
 
                             hdusmall.data = np.divide(hdusmall.data, tempFlatFrame)
                             del tempFlatFrame
                         except Exception as e:
                             plog("flatting light frame failed", e)
-                            breakpoint()
                             #print (traceback.format_exc())
                             #breakpoint()
 
