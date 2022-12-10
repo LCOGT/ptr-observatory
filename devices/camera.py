@@ -202,14 +202,14 @@ class Camera:
         plog(driver, name)
         self.camera = win32com.client.Dispatch(driver)
 
-        plog("loading flash dark frame and bias frame if available")
+        plog("loading flash dark, bias and flat masters frames if available")        
         plog("For binnings set in bin_enable")
         bins_enabled=config["camera"][self.name]['settings']["bin_enable"]
         self.biasFiles = {}
         self.darkFiles = {}
         self.flatFiles = {}
         for ctr in range(len(bins_enabled)):
-            print (bins_enabled[ctr])
+
             tempBinNumber = bins_enabled[ctr].replace(',',' ').split(' ')[0]       
             
             try:
@@ -240,7 +240,7 @@ class Camera:
                 plog("Dark frame for Binning " + str(tempBinNumber) + "not available")  
     
             try:
-                plog("Arranging dictionary of flat frames if available")
+                
                 fileList = glob.glob(
                     self.config["archive_path"]
                     + "calibmasters/"
@@ -404,11 +404,12 @@ class Camera:
                 self.config["camera"][self.name]["settings"]["default_bin"][0]
             )  # = 1
             self.camera.BinY = int(
-                self.config["camera"][self.name]["settings"]["default_bin"][-1]
+                self.config["camera"][self.name]["settings"]["default_bin"][1]
             )  # = 1
+
             # NB we need to be sure AWS picks up this default.config.site_config['camera'][self.name]['settings']['default_bin'])
         except:
-            plog("Camera only accepts Bins = 1.")
+            plog("Problem setting up default binning at startup.")
             self.camera.BinX = 1
             self.camera.BinY = 1
         self.overscan_x = int(
@@ -853,16 +854,15 @@ class Camera:
 
         self.pane = optional_params.get("pane", None)
 
-
         bin_x = optional_params.get(
-            "bin", self.config["camera"][self.name]["settings"]["default_bin"]
+            "bin", self.config["camera"][self.name]["settings"]["default_bin"][0]
         )  # NB this should pick up config default.
 
         if bin_x == '"optimal"':
-            bin_x = self.config["camera"][self.name]["settings"]["default_bin"]
+            bin_x = self.config["camera"][self.name]["settings"]["default_bin"][0]
 
         if bin_x == '"maximum"':
-            bin_x = self.config["camera"][self.name]["settings"]["maximum_bin"]
+            bin_x = self.config["camera"][self.name]["settings"]["maximum_bin"][0]
 
         if bin_x in [
             "4 4",
@@ -2522,6 +2522,9 @@ class Camera:
                         hdusmall = copy.deepcopy(hduraw)
                         hdusmall.data = hdusmall.data.astype("float32")
                         # Quick flash bias and dark frame
+                        
+                        breakpoint()
+                        
                         try:
                             if len(self.biasframe) > 10:
                                 hdusmall.data = hdusmall.data - self.biasframe
@@ -2531,6 +2534,7 @@ class Camera:
                                 )
                         except Exception as e:
                             plog("debias/darking light frame failed: ", e)
+                            
                         # Quick flat flat frame
                         try:
                             tempFlatFrame = np.load(self.flatFiles[self.current_filter])
@@ -2539,6 +2543,7 @@ class Camera:
                             del tempFlatFrame
                         except Exception as e:
                             plog("flatting light frame failed", e)
+                            breakpoint()
                             #print (traceback.format_exc())
                             #breakpoint()
 

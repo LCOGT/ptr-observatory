@@ -532,10 +532,7 @@ site_config = {
                 'can_subframe':  True,
                 'min_subframe':  [128, 128],
                 'bin_modes':  [[1, 1, 0.269],[2, 2, 0.538]], #  , [2, 2, 2.13], [3, 3, 3.21], [4, 4, 4.27]],   #Meaning no binning choice if list has only one entry, default should be first.
-                'default_bin':  [2, 2, 0.538],    #  Matched to seeing situation by owner
-                'maximum_bin':  [1, 1, 0.269],    #  Matched to seeing situation by owner
-                'cosmics_at_default' : 'yes',
-                'cosmics_at_maximum' : 'yes',
+                
                 
                 'cycle_time':  [2, 2, 2, 2],  # 3x3 requires a 1, 1 reaout then a software bin, so slower.
                 'rbi_delay':  0.,      #  This being zero says RBI is not available, eg. for SBIG.
@@ -564,6 +561,10 @@ site_config = {
                 'flat_bin_spec': ['1,1','2,2', '3,3','4,4'],    #Default binning for flats
                 'darkbias_bin_spec': ['1,1','2,2', '3,3','4,4'],    #Default binning for flats
                 'bin_enable': ['1,1', '2,2', '3,3','4,4'],
+                'default_bin':  [2, 2, 0.538],    #  Matched to seeing situation by owner
+                'maximum_bin':  [1, 1, 0.269],    #  Matched to seeing situation by owner
+                'cosmics_at_default' : 'yes',
+                'cosmics_at_maximum' : 'yes',
                 'dark_length' : 900,
                 'bias_count' : 10,
                 'dark_count' : 10,
