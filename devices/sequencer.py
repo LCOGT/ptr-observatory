@@ -2284,10 +2284,22 @@ class Sequencer:
                 st = ""
                 time.sleep(0.2)
                 g_dev['obs'].update_status()
-        except:
-            plog("Motion check faulted.")
-            plog(traceback.format_exc())
-            breakpoint()
+        except: # most problems are that there is no rotator.
+            try:
+                st = ""
+                while g_dev['foc'].focuser.IsMoving or \
+                      g_dev['mnt'].mount.Slewing: #or g_dev['enc'].status['dome_slewing']:   #Filter is moving??
+                    if g_dev['foc'].focuser.IsMoving: st += 'f>'
+                    if g_dev['mnt'].mount.Slewing: st += 'm>'
+                    #if g_dev['enc'].status['dome_slewing']: st += 'd>'
+                    plog(st)
+                    st = ""
+                    time.sleep(0.2)
+                    g_dev['obs'].update_status()
+            except:
+                plog("Motion check faulted.")
+                plog(traceback.format_exc())
+                breakpoint()
         
         if req['target'] == 'near_tycho_star':   ## 'bin', 'area'  Other parameters
             #  Go to closest Mag 7.5 Tycho * with no flip

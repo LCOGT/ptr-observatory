@@ -2592,6 +2592,11 @@ class Camera:
                             #print ("interpolating bayer grid for focusing purposes.")
                             if self.config["camera"][self.name]["settings"]["osc_bayer"] == 'RGGB':
                                 
+                                # Interpolate to make a high resolution version for focussing
+                                # and platesolving
+                                hdufocus.data=demosaicing_CFA_Bayer_bilinear(hdufocus.data, 'RGGB')[:,:,1]
+                                hdufocus.data=hdufocus.data.astype("float32")
+                                
                                 # Only separate colours if needed for colour jpeg
                                 if smartstackid == 'no':
                                     # Checkerboard collapse for other colours for temporary jpeg                                
@@ -2631,10 +2636,7 @@ class Camera:
                                     
 
                                 
-                                # Interpolate to make a high resolution version for focussing
-                                # and platesolving
-                                hdufocus.data=demosaicing_CFA_Bayer_bilinear(hdufocus.data, 'RGGB')[:,:,1]
-                                hdufocus.data=hdufocus.data.astype("float32")
+                                
                                 
                                 
 
@@ -3175,6 +3177,7 @@ class Camera:
                         saverretries = 0
                         while saver == 0 and saverretries < 10:
                             try:
+                                hdureduced.data=hdureduced.data.astype("float32")
                                 hdureduced.writeto(
                                     red_path + red_name01, overwrite=True, output_verify='silentfix'
                                 )  # Save flash reduced file locally
