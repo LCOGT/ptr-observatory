@@ -1575,7 +1575,7 @@ class Sequencer:
                                                 sky_lux = None
                                             
                                             if sky_lux != None:
-                                                exp_time=exp_time * (sky_lux / prev_sky_lux)
+                                                exp_time=exp_time * (prev_sky_lux / sky_lux)
                                             else:
                                                 if morn:
                                                     exp_time=exp_time * 0.9
