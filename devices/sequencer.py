@@ -1558,9 +1558,9 @@ class Sequencer:
                                         print ("Good range for a flat, firing off the other flat types")
                                         for ctr in range (len(bin_spec)-1):
                                             if morn:
-                                                exp_time=exp_time * 0.8
+                                                exp_time=exp_time * 0.9
                                             else:
-                                                exp_time=exp_time * 1.2
+                                                exp_time=exp_time * 1.1
                                             req = {'time': float(exp_time),  'alias': camera_name, 'image_type': 'sky flat', 'script': 'On'}
                                             if g_dev["fil"].null_filterwheel == False:
                                                 
@@ -1574,6 +1574,10 @@ class Sequencer:
                 
                                             obright = ored['patch']    #  Patch should be circular and 20% of Chip area. ToDo project
                                             plog('Returned:  ', obright)
+                                            #scale = target_flat / obright # need to think this 
+                                            # through as the scale will change with binnings
+                                            # but for some reason it doesn't seem to with th
+                                            # ECO camera. What is here is fine for now. 
                                 
                             except Exception as e:
                                 plog('Failed to get a flat image: ', e)
