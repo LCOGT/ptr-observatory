@@ -2645,7 +2645,7 @@ class Camera:
                         focusimg = np.asarray(
                             hdufocus.data
                         )  # + 100   #maintain a + pedestal for sep  THIS SHOULD not be needed for a raw input file.
-                        focusimg = focusimg.astype("float")
+                        focusimg = focusimg.astype("float32")
                         focusimg = focusimg.copy(
                             order="C"
                         )  # NB Should we move this up to where we read the array?
@@ -2884,6 +2884,7 @@ class Camera:
                             cal_name = (
                                 cal_name[:-9] + "F012" + cal_name[-7:]
                             )
+                            hdufocus.data=hdufocus.data.astype("float32")
                             hdufocus.writeto(cal_path + cal_name, overwrite=True, output_verify='silentfix')
                             pixscale=hdufocus.header['PIXSCALE']
                             try:
