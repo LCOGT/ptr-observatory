@@ -997,6 +997,8 @@ class Mount:
 
         wait_for_slew() 
         self.mount.SlewToCoordinatesAsync(self.ra_mech*RTOH, self.dec_mech*RTOD)  #Is this needed?
+        g_dev['obs'].last_solve_time = datetime.datetime.now() - datetime.timedelta(days=1)
+        g_dev['obs'].images_since_last_solve = 10000
         wait_for_slew()    
         
         
@@ -1345,6 +1347,8 @@ class Mount:
         if self.config['mount']['mount1']['has_ascom_altaz'] == True:
             wait_for_slew() 
             self.mount.SlewToAltAzAsync(az, alt)
+            g_dev['obs'].last_solve_time = datetime.datetime.now() - datetime.timedelta(days=1)
+            g_dev['obs'].images_since_last_solve = 10000
             wait_for_slew()
         else:
             #plog("Recaclulating RA and DEC for Alt Az move")
@@ -1359,6 +1363,8 @@ class Mount:
             #self.site_coordinates
             wait_for_slew() 
             self.mount.SlewToCoordinatesAsync(tempRA, tempDEC)
+            g_dev['obs'].last_solve_time = datetime.datetime.now() - datetime.timedelta(days=1)
+            g_dev['obs'].images_since_last_solve = 10000
             wait_for_slew()
         
 

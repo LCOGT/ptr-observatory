@@ -2927,8 +2927,8 @@ class Camera:
                                 )  # NB WER changed units 20221012
 
                                 # We do not want to reset solve timers during a smartStack
-                                self.last_solve_time = datetime.datetime.now()
-                                self.images_since_last_solve = 0
+                                g_dev['obs'].last_solve_time = datetime.datetime.now()
+                                g_dev['obs'].images_since_last_solve = 0
 
                                 # NB NB NB this needs rethinking, the incoming units are hours in HA or degrees of dec
                                 if (
