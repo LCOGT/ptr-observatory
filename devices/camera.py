@@ -2551,6 +2551,7 @@ class Camera:
                         # Quick flat flat frame
                         try:
                             tempFlatFrame = np.load(self.flatFiles[self.current_filter])
+                            
 
                             hdusmall.data = np.divide(hdusmall.data, tempFlatFrame)
                             del tempFlatFrame
