@@ -1696,6 +1696,11 @@ class Camera:
                     )  # THis needs to be done to keep fits "traditional." 0,0 upper left.
                     self.img = None
 
+
+                    # It is faster to store the current binning than keeping on asking ASCOM throughout this
+                    tempBinningCodeX=self.camera.BinX
+                    tempBinningCodeY=self.camera.BinY
+
                     # assign the keyword values and comment of the keyword as a tuple to write both to header.
 
                     hdu.header["BUNIT"] = ("adu", "Unit of array values")
@@ -1708,20 +1713,20 @@ class Camera:
                         "[um] Size of unbinned pixel, in Y",
                     )
                     hdu.header["XPIXSZ"] = (
-                        round(float(hdu.header["CCDXPIXE"] * self.camera.BinX), 3),
+                        round(float(hdu.header["CCDXPIXE"] * tempBinningCodeX), 3),
                         "[um] Size of binned pixel",
                     )
                     hdu.header["YPIXSZ"] = (
-                        round(float(hdu.header["CCDYPIXE"] * self.camera.BinY), 3),
+                        round(float(hdu.header["CCDYPIXE"] * tempBinningCodeY), 3),
                         "[um] Size of binned pixel",
                     )
                     try:
                         hdu.header["XBINING"] = (
-                            self.camera.BinX,
+                            tempBinningCodeX,
                             "Pixel binning in x direction",
                         )
                         hdu.header["YBINING"] = (
-                            self.camera.BinY,
+                            tempBinningCodeY,
                             "Pixel binning in y direction",
                         )
                     except:
@@ -1801,13 +1806,13 @@ class Camera:
                                               'Type of shutter')
                     hdu.header["GAIN"] = (
                         self.config["camera"][self.name]["settings"]["reference_gain"][
-                            self.camera.BinX - 1
+                            tempBinningCodeX - 1
                         ],
                         "[e-/ADU] Pixel gain",
                     )
                     hdu.header["RDNOISE"] = (
                         self.config["camera"][self.name]["settings"]["reference_noise"][
-                            self.camera.BinX - 1
+                            tempBinningCodeX - 1
                         ],
                         "[e-/pixel] Read noise",
                     )
@@ -1815,7 +1820,7 @@ class Camera:
                     hdu.header["FULLWELL"] = (
                         self.config["camera"][self.name]["settings"][
                             "fullwell_capacity"
-                        ][self.camera.BinX - 1],
+                        ][tempBinningCodeX - 1],
                         "Full well capacity",
                     )
                     hdu.header["CMOSGAIN"] = (0, "CMOS Camera System Gain")
@@ -2273,7 +2278,7 @@ class Camera:
 
                     hdu.header["PIXSCALE"] = (
                         self.config["camera"][self.name]["settings"]["pix_scale"][
-                            self.camera.BinX - 1
+                            tempBinningCodeX - 1
                         ],
                         "[arcsec/pixel] Nominal pixel scale on sky",
                     )
@@ -2337,7 +2342,7 @@ class Camera:
                         if opt["area"] == 150:
                             f_ext += "f"
                         if frame_type[0:4] in ("bias", "dark"):
-                            f_ext += frame_type[0] + "_" + str(self.camera.BinX)
+                            f_ext += frame_type[0] + "_" + str(tempBinningCodeX)
                         if frame_type in (
                             "lampflat",
                             "skyflat",
@@ -2349,7 +2354,7 @@ class Camera:
                             f_ext += (
                                 frame_type[:2]
                                 + "_"
-                                + str(self.camera.BinX)
+                                + str(tempBinningCodeX)
                                 + "_"
                                 + str(self.current_filter)
                             )
@@ -2524,6 +2529,8 @@ class Camera:
                         # Quick flash bias and dark frame
                         
                         breakpoint()
+                        
+                        tempBinningCode=tempBinningCodeX
                         
                         try:
                             if len(self.biasframe) > 10:
