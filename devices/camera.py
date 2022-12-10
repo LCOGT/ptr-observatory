@@ -203,45 +203,57 @@ class Camera:
         self.camera = win32com.client.Dispatch(driver)
 
         plog("loading flash dark frame and bias frame if available")
-
-        try:
-            self.biasframe = fits.open(
-                self.config["archive_path"]
-                + "calibmasters/"
-                + self.alias
-                + "/BIAS_master.fits"
-            )
-            self.biasframe = np.asarray(self.biasframe[0].data, dtype=np.int16)
-        except:
-            plog("Bias frame not available")
-            self.biasframe = [0]
-        try:
-            self.darkframe = fits.open(
-                self.config["archive_path"]
-                + "calibmasters/"
-                + self.alias
-                + "/DARK_master.fits"
-            )
-            self.darkframe = np.asarray(self.darkframe[0].data, dtype=np.float32)
-        except:
-            plog("Dark frame not available")
-            self.darkframe = [0]
-
-        try:
-            plog("Arranging dictionary of flat frames if available")
-            fileList = glob.glob(
-                self.config["archive_path"]
-                + "calibmasters/"
-                + self.alias
-                + "/masterFlat*.npy"
-            )
-            self.flatFiles = {}
-            for file in fileList:
-                self.flatFiles.update({file.split("_")[1].replace ('.npy',''): file})
-            # To supress occasional flatfield div errors
-            np.seterr(divide="ignore")
-        except:
-            plog("Flat frames not loaded or available")
+        plog("For binnings set in bin_enable")
+        bins_enabled=config["camera"][self.name]['settings']["bin_enable"]
+        self.biasFiles = {}
+        self.darkFiles = {}
+        self.flatFiles = {}
+        for ctr in range(len(bins_enabled)):
+            print (bins_enabled[ctr])
+            tempBinNumber = bins_enabled[ctr].replace(',',' ').split(' ')[0]       
+            
+            try:
+                #self.biasframe = fits.open(
+                tempbiasframe = fits.open(
+                    self.config["archive_path"]
+                    + "calibmasters/"
+                    + self.alias
+                    + "/BIAS_master_bin" + str(tempBinNumber) + ".fits"
+                )
+                tempbiasframe = np.asarray(tempbiasframe[0].data, dtype=np.int16)
+                self.biasFiles.update({tempBinNumber: tempbiasframe})
+                del tempbiasframe
+            except:
+                plog("Bias frame for Binning " + str(tempBinNumber) + "not available")               
+                
+            
+            try:
+                #self.darkframe = fits.open(
+                tempdarkframe = fits.open(
+                    self.config["archive_path"]
+                    + "calibmasters/"
+                    + self.alias
+                    + "/DARK_master_bin" + str(tempBinNumber) + ".fits"
+                )
+                tempdarkframe = np.asarray(tempdarkframe[0].data, dtype=np.float32)
+            except:
+                plog("Dark frame for Binning " + str(tempBinNumber) + "not available")  
+    
+            try:
+                plog("Arranging dictionary of flat frames if available")
+                fileList = glob.glob(
+                    self.config["archive_path"]
+                    + "calibmasters/"
+                    + self.alias
+                    + "/masterFlat*_bin" + str(tempBinNumber) + ".npy"
+                )
+                
+                for file in fileList:
+                    self.flatFiles.update({file.split("_")[1].replace ('.npy','') + '_bin' + str(tempBinNumber): file})
+                # To supress occasional flatfield div errors
+                np.seterr(divide="ignore")
+            except:
+                plog("Flat frames not loaded or available")
 
         plog("Connecting to:  ", driver)
 
@@ -519,7 +531,7 @@ class Camera:
         return self.camera.TemperatureSetpoint
 
     def _theskyx_expose(self, exposure_time, imtypeb):
-        self.camera.ExposureTime = exposure_time
+        self.camera.ExposureTime = exposure_time        
         self.camera.TakeImage()
 
     def _theskyx_stop_expose(self):
@@ -883,6 +895,16 @@ class Camera:
             bin_x = 2
             self.ccd_sum = "2 2"
         elif bin_x in [
+            "1 1",
+            1,
+            "1, 1",
+            "1,1",
+            [1, 1],
+            (1, 1),
+        ]:  # The bin spec is too convoluted. This needs a deep clean.
+            bin_x = 1
+            self.ccd_sum = "1 1"
+        elif bin_x in [
             "0 0",
             0,
             "0, 0",
@@ -1065,20 +1087,10 @@ class Camera:
 
             ## Vital Check : Has end of observing occured???
             ## Need to do this, SRO kept taking shots til midday without this
-            #print (g_dev['events']['Observing Begins'])
-            #print (ephem.Date(ephem.now()+ (exposure_time *ephem.second)))
-            #loadingprint (g_dev['events']['Observing Ends'])
             if imtype.lower() in ["light"] or imtype.lower() in ["expose"]:
                 if g_dev['events']['Observing Ends'] < ephem.Date(ephem.now()+ (exposure_time *ephem.second)):
                     print ("Sorry, exposures are outside of night time.")
                     break
-
-            #print (endOfExposure)
-            #print (now_date_timeZ)
-            #print (self.blockend)
-            #print (ephem.now() + exposure_time)
-            #print (g_dev['events']['Observing Ends'])
-            #print (ephem.Date(ephem.now()+ (exposure_time *ephem.second)))
 
             self.pre_mnt = []
             self.pre_rot = []
@@ -1098,11 +1110,9 @@ class Camera:
                 Nsmartstack=np.ceil(exposure_time / ssExp)
                 exposure_time=ssExp
                 SmartStackID=(datetime.datetime.now().strftime("%d%m%y%H%M%S"))
-
             else:
                 Nsmartstack=1
                 SmartStackID='no'
-
 
             try:
                 # Check here for filter, guider, still moving  THIS IS A CLASSIC
@@ -1186,25 +1196,15 @@ class Camera:
 
                     # Check that the block isn't ending during normal observing time (don't check while biasing, flats etc.)
                     if not 'None' in self.blockend: # Only do this check if a block end was provided.
-                        # Check that the exposure doesn't go over the end of a block
+                        
+                    # Check that the exposure doesn't go over the end of a block
                         endOfExposure = datetime.datetime.now() + datetime.timedelta(seconds=exposure_time)
                         now_date_timeZ = endOfExposure.isoformat().split('.')[0] +'Z'
                         blockended = now_date_timeZ  >= self.blockend
-                        #blockendedafterexposure  = now_date_timeZ + (exposure_time *ephem.second) >= self.blockend
-
-                        #print (endOfExposure)
-                        #print (now_date_timeZ)
-                        #print (self.blockend)
-                        #print (ephem.now() + exposure_time)
-                        #print (g_dev['events']['Observing Ends'])
-                        #print (ephem.Date(ephem.now()+ (exposure_time *ephem.second)))
-
                         if blockended or ephem.Date(ephem.now()+ (exposure_time *ephem.second)) >= g_dev['events']['End Morn Bias Dark']:
                             print ("Exposure overlays the end of a block or the end of observing. Skipping Exposure.")
-
-                            print ("Waiting until block ended.")
-
                             return
+                        
                     # NB Here we enter Phase 2
                     try:
                         self.t1 = time.time()
@@ -1566,7 +1566,7 @@ class Camera:
                 continue
 
             incoming_image_list = []
-            self.t4 = time.time()
+            #self.t4 = time.time()
             try:
                 pier_side = g_dev["mnt"].mount.sideOfPier
             except:
@@ -1609,9 +1609,9 @@ class Camera:
 
                 pedastal = 0
                 self.overscan = 0
-                self.t4p4 = time.time()
-                self.t4p5 = time.time()
-                self.t5 = time.time()
+                #self.t4p4 = time.time()
+                #self.t4p5 = time.time()
+                #self.t5 = time.time()
                 try:
                     pier_side = g_dev[
                         "mnt"
@@ -1621,7 +1621,7 @@ class Camera:
                     pass
 
                 ix, iy = self.img.shape
-                self.t77 = time.time()
+                #self.t77 = time.time()
 
                 neg_pix = np.where(self.img < 0)
                 if len(neg_pix[0]) > 0:

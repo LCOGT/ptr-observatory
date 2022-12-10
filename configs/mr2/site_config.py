@@ -647,7 +647,7 @@ site_config = {
                 'shutter_type': "Electronic",
                 'flat_bin_spec': ['1,1','2,2', '3,3','4,4'],    #Default binning for flats
                 'darkbias_bin_spec': ['1,1','2,2', '3,3','4,4'],    #Default binning for flats
-                'bin_enable': ['1 1', '2 2', '3,3','4,4'],
+                'bin_enable': ['1,1', '2,2', '3,3','4,4'],
                 'dark_length' : 900,
                 'bias_count' : 10,
                 'dark_count' : 10,
