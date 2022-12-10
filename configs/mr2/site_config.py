@@ -618,7 +618,7 @@ site_config = {
                 'maximum_bin':  [1, 1, 0.469],    # Matched to seeing situation by owner
                 'cosmics_at_default' : 'no',
                 'cosmics_at_maximum' : 'yes',
-                'bin_enable':  ['2 2'],
+
                 'cycle_time':  [10, 12, 8, 6],  # 3x3 requires a 1, 1 reaout then a software bin, so slower.
                 'rbi_delay':  0.,      # This being zero says RBI is not available, eg. for SBIG.
                 'is_cmos':  False,
@@ -638,7 +638,6 @@ site_config = {
                 'areas_implemented': ["600%", "300%", "220%", "150%", "Full", "Sqr", '71%', '50%',  '35%', '25%', '12%'],
                 'default_area':  "Full",
                 'default_rotation': 0.0000,
-                'flat_bin_spec': '1,1',    #Default binning for flats
                 'smart_stack_exposure_time': 30,
                 #'bin_modes':  [[2, 2, 0.9371], [1, 1, 0.4685], [3, 3, 1.4056], [4, 4, 1.8742]],     #Meaning no binning if list has only one entry
                 #'default_bin':  [2, 2],    #Always square and matched to seeing situation by owner
@@ -646,8 +645,14 @@ site_config = {
                 'has_darkslide':  False,
                 'darkslide_com':  None,
                 'shutter_type': "Electronic",
+                'flat_bin_spec': ['1,1','2,2', '3,3','4,4'],    #Default binning for flats
+                'darkbias_bin_spec': ['1,1','2,2', '3,3','4,4'],    #Default binning for flats
+                'bin_enable': ['1 1', '2 2', '3,3','4,4'],
+                'dark_length' : 900,
+                'bias_count' : 10,
+                'dark_count' : 10,
                 
-                'flat_bin_spec': ['1,1', '2 2'],    # List of binnings for flats
+                
                 'has_screen': True,
                 'screen_settings':  {
                     'screen_saturation':  157.0,

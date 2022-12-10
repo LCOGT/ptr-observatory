@@ -537,7 +537,7 @@ site_config = {
                 'maximum_bin':  [1, 1, 0.269],    #  Matched to seeing situation by owner
                 'cosmics_at_default' : 'yes',
                 'cosmics_at_maximum' : 'yes',
-                'bin_enable': ['1 1'],
+
                 'cycle_time':  [2, 2, 2, 2],  # 3x3 requires a 1, 1 reaout then a software bin, so slower.
                 'rbi_delay':  0.,      #  This being zero says RBI is not available, eg. for SBIG.
                 'is_cmos':  False,
@@ -562,9 +562,14 @@ site_config = {
                 'areas_implemented': ["Full",'4x4d', "600%", "500%", "450%", "300%", "220%", "150%", "133%", "Full", "Sqr", '71%', '50%',  '35%', '25%', '12%'],
                 'default_area':  "Full",
                 'default_rotation': 0.0000,
-                'flat_bin_spec': ['1,1'],    #Default binning for flats
                 'has_darkslide':  False,
                 'darkslide_com':  None,
+                'flat_bin_spec': ['1,1'],    #Default binning for flats
+                'darkbias_bin_spec': ['1,1'],    #Default binning for flats
+                'bin_enable': ['1 1'],
+                'dark_length' : 900,
+                'bias_count' : 10,
+                'dark_count' : 10,
                 
                 'shutter_type': "Electronic",
                 'has_screen': True,

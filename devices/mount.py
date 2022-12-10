@@ -1109,12 +1109,11 @@ class Mount:
 
     def park_command(self, req=None, opt=None):
         ''' park the telescope mount '''
-        plog(self.mount.CanPark)
         if self.mount.CanPark:
-            plog("mount cmd: parking mount")
-            self.move_time = time.time()
-            self.mount.Park()
-            wait_for_slew()
+            if not g_dev['mnt'].mount.AtPark:
+                plog("mount cmd: parking mount")
+                self.mount.Park()
+                wait_for_slew()
 
     def unpark_command(self, req=None, opt=None):
         ''' unpark the telescope mount '''

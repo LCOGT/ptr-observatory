@@ -583,8 +583,6 @@ site_config = {
                 'corner_everlap': None,
                 'x_bias_line': True,
                 'y_bias_line': True,
-                'ref_dark': 360.0,
-                'long_dark': 600.0,
                 'x_active': 4784,
                 'y_active': 3194,
                 'det_size': '[1:9600, 1:6422]',  # Physical chip data size as reutrned from driver
@@ -622,14 +620,12 @@ site_config = {
                 'maximum_bin': [1, 1, 0.303],
                 'cosmics_at_default' : 'yes',
                 'cosmics_at_maximum' : 'yes',
-                'bin_enable':  ['2 2'],  #  Always square and matched to seeing situation by owner
                 'cycle_time':  [18, 15, 15, 12],
                 'rbi_delay':  0,      #  This being zero says RBI is not available, eg. for SBIG.
                 'is_cmos':  True,
                 'is_color': False,
                 'can_set_gain':  True,
-                'ref_dark': 600,
-                'long_dark': None,   #  s.
+
                 'reference_gain': [1.3, 2.6, 3.9, 5.2],     #  One val for each binning. Assumed digitalsumming in camera???
                 'reference_noise': [6, 6, 6, 6],    #  NB Guess
                 'reference_dark': [.2, .8, 1.8, 3.2],  #  Guess
@@ -646,10 +642,15 @@ site_config = {
                 'areas_implemented': ['Full', '0.5sq°',  '0.7sq°', '1x1°', '1.4sq°', '2x2°', '2.8xsq°', '4x4°', '5.6sq°'],
                 'default_area':  "Full",
                 'default_rotation': 0.0000,
-                'flat_bin_spec': ['1,1', '2 2'],    # List of binnings for flats
                 'has_darkslide':  True,
                 'darkslide_com':  'COM15',
                 'shutter_type': "Electronic",
+                'flat_bin_spec': ['1,1','2,2', '3,3','4,4'],    #Default binning for flats
+                'darkbias_bin_spec': ['1,1','2,2', '3,3','4,4'],    #Default binning for flats
+                'bin_enable': ['1 1', '2 2', '3,3','4,4'],
+                'dark_length' : 900,
+                'bias_count' : 10,
+                'dark_count' : 10,
                 'has_screen': True,
                 'screen_settings':  {
                     'screen_saturation':  157.0,
