@@ -1557,10 +1557,31 @@ class Sequencer:
                                     if len(bin_spec) > 1:
                                         print ("Good range for a flat, firing off the other flat types")
                                         for ctr in range (len(bin_spec)-1):
-                                            if morn:
-                                                exp_time=exp_time * 0.9
+                                            
+                                            # Estimate the new exposure time by the ratio of the skylux
+                                            prev_sky_lux = sky_lux
+                                            
+                                            try:
+                                                try:
+                                                    sky_lux = eval(self.redis_server.get('ocn_status'))['calc_HSI_lux']     #Why Eval, whould have float?
+                                                except:
+                                                    #plog("Redis not running. lux set to 1000.")
+                                                    try:
+                                                        sky_lux = float(g_dev['ocn'].status['calc_HSI_lux'])
+                                                    except:
+                                                        sky_lux, _ = g_dev['evnt'].illuminationNow()
+                                                        
+                                            except:
+                                                sky_lux = None
+                                            
+                                            if sky_lux != None:
+                                                exp_time=exp_time * (sky_lux / prev_sky_lux)
                                             else:
-                                                exp_time=exp_time * 1.1
+                                                if morn:
+                                                    exp_time=exp_time * 0.9
+                                                else:
+                                                    exp_time=exp_time * 1.1
+                                                
                                             req = {'time': float(exp_time),  'alias': camera_name, 'image_type': 'sky flat', 'script': 'On'}
                                             if g_dev["fil"].null_filterwheel == False:
                                                 

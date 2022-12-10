@@ -1118,7 +1118,7 @@ class Mount:
     def unpark_command(self, req=None, opt=None):
         ''' unpark the telescope mount '''
         if self.mount.CanPark:
-            if g_dev['mnt'].mount.AtPark:
+            if self.mount.AtPark:
                 plog("mount cmd: unparking mount")
             
                 self.mount.Unpark()

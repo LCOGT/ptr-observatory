@@ -2880,6 +2880,8 @@ class Camera:
                         # This is outside the reduce queue to guarantee the pointing check is done
                         # prior to the next exposure
 
+
+
                         if focus_image == True or ((Nsmartstack == sskcounter+1) and Nsmartstack > 1):
                             cal_name = (
                                 cal_name[:-9] + "F012" + cal_name[-7:]
