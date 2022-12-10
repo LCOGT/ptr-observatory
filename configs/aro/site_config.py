@@ -534,8 +534,7 @@ site_config = {
                 'y_active': 3194,
                 'x_pixel':  3.76,
                 'y_pixel':  3.76,
-                'pix_scale': [0.2876, 0.575, 0.863, 1.15],  # VErified for saf 20220903 WER [0.2876, 0.575, 0.863, 1.15], #F9        [0.528, 1.055, 1.583, 2.110] F4.9
-
+                
                 'CameraXSize' : 9600,
                 'CameraYSize' : 6422,
                 #'MaxBinX' : 2,
@@ -560,9 +559,7 @@ site_config = {
                 'max_exposure': 360.0,
                 'can_subframe':  True,
                 'min_subframe':  [128, 128],
-                'bin_modes':  [[1, 1, 0.2876], [2, 2, 0.575], [3, 3, 0.863], [4, 4, 1.15]],   #Meaning no binning choice if list has only one entry, default should be first.
-                'default_bin':  [2, 2, 0.575],
-                'maximum_bin':  [1, 1, 0.2876],
+                
                 'cosmics_at_default' : 'yes',
                 'cosmics_at_maximum' : 'yes',
                 'cycle_time':  [18, 15, 15, 12],  # 3x3 requires a 1, 1 reaout then a software bin, so slower.
@@ -597,6 +594,10 @@ site_config = {
                 'dark_length' : 900,
                 'bias_count' : 10,
                 'dark_count' : 10,
+                'bin_modes':  [[1, 1, 0.2876], [2, 2, 0.575], [3, 3, 0.863], [4, 4, 1.15]],   #Meaning no binning choice if list has only one entry, default should be first.
+                'default_bin':  [2, 2, 0.575],
+                'maximum_bin':  [1, 1, 0.2876],
+                'pix_scale': [0.2876, 0.575, 0.863, 1.15],    #  1.4506,  bin-2  2* math.degrees(math.atan(9/3962000))*3600
                 'darkslide_com':  'COM17',
                 'has_screen': True,
                 'screen_settings':  {

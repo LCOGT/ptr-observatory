@@ -598,7 +598,7 @@ site_config = {
                 'det_sec': ['[25:9600, 1:6388]', '[13:4800, 1:3194]', '[9:3200, 1:2129]', '[7:2400, 1:1597]'],
                 'data_sec': ['[25:9600, 1:6388]', '[13:4800, 1:3194]', '[9:3200, 1:2129]', '[7:2400, 1:1597]'],
                 'trim_sec': ['[1:9576, 1:6388]', '[1:4788, 1:3194]', '[1:3192, 1:2129]', '[1:2394, 1:1597]'],
-                'pix_scale': [0.4685, 0.9371, 1.8742],    #  1.4506,  bin-2  2* math.degrees(math.atan(9/3962000))*3600
+                
                 'x_field_deg': 0.5331,  # round(4096*0.468547/3600, 4),   #32_0 X 32 AMIN  3MIN X 0.5 DEG
                 'y_field_deg': 0.5331,  # round(4096*0.468547/3600, 4),
                 'field_area_sq_amin': 1023,
@@ -613,9 +613,8 @@ site_config = {
                 'long_dark': 600.0,
                 'can_subframe':  True,
                 'min_subframe':  [128,128],
-                'bin_modes':  [[2, 2, 0.937], [1, 1, 0.469], [4, 4, 1.87]],   # [3, 3, 1.45],Meaning no binning choice if list has only one entry, default should be first.
-                'default_bin':  [2, 2, 0.937],    # Matched to seeing situation by owner
-                'maximum_bin':  [1, 1, 0.469],    # Matched to seeing situation by owner
+                
+                
                 'cosmics_at_default' : 'no',
                 'cosmics_at_maximum' : 'yes',
 
@@ -651,8 +650,10 @@ site_config = {
                 'dark_length' : 900,
                 'bias_count' : 10,
                 'dark_count' : 10,
-                
-                
+                'pix_scale': [0.4685, 0.9371, 1.4055, 1.8742],    #  1.4506,  bin-2  2* math.degrees(math.atan(9/3962000))*3600
+                'bin_modes':  [[2, 2, 0.937], [1, 1, 0.469], [4, 4, 1.87], [4, 4, 1.40]],   # [3, 3, 1.45],Meaning no binning choice if list has only one entry, default should be first.
+                'default_bin':  [2, 2, 0.937],    # Matched to seeing situation by owner
+                'maximum_bin':  [1, 1, 0.469],    # Matched to seeing situation by owner
                 'has_screen': True,
                 'screen_settings':  {
                     'screen_saturation':  157.0,

@@ -593,7 +593,6 @@ site_config = {
                 'trim_sec': ['[1:9576, 1:6388]', '[1:4788, 1:3194]', '[1:3192, 1:2129]', '[1:2394, 1:1597]'],
                 'x_pixel':  3.76,
                 'y_pixel':  3.76,
-                'pix_scale': [0.302597, 0.605194, 0.907791, 1.210388],    #   bin-2  2* math.degrees(math.atan(3.76/2563000))*3600
 
                 'CameraXSize' : 9600,
                 'CameraYSize' : 6422,
@@ -615,9 +614,7 @@ site_config = {
                 'max_exposure': 180.,
                 'can_subframe':  True,
                 'min_subframe': [128,128],
-                'bin_modes':  [[1, 1, 0.303], [2, 2, 0.605],  [3, 3, 0.908], [4, 4, 1.21]],     #Meaning fixed binning if list has only one entry
-                'default_bin':  [2, 2, 0.605],
-                'maximum_bin': [1, 1, 0.303],
+                
                 'cosmics_at_default' : 'yes',
                 'cosmics_at_maximum' : 'yes',
                 'cycle_time':  [18, 15, 15, 12],
@@ -645,9 +642,13 @@ site_config = {
                 'has_darkslide':  True,
                 'darkslide_com':  'COM15',
                 'shutter_type': "Electronic",
+                'bin_modes':  [[1, 1, 0.303], [2, 2, 0.605],  [3, 3, 0.908], [4, 4, 1.21]],     #Meaning fixed binning if list has only one entry
+                'default_bin':  [2, 2, 0.605],
+                'maximum_bin': [1, 1, 0.303],
                 'flat_bin_spec': ['1,1','2,2', '3,3','4,4'],    #Default binning for flats
                 'darkbias_bin_spec': ['1,1','2,2', '3,3','4,4'],    #Default binning for flats
-                'bin_enable': ['1,1', '2,2', '3,3','4,4'],
+                'bin_enable': ['1,1', '2,2', '3,3','4,4'],                
+                'pix_scale': [0.302597, 0.605194, 0.907791, 1.210388],    #   bin-2  2* math.degrees(math.atan(3.76/2563000))*3600
                 'dark_length' : 900,
                 'bias_count' : 10,
                 'dark_count' : 10,

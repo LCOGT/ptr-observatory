@@ -511,7 +511,7 @@ site_config = {
                 'trim_sec': ['[1:9576, 1:6388]', '[1:4788, 1:3194]', '[1:3192, 1:2129]', '[1:2394, 1:1597]'],
                 'x_pixel':  6,
                 'y_pixel':  6,
-                'pix_scale': [0.269,0.538],
+                
                 'CameraXSize' : 4096,
                 'CameraYSize' : 4096,
                 #'MaxBinX' : 4,
@@ -562,8 +562,8 @@ site_config = {
                 'bin_enable': ['1,1', '2,2', '3,3','4,4'],
                 'default_bin':  [2, 2, 0.538],    #  Matched to seeing situation by owner
                 'maximum_bin':  [1, 1, 0.269],    #  Matched to seeing situation by owner
-                'bin_modes':  [[1, 1, 0.269],[2, 2, 0.538]], #  , [2, 2, 2.13], [3, 3, 3.21], [4, 4, 4.27]],   #Meaning no binning choice if list has only one entry, default should be first.
-                
+                'bin_modes':  [[1, 1, 0.269],[2, 2, 0.538],[3, 3, 0.807],[4, 4, 1.076]], #  , [2, 2, 2.13], [3, 3, 3.21], [4, 4, 4.27]],   #Meaning no binning choice if list has only one entry, default should be first.
+                'pix_scale': [0.269,0.538, 0.807,1.076],
                 'cosmics_at_default' : 'yes',
                 'cosmics_at_maximum' : 'yes',
                 'dark_length' : 10,

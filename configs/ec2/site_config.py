@@ -513,7 +513,7 @@ site_config = {
                 'trim_sec': ['[1:9576, 1:6388]', '[1:4788, 1:3194]', '[1:3192, 1:2129]', '[1:2394, 1:1597]'],
                 'x_pixel':  6,
                 'y_pixel':  6,
-                'pix_scale': [1.569],
+                
                 'CameraXSize' : 4096,
                 'CameraYSize' : 4096,
                 #'MaxBinX' : 2,
@@ -537,7 +537,7 @@ site_config = {
                 'maximum_bin':  [1, 1, 0.269],    #  Matched to seeing situation by owner
                 'cosmics_at_default' : 'yes',
                 'cosmics_at_maximum' : 'yes',
-
+                'pix_scale': [1.569],
                 'cycle_time':  [2, 2, 2, 2],  # 3x3 requires a 1, 1 reaout then a software bin, so slower.
                 'rbi_delay':  0.,      #  This being zero says RBI is not available, eg. for SBIG.
                 'is_cmos':  False,
