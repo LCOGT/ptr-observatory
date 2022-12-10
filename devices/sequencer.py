@@ -1003,8 +1003,8 @@ class Sequencer:
                     req = {'time': 0.0,  'script': 'True', 'image_type': 'bias'}
                     opt = {'area': "Full", 'count': bias_count, 'bin': darkbias_bin_spec[ctr] , \
                            'filter': 'dark'}                    
-                    #result = g_dev['cam'].expose_command(req, opt, no_AWS=False, \
-                    #                do_sep=False, quick=False)
+                    result = g_dev['cam'].expose_command(req, opt, no_AWS=False, \
+                                    do_sep=False, quick=False)
                     
                     g_dev['obs'].update_status()
                     
@@ -1016,8 +1016,8 @@ class Sequencer:
                     req = {'time': dark_exp_time ,  'script': 'True', 'image_type': 'dark'}
                     opt = {'area': "Full", 'count': 1, 'bin': darkbias_bin_spec[ctr], \
                             'filter': 'dark'}
-                    #result = g_dev['cam'].expose_command(req, opt, no_AWS=False, \
-                    #                    do_sep=False, quick=False)
+                    result = g_dev['cam'].expose_command(req, opt, no_AWS=False, \
+                                       do_sep=False, quick=False)
                     g_dev['obs'].update_status()
                     if ephem.now() + (dark_exp_time + 30)/86400 > ending:
                         break
