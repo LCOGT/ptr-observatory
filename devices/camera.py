@@ -718,6 +718,7 @@ class Camera:
         if self.user_name != self.last_user_name:
             self.last_user_name = self.user_name
         if action == "expose" and not self.exposure_busy:
+
             self.expose_command(req, opt, do_sep=True, quick=False)
             self.exposure_busy = False  # Hangup needs to be guarded with a timeout.
             self.active_script = None
@@ -852,8 +853,7 @@ class Camera:
             bin_x = self.config["camera"][self.name]["settings"]["default_bin"]
 
         if bin_x == '"maximum"':
-            bin_x = self.config["camera"][self.name]["settings"]["maximum_bin"]
-
+            bin_x = self.config["camera"][self.name]["settings"]["max_res_bin"]
         if bin_x in [
             "4 4",
             4,
@@ -875,6 +875,8 @@ class Camera:
             bin_x = 3
             self.ccd_sum = "3 3"
         elif bin_x in [
+            '"optimal"',
+            'optimal',
             "2 2",
             2,
             "2, 2",
@@ -885,6 +887,18 @@ class Camera:
             bin_x = 2
             self.ccd_sum = "2 2"
         elif bin_x in [
+            '"maximum"',
+            'maximum',
+            "1 1",
+            1,
+            "1, 1",
+            "1,1",
+            [1, 1],
+            (1, 1),
+        ]:  # The bin spec is too convoluted. This needs a deep clean.
+            bin_x = 1
+            self.ccd_sum = "1 1"
+        elif bin_x in [
             "0 0",
             0,
             "0, 0",
@@ -894,7 +908,7 @@ class Camera:
         ]:  # 0,0 is an indicator for selecting the default binning
             bin_x = self.config["camera"][self.name]["settings"]["default_bin"][0]
             self.ccd_sum = str(bin_x) + " " + str(bin_x)
-        else:
+        else: #Something unanticipated was supplied.
             bin_x = self.config['camera'][self.name]['settings']['default_bin'][0]
             self.ccd_sum = str(bin_x) + ' ' + str(bin_x)
 

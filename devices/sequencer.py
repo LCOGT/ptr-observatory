@@ -1355,7 +1355,7 @@ class Sequencer:
         g_dev['obs'].send_to_user('Sky Flat sequence Starting, Enclosure PRESUMED Open. Telescope should be on sky flat spot.', p_level='INFO')
         evening = not morn
         camera_name = str(self.config['camera']['camera_1_1']['name'])
-        flat_count = 7
+        flat_count = int(self.config['camera']['camera_1_1']['settings']['flat_count'])
         min_exposure = float(self.config['camera']['camera_1_1']['settings']['min_exposure'])
         #bin_spec = '1,1'
         #try:

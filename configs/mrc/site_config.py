@@ -120,9 +120,9 @@ site_config = {
 
     'auto_eve_bias_dark': False,
     
-    'auto_midnight_moonless_bias_dark': False,
+    'auto_midnight_moonless_bias_dark': True,
     'auto_eve_sky_flat': False,
-    'eve_sky_flat_sunset_offset': -95.,  #  Minutes  neg means before, + after.
+    'eve_sky_flat_sunset_offset': -90.,  #  Minutes  neg means before, + after.
     'eve_cool_down_open' : -95.0,
     'auto_morn_sky_flat': True,
     'auto_morn_bias_dark': True,
@@ -485,6 +485,7 @@ site_config = {
                 #'home_filter':  2,
                 'default_filter':  'w',
                 'filter_reference': 2,
+                
 
 
                 #'filter_list': ['PL','PR','PG','PB','HA','O3','S2', 'air','dif','w','CR','N2','up','gp','rp','ip','z', 'difup','difgp','difrp','difip','dark'], # A list of actual physical filters for the substitution function
@@ -629,11 +630,11 @@ site_config = {
                 'reference_offset': [611, 623, 590, 700], #  NB Guess  ADU vaules not times in sec.
                 'fullwell_capacity': [80000, 320000, 720000, 1280000],   #  NB Guess
                 'cycle_time':  [18, 15, 15, 12],   # NB somewhat a Guess.
-                'default_bin':  [2, 2, 0.605],
+                'default_bin':  [2, 2],   #  Tsis is aka the optimal bin
                 'bin_enable':  ['2 2'],  #  Always square and matched to seeing situation by owner
                                          #  NB NB inconsistent use of bin string   '1 1', '1x1' , etc.
-                'maximum_bin': [1, 1, 0.303],   #  NB confusing name, defining a better term next, drop this eventually
-                'minimum_bin': [1, 1, 0.303],
+                'max_res_bin': [1, 1],   
+
                 'cosmics_at_default' : 'yes',
                 'cosmics_at_maximum' : 'yes',
                 
@@ -647,7 +648,7 @@ site_config = {
 
                 'max_linearity':  60000,   # Guess
                 'saturate':  65300,
-                
+                'flat_count': 5,
                 'read_mode':  'Normal',
                 'readout_mode': 'Normal',
                 'readout_speed':  50,

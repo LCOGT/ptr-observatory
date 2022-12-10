@@ -1156,7 +1156,7 @@ class Observatory:
                             preserve_range=True,
                         )  #  We should trim chips so ratio is exact.
 
-                    if self.config["camera"][self.name]["settings"]["is_osc"]:
+                    if self.config["camera"][g_dev['cam'].name]["settings"]["is_osc"]:
                         blue_stretched_data_float = Stretch().stretch(hdublue+1000)
                         del hdublue
                         green_stretched_data_float = Stretch().stretch(hdugreen+1000)
