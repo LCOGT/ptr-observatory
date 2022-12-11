@@ -316,6 +316,8 @@ class Sequencer:
             #NB The above put dome closed and telescope at Park, Which is where it should have been upon entry.
             self.bias_dark_script(req, opt, morn=False)
             self.bias_dark_latch = False
+            
+            g_dev['mnt'].park_command({}, {})
 
         elif ((g_dev['events']['Cool Down, Open']  <= ephem_now < g_dev['events']['Eve Sky Flats']) and \
                g_dev['enc'].mode == 'Automatic') and not g_dev['ocn'].wx_hold:
@@ -382,6 +384,7 @@ class Sequencer:
                                    is not None:
             try:
                 
+               
                 self.nightly_reset_complete = False
                 
                 if enc_status['enclosure_mode'] in ['Autonomous!', 'Automatic']:
@@ -537,6 +540,10 @@ class Sequencer:
             self.sky_flat_script({}, {}, morn=True)   #Null command dictionaries
             self.morn_sky_flat_latch = False
             #self.park_and_close(enc_status)
+            
+            # Park at the end of morning sky flats
+            g_dev['mnt'].park_command({}, {})
+            
         elif self.morn_bias_dark_latch and (events['Morn Bias Dark'] <= ephem_now < events['End Morn Bias Dark']) and \
                   self.config['auto_morn_bias_dark']: # and g_dev['enc'].mode == 'Automatic' ):
             #breakpoint()
@@ -1024,72 +1031,6 @@ class Sequencer:
                     if ephem.now() + (dark_exp_time + 30)/86400 > ending:
                         break
                         
-                        
-                #     g_dev['obs'].update_status()
-                
-                # if "1 1" in self.config['camera']['camera_1_1']['settings']['bin_enable']:
-                #     req = {'time': 0.0,  'script': 'True', 'image_type': 'bias'}
-                #     opt = {'area': "Full", 'count': bias_count, 'bin':'1 1', \
-                #             'filter': 'dark'}
-                #     plog("Expose b_1")
-                #     result = g_dev['cam'].expose_command(req, opt, no_AWS=False, \
-                #                     do_sep=False, quick=False)
-                #     g_dev['obs'].update_status()
-                #     dark_time = short_dark_time
-                #     if ephem.now() + (dark_time + 30)/86400 > ending:
-                #         break
-                #     plog("Expose ref_dark using exposure:  ", dark_time )
-                #     req = {'time':dark_time ,  'script': 'True', 'image_type': 'dark'}
-                #     opt = {'area': "Full", 'count':1, 'bin': '1 1', \
-                #             'filter': 'dark'}
-                #     result = g_dev['cam'].expose_command(req, opt, no_AWS=False, \
-                #                         do_sep=False, quick=False)
-
-                #     g_dev['obs'].update_status()
-                #     if long_dark_time is not None and long_dark_time > dark_time:
-
-                #         if ephem.now() + (long_dark_time + 30)/86400 > ending:
-                #             break
-                #         plog("Expose long dark using exposure:  ", long_dark_time)
-                #         req = {'time':long_dark_time ,  'script': 'True', 'image_type': 'dark'}
-                #         opt = {'area': "Full", 'count':1, 'bin': '1 1', \
-                #                 'filter': 'dark'}
-                #         result = g_dev['cam'].expose_command(req, opt, no_AWS=False, \
-                #                             do_sep=False, quick=False)
-
-                #         g_dev['obs'].update_status()
-                # if "2 2" in self.config['camera']['camera_1_1']['settings']['bin_enable']:
-                #     req = {'time': 0.0,  'script': 'True', 'image_type': 'bias'}
-                #     opt = {'area': "Full", 'count': bias_count, 'bin':'2 2', \
-                #             'filter': 'dark'}
-                #     plog("Expose b_2")
-                #     result = g_dev['cam'].expose_command(req, opt, no_AWS=False, \
-                #                     do_sep=False, quick=False)
-                #     g_dev['obs'].update_status()
-                #     dark_time = short_dark_time
-                #     if ephem.now() + (dark_time + 30)/86400 > ending:
-                #         break
-                #     plog("Expose ref_dark using exposure:  ", dark_time )
-                #     req = {'time':dark_time ,  'script': 'True', 'image_type': 'dark'}
-                #     opt = {'area': "Full", 'count':1, 'bin': '2 2', \
-                #             'filter': 'dark'}
-                #     result = g_dev['cam'].expose_command(req, opt, no_AWS=False, \
-                #                         do_sep=False, quick=False)
-
-                #     g_dev['obs'].update_status()
-                #     if long_dark_time is not None and long_dark_time > dark_time:
-
-                #         if ephem.now() + (long_dark_time + 30)/86400 > ending:
-                #             break
-                #         plog("Expose long dark using exposure:  ", long_dark_time)
-                #         req = {'time':long_dark_time ,  'script': 'True', 'image_type': 'dark'}
-                #         opt = {'area': "Full", 'count':1, 'bin': '2 2', \
-                #                 'filter': 'dark'}
-                #         result = g_dev['cam'].expose_command(req, opt, no_AWS=True, \
-                #                             do_sep=False, quick=False)
-
-                #         g_dev['obs'].update_status()
-
                 g_dev['obs'].update_status()
                 if ephem.now() + 30/86400 >= ending:
                     break
@@ -1282,6 +1223,8 @@ class Sequencer:
         self.midnight_calibration_done = False
         self.nightly_reset_complete = True
 
+        # No harm in doubly checking it has parked
+        g_dev['mnt'].park_command({}, {})
 
         return
 
@@ -1660,16 +1603,18 @@ class Sequencer:
                             #obs_win_begin, sunset, sunrise, ephem_now = self.astro_events.getSunEvents()
                             #g_dev['obs'].update_status()
                             continue
-        if morn is False:
-            g_dev['mnt'].tracking = False   #  park_command({}, {})  #  NB this is provisional, Ok when simulating
-            self.eve_sky_flat_latch = False
-        elif morn:
-            try:
-                g_dev['mnt'].park_command({}, {})
-            except:
-                plog("Mount did not park at end of morning skyflats.")
+        #if morn is False:
+            #g_dev['mnt'].tracking = False   #  park_command({}, {})  #  NB this is provisional, Ok when simulating
+        #    self.eve_sky_flat_latch = False
+        #elif morn:
+        #    try:
+        #        g_dev['mnt'].park_command({}, {})
+        #    except:
+        #        plog("Mount did not park at end of morning skyflats.")
+        if morn: 
             self.morn_sky_flat_latch = False
         plog('\nSky flat complete, or too early. Telescope Tracking is off.\n')
+        g_dev['mnt'].park_command({}, {}) # You actually always want it to park, TheSkyX can't stop the telescope tracking, so park is safer... it is before focus anyway.
         self.sky_guard = False
 
 
@@ -1751,6 +1696,8 @@ class Sequencer:
         g_dev['mnt'].Tracking = False   #park_command({}, {})
         plog('Sky Flat sequence completed, Telescope tracking is off.')
         self.guard = False
+        
+        g_dev['mnt'].park_command({}, {})
 
 
 
