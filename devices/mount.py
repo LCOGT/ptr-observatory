@@ -270,6 +270,8 @@ class Mount:
         self.obs.long = config['longitude']*DTOR
         self.obs.lat = config['latitude']*DTOR
 
+        self.theskyx_tracking_rescues = 0
+
         plog("exiting mount _init")
 
     def check_connect(self):
@@ -986,17 +988,80 @@ class Mount:
         self.ha_corr = ptr_utility.reduce_ha_r(self.ha_mech -self. ha_obs_r)*RTOS
         self.dec_corr = ptr_utility.reduce_dec_r(self.dec_mech - self.dec_obs_r)*RTOS
 
-        try:
-            self.mount.Tracking = True
-        except:
-            print ("this mount may not accept tracking commands")
+
+        if self.mount.Tracking == False:
+            try:
+                wait_for_slew()
+                self.mount.Tracking = True
+            except Exception as e:
+                # Yes, this is an awfully non-elegant way to force a mount to start 
+                # Tracking when it isn't implemented in the ASCOM driver. But if anyone has any better ideas, I am all ears - MF
+                # It also doesn't want to get into an endless loop of parking and unparking and homing, hence the rescue counter
+                if ('Property write Tracking is not implemented in this driver.' in str(e)) and self.theskyx_tracking_rescues < 5:
+                    self.theskyx_tracking_rescues=self.theskyx_tracking_rescues + 1
+                    self.park_command()
+                    wait_for_slew()
+                    self.unpark_command()
+                    wait_for_slew()
+                    self.mount.SlewToCoordinatesAsync(self.ra_mech*RTOH, self.dec_mech*RTOD)  #Is this needed?
+                    wait_for_slew()                  
+                
+                    print ("this mount may not accept tracking commands")
+                elif ('Property write Tracking is not implemented in this driver.' in str(e)) and self.theskyx_tracking_rescues >= 5:
+                    print ("theskyx has been rescued one too many times. Just sending it to park.")
+                    self.park_command()
+                    wait_for_slew()
+                    return
+                else:
+                    print ("problem with setting tracking: ", e)
+                
+                
         self.move_time = time.time()
         az, alt = ptr_utility.transform_haDec_to_azAlt_r(self.ha_mech, self.dec_mech, self.latitude_r)
         plog('MODEL HA, DEC, AZ, Refraction:  (asec)  ', self.ha_corr, self.dec_corr, az*RTOD, self.refr_asec)
         self.target_az = az*RTOD
 
         wait_for_slew() 
-        self.mount.SlewToCoordinatesAsync(self.ra_mech*RTOH, self.dec_mech*RTOD)  #Is this needed?
+        try:
+            self.mount.SlewToCoordinatesAsync(self.ra_mech*RTOH, self.dec_mech*RTOD)  #Is this needed?
+            wait_for_slew() 
+        except Exception as e:
+            # This catches an occasional ASCOM/TheSkyX glitch and gets it out of being stuck
+            # And back on tracking. 
+            if ('Object reference not set to an instance of an object.' in str(e)):
+                self.park_command()
+                wait_for_slew()
+                self.unpark_command()
+                wait_for_slew()
+                self.mount.SlewToCoordinatesAsync(self.ra_mech*RTOH, self.dec_mech*RTOD)  #Is this needed?
+                wait_for_slew()
+                
+        if self.mount.Tracking == False:
+            try:
+                wait_for_slew()
+                self.mount.Tracking = True
+            except Exception as e:
+                # Yes, this is an awfully non-elegant way to force a mount to start 
+                # Tracking when it isn't implemented in the ASCOM driver. But if anyone has any better ideas, I am all ears - MF
+                # It also doesn't want to get into an endless loop of parking and unparking and homing, hence the rescue counter
+                if ('Property write Tracking is not implemented in this driver.' in str(e)) and self.theskyx_tracking_rescues < 5:
+                    self.theskyx_tracking_rescues=self.theskyx_tracking_rescues + 1
+                    self.park_command()
+                    wait_for_slew()
+                    self.unpark_command()
+                    wait_for_slew()
+                    self.mount.SlewToCoordinatesAsync(self.ra_mech*RTOH, self.dec_mech*RTOD)  #Is this needed?
+                    wait_for_slew()                  
+                
+                    print ("this mount may not accept tracking commands")
+                elif ('Property write Tracking is not implemented in this driver.' in str(e)) and self.theskyx_tracking_rescues >= 5:
+                    print ("theskyx has been rescued one too many times. Just sending it to park.")
+                    self.park_command()
+                    wait_for_slew()
+                    return
+                else:
+                    print ("problem with setting tracking: ", e)
+                
         g_dev['obs'].last_solve_time = datetime.datetime.now() - datetime.timedelta(days=1)
         g_dev['obs'].images_since_last_solve = 10000
         wait_for_slew()    

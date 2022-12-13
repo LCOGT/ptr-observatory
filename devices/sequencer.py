@@ -1222,6 +1222,8 @@ class Sequencer:
         # Allow midnight calibrations
         self.midnight_calibration_done = False
         self.nightly_reset_complete = True
+        
+        g_dev['mnt'].theskyx_tracking_rescues = 0
 
         # No harm in doubly checking it has parked
         g_dev['mnt'].park_command({}, {})
