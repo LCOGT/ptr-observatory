@@ -234,6 +234,14 @@ class Observatory:
         self.reset_last_reference()
         self.env_exists = os.path.exists(os.getcwd() + '\.env')  # Boolean, check if .env present
 
+
+        # If mount is permissively set, reset mount reference
+        # This is necessary for SRO and it seems for ECO
+        # I actually think it may be necessary for all telescopes
+        # Not all who wander are lost.... but those that point below altitude -10 probably are.
+        if self.config["mount"]["mount1"]["permissive_mount_reset"] == "yes":
+            g_dev["mnt"].reset_mount_reference()
+
         # Need to set this for the night log
         #g_dev['foc'].set_focal_ref_reset_log(self.config["focuser"]["focuser1"]["reference"])
         # Send the config to AWS. TODO This has faulted.
