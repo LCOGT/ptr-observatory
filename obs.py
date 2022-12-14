@@ -246,6 +246,9 @@ class Observatory:
         # Keep track of how long it has been since the last activity
         self.time_since_last_slew_or_exposure = time.time()
 
+        # Only poll the broad safety checks (altitude and inactivity) every 5 minutes
+        self.time_since_safety_checks=time.time()
+
         # Need to set this for the night log
         #g_dev['foc'].set_focal_ref_reset_log(self.config["focuser"]["focuser1"]["reference"])
         # Send the config to AWS. TODO This has faulted.
@@ -707,40 +710,46 @@ class Observatory:
         # confuzzled and take images of the dirt. This should save them from this fate.
         # Also it should generically save any telescope from pointing weirdly down
         # or just tracking forever after being left tracking for far too long.
-        try:
-            mount_altitude=g_dev['mnt'].mount.Altitude
-            lowest_acceptable_altitude= self.config['mount']['mount1']['lowest_acceptable_altitude'] 
-            if mount_altitude < lowest_acceptable_altitude:
-                print ("Altitude too low! " + str(mount_altitude) + ". Parking scope for safety!")
-                if not g_dev['mnt'].mount.AtPark:  
-                    g_dev['mnt'].home_command()
-                    g_dev['mnt'].park_command()  
-                    # Reset mount reference because thats how it probably got pointing at the dirt in the first place!
-                    if self.config["mount"]["mount1"]["permissive_mount_reset"] == "yes":
-                        g_dev["mnt"].reset_mount_reference()
-        except Exception as e:
-            print (traceback.format_exc())
-            print (e)
-            breakpoint()
-            if 'GetAltAz' in str(e) and 'ASCOM.SoftwareBisque.Telescope' in str(e):
-                print ("The SkyX Altitude detection had an error.")
-                print ("Usually this is because of a broken connection.")
-                print ("Waiting 60 seconds then reconnecting")
-                
-                time.sleep(60)
-                
-                self.mount.Connected = True
-                #g_dev['mnt'].home_command()
+        #
+        # Probably we don't want to run these checkes EVERY status update, just every 5 minutes
+        if time.time() - self.time_since_safety_checks > 300:
+            self.time_since_safety_checks=time.time()
             
-
-        # If no activity for an hour, park the scope               
-        if time.time() - self.time_since_last_slew_or_exposure  > self.config['mount']['mount1']['time_inactive_until_park']:
-            if not g_dev['mnt'].mount.AtPark:  
-                print ("Parking scope due to inactivity")
-                g_dev['mnt'].home_command()
-                g_dev['mnt'].park_command()
-                self.time_since_last_slew_or_exposure = time.time()
-        
+            # Check that the mount hasn't tracked too low or an odd slew hasn't sent it pointing to the ground.
+            try:
+                mount_altitude=g_dev['mnt'].mount.Altitude
+                lowest_acceptable_altitude= self.config['mount']['mount1']['lowest_acceptable_altitude'] 
+                if mount_altitude < lowest_acceptable_altitude:
+                    print ("Altitude too low! " + str(mount_altitude) + ". Parking scope for safety!")
+                    if not g_dev['mnt'].mount.AtPark:  
+                        g_dev['mnt'].home_command()
+                        g_dev['mnt'].park_command()  
+                        # Reset mount reference because thats how it probably got pointing at the dirt in the first place!
+                        if self.config["mount"]["mount1"]["permissive_mount_reset"] == "yes":
+                            g_dev["mnt"].reset_mount_reference()
+            except Exception as e:
+                print (traceback.format_exc())
+                print (e)
+                breakpoint()
+                if 'GetAltAz' in str(e) and 'ASCOM.SoftwareBisque.Telescope' in str(e):
+                    print ("The SkyX Altitude detection had an error.")
+                    print ("Usually this is because of a broken connection.")
+                    print ("Waiting 60 seconds then reconnecting")
+                    
+                    time.sleep(60)
+                    
+                    self.mount.Connected = True
+                    #g_dev['mnt'].home_command()
+                
+    
+            # If no activity for an hour, park the scope               
+            if time.time() - self.time_since_last_slew_or_exposure  > self.config['mount']['mount1']['time_inactive_until_park']:
+                if not g_dev['mnt'].mount.AtPark:  
+                    print ("Parking scope due to inactivity")
+                    g_dev['mnt'].home_command()
+                    g_dev['mnt'].park_command()
+                    self.time_since_last_slew_or_exposure = time.time()
+            
         
 
     def run(self):  # run is a poor name for this function.
