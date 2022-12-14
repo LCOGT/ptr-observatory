@@ -1007,6 +1007,7 @@ class Mount:
                 # It also doesn't want to get into an endless loop of parking and unparking and homing, hence the rescue counter
                 if ('Property write Tracking is not implemented in this driver.' in str(e)) and self.theskyx_tracking_rescues < 5:
                     self.theskyx_tracking_rescues=self.theskyx_tracking_rescues + 1
+                    self.home_command()
                     self.park_command()
                     wait_for_slew()
                     self.unpark_command()
@@ -1037,6 +1038,7 @@ class Mount:
             # This catches an occasional ASCOM/TheSkyX glitch and gets it out of being stuck
             # And back on tracking. 
             if ('Object reference not set to an instance of an object.' in str(e)):
+                self.home_command()
                 self.park_command()
                 wait_for_slew()
                 self.unpark_command()
