@@ -1925,6 +1925,7 @@ class Sequencer:
             self.sequencer_hold = False   #Allow comand checks.
             self.af_guard = False
             g_dev['mnt'].mount.SlewToCoordinatesAsync(start_ra, start_dec)  #MAKE sure same style coordinates.
+            wait_for_slew()
             self.sequencer_hold = False
             self.guard = False
             self.af_guard = False
@@ -1944,6 +1945,7 @@ class Sequencer:
                 self.sequencer_hold = False   #Allow comand checks.
                 self.af_guard = False
                 g_dev['mnt'].mount.SlewToCoordinatesAsync(start_ra, start_dec)   #NB NB Does this really take us back to starting point?
+                wait_for_slew()
                 self.sequencer_hold = False
                 self.guard = False
                 self.af_guard = False
@@ -1981,6 +1983,7 @@ class Sequencer:
                 g_dev['foc'].af_log(foc_pos4, spot4, new_spot)
                 plog("Returning to:  ", start_ra, start_dec)
                 g_dev['mnt'].mount.SlewToCoordinatesAsync(start_ra, start_dec)   #Return to pre-focus pointing.
+                wait_for_slew()
             if sim:
 
                 g_dev['foc'].guarded_move((focus_start)*g_dev['foc'].micron_to_steps)
@@ -2026,6 +2029,7 @@ class Sequencer:
                 self.sequencer_hold = False   #Allow comand checks.
                 self.af_guard = False
                 g_dev['mnt'].mount.SlewToCoordinatesAsync(start_ra, start_dec)   #NB NB Does this really take us back to starting point?
+                wait_for_slew()
                 self.sequencer_hold = False
                 self.guard = False
                 self.af_guard = False
@@ -2061,6 +2065,7 @@ class Sequencer:
                 g_dev['foc'].af_log(foc_pos4, spot4, new_spot)
                 plog("Returning to:  ", start_ra, start_dec)
                 g_dev['mnt'].mount.SlewToCoordinatesAsync(start_ra, start_dec)   #Return to pre-focus pointing.
+                wait_for_slew()
             if sim:
 
                 g_dev['foc'].guarded_move((focus_start)*g_dev['foc'].micron_to_steps)
@@ -2108,6 +2113,7 @@ class Sequencer:
                 self.sequencer_hold = False   #Allow comand checks.
                 self.af_guard = False
                 g_dev['mnt'].mount.SlewToCoordinatesAsync(start_ra, start_dec)   #NB NB Does this really take us back to starting point?
+                wait_for_slew()
                 self.sequencer_hold = False
                 self.guard = False
                 self.af_guard = False
@@ -2143,6 +2149,7 @@ class Sequencer:
                 g_dev['foc'].af_log(foc_pos4, spot4, new_spot)
                 plog("Returning to:  ", start_ra, start_dec)
                 g_dev['mnt'].mount.SlewToCoordinatesAsync(start_ra, start_dec)   #Return to pre-focus pointing.
+                wait_for_slew()
             if sim:
 
                 g_dev['foc'].guarded_move((focus_start)*g_dev['foc'].micron_to_steps)
@@ -2177,6 +2184,7 @@ class Sequencer:
             g_dev['foc'].focuser.Move((focus_start)*g_dev['foc'].micron_to_steps)
         plog("Returning to:  ", start_ra, start_dec)
         g_dev['mnt'].mount.SlewToCoordinatesAsync(start_ra, start_dec)   #Return to pre-focus pointing.
+        wait_for_slew()
         if sim:
 
             g_dev['foc'].guarded_move((focus_start)*g_dev['foc'].micron_to_steps)
@@ -2401,6 +2409,7 @@ class Sequencer:
             g_dev['foc'].guarded_move((foc_start)*g_dev['foc'].micron_to_steps)
         plog("Returning to:  ", start_ra, start_dec)
         g_dev['mnt'].mount.SlewToCoordinatesAsync(start_ra, start_dec)   #Return to pre-focus pointing.
+        wait_for_slew()
         if sim:
             g_dev['foc'].guarded_move((foc_start)*g_dev['foc'].micron_to_steps)
         self.sequencer_hold = False
@@ -2441,3 +2450,20 @@ class Sequencer:
         except:
             plog('Found an empty shelf.  Reset_(block)completes for:  ', camera)
         return
+    
+    def wait_for_slew():
+        try:
+            if not g_dev['mnt'].mount.AtPark:              
+                while g_dev['mnt'].mount.Slewing: #or g_dev['enc'].status['dome_slewing']:   #Filter is moving??
+                    if g_dev['mnt'].mount.Slewing: plog( 'm>')
+                    #if g_dev['enc'].status['dome_slewing']: st += 'd>'
+        
+                    time.sleep(0.2)
+                    g_dev['obs'].update_status()            
+                
+        except:
+            plog("Motion check faulted.")
+            plog(traceback.format_exc())
+            breakpoint()
+        
+        return 

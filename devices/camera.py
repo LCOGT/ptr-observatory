@@ -798,11 +798,7 @@ class Camera:
         not the slower File Path.  THe mode used for focusing or other operations where we do not want to save any
         image data.
         """
-        #try:
-        #    self.user_name
-        #except:
-        #    self.user_name = "kilroy_was_here"
-        #self.t0 = time.time()
+
         # Force a reseek //eventually dither//
         try:
             if (
