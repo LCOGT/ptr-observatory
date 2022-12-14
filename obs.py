@@ -707,16 +707,27 @@ class Observatory:
         # confuzzled and take images of the dirt. This should save them from this fate.
         # Also it should generically save any telescope from pointing weirdly down
         # or just tracking forever after being left tracking for far too long.
-        mount_altitude=g_dev['mnt'].mount.Altitude
-        lowest_acceptable_altitude= self.config['mount']['mount1']['lowest_acceptable_altitude'] 
-        if mount_altitude < lowest_acceptable_altitude:
-            print ("Altitude too low! " + str(mount_altitude) + ". Parking scope for safety!")
-            if not g_dev['mnt'].mount.AtPark:  
-                g_dev['mnt'].home_command()
-                g_dev['mnt'].park_command()  
-                # Reset mount reference because thats how it probably got pointing at the dirt in the first place!
-                if self.config["mount"]["mount1"]["permissive_mount_reset"] == "yes":
-                    g_dev["mnt"].reset_mount_reference()
+        try:
+            mount_altitude=g_dev['mnt'].mount.Altitude
+            lowest_acceptable_altitude= self.config['mount']['mount1']['lowest_acceptable_altitude'] 
+            if mount_altitude < lowest_acceptable_altitude:
+                print ("Altitude too low! " + str(mount_altitude) + ". Parking scope for safety!")
+                if not g_dev['mnt'].mount.AtPark:  
+                    g_dev['mnt'].home_command()
+                    g_dev['mnt'].park_command()  
+                    # Reset mount reference because thats how it probably got pointing at the dirt in the first place!
+                    if self.config["mount"]["mount1"]["permissive_mount_reset"] == "yes":
+                        g_dev["mnt"].reset_mount_reference()
+        except Exception as e:
+            if 'GetAltAz' in str(e) and 'ASCOM.SoftwareBisque.Telescope' in str(e):
+                print ("The SkyX Altitude detection had an error.")
+                print ("Usually this is because of a broken connection.")
+                print ("Waiting 60 seconds then reconnecting")
+                print (traceback.format_exc())
+                time.sleep(60)
+                breakpoint()
+                self.mount.Connected = True
+                #g_dev['mnt'].home_command()
 
         # If no activity for an hour, park the scope               
         if time.time() - self.time_since_last_slew_or_exposure  > self.config['mount']['mount1']['time_inactive_until_park']:
@@ -801,7 +812,7 @@ class Observatory:
                             except Exception as e:
                                 print ("couldn't send to PTR archive for some reason")
                                 print (e)
-                                print (print (traceback.format_exc()))
+                                print ((traceback.format_exc()))
                                 tempPTR=0
                         # If ingester fails, send to default S3 bucket.
                         if tempPTR ==0:
