@@ -1443,7 +1443,13 @@ class Mount:
             #print (tempDEC)
             #self.site_coordinates
             wait_for_slew() 
-            self.mount.SlewToCoordinatesAsync(tempRA, tempDEC)
+            try:
+                self.mount.SlewToCoordinatesAsync(tempRA, tempDEC)
+            except Exception as e:
+                if ('Object reference not set to an instance of an object.' in str(e)):                       
+                    self.home_command()
+                    self.mount.SlewToCoordinatesAsync(tempRA, tempDEC)
+            
             g_dev['obs'].time_since_last_slew_or_exposure = time.time()
             g_dev['obs'].last_solve_time = datetime.datetime.now() - datetime.timedelta(days=1)
             g_dev['obs'].images_since_last_solve = 10000
