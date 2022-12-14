@@ -698,6 +698,23 @@ class Observatory:
         if self.status_count > 1:  # Give time for status to form
             g_dev["seq"].manager()  # Go see if there is something new to do.
         
+        # An important check to make sure equatorial telescopes are pointed appropriately
+        # above the horizon. SRO and ECO have shown that it is possible to get entirely
+        # confuzzled and take images of the dirt. This should save them from this fate.
+        # Also it should generically save any telescope from pointing weirdly down.
+        mount_altitude=g_dev['mnt'].mount.Altitude
+        lowest_acceptable_altitude= self.config['mount']['mount1']['lowest_acceptable_altitude'] 
+        if mount_altitude < lowest_acceptable_altitude:
+            print ("Altitude too low! " + str(mount_altitude) + ". Parking scope for safety!")
+            if not g_dev['mnt'].mount.AtPark:  
+                g_dev['mnt'].home_command()
+                g_dev['mnt'].park_command()  
+                # Reset mount reference because thats how it probably got pointing at the dirt in the first place!
+                if self.config["mount"]["mount1"]["permissive_mount_reset"] == "yes":
+                    g_dev["mnt"].reset_mount_reference()
+
+        
+        
 
     def run(self):  # run is a poor name for this function.
         try:

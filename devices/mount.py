@@ -140,7 +140,7 @@ def wait_for_slew():
                 time.sleep(0.2)
                 g_dev['obs'].update_status()            
             
-    except:
+    except Exception as e:
         plog("Motion check faulted.")
         plog(traceback.format_exc())
         breakpoint()
@@ -464,37 +464,45 @@ class Mount:
             else:
                 self.pier_side_str = "Looking East"
             #breakpoint()
-            status = {
-                'timestamp': round(time.time(), 3),
-                'right_ascension': round(icrs_ra, 5),
-                'declination': round(icrs_dec, 4),
-                'sidereal_time': round(self.current_sidereal, 5),  #Should we add HA?
-                'refraction': round(self.refraction_rev, 2),
-                'correction_ra': round(self.ha_corr, 4),  #If mount model = 0, these are very small numbers.
-                'correction_dec': round(self.dec_corr, 4),
-                'hour_angle': round(ha, 4),
-                'demand_right_ascension_rate': round(self.prior_roll_rate, 9),
-                'mount_right_ascension_rate': round(self.mount.RightAscensionRate, 9),   #Will use sec-RA/sid-sec
-                'demand_declination_rate': round(self.prior_pitch_rate, 8),
-                'mount_declination_rate': round(self.mount.DeclinationRate, 8),
-                'pier_side':self.pier_side,
-                'pier_side_str': self.pier_side_str,
-                'azimuth': round(self.mount.Azimuth, 3),
-                'target_az': round(self.target_az, 3),
-                'altitude': round(alt, 3),
-                'zenith_distance': round(zen, 3),
-                'airmass': round(airmass,4),
-                'coordinate_system': str(self.rdsys),
-                'equinox':  self.equinox_now,
-                'pointing_instrument': str(self.inst),  # needs fixing
-                'is_parked': self.mount.AtPark,     #  Send strings to AWS so JSON does not change case  Wrong. 20211202 'False' evaluates to True
-                'is_tracking': self.mount.Tracking,
-                'is_slewing': self.mount.Slewing,
-                'message': str(self.mount_message[:54]),
-                #'site_in_automatic': self.site_in_automatic,
-                #'automatic_detail': str(self.automatic_detail),
-                'move_time': self.move_time
-            }
+            try:
+                status = {
+                    'timestamp': round(time.time(), 3),
+                    'right_ascension': round(icrs_ra, 5),
+                    'declination': round(icrs_dec, 4),
+                    'sidereal_time': round(self.current_sidereal, 5),  #Should we add HA?
+                    'refraction': round(self.refraction_rev, 2),
+                    'correction_ra': round(self.ha_corr, 4),  #If mount model = 0, these are very small numbers.
+                    'correction_dec': round(self.dec_corr, 4),
+                    'hour_angle': round(ha, 4),
+                    'demand_right_ascension_rate': round(self.prior_roll_rate, 9),
+                    'mount_right_ascension_rate': round(self.mount.RightAscensionRate, 9),   #Will use sec-RA/sid-sec
+                    'demand_declination_rate': round(self.prior_pitch_rate, 8),
+                    'mount_declination_rate': round(self.mount.DeclinationRate, 8),
+                    'pier_side':self.pier_side,
+                    'pier_side_str': self.pier_side_str,
+                    'azimuth': round(self.mount.Azimuth, 3),
+                    'target_az': round(self.target_az, 3),
+                    'altitude': round(alt, 3),
+                    'zenith_distance': round(zen, 3),
+                    'airmass': round(airmass,4),
+                    'coordinate_system': str(self.rdsys),
+                    'equinox':  self.equinox_now,
+                    'pointing_instrument': str(self.inst),  # needs fixing
+                    'is_parked': self.mount.AtPark,     #  Send strings to AWS so JSON does not change case  Wrong. 20211202 'False' evaluates to True
+                    'is_tracking': self.mount.Tracking,
+                    'is_slewing': self.mount.Slewing,
+                    'message': str(self.mount_message[:54]),
+                    #'site_in_automatic': self.site_in_automatic,
+                    #'automatic_detail': str(self.automatic_detail),
+                    'move_time': self.move_time
+                }
+            except Exception as e:
+                if ('Object reference not set to an instance of an object.' in str(e)):
+                    print ("There is a TheSkyX undetermined error. Re-parking and waiting for further instructions from the site-code.")
+                    breakpoint()
+                    self.home_command()
+                    self.park_command()
+                    wait_for_slew()
             # This write the mount conditin back to the dome, only needed if self.is_dome
 # =============================================================================
 #             #  Here we should add any correction to fine tune the dome azimuth and sent that to
@@ -1145,23 +1153,27 @@ class Mount:
         plog("mount cmd: stopping mount")
         self.mount.AbortSlew()
 
-    def home_command(self, req, opt):
+    def home_command(self, req=None, opt=None):
         ''' slew to the home position '''
         plog("mount cmd: homing mount")
-        if self.mount.AtHome:
+        mount_at_home = self.mount.AtHome
+        if mount_at_home:
             plog("Mount is at home.")
-        elif False: #self.mount.CanFindHome:    # NB what is this all about?
+        elif not mount_at_home: #self.mount.CanFindHome:    # NB what is this all about?
             plog(f"can find home: {self.mount.CanFindHome}")
             self.unpark_command()  
+            wait_for_slew()
             #home_alt = self.settings["home_altitude"]
             #home_az = self.settings["home_azimuth"]
             #self.move_to_altaz(home_alt, home_az)
             self.move_time = time.time()
             self.mount.FindHome()
+            wait_for_slew()
         else:
             plog("Mount is not capable of finding home. Slewing to zenith.")
             self.move_time = time.time()
             self.move_to_altaz(0, 80)
+            wait_for_slew()
         wait_for_slew()
 
     def flat_panel_command(self, req, opt):
