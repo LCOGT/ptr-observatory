@@ -130,17 +130,24 @@ def ra_fix_h(ra):
         ra = 24
     return ra
 
-def wait_for_slew():
+def wait_for_slew():    
+    
     try:
         if not g_dev['mnt'].mount.AtPark:              
             while g_dev['mnt'].mount.Slewing: #or g_dev['enc'].status['dome_slewing']:   #Filter is moving??
-                if g_dev['mnt'].mount.Slewing: plog( 'm>')
+                #if g_dev['mnt'].mount.Slewing: plog( 'm>')
                 #if g_dev['enc'].status['dome_slewing']: st += 'd>'
-    
-                time.sleep(0.2)
+                plog( 'm>')
+                time.sleep(0.5)
                 g_dev['obs'].update_status()            
             
     except Exception as e:
+        if 'pywintypes.com_error' in str(e):
+            print ("Mount disconnected. Recovering.....")
+            time.sleep(30)
+            g_dev['mnt'].mount.Connected = True
+            #g_dev['mnt'].home_command()
+        
         plog("Motion check faulted.")
         plog(traceback.format_exc())
         breakpoint()
