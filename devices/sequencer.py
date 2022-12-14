@@ -758,6 +758,20 @@ class Sequencer:
             except:
                 pass
             g_dev['mnt'].go_coord(dest_ra, dest_dec)
+            
+            # Quick pointing check and re_seek at the start of each project block
+            # Otherwise everyone will get slightly off-pointing images
+            # Necessary
+            # Pointing
+            # Reset Solve timers
+            print ("Taking a quick pointing check and re_seek for new project block")
+            g_dev['obs'].last_solve_time = datetime.datetime.now()
+            g_dev['obs'].images_since_last_solve = 0
+            req = {'time': self.config['focus_exposure_time'],  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'focus'}   #  NB Should pick up filter and constats from config
+            #opt = {'area': 150, 'count': 1, 'bin': '2, 2', 'filter': 'focus'}
+            opt = {'area': 150, 'count': 1, 'bin': 'default', 'filter': 'focus'}
+            result = g_dev['cam'].expose_command(req, opt, no_AWS=False, solve_it=True)
+            g_dev['mnt'].re_seek(dither=0)
 
             plog("CAUTION:  rotator may block")
             pa = float(block_specification['project']['project_constraints']['position_angle'])

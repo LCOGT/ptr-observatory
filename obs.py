@@ -701,7 +701,8 @@ class Observatory:
         # An important check to make sure equatorial telescopes are pointed appropriately
         # above the horizon. SRO and ECO have shown that it is possible to get entirely
         # confuzzled and take images of the dirt. This should save them from this fate.
-        # Also it should generically save any telescope from pointing weirdly down.
+        # Also it should generically save any telescope from pointing weirdly down
+        # or just tracking forever after being left tracking for far too long.
         mount_altitude=g_dev['mnt'].mount.Altitude
         lowest_acceptable_altitude= self.config['mount']['mount1']['lowest_acceptable_altitude'] 
         if mount_altitude < lowest_acceptable_altitude:
