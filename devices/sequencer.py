@@ -55,6 +55,23 @@ and or visit more altitudes and temeperatures.
 
 '''
 
+def wait_for_slew():
+    try:
+        if not g_dev['mnt'].mount.AtPark:              
+            while g_dev['mnt'].mount.Slewing: #or g_dev['enc'].status['dome_slewing']:   #Filter is moving??
+                if g_dev['mnt'].mount.Slewing: plog( 'm>')
+                #if g_dev['enc'].status['dome_slewing']: st += 'd>'
+    
+                time.sleep(0.2)
+                g_dev['obs'].update_status()            
+            
+    except:
+        plog("Motion check faulted.")
+        plog(traceback.format_exc())
+        breakpoint()
+    
+    return 
+
 
 def fit_quadratic(x, y):
     #From Meeus, works fine.
@@ -2015,6 +2032,7 @@ class Sequencer:
             x = [foc_pos4, foc_pos2, foc_pos1, foc_pos3]
             y = [spot4, spot2, spot1, spot3]
             plog('X, Y:  ', x, y, 'Desire center to be smallest.')
+            g_dev['obs'].send_to_user('X, Y:  '+ str(x) + " " + str(y)+ ' Desire center to be smallest.', p_level='INFO')
             try:
                 #Digits are to help out pdb commands!
                 a1, b1, c1, d1 = fit_quadratic(x, y)
@@ -2036,6 +2054,7 @@ class Sequencer:
                 return
             if min(x) <= d1 <= max(x):
                 print ('Moving to Solved focus:  ', round(d1, 2), ' calculated:  ',  new_spot)
+                
                 pos = int(d1*g_dev['foc'].micron_to_steps)
 
 
@@ -2062,6 +2081,7 @@ class Sequencer:
                     foc_pos4 = False
                     print ("spot4 failed ")
                 plog('\nFound best focus at:  ', foc_pos4,' measured is:  ',  round(spot4, 2), '\n')
+                g_dev['obs'].send_to_user('Found best focus at: ' + str(foc_pos4) +' measured FWHM is: ' + str(round(spot4, 2)), p_level='INFO')
                 g_dev['foc'].af_log(foc_pos4, spot4, new_spot)
                 plog("Returning to:  ", start_ra, start_dec)
                 g_dev['mnt'].mount.SlewToCoordinatesAsync(start_ra, start_dec)   #Return to pre-focus pointing.
@@ -2099,6 +2119,7 @@ class Sequencer:
             x = [foc_pos2, foc_pos1, foc_pos3, foc_pos4]
             y = [spot2, spot1, spot3, spot4]
             plog('X, Y:  ', x, y, 'Desire center to be smallest.')
+            g_dev['obs'].send_to_user('X, Y:  '+ str(x) + " " + str(y)+ ' Desire center to be smallest.', p_level='INFO')
             try:
                 #Digits are to help out pdb commands!
                 a1, b1, c1, d1 = fit_quadratic(x, y)
@@ -2146,6 +2167,7 @@ class Sequencer:
                     foc_pos4 = False
                     print ("spot4 failed ")
                 plog('\nFound best focus at:  ', foc_pos4,' measured is:  ',  round(spot4, 2), '\n')
+                g_dev['obs'].send_to_user('Found best focus at: ' + str(foc_pos4) +' measured FWHM is: ' + str(round(spot4, 2)), p_level='INFO')
                 g_dev['foc'].af_log(foc_pos4, spot4, new_spot)
                 plog("Returning to:  ", start_ra, start_dec)
                 g_dev['mnt'].mount.SlewToCoordinatesAsync(start_ra, start_dec)   #Return to pre-focus pointing.
@@ -2288,13 +2310,8 @@ class Sequencer:
             spot1 = False
             foc_pos1 = False
             print ("spot1 failed on coarse focus script")
-        # if not sim:
-        #     result = g_dev['cam'].expose_command(req, opt, no_AWS=True) ## , script = 'auto_focus_script_0')  #  This is where we start.
-        # else:
-        #     result['FWHM'] = 3
-        #     result['mean_focus'] = foc_pos0
-        # spot1 = result['FWHM']
-        # foc_pos1 = result['mean_focus']
+
+        g_dev['obs'].send_to_user("Coarse focus center FWHM: " + str(spot1), p_level='INFO')
 
 
         plog('Autofocus Moving In -1x, second time.\n\n')
@@ -2313,7 +2330,10 @@ class Sequencer:
             spot2 = False
             foc_pos2 = False
             print ("spot2 failed on coarse focus script")
+        g_dev['obs'].send_to_user("First Inward focus center FWHM: " + str(spot2), p_level='INFO')
+        
         plog('Autofocus Moving In -2x, second time.\n\n')
+        
 
         g_dev['foc'].guarded_move((foc_pos0 - 2*throw)*g_dev['foc'].micron_to_steps)
         #opt['fwhm_sim'] = 4.
@@ -2329,6 +2349,7 @@ class Sequencer:
             spot3 = False
             foc_pos3 = False
             print ("spot3 failed on coarse focus script")
+        g_dev['obs'].send_to_user("Second Inward focus center FWHM: " + str(spot3), p_level='INFO')
         #Need to check we are not going out too far!
         plog('Autofocus Moving out +3X.\n\n')
 
@@ -2348,6 +2369,9 @@ class Sequencer:
             spot4 = False
             foc_pos4 = False
             print ("spot4 failed on coarse focus script")
+        
+        g_dev['obs'].send_to_user("First Outward focus center FWHM: " + str(spot4), p_level='INFO')
+            
         plog('Autofocus back in for backlash to +1X\n\n')
 
         g_dev['foc'].guarded_move((foc_pos0 + throw)*g_dev['foc'].micron_to_steps)
@@ -2364,6 +2388,9 @@ class Sequencer:
             spot5 = False
             foc_pos5 = False
             print ("spot5 failed on coarse focus script")
+        
+        g_dev['obs'].send_to_user("Second Outward focus center FWHM: " + str(spot2), p_level='INFO')
+        
         x = [foc_pos3, foc_pos2, foc_pos1, foc_pos5, foc_pos4]  # NB NB 20220218 This assigment is bogus!!!!
         y = [spot3, spot2, spot1, spot5, spot4]
         plog('X, Y:  ', x, y)
@@ -2401,10 +2428,12 @@ class Sequencer:
                 spot6 = result['FWHM']
                 foc_pos4 = result['mean_focus']
                 plog('\n\n\nFound best focus at:  ', foc_pos4,' measured is:  ',  round(spot6, 2), '\n\n\n')
+                g_dev['obs'].send_to_user("Found best focus at: " +str(foc_pos4) + ' measured FWHM is: ' + str(round(spot6, 2)), p_level='INFO')
             except:
                 plog('Known bug, Verifcation did not work. Returing to target using solved focus.')
         else:
             plog('Coarse_focus did not converge. Moving back to starting focus:  ', foc_pos0)
+            g_dev['obs'].send_to_user('Coarse_focus did not converge. Moving back to starting focus:  ' + str(foc_pos0), p_level='INFO')
 
             g_dev['foc'].guarded_move((foc_start)*g_dev['foc'].micron_to_steps)
         plog("Returning to:  ", start_ra, start_dec)
@@ -2451,19 +2480,4 @@ class Sequencer:
             plog('Found an empty shelf.  Reset_(block)completes for:  ', camera)
         return
     
-    def wait_for_slew():
-        try:
-            if not g_dev['mnt'].mount.AtPark:              
-                while g_dev['mnt'].mount.Slewing: #or g_dev['enc'].status['dome_slewing']:   #Filter is moving??
-                    if g_dev['mnt'].mount.Slewing: plog( 'm>')
-                    #if g_dev['enc'].status['dome_slewing']: st += 'd>'
-        
-                    time.sleep(0.2)
-                    g_dev['obs'].update_status()            
-                
-        except:
-            plog("Motion check faulted.")
-            plog(traceback.format_exc())
-            breakpoint()
-        
-        return 
+    
