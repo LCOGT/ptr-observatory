@@ -142,16 +142,15 @@ def wait_for_slew():
                 g_dev['obs'].update_status()            
             
     except Exception as e:
+        plog("Motion check faulted.")
+        plog(traceback.format_exc())
         if 'pywintypes.com_error' in str(e):
             print ("Mount disconnected. Recovering.....")
             time.sleep(30)
             g_dev['mnt'].mount.Connected = True
             #g_dev['mnt'].home_command()
-        
-        plog("Motion check faulted.")
-        plog(traceback.format_exc())
-        breakpoint()
-    
+        else:
+            breakpoint()
     return 
 
 class Mount:
