@@ -2887,13 +2887,15 @@ class Camera:
                         # pointing during focus, not when it quickly moves back to the target. Takes longer
                         # during focussing, but reduces the need for pointing nudges and bounces on
                         # target images.
+                        #
                         # It will also do a pointing check at the end of a smartstack
-                        # This is outside the reduce queue to guarantee the pointing check is done
-                        # prior to the next exposure
+                        #
+                        # It will also do a pointing check periodically during normal use on a timer.
+                        #
+                        # This is all done outside the reduce queue to guarantee the pointing check is done
+                        # prior to the next exposure                        
 
-
-
-                        if focus_image == True or ((Nsmartstack == sskcounter+1) and Nsmartstack > 1):
+                        if focus_image == True or ((Nsmartstack == sskcounter+1) and Nsmartstack > 1) or (g_dev['obs'].images_since_last_solve > g_dev['obs'].config["solve_nth_image"] and (datetime.datetime.now() - g_dev['obs'].last_solve_time) > datetime.timedelta(minutes=g_dev['obs'].config["solve_timer"])):
                             cal_name = (
                                 cal_name[:-9] + "F012" + cal_name[-7:]
                             )
@@ -2906,9 +2908,6 @@ class Camera:
                                 pass
                             del hdufocus
 
-
-                        #if focus_image == True :
-                            # Use the focus image for pointing purposes
                             try:
                                 time.sleep(1) # A simple wait to make sure file is saved
                                 solve = platesolve.platesolve(
@@ -2935,7 +2934,7 @@ class Camera:
                                     round(err_dec * 3600, 2),
                                 )  # NB WER changed units 20221012
 
-                                # We do not want to reset solve timers during a smartStack
+                                # Reset Solve timers
                                 g_dev['obs'].last_solve_time = datetime.datetime.now()
                                 g_dev['obs'].images_since_last_solve = 0
 

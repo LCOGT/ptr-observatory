@@ -933,11 +933,6 @@ class Observatory:
                     time.sleep(0.5)
                     continue
 
-
-                # Each image that is not a calibration frame gets it's focus examined and
-                # Recorded. In the future this is intended to trigger an auto_focus if the
-                # Focus gets wildly worse..
-                # Also the number of sources indicates whether astroalign should run.
                 if not paths["frame_type"] in [
                     "bias",
                     "dark",
@@ -970,15 +965,9 @@ class Observatory:
                     if len(sources) < 12:
                         print ("skipping stacking as there are not enough sources " + str(len(sources)) +" in this image")
 
-
                     # No need to open the same image twice, just using the same one as SEP.
                     img = sstackimghold.copy()
                     del sstackimghold
-
-                    #plog(img[0].header["FILTER"])
-
-                    #stackHoldheader = img[0].header
-                    #plog(g_dev["cam"].site_path + "smartstacks")
 
                     smartStackFilename = (
                         str(ssobject)
@@ -991,14 +980,7 @@ class Observatory:
                         + ".npy"
                     )
 
-                    #cleanhdu=fits.PrimaryHDU()
-                    #cleanhdu.data=img
 
-                    #cleanhdr=cleanhdu.header
-                    #cleanhdu.writeto(g_dev["cam"].site_path + "smartstacks/" + smartStackFilename.replace('.npy','.fit'))
-
-                    #plog(smartStackFilename)
-                    #img = np.asarray(img[0].data)
                     # Detect and swap img to the correct endianness - needed for the smartstack jpg
                     if sys.byteorder=='little':
                         img=img.newbyteorder('little').byteswap()
@@ -1014,23 +996,12 @@ class Observatory:
                         if len(sources) >= 12:
                             # Store original image
                             plog("Storing First smartstack image")
-                            # storedsStack=np.nan_to_num(img)
-                            # backgroundLevel =(np.nanmedian(sep.Background(storedsStack.byteswap().newbyteorder())))
-                            # print (backgroundLevel)
-                            # storedsStack= storedsStack - backgroundLevel
-
                             np.save(
                                 g_dev["cam"].site_path
                                 + "smartstacks/"
                                 + smartStackFilename,
                                 img,
                             )
-
-                            #cleanhdu=fits.PrimaryHDU()
-                            #cleanhdu.data=img
-
-                            #cleanhdr=cleanhdu.header
-                            #cleanhdu.writeto(g_dev["cam"].site_path + "smartstacks/" + smartStackFilename.replace('.npy','.fit'))
 
                         else:
                             print ("Not storing first smartstack image as not enough sources")
@@ -1053,8 +1024,6 @@ class Observatory:
                         if len(sources) > 12:
                             try:
                                 reprojectedimage, _ = func_timeout.func_timeout (60, aa.register, args=(img, storedsStack), kwargs={"detection_sigma":3, "min_area":9})
-                                #(20, aa.register, args=(img, storedsStack, detection_sigma=3, min_area=9)
-
                                 # scalingFactor= np.nanmedian(reprojectedimage / storedsStack)
                                 # print (" Scaling Factor : " +str(scalingFactor))
                                 # reprojectedimage=(scalingFactor) * reprojectedimage # Insert a scaling factor
@@ -1077,10 +1046,6 @@ class Observatory:
                                 print ("astroalign failed")
                                 print (traceback.format_exc())
                                 reprojection_failed=True
-
-
-                            #except func_timeout.FunctionTimedOut:
-                            #    print ("astroalign Timed Out")
                         else:
                             reprojection_failed=True
 
@@ -1088,21 +1053,15 @@ class Observatory:
                     if reprojection_failed == True: # If we couldn't make a stack send a jpeg of the original image.
                         storedsStack=img
 
-
-
                     if self.config["camera"][g_dev['cam'].name]["settings"]["is_osc"]:
                         #print ("interpolating bayer grid for focusing purposes.")
                         if self.config["camera"][g_dev['cam'].name]["settings"]["osc_bayer"] == 'RGGB':                           
                             
-                            # Checkerboard collapse for other colours for temporary jpeg
-                            
-                            # Create indexes for B, G, G, R images
-                            
+                            # Checkerboard collapse for other colours for temporary jpeg                            
+                            # Create indexes for B, G, G, R images                            
                             xshape=storedsStack.shape[0]
                             yshape=storedsStack.shape[1]
-                            #print (xshape)
-                            #print (yshape)
-                            
+
                             # B pixels
                             list_0_1 = np.array([ [0,0], [0,1] ])
                             checkerboard=np.tile(list_0_1, (xshape//2, yshape//2))
@@ -1132,15 +1091,6 @@ class Observatory:
                             del GTRonly
                             del GBLonly
                             del checkerboard
-                            
-
-                            
-                            # Interpolate to make a high resolution version for focussing
-                            # and platesolving
-                            #hdufocus.data=demosaicing_CFA_Bayer_bilinear(storedsStack, 'RGGB')[:,:,1]
-                            #hdufocus.data=hdufocus.data.astype("float32")
-                            
-                            
 
                         else:
                             print ("this bayer grid not implemented yet")
@@ -1217,11 +1167,7 @@ class Observatory:
                             stretched_data_uint8,
                         )
 
-                    #g_dev["cam"].enqueue_for_fastAWS(
-                    #    100, paths["im_path"], paths["jpeg_name10"]
-                    #)
 
-                    #image = (paths["im_path"], paths["jpeg_name10"])
                     self.fast_queue.put((15, (paths["im_path"], paths["jpeg_name10"])), block=False)
 
                     if reprojection_failed == True:
@@ -1239,7 +1185,6 @@ class Observatory:
                             + ", has been sent to the GUI.",
                             p_level="INFO",
                         )
-                    #    )
 
                     plog(datetime.datetime.now())
 
@@ -1250,155 +1195,8 @@ class Observatory:
                         pass
                     del img
 
-
-                # Solve for pointing. Note: as the raw and reduced file are already saved and an fz file
-                # has already been sent up, this is purely for pointing purposes.
-                if not paths["frame_type"] in [
-                    "bias",
-                    "dark",
-                    "flat",
-                    "solar",
-                    "lunar",
-                    "skyflat",
-                    "screen",
-                    "spectrum",
-                    "auto_focus",
-                ]:
-
-                    # check that both enough time and images have past between last solve
-                    if self.images_since_last_solve > self.config[
-                        "solve_nth_image"
-                    ] and (
-                        datetime.datetime.now() - self.last_solve_time
-                    ) > datetime.timedelta(
-                        minutes=self.config["solve_timer"]
-                    ):
-
-                        if smartstackid == "no" and len(sources) > 12:
-                            try:
-
-                                solve = platesolve.platesolve(
-                                    paths["red_path"] + paths["red_name01"], pixscale
-                                )  # 0.5478)
-                                plog(
-                                    "PW Solves: ",
-                                    solve["ra_j2000_hours"],
-                                    solve["dec_j2000_degrees"],
-                                )
-                                target_ra = g_dev["mnt"].current_icrs_ra
-                                target_dec = g_dev["mnt"].current_icrs_dec
-                                solved_ra = solve["ra_j2000_hours"]
-                                solved_dec = solve["dec_j2000_degrees"]
-                                solved_arcsecperpixel = solve["arcsec_per_pixel"]
-                                solved_rotangledegs = solve["rot_angle_degs"]
-                                err_ha = target_ra - solved_ra
-                                err_dec = target_dec - solved_dec
-                                #solved_arcsecperpixel = solve["arcsec_per_pixel"]
-                                #solved_rotangledegs = solve["rot_angle_degs"]
-                                plog(
-                                    " coordinate error in ra, dec:  (asec) ",
-                                    round(err_ha * 15 * 3600, 2),
-                                    round(err_dec * 3600, 2),
-                                )  # NB WER changed units 20221012
-                                try:
-                                    f_err_ha = err_ha*math.cos(math.radians(solved_dec))
-                                    plog(
-                                        " *field* error in ra, dec:  (asec) ",      
-                                        round(f_err_ha * 15 * 3600, 2),
-                                        round(err_dec * 3600, 2),
-                                    )  # NB WER changed to apply to err_ha
-                                except:
-                                        pass
-                                # We do not want to reset solve timers during a smartStack
-                                self.last_solve_time = datetime.datetime.now()
-                                self.images_since_last_solve = 0
-
-                                # IF IMAGE IS PART OF A SMARTSTACK
-                                # THEN OPEN THE REDUCED FILE AND PROVIDE A WCS READY FOR STACKING
-                                # if smartStack == 70000080: # This is currently a silly value... we may not be using WCS for smartstacks
-                                #     img = fits.open(
-                                #         paths["red_path"] + paths["red_name01"],
-                                #         mode="update",
-                                #         ignore_missing_end=True,
-                                #     )
-                                #     img[0].header["CTYPE1"] = "RA---TAN"
-                                #     img[0].header["CTYPE2"] = "DEC--TAN"
-                                #     img[0].header["CRVAL1"] = solved_ra * 15
-                                #     img[0].header["CRVAL2"] = solved_dec
-                                #     img[0].header["CRPIX1"] = float(
-                                #         img[0].header["NAXIS1"] / 2
-                                #     )
-                                #     img[0].header["CRPIX2"] = float(
-                                #         img[0].header["NAXIS2"] / 2
-                                #     )
-                                #     img[0].header["CUNIT1"] = "deg"
-                                #     img[0].header["CUNIT2"] = "deg"
-                                #     img[0].header["CROTA2"] = 180 - solved_rotangledegs
-                                #     img[0].header["CDELT1"] = solved_arcsecperpixel / 3600
-                                #     img[0].header["CDELT2"] = solved_arcsecperpixel / 3600
-                                #     img.writeto(
-                                #         paths["red_path"] + "SOLVED_" + paths["red_name01"]
-                                #     )
-
-                                # IF IMAGE IS PART OF A SMARTSTACK
-                                # DO NOT UPDATE THE POINTING!
-
-                                # NB NB NB this needs rethinking, the incoming units are hours in HA or degrees of dec
-                                if (
-                                    err_ha * 15 * 3600 > 1200
-                                    or err_dec * 3600 > 1200
-                                    or err_ha * 15 * 3600 < -1200
-                                    or err_dec * 3600 < -1200
-                                ) and self.config["mount"]["mount1"][
-                                    "permissive_mount_reset"
-                                ] == "yes":
-                                    g_dev["mnt"].reset_mount_reference()
-                                    plog("I've  reset the mount_reference 1")
-                                    g_dev["mnt"].current_icrs_ra = solved_ra
-                                    #    "ra_j2000_hours"
-                                    #]
-                                    g_dev["mnt"].current_icrs_dec = solved_dec
-                                    #    "dec_j2000_hours"
-                                    #]
-                                    err_ha = 0
-                                    err_dec = 0
-
-                                if (
-                                    abs(err_ha * 15 * 3600)
-                                    > self.config["threshold_mount_update"]
-                                    or abs(err_dec * 3600)
-                                    > self.config["threshold_mount_update"]
-                                ):
-                                    try:
-                                        if g_dev["mnt"].pier_side_str == "Looking West":
-                                            try:
-                                                g_dev["mnt"].adjust_mount_reference(
-                                                    err_ha, err_dec
-                                                )
-                                            except Exception as e:
-                                                print ("Something is up in the mount reference adjustment code ", e)
-                                        else:
-                                            try:
-                                                g_dev["mnt"].adjust_flip_reference(
-                                                    err_ha, err_dec
-                                                )  # Need to verify signs
-                                            except Exception as e:
-                                                print ("Something is up in the mount reference adjustment code ", e)
-                                        g_dev["mnt"].current_icrs_ra = solved_ra                                    
-                                        g_dev["mnt"].current_icrs_dec = solved_dec
-                                        g_dev['mnt'].re_seek(dither=0)
-                                    except:
-                                        plog("This mount doesn't report pierside")
-
-                            except Exception as e:
-                                plog(
-                                    "Image: did not platesolve; this is usually OK. ", e
-                                )
-
-                    else:
-                        plog("skipping solve as not enough time or images have passed")
-                        self.images_since_last_solve = self.images_since_last_solve + 1
-
+                # WE CANNOT SOLVE FOR POINTING IN THE REDUCE THREAD! 
+                # POINTING SOLUTIONS HAVE TO HAPPEN AND COMPLETE IN BETWEEN EXPOSURES AND SLEWS
 
                 time.sleep(0.5)
                 self.img = None  # Clean up all big objects.
