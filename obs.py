@@ -719,15 +719,19 @@ class Observatory:
                     if self.config["mount"]["mount1"]["permissive_mount_reset"] == "yes":
                         g_dev["mnt"].reset_mount_reference()
         except Exception as e:
+            print (traceback.format_exc())
+            print (e)
+            breakpoint()
             if 'GetAltAz' in str(e) and 'ASCOM.SoftwareBisque.Telescope' in str(e):
                 print ("The SkyX Altitude detection had an error.")
                 print ("Usually this is because of a broken connection.")
                 print ("Waiting 60 seconds then reconnecting")
-                print (traceback.format_exc())
+                
                 time.sleep(60)
-                breakpoint()
+                
                 self.mount.Connected = True
                 #g_dev['mnt'].home_command()
+            
 
         # If no activity for an hour, park the scope               
         if time.time() - self.time_since_last_slew_or_exposure  > self.config['mount']['mount1']['time_inactive_until_park']:
