@@ -242,6 +242,10 @@ class Observatory:
         if self.config["mount"]["mount1"]["permissive_mount_reset"] == "yes":
             g_dev["mnt"].reset_mount_reference()
 
+
+        # Keep track of how long it has been since the last activity
+        self.time_since_last_slew_or_exposure = time.time()
+
         # Need to set this for the night log
         #g_dev['foc'].set_focal_ref_reset_log(self.config["focuser"]["focuser1"]["reference"])
         # Send the config to AWS. TODO This has faulted.
@@ -714,6 +718,13 @@ class Observatory:
                 if self.config["mount"]["mount1"]["permissive_mount_reset"] == "yes":
                     g_dev["mnt"].reset_mount_reference()
 
+        # If no activity for an hour, park the scope               
+        if time.time() - self.time_since_last_slew_or_exposure  > self.config['mount']['mount1']['time_inactive_until_park']:
+            if not g_dev['mnt'].mount.AtPark:  
+                print ("Parking scope due to inactivity")
+                g_dev['mnt'].home_command()
+                g_dev['mnt'].park_command()
+                self.time_since_last_slew_or_exposure = time.time()
         
         
 

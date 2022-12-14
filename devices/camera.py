@@ -1368,6 +1368,7 @@ class Camera:
                                     imtypeb = 0
                                 self.t2 = time.time()
                                 self._expose(exposure_time, imtypeb)
+                                g_dev['obs'].time_since_last_slew_or_exposure = time.time()
                         else:
                             plog("Something terribly wrong, driver not recognized.!")
                             result = {}

@@ -229,6 +229,7 @@ site_config = {
   #
             'permissive_mount_reset' : 'no', # if this is set to yes, it will reset the mount at startup and when coordinates are out significantly
             'lowest_acceptable_altitude' : -10.0, # Below this altitude, it will automatically try to home and park the scope to recover.
+            'time_inactive_until_park' : 3600.0, # How many seconds of inactivity until it will park the telescope
             'west_clutch_ra_correction': -0.05323724387608619,  #final:   0.0035776615398219747 -0.1450812805892454
             'west_clutch_dec_correction': 0.3251459235809251,
             'east_flip_ra_correction':   -0.040505313212952586, # Initially -0.039505313212952586,
