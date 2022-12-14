@@ -201,7 +201,6 @@ class Camera:
         win32com.client.pythoncom.CoInitialize()
         plog(driver, name)
         self.camera = win32com.client.Dispatch(driver)
-
         plog("loading flash dark, bias and flat masters frames if available")        
         plog("For binnings set in bin_enable")
         bins_enabled=config["camera"][self.name]['settings']["bin_enable"]
@@ -403,13 +402,13 @@ class Camera:
         # NB NB There is a differenc between normal cameras and the QHY when it is set to Bin2.
         try:
             self.camera.BinX = int(
-                self.config["camera"][self.name]["settings"]["default_bin"][0]
+                self.config["camera"][self.name]["settings"]["max_res_bin"][0]
             )  # = 1
             self.camera.BinY = int(
-                self.config["camera"][self.name]["settings"]["default_bin"][1]
+                self.config["camera"][self.name]["settings"]["max_res_bin"][1]
             )  # = 1
 
-            # NB we need to be sure AWS picks up this default.config.site_config['camera'][self.name]['settings']['default_bin'])
+            # NB we need to be sure AWS picks up this default.config.site_config['camera'][self.name]['settings']['max_res_bin'])
         except:
             plog("Problem setting up default binning at startup.")
             self.camera.BinX = 1
@@ -859,14 +858,14 @@ class Camera:
 
 
         bin_x = optional_params.get(
-            "bin", self.config["camera"][self.name]["settings"]["default_bin"][0]
+            "bin", self.config["camera"][self.name]["settings"]["optimal_bin"][0]
         )  # NB this should pick up config default.
 
-        if bin_x == '"optimal"':
-            bin_x = self.config["camera"][self.name]["settings"]["default_bin"][0]
+        if bin_x == '"optimal"':    # NB NB we should clean up the double quoted string coming from AWS GUI
+            bin_x = self.config["camera"][self.name]["settings"]["optimal_bin"][0]
 
-        if bin_x == '"maximum"':
-            bin_x = self.config["camera"][self.name]["settings"]["maximum_bin"][0]
+        if bin_x in ['"maximum"', 'fine']:
+            bin_x = self.config["camera"][self.name]["settings"]["max_res_bin"][0]
 
         if bin_x in [
             "4 4",
@@ -916,13 +915,13 @@ class Camera:
             [0, 0],
             (0, 0),
         ]:  # 0,0 is an indicator for selecting the default binning
-            bin_x = self.config["camera"][self.name]["settings"]["default_bin"][0]
+            bin_x = self.config["camera"][self.name]["settings"]["max_res_bin"][0]
             self.ccd_sum = str(bin_x) + " " + str(bin_x)
         else:
-            bin_x = self.config['camera'][self.name]['settings']['default_bin'][0]
+            bin_x = self.config['camera'][self.name]['settings']['max_res_bin'][0]
             self.ccd_sum = str(bin_x) + ' ' + str(bin_x)
 
-
+        
         bin_y = bin_x  # NB This needs fixing someday!
         self.bin = bin_x
         self.camera.BinX = bin_x
@@ -1599,7 +1598,11 @@ class Camera:
                 time.sleep(0.1)
                 self.t4p4 = time.time()
 
-                self.img = np.array(self._getImageArray()).astype("uint16")
+                self.img = np.array(self._getImageArray())  #Does QHY sum-bin or average bin? Ans Default is sum-bin.
+                max_pix = self.img.max()
+                if max_pix > 65535:
+                    print("max pix >65532:  ", max_pix)
+                self.img = self.img.astype('uint16')
                 self.t4p5 = (
                     time.time()
                 )  # As read, this is a Windows Safe Array of Longs

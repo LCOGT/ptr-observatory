@@ -542,8 +542,8 @@ class FilterWheel:
         
         #breakpoint()
         #filter_names=[]
-        for ctr in range(len(self.config["filter_wheel1"]["settings"]['filter_data'])):
-            filter_names.append((self.config["filter_wheel1"]["settings"]['filter_data'][ctr][0]))
+        #for ctr in range(len(self.config["filter_wheel1"]["settings"]['filter_data'])):
+        #    filter_names.append((self.config["filter_wheel1"]["settings"]['filter_data'][ctr][0]))
         
         # Seriously dumb way to do this..... but quick!
         # Construct available filter list

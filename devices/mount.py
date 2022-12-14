@@ -361,7 +361,8 @@ class Mount:
                 try:
                     ra_cal_offset, dec_cal_offset = self.get_mount_reference()
                 except:
-                    print ("couldn't get offset")
+                    print ("couldn't get mount offset")
+                    #self.reset_mount_reference()
                     ra_cal_offset=0
                     dec_cal_offset=0
                     #print ("Mount does not report pier side")

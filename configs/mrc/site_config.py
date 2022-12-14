@@ -120,13 +120,13 @@ site_config = {
 
     'auto_eve_bias_dark': False,
     
-    'auto_midnight_moonless_bias_dark': True,
+    'auto_midnight_moonless_bias_dark': False,
     'auto_eve_sky_flat': False,
     'eve_sky_flat_sunset_offset': -90.,  #  Minutes  neg means before, + after.
     'eve_cool_down_open' : -95.0,
-    'auto_morn_sky_flat': True,
-    'auto_morn_bias_dark': True,
-    're-calibrate_on_solve': True,
+    'auto_morn_sky_flat': False,
+    'auto_morn_bias_dark': False,
+    're-calibrate_on_solve': False,
     'pointing_calibration_on_startup': False,
     'periodic_focus_time' : 0.5, # This is a time, in hours, over which to bypass automated focussing (e.g. at the start of a project it will not refocus if a new project starts X hours after the last focus)
     'stdev_fwhm' : 0.5, # This is the expected variation in FWHM at a given telescope/camera/site combination. This is used to check if a fwhm is within normal range or the focus has shifted
@@ -259,6 +259,7 @@ site_config = {
             'west_clutch_dec_correction': 0.0,
             'east_flip_ra_correction': 0.0,
             'east_flip_dec_correction': 0.0,  #
+            'home_after_unpark' : False,
             'permissive_mount_reset' : 'no', # if this is set to yes, it will reset the mount at startup and when coordinates are out significantly
             'has_paddle': False,
             'has_ascom_altaz': True,
@@ -589,8 +590,6 @@ site_config = {
                 'corner_everlap': None,
                 'x_bias_line': True,
                 'y_bias_line': True,
-                'ref_dark': 360.0,
-                'long_dark': 600.0,
                 'x_active': 4784,
                 'y_active': 3194,
                 'det_size': '[1:9600, 1:6422]',  # Physical chip data size as reutrned from driver
@@ -605,8 +604,8 @@ site_config = {
 
                 'CameraXSize' : 9600,
                 'CameraYSize' : 6422,
-                'MaxBinX' : 2,
-                'MaxBinY' : 2,
+                'MaxBinX' : 4,
+                'MaxBinY' : 4,
                 'StartX' : 1,
                 'StartY' : 1,
 
@@ -623,29 +622,32 @@ site_config = {
                 'max_exposure': 180.,
                 'can_subframe':  True,
                 'min_subframe': [128,128],
-                'bin_modes':  [[1, 1, 0.303], [2, 2, 0.605],  [3, 3, 0.908], [4, 4, 1.210]],     #Meaning fixed binning if list has only one entry
+                'bin_modes':  [[[1, 1], 0.30], ['Fine', 0.61],  ['Optimal', 0.91], ['Coarse', 1.2]],     #Meaning fixed binning if list has only one entry
                 'reference_gain': [1.3, 2.6, 3.9, 5.2],     #  NB GUess One val for each binning. Assumed digitalsumming in camera???
                 'reference_noise': [6, 6, 6, 6],    #  NB Guess
                 'reference_dark': [.2, .8, 1.8, 3.2],  #  NB  Guess
                 'reference_offset': [611, 623, 590, 700], #  NB Guess  ADU vaules not times in sec.
-                'fullwell_capacity': [80000, 320000, 720000, 1280000],   #  NB Guess
-                'cycle_time':  [18, 15, 15, 12],   # NB somewhat a Guess.
-                'default_bin':  [2, 2],   #  Tsis is aka the optimal bin
-                'bin_enable':  ['2 2'],  #  Always square and matched to seeing situation by owner
+                'fullwell_capacity': [80000, 720000, 320000, 1280000],   #  NB Guess
+                'bin-desc':              ['N.A. 0.30"', 'Optimal 0.91"', 'Fine 0.61"', 'Coarse 1.2"'],# " as is arcsec
+                'cycle_time':            [ 18,    13,    15,    12  ],   # NB somewhat a Guess.
+                'enable_bin':            [ False, True,  True,  True],
+                'bias_dark_bin_spec':    ['1,1', '3,3', '2,2', '4,4'],    #Default binning for flats
+                'bias_per_bin_count':    [ 0,     51,    21,    21  ],
+                'dark_per_bin_count':    [ 0,     7,     5,     5   ],
+                'dark_exposure_per_bin': [ 0,     600  , 500  , 300 ],
+                'flat_bin_spec':         ['1,1', '3,3', '2,2', '4,4'],   #Is this necessary?
+                'flat_count_per_bin':    [ 0,     5,     5,     5   ],   #This will take days to get through
+                #'flat_count': 5,
+                'optimal_bin': [3, 3],   #  This is aka the optimal bin
+                'max_res_bin': [2, 2],  
+                'bin_enable':  ['3 3'],  #  Always square and matched to seeing situation by owner  NB Obsolete? NO MF uses to load bias calib
                                          #  NB NB inconsistent use of bin string   '1 1', '1x1' , etc.
-                'max_res_bin': [1, 1],   
-
                 'cosmics_at_default' : 'yes',
-                'cosmics_at_maximum' : 'yes',
-                
-                
+                'cosmics_at_maximum' : 'yes',              
                 'rbi_delay':  0,      #  This being zero says RBI is not available, eg. for SBIG.
                 'is_cmos':  True,
                 'is_color': False,
                 'can_set_gain':  True,
-                'ref_dark': 600,    #  Time in seconds
-                'long_dark': None,   #  s.
-
                 'max_linearity':  60000,   # Guess
                 'saturate':  65300,
                 'flat_count': 5,
@@ -656,11 +658,11 @@ site_config = {
                 'smart_stack_exposure_time': 30,
                 'square_detector': False,
                 'square_pixels': True,
-                'areas_implemented': ['Full', '0.5sq°',  '0.7sq°', '1x1°', '1.4sq°', '2x2°', '2.8xsq°', '4x4°', '5.6sq°'],
+                'areas_implemented': ['Full', 'SQR', '0.5*0.5°',  '0.7x0.7°', '1x1°', '1.4x1.4°', '2x2°', '2.8x2.8°', '4x4sq°', '5.6x5.6°'],
                 'default_area':  "Full",
                 'default_rotation': 0.0000,
 
-                'flat_bin_spec': ['1,1', '2 2'],    # List of binnings for flats.  NB NB NB Note inconsistent use of '1 1' and '1x1' and '1,1'
+                #'flat_bin_spec': ['1 1', '2 2'],    # List of binnings for flats.  NB NB NB Note inconsistent use of '1 1' and '1x1' and '1,1'
 
                 'has_darkslide':  True,
                 'darkslide_com':  'COM15',
