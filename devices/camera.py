@@ -3257,11 +3257,12 @@ class Camera:
                     except:
                         pass
                     
-                    del hdureduced  # remove file from memory now that we are doing with it
-                    try: 
-                        hdureduced.close()
-                    except:
-                        pass
+                    if "hdureduced" in locals():
+                        del hdureduced  # remove file from memory now that we are doing with it
+                        try: 
+                            hdureduced.close()
+                        except:
+                            pass
 
                     # The paths to these saved files and the pixelscale are sent to the reduce queue
                     # Currently the reduce queue platesolves the images and monitors the focus.
