@@ -749,6 +749,27 @@ class Observatory:
                     g_dev['mnt'].home_command()
                     g_dev['mnt'].park_command()
                     self.time_since_last_slew_or_exposure = time.time()
+                    
+            # Check that cooler is alive
+            try:
+                probe = g_dev['cam']._cooler_on()
+                if not probe:
+                    g_dev['cam']._set_cooler_on()
+                    plog("Found cooler off.")
+                    try:
+                        g_dev['cam']._connect(False)
+                        g_dev['cam']._connect(True)
+                        g_dev['cam']._set_cooler_on()
+                    except:
+                        plog("Camera cooler reconnect failed.")
+            except Exception as e:
+                plog("\n\nCamera was not connected @ expose entry:  ", e, "\n\n")
+                try:
+                    g_dev['cam']._connect(False)
+                    g_dev['cam']._connect(True)
+                    g_dev['cam']._set_cooler_on()
+                except:
+                    plog("Camera cooler reconnect failed 2nd time.")
             
         
 
