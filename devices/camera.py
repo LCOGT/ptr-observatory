@@ -520,8 +520,8 @@ class Camera:
 
     def _theskyx_set_cooler_on(self):
         self.camera.RegulateTemperature = True
-        plog("3s wait for cooler to start up.")
-        time.sleep(3)
+        #plog("3s wait for cooler to start up.")
+        #time.sleep(3)
         return (
             self.camera.RegulateTemperature
         )  # NB NB NB This would be a good place to put a warming protector
@@ -570,8 +570,8 @@ class Camera:
 
     def _maxim_set_cooler_on(self):
         self.camera.CoolerOn = True
-        plog("3s wait for cooler to start up.")
-        time.sleep(3)
+        #plog("3s wait for cooler to start up.")
+        #time.sleep(3)
         return (
             self.camera.CoolerOn
         )  # NB NB NB This would be a good place to put a warming protector
@@ -798,7 +798,9 @@ class Camera:
         not the slower File Path.  THe mode used for focusing or other operations where we do not want to save any
         image data.
         """
-
+        
+        self.tempStartupExposureTime=time.time()
+        #print (tempStartupExposureTime)
         # Force a reseek //eventually dither//
         try:
             if (
@@ -811,25 +813,25 @@ class Camera:
         except:
             pass
 
-        try:
-            probe = self._cooler_on()
-            if not probe:
-                self._set_cooler_on()
-                plog("Found cooler off.")
-                try:
-                    self._connect(False)
-                    self._connect(True)
-                    self._set_cooler_on()
-                except:
-                    plog("Camera reconnect failed @ expose entry.")
-        except Exception as e:
-            plog("\n\nCamera was not connected @ expose entry:  ", e, "\n\n")
-            try:
-                self._connect(False)
-                self._connect(True)
-                self._set_cooler_on()
-            except:
-                plog("Camera reconnect failed 2nd time @ expose entry.")
+        # try:
+        #     probe = self._cooler_on()
+        #     if not probe:
+        #         self._set_cooler_on()
+        #         plog("Found cooler off.")
+        #         try:
+        #             self._connect(False)
+        #             self._connect(True)
+        #             self._set_cooler_on()
+        #         except:
+        #             plog("Camera reconnect failed @ expose entry.")
+        # except Exception as e:
+        #     plog("\n\nCamera was not connected @ expose entry:  ", e, "\n\n")
+        #     try:
+        #         self._connect(False)
+        #         self._connect(True)
+        #         self._set_cooler_on()
+        #     except:
+        #         plog("Camera reconnect failed 2nd time @ expose entry.")
 
         opt = optional_params
         print ("optional params :", opt)
@@ -1113,63 +1115,63 @@ class Camera:
                 Nsmartstack=1
                 SmartStackID='no'
 
-            try:
-                # Check here for filter, guider, still moving  THIS IS A CLASSIC
-                # case where a timeout is a smart idea.
-                # Wait for external motion to cease before exposing. Note this precludes satellite tracking.
-                st = ""
+            # try:
+            #     # Check here for filter, guider, still moving  THIS IS A CLASSIC
+            #     # case where a timeout is a smart idea.
+            #     # Wait for external motion to cease before exposing. Note this precludes satellite tracking.
+            #     st = ""
 
-                if g_dev["enc"].is_dome:
-                    try:
-                        enc_slewing = g_dev["enc"].status["dome_slewing"]
-                    except:
-                        plog("enclosure SLEWING threw an exception.")
-                else:
-                    enc_slewing = False
+            #     if g_dev["enc"].is_dome:
+            #         try:
+            #             enc_slewing = g_dev["enc"].status["dome_slewing"]
+            #         except:
+            #             plog("enclosure SLEWING threw an exception.")
+            #     else:
+            #         enc_slewing = False
 
-                while (
-                    g_dev["foc"].focuser.IsMoving
-                    or g_dev["rot"].rotator.IsMoving
-                    or g_dev["mnt"].mount.Slewing
-                ):  # or enc_slewing:   #Filter is moving??
-                    if g_dev["foc"].focuser.IsMoving:
-                        st += "f>"
-                    if g_dev["rot"].rotator.IsMoving:
-                        st += "r>"
-                    if g_dev["mnt"].mount.Slewing:
-                        st += "m>  " + str(
-                            round(time.time() - g_dev["mnt"].move_time, 1)
-                        )
-                    # if enc_slewing:
-                    # st += 'd>' + str(round(time.time() - g_dev['mnt'].move_time, 1))
-                    plog(st)
-                    if round(time.time() - g_dev["mnt"].move_time, 1) >= 75:
-                        plog("|n\n DOME OR MOUNT HAS TIMED OUT!|n|n")
-                        break
+            #     while (
+            #         g_dev["foc"].focuser.IsMoving
+            #         or g_dev["rot"].rotator.IsMoving
+            #         or g_dev["mnt"].mount.Slewing
+            #     ):  # or enc_slewing:   #Filter is moving??
+            #         if g_dev["foc"].focuser.IsMoving:
+            #             st += "f>"
+            #         if g_dev["rot"].rotator.IsMoving:
+            #             st += "r>"
+            #         if g_dev["mnt"].mount.Slewing:
+            #             st += "m>  " + str(
+            #                 round(time.time() - g_dev["mnt"].move_time, 1)
+            #             )
+            #         # if enc_slewing:
+            #         # st += 'd>' + str(round(time.time() - g_dev['mnt'].move_time, 1))
+            #         plog(st)
+            #         if round(time.time() - g_dev["mnt"].move_time, 1) >= 75:
+            #             plog("|n\n DOME OR MOUNT HAS TIMED OUT!|n|n")
+            #             break
 
-                    st = ""
-                    time.sleep(0.2)
-                    if seq > 0:
-                        g_dev["obs"].update_status(cancel_check=True)
-                        if not g_dev["cam"].exposure_busy:
-                            result = {"stopped": True}
-                            return result
-                    # Refresh the probe of the dome status
-                    if g_dev["enc"].is_dome:
-                        try:
-                            enc_slewing = g_dev["enc"].status["dome_slewing"]
-                        except:
-                            plog("enclosure SLEWING threw an exception.")
-                    else:
-                        enc_slewing = False
+            #         st = ""
+            #         #time.sleep(0.2)
+            #         if seq > 0:
+            #             g_dev["obs"].update_status(cancel_check=True)
+            #             if not g_dev["cam"].exposure_busy:
+            #                 result = {"stopped": True}
+            #                 return result
+            #         # Refresh the probe of the dome status
+            #         if g_dev["enc"].is_dome:
+            #             try:
+            #                 enc_slewing = g_dev["enc"].status["dome_slewing"]
+            #             except:
+            #                 plog("enclosure SLEWING threw an exception.")
+            #         else:
+            #             enc_slewing = False
 
-            except:
-                pass
+            # except:
+            #     pass
 
-            if seq > 0:
-                g_dev[
-                    "obs"
-                ].update_status()  # NB Make sure this routine has a fault guard.
+            #if seq > 0:
+            #    g_dev[
+            #        "obs"
+            #    ].update_status()  # NB Make sure this routine has a fault guard.
             self.retry_camera = 3
             self.retry_camera_start_time = time.time()
 
@@ -1206,55 +1208,55 @@ class Camera:
                         
                     # NB Here we enter Phase 2
                     try:
-                        self.t1 = time.time()
+                        #self.t1 = time.time()
                         self.exposure_busy = True
 
-                        # First lets verify we are connected or try to reconnect.
-                        # Consider uniform ests in a routine, start with reading CoolerOn
-                        try:
-                            probe = self._cooler_on()
-                            if not probe:
-                                plog("Found cooler off.")
-                                try:
-                                    self._connect(False)
-                                    self._connect(True)
-                                    self._set_cooler_on()
-                                except:
-                                    plog("Camera reconnect failed @ expose camera entry.")
+                        # # First lets verify we are connected or try to reconnect.
+                        # # Consider uniform ests in a routine, start with reading CoolerOn
+                        # try:
+                        #     probe = self._cooler_on()
+                        #     if not probe:
+                        #         plog("Found cooler off.")
+                        #         try:
+                        #             self._connect(False)
+                        #             self._connect(True)
+                        #             self._set_cooler_on()
+                        #         except:
+                        #             plog("Camera reconnect failed @ expose camera entry.")
 
-                                    g_dev["cam_retry_doit"] = True
-                        except Exception as e:
-                            plog(
-                                "\n\nCamera was not connected @ expose camera retry:  ",
-                                e,
-                                "\n\n",
-                            )
+                        #             g_dev["cam_retry_doit"] = True
+                        # except Exception as e:
+                        #     plog(
+                        #         "\n\nCamera was not connected @ expose camera retry:  ",
+                        #         e,
+                        #         "\n\n",
+                        #     )
 
-                            try:
-                                self._connect(False)
-                                self._connect(True)
-                                self._set_cooler_on()
-                            except:
-                                plog("Camera reconnect failed @ expose camera retry.")
+                        #     try:
+                        #         self._connect(False)
+                        #         self._connect(True)
+                        #         self._set_cooler_on()
+                        #     except:
+                        #         plog("Camera reconnect failed @ expose camera retry.")
 
-                                g_dev["cam_retry_doit"] = True
+                        #         g_dev["cam_retry_doit"] = True
                         # At this point we really should be connected!!
 
                         if self.maxim or self.ascom or self.theskyx:
 
-                            try:
-                                g_dev["ocn"].get_quick_status(self.pre_ocn)
-                            except:
-                                plog("Enclosure quick status failed")
-                            g_dev["foc"].get_quick_status(self.pre_foc)
-                            try:
-                                g_dev["rot"].get_quick_status(self.pre_rot)
-                            except:
-                                plog("Rotator quick status failed")
-                            try:
-                                g_dev["mnt"].get_quick_status(self.pre_mnt)
-                            except:
-                                plog("ra_cal_offset is an issue")
+                            # try:
+                            #     g_dev["ocn"].get_quick_status(self.pre_ocn)
+                            # except:
+                            #     plog("Enclosure quick status failed")
+                            # g_dev["foc"].get_quick_status(self.pre_foc)
+                            # try:
+                            #     g_dev["rot"].get_quick_status(self.pre_rot)
+                            # except:
+                            #     plog("Rotator quick status failed")
+                            # try:
+                            #     g_dev["mnt"].get_rapid_exposure_status(self.pre_mnt)
+                            # except:
+                            #     plog("mount quick status failed")
                             ldr_handle_time = None
                             ldr_handle_high_time = None  #  This is not maxim-specific
 
@@ -1262,12 +1264,12 @@ class Camera:
                                 self.darkslide_instance.openDarkslide()
                                 self.darkslide_open = True
                                 self.darkslide_state = 'Open'
-                                time.sleep(0.1)
+                                #time.sleep(0.1)
                             elif self.darkslide and not imtypeb:
                                 self.darkslide_instance.closeDarkslide()
                                 self.darkslide_open = False
                                 self.darkslide_state = 'Closed'
-                                time.sleep(0.1)
+                                #time.sleep(0.1)
                             else:
                                 pass
                             if self.use_file_mode:
@@ -1358,7 +1360,7 @@ class Camera:
                                     #plog("There is perhaps no rotator")
                                     pass
 
-                                g_dev["mnt"].get_quick_status(
+                                g_dev["mnt"].get_rapid_exposure_status(
                                     self.pre_mnt
                                 )  # Should do this close to the exposure
 
@@ -1374,7 +1376,7 @@ class Camera:
                             result = {}
                             result["error":True]
                             return result
-                        self.t9 = time.time()
+                        #self.t9 = time.time()
                         # We go here to keep this subroutine a reasonable length, Basically still in Phase 2
                         # None used to be dist_x and dist_y but they are only used for subframes that we are no longer supporting
 
@@ -1485,7 +1487,7 @@ class Camera:
             self.post_foc = []
             self.post_ocn = []
             try:
-                g_dev["mnt"].get_quick_status(
+                g_dev["mnt"].get_rapid_exposure_status(
                     self.post_mnt
                 )  # Need to pick which pass was closest to image completion
             except:
@@ -1502,20 +1504,20 @@ class Camera:
             except:
                 #plog("OCN status not quick updated")
                 pass
-            if time.time() > self.status_time:
-                g_dev["obs"].update_status(cancel_check=False)
-                # if not g_dev["cam"].exposure_busy:
-                #     result = {"stopped": True}
-                #     return result
+            # if time.time() > self.status_time:
+            #     g_dev["obs"].update_status(cancel_check=False)
+            #     # if not g_dev["cam"].exposure_busy:
+            #     #     result = {"stopped": True}
+            #     #     return result
                     
-                self.status_time = time.time() + 10
+            #     self.status_time = time.time() + 10
                 
             if (
                 time.time() < self.completion_time
             ):  # NB Testing here if glob too early is delaying readout.
-                time.sleep(2)
-                self.t7b = time.time()
-                remaining = round(self.completion_time - self.t7b, 1)
+                #time.sleep(2)
+                #self.t7b = time.time()
+                remaining = round(self.completion_time - time.time(), 1)
                 if remaining > 0:
                     plog(
                         '||  ' + str(round(remaining, 1)) + "sec.",
@@ -1566,10 +1568,10 @@ class Camera:
 
             incoming_image_list = []
             #self.t4 = time.time()
-            try:
-                pier_side = g_dev["mnt"].mount.sideOfPier
-            except:
-                pass
+            #try:
+            #    pier_side = g_dev["mnt"].mount.sideOfPier
+            #except:
+            #    pass
                 #plog("Mount doesn't use pierside")
 
             if (not self.use_file_mode and self._imageavailable()) or (
@@ -1593,13 +1595,13 @@ class Camera:
                         time.sleep(3)
                         retrycounter = retrycounter + 1
 
-                time.sleep(0.1)
-                self.t4p4 = time.time()
+                #time.sleep(0.1)
+                #self.t4p4 = time.time()
 
                 self.img = np.array(self._getImageArray()).astype("uint16")
-                self.t4p5 = (
-                    time.time()
-                )  # As read, this is a Windows Safe Array of Longs
+                #self.t4p5 = (
+                #    time.time()
+                #)  # As read, this is a Windows Safe Array of Longs
                 if frame_type in ["bias", "dark"] or frame_type[-4:] == ['flat']:
                     plog(
                         "Median of full area bias, dark or flat image:  ",
@@ -1663,7 +1665,7 @@ class Camera:
                     else:
                         plog('Flat value is:  ', bi_mean)
                     
-                g_dev["obs"].update_status(cancel_check=True)
+                #g_dev["obs"].update_status(cancel_check=True)
                 if not g_dev["cam"].exposure_busy:
                     result = {"stopped": True}
                     return result
@@ -1697,8 +1699,11 @@ class Camera:
 
 
                     # It is faster to store the current binning than keeping on asking ASCOM throughout this
-                    tempBinningCodeX=self.camera.BinX
-                    tempBinningCodeY=self.camera.BinY
+                    #tempBinningCodeX=self.camera.BinX
+                    #tempBinningCodeY=self.camera.BinY
+                    tempBinningCodeX=self.bin
+                    tempBinningCodeY=self.bin
+
 
                     # assign the keyword values and comment of the keyword as a tuple to write both to header.
 
@@ -2522,10 +2527,10 @@ class Camera:
 
                     # Make a copy of the raw file to hold onto while the flash reductions are happening.
                     # It will be saved once the jpg has been quickly created.
-                    hduraw = copy.deepcopy(
-                        hdu
-                    )  # This is realistically just a name change to help understand which hdu is which
-                    del hdu
+                    #hduraw = copy.deepcopy(
+                    #    hdu
+                    #)  # This is realistically just a name change to help understand which hdu is which
+                    #del hdu
 
                     # If the file isn't a calibration frame, then undertake a flash reduction quickly
                     # To make a palatable jpg AS SOON AS POSSIBLE to send to AWS
@@ -2538,14 +2543,14 @@ class Camera:
                     ):  # Don't process jpgs or small fits for biases and darks
 
                         # Make a copy of hdu to use as jpg and small fits as well as a local raw used file for planewave solves
-                        hdusmall = copy.deepcopy(hduraw)
-                        hdusmall.data = hdusmall.data.astype("float32")
+                        #hdusmall = copy.deepcopy(hdu)
+                        hdusmalldata = np.asarray(hdu.data.astype("float32"))
                         # Quick flash bias and dark frame
                                                 
                         try:
 
-                            hdusmall.data = hdusmall.data - self.biasFiles[str(tempBinningCodeX)]
-                            hdusmall.data = hdusmall.data - (self.darkFiles[str(tempBinningCodeX)] * exposure_time)
+                            hdusmalldata = hdusmalldata - self.biasFiles[str(tempBinningCodeX)]
+                            hdusmalldata = hdusmalldata - (self.darkFiles[str(tempBinningCodeX)] * exposure_time)
                             
                         except Exception as e:
                             plog("debias/darking light frame failed: ", e)
@@ -2554,7 +2559,7 @@ class Camera:
                         try:
                             tempFlatFrame = np.load(self.flatFiles[str(self.current_filter + "_bin" + str(tempBinningCodeX))])
 
-                            hdusmall.data = np.divide(hdusmall.data, tempFlatFrame)
+                            hdusmalldata = np.divide(hdusmalldata, tempFlatFrame)
                             del tempFlatFrame
                         except Exception as e:
                             plog("flatting light frame failed", e)
@@ -2580,15 +2585,14 @@ class Camera:
                             xr = self.config["camera"][self.name]["settings"][
                                 "crop_preview_xright"
                             ]
-                            hdusmall.data = hdusmall.data[yb:-yt, xl:-xr]
-                            hdusmall.header["NAXIS1"] = hdusmall.data.shape[0]
-                            hdusmall.header["NAXIS2"] = hdusmall.data.shape[1]
+                            hdusmalldata = hdusmalldata[yb:-yt, xl:-xr]
+                            
 
                         # Every Image gets SEP'd and gets it's catalogue sent up pronto ahead of the big fits
                         # Focus images use it for focus, Normal images also report their focus.
 
-                        hdufocus = copy.deepcopy(hdusmall)
-                        hdufocus.data = hdufocus.data.astype("float32")
+                        #hdufocus = copy.deepcopy(hdusmall)
+                        hdufocusdata = np.asarray(hdusmalldata)
                         
                         # If this a bayer image, then we need to make an appropriate image that is monochrome
                         # That gives the best chance of finding a focus AND for pointing while maintaining resolution.
@@ -2600,39 +2604,39 @@ class Camera:
                                 
                                 # Interpolate to make a high resolution version for focussing
                                 # and platesolving
-                                hdufocus.data=demosaicing_CFA_Bayer_bilinear(hdufocus.data, 'RGGB')[:,:,1]
-                                hdufocus.data=hdufocus.data.astype("float32")
+                                hdufocusdata=demosaicing_CFA_Bayer_bilinear(hdufocusdata, 'RGGB')[:,:,1]
+                                hdufocusdata=hdufocusdata.astype("float32")
                                 
                                 # Only separate colours if needed for colour jpeg
                                 if smartstackid == 'no':
                                     # Checkerboard collapse for other colours for temporary jpeg                                
                                     # Create indexes for B, G, G, R images                                
-                                    xshape=hdufocus.data.shape[0]
-                                    yshape=hdufocus.data.shape[1]
+                                    xshape=hdufocusdata.shape[0]
+                                    yshape=hdufocusdata.shape[1]
     
                                     # B pixels
                                     list_0_1 = np.array([ [0,0], [0,1] ])
                                     checkerboard=np.tile(list_0_1, (xshape//2, yshape//2))
                                     checkerboard=np.asarray(checkerboard)
-                                    hdublue=(block_reduce(hdufocus.data * checkerboard ,2))
+                                    hdublue=(block_reduce(hdufocusdata * checkerboard ,2))
                                     
                                     # R Pixels
                                     list_0_1 = np.array([ [1,0], [0,0] ])
                                     checkerboard=np.tile(list_0_1, (xshape//2, yshape//2))
                                     checkerboard=np.asarray(checkerboard)
-                                    hdured=(block_reduce(hdufocus.data * checkerboard ,2))
+                                    hdured=(block_reduce(hdufocusdata * checkerboard ,2))
                                     
                                     # G top right Pixels
                                     list_0_1 = np.array([ [0,1], [0,0] ])
                                     checkerboard=np.tile(list_0_1, (xshape//2, yshape//2))
                                     checkerboard=np.asarray(checkerboard)
-                                    GTRonly=(block_reduce(hdufocus.data * checkerboard ,2))
+                                    GTRonly=(block_reduce(hdufocusdata * checkerboard ,2))
                                     
                                     # G bottom left Pixels
                                     list_0_1 = np.array([ [0,0], [1,0] ])
                                     checkerboard=np.tile(list_0_1, (xshape//2, yshape//2))
                                     checkerboard=np.asarray(checkerboard)
-                                    GBLonly=(block_reduce(hdufocus.data * checkerboard ,2))                                
+                                    GBLonly=(block_reduce(hdufocusdata * checkerboard ,2))                                
                                     
                                     # Sum two Gs together and half them to be vaguely on the same scale
                                     hdugreen = np.asarray(GTRonly + GBLonly)
@@ -2651,7 +2655,7 @@ class Camera:
                         
                         
                         focusimg = np.asarray(
-                            hdufocus.data
+                            hdufocusdata
                         )  # + 100   #maintain a + pedestal for sep  THIS SHOULD not be needed for a raw input file.
                         focusimg = focusimg.astype("float32")
                         focusimg = focusimg.copy(
@@ -2661,7 +2665,7 @@ class Camera:
                         try:
                             # Some of these are liberated from BANZAI
                             bkg = sep.Background(focusimg)
-                            hduraw.header["SEPSKY"] = ( np.nanmedian(bkg), "Sky background estimated by SEP" )
+                            hdu.header["SEPSKY"] = ( np.nanmedian(bkg), "Sky background estimated by SEP" )
                             focusimg -= bkg
                             ix, iy = focusimg.shape
                             border_x = int(ix * 0.05)
@@ -2698,7 +2702,7 @@ class Camera:
                             sources['kronrad'] = kronrad
 
                             # Calculate uncertainty of image (thanks BANZAI)
-                            uncertainty = float(hdufocus.header["RDNOISE"]) * np.ones(hdufocus.data.shape, dtype=hdufocus.data.dtype) / float(hdufocus.header["RDNOISE"])
+                            uncertainty = float(hdu.header["RDNOISE"]) * np.ones(hdufocusdata.shape, dtype=hdufocusdata.dtype) / float(hdu.header["RDNOISE"])
 
                             # Calcuate the equivilent of flux_auto (Thanks BANZAI)
                             # This is the preferred best photometry SEP can do.
@@ -2791,16 +2795,16 @@ class Camera:
 
                         if 'rfr' in locals():
 
-                            hduraw.header["FWHM"] = ( rfp, 'FWHM in pixels')
-                            hduraw.header["FWHMpix"] = ( rfp, 'FWHM in pixels')
-                            hduraw.header["FWHMasec"] = ( rfr, 'FWHM in arcseconds')
-                            hduraw.header["FWHMstd"] = ( rfs, 'FWHM standard deviation in arcseconds')
+                            hdu.header["FWHM"] = ( rfp, 'FWHM in pixels')
+                            hdu.header["FWHMpix"] = ( rfp, 'FWHM in pixels')
+                            hdu.header["FWHMasec"] = ( rfr, 'FWHM in arcseconds')
+                            hdu.header["FWHMstd"] = ( rfs, 'FWHM standard deviation in arcseconds')
 
                         if focus_image == False:
                             text = open(
                                 im_path + text_name, "w"
                             )  # This is needed by AWS to set up database.
-                            text.write(str(hduraw.header))
+                            text.write(str(hdu.header))
                             text.close()
                             self.enqueue_for_fastAWS(10, im_path, text_name)
 
@@ -2814,60 +2818,60 @@ class Camera:
                         tempointing = SkyCoord(tempRAdeg, tempDECdeg, unit='deg')
                         tempointing=tempointing.to_string("hmsdms").split(' ')
 
-                        hduraw.header["RA"] = (
+                        hdu.header["RA"] = (
                             tempointing[0],
                             "[hms] Telescope right ascension",
                         )
-                        hduraw.header["DEC"] = (
+                        hdu.header["DEC"] = (
                             tempointing[1],
                             "[dms] Telescope declination",
                         )
-                        hduraw.header["ORIGRA"] = hduraw.header["RA"]
-                        hduraw.header["ORIGDEC"] = hduraw.header["DEC"]
-                        hduraw.header["RAhrs"] = (
+                        hdu.header["ORIGRA"] = hdu.header["RA"]
+                        hdu.header["ORIGDEC"] = hdu.header["DEC"]
+                        hdu.header["RAhrs"] = (
                             g_dev["mnt"].current_icrs_ra,
                             "[hrs] Telescope right ascension",
                         )
-                        hduraw.header["RA-deg"] = tempRAdeg
-                        hduraw.header["DEC-deg"] = tempDECdeg
+                        hdu.header["RA-deg"] = tempRAdeg
+                        hdu.header["DEC-deg"] = tempDECdeg
 
-                        hduraw.header["TARG-CHK"] = (
+                        hdu.header["TARG-CHK"] = (
                             (g_dev["mnt"].current_icrs_ra * 15)
                             + g_dev["mnt"].current_icrs_dec,
                             "[deg] Sum of RA and dec",
                         )
-                        hduraw.header["CATNAME"] = (g_dev["mnt"].object, "Catalog object name")
-                        hduraw.header["CAT-RA"] = (
+                        hdu.header["CATNAME"] = (g_dev["mnt"].object, "Catalog object name")
+                        hdu.header["CAT-RA"] = (
                             tempointing[0],
                             "[hms] Catalog RA of object",
                         )
-                        hduraw.header["CAT-DEC"] = (
+                        hdu.header["CAT-DEC"] = (
                             tempointing[1],
                             "[dms] Catalog Dec of object",
                         )
-                        hduraw.header["OFST-RA"] = (
+                        hdu.header["OFST-RA"] = (
                             tempointing[0],
                             "[hms] Catalog RA of object (for BANZAI only)",
                         )
-                        hduraw.header["OFST-DEC"] = (
+                        hdu.header["OFST-DEC"] = (
                             tempointing[1],
                             "[dms] Catalog Dec of object",
                         )
 
 
-                        hduraw.header["TPT-RA"] = (
+                        hdu.header["TPT-RA"] = (
                             tempointing[0],
                             "[hms] Catalog RA of object (for BANZAI only",
                         )
-                        hduraw.header["TPT-DEC"] = (
+                        hdu.header["TPT-DEC"] = (
                             tempointing[1],
                             "[dms] Catalog Dec of object",
                         )
 
-                        hduraw.header["CRVAL1"] = tempRAdeg
-                        hduraw.header["CRVAL2"] = tempDECdeg
-                        hduraw.header["CRPIX1"] = float(hduraw.header["NAXIS1"])/2
-                        hduraw.header["CRPIX2"] = float(hduraw.header["NAXIS2"])/2
+                        hdu.header["CRVAL1"] = tempRAdeg
+                        hdu.header["CRVAL2"] = tempDECdeg
+                        hdu.header["CRPIX1"] = float(hdu.header["NAXIS1"])/2
+                        hdu.header["CRPIX2"] = float(hdu.header["NAXIS2"])/2
 
 
                         source_delete=['thresh','npix','tnpix','xmin','xmax','ymin','ymax','x2','y2','xy','errx2','erry2','errxy','a','b','theta','cxx','cyy','cxy','cflux','cpeak','xcpeak','ycpeak']
@@ -2896,108 +2900,113 @@ class Camera:
                             cal_name = (
                                 cal_name[:-9] + "F012" + cal_name[-7:]
                             )
-                            hdufocus.data=hdufocus.data.astype("float32")
+                            hdufocus=fits.PrimaryHDU()
+                            hdufocus.data=hdufocusdata                            
+                            hdufocus.header=hdu.header
+                            hdufocus.header["NAXIS1"] = hdufocusdata.shape[0]
+                            hdufocus.header["NAXIS2"] = hdufocusdata.shape[1]
                             hdufocus.writeto(cal_path + cal_name, overwrite=True, output_verify='silentfix')
                             pixscale=hdufocus.header['PIXSCALE']
                             try:
                                 hdufocus.close()
                             except:
                                 pass
+                            del hdufocusdata
                             del hdufocus
-
-                            try:
-                                time.sleep(1) # A simple wait to make sure file is saved
-                                solve = platesolve.platesolve(
-                                    cal_path + cal_name, pixscale
-                                )
-                                plog(
-                                    "PW Solves: ",
-                                    solve["ra_j2000_hours"],
-                                    solve["dec_j2000_degrees"],
-                                )
-                                target_ra = g_dev["mnt"].current_icrs_ra
-                                target_dec = g_dev["mnt"].current_icrs_dec
-                                solved_ra = solve["ra_j2000_hours"]
-                                solved_dec = solve["dec_j2000_degrees"]
-                                solved_arcsecperpixel = solve["arcsec_per_pixel"]
-                                solved_rotangledegs = solve["rot_angle_degs"]
-                                err_ha = target_ra - solved_ra
-                                err_dec = target_dec - solved_dec
-                                solved_arcsecperpixel = solve["arcsec_per_pixel"]
-                                solved_rotangledegs = solve["rot_angle_degs"]
-                                plog(
-                                    " coordinate error in ra, dec:  (asec) ",
-                                    round(err_ha * 15 * 3600, 2),
-                                    round(err_dec * 3600, 2),
-                                )  # NB WER changed units 20221012
-
-                                # Reset Solve timers
-                                g_dev['obs'].last_solve_time = datetime.datetime.now()
-                                g_dev['obs'].images_since_last_solve = 0
-
-                                # NB NB NB this needs rethinking, the incoming units are hours in HA or degrees of dec
-                                if (
-                                    err_ha * 15 * 3600 > 1200
-                                    or err_dec * 3600 > 1200
-                                    or err_ha * 15 * 3600 < -1200
-                                    or err_dec * 3600 < -1200
-                                ) and self.config["mount"]["mount1"][
-                                    "permissive_mount_reset"
-                                ] == "yes":
-                                    g_dev["mnt"].reset_mount_reference()
-                                    plog("I've  reset the mount_reference 1")
-                                    g_dev["mnt"].current_icrs_ra = solved_ra
-                                    #    "ra_j2000_hours"
-                                    #]
-                                    g_dev["mnt"].current_icrs_dec = solved_dec
-                                    #    "dec_j2000_hours"
-                                    #]
-                                    err_ha = 0
-                                    err_dec = 0
-
-                                if (
-                                    abs(err_ha * 15 * 3600)
-                                    > self.config["threshold_mount_update"]
-                                    or abs(err_dec * 3600)
-                                    > self.config["threshold_mount_update"]
-                                ):
-                                    try:
-                                        if g_dev["mnt"].pier_side_str == "Looking West":
-                                            try:
-                                                g_dev["mnt"].adjust_mount_reference(
-                                                    err_ha, err_dec
-                                                )
-                                            except Exception as e:
-                                                print ("Something is up in the mount reference adjustment code ", e)
-                                        else:
-                                            try:
-                                                g_dev["mnt"].adjust_flip_reference(
-                                                    err_ha, err_dec
-                                                )  # Need to verify signs
-                                            except Exception as e:
-                                                print ("Something is up in the mount reference adjustment code ", e)
-                                        
-                                        g_dev["mnt"].current_icrs_ra = solved_ra                                    
+                            
+                            if len(sources) > 5:
+                                try:
+                                    #time.sleep(1) # A simple wait to make sure file is saved
+                                    solve = platesolve.platesolve(
+                                        cal_path + cal_name, pixscale
+                                    )
+                                    plog(
+                                        "PW Solves: ",
+                                        solve["ra_j2000_hours"],
+                                        solve["dec_j2000_degrees"],
+                                    )
+                                    target_ra = g_dev["mnt"].current_icrs_ra
+                                    target_dec = g_dev["mnt"].current_icrs_dec
+                                    solved_ra = solve["ra_j2000_hours"]
+                                    solved_dec = solve["dec_j2000_degrees"]
+                                    solved_arcsecperpixel = solve["arcsec_per_pixel"]
+                                    solved_rotangledegs = solve["rot_angle_degs"]
+                                    err_ha = target_ra - solved_ra
+                                    err_dec = target_dec - solved_dec
+                                    solved_arcsecperpixel = solve["arcsec_per_pixel"]
+                                    solved_rotangledegs = solve["rot_angle_degs"]
+                                    plog(
+                                        " coordinate error in ra, dec:  (asec) ",
+                                        round(err_ha * 15 * 3600, 2),
+                                        round(err_dec * 3600, 2),
+                                    )  # NB WER changed units 20221012
+    
+                                    # Reset Solve timers
+                                    g_dev['obs'].last_solve_time = datetime.datetime.now()
+                                    g_dev['obs'].images_since_last_solve = 0
+    
+                                    # NB NB NB this needs rethinking, the incoming units are hours in HA or degrees of dec
+                                    if (
+                                        err_ha * 15 * 3600 > 1200
+                                        or err_dec * 3600 > 1200
+                                        or err_ha * 15 * 3600 < -1200
+                                        or err_dec * 3600 < -1200
+                                    ) and self.config["mount"]["mount1"][
+                                        "permissive_mount_reset"
+                                    ] == "yes":
+                                        g_dev["mnt"].reset_mount_reference()
+                                        plog("I've  reset the mount_reference 1")
+                                        g_dev["mnt"].current_icrs_ra = solved_ra
+                                        #    "ra_j2000_hours"
+                                        #]
                                         g_dev["mnt"].current_icrs_dec = solved_dec
-                                        g_dev['mnt'].re_seek(dither=0)
-                                    except:
-                                        plog("This mount doesn't report pierside")
-
-                            except Exception as e:
-                                plog(
-                                    "Image: did not platesolve; this is usually OK. ", e
-                                )
+                                        #    "dec_j2000_hours"
+                                        #]
+                                        err_ha = 0
+                                        err_dec = 0
+    
+                                    if (
+                                        abs(err_ha * 15 * 3600)
+                                        > self.config["threshold_mount_update"]
+                                        or abs(err_dec * 3600)
+                                        > self.config["threshold_mount_update"]
+                                    ):
+                                        try:
+                                            if g_dev["mnt"].pier_side_str == "Looking West":
+                                                try:
+                                                    g_dev["mnt"].adjust_mount_reference(
+                                                        err_ha, err_dec
+                                                    )
+                                                except Exception as e:
+                                                    print ("Something is up in the mount reference adjustment code ", e)
+                                            else:
+                                                try:
+                                                    g_dev["mnt"].adjust_flip_reference(
+                                                        err_ha, err_dec
+                                                    )  # Need to verify signs
+                                                except Exception as e:
+                                                    print ("Something is up in the mount reference adjustment code ", e)
+                                            
+                                            g_dev["mnt"].current_icrs_ra = solved_ra                                    
+                                            g_dev["mnt"].current_icrs_dec = solved_dec
+                                            g_dev['mnt'].re_seek(dither=0)
+                                        except:
+                                            plog("This mount doesn't report pierside")
+    
+                                except Exception as e:
+                                    plog(
+                                        "Image: did not platesolve; this is usually OK. ", e
+                                    )
+                            else:
+                                print ("Platesolve wasn't attempted due to lack of sources")
                             if focus_image == True :
                                 focus_image = False
+                                print ("Time Taken From Exposure start to finish : "  +str(time.time() - self.tempStartupExposureTime))
                                 return result
 
                         # This is holding the flash reduced fits file waiting to be saved
                         # AFTER the jpeg has been sent up to AWS.
-                        hdureduced = copy.deepcopy(hdusmall)
-
-                        
-
-
+                        hdureduceddata = np.asarray(hdusmalldata)                      
 
                         # Code to stretch the image to fit into the 256 levels of grey for a jpeg
                         # But only if it isn't a smartstack, if so wait for the reduce queue
@@ -3034,27 +3043,27 @@ class Camera:
                                 del colour_img
                             else:
                                 # Making cosmetic adjustments to the image array ready for jpg stretching
-                                hdusmall.data = np.asarray(hdusmall.data)
-                                hdusmall.data[
-                                    hdusmall.data
+                                #hdusmalldata = np.asarray(hdusmalldata)
+                                hdusmalldata[
+                                    hdusmalldata
                                     > self.config["camera"][self.name]["settings"]["saturate"]
                                 ] = self.config["camera"][self.name]["settings"]["saturate"]
-                                hdusmall.data[hdusmall.data < -100] = -100
-                                hdusmall.data = hdusmall.data - np.min(hdusmall.data)
+                                hdusmalldata[hdusmalldata < -100] = -100
+                                hdusmalldata = hdusmalldata - np.min(hdusmalldata)
 
                                 # Resizing the array to an appropriate shape for the jpg and the small fits
-                                iy, ix = hdusmall.data.shape
+                                iy, ix = hdusmalldata.shape
                                 if iy == ix:
-                                    hdusmall.data = resize(
-                                        hdusmall.data, (1280, 1280), preserve_range=True
+                                    hdusmalldata = resize(
+                                        hdusmalldata, (1280, 1280), preserve_range=True
                                     )
                                 else:
-                                    hdusmall.data = resize(
-                                        hdusmall.data,
+                                    hdusmalldata = resize(
+                                        hdusmalldata,
                                         (int(1536 * iy / ix), 1536),
                                         preserve_range=True,
                                     ) 
-                                stretched_data_float = Stretch().stretch(hdusmall.data+1000)
+                                stretched_data_float = Stretch().stretch(hdusmalldata+1000)
                                 stretched_256 = 255 * stretched_data_float
                                 hot = np.where(stretched_256 > 255)
                                 cold = np.where(stretched_256 < 0)
@@ -3074,12 +3083,12 @@ class Camera:
 
 
                         #Remove all image remnants
-                        try: 
-                            hdusmall.close()
-                        except:
+                        #try: 
+                        #    hdusmall.close()
+                        #except:
                             #print ("couldn't close hdusmall")
-                            pass
-                        del hdusmall
+                        #    pass
+                        del hdusmalldata
                             
 
                         # Try saving the jpeg to disk and quickly send up to AWS to present for the user
@@ -3116,7 +3125,7 @@ class Camera:
                     # The compression and a few pieces of software require float32
                     # BUT it actually compresses to the same size either way
                     hdufz = fits.CompImageHDU(
-                        np.asarray(hduraw.data, dtype=np.float32), hduraw.header
+                        np.asarray(hdu.data, dtype=np.float32), hdu.header
                     )
                     hdufz.verify("fix")
                     hdufz.header[
@@ -3147,6 +3156,11 @@ class Camera:
                             time.sleep(10)
                             saverretries = saverretries + 1
                     del hdufz  # remove file from memory now that we are doing with it
+                    try: 
+                        hdufz.close()
+                    except:
+                        pass
+                    
                     # Send this file up to AWS (THIS WILL BE SENT TO BANZAI INSTEAD, SO THIS IS THE INGESTER POSITION)
                     if not no_AWS and self.config['send_files_at_end_of_night'] == 'no':
                         self.enqueue_for_AWS(
@@ -3163,7 +3177,7 @@ class Camera:
                     saverretries = 0
                     while saver == 0 and saverretries < 10:
                         try:
-                            hduraw.writeto(
+                            hdu.writeto(
                                 raw_path + raw_name00, overwrite=True, output_verify='silentfix'
                             )  # Save full raw file locally
                             saver = 1
@@ -3174,14 +3188,20 @@ class Camera:
                             plog(traceback.format_exc())
                             time.sleep(10)
                             saverretries = saverretries + 1
-
+                    
+                    
                     # Similarly to the above. This saves the REDUCED file to disk
                     # it works 99.9999% of the time.
-                    if "hdureduced" in locals():
+                    if "hdureduceddata" in locals():
                         saver = 0
                         saverretries = 0
                         while saver == 0 and saverretries < 10:
                             try:
+                                hdureduced=fits.PrimaryHDU()
+                                hdureduced.data=hdureduceddata                            
+                                hdureduced.header=hdu.header
+                                hdureduced.header["NAXIS1"] = hdureduceddata.shape[0]
+                                hdureduced.header["NAXIS2"] = hdureduceddata.shape[1]
                                 hdureduced.data=hdureduced.data.astype("float32")
                                 hdureduced.writeto(
                                     red_path + red_name01, overwrite=True, output_verify='silentfix'
@@ -3195,7 +3215,9 @@ class Camera:
                                 plog(traceback.format_exc())
                                 time.sleep(10)
                                 saverretries = saverretries + 1
-
+                    
+                    
+                    
                     # For sites that have "save_to_alt_path" enabled, this routine
                     # Saves the raw and reduced fits files out to the provided directories
                     if self.config["save_to_alt_path"] == "yes":
@@ -3206,7 +3228,7 @@ class Camera:
                             self.alt_path + g_dev["day"] + "/reduced/", exist_ok=True
                         )
                         try:
-                            hduraw.writeto(
+                            hdu.writeto(
                                 self.alt_path + g_dev["day"] + "/raw/" + raw_name00,
                                 overwrite=True, output_verify='silentfix'
                             )  # Save full raw file locally
@@ -3229,9 +3251,17 @@ class Camera:
                             saverretries = saverretries + 1
 
                     # remove file from memory
-                    del hduraw
-                    if "hdureduced" in locals():
-                        del hdureduced
+                    del hdu  # remove file from memory now that we are doing with it
+                    try: 
+                        hdu.close()
+                    except:
+                        pass
+                    
+                    del hdureduced  # remove file from memory now that we are doing with it
+                    try: 
+                        hdureduced.close()
+                    except:
+                        pass
 
                     # The paths to these saved files and the pixelscale are sent to the reduce queue
                     # Currently the reduce queue platesolves the images and monitors the focus.
@@ -3249,7 +3279,7 @@ class Camera:
                     ]:
                         self.to_reduce((paths, pixscale, smartstackid, sskcounter, Nsmartstack, sources))
 
-                    g_dev["obs"].update_status(cancel_check=True)
+                    #g_dev["obs"].update_status(cancel_check=True)
                     if not g_dev["cam"].exposure_busy:
                         result = {"stopped": True}
                         return result
@@ -3272,6 +3302,7 @@ class Camera:
                     result["filter"] = self.current_filter
                     result["error"] == False
                     self.exposure_busy = False
+                    print ("Time Taken : "  +str(time.time() - self.tempStartupExposureTime))
                     return result
                 except Exception as e:
                     plog("Header assembly block failed: ", e)
@@ -3279,12 +3310,13 @@ class Camera:
                     self.t7 = time.time()
                     result = {"error": True}
                 self.exposure_busy = False
+                print ("Time Taken : "  +str(time.time() - self.tempStartupExposureTime))
                 return result
             else:
-                time.sleep(1)
+                #time.sleep(1)
 
-                self.t7 = time.time()
-                remaining = round(self.completion_time - self.t7, 1)
+                #self.t7 = time.time()
+                remaining = round(self.completion_time - time.time(), 1)
 
                 if remaining < 0 and notifyReadOutOnlyOnce == 0:
                     plog(
@@ -3309,6 +3341,7 @@ class Camera:
                     )
                     result = {"error": True}
                     self.exposure_busy = False
+                    print ("Time Taken : "  +str(time.time() - self.tempStartupExposureTime))
                     return result
 
     def enqueue_for_AWS(self, priority, im_path, name):

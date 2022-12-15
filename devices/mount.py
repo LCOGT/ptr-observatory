@@ -564,12 +564,12 @@ class Mount:
         airmass = abs(round(sec_z - 0.0018167*(sec_z - 1) - 0.002875*((sec_z - 1)**2) - 0.0008083*((sec_z - 1)**3),3))
         if airmass > 10: airmass = 10
         airmass = round(airmass, 4)
-        try:
-            ra_off, dec_off = self.get_mount_reference()
-        except:
-            #print ("get_quick_status offset... is zero")
-            ra_off = 0
-            dec_off = 0
+        # try:
+        #     ra_off, dec_off = self.get_mount_reference()
+        # except:
+        #     #print ("get_quick_status offset... is zero")
+        #     ra_off = 0
+        #     dec_off = 0
         # NB NB THis code would be safer as a dict or other explicity named structure
         pre.append(time.time())
         icrs_ra, icrs_dec = self.get_mount_coordinates()
@@ -588,6 +588,51 @@ class Mount:
         pre.append(self.mount.Slewing)
         #plog(pre)
         return pre
+    
+    
+    def get_rapid_exposure_status(self, pre):
+
+        #self.check_connect()
+        icrs_ra, icrs_dec = self.get_mount_coordinates()
+        #alt = self.mount.Altitude
+        rd = SkyCoord(ra=icrs_ra*u.hour, dec=icrs_dec*u.deg)
+        aa = AltAz (location=self.site_coordinates, obstime=Time.now())
+        rd = rd.transform_to(aa)
+        alt = float(rd.alt/u.deg)
+        az = float(rd.az/u.deg)
+        zen = round((90 - alt), 3)
+        if zen > 90:
+            zen = 90.0
+        if zen < 0.1:    #This can blow up when zen <=0!
+            new_z = 0.1
+        else:
+            new_z = zen
+        sec_z = 1/cos(radians(new_z))
+        airmass = abs(round(sec_z - 0.0018167*(sec_z - 1) - 0.002875*((sec_z - 1)**2) - 0.0008083*((sec_z - 1)**3),3))
+        if airmass > 10: airmass = 10
+        airmass = round(airmass, 4)
+        # NB NB THis code would be safer as a dict or other explicity named structure
+        pre.append(time.time())
+        
+        pre.append(icrs_ra)
+        pre.append(icrs_dec)
+        # the following command is the sidereal time
+        pre.append(float((Time(datetime.datetime.utcnow(), scale='utc', location=g_dev['mnt'].site_coordinates).sidereal_time('apparent')*u.deg) / u.deg / u.hourangle))
+        #pre.append(self.mount.RightAscensionRate)
+        #pre.append(self.mount.DeclinationRate)
+        #pre.append(self.mount.Azimuth)
+        pre.append(0.0)
+        pre.append(0.0)
+        pre.append(az)
+        pre.append(alt)
+        pre.append(zen)
+        pre.append(airmass)
+        pre.append(False)
+        pre.append(True)
+        pre.append(False)
+        #plog(pre)
+        return pre
+    
 
     @classmethod
     def two_pi_avg(cls, pre, post, half):
