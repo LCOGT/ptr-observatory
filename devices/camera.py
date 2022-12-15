@@ -3302,7 +3302,7 @@ class Camera:
                     result["filter"] = self.current_filter
                     result["error"] == False
                     self.exposure_busy = False
-                    print ("Time Taken : "  +str(time.time() - self.tempStartupExposureTime))
+                    print ("Time Taken From Exposure start to finish : "  +str(time.time() - self.tempStartupExposureTime))
                     return result
                 except Exception as e:
                     plog("Header assembly block failed: ", e)
@@ -3310,7 +3310,7 @@ class Camera:
                     self.t7 = time.time()
                     result = {"error": True}
                 self.exposure_busy = False
-                print ("Time Taken : "  +str(time.time() - self.tempStartupExposureTime))
+                print ("Time Taken From Exposure start to finish : "  +str(time.time() - self.tempStartupExposureTime))
                 return result
             else:
                 #time.sleep(1)
@@ -3341,7 +3341,7 @@ class Camera:
                     )
                     result = {"error": True}
                     self.exposure_busy = False
-                    print ("Time Taken : "  +str(time.time() - self.tempStartupExposureTime))
+                    print ("Time Taken From Exposure start to finish : "  +str(time.time() - self.tempStartupExposureTime))
                     return result
 
     def enqueue_for_AWS(self, priority, im_path, name):
