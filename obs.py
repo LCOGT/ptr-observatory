@@ -25,6 +25,7 @@ import shutil
 import astroalign as aa
 from astropy.io import fits
 from astropy.nddata import block_reduce
+from astropy.utils.data import check_download_cache
 from dotenv import load_dotenv
 import numpy as np
 import redis  # Client, can work with Memurai
@@ -912,8 +913,8 @@ class Observatory:
 
                 one_at_a_time = 0
                 #3time.sleep(0.1)
-            #else:
-                #time.sleep(0.2)
+            else:
+                time.sleep(0.5)
 
     def slow_camera_process(self):
         """A place to process non-process dependant images from the camera pile
@@ -941,7 +942,112 @@ class Observatory:
                         pass                    
                     del hdufocus
                 
+                if slow_process[0] == 'raw':
+                    saver = 0
+                    saverretries = 0
+                    while saver == 0 and saverretries < 10:
+                        try:
+                            hdu=fits.PrimaryHDU()
+                            hdu.data=slow_process[2]                            
+                            hdu.header=slow_process[3]
+                            hdu.writeto(
+                                slow_process[1], overwrite=True, output_verify='silentfix'
+                            )  # Save full raw file locally
+                            try:
+                                hdu.close()
+                            except:
+                                pass                    
+                            del hdu
+                            saver = 1
+                            
+                        except Exception as e:
+                            plog("Failed to write raw file: ", e)
+                            if "requested" in e and "written" in e:
+                                plog(check_download_cache())
+                            plog(traceback.format_exc())
+                            time.sleep(10)
+                            saverretries = saverretries + 1
+                            
+                if slow_process[0] == 'fz_and_send':
+                    # Create the fz file ready for BANZAI and the AWS/UI
+                    # Note that even though the raw file is int16,
+                    # The compression and a few pieces of software require float32
+                    # BUT it actually compresses to the same size either way
+                    hdufz = fits.CompImageHDU(
+                        np.asarray(slow_process[2], dtype=np.float32), slow_process[3]
+                    )
+                    hdufz.verify("fix")
+                    hdufz.header[
+                        "BZERO"
+                    ] = 0  # Make sure there is no integer scaling left over
+                    hdufz.header[
+                        "BSCALE"
+                    ] = 1  # Make sure there is no integer scaling left over
+
+                    # This routine saves the file ready for uploading to AWS
+                    # It usually works perfectly 99.9999% of the time except
+                    # when there is an astropy cache error. It is likely that
+                    # the cache will need to be cleared when it fails, but
+                    # I am still waiting for it to fail again (rare)
+                    saver = 0
+                    saverretries = 0
+                    while saver == 0 and saverretries < 10:
+                        try:
+                            hdufz.writeto(
+                                slow_process[1], overwrite=True, output_verify='silentfix'
+                            )  # Save full fz file locally
+                            saver = 1
+                        except Exception as e:
+                            plog("Failed to write raw fz file: ", e)
+                            if "requested" in e and "written" in e:
+                                plog(check_download_cache())
+                            plog(traceback.format_exc())
+                            time.sleep(10)
+                            saverretries = saverretries + 1
+                    
+                    try: 
+                        hdufz.close()
+                    except:
+                        pass
+                    del hdufz  # remove file from memory now that we are doing with it
+                    
+                    # Send this file up to AWS (THIS WILL BE SENT TO BANZAI INSTEAD, SO THIS IS THE INGESTER POSITION)
+                    if self.config['send_files_at_end_of_night'] == 'no':
+                        g_dev['cam'].enqueue_for_AWS(
+                            26000000, slow_process[1]
+                        )
+                        g_dev["obs"].send_to_user(
+                            "An image has been readout from the camera and queued for transfer to the cloud.",
+                            p_level="INFO",
+                        )
+                
+                if slow_process[0] == 'reduced':
+                    saver = 0
+                    saverretries = 0
+                    while saver == 0 and saverretries < 10:
+                        try:
+                            hdureduced=fits.PrimaryHDU()
+                            hdureduced.data=slow_process[2]                            
+                            hdureduced.header=slow_process[3]
+                            hdureduced.header["NAXIS1"] = hdureduced.data.shape[0]
+                            hdureduced.header["NAXIS2"] = hdureduced.data.shape[1]
+                            hdureduced.data=hdureduced.data.astype("float32")
+                            hdureduced.writeto(
+                                slow_process[1], overwrite=True, output_verify='silentfix'
+                            )  # Save flash reduced file locally
+                            saver = 1
+                        except Exception as e:
+                            plog("Failed to write raw file: ", e)
+                            if "requested" in e and "written" in e:
+
+                                plog(check_download_cache())
+                            plog(traceback.format_exc())
+                            time.sleep(10)
+                            saverretries = saverretries + 1
+                
                 self.slow_camera_queue.task_done()
+            else:
+                time.sleep(0.5)
                 #breakpoint()
                 
 
@@ -1004,8 +1110,8 @@ class Observatory:
                 self.fast_queue.task_done()
                 one_at_a_time = 0
                 #time.sleep(0.1)
-            #else:
-                #time.sleep(0.2)
+            else:
+                time.sleep(0.5)
 
     def send_to_user(self, p_log, p_level="INFO"):
         url_log = "https://logs.photonranch.org/logs/newlog"
@@ -1044,33 +1150,35 @@ class Observatory:
                     #time.sleep(0.5)
                     continue
 
-                if not paths["frame_type"] in [
-                    "bias",
-                    "dark",
-                    "flat",
-                    "solar",
-                    "lunar",
-                    "skyflat",
-                    "screen",
-                    "spectrum",
-                    "auto_focus",
-                ]:
-                    img = fits.open(
-                        paths["red_path"] + paths["red_name01"],
-                        ignore_missing_end=True,
-                    )
-                    imgdata=img[0].data.copy()
-                    # Pick up some header items for smartstacking later
-                    ssfilter = str(img[0].header["FILTER"])
-                    ssobject = str(img[0].header["OBJECT"])
-                    ssexptime = str(img[0].header["EXPTIME"])
-                    ssframenumber = str(img[0].header["FRAMENUM"])
-                    img.close()
-                    del img
-                    sstackimghold=np.asarray(imgdata)                    
+                                  
 
                 # SmartStack Section
                 if smartstackid != "no" :
+                    
+                    if not paths["frame_type"] in [
+                        "bias",
+                        "dark",
+                        "flat",
+                        "solar",
+                        "lunar",
+                        "skyflat",
+                        "screen",
+                        "spectrum",
+                        "auto_focus",
+                    ]:
+                        img = fits.open(
+                            paths["red_path"] + paths["red_name01"],
+                            ignore_missing_end=True,
+                        )
+                        imgdata=img[0].data.copy()
+                        # Pick up some header items for smartstacking later
+                        ssfilter = str(img[0].header["FILTER"])
+                        ssobject = str(img[0].header["OBJECT"])
+                        ssexptime = str(img[0].header["EXPTIME"])
+                        ssframenumber = str(img[0].header["FRAMENUM"])
+                        img.close()
+                        del img
+                        sstackimghold=np.asarray(imgdata)  
 
                     print ("Number of sources just prior to smartstacks: " + str(len(sources)))
                     if len(sources) < 12:
@@ -1312,8 +1420,8 @@ class Observatory:
                 #time.sleep(0.5)
                 self.img = None  # Clean up all big objects.
                 self.reduce_queue.task_done()
-            #else:
-                #time.sleep(0.5)
+            else:
+                time.sleep(0.5)
 
 
 if __name__ == "__main__":

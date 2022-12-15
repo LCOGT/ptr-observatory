@@ -3005,7 +3005,7 @@ class Camera:
                                     )
                             else:
                                 print ("Platesolve wasn't attempted due to lack of sources")
-                                self.to_slow_process(('focus', cal_path + cal_name, hdufocusdata, hdu.header))
+                                self.to_slow_process(2000,('focus', cal_path + cal_name, hdufocusdata, hdu.header))
                                 del hdufocusdata
                                 
                             if focus_image == True :
@@ -3089,14 +3089,6 @@ class Camera:
                                 )
                                 del stretched_data_uint8
                             
-
-
-                        #Remove all image remnants
-                        #try: 
-                        #    hdusmall.close()
-                        #except:
-                            #print ("couldn't close hdusmall")
-                        #    pass
                         del hdusmalldata
                             
 
@@ -3128,103 +3120,42 @@ class Camera:
 
                     # Now that the jpeg has been sent up pronto,
                     # We turn back to getting the bigger raw, reduced and fz files dealt with
-
-                    # Create the fz file ready for BANZAI and the AWS/UI
-                    # Note that even though the raw file is int16,
-                    # The compression and a few pieces of software require float32
-                    # BUT it actually compresses to the same size either way
-                    hdufz = fits.CompImageHDU(
-                        np.asarray(hdu.data, dtype=np.float32), hdu.header
-                    )
-                    hdufz.verify("fix")
-                    hdufz.header[
-                        "BZERO"
-                    ] = 0  # Make sure there is no integer scaling left over
-                    hdufz.header[
-                        "BSCALE"
-                    ] = 1  # Make sure there is no integer scaling left over
-
-                    # This routine saves the file ready for uploading to AWS
-                    # It usually works perfectly 99.9999% of the time except
-                    # when there is an astropy cache error. It is likely that
-                    # the cache will need to be cleared when it fails, but
-                    # I am still waiting for it to fail again (rare)
-                    saver = 0
-                    saverretries = 0
-                    while saver == 0 and saverretries < 10:
-                        try:
-                            hdufz.writeto(
-                                raw_path + raw_name00 + ".fz", overwrite=True, output_verify='silentfix'
-                            )  # Save full fz file locally
-                            saver = 1
-                        except Exception as e:
-                            plog("Failed to write raw fz file: ", e)
-                            if "requested" in e and "written" in e:
-                                plog(check_download_cache())
-                            plog(traceback.format_exc())
-                            time.sleep(10)
-                            saverretries = saverretries + 1
-                    
-                    try: 
-                        hdufz.close()
-                    except:
-                        pass
-                    del hdufz  # remove file from memory now that we are doing with it
-                    
-                    # Send this file up to AWS (THIS WILL BE SENT TO BANZAI INSTEAD, SO THIS IS THE INGESTER POSITION)
-                    if not no_AWS and self.config['send_files_at_end_of_night'] == 'no':
-                        self.enqueue_for_AWS(
-                            26000000, paths["raw_path"], paths["raw_name00"] + ".fz"
-                        )
-                        g_dev["obs"].send_to_user(
-                            "An image has been readout from the camera and sent to the cloud.",
-                            p_level="INFO",
-                        )
+                    self.to_slow_process(5,('fz_and_send', raw_path + raw_name00 + ".fz", hdu.data, hdu.header))                    
 
                     # Similarly to the above. This saves the RAW file to disk
                     # it works 99.9999% of the time.
-                    saver = 0
-                    saverretries = 0
-                    while saver == 0 and saverretries < 10:
-                        try:
-                            hdu.writeto(
-                                raw_path + raw_name00, overwrite=True, output_verify='silentfix'
-                            )  # Save full raw file locally
-                            saver = 1
-                        except Exception as e:
-                            plog("Failed to write raw file: ", e)
-                            if "requested" in e and "written" in e:
-                                plog(check_download_cache())
-                            plog(traceback.format_exc())
-                            time.sleep(10)
-                            saverretries = saverretries + 1
+                    self.to_slow_process(1000,('raw', raw_path + raw_name00, hdu.data, hdu.header))
+
                     
                     
                     # Similarly to the above. This saves the REDUCED file to disk
                     # it works 99.9999% of the time.
                     if "hdureduceddata" in locals():
-                        saver = 0
-                        saverretries = 0
-                        while saver == 0 and saverretries < 10:
-                            try:
-                                hdureduced=fits.PrimaryHDU()
-                                hdureduced.data=hdureduceddata                            
-                                hdureduced.header=hdu.header
-                                hdureduced.header["NAXIS1"] = hdureduceddata.shape[0]
-                                hdureduced.header["NAXIS2"] = hdureduceddata.shape[1]
-                                hdureduced.data=hdureduced.data.astype("float32")
-                                hdureduced.writeto(
-                                    red_path + red_name01, overwrite=True, output_verify='silentfix'
-                                )  # Save flash reduced file locally
-                                saver = 1
-                            except Exception as e:
-                                plog("Failed to write raw file: ", e)
-                                if "requested" in e and "written" in e:
-
-                                    plog(check_download_cache())
-                                plog(traceback.format_exc())
-                                time.sleep(10)
-                                saverretries = saverretries + 1
+                        if smartstackid == 'no':
+                            self.to_slow_process(1000,('reduced', red_path + red_name01, hdureduceddata, hdu.header))
+                        else:
+                            saver = 0
+                            saverretries = 0
+                            while saver == 0 and saverretries < 10:
+                                try:
+                                    hdureduced=fits.PrimaryHDU()
+                                    hdureduced.data=hdureduceddata                            
+                                    hdureduced.header=hdu.header
+                                    hdureduced.header["NAXIS1"] = hdureduceddata.shape[0]
+                                    hdureduced.header["NAXIS2"] = hdureduceddata.shape[1]
+                                    hdureduced.data=hdureduced.data.astype("float32")
+                                    hdureduced.writeto(
+                                        red_path + red_name01, overwrite=True, output_verify='silentfix'
+                                    )  # Save flash reduced file locally
+                                    saver = 1
+                                except Exception as e:
+                                    plog("Failed to write raw file: ", e)
+                                    if "requested" in e and "written" in e:
+    
+                                        plog(check_download_cache())
+                                    plog(traceback.format_exc())
+                                    time.sleep(10)
+                                    saverretries = saverretries + 1
                     
                     
                     
@@ -3367,5 +3298,5 @@ class Camera:
     def to_reduce(self, to_red):
         g_dev["obs"].reduce_queue.put(to_red, block=False)
         
-    def to_slow_process(self, to_slow):
-        g_dev["obs"].slow_camera_queue.put(to_slow, block=False)
+    def to_slow_process(self, priority, to_slow):
+        g_dev["obs"].slow_camera_queue.put((priority, to_slow), block=False)
