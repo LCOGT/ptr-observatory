@@ -3156,11 +3156,12 @@ class Camera:
                             plog(traceback.format_exc())
                             time.sleep(10)
                             saverretries = saverretries + 1
-                    del hdufz  # remove file from memory now that we are doing with it
+                    
                     try: 
                         hdufz.close()
                     except:
                         pass
+                    del hdufz  # remove file from memory now that we are doing with it
                     
                     # Send this file up to AWS (THIS WILL BE SENT TO BANZAI INSTEAD, SO THIS IS THE INGESTER POSITION)
                     if not no_AWS and self.config['send_files_at_end_of_night'] == 'no':
@@ -3252,18 +3253,19 @@ class Camera:
                             saverretries = saverretries + 1
 
                     # remove file from memory
-                    del hdu  # remove file from memory now that we are doing with it
+                    
                     try: 
                         hdu.close()
                     except:
                         pass
+                    del hdu  # remove file from memory now that we are doing with it
                     
-                    if "hdureduced" in locals():
-                        del hdureduced  # remove file from memory now that we are doing with it
+                    if "hdureduced" in locals():                        
                         try: 
                             hdureduced.close()
                         except:
                             pass
+                        del hdureduced  # remove file from memory now that we are doing with it
 
                     # The paths to these saved files and the pixelscale are sent to the reduce queue
                     # Currently the reduce queue platesolves the images and monitors the focus.
