@@ -1552,10 +1552,11 @@ class Sequencer:
                                 plog('Returned:  ', bright)
                                 
                                 
-                                if (bright > 0.25 * g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"] and
-                                    bright < 0.75 * g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"]):
-                                    if len(bin_spec) > 1:
+                                if (bright > 0.25 * flat_saturation_level and
+                                    bright < 0.75 * flat_saturation_level):
+                                    if len(bin_spec) > 1 and g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["is_cmos"] == False:
                                         print ("Good range for a flat, firing off the other flat types")
+                                        
                                         for ctr in range (len(bin_spec)-1):
                                             
                                             # Estimate the new exposure time by the ratio of the skylux

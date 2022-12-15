@@ -542,9 +542,9 @@ site_config = {
                 'pix_scale': [1.569],
                 'cycle_time':  [2, 2, 2, 2],  # 3x3 requires a 1, 1 reaout then a software bin, so slower.
                 'rbi_delay':  0.,      #  This being zero says RBI is not available, eg. for SBIG.
-                'is_cmos':  False,
-                'is_color':  False,
-                'bayer_pattern':  None,    #  'RGGB" is a valid string in camera is color.
+                'is_cmos':  True,
+                'is_color':  True,
+                'bayer_pattern':  'RGGB',    #  'RGGB" is a valid string in camera is color.
                 'can_set_gain':  True,
                 'reference_gain': [2., 4., 18., 32.],     #  One val for each binning. SWAG!
                 'reference_noise': [10, 10, 10, 10],    #  All SWAGs right now!
