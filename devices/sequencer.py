@@ -1421,7 +1421,18 @@ class Sequencer:
                 
                 acquired_count = 0
                 #g_dev['mnt'].slewToSkyFlatAsync()
-                target_flat = 0.5 * g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"]
+                
+                if g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["is_cmos"] == True:
+                    tempFlatBin=1
+                else: # This should eventually be the requested binning....
+                    tempFlatBin=1
+                
+                for finder in range(len(g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"])):
+                    if g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"][finder][0] == tempFlatBin:
+                        flat_saturation_level = g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"][finder][1]
+                
+                    
+                target_flat = 0.5 * flat_saturation_level
                 # if not g_dev['enc'].status['shutter_status'] in ['Open', 'open']:
                 #     g_dev['obs'].send_to_user("Wait for roof to be open to take skyflats. 60 sec delay loop.", p_level='INFO')
                 #     time.sleep(60)
@@ -1495,12 +1506,18 @@ class Sequencer:
                              plog("Too bright, wating 180 seconds. Estimated Exposure time is " + str(exp_time))
                              g_dev['obs'].send_to_user('Delay 60 seconds to let it get darker.', p_level='INFO')
                              self.estimated_first_flat_exposure = False
+                             if time.time() >= self.time_of_next_slew:
+                                g_dev['mnt'].slewToSkyFlatAsync()  
+                                self.time_of_next_slew = time.time() + 600
                              self.next_flat_observe = time.time() + 60
                         elif morn and exp_time > 120 :   #NB it is too bright, should consider a delay here.
                           #**************THIS SHOUD BE A WHILE LOOP! WAITING FOR THE SKY TO GET DARK AND EXP TIME TO BE LONGER********************
                              plog("Too dim, wating 180 seconds. Estimated Exposure time is " + str(exp_time))
                              g_dev['obs'].send_to_user('Delay 60 seconds to let it get lighterer.', p_level='INFO')
                              self.estimated_first_flat_exposure = False
+                             if time.time() >= self.time_of_next_slew:
+                                g_dev['mnt'].slewToSkyFlatAsync()  
+                                self.time_of_next_slew = time.time() + 600
                              self.next_flat_observe = time.time() + 60
                              #*****************NB Recompute exposure or otherwise wait
                              exp_time = min_exposure

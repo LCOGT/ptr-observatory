@@ -1622,26 +1622,27 @@ class Camera:
                     pass
 
                 ix, iy = self.img.shape
-                #self.t77 = time.time()
-
-                neg_pix = np.where(self.img < 0)
-                if len(neg_pix[0]) > 0:
-                    plog("No. of negative pixels fixed:  ", len(neg_pix[0]))
-                self.img[neg_pix] = 0
-                pos_pix = np.where(self.img > 65535)
-                if len(pos_pix[0]) > 0:
-                    plog("No. of overflow pixels fixed:  ", len(pos_pix[0]))
-                self.img[pos_pix] = 65535
+                #self.t77 = time.time()              
+                
+                # Get bi_mean of middle patch for flat usage                
                 test_saturated = np.array(
                     self.img[ix // 3 : ix * 2 // 3, iy // 3 : iy * 2 // 3]
                 )  # 1/9th the chip area, but central.
                 bi_mean = round(
                     (test_saturated.mean() + np.median(test_saturated)) / 2, 1
                 )
+                
+                 
+                for finder in range(len(g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"])):
+                    if g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"][finder][0] == self.bin:
+                        image_saturation_level = g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"][finder][1]
+                
+                
                 if frame_type[-4:] == "flat":  # NB use in operator
+                
                     if (
                         bi_mean
-                        >= 0.75* self.config["camera"][self.name]["settings"]["saturate"]
+                        >= 0.75* image_saturation_level
                     ):
                         plog("Flat rejected, center is too bright:  ", bi_mean)
                         g_dev["obs"].send_to_user(
@@ -1653,7 +1654,7 @@ class Camera:
                     
                     elif (
                         bi_mean
-                        <= 0.25 * self.config["camera"][self.name]["settings"]["saturate"]
+                        <= 0.25 * image_saturation_level
                     ):
                         plog("Flat rejected, center is too dim:  ", bi_mean)
                         g_dev["obs"].send_to_user(
@@ -1961,7 +1962,7 @@ class Camera:
                         ]["trim_sec"][3]
 
                     hdu.header["SATURATE"] = (
-                        float(self.config["camera"][self.name]["settings"]["saturate"]),
+                        float(image_saturation_level),
                         "[ADU] Saturation level",
                     )  # will come from config(?)
                     hdu.header["MAXLIN"] = (
@@ -2676,8 +2677,8 @@ class Camera:
                             )
                             sources = Table(sources)
                             sources = sources[sources['flag'] < 8]
-                            sources = sources[sources["peak"] < 0.9* float(self.config["camera"][self.name]["settings"]["saturate"])]
-                            sources = sources[sources["cpeak"] < 0.9 * float(self.config["camera"][self.name]["settings"]["saturate"])]
+                            sources = sources[sources["peak"] < 0.9* image_saturation_level]
+                            sources = sources[sources["cpeak"] < 0.9 * image_saturation_level]
                             sources = sources[sources["peak"] > 500]
                             sources = sources[sources["cpeak"] > 500]
                             sources = sources[sources["x"] < ix - border_x]
@@ -3046,8 +3047,8 @@ class Camera:
                                 #hdusmalldata = np.asarray(hdusmalldata)
                                 hdusmalldata[
                                     hdusmalldata
-                                    > self.config["camera"][self.name]["settings"]["saturate"]
-                                ] = self.config["camera"][self.name]["settings"]["saturate"]
+                                    > image_saturation_level
+                                ] = image_saturation_level
                                 hdusmalldata[hdusmalldata < -100] = -100
                                 hdusmalldata = hdusmalldata - np.min(hdusmalldata)
 

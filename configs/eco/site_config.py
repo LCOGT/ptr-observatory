@@ -415,18 +415,18 @@ site_config = {
                 'filter_data': [  
 
                         #['w',     [0,  0],     0, 72.7, [1.00 ,  72], 'PL'],    #0.   For sequencer autofocus  consider foc or f filter
-                        ['focus', [3,  3],     0, 72.7, [1.00 ,  72], 'focus'],    #0.
-                        ['air',    [0,  0],     0, 620, [1.00 ,  72], 'PhLum'],    #1.
+                        ['focus', [3,  3],     0, 1000.7, [1.00 ,  72], 'focus'],    #0.
+                        ['air',    [0,  0],     0, 1620, [1.00 ,  72], 'PhLum'],    #1.
                         ['dark',    [1,  1],     0, 170, [1.00 , 119], 'PhRed'],    #2.
-                        ['pb',    [2,  2],     0, 220, [1.00 , 113], 'PhGreen'],    #3.
-                        ['pg',    [3,  3],     0, 300, [0.80 ,  97], 'PhBlue'],    #4.
-                        ['pr',    [4,  4],     0, 32, [0.80 ,  97], 'PhBlue'],    #4.
+                        ['pb',    [2,  2],     0, 1020, [1.00 , 113], 'PhGreen'],    #3.
+                        ['pg',    [3,  3],     0, 1000, [0.80 ,  97], 'PhBlue'],    #4.
+                        ['pr',    [4,  4],     0, 1000, [0.80 ,  97], 'PhBlue'],    #4.
                         #['PR',    [1,  1],     0, 170, [1.00 , 119], 'PhBlue'],    #2.
                         #['PG',    [2,  2],     0, 220, [1.00 , 113], 'PhGreen'],    #3.
                         #['PB',    [3,  3],     0, 300, [0.80 ,  97], 'PhRed'],    #4.
-                        ['ha',    [5,  5],     0, .50, [5.00 , 200], 'Halpha'],    #5.
-                        ['o3',    [6,  6],     0, 6, [4.00 , 200], 'OIII'],    #6.
-                        ['s2',    [7,  7],     0, .2, [10.0,  200], 'SII']],    #7.
+                        ['ha',    [5,  5],     0, .200, [5.00 , 200], 'Halpha'],    #5.
+                        ['o3',    [6,  6],     0, 100, [4.00 , 200], 'OIII'],    #6.
+                        ['s2',    [7,  7],     0, .50, [10.0,  200], 'SII']],    #7.
                         #['air',   [7,  7], -1000, 100., [1.00,   70], 'air'],    #8.
                         #['gooble',  [6,  6],     0, .221, [   0,    0], 'dark'],   #9.
                         #['LRGB',  [0,  0],     0, .221, [   0,    0], 'LRGB']],   #10.
@@ -536,7 +536,7 @@ site_config = {
                 
                 'cycle_time':  [2, 2, 2, 2],  # 3x3 requires a 1, 1 reaout then a software bin, so slower.
                 'rbi_delay':  0.,      #  This being zero says RBI is not available, eg. for SBIG.
-                'is_cmos':  False,
+                'is_cmos':  True,
                 'is_color':  False,
                 'bayer_pattern':  None,    #  'RGGB" is a valid string in camera is color.
                 'can_set_gain':  True,
@@ -552,9 +552,9 @@ site_config = {
                 'readout_speed': 0.4,
                 'readout_seconds': 2,
                 'smart_stack_exposure_time' : 60,
-                'saturate':  65000,    # e-.  This is a close guess, not measured, but taken from data sheet.
+                'saturate':  [[1, 65000], [2,262000], [3,589815], [4, 1048560]] ,   # e-.  This is a close guess, not measured, but taken from data sheet.
                 'max_linearity': 65000,
-                'fullwell_capacity': [65000, 65000],  #e-.   We need to sort out the units properly NB NB NB
+                'fullwell_capacity': [65000, 262000,589815,1048560],  #e-.   We need to sort out the units properly NB NB NB
                 'areas_implemented': ["Full",'4x4d', "600%", "500%", "450%", "300%", "220%", "150%", "133%", "Full", "Sqr", '71%', '50%',  '35%', '25%', '12%'],
                 'default_area':  "Full",
                 'default_rotation': 0.0000,
