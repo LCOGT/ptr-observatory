@@ -180,7 +180,7 @@ class Observatory:
             shutil.rmtree(g_dev["cam"].site_path + "smartstacks")
         except:
             print ("problems with removing the smartstacks directory... usually a file is open elsewhere")
-        time.sleep(20)
+        time.sleep(3)
         if not os.path.exists(g_dev["cam"].site_path + "smartstacks"):
             os.makedirs(g_dev["cam"].site_path + "smartstacks")
 
@@ -213,6 +213,9 @@ class Observatory:
         self.fast_queue_thread = threading.Thread(target=self.fast_to_aws, args=())
         self.fast_queue_thread.start()
 
+        self.slow_camera_queue = queue.PriorityQueue(maxsize=0)
+        self.slow_camera_queue_thread = threading.Thread(target=self.slow_camera_process, args=())
+        self.slow_camera_queue_thread.start()
 
         # Set up command_queue for incoming jobs
         self.cmd_queue = queue.Queue(
@@ -812,7 +815,7 @@ class Observatory:
                     plog("Got an empty entry in aws_queue.")
                     self.aws_queue.task_done()
                     one_at_a_time = 0
-                    time.sleep(0.2)
+                    #time.sleep(0.2)
                     continue
 
                 # Here we parse the file, set up and send to AWS
@@ -908,9 +911,41 @@ class Observatory:
 
 
                 one_at_a_time = 0
-                time.sleep(0.1)
-            else:
-                time.sleep(0.2)
+                #3time.sleep(0.1)
+            #else:
+                #time.sleep(0.2)
+
+    def slow_camera_process(self):
+        """A place to process non-process dependant images from the camera pile
+        
+        """
+
+        one_at_a_time = 0
+        # This stopping mechanism allows for threads to close cleanly.
+        while True:
+            if (not self.slow_camera_queue.empty()) and one_at_a_time == 0:
+                one_at_a_time = 1
+                slow_process = self.slow_camera_queue.get(block=False)
+                #print (slow_process)
+                if slow_process[0] == 'focus':
+                    hdufocus=fits.PrimaryHDU()
+                    hdufocus.data=slow_process[2]                            
+                    hdufocus.header=slow_process[3]
+                    hdufocus.header["NAXIS1"] = hdufocus.data.shape[0]
+                    hdufocus.header["NAXIS2"] = hdufocus.data.shape[1]
+                    hdufocus.writeto(slow_process[1], overwrite=True, output_verify='silentfix')
+
+                    try:
+                        hdufocus.close()
+                    except:
+                        pass                    
+                    del hdufocus
+                
+                self.slow_camera_queue.task_done()
+                #breakpoint()
+                
+
+
 
     # Note this is a thread!
     def fast_to_aws(self):
@@ -935,7 +970,7 @@ class Observatory:
                     plog("Got an empty entry in fast_queue.")
                     self.fast_queue.task_done()
                     one_at_a_time = 0
-                    time.sleep(0.2)
+                    #time.sleep(0.2)
                     continue
 
                 # Here we parse the file, set up and send to AWS
@@ -968,9 +1003,9 @@ class Observatory:
 
                 self.fast_queue.task_done()
                 one_at_a_time = 0
-                time.sleep(0.1)
-            else:
-                time.sleep(0.2)
+                #time.sleep(0.1)
+            #else:
+                #time.sleep(0.2)
 
     def send_to_user(self, p_log, p_level="INFO"):
         url_log = "https://logs.photonranch.org/logs/newlog"
@@ -1006,7 +1041,7 @@ class Observatory:
                 ) = self.reduce_queue.get(block=False)
 
                 if paths is None:
-                    time.sleep(0.5)
+                    #time.sleep(0.5)
                     continue
 
                 if not paths["frame_type"] in [
@@ -1274,11 +1309,11 @@ class Observatory:
                 # WE CANNOT SOLVE FOR POINTING IN THE REDUCE THREAD! 
                 # POINTING SOLUTIONS HAVE TO HAPPEN AND COMPLETE IN BETWEEN EXPOSURES AND SLEWS
 
-                time.sleep(0.5)
+                #time.sleep(0.5)
                 self.img = None  # Clean up all big objects.
                 self.reduce_queue.task_done()
-            else:
-                time.sleep(0.5)
+            #else:
+                #time.sleep(0.5)
 
 
 if __name__ == "__main__":

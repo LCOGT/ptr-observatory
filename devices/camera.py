@@ -2900,22 +2900,27 @@ class Camera:
                         if focus_image == True or ((Nsmartstack == sskcounter+1) and Nsmartstack > 1) or (g_dev['obs'].images_since_last_solve > g_dev['obs'].config["solve_nth_image"] and (datetime.datetime.now() - g_dev['obs'].last_solve_time) > datetime.timedelta(minutes=g_dev['obs'].config["solve_timer"])):
                             cal_name = (
                                 cal_name[:-9] + "F012" + cal_name[-7:]
-                            )
-                            hdufocus=fits.PrimaryHDU()
-                            hdufocus.data=hdufocusdata                            
-                            hdufocus.header=hdu.header
-                            hdufocus.header["NAXIS1"] = hdufocusdata.shape[0]
-                            hdufocus.header["NAXIS2"] = hdufocusdata.shape[1]
-                            hdufocus.writeto(cal_path + cal_name, overwrite=True, output_verify='silentfix')
-                            pixscale=hdufocus.header['PIXSCALE']
-                            try:
-                                hdufocus.close()
-                            except:
-                                pass
-                            del hdufocusdata
-                            del hdufocus
+                            )                            
                             
                             if len(sources) > 5:
+                                
+                                # We only need to save the focus image immediately if there is enough sources to rationalise that.
+                                # It only needs to be on the disk immediately now if platesolve is going to attempt to pick it up.
+                                # Otherwise it goes to the slow queue                                
+                                hdufocus=fits.PrimaryHDU()
+                                hdufocus.data=hdufocusdata                            
+                                hdufocus.header=hdu.header
+                                hdufocus.header["NAXIS1"] = hdufocusdata.shape[0]
+                                hdufocus.header["NAXIS2"] = hdufocusdata.shape[1]
+                                hdufocus.writeto(cal_path + cal_name, overwrite=True, output_verify='silentfix')
+                                pixscale=hdufocus.header['PIXSCALE']
+                                try:
+                                    hdufocus.close()
+                                except:
+                                    pass
+                                del hdufocusdata
+                                del hdufocus
+                                
                                 try:
                                     #time.sleep(1) # A simple wait to make sure file is saved
                                     solve = platesolve.platesolve(
@@ -3000,6 +3005,9 @@ class Camera:
                                     )
                             else:
                                 print ("Platesolve wasn't attempted due to lack of sources")
+                                self.to_slow_process(('focus', cal_path + cal_name, hdufocusdata, hdu.header))
+                                del hdufocusdata
+                                
                             if focus_image == True :
                                 focus_image = False
                                 print ("Time Taken From Exposure start to finish : "  +str(time.time() - self.tempStartupExposureTime))
@@ -3358,3 +3366,6 @@ class Camera:
 
     def to_reduce(self, to_red):
         g_dev["obs"].reduce_queue.put(to_red, block=False)
+        
+    def to_slow_process(self, to_slow):
+        g_dev["obs"].slow_camera_queue.put(to_slow, block=False)
