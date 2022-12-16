@@ -518,10 +518,10 @@ class Camera:
 
     # The patches. Note these are essentially getter-setter/property constructs.
 
-    def _theskyx_set_setpoint(self, p_temp):
-        plog("NOT SURE HOW TO SET TEMP POINT IN THE SKY YET")
-        self.camera.TemperatureSetPoint = float(p_temp)
-        return self.camera.TemperatureSetPoint
+    # def _theskyx_set_setpoint(self, p_temp):
+    #     plog("NOT SURE HOW TO SET TEMP POINT IN THE SKY YET")
+    #     self.camera.TemperatureSetPoint = float(p_temp)
+    #     return self.camera.TemperatureSetPoint
 
     def _theskyx_connected(self):
         return self.camera.LinkEnabled
@@ -541,7 +541,7 @@ class Camera:
 
     def _theskyx_cooler_on(self):
         #plog("I am not sure what this function is asking for")
-        return True  # NB NB NB This would be a good place to put a warming protector
+        return self.camera.RegulateTemperature  # NB NB NB This would be a good place to put a warming protector
 
     def _theskyx_set_cooler_on(self):
         self.camera.RegulateTemperature = True
@@ -563,7 +563,8 @@ class Camera:
         tempcamera = win32com.client.Dispatch(self.driver)
         tempcamera.Connect()
         tempcamera.TakeImage()
-        tempcamera.Disconnect()
+        tempcamera.ShutDownTemperatureRegulationOnDisconnect = False
+        #tempcamera.Disconnect()
         self.async_exposure_lock=False
 
     def _theskyx_expose(self, exposure_time, imtypeb):
@@ -1533,6 +1534,7 @@ class Camera:
         result = {"error": False}
         notifyReadOutOnlyOnce = 0
         quartileExposureReport = 0
+        self.plog_exposure_time_counter_timer=time.time() -3.0
         while True:  # This loop really needs a timeout.
             self.post_mnt = []
             self.post_rot = []
@@ -1570,11 +1572,13 @@ class Camera:
                 #time.sleep(2)
                 #self.t7b = time.time()
                 remaining = round(self.completion_time - time.time(), 1)
-                if remaining > 0:                    
-                    plog(
-                        '||  ' + str(round(remaining, 1)) + "sec.",
-                        str(round(100 * remaining / cycle_time, 1)) + "%",
-                    )  #|| used to flag this line in plog().
+                if remaining > 0:  
+                    if time.time() - self.plog_exposure_time_counter_timer > 2.0:
+                        self.plog_exposure_time_counter_timer=time.time()
+                        plog(
+                            '||  ' + str(round(remaining, 1)) + "sec.",
+                            str(round(100 * remaining / cycle_time, 1)) + "%",
+                        )  #|| used to flag this line in plog().
                     if (
                         quartileExposureReport == 0
                     ):  # Silly daft but workable exposure time reporting by MTF
