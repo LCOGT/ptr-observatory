@@ -216,6 +216,8 @@ site_config = {
             'east_flip_dec_correction': 0.0,  #  #
             'home_after_unpark' : True,
             'permissive_mount_reset' : 'yes', # if this is set to yes, it will reset the mount at startup and when coordinates are out significantly
+            'lowest_acceptable_altitude' : -5.0, # Below this altitude, it will automatically try to home and park the scope to recover.
+            'time_inactive_until_park' : 3600.0, # How many seconds of inactivity until it will park the telescope
             'settings': {
 			    'latitude_offset': 0.0,     #Decimal degrees, North is Positive   These *could* be slightly different than site.
 			    'longitude_offset': 0.0,   #Decimal degrees, West is negative  #NB This could be an eval( <<site config data>>))
@@ -262,7 +264,7 @@ site_config = {
             'ptrtel': 'CDK17',
             'desc':  'CDK17',
             'driver': None,                     #  Essentially this device is informational.  It is mostly about the optics.
-            'collecting_area': 55381,
+            'collecting_area': 100000,
             'obscuration':  23.7,   #  %
             'aperture': 432,
             'focal_length': 2939,
@@ -352,10 +354,10 @@ site_config = {
             #F4.9 setup
             'start_at_config_reference': True,
             'use_focuser_temperature': True,
-            'reference':24150,    #  20210313  Nominal at 10C Primary temperature
+            'reference':24229,    #  20210313  Nominal at 10C Primary temperature
             'ref_temp':  6265.0,    #  Update when pinning reference
             'coef_c': 0,   #  Negative means focus moves out as Primary gets colder
-            'coef_0': 24150,  #  Nominal intercept when Primary is at 0.0 C.
+            'coef_0': 24229,  #  Nominal intercept when Primary is at 0.0 C.
             'coef_date':  '20220914',    #This appears to be sensible result 44 points -13 to 3C'reference':  6431,    #  Nominal at 10C Primary temperature
             # #F9 setup
             # 'reference': 4375,    #   Guess 20210904  Nominal at 10C Primary temperature
@@ -412,19 +414,36 @@ site_config = {
                 # Columns for filter data are : ['filter', 'filter_index', 'filter_offset', 'sky_gain', 'screen_gain', 'alias']
                 'filter_data': [  
 
+                        # #['w',     [0,  0],     0, 72.7, [1.00 ,  72], 'PL'],    #0.   For sequencer autofocus  consider foc or f filter
+                        # ['focus', [3,  3],     0, 1000.7, [1.00 ,  72], 'focus'],    #0.
+                        # ['air',    [0,  0],     0, 1620, [1.00 ,  72], 'PhLum'],    #1.
+                        # ['dark',    [1,  1],     0, 170, [1.00 , 119], 'PhRed'],    #2.
+                        # ['pb',    [2,  2],     0, 1020, [1.00 , 113], 'PhGreen'],    #3.
+                        # ['pg',    [3,  3],     0, 1000, [0.80 ,  97], 'PhBlue'],    #4.
+                        # ['pr',    [4,  4],     0, 1000, [0.80 ,  97], 'PhBlue'],    #4.
+                        # #['PR',    [1,  1],     0, 170, [1.00 , 119], 'PhBlue'],    #2.
+                        # #['PG',    [2,  2],     0, 220, [1.00 , 113], 'PhGreen'],    #3.
+                        # #['PB',    [3,  3],     0, 300, [0.80 ,  97], 'PhRed'],    #4.
+                        # ['ha',    [5,  5],     0, .2000, [5.00 , 200], 'Halpha'],    #5.
+                        # ['o3',    [6,  6],     0, 1000, [4.00 , 200], 'OIII'],    #6.
+                        # ['s2',    [7,  7],     0, .5000, [10.0,  200], 'SII']],    #7.
+                        # #['air',   [7,  7], -1000, 100., [1.00,   70], 'air'],    #8.
+                        # #['gooble',  [6,  6],     0, .221, [   0,    0], 'dark'],   #9.
+                        # #['LRGB',  [0,  0],     0, .221, [   0,    0], 'LRGB']],   #10.
+                        
                         #['w',     [0,  0],     0, 72.7, [1.00 ,  72], 'PL'],    #0.   For sequencer autofocus  consider foc or f filter
-                        ['focus', [3,  3],     0, 72.7, [1.00 ,  72], 'focus'],    #0.
-                        ['air',    [0,  0],     0, 620, [1.00 ,  72], 'PhLum'],    #1.
-                        ['dark',    [1,  1],     0, 170, [1.00 , 119], 'PhRed'],    #2.
-                        ['pb',    [2,  2],     0, 220, [1.00 , 113], 'PhGreen'],    #3.
-                        ['pg',    [3,  3],     0, 300, [0.80 ,  97], 'PhBlue'],    #4.
-                        ['pr',    [4,  4],     0, 32, [0.80 ,  97], 'PhBlue'],    #4.
+                        ['focus', [3,  3],     0, 50, [1.00 ,  72], 'focus'],    #0.
+                        ['air',    [0,  0],     0, 100, [1.00 ,  72], 'PhLum'],    #1.
+                        ['dark',    [1,  1],     0, 17, [1.00 , 119], 'PhRed'],    #2.
+                        ['pb',    [2,  2],     0, 50, [1.00 , 113], 'PhGreen'],    #3.
+                        ['pg',    [3,  3],     0, 50, [0.80 ,  97], 'PhBlue'],    #4.
+                        ['pr',    [4,  4],     0, 15, [0.80 ,  97], 'PhBlue'],    #4.
                         #['PR',    [1,  1],     0, 170, [1.00 , 119], 'PhBlue'],    #2.
                         #['PG',    [2,  2],     0, 220, [1.00 , 113], 'PhGreen'],    #3.
                         #['PB',    [3,  3],     0, 300, [0.80 ,  97], 'PhRed'],    #4.
-                        ['ha',    [5,  5],     0, .50, [5.00 , 200], 'Halpha'],    #5.
-                        ['o3',    [6,  6],     0, 6, [4.00 , 200], 'OIII'],    #6.
-                        ['s2',    [7,  7],     0, .2, [10.0,  200], 'SII']],    #7.
+                        ['ha',    [5,  5],     0, 20.376, [5.00 , 200], 'Halpha'],    #5.
+                        ['o3',    [6,  6],     0, 22.53, [4.00 , 200], 'OIII'],    #6.
+                        ['s2',    [7,  7],     0, 43.65, [10.0,  200], 'SII']],    #7.
                         #['air',   [7,  7], -1000, 100., [1.00,   70], 'air'],    #8.
                         #['gooble',  [6,  6],     0, .221, [   0,    0], 'dark'],   #9.
                         #['LRGB',  [0,  0],     0, .221, [   0,    0], 'LRGB']],   #10.
@@ -526,7 +545,7 @@ site_config = {
                 'north_offset': 0.0,    #  These three are normally 0.0 for the primary telescope
                 'east_offset': 0.0,     #  Not sure why these three are even here.
                 'rotation': 0.0,        #  Probably remove.
-                'min_exposure': 0.1,
+                'min_exposure': 0.02,
                 'max_exposure': 3600,
                 'can_subframe':  True,
                 'min_subframe':  [128, 128],
@@ -534,7 +553,7 @@ site_config = {
                 
                 'cycle_time':  [2, 2, 2, 2],  # 3x3 requires a 1, 1 reaout then a software bin, so slower.
                 'rbi_delay':  0.,      #  This being zero says RBI is not available, eg. for SBIG.
-                'is_cmos':  False,
+                'is_cmos':  True,
                 'is_color':  False,
                 'bayer_pattern':  None,    #  'RGGB" is a valid string in camera is color.
                 'can_set_gain':  True,
@@ -550,9 +569,9 @@ site_config = {
                 'readout_speed': 0.4,
                 'readout_seconds': 2,
                 'smart_stack_exposure_time' : 60,
-                'saturate':  65000,    # e-.  This is a close guess, not measured, but taken from data sheet.
+                'saturate':  [[1, 65000], [2,262000], [3,589815], [4, 1048560]] ,   # e-.  This is a close guess, not measured, but taken from data sheet.
                 'max_linearity': 65000,
-                'fullwell_capacity': [65000, 65000],  #e-.   We need to sort out the units properly NB NB NB
+                'fullwell_capacity': [65000, 262000,589815,1048560],  #e-.   We need to sort out the units properly NB NB NB
                 'areas_implemented': ["Full",'4x4d', "600%", "500%", "450%", "300%", "220%", "150%", "133%", "Full", "Sqr", '71%', '50%',  '35%', '25%', '12%'],
                 'default_area':  "Full",
                 'default_rotation': 0.0000,

@@ -237,7 +237,11 @@ site_config = {
             'east_flip_ra_correction': 0.0,
             'east_flip_dec_correction': 0.0,
             'west_clutch_ra_correction': 0.0,
-            'west_clutch_dec_correction': 0.0,
+            'west_clutch_dec_correction': 0.0,            
+            'permissive_mount_reset' : 'yes', # if this is set to yes, it will reset the mount at startup and when coordinates are out significantly
+            'lowest_acceptable_altitude' : -10.0, # Below this altitude, it will automatically try to home and park the scope to recover.
+            
+            'time_inactive_until_park' : 3600.0, # How many seconds of inactivity until it will park the telescope
             'home_after_unpark' : False,
             'has_paddle': False,    #or a string that permits proper configuration.
             'has_ascom_altaz': True,
@@ -626,7 +630,7 @@ site_config = {
                 'reference_gain': [10., 10., 10., 10.],     #  One val for each binning.
                 'reference_noise': [9, 9, 9, 9],    #  All SWAGs right now
                 'reference_dark': [0.0, 0.0, 0.0, 0.0],     #  Might these best be pedastal values?
-                'saturate':  55000,
+                'saturate':  [[1, 65000], [2,262000], [3,589815], [4, 1048560]] ,   # e-.  This is a close guess, not measured, but taken from data sheet.
                 'max_linearity':  55000.,
                 'fullwell_capacity': [85000, 85000, 85000, 85000],
                 'read_mode':  'Normal',

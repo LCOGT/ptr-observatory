@@ -87,15 +87,15 @@ class FilterWheel:
                 self.filter_number = self.filter_reference
                 self.filter_offset = self.filter_data[self.filter_reference][2]
                 # First setup:
-                time.sleep(1)
+                #time.sleep(1)
                 while self.filter_front.Position == -1:
-                    time.sleep(0.2)
+                    time.sleep(0.1)
                 self.filter_front.Position = self.filter_data[self.filter_reference][1][1]
-                time.sleep(1)
+                #time.sleep(1)
                 while self.filter_back.Position == -1:
-                    time.sleep(0.2)
+                    time.sleep(0.1)
                 self.filter_back.Position = self.filter_data[self.filter_reference][1][0]
-                time.sleep(1)
+                #time.sleep(1)
                 plog(self.filter_selected, self.filter_offset)
             elif driver == "ASCOM.FLI.FilterWheel" and self.dual_filter:
                 self.maxim = False
@@ -146,15 +146,15 @@ class FilterWheel:
                 self.filter_offset = self.filter_data[self.filter_reference][2]
     
                 # First setup:
-                time.sleep(1)
+                #time.sleep(1)
                 while self.filter_front.Position == -1:
-                    time.sleep(0.2)
+                    time.sleep(0.1)
                 self.filter_front.Position = self.filter_data[self.filter_reference][1][1]
-                time.sleep(1)
+                #time.sleep(1)
                 while self.filter_back.Position == -1:
-                    time.sleep(0.2)
+                    time.sleep(0.1)
                 self.filter_back.Position = self.filter_data[self.filter_reference][1][0]
-                time.sleep(1)
+                #time.sleep(1)
                 plog(self.filter_selected, self.filter_offset)
     
             elif driver.lower() in ["maxim.ccdcamera", "maxim", "maximdl", "maximdlpro"]:
@@ -228,6 +228,9 @@ class FilterWheel:
                 plog("Currently QHY RS232 FW")
         else:
             self.null_filterwheel = True
+        
+        if self.null_filterwheel == False:
+            self.home_command(None)
             
 
     # The patches. Note these are essentially a getter-setter/property constructs.
@@ -309,22 +312,22 @@ class FilterWheel:
             # NB the order of the filter_selected [1] may be incorrect
             try:
                 while self.filter_front.Position == -1:
-                    time.sleep(0.4)
+                    time.sleep(0.1)
                 self.filter_front.Position = self.filter_selected[1]
-                time.sleep(0.2)
+                #time.sleep(0.2)
             except:
                 pass
             try:
                 while self.filter_back.Position == -1:
-                    time.sleep(0.4)
+                    time.sleep(0.1)
                 self.filter_back.Position = self.filter_selected[0]
-                time.sleep(0.2)
+                #time.sleep(0.2)
             except:
                 pass
             self.filter_offset = float(self.filter_data[filter_number][2])
         elif self.maxim:
             g_dev["cam"].camera.Filter = filter_selections[0]
-            time.sleep(0.1)
+            #time.sleep(0.1)
             g_dev["cam"].camera.GuiderFilter = filter_selections[1]
 
     def set_position_command(self, req: dict, opt: dict):
@@ -346,22 +349,22 @@ class FilterWheel:
         elif self.dual and not self.custom:
             try:
                 while self.filter_front.Position == -1:
-                    time.sleep(0.4)
+                    time.sleep(0.1)
                 self.filter_front.Position = filter_selections[1]
-                time.sleep(0.2)
+                #time.sleep(0.2)
             except:
                 pass
             try:
                 while self.filter_back.Position == -1:
-                    time.sleep(0.4)
+                    time.sleep(0.1)
                 self.filter_back.Position = filter_selections[0]
-                time.sleep(0.2)
+                #time.sleep(0.2)
             except:
                 pass
             self.filter_offset = float(self.filter_data[filter_selections][2])
         elif self.maxim:
             g_dev["cam"].camera.Filter = filter_selections[0]
-            time.sleep(0.2)
+            #time.sleep(0.2)
             g_dev["cam"].camera.GuiderFilter = filter_selections[1]
 
     def set_name_command(self, req: dict, opt: dict):
@@ -428,7 +431,10 @@ class FilterWheel:
                     break
 
         plog("Filter name is:  ", self.filter_data[match][0])
-        g_dev["obs"].send_to_user("Filter set to:  " + str(self.filter_data[match][0]))
+        try:
+            g_dev["obs"].send_to_user("Filter set to:  " + str(self.filter_data[match][0]))
+        except:
+            pass  # This is usually when it is just booting up and obs doesn't exist yet
         self.filter_number = filt_pointer
         self.filter_selected = str(filter_name).lower()
         filter_selections = self.filter_data[filt_pointer][1]
@@ -457,7 +463,7 @@ class FilterWheel:
                 )
                 plog(r0_t, r1_t)
                 if r0_t == 808 or r1_t == 808:
-                    time.sleep(1)
+                    #time.sleep(1)
                     continue
                 else:
                     plog("Filters:  ", r0_t, r1_t)
@@ -466,26 +472,26 @@ class FilterWheel:
         elif self.dual and not self.maxim:
             try:
                 while self.filter_front.Position == -1:
-                    time.sleep(0.4)
+                    time.sleep(0.1)
                 self.filter_front.Position = filter_selections[1]
-                time.sleep(0.2)
+                #time.sleep(0.2)
             except:
                 pass
             try:
                 while self.filter_back.Position == -1:
-                    time.sleep(0.4)
+                    time.sleep(0.1)
                 self.filter_back.Position = filter_selections[0]
-                time.sleep(0.2)
+                #time.sleep(0.2)
             except:
                 pass
             self.filter_offset = float(self.filter_data[filt_pointer][2])
         elif self.maxim and self.dual:
             try:
                 self.filter.Filter = filter_selections[0]
-                time.sleep(0.1)
+                #time.sleep(0.1)
                 if self.dual_filter:
                     self.filter.GuiderFilter = filter_selections[1]
-                    time.sleep(0.1)
+                    #time.sleep(0.1)
             except:
                 plog("Filter RPC error, Maxim not responding. Reset Maxim needed.")
         elif self.theskyx:
@@ -503,7 +509,7 @@ class FilterWheel:
         else:
             try:
                 while self.filter_front.Position == -1:
-                    time.sleep(0.4)
+                    time.sleep(0.1)
                 self.filter_front.Position = filter_selections[0]
             except:
                 print ("Failed to change filter")
@@ -517,14 +523,17 @@ class FilterWheel:
         """Sets the filter to the home position."""
 
         # NB TODO this is setting to default not Home.
-        while self.filter_back.Position == -1:
-            time.sleep(0.1)
-        self.filter_back.Position = 2
-        while self.filter_back.Position == -1:
-            time.sleep(0.1)
-        self.filter_selected = "w"
-        self.filter_reference = 2
-        self.filter_offset = int(self.filter_data[2][2])
+        #while self.filter_back.Position == -1:
+        #    time.sleep(0.1)
+        #self.filter_back.Position = 2
+        #while self.filter_back.Position == -1:
+        #    time.sleep(0.1)
+            
+        self.set_name_command({"filter": self.config["filter_wheel1"]["settings"]['default_filter']}, {})
+        
+        #self.filter_selected = "w"
+        #self.filter_reference = 2
+        #self.filter_offset = int(self.filter_data[2][2])
 
     def substitute_filter(self, requested_filter: str):
         """Returns an alternative filter if requested filter not at site.
