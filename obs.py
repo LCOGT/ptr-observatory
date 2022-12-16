@@ -1182,7 +1182,7 @@ class Observatory:
                 one_at_a_time = 0
                 #time.sleep(0.1)
             else:
-                time.sleep(0.5)
+                time.sleep(0.05)
 
     def send_to_user(self, p_log, p_level="INFO"):
         url_log = "https://logs.photonranch.org/logs/newlog"
