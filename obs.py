@@ -218,6 +218,8 @@ class Observatory:
         self.slow_camera_queue_thread = threading.Thread(target=self.slow_camera_process, args=())
         self.slow_camera_queue_thread.start()
 
+        
+
         # Set up command_queue for incoming jobs
         self.cmd_queue = queue.Queue(
             maxsize=30
@@ -915,6 +917,8 @@ class Observatory:
                 #3time.sleep(0.1)
             else:
                 time.sleep(0.5)
+
+
 
     def slow_camera_process(self):
         """A place to process non-process dependant images from the camera pile

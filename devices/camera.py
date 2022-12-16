@@ -30,6 +30,8 @@ import win32com.client
 from planewave import platesolve
 
 import colour
+import queue
+import threading
 
     
 from colour_demosaicing import (
@@ -189,6 +191,7 @@ class Camera:
         """
 
         self.name = name
+        self.driver = driver
         g_dev[name + "_cam_retry_driver"] = driver
         g_dev[name + "_cam_retry_name"] = name
         g_dev[name + "_cam_retry_config"] = config
@@ -201,6 +204,9 @@ class Camera:
         win32com.client.pythoncom.CoInitialize()
         plog(driver, name)
         self.camera = win32com.client.Dispatch(driver)
+
+        self.async_exposure_lock=False # This is needed for TheSkyx (and maybe future programs) where the exposure has to be called from a separate thread and then waited for in the main thread
+
 
         plog("loading flash dark, bias and flat masters frames if available")        
         plog("For binnings set in bin_enable")
@@ -374,6 +380,15 @@ class Camera:
             self.config["camera"]["camera_1_1"]["driver"]
             == "CCDSoft2XAdaptor.ccdsoft5Camera"
         ):
+            
+            
+            # # Start up the async camera thread for TheSkyX
+            # self.async_camera_exposure_queue = queue.Queue(
+            #     maxsize=0
+            # )  # Why do we want a maximum size and lose files?
+            # self.async_camera_exposure_queue_thread = threading.Thread(target=self.camera_exposure_async, args=())
+            # self.async_camera_exposure_queue_thread.start()
+            
             self.camera.AutoSavePath = (
                 self.config["archive_path"]
                 + "archive/"
@@ -533,9 +548,23 @@ class Camera:
     def _theskyx_setpoint(self):
         return self.camera.TemperatureSetpoint
 
+    def theskyx_async_expose(self):
+        self.async_exposure_lock=True
+        tempcamera = win32com.client.Dispatch(self.driver)
+        tempcamera.Connect()
+        tempcamera.TakeImage()
+        tempcamera.Disconnect()
+        self.async_exposure_lock=False
+
     def _theskyx_expose(self, exposure_time, imtypeb):
-        self.camera.ExposureTime = exposure_time        
-        self.camera.TakeImage()
+        self.camera.ExposureTime = exposure_time
+        #self.async_camera_exposure_queue.put('expose_please', block=False)
+        thread=threading.Thread(target=self.theskyx_async_expose)
+        thread.start()
+        #breakpoint()
+        #self.camera.TakeImage()
+    
+
 
     def _theskyx_stop_expose(self):
         self.camera.AbortExposure()
@@ -1511,9 +1540,11 @@ class Camera:
             #     #     return result
                     
             #     self.status_time = time.time() + 10
-                
+            
+            print (self.async_exposure_lock)
+            
             if (
-                time.time() < self.completion_time
+                time.time() < self.completion_time or self.async_exposure_lock==True
             ):  # NB Testing here if glob too early is delaying readout.
                 #time.sleep(2)
                 #self.t7b = time.time()
@@ -1574,9 +1605,9 @@ class Camera:
             #    pass
                 #plog("Mount doesn't use pierside")
 
-            if (not self.use_file_mode and self._imageavailable()) or (
+            if self.async_exposure_lock == False and ((not self.use_file_mode and self._imageavailable()) or (
                 self.use_file_mode and len(incoming_image_list) >= 1
-            ):
+            )):
                 imageCollected = 0
                 retrycounter = 0
                 while imageCollected != 1:
@@ -3300,3 +3331,18 @@ class Camera:
         
     def to_slow_process(self, priority, to_slow):
         g_dev["obs"].slow_camera_queue.put((priority, to_slow), block=False)
+        
+    # def camera_exposure_async(self): # This is for theSkyX which does not have an asyncrnous exposure command to do the exposure in an external thread outside of the main loop
+    #     one_at_a_time = 0
+    #     # This stopping mechanism allows for threads to close cleanly.
+    #     while True:
+    #         if (not self.async_camera_exposure_queue.empty()) and one_at_a_time == 0:
+    #             one_at_a_time = 1
+    #             self.async_camera_exposure_queue.get(block=False)
+    #             #breakpoint()
+    #             self._theskyx_async_expose()
+    #             #self.camera.TakeImage()
+    #             self.async_camera_exposure_queue.task_done()
+    #             break
+    #         else:
+    #             time.sleep(0.2)
