@@ -492,6 +492,16 @@ class Camera:
             seq = test_sequence(self.alias)
         except:
             reset_sequence(self.alias)
+        
+        # We always use 1x1 with CMOS, so this does not change throughout the code
+        if self.is_cmos:
+            self.camera.BinX = 1
+            self.camera.BinY = 1
+            try:
+                self.camera.NumX = int(self.camera_x_size / self.camera.BinX)
+                self.camera.NumY = int(self.camera_y_size / self.camera.BinY)
+            except:
+                pass
 
     # Patchable methods   NB These could be default ASCOM
     def _connected(self):
@@ -952,18 +962,31 @@ class Camera:
 
         bin_y = bin_x  # NB This needs fixing someday!
         self.bin = bin_x
-        self.camera.BinX = bin_x
-        self.camera.BinY = bin_y
-        try:
-            self.camera.NumX = int(self.camera_x_size / self.camera.BinX)
-            self.camera.NumY = int(self.camera_y_size / self.camera.BinY)
-        except:
-            pass
-            #plog("this camera cannot set NumX")
+        # everything in cmos land is 1x1
+        if self.is_cmos:
+            #self.camera.BinX = 1
+            #self.camera.BinY = 1            
+            print ("CMOS ALWAYS USES 1x1, not setting binning.")
+        else:
+            self.camera.BinX = bin_x
+            self.camera.BinY = bin_y
+        
+        if not self.is_cmos: # This is set for CMOS at the beginning.
+            try:
+                self.camera.NumX = int(self.camera_x_size / self.camera.BinX)
+                self.camera.NumY = int(self.camera_y_size / self.camera.BinY)
+            except:
+                pass
+                #plog("this camera cannot set NumX")
 
-        readout_time = float(
-            self.config["camera"][self.name]["settings"]["cycle_time"][bin_x - 1]
-        )
+        if self.is_cmos:
+            readout_time = float(
+                self.config["camera"][self.name]["settings"]["cycle_time"][0]
+            )
+        else:
+            readout_time = float(
+                self.config["camera"][self.name]["settings"]["cycle_time"][bin_x - 1]
+            )
         exposure_time = float(
             required_params.get("time", 0.0001)
         )  #  0.0 may be the best default.  Use QHY min spec?  Config item?
@@ -1664,10 +1687,16 @@ class Camera:
                     (test_saturated.mean() + np.median(test_saturated)) / 2, 1
                 )
                 
-                 
-                for finder in range(len(g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"])):
-                    if g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"][finder][0] == self.bin:
-                        image_saturation_level = g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"][finder][1]
+                # CMOS IS ALWAYS 1x1 saturation
+                if self.is_cmos:
+                    for finder in range(len(g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"])):
+                        if g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"][finder][0] == 1:
+                            image_saturation_level = g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"][finder][1]
+                else:    
+                    for finder in range(len(g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"])):
+                        if g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"][finder][0] == self.bin:
+                            image_saturation_level = g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"][finder][1]
+                    
                 
                 
                 if frame_type[-4:] == "flat":  # NB use in operator
@@ -1696,7 +1725,7 @@ class Camera:
                         result["patch"] = bi_mean
                         return result  # signals to flat routine image was rejected, prompt return
                     else:
-                        plog('Flat value is:  ', bi_mean)
+                        plog('Good flat value! :  ', bi_mean)
                     
                 #g_dev["obs"].update_status(cancel_check=True)
                 if not g_dev["cam"].exposure_busy:
@@ -1729,7 +1758,7 @@ class Camera:
                         self.img.transpose()
                     )  # THis needs to be done to keep fits "traditional." 0,0 upper left.
                     self.img = None
-
+                    
 
                     # It is faster to store the current binning than keeping on asking ASCOM throughout this
                     #tempBinningCodeX=self.camera.BinX
@@ -2578,19 +2607,24 @@ class Camera:
                         # Make a copy of hdu to use as jpg and small fits as well as a local raw used file for planewave solves
                         #hdusmall = copy.deepcopy(hdu)
                         hdusmalldata = np.asarray(hdu.data.astype("float32"))
+                            
                         # Quick flash bias and dark frame
-                                                
+                             
+                        if self.is_cmos:
+                            flashbinning=1
+                        else:
+                            flashbinning=tempBinningCodeX
                         try:
 
-                            hdusmalldata = hdusmalldata - self.biasFiles[str(tempBinningCodeX)]
-                            hdusmalldata = hdusmalldata - (self.darkFiles[str(tempBinningCodeX)] * exposure_time)
+                            hdusmalldata = hdusmalldata - self.biasFiles[str(flashbinning)]
+                            hdusmalldata = hdusmalldata - (self.darkFiles[str(flashbinning)] * exposure_time)
                             
                         except Exception as e:
                             plog("debias/darking light frame failed: ", e)
                             
                         # Quick flat flat frame
                         try:
-                            tempFlatFrame = np.load(self.flatFiles[str(self.current_filter + "_bin" + str(tempBinningCodeX))])
+                            tempFlatFrame = np.load(self.flatFiles[str(self.current_filter + "_bin" + str(flashbinning))])
 
                             hdusmalldata = np.divide(hdusmalldata, tempFlatFrame)
                             del tempFlatFrame
@@ -2676,24 +2710,17 @@ class Camera:
                                     del GTRonly
                                     del GBLonly
                                     del checkerboard
-                                    
-
-                                
-                                
-                                
-                                
-
                             else:
                                 print ("this bayer grid not implemented yet")
                         
                         
                         focusimg = np.asarray(
-                            hdufocusdata
+                            hdufocusdata, order="C"
                         )  # + 100   #maintain a + pedestal for sep  THIS SHOULD not be needed for a raw input file.
-                        focusimg = focusimg.astype("float32")
-                        focusimg = focusimg.copy(
-                            order="C"
-                        )  # NB Should we move this up to where we read the array?
+                        #focusimg = focusimg.astype("float32")
+                        #focusimg = focusimg.copy(
+                        #    order="C"
+                        #)  # NB Should we move this up to where we read the array?
 
                         try:
                             # Some of these are liberated from BANZAI
@@ -3149,10 +3176,28 @@ class Camera:
                             except:
                                 plog("Failed to send SEP up for some reason")
 
+                    if frame_type in (
+                                    "flat",
+                                    "screenflat",
+                                    "skyflat",
+                                    "dark",
+                                    "bias",
+                                ):
+                        self.to_slow_process(5,('cmos_other_calib_binnings_fz_and_send', raw_path + raw_name00 + ".fz", hdu.data, hdu.header)) 
 
+                    # If a CMOS camera, bin to requested binning
+                    if self.is_cmos and self.bin != 1:
+                        print ("Binning 1x1 to " + str(self.bin))
+                        hdu.data=(block_reduce(hdu.data,self.bin))                        
+                        
                     # Now that the jpeg has been sent up pronto,
                     # We turn back to getting the bigger raw, reduced and fz files dealt with
                     self.to_slow_process(5,('fz_and_send', raw_path + raw_name00 + ".fz", hdu.data, hdu.header))                    
+
+                    # Now, here is an interesting twirly twist.... if it is a CMOS
+                    # and a flat, then take that flat and send up different binning versions of it.
+                    
+
 
                     # Similarly to the above. This saves the RAW file to disk
                     # it works 99.9999% of the time.
@@ -3163,6 +3208,11 @@ class Camera:
                     # Similarly to the above. This saves the REDUCED file to disk
                     # it works 99.9999% of the time.
                     if "hdureduceddata" in locals():
+                        # If a CMOS camera, bin to requested binning
+                        if self.is_cmos and self.bin != 1:
+                            print ("Binning 1x1 to " + str(self.bin))
+                            hdureduceddata=(block_reduce(hdureduceddata,self.bin)) 
+                        
                         if smartstackid == 'no':
                             self.to_slow_process(1000,('reduced', red_path + red_name01, hdureduceddata, hdu.header))
                         else:

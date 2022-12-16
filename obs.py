@@ -759,6 +759,11 @@ class Observatory:
                     self.time_since_last_slew_or_exposure = time.time()
                     
             # Check that cooler is alive
+            #print ("Cooler check")
+            probe = g_dev['cam']._cooler_on()
+            if probe == True:
+                print ("Cooler is still on at " + str(self._setpoint()))            
+            
             try:
                 probe = g_dev['cam']._cooler_on()
                 if not probe:
@@ -971,7 +976,15 @@ class Observatory:
                             plog(traceback.format_exc())
                             time.sleep(10)
                             saverretries = saverretries + 1
-                            
+                
+                if slow_process[0] == 'cmos_other_calib_binnings_fz_and_send':
+                    # Ok, we have the 1x1 binning from the CMOS
+                    # now we are here, we shall send up the other binning versions
+                    print ("other_calib_binnings")
+                    
+                    
+                
+                
                 if slow_process[0] == 'fz_and_send':
                     # Create the fz file ready for BANZAI and the AWS/UI
                     # Note that even though the raw file is int16,
