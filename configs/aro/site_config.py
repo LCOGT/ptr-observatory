@@ -576,7 +576,7 @@ site_config = {
                 'ref_dark': 360.0,    #  this needs fixing.
                 'long_dark':600.0,
                 'max_linearity':  60000,   # Guess  60% of this is max counts for skyflats.  75% rejects the skyflat
-                'saturate':  65300,
+                'saturate':  [[1, 65000], [2,262000], [3,589815], [4, 1048560]] ,   # e-.  This is a close guess, not measured, but taken from data sheet.
                 'fullwell_capacity': [80000, 320000, 720000, 1280000],
                                     #hdu.header['RDMODE'] = (self.config['camera'][self.name]['settings']['read_mode'], 'Camera read mode')
                     #hdu.header['RDOUTM'] = (self.config['camera'][self.name]['readout_mode'], 'Camera readout mode')

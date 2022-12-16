@@ -1395,7 +1395,7 @@ class Sequencer:
             
         if morn:            
             ending = g_dev['events']['End Morn Sky Flats']
-            min_exposure=100 * min_exposure
+            #min_exposure=100 * min_exposure
         else:            
             ending = g_dev['events']['End Eve Sky Flats']
         #length = len(pop_list)

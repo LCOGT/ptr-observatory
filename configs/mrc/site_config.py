@@ -630,7 +630,7 @@ site_config = {
                 'reference_noise': [6, 6, 6, 6],    #  NB Guess
                 'reference_dark': [.2, .8, 1.8, 3.2],  #  Guess
                 'max_linearity':  60000,   # Guess
-                'saturate':  65300,
+                'saturate':  [[1, 65000], [2,262000], [3,589815], [4, 1048560]] ,   # e-.  This is a close guess, not measured, but taken from data sheet.
                 'fullwell_capacity': [80000, 320000, 720000, 1280000],
                 'read_mode':  'Normal',
                 'readout_mode': 'Normal',

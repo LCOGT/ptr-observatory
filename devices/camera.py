@@ -3197,10 +3197,12 @@ class Camera:
                                     "dark",
                                     "bias",
                                 ):
-                        self.to_slow_process(50,('cmos_other_calib_binnings_fz_and_send', raw_path + raw_name00 + ".fz", hdu.data, hdu.header, frame_type)) 
+                        self.to_slow_process(50,('cmos_other_calib_binnings_fz_and_send', raw_path + raw_name00 + ".fz", np.asarray(hdu.data), hdu.header, frame_type)) 
+
+                        #time.sleep(300)
 
                     # If a CMOS camera, bin to requested binning
-                    if self.is_cmos and self.bin != 1:
+                    elif self.is_cmos and self.bin != 1:
                         print ("Binning 1x1 to " + str(self.bin))
                         hdu.data=(block_reduce(hdu.data,self.bin))                        
                         

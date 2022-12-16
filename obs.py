@@ -906,6 +906,14 @@ class Observatory:
                     os.remove(filepath)
                 except:
                     pass
+                
+                # This removes temporary binning files that may not get cleaned up earlier.
+                try:   
+                    os.remove(filepath.replace('bin','tempbin'))
+                except:
+                    pass
+                
+                
                 if (
                     filename[-3:] == "jpg"
                     or filename[-3:] == "txt"
@@ -939,7 +947,7 @@ class Observatory:
                 #print (slow_process[0])
                 #print (slow_process[1][0])
                 slow_process=slow_process[1]
-                print ("********** slow queue : " + str(slow_process[0]) )
+                #print ("********** slow queue : " + str(slow_process[0]) )
                 if slow_process[0] == 'focus':
                     hdufocus=fits.PrimaryHDU()
                     hdufocus.data=slow_process[2]                            
@@ -983,7 +991,7 @@ class Observatory:
                 if slow_process[0] == 'cmos_other_calib_binnings_fz_and_send':
                     # Ok, we have the 1x1 binning from the CMOS
                     # now we are here, we shall send up the other binning versions
-                    print ("other_calib_binnings")
+                    #print ("other_calib_binnings")
                     if slow_process[4] == 'flat' or slow_process[4] == 'screenflat' or slow_process[4] == 'skyflat':
                         cmos_calib_binnings=self.config['camera']['camera_1_1']['settings']['flat_bin_spec']
                     elif slow_process[4] == 'dark' or slow_process[4] == 'bias':
@@ -995,29 +1003,70 @@ class Observatory:
                         saverretries = 0
                         while saver == 0 and saverretries < 10:
                             try:                               
-                                print ("Binning 1x1 " + str(slow_process[4]) + "to " + str(self.bin) + ", making an fz and sending it up")
-                                hdu = fits.CompImageHDU(
-                                    np.asarray(block_reduce(slow_process[2],tempBin), dtype=np.float32), slow_process[3]
-                                )
-                                hdu.verify("fix")
-                                hdu.header[
+                                print ("Binning 1x1 " + str(slow_process[4]) + " to " + str(tempBin) + "x" + str(tempBin) + ", making an fz and sending it up")
+                                
+                                #breakpoint()
+                                hducb = fits.CompImageHDU(np.asarray(block_reduce(np.array(slow_process[2],np.float32),int(tempBin))), slow_process[3])
+                                hducb.verify("fix")
+                                hducb.header[
                                     "BZERO"
                                 ] = 0  # Make sure there is no integer scaling left over
-                                hdu.header[
+                                hducb.header[
                                     "BSCALE"
                                 ] = 1  # Make sure there is no integer scaling left over
                                 #hdu.data=slow_process[2]  
 
-                                hdu.header["NAXIS1"] = hdu.data.shape[0]
-                                hdu.header["NAXIS2"] = hdu.data.shape[1]
-                                hdu.writeto(
-                                    slow_process[1].replace('.fit', 'bin' +str(tempBin) + '.fit.fz'), overwrite=True, output_verify='silentfix'
-                                )  # Save full raw file locally
+                                hducb.header["NAXIS1"] = hducb.data.shape[0]
+                                hducb.header["NAXIS2"] = hducb.data.shape[1]
+                                hducb.header["XBINING"] = (
+                                    tempBin,
+                                    "Pixel binning in x direction",
+                                )
+                                hducb.header["YBINING"] = (
+                                    tempBin,
+                                    "Pixel binning in y direction",
+                                )
+                                #breakpoint()
+                                #print ("SAVING")
+                                #print (slow_process[1].replace('-EX00.fits.fz', 'bin' +str(tempBin) + '-EX00.fits.fz'))
+                                
+                                #print (hducb.data)
+                                
+                                #breakpoint()
+                                
+                                fits.writeto(slow_process[1].replace('-EX00.fits.fz', 'tempbin' +str(tempBin) + '-EX00.fits.fz'), hducb.data, header=hducb.header, overwrite=True)
                                 try:
-                                    hdu.close()
+                                    hducb.close()
                                 except:
                                     pass                    
-                                del hdu
+                                del hducb
+                                
+                                hducb=fits.open(slow_process[1].replace('-EX00.fits.fz', 'tempbin' +str(tempBin) + '-EX00.fits.fz'))
+                                hducbz = fits.CompImageHDU(hducb[0].data, hducb[0].header)
+                                try:
+                                    hducb.close()
+                                except:
+                                    pass                    
+                                del hducb
+                                
+                                hducbz.writeto(slow_process[1].replace('-EX00.fits.fz', 'bin' +str(tempBin) + '-EX00.fits.fz'), overwrite=True)
+                                #breakpoint()
+                                try:
+                                    hducbz.close()
+                                except:
+                                    pass                    
+                                del hducbz
+                                #try:
+                                #    hducb.writeto(
+                                #        slow_process[1].replace('-EX00.fits.fz', 'bin' +str(tempBin) + '-EX00.fits.fz'), overwrite=True, output_verify='silentfix'
+                                #    )  # Save full raw file locally
+                                #except:
+                                #    print ("failed to save file")
+                                try:
+                                    os.remove(slow_process[1].replace('-EX00.fits.fz', 'tempbin' +str(tempBin) + '-EX00.fits.fz'))
+                                except:
+                                    #print ("couldn't remove temporary bin file.")
+                                    pass
                                 saver = 1
                                 
                             except Exception as e:
@@ -1027,20 +1076,17 @@ class Observatory:
                                 plog(traceback.format_exc())
                                 time.sleep(10)
                                 saverretries = saverretries + 1
+                                
                         # Send this file up to AWS (THIS WILL BE SENT TO BANZAI INSTEAD, SO THIS IS THE INGESTER POSITION)
                         if self.config['send_files_at_end_of_night'] == 'no':
                             g_dev['cam'].enqueue_for_AWS(
-                                25000000, '', slow_process[1].replace('.fit', 'bin' +str(tempBin) + '.fit.fz')
+                                25000000, '', slow_process[1].replace('-EX00.fits.fz', 'bin' +str(tempBin) + '-EX00.fits.fz')
                             )
                             g_dev["obs"].send_to_user(
                                 "An image has been readout from the camera and queued for transfer to the cloud.",
                                 p_level="INFO",
                             )
 
-
-#'flat_bin_spec': ['1,1','2,2', '3,3','4,4'],    #Default binning for flats
-                #'darkbias_bin_spec': ['1,1','2,2', '3,3','4,4'],    #Default binning for flats
-#                'darkbias_bin_spec': ['1,1', '2,2','3,3','4,4']
                 
                 if slow_process[0] == 'fz_and_send':
                     #print ("fz sending")

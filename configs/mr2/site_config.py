@@ -630,7 +630,7 @@ site_config = {
                 'reference_gain': [10., 10., 10., 10.],     #  One val for each binning.
                 'reference_noise': [9, 9, 9, 9],    #  All SWAGs right now
                 'reference_dark': [0.0, 0.0, 0.0, 0.0],     #  Might these best be pedastal values?
-                'saturate':  55000,
+                'saturate':  [[1, 65000], [2,262000], [3,589815], [4, 1048560]] ,   # e-.  This is a close guess, not measured, but taken from data sheet.
                 'max_linearity':  55000.,
                 'fullwell_capacity': [85000, 85000, 85000, 85000],
                 'read_mode':  'Normal',

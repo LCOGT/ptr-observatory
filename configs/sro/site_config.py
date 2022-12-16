@@ -552,7 +552,7 @@ site_config = {
                 'readout_speed': 0.4,
                 'readout_seconds': 12,
                 'smart_stack_exposure_time' : 30,
-                'saturate':  62000,    # e-.  This is a close guess, not measured, but taken from data sheet.
+                'saturate':  [[1, 65000], [2,262000], [3,589815], [4, 1048560]] ,   # e-.  This is a close guess, not measured, but taken from data sheet.    # e-.  This is a close guess, not measured, but taken from data sheet.
                 'max_linearity': 60000,
                 'fullwell_capacity': [63000, 63000, 63000, 63000],  #e-.   We need to sort out the units properly NB NB NB
                 'areas_implemented': ["Full",'4x4d', "600%", "500%", "450%", "300%", "220%", "150%", "133%", "Full", "Sqr", '71%', '50%',  '35%', '25%', '12%'],
