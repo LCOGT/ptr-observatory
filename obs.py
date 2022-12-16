@@ -762,7 +762,7 @@ class Observatory:
             #print ("Cooler check")
             probe = g_dev['cam']._cooler_on()
             if probe == True:
-                print ("Cooler is still on at " + str(self._temperature()))            
+                print ("Cooler is still on at " + str(g_dev['cam']._temperature()))            
             
             try:
                 probe = g_dev['cam']._cooler_on()
