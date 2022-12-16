@@ -264,7 +264,7 @@ site_config = {
             'ptrtel': 'CDK17',
             'desc':  'CDK17',
             'driver': None,                     #  Essentially this device is informational.  It is mostly about the optics.
-            'collecting_area': 55381,
+            'collecting_area': 100000,
             'obscuration':  23.7,   #  %
             'aperture': 432,
             'focal_length': 2939,
@@ -424,9 +424,9 @@ site_config = {
                         #['PR',    [1,  1],     0, 170, [1.00 , 119], 'PhBlue'],    #2.
                         #['PG',    [2,  2],     0, 220, [1.00 , 113], 'PhGreen'],    #3.
                         #['PB',    [3,  3],     0, 300, [0.80 ,  97], 'PhRed'],    #4.
-                        ['ha',    [5,  5],     0, .200, [5.00 , 200], 'Halpha'],    #5.
-                        ['o3',    [6,  6],     0, 100, [4.00 , 200], 'OIII'],    #6.
-                        ['s2',    [7,  7],     0, .50, [10.0,  200], 'SII']],    #7.
+                        ['ha',    [5,  5],     0, .2000, [5.00 , 200], 'Halpha'],    #5.
+                        ['o3',    [6,  6],     0, 1000, [4.00 , 200], 'OIII'],    #6.
+                        ['s2',    [7,  7],     0, .5000, [10.0,  200], 'SII']],    #7.
                         #['air',   [7,  7], -1000, 100., [1.00,   70], 'air'],    #8.
                         #['gooble',  [6,  6],     0, .221, [   0,    0], 'dark'],   #9.
                         #['LRGB',  [0,  0],     0, .221, [   0,    0], 'LRGB']],   #10.

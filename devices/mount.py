@@ -593,9 +593,11 @@ class Mount:
     def get_rapid_exposure_status(self, pre):
 
         #self.check_connect()
-        icrs_ra, icrs_dec = self.get_mount_coordinates()
+        #self.current_icrs_ra 
+        #self.current_icrs_dec
+        #icrs_ra, icrs_dec = self.get_mount_coordinates()
         #alt = self.mount.Altitude
-        rd = SkyCoord(ra=icrs_ra*u.hour, dec=icrs_dec*u.deg)
+        rd = SkyCoord(ra=self.current_icrs_ra*u.hour, dec=self.current_icrs_dec*u.deg)
         aa = AltAz (location=self.site_coordinates, obstime=Time.now())
         rd = rd.transform_to(aa)
         alt = float(rd.alt/u.deg)
@@ -614,8 +616,8 @@ class Mount:
         # NB NB THis code would be safer as a dict or other explicity named structure
         pre.append(time.time())
         
-        pre.append(icrs_ra)
-        pre.append(icrs_dec)
+        pre.append(self.current_icrs_ra)
+        pre.append(self.current_icrs_dec)
         # the following command is the sidereal time
         pre.append(float((Time(datetime.datetime.utcnow(), scale='utc', location=g_dev['mnt'].site_coordinates).sidereal_time('apparent')*u.deg) / u.deg / u.hourangle))
         #pre.append(self.mount.RightAscensionRate)

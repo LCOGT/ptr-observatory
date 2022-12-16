@@ -1136,7 +1136,7 @@ class Camera:
             if not imtype.lower() in ["light"]:
                 Nsmartstack=1
                 SmartStackID='no'
-            elif (self.smartstack == 'yes' or self.smartstack == True) and (exposure_time > 3*ssExp):
+            elif (self.smartstack == 'yes' or self.smartstack == True) and (exposure_time >= 3*ssExp):
                 Nsmartstack=np.ceil(exposure_time / ssExp)
                 exposure_time=ssExp
                 SmartStackID=(datetime.datetime.now().strftime("%d%m%y%H%M%S"))
@@ -3241,7 +3241,7 @@ class Camera:
                     # The paths to these saved files and the pixelscale are sent to the reduce queue
                     # Currently the reduce queue platesolves the images and monitors the focus.
                     # Soon it will also smartstack
-                    if not frame_type.lower() in [
+                    if ( not frame_type.lower() in [
                         "bias",
                         "dark",
                         "flat",
@@ -3251,7 +3251,7 @@ class Camera:
                         "screen",
                         "spectrum",
                         "auto_focus",
-                    ]:
+                    ]) and smartstackid != 'no' :
                         self.to_reduce((paths, pixscale, smartstackid, sskcounter, Nsmartstack, sources))
 
                     #g_dev["obs"].update_status(cancel_check=True)
