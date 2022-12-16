@@ -936,7 +936,10 @@ class Observatory:
             if (not self.slow_camera_queue.empty()) and one_at_a_time == 0:
                 one_at_a_time = 1
                 slow_process = self.slow_camera_queue.get(block=False)
-                #print (slow_process)
+                print (slow_process[0])
+                print (slow_process[1][0])
+                slow_process=slow_process[1]
+                print ("***************************************************")
                 if slow_process[0] == 'focus':
                     hdufocus=fits.PrimaryHDU()
                     hdufocus.data=slow_process[2]                            
@@ -1027,7 +1030,7 @@ class Observatory:
                         # Send this file up to AWS (THIS WILL BE SENT TO BANZAI INSTEAD, SO THIS IS THE INGESTER POSITION)
                         if self.config['send_files_at_end_of_night'] == 'no':
                             g_dev['cam'].enqueue_for_AWS(
-                                25000000, slow_process[1].replace('.fit', 'bin' +str(tempBin) + '.fit.fz')
+                                25000000, '', slow_process[1].replace('.fit', 'bin' +str(tempBin) + '.fit.fz')
                             )
                             g_dev["obs"].send_to_user(
                                 "An image has been readout from the camera and queued for transfer to the cloud.",
@@ -1040,6 +1043,7 @@ class Observatory:
 #                'darkbias_bin_spec': ['1,1', '2,2','3,3','4,4']
                 
                 if slow_process[0] == 'fz_and_send':
+                    print ("fz sending")
                     # Create the fz file ready for BANZAI and the AWS/UI
                     # Note that even though the raw file is int16,
                     # The compression and a few pieces of software require float32
@@ -1085,12 +1089,13 @@ class Observatory:
                     # Send this file up to AWS (THIS WILL BE SENT TO BANZAI INSTEAD, SO THIS IS THE INGESTER POSITION)
                     if self.config['send_files_at_end_of_night'] == 'no':
                         g_dev['cam'].enqueue_for_AWS(
-                            26000000, slow_process[1]
+                            26000000, '',slow_process[1]
                         )
                         g_dev["obs"].send_to_user(
                             "An image has been readout from the camera and queued for transfer to the cloud.",
                             p_level="INFO",
                         )
+                    print ("fz done.")
                 
                 if slow_process[0] == 'reduced':
                     saver = 0
@@ -1117,6 +1122,8 @@ class Observatory:
                             saverretries = saverretries + 1
                 
                 self.slow_camera_queue.task_done()
+                one_at_a_time = 0
+
             else:
                 time.sleep(0.5)
                 #breakpoint()

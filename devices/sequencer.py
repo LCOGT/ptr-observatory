@@ -1490,7 +1490,7 @@ class Sequencer:
                         if evening and exp_time > 120:
                              #exp_time = 60    #Live with this limit.  Basically started too late
                              plog('Break because proposed evening exposure > 180 seconds:  ', exp_time)
-                             g_dev['obs'].send_to_user('Try next filter because proposed  flat exposure > 180 seconds.', p_level='INFO')
+                             g_dev['obs'].send_to_user('Try next filter because proposed  flat exposure > 120 seconds.', p_level='INFO')
                              pop_list.pop(0)
                              acquired_count = flat_count + 1 # trigger end of loop
                              #break

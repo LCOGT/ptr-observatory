@@ -1962,7 +1962,10 @@ class Camera:
                         "Filter type",
                     )  # NB this should read from the wheel!
                     if g_dev["fil"].null_filterwheel == False:
-                        hdu.header["FILTEROF"] = (self.current_offset, "Filer offset")
+                        try:
+                            hdu.header["FILTEROF"] = (self.current_offset, "Filter offset")
+                        except:
+                            pass # sometimes the offset isn't set on the first filter of the eve
                         hdu.header["FILTRNUM"] = (
                            "PTR_ADON_HA_0023",
                            "An index into a DB",
@@ -3185,7 +3188,8 @@ class Camera:
                                 #plog("Sent SEP up")
                             except:
                                 plog("Failed to send SEP up for some reason")
-
+                    print ("frame type looking for calibrations")
+                    print (frame_type)
                     if frame_type in (
                                     "flat",
                                     "screenflat",
