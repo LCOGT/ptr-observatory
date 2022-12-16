@@ -229,6 +229,10 @@ site_config = {
             'east_flip_ra_correction':  0.0, #
             'east_flip_dec_correction': 0.0,  #
             'permissive_mount_reset' : 'yes', # if this is set to yes, it will reset the mount at startup and when coordinates are out significantly
+            'home_after_unpark' : False,            
+            'lowest_acceptable_altitude' : -5.0, # Below this altitude, it will automatically try to home and park the scope to recover.
+            
+            'time_inactive_until_park' : 3600.0, # How many seconds of inactivity until it will park the telescope
             'settings': {
 			    'latitude_offset': 0.0,     #Decimal degrees, North is Positive   These *could* be slightly different than site.
 			    'longitude_offset': 0.0,   #Decimal degrees, West is negative  #NB This could be an eval( <<site config data>>))
@@ -548,7 +552,7 @@ site_config = {
                 'readout_speed': 0.4,
                 'readout_seconds': 12,
                 'smart_stack_exposure_time' : 30,
-                'saturate':  62000,    # e-.  This is a close guess, not measured, but taken from data sheet.
+                'saturate':  [[1, 65000], [2,262000], [3,589815], [4, 1048560]] ,   # e-.  This is a close guess, not measured, but taken from data sheet.    # e-.  This is a close guess, not measured, but taken from data sheet.
                 'max_linearity': 60000,
                 'fullwell_capacity': [63000, 63000, 63000, 63000],  #e-.   We need to sort out the units properly NB NB NB
                 'areas_implemented': ["Full",'4x4d', "600%", "500%", "450%", "300%", "220%", "150%", "133%", "Full", "Sqr", '71%', '50%',  '35%', '25%', '12%'],

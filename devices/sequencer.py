@@ -55,6 +55,30 @@ and or visit more altitudes and temeperatures.
 
 '''
 
+def wait_for_slew():    
+    
+    try:
+        if not g_dev['mnt'].mount.AtPark:              
+            while g_dev['mnt'].mount.Slewing: #or g_dev['enc'].status['dome_slewing']:   #Filter is moving??
+                #if g_dev['mnt'].mount.Slewing: plog( 'm>')
+                #if g_dev['enc'].status['dome_slewing']: st += 'd>'
+                plog( 'm>')
+                time.sleep(0.5)
+                g_dev['obs'].update_status()            
+            
+    except Exception as e:
+        plog("Motion check faulted.")
+        plog(traceback.format_exc())
+        if 'pywintypes.com_error' in str(e):
+            print ("Mount disconnected. Recovering.....")
+            time.sleep(30)
+            g_dev['mnt'].mount.Connected = True
+            #g_dev['mnt'].home_command()
+        else:
+            breakpoint()
+    return 
+
+
 
 def fit_quadratic(x, y):
     #From Meeus, works fine.
@@ -246,6 +270,7 @@ class Sequencer:
                     g_dev['mnt'].slewToSkyFlatAsync()
                     time.sleep(10)
                 plog("Open and slew Dome to azimuth opposite the Sun:  ", round(flat_spot, 1))
+                plog("Cooling down and waiting for skyflat / observing to begin")
 
                 if enc_status['shutter_status'] in ['Closed', 'closed'] and g_dev['enc'].mode == 'Automatic' \
                     and ocn_status['hold_duration'] <= 0.1:   #NB
@@ -316,6 +341,8 @@ class Sequencer:
             #NB The above put dome closed and telescope at Park, Which is where it should have been upon entry.
             self.bias_dark_script(req, opt, morn=False)
             self.bias_dark_latch = False
+            
+            g_dev['mnt'].park_command({}, {})
 
         elif ((g_dev['events']['Cool Down, Open']  <= ephem_now < g_dev['events']['Eve Sky Flats']) and \
                g_dev['enc'].mode == 'Automatic') and not g_dev['ocn'].wx_hold:
@@ -382,6 +409,7 @@ class Sequencer:
                                    is not None:
             try:
                 
+               
                 self.nightly_reset_complete = False
                 
                 if enc_status['enclosure_mode'] in ['Autonomous!', 'Automatic']:
@@ -537,6 +565,10 @@ class Sequencer:
             self.sky_flat_script({}, {}, morn=True)   #Null command dictionaries
             self.morn_sky_flat_latch = False
             #self.park_and_close(enc_status)
+            
+            # Park at the end of morning sky flats
+            g_dev['mnt'].park_command({}, {})
+            
         elif self.morn_bias_dark_latch and (events['Morn Bias Dark'] <= ephem_now < events['End Morn Bias Dark']) and \
                   self.config['auto_morn_bias_dark']: # and g_dev['enc'].mode == 'Automatic' ):
             #breakpoint()
@@ -734,6 +766,20 @@ class Sequencer:
             except:
                 pass
             g_dev['mnt'].go_coord(dest_ra, dest_dec)
+            
+            # Quick pointing check and re_seek at the start of each project block
+            # Otherwise everyone will get slightly off-pointing images
+            # Necessary
+            # Pointing
+            # Reset Solve timers
+            print ("Taking a quick pointing check and re_seek for new project block")
+            g_dev['obs'].last_solve_time = datetime.datetime.now()
+            g_dev['obs'].images_since_last_solve = 0
+            req = {'time': self.config['focus_exposure_time'],  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'focus'}   #  NB Should pick up filter and constats from config
+            #opt = {'area': 150, 'count': 1, 'bin': '2, 2', 'filter': 'focus'}
+            opt = {'area': 150, 'count': 1, 'bin': 'default', 'filter': 'focus'}
+            result = g_dev['cam'].expose_command(req, opt, no_AWS=False, solve_it=True)
+            g_dev['mnt'].re_seek(dither=0)
 
             plog("CAUTION:  rotator may block")
             pa = float(block_specification['project']['project_constraints']['position_angle'])
@@ -1028,6 +1074,7 @@ class Sequencer:
                                         do_sep=False, quick=False)
                         b_d_to_do -= min_to_do
                         
+
                         g_dev['obs'].update_status()
                         
                         # if ephem.now() + 210/86400 > ending:   #NB NB needs to be checked out
@@ -1255,7 +1302,11 @@ class Sequencer:
         # Allow midnight calibrations
         self.midnight_calibration_done = False
         self.nightly_reset_complete = True
+        
+        g_dev['mnt'].theskyx_tracking_rescues = 0
 
+        # No harm in doubly checking it has parked
+        g_dev['mnt'].park_command({}, {})
 
         return
 
@@ -1385,7 +1436,7 @@ class Sequencer:
             
         if morn:            
             ending = g_dev['events']['End Morn Sky Flats']
-            min_exposure=100 * min_exposure
+            #min_exposure=100 * min_exposure
         else:            
             ending = g_dev['events']['End Eve Sky Flats']
         #length = len(pop_list)
@@ -1412,7 +1463,18 @@ class Sequencer:
                 
                 acquired_count = 0
                 #g_dev['mnt'].slewToSkyFlatAsync()
-                target_flat = 0.5 * g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"]
+                
+                if g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["is_cmos"] == True:
+                    tempFlatBin=1
+                else: # This should eventually be the requested binning....
+                    tempFlatBin=1
+                
+                for finder in range(len(g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"])):
+                    if g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"][finder][0] == tempFlatBin:
+                        flat_saturation_level = g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"][finder][1]
+                
+                    
+                target_flat = 0.5 * flat_saturation_level
                 # if not g_dev['enc'].status['shutter_status'] in ['Open', 'open']:
                 #     g_dev['obs'].send_to_user("Wait for roof to be open to take skyflats. 60 sec delay loop.", p_level='INFO')
                 #     time.sleep(60)
@@ -1422,6 +1484,7 @@ class Sequencer:
                 self.estimated_first_flat_exposure = False
                 while (acquired_count < flat_count):# and g_dev['enc'].status['shutter_status'] in ['Open', 'open']: # NB NB NB and roof is OPEN! and (ephem_now +3/1440) < g_dev['events']['End Eve Sky Flats' ]:
                     #if g_dev['enc'].is_dome:   #Does not apply
+                    g_dev['obs'].update_status()
                     if self.next_flat_observe < time.time():                
                         
                             
@@ -1469,7 +1532,7 @@ class Sequencer:
                         if evening and exp_time > 120:
                              #exp_time = 60    #Live with this limit.  Basically started too late
                              plog('Break because proposed evening exposure > 180 seconds:  ', exp_time)
-                             g_dev['obs'].send_to_user('Try next filter because proposed  flat exposure > 180 seconds.', p_level='INFO')
+                             g_dev['obs'].send_to_user('Try next filter because proposed  flat exposure > 120 seconds.', p_level='INFO')
                              pop_list.pop(0)
                              acquired_count = flat_count + 1 # trigger end of loop
                              #break
@@ -1486,12 +1549,18 @@ class Sequencer:
                              plog("Too bright, wating 180 seconds. Estimated Exposure time is " + str(exp_time))
                              g_dev['obs'].send_to_user('Delay 60 seconds to let it get darker.', p_level='INFO')
                              self.estimated_first_flat_exposure = False
+                             if time.time() >= self.time_of_next_slew:
+                                g_dev['mnt'].slewToSkyFlatAsync()  
+                                self.time_of_next_slew = time.time() + 600
                              self.next_flat_observe = time.time() + 60
                         elif morn and exp_time > 120 :   #NB it is too bright, should consider a delay here.
                           #**************THIS SHOUD BE A WHILE LOOP! WAITING FOR THE SKY TO GET DARK AND EXP TIME TO BE LONGER********************
                              plog("Too dim, wating 180 seconds. Estimated Exposure time is " + str(exp_time))
                              g_dev['obs'].send_to_user('Delay 60 seconds to let it get lighterer.', p_level='INFO')
                              self.estimated_first_flat_exposure = False
+                             if time.time() >= self.time_of_next_slew:
+                                g_dev['mnt'].slewToSkyFlatAsync()  
+                                self.time_of_next_slew = time.time() + 600
                              self.next_flat_observe = time.time() + 60
                              #*****************NB Recompute exposure or otherwise wait
                              exp_time = min_exposure
@@ -1526,10 +1595,11 @@ class Sequencer:
                                 plog('Returned:  ', bright)
                                 
                                 
-                                if (bright > 0.25 * g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"] and
-                                    bright < 0.75 * g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"]):
-                                    if len(bin_spec) > 1:
+                                if (bright > 0.25 * flat_saturation_level and
+                                    bright < 0.75 * flat_saturation_level):
+                                    if len(bin_spec) > 1 and g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["is_cmos"] == False:
                                         print ("Good range for a flat, firing off the other flat types")
+                                        
                                         for ctr in range (len(bin_spec)-1):
                                             
                                             # Estimate the new exposure time by the ratio of the skylux
@@ -1634,16 +1704,22 @@ class Sequencer:
                             #obs_win_begin, sunset, sunrise, ephem_now = self.astro_events.getSunEvents()
                             #g_dev['obs'].update_status()
                             continue
-        if morn is False:
-            g_dev['mnt'].tracking = False   #  park_command({}, {})  #  NB this is provisional, Ok when simulating
-            self.eve_sky_flat_latch = False
-        elif morn:
-            try:
-                g_dev['mnt'].park_command({}, {})
-            except:
-                plog("Mount did not park at end of morning skyflats.")
+                    else:
+                        time.sleep(10)
+        #if morn is False:
+            #g_dev['mnt'].tracking = False   #  park_command({}, {})  #  NB this is provisional, Ok when simulating
+        #    self.eve_sky_flat_latch = False
+        #elif morn:
+        #    try:
+        #        g_dev['mnt'].park_command({}, {})
+        #    except:
+        #        plog("Mount did not park at end of morning skyflats.")
+        if morn: 
             self.morn_sky_flat_latch = False
+        else:
+            self.eve_sky_flat_latch = False
         plog('\nSky flat complete, or too early. Telescope Tracking is off.\n')
+        g_dev['mnt'].park_command({}, {}) # You actually always want it to park, TheSkyX can't stop the telescope tracking, so park is safer... it is before focus anyway.
         self.sky_guard = False
 
 
@@ -1725,6 +1801,8 @@ class Sequencer:
         g_dev['mnt'].Tracking = False   #park_command({}, {})
         plog('Sky Flat sequence completed, Telescope tracking is off.')
         self.guard = False
+        
+        g_dev['mnt'].park_command({}, {})
 
 
 
@@ -1950,6 +2028,7 @@ class Sequencer:
             self.sequencer_hold = False   #Allow comand checks.
             self.af_guard = False
             g_dev['mnt'].mount.SlewToCoordinatesAsync(start_ra, start_dec)  #MAKE sure same style coordinates.
+            wait_for_slew()
             self.sequencer_hold = False
             self.guard = False
             self.af_guard = False
@@ -1969,6 +2048,7 @@ class Sequencer:
                 self.sequencer_hold = False   #Allow comand checks.
                 self.af_guard = False
                 g_dev['mnt'].mount.SlewToCoordinatesAsync(start_ra, start_dec)   #NB NB Does this really take us back to starting point?
+                wait_for_slew()
                 self.sequencer_hold = False
                 self.guard = False
                 self.af_guard = False
@@ -2006,6 +2086,7 @@ class Sequencer:
                 g_dev['foc'].af_log(foc_pos4, spot4, new_spot)
                 plog("Returning to:  ", start_ra, start_dec)
                 g_dev['mnt'].mount.SlewToCoordinatesAsync(start_ra, start_dec)   #Return to pre-focus pointing.
+                wait_for_slew()
             if sim:
 
                 g_dev['foc'].guarded_move((focus_start)*g_dev['foc'].micron_to_steps)
@@ -2037,6 +2118,7 @@ class Sequencer:
             x = [foc_pos4, foc_pos2, foc_pos1, foc_pos3]
             y = [spot4, spot2, spot1, spot3]
             plog('X, Y:  ', x, y, 'Desire center to be smallest.')
+            g_dev['obs'].send_to_user('X, Y:  '+ str(x) + " " + str(y)+ ' Desire center to be smallest.', p_level='INFO')
             try:
                 #Digits are to help out pdb commands!
                 a1, b1, c1, d1 = fit_quadratic(x, y)
@@ -2051,12 +2133,14 @@ class Sequencer:
                 self.sequencer_hold = False   #Allow comand checks.
                 self.af_guard = False
                 g_dev['mnt'].mount.SlewToCoordinatesAsync(start_ra, start_dec)   #NB NB Does this really take us back to starting point?
+                wait_for_slew()
                 self.sequencer_hold = False
                 self.guard = False
                 self.af_guard = False
                 return
             if min(x) <= d1 <= max(x):
                 print ('Moving to Solved focus:  ', round(d1, 2), ' calculated:  ',  new_spot)
+                
                 pos = int(d1*g_dev['foc'].micron_to_steps)
 
 
@@ -2083,9 +2167,11 @@ class Sequencer:
                     foc_pos4 = False
                     print ("spot4 failed ")
                 plog('\nFound best focus at:  ', foc_pos4,' measured is:  ',  round(spot4, 2), '\n')
+                g_dev['obs'].send_to_user('Found best focus at: ' + str(foc_pos4) +' measured FWHM is: ' + str(round(spot4, 2)), p_level='INFO')
                 g_dev['foc'].af_log(foc_pos4, spot4, new_spot)
                 plog("Returning to:  ", start_ra, start_dec)
                 g_dev['mnt'].mount.SlewToCoordinatesAsync(start_ra, start_dec)   #Return to pre-focus pointing.
+                wait_for_slew()
             if sim:
 
                 g_dev['foc'].guarded_move((focus_start)*g_dev['foc'].micron_to_steps)
@@ -2119,6 +2205,7 @@ class Sequencer:
             x = [foc_pos2, foc_pos1, foc_pos3, foc_pos4]
             y = [spot2, spot1, spot3, spot4]
             plog('X, Y:  ', x, y, 'Desire center to be smallest.')
+            g_dev['obs'].send_to_user('X, Y:  '+ str(x) + " " + str(y)+ ' Desire center to be smallest.', p_level='INFO')
             try:
                 #Digits are to help out pdb commands!
                 a1, b1, c1, d1 = fit_quadratic(x, y)
@@ -2133,6 +2220,7 @@ class Sequencer:
                 self.sequencer_hold = False   #Allow comand checks.
                 self.af_guard = False
                 g_dev['mnt'].mount.SlewToCoordinatesAsync(start_ra, start_dec)   #NB NB Does this really take us back to starting point?
+                wait_for_slew()
                 self.sequencer_hold = False
                 self.guard = False
                 self.af_guard = False
@@ -2165,9 +2253,11 @@ class Sequencer:
                     foc_pos4 = False
                     print ("spot4 failed ")
                 plog('\nFound best focus at:  ', foc_pos4,' measured is:  ',  round(spot4, 2), '\n')
+                g_dev['obs'].send_to_user('Found best focus at: ' + str(foc_pos4) +' measured FWHM is: ' + str(round(spot4, 2)), p_level='INFO')
                 g_dev['foc'].af_log(foc_pos4, spot4, new_spot)
                 plog("Returning to:  ", start_ra, start_dec)
                 g_dev['mnt'].mount.SlewToCoordinatesAsync(start_ra, start_dec)   #Return to pre-focus pointing.
+                wait_for_slew()
             if sim:
 
                 g_dev['foc'].guarded_move((focus_start)*g_dev['foc'].micron_to_steps)
@@ -2202,6 +2292,7 @@ class Sequencer:
             g_dev['foc'].focuser.Move((focus_start)*g_dev['foc'].micron_to_steps)
         plog("Returning to:  ", start_ra, start_dec)
         g_dev['mnt'].mount.SlewToCoordinatesAsync(start_ra, start_dec)   #Return to pre-focus pointing.
+        wait_for_slew()
         if sim:
 
             g_dev['foc'].guarded_move((focus_start)*g_dev['foc'].micron_to_steps)
@@ -2305,13 +2396,8 @@ class Sequencer:
             spot1 = False
             foc_pos1 = False
             print ("spot1 failed on coarse focus script")
-        # if not sim:
-        #     result = g_dev['cam'].expose_command(req, opt, no_AWS=True) ## , script = 'auto_focus_script_0')  #  This is where we start.
-        # else:
-        #     result['FWHM'] = 3
-        #     result['mean_focus'] = foc_pos0
-        # spot1 = result['FWHM']
-        # foc_pos1 = result['mean_focus']
+
+        g_dev['obs'].send_to_user("Coarse focus center FWHM: " + str(spot1), p_level='INFO')
 
 
         plog('Autofocus Moving In -1x, second time.\n\n')
@@ -2330,7 +2416,10 @@ class Sequencer:
             spot2 = False
             foc_pos2 = False
             print ("spot2 failed on coarse focus script")
+        g_dev['obs'].send_to_user("First Inward focus center FWHM: " + str(spot2), p_level='INFO')
+        
         plog('Autofocus Moving In -2x, second time.\n\n')
+        
 
         g_dev['foc'].guarded_move((foc_pos0 - 2*throw)*g_dev['foc'].micron_to_steps)
         #opt['fwhm_sim'] = 4.
@@ -2346,6 +2435,7 @@ class Sequencer:
             spot3 = False
             foc_pos3 = False
             print ("spot3 failed on coarse focus script")
+        g_dev['obs'].send_to_user("Second Inward focus center FWHM: " + str(spot3), p_level='INFO')
         #Need to check we are not going out too far!
         plog('Autofocus Moving out +3X.\n\n')
 
@@ -2365,6 +2455,9 @@ class Sequencer:
             spot4 = False
             foc_pos4 = False
             print ("spot4 failed on coarse focus script")
+        
+        g_dev['obs'].send_to_user("First Outward focus center FWHM: " + str(spot4), p_level='INFO')
+            
         plog('Autofocus back in for backlash to +1X\n\n')
 
         g_dev['foc'].guarded_move((foc_pos0 + throw)*g_dev['foc'].micron_to_steps)
@@ -2381,6 +2474,9 @@ class Sequencer:
             spot5 = False
             foc_pos5 = False
             print ("spot5 failed on coarse focus script")
+        
+        g_dev['obs'].send_to_user("Second Outward focus center FWHM: " + str(spot2), p_level='INFO')
+        
         x = [foc_pos3, foc_pos2, foc_pos1, foc_pos5, foc_pos4]  # NB NB 20220218 This assigment is bogus!!!!
         y = [spot3, spot2, spot1, spot5, spot4]
         plog('X, Y:  ', x, y)
@@ -2418,14 +2514,17 @@ class Sequencer:
                 spot6 = result['FWHM']
                 foc_pos4 = result['mean_focus']
                 plog('\n\n\nFound best focus at:  ', foc_pos4,' measured is:  ',  round(spot6, 2), '\n\n\n')
+                g_dev['obs'].send_to_user("Found best focus at: " +str(foc_pos4) + ' measured FWHM is: ' + str(round(spot6, 2)), p_level='INFO')
             except:
                 plog('Known bug, Verifcation did not work. Returing to target using solved focus.')
         else:
             plog('Coarse_focus did not converge. Moving back to starting focus:  ', foc_pos0)
+            g_dev['obs'].send_to_user('Coarse_focus did not converge. Moving back to starting focus:  ' + str(foc_pos0), p_level='INFO')
 
             g_dev['foc'].guarded_move((foc_start)*g_dev['foc'].micron_to_steps)
         plog("Returning to:  ", start_ra, start_dec)
         g_dev['mnt'].mount.SlewToCoordinatesAsync(start_ra, start_dec)   #Return to pre-focus pointing.
+        wait_for_slew()
         if sim:
             g_dev['foc'].guarded_move((foc_start)*g_dev['foc'].micron_to_steps)
         self.sequencer_hold = False
@@ -2466,3 +2565,5 @@ class Sequencer:
         except:
             plog('Found an empty shelf.  Reset_(block)completes for:  ', camera)
         return
+    
+    

@@ -228,6 +228,8 @@ site_config = {
             'home_after_unpark' : False,
   #
             'permissive_mount_reset' : 'no', # if this is set to yes, it will reset the mount at startup and when coordinates are out significantly
+            'lowest_acceptable_altitude' : -10.0, # Below this altitude, it will automatically try to home and park the scope to recover.
+            'time_inactive_until_park' : 3600.0, # How many seconds of inactivity until it will park the telescope
             'west_clutch_ra_correction': -0.05323724387608619,  #final:   0.0035776615398219747 -0.1450812805892454
             'west_clutch_dec_correction': 0.3251459235809251,
             'east_flip_ra_correction':   -0.040505313212952586, # Initially -0.039505313212952586,
@@ -574,7 +576,7 @@ site_config = {
                 'ref_dark': 360.0,    #  this needs fixing.
                 'long_dark':600.0,
                 'max_linearity':  60000,   # Guess  60% of this is max counts for skyflats.  75% rejects the skyflat
-                'saturate':  65300,
+                'saturate':  [[1, 65000], [2,262000], [3,589815], [4, 1048560]] ,   # e-.  This is a close guess, not measured, but taken from data sheet.
                 'fullwell_capacity': [80000, 320000, 720000, 1280000],
                                     #hdu.header['RDMODE'] = (self.config['camera'][self.name]['settings']['read_mode'], 'Camera read mode')
                     #hdu.header['RDOUTM'] = (self.config['camera'][self.name]['readout_mode'], 'Camera readout mode')
