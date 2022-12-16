@@ -1022,14 +1022,19 @@ class Camera:
                     )
                 )  # Default DOES come from config.
                 #breakpoint()
-                self.current_filter = requested_filter_name
-                self.current_filter = g_dev["fil"].set_name_command(
-                    {"filter": requested_filter_name}, {}
-                )
+                # Check if filter needs changing, if so, change.
                 
-                self.current_offset = g_dev[
-                    "fil"
-                ].filter_offset  # TEMP   NBNBNB This needs fixing
+                if not g_dev['fil'].filter_selected == requested_filter_name:
+                #self.current_filter = requested_filter_name
+                    self.current_filter = g_dev["fil"].set_name_command(
+                        {"filter": requested_filter_name}, {}
+                    )
+                    
+                    self.current_offset = g_dev[
+                        "fil"
+                    ].filter_offset  # TEMP   NBNBNB This needs fixing
+                    
+                self.current_filter = g_dev['fil'].filter_selected
                 
                 if self.current_filter == "none":
                     plog("skipping exposure as no adequate filter match found")

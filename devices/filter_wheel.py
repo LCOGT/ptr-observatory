@@ -228,6 +228,8 @@ class FilterWheel:
                 plog("Currently QHY RS232 FW")
         else:
             self.null_filterwheel = True
+        
+        self.home_command(None)
             
 
     # The patches. Note these are essentially a getter-setter/property constructs.
@@ -428,7 +430,10 @@ class FilterWheel:
                     break
 
         plog("Filter name is:  ", self.filter_data[match][0])
-        g_dev["obs"].send_to_user("Filter set to:  " + str(self.filter_data[match][0]))
+        try:
+            g_dev["obs"].send_to_user("Filter set to:  " + str(self.filter_data[match][0]))
+        except:
+            pass  # This is usually when it is just booting up and obs doesn't exist yet
         self.filter_number = filt_pointer
         self.filter_selected = str(filter_name).lower()
         filter_selections = self.filter_data[filt_pointer][1]
@@ -517,14 +522,17 @@ class FilterWheel:
         """Sets the filter to the home position."""
 
         # NB TODO this is setting to default not Home.
-        while self.filter_back.Position == -1:
-            time.sleep(0.1)
-        self.filter_back.Position = 2
-        while self.filter_back.Position == -1:
-            time.sleep(0.1)
-        self.filter_selected = "w"
-        self.filter_reference = 2
-        self.filter_offset = int(self.filter_data[2][2])
+        #while self.filter_back.Position == -1:
+        #    time.sleep(0.1)
+        #self.filter_back.Position = 2
+        #while self.filter_back.Position == -1:
+        #    time.sleep(0.1)
+            
+        self.set_name_command({"filter": self.config["filter_wheel1"]["settings"]['default_filter']}, {})
+        
+        #self.filter_selected = "w"
+        #self.filter_reference = 2
+        #self.filter_offset = int(self.filter_data[2][2])
 
     def substitute_filter(self, requested_filter: str):
         """Returns an alternative filter if requested filter not at site.
