@@ -341,8 +341,8 @@ site_config = {
             'driver': 'SeletekFocuser.Focuser',
 			'com_port':  'COM9',
             #F4.9 setup
-            'start_at_config_reference': True,
-            'use_focuser_temperature': True,
+            'start_at_config_reference': False,
+            'use_focuser_temperature': False,
             'reference':14043,    #  20210313  Nominal at 10C Primary temperature
             'ref_temp':  6265.0,    #  Update when pinning reference
             'coef_c': 0,   #  Negative means focus moves out as Primary gets colder
