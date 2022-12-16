@@ -433,8 +433,6 @@ class FilterWheel:
 
         plog("Filter name is:  ", self.filter_data[match][0])
 
-        g_dev["obs"].send_to_user("Filter set to:  " + str(self.filter_data[match][0]))
-
         try:
             g_dev["obs"].send_to_user("Filter set to:  " + str(self.filter_data[match][0]))
         except:

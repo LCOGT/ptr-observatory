@@ -530,8 +530,8 @@ site_config = {
                 'can_subframe':  True,
                 'min_subframe':  [128, 128],
                 'bin_modes':  [[1, 1, 1.07]], #  , [2, 2, 2.13], [3, 3, 3.21], [4, 4, 4.27]],   #Meaning no binning choice if list has only one entry, default should be first.
-                'default_bin':  [1, 1, 1.07],    #  This is the OPTIMAL binning
-                'maximum_bin':  [1, 1, 1.07],    #  This is the MAXIMUM binning
+                'optimal_bin':  [1, 1, 1.07],    #  This is the OPTIMAL binning
+                'max_res_bin':  [1, 1, 1.07],    #  This is the MAXIMUM binning
                 'cosmics_at_default' : 'no',
                 'cosmics_at_maximum' : 'no',
                 'cycle_time':  [30, 20, 15, 12],  # 3x3 requires a 1, 1 reaout then a software bin, so slower.

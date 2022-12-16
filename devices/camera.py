@@ -1006,7 +1006,7 @@ class Camera:
             bin_x = self.config['camera'][self.name]['settings']['fine_bin'][0]
             self.ccd_sum = str(bin_x) + ' ' + str(bin_x)
 
-        bin_x = 3
+        
         bin_y = bin_x  # NB This needs fixing someday!
         self.bin = bin_x
         
@@ -1671,7 +1671,7 @@ class Camera:
                         retrycounter = retrycounter + 1
 
                 #time.sleep(0.1)
-                #self.t4p4 = time.time()
+                self.t4p4 = time.time()
 
 
                 self.img = np.array(self._getImageArray())  #Does QHY sum-bin or average bin? Ans Default is sum-bin.
@@ -3206,8 +3206,7 @@ class Camera:
                                 #plog("Sent SEP up")
                             except:
                                 plog("Failed to send SEP up for some reason")
-                    print ("frame type looking for calibrations")
-                    print (frame_type)
+
                     if frame_type in (
                                     "flat",
                                     "screenflat",
@@ -3221,7 +3220,7 @@ class Camera:
 
                     # If a CMOS camera, bin to requested binning
                     elif self.is_cmos and self.bin != 1:
-                        print ("Binning 1x1 to " + str(self.bin))
+                        #print ("Binning 1x1 to " + str(self.bin))
                         hdu.data=(block_reduce(hdu.data,self.bin))                        
                         
                     # Now that the jpeg has been sent up pronto,
@@ -3244,7 +3243,7 @@ class Camera:
                     if "hdureduceddata" in locals():
                         # If a CMOS camera, bin to requested binning
                         if self.is_cmos and self.bin != 1:
-                            print ("Binning 1x1 to " + str(self.bin))
+                            #print ("Binning 1x1 to " + str(self.bin))
                             hdureduceddata=(block_reduce(hdureduceddata,self.bin)) 
                         
                         if smartstackid == 'no':

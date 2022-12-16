@@ -597,8 +597,8 @@ site_config = {
                 'bias_count' : 10,
                 'dark_count' : 10,
                 'bin_modes':  [[1, 1, 0.2876], [2, 2, 0.575], [3, 3, 0.863], [4, 4, 1.15]],   #Meaning no binning choice if list has only one entry, default should be first.
-                'default_bin':  [2, 2, 0.575],
-                'maximum_bin':  [1, 1, 0.2876],
+                'optimal_bin':  [2, 2, 0.575],
+                'max_res_bin':  [1, 1, 0.2876],
                 'pix_scale': [0.2876, 0.575, 0.863, 1.15],    #  1.4506,  bin-2  2* math.degrees(math.atan(9/3962000))*3600
                 'darkslide_com':  'COM17',
                 'has_screen': True,

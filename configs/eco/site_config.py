@@ -579,8 +579,8 @@ site_config = {
                 #'darkbias_bin_spec': ['1,1','2,2', '3,3','4,4'],    #Default binning for flats
                 'darkbias_bin_spec': ['1,1', '2,2','3,3','4,4'],    #Default binning for flats
                 'bin_enable': ['1,1', '2,2', '3,3','4,4'],
-                'default_bin':  [2, 2, 0.538],    #  Matched to seeing situation by owner
-                'maximum_bin':  [1, 1, 0.269],    #  Matched to seeing situation by owner
+                'optimal_bin':  [2, 2, 0.538],    #  Matched to seeing situation by owner
+                'max_res_bin':  [1, 1, 0.269],    #  Matched to seeing situation by owner
                 'bin_modes':  [[1, 1, 0.269],[2, 2, 0.538],[3, 3, 0.807],[4, 4, 1.076]], #  , [2, 2, 2.13], [3, 3, 3.21], [4, 4, 4.27]],   #Meaning no binning choice if list has only one entry, default should be first.
                 'pix_scale': [0.269,0.538, 0.807,1.076],
                 'cosmics_at_default' : 'yes',
