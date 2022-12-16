@@ -270,6 +270,7 @@ class Sequencer:
                     g_dev['mnt'].slewToSkyFlatAsync()
                     time.sleep(10)
                 plog("Open and slew Dome to azimuth opposite the Sun:  ", round(flat_spot, 1))
+                plog("Cooling down and waiting for skyflat / observing to begin")
 
                 if enc_status['shutter_status'] in ['Closed', 'closed'] and g_dev['enc'].mode == 'Automatic' \
                     and ocn_status['hold_duration'] <= 0.1:   #NB
