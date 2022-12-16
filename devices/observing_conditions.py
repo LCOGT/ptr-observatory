@@ -207,6 +207,7 @@ class ObservingConditions:
                 self.status = status
                 self.prior_status = status
                 g_dev["ocn"].status = status
+
                 if status['wx_ok'] in ['no', 'No', False]:
                     self.wx_is_ok = False
                 if status['wx_ok'] in ['yes', 'Yes', True]:
@@ -337,7 +338,7 @@ class ObservingConditions:
             if not dewpoint_gap:
                 wx_reasons.append('Ambient - Dewpoint < 2C')
             sky_amb_limit = (
-                self.sky_monitor.Temperature - self.sky_monitor.SkyTemperature 
+                -self.sky_monitor.Temperature + self.sky_monitor.SkyTemperature 
             ) < -8.5  # NB THIS NEEDS ATTENTION, Sky alert defaults to -17
             if not sky_amb_limit:
                 wx_reasons.append('sky - amb < -8.5C')

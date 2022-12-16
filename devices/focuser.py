@@ -27,6 +27,7 @@ class Focuser:
         self.name = name
         self.site_path = config["client_path"]
         self.camera_name = config["camera"]["camera_1_1"]["name"]
+        
         g_dev["foc"] = self
         self.config = config["focuser"]["focuser1"]
         self.throw = int(config["focuser"]["focuser1"]["throw"])
@@ -178,6 +179,7 @@ class Focuser:
         return status
 
     def get_quick_status(self, quick):
+
         quick.append(time.time())
         quick.append(self.focuser.Position * self.steps_to_micron)
         try:
@@ -419,10 +421,10 @@ class Focuser:
             #breakpoint()
             if "af_log" in cam_shelf:
                 cam_shelf["af_log"].append(
-                    (f_temp, ref, fwhm, solved, datetime.datetime.now().isoformat())
+                    (f_temp, ref, round(fwhm, 2), round(solved, 2), datetime.datetime.now().isoformat())
                 )
             else : # create af log if it doesn't exist
-                cam_shelf["af_log"]=[(f_temp, ref, fwhm, solved, datetime.datetime.now().isoformat())]
+                cam_shelf["af_log"]=[(f_temp, ref, round(fwhm, 2), round(solved, 2), datetime.datetime.now().isoformat())]
         else:
             f_temp=15.0
             print ("getting f_temp failed, using 15 degrees C")

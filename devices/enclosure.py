@@ -258,6 +258,7 @@ class Enclosure:
             plog('      20221014  Close commands are blocked,  System defaults to manual. \n ')
             plog('&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& \n')
     def get_status(self) -> dict:
+
         if not self.is_wema and self.site_has_proxy and self.dome_on_wema:
             if self.config['site_IPC_mechanism'] == 'shares':
                 try:
@@ -512,7 +513,6 @@ class Enclosure:
         #     redis_command = redis_command[0]  # it can come in as ['setManual']
         # except:
         #     pass
-
         if redis_command == 'open':
             if _redis: g_dev['redis'].delete('enc_cmd')
             plog("enclosure remote cmd: open.")
@@ -838,7 +838,6 @@ class Enclosure:
         wx_hold = g_dev['ocn'].wx_hold #or redis_hold  #TWO PATHS to pick up wx-hold.
         if self.mode == "Automatic" and (open_cmd or close_cmd):
             g_dev['obs'].send_to_user("User enclosure requests not honored in Automatic mode.", p_level='INFO')
-
         if self.mode == 'Shutdown':
             #  NB in this situation we should always Park telescope, rotators, etc.
             #  NB This code is weak

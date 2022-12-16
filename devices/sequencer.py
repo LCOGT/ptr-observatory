@@ -334,7 +334,7 @@ class Sequencer:
             self.bias_dark_latch = False
             req = {'bin1': False, 'bin2': True, 'bin3': False, 'bin4': False, 'numOfBias': 45, \
                    'numOfDark': 15, 'darkTime': 180, 'numOfDark2': 3, 'dark2Time': 360, \
-                   'hotMap': True, 'coldMap': True, 'script': 'genBiasDarkMaster', }
+                   'hotMap': True, 'coldMap': True, 'script': 'genBiasDarkMaster', }  # NB NB All of the prior is obsolete
             opt = {}
             #No action needed on  the enclosure at this level
             self.park_and_close(enc_status)
@@ -851,13 +851,19 @@ class Sequencer:
                     exp_time =  float(exposure['exposure'])
 
                     if exposure['bin'] == '"optimal"':
-                        tempBinString=str(g_dev['cam'].config['camera']['camera_1_1']['settings']['default_bin'][0])
+                        tempBinString=str(g_dev['cam'].config['camera']['camera_1_1']['settings']['optimal_bin'][0])
                         binning = tempBinString + ' ' + tempBinString
-                    elif exposure['bin'] == '"maximum"' :
-                        tempBinString=str(g_dev['cam'].config['camera']['camera_1_1']['settings']['maximum_bin'][0])
+                    elif exposure['bin'] == '"fine"' :
+                        tempBinString=str(g_dev['cam'].config['camera']['camera_1_1']['settings']['fine_bin'][0])
+                        binning = tempBinString + ' ' + tempBinString
+                    elif exposure['bin'] == '"coarse"' :
+                        tempBinString=str(g_dev['cam'].config['camera']['camera_1_1']['settings']['coarse_bin'][0])
+                        binning = tempBinString + ' ' + tempBinString
+                    elif exposure['bin'] == '"eng"' :
+                        tempBinString=str(g_dev['cam'].config['camera']['camera_1_1']['settings']['eng_bin'][0])
                         binning = tempBinString + ' ' + tempBinString
                     elif exposure['bin'] in[0, '0', '0,0', '0, 0', '0 0']:
-                        tempBinString=str(g_dev['cam'].config['camera']['camera_1_1']['settings']['default_bin'][0])
+                        tempBinString=str(g_dev['cam'].config['camera']['camera_1_1']['settings']['fine_bin'][0])
                         binning = tempBinString + ' ' + tempBinString
                     elif exposure['bin'] in [1, '1,1', '1, 1', '1 1']:
                         binning = '1 1'
@@ -868,7 +874,7 @@ class Sequencer:
                     elif exposure['bin'] in [4, '4,4', '4, 4', '4 4']:
                         binning = '4 4'
                     else:
-                        tempBinString=str(g_dev['cam'].config['camera']['camera_1_1']['settings']['default_bin'][0])
+                        tempBinString=str(g_dev['cam'].config['camera']['camera_1_1']['settings']['optimal_bin'][0])
                         binning = tempBinString + ' ' + tempBinString
                     count = int(exposure['count'])
                     #  We should add a frame repeat count
@@ -1024,7 +1030,7 @@ class Sequencer:
         if morn:
             ending = g_dev['events']['End Morn Bias Dark']
         else:
-            ending = g_dev['events']['End Eve Bias Dark']
+            ending = g_dev['events']['End Eve Bias Dark']+0.3
         while ephem.now() < ending :   #Do not overrun the window end
 
             g_dev['mnt'].park_command({}, {}) # Get there early
@@ -1033,46 +1039,81 @@ class Sequencer:
 
             #short_dark_time = self.config['camera']['camera_1_1']['settings']['ref_dark']
             #long_dark_time = self.config['camera']['camera_1_1']['settings']['long_dark']
-            bias_count = self.config['camera']['camera_1_1']['settings']['bias_count']
-            dark_count = self.config['camera']['camera_1_1']['settings']['dark_count']
-            dark_exp_time = self.config['camera']['camera_1_1']['settings']['dark_length']
-            darkbias_bin_spec=self.config['camera']['camera_1_1']['settings']['darkbias_bin_spec']
+            # NB NB Long term it would be slightly better to interleave bias and darks
+            bias_dark_bin_spec=self.config['camera']['camera_1_1']['settings']['bias_dark_bin_spec']  #Each is these is a list.
+            bias_count = self.config['camera']['camera_1_1']['settings']['bias_per_bin_count']
+            dark_count = self.config['camera']['camera_1_1']['settings']['dark_per_bin_count']
+            dark_exp_time = self.config['camera']['camera_1_1']['settings']['dark_exposure_per_bin']
+            cycle_time = self.config['camera']['camera_1_1']['settings']['cycle_time']
+            enable_bin= self.config['camera']['camera_1_1']['settings']['enable_bin']
             #for n_of_bias in range(bias_count):   #9*(9 +1) per cycle.
-            if ephem.now() + 210/86400 > ending:
-                break
+            if ephem.now() + 120/86400 > ending:
+                break     #Terminate Bias dark phase if within 2 min of ending the phas. 
             
-            # For each binning in biasdark_bin_spec
-            # Take.... biases and darks
-            for ctr in range(len(darkbias_bin_spec)):
-                #print ("Undertaking binning " + str(darkbias_bin_spec[ctr]) + " biases and darks.")
-                plog("Expose " + str(dark_count) +" " + str(darkbias_bin_spec[ctr]) +  " bias frames.")
-                req = {'time': 0.0,  'script': 'True', 'image_type': 'bias'}
-                opt = {'area': "Full", 'count': bias_count, 'bin': darkbias_bin_spec[ctr] , \
-                       'filter': 'dark'}                    
-                result = g_dev['cam'].expose_command(req, opt, no_AWS=False, \
-                                do_sep=False, quick=False)
-                
-                g_dev['obs'].update_status()
-                if ephem.now() + 210/86400 > ending:
-                    break
-                    
-            for n_of_darks in range(dark_count):
-                if ephem.now() + (dark_exp_time + 30)/86400 > ending:
-                    break
-                for ctr in range(len(darkbias_bin_spec)):
-                    plog("Expose " + str(darkbias_bin_spec[ctr]) + " dark " + str(n_of_darks+1) + " of " + str(dark_count) + " using exposure:  " + str(dark_exp_time) )
-                    req = {'time': dark_exp_time ,  'script': 'True', 'image_type': 'dark'}
-                    opt = {'area': "Full", 'count': 1, 'bin': darkbias_bin_spec[ctr], \
-                            'filter': 'dark'}
-                    result = g_dev['cam'].expose_command(req, opt, no_AWS=False, \
-                                       do_sep=False, quick=False)
-                    g_dev['obs'].update_status()
-                    if ephem.now() + (dark_exp_time + 30)/86400 > ending:
-                        break
+            # For each enabled binning in biasdark_bin_spec
+            # Take.... biases and darks, then advance to another binning and repeat
+            
+            for ctr_dbb in range(len(bias_dark_bin_spec)):
+                if enable_bin[ctr_dbb]:
+                    b_d_to_do = bias_count[ctr_dbb] + dark_count[ctr_dbb]
+                    try:
+                        stride = bias_count[ctr_dbb]//dark_count[ctr_dbb]
+                        plog("Tobor will interleave a dark every  " + str(stride) + "  biases.")
+                        single_dark = True
+                    except:
+                        stride = bias_count[ctr_dbb]    #Just do all of the biases first.
+                        single_dark = False
+                    while b_d_to_do > 0:
+                        min_to_do = min(b_d_to_do, stride)
+                        plog("Expose " + str(stride) +" " + str(bias_dark_bin_spec[ctr_dbb]) +  " bias frames.")
+                        req = {'time': 0.0,  'script': 'True', 'image_type': 'bias'}
+                        opt = {'area': "Full", 'count': min_to_do, 'bin': bias_dark_bin_spec[ctr_dbb] , \
+                               'filter': 'dark'}
+                          
+                        result = g_dev['cam'].expose_command(req, opt, no_AWS=False, \
+                                        do_sep=False, quick=False)
+                        b_d_to_do -= min_to_do
                         
-                g_dev['obs'].update_status()
-                if ephem.now() + 30/86400 >= ending:
-                    break
+
+                        g_dev['obs'].update_status()
+                        
+                        # if ephem.now() + 210/86400 > ending:   #NB NB needs to be checked out
+                        #     break
+                        #I am changing this so the darks for the above binning are done after the biases  WER
+                            
+                        #for ctr_darks in range((dark_count[ctr_dbb])):
+                        if ephem.now() + (dark_exp_time[ctr_dbb] + cycle_time[ctr_dbb] + 30)/86400 > ending:
+                            break
+                        if not single_dark:
+                            for ctr_dark in range(dark_count[ctr_dbb]):
+                                plog("Expose " + str(bias_dark_bin_spec[ctr_dbb]) + " dark " + str(ctr_dark + 1) + " of " \
+                                     + str(dark_count[ctr_dbb]) + " using exposure:  " + str(dark_exp_time[ctr_dbb]) )
+                                req = {'time': dark_exp_time[ctr_dbb] ,  'script': 'True', 'image_type': 'dark'}
+                                opt = {'area': "Full", 'count': 1, 'bin': bias_dark_bin_spec[ctr_dbb], \
+                                        'filter': 'dark'}
+                                result = g_dev['cam'].expose_command(req, opt, no_AWS=False, \
+                                                   do_sep=False, quick=False)
+                                b_d_to_do -= 1
+                                g_dev['obs'].update_status()
+                                if ephem.now() + (dark_exp_time[ctr_dbb] + cycle_time[ctr_dbb] + 30)/86400 > ending:
+                                    break
+                        else:
+                            plog("Expose " + str(bias_dark_bin_spec[ctr_dbb]) + " dark " + str(1) + " of " \
+                                     + str(dark_count[ctr_dbb]) + " using exposure:  " + str(dark_exp_time[ctr_dbb]) )
+                            req = {'time': dark_exp_time[ctr_dbb] ,  'script': 'True', 'image_type': 'dark'}
+                            opt = {'area': "Full", 'count': 1, 'bin': bias_dark_bin_spec[ctr_dbb], \
+                                    'filter': 'dark'}
+                            result = g_dev['cam'].expose_command(req, opt, no_AWS=False, \
+                                               do_sep=False, quick=False)
+                            b_d_to_do -= 1
+                            g_dev['obs'].update_status()
+                            if ephem.now() + (dark_exp_time[ctr_dbb] + cycle_time[ctr_dbb] + 30)/86400 > ending:
+                                break
+                            
+    
+                    g_dev['obs'].update_status()
+                    if ephem.now() + 30/86400 >= ending:
+                        break
 
             plog(" Bias/Dark acquisition is finished normally.")
 
