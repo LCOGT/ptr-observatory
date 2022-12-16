@@ -1443,6 +1443,7 @@ class Sequencer:
                 self.estimated_first_flat_exposure = False
                 while (acquired_count < flat_count):# and g_dev['enc'].status['shutter_status'] in ['Open', 'open']: # NB NB NB and roof is OPEN! and (ephem_now +3/1440) < g_dev['events']['End Eve Sky Flats' ]:
                     #if g_dev['enc'].is_dome:   #Does not apply
+                    g_dev['obs'].update_status()
                     if self.next_flat_observe < time.time():                
                         
                             
@@ -1662,6 +1663,8 @@ class Sequencer:
                             #obs_win_begin, sunset, sunrise, ephem_now = self.astro_events.getSunEvents()
                             #g_dev['obs'].update_status()
                             continue
+                    else:
+                        time.sleep(10)
         #if morn is False:
             #g_dev['mnt'].tracking = False   #  park_command({}, {})  #  NB this is provisional, Ok when simulating
         #    self.eve_sky_flat_latch = False
