@@ -229,7 +229,8 @@ class FilterWheel:
         else:
             self.null_filterwheel = True
         
-        self.home_command(None)
+        if self.null_filterwheel == False:
+            self.home_command(None)
             
 
     # The patches. Note these are essentially a getter-setter/property constructs.
