@@ -343,7 +343,7 @@ site_config = {
             #F4.9 setup
             'start_at_config_reference': True,
             'use_focuser_temperature': True,
-            'reference':12968,    #  20210313  Nominal at 10C Primary temperature
+            'reference':14043,    #  20210313  Nominal at 10C Primary temperature
             'ref_temp':  6265.0,    #  Update when pinning reference
             'coef_c': 0,   #  Negative means focus moves out as Primary gets colder
             'coef_0': 12968,  #  Nominal intercept when Primary is at 0.0 C.
