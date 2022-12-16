@@ -1675,6 +1675,8 @@ class Sequencer:
         #        plog("Mount did not park at end of morning skyflats.")
         if morn: 
             self.morn_sky_flat_latch = False
+        else:
+            self.eve_sky_flat_latch = False
         plog('\nSky flat complete, or too early. Telescope Tracking is off.\n')
         g_dev['mnt'].park_command({}, {}) # You actually always want it to park, TheSkyX can't stop the telescope tracking, so park is safer... it is before focus anyway.
         self.sky_guard = False
