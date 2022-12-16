@@ -1021,6 +1021,7 @@ class Camera:
                         ],
                     )
                 )  # Default DOES come from config.
+                #breakpoint()
                 self.current_filter = requested_filter_name
                 self.current_filter = g_dev["fil"].set_name_command(
                     {"filter": requested_filter_name}, {}
