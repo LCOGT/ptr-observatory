@@ -981,9 +981,63 @@ class Observatory:
                     # Ok, we have the 1x1 binning from the CMOS
                     # now we are here, we shall send up the other binning versions
                     print ("other_calib_binnings")
-                    
-                    
-                
+                    if slow_process[4] == 'flat' or slow_process[4] == 'screenflat' or slow_process[4] == 'skyflat':
+                        cmos_calib_binnings=self.config['camera']['camera_1_1']['settings']['flat_bin_spec']
+                    elif slow_process[4] == 'dark' or slow_process[4] == 'bias':
+                        cmos_calib_binnings=self.config['camera']['camera_1_1']['settings']['darkbias_bin_spec']
+
+                    for ctr in range (len(cmos_calib_binnings)-1):
+                        tempBin=cmos_calib_binnings[ctr+1][0]
+                        saver = 0
+                        saverretries = 0
+                        while saver == 0 and saverretries < 10:
+                            try:                               
+                                print ("Binning 1x1 " + str(slow_process[4]) + "to " + str(self.bin) + ", making an fz and sending it up")
+                                hdu = fits.CompImageHDU(
+                                    np.asarray(block_reduce(slow_process[2],tempBin), dtype=np.float32), slow_process[3]
+                                )
+                                hdu.verify("fix")
+                                hdu.header[
+                                    "BZERO"
+                                ] = 0  # Make sure there is no integer scaling left over
+                                hdu.header[
+                                    "BSCALE"
+                                ] = 1  # Make sure there is no integer scaling left over
+                                #hdu.data=slow_process[2]  
+
+                                hdu.header["NAXIS1"] = hdu.data.shape[0]
+                                hdu.header["NAXIS2"] = hdu.data.shape[1]
+                                hdu.writeto(
+                                    slow_process[1].replace('.fit', 'bin' +str(tempBin) + '.fit.fz'), overwrite=True, output_verify='silentfix'
+                                )  # Save full raw file locally
+                                try:
+                                    hdu.close()
+                                except:
+                                    pass                    
+                                del hdu
+                                saver = 1
+                                
+                            except Exception as e:
+                                plog("Failed to write raw file: ", e)
+                                if "requested" in e and "written" in e:
+                                    plog(check_download_cache())
+                                plog(traceback.format_exc())
+                                time.sleep(10)
+                                saverretries = saverretries + 1
+                        # Send this file up to AWS (THIS WILL BE SENT TO BANZAI INSTEAD, SO THIS IS THE INGESTER POSITION)
+                        if self.config['send_files_at_end_of_night'] == 'no':
+                            g_dev['cam'].enqueue_for_AWS(
+                                25000000, slow_process[1].replace('.fit', 'bin' +str(tempBin) + '.fit.fz')
+                            )
+                            g_dev["obs"].send_to_user(
+                                "An image has been readout from the camera and queued for transfer to the cloud.",
+                                p_level="INFO",
+                            )
+
+
+#'flat_bin_spec': ['1,1','2,2', '3,3','4,4'],    #Default binning for flats
+                #'darkbias_bin_spec': ['1,1','2,2', '3,3','4,4'],    #Default binning for flats
+#                'darkbias_bin_spec': ['1,1', '2,2','3,3','4,4']
                 
                 if slow_process[0] == 'fz_and_send':
                     # Create the fz file ready for BANZAI and the AWS/UI

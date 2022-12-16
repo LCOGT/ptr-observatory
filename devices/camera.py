@@ -3074,7 +3074,7 @@ class Camera:
                                     )
                             else:
                                 print ("Platesolve wasn't attempted due to lack of sources")
-                                self.to_slow_process(2000,('focus', cal_path + cal_name, hdufocusdata, hdu.header))
+                                self.to_slow_process(2000,('focus', cal_path + cal_name, hdufocusdata, hdu.header, frame_type))
                                 del hdufocusdata
                                 
                             if focus_image == True :
@@ -3193,7 +3193,7 @@ class Camera:
                                     "dark",
                                     "bias",
                                 ):
-                        self.to_slow_process(5,('cmos_other_calib_binnings_fz_and_send', raw_path + raw_name00 + ".fz", hdu.data, hdu.header)) 
+                        self.to_slow_process(50,('cmos_other_calib_binnings_fz_and_send', raw_path + raw_name00 + ".fz", hdu.data, hdu.header, frame_type)) 
 
                     # If a CMOS camera, bin to requested binning
                     if self.is_cmos and self.bin != 1:
@@ -3202,7 +3202,7 @@ class Camera:
                         
                     # Now that the jpeg has been sent up pronto,
                     # We turn back to getting the bigger raw, reduced and fz files dealt with
-                    self.to_slow_process(5,('fz_and_send', raw_path + raw_name00 + ".fz", hdu.data, hdu.header))                    
+                    self.to_slow_process(5,('fz_and_send', raw_path + raw_name00 + ".fz", hdu.data, hdu.header, frame_type))                    
 
                     # Now, here is an interesting twirly twist.... if it is a CMOS
                     # and a flat, then take that flat and send up different binning versions of it.
@@ -3211,7 +3211,7 @@ class Camera:
 
                     # Similarly to the above. This saves the RAW file to disk
                     # it works 99.9999% of the time.
-                    self.to_slow_process(1000,('raw', raw_path + raw_name00, hdu.data, hdu.header))
+                    self.to_slow_process(1000,('raw', raw_path + raw_name00, hdu.data, hdu.header, frame_type))
 
                     
                     
@@ -3224,7 +3224,7 @@ class Camera:
                             hdureduceddata=(block_reduce(hdureduceddata,self.bin)) 
                         
                         if smartstackid == 'no':
-                            self.to_slow_process(1000,('reduced', red_path + red_name01, hdureduceddata, hdu.header))
+                            self.to_slow_process(1000,('reduced', red_path + red_name01, hdureduceddata, hdu.header, frame_type))
                         else:
                             saver = 0
                             saverretries = 0
