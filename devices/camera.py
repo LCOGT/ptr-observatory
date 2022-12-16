@@ -878,6 +878,53 @@ class Camera:
         self.hint = optional_params.get("hint", "")
         self.script = required_params.get("script", "None")
         
+        imtype = required_params.get("image_type", "light")
+        no_AWS, self.toss = True if imtype.lower() == "test image" else False, False
+        quick = True if imtype.lower() == "quick" else False
+        # clearly define which frames do not do_sep, the rest default to do_sep.  NBNB this is obsolete and needs rework 20221002 WER
+        if imtype.lower() in (
+            "quick",
+            "bias",
+            "dark",
+            "screen flat",
+            "sky flat",
+            "near flat",
+            "thor flat",
+            "arc flat",
+            "lamp flat",
+            "solar flat",
+        ):
+            do_sep = False
+        else:
+            do_sep = True
+
+        if imtype.lower() in ("bias", "dark", "lamp flat"):
+            if imtype.lower() == "bias":
+                exposure_time = 0.0
+            imtypeb = False  # don't open the shutter.
+            lamps = "turn on led+tungsten lamps here, if lampflat"
+            frame_type = imtype.replace(" ", "")
+        elif imtype.lower() in ("near flat", "thor flat", "arc flat"):
+            imtypeb = False
+            lamps = "turn on ThAr or NeAr lamps here"
+            frame_type = "arc"
+        elif imtype.lower() in ("sky flat", "screen flat", "solar flat"):
+            imtypeb = True  # open the shutter.
+            lamps = "screen lamp or none"
+            frame_type = imtype.replace(
+                " ", ""
+            )  # note banzai doesn't appear to include screen or solar flat keywords.
+        elif imtype.lower() == "focus":
+            frame_type = "focus"
+            imtypeb = True
+            lamps = None
+        else:  # 'light', 'experimental', 'autofocus probe', 'quick', 'test image', or any other image type
+            imtypeb = True
+            lamps = None
+            if imtype.lower() in ("experimental", "autofocus probe", "auto_focus"):
+                frame_type = "experimental"
+            else:
+                frame_type = "expose"
         
         self.smartstack = required_params.get('smartstack', 'yes')
         self.longstack = required_params.get('longstackswitch', 'no')
@@ -963,11 +1010,19 @@ class Camera:
 
         bin_y = bin_x  # NB This needs fixing someday!
         self.bin = bin_x
+        
+        
+        
         # everything in cmos land is 1x1
         if self.is_cmos:
             #self.camera.BinX = 1
             #self.camera.BinY = 1            
             print ("CMOS ALWAYS USES 1x1, not setting binning.")
+            if frame_type in ("bias", "dark", "flat", "screenflat", "skyflat"): # All calibration frames are done in 1x1 and then altered later for CMOS
+                self.bin = 1
+                self.ccd_sum = str(1) + ' ' + str(1)
+                bin_x = 1
+                bin_y = 1
         else:
             self.camera.BinX = bin_x
             self.camera.BinY = bin_y
@@ -996,7 +1051,7 @@ class Camera:
             exposure_time + readout_time
         )  #  3 is the outer retry loop maximum.
 
-        imtype = required_params.get("image_type", "light")
+        
         # if imtype.lower() in ["experimental"]:
         #     g_dev["enc"].wx_test = not g_dev[
         #         "enc"
@@ -1050,52 +1105,7 @@ class Camera:
         #if not imtype.lower() in ["auto_focus", "focus", "autofocus probe"]:
         #    g_dev["foc"].adjust_focus()
 
-        no_AWS, self.toss = True if imtype.lower() == "test image" else False, False
-        quick = True if imtype.lower() == "quick" else False
-        # clearly define which frames do not do_sep, the rest default to do_sep.  NBNB this is obsolete and needs rework 20221002 WER
-        if imtype.lower() in (
-            "quick",
-            "bias",
-            "dark",
-            "screen flat",
-            "sky flat",
-            "near flat",
-            "thor flat",
-            "arc flat",
-            "lamp flat",
-            "solar flat",
-        ):
-            do_sep = False
-        else:
-            do_sep = True
-
-        if imtype.lower() in ("bias", "dark", "lamp flat"):
-            if imtype.lower() == "bias":
-                exposure_time = 0.0
-            imtypeb = False  # don't open the shutter.
-            lamps = "turn on led+tungsten lamps here, if lampflat"
-            frame_type = imtype.replace(" ", "")
-        elif imtype.lower() in ("near flat", "thor flat", "arc flat"):
-            imtypeb = False
-            lamps = "turn on ThAr or NeAr lamps here"
-            frame_type = "arc"
-        elif imtype.lower() in ("sky flat", "screen flat", "solar flat"):
-            imtypeb = True  # open the shutter.
-            lamps = "screen lamp or none"
-            frame_type = imtype.replace(
-                " ", ""
-            )  # note banzai doesn't appear to include screen or solar flat keywords.
-        elif imtype.lower() == "focus":
-            frame_type = "focus"
-            imtypeb = True
-            lamps = None
-        else:  # 'light', 'experimental', 'autofocus probe', 'quick', 'test image', or any other image type
-            imtypeb = True
-            lamps = None
-            if imtype.lower() in ("experimental", "autofocus probe", "auto_focus"):
-                frame_type = "experimental"
-            else:
-                frame_type = "expose"
+        
 
         #area = optional_params.get("area", 150)
         # if area is None or area in['Full', 'full', 'chip', 'Chip']:   #  Temporary patch to deal with 'chip'
