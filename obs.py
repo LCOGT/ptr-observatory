@@ -936,10 +936,10 @@ class Observatory:
             if (not self.slow_camera_queue.empty()) and one_at_a_time == 0:
                 one_at_a_time = 1
                 slow_process = self.slow_camera_queue.get(block=False)
-                print (slow_process[0])
-                print (slow_process[1][0])
+                #print (slow_process[0])
+                #print (slow_process[1][0])
                 slow_process=slow_process[1]
-                print ("***************************************************")
+                print ("********** slow queue : " + str(slow_process[0]) )
                 if slow_process[0] == 'focus':
                     hdufocus=fits.PrimaryHDU()
                     hdufocus.data=slow_process[2]                            
@@ -1043,7 +1043,7 @@ class Observatory:
 #                'darkbias_bin_spec': ['1,1', '2,2','3,3','4,4']
                 
                 if slow_process[0] == 'fz_and_send':
-                    print ("fz sending")
+                    #print ("fz sending")
                     # Create the fz file ready for BANZAI and the AWS/UI
                     # Note that even though the raw file is int16,
                     # The compression and a few pieces of software require float32
@@ -1095,7 +1095,7 @@ class Observatory:
                             "An image has been readout from the camera and queued for transfer to the cloud.",
                             p_level="INFO",
                         )
-                    print ("fz done.")
+                    #print ("fz done.")
                 
                 if slow_process[0] == 'reduced':
                     saver = 0
