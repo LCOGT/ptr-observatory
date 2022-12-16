@@ -401,7 +401,8 @@ site_config = {
             'maximum':360.0,
             'step_size':  0.0001,
             'backlash':  0.0,
-            'unit':  'degree'
+            'unit':  'degree',
+            'has_rotator': True   #Indicates to camera and Project to include rotation box.
             },
 
     },
@@ -592,7 +593,7 @@ site_config = {
                 'y_bias_line': True,
                 'x_active': 4784,
                 'y_active': 3194,
-                'det_size': '[1:9600, 1:6422]',  # Physical chip data size as reutrned from driver
+                'det_size': '[1:9600, 1:6422]',  # Physical chip data size as returned from driver
                 'ccd_sec': '[1:9600, 1:6422]',
                 'bias_sec': ['[1:22, 1:6388]', '[1:11, 1:3194]', '[1:7, 1:2129]', '[1:5, 1:1597]'],
                 'det_sec': ['[25:9600, 1:6388]', '[13:4800, 1:3194]', '[9:3200, 1:2129]', '[7:2400, 1:1597]'],
@@ -622,7 +623,7 @@ site_config = {
                 'max_exposure': 180.,
                 'can_subframe':  True,
                 'min_subframe': [128,128],
-                'bin_modes':  [[[1, 1], 0.30], ['Fine', 0.61],  ['Optimal', 0.91], ['Coarse', 1.2]],     #Meaning fixed binning if list has only one entry
+                'bin_modes':  [['Optimal', 0.91], ['Fine', 0.61], ['Coarse', 1.2], ['Eng', 0.30]],     #Meaning fixed binning if list has only one entry
                 'reference_gain': [1.3, 2.6, 3.9, 5.2],     #  NB GUess One val for each binning. Assumed digitalsumming in camera???
                 'reference_noise': [6, 6, 6, 6],    #  NB Guess
                 'reference_dark': [.2, .8, 1.8, 3.2],  #  NB  Guess
@@ -632,14 +633,16 @@ site_config = {
                 'cycle_time':            [ 18,    13,    15,    12  ],   # NB somewhat a Guess.
                 'enable_bin':            [ False, True,  True,  True],
                 'bias_dark_bin_spec':    ['1,1', '3,3', '2,2', '4,4'],    #Default binning for flats
-                'bias_per_bin_count':    [ 0,     51,    21,    21  ],
-                'dark_per_bin_count':    [ 0,     7,     5,     5   ],
-                'dark_exposure_per_bin': [ 0,     600  , 500  , 300 ],
+                'bias_per_bin_count':    [ 9,     9,    9,    9  ],
+                'dark_per_bin_count':    [ 3,     3,     3,     3   ],
+                'dark_exposure_per_bin': [ 60,     60  , 60  , 60 ],
                 'flat_bin_spec':         ['1,1', '3,3', '2,2', '4,4'],   #Is this necessary?
                 'flat_count_per_bin':    [ 0,     5,     5,     5   ],   #This will take days to get through
                 #'flat_count': 5,
-                'optimal_bin': [3, 3],   #  This is aka the optimal bin
-                'max_res_bin': [2, 2],  
+                'optimal_bin': [3, 3],   #  This is the optimal bin for MRC
+                'fine_bin': [2, 2],   #  This is the fine bin for MRC
+                'coarse_bin':  [4, 4],   #  This is the coarse bin for MRC
+                'eng_bin':     [1, 1],   #  This is the eng-only bin for MRC, not useful for users?
                 'bin_enable':  ['3 3'],  #  Always square and matched to seeing situation by owner  NB Obsolete? NO MF uses to load bias calib
                                          #  NB NB inconsistent use of bin string   '1 1', '1x1' , etc.
                 'cosmics_at_default' : 'yes',

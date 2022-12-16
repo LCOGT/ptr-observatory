@@ -915,13 +915,13 @@ class Camera:
             [0, 0],
             (0, 0),
         ]:  # 0,0 is an indicator for selecting the default binning
-            bin_x = self.config["camera"][self.name]["settings"]["max_res_bin"][0]
+            bin_x = self.config["camera"][self.name]["settings"]["fine_bin"][0]
             self.ccd_sum = str(bin_x) + " " + str(bin_x)
         else:
-            bin_x = self.config['camera'][self.name]['settings']['max_res_bin'][0]
+            bin_x = self.config['camera'][self.name]['settings']['fine_bin'][0]
             self.ccd_sum = str(bin_x) + ' ' + str(bin_x)
 
-        
+        bin_x = 3
         bin_y = bin_x  # NB This needs fixing someday!
         self.bin = bin_x
         self.camera.BinX = bin_x
@@ -1298,13 +1298,14 @@ class Camera:
                                 self.camera.StartSequence(
                                     self.camera_path + "seq/ptr_mrc.seq"
                                 )
-                                plog("Starting autosave  at:  ", self.t2)
+                                #plog("Starting autosave  at:  ", self.t2)
                             else:
-                                # This is the standard call to Maxim
+                                
                                 self.pre_mnt = []
                                 self.pre_rot = []
                                 self.pre_foc = []
                                 self.pre_ocn = []
+                                self.t2p1 = time.time()
                                 if frame_type in (
                                     "flat",
                                     "screenflat",
@@ -1326,7 +1327,7 @@ class Camera:
                                         + str(exposure_time)
                                         + "s "
                                         + str(frame_type)
-                                        + " exposure.",
+                                        + " focus exposure.",
                                         p_level="INFO",
                                     )
                                 else:
@@ -1599,13 +1600,15 @@ class Camera:
                 self.t4p4 = time.time()
 
                 self.img = np.array(self._getImageArray())  #Does QHY sum-bin or average bin? Ans Default is sum-bin.
-                max_pix = self.img.max()
-                if max_pix > 65535:
-                    print("max pix >65532:  ", max_pix)
-                self.img = self.img.astype('uint16')
+
+                
                 self.t4p5 = (
                     time.time()
+                
                 )  # As read, this is a Windows Safe Array of Longs
+                print("READOUT READOUT READOUT:  ", round(self.t4p5-self.t4p4, 1))
+                self.img = self.img.astype('uint16')
+
                 if frame_type in ["bias", "dark"] or frame_type[-4:] == ['flat']:
                     plog(
                         "Median of full area bias, dark or flat image:  ",
@@ -3279,6 +3282,8 @@ class Camera:
                     result["filter"] = self.current_filter
                     result["error"] == False
                     self.exposure_busy = False
+                    print("POSTPROCESS:  ", round(time.time() - self.t4p5, 1))
+                    print("TIME TIME TIME:  ", round(time.time() - self.t2, 1))
                     return result
                 except Exception as e:
                     plog("Header assembly block failed: ", e)

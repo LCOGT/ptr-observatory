@@ -304,12 +304,12 @@ class Sequencer:
         events = g_dev['events']
 
 
-        if self.bias_dark_latch and ((events['Eve Bias Dark'] <= ephem_now < events['End Eve Bias Dark']+0.3) and \
+        if self.bias_dark_latch and ((events['Eve Bias Dark'] <= ephem_now < events['End Eve Bias Dark']) and \
              self.config['auto_eve_bias_dark'] and g_dev['enc'].mode in ['Automatic', 'Autonomous', 'Manual'] ):
             self.bias_dark_latch = False
             req = {'bin1': False, 'bin2': True, 'bin3': False, 'bin4': False, 'numOfBias': 45, \
                    'numOfDark': 15, 'darkTime': 180, 'numOfDark2': 3, 'dark2Time': 360, \
-                   'hotMap': True, 'coldMap': True, 'script': 'genBiasDarkMaster', }
+                   'hotMap': True, 'coldMap': True, 'script': 'genBiasDarkMaster', }  # NB NB All of the prior is obsolete
             opt = {}
             #No action needed on  the enclosure at this level
             self.park_and_close(enc_status)
@@ -805,13 +805,19 @@ class Sequencer:
                     exp_time =  float(exposure['exposure'])
 
                     if exposure['bin'] == '"optimal"':
-                        tempBinString=str(g_dev['cam'].config['camera']['camera_1_1']['settings']['max_res_bin'][0])
+                        tempBinString=str(g_dev['cam'].config['camera']['camera_1_1']['settings']['optimal_bin'][0])
                         binning = tempBinString + ' ' + tempBinString
-                    elif exposure['bin'] == '"maximum"' :
-                        tempBinString=str(g_dev['cam'].config['camera']['camera_1_1']['settings']['max_res_bin'][0])
+                    elif exposure['bin'] == '"fine"' :
+                        tempBinString=str(g_dev['cam'].config['camera']['camera_1_1']['settings']['fine_bin'][0])
+                        binning = tempBinString + ' ' + tempBinString
+                    elif exposure['bin'] == '"coarse"' :
+                        tempBinString=str(g_dev['cam'].config['camera']['camera_1_1']['settings']['coarse_bin'][0])
+                        binning = tempBinString + ' ' + tempBinString
+                    elif exposure['bin'] == '"eng"' :
+                        tempBinString=str(g_dev['cam'].config['camera']['camera_1_1']['settings']['eng_bin'][0])
                         binning = tempBinString + ' ' + tempBinString
                     elif exposure['bin'] in[0, '0', '0,0', '0, 0', '0 0']:
-                        tempBinString=str(g_dev['cam'].config['camera']['camera_1_1']['settings']['max_res_bin'][0])
+                        tempBinString=str(g_dev['cam'].config['camera']['camera_1_1']['settings']['fine_bin'][0])
                         binning = tempBinString + ' ' + tempBinString
                     elif exposure['bin'] in [1, '1,1', '1, 1', '1 1']:
                         binning = '1 1'
@@ -822,7 +828,7 @@ class Sequencer:
                     elif exposure['bin'] in [4, '4,4', '4, 4', '4 4']:
                         binning = '4 4'
                     else:
-                        tempBinString=str(g_dev['cam'].config['camera']['camera_1_1']['settings']['max_res_bin'][0])
+                        tempBinString=str(g_dev['cam'].config['camera']['camera_1_1']['settings']['optimal_bin'][0])
                         binning = tempBinString + ' ' + tempBinString
                     count = int(exposure['count'])
                     #  We should add a frame repeat count
@@ -1012,14 +1018,15 @@ class Sequencer:
                         stride = bias_count[ctr_dbb]    #Just do all of the biases first.
                         single_dark = False
                     while b_d_to_do > 0:
+                        min_to_do = min(b_d_to_do, stride)
                         plog("Expose " + str(stride) +" " + str(bias_dark_bin_spec[ctr_dbb]) +  " bias frames.")
                         req = {'time': 0.0,  'script': 'True', 'image_type': 'bias'}
-                        opt = {'area': "Full", 'count': stride, 'bin': bias_dark_bin_spec[ctr_dbb] , \
+                        opt = {'area': "Full", 'count': min_to_do, 'bin': bias_dark_bin_spec[ctr_dbb] , \
                                'filter': 'dark'}
                           
                         result = g_dev['cam'].expose_command(req, opt, no_AWS=False, \
                                         do_sep=False, quick=False)
-                        b_d_to_do -= stride
+                        b_d_to_do -= min_to_do
                         
                         g_dev['obs'].update_status()
                         
