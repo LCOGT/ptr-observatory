@@ -1541,15 +1541,13 @@ class Camera:
                     
             #     self.status_time = time.time() + 10
             
-            print (self.async_exposure_lock)
-            
             if (
                 time.time() < self.completion_time or self.async_exposure_lock==True
             ):  # NB Testing here if glob too early is delaying readout.
                 #time.sleep(2)
                 #self.t7b = time.time()
                 remaining = round(self.completion_time - time.time(), 1)
-                if remaining > 0:
+                if remaining > 0:                    
                     plog(
                         '||  ' + str(round(remaining, 1)) + "sec.",
                         str(round(100 * remaining / cycle_time, 1)) + "%",
@@ -1571,6 +1569,7 @@ class Camera:
                             + " sec.",
                             p_level="INFO",
                         )
+
                     if (
                         quartileExposureReport == 2
                         and remaining < initialRemaining * 0.50
@@ -1583,6 +1582,7 @@ class Camera:
                             + " sec.",
                             p_level="INFO",
                         )
+
                     if (
                         quartileExposureReport == 3
                         and remaining < initialRemaining * 0.25
@@ -1595,6 +1595,7 @@ class Camera:
                             + " sec.",
                             p_level="INFO",
                         )
+
                 continue
 
             incoming_image_list = []
