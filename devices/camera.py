@@ -40,7 +40,7 @@ from colour_demosaicing import (
     demosaicing_CFA_Bayer_Menon2007,
     mosaicing_CFA_Bayer)
 
-from PIL import Image
+from PIL import Image , ImageEnhance
 
 from devices.darkslide import Darkslide
 import ptr_utility
@@ -2821,6 +2821,14 @@ class Camera:
                             sources['flux'] = flux
                             sources['fluxerr'] = fluxerr
                             sources['flag'] |= flag
+                            sources['FWHM'], _ = sep.flux_radius(focusimg, sources['x'], sources['y'], sources['a'], 0.5, subpix=5)
+                            sources['FWHM'] = sources['FWHM'] * 2
+                            #print ("Does this tell me what I think it does?")
+                            #print (sources['FWHM'] < 1.0)
+                            #print (sources['FWHM'][sources['FWHM'] < 1.0])
+                            #print (sources[sources['FWHM'] > 1.0])
+                            sources = sources[sources['FWHM'] > 1.0]
+                            ##breakpoint()
 
                             plog("No. of detections:  ", len(sources))
 
@@ -2838,9 +2846,7 @@ class Camera:
 
                             else:
                                 # Get halflight radii
-                                #breakpoint()
-                                sources['FWHM'], _ = sep.flux_radius(focusimg, sources['x'], sources['y'], sources['a'], 0.5, subpix=5)
-                                sources['FWHM'] = sources['FWHM'] * 2
+                                #breakpoint()                                
                                 fwhmcalc=(np.asarray(sources['FWHM']))
                                 fwhmcalc=fwhmcalc[fwhmcalc > 1.0]
                                 fwhmcalc=fwhmcalc[fwhmcalc != 0] # Remove 0 entries
@@ -2850,7 +2856,7 @@ class Camera:
                                 rfp = round(np.median(fwhmcalc),3)
                                 rfr = round(np.median(fwhmcalc) * pixscale,3)
                                 rfs = round(np.std(fwhmcalc) * pixscale,3)
-                                print("This image has a FWHM of " + str(rfr) + "+/-" +str(rfs) +" arcsecs, " + str(rfp) + " pixels. Pixelscale " + str(pixscale))
+                                print("This image has a FWHM of " + str(rfr) + "+/-" +str(rfs) +" arcsecs, " + str(rfp) + " pixels.")
                                 #breakpoint()
                                 result["FWHM"] = rfr
                                 result["mean_focus"] = avg_foc[1]
@@ -2874,7 +2880,7 @@ class Camera:
                                     # Focus tracker code. This keeps track of the focus and if it drifts
                                     # Then it triggers an autofocus.
                                     g_dev["foc"].focus_tracker.pop(0)
-                                    g_dev["foc"].focus_tracker.append(rfr)
+                                    g_dev["foc"].focus_tracker.append(round(rfr,3))
                                     print("Last ten FWHM : ")
                                     print(g_dev["foc"].focus_tracker)
                                     print("Median last ten FWHM")
@@ -3136,6 +3142,80 @@ class Camera:
                         if smartstackid == 'no':
                             
                             if self.config["camera"][self.name]["settings"]["is_osc"]:
+                                xshape=hdugreen.shape[0]
+                                yshape=hdugreen.shape[1]
+                                
+                                # Lets put a roof on top of hdublue incoming.
+                                #hdublue=hdublue-np.nanmin(hdublue)+1
+                                
+                                # hdublue=np.arcsinh(hdublue)
+                                # blueperc=np.percentile(hdublue, 0.5)
+                                # hdublue= hdublue-blueperc
+                                # blueperc=np.percentile(hdublue, 98)
+                                # blue_stretched=hdublue * 1/blueperc
+                                # blue_stretched[blue_stretched > 1] = 1
+                                
+                                # hdugreen=np.arcsinh(hdugreen)
+                                # greenperc=np.percentile(hdugreen, 0.5)
+                                # hdugreen= hdugreen-greenperc
+                                # greenperc=np.percentile(hdugreen, 98)
+                                # green_stretched=hdugreen * 1/greenperc
+                                # green_stretched[green_stretched > 1] = 1
+                                
+                                # hdured=np.arcsinh(hdured)
+                                # redperc=np.percentile(hdured, 0.5)
+                                # hdured= hdured-redperc                                
+                                # redperc=np.percentile(hdured, 98)
+                                # red_stretched=hdured * 1/redperc
+                                # red_stretched[red_stretched > 1] = 1
+                                # hdublue[ hdublue > blueperc] = blueperc
+                                # blueperc=np.percentile(hdublue, 0.001)
+                                # hdublue[ hdublue < blueperc] = blueperc
+                                # blue_stretched = np.arcsinh(hdublue)                                
+                                # #blue_stretched = blue_stretched - np.nanmin(blue_stretched) + 10
+                                # blue_stretched = blue_stretched /np.nanmax(blue_stretched)
+                                # #blue_stretched = blue_stretched.astype(np.uint8)
+                                # del hdublue
+                                
+                                # #hdured=hdured-np.nanmin(hdured)+1
+                                # redperc=np.percentile(hdured, 99.9)
+                                # hdured[ hdured > redperc] = redperc
+                                # redperc=np.percentile(hdured, 0.001)
+                                # hdured[ hdured < redperc] = redperc
+                                # red_stretched = np.arcsinh(hdured)                                
+                                # #red_stretched = red_stretched - np.nanmin(red_stretched) + 10
+                                # red_stretched = red_stretched /np.nanmax(red_stretched)
+                                # #red_stretched = red_stretched.astype(np.uint8)
+                                # del hdured
+                                
+                                # #hdugreen=hdugreen-np.nanmin(hdugreen)+1
+                                # greenperc=np.percentile(hdugreen, 99.9)
+                                # hdugreen[ hdugreen > greenperc] = greenperc
+                                # greenperc=np.percentile(hdugreen, 0.001)
+                                # hdugreen[ hdugreen < greenperc] = greenperc
+                                # green_stretched = np.arcsinh(hdugreen)
+                                                        
+                                # #green_stretched = green_stretched - np.nanmin(green_stretched) + 10
+                                # green_stretched = green_stretched / np.nanmax(green_stretched)
+                                            
+                                #green_stretched = green_stretched.astype(np.uint8)
+
+
+                                # red_stretched_data_float = np.arcsinh(hdured)
+                                # red_stretched_data_float = red_stretched_data_float - np.nanmin(red_stretched_data_float)
+                                # print (np.percentile(red_stretched_data_float,99))
+                                # topValue= (np.percentile(red_stretched_data_float,99))
+                                # red_stretched_data_float = red_stretched_data_float * (256/topValue)
+                                # red_stretched_data_float = red_stretched_data_float.astype(np.uint8)
+                                # del hdured
+                                # green_stretched_data_float = np.arcsinh(hdugreen)
+                                # green_stretched_data_float = green_stretched_data_float - np.nanmin(green_stretched_data_float)
+                                # print (np.percentile(green_stretched_data_float,99))
+                                # topValue= (np.percentile(green_stretched_data_float,99))
+                                # green_stretched_data_float = green_stretched_data_float * (256/topValue)
+                                # green_stretched_data_float = green_stretched_data_float.astype(np.uint8)
+                                #breakpoint()
+                                
                                 blue_stretched_data_float = Stretch().stretch(hdublue+1000)
                                 del hdublue
                                 green_stretched_data_float = Stretch().stretch(hdugreen+1000)
@@ -3148,19 +3228,37 @@ class Camera:
                                 rgbArray[..., 0] = red_stretched_data_float*256
                                 rgbArray[..., 1] = green_stretched_data_float*256
                                 rgbArray[..., 2] = blue_stretched_data_float*256
-                                stretched_data_uint8 = Image.fromarray(rgbArray)
+        
                                 del red_stretched_data_float
                                 del blue_stretched_data_float
                                 del green_stretched_data_float
                                 colour_img = Image.fromarray(rgbArray)
+                                
+                                # del hdugreen
+                                # rgbArray=np.zeros((xshape,yshape,3), 'uint8')
+                                # rgbArray[..., 0] = np.asarray(red_stretched * 255, dtype=np.uint8)
+                                # rgbArray[..., 1] = np.asarray(green_stretched *255, dtype=np.uint8)
+                                # rgbArray[..., 2] = np.asarray(blue_stretched * 255, dtype=np.uint8)
+                                # #rgbArray=rgbArray.astype(np.uint8)
+                                # del red_stretched
+                                # del blue_stretched
+                                # del green_stretched
+                                #colour_img = Image.fromarray(rgbArray)
+                                #breakpoint()
+                                contrast=ImageEnhance.Contrast(colour_img)
+                                contrast_image=contrast.enhance(1.3)
+                                satur=ImageEnhance.Color(contrast_image)
+                                satur_image=satur.enhance(3.0)
+                                #colour_img = colour_img.satur(3)
+                                
                                 ## Resizing the array to an appropriate shape for the jpg and the small fits
                                 iy, ix = colour_img.size
                                 if iy == ix:
-                                    colour_img.resize((1280, 1280))
+                                    satur_image.resize((1280, 1280))
                                 else:
-                                    colour_img.resize((int(1536 * iy / ix), 1536))
+                                    satur_image.resize((int(1536 * iy / ix), 1536))
                                 
-                                colour_img.save(
+                                satur_image.save(
                                     paths["im_path"] + paths["jpeg_name10"]
                                 )
                                 del colour_img

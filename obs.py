@@ -1465,7 +1465,7 @@ class Observatory:
                         rgbArray[..., 0] = red_stretched_data_float*256
                         rgbArray[..., 1] = green_stretched_data_float*256
                         rgbArray[..., 2] = blue_stretched_data_float*256
-                        stretched_data_uint8 = Image.fromarray(rgbArray)
+
                         del red_stretched_data_float
                         del blue_stretched_data_float
                         del green_stretched_data_float
