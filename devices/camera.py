@@ -1556,7 +1556,7 @@ class Camera:
 
         self.completion_time = self.t2 + cycle_time
         result = {"error": False}
-        notifyReadOutOnlyOnce = 0
+        #notifyReadOutOnlyOnce = 0
         quartileExposureReport = 0
         self.plog_exposure_time_counter_timer=time.time() -3.0
         
@@ -1665,6 +1665,10 @@ class Camera:
                     #plog("OCN status not quick updated")
                     pass
                 
+                
+                #time.sleep(0.1)
+                self.t4p4 = time.time()
+                
                 imageCollected = 0
                 retrycounter = 0
                 while imageCollected != 1:
@@ -1674,28 +1678,23 @@ class Camera:
                         return result
 
                     try:
-                        self.img = np.array(self._getImageArray()).astype("uint16")
+                        self.img = np.array(self._getImageArray())
                         imageCollected = 1
                     except Exception as e:
                         plog(e)
                         if "Image Not Available" in str(e):
                             plog("Still waiting for file to arrive: ", e)
                         time.sleep(3)
-                        retrycounter = retrycounter + 1
+                        retrycounter = retrycounter + 1          
 
-                #time.sleep(0.1)
-                self.t4p4 = time.time()
-
-                #breakpoint()
-                self.img = self._getImageArray()  #Does QHY sum-bin or average bin? Ans Default is sum-bin.
-
-                
                 self.t4p5 = (
                     time.time()
                 
                 )  # As read, this is a Windows Safe Array of Longs
+
+                
                 print("READOUT READOUT READOUT:  ", round(self.t4p5-self.t4p4, 1))
-                self.img = self.img.astype('uint16')
+                #self.img = self.img.astype('uint16')
 
 
                 if frame_type in ["bias", "dark"] or frame_type[-4:] == ['flat']:
@@ -1776,6 +1775,8 @@ class Camera:
 
                 counter = 0
 
+
+
                 avg_mnt = g_dev["mnt"].get_average_status(self.pre_mnt, self.post_mnt)
                 avg_foc = g_dev["foc"].get_average_status(self.pre_foc, self.post_foc)
                 try:
@@ -1798,7 +1799,8 @@ class Camera:
                     hdu = fits.PrimaryHDU(
                         self.img.transpose()
                     )  # THis needs to be done to keep fits "traditional." 0,0 upper left.
-                    self.img = None
+                    #self.img = None
+                    del self.img
                     
 
                     # It is faster to store the current binning than keeping on asking ASCOM throughout this
@@ -2450,6 +2452,8 @@ class Camera:
                         hdu.header["USERID"] = (
                             str(self.last_user_id).replace("-", "").replace("|", "")
                         )
+
+            
 
                     im_type = "EX"  # or EN for engineering....
                     f_ext = ""
@@ -3391,19 +3395,19 @@ class Camera:
                 #self.t7 = time.time()
                 remaining = round(self.completion_time - time.time(), 1)
 
-                if remaining < 0 and notifyReadOutOnlyOnce == 0:
-                    plog(
-                        "Reading out image. Time remaining: "
-                        + str(round(13 + remaining, 1)),
-                        " sec",
-                    )
-                    g_dev["obs"].send_to_user(
-                        "Reading out image. Time remaining: "
-                        + str(round(13 + remaining, 1))
-                        + " s.",
-                        p_level="INFO",
-                    )
-                    notifyReadOutOnlyOnce = 1
+                # if remaining < 0 and notifyReadOutOnlyOnce == 0:
+                #     plog(
+                #         "Reading out image. Time remaining: "
+                #         + str(round(13 + remaining, 1)),
+                #         " sec",
+                #     )
+                #     g_dev["obs"].send_to_user(
+                #         "Reading out image. Time remaining: "
+                #         + str(round(13 + remaining, 1))
+                #         + " s.",
+                #         p_level="INFO",
+                #     )
+                #     notifyReadOutOnlyOnce = 1
                 if remaining < -30:
                     plog(
                         "Camera timed out; probably is no longer connected, resetting it now."
