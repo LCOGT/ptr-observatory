@@ -1004,10 +1004,10 @@ class Camera:
             [0, 0],
             (0, 0),
         ]:  # 0,0 is an indicator for selecting the default binning
-            bin_x = self.config["camera"][self.name]["settings"]["fine_bin"][0]
+            bin_x = self.config["camera"][self.name]["settings"]["optimal_bin"][0]
             self.ccd_sum = str(bin_x) + " " + str(bin_x)
         else:
-            bin_x = self.config['camera'][self.name]['settings']['fine_bin'][0]
+            bin_x = self.config['camera'][self.name]['settings']["optimal_bin"][0]
             self.ccd_sum = str(bin_x) + ' ' + str(bin_x)
 
         
