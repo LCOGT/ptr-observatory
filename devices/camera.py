@@ -2838,13 +2838,20 @@ class Camera:
 
                             else:
                                 # Get halflight radii
+                                #breakpoint()
                                 sources['FWHM'], _ = sep.flux_radius(focusimg, sources['x'], sources['y'], sources['a'], 0.5, subpix=5)
                                 sources['FWHM'] = sources['FWHM'] * 2
-                                rfp = np.median(sources['FWHM'])
-                                rfr = np.median(sources['FWHM']) * pixscale
-                                rfs = np.std(sources['FWHM']) * pixscale
-                                print("This image has a FWHM of " + str(rfr))
-
+                                fwhmcalc=(np.asarray(sources['FWHM']))
+                                fwhmcalc=fwhmcalc[fwhmcalc > 1.0]
+                                fwhmcalc=fwhmcalc[fwhmcalc != 0] # Remove 0 entries
+                                fwhmcalc=fwhmcalc[fwhmcalc < 75] # remove stupidly large entries
+                                fwhmcalc=fwhmcalc[fwhmcalc < np.median(fwhmcalc)+ 3* np.std(fwhmcalc)]
+                                fwhmcalc=fwhmcalc[fwhmcalc > np.median(fwhmcalc)- 3* np.std(fwhmcalc)]
+                                rfp = round(np.median(fwhmcalc),3)
+                                rfr = round(np.median(fwhmcalc) * pixscale,3)
+                                rfs = round(np.std(fwhmcalc) * pixscale,3)
+                                print("This image has a FWHM of " + str(rfr) + "+/-" +str(rfs) +" arcsecs, " + str(rfp) + " pixels. Pixelscale " + str(pixscale))
+                                #breakpoint()
                                 result["FWHM"] = rfr
                                 result["mean_focus"] = avg_foc[1]
                                 try:
