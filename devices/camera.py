@@ -2786,8 +2786,8 @@ class Camera:
                             sources = sources[sources['flag'] < 8]
                             sources = sources[sources["peak"] < 0.9* image_saturation_level]
                             sources = sources[sources["cpeak"] < 0.9 * image_saturation_level]
-                            sources = sources[sources["peak"] > 500]
-                            sources = sources[sources["cpeak"] > 500]
+                            sources = sources[sources["peak"] > 300]
+                            sources = sources[sources["cpeak"] > 300]
                             sources = sources[sources["x"] < ix - border_x]
                             sources = sources[sources["x"] > border_x]
                             sources = sources[sources["y"] < iy - border_y]
@@ -2838,7 +2838,7 @@ class Camera:
 
 
 
-                            if len(sources) < 5:
+                            if len(sources) < 2:
                                 print ("not enough sources to estimate a reliable focus")
                                 result["error"]=True
                                 result["FWHM"] = np.nan
@@ -3022,7 +3022,7 @@ class Camera:
                                 cal_name[:-9] + "F012" + cal_name[-7:]
                             )                            
                             
-                            if len(sources) > 5:
+                            if len(sources) >= 5:
                                 
                                 # We only need to save the focus image immediately if there is enough sources to rationalise that.
                                 # It only needs to be on the disk immediately now if platesolve is going to attempt to pick it up.
@@ -3232,7 +3232,7 @@ class Camera:
                                 del red_stretched_data_float
                                 del blue_stretched_data_float
                                 del green_stretched_data_float
-                                colour_img = Image.fromarray(rgbArray)
+                                colour_img = Image.fromarray(rgbArray, mode="RGB")
                                 
                                 # del hdugreen
                                 # rgbArray=np.zeros((xshape,yshape,3), 'uint8')

@@ -1469,7 +1469,7 @@ class Observatory:
                         del red_stretched_data_float
                         del blue_stretched_data_float
                         del green_stretched_data_float
-                        colour_img = Image.fromarray(rgbArray)
+                        colour_img = Image.fromarray(rgbArray, mode="RGB")
                         ## Resizing the array to an appropriate shape for the jpg and the small fits
                         iy, ix = colour_img.size
                         if iy == ix:
