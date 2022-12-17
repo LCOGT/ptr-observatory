@@ -673,8 +673,8 @@ site_config = {
 
                 'flat_count': 5,
 
-                'saturate': 60000,   #[[1, 65000], [2,262000], [3,589815], [4, 1048560]] ,   # e-.  This is a close guess, not measured, but taken from data sheet.
-                'fullwell_capacity': 70000, # [80000, 320000, 720000, 1280000],
+                'saturate':  [[1, 65000], [2,262000], [3,589815], [4, 1048560]] ,    #[[1, 65000], [2,262000], [3,589815], [4, 1048560]] ,   # e-.  This is a close guess, not measured, but taken from data sheet.
+                'fullwell_capacity':  [80000, 320000, 720000, 1280000],
 
                 'read_mode':  'Normal',
                 'readout_mode': 'Normal',

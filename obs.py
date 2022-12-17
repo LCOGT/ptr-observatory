@@ -995,7 +995,7 @@ class Observatory:
                     if slow_process[4] == 'flat' or slow_process[4] == 'screenflat' or slow_process[4] == 'skyflat':
                         cmos_calib_binnings=self.config['camera']['camera_1_1']['settings']['flat_bin_spec']
                     elif slow_process[4] == 'dark' or slow_process[4] == 'bias':
-                        cmos_calib_binnings=self.config['camera']['camera_1_1']['settings']['darkbias_bin_spec']
+                        cmos_calib_binnings=self.config['camera']['camera_1_1']['settings']['bias_dark_bin_spec']
 
                     for ctr in range (len(cmos_calib_binnings)-1):
                         tempBin=cmos_calib_binnings[ctr+1][0]
