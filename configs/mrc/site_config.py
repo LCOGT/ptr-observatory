@@ -62,7 +62,7 @@ site_config = {
     'admin_aliases': ["ANS", "WER", "TELOPS", "TB", "DH", "KVH", "KC"],
 
     'client_hostname':  'MRC-0m35',
-
+                    # NB NB disk D at mrc may be faster for temp storage
     'client_path':  'Q:/ptr/',  # Generic place for client host to stash misc stuff
     'alt_path':  'Q:/ptr/',  # Generic place for this host to stash misc stuff
     'plog_path':  'Q:/ptr/plogs/',  #place where night logs can be found.
@@ -71,21 +71,22 @@ site_config = {
 
     'archive_age' : -99.9, # Number of days to keep files in the local archive before deletion. Negative means never delete
     'send_files_at_end_of_night' : 'no', # For low bandwidth sites, do not send up large files until the end of the night. set to 'no' to disable
-    'aux_archive_path':  None,
-    'wema_is_active':  True,          # True if the split computers used at a site.
+    'aux_archive_path':  None,   #NB NB we might want to put Q: here for MRC
+    'wema_is_active':  True,          # True if the split computers used at a site.  NB CHANGE THE DAMN NAME!
     'wema_hostname': 'MRC-WMS-ENC',   # Prefer the shorter version
     'wema_path':  'Q:/ptr/',  # '/wema_transfer/',
     'dome_on_wema':   True,
     'site_IPC_mechanism':  'redis',   # ['None', shares', 'shelves', 'redis']  Pick One
     'wema_write_share_path': 'Q:/ptr/',  # Meant to be where Wema puts status data.
-    'client_read_share_path':  'Q:/ptr/',
+    'client_read_share_path':  'Q:/ptr/', #NB these are all very confusing names.
     'client_write_share_path': 'Q:/ptr/',
     'redis_ip': '10.15.0.109',  #'127.0.0.1', None if no redis path present,
     'site_is_generic':  False,   # A simply  single computer ASCOM site.
     'site_is_specific':  False,  # Indicates some special code for this site, found at end of config.
 
 
-    'host_wema_site_name':  'MRC',  #  The umbrella header for obsys in close geographic proximity.
+    'host_wema_site_name':  'MRC',  #  The umbrella header for obsys in close geographic proximity,
+                                    #  under the control of one wema
     'name': 'Mountain Ranch Camp Observatory 0m35f7.2',
     'airport_code': 'SBA',
     'location': 'Near Santa Barbara CA,  USA',
@@ -97,14 +98,14 @@ site_config = {
                     to get out and vote early and often lest
                     we lose charge of our democracy.
                     ''',    #i.e, a multi-line text block supplied by the owner.  Must be careful about the contents for now.
-     'location_day_allsky':  None,  #  Thus ultimately should be a URL, probably a color camera.
+    'location_day_allsky':  None,  #  Thus ultimately should be a URL, probably a color camera.
     'location_night_allsky':  None,  #  Thus ultimately should be a URL, usually Mono camera with filters.
     'location _pole_monitor': None,  #This probably gets us to some sort of image (Polaris in the North)
     'location_seeing_report': None,  # Probably a path to a jpeg or png graph.
 
     'TZ_database_name':  'America/Los_Angeles',
     'mpc_code':  'ZZ23',    #This is made up for now.
-    'time_offset':  -8,
+    'time_offset':  -8,     # NB these two should be derived from Python libs so change is automatic
     'timezone': 'PST',
     'latitude': 34.459375,     #Decimal degrees, North is Positive
     'longitude': -119.681172,   #Decimal degrees, West is negative
@@ -112,7 +113,7 @@ site_config = {
     'reference_ambient':  10.0,  #Degrees Celsius.  Alternately 12 entries, one for every - mid month.
     'reference_pressure':  977.83,  #mbar Alternately 12 entries, one for every - mid month.
 
-    'site_roof_control': 'no', #MTF entered this in to remove sro specific code
+    'site_roof_control': 'no', #MTF entered this in to remove sro specific code  NB 'site_is_specifc' also deals with this
     'site_in_automatic_default': "Automatic",   #"Manual", "Shutdown"
     'automatic_detail_default': "Enclosure is initially set to Automatic mode.",
     'observing_check_period' : 2,    # How many minutes between weather checks
@@ -480,6 +481,17 @@ site_config = {
             "driver": "Maxim.CCDCamera",  #['ASCOM.FLI.FilterWheel1', 'ASCOM.FLI.FilterWheel2'],   #"Maxim",   #
             #"driver":   'ASCOM.FLI.FilterWheel',   #  NB THIS IS THE NEW DRIVER FROM peter.oleynikov@gmail.com  Found in Kepler ASCOM section
             "dual_wheel": True,
+            
+            
+            # WER - if there is no filter wheel, then these two are used, otherwise they are harmless
+            "name" : "RGGB",
+            'flat_sky_gain' : 1148,
+            #'driver' : None <------ set driver to None for no filter wheel
+            
+            
+            
+            
+            
             # "parent": "telescope1",
             # "alias": "CWL2",
             # "desc":  'PTR Custom FLI dual wheel.',
@@ -556,25 +568,27 @@ site_config = {
     'camera': {
         'camera_1_1': {
             'parent': 'telescope1',
-            'name': 'sq003ms',      #Important because this points to a server file structure by that name.
-            'desc':  'QHY 600M Pro',
-            'driver':  "ASCOM.QHYCCD.Camera", #"Maxim.CCDCamera",   #'ASCOM.FLI.Kepler.Camera', "ASCOM.QHYCCD.Camera",   #
-            'detector':  'Sony IMX455',
+            'name': 'sq001cs',      #Important because this points to a server file structure by that name.
+            'desc':  'QHY 600C Pro',
+            'driver':  "ASCOM.QHYCCD.Camera", # NB Be careful this is not QHY Camera2 or Guider  "Maxim.CCDCamera",   #'ASCOM.FLI.Kepler.Camera', "ASCOM.QHYCCD.Camera",   #
+            'detector':  'Sony IMX455 Color',
             'manufacturer':  'QHY',
             'use_file_mode':  False,
-            'file_mode_path':  'Q:/archive/sq01/maxim/',
+            'file_mode_path':  'Q:/archive/sq01/maxim/',   #NB NB all file_mode Maxim stuff should go!
 
             'settings': {
                 
-                'is_osc' : False,
+                'is_osc' : True,
                 'osc_bayer' : 'RGGB',
                 'crop_preview': False,
                 'crop_preview_ybottom': 1,
                 'crop_preview_ytop': 1,
                 'crop_preview_xleft': 1,
                 'crop_preview_xright': 1,
-                'temp_setpoint': -25,
-                'calib_setpoints': [-25, -22.5,- 20, -17.5 ],  #  Picked by day-of-year mod len(list)
+                'temp_setpoint': -20,    #Verify we can go colder, this system has a chiller
+                'has_chiller': True,
+                'calib_setpoints': [-20, -20, -20, -20, -20, -20, \
+                                    -20, -20, -20, -20, -20, -20],  #  Picked by month-of-year 
                 'day_warm': False,
                 'cooler_on': True,
                 'x_start':  0,
@@ -631,40 +645,41 @@ site_config = {
                 'reference_noise': [6, 6, 6, 6],    #  NB Guess
                 'reference_dark': [.2, .8, 1.8, 3.2],  #  NB  Guess
                 'reference_offset': [611, 623, 590, 700], #  NB Guess  ADU vaules not times in sec.
-                'fullwell_capacity': [80000, 720000, 320000, 1280000],   #  NB Guess
-                'bin-desc':              ['N.A. 0.30"', 'Optimal 0.91"', 'Fine 0.61"', 'Coarse 1.2"'],# " as is arcsec
-                'cycle_time':            [ 18,    13,    15,    12  ],   # NB somewhat a Guess.
-                'enable_bin':            [ False, True,  True,  True],
-                'bias_dark_bin_spec':    ['1,1', '3,3', '2,2', '4,4'],    #Default binning for flats
-                'bias_per_bin_count':    [ 9,     9,    9,    9  ],
-                'dark_per_bin_count':    [ 3,     3,     3,     3   ],
-                'dark_exposure_per_bin': [ 60,     60  , 60  , 60 ],
-                'flat_bin_spec':         ['1,1', '3,3', '2,2', '4,4'],   #Is this necessary?
-                'flat_count_per_bin':    [ 0,     5,     5,     5   ],   #This will take days to get through
+                'fullwell_capacity': [80000, 720000, 320000, 1280000 ],   #  NB Guess
+                'bin-desc':              ['1x1', '2x2', '3x3', '4x4' ],
+                'chan_color':            ['col', 'gry', 'gry', 'gry' ],
+                'cycle_time':            [ 18,    13,    15,    12   ],   # NB somewhat a Guess.
+                'enable_bin':            [ True, True,  False,  False],
+                'bias_dark_bin_spec':    ['1,1', '2,2', '3,3', '4,4' ],    #Default binning for flats
+                'bias_per_bin_count':    [ 17,     17,   9,     9    ],
+                'dark_per_bin_count':    [ 5,     5,     3,     3    ],
+                'dark_exposure_per_bin': [ 120,   120,    60,    60  ],
+                'flat_bin_spec':         ['1,1', '2,2', '3,3', '4,4' ],   #Is this necessary?
+                'flat_count_per_bin':    [ 5,     5,     0,     0    ],   #This will take days to get through
                 #'flat_count': 5,
-                'optimal_bin': [3, 3],   #  This is the optimal bin for MRC
-                'fine_bin': [2, 2],   #  This is the fine bin for MRC
-                'coarse_bin':  [4, 4],   #  This is the coarse bin for MRC
+                'optimal_bin': [1, 1],   #  This is the optimal bin for MRC
+                'fine_bin':    [1, 1],   #  This is the fine bin for MRC
+                'coarse_bin':  [1, 1],   #  This is the coarse bin for MRC
                 'eng_bin':     [1, 1],   #  This is the eng-only bin for MRC, not useful for users?
-                'bin_enable':  ['3 3'],  #  Always square and matched to seeing situation by owner  NB Obsolete? NO MF uses to load bias calib
+                'bin_enable':  ['1 1'],  #  Always square and matched to seeing situation by owner  NB Obsolete? NO MF uses to load bias calib
                                          #  NB NB inconsistent use of bin string   '1 1', '1x1' , etc.
                 'cosmics_at_default' : 'yes',
                 'cosmics_at_maximum' : 'yes',              
                 'rbi_delay':  0,      #  This being zero says RBI is not available, eg. for SBIG.
                 'is_cmos':  True,
-                'is_color': False,
+                'is_color': True,   #NB we also have a is_osc key.
                 'can_set_gain':  True,
                 'max_linearity':  60000,   # Guess
 
                 'flat_count': 5,
 
-                'saturate':  [[1, 65000], [2,262000], [3,589815], [4, 1048560]] ,   # e-.  This is a close guess, not measured, but taken from data sheet.
-                'fullwell_capacity': [80000, 320000, 720000, 1280000],
+                'saturate': 60000,   #[[1, 65000], [2,262000], [3,589815], [4, 1048560]] ,   # e-.  This is a close guess, not measured, but taken from data sheet.
+                'fullwell_capacity': 70000, # [80000, 320000, 720000, 1280000],
 
                 'read_mode':  'Normal',
                 'readout_mode': 'Normal',
                 'readout_speed':  50,
-                'readout_seconds': 12,
+                'readout_seconds': 6,
                 'smart_stack_exposure_time': 30,
                 'square_detector': False,
                 'square_pixels': True,
