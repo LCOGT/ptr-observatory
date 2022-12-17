@@ -483,8 +483,12 @@ class Camera:
             )  #  NB eventually default after reboot should be closed.
             # self.darkslide_instance.closeDarkslide()   #  Consider turing off IR Obsy light at same time..
             # self.darkslide_open = False
-            self.darkslide_state =  'Unknown'
-            plog("Darkslide unknown on camera startup.")
+            if self.darkslide_state != 'Open':
+                self.darkslide_instance.openDarkslide()
+                self.darkslide_open = True
+                self.darkslide_state = 'Open'
+            #self.darkslide_state =  'Unknown'
+            #plog("Darkslide unknown on camera startup.")
         self.last_user_name = "Tobor"
         self.last_user_id = "Tobor"
         try:
@@ -632,7 +636,7 @@ class Camera:
         return self.camera.ImageReady
 
     def _maxim_getImageArray(self):
-        return self.camera.ImageArray
+        return np.asarray(self.camera.ImageArray)
 
     def _ascom_connected(self):
         return self.camera.Connected
@@ -678,7 +682,7 @@ class Camera:
         self.camera.StopExposure()  # ASCOM also has an AbortExposure method.
 
     def _ascom_getImageArray(self):
-        return self.camera.ImageArray
+        return np.asarray(self.camera.ImageArray)
 
     def create_simple_autosave(
         self,
@@ -1329,14 +1333,16 @@ class Camera:
                             ldr_handle_high_time = None  #  This is not maxim-specific
 
                             if self.darkslide and imtypeb:
-                                self.darkslide_instance.openDarkslide()
-                                self.darkslide_open = True
-                                self.darkslide_state = 'Open'
-                                #time.sleep(0.1)
+                                if self.darkslide_state != 'Open':
+                                    self.darkslide_instance.openDarkslide()
+                                    self.darkslide_open = True
+                                    self.darkslide_state = 'Open'
+                                    #time.sleep(0.1)
                             elif self.darkslide and not imtypeb:
-                                self.darkslide_instance.closeDarkslide()
-                                self.darkslide_open = False
-                                self.darkslide_state = 'Closed'
+                                if self.darkslide_state != 'Closed':
+                                    self.darkslide_instance.closeDarkslide()
+                                    self.darkslide_open = False
+                                    self.darkslide_state = 'Closed'
                                 #time.sleep(0.1)
                             else:
                                 pass
@@ -1468,7 +1474,8 @@ class Camera:
                             smartstackid=SmartStackID,
                             longstackid=LongStackID,
                             sskcounter=sskcounter,
-                            Nsmartstack=Nsmartstack
+                            Nsmartstack=Nsmartstack,
+                            bin_x=bin_x
                         )  # NB all these parameters are crazy!
                         self.exposure_busy = False
                         #self.t10 = time.time()
@@ -1512,7 +1519,8 @@ class Camera:
         smartstackid='no',
         longstackid='no',
         sskcounter=0,
-        Nsmartstack=1
+        Nsmartstack=1,
+        bin_x=1
     ):
         plog(
             "Finish exposure Entered:  " + str(exposure_time) + "sec.;   # of ",
@@ -1542,38 +1550,23 @@ class Camera:
         counter = 0
 
         cycle_time = (
-            float(self.config["camera"][self.name]["settings"]["readout_seconds"])
+            float(self.config["camera"][self.name]["settings"]['cycle_time'][bin_x-1])
             + exposure_time
         )
 
         self.completion_time = self.t2 + cycle_time
         result = {"error": False}
-        notifyReadOutOnlyOnce = 0
+        #notifyReadOutOnlyOnce = 0
         quartileExposureReport = 0
         self.plog_exposure_time_counter_timer=time.time() -3.0
+        
+        
         while True:  # This loop really needs a timeout.
             self.post_mnt = []
             self.post_rot = []
             self.post_foc = []
             self.post_ocn = []
-            try:
-                g_dev["mnt"].get_rapid_exposure_status(
-                    self.post_mnt
-                )  # Need to pick which pass was closest to image completion
-            except:
-                #plog("need to get this mount status done")
-                pass
-            try:
-                g_dev["rot"].get_quick_status(self.post_rot)
-            except:
-                #plog("There is no rotator?")
-                pass
-            g_dev["foc"].get_quick_status(self.post_foc)
-            try:
-                g_dev["ocn"].get_quick_status(self.post_ocn)
-            except:
-                #plog("OCN status not quick updated")
-                pass
+            
             # if time.time() > self.status_time:
             #     g_dev["obs"].update_status(cancel_check=False)
             #     # if not g_dev["cam"].exposure_busy:
@@ -1652,6 +1645,30 @@ class Camera:
             if self.async_exposure_lock == False and ((not self.use_file_mode and self._imageavailable()) or (
                 self.use_file_mode and len(incoming_image_list) >= 1
             )):
+                
+                try:
+                    g_dev["mnt"].get_rapid_exposure_status(
+                        self.post_mnt
+                    )  # Need to pick which pass was closest to image completion
+                except:
+                    #plog("need to get this mount status done")
+                    pass
+                try:
+                    g_dev["rot"].get_quick_status(self.post_rot)
+                except:
+                    #plog("There is no rotator?")
+                    pass
+                g_dev["foc"].get_quick_status(self.post_foc)
+                try:
+                    g_dev["ocn"].get_quick_status(self.post_ocn)
+                except:
+                    #plog("OCN status not quick updated")
+                    pass
+                
+                
+                #time.sleep(0.1)
+                self.t4p4 = time.time()
+                
                 imageCollected = 0
                 retrycounter = 0
                 while imageCollected != 1:
@@ -1661,28 +1678,23 @@ class Camera:
                         return result
 
                     try:
-                        self.img = np.array(self._getImageArray()).astype("uint16")
+                        self.img = np.array(self._getImageArray())
                         imageCollected = 1
                     except Exception as e:
                         plog(e)
                         if "Image Not Available" in str(e):
                             plog("Still waiting for file to arrive: ", e)
                         time.sleep(3)
-                        retrycounter = retrycounter + 1
+                        retrycounter = retrycounter + 1          
 
-                #time.sleep(0.1)
-                self.t4p4 = time.time()
-
-
-                self.img = np.array(self._getImageArray())  #Does QHY sum-bin or average bin? Ans Default is sum-bin.
-
-                
                 self.t4p5 = (
                     time.time()
                 
                 )  # As read, this is a Windows Safe Array of Longs
+
+                
                 print("READOUT READOUT READOUT:  ", round(self.t4p5-self.t4p4, 1))
-                self.img = self.img.astype('uint16')
+                #self.img = self.img.astype('uint16')
 
 
                 if frame_type in ["bias", "dark"] or frame_type[-4:] == ['flat']:
@@ -1763,6 +1775,8 @@ class Camera:
 
                 counter = 0
 
+
+
                 avg_mnt = g_dev["mnt"].get_average_status(self.pre_mnt, self.post_mnt)
                 avg_foc = g_dev["foc"].get_average_status(self.pre_foc, self.post_foc)
                 try:
@@ -1785,7 +1799,8 @@ class Camera:
                     hdu = fits.PrimaryHDU(
                         self.img.transpose()
                     )  # THis needs to be done to keep fits "traditional." 0,0 upper left.
-                    self.img = None
+                    #self.img = None
+                    del self.img
                     
 
                     # It is faster to store the current binning than keeping on asking ASCOM throughout this
@@ -2437,6 +2452,8 @@ class Camera:
                         hdu.header["USERID"] = (
                             str(self.last_user_id).replace("-", "").replace("|", "")
                         )
+
+            
 
                     im_type = "EX"  # or EN for engineering....
                     f_ext = ""
@@ -3378,19 +3395,19 @@ class Camera:
                 #self.t7 = time.time()
                 remaining = round(self.completion_time - time.time(), 1)
 
-                if remaining < 0 and notifyReadOutOnlyOnce == 0:
-                    plog(
-                        "Reading out image. Time remaining: "
-                        + str(round(13 + remaining, 1)),
-                        " sec",
-                    )
-                    g_dev["obs"].send_to_user(
-                        "Reading out image. Time remaining: "
-                        + str(round(13 + remaining, 1))
-                        + " s.",
-                        p_level="INFO",
-                    )
-                    notifyReadOutOnlyOnce = 1
+                # if remaining < 0 and notifyReadOutOnlyOnce == 0:
+                #     plog(
+                #         "Reading out image. Time remaining: "
+                #         + str(round(13 + remaining, 1)),
+                #         " sec",
+                #     )
+                #     g_dev["obs"].send_to_user(
+                #         "Reading out image. Time remaining: "
+                #         + str(round(13 + remaining, 1))
+                #         + " s.",
+                #         p_level="INFO",
+                #     )
+                #     notifyReadOutOnlyOnce = 1
                 if remaining < -30:
                     plog(
                         "Camera timed out; probably is no longer connected, resetting it now."
@@ -3403,6 +3420,7 @@ class Camera:
                     self.exposure_busy = False
                     print ("Time Taken From Exposure start to finish : "  +str(time.time() - self.tempStartupExposureTime))
                     return result
+            time.sleep(0.1)
 
     def enqueue_for_AWS(self, priority, im_path, name):
         image = (im_path, name)

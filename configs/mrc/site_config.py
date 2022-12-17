@@ -648,7 +648,8 @@ site_config = {
                 'fullwell_capacity': [80000, 720000, 320000, 1280000 ],   #  NB Guess
                 'bin-desc':              ['1x1', '2x2', '3x3', '4x4' ],
                 'chan_color':            ['col', 'gry', 'gry', 'gry' ],
-                'cycle_time':            [ 18,    13,    15,    12   ],   # NB somewhat a Guess.
+                #'cycle_time':            [ 18,    13,    15,    12   ],   # NB somewhat a Guess.
+                'cycle_time':            [ 0,    0,    0,    0   ],   # NB somewhat a Guess.
                 'enable_bin':            [ True, True,  False,  False],
                 'bias_dark_bin_spec':    ['1,1', '2,2', '3,3', '4,4' ],    #Default binning for flats
                 'bias_per_bin_count':    [ 17,     17,   9,     9    ],
