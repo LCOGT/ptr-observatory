@@ -577,7 +577,7 @@ site_config = {
                 'default_rotation': 0.0000,
                 'flat_bin_spec': ['1,1','2,2', '3,3','4,4'],    #Default binning for flats
                 #'darkbias_bin_spec': ['1,1','2,2', '3,3','4,4'],    #Default binning for flats
-                'darkbias_bin_spec': ['1,1', '2,2','3,3','4,4'],    #Default binning for flats
+                'bias_dark_bin_spec': ['1,1', '2,2','3,3','4,4'],    #Default binning for flats
                 'bin_enable': ['1,1', '2,2', '3,3','4,4'],
                 'optimal_bin':  [2, 2, 0.538],    #  Matched to seeing situation by owner
                 'max_res_bin':  [1, 1, 0.269],    #  Matched to seeing situation by owner

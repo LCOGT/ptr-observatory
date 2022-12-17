@@ -567,7 +567,7 @@ site_config = {
                 'has_darkslide':  False,
                 'darkslide_com':  None,
                 'flat_bin_spec': ['1,1'],    #Default binning for flats
-                'darkbias_bin_spec': ['1,1'],    #Default binning for flats
+                'bias_dark_bin_spec': ['1,1'],    #Default binning for flats
                 'bin_enable': ['1 1'],
                 'dark_length' : 900,
                 'bias_count' : 10,
