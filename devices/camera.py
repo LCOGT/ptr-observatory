@@ -1797,7 +1797,7 @@ class Camera:
                 try:
 
                     hdu = fits.PrimaryHDU(
-                        self.img.transpose()
+                        self.img
                     )  # THis needs to be done to keep fits "traditional." 0,0 upper left.
                     #self.img = None
                     del self.img
