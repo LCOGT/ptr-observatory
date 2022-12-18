@@ -512,6 +512,9 @@ site_config = {
 
             'settings': {
                 'is_osc' : False,
+                
+                'transpose_fits' : False,
+                'transpose_jpeg' : True,
                 'osc_bayer' : 'RGGB',
                 'crop_preview': False,
                 'crop_preview_ybottom': 1,

@@ -3252,7 +3252,7 @@ class Camera:
                                 satur_image=satur.enhance(3.0)
                                 #colour_img = colour_img.satur(3)
                                 
-                                if self.config["camera"][self.name]["settings"]["transpose_jpeg"]:
+                                if self.config["camera"][g_dev['cam'].name]["settings"]["transpose_jpeg"]:
                                     satur_image=satur_image.transpose(Image.TRANSPOSE)
                                 
                                 ## Resizing the array to an appropriate shape for the jpg and the small fits

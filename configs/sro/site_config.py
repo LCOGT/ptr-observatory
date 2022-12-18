@@ -468,6 +468,9 @@ site_config = {
 
             'settings': {                
                 'is_osc' : False,
+                
+                'transpose_fits' : False,
+                'transpose_jpeg' : True,
                 'osc_bayer' : 'RGGB',
                 'crop_preview': True,
                 'crop_preview_ybottom': 1,  #### IMPORTANT: CROPS NEED TO BE SYMMETRICAL FOR POINTING SOLVES TO WORK.
