@@ -433,11 +433,11 @@ site_config = {
                         
                         #['w',     [0,  0],     0, 72.7, [1.00 ,  72], 'PL'],    #0.   For sequencer autofocus  consider foc or f filter
                         ['focus', [3,  3],     0, 50, [1.00 ,  72], 'focus'],    #0.
-                        ['air',    [0,  0],     0, 100, [1.00 ,  72], 'PhLum'],    #1.
+                        ['air',    [0,  0],     0, 24, [1.00 ,  72], 'PhLum'],    #1.
                         ['dark',    [1,  1],     0, 17, [1.00 , 119], 'PhRed'],    #2.
-                        ['pb',    [2,  2],     0, 50, [1.00 , 113], 'PhGreen'],    #3.
-                        ['pg',    [3,  3],     0, 50, [0.80 ,  97], 'PhBlue'],    #4.
-                        ['pr',    [4,  4],     0, 15, [0.80 ,  97], 'PhBlue'],    #4.
+                        ['pb',    [2,  2],     0, 23, [1.00 , 113], 'PhGreen'],    #3.
+                        ['pg',    [3,  3],     0, 24, [0.80 ,  97], 'PhBlue'],    #4.
+                        ['pr',    [4,  4],     0, 24, [0.80 ,  97], 'PhBlue'],    #4.
                         #['PR',    [1,  1],     0, 170, [1.00 , 119], 'PhBlue'],    #2.
                         #['PG',    [2,  2],     0, 220, [1.00 , 113], 'PhGreen'],    #3.
                         #['PB',    [3,  3],     0, 300, [0.80 ,  97], 'PhRed'],    #4.
@@ -577,7 +577,7 @@ site_config = {
                 'default_rotation': 0.0000,
                 'flat_bin_spec': ['1,1','2,2', '3,3','4,4'],    #Default binning for flats
                 #'darkbias_bin_spec': ['1,1','2,2', '3,3','4,4'],    #Default binning for flats
-                'darkbias_bin_spec': ['1,1', '2,2','3,3','4,4'],    #Default binning for flats
+                'bias_dark_bin_spec': ['1,1', '2,2','3,3','4,4'],    #Default binning for flats
                 'bin_enable': ['1,1', '2,2', '3,3','4,4'],
                 'optimal_bin':  [2, 2, 0.538],    #  Matched to seeing situation by owner
                 'max_res_bin':  [1, 1, 0.269],    #  Matched to seeing situation by owner
