@@ -505,7 +505,7 @@ class FilterWheel:
             #print (self.filter.FilterIndexZeroBased)
             #print ("Requesto Filter")
             #print (self.filter_number)
-            self.filter.FilterIndexZeroBased = self.filter_number
+            self.filter.FilterIndexZeroBased = self.filter_number + 1
             #print ("After Filter")
             #print (self.filter.FilterIndexZeroBased)
             #breakpoint()
