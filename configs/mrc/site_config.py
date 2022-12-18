@@ -131,7 +131,7 @@ site_config = {
     'pointing_calibration_on_startup': False,
     'periodic_focus_time' : 0.5, # This is a time, in hours, over which to bypass automated focussing (e.g. at the start of a project it will not refocus if a new project starts X hours after the last focus)
     'stdev_fwhm' : 0.5, # This is the expected variation in FWHM at a given telescope/camera/site combination. This is used to check if a fwhm is within normal range or the focus has shifted
-    'focus_exposure_time': 15, # Exposure time in seconds for exposure image
+    'focus_exposure_time': 25, # Exposure time in seconds for exposure image
     'focus_trigger' : 1.0, # What FWHM increase is needed to trigger an autofocus
     'solve_nth_image' : 10, # Only solve every nth image
     'solve_timer' : 5, # Only solve every X minutes
@@ -529,6 +529,7 @@ site_config = {
                                 ['difrp',   [4, 7],  1000,   48,   [2, 17], 'dr'], # 19
                                 ['difip',   [4, 8],  1000,   44,   [2, 17], 'di'], # 20
                                 ['focus',   [2, 0],     0,  0.0,   [2, 17], 'fo'], # 21
+                                #['focus',   [0, 0],     0,  0.0,   [2, 17], 'fo'], # 21
                                 ['dark',    [8, 5],     0,  0.0,   [2, 17], 'dk']],# 22
 
                                 #Screen = 100; QHY400 ~ 92% DQE   HDR Mode    Screen = 160 sat  20190825 measured.
@@ -579,6 +580,8 @@ site_config = {
             'settings': {
                 
                 'is_osc' : True,
+                'transpose_fits' : False,
+                'transpose_jpeg' : True,
                 'osc_bayer' : 'RGGB',
                 'crop_preview': False,
                 'crop_preview_ybottom': 1,
@@ -650,11 +653,11 @@ site_config = {
                 'chan_color':            ['col', 'gry', 'gry', 'gry' ],
                 #'cycle_time':            [ 18,    13,    15,    12   ],   # NB somewhat a Guess.
                 'cycle_time':            [ 0,    0,    0,    0   ],   # NB somewhat a Guess.
-                'enable_bin':            [ True, True,  False,  False],
+                'enable_bin':            [ True, False,  False,  False],
                 'bias_dark_bin_spec':    ['1,1', '2,2', '3,3', '4,4' ],    #Default binning for flats
-                'bias_per_bin_count':    [ 17,     17,   9,     9    ],
-                'dark_per_bin_count':    [ 5,     5,     3,     3    ],
-                'dark_exposure_per_bin': [ 120,   120,    60,    60  ],
+                'bias_per_bin_count':    [ 31,     17,   9,     9    ],
+                'dark_per_bin_count':    [ 9,     5,     3,     3    ],
+                'dark_exposure_per_bin': [ 360,   120,    60,    60  ],
                 'flat_bin_spec':         ['1,1', '2,2', '3,3', '4,4' ],   #Is this necessary?
                 'flat_count_per_bin':    [ 5,     5,     0,     0    ],   #This will take days to get through
                 #'flat_count': 5,

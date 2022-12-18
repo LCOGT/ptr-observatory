@@ -1018,8 +1018,7 @@ class Mount:
             print ("mount really doesn't like pierside calls ", e)
             pier_east = 1
          #Update incoming ra and dec with mounting offsets.
-        print ("delta")
-        print (delta_ra)
+
         ra += delta_ra #NB it takes a restart to pick up a new correction which is also J.now.
         dec += delta_dec
         ra, dec = ra_dec_fix_h(ra,dec)
