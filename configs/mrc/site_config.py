@@ -580,6 +580,8 @@ site_config = {
             'settings': {
                 
                 'is_osc' : True,
+                'transpose_fits' : False,
+                'transpose_jpeg' : True,
                 'osc_bayer' : 'RGGB',
                 'crop_preview': False,
                 'crop_preview_ybottom': 1,
@@ -651,11 +653,11 @@ site_config = {
                 'chan_color':            ['col', 'gry', 'gry', 'gry' ],
                 #'cycle_time':            [ 18,    13,    15,    12   ],   # NB somewhat a Guess.
                 'cycle_time':            [ 0,    0,    0,    0   ],   # NB somewhat a Guess.
-                'enable_bin':            [ True, True,  False,  False],
+                'enable_bin':            [ True, False,  False,  False],
                 'bias_dark_bin_spec':    ['1,1', '2,2', '3,3', '4,4' ],    #Default binning for flats
-                'bias_per_bin_count':    [ 17,     17,   9,     9    ],
-                'dark_per_bin_count':    [ 5,     5,     3,     3    ],
-                'dark_exposure_per_bin': [ 120,   120,    60,    60  ],
+                'bias_per_bin_count':    [ 31,     17,   9,     9    ],
+                'dark_per_bin_count':    [ 9,     5,     3,     3    ],
+                'dark_exposure_per_bin': [ 360,   120,    60,    60  ],
                 'flat_bin_spec':         ['1,1', '2,2', '3,3', '4,4' ],   #Is this necessary?
                 'flat_count_per_bin':    [ 5,     5,     0,     0    ],   #This will take days to get through
                 #'flat_count': 5,

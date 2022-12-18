@@ -1,4 +1,5 @@
-""""
+\
+    """"
 IMPORTANT TODOs:
 
 WER 20211211
@@ -57,7 +58,7 @@ from planewave import platesolve
 import ptr_events
 from ptr_utility import plog
 
-from PIL import Image
+from PIL import Image, ImageEnhance
 
 # The ingester should only be imported after environment variables are loaded in.
 load_dotenv(".env")
@@ -416,8 +417,8 @@ class Observatory:
                                 "Pending reductions and transfers to the PTR Archive are not affected."
                             )
                             # Now we need to cancel possibly a pending camera cycle or a
-                            # script running in the sequencer.  NOTE a stop or cancel empties outgoing queue at AWS side and only
-                            # a Cancel/Stop action is sent.  But we need to same any subsequent commands.
+                            # script running in the sequencer.  NOTE a stop or cancel empties outgoing queue at AWS side and 
+                            # only a Cancel/Stop action is sent.  But we need to same any subsequent commands.
                             try:
                                 if g_dev["cam"].exposure_busy:
                                     
@@ -751,7 +752,8 @@ class Observatory:
                 
     
             # If no activity for an hour, park the scope               
-            if time.time() - self.time_since_last_slew_or_exposure  > self.config['mount']['mount1']['time_inactive_until_park']:
+            if time.time() - self.time_since_last_slew_or_exposure > self.config['mount']['mount1']\
+                                                                                ['time_inactive_until_park']:
                 if not g_dev['mnt'].mount.AtPark:  
                     print ("Parking scope due to inactivity")
                     g_dev['mnt'].home_command()
@@ -1003,10 +1005,12 @@ class Observatory:
                         saverretries = 0
                         while saver == 0 and saverretries < 10:
                             try:                               
-                                print ("Binning 1x1 " + str(slow_process[4]) + " to " + str(tempBin) + "x" + str(tempBin) + ", making an fz and sending it up")
+                                print ("Binning 1x1 " + str(slow_process[4]) + " to " + str(tempBin) + "x" + str(tempBin) \
+                                       + ", making an fz and sending it up")
                                 
                                 #breakpoint()
-                                hducb = fits.CompImageHDU(np.asarray(block_reduce(np.array(slow_process[2],np.float32),int(tempBin))), slow_process[3])
+                                hducb = fits.CompImageHDU(np.asarray(block_reduce(np.array(slow_process[2],np.float32),\
+                                                                                  int(tempBin))), slow_process[3])
                                 hducb.verify("fix")
                                 hducb.header[
                                     "BZERO"
@@ -1034,14 +1038,17 @@ class Observatory:
                                 
                                 #breakpoint()
                                 
-                                fits.writeto(slow_process[1].replace('-EX00.fits.fz', 'tempbin' +str(tempBin) + '-EX00.fits.fz'), hducb.data, header=hducb.header, overwrite=True)
+                                fits.writeto(slow_process[1].replace('-EX00.fits.fz', 'tempbin' +str(tempBin)\
+                                                                     + '-EX00.fits.fz'), hducb.data, header=hducb.header,\
+                                                                     overwrite=True)
                                 try:
                                     hducb.close()
                                 except:
                                     pass                    
                                 del hducb
                                 
-                                hducb=fits.open(slow_process[1].replace('-EX00.fits.fz', 'tempbin' +str(tempBin) + '-EX00.fits.fz'))
+                                hducb=fits.open(slow_process[1].replace('-EX00.fits.fz', 'tempbin' +str(tempBin)\
+                                                                        + '-EX00.fits.fz'))
                                 hducbz = fits.CompImageHDU(hducb[0].data, hducb[0].header)
                                 try:
                                     hducb.close()
@@ -1049,7 +1056,8 @@ class Observatory:
                                     pass                    
                                 del hducb
                                 
-                                hducbz.writeto(slow_process[1].replace('-EX00.fits.fz', 'bin' +str(tempBin) + '-EX00.fits.fz'), overwrite=True)
+                                hducbz.writeto(slow_process[1].replace('-EX00.fits.fz', 'bin' +str(tempBin)\
+                                                                       + '-EX00.fits.fz'), overwrite=True)
                                 #breakpoint()
                                 try:
                                     hducbz.close()
@@ -1058,12 +1066,14 @@ class Observatory:
                                 del hducbz
                                 #try:
                                 #    hducb.writeto(
-                                #        slow_process[1].replace('-EX00.fits.fz', 'bin' +str(tempBin) + '-EX00.fits.fz'), overwrite=True, output_verify='silentfix'
+                                #        slow_process[1].replace('-EX00.fits.fz', 'bin' +str(tempBin) + '-EX00.fits.fz'), \
+                                #        overwrite=True, output_verify='silentfix'
                                 #    )  # Save full raw file locally
                                 #except:
                                 #    print ("failed to save file")
                                 try:
-                                    os.remove(slow_process[1].replace('-EX00.fits.fz', 'tempbin' +str(tempBin) + '-EX00.fits.fz'))
+                                    os.remove(slow_process[1].replace('-EX00.fits.fz', 'tempbin' +str(tempBin)\
+                                                                      + '-EX00.fits.fz'))
                                 except:
                                     #print ("couldn't remove temporary bin file.")
                                     pass
@@ -1366,7 +1376,8 @@ class Observatory:
                         plog(datetime.datetime.now())
                         if len(sources) > 12:
                             try:
-                                reprojectedimage, _ = func_timeout.func_timeout (60, aa.register, args=(img, storedsStack), kwargs={"detection_sigma":3, "min_area":9})
+                                reprojectedimage, _ = func_timeout.func_timeout (60, aa.register, args=(img, storedsStack),\
+                                                                                 kwargs={"detection_sigma":3, "min_area":9})
                                 # scalingFactor= np.nanmedian(reprojectedimage / storedsStack)
                                 # print (" Scaling Factor : " +str(scalingFactor))
                                 # reprojectedimage=(scalingFactor) * reprojectedimage # Insert a scaling factor
@@ -1453,6 +1464,38 @@ class Observatory:
                         )  #  We should trim chips so ratio is exact.
 
                     if self.config["camera"][g_dev['cam'].name]["settings"]["is_osc"]:
+                        # blue_stretched_data_float = Stretch().stretch(hdublue+1000)
+                        # del hdublue
+                        # green_stretched_data_float = Stretch().stretch(hdugreen+1000)
+                        # red_stretched_data_float = Stretch().stretch(hdured+1000)
+                        # del hdured
+                        # xshape=hdugreen.shape[0]
+                        # yshape=hdugreen.shape[1]
+                        # del hdugreen
+                        # rgbArray=np.zeros((xshape,yshape,3), 'uint8')
+                        # rgbArray[..., 0] = red_stretched_data_float*256
+                        # rgbArray[..., 1] = green_stretched_data_float*256
+                        # rgbArray[..., 2] = blue_stretched_data_float*256
+
+                        # del red_stretched_data_float
+                        # del blue_stretched_data_float
+                        # del green_stretched_data_float
+                        # colour_img = Image.fromarray(rgbArray, mode="RGB")
+                        
+                        # if self.config["camera"][self.name]["settings"]["transpose_jpeg"]:
+                        #     colour_img=colour_img.transpose()
+                        
+                        # ## Resizing the array to an appropriate shape for the jpg and the small fits
+                        # iy, ix = colour_img.size
+                        # if iy == ix:
+                        #     colour_img.resize((1280, 1280))
+                        # else:
+                        #     colour_img.resize((int(1536 * iy / ix), 1536))
+                        
+                        xshape=hdugreen.shape[0]
+                        yshape=hdugreen.shape[1]
+                        
+                        
                         blue_stretched_data_float = Stretch().stretch(hdublue+1000)
                         del hdublue
                         green_stretched_data_float = Stretch().stretch(hdugreen+1000)
@@ -1470,17 +1513,44 @@ class Observatory:
                         del blue_stretched_data_float
                         del green_stretched_data_float
                         colour_img = Image.fromarray(rgbArray, mode="RGB")
-                        ## Resizing the array to an appropriate shape for the jpg and the small fits
-                        iy, ix = colour_img.size
-                        if iy == ix:
-                            colour_img.resize((1280, 1280))
-                        else:
-                            colour_img.resize((int(1536 * iy / ix), 1536))
                         
-                        colour_img.save(
+                        # del hdugreen
+                        # rgbArray=np.zeros((xshape,yshape,3), 'uint8')
+                        # rgbArray[..., 0] = np.asarray(red_stretched * 255, dtype=np.uint8)
+                        # rgbArray[..., 1] = np.asarray(green_stretched *255, dtype=np.uint8)
+                        # rgbArray[..., 2] = np.asarray(blue_stretched * 255, dtype=np.uint8)
+                        # #rgbArray=rgbArray.astype(np.uint8)
+                        # del red_stretched
+                        # del blue_stretched
+                        # del green_stretched
+                        #colour_img = Image.fromarray(rgbArray)
+                        #breakpoint()
+                        contrast=ImageEnhance.Contrast(colour_img)
+                        contrast_image=contrast.enhance(1.3)
+                        satur=ImageEnhance.Color(contrast_image)
+                        satur_image=satur.enhance(3.0)
+                        #colour_img = colour_img.satur(3)
+                        
+                        if self.config["camera"][g_dev['cam'].name]["settings"]["transpose_jpeg"]:
+                            satur_image=satur_image.transpose(Image.TRANSPOSE)
+                        
+                        ## Resizing the array to an appropriate shape for the jpg and the small fits
+                        iy, ix = satur_image.size
+                        if iy == ix:
+                            satur_image.resize((1280, 1280))
+                        else:
+                            satur_image.resize((int(1536 * iy / ix), 1536))
+                        
+                        
+                            
+                        satur_image.save(
                             paths["im_path"] + paths["jpeg_name10"]
                         )
                         del colour_img
+                        del satur_image
+                        del contrast_image
+                                
+             
                     else:
                         # Code to stretch the image to fit into the 256 levels of grey for a jpeg
                         stretched_data_float = Stretch().stretch(storedsStack + 1000)
