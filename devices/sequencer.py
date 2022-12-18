@@ -1048,7 +1048,13 @@ class Sequencer:
             enable_bin= self.config['camera']['camera_1_1']['settings']['enable_bin']
             #for n_of_bias in range(bias_count):   #9*(9 +1) per cycle.
             if ephem.now() + 120/86400 > ending:
-                break     #Terminate Bias dark phase if within 2 min of ending the phas. 
+                break     #Terminate Bias dark phase if within 2 min of ending the phas.             
+            
+            # The way we make different binnings for CMOS camera is derived from a single
+            # exposure of 1x1. So if it is a cmos camera, it is just 1x1.
+            # Do not fear, the bin specs are used later on.
+            if g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["is_cmos"] == True:
+                bias_dark_bin_spec=['1,1']
             
             # For each enabled binning in biasdark_bin_spec
             # Take.... biases and darks, then advance to another binning and repeat
