@@ -1979,14 +1979,18 @@ class Camera:
                     except:
                         hdu.header["PIERSIDE"] = "Undefined"
                         pier_string = ""
-                    hdu.header["HACORR"] = (
-                        g_dev["mnt"].ha_corr,
-                        "[deg] Hour angle correction",
-                    )  # Should these be averaged?
-                    hdu.header["DECCORR"] = (
-                        g_dev["mnt"].dec_corr,
-                        "[deg] Declination correction",
-                    )
+                    
+                    try:
+                        hdu.header["HACORR"] = (
+                            g_dev["mnt"].ha_corr,
+                            "[deg] Hour angle correction",
+                        )  # Should these be averaged?
+                        hdu.header["DECCORR"] = (
+                            g_dev["mnt"].dec_corr,
+                            "[deg] Declination correction",
+                        )
+                    except:
+                        pass
                     hdu.header["OTA"] = "Main"
                     hdu.header["SELECTEL"] = ("tel1", "Nominted OTA for pointing")
                     try:
