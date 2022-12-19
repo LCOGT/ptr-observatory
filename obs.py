@@ -262,6 +262,7 @@ class Observatory:
         self.update_config()   #This is the never-ending control loop
 
 
+
     def set_last_reference(self, delta_ra, delta_dec, last_time):
         mnt_shelf = shelve.open(self.site_path + "ptr_night_shelf/" + "last")
         mnt_shelf["ra_cal_offset"] = delta_ra
@@ -908,13 +909,6 @@ class Observatory:
                     os.remove(filepath)
                 except:
                     pass
-                
-                # This removes temporary binning files that may not get cleaned up earlier.
-                try:   
-                    os.remove(filepath.replace('bin','tempbin'))
-                except:
-                    pass
-                
                 
                 if (
                     filename[-3:] == "jpg"

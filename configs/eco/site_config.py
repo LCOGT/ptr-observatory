@@ -432,16 +432,16 @@ site_config = {
                         # #['LRGB',  [0,  0],     0, .221, [   0,    0], 'LRGB']],   #10.
                         
                         #['w',     [0,  0],     0, 72.7, [1.00 ,  72], 'PL'],    #0.   For sequencer autofocus  consider foc or f filter
-                        ['focus', [0,  0],     0, 50, [1.00 ,  72], 'focus'],    #0.
-                        ['Lum',    [0,  0],     0, 24, [1.00 ,  72], 'PhLum'],    #1.
+                        ['focus', [0,  0],     0, 148, [1.00 ,  72], 'focus'],    #0.
+                        ['Lum',    [0,  0],     0, 148, [1.00 ,  72], 'PhLum'],    #1.
                         ['dark',    [1,  1],     0, 17, [1.00 , 119], 'PhRed'],    #2.
-                        ['pb',    [2,  2],     0, 23, [1.00 , 113], 'PhGreen'],    #3.
-                        ['pg',    [3,  3],     0, 24, [0.80 ,  97], 'PhBlue'],    #4.
-                        ['pr',    [4,  4],     0, 24, [0.80 ,  97], 'PhBlue'],    #4.
+                        ['pb',    [2,  2],     0, 75, [1.00 , 113], 'PhGreen'],    #3.
+                        ['pg',    [3,  3],     0, 50, [0.80 ,  97], 'PhBlue'],    #4.
+                        ['pr',    [4,  4],     0, 39, [0.80 ,  97], 'PhBlue'],    #4.
                         #['PR',    [1,  1],     0, 170, [1.00 , 119], 'PhBlue'],    #2.
                         #['PG',    [2,  2],     0, 220, [1.00 , 113], 'PhGreen'],    #3.
                         #['PB',    [3,  3],     0, 300, [0.80 ,  97], 'PhRed'],    #4.
-                        ['ha',    [5,  5],     0, 20.376, [5.00 , 200], 'Halpha'],    #5.
+                        ['ha',    [5,  5],     0, 2.728, [5.00 , 200], 'Halpha'],    #5.
                         ['o3',    [6,  6],     0, 5.827, [4.00 , 200], 'OIII'],    #6.
                         ['s2',    [7,  7],     0, 2.196, [10.0,  200], 'SII']],    #7.
                         #['air',   [7,  7], -1000, 100., [1.00,   70], 'air'],    #8.
@@ -599,16 +599,17 @@ site_config = {
                 'default_rotation': 0.0000,
                 'flat_bin_spec': ['1,1','2,2', '3,3','4,4'],    #Default binning for flats
                 #'darkbias_bin_spec': ['1,1','2,2', '3,3','4,4'],    #Default binning for flats
-                'bias_dark_bin_spec': ['1,1', '2,2','3,3','4,4'],    #Default binning for flats
-                'bin_enable': ['1,1', '2,2', '3,3','4,4'],
-                'optimal_bin':  [2, 2, 0.538],    #  Matched to seeing situation by owner
-                'max_res_bin':  [1, 1, 0.269],    #  Matched to seeing situation by owner
-                'bin_modes':  [[1, 1, 0.269],[2, 2, 0.538],[3, 3, 0.807],[4, 4, 1.076]], #  , [2, 2, 2.13], [3, 3, 3.21], [4, 4, 4.27]],   #Meaning no binning choice if list has only one entry, default should be first.
+                #'bias_dark_bin_spec': ['1,1', '2,2','3,3','4,4'],    #Default binning for flats
+                #'bin_enable': ['1,1', '2,2', '3,3','4,4'],
+                #'optimal_bin':  [2, 2, 0.538],    #  Matched to seeing situation by owner
+                #'max_res_bin':  [1, 1, 0.269],    #  Matched to seeing situation by owner
+                #'bin_modes':  [[1, 1, 0.269],[2, 2, 0.538],[3, 3, 0.807],[4, 4, 1.076]], #  , [2, 2, 2.13], [3, 3, 3.21], [4, 4, 4.27]],   #Meaning no binning choice if list has only one entry, default should be first.
                 'pix_scale': 0.269,
                 'do_cosmics' : 'yes',
-                'dark_length' : 10,
-                'bias_count' : 2,
-                'dark_count' : 2,
+                #'dark_length' : 1,
+                'bias_count' : 5,
+                'dark_count' : 5,
+                'dark_exposure': 10,
                 'has_darkslide':  False,
                 'darkslide_com':  None,
                 'shutter_type': "Electronic",

@@ -671,13 +671,13 @@ site_config = {
                 'chan_color':            ['col', 'gry', 'gry', 'gry' ],
                 #'cycle_time':            [ 18,    13,    15,    12   ],   # NB somewhat a Guess.
                 'cycle_time':            0,   # NB somewhat a Guess.
-                'enable_bin':            [ True, False,  False,  False],
-                'bias_dark_bin_spec':    ['1,1', '2,2', '3,3', '4,4' ],    #Default binning for flats
-                'bias_per_bin_count':    [ 31,     17,   9,     9    ],
-                'dark_per_bin_count':    [ 9,     5,     3,     3    ],
+                #'enable_bin':            [ True, False,  False,  False],
+                #'bias_dark_bin_spec':    ['1,1', '2,2', '3,3', '4,4' ],    #Default binning for flats
+                'bias_count':    31,
+                'dark_count':    9,
                 'dark_exposure': 360,
-                'flat_bin_spec':         ['1,1', '2,2', '3,3', '4,4' ],   #Is this necessary?
-                'flat_count_per_bin':    [ 5,     5,     0,     0    ],   #This will take days to get through
+                #'flat_bin_spec':         ['1,1', '2,2', '3,3', '4,4' ],   #Is this necessary?
+                'flat_count':    5,   #This will take days to get through
                 #'flat_count': 5,
                 'optimal_bin': [1, 1],   #  This is the optimal bin for MRC
                 'fine_bin':    [1, 1],   #  This is the fine bin for MRC
