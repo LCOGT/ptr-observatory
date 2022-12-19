@@ -231,7 +231,7 @@ class Camera:
                 + self.alias
                 + "/BIAS_master_bin1.fits"
             )
-            tempbiasframe = np.asarray(tempbiasframe[0].data, dtype=np.int16)
+            tempbiasframe = np.array(tempbiasframe[0].data, dtype=np.int16)
             self.biasFiles.update({'1': tempbiasframe})
             del tempbiasframe
         except:
@@ -246,7 +246,7 @@ class Camera:
                 + self.alias
                 + "/DARK_master_bin1.fits"
             )
-            tempdarkframe = np.asarray(tempdarkframe[0].data, dtype=np.float32)
+            tempdarkframe = np.array(tempdarkframe[0].data, dtype=np.float32)
             self.darkFiles.update({'1': tempdarkframe})
             del tempdarkframe
         except:
@@ -614,7 +614,7 @@ class Camera:
         return self.camera.ImageReady
 
     def _maxim_getImageArray(self):
-        return np.asarray(self.camera.ImageArray)
+        return np.array(self.camera.ImageArray)
 
     def _ascom_connected(self):
         return self.camera.Connected
@@ -660,7 +660,7 @@ class Camera:
         self.camera.StopExposure()  # ASCOM also has an AbortExposure method.
 
     def _ascom_getImageArray(self):
-        return np.asarray(self.camera.ImageArray)
+        return np.array(self.camera.ImageArray)
 
     def create_simple_autosave(
         self,
@@ -2296,7 +2296,7 @@ class Camera:
 
                         # Make a copy of hdu to use as jpg and small fits as well as a local raw used file for 
                         # planewave solves
-                        hdusmalldata = np.asarray(hdu.data.astype("float32"))
+                        hdusmalldata = np.array(hdu.data.astype("float32"))
                             
                         # Quick flash bias and dark frame
                              
@@ -2365,29 +2365,29 @@ class Camera:
                                     # B pixels
                                     list_0_1 = np.array([ [0,0], [0,1] ])
                                     checkerboard=np.tile(list_0_1, (xshape//2, yshape//2))
-                                    checkerboard=np.asarray(checkerboard)
+                                    checkerboard=np.array(checkerboard)
                                     hdublue=(block_reduce(hdufocusdata * checkerboard ,2))
                                     
                                     # R Pixels
                                     list_0_1 = np.array([ [1,0], [0,0] ])
                                     checkerboard=np.tile(list_0_1, (xshape//2, yshape//2))
-                                    checkerboard=np.asarray(checkerboard)
+                                    checkerboard=np.array(checkerboard)
                                     hdured=(block_reduce(hdufocusdata * checkerboard ,2))
                                     
                                     # G top right Pixels
                                     list_0_1 = np.array([ [0,1], [0,0] ])
                                     checkerboard=np.tile(list_0_1, (xshape//2, yshape//2))
-                                    checkerboard=np.asarray(checkerboard)
+                                    checkerboard=np.array(checkerboard)
                                     GTRonly=(block_reduce(hdufocusdata * checkerboard ,2))
                                     
                                     # G bottom left Pixels
                                     list_0_1 = np.array([ [0,0], [1,0] ])
                                     checkerboard=np.tile(list_0_1, (xshape//2, yshape//2))
-                                    checkerboard=np.asarray(checkerboard)
+                                    checkerboard=np.array(checkerboard)
                                     GBLonly=(block_reduce(hdufocusdata * checkerboard ,2))                                
                                     
                                     # Sum two Gs together and half them to be vaguely on the same scale
-                                    hdugreen = np.asarray(GTRonly + GBLonly) / 2
+                                    hdugreen = np.array(GTRonly + GBLonly) / 2
                                     del GTRonly
                                     del GBLonly
                                     del checkerboard
@@ -2400,7 +2400,7 @@ class Camera:
                                 print ("this bayer grid not implemented yet")
                         
                         
-                        focusimg = np.asarray(
+                        focusimg = np.array(
                             hdufocusdata, order="C"
                         )  
 
@@ -2483,7 +2483,7 @@ class Camera:
                             else:
                                 # Get halflight radii
                                 #breakpoint()                                
-                                fwhmcalc=(np.asarray(sources['FWHM']))
+                                fwhmcalc=(np.array(sources['FWHM']))
                                 fwhmcalc=fwhmcalc[fwhmcalc > 1.0]
                                 fwhmcalc=fwhmcalc[fwhmcalc != 0] # Remove 0 entries
                                 fwhmcalc=fwhmcalc[fwhmcalc < 75] # remove stupidly large entries

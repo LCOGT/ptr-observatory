@@ -991,7 +991,7 @@ class Observatory:
                     # The compression and a few pieces of software require float32
                     # BUT it actually compresses to the same size either way
                     hdufz = fits.CompImageHDU(
-                        np.asarray(slow_process[2], dtype=np.float32), slow_process[3]
+                        np.array(slow_process[2], dtype=np.float32), slow_process[3]
                     )
                     hdufz.verify("fix")
                     hdufz.header[
@@ -1198,7 +1198,7 @@ class Observatory:
                         ssframenumber = str(img[0].header["FRAMENUM"])
                         img.close()
                         del img
-                        sstackimghold=np.asarray(imgdata)  
+                        sstackimghold=np.array(imgdata)  
 
                     print ("Number of sources just prior to smartstacks: " + str(len(sources)))
                     if len(sources) < 12:
@@ -1267,7 +1267,7 @@ class Observatory:
                                 # scalingFactor= np.nanmedian(reprojectedimage / storedsStack)
                                 # print (" Scaling Factor : " +str(scalingFactor))
                                 # reprojectedimage=(scalingFactor) * reprojectedimage # Insert a scaling factor
-                                storedsStack = np.asarray((reprojectedimage + storedsStack))
+                                storedsStack = np.array((reprojectedimage + storedsStack))
                                 # Save new stack to disk
                                 np.save(
                                     g_dev["cam"].site_path
@@ -1306,29 +1306,29 @@ class Observatory:
                             # B pixels
                             list_0_1 = np.array([ [0,0], [0,1] ])
                             checkerboard=np.tile(list_0_1, (xshape//2, yshape//2))
-                            checkerboard=np.asarray(checkerboard)
+                            checkerboard=np.array(checkerboard)
                             hdublue=(block_reduce(storedsStack * checkerboard ,2))
                             
                             # R Pixels
                             list_0_1 = np.array([ [1,0], [0,0] ])
                             checkerboard=np.tile(list_0_1, (xshape//2, yshape//2))
-                            checkerboard=np.asarray(checkerboard)
+                            checkerboard=np.array(checkerboard)
                             hdured=(block_reduce(storedsStack * checkerboard ,2))
                             
                             # G top right Pixels
                             list_0_1 = np.array([ [0,1], [0,0] ])
                             checkerboard=np.tile(list_0_1, (xshape//2, yshape//2))
-                            checkerboard=np.asarray(checkerboard)
+                            checkerboard=np.array(checkerboard)
                             GTRonly=(block_reduce(storedsStack * checkerboard ,2))
                             
                             # G bottom left Pixels
                             list_0_1 = np.array([ [0,0], [1,0] ])
                             checkerboard=np.tile(list_0_1, (xshape//2, yshape//2))
-                            checkerboard=np.asarray(checkerboard)
+                            checkerboard=np.array(checkerboard)
                             GBLonly=(block_reduce(storedsStack * checkerboard ,2))                                
                             
                             # Sum two Gs together and half them to be vaguely on the same scale
-                            hdugreen = np.asarray(GTRonly + GBLonly) / 2
+                            hdugreen = np.array(GTRonly + GBLonly) / 2
                             del GTRonly
                             del GBLonly
                             del checkerboard
