@@ -89,13 +89,13 @@ site_config = {
     'auto_eve_sky_flat': True,
     'eve_sky_flat_sunset_offset': -30.5,  #  Minutes  neg means before, + after.
     'eve_cool_down_open' : -60.0,
-    'auto_morn_sky_flat': True,
+    'auto_morn_sky_flat': False,
     'auto_morn_bias_dark': False,
     're-calibrate_on_solve': True,
     'pointing_calibration_on_startup': False,
     'periodic_focus_time' : 0.5, # This is a time, in hours, over which to bypass automated focussing (e.g. at the start of a project it will not refocus if a new project starts X hours after the last focus)
     'stdev_fwhm' : 0.5, # This is the expected variation in FWHM at a given telescope/camera/site combination. This is used to check if a fwhm is within normal range or the focus has shifted
-    'focus_exposure_time': 120, # Exposure time in seconds for exposure image
+    'focus_exposure_time': 60, # Exposure time in seconds for exposure image
 
     'focus_trigger' : 5.0, # What FWHM increase is needed to trigger an autofocus
     'solve_nth_image' : 10, # Only solve every nth image
@@ -354,10 +354,10 @@ site_config = {
             #F4.9 setup
             'start_at_config_reference': True,
             'use_focuser_temperature': True,
-            'reference':24229,    #  20210313  Nominal at 10C Primary temperature
+            'reference':24729,    #  20210313  Nominal at 10C Primary temperature
             'ref_temp':  6265.0,    #  Update when pinning reference
             'coef_c': 0,   #  Negative means focus moves out as Primary gets colder
-            'coef_0': 24229,  #  Nominal intercept when Primary is at 0.0 C.
+            'coef_0': 24729,  #  Nominal intercept when Primary is at 0.0 C.
             'coef_date':  '20220914',    #This appears to be sensible result 44 points -13 to 3C'reference':  6431,    #  Nominal at 10C Primary temperature
             # #F9 setup
             # 'reference': 4375,    #   Guess 20210904  Nominal at 10C Primary temperature
@@ -369,7 +369,7 @@ site_config = {
             'maximum': 18000,   #12672 actually
             'step_size': 1,
             'backlash': 0,
-            'throw' : 500,
+            'throw' : 750,
             'unit': 'micron',
             #'unit_conversion': 9.09090909091,
             'unit_conversion': 1.0,
@@ -432,18 +432,18 @@ site_config = {
                         # #['LRGB',  [0,  0],     0, .221, [   0,    0], 'LRGB']],   #10.
                         
                         #['w',     [0,  0],     0, 72.7, [1.00 ,  72], 'PL'],    #0.   For sequencer autofocus  consider foc or f filter
-                        ['focus', [3,  3],     0, 50, [1.00 ,  72], 'focus'],    #0.
-                        ['air',    [0,  0],     0, 100, [1.00 ,  72], 'PhLum'],    #1.
+                        ['focus', [0,  0],     0, 148, [1.00 ,  72], 'focus'],    #0.
+                        ['Lum',    [0,  0],     0, 148, [1.00 ,  72], 'PhLum'],    #1.
                         ['dark',    [1,  1],     0, 17, [1.00 , 119], 'PhRed'],    #2.
-                        ['pb',    [2,  2],     0, 50, [1.00 , 113], 'PhGreen'],    #3.
+                        ['pb',    [2,  2],     0, 75, [1.00 , 113], 'PhGreen'],    #3.
                         ['pg',    [3,  3],     0, 50, [0.80 ,  97], 'PhBlue'],    #4.
-                        ['pr',    [4,  4],     0, 15, [0.80 ,  97], 'PhBlue'],    #4.
+                        ['pr',    [4,  4],     0, 39, [0.80 ,  97], 'PhBlue'],    #4.
                         #['PR',    [1,  1],     0, 170, [1.00 , 119], 'PhBlue'],    #2.
                         #['PG',    [2,  2],     0, 220, [1.00 , 113], 'PhGreen'],    #3.
                         #['PB',    [3,  3],     0, 300, [0.80 ,  97], 'PhRed'],    #4.
-                        ['ha',    [5,  5],     0, 20.376, [5.00 , 200], 'Halpha'],    #5.
-                        ['o3',    [6,  6],     0, 22.53, [4.00 , 200], 'OIII'],    #6.
-                        ['s2',    [7,  7],     0, 43.65, [10.0,  200], 'SII']],    #7.
+                        ['ha',    [5,  5],     0, 2.728, [5.00 , 200], 'Halpha'],    #5.
+                        ['o3',    [6,  6],     0, 5.827, [4.00 , 200], 'OIII'],    #6.
+                        ['s2',    [7,  7],     0, 2.196, [10.0,  200], 'SII']],    #7.
                         #['air',   [7,  7], -1000, 100., [1.00,   70], 'air'],    #8.
                         #['gooble',  [6,  6],     0, .221, [   0,    0], 'dark'],   #9.
                         #['LRGB',  [0,  0],     0, .221, [   0,    0], 'LRGB']],   #10.
@@ -488,23 +488,45 @@ site_config = {
 
             'settings': {                
                 'is_osc' : False,
+                
+                # ONLY TRANSFORM THE FITS IF YOU HAVE
+               # A DATA-BASED REASON TO DO SO.....
+               # USUALLY TO GET A BAYER GRID ORIENTATED CORRECTLY
+               # ***** ONLY ONE OF THESE SHOULD BE ON! *********
+               'transpose_fits' : False,
+               'flipx_fits' : False,
+               'flipy_fits' : False,
+               'rotate180_fits' : False, # This also should be flipxy!
+               'rotate90_fits' : False,
+               'rotate270_fits' : False,
+               
+               # HERE YOU CAN FLIP THE IMAGE TO YOUR HEARTS DESIRE
+               # HOPEFULLY YOUR HEARTS DESIRE IS SIMILAR TO THE
+               # RECOMMENDED DEFAULT DESIRE OF PTR
+               'transpose_jpeg' : False,
+               'flipx_jpeg' : False,
+               'flipy_jpeg' : False,
+               'rotate180_jpeg' : False,
+               'rotate90_jpeg' : False,
+               'rotate270_jpeg' : False,
+               
                 'osc_bayer' : 'RGGB',
                 'crop_preview': False,
                 'crop_preview_ybottom': 1,
                 'crop_preview_ytop': 1,
                 'crop_preview_xleft': 1,
                 'crop_preview_xright': 1,
-                'temp_setpoint': -22,   #Updated from -18 WER 20220914 Afternoon
+                'temp_setpoint': -10,   
                 'calib_setpoints': [-35,-30, -25, -20, -15, -10 ],  #  Should vary with season?
                 'day_warm': False,
                 'cooler_on': True,
                 'x_start':  0,
                 'y_start':  0,
-                'x_width':  4500,   #  NB Should be set up with overscan, which this camera is!  20200315 WER
-                'y_width':  3600,
+                'x_width':  4656,   #  NB Should be set up with overscan, which this camera is!  20200315 WER
+                'y_width':  3520,
                 #Note please add 56 to SBIG Driver Checker 64 Update config for added overscan
-                'x_chip':  4556,   #  NB Should specify the active pixel area.   20200315 WER
-                'y_chip':  3656,
+                'x_chip':  4656,   #  NB Should specify the active pixel area.   20200315 WER
+                'y_chip':  3520,
                 'x_trim_offset':  0,   #  NB these four entries are guesses.
                 'y_trim_offset':  0,
                 'pre_bias_available': False,  #if so need to specify as below for post_bias.
@@ -519,27 +541,27 @@ site_config = {
                 #'ref_dark': 60.0,
                 #'long_dark': 600.0,
                 
-                'x_active': 4500,
-                'y_active': 3600,
+                'x_active': 4656,
+                'y_active': 3520,
                 #THIS IS ALL WRONG!
-                'det_size': '[1:4556, 1:3656]',  # Physical chip data size as returned from driver
-                'ccd_sec': '[1:4556, 1:3656]',
-                'bias_sec': ['[1:22, 1:6388]', '[1:11, 1:3194]', '[1:7, 1:2129]', '[1:5, 1:1597]'],
-                'det_sec': ['[25:9600, 1:6388]', '[13:4800, 1:3194]', '[9:3200, 1:2129]', '[7:2400, 1:1597]'],
-                'data_sec': ['[25:9600, 1:6388]', '[13:4800, 1:3194]', '[9:3200, 1:2129]', '[7:2400, 1:1597]'],
-                'trim_sec': ['[1:9576, 1:6388]', '[1:4788, 1:3194]', '[1:3192, 1:2129]', '[1:2394, 1:1597]'],
+                #'det_size': '[1:4556, 1:3656]',  # Physical chip data size as returned from driver
+                #'ccd_sec': '[1:4556, 1:3656]',
+                ##'bias_sec': ['[1:22, 1:6388]', '[1:11, 1:3194]', '[1:7, 1:2129]', '[1:5, 1:1597]'],
+                #'det_sec': ['[25:9600, 1:6388]', '[13:4800, 1:3194]', '[9:3200, 1:2129]', '[7:2400, 1:1597]'],
+                #'data_sec': ['[25:9600, 1:6388]', '[13:4800, 1:3194]', '[9:3200, 1:2129]', '[7:2400, 1:1597]'],
+                #'trim_sec': ['[1:9576, 1:6388]', '[1:4788, 1:3194]', '[1:3192, 1:2129]', '[1:2394, 1:1597]'],
                 'x_pixel':  6,
                 'y_pixel':  6,
                 
-                'CameraXSize' : 4096,
-                'CameraYSize' : 4096,
+                'CameraXSize' : 4656,
+                'CameraYSize' : 3520,
                 #'MaxBinX' : 4,
                 #'MaxBinY' : 4,
                 'StartX' : 1,
                 'StartY' : 1,
 
-                'x_field_deg': 1.3333,   #   round(4784*1.0481/3600, 4),
-                'y_field_deg': 1.0665,   #  round(3194*1.0481/3600, 4),
+                #'x_field_deg': 1.3333,   #   round(4784*1.0481/3600, 4),
+                #'y_field_deg': 1.0665,   #  round(3194*1.0481/3600, 4),
                 'overscan_x': 24,
                 'overscan_y': 3,
                 'north_offset': 0.0,    #  These three are normally 0.0 for the primary telescope
@@ -551,14 +573,14 @@ site_config = {
                 'min_subframe':  [128, 128],
                
                 
-                'cycle_time':  [2, 2, 2, 2],  # 3x3 requires a 1, 1 reaout then a software bin, so slower.
+                'cycle_time':  2,  # 3x3 requires a 1, 1 reaout then a software bin, so slower.
                 'rbi_delay':  0.,      #  This being zero says RBI is not available, eg. for SBIG.
                 'is_cmos':  True,
                 'is_color':  False,
                 'bayer_pattern':  None,    #  'RGGB" is a valid string in camera is color.
                 'can_set_gain':  True,
-                'reference_gain': [2., 4., 18., 32.],     #  One val for each binning. SWAG!
-                'reference_noise': [10, 10, 10, 10],    #  All SWAGs right now!
+                'reference_gain': 2,     #  One val for each binning. SWAG!
+                'reference_noise': 10,    #  All SWAGs right now!
 
                 'reference_dark': [0.0, 0.0, 0.0, 0.0],     #  Might these best be pedastal values?  NO!
                                     #hdu.header['RDMODE'] = (self.config['camera'][self.name]['settings']['read_mode'], 'Camera read mode')
@@ -568,26 +590,26 @@ site_config = {
                 'readout_mode':  'Normal',
                 'readout_speed': 0.4,
                 'readout_seconds': 2,
-                'smart_stack_exposure_time' : 60,
-                'saturate':  [[1, 65000], [2,262000], [3,589815], [4, 1048560]] ,   # e-.  This is a close guess, not measured, but taken from data sheet.
+                'smart_stack_exposure_time' : 10,
+                'saturate':   65000 ,   # e-.  This is a close guess, not measured, but taken from data sheet.
                 'max_linearity': 65000,
-                'fullwell_capacity': [65000, 262000,589815,1048560],  #e-.   We need to sort out the units properly NB NB NB
+                'fullwell_capacity': 65000,  #e-.   We need to sort out the units properly NB NB NB
                 'areas_implemented': ["Full",'4x4d', "600%", "500%", "450%", "300%", "220%", "150%", "133%", "Full", "Sqr", '71%', '50%',  '35%', '25%', '12%'],
                 'default_area':  "Full",
                 'default_rotation': 0.0000,
-                'flat_bin_spec': ['1,1','2,2', '3,3','4,4'],    #Default binning for flats
+                #'flat_bin_spec': ['1,1','2,2', '3,3','4,4'],    #Default binning for flats
                 #'darkbias_bin_spec': ['1,1','2,2', '3,3','4,4'],    #Default binning for flats
-                'darkbias_bin_spec': ['1,1', '2,2','3,3','4,4'],    #Default binning for flats
-                'bin_enable': ['1,1', '2,2', '3,3','4,4'],
-                'optimal_bin':  [2, 2, 0.538],    #  Matched to seeing situation by owner
-                'max_res_bin':  [1, 1, 0.269],    #  Matched to seeing situation by owner
-                'bin_modes':  [[1, 1, 0.269],[2, 2, 0.538],[3, 3, 0.807],[4, 4, 1.076]], #  , [2, 2, 2.13], [3, 3, 3.21], [4, 4, 4.27]],   #Meaning no binning choice if list has only one entry, default should be first.
-                'pix_scale': [0.269,0.538, 0.807,1.076],
-                'cosmics_at_default' : 'yes',
-                'cosmics_at_maximum' : 'yes',
-                'dark_length' : 10,
-                'bias_count' : 2,
-                'dark_count' : 2,
+                #'bias_dark_bin_spec': ['1,1', '2,2','3,3','4,4'],    #Default binning for flats
+                #'bin_enable': ['1,1', '2,2', '3,3','4,4'],
+                #'optimal_bin':  [2, 2, 0.538],    #  Matched to seeing situation by owner
+                #'max_res_bin':  [1, 1, 0.269],    #  Matched to seeing situation by owner
+                #'bin_modes':  [[1, 1, 0.269],[2, 2, 0.538],[3, 3, 0.807],[4, 4, 1.076]], #  , [2, 2, 2.13], [3, 3, 3.21], [4, 4, 4.27]],   #Meaning no binning choice if list has only one entry, default should be first.
+                'pix_scale': 0.269,
+                'do_cosmics' : 'yes',
+                #'dark_length' : 1,
+                'bias_count' : 5,
+                'dark_count' : 5,
+                'dark_exposure': 10,
                 'has_darkslide':  False,
                 'darkslide_com':  None,
                 'shutter_type': "Electronic",

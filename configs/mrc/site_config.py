@@ -579,9 +579,29 @@ site_config = {
 
             'settings': {
                 
-                'is_osc' : True,
+                'is_osc' : True, 
+                
+                # ONLY TRANSFORM THE FITS IF YOU HAVE
+                # A DATA-BASED REASON TO DO SO.....
+                # USUALLY TO GET A BAYER GRID ORIENTATED CORRECTLY
+                # ***** ONLY ONE OF THESE SHOULD BE ON! *********
                 'transpose_fits' : False,
-                'transpose_jpeg' : True,
+                'flipx_fits' : False,
+                'flipy_fits' : False,
+                'rotate180_fits' : False, # This also should be flipxy!
+                'rotate90_fits' : False,
+                'rotate270_fits' : False,
+                
+                # HERE YOU CAN FLIP THE IMAGE TO YOUR HEARTS DESIRE
+                # HOPEFULLY YOUR HEARTS DESIRE IS SIMILAR TO THE
+                # RECOMMENDED DEFAULT DESIRE OF PTR
+                'transpose_jpeg' : False,
+                'flipx_jpeg' : False,
+                'flipy_jpeg' : False,
+                'rotate180_jpeg' : False,
+                'rotate90_jpeg' : False,
+                'rotate270_jpeg' : False,
+                
                 'osc_bayer' : 'RGGB',
                 'crop_preview': False,
                 'crop_preview_ybottom': 1,
@@ -596,8 +616,8 @@ site_config = {
                 'cooler_on': True,
                 'x_start':  0,
                 'y_start':  0,
-                'x_width':  4800,   #NB Should be set up with overscan, which this camera is!  20200315 WER
-                'y_width':  3211,
+                'x_width':  9576,   #NB Should be set up with overscan, which this camera is!  20200315 WER
+                'y_width':  6388,
                 'x_chip':  9576,   #NB Should specify the active pixel area.   20200315 WER
                 'y_chip':  6388,
                 'x_trim_offset':  8,   #  NB these four entries are guesses.
@@ -611,8 +631,8 @@ site_config = {
                 'corner_everlap': None,
                 'x_bias_line': True,
                 'y_bias_line': True,
-                'x_active': 4784,
-                'y_active': 3194,
+                'x_active': 9576,
+                'y_active': 6388,
                 'det_size': '[1:9600, 1:6422]',  # Physical chip data size as returned from driver
                 'ccd_sec': '[1:9600, 1:6422]',
                 'bias_sec': ['[1:22, 1:6388]', '[1:11, 1:3194]', '[1:7, 1:2129]', '[1:5, 1:1597]'],
@@ -621,12 +641,10 @@ site_config = {
                 'trim_sec': ['[1:9576, 1:6388]', '[1:4788, 1:3194]', '[1:3192, 1:2129]', '[1:2394, 1:1597]'],
                 'x_pixel':  3.76,
                 'y_pixel':  3.76,
-                'pix_scale': [0.302597, 0.605194, 0.907791, 1.210388],    #   bin-2  2* math.degrees(math.atan(3.76/2563000))*3600
+                'pix_scale': 0.302597,    #   bin-2  2* math.degrees(math.atan(3.76/2563000))*3600
 
                 'CameraXSize' : 9600,
                 'CameraYSize' : 6422,
-                'MaxBinX' : 4,
-                'MaxBinY' : 4,
                 'StartX' : 1,
                 'StartY' : 1,
 
@@ -644,22 +662,22 @@ site_config = {
                 'can_subframe':  True,
                 'min_subframe': [128,128],
                 'bin_modes':  [['Optimal', 0.91], ['Fine', 0.61], ['Coarse', 1.2], ['Eng', 0.30]],     #Meaning fixed binning if list has only one entry
-                'reference_gain': [1.3, 2.6, 3.9, 5.2],     #  NB GUess One val for each binning. Assumed digitalsumming in camera???
-                'reference_noise': [6, 6, 6, 6],    #  NB Guess
-                'reference_dark': [.2, .8, 1.8, 3.2],  #  NB  Guess
-                'reference_offset': [611, 623, 590, 700], #  NB Guess  ADU vaules not times in sec.
-                'fullwell_capacity': [80000, 720000, 320000, 1280000 ],   #  NB Guess
+                'reference_gain': 1.3,     #  NB GUess One val for each binning. Assumed digitalsumming in camera???
+                'reference_noise': 6,    #  NB Guess
+                'reference_dark': 0.2,  #  NB  Guess
+                'reference_offset': 611, #  NB Guess  ADU vaules not times in sec.
+                'fullwell_capacity': 80000,   #  NB Guess
                 'bin-desc':              ['1x1', '2x2', '3x3', '4x4' ],
                 'chan_color':            ['col', 'gry', 'gry', 'gry' ],
                 #'cycle_time':            [ 18,    13,    15,    12   ],   # NB somewhat a Guess.
-                'cycle_time':            [ 0,    0,    0,    0   ],   # NB somewhat a Guess.
-                'enable_bin':            [ True, False,  False,  False],
-                'bias_dark_bin_spec':    ['1,1', '2,2', '3,3', '4,4' ],    #Default binning for flats
-                'bias_per_bin_count':    [ 31,     17,   9,     9    ],
-                'dark_per_bin_count':    [ 9,     5,     3,     3    ],
-                'dark_exposure_per_bin': [ 360,   120,    60,    60  ],
-                'flat_bin_spec':         ['1,1', '2,2', '3,3', '4,4' ],   #Is this necessary?
-                'flat_count_per_bin':    [ 5,     5,     0,     0    ],   #This will take days to get through
+                'cycle_time':            0,   # NB somewhat a Guess.
+                #'enable_bin':            [ True, False,  False,  False],
+                #'bias_dark_bin_spec':    ['1,1', '2,2', '3,3', '4,4' ],    #Default binning for flats
+                'bias_count':    31,
+                'dark_count':    9,
+                'dark_exposure': 360,
+                #'flat_bin_spec':         ['1,1', '2,2', '3,3', '4,4' ],   #Is this necessary?
+                'flat_count':    5,   #This will take days to get through
                 #'flat_count': 5,
                 'optimal_bin': [1, 1],   #  This is the optimal bin for MRC
                 'fine_bin':    [1, 1],   #  This is the fine bin for MRC
@@ -667,8 +685,8 @@ site_config = {
                 'eng_bin':     [1, 1],   #  This is the eng-only bin for MRC, not useful for users?
                 'bin_enable':  ['1 1'],  #  Always square and matched to seeing situation by owner  NB Obsolete? NO MF uses to load bias calib
                                          #  NB NB inconsistent use of bin string   '1 1', '1x1' , etc.
-                'cosmics_at_default' : 'yes',
-                'cosmics_at_maximum' : 'yes',              
+                'do_cosmics' : 'yes',
+                
                 'rbi_delay':  0,      #  This being zero says RBI is not available, eg. for SBIG.
                 'is_cmos':  True,
                 'is_color': True,   #NB we also have a is_osc key.
@@ -677,8 +695,8 @@ site_config = {
 
                 'flat_count': 5,
 
-                'saturate':  [[1, 65000], [2,262000], [3,589815], [4, 1048560]] ,    #[[1, 65000], [2,262000], [3,589815], [4, 1048560]] ,   # e-.  This is a close guess, not measured, but taken from data sheet.
-                'fullwell_capacity':  [80000, 320000, 720000, 1280000],
+                'saturate':   65000 ,    #[[1, 65000], [2,262000], [3,589815], [4, 1048560]] ,   # e-.  This is a close guess, not measured, but taken from data sheet.
+                'fullwell_capacity':  80000,
 
                 'read_mode':  'Normal',
                 'readout_mode': 'Normal',

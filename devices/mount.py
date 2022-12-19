@@ -598,7 +598,11 @@ class Mount:
         #self.current_icrs_dec
         #icrs_ra, icrs_dec = self.get_mount_coordinates()
         #alt = self.mount.Altitude
-        rd = SkyCoord(ra=self.current_icrs_ra*u.hour, dec=self.current_icrs_dec*u.deg)
+        try:
+            rd = SkyCoord(ra=self.current_icrs_ra*u.hour, dec=self.current_icrs_dec*u.deg)            
+        except:
+            icrs_ra, icrs_dec = self.get_mount_coordinates()
+            rd = SkyCoord(ra=icrs_ra*u.hour, dec=icrs_dec*u.deg)
         aa = AltAz (location=self.site_coordinates, obstime=Time.now())
         rd = rd.transform_to(aa)
         alt = float(rd.alt/u.deg)

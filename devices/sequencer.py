@@ -332,7 +332,7 @@ class Sequencer:
         if self.bias_dark_latch and ((events['Eve Bias Dark'] <= ephem_now < events['End Eve Bias Dark']) and \
              self.config['auto_eve_bias_dark'] and g_dev['enc'].mode in ['Automatic', 'Autonomous', 'Manual'] ):
             self.bias_dark_latch = False
-            req = {'bin1': False, 'bin2': True, 'bin3': False, 'bin4': False, 'numOfBias': 45, \
+            req = {'bin1': True, 'bin2': False, 'bin3': False, 'bin4': False, 'numOfBias': 45, \
                    'numOfDark': 15, 'darkTime': 180, 'numOfDark2': 3, 'dark2Time': 360, \
                    'hotMap': True, 'coldMap': True, 'script': 'genBiasDarkMaster', }  # NB NB All of the prior is obsolete
             opt = {}
@@ -377,7 +377,7 @@ class Sequencer:
                 # Pointing
                 req = {'time': self.config['focus_exposure_time'],  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'focus'}   #  NB Should pick up filter and constats from config
                 #opt = {'area': 150, 'count': 1, 'bin': '2, 2', 'filter': 'focus'}
-                opt = {'area': 150, 'count': 1, 'bin': 'default', 'filter': 'focus'}
+                opt = {'area': 150, 'count': 1, 'bin': 1, 'filter': 'focus'}
                 result = g_dev['cam'].expose_command(req, opt, no_AWS=False, solve_it=True)
             self.night_focus_ready=False
 
@@ -573,7 +573,7 @@ class Sequencer:
                   self.config['auto_morn_bias_dark']: # and g_dev['enc'].mode == 'Automatic' ):
             #breakpoint()
             self.morn_bias_dark_latch = False
-            req = {'bin1': False, 'bin2': True, 'bin3': False, 'bin4': False, 'numOfBias': 63, \
+            req = {'bin1': True, 'bin2': False, 'bin3': False, 'bin4': False, 'numOfBias': 63, \
                     'numOfDark': 31, 'darkTime': 600, 'numOfDark2': 31, 'dark2Time': 600, \
                     'hotMap': True, 'coldMap': True, 'script': 'genBiasDarkMaster', }  #This specificatin is obsolete
             opt = {}
@@ -777,7 +777,7 @@ class Sequencer:
             g_dev['obs'].images_since_last_solve = 0
             req = {'time': self.config['focus_exposure_time'],  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'focus'}   #  NB Should pick up filter and constats from config
             #opt = {'area': 150, 'count': 1, 'bin': '2, 2', 'filter': 'focus'}
-            opt = {'area': 150, 'count': 1, 'bin': 'default', 'filter': 'focus'}
+            opt = {'area': 150, 'count': 1, 'bin': 1, 'filter': 'focus'}
             result = g_dev['cam'].expose_command(req, opt, no_AWS=False, solve_it=True)
             g_dev['mnt'].re_seek(dither=0)
 
@@ -849,33 +849,34 @@ class Sequencer:
                     plog("Executing: ", exposure, left_to_do)
                     color = exposure['filter']
                     exp_time =  float(exposure['exposure'])
+                    binning = '1 1'
 
-                    if exposure['bin'] == '"optimal"':
-                        tempBinString=str(g_dev['cam'].config['camera']['camera_1_1']['settings']['optimal_bin'][0])
-                        binning = tempBinString + ' ' + tempBinString
-                    elif exposure['bin'] == '"fine"' :
-                        tempBinString=str(g_dev['cam'].config['camera']['camera_1_1']['settings']['fine_bin'][0])
-                        binning = tempBinString + ' ' + tempBinString
-                    elif exposure['bin'] == '"coarse"' :
-                        tempBinString=str(g_dev['cam'].config['camera']['camera_1_1']['settings']['coarse_bin'][0])
-                        binning = tempBinString + ' ' + tempBinString
-                    elif exposure['bin'] == '"eng"' :
-                        tempBinString=str(g_dev['cam'].config['camera']['camera_1_1']['settings']['eng_bin'][0])
-                        binning = tempBinString + ' ' + tempBinString
-                    elif exposure['bin'] in[0, '0', '0,0', '0, 0', '0 0']:
-                        tempBinString=str(g_dev['cam'].config['camera']['camera_1_1']['settings']['fine_bin'][0])
-                        binning = tempBinString + ' ' + tempBinString
-                    elif exposure['bin'] in [1, '1,1', '1, 1', '1 1']:
-                        binning = '1 1'
-                    elif exposure['bin'] in [2, '2,2', '2, 2', '2 2']:
-                        binning = '2 2'
-                    elif exposure['bin'] in [3, '3,3', '3, 3', '3 3']:
-                        binning = '3 3'
-                    elif exposure['bin'] in [4, '4,4', '4, 4', '4 4']:
-                        binning = '4 4'
-                    else:
-                        tempBinString=str(g_dev['cam'].config['camera']['camera_1_1']['settings']['optimal_bin'][0])
-                        binning = tempBinString + ' ' + tempBinString
+                    # if exposure['bin'] == '"optimal"':
+                    #     tempBinString=str(g_dev['cam'].config['camera']['camera_1_1']['settings']['optimal_bin'][0])
+                    #     binning = tempBinString + ' ' + tempBinString
+                    # elif exposure['bin'] == '"fine"' :
+                    #     tempBinString=str(g_dev['cam'].config['camera']['camera_1_1']['settings']['fine_bin'][0])
+                    #     binning = tempBinString + ' ' + tempBinString
+                    # elif exposure['bin'] == '"coarse"' :
+                    #     tempBinString=str(g_dev['cam'].config['camera']['camera_1_1']['settings']['coarse_bin'][0])
+                    #     binning = tempBinString + ' ' + tempBinString
+                    # elif exposure['bin'] == '"eng"' :
+                    #     tempBinString=str(g_dev['cam'].config['camera']['camera_1_1']['settings']['eng_bin'][0])
+                    #     binning = tempBinString + ' ' + tempBinString
+                    # elif exposure['bin'] in[0, '0', '0,0', '0, 0', '0 0']:
+                    #     tempBinString=str(g_dev['cam'].config['camera']['camera_1_1']['settings']['fine_bin'][0])
+                    #     binning = tempBinString + ' ' + tempBinString
+                    # elif exposure['bin'] in [1, '1,1', '1, 1', '1 1']:
+                    #     binning = '1 1'
+                    # elif exposure['bin'] in [2, '2,2', '2, 2', '2 2']:
+                    #     binning = '2 2'
+                    # elif exposure['bin'] in [3, '3,3', '3, 3', '3 3']:
+                    #     binning = '3 3'
+                    # elif exposure['bin'] in [4, '4,4', '4, 4', '4 4']:
+                    #     binning = '4 4'
+                    # else:
+                    #     tempBinString=str(g_dev['cam'].config['camera']['camera_1_1']['settings']['optimal_bin'][0])
+                    #     binning = tempBinString + ' ' + tempBinString
                     count = int(exposure['count'])
                     #  We should add a frame repeat count
                     imtype = exposure['imtype']
@@ -975,7 +976,7 @@ class Sequencer:
 
                             # Set up options for exposure and take exposure.
                             req = {'time': exp_time,  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': imtype, 'smartstack' : smartstackswitch, 'longstackswitch' : longstackswitch, 'longstackname' : longstackname, 'block_end' : block['end']}   #  NB Should pick up filter and constants from config
-                            opt = {'area': 150, 'count': 1, 'bin': binning, 'filter': color, \
+                            opt = {'area': 150, 'count': 1, 'bin': 1, 'filter': color, \
                                    'hint': block['project_id'] + "##" + dest_name, 'object_name': block['project']['project_targets'][0]['name'], 'pane': pane}
                             plog('Seq Blk sent to camera:  ', req, opt)
                             obs_win_begin, sunZ88Op, sunZ88Cl, ephem_now = self.astro_events.getSunEvents()
@@ -1040,12 +1041,12 @@ class Sequencer:
             #short_dark_time = self.config['camera']['camera_1_1']['settings']['ref_dark']
             #long_dark_time = self.config['camera']['camera_1_1']['settings']['long_dark']
             # NB NB Long term it would be slightly better to interleave bias and darks
-            bias_dark_bin_spec=self.config['camera']['camera_1_1']['settings']['bias_dark_bin_spec']  #Each is these is a list.
-            bias_count = self.config['camera']['camera_1_1']['settings']['bias_per_bin_count']
-            dark_count = self.config['camera']['camera_1_1']['settings']['dark_per_bin_count']
-            dark_exp_time = self.config['camera']['camera_1_1']['settings']['dark_exposure_per_bin']
+            #bias_dark_bin_spec=self.config['camera']['camera_1_1']['settings']['bias_dark_bin_spec']  #Each is these is a list.
+            bias_count = self.config['camera']['camera_1_1']['settings']['bias_count']
+            dark_count = self.config['camera']['camera_1_1']['settings']['dark_count']
+            dark_exp_time = self.config['camera']['camera_1_1']['settings']['dark_exposure']
             cycle_time = self.config['camera']['camera_1_1']['settings']['cycle_time']
-            enable_bin= self.config['camera']['camera_1_1']['settings']['enable_bin']
+            #enable_bin= self.config['camera']['camera_1_1']['settings']['enable_bin']
             #for n_of_bias in range(bias_count):   #9*(9 +1) per cycle.
             if ephem.now() + 120/86400 > ending:
                 break     #Terminate Bias dark phase if within 2 min of ending the phas.             
@@ -1053,73 +1054,71 @@ class Sequencer:
             # The way we make different binnings for CMOS camera is derived from a single
             # exposure of 1x1. So if it is a cmos camera, it is just 1x1.
             # Do not fear, the bin specs are used later on.
-            if g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["is_cmos"] == True:
-                bias_dark_bin_spec=['1,1']
+            #bias_dark_bin_spec=['1,1']
             
             # For each enabled binning in biasdark_bin_spec
             # Take.... biases and darks, then advance to another binning and repeat
             
-            for ctr_dbb in range(len(bias_dark_bin_spec)):
-                if enable_bin[ctr_dbb]:
-                    b_d_to_do = bias_count[ctr_dbb] + dark_count[ctr_dbb]
-                    try:
-                        stride = bias_count[ctr_dbb]//dark_count[ctr_dbb]
-                        plog("Tobor will interleave a dark every  " + str(stride) + "  biases.")
-                        single_dark = True
-                    except:
-                        stride = bias_count[ctr_dbb]    #Just do all of the biases first.
-                        single_dark = False
-                    while b_d_to_do > 0:
-                        min_to_do = min(b_d_to_do, stride)
-                        plog("Expose " + str(stride) +" " + str(bias_dark_bin_spec[ctr_dbb]) +  " bias frames.")
-                        req = {'time': 0.0,  'script': 'True', 'image_type': 'bias'}
-                        opt = {'area': "Full", 'count': min_to_do, 'bin': bias_dark_bin_spec[ctr_dbb] , \
-                               'filter': 'dark'}
-                          
-                        result = g_dev['cam'].expose_command(req, opt, no_AWS=False, \
-                                        do_sep=False, quick=False)
-                        b_d_to_do -= min_to_do
+            
+            b_d_to_do = bias_count + dark_count
+            try:
+                stride = bias_count//dark_count
+                plog("Tobor will interleave a dark every  " + str(stride) + "  biases.")
+                single_dark = True
+            except:
+                stride = bias_count   #Just do all of the biases first.
+                single_dark = False
+            while b_d_to_do > 0:
+                min_to_do = min(b_d_to_do, stride)
+                plog("Expose " + str(stride) +" 1x1 bias frames.")
+                req = {'time': 0.0,  'script': 'True', 'image_type': 'bias'}
+                opt = {'area': "Full", 'count': min_to_do, 'bin': 1 , \
+                       'filter': 'dark'}
+                  
+                result = g_dev['cam'].expose_command(req, opt, no_AWS=False, \
+                                do_sep=False, quick=False)
+                b_d_to_do -= min_to_do
+                
+
+                g_dev['obs'].update_status()
+                
+                # if ephem.now() + 210/86400 > ending:   #NB NB needs to be checked out
+                #     break
+                #I am changing this so the darks for the above binning are done after the biases  WER
+                    
+                #for ctr_darks in range((dark_count[ctr_dbb])):
+                if ephem.now() + (dark_exp_time + cycle_time + 30)/86400 > ending:
+                    break
+                if not single_dark:
+                    
+                    plog("Expose 1x1 dark of " \
+                         + str(dark_count) + " using exposure:  " + str(dark_exp_time) )
+                    req = {'time': dark_exp_time ,  'script': 'True', 'image_type': 'dark'}
+                    opt = {'area': "Full", 'count': 1, 'bin': 1, \
+                            'filter': 'dark'}
+                    result = g_dev['cam'].expose_command(req, opt, no_AWS=False, \
+                                       do_sep=False, quick=False)
+                    b_d_to_do -= 1
+                    g_dev['obs'].update_status()
+                    if ephem.now() + (dark_exp_time + cycle_time + 30)/86400 > ending:
+                        break
+                else:
+                    plog("Expose 1x1 dark " + str(1) + " of " \
+                             + str(dark_count) + " using exposure:  " + str(dark_exp_time) )
+                    req = {'time': dark_exp_time,  'script': 'True', 'image_type': 'dark'}
+                    opt = {'area': "Full", 'count': 1, 'bin': 1, \
+                            'filter': 'dark'}
+                    result = g_dev['cam'].expose_command(req, opt, no_AWS=False, \
+                                       do_sep=False, quick=False)
+                    b_d_to_do -= 1
+                    g_dev['obs'].update_status()
+                    if ephem.now() + (dark_exp_time + cycle_time + 30)/86400 > ending:
+                        break
                         
 
-                        g_dev['obs'].update_status()
-                        
-                        # if ephem.now() + 210/86400 > ending:   #NB NB needs to be checked out
-                        #     break
-                        #I am changing this so the darks for the above binning are done after the biases  WER
-                            
-                        #for ctr_darks in range((dark_count[ctr_dbb])):
-                        if ephem.now() + (dark_exp_time[ctr_dbb] + cycle_time[ctr_dbb] + 30)/86400 > ending:
-                            break
-                        if not single_dark:
-                            for ctr_dark in range(dark_count[ctr_dbb]):
-                                plog("Expose " + str(bias_dark_bin_spec[ctr_dbb]) + " dark " + str(ctr_dark + 1) + " of " \
-                                     + str(dark_count[ctr_dbb]) + " using exposure:  " + str(dark_exp_time[ctr_dbb]) )
-                                req = {'time': dark_exp_time[ctr_dbb] ,  'script': 'True', 'image_type': 'dark'}
-                                opt = {'area': "Full", 'count': 1, 'bin': bias_dark_bin_spec[ctr_dbb], \
-                                        'filter': 'dark'}
-                                result = g_dev['cam'].expose_command(req, opt, no_AWS=False, \
-                                                   do_sep=False, quick=False)
-                                b_d_to_do -= 1
-                                g_dev['obs'].update_status()
-                                if ephem.now() + (dark_exp_time[ctr_dbb] + cycle_time[ctr_dbb] + 30)/86400 > ending:
-                                    break
-                        else:
-                            plog("Expose " + str(bias_dark_bin_spec[ctr_dbb]) + " dark " + str(1) + " of " \
-                                     + str(dark_count[ctr_dbb]) + " using exposure:  " + str(dark_exp_time[ctr_dbb]) )
-                            req = {'time': dark_exp_time[ctr_dbb] ,  'script': 'True', 'image_type': 'dark'}
-                            opt = {'area': "Full", 'count': 1, 'bin': bias_dark_bin_spec[ctr_dbb], \
-                                    'filter': 'dark'}
-                            result = g_dev['cam'].expose_command(req, opt, no_AWS=False, \
-                                               do_sep=False, quick=False)
-                            b_d_to_do -= 1
-                            g_dev['obs'].update_status()
-                            if ephem.now() + (dark_exp_time[ctr_dbb] + cycle_time[ctr_dbb] + 30)/86400 > ending:
-                                break
-                            
-    
-                    g_dev['obs'].update_status()
-                    if ephem.now() + 30/86400 >= ending:
-                        break
+                g_dev['obs'].update_status()
+                if ephem.now() + 30/86400 >= ending:
+                    break
 
             plog(" Bias/Dark acquisition is finished normally.")
 
@@ -1414,15 +1413,7 @@ class Sequencer:
         camera_name = str(self.config['camera']['camera_1_1']['name'])
         flat_count = 5
         min_exposure = float(self.config['camera']['camera_1_1']['settings']['min_exposure'])
-        #bin_spec = '1,1'
-        #try:
-        #    bin_spec = self.config['camera']['camera_1_1']['settings']['flat_bin_spec']
-        #except:
-        #    pass
-    
-        # Get LIST of binnings to collect with flats
-        bin_spec = self.config['camera']['camera_1_1']['settings']['flat_bin_spec']
-    
+
         exp_time = min_exposure # added 20220207 WER  0.2 sec for SRO
 
 
@@ -1468,16 +1459,8 @@ class Sequencer:
                     g_dev['fil'].set_number_command(current_filter)  #  20220825  NB NB NB Change this to using a list of filter names.
                 
                 acquired_count = 0
-                #g_dev['mnt'].slewToSkyFlatAsync()
                 
-                if g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["is_cmos"] == True:
-                    tempFlatBin=1
-                else: # This should eventually be the requested binning....
-                    tempFlatBin=1
-                
-                for finder in range(len(g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"])):
-                    if g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"][finder][0] == tempFlatBin:
-                        flat_saturation_level = g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"][finder][1]
+                flat_saturation_level = g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"]
                 
                     
                 target_flat = 0.5 * flat_saturation_level
@@ -1581,10 +1564,10 @@ class Sequencer:
                             # FIRST, lets get the highest resolution flat
             
                             if g_dev["fil"].null_filterwheel == False:
-                                opt = { 'count': 1, 'bin':  bin_spec[0], 'area': 150, 'filter': g_dev['fil'].filter_data[current_filter][0]}   #nb nb nb BIN CHNAGED FROM 2,2 ON 20220618 wer
+                                opt = { 'count': 1, 'bin':  1, 'area': 150, 'filter': g_dev['fil'].filter_data[current_filter][0]}   #nb nb nb BIN CHNAGED FROM 2,2 ON 20220618 wer
                                 plog("using:  ", g_dev['fil'].filter_data[current_filter][0])
                             else:
-                                opt = { 'count': 1, 'bin':  bin_spec[0], 'area': 150}   
+                                opt = { 'count': 1, 'bin':  1, 'area': 150}   
                             
                             if ephem.now() >= ending:
                                 if morn: # This needs to be here because some scopes do not do morning bias and darks
@@ -1599,57 +1582,7 @@ class Sequencer:
             
                                 bright = fred['patch']    #  Patch should be circular and 20% of Chip area. ToDo project
                                 plog('Returned:  ', bright)
-                                
-                                
-                                if (bright > 0.25 * flat_saturation_level and
-                                    bright < 0.75 * flat_saturation_level):
-                                    if len(bin_spec) > 1 and g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["is_cmos"] == False:
-                                        print ("Good range for a flat, firing off the other flat types")
-                                        
-                                        for ctr in range (len(bin_spec)-1):
-                                            
-                                            # Estimate the new exposure time by the ratio of the skylux
-                                            prev_sky_lux = sky_lux
-                                            
-                                            try:
-                                                try:
-                                                    sky_lux = eval(self.redis_server.get('ocn_status'))['calc_HSI_lux']     #Why Eval, whould have float?
-                                                except:
-                                                    #plog("Redis not running. lux set to 1000.")
-                                                    try:
-                                                        sky_lux = float(g_dev['ocn'].status['calc_HSI_lux'])
-                                                    except:
-                                                        sky_lux, _ = g_dev['evnt'].illuminationNow()
-                                                        
-                                            except:
-                                                sky_lux = None
-                                            
-                                            if sky_lux != None:
-                                                exp_time=exp_time * (prev_sky_lux / sky_lux)
-                                            else:
-                                                if morn:
-                                                    exp_time=exp_time * 0.9
-                                                else:
-                                                    exp_time=exp_time * 1.1
-                                                
-                                            req = {'time': float(exp_time),  'alias': camera_name, 'image_type': 'sky flat', 'script': 'On'}
-                                            if g_dev["fil"].null_filterwheel == False:
-                                                
-                                                opt = { 'count': 1, 'bin':  bin_spec[ctr+1], 'area': 150, 'filter': g_dev['fil'].filter_data[current_filter][0]}   #nb nb nb BIN CHNAGED FROM 2,2 ON 20220618 wer
-                                                plog (opt)
-                                                plog("using:  ", g_dev['fil'].filter_data[current_filter][0])
-                                            else:
-                                                opt = { 'count': 1, 'bin':  bin_spec[ctr+1], 'area': 150}
-                                            
-                                            ored = g_dev['cam'].expose_command(req, opt, no_AWS=True, do_sep = False)
-                
-                                            obright = ored['patch']    #  Patch should be circular and 20% of Chip area. ToDo project
-                                            plog('Returned:  ', obright)
-                                            #scale = target_flat / obright # need to think this 
-                                            # through as the scale will change with binnings
-                                            # but for some reason it doesn't seem to with th
-                                            # ECO camera. What is here is fine for now. 
-                                
+                                                                
                             except Exception as e:
                                 plog('Failed to get a flat image: ', e)
                                 plog(traceback.format_exc())
@@ -1657,15 +1590,10 @@ class Sequencer:
                                 g_dev['obs'].update_status()
                                 continue
                             g_dev['obs'].update_status()
+                            
                             try:
-            
-                                #scale *= target_flat / bright           #Note we are scaling the scale
                                 scale = target_flat / bright
                                 plog("New scale is:  ", scale)
-                                #if scale > 5000:
-                                #    scale = 5000
-                                #if scale < 0.01:
-                                #    scale = 0.01
                             except:
                                 scale = 1.0
                                 
@@ -1691,15 +1619,7 @@ class Sequencer:
                                     plog('\n\n', "Patch/Bright:  ", bright,  \
                                           'New Gain value: ', round(bright/(collecting_area*exp_time), 3), '\n\n')
             
-            
-                            #obs_win_begin, sunset, sunrise, ephem_now = self.astro_events.getSunEvents()
-                            #  THE following code looks like a debug patch gone rogue.
-            
-                            #if bright > 0.85 * g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"]  and (ephem.now() < ending):    #NB should gate with end of skyflat window as well.
-                            ##    for i in range(1):
-                             #       time.sleep(2)  #  #0 seconds of wait time.  Maybe shorten for wide bands?
-                            #        g_dev['obs'].update_status()
-                            #else:
+
                             acquired_count += 1
                             if acquired_count == flat_count:
                                 pop_list.pop(0)
@@ -1712,18 +1632,12 @@ class Sequencer:
                             continue
                     else:
                         time.sleep(10)
-        #if morn is False:
-            #g_dev['mnt'].tracking = False   #  park_command({}, {})  #  NB this is provisional, Ok when simulating
-        #    self.eve_sky_flat_latch = False
-        #elif morn:
-        #    try:
-        #        g_dev['mnt'].park_command({}, {})
-        #    except:
-        #        plog("Mount did not park at end of morning skyflats.")
+
         if morn: 
             self.morn_sky_flat_latch = False
         else:
             self.eve_sky_flat_latch = False
+            
         plog('\nSky flat complete, or too early. Telescope Tracking is off.\n')
         g_dev['mnt'].park_command({}, {}) # You actually always want it to park, TheSkyX can't stop the telescope tracking, so park is safer... it is before focus anyway.
         self.sky_guard = False
@@ -1898,17 +1812,14 @@ class Sequencer:
             except:
                 print ("Issues pointing to a tycho star. Focussing at the current pointing.")
             req = {'time': self.config['focus_exposure_time'],  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'focus'}   #  NB Should pick up filter and constats from config
-            #opt = {'area': 150, 'count': 1, 'bin': '2, 2', 'filter': 'focus'}
-            opt = {'area': 150, 'count': 1, 'bin': 'default', 'filter': 'focus'}
+
+            opt = {'area': 150, 'count': 1, 'bin': 1, 'filter': 'focus'}
         else:
             pass   #Just take an image where currently pointed.
             req = {'time': self.config['focus_exposure_time'],  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'focus'}   #  NB Should pick up filter and constats from config
-            #opt = {'area': 150, 'count': 1, 'bin': '2, 2', 'filter': 'focus'}
-            opt = {'area': 150, 'count': 1, 'bin': 'default', 'filter': 'focus'}
+            opt = {'area': 150, 'count': 1, 'bin': 1, 'filter': 'focus'}
         foc_pos0 = focus_start
         result = {}
-        #plog("temporary patch in Sim values")
-        
         
         try:
             #Check here for filter, guider, still moving  THIS IS A CLASSIC
