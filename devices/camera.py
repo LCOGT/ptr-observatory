@@ -297,7 +297,10 @@ class Camera:
             self.theskyx = False
             plog("ASCOM is connected:  ", self._connect(True))
             plog("Control is ASCOM camera driver.")
-            self.camera.Action("EnableFullSensor", "enable")
+            try:
+                self.camera.Action("EnableFullSensor", "enable")
+            except:
+                pass
             # try:
             #     actions = self.camera.SupportedActions
             #     if "EnableFullSensor" in actions:
