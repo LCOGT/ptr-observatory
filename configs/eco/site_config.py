@@ -442,8 +442,8 @@ site_config = {
                         #['PG',    [2,  2],     0, 220, [1.00 , 113], 'PhGreen'],    #3.
                         #['PB',    [3,  3],     0, 300, [0.80 ,  97], 'PhRed'],    #4.
                         ['ha',    [5,  5],     0, 20.376, [5.00 , 200], 'Halpha'],    #5.
-                        ['o3',    [6,  6],     0, 22.53, [4.00 , 200], 'OIII'],    #6.
-                        ['s2',    [7,  7],     0, 43.65, [10.0,  200], 'SII']],    #7.
+                        ['o3',    [6,  6],     0, 5.827, [4.00 , 200], 'OIII'],    #6.
+                        ['s2',    [7,  7],     0, 2.196, [10.0,  200], 'SII']],    #7.
                         #['air',   [7,  7], -1000, 100., [1.00,   70], 'air'],    #8.
                         #['gooble',  [6,  6],     0, .221, [   0,    0], 'dark'],   #9.
                         #['LRGB',  [0,  0],     0, .221, [   0,    0], 'LRGB']],   #10.
@@ -489,8 +489,27 @@ site_config = {
             'settings': {                
                 'is_osc' : False,
                 
-                'transpose_fits' : False,
-                'transpose_jpeg' : False,
+                # ONLY TRANSFORM THE FITS IF YOU HAVE
+               # A DATA-BASED REASON TO DO SO.....
+               # USUALLY TO GET A BAYER GRID ORIENTATED CORRECTLY
+               # ***** ONLY ONE OF THESE SHOULD BE ON! *********
+               'transpose_fits' : False,
+               'flipx_fits' : False,
+               'flipy_fits' : False,
+               'rotate180_fits' : False, # This also should be flipxy!
+               'rotate90_fits' : False,
+               'rotate270_fits' : False,
+               
+               # HERE YOU CAN FLIP THE IMAGE TO YOUR HEARTS DESIRE
+               # HOPEFULLY YOUR HEARTS DESIRE IS SIMILAR TO THE
+               # RECOMMENDED DEFAULT DESIRE OF PTR
+               'transpose_jpeg' : False,
+               'flipx_jpeg' : False,
+               'flipy_jpeg' : False,
+               'rotate180_jpeg' : False,
+               'rotate90_jpeg' : False,
+               'rotate270_jpeg' : False,
+               
                 'osc_bayer' : 'RGGB',
                 'crop_preview': False,
                 'crop_preview_ybottom': 1,
@@ -554,14 +573,14 @@ site_config = {
                 'min_subframe':  [128, 128],
                
                 
-                'cycle_time':  [2, 2, 2, 2],  # 3x3 requires a 1, 1 reaout then a software bin, so slower.
+                'cycle_time':  2,  # 3x3 requires a 1, 1 reaout then a software bin, so slower.
                 'rbi_delay':  0.,      #  This being zero says RBI is not available, eg. for SBIG.
                 'is_cmos':  True,
                 'is_color':  False,
                 'bayer_pattern':  None,    #  'RGGB" is a valid string in camera is color.
                 'can_set_gain':  True,
-                'reference_gain': [2., 4., 18., 32.],     #  One val for each binning. SWAG!
-                'reference_noise': [10, 10, 10, 10],    #  All SWAGs right now!
+                'reference_gain': 2,     #  One val for each binning. SWAG!
+                'reference_noise': 10,    #  All SWAGs right now!
 
                 'reference_dark': [0.0, 0.0, 0.0, 0.0],     #  Might these best be pedastal values?  NO!
                                     #hdu.header['RDMODE'] = (self.config['camera'][self.name]['settings']['read_mode'], 'Camera read mode')
@@ -572,7 +591,7 @@ site_config = {
                 'readout_speed': 0.4,
                 'readout_seconds': 2,
                 'smart_stack_exposure_time' : 60,
-                'saturate':  [[1, 65000], [2,262000], [3,589815], [4, 1048560]] ,   # e-.  This is a close guess, not measured, but taken from data sheet.
+                'saturate':   65000 ,   # e-.  This is a close guess, not measured, but taken from data sheet.
                 'max_linearity': 65000,
                 'fullwell_capacity': [65000, 262000,589815,1048560],  #e-.   We need to sort out the units properly NB NB NB
                 'areas_implemented': ["Full",'4x4d', "600%", "500%", "450%", "300%", "220%", "150%", "133%", "Full", "Sqr", '71%', '50%',  '35%', '25%', '12%'],
@@ -585,9 +604,8 @@ site_config = {
                 'optimal_bin':  [2, 2, 0.538],    #  Matched to seeing situation by owner
                 'max_res_bin':  [1, 1, 0.269],    #  Matched to seeing situation by owner
                 'bin_modes':  [[1, 1, 0.269],[2, 2, 0.538],[3, 3, 0.807],[4, 4, 1.076]], #  , [2, 2, 2.13], [3, 3, 3.21], [4, 4, 4.27]],   #Meaning no binning choice if list has only one entry, default should be first.
-                'pix_scale': [0.269,0.538, 0.807,1.076],
-                'cosmics_at_default' : 'yes',
-                'cosmics_at_maximum' : 'yes',
+                'pix_scale': 0.269,
+                'do_cosmics' : 'yes',
                 'dark_length' : 10,
                 'bias_count' : 2,
                 'dark_count' : 2,

@@ -1468,16 +1468,8 @@ class Sequencer:
                     g_dev['fil'].set_number_command(current_filter)  #  20220825  NB NB NB Change this to using a list of filter names.
                 
                 acquired_count = 0
-                #g_dev['mnt'].slewToSkyFlatAsync()
                 
-                if g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["is_cmos"] == True:
-                    tempFlatBin=1
-                else: # This should eventually be the requested binning....
-                    tempFlatBin=1
-                
-                for finder in range(len(g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"])):
-                    if g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"][finder][0] == tempFlatBin:
-                        flat_saturation_level = g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"][finder][1]
+                flat_saturation_level = g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"]
                 
                     
                 target_flat = 0.5 * flat_saturation_level
@@ -1581,10 +1573,10 @@ class Sequencer:
                             # FIRST, lets get the highest resolution flat
             
                             if g_dev["fil"].null_filterwheel == False:
-                                opt = { 'count': 1, 'bin':  bin_spec[0], 'area': 150, 'filter': g_dev['fil'].filter_data[current_filter][0]}   #nb nb nb BIN CHNAGED FROM 2,2 ON 20220618 wer
+                                opt = { 'count': 1, 'bin':  1, 'area': 150, 'filter': g_dev['fil'].filter_data[current_filter][0]}   #nb nb nb BIN CHNAGED FROM 2,2 ON 20220618 wer
                                 plog("using:  ", g_dev['fil'].filter_data[current_filter][0])
                             else:
-                                opt = { 'count': 1, 'bin':  bin_spec[0], 'area': 150}   
+                                opt = { 'count': 1, 'bin':  1, 'area': 150}   
                             
                             if ephem.now() >= ending:
                                 if morn: # This needs to be here because some scopes do not do morning bias and darks
@@ -1599,57 +1591,7 @@ class Sequencer:
             
                                 bright = fred['patch']    #  Patch should be circular and 20% of Chip area. ToDo project
                                 plog('Returned:  ', bright)
-                                
-                                
-                                if (bright > 0.25 * flat_saturation_level and
-                                    bright < 0.75 * flat_saturation_level):
-                                    if len(bin_spec) > 1 and g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["is_cmos"] == False:
-                                        print ("Good range for a flat, firing off the other flat types")
-                                        
-                                        for ctr in range (len(bin_spec)-1):
-                                            
-                                            # Estimate the new exposure time by the ratio of the skylux
-                                            prev_sky_lux = sky_lux
-                                            
-                                            try:
-                                                try:
-                                                    sky_lux = eval(self.redis_server.get('ocn_status'))['calc_HSI_lux']     #Why Eval, whould have float?
-                                                except:
-                                                    #plog("Redis not running. lux set to 1000.")
-                                                    try:
-                                                        sky_lux = float(g_dev['ocn'].status['calc_HSI_lux'])
-                                                    except:
-                                                        sky_lux, _ = g_dev['evnt'].illuminationNow()
-                                                        
-                                            except:
-                                                sky_lux = None
-                                            
-                                            if sky_lux != None:
-                                                exp_time=exp_time * (prev_sky_lux / sky_lux)
-                                            else:
-                                                if morn:
-                                                    exp_time=exp_time * 0.9
-                                                else:
-                                                    exp_time=exp_time * 1.1
-                                                
-                                            req = {'time': float(exp_time),  'alias': camera_name, 'image_type': 'sky flat', 'script': 'On'}
-                                            if g_dev["fil"].null_filterwheel == False:
-                                                
-                                                opt = { 'count': 1, 'bin':  bin_spec[ctr+1], 'area': 150, 'filter': g_dev['fil'].filter_data[current_filter][0]}   #nb nb nb BIN CHNAGED FROM 2,2 ON 20220618 wer
-                                                plog (opt)
-                                                plog("using:  ", g_dev['fil'].filter_data[current_filter][0])
-                                            else:
-                                                opt = { 'count': 1, 'bin':  bin_spec[ctr+1], 'area': 150}
-                                            
-                                            ored = g_dev['cam'].expose_command(req, opt, no_AWS=True, do_sep = False)
-                
-                                            obright = ored['patch']    #  Patch should be circular and 20% of Chip area. ToDo project
-                                            plog('Returned:  ', obright)
-                                            #scale = target_flat / obright # need to think this 
-                                            # through as the scale will change with binnings
-                                            # but for some reason it doesn't seem to with th
-                                            # ECO camera. What is here is fine for now. 
-                                
+                                                                
                             except Exception as e:
                                 plog('Failed to get a flat image: ', e)
                                 plog(traceback.format_exc())
@@ -1657,15 +1599,10 @@ class Sequencer:
                                 g_dev['obs'].update_status()
                                 continue
                             g_dev['obs'].update_status()
+                            
                             try:
-            
-                                #scale *= target_flat / bright           #Note we are scaling the scale
                                 scale = target_flat / bright
                                 plog("New scale is:  ", scale)
-                                #if scale > 5000:
-                                #    scale = 5000
-                                #if scale < 0.01:
-                                #    scale = 0.01
                             except:
                                 scale = 1.0
                                 
@@ -1691,15 +1628,7 @@ class Sequencer:
                                     plog('\n\n', "Patch/Bright:  ", bright,  \
                                           'New Gain value: ', round(bright/(collecting_area*exp_time), 3), '\n\n')
             
-            
-                            #obs_win_begin, sunset, sunrise, ephem_now = self.astro_events.getSunEvents()
-                            #  THE following code looks like a debug patch gone rogue.
-            
-                            #if bright > 0.85 * g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"]  and (ephem.now() < ending):    #NB should gate with end of skyflat window as well.
-                            ##    for i in range(1):
-                             #       time.sleep(2)  #  #0 seconds of wait time.  Maybe shorten for wide bands?
-                            #        g_dev['obs'].update_status()
-                            #else:
+
                             acquired_count += 1
                             if acquired_count == flat_count:
                                 pop_list.pop(0)
