@@ -131,7 +131,7 @@ site_config = {
     'pointing_calibration_on_startup': False,
     'periodic_focus_time' : 0.5, # This is a time, in hours, over which to bypass automated focussing (e.g. at the start of a project it will not refocus if a new project starts X hours after the last focus)
     'stdev_fwhm' : 0.5, # This is the expected variation in FWHM at a given telescope/camera/site combination. This is used to check if a fwhm is within normal range or the focus has shifted
-    'focus_exposure_time': 25, # Exposure time in seconds for exposure image
+    'focus_exposure_time': 10, # Exposure time in seconds for exposure image
     'focus_trigger' : 1.0, # What FWHM increase is needed to trigger an autofocus
     'solve_nth_image' : 10, # Only solve every nth image
     'solve_timer' : 5, # Only solve every X minutes
@@ -537,7 +537,7 @@ site_config = {
                                         14, 15, 4, 16],   #  9, 21],  # 5, 17], #Most to least throughput, \
                                 #so screen brightens, skipping u and zs which really need sky.
 
-                'filter_sky_sort':     [16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 4, 4, 3, 2, 1, 0]  #Least to most throughput  \
+                'filter_sky_sort':     [16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0]  #Least to most throughput  \
 
 
             },

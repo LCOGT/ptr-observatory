@@ -222,6 +222,8 @@ class Camera:
         self.biasFiles = {}
         self.darkFiles = {}
         self.flatFiles = {}
+        self.hotFiles = {}
+
         
         try:
             #self.biasframe = fits.open(
@@ -252,8 +254,7 @@ class Camera:
         except:
             plog("Dark frame for Binning 1 not available")  
 
-        try:
-            
+        try:            
             fileList = glob.glob(
                 self.config["archive_path"]
                 + "calibmasters/"
@@ -274,7 +275,7 @@ class Camera:
         camera actions for various drivers. Each separate software
         has it's own unique and annoying way of doing things'
         """
-
+               
         plog("Connecting to:  ", driver)
 
         if driver[:5].lower() == "ascom":
