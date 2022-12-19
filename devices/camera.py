@@ -2000,59 +2000,61 @@ class Camera:
                             int(g_dev["scr"].bright_setting),
                             "Screen brightness setting",
                         )
-
-                    if self.bin == 1:
-                        hdu.header["DATASEC"] = self.config["camera"][self.name][
-                            "settings"
-                        ]["data_sec"][0]
-                        hdu.header["DETSEC"] = self.config["camera"][self.name][
-                            "settings"
-                        ]["det_sec"][0]
-                        hdu.header["BIASSEC"] = self.config["camera"][self.name][
-                            "settings"
-                        ]["bias_sec"][0]
-                        hdu.header["TRIMSEC"] = self.config["camera"][self.name][
-                            "settings"
-                        ]["trim_sec"][0]
-                    elif self.bin == 2:
-                        hdu.header["DATASEC"] = self.config["camera"][self.name][
-                            "settings"
-                        ]["data_sec"][1]
-                        hdu.header["DETSEC"] = self.config["camera"][self.name][
-                            "settings"
-                        ]["det_sec"][1]
-                        hdu.header["BIASSEC"] = self.config["camera"][self.name][
-                            "settings"
-                        ]["bias_sec"][1]
-                        hdu.header["TRIMSEC"] = self.config["camera"][self.name][
-                            "settings"
-                        ]["trim_sec"][1]
-                    elif self.bin == 3:
-                        hdu.header["DATASEC"] = self.config["camera"][self.name][
-                            "settings"
-                        ]["data_sec"][2]
-                        hdu.header["DETSEC"] = self.config["camera"][self.name][
-                            "settings"
-                        ]["det_sec"][2]
-                        hdu.header["BIASSEC"] = self.config["camera"][self.name][
-                            "settings"
-                        ]["bias_sec"][2]
-                        hdu.header["TRIMSEC"] = self.config["camera"][self.name][
-                            "settings"
-                        ]["trim_sec"][2]
-                    else:  # self.bin == 4:
-                        hdu.header["DATASEC"] = self.config["camera"][self.name][
-                            "settings"
-                        ]["data_sec"][3]
-                        hdu.header["DETSEC"] = self.config["camera"][self.name][
-                            "settings"
-                        ]["det_sec"][3]
-                        hdu.header["BIASSEC"] = self.config["camera"][self.name][
-                            "settings"
-                        ]["bias_sec"][3]
-                        hdu.header["TRIMSEC"] = self.config["camera"][self.name][
-                            "settings"
-                        ]["trim_sec"][3]
+                    try:
+                        if self.bin == 1:
+                            hdu.header["DATASEC"] = self.config["camera"][self.name][
+                                "settings"
+                            ]["data_sec"][0]
+                            hdu.header["DETSEC"] = self.config["camera"][self.name][
+                                "settings"
+                            ]["det_sec"][0]
+                            hdu.header["BIASSEC"] = self.config["camera"][self.name][
+                                "settings"
+                            ]["bias_sec"][0]
+                            hdu.header["TRIMSEC"] = self.config["camera"][self.name][
+                                "settings"
+                            ]["trim_sec"][0]
+                        elif self.bin == 2:
+                            hdu.header["DATASEC"] = self.config["camera"][self.name][
+                                "settings"
+                            ]["data_sec"][1]
+                            hdu.header["DETSEC"] = self.config["camera"][self.name][
+                                "settings"
+                            ]["det_sec"][1]
+                            hdu.header["BIASSEC"] = self.config["camera"][self.name][
+                                "settings"
+                            ]["bias_sec"][1]
+                            hdu.header["TRIMSEC"] = self.config["camera"][self.name][
+                                "settings"
+                            ]["trim_sec"][1]
+                        elif self.bin == 3:
+                            hdu.header["DATASEC"] = self.config["camera"][self.name][
+                                "settings"
+                            ]["data_sec"][2]
+                            hdu.header["DETSEC"] = self.config["camera"][self.name][
+                                "settings"
+                            ]["det_sec"][2]
+                            hdu.header["BIASSEC"] = self.config["camera"][self.name][
+                                "settings"
+                            ]["bias_sec"][2]
+                            hdu.header["TRIMSEC"] = self.config["camera"][self.name][
+                                "settings"
+                            ]["trim_sec"][2]
+                        else:  # self.bin == 4:
+                            hdu.header["DATASEC"] = self.config["camera"][self.name][
+                                "settings"
+                            ]["data_sec"][3]
+                            hdu.header["DETSEC"] = self.config["camera"][self.name][
+                                "settings"
+                            ]["det_sec"][3]
+                            hdu.header["BIASSEC"] = self.config["camera"][self.name][
+                                "settings"
+                            ]["bias_sec"][3]
+                            hdu.header["TRIMSEC"] = self.config["camera"][self.name][
+                                "settings"
+                            ]["trim_sec"][3]
+                    except:
+                        pass
 
                     hdu.header["SATURATE"] = (
                         float(image_saturation_level),
@@ -3020,7 +3022,7 @@ class Camera:
                                 cal_name[:-9] + "F012" + cal_name[-7:]
                             )                            
                             
-                            if len(sources) >= 5:
+                            if len(sources) >= 5 and len(sources) < 200:
                                 
                                 # We only need to save the focus image immediately if there is enough sources to 
                                 #  rationalise that.  It only needs to be on the disk immediately now if platesolve 
@@ -3122,7 +3124,7 @@ class Camera:
                                         "Image: did not platesolve; this is usually OK. ", e
                                     )
                             else:
-                                print ("Platesolve wasn't attempted due to lack of sources")
+                                print ("Platesolve wasn't attempted due to lack of sources (or sometimes too many!)")
                                 self.to_slow_process(2000,('focus', cal_path + cal_name, hdufocusdata, hdu.header, \
                                                            frame_type))
                                 del hdufocusdata

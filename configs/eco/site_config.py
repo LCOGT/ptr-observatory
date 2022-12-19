@@ -89,13 +89,13 @@ site_config = {
     'auto_eve_sky_flat': True,
     'eve_sky_flat_sunset_offset': -30.5,  #  Minutes  neg means before, + after.
     'eve_cool_down_open' : -60.0,
-    'auto_morn_sky_flat': True,
+    'auto_morn_sky_flat': False,
     'auto_morn_bias_dark': False,
     're-calibrate_on_solve': True,
     'pointing_calibration_on_startup': False,
     'periodic_focus_time' : 0.5, # This is a time, in hours, over which to bypass automated focussing (e.g. at the start of a project it will not refocus if a new project starts X hours after the last focus)
     'stdev_fwhm' : 0.5, # This is the expected variation in FWHM at a given telescope/camera/site combination. This is used to check if a fwhm is within normal range or the focus has shifted
-    'focus_exposure_time': 120, # Exposure time in seconds for exposure image
+    'focus_exposure_time': 60, # Exposure time in seconds for exposure image
 
     'focus_trigger' : 5.0, # What FWHM increase is needed to trigger an autofocus
     'solve_nth_image' : 10, # Only solve every nth image
@@ -432,8 +432,8 @@ site_config = {
                         # #['LRGB',  [0,  0],     0, .221, [   0,    0], 'LRGB']],   #10.
                         
                         #['w',     [0,  0],     0, 72.7, [1.00 ,  72], 'PL'],    #0.   For sequencer autofocus  consider foc or f filter
-                        ['focus', [3,  3],     0, 50, [1.00 ,  72], 'focus'],    #0.
-                        ['air',    [0,  0],     0, 24, [1.00 ,  72], 'PhLum'],    #1.
+                        ['focus', [0,  0],     0, 50, [1.00 ,  72], 'focus'],    #0.
+                        ['Lum',    [0,  0],     0, 24, [1.00 ,  72], 'PhLum'],    #1.
                         ['dark',    [1,  1],     0, 17, [1.00 , 119], 'PhRed'],    #2.
                         ['pb',    [2,  2],     0, 23, [1.00 , 113], 'PhGreen'],    #3.
                         ['pg',    [3,  3],     0, 24, [0.80 ,  97], 'PhBlue'],    #4.
@@ -497,17 +497,17 @@ site_config = {
                 'crop_preview_ytop': 1,
                 'crop_preview_xleft': 1,
                 'crop_preview_xright': 1,
-                'temp_setpoint': -22,   #Updated from -18 WER 20220914 Afternoon
+                'temp_setpoint': -10,   
                 'calib_setpoints': [-35,-30, -25, -20, -15, -10 ],  #  Should vary with season?
                 'day_warm': False,
                 'cooler_on': True,
                 'x_start':  0,
                 'y_start':  0,
-                'x_width':  4500,   #  NB Should be set up with overscan, which this camera is!  20200315 WER
-                'y_width':  3600,
+                'x_width':  4656,   #  NB Should be set up with overscan, which this camera is!  20200315 WER
+                'y_width':  3520,
                 #Note please add 56 to SBIG Driver Checker 64 Update config for added overscan
-                'x_chip':  4556,   #  NB Should specify the active pixel area.   20200315 WER
-                'y_chip':  3656,
+                'x_chip':  4656,   #  NB Should specify the active pixel area.   20200315 WER
+                'y_chip':  3520,
                 'x_trim_offset':  0,   #  NB these four entries are guesses.
                 'y_trim_offset':  0,
                 'pre_bias_available': False,  #if so need to specify as below for post_bias.
@@ -522,27 +522,27 @@ site_config = {
                 #'ref_dark': 60.0,
                 #'long_dark': 600.0,
                 
-                'x_active': 4500,
-                'y_active': 3600,
+                'x_active': 4656,
+                'y_active': 3520,
                 #THIS IS ALL WRONG!
-                'det_size': '[1:4556, 1:3656]',  # Physical chip data size as returned from driver
-                'ccd_sec': '[1:4556, 1:3656]',
-                'bias_sec': ['[1:22, 1:6388]', '[1:11, 1:3194]', '[1:7, 1:2129]', '[1:5, 1:1597]'],
-                'det_sec': ['[25:9600, 1:6388]', '[13:4800, 1:3194]', '[9:3200, 1:2129]', '[7:2400, 1:1597]'],
-                'data_sec': ['[25:9600, 1:6388]', '[13:4800, 1:3194]', '[9:3200, 1:2129]', '[7:2400, 1:1597]'],
-                'trim_sec': ['[1:9576, 1:6388]', '[1:4788, 1:3194]', '[1:3192, 1:2129]', '[1:2394, 1:1597]'],
+                #'det_size': '[1:4556, 1:3656]',  # Physical chip data size as returned from driver
+                #'ccd_sec': '[1:4556, 1:3656]',
+                ##'bias_sec': ['[1:22, 1:6388]', '[1:11, 1:3194]', '[1:7, 1:2129]', '[1:5, 1:1597]'],
+                #'det_sec': ['[25:9600, 1:6388]', '[13:4800, 1:3194]', '[9:3200, 1:2129]', '[7:2400, 1:1597]'],
+                #'data_sec': ['[25:9600, 1:6388]', '[13:4800, 1:3194]', '[9:3200, 1:2129]', '[7:2400, 1:1597]'],
+                #'trim_sec': ['[1:9576, 1:6388]', '[1:4788, 1:3194]', '[1:3192, 1:2129]', '[1:2394, 1:1597]'],
                 'x_pixel':  6,
                 'y_pixel':  6,
                 
-                'CameraXSize' : 4096,
-                'CameraYSize' : 4096,
+                'CameraXSize' : 4656,
+                'CameraYSize' : 3520,
                 #'MaxBinX' : 4,
                 #'MaxBinY' : 4,
                 'StartX' : 1,
                 'StartY' : 1,
 
-                'x_field_deg': 1.3333,   #   round(4784*1.0481/3600, 4),
-                'y_field_deg': 1.0665,   #  round(3194*1.0481/3600, 4),
+                #'x_field_deg': 1.3333,   #   round(4784*1.0481/3600, 4),
+                #'y_field_deg': 1.0665,   #  round(3194*1.0481/3600, 4),
                 'overscan_x': 24,
                 'overscan_y': 3,
                 'north_offset': 0.0,    #  These three are normally 0.0 for the primary telescope

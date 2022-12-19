@@ -343,10 +343,10 @@ site_config = {
             #F4.9 setup
             'start_at_config_reference': True,
             'use_focuser_temperature': False,
-            'reference':14462,    #  20210313  Nominal at 10C Primary temperature
+            'reference':12462,    #  20210313  Nominal at 10C Primary temperature
             'ref_temp':  6265.0,    #  Update when pinning reference
             'coef_c': 0,   #  Negative means focus moves out as Primary gets colder
-            'coef_0': 14462,  #  Nominal intercept when Primary is at 0.0 C.
+            'coef_0': 12462,  #  Nominal intercept when Primary is at 0.0 C.
             'coef_date':  '20220914',    #This appears to be sensible result 44 points -13 to 3C'reference':  6431,    #  Nominal at 10C Primary temperature
             # #F9 setup
             # 'reference': 4375,    #   Guess 20210904  Nominal at 10C Primary temperature
@@ -358,7 +358,7 @@ site_config = {
             'maximum': 18000,   #12672 actually
             'step_size': 1,
             'backlash': 0,
-            'throw' : 500,
+            'throw' : 750,
             'unit': 'micron',
             #'unit_conversion': 9.09090909091,
             'unit_conversion': 1.0,
