@@ -89,7 +89,7 @@ site_config = {
     'auto_eve_sky_flat': True,
     'eve_sky_flat_sunset_offset': -30.5,  #  Minutes  neg means before, + after.
     'eve_cool_down_open' : -60.0,
-    'auto_morn_sky_flat': True,
+    'auto_morn_sky_flat': False,
     'auto_morn_bias_dark': False,
     're-calibrate_on_solve': True,
     'pointing_calibration_on_startup': False,
@@ -497,7 +497,7 @@ site_config = {
                 'crop_preview_ytop': 1,
                 'crop_preview_xleft': 1,
                 'crop_preview_xright': 1,
-                'temp_setpoint': -22,   #Updated from -18 WER 20220914 Afternoon
+                'temp_setpoint': -10,   
                 'calib_setpoints': [-35,-30, -25, -20, -15, -10 ],  #  Should vary with season?
                 'day_warm': False,
                 'cooler_on': True,

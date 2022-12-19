@@ -3124,7 +3124,7 @@ class Camera:
                                         "Image: did not platesolve; this is usually OK. ", e
                                     )
                             else:
-                                print ("Platesolve wasn't attempted due to lack of sources")
+                                print ("Platesolve wasn't attempted due to lack of sources (or sometimes too many!)")
                                 self.to_slow_process(2000,('focus', cal_path + cal_name, hdufocusdata, hdu.header, \
                                                            frame_type))
                                 del hdufocusdata
