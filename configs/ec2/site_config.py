@@ -475,8 +475,26 @@ site_config = {
             'settings': {
                 'is_osc' : True,
                 
+                # ONLY TRANSFORM THE FITS IF YOU HAVE
+                # A DATA-BASED REASON TO DO SO.....
+                # USUALLY TO GET A BAYER GRID ORIENTATED CORRECTLY
+                # ***** ONLY ONE OF THESE SHOULD BE ON! *********
                 'transpose_fits' : False,
+                'flipx_fits' : False,
+                'flipy_fits' : False,
+                'rotate180_fits' : False, # This also should be flipxy!
+                'rotate90_fits' : False,
+                'rotate270_fits' : False,
+                
+                # HERE YOU CAN FLIP THE IMAGE TO YOUR HEARTS DESIRE
+                # HOPEFULLY YOUR HEARTS DESIRE IS SIMILAR TO THE
+                # RECOMMENDED DEFAULT DESIRE OF PTR
                 'transpose_jpeg' : False,
+                'flipx_jpeg' : False,
+                'flipy_jpeg' : False,
+                'rotate180_jpeg' : False,
+                'rotate90_jpeg' : False,
+                'rotate270_jpeg' : False,
                 'osc_bayer' : 'RGGB',
                 'crop_preview': False,
                 'crop_preview_ybottom': 1,
@@ -540,17 +558,16 @@ site_config = {
                 'bin_modes':  [[1, 1, 1.59]], #  , [2, 2, 2.13], [3, 3, 3.21], [4, 4, 4.27]],   #Meaning no binning choice if list has only one entry, default should be first.
                 'optimal_bin':  [1, 1, 1.59],    #  Matched to seeing situation by owner
                 'max_res_bin':  [1, 1, 1.59],    #  Matched to seeing situation by owner
-                'cosmics_at_default' : 'yes',
-                'cosmics_at_maximum' : 'yes',
-                'pix_scale': [1.569],
-                'cycle_time':  [2, 2, 2, 2],  # 3x3 requires a 1, 1 reaout then a software bin, so slower.
+                'do_cosmics' : 'no',
+                'pix_scale': 1.569,
+                'cycle_time':  2,
                 'rbi_delay':  0.,      #  This being zero says RBI is not available, eg. for SBIG.
                 'is_cmos':  True,
                 'is_color':  True,
                 'bayer_pattern':  'RGGB',    #  'RGGB" is a valid string in camera is color.
                 'can_set_gain':  True,
-                'reference_gain': [2., 4., 18., 32.],     #  One val for each binning. SWAG!
-                'reference_noise': [10, 10, 10, 10],    #  All SWAGs right now!
+                'reference_gain': 2.0,     #  One val for each binning. SWAG!
+                'reference_noise': 10.0,    #  All SWAGs right now!
 
                 'reference_dark': [0.0, 0.0, 0.0, 0.0],     #  Might these best be pedastal values?  NO!
                                     #hdu.header['RDMODE'] = (self.config['camera'][self.name]['settings']['read_mode'], 'Camera read mode')
@@ -561,9 +578,9 @@ site_config = {
                 'readout_speed': 0.4,
                 'readout_seconds': 2,
                 'smart_stack_exposure_time' : 10,
-                'saturate': [[1,65000]],    # e-.  This is a close guess, not measured, but taken from data sheet.
+                'saturate': 65000,    # e-.  This is a close guess, not measured, but taken from data sheet.
                 'max_linearity': 65000,
-                'fullwell_capacity': [65000, 65000, 65000, 65000],  #e-.   We need to sort out the units properly NB NB NB
+                'fullwell_capacity': 65000,  #e-.   We need to sort out the units properly NB NB NB
                 'areas_implemented': ["Full",'4x4d', "600%", "500%", "450%", "300%", "220%", "150%", "133%", "Full", "Sqr", '71%', '50%',  '35%', '25%', '12%'],
                 'default_area':  "Full",
                 'default_rotation': 0.0000,

@@ -990,116 +990,8 @@ class Observatory:
                             time.sleep(10)
                             saverretries = saverretries + 1
                 
-                if slow_process[0] == 'cmos_other_calib_binnings_fz_and_send':
-                    # Ok, we have the 1x1 binning from the CMOS
-                    # now we are here, we shall send up the other binning versions
-                    #print ("other_calib_binnings")
-                    if slow_process[4] == 'flat' or slow_process[4] == 'screenflat' or slow_process[4] == 'skyflat':
-                        cmos_calib_binnings=self.config['camera']['camera_1_1']['settings']['flat_bin_spec']
-                    elif slow_process[4] == 'dark' or slow_process[4] == 'bias':
-                        cmos_calib_binnings=self.config['camera']['camera_1_1']['settings']['bias_dark_bin_spec']
-
-                    for ctr in range (len(cmos_calib_binnings)-1):
-                        tempBin=cmos_calib_binnings[ctr+1][0]
-                        saver = 0
-                        saverretries = 0
-                        while saver == 0 and saverretries < 10:
-                            try:                               
-                                print ("Binning 1x1 " + str(slow_process[4]) + " to " + str(tempBin) + "x" + str(tempBin) \
-                                       + ", making an fz and sending it up")
-                                
-                                #breakpoint()
-                                hducb = fits.CompImageHDU(np.asarray(block_reduce(np.array(slow_process[2],np.float32),\
-                                                                                  int(tempBin))), slow_process[3])
-                                hducb.verify("fix")
-                                hducb.header[
-                                    "BZERO"
-                                ] = 0  # Make sure there is no integer scaling left over
-                                hducb.header[
-                                    "BSCALE"
-                                ] = 1  # Make sure there is no integer scaling left over
-                                #hdu.data=slow_process[2]  
-
-                                hducb.header["NAXIS1"] = hducb.data.shape[0]
-                                hducb.header["NAXIS2"] = hducb.data.shape[1]
-                                hducb.header["XBINING"] = (
-                                    tempBin,
-                                    "Pixel binning in x direction",
-                                )
-                                hducb.header["YBINING"] = (
-                                    tempBin,
-                                    "Pixel binning in y direction",
-                                )
-                                #breakpoint()
-                                #print ("SAVING")
-                                #print (slow_process[1].replace('-EX00.fits.fz', 'bin' +str(tempBin) + '-EX00.fits.fz'))
-                                
-                                #print (hducb.data)
-                                
-                                #breakpoint()
-                                
-                                fits.writeto(slow_process[1].replace('-EX00.fits.fz', 'tempbin' +str(tempBin)\
-                                                                     + '-EX00.fits.fz'), hducb.data, header=hducb.header,\
-                                                                     overwrite=True)
-                                try:
-                                    hducb.close()
-                                except:
-                                    pass                    
-                                del hducb
-                                
-                                hducb=fits.open(slow_process[1].replace('-EX00.fits.fz', 'tempbin' +str(tempBin)\
-                                                                        + '-EX00.fits.fz'))
-                                hducbz = fits.CompImageHDU(hducb[0].data, hducb[0].header)
-                                try:
-                                    hducb.close()
-                                except:
-                                    pass                    
-                                del hducb
-                                
-                                hducbz.writeto(slow_process[1].replace('-EX00.fits.fz', 'bin' +str(tempBin)\
-                                                                       + '-EX00.fits.fz'), overwrite=True)
-                                #breakpoint()
-                                try:
-                                    hducbz.close()
-                                except:
-                                    pass                    
-                                del hducbz
-                                #try:
-                                #    hducb.writeto(
-                                #        slow_process[1].replace('-EX00.fits.fz', 'bin' +str(tempBin) + '-EX00.fits.fz'), \
-                                #        overwrite=True, output_verify='silentfix'
-                                #    )  # Save full raw file locally
-                                #except:
-                                #    print ("failed to save file")
-                                try:
-                                    os.remove(slow_process[1].replace('-EX00.fits.fz', 'tempbin' +str(tempBin)\
-                                                                      + '-EX00.fits.fz'))
-                                except:
-                                    #print ("couldn't remove temporary bin file.")
-                                    pass
-                                saver = 1
-                                
-                            except Exception as e:
-                                plog("Failed to write raw file: ", e)
-                                if "requested" in e and "written" in e:
-                                    plog(check_download_cache())
-                                plog(traceback.format_exc())
-                                time.sleep(10)
-                                saverretries = saverretries + 1
-                                
-                        # Send this file up to AWS (THIS WILL BE SENT TO BANZAI INSTEAD, SO THIS IS THE INGESTER POSITION)
-                        if self.config['send_files_at_end_of_night'] == 'no':
-                            g_dev['cam'].enqueue_for_AWS(
-                                25000000, '', slow_process[1].replace('-EX00.fits.fz', 'bin' +str(tempBin) + '-EX00.fits.fz')
-                            )
-                            g_dev["obs"].send_to_user(
-                                "An image has been readout from the camera and queued for transfer to the cloud.",
-                                p_level="INFO",
-                            )
-
-                
                 if slow_process[0] == 'fz_and_send':
-                    #print ("fz sending")
+
                     # Create the fz file ready for BANZAI and the AWS/UI
                     # Note that even though the raw file is int16,
                     # The compression and a few pieces of software require float32
@@ -1407,8 +1299,53 @@ class Observatory:
                     if reprojection_failed == True: # If we couldn't make a stack send a jpeg of the original image.
                         storedsStack=img
 
+                    # if self.config["camera"][g_dev['cam'].name]["settings"]["is_osc"]:
+                    #     #print ("interpolating bayer grid for focusing purposes.")
+                    #     if self.config["camera"][g_dev['cam'].name]["settings"]["osc_bayer"] == 'RGGB':                           
+                            
+                    #         # Checkerboard collapse for other colours for temporary jpeg                            
+                    #         # Create indexes for B, G, G, R images                            
+                    #         xshape=storedsStack.shape[0]
+                    #         yshape=storedsStack.shape[1]
+
+                    #         # B pixels
+                    #         list_0_1 = np.array([ [0,0], [0,1] ])
+                    #         checkerboard=np.tile(list_0_1, (xshape//2, yshape//2))
+                    #         checkerboard=np.asarray(checkerboard)
+                    #         hdublue=(block_reduce(storedsStack * checkerboard ,2))
+                            
+                    #         # R Pixels
+                    #         list_0_1 = np.array([ [1,0], [0,0] ])
+                    #         checkerboard=np.tile(list_0_1, (xshape//2, yshape//2))
+                    #         checkerboard=np.asarray(checkerboard)
+                    #         hdured=(block_reduce(storedsStack * checkerboard ,2))
+                            
+                    #         # G top right Pixels
+                    #         list_0_1 = np.array([ [0,1], [0,0] ])
+                    #         checkerboard=np.tile(list_0_1, (xshape//2, yshape//2))
+                    #         checkerboard=np.asarray(checkerboard)
+                    #         GTRonly=(block_reduce(storedsStack * checkerboard ,2))
+                            
+                    #         # G bottom left Pixels
+                    #         list_0_1 = np.array([ [0,0], [1,0] ])
+                    #         checkerboard=np.tile(list_0_1, (xshape//2, yshape//2))
+                    #         checkerboard=np.asarray(checkerboard)
+                    #         GBLonly=(block_reduce(storedsStack * checkerboard ,2))                                
+                            
+                    #         # Sum two Gs together and half them to be vaguely on the same scale
+                    #         hdugreen = np.asarray(GTRonly + GBLonly)
+                    #         del GTRonly
+                    #         del GBLonly
+                    #         del checkerboard
+
+                    #     else:
+                    #         print ("this bayer grid not implemented yet")
+
+            
+                    
+
                     if self.config["camera"][g_dev['cam'].name]["settings"]["is_osc"]:
-                        #print ("interpolating bayer grid for focusing purposes.")
+                        
                         if self.config["camera"][g_dev['cam'].name]["settings"]["osc_bayer"] == 'RGGB':                           
                             
                             # Checkerboard collapse for other colours for temporary jpeg                            
@@ -1448,22 +1385,6 @@ class Observatory:
 
                         else:
                             print ("this bayer grid not implemented yet")
-
-            
-                    # Resizing the array to an appropriate shape for the jpg and the small fits
-                    iy, ix = storedsStack.shape
-                    if iy == ix:
-                        storedsStack = resize(
-                            storedsStack, (1280, 1280), preserve_range=True
-                        )
-                    else:
-                        storedsStack = resize(
-                            storedsStack,
-                            (int(1536 * iy / ix), 1536),
-                            preserve_range=True,
-                        )  #  We should trim chips so ratio is exact.
-
-                    if self.config["camera"][g_dev['cam'].name]["settings"]["is_osc"]:
                         # blue_stretched_data_float = Stretch().stretch(hdublue+1000)
                         # del hdublue
                         # green_stretched_data_float = Stretch().stretch(hdugreen+1000)
@@ -1485,12 +1406,7 @@ class Observatory:
                         # if self.config["camera"][self.name]["settings"]["transpose_jpeg"]:
                         #     colour_img=colour_img.transpose()
                         
-                        # ## Resizing the array to an appropriate shape for the jpg and the small fits
-                        # iy, ix = colour_img.size
-                        # if iy == ix:
-                        #     colour_img.resize((1280, 1280))
-                        # else:
-                        #     colour_img.resize((int(1536 * iy / ix), 1536))
+                        
                         
                         xshape=hdugreen.shape[0]
                         yshape=hdugreen.shape[1]
@@ -1552,6 +1468,19 @@ class Observatory:
                                 
              
                     else:
+                        # Resizing the array to an appropriate shape for the jpg and the small fits
+                        iy, ix = storedsStack.shape
+                        if iy == ix:
+                            storedsStack = resize(
+                                storedsStack, (1280, 1280), preserve_range=True
+                            )
+                        else:
+                            storedsStack = resize(
+                                storedsStack,
+                                (int(1536 * iy / ix), 1536),
+                                preserve_range=True,
+                            )  #  We should trim chips so ratio is exact.
+                        
                         # Code to stretch the image to fit into the 256 levels of grey for a jpeg
                         stretched_data_float = Stretch().stretch(storedsStack + 1000)
                         del storedsStack
