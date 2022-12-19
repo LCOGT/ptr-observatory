@@ -1292,50 +1292,6 @@ class Observatory:
 
                     if reprojection_failed == True: # If we couldn't make a stack send a jpeg of the original image.
                         storedsStack=img
-
-                    # if self.config["camera"][g_dev['cam'].name]["settings"]["is_osc"]:
-                    #     #print ("interpolating bayer grid for focusing purposes.")
-                    #     if self.config["camera"][g_dev['cam'].name]["settings"]["osc_bayer"] == 'RGGB':                           
-                            
-                    #         # Checkerboard collapse for other colours for temporary jpeg                            
-                    #         # Create indexes for B, G, G, R images                            
-                    #         xshape=storedsStack.shape[0]
-                    #         yshape=storedsStack.shape[1]
-
-                    #         # B pixels
-                    #         list_0_1 = np.array([ [0,0], [0,1] ])
-                    #         checkerboard=np.tile(list_0_1, (xshape//2, yshape//2))
-                    #         checkerboard=np.asarray(checkerboard)
-                    #         hdublue=(block_reduce(storedsStack * checkerboard ,2))
-                            
-                    #         # R Pixels
-                    #         list_0_1 = np.array([ [1,0], [0,0] ])
-                    #         checkerboard=np.tile(list_0_1, (xshape//2, yshape//2))
-                    #         checkerboard=np.asarray(checkerboard)
-                    #         hdured=(block_reduce(storedsStack * checkerboard ,2))
-                            
-                    #         # G top right Pixels
-                    #         list_0_1 = np.array([ [0,1], [0,0] ])
-                    #         checkerboard=np.tile(list_0_1, (xshape//2, yshape//2))
-                    #         checkerboard=np.asarray(checkerboard)
-                    #         GTRonly=(block_reduce(storedsStack * checkerboard ,2))
-                            
-                    #         # G bottom left Pixels
-                    #         list_0_1 = np.array([ [0,0], [1,0] ])
-                    #         checkerboard=np.tile(list_0_1, (xshape//2, yshape//2))
-                    #         checkerboard=np.asarray(checkerboard)
-                    #         GBLonly=(block_reduce(storedsStack * checkerboard ,2))                                
-                            
-                    #         # Sum two Gs together and half them to be vaguely on the same scale
-                    #         hdugreen = np.asarray(GTRonly + GBLonly)
-                    #         del GTRonly
-                    #         del GBLonly
-                    #         del checkerboard
-
-                    #     else:
-                    #         print ("this bayer grid not implemented yet")
-
-            
                     
 
                     if self.config["camera"][g_dev['cam'].name]["settings"]["is_osc"]:
@@ -1372,7 +1328,7 @@ class Observatory:
                             GBLonly=(block_reduce(storedsStack * checkerboard ,2))                                
                             
                             # Sum two Gs together and half them to be vaguely on the same scale
-                            hdugreen = np.asarray(GTRonly + GBLonly)
+                            hdugreen = np.asarray(GTRonly + GBLonly) / 2
                             del GTRonly
                             del GBLonly
                             del checkerboard
@@ -1424,41 +1380,54 @@ class Observatory:
                         del green_stretched_data_float
                         colour_img = Image.fromarray(rgbArray, mode="RGB")
                         
-                        # del hdugreen
-                        # rgbArray=np.zeros((xshape,yshape,3), 'uint8')
-                        # rgbArray[..., 0] = np.asarray(red_stretched * 255, dtype=np.uint8)
-                        # rgbArray[..., 1] = np.asarray(green_stretched *255, dtype=np.uint8)
-                        # rgbArray[..., 2] = np.asarray(blue_stretched * 255, dtype=np.uint8)
-                        # #rgbArray=rgbArray.astype(np.uint8)
-                        # del red_stretched
-                        # del blue_stretched
-                        # del green_stretched
-                        #colour_img = Image.fromarray(rgbArray)
-                        #breakpoint()
-                        contrast=ImageEnhance.Contrast(colour_img)
-                        contrast_image=contrast.enhance(1.3)
-                        satur=ImageEnhance.Color(contrast_image)
-                        satur_image=satur.enhance(3.0)
+                       # adjust brightness
+                        brightness=ImageEnhance.Brightness(colour_img)
+                        brightness_image=brightness.enhance(self.config["camera"][g_dev['cam'].name]["settings"]['osc_brightness_enhance'])
+                        del colour_img
+                        del brightness
+                        
+                        # adjust contrast
+                        contrast=ImageEnhance.Contrast(brightness_image)
+                        contrast_image=contrast.enhance(self.config["camera"][g_dev['cam'].name]["settings"]['osc_contrast_enhance'])
+                        del brightness_image
+                        del contrast
+                        
+                        # adjust colour
+                        colouradj=ImageEnhance.Color(contrast_image)
+                        colour_image=colouradj.enhance(self.config["camera"][g_dev['cam'].name]["settings"]['osc_colour_enhance'])
+                        del contrast_image
+                        del colouradj
+                        
+                        # adjust saturation
+                        satur=ImageEnhance.Color(colour_image)
+                        satur_image=satur.enhance(self.config["camera"][g_dev['cam'].name]["settings"]['osc_saturation_enhance'])
+                        del colour_image
+                        del satur
+                        
+                        # adjust sharpness
+                        sharpness=ImageEnhance.Sharpness(satur_image)
+                        final_image=sharpness.enhance(self.config["camera"][g_dev['cam'].name]["settings"]['osc_sharpness_enhance'])
+                        del satur_image
+                        del sharpness
+                        
                         #colour_img = colour_img.satur(3)
                         
                         if self.config["camera"][g_dev['cam'].name]["settings"]["transpose_jpeg"]:
-                            satur_image=satur_image.transpose(Image.TRANSPOSE)
+                            final_image=final_image.transpose(Image.TRANSPOSE)
                         
                         ## Resizing the array to an appropriate shape for the jpg and the small fits
-                        iy, ix = satur_image.size
+                        iy, ix = final_image.size
                         if iy == ix:
-                            satur_image.resize((1280, 1280))
+                            final_image.resize((1280, 1280))
                         else:
-                            satur_image.resize((int(1536 * iy / ix), 1536))
+                            final_image.resize((int(1536 * iy / ix), 1536))
                         
                         
                             
-                        satur_image.save(
+                        final_image.save(
                             paths["im_path"] + paths["jpeg_name10"]
                         )
-                        del colour_img
-                        del satur_image
-                        del contrast_image
+                        del final_image
                                 
              
                     else:
