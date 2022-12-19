@@ -354,10 +354,10 @@ site_config = {
             #F4.9 setup
             'start_at_config_reference': True,
             'use_focuser_temperature': True,
-            'reference':24229,    #  20210313  Nominal at 10C Primary temperature
+            'reference':24729,    #  20210313  Nominal at 10C Primary temperature
             'ref_temp':  6265.0,    #  Update when pinning reference
             'coef_c': 0,   #  Negative means focus moves out as Primary gets colder
-            'coef_0': 24229,  #  Nominal intercept when Primary is at 0.0 C.
+            'coef_0': 24729,  #  Nominal intercept when Primary is at 0.0 C.
             'coef_date':  '20220914',    #This appears to be sensible result 44 points -13 to 3C'reference':  6431,    #  Nominal at 10C Primary temperature
             # #F9 setup
             # 'reference': 4375,    #   Guess 20210904  Nominal at 10C Primary temperature
@@ -369,7 +369,7 @@ site_config = {
             'maximum': 18000,   #12672 actually
             'step_size': 1,
             'backlash': 0,
-            'throw' : 500,
+            'throw' : 750,
             'unit': 'micron',
             #'unit_conversion': 9.09090909091,
             'unit_conversion': 1.0,
@@ -593,11 +593,11 @@ site_config = {
                 'smart_stack_exposure_time' : 60,
                 'saturate':   65000 ,   # e-.  This is a close guess, not measured, but taken from data sheet.
                 'max_linearity': 65000,
-                'fullwell_capacity': [65000, 262000,589815,1048560],  #e-.   We need to sort out the units properly NB NB NB
+                'fullwell_capacity': 65000,  #e-.   We need to sort out the units properly NB NB NB
                 'areas_implemented': ["Full",'4x4d', "600%", "500%", "450%", "300%", "220%", "150%", "133%", "Full", "Sqr", '71%', '50%',  '35%', '25%', '12%'],
                 'default_area':  "Full",
                 'default_rotation': 0.0000,
-                'flat_bin_spec': ['1,1','2,2', '3,3','4,4'],    #Default binning for flats
+                #'flat_bin_spec': ['1,1','2,2', '3,3','4,4'],    #Default binning for flats
                 #'darkbias_bin_spec': ['1,1','2,2', '3,3','4,4'],    #Default binning for flats
                 #'bias_dark_bin_spec': ['1,1', '2,2','3,3','4,4'],    #Default binning for flats
                 #'bin_enable': ['1,1', '2,2', '3,3','4,4'],
