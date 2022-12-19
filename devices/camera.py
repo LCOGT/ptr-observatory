@@ -565,8 +565,8 @@ class Camera:
         plog(self.camera.IsExposureComplete)
         return self.camera.IsExposureComplete
 
-    def _theskyx_getImageArray(self):
-        return fits.open(self.camera.LastImageFileName)[0].data
+    def _theskyx_getImageArray(self):        
+        return fits.open(self.camera.LastImageFileName, uint=False)[0].data.astype("float32")
 
     def _maxim_connected(self):
         return self.camera.LinkEnabled
@@ -1452,32 +1452,34 @@ class Camera:
                      
                     if self.config["camera"][self.name]["settings"]["transpose_fits"]:
                         hdu = fits.PrimaryHDU(
-                            self.img.transpose().astype('uint16'))
+                            self.img.transpose().astype('float32'))
                                               
                     if self.config["camera"][self.name]["settings"]["flipx_fits"]:
                         hdu = fits.PrimaryHDU(
-                            np.fliplr(self.img.astype('uint16'))
+                            np.fliplr(self.img.astype('float32'))
                         )                      
                     if self.config["camera"][self.name]["settings"]["flipy_fits"]:
                         hdu = fits.PrimaryHDU(
-                            np.flipud(self.img.astype('uint16'))
+                            np.flipud(self.img.astype('float32'))
                         )                      
                     if self.config["camera"][self.name]["settings"]["rotate90_fits"]:
                         hdu = fits(
-                            np.rot90(self.img.astype('uint16'))
+                            np.rot90(self.img.astype('float32'))
                         )                      
                     if self.config["camera"][self.name]["settings"]["rotate180_fits"]:
                         hdu = fits.PrimaryHDU(
-                            np.rot90(self.img.astype('uint16'),2)
+                            np.rot90(self.img.astype('float32'),2)
                         )                      
                     if self.config["camera"][self.name]["settings"]["rotate270_fits"]:
                         hdu = fits.PrimaryHDU(
-                            np.rot90(self.img.astype('uint16'),3)
+                            np.rot90(self.img.astype('float32'),3)
                         )                                                             
                     else:
                         hdu = fits.PrimaryHDU(
-                            self.img.astype('uint16')
+                            self.img.astype('float32')
                         )                  
+                    
+
                     
                     del self.img
 
@@ -2344,7 +2346,7 @@ class Camera:
 
                         # Every Image gets SEP'd and gets it's catalogue sent up pronto ahead of the big fits
                         # Focus images use it for focus, Normal images also report their focus.
-                        hdufocusdata = np.asarray(hdusmalldata)
+                        hdufocusdata = np.array(hdusmalldata)
                         
                         # If this a bayer image, then we need to make an appropriate image that is monochrome
                         # That gives the best chance of finding a focus AND for pointing while maintaining resolution.
@@ -2548,7 +2550,7 @@ class Camera:
                             print (traceback.format_exc())
                             sources = [0]
 
-
+                        
 
                         if 'rfr' in locals():
 
@@ -2780,9 +2782,11 @@ class Camera:
                                        - self.tempStartupExposureTime))
                                 return result
 
+                        #breakpointbreakpoint()
+
                         # This is holding the flash reduced fits file waiting to be saved
                         # AFTER the jpeg has been sent up to AWS.
-                        hdureduceddata = np.asarray(hdusmalldata)                      
+                        hdureduceddata = np.array(hdusmalldata)                      
 
                         # Code to stretch the image to fit into the 256 levels of grey for a jpeg
                         # But only if it isn't a smartstack, if so wait for the reduce queue
@@ -2862,12 +2866,16 @@ class Camera:
                                 
                             else:
                                 # Making cosmetic adjustments to the image array ready for jpg stretching
-                                #hdusmalldata = np.asarray(hdusmalldata)
-                                hdusmalldata[
-                                    hdusmalldata
-                                    > image_saturation_level
-                                ] = image_saturation_level
-                                hdusmalldata[hdusmalldata < -100] = -100
+                                #breakpoint()
+                                
+                                hdusmalldata = np.array(hdusmalldata)
+                                
+                                #breakpoint()
+                                # hdusmalldata[
+                                #     hdusmalldata
+                                #     > image_saturation_level
+                                # ] = image_saturation_level
+                                # #hdusmalldata[hdusmalldata < -100] = -100
                                 hdusmalldata = hdusmalldata - np.min(hdusmalldata)
 
                                 # Resizing the array to an appropriate shape for the jpg and the small fits
@@ -2957,6 +2965,7 @@ class Camera:
                                     hdureduced.header=hdu.header
                                     hdureduced.header["NAXIS1"] = hdureduceddata.shape[0]
                                     hdureduced.header["NAXIS2"] = hdureduceddata.shape[1]
+                                    #hdureduced.data=hdureduced.data.astype("float32")
                                     hdureduced.data=hdureduced.data.astype("float32")
                                     hdureduced.writeto(
                                         red_path + red_name01, overwrite=True, output_verify='silentfix'

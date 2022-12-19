@@ -1335,33 +1335,11 @@ class Observatory:
 
                         else:
                             print ("this bayer grid not implemented yet")
-                        # blue_stretched_data_float = Stretch().stretch(hdublue+1000)
-                        # del hdublue
-                        # green_stretched_data_float = Stretch().stretch(hdugreen+1000)
-                        # red_stretched_data_float = Stretch().stretch(hdured+1000)
-                        # del hdured
-                        # xshape=hdugreen.shape[0]
-                        # yshape=hdugreen.shape[1]
-                        # del hdugreen
-                        # rgbArray=np.zeros((xshape,yshape,3), 'uint8')
-                        # rgbArray[..., 0] = red_stretched_data_float*256
-                        # rgbArray[..., 1] = green_stretched_data_float*256
-                        # rgbArray[..., 2] = blue_stretched_data_float*256
-
-                        # del red_stretched_data_float
-                        # del blue_stretched_data_float
-                        # del green_stretched_data_float
-                        # colour_img = Image.fromarray(rgbArray, mode="RGB")
-                        
-                        # if self.config["camera"][self.name]["settings"]["transpose_jpeg"]:
-                        #     colour_img=colour_img.transpose()
                         
                         
                         
                         xshape=hdugreen.shape[0]
-                        yshape=hdugreen.shape[1]
-                        
-                        
+                        yshape=hdugreen.shape[1]      
                         blue_stretched_data_float = Stretch().stretch(hdublue+1000)
                         del hdublue
                         green_stretched_data_float = Stretch().stretch(hdugreen+1000)
