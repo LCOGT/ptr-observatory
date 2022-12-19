@@ -216,8 +216,8 @@ class Camera:
         self.biasFiles = {}
         self.darkFiles = {}
         self.flatFiles = {}
+        self.hotFiles = {}
         for ctr in range(len(bins_enabled)):
-
             tempBinNumber = bins_enabled[ctr].replace(',',' ').split(' ')[0]       
             
             try:
@@ -243,12 +243,28 @@ class Camera:
                     + self.alias
                     + "/DARK_master_bin" + str(tempBinNumber) + ".fits"
                 )
-                tempdarkframe = np.asarray(tempdarkframe[0].data, dtype=np.float32)
+                tempdarkframe = np.asarray(tempdarkframe[0].data, dtype='np.float32')
                 self.darkFiles.update({tempBinNumber: tempdarkframe})
                 del tempdarkframe
             except:
                 plog("Dark frame for Binning " + str(tempBinNumber) + "not available")  
-    
+
+            try:
+                #self.darkframe = fits.open(
+                temphotframe = fits.open(
+                    self.config["archive_path"]
+                    + "calibmasters/"
+                    + self.alias
+                    + "/HOT_sigma3_map_bin" + str(tempBinNumber) + ".fits"
+                )
+                temphotframe = np.asarray(temphotframe[0].data, dtype="B")
+                hot_coord_list = np.where(temphotframe > 0)
+                plog("Number of 2-sigma hot pixels:  ", len(hot_coord_list[0]))
+                self.hotFiles.update({tempBinNumber: hot_coord_list})
+                del temphotframe, hot_coord_list
+            except:
+                plog("Dark frame for Binning " + str(tempBinNumber) + "not available")
+                
             try:
                 
                 fileList = glob.glob(
@@ -266,6 +282,7 @@ class Camera:
             except:
                 plog("Flat frames not loaded or available")
 
+                
         plog("Connecting to:  ", driver)
 
         if driver[:5].lower() == "ascom":
