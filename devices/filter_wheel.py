@@ -328,6 +328,18 @@ class FilterWheel:
             g_dev["cam"].camera.Filter = filter_selections[0]
             #time.sleep(0.1)
             g_dev["cam"].camera.GuiderFilter = filter_selections[1]
+        elif self.theskyx:
+            #TSXSend("ccdsoftCamera.TemperatureSetPoint = -10")
+            #TSXSend("ccdsoftCamera.RegulateTemperature = true")
+            # self.filter.FilterIndexZeroBased <---- prints number of current filter
+            print ("Before Filter")            
+            print (self.filter.FilterIndexZeroBased)
+            print ("Requesto Filter")
+            print (self.filter_number)
+            self.filter.FilterIndexZeroBased = self.filter_number - 1
+            print ("After Filter")
+            print (self.filter.FilterIndexZeroBased)
+            #breakpoint()
 
     def set_position_command(self, req: dict, opt: dict):
         """Sets the filter position by param string filter position index."""
@@ -365,6 +377,18 @@ class FilterWheel:
             g_dev["cam"].camera.Filter = filter_selections[0]
             #time.sleep(0.2)
             g_dev["cam"].camera.GuiderFilter = filter_selections[1]
+        elif self.theskyx:
+            #TSXSend("ccdsoftCamera.TemperatureSetPoint = -10")
+            #TSXSend("ccdsoftCamera.RegulateTemperature = true")
+            # self.filter.FilterIndexZeroBased <---- prints number of current filter
+            print ("Before Filter")            
+            print (self.filter.FilterIndexZeroBased)
+            print ("Requesto Filter")
+            print (self.filter_number)
+            self.filter.FilterIndexZeroBased = self.filter_number - 1
+            print ("After Filter")
+            print (self.filter.FilterIndexZeroBased)
+            #breakpoint()
 
     def set_name_command(self, req: dict, opt: dict):
         """Sets the filter position by filter name."""

@@ -343,10 +343,10 @@ site_config = {
             #F4.9 setup
             'start_at_config_reference': True,
             'use_focuser_temperature': False,
-            'reference':12462,    #  20210313  Nominal at 10C Primary temperature
+            'reference':13212,    #  20210313  Nominal at 10C Primary temperature
             'ref_temp':  6265.0,    #  Update when pinning reference
             'coef_c': 0,   #  Negative means focus moves out as Primary gets colder
-            'coef_0': 12462,  #  Nominal intercept when Primary is at 0.0 C.
+            'coef_0': 13212,  #  Nominal intercept when Primary is at 0.0 C.
             'coef_date':  '20220914',    #This appears to be sensible result 44 points -13 to 3C'reference':  6431,    #  Nominal at 10C Primary temperature
             # #F9 setup
             # 'reference': 4375,    #   Guess 20210904  Nominal at 10C Primary temperature
@@ -474,16 +474,39 @@ site_config = {
 
             'settings': {
                 'is_osc' : True,
+                'osc_brightness_enhance' : 1.0,
+                'osc_contrast_enhance' : 1.3,
+                'osc_saturation_enhance' : 2.0,
+                'osc_colour_enhance' : 1.5,
+                'osc_sharpness_enhance' : 1.5,
                 
+                # ONLY TRANSFORM THE FITS IF YOU HAVE
+                # A DATA-BASED REASON TO DO SO.....
+                # USUALLY TO GET A BAYER GRID ORIENTATED CORRECTLY
+                # ***** ONLY ONE OF THESE SHOULD BE ON! *********
                 'transpose_fits' : False,
+                'flipx_fits' : False,
+                'flipy_fits' : False,
+                'rotate180_fits' : False, # This also should be flipxy!
+                'rotate90_fits' : False,
+                'rotate270_fits' : False,
+                
+                # HERE YOU CAN FLIP THE IMAGE TO YOUR HEARTS DESIRE
+                # HOPEFULLY YOUR HEARTS DESIRE IS SIMILAR TO THE
+                # RECOMMENDED DEFAULT DESIRE OF PTR
                 'transpose_jpeg' : False,
+                'flipx_jpeg' : False,
+                'flipy_jpeg' : False,
+                'rotate180_jpeg' : False,
+                'rotate90_jpeg' : False,
+                'rotate270_jpeg' : False,
                 'osc_bayer' : 'RGGB',
                 'crop_preview': False,
                 'crop_preview_ybottom': 1,
                 'crop_preview_ytop': 1,
                 'crop_preview_xleft': 1,
                 'crop_preview_xright': 1,
-                'temp_setpoint': -10,   #Updated from -18 WER 20220914 Afternoon
+                'temp_setpoint': -5,   #Updated from -18 WER 20220914 Afternoon
                 'calib_setpoints': [-35,-30, -25, -20, -15, -10 ],  #  Should vary with season?
                 'day_warm': False,
                 'cooler_on': True,
@@ -540,17 +563,16 @@ site_config = {
                 'bin_modes':  [[1, 1, 1.59]], #  , [2, 2, 2.13], [3, 3, 3.21], [4, 4, 4.27]],   #Meaning no binning choice if list has only one entry, default should be first.
                 'optimal_bin':  [1, 1, 1.59],    #  Matched to seeing situation by owner
                 'max_res_bin':  [1, 1, 1.59],    #  Matched to seeing situation by owner
-                'cosmics_at_default' : 'yes',
-                'cosmics_at_maximum' : 'yes',
-                'pix_scale': [1.569],
-                'cycle_time':  [2, 2, 2, 2],  # 3x3 requires a 1, 1 reaout then a software bin, so slower.
+                'do_cosmics' : 'no',
+                'pix_scale': 1.569,
+                'cycle_time':  2,
                 'rbi_delay':  0.,      #  This being zero says RBI is not available, eg. for SBIG.
                 'is_cmos':  True,
                 'is_color':  True,
                 'bayer_pattern':  'RGGB',    #  'RGGB" is a valid string in camera is color.
                 'can_set_gain':  True,
-                'reference_gain': [2., 4., 18., 32.],     #  One val for each binning. SWAG!
-                'reference_noise': [10, 10, 10, 10],    #  All SWAGs right now!
+                'reference_gain': 2.0,     #  One val for each binning. SWAG!
+                'reference_noise': 10.0,    #  All SWAGs right now!
 
                 'reference_dark': [0.0, 0.0, 0.0, 0.0],     #  Might these best be pedastal values?  NO!
                                     #hdu.header['RDMODE'] = (self.config['camera'][self.name]['settings']['read_mode'], 'Camera read mode')
@@ -561,9 +583,9 @@ site_config = {
                 'readout_speed': 0.4,
                 'readout_seconds': 2,
                 'smart_stack_exposure_time' : 10,
-                'saturate': [[1,65000]],    # e-.  This is a close guess, not measured, but taken from data sheet.
+                'saturate': 65000,    # e-.  This is a close guess, not measured, but taken from data sheet.
                 'max_linearity': 65000,
-                'fullwell_capacity': [65000, 65000, 65000, 65000],  #e-.   We need to sort out the units properly NB NB NB
+                'fullwell_capacity': 65000,  #e-.   We need to sort out the units properly NB NB NB
                 'areas_implemented': ["Full",'4x4d', "600%", "500%", "450%", "300%", "220%", "150%", "133%", "Full", "Sqr", '71%', '50%',  '35%', '25%', '12%'],
                 'default_area':  "Full",
                 'default_rotation': 0.0000,
