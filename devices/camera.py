@@ -2865,7 +2865,12 @@ class Camera:
                                 if self.config["camera"][g_dev['cam'].name]["settings"]['rotate270_jpeg']:
                                     final_image=final_image.transpose(Image.ROTATE_270)
                                     
-
+                                # Detect the pierside and if it is one way, rotate the jpeg 180 degrees
+                                # to maintain the orientation. whether it is 1 or 0 that is flipped
+                                # is sorta arbitrary... you'd use the site-config settings above to 
+                                # set it appropriately and leave this alone.
+                                if g_dev['mnt'].pier_side == 1:
+                                    final_image=final_image.transpose(Image.ROTATE_180)
                                 
                                 ## Resizing the array to an appropriate shape for the jpg and the small fits
                                 iy, ix = final_image.size
