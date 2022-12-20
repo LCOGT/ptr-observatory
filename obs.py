@@ -77,7 +77,6 @@ def send_status(obsy, column, status_to_send):
         data = json.dumps(payload)
     except Exception as e:
         plog("Failed to send_status. usually not fatal:  ", e)
-        breakpoint()
     
     try:
         requests.post(uri_status, data=data)
