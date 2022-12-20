@@ -1455,23 +1455,23 @@ class Camera:
                         hdu = fits.PrimaryHDU(
                             self.img.transpose().astype('float32'))
                                               
-                    if self.config["camera"][self.name]["settings"]["flipx_fits"]:
+                    elif self.config["camera"][self.name]["settings"]["flipx_fits"]:
                         hdu = fits.PrimaryHDU(
                             np.fliplr(self.img.astype('float32'))
                         )                      
-                    if self.config["camera"][self.name]["settings"]["flipy_fits"]:
+                    elif self.config["camera"][self.name]["settings"]["flipy_fits"]:
                         hdu = fits.PrimaryHDU(
                             np.flipud(self.img.astype('float32'))
                         )                      
-                    if self.config["camera"][self.name]["settings"]["rotate90_fits"]:
+                    elif self.config["camera"][self.name]["settings"]["rotate90_fits"]:
                         hdu = fits(
                             np.rot90(self.img.astype('float32'))
                         )                      
-                    if self.config["camera"][self.name]["settings"]["rotate180_fits"]:
+                    elif self.config["camera"][self.name]["settings"]["rotate180_fits"]:
                         hdu = fits.PrimaryHDU(
                             np.rot90(self.img.astype('float32'),2)
                         )                      
-                    if self.config["camera"][self.name]["settings"]["rotate270_fits"]:
+                    elif self.config["camera"][self.name]["settings"]["rotate270_fits"]:
                         hdu = fits.PrimaryHDU(
                             np.rot90(self.img.astype('float32'),3)
                         )                                                             
