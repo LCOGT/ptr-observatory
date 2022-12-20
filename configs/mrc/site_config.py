@@ -578,7 +578,12 @@ site_config = {
 
             'settings': {
                 
-                'is_osc' : True, 
+                'is_osc' : True,
+                'osc_brightness_enhance' : 1.0,
+                'osc_contrast_enhance' : 1.3,
+                'osc_saturation_enhance' : 2.0,
+                'osc_colour_enhance' : 1.5,
+                'osc_sharpness_enhance' : 1.5,
                 
                 # ONLY TRANSFORM THE FITS IF YOU HAVE
                 # A DATA-BASED REASON TO DO SO.....
