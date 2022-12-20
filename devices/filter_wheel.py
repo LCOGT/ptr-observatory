@@ -387,9 +387,7 @@ class FilterWheel:
     #         #breakpoint()
 
     def set_name_command(self, req: dict, opt: dict):
-        """Sets the filter position by filter name."""
-
-       
+        """Sets the filter position by filter name."""      
 
         try:
             filter_name = str(req["filter"]).lower()

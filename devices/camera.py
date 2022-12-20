@@ -2360,7 +2360,7 @@ class Camera:
                         # Every Image gets SEP'd and gets it's catalogue sent up pronto ahead of the big fits
                         # Focus images use it for focus, Normal images also report their focus.
                         hdufocusdata = np.array(hdusmalldata)
-                        
+                        binfocus=1
                         # If this a bayer image, then we need to make an appropriate image that is monochrome
                         # That gives the best chance of finding a focus AND for pointing while maintaining resolution.
                         # This is best done by taking the two "real" g pixels and interpolating in-between 
@@ -2409,9 +2409,11 @@ class Camera:
                                 # and platesolving
                                 if self.config["camera"][self.name]["settings"]['bin_for_focus']:
                                     hdufocusdata=block_reduce(hdufocusdata,2)
+                                    binfocus=2
                                 else:
                                     hdufocusdata=demosaicing_CFA_Bayer_bilinear(hdufocusdata, 'RGGB')[:,:,1]
                                     hdufocusdata=hdufocusdata.astype("float32")
+                                    binfocus=1
                             else:
                                 print ("this bayer grid not implemented yet")
                         
@@ -2434,10 +2436,10 @@ class Camera:
                             )
                             sources = Table(sources)
                             sources = sources[sources['flag'] < 8]
-                            sources = sources[sources["peak"] < 0.9* image_saturation_level]
-                            sources = sources[sources["cpeak"] < 0.9 * image_saturation_level]
-                            sources = sources[sources["peak"] > 300]
-                            sources = sources[sources["cpeak"] > 300]
+                            sources = sources[sources["peak"] < 0.9* image_saturation_level * pow(binfocus,2)]
+                            sources = sources[sources["cpeak"] < 0.9 * image_saturation_level* pow(binfocus,2)]
+                            sources = sources[sources["peak"] > 300 * pow(binfocus,2)]
+                            sources = sources[sources["cpeak"] > 300 * pow(binfocus,2)]
                             sources = sources[sources["x"] < ix - border_x]
                             sources = sources[sources["x"] > border_x]
                             sources = sources[sources["y"] < iy - border_y]
@@ -2474,7 +2476,14 @@ class Camera:
                             sources['flag'] |= flag
                             sources['FWHM'], _ = sep.flux_radius(focusimg, sources['x'], sources['y'], sources['a'], 0.5, \
                                                                  subpix=5)
-                            sources['FWHM'] = sources['FWHM'] * 2
+                            # If image has been binned for focus we need to multiply some of these things by the binning
+                            # To represent the original image
+                            sources['FWHM'] = (sources['FWHM'] * 2) * binfocus
+                            sources['x'] = (sources['x'] ) * binfocus
+                            sources['y'] = (sources['y'] ) * binfocus
+                            sources['a'] = (sources['a'] ) * binfocus
+                            sources['b'] = (sources['b'] ) * binfocus
+                            
                             sources = sources[sources['FWHM'] > 1.0]
                             sources = sources[sources['FWHM'] != 0]
                             
