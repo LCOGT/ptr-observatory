@@ -2776,7 +2776,7 @@ class Camera:
                                             
                                             g_dev["mnt"].current_icrs_ra = solved_ra                                    
                                             g_dev["mnt"].current_icrs_dec = solved_dec
-                                            g_dev['mnt'].re_seek(dither=0)
+                                            #g_dev['mnt'].re_seek(dither=0)
                                         except:
                                             plog("This mount doesn't report pierside")
                                             plog(traceback.format_exc())

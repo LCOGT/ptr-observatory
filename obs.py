@@ -246,8 +246,8 @@ class Observatory:
         # This is necessary for SRO and it seems for ECO
         # I actually think it may be necessary for all telescopes
         # Not all who wander are lost.... but those that point below altitude -10 probably are.
-        if self.config["mount"]["mount1"]["permissive_mount_reset"] == "yes":
-            g_dev["mnt"].reset_mount_reference()
+        #if self.config["mount"]["mount1"]["permissive_mount_reset"] == "yes":
+        g_dev["mnt"].reset_mount_reference()
 
         # Keep track of how long it has been since the last activity
         self.time_since_last_slew_or_exposure = time.time()
