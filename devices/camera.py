@@ -2469,6 +2469,9 @@ class Camera:
                             #print (sources['FWHM'][sources['FWHM'] < 1.0])
                             #print (sources[sources['FWHM'] > 1.0])
                             sources = sources[sources['FWHM'] > 1.0]
+                            sources = sources[sources['FWHM'] != 0]
+                            sources = sources[not np.isnan(sources['FWHM'])] # Reject nan entries
+                            
                             ##breakpoint()
 
                             plog("No. of detections:  ", len(sources))
