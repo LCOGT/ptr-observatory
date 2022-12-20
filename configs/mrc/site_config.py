@@ -533,11 +533,10 @@ site_config = {
                                 ['dark',    [8, 5],     0,  0.0,   [2, 17], 'dk']],# 22
 
                                 #Screen = 100; QHY400 ~ 92% DQE   HDR Mode    Screen = 160 sat  20190825 measured.
-                'filter_screen_sort':  [0, 1, 2, 10, 7, 19, 6, 18, 12, 11, 13, 8, 20, 3, \
-                                        14, 15, 4, 16],   #  9, 21],  # 5, 17], #Most to least throughput, \
+                'filter_screen_sort':  ['air','w','PL','dif', 'gp','PB','rp','PG','PR','ip','O3','N2','CR','S2','HA'],   #  9, 21],  # 5, 17], #Most to least throughput, \
                                 #so screen brightens, skipping u and zs which really need sky.
 
-                'filter_sky_sort':     [16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0]  #Least to most throughput  \
+                'filter_sky_sort':     ['HA', 'S2', 'CR', 'N2', 'up', 'O3', 'z', 'ip', 'PR', 'PG', 'rp', 'PB', 'gp', 'PL', 'w', 'dif', 'air']  #Least to most throughput  \
 
 
             },

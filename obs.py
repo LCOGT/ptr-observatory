@@ -1388,10 +1388,19 @@ class Observatory:
                         del satur_image
                         del sharpness
                         
-                        #colour_img = colour_img.satur(3)
-                        
+                        # These steps flip and rotate the jpeg according to the settings in the site-config for this camera
                         if self.config["camera"][g_dev['cam'].name]["settings"]["transpose_jpeg"]:
                             final_image=final_image.transpose(Image.TRANSPOSE)
+                        if self.config["camera"][g_dev['cam'].name]["settings"]['flipx_jpeg']:
+                            final_image=final_image.transpose(Image.FLIP_LEFT_RIGHT)
+                        if self.config["camera"][g_dev['cam'].name]["settings"]['flipy_jpeg']:
+                            final_image=final_image.transpose(Image.FLIP_TOP_BOTTOM)
+                        if self.config["camera"][g_dev['cam'].name]["settings"]['rotate180_jpeg']:
+                            final_image=final_image.transpose(Image.ROTATE_180)
+                        if self.config["camera"][g_dev['cam'].name]["settings"]['rotate90_jpeg']:
+                            final_image=final_image.transpose(Image.ROTATE_90)
+                        if self.config["camera"][g_dev['cam'].name]["settings"]['rotate270_jpeg']:
+                            final_image=final_image.transpose(Image.ROTATE_270)
                         
                         ## Resizing the array to an appropriate shape for the jpg and the small fits
                         iy, ix = final_image.size
