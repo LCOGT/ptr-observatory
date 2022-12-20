@@ -1201,7 +1201,7 @@ class Observatory:
                         sstackimghold=np.array(imgdata)  
 
                     print ("Number of sources just prior to smartstacks: " + str(len(sources)))
-                    if len(sources) < 12:
+                    if len(sources) < 5:
                         print ("skipping stacking as there are not enough sources " + str(len(sources)) +" in this image")
 
                     # No need to open the same image twice, just using the same one as SEP.
@@ -1232,7 +1232,7 @@ class Observatory:
                     if not os.path.exists(
                         g_dev["cam"].site_path + "smartstacks/" + smartStackFilename
                     ):
-                        if len(sources) >= 12:
+                        if len(sources) >= 5:
                             # Store original image
                             plog("Storing First smartstack image")
                             np.save(
@@ -1260,7 +1260,7 @@ class Observatory:
                         # img= img - backgroundLevel
                         # Reproject new image onto footprint of old image.
                         plog(datetime.datetime.now())
-                        if len(sources) > 12:
+                        if len(sources) > 5:
                             try:
                                 reprojectedimage, _ = func_timeout.func_timeout (60, aa.register, args=(img, storedsStack),\
                                                                                  kwargs={"detection_sigma":3, "min_area":9})

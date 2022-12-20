@@ -307,6 +307,14 @@ class Mount:
             #plog("This mount doesn't report sideofpier")
             pass
         
+        # NEED to initialise these variables here in case the mount isn't slewed
+        # before exposures after bootup
+        self.last_ra = self.mount.RightAscension
+            
+        self.last_dec = self.mount.Declination
+        self.last_tracking_rate_ra = 0
+        self.last_tracking_rate_dec = 0
+        self.last_seek_time = time.time() - 5000
         
         #breakpoint()
         plog("exiting mount _init")
@@ -1006,11 +1014,14 @@ class Mount:
         g_dev['obs'].images_since_last_solve = 10000
 
     def re_seek(self, dither):
-        if dither == 0:
-            self.go_coord(self.last_ra, self.last_dec, self.last_tracking_rate_ra, self.last_tracking_rate_dec)
+        
+        try:
+            if dither == 0:
+                self.go_coord(self.last_ra, self.last_dec, self.last_tracking_rate_ra, self.last_tracking_rate_dec)
+                
+        except Exception as e:
+            print ("Could not re_seek: ",e)
             
-        else:
-            pass#breakpoint()
         wait_for_slew()   
 
     def go_coord(self, ra, dec, tracking_rate_ra=0, tracking_rate_dec=0, reset_solve=True):  #Note these rates need a system specification
@@ -1023,7 +1034,7 @@ class Mount:
         self.last_dec = dec
         self.last_tracking_rate_ra = tracking_rate_ra
         self.last_tracking_rate_dec = tracking_rate_dec
-        self.last_seek_time = time.time()
+        self.last_seek_time = time.time() - 5000
 
         self.unpark_command()  
         #Note this initiates a mount move.  WE should Evaluate if the destination is on the flip side and pick up the

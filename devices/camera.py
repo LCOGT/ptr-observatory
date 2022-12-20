@@ -2755,7 +2755,8 @@ class Camera:
                                         > self.config["threshold_mount_update"]
                                     ):
                                         try:
-                                            if g_dev["mnt"].pier_side_str == "Looking West":
+                                            #if g_dev["mnt"].pier_side_str == "Looking West":
+                                            if g_dev["mnt"].pier_side == 0:
                                                 try:
                                                     g_dev["mnt"].adjust_mount_reference(
                                                         err_ha, err_dec
@@ -2775,6 +2776,7 @@ class Camera:
                                             g_dev['mnt'].re_seek(dither=0)
                                         except:
                                             plog("This mount doesn't report pierside")
+                                            plog(traceback.format_exc())
     
                                 except Exception as e:
                                     plog(
