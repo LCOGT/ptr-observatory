@@ -359,6 +359,14 @@ class Camera:
             plog("Control is via Maxim camera interface, not ASCOM.")
             plog("Please note telescope is NOT connected to Maxim.")
 
+        # Before anything, abort any exposures because sometimes a long exposure
+        # e.g. 500s could keep on going with theskyx (and maybe Maxin)
+        # and still be going on at a restart and crash the connection
+        try:
+            self._stop_expose()
+        except:
+            pass
+        
         # NB NB Consider starting at low end of cooling and then gradually increasing it
         plog("Cooler started @:  ", self._setpoint())
         setpoint = float(self.config["camera"][self.name]["settings"]["temp_setpoint"])
@@ -2464,22 +2472,16 @@ class Camera:
                             sources['FWHM'], _ = sep.flux_radius(focusimg, sources['x'], sources['y'], sources['a'], 0.5, \
                                                                  subpix=5)
                             sources['FWHM'] = sources['FWHM'] * 2
-                            #print ("Does this tell me what I think it does?")
-                            #print (sources['FWHM'] < 1.0)
-                            #print (sources['FWHM'][sources['FWHM'] < 1.0])
-                            #print (sources[sources['FWHM'] > 1.0])
                             sources = sources[sources['FWHM'] > 1.0]
                             sources = sources[sources['FWHM'] != 0]
-                            sources = sources[not np.isnan(sources['FWHM'])] # Reject nan entries
                             
-                            ##breakpoint()
+                            # BANZAI prune nans from table
+                            nan_in_row = np.zeros(len(sources), dtype=bool)
+                            for col in sources.colnames:
+                                nan_in_row |= np.isnan(sources[col])
+                            sources = sources[~nan_in_row]
 
                             plog("No. of detections:  ", len(sources))
-
-
-                            #ascii.write(sources, im_path + text_name.replace('.txt', '.sep'), format='csv')
-
-
 
 
                             if len(sources) < 2:
