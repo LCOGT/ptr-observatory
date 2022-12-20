@@ -95,7 +95,7 @@ site_config = {
     'pointing_calibration_on_startup': False,
     'periodic_focus_time' : 0.5, # This is a time, in hours, over which to bypass automated focussing (e.g. at the start of a project it will not refocus if a new project starts X hours after the last focus)
     'stdev_fwhm' : 0.5, # This is the expected variation in FWHM at a given telescope/camera/site combination. This is used to check if a fwhm is within normal range or the focus has shifted
-    'focus_exposure_time': 60, # Exposure time in seconds for exposure image
+    'focus_exposure_time': 20, # Exposure time in seconds for exposure image
 
     'focus_trigger' : 5.0, # What FWHM increase is needed to trigger an autofocus
     'solve_nth_image' : 10, # Only solve every nth image
@@ -407,7 +407,7 @@ site_config = {
             'ip_string': None,
             "dual_wheel": False,
             'settings': {
-                'filter_count': 11,   #  This must be correct as to the number of filters
+                #'filter_count': 11,   #  This must be correct as to the number of filters
                 'home_filter':  4,
                 'default_filter': "pr",
                 'filter_reference': 4,   #  We choose to use W as the default filter.  Gains taken at F9, Ceravolo 300mm
@@ -433,11 +433,11 @@ site_config = {
                         
                         #['w',     [0,  0],     0, 72.7, [1.00 ,  72], 'PL'],    #0.   For sequencer autofocus  consider foc or f filter
                         ['focus', [0,  0],     0, 148, [1.00 ,  72], 'focus'],    #0.
-                        ['Lum',    [0,  0],     0, 148, [1.00 ,  72], 'PhLum'],    #1.
+                        ['lum',    [0,  0],     0, 148, [1.00 ,  72], 'PhLum'],    #1.
                         ['dark',    [1,  1],     0, 17, [1.00 , 119], 'PhRed'],    #2.
-                        ['pb',    [2,  2],     0, 75, [1.00 , 113], 'PhGreen'],    #3.
+                        ['pb',    [2,  2],     0, 39, [1.00 , 113], 'PhGreen'],    #3.
                         ['pg',    [3,  3],     0, 50, [0.80 ,  97], 'PhBlue'],    #4.
-                        ['pr',    [4,  4],     0, 39, [0.80 ,  97], 'PhBlue'],    #4.
+                        ['pr',    [4,  4],     0, 75, [0.80 ,  97], 'PhBlue'],    #4.
                         #['PR',    [1,  1],     0, 170, [1.00 , 119], 'PhBlue'],    #2.
                         #['PG',    [2,  2],     0, 220, [1.00 , 113], 'PhGreen'],    #3.
                         #['PB',    [3,  3],     0, 300, [0.80 ,  97], 'PhRed'],    #4.
@@ -449,10 +449,10 @@ site_config = {
                         #['LRGB',  [0,  0],     0, .221, [   0,    0], 'LRGB']],   #10.
 
 
-                'filter_screen_sort':  [1, 4, 3, 2, 6, 5, 7],   #  don't use narrow yet,  8, 10, 9], useless to try.
+                'filter_screen_sort':  ['s2','o3','ha','pb','pg','pr','lum'],   #  don't use narrow yet,  8, 10, 9], useless to try.
 
 
-                'filter_sky_sort': [8, 7, 6, 3, 4, 5,  1]    #No diffuser based filters
+                'filter_sky_sort': ['s2','o3','ha','pb','pg','pr','lum']    #No diffuser based filters
                 #'filter_sky_sort': [7, 19, 2, 13, 18, 5, 15,\
                 #                    12, 4, 11, 16, 10, 9, 17, 3, 14, 1, 0]    #basically no diffuser based filters
                 #[32, 8, 22, 21, 20, 23, 31, 6, 7, 19, 27, 2, 37, 13, 18, 30, 5, 15, 36, 12,\
@@ -560,8 +560,8 @@ site_config = {
                 'StartX' : 1,
                 'StartY' : 1,
 
-                #'x_field_deg': 1.3333,   #   round(4784*1.0481/3600, 4),
-                #'y_field_deg': 1.0665,   #  round(3194*1.0481/3600, 4),
+                'x_field_deg': 1.3333,   #   round(4784*1.0481/3600, 4),
+                'y_field_deg': 1.0665,   #  round(3194*1.0481/3600, 4),
                 'overscan_x': 24,
                 'overscan_y': 3,
                 'north_offset': 0.0,    #  These three are normally 0.0 for the primary telescope

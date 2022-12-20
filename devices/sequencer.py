@@ -933,6 +933,7 @@ class Sequencer:
 
                     for displacement in offset:
 
+                        
                         x_field_deg = g_dev['cam'].config['camera']['camera_1_1']['settings']['x_field_deg']
                         y_field_deg = g_dev['cam'].config['camera']['camera_1_1']['settings']['y_field_deg']
                         if pitch == -1:
@@ -1456,7 +1457,8 @@ class Sequencer:
             
                 if g_dev["fil"].null_filterwheel == False:
                     current_filter = int(pop_list[0])                
-                    g_dev['fil'].set_number_command(current_filter)  #  20220825  NB NB NB Change this to using a list of filter names.
+                    #g_dev['fil'].set_number_command(current_filter)  #  20220825  NB NB NB Change this to using a list of filter names.
+                    g_dev['fil'].set_name_command(current_filter)  #  20220825  NB NB NB Chan
                 
                 acquired_count = 0
                 
