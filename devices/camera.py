@@ -2559,10 +2559,10 @@ class Camera:
 
                         if 'rfr' in locals():
 
-                            hdu.header["FWHM"] = ( rfp, 'FWHM in pixels')
-                            hdu.header["FWHMpix"] = ( rfp, 'FWHM in pixels')
-                            hdu.header["FWHMasec"] = ( rfr, 'FWHM in arcseconds')
-                            hdu.header["FWHMstd"] = ( rfs, 'FWHM standard deviation in arcseconds')
+                            hdu.header["FWHM"] = ( str(rfp), 'FWHM in pixels')
+                            hdu.header["FWHMpix"] = ( str(rfp), 'FWHM in pixels')
+                            hdu.header["FWHMasec"] = ( str(rfr), 'FWHM in arcseconds')
+                            hdu.header["FWHMstd"] = ( str(rfs), 'FWHM standard deviation in arcseconds')
 
                         if focus_image == False:
                             text = open(
