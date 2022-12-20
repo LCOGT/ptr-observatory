@@ -1456,9 +1456,9 @@ class Sequencer:
                 g_dev['obs'].update_status()
             
                 if g_dev["fil"].null_filterwheel == False:
-                    current_filter = int(pop_list[0])                
+                    current_filter = pop_list[0]                
                     #g_dev['fil'].set_number_command(current_filter)  #  20220825  NB NB NB Change this to using a list of filter names.
-                    g_dev['fil'].set_name_command(current_filter)  #  20220825  NB NB NB Chan
+                    g_dev['fil'].set_name_command({"filter": current_filter}, {})  #  20220825  NB NB NB Chan
                 
                 acquired_count = 0
                 
