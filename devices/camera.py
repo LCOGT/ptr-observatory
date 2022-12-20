@@ -485,6 +485,8 @@ class Camera:
             seq = test_sequence(self.alias)
         except:
             reset_sequence(self.alias)
+            
+        
     
 
 
@@ -1382,14 +1384,9 @@ class Camera:
                 pedastal = 0
                 self.overscan = 0
 
-                try:
-                    pier_side = g_dev[
-                        "mnt"
-                    ].mount.sideOfPier  # 0 == Tel Looking West, is flipped.
-                except:
-                    #plog("This mount doesn't report sideofpier")
-                    pass
-
+               
+                pier_side = g_dev["mnt"].pier_side  # 0 == Tel Looking West, is flipped.
+            
                 ix, iy = self.img.shape
                 #self.t77 = time.time() 
 
@@ -2853,8 +2850,8 @@ class Camera:
                                 del satur_image
                                 del sharpness
                                 
-                                #colour_img = colour_img.satur(3)
                                 
+                                # These steps flip and rotate the jpeg according to the settings in the site-config for this camera
                                 if self.config["camera"][g_dev['cam'].name]["settings"]["transpose_jpeg"]:
                                     final_image=final_image.transpose(Image.TRANSPOSE)
                                 if self.config["camera"][g_dev['cam'].name]["settings"]['flipx_jpeg']:
