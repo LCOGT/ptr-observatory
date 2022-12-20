@@ -2407,8 +2407,11 @@ class Camera:
                                     
                                 # Interpolate to make a high resolution version for focussing
                                 # and platesolving
-                                hdufocusdata=demosaicing_CFA_Bayer_bilinear(hdufocusdata, 'RGGB')[:,:,1]
-                                hdufocusdata=hdufocusdata.astype("float32")
+                                if self.config["camera"][self.name]["settings"]['bin_for_focus']:
+                                    hdufocusdata=block_reduce(hdufocusdata,2)
+                                else:
+                                    hdufocusdata=demosaicing_CFA_Bayer_bilinear(hdufocusdata, 'RGGB')[:,:,1]
+                                    hdufocusdata=hdufocusdata.astype("float32")
                             else:
                                 print ("this bayer grid not implemented yet")
                         

@@ -249,7 +249,6 @@ class Observatory:
         if self.config["mount"]["mount1"]["permissive_mount_reset"] == "yes":
             g_dev["mnt"].reset_mount_reference()
 
-
         # Keep track of how long it has been since the last activity
         self.time_since_last_slew_or_exposure = time.time()
 
