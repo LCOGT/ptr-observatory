@@ -291,13 +291,14 @@ class Mount:
             print ("Mount cannot report pierside. Setting the code not to ask again, assuming default pointing west.")
             self.can_report_pierside = False
             self.pier_side = 0
+            
             #plog("This mount doesn't report sideofpier")
             pass
         # Similarly for DestinationSideOfPier
         try:
-            self.pier_side = g_dev[
+            g_dev[
                 "mnt"
-            ].mount.DestinationSideOfPier  # 0 == Tel Looking West, is flipped.
+            ].mount.DestinationSideOfPier(0,0)  # 0 == Tel Looking West, is flipped.
             self.can_report_destination_pierside = True
         except Exception as e:
             print (e)
@@ -407,6 +408,9 @@ class Mount:
                         ra_cal_offset, dec_cal_offset = self.get_mount_reference()
                     else:
                         ra_cal_offset, dec_cal_offset = self.get_flip_reference()
+                else:
+                    ra_cal_offset=0
+                    dec_cal_offset=0
             except:
                 try:
                     ra_cal_offset, dec_cal_offset = self.get_mount_reference()
