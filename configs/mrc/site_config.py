@@ -121,17 +121,17 @@ site_config = {
 
     'auto_eve_bias_dark': False,
     
-    'auto_midnight_moonless_bias_dark': False,
-    'auto_eve_sky_flat': False,
+    'auto_midnight_moonless_bias_dark': True,
+    'auto_eve_sky_flat': True,
     'eve_sky_flat_sunset_offset': -90.,  #  Minutes  neg means before, + after.
     'eve_cool_down_open' : -95.0,
-    'auto_morn_sky_flat': False,
-    'auto_morn_bias_dark': False,
-    're-calibrate_on_solve': False,
-    'pointing_calibration_on_startup': False,
+    'auto_morn_sky_flat': True,
+    'auto_morn_bias_dark': True,
+    're-calibrate_on_solve': True,
+    'pointing_calibration_on_startup': False,  #MF I am leaving this alone.
     'periodic_focus_time' : 0.5, # This is a time, in hours, over which to bypass automated focussing (e.g. at the start of a project it will not refocus if a new project starts X hours after the last focus)
     'stdev_fwhm' : 0.5, # This is the expected variation in FWHM at a given telescope/camera/site combination. This is used to check if a fwhm is within normal range or the focus has shifted
-    'focus_exposure_time': 10, # Exposure time in seconds for exposure image
+    'focus_exposure_time': 12.5, # Exposure time in seconds for exposure image
     'focus_trigger' : 1.0, # What FWHM increase is needed to trigger an autofocus
     'solve_nth_image' : 10, # Only solve every nth image
     'solve_timer' : 5, # Only solve every X minutes
