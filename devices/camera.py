@@ -2418,6 +2418,169 @@ class Camera:
                                 print ("this bayer grid not implemented yet")
                         
                         
+                        # This is holding the flash reduced fits file waiting to be saved
+                        # AFTER the jpeg has been sent up to AWS.
+                        hdureduceddata = np.array(hdusmalldata)                      
+
+                        # Code to stretch the image to fit into the 256 levels of grey for a jpeg
+                        # But only if it isn't a smartstack, if so wait for the reduce queue
+                        if smartstackid == 'no':
+                            
+                            if self.config["camera"][g_dev['cam'].name]["settings"]["is_osc"]:
+                                xshape=hdugreen.shape[0]
+                                yshape=hdugreen.shape[1]
+                                
+                                blue_stretched_data_float = Stretch().stretch(hdublue+1000)
+                                del hdublue
+                                green_stretched_data_float = Stretch().stretch(hdugreen+1000)
+                                red_stretched_data_float = Stretch().stretch(hdured+1000)
+                                del hdured
+                                xshape=hdugreen.shape[0]
+                                yshape=hdugreen.shape[1]
+                                del hdugreen
+                                rgbArray=np.zeros((xshape,yshape,3), 'uint8')
+                                rgbArray[..., 0] = red_stretched_data_float*256
+                                rgbArray[..., 1] = green_stretched_data_float*256
+                                rgbArray[..., 2] = blue_stretched_data_float*256
+
+                                del red_stretched_data_float
+                                del blue_stretched_data_float
+                                del green_stretched_data_float
+                                colour_img = Image.fromarray(rgbArray, mode="RGB")
+                                
+                                
+                                # adjust brightness
+                                brightness=ImageEnhance.Brightness(colour_img)
+                                brightness_image=brightness.enhance(self.config["camera"][g_dev['cam'].name]["settings"]['osc_brightness_enhance'])
+                                del colour_img
+                                del brightness
+                                
+                                # adjust contrast
+                                contrast=ImageEnhance.Contrast(brightness_image)
+                                contrast_image=contrast.enhance(self.config["camera"][g_dev['cam'].name]["settings"]['osc_contrast_enhance'])
+                                del brightness_image
+                                del contrast
+                                
+                                # adjust colour
+                                colouradj=ImageEnhance.Color(contrast_image)
+                                colour_image=colouradj.enhance(self.config["camera"][g_dev['cam'].name]["settings"]['osc_colour_enhance'])
+                                del contrast_image
+                                del colouradj
+                                
+                                # adjust saturation
+                                satur=ImageEnhance.Color(colour_image)
+                                satur_image=satur.enhance(self.config["camera"][g_dev['cam'].name]["settings"]['osc_saturation_enhance'])
+                                del colour_image
+                                del satur
+                                
+                                # adjust sharpness
+                                sharpness=ImageEnhance.Sharpness(satur_image)
+                                final_image=sharpness.enhance(self.config["camera"][g_dev['cam'].name]["settings"]['osc_sharpness_enhance'])
+                                del satur_image
+                                del sharpness
+                                
+                                
+                                # These steps flip and rotate the jpeg according to the settings in the site-config for this camera
+                                if self.config["camera"][g_dev['cam'].name]["settings"]["transpose_jpeg"]:
+                                    final_image=final_image.transpose(Image.TRANSPOSE)
+                                if self.config["camera"][g_dev['cam'].name]["settings"]['flipx_jpeg']:
+                                    final_image=final_image.transpose(Image.FLIP_LEFT_RIGHT)
+                                if self.config["camera"][g_dev['cam'].name]["settings"]['flipy_jpeg']:
+                                    final_image=final_image.transpose(Image.FLIP_TOP_BOTTOM)
+                                if self.config["camera"][g_dev['cam'].name]["settings"]['rotate180_jpeg']:
+                                    final_image=final_image.transpose(Image.ROTATE_180)
+                                if self.config["camera"][g_dev['cam'].name]["settings"]['rotate90_jpeg']:
+                                    final_image=final_image.transpose(Image.ROTATE_90)
+                                if self.config["camera"][g_dev['cam'].name]["settings"]['rotate270_jpeg']:
+                                    final_image=final_image.transpose(Image.ROTATE_270)
+                                    
+                                # Detect the pierside and if it is one way, rotate the jpeg 180 degrees
+                                # to maintain the orientation. whether it is 1 or 0 that is flipped
+                                # is sorta arbitrary... you'd use the site-config settings above to 
+                                # set it appropriately and leave this alone.
+                                if g_dev['mnt'].pier_side == 1:
+                                    final_image=final_image.transpose(Image.ROTATE_180)
+                                
+                                ## Resizing the array to an appropriate shape for the jpg and the small fits
+                                iy, ix = final_image.size
+                                if iy == ix:
+                                    final_image.resize((1280, 1280))
+                                else:
+                                    final_image.resize((int(1536 * iy / ix), 1536))
+                                
+                                
+                                    
+                                final_image.save(
+                                    paths["im_path"] + paths["jpeg_name10"]
+                                )
+                                del final_image
+                                
+                            else:
+                                # Making cosmetic adjustments to the image array ready for jpg stretching
+                                #breakpoint()
+                                
+                                #hdusmalldata = np.asarray(hdusmalldata)
+                                
+                                #breakpoint()
+                                # hdusmalldata[
+                                #     hdusmalldata
+                                #     > image_saturation_level
+                                # ] = image_saturation_level
+                                # #hdusmalldata[hdusmalldata < -100] = -100
+                                hdusmalldata = hdusmalldata - np.min(hdusmalldata)
+
+                                # Resizing the array to an appropriate shape for the jpg and the small fits
+                                iy, ix = hdusmalldata.shape
+                                if iy == ix:
+                                    hdusmalldata = resize(
+                                        hdusmalldata, (1280, 1280), preserve_range=True
+                                    )
+                                else:
+                                    hdusmalldata = resize(
+                                        hdusmalldata,
+                                        (int(1536 * iy / ix), 1536),
+                                        preserve_range=True,
+                                    ) 
+                                stretched_data_float = Stretch().stretch(hdusmalldata+1000)
+                                stretched_256 = 255 * stretched_data_float
+                                hot = np.where(stretched_256 > 255)
+                                cold = np.where(stretched_256 < 0)
+                                stretched_256[hot] = 255
+                                stretched_256[cold] = 0
+                                stretched_data_uint8 = stretched_256.astype("uint8")
+                                hot = np.where(stretched_data_uint8 > 255)
+                                cold = np.where(stretched_data_uint8 < 0)
+                                stretched_data_uint8[hot] = 255
+                                stretched_data_uint8[cold] = 0
+                                imsave(
+                                    paths["im_path"] + paths["jpeg_name10"],
+                                    stretched_data_uint8,
+                                )
+                                del stretched_data_uint8
+                            
+                        del hdusmalldata
+                            
+
+                        # Try saving the jpeg to disk and quickly send up to AWS to present for the user
+                        # GUI
+                        if smartstackid == 'no':
+                            try:
+                                
+                                if not no_AWS:
+                                    g_dev["cam"].enqueue_for_fastAWS(
+                                        100, paths["im_path"], paths["jpeg_name10"]
+                                    )
+                                    g_dev["obs"].send_to_user(
+                                        "A preview image of the single image has been sent to the GUI.",
+                                        p_level="INFO",
+                                    )
+                            except:
+                                plog(
+                                    "there was an issue saving the preview jpg. Pushing on though"
+                                )
+                       
+                        
+                        
                         focusimg = np.array(
                             hdufocusdata, order="C"
                         )  
@@ -2591,6 +2754,13 @@ class Camera:
                             text.write(str(hdu.header))
                             text.close()
                             self.enqueue_for_fastAWS(10, im_path, text_name)
+                        
+                        if focus_image == False:
+                            try:
+                                self.enqueue_for_fastAWS(200, im_path, text_name.replace('.txt', '.sep'))
+                                #plog("Sent SEP up")
+                            except:
+                                plog("Failed to send SEP up for some reason")
 
 
                          # Set up RA and DEC headers for BANZAI
@@ -2811,173 +2981,7 @@ class Camera:
 
                         #breakpointbreakpoint()
 
-                        # This is holding the flash reduced fits file waiting to be saved
-                        # AFTER the jpeg has been sent up to AWS.
-                        hdureduceddata = np.array(hdusmalldata)                      
-
-                        # Code to stretch the image to fit into the 256 levels of grey for a jpeg
-                        # But only if it isn't a smartstack, if so wait for the reduce queue
-                        if smartstackid == 'no':
-                            
-                            if self.config["camera"][g_dev['cam'].name]["settings"]["is_osc"]:
-                                xshape=hdugreen.shape[0]
-                                yshape=hdugreen.shape[1]
-                                
-                                blue_stretched_data_float = Stretch().stretch(hdublue+1000)
-                                del hdublue
-                                green_stretched_data_float = Stretch().stretch(hdugreen+1000)
-                                red_stretched_data_float = Stretch().stretch(hdured+1000)
-                                del hdured
-                                xshape=hdugreen.shape[0]
-                                yshape=hdugreen.shape[1]
-                                del hdugreen
-                                rgbArray=np.zeros((xshape,yshape,3), 'uint8')
-                                rgbArray[..., 0] = red_stretched_data_float*256
-                                rgbArray[..., 1] = green_stretched_data_float*256
-                                rgbArray[..., 2] = blue_stretched_data_float*256
-
-                                del red_stretched_data_float
-                                del blue_stretched_data_float
-                                del green_stretched_data_float
-                                colour_img = Image.fromarray(rgbArray, mode="RGB")
-                                
-                                
-                                # adjust brightness
-                                brightness=ImageEnhance.Brightness(colour_img)
-                                brightness_image=brightness.enhance(self.config["camera"][g_dev['cam'].name]["settings"]['osc_brightness_enhance'])
-                                del colour_img
-                                del brightness
-                                
-                                # adjust contrast
-                                contrast=ImageEnhance.Contrast(brightness_image)
-                                contrast_image=contrast.enhance(self.config["camera"][g_dev['cam'].name]["settings"]['osc_contrast_enhance'])
-                                del brightness_image
-                                del contrast
-                                
-                                # adjust colour
-                                colouradj=ImageEnhance.Color(contrast_image)
-                                colour_image=colouradj.enhance(self.config["camera"][g_dev['cam'].name]["settings"]['osc_colour_enhance'])
-                                del contrast_image
-                                del colouradj
-                                
-                                # adjust saturation
-                                satur=ImageEnhance.Color(colour_image)
-                                satur_image=satur.enhance(self.config["camera"][g_dev['cam'].name]["settings"]['osc_saturation_enhance'])
-                                del colour_image
-                                del satur
-                                
-                                # adjust sharpness
-                                sharpness=ImageEnhance.Sharpness(satur_image)
-                                final_image=sharpness.enhance(self.config["camera"][g_dev['cam'].name]["settings"]['osc_sharpness_enhance'])
-                                del satur_image
-                                del sharpness
-                                
-                                
-                                # These steps flip and rotate the jpeg according to the settings in the site-config for this camera
-                                if self.config["camera"][g_dev['cam'].name]["settings"]["transpose_jpeg"]:
-                                    final_image=final_image.transpose(Image.TRANSPOSE)
-                                if self.config["camera"][g_dev['cam'].name]["settings"]['flipx_jpeg']:
-                                    final_image=final_image.transpose(Image.FLIP_LEFT_RIGHT)
-                                if self.config["camera"][g_dev['cam'].name]["settings"]['flipy_jpeg']:
-                                    final_image=final_image.transpose(Image.FLIP_TOP_BOTTOM)
-                                if self.config["camera"][g_dev['cam'].name]["settings"]['rotate180_jpeg']:
-                                    final_image=final_image.transpose(Image.ROTATE_180)
-                                if self.config["camera"][g_dev['cam'].name]["settings"]['rotate90_jpeg']:
-                                    final_image=final_image.transpose(Image.ROTATE_90)
-                                if self.config["camera"][g_dev['cam'].name]["settings"]['rotate270_jpeg']:
-                                    final_image=final_image.transpose(Image.ROTATE_270)
-                                    
-                                # Detect the pierside and if it is one way, rotate the jpeg 180 degrees
-                                # to maintain the orientation. whether it is 1 or 0 that is flipped
-                                # is sorta arbitrary... you'd use the site-config settings above to 
-                                # set it appropriately and leave this alone.
-                                if g_dev['mnt'].pier_side == 1:
-                                    final_image=final_image.transpose(Image.ROTATE_180)
-                                
-                                ## Resizing the array to an appropriate shape for the jpg and the small fits
-                                iy, ix = final_image.size
-                                if iy == ix:
-                                    final_image.resize((1280, 1280))
-                                else:
-                                    final_image.resize((int(1536 * iy / ix), 1536))
-                                
-                                
-                                    
-                                final_image.save(
-                                    paths["im_path"] + paths["jpeg_name10"]
-                                )
-                                del final_image
-                                
-                            else:
-                                # Making cosmetic adjustments to the image array ready for jpg stretching
-                                #breakpoint()
-                                
-                                hdusmalldata = np.array(hdusmalldata)
-                                
-                                #breakpoint()
-                                # hdusmalldata[
-                                #     hdusmalldata
-                                #     > image_saturation_level
-                                # ] = image_saturation_level
-                                # #hdusmalldata[hdusmalldata < -100] = -100
-                                hdusmalldata = hdusmalldata - np.min(hdusmalldata)
-
-                                # Resizing the array to an appropriate shape for the jpg and the small fits
-                                iy, ix = hdusmalldata.shape
-                                if iy == ix:
-                                    hdusmalldata = resize(
-                                        hdusmalldata, (1280, 1280), preserve_range=True
-                                    )
-                                else:
-                                    hdusmalldata = resize(
-                                        hdusmalldata,
-                                        (int(1536 * iy / ix), 1536),
-                                        preserve_range=True,
-                                    ) 
-                                stretched_data_float = Stretch().stretch(hdusmalldata+1000)
-                                stretched_256 = 255 * stretched_data_float
-                                hot = np.where(stretched_256 > 255)
-                                cold = np.where(stretched_256 < 0)
-                                stretched_256[hot] = 255
-                                stretched_256[cold] = 0
-                                stretched_data_uint8 = stretched_256.astype("uint8")
-                                hot = np.where(stretched_data_uint8 > 255)
-                                cold = np.where(stretched_data_uint8 < 0)
-                                stretched_data_uint8[hot] = 255
-                                stretched_data_uint8[cold] = 0
-                                imsave(
-                                    paths["im_path"] + paths["jpeg_name10"],
-                                    stretched_data_uint8,
-                                )
-                                del stretched_data_uint8
-                            
-                        del hdusmalldata
-                            
-
-                        # Try saving the jpeg to disk and quickly send up to AWS to present for the user
-                        # GUI
-                        if smartstackid == 'no':
-                            try:
-                                
-                                if not no_AWS:
-                                    g_dev["cam"].enqueue_for_fastAWS(
-                                        100, paths["im_path"], paths["jpeg_name10"]
-                                    )
-                                    g_dev["obs"].send_to_user(
-                                        "A preview image of the single image has been sent to the GUI.",
-                                        p_level="INFO",
-                                    )
-                            except:
-                                plog(
-                                    "there was an issue saving the preview jpg. Pushing on though"
-                                )
-                       
-                        if focus_image == False:
-                            try:
-                                self.enqueue_for_fastAWS(200, im_path, text_name.replace('.txt', '.sep'))
-                                #plog("Sent SEP up")
-                            except:
-                                plog("Failed to send SEP up for some reason")
+                        
 
                     # Now that the jpeg has been sent up pronto,
                     # We turn back to getting the bigger raw, reduced and fz files dealt with
