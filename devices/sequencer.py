@@ -3,6 +3,9 @@ import datetime
 from datetime import timedelta
 import copy
 from global_yard import g_dev
+from astropy.coordinates import SkyCoord, AltAz
+from astropy import units as u
+from astropy.time import Time
 import ephem
 import build_tycho as tycho
 import shelve
@@ -189,6 +192,10 @@ class Sequencer:
             self.is_in_completes(None)
         except:
             self.reset_completes()
+            
+        # Load up focus catalogue
+        self.focus_catalogue = np.genfromtxt('support_info/focusCatalogue.csv', delimiter=',')
+        
 
 
     def get_status(self):
@@ -239,7 +246,6 @@ class Sequencer:
         elif action.lower() in ["stop", "cancel"]:
             self.stop_command(req, opt)
         elif action == "home":
-            #breakpoint()
             self.home_command(req, opt)
         elif action == 'run' and script == 'findFieldCenter':
             g_dev['mnt'].go_command(req, opt, calibrate=True, auto_center=True)
@@ -1806,14 +1812,35 @@ class Sequencer:
         if req2['target'] == 'near_tycho_star':   ## 'bin', 'area'  Other parameters
 
             #  Go to closest Mag 7.5 Tycho * with no flip
+            #focus_star = tycho.dist_sort_targets(g_dev['mnt'].current_icrs_ra, g_dev['mnt'].current_icrs_dec,g_dev['mnt'].current_sidereal)
+            
+            # Trim catalogue so that only fields 45 degrees altitude are in there.
+            self.focus_catalogue_skycoord= SkyCoord(ra = self.focus_catalogue[:,0]*u.deg, dec = self.focus_catalogue[:,1]*u.deg)
+            aa = AltAz (location=g_dev['mnt'].site_coordinates, obstime=Time.now())
+            self.focus_catalogue_altitudes=self.focus_catalogue_skycoord.transform_to(aa)            
+            above_altitude_patches=[]
 
-            focus_star = tycho.dist_sort_targets(g_dev['mnt'].current_icrs_ra, g_dev['mnt'].current_icrs_dec, \
-                                    g_dev['mnt'].current_sidereal)
+            for ctr in range(len(self.focus_catalogue_altitudes)):
+                if self.focus_catalogue_altitudes[ctr].alt /u.deg > 45.0:
+                    above_altitude_patches.append([self.focus_catalogue[ctr,0], self.focus_catalogue[ctr,1], self.focus_catalogue[ctr,2]])
+            above_altitude_patches=np.asarray(above_altitude_patches)
+            self.focus_catalogue_skycoord= SkyCoord(ra = above_altitude_patches[:,0]*u.deg, dec = above_altitude_patches[:,1]*u.deg)  
+            
+            # d2d of the closest field.
+            teststar = SkyCoord(ra = g_dev['mnt'].current_icrs_ra*15*u.deg, dec = g_dev['mnt'].current_icrs_dec*u.deg)
+            idx, d2d, _ = teststar.match_to_catalog_sky(self.focus_catalogue_skycoord)
+            
+            focus_patch_ra=above_altitude_patches[idx,0] /15
+            focus_patch_dec=above_altitude_patches[idx,1]
+            focus_patch_n=above_altitude_patches[idx,2]                
+            
             try:
-                plog("Going to near focus star " + str(focus_star[0][0]) + "  degrees away.")
-                g_dev['mnt'].go_coord(focus_star[0][1][1], focus_star[0][1][0])
-            except:
-                print ("Issues pointing to a tycho star. Focussing at the current pointing.")
+                plog("Going to near focus patch of " + str(focus_patch_n) + " 9th to 12th mag stars " + str(d2d.deg) + "  degrees away.")
+                g_dev['mnt'].go_coord(focus_patch_ra, focus_patch_dec)
+            except Exception as e:
+                print ("Issues pointing to a focus patch. Focussing at the current pointing." , e)
+                plog(traceback.format_exc())
+
             req = {'time': self.config['focus_exposure_time'],  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'focus'}   #  NB Should pick up filter and constats from config
 
             opt = {'area': 150, 'count': 1, 'bin': 1, 'filter': 'focus'}

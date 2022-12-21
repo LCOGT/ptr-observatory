@@ -109,7 +109,7 @@ def dist_sort_targets(pRa, pDec, pSidTime):
 def az_sort_targets(pSidTime, grid=4):
     """Sorts list of targets by azimuth measurement"""
     # NB Bad form. Pick up constants from config.
-    sorted_target_list = dist_sort_targets(pSidTime, 35.55, pSidTime)
+    sorted_target_list = dist_sort_targets(pSidTime, g_dev['mnt'].config['latitude'], pSidTime)
     az_sorted_targets = []
     for star in sorted_target_list:
         cat_ha = reduceHa(pSidTime - star[1][1])

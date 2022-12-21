@@ -1507,7 +1507,7 @@ class Observatory:
                 self.img = None  # Clean up all big objects.
                 self.reduce_queue.task_done()
             else:
-                time.sleep(0.5)
+                time.sleep(0.1)
 
 
 if __name__ == "__main__":
