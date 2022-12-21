@@ -1422,9 +1422,11 @@ class Observatory:
                         ## Resizing the array to an appropriate shape for the jpg and the small fits
                         iy, ix = final_image.size
                         if iy == ix:
-                            final_image.resize((1280, 1280))
+                            #final_image.resize((1280, 1280))
+                            final_image.resize((900, 900))
                         else:
-                            final_image.resize((int(1536 * iy / ix), 1536))
+                            #final_image.resize((int(1536 * iy / ix), 1536))
+                            final_image.resize((int(900 * iy / ix), 900))
                         
                         
                             
@@ -1436,17 +1438,8 @@ class Observatory:
              
                     else:
                         # Resizing the array to an appropriate shape for the jpg and the small fits
-                        iy, ix = storedsStack.shape
-                        if iy == ix:
-                            storedsStack = resize(
-                                storedsStack, (1280, 1280), preserve_range=True
-                            )
-                        else:
-                            storedsStack = resize(
-                                storedsStack,
-                                (int(1536 * iy / ix), 1536),
-                                preserve_range=True,
-                            )  #  We should trim chips so ratio is exact.
+                        #iy, ix = storedsStack.shape
+                        
                         
                         # Code to stretch the image to fit into the 256 levels of grey for a jpeg
                         stretched_data_float = Stretch().stretch(storedsStack + 1000)
@@ -1462,19 +1455,60 @@ class Observatory:
                         stretched_data_uint8[hot] = 255
                         stretched_data_uint8[cold] = 0
     
-                        imsave(
-                            g_dev["cam"].site_path
-                            + "smartstacks/"
-                            + smartStackFilename.replace(
-                                ".npy", "_" + str(ssframenumber) + ".jpg"
-                            ),
-                            stretched_data_uint8,
-                        )
+                        iy, ix = stretched_data_uint8.shape
+                        stretched_data_uint8 = Image.fromarray(stretched_data_uint8)
     
-                        imsave(
-                            paths["im_path"] + paths["jpeg_name10"],
-                            stretched_data_uint8,
+                        if iy == ix:
+                            # storedsStack = resize(
+                            #     storedsStack, (1280, 1280), preserve_range=True
+                            # )
+                            # storedsStack = resize(
+                            #     storedsStack, (900, 900), preserve_range=True
+                            # )
+                            stretched_data_uint8 = stretched_data_uint8.resize(
+                                         (900, 900)
+                                    )
+                        else:
+                            # storedsStack = resize(
+                            #     storedsStack,
+                            #     (int(1536 * iy / ix), 1536),
+                            #     preserve_range=True,
+                            # )  #  We should trim chips so ratio is exact.
+                            # storedsStack = resize(
+                            #     storedsStack,
+                            #     (int(900 * iy / ix), 900),
+                            #     preserve_range=True,
+                            # )  #  We should trim chips so ratio is exact.
+                            stretched_data_uint8 = stretched_data_uint8.resize(
+                                        
+                                        (int(900 * iy / ix), 900)
+                                        
+                                    ) 
+    
+                        # imsave(
+                        #     g_dev["cam"].site_path
+                        #     + "smartstacks/"
+                        #     + smartStackFilename.replace(
+                        #         ".npy", "_" + str(ssframenumber) + ".jpg"
+                        #     ),
+                        #     stretched_data_uint8,
+                        # )
+    
+                        # imsave(
+                        #     paths["im_path"] + paths["jpeg_name10"],
+                        #     stretched_data_uint8,
+                        # )
+
+                        stretched_data_uint8=stretched_data_uint8.transpose(Image.TRANSPOSE) # Not sure why it transposes on array creation ... but it does!
+                        stretched_data_uint8.save(
+                            paths["im_path"] + paths["jpeg_name10"]
                         )
+                        
+                        # imsave(
+                        #     paths["im_path"] + paths["jpeg_name10"],
+                        #     stretched_data_uint8,
+                        # )
+
 
 
                     self.fast_queue.put((15, (paths["im_path"], paths["jpeg_name10"])), block=False)

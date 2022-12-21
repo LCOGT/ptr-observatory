@@ -2506,10 +2506,11 @@ class Camera:
                                 ## Resizing the array to an appropriate shape for the jpg and the small fits
                                 iy, ix = final_image.size
                                 if iy == ix:
-                                    final_image.resize((1280, 1280))
+                                    #final_image.resize((1280, 1280))
+                                    final_image.resize((900, 900))
                                 else:
-                                    final_image.resize((int(1536 * iy / ix), 1536))
-                                
+                                    #final_image.resize((int(1536 * iy / ix), 1536))
+                                    final_image.resize((int(900 * iy / ix), 900))
                                 
                                     
                                 final_image.save(
@@ -2531,18 +2532,7 @@ class Camera:
                                 # #hdusmalldata[hdusmalldata < -100] = -100
                                 hdusmalldata = hdusmalldata - np.min(hdusmalldata)
 
-                                # Resizing the array to an appropriate shape for the jpg and the small fits
-                                iy, ix = hdusmalldata.shape
-                                if iy == ix:
-                                    hdusmalldata = resize(
-                                        hdusmalldata, (1280, 1280), preserve_range=True
-                                    )
-                                else:
-                                    hdusmalldata = resize(
-                                        hdusmalldata,
-                                        (int(1536 * iy / ix), 1536),
-                                        preserve_range=True,
-                                    ) 
+
                                 stretched_data_float = Stretch().stretch(hdusmalldata+1000)
                                 stretched_256 = 255 * stretched_data_float
                                 hot = np.where(stretched_256 > 255)
@@ -2554,9 +2544,41 @@ class Camera:
                                 cold = np.where(stretched_data_uint8 < 0)
                                 stretched_data_uint8[hot] = 255
                                 stretched_data_uint8[cold] = 0
-                                imsave(
-                                    paths["im_path"] + paths["jpeg_name10"],
-                                    stretched_data_uint8,
+                                
+                                iy, ix = stretched_data_uint8.shape
+                                stretched_data_uint8 = Image.fromarray(stretched_data_uint8)
+                                
+
+                                # Resizing the array to an appropriate shape for the jpg and the small fits
+                                
+                        
+                                if iy == ix:
+                                    # hdusmalldata = resize(
+                                    #     hdusmalldata, (1280, 1280), preserve_range=True
+                                    # )
+                                    stretched_data_uint8 = stretched_data_uint8.resize(
+                                         (900, 900)
+                                    )
+                                else:
+                                    # stretched_data_uint8 = resize(
+                                    #     stretched_data_uint8,
+                                    #     (int(1536 * iy / ix), 1536),
+                                    #     preserve_range=True,
+                                    # )
+                                    # stretched_data_uint8 = resize(
+                                    #     stretched_data_uint8,
+                                    #     (int(900 * iy / ix), 900),
+                                    #     preserve_range=True,
+                                    # ) 
+                                    
+                                    stretched_data_uint8 = stretched_data_uint8.resize(
+                                        
+                                        (int(900 * iy / ix), 900)
+                                        
+                                    ) 
+                                stretched_data_uint8=stretched_data_uint8.transpose(Image.TRANSPOSE) # Not sure why it transposes on array creation ... but it does!
+                                stretched_data_uint8.save(
+                                    paths["im_path"] + paths["jpeg_name10"]
                                 )
                                 del stretched_data_uint8
                             
