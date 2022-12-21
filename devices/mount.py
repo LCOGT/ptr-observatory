@@ -1075,8 +1075,11 @@ class Mount:
                 pier_east = 0
          #Update incoming ra and dec with mounting offsets.
 
-        ra += delta_ra #NB it takes a restart to pick up a new correction which is also J.now.
-        dec += delta_dec
+        try:        
+            ra += delta_ra #NB it takes a restart to pick up a new correction which is also J.now.
+            dec += delta_dec
+        except:
+            pass
         ra, dec = ra_dec_fix_h(ra,dec)
         if self.mount.EquatorialSystem == 1:    #equTopocentric
             self.get_current_times()   #  NB We should find a way to refresh this once a day, esp. for status return.
