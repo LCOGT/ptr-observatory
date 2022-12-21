@@ -2841,6 +2841,20 @@ class Camera:
 
 
 
+                        # Make  sure the alt paths exist
+                        if self.config["save_to_alt_path"] == "yes":
+                            os.makedirs(
+                                self.alt_path + g_dev["day"], exist_ok=True
+                            )
+                            os.makedirs(
+                                self.alt_path + g_dev["day"] + "/raw/", exist_ok=True
+                            )
+                            os.makedirs(
+                                self.alt_path + g_dev["day"] + "/reduced/", exist_ok=True
+                            )
+                            os.makedirs(
+                                self.alt_path + g_dev["day"] + "/calib/", exist_ok=True)
+
                         # If this is a focus image, save focus image, estimate pointing, and estimate pointing
                         # We want to estimate pointing in the main thread so it has enough time to correct the
                         # pointing during focus, not when it quickly moves back to the target. Takes longer
@@ -2879,6 +2893,10 @@ class Camera:
                                 hdufocus.header["NAXIS2"] = hdufocusdata.shape[1]
                                 hdufocus.writeto(cal_path + cal_name, overwrite=True, output_verify='silentfix')
                                 pixscale=hdufocus.header['PIXSCALE']
+                                if self.config["save_to_alt_path"] == "yes":
+                                    self.to_slow_process(1000,('raw_alt_path', self.alt_path + g_dev["day"] + "/calib/" + cal_name, hdufocus.data, hdufocus.header, \
+                                                                   frame_type))
+                                
                                 try:
                                     hdufocus.close()
                                 except:
@@ -3035,35 +3053,38 @@ class Camera:
                     
                     # For sites that have "save_to_alt_path" enabled, this routine
                     # Saves the raw and reduced fits files out to the provided directories
+                    
                     if self.config["save_to_alt_path"] == "yes":
-                        os.makedirs(
-                            self.alt_path + g_dev["day"] + "/raw/", exist_ok=True
-                        )
-                        os.makedirs(
-                            self.alt_path + g_dev["day"] + "/reduced/", exist_ok=True
-                        )
-                        try:
-                            hdu.writeto(
-                                self.alt_path + g_dev["day"] + "/raw/" + raw_name00,
-                                overwrite=True, output_verify='silentfix'
-                            )  # Save full raw file locally
-                            if "hdureduced" in locals():
-                                hdureduced.writeto(
-                                    self.alt_path
-                                    + g_dev["day"]
-                                    + "/reduced/"
-                                    + red_name01,
-                                    overwrite=True, output_verify='silentfix'
-                                )  # Save full raw file locally
-                            saver = 1
-                        except Exception as e:
-                            plog("Failed to write raw file: ", e)
-                            if "requested" in e and "written" in e:
+                        self.to_slow_process(1000,('raw_alt_path', self.alt_path + g_dev["day"] + "/raw/" + raw_name00, hdu.data, hdu.header, \
+                                                       frame_type))
+                        if "hdureduced" in locals():
+                            self.to_slow_process(1000,('reduced_alt_path', self.alt_path + g_dev["day"] + "/reduced/" + red_name01, hdureduceddata, hdu.header, \
+                                                               frame_type))
+                            
+                        
+                      
+                        # try:
+                        #     hdu.writeto(
+                        #         self.alt_path + g_dev["day"] + "/raw/" + raw_name00,
+                        #         overwrite=True, output_verify='silentfix'
+                        #     )  # Save full raw file locally
+                        #     if "hdureduced" in locals():
+                        #         hdureduced.writeto(
+                        #             self.alt_path
+                        #             + g_dev["day"]
+                        #             + "/reduced/"
+                        #             + red_name01,
+                        #             overwrite=True, output_verify='silentfix'
+                        #         )  # Save full raw file locally
+                        #     saver = 1
+                        # except Exception as e:
+                        #     plog("Failed to write raw file: ", e)
+                        #     if "requested" in e and "written" in e:
 
-                                plog(check_download_cache())
-                            plog(traceback.format_exc())
-                            time.sleep(10)
-                            saverretries = saverretries + 1
+                        #         plog(check_download_cache())
+                        #     plog(traceback.format_exc())
+                        #     time.sleep(10)
+                        #     saverretries = saverretries + 1
 
                     # remove file from memory
                     

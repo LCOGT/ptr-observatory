@@ -963,7 +963,7 @@ class Observatory:
                         pass                    
                     del hdufocus
                 
-                if slow_process[0] == 'raw':
+                if slow_process[0] == 'raw' or slow_process[0] =='raw_alt_path' or slow_process[0] == 'reduced_alt_path':
                     saver = 0
                     saverretries = 0
                     while saver == 0 and saverretries < 10:
@@ -988,6 +988,10 @@ class Observatory:
                             plog(traceback.format_exc())
                             time.sleep(10)
                             saverretries = saverretries + 1
+                    
+                    
+                
+                    
                 
                 if slow_process[0] == 'fz_and_send':
 
