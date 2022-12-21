@@ -287,7 +287,7 @@ class Mount:
             ].mount.sideOfPier  # 0 == Tel Looking West, is flipped.
             self.can_report_pierside = True
         except Exception as e:
-            print (e)
+            #print (e)
             print ("Mount cannot report pierside. Setting the code not to ask again, assuming default pointing west.")
             self.can_report_pierside = False
             self.pier_side = 0
@@ -301,7 +301,7 @@ class Mount:
             ].mount.DestinationSideOfPier(0,0)  # 0 == Tel Looking West, is flipped.
             self.can_report_destination_pierside = True
         except Exception as e:
-            print (e)
+            #print (e)
             print ("Mount cannot report destination pierside. Setting the code not to ask again.")
             self.can_report_destination_pierside = False
             self.pier_side = 0
