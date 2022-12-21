@@ -2483,6 +2483,9 @@ class Camera:
                             sources['y'] = (sources['y'] ) * binfocus
                             sources['a'] = (sources['a'] ) * binfocus
                             sources['b'] = (sources['b'] ) * binfocus
+                            sources['kronrad'] = (sources['kronrad'] ) * binfocus
+                            sources['peak'] = (sources['peak'] ) / pow(binfocus,2)
+                            sources['cpeak'] = (sources['cpeak'] ) / pow(binfocus,2)
                             
                             sources = sources[sources['FWHM'] > 1.0]
                             sources = sources[sources['FWHM'] != 0]
