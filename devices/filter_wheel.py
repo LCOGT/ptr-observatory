@@ -508,7 +508,7 @@ class FilterWheel:
 
             self.filter_offset = float(self.filter_data[filt_pointer][2])
 
-        return filter_name
+        return filter_name, match
 
     def home_command(self, opt: dict):
         """Sets the filter to the home position."""
