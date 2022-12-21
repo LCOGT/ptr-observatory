@@ -508,7 +508,7 @@ site_config = {
                 #'filter_list': ['PL','PR','PG','PB','HA','O3','S2', 'air','dif','w','CR','N2','up','gp','rp','ip','z', 'difup','difgp','difrp','difip','dark'], # A list of actual physical filters for the substitution function
 
                 'filter_data': [['air',     [0, 0], -1000,  357.1, [2, 17], 'ai'], #  0
-                                ['dif',     [4, 0],     0,  330.0, [2, 17], 'df'], #  1  NB NB NB THis in series should change focus about 1mm more.
+                                ['dif',     [4, 0],     0,  330.0, [2, 17], 'df'], #  1  NB NB NB If this in series should change focus about 1mm more.
                                 ['w',       [2, 0],     0,  346.2, [2, 17], 'w '], #  2
                                 ['PL',      [0, 4],     0,  317.5, [2, 17], "PL"], #  3
                                 ['gp',      [0, 6],     0,  108.7, [2, 17], 'gp'], #  4 
@@ -524,13 +524,8 @@ site_config = {
                                 ['CR',      [1, 0],     0,  2.83,  [2, 17], 'CR'], # 14
                                 ['S2',      [8, 0],     0,  1.64,  [2, 17], 'S2'], # 15   
                                 ['HA',      [6, 0],     0,  1.58,  [2, 17], 'HA'], # 16  
-                                ['difup',   [4, 5],  1000,  4.8,   [2, 17], 'du'], # 17
-                                ['difgp',   [4, 6],  1000,   90,   [2, 17], 'dg'], # 18
-                                ['difrp',   [4, 7],  1000,   48,   [2, 17], 'dr'], # 19
-                                ['difip',   [4, 8],  1000,   44,   [2, 17], 'di'], # 20
-                                ['focus',   [2, 0],     0,  0.0,   [2, 17], 'fo'], # 21
-                                #['focus',   [0, 0],     0,  0.0,   [2, 17], 'fo'], # 21
-                                ['dark',    [8, 5],     0,  0.0,   [2, 17], 'dk']],# 22
+                                ['focus',   [2, 0],     0,  0.0,   [2, 17], 'fo'], # 17
+                                ['dark',    [8, 5],     0,  0.0,   [2, 17], 'dk']],# 18
 
                                 #Screen = 100; QHY400 ~ 92% DQE   HDR Mode    Screen = 160 sat  20190825 measured.
                 'filter_screen_sort':  ['air','w','PL','dif', 'gp','PB','rp','PG','PR','ip','O3','N2','CR','S2','HA'],   #  9, 21],  # 5, 17], #Most to least throughput, \
