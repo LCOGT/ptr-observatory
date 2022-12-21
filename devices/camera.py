@@ -233,7 +233,7 @@ class Camera:
                 + self.alias
                 + "/BIAS_master_bin1.fits"
             )
-            tempbiasframe = np.array(tempbiasframe[0].data, dtype=np.int16)
+            tempbiasframe = np.array(tempbiasframe[0].data, dtype=np.float32)
             self.biasFiles.update({'1': tempbiasframe})
             del tempbiasframe
         except:
@@ -628,7 +628,7 @@ class Camera:
         return self.camera.ImageReady
 
     def _maxim_getImageArray(self):
-        return np.array(self.camera.ImageArray)
+        return np.asarray(self.camera.ImageArray)
 
     def _ascom_connected(self):
         return self.camera.Connected
@@ -674,7 +674,7 @@ class Camera:
         self.camera.StopExposure()  # ASCOM also has an AbortExposure method.
 
     def _ascom_getImageArray(self):
-        return np.array(self.camera.ImageArray)
+        return np.asarray(self.camera.ImageArray)
 
     def create_simple_autosave(
         self,
@@ -1373,7 +1373,7 @@ class Camera:
                         plog("Retried 8 times and didn't get an image, giving up.")
                         return result
                     try:
-                        self.img = np.array(self._getImageArray())  # As read, this is a Windows Safe Array of longs
+                        self.img = self._getImageArray()  # As read, this is a Windows Safe Array of longs
                         imageCollected = 1
                     except Exception as e:
                         plog(e)
@@ -1400,7 +1400,8 @@ class Camera:
 
                 image_saturation_level = g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"]
                 # Get bi_mean of middle patch for flat usage                
-                test_saturated = np.array(self.img[ix // 3 : ix * 2 // 3, iy // 3 : iy * 2 // 3])  
+                #test_saturated = np.array(self.img[ix // 3 : ix * 2 // 3, iy // 3 : iy * 2 // 3]) 
+                test_saturated = self.img[ix // 3 : ix * 2 // 3, iy // 3 : iy * 2 // 3]
                 # 1/9th the chip area, but central.   NB NB why 3, is this what flat uses???
                 bi_mean = round((test_saturated.mean() + np.median(test_saturated)) / 2, 1)
                 
@@ -1494,10 +1495,10 @@ class Camera:
 
                     
                     #This should print out  0,0 color pixel for an OSC camera and plot it. Yellow is larger! 
-                    self.tsp = hdu.data
-                    print(self.tsp[0:2, 24:26])
-                    plt.imshow(self.tsp[0:2, 24:26])
-                    del self.tsp
+                    # self.tsp = hdu.data
+                    # print(self.tsp[0:2, 24:26])
+                    # plt.imshow(self.tsp[0:2, 24:26])
+                    # del self.tsp
 
                     # It is faster to store the current binning than keeping on asking ASCOM throughout this
                     #tempBinningCodeX=self.camera.BinX
@@ -2360,11 +2361,11 @@ class Camera:
                         # Every Image gets SEP'd and gets it's catalogue sent up pronto ahead of the big fits
                         # Focus images use it for focus, Normal images also report their focus.
                         hdufocusdata = np.array(hdusmalldata)
-                        binfocus=1
+                        
                         # If this a bayer image, then we need to make an appropriate image that is monochrome
                         # That gives the best chance of finding a focus AND for pointing while maintaining resolution.
                         # This is best done by taking the two "real" g pixels and interpolating in-between 
-                        
+                        binfocus=1
                         if self.config["camera"][self.name]["settings"]["is_osc"]:
                             #print ("interpolating bayer grid for focusing purposes.")
                             if self.config["camera"][self.name]["settings"]["osc_bayer"] == 'RGGB':                              
@@ -2376,31 +2377,32 @@ class Camera:
                                     yshape=hdufocusdata.shape[1]
     
                                     # B pixels
-                                    list_0_1 = np.array([ [0,0], [0,1] ])
+                                    #list_0_1 = np.array([ [0,0], [0,1] ])
+                                    list_0_1 = np.asarray([ [0,0], [0,1] ])
                                     checkerboard=np.tile(list_0_1, (xshape//2, yshape//2))
-                                    checkerboard=np.array(checkerboard)
+                                    #checkerboard=np.array(checkerboard)
                                     hdublue=(block_reduce(hdufocusdata * checkerboard ,2))
                                     
                                     # R Pixels
-                                    list_0_1 = np.array([ [1,0], [0,0] ])
+                                    list_0_1 = np.asarray([ [1,0], [0,0] ])
                                     checkerboard=np.tile(list_0_1, (xshape//2, yshape//2))
-                                    checkerboard=np.array(checkerboard)
+                                    #checkerboard=np.array(checkerboard)
                                     hdured=(block_reduce(hdufocusdata * checkerboard ,2))
                                     
                                     # G top right Pixels
-                                    list_0_1 = np.array([ [0,1], [0,0] ])
+                                    list_0_1 = np.asarray([ [0,1], [0,0] ])
                                     checkerboard=np.tile(list_0_1, (xshape//2, yshape//2))
-                                    checkerboard=np.array(checkerboard)
+                                    #checkerboard=np.array(checkerboard)
                                     GTRonly=(block_reduce(hdufocusdata * checkerboard ,2))
                                     
                                     # G bottom left Pixels
-                                    list_0_1 = np.array([ [0,0], [1,0] ])
+                                    list_0_1 = np.asarray([ [0,0], [1,0] ])
                                     checkerboard=np.tile(list_0_1, (xshape//2, yshape//2))
-                                    checkerboard=np.array(checkerboard)
+                                    #checkerboard=np.array(checkerboard)
                                     GBLonly=(block_reduce(hdufocusdata * checkerboard ,2))                                
                                     
                                     # Sum two Gs together and half them to be vaguely on the same scale
-                                    hdugreen = np.array(GTRonly + GBLonly) / 2
+                                    hdugreen = (GTRonly + GBLonly) / 2
                                     del GTRonly
                                     del GBLonly
                                     del checkerboard
@@ -2671,7 +2673,8 @@ class Camera:
                             else:
                                 # Get halflight radii
                                 #breakpoint()                                
-                                fwhmcalc=(np.array(sources['FWHM']))
+                                #fwhmcalc=(np.array(sources['FWHM']))
+                                fwhmcalc=sources['FWHM']
                                 fwhmcalc=fwhmcalc[fwhmcalc > 1.0]
                                 fwhmcalc=fwhmcalc[fwhmcalc != 0] # Remove 0 entries
                                 fwhmcalc=fwhmcalc[fwhmcalc < 75] # remove stupidly large entries
